@@ -1,0 +1,155 @@
+[
+  {
+    "id": "retroarch",
+    "name": "RetroArch",
+    "packageName": "com.retroarch",
+    "activityClass": "com.retroarch.browser.retroactivity.RetroActivityFuture",
+    "intentType": "COMPONENT",
+    "supportedPlatformIds": ["nes","snes","gba","gbc","n64","ps1","ps2","nds","psp","saturn","megadrive","mame"],
+    "intentExtras": {
+      "ROM": "{rom_path}",
+      "LIBRETRO": "{core_path}",
+      "CONFIGFILE": "{config_path}"
+    },
+    "coreMap": {
+      "nes":       "/data/data/com.retroarch.aarch64/cores/fceumm_libretro_android.so",
+      "snes":      "/data/data/com.retroarch.aarch64/cores/snes9x_libretro_android.so",
+      "gba":       "/data/data/com.retroarch.aarch64/cores/mgba_libretro_android.so",
+      "gbc":       "/data/data/com.retroarch.aarch64/cores/gambatte_libretro_android.so",
+      "n64":       "/data/data/com.retroarch.aarch64/cores/mupen64plus_next_libretro_android.so",
+      "ps1":       "/data/data/com.retroarch.aarch64/cores/swanstation_libretro_android.so",
+      "ps2":       "/data/data/com.retroarch.aarch64/cores/pcsx2_libretro_android.so",
+      "nds":       "/data/data/com.retroarch.aarch64/cores/melonds_libretro_android.so",
+      "psp":       "/data/data/com.retroarch.aarch64/cores/ppsspp_libretro_android.so",
+      "saturn":    "/data/data/com.retroarch.aarch64/cores/kronos_libretro_android.so",
+      "megadrive": "/data/data/com.retroarch.aarch64/cores/genesis_plus_gx_libretro_android.so",
+      "mame":      "/data/data/com.retroarch.aarch64/cores/mame_libretro_android.so"
+    },
+    "notes": "Full core path required post Jan-2025 nightly (versionCode >= 1170117)"
+  },
+  {
+    "id": "retroarch_aarch64",
+    "name": "RetroArch (64-bit)",
+    "packageName": "com.retroarch.aarch64",
+    "activityClass": "com.retroarch.browser.retroactivity.RetroActivityFuture",
+    "intentType": "COMPONENT",
+    "supportedPlatformIds": ["nes","snes","gba","gbc","n64","ps1","ps2","nds","psp","saturn","megadrive","mame"],
+    "intentExtras": {
+      "ROM": "{rom_path}",
+      "LIBRETRO": "{core_path}",
+      "CONFIGFILE": "{config_path}"
+    },
+    "coreMap": {
+      "nes":       "/data/data/com.retroarch.aarch64/cores/fceumm_libretro_android.so",
+      "snes":      "/data/data/com.retroarch.aarch64/cores/snes9x_libretro_android.so",
+      "gba":       "/data/data/com.retroarch.aarch64/cores/mgba_libretro_android.so",
+      "gbc":       "/data/data/com.retroarch.aarch64/cores/gambatte_libretro_android.so",
+      "n64":       "/data/data/com.retroarch.aarch64/cores/mupen64plus_next_libretro_android.so",
+      "ps1":       "/data/data/com.retroarch.aarch64/cores/swanstation_libretro_android.so",
+      "ps2":       "/data/data/com.retroarch.aarch64/cores/pcsx2_libretro_android.so",
+      "nds":       "/data/data/com.retroarch.aarch64/cores/melonds_libretro_android.so",
+      "psp":       "/data/data/com.retroarch.aarch64/cores/ppsspp_libretro_android.so",
+      "saturn":    "/data/data/com.retroarch.aarch64/cores/kronos_libretro_android.so",
+      "megadrive": "/data/data/com.retroarch.aarch64/cores/genesis_plus_gx_libretro_android.so",
+      "mame":      "/data/data/com.retroarch.aarch64/cores/mame_libretro_android.so"
+    },
+    "minVersionCode": 1170117,
+    "notes": "64-bit variant — preferred on aarch64 devices"
+  },
+  {
+    "id": "ppsspp",
+    "name": "PPSSPP",
+    "packageName": "org.ppsspp.ppsspp",
+    "intentType": "ACTION_VIEW",
+    "supportedPlatformIds": ["psp"],
+    "mimeType": "application/octet-stream",
+    "useFileUri": true,
+    "notes": "Stable intent format, unchanged for years"
+  },
+  {
+    "id": "ppsspp_gold",
+    "name": "PPSSPP Gold",
+    "packageName": "org.ppsspp.ppssppgold",
+    "intentType": "ACTION_VIEW",
+    "supportedPlatformIds": ["psp"],
+    "mimeType": "application/octet-stream",
+    "useFileUri": true
+  },
+  {
+    "id": "dolphin",
+    "name": "Dolphin Emulator",
+    "packageName": "org.dolphinemu.dolphinemu",
+    "intentType": "ACTION_VIEW",
+    "supportedPlatformIds": ["gamecube","wii"],
+    "useFileUri": true,
+    "notes": "Supports GC and Wii — use file:// URI"
+  },
+  {
+    "id": "duckstation",
+    "name": "DuckStation",
+    "packageName": "com.github.stenzek.duckstation",
+    "intentType": "ACTION_VIEW",
+    "supportedPlatformIds": ["ps1"],
+    "useSafUri": true,
+    "notes": "Prefers SAF/content URI on Android 11+"
+  },
+  {
+    "id": "nethersx2",
+    "name": "NetherSX2",
+    "packageName": "xyz.aethersx2.android",
+    "intentType": "ACTION_VIEW",
+    "supportedPlatformIds": ["ps2"],
+    "useFileUri": true,
+    "notes": "AetherSX2 fork — most common PS2 standalone"
+  },
+  {
+    "id": "azahar",
+    "name": "Azahar (3DS)",
+    "packageName": "org.azahar.azahar",
+    "intentType": "ACTION_VIEW",
+    "supportedPlatformIds": ["3ds"],
+    "useFileUri": true,
+    "notes": "Replaced Citra after March 2024 shutdown"
+  },
+  {
+    "id": "sudachi",
+    "name": "Sudachi (Switch)",
+    "packageName": "org.sudachi.android",
+    "intentType": "ACTION_VIEW",
+    "supportedPlatformIds": ["switch"],
+    "useFileUri": true,
+    "notes": "Yuzu fork — pre-alpha as of July 2025"
+  },
+  {
+    "id": "melonds",
+    "name": "melonDS",
+    "packageName": "me.magnum.melonds",
+    "intentType": "ACTION_VIEW",
+    "supportedPlatformIds": ["nds"],
+    "useFileUri": true
+  },
+  {
+    "id": "mgba",
+    "name": "mGBA",
+    "packageName": "io.mgba",
+    "intentType": "ACTION_VIEW",
+    "supportedPlatformIds": ["gba","gbc"],
+    "useFileUri": true
+  },
+  {
+    "id": "winlator",
+    "name": "Winlator",
+    "packageName": "com.winlator",
+    "intentType": "SHORTCUT",
+    "supportedPlatformIds": ["windows"],
+    "notes": "Shortcut support removed in v8. Launch app directly — user navigates internally."
+  },
+  {
+    "id": "gamehub",
+    "name": "GameHub",
+    "packageName": "com.github.tkashkin.gamehub",
+    "intentType": "SHORTCUT",
+    "supportedPlatformIds": ["android","steam","gog"],
+    "notes": "Query shortcuts via LauncherApps"
+  }
+]
