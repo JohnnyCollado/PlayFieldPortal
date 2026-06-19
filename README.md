@@ -21,8 +21,8 @@ An Android game launcher styled after the PlayStation Portable's XMB (Cross Medi
 | Backup & restore — `.pfpbackup` ZIP including settings | ✅ Done |
 | Theme engine — `.xmbtheme` packages, built-in Classic PSP Blue | ✅ Done |
 | Idle wave degradation (FULL → REDUCED → STATIC) | ✅ Done |
-| Platform pin to XMB bar + folder creation on pin | ✅ Done |
-| Emulator profile editor UI | ⏳ Upcoming |
+| PSP-style platform folders under Games | ✅ Done |
+| Emulator profile editor UI — add/edit/delete custom launch profiles | ✅ Done |
 | Smart / manual category builder | ⏳ Upcoming |
 | Unmatched ROM assignment UI | ⏳ Upcoming |
 | Theme sound playback | ⏳ Upcoming |

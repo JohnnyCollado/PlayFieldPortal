@@ -1,9 +1,12 @@
-package com.playfieldportal.feature.xmb.gamepad
+package com.playfieldportal.core.data.repository
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.playfieldportal.core.data.datastore.pfpDataStore
+import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.domain.model.GamepadBinding
+import com.playfieldportal.core.domain.model.GamepadMappings
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -58,12 +61,10 @@ class ControllerMappingRepository @Inject constructor(
             }
             .let { flow ->
                 var result = GamepadMappings()
-                // Collect just one value
                 flow.collect { result = it; return@collect }
                 result
             }
 
-        // Remove any existing binding for this keycode or action, then add new one
         val updated = current.bindings
             .filter { it.keyCode != newKeyCode && it.action != action }
             .plus(GamepadBinding(newKeyCode, action))

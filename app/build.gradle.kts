@@ -65,6 +65,10 @@ dependencies {
     implementation(libs.timber)
     implementation(libs.accompanist.systemuicontroller)
     ksp(libs.hilt.compiler)
+    implementation(libs.hilt.work)
+    ksp(libs.hilt.work.compiler)
+    implementation(libs.workmanager.ktx)
+    implementation(libs.datastore.preferences)
 
     // All feature & core modules
     implementation(project(":core:core-common"))

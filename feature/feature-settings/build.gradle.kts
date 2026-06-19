@@ -16,7 +16,20 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
+    buildTypes {
+        debug {
+            buildConfigField("String", "VERSION_NAME", "\"0.1.0-alpha-debug\"")
+            buildConfigField("int", "VERSION_CODE", "1")
+        }
+        release {
+            buildConfigField("String", "VERSION_NAME", "\"0.1.0-alpha\"")
+            buildConfigField("int", "VERSION_CODE", "1")
+        }
+    }
 }
 
 dependencies {
@@ -30,14 +43,13 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     ksp(libs.hilt.compiler)
 
+    implementation(libs.datastore.preferences)
     implementation(libs.workmanager.ktx)
 
     implementation(project(":core:core-common"))
     implementation(project(":core:core-domain"))
     implementation(project(":core:core-data"))
     implementation(project(":core:core-ui"))
-    // ControllerMappingRepository and GamepadAction live in feature-xmb
-    implementation(project(":feature:feature-xmb"))
     // ArtworkRepository and SgdbApiKeyProvider
     implementation(project(":feature:feature-artwork"))
     // EmulatorProfileRepository

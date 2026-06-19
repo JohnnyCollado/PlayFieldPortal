@@ -2,10 +2,10 @@ package com.playfieldportal.feature.settings.viewmodel
 
 import android.view.KeyEvent
 import app.cash.turbine.test
-import com.playfieldportal.feature.xmb.gamepad.ControllerMappingRepository
-import com.playfieldportal.feature.xmb.gamepad.GamepadAction
-import com.playfieldportal.feature.xmb.gamepad.GamepadBinding
-import com.playfieldportal.feature.xmb.gamepad.GamepadMappings
+import com.playfieldportal.core.data.repository.ControllerMappingRepository
+import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.domain.model.GamepadBinding
+import com.playfieldportal.core.domain.model.GamepadMappings
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk

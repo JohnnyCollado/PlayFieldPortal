@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.domain.model.Category
 import com.playfieldportal.core.ui.theme.LocalPFPColors
+import com.playfieldportal.feature.xmb.R
 
 @Composable
 fun XMBCategoryBar(
@@ -126,5 +127,13 @@ private fun XMBCategoryItem(
 // Full implementation uses a generated resource map
 private fun resolveIconRes(iconKey: String): Int {
     // Placeholder — replaced with real resource lookups once drawables are added
-    return android.R.drawable.ic_menu_gallery
+    return when (iconKey) {
+        "ic_settings" -> R.drawable.ic_xmb_settings
+        "ic_photos"   -> R.drawable.ic_xmb_photos
+        "ic_music"    -> R.drawable.ic_xmb_music
+        "ic_videos"   -> R.drawable.ic_xmb_videos
+        "ic_games"    -> R.drawable.ic_xmb_games
+        "ic_network"  -> R.drawable.ic_xmb_network
+        else          -> R.drawable.ic_xmb_games
+    }
 }

@@ -23,17 +23,20 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.playfieldportal.core.domain.model.GamepadAction
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,7 +52,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import coil.compose.AsyncImage
+import androidx.compose.foundation.Image
 import com.google.accompanist.drawablepainter.DrawablePainter
 
 private val DrawerBg      = Color(0xF0080808)   // near-black, wave visible beneath
@@ -62,13 +65,21 @@ private val DrawerSelected = Color(0xFF4A90D9).copy(alpha = 0.25f)
 @Composable
 fun AppDrawerScreen(
     onBack: () -> Unit,
-    // Optional: caller can pre-select a filter (e.g. Android category → Games)
     initialFilter: AppFilter = AppFilter.ALL,
+    pendingGamepadAction: GamepadAction? = null,
+    onGamepadActionConsumed: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: AppDrawerViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
     var searchActive by remember { mutableStateOf(false) }
+
+    LaunchedEffect(pendingGamepadAction) {
+        if (pendingGamepadAction != null) {
+            viewModel.handleGamepadAction(pendingGamepadAction)
+            onGamepadActionConsumed()
+        }
+    }
     val lifecycleOwner = LocalLifecycleOwner.current
 
     // Apply initial filter once on first composition
@@ -260,8 +271,15 @@ private fun AppGrid(
     onAppSelected: (Int) -> Unit,
     onAppLaunched: (String) -> Unit,
 ) {
+    val gridState = rememberLazyGridState()
+
+    LaunchedEffect(selectedIndex) {
+        if (apps.isNotEmpty()) gridState.animateScrollToItem(selectedIndex)
+    }
+
     LazyVerticalGrid(
-        columns             = GridCells.Adaptive(minSize = 100.dp),
+        state               = gridState,
+        columns             = GridCells.Fixed(GRID_COLUMNS),
         contentPadding      = PaddingValues(horizontal = 32.dp, vertical = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement   = Arrangement.spacedBy(16.dp),
@@ -304,8 +322,8 @@ private fun AppGridItem(
             .padding(vertical = 10.dp, horizontal = 8.dp),
     ) {
         // App icon
-        AsyncImage(
-            model    = DrawablePainter(app.icon),
+        Image(
+            painter  = DrawablePainter(app.icon),
             contentDescription = app.label,
             modifier = Modifier
                 .size(56.dp)

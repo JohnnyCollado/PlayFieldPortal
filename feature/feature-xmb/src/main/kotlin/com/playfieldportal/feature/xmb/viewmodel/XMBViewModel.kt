@@ -5,35 +5,38 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.playfieldportal.core.data.database.dao.LibrarySourceDao
 import com.playfieldportal.core.data.database.dao.PlatformDao
 import com.playfieldportal.core.data.database.dao.ThemeDao
 import com.playfieldportal.core.data.database.entity.PlatformEntity
 import com.playfieldportal.core.data.datastore.pfpDataStore
-import com.playfieldportal.core.data.repository.CategoryRepositoryImpl
 import com.playfieldportal.core.domain.model.BuiltInCategory
 import com.playfieldportal.core.domain.model.Category
+import com.playfieldportal.core.domain.model.CategoryType
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.core.ui.icons.GameIconStyle
 import com.playfieldportal.core.ui.theme.DefaultPFPColors
 import com.playfieldportal.core.ui.theme.PFPColors
 import com.playfieldportal.core.ui.wave.WaveRenderMode
-import com.playfieldportal.feature.xmb.gamepad.ControllerMappingRepository
-import com.playfieldportal.feature.xmb.gamepad.GamepadAction
+import com.playfieldportal.core.data.repository.ControllerMappingRepository
+import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.feature.artwork.api.ArtworkRepository
+import com.playfieldportal.feature.library.scanner.RomScanner
+import com.playfieldportal.feature.library.scanner.ScanResult
+import com.playfieldportal.feature.library.scanner.ScanType
 import com.playfieldportal.feature.xmb.gamepad.GamepadInputHandler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.io.File
 import javax.inject.Inject
 
 private fun com.playfieldportal.core.data.database.entity.ThemeEntity.toPFPColors() = PFPColors(
@@ -46,22 +49,54 @@ private fun com.playfieldportal.core.data.database.entity.ThemeEntity.toPFPColor
     categoryBar       = androidx.compose.ui.graphics.Color(0x00000000),
 )
 
+// ── Context menu types ────────────────────────────────────────────────────────
+
+data class XMBContextMenu(
+    val title: String,
+    val items: List<XMBContextMenuItem>,
+    val selectedIndex: Int = 0,
+    // Exactly one of these is non-null, identifies the source of the menu
+    val platformId: String? = null,
+    val gameId: Long? = null,
+)
+
+data class XMBContextMenuItem(
+    val id: String,
+    val label: String,
+    val isDestructive: Boolean = false,
+)
+
+// ── Main XMB state ────────────────────────────────────────────────────────────
+
 data class XMBUiState(
+    // ── Horizontal axis: platforms (SD cards) + utility tabs ──────────────
     val categories: List<Category> = emptyList(),
     val selectedCategoryIndex: Int = 0,
+    val platformGameCounts: Map<String, Int> = emptyMap(),
+    val selectedPlatformId: String? = null,
+
+    // ── Vertical axis: games / settings items ─────────────────────────────
     val currentItems: List<XMBItem> = emptyList(),
     val selectedItemIndex: Int = 0,
+
+    // ── Background + rendering ────────────────────────────────────────────
     val waveRenderMode: WaveRenderMode = WaveRenderMode.FULL,
     val showBootSequence: Boolean = true,
     val showTaskTray: Boolean = false,
     val activeBackgroundTasks: Int = 0,
     val backgroundTasks: List<BackgroundTaskInfo> = emptyList(),
-    // Non-null when a settings sub-screen is open (matches XMBItem.id from SETTINGS_ITEMS)
+
+    // ── Overlay screens ───────────────────────────────────────────────────
     val activeSettingsScreen: String? = null,
-    // Non-null when the app drawer is open; value is the AppFilter name to pre-select
     val activeAppDrawerFilter: String? = null,
-    // Non-null when a game detail overlay is open
+    val pendingDrawerAction: GamepadAction? = null,
+    val pendingGameDetailAction: GamepadAction? = null,
     val activeGameId: Long? = null,
+
+    // ── Context menu (Y/Triangle) ─────────────────────────────────────────
+    val activeContextMenu: XMBContextMenu? = null,
+
+    // ── Misc ──────────────────────────────────────────────────────────────
     val iconStyle: GameIconStyle = GameIconStyle.PSP_RECTANGLE,
     val librarySetupComplete: Boolean = false,
     val themeColors: PFPColors = DefaultPFPColors,
@@ -72,31 +107,33 @@ data class XMBItem(
     val title: String,
     val artworkUri: String? = null,
     val subtitle: String? = null,
-    // Non-null when this item represents a game — triggers game detail overlay on select
     val gameId: Long? = null,
-    // Platform accent color (packed Long from PlatformEntity.accentColor)
+    val platformId: String? = null,
     val accentColor: Long? = null,
-    // True when the game is a native Android app — renders with round-square icon
+    val isFavorite: Boolean = false,
     val isAndroidApp: Boolean = false,
-    // Package name for loading the Android app icon via PackageManager
     val packageName: String? = null,
 )
 
 data class BackgroundTaskInfo(
     val id: String,
     val label: String,
-    val progress: Float?,       // null = indeterminate
+    val progress: Float?,
     val isCompleted: Boolean = false,
     val isFailed: Boolean = false,
     val errorMessage: String? = null,
 )
 
+// ── ViewModel ─────────────────────────────────────────────────────────────────
+
 @HiltViewModel
 class XMBViewModel @Inject constructor(
     private val gameRepository: GameRepository,
-    private val categoryRepository: CategoryRepositoryImpl,
     private val platformDao: PlatformDao,
     private val themeDao: ThemeDao,
+    private val librarySourceDao: LibrarySourceDao,
+    private val romScanner: RomScanner,
+    private val artworkRepository: ArtworkRepository,
     @ApplicationContext private val context: Context,
     private val gamepadInputHandler: GamepadInputHandler,
     private val mappingRepository: ControllerMappingRepository,
@@ -106,12 +143,12 @@ class XMBViewModel @Inject constructor(
     val uiState: StateFlow<XMBUiState> = _uiState.asStateFlow()
 
     private var idleJob: Job? = null
-
-    // Live platform lookup for accent colors and ROM extension info
+    private var currentItemsJob: Job? = null
     private var platformCache: Map<String, PlatformEntity> = emptyMap()
+    private var baseThemeColors: PFPColors = DefaultPFPColors
 
     init {
-        observePlatforms()
+        gamepadInputHandler.scope = viewModelScope
         observeIconStyle()
         observeLibrarySetupState()
         observeActiveTheme()
@@ -120,47 +157,143 @@ class XMBViewModel @Inject constructor(
         collectGamepadActions()
     }
 
+    // ── Theme ─────────────────────────────────────────────────────────────────
+
     private fun observeActiveTheme() {
         viewModelScope.launch {
             themeDao.observeAll().collect { themes ->
                 val active = themes.firstOrNull { it.isActive }
                 val colors = active?.toPFPColors() ?: DefaultPFPColors
-                _uiState.update { it.copy(themeColors = colors) }
+                baseThemeColors = colors
+                val accentFromPlatform = _uiState.value.categories
+                    .getOrNull(_uiState.value.selectedCategoryIndex)?.accentColor
+                val waveColor = accentFromPlatform
+                    ?.let { androidx.compose.ui.graphics.Color(it) }
+                    ?: colors.waveColor
+                _uiState.update { it.copy(themeColors = colors.copy(waveColor = waveColor)) }
             }
         }
     }
 
-    private fun observePlatforms() {
+    // ── Categories ────────────────────────────────────────────────────────────
+
+    private fun observeCategories() {
         viewModelScope.launch {
-            platformDao.observeAll().collect { platforms ->
-                platformCache = platforms.associateBy { it.id }
-            }
+            combine(
+                platformDao.observeAll(),
+                gameRepository.observeAll(),
+            ) { platforms, games -> Pair(platforms, games) }
+                .collect { (platforms, games) ->
+                    platformCache = platforms.associateBy { it.id }
+                    val counts = games.groupBy { it.platformId }.mapValues { it.value.size }
+
+                    val allCategories = PSP_CATEGORIES
+                    val prevIndex     = _uiState.value.selectedCategoryIndex
+                    val newIndex      = prevIndex.coerceIn(0, (allCategories.size - 1).coerceAtLeast(0))
+                    val prevId        = _uiState.value.categories.getOrNull(prevIndex)?.id
+                    val newId         = allCategories.getOrNull(newIndex)?.id
+
+                    _uiState.update { it.copy(
+                        categories            = allCategories,
+                        selectedCategoryIndex = newIndex,
+                        platformGameCounts    = counts,
+                        selectedPlatformId    = it.selectedPlatformId?.takeIf { id -> id in platformCache },
+                    )}
+
+                    if (newId != prevId || _uiState.value.currentItems.isEmpty()) {
+                        tintWaveForCategory(allCategories.getOrNull(newIndex))
+                        loadItemsForCategory(allCategories.getOrNull(newIndex))
+                    }
+                }
         }
     }
 
-    private fun observeIconStyle() {
-        viewModelScope.launch {
-            context.pfpDataStore.data.collect { prefs ->
-                val styleName = prefs[KEY_ICON_STYLE] ?: GameIconStyle.PSP_RECTANGLE.name
-                val style = runCatching { GameIconStyle.valueOf(styleName) }
-                    .getOrDefault(GameIconStyle.PSP_RECTANGLE)
-                _uiState.update { it.copy(iconStyle = style) }
-            }
-        }
-    }
+    private fun loadItemsForCategory(category: Category?) {
+        currentItemsJob?.cancel()
+        if (category == null) { _uiState.update { it.copy(currentItems = emptyList()) }; return }
 
-    private fun observeLibrarySetupState() {
-        viewModelScope.launch {
-            context.pfpDataStore.data.collect { prefs ->
-                val complete = prefs[KEY_SETUP_COMPLETE] ?: false
-                _uiState.update { it.copy(librarySetupComplete = complete) }
-                // Refresh GAMES items when setup state changes so the prompt appears/disappears live
-                val state = _uiState.value
-                if (state.categories.getOrNull(state.selectedCategoryIndex)?.id == BuiltInCategory.GAMES) {
-                    loadItemsForCategory(state.categories.getOrNull(state.selectedCategoryIndex))
+        currentItemsJob = viewModelScope.launch {
+            when (category.id) {
+                BuiltInCategory.FAVORITES -> {
+                    gameRepository.observeFavorites().collect { games ->
+                        _uiState.update { it.copy(currentItems = games.toXmbItems()) }
+                    }
+                }
+                BuiltInCategory.ANDROID -> {
+                    _uiState.update { it.copy(currentItems = ANDROID_ITEMS) }
+                }
+                BuiltInCategory.SETTINGS -> {
+                    _uiState.update { it.copy(currentItems = SETTINGS_ITEMS) }
+                }
+                BuiltInCategory.GAMES -> {
+                    val platformId = _uiState.value.selectedPlatformId
+                    if (platformId != null) {
+                        gameRepository.observeByPlatform(platformId).collect { games ->
+                            _uiState.update { it.copy(currentItems = games.toXmbItems()) }
+                        }
+                    } else {
+                        _uiState.update { it.copy(currentItems = platformFolderItems()) }
+                    }
+                }
+                else -> {
+                    if (!_uiState.value.librarySetupComplete) {
+                        _uiState.update {
+                            it.copy(currentItems = listOf(XMBItem(
+                                id       = SETUP_ITEM_ID,
+                                title    = "Set up ROM Library",
+                                subtitle = "Open Settings → Library to choose your ROM folder  →",
+                            )))
+                        }
+                        return@launch
+                    }
+                    _uiState.update { it.copy(currentItems = emptyList()) }
                 }
             }
         }
+    }
+
+    private fun platformFolderItems(): List<XMBItem> {
+        if (!_uiState.value.librarySetupComplete) {
+            return listOf(XMBItem(
+                id       = SETUP_ITEM_ID,
+                title    = "Set up ROM Library",
+                subtitle = "Open Settings > Library to choose your ROM folder",
+            ))
+        }
+
+        return platformCache.values
+            .sortedWith(compareBy({ it.name }, { it.id }))
+            .map { platform ->
+                val count = _uiState.value.platformGameCounts[platform.id] ?: 0
+                XMBItem(
+                    id          = "platform_${platform.id}",
+                    title       = platform.name,
+                    subtitle    = "$count game${if (count == 1) "" else "s"}",
+                    platformId  = platform.id,
+                    accentColor = platform.accentColor,
+                )
+            }
+    }
+
+    private fun List<com.playfieldportal.core.domain.model.Game>.toXmbItems() = map { g ->
+        XMBItem(
+            id           = g.id.toString(),
+            title        = g.title,
+            artworkUri   = g.artworkUri,
+            subtitle     = g.releaseYear?.toString(),
+            gameId       = g.id,
+            accentColor  = platformCache[g.platformId]?.accentColor,
+            isFavorite   = g.isFavorite,
+            isAndroidApp = g.packageName != null,
+            packageName  = g.packageName,
+        )
+    }
+
+    private fun tintWaveForCategory(category: Category?) {
+        val accentColor = category?.accentColor
+            ?.let { androidx.compose.ui.graphics.Color(it) }
+            ?: baseThemeColors.waveColor
+        _uiState.update { it.copy(themeColors = it.themeColors.copy(waveColor = accentColor)) }
     }
 
     // ── Gamepad ───────────────────────────────────────────────────────────────
@@ -185,10 +318,24 @@ class XMBViewModel @Inject constructor(
     private fun dispatchGamepadAction(action: GamepadAction) {
         val state = _uiState.value
 
-        // Overlays consume navigation — handle back first (innermost first)
+        // ── Context menu captures ALL input when open ──────────────────────────
+        if (state.activeContextMenu != null) {
+            when (action) {
+                GamepadAction.NAVIGATE_UP   -> shiftContextMenu(-1)
+                GamepadAction.NAVIGATE_DOWN -> shiftContextMenu(+1)
+                GamepadAction.SELECT        -> activateContextMenuItem()
+                GamepadAction.BACK,
+                GamepadAction.LONG_PRESS    -> closeContextMenu()
+                else -> Unit
+            }
+            return
+        }
+
+        // ── Overlays (innermost wins) ──────────────────────────────────────────
         when {
             state.activeGameId != null -> {
                 if (action == GamepadAction.BACK) onCloseGameDetail()
+                else _uiState.update { it.copy(pendingGameDetailAction = action) }
                 return
             }
             state.activeSettingsScreen != null -> {
@@ -197,6 +344,7 @@ class XMBViewModel @Inject constructor(
             }
             state.activeAppDrawerFilter != null -> {
                 if (action == GamepadAction.BACK) onCloseAppDrawer()
+                else _uiState.update { it.copy(pendingDrawerAction = action) }
                 return
             }
             state.showTaskTray -> {
@@ -208,14 +356,14 @@ class XMBViewModel @Inject constructor(
         when (action) {
             GamepadAction.NAVIGATE_UP -> {
                 val next = (state.selectedItemIndex - 1).coerceAtLeast(0)
-                if (next != state.selectedItemIndex) onItemSelected(next)
-                else gamepadInputHandler.cancelRepeat()  // hit top — stop repeat
+                if (next != state.selectedItemIndex) { resetIdleTimer(); _uiState.update { it.copy(selectedItemIndex = next) } }
+                else gamepadInputHandler.cancelRepeat()
             }
             GamepadAction.NAVIGATE_DOWN -> {
                 val max  = (state.currentItems.size - 1).coerceAtLeast(0)
                 val next = (state.selectedItemIndex + 1).coerceAtMost(max)
-                if (next != state.selectedItemIndex) onItemSelected(next)
-                else gamepadInputHandler.cancelRepeat()  // hit bottom — stop repeat
+                if (next != state.selectedItemIndex) { resetIdleTimer(); _uiState.update { it.copy(selectedItemIndex = next) } }
+                else gamepadInputHandler.cancelRepeat()
             }
             GamepadAction.NAVIGATE_LEFT, GamepadAction.PREV_CATEGORY -> {
                 val next = (state.selectedCategoryIndex - 1).coerceAtLeast(0)
@@ -228,19 +376,26 @@ class XMBViewModel @Inject constructor(
                 if (next != state.selectedCategoryIndex) onCategorySelected(next)
                 else gamepadInputHandler.cancelRepeat()
             }
-            GamepadAction.SELECT      -> onItemSelected(state.selectedItemIndex)
-            GamepadAction.BACK        -> { /* no overlay open — nothing to go back to */ }
-            GamepadAction.LONG_PRESS  -> onItemLongPress(state.selectedItemIndex)
-            GamepadAction.HOME        -> _uiState.update { it.copy(showBootSequence = true) }
+            GamepadAction.SELECT     -> onItemSelected(state.selectedItemIndex)
+            GamepadAction.BACK       -> {
+                if (state.selectedPlatformId != null) closePlatformFolder()
+                else onOpenAppDrawer()
+            }
+            GamepadAction.LONG_PRESS -> {
+                // Y / Triangle — open context menu for whichever item type has focus
+                val item = state.currentItems.getOrNull(state.selectedItemIndex)
+                when {
+                    item?.gameId != null -> openGameContextMenu(item)
+                    item?.platformId != null -> openPlatformContextMenu(item.platformId)
+                }
+            }
+            GamepadAction.HOME          -> _uiState.update { it.copy(showBootSequence = true) }
             GamepadAction.OPEN_TASK_TRAY -> onTaskTrayVisibility(true)
         }
     }
 
-    // Wired from MainActivity.dispatchKeyEvent — starts repeat via viewModelScope
     fun onKeyDown(action: GamepadAction) {
-        if (action.isDirectional()) {
-            gamepadInputHandler.startRepeating(action, viewModelScope)
-        }
+        if (action.isDirectional()) gamepadInputHandler.startRepeating(action, viewModelScope)
     }
 
     fun onKeyUp(action: GamepadAction) {
@@ -252,232 +407,324 @@ class XMBViewModel @Inject constructor(
         GamepadAction.NAVIGATE_LEFT, GamepadAction.NAVIGATE_RIGHT,
     )
 
-    // ── Data loading ──────────────────────────────────────────────────────────
+    // ── Context menu ──────────────────────────────────────────────────────────
 
-    private fun observeCategories() {
-        viewModelScope.launch {
-            categoryRepository.observeVisible().collect { categories ->
-                val selectedIndex = _uiState.value.selectedCategoryIndex
-                    .coerceIn(0, (categories.size - 1).coerceAtLeast(0))
+    private fun openPlatformContextMenu(platformId: String) {
+        val platform = platformCache[platformId] ?: return
+        // No context menu for utility tabs — they have their own dedicated screens
+        val items = buildList {
+            add(XMBContextMenuItem("scan_roms",        "Scan for New ROMs"))
+            add(XMBContextMenuItem("refresh_artwork",  "Refresh Artwork"))
+            add(XMBContextMenuItem("refresh_metadata", "Refresh Metadata"))
+        }
 
-                _uiState.update { it.copy(categories = categories, selectedCategoryIndex = selectedIndex) }
+        _uiState.update { it.copy(
+            activeContextMenu = XMBContextMenu(
+                title      = platform.name,
+                items      = items,
+                platformId = platformId,
+            )
+        )}
+    }
 
-                // Load items for whichever category is currently selected
-                loadItemsForCategory(categories.getOrNull(selectedIndex))
+    private fun openGameContextMenu(item: XMBItem) {
+        val items = buildList {
+            add(XMBContextMenuItem(
+                id    = if (item.isFavorite) "unfavorite" else "favorite",
+                label = if (item.isFavorite) "Remove from Favorites" else "Add to Favorites",
+            ))
+            add(XMBContextMenuItem("refresh_artwork",  "Refresh Artwork"))
+            add(XMBContextMenuItem("refresh_metadata", "Refresh Metadata"))
+        }
+
+        _uiState.update { it.copy(
+            activeContextMenu = XMBContextMenu(
+                title  = item.title,
+                items  = items,
+                gameId = item.gameId,
+            )
+        )}
+    }
+
+    private fun shiftContextMenu(delta: Int) {
+        val menu = _uiState.value.activeContextMenu ?: return
+        val next = (menu.selectedIndex + delta).coerceIn(0, menu.items.size - 1)
+        _uiState.update { it.copy(activeContextMenu = menu.copy(selectedIndex = next)) }
+    }
+
+    private fun activateContextMenuItem() {
+        val menu   = _uiState.value.activeContextMenu ?: return
+        val itemId = menu.items.getOrNull(menu.selectedIndex)?.id ?: return
+        closeContextMenu()
+
+        when {
+            menu.platformId != null -> when (itemId) {
+                "scan_roms"        -> scanPlatformRoms(menu.platformId)
+                "refresh_artwork"  -> refreshPlatformArtwork(menu.platformId)
+                "refresh_metadata" -> refreshPlatformArtwork(menu.platformId) // same path for now
+            }
+            menu.gameId != null -> when (itemId) {
+                "favorite"         -> toggleGameFavorite(menu.gameId, true)
+                "unfavorite"       -> toggleGameFavorite(menu.gameId, false)
+                "refresh_artwork"  -> refreshGameArtwork(menu.gameId)
+                "refresh_metadata" -> refreshGameArtwork(menu.gameId)
             }
         }
     }
 
-    private fun loadItemsForCategory(category: Category?) {
-        if (category == null) {
-            _uiState.update { it.copy(currentItems = emptyList()) }
-            return
-        }
+    // Called from touch interaction on the overlay
+    fun onContextMenuItemActivatedAt(index: Int) {
+        _uiState.update { it.copy(activeContextMenu = it.activeContextMenu?.copy(selectedIndex = index)) }
+        activateContextMenuItem()
+    }
 
+    fun closeContextMenu() {
+        _uiState.update { it.copy(activeContextMenu = null) }
+    }
+
+    // ── Platform actions ──────────────────────────────────────────────────────
+
+    fun onPlatformLongPress(categoryIndex: Int) {
+        _uiState.value.currentItems.getOrNull(categoryIndex)?.platformId?.let(::openPlatformContextMenu)
+    }
+
+    private fun scanPlatformRoms(platformId: String) {
         viewModelScope.launch {
-            when (category.id) {
-                BuiltInCategory.FAVORITES -> {
-                    gameRepository.observeFavorites().collect { games ->
-                        _uiState.update {
-                            it.copy(currentItems = games.map { g ->
-                                XMBItem(
-                                    id           = g.id.toString(),
-                                    title        = g.title,
-                                    artworkUri   = g.artworkUri,
-                                    subtitle     = g.platformId.uppercase(),
-                                    gameId       = g.id,
-                                    accentColor  = platformCache[g.platformId]?.accentColor,
-                                    isAndroidApp = g.packageName != null,
-                                    packageName  = g.packageName,
-                                )
-                            })
-                        }
-                    }
-                }
+            val allSources  = librarySourceDao.getEnabled()
+            // Prefer platform-locked sources; fall back to all sources if none are locked
+            val scanSources = allSources.filter { it.platformId == platformId }
+                .ifEmpty { allSources }
 
-                BuiltInCategory.RECENTLY_PLAYED -> {
-                    gameRepository.observeRecentPlatforms(limit = 5).collect { platforms ->
-                        _uiState.update {
-                            it.copy(currentItems = platforms.map { p ->
-                                XMBItem(
-                                    id       = p.platformId,
-                                    title    = p.platformName,
-                                    subtitle = "${p.gameCount} games",
-                                )
-                            })
-                        }
-                    }
-                }
+            if (scanSources.isEmpty()) {
+                Timber.w("No library sources configured for $platformId scan")
+                return@launch
+            }
 
-                BuiltInCategory.GAMES -> {
-                    gameRepository.observeAll().collect { games ->
-                        val items = mutableListOf<XMBItem>()
+            val platformName = platformCache[platformId]?.name ?: platformId.uppercase()
+            val taskId       = "scan_$platformId"
+            val existingPaths = runCatching {
+                gameRepository.observeByPlatform(platformId).first().mapNotNull { it.romPath }.toSet()
+            }.getOrDefault(emptySet())
 
-                        // First-run prompt when library has never been configured
-                        if (!_uiState.value.librarySetupComplete) {
-                            items.add(XMBItem(
-                                id       = SETUP_ITEM_ID,
-                                title    = "Set up ROM Library",
-                                subtitle = "Choose a folder and start adding games  →",
-                            ))
-                        }
+            addBackgroundTask(BackgroundTaskInfo(id = taskId, label = "Scanning $platformName ROMs…", progress = null))
 
-                        val platforms = games.map { it.platformId }.distinct().sorted()
-                        items.addAll(platforms.map { platformId ->
-                            XMBItem(id = platformId, title = platformId.uppercase())
-                        })
-
-                        _uiState.update { it.copy(currentItems = items) }
-                    }
-                }
-
-                BuiltInCategory.ANDROID -> {
-                    // Android category: filter shortcuts that open the drawer directly
-                    _uiState.update { it.copy(currentItems = ANDROID_ITEMS) }
-                }
-
-                BuiltInCategory.APP_DRAWER -> {
-                    // App Drawer category opens the full drawer immediately on selection
-                    _uiState.update {
-                        it.copy(
-                            currentItems        = emptyList(),
-                            activeAppDrawerFilter = "ALL",
+            romScanner.scan(
+                folders          = scanSources.map { it.path },
+                scanType         = ScanType.NEW_FILES_ONLY,
+                existingRomPaths = existingPaths,
+            ).collect { result ->
+                when (result) {
+                    is ScanResult.Progress -> updateBackgroundTask(
+                        taskId, result.progress.filesFound.toFloat() /
+                                (result.progress.totalEstimated.coerceAtLeast(1))
+                    )
+                    is ScanResult.Complete -> {
+                        result.newGames.forEach { game -> gameRepository.upsert(game) }
+                        completeBackgroundTask(taskId,
+                            if (result.newGames.isEmpty()) "No new ROMs found"
+                            else "${result.newGames.size} new ROM(s) added"
                         )
+                        Timber.i("Platform scan complete: ${result.newGames.size} new games for $platformId")
                     }
-                }
-
-                BuiltInCategory.SETTINGS -> {
-                    _uiState.update {
-                        it.copy(currentItems = SETTINGS_ITEMS)
-                    }
-                }
-
-                else -> {
-                    // Platform category (pinned) or user category — load by platform
-                    gameRepository.observeByPlatform(category.id).collect { games ->
-                        _uiState.update {
-                            it.copy(currentItems = games.map { g ->
-                                XMBItem(
-                                    id           = g.id.toString(),
-                                    title        = g.title,
-                                    artworkUri   = g.artworkUri,
-                                    subtitle     = g.releaseYear?.toString(),
-                                    gameId       = g.id,
-                                    accentColor  = platformCache[g.platformId]?.accentColor,
-                                    isAndroidApp = g.packageName != null,
-                                    packageName  = g.packageName,
-                                )
-                            })
-                        }
+                    is ScanResult.Error -> {
+                        failBackgroundTask(taskId, result.message)
+                        Timber.e("Platform scan error for $platformId: ${result.message}")
                     }
                 }
             }
         }
     }
 
-    // ── User interaction ──────────────────────────────────────────────────────
+    private fun refreshPlatformArtwork(platformId: String) {
+        // Route to artwork settings screen for now; bulk per-platform refresh is a future feature
+        _uiState.update { it.copy(activeSettingsScreen = "settings_artwork") }
+    }
+
+    // ── Game actions ──────────────────────────────────────────────────────────
+
+    private fun toggleGameFavorite(gameId: Long, isFavorite: Boolean) {
+        viewModelScope.launch {
+            gameRepository.setFavorite(gameId, isFavorite)
+        }
+    }
+
+    private fun refreshGameArtwork(gameId: Long) {
+        viewModelScope.launch {
+            val game   = gameRepository.getById(gameId) ?: return@launch
+            val taskId = "artwork_$gameId"
+            addBackgroundTask(BackgroundTaskInfo(id = taskId, label = "Fetching artwork: ${game.title}", progress = null))
+            val result = artworkRepository.fetchArtworkForGame(gameId, game.title)
+            if (result.success) {
+                completeBackgroundTask(taskId, "Artwork updated")
+            } else {
+                failBackgroundTask(taskId, result.errorMessage ?: "Artwork fetch failed")
+            }
+        }
+    }
+
+    // ── Background task management ────────────────────────────────────────────
+
+    private fun addBackgroundTask(task: BackgroundTaskInfo) {
+        _uiState.update { it.copy(
+            backgroundTasks      = it.backgroundTasks + task,
+            activeBackgroundTasks = it.activeBackgroundTasks + 1,
+        )}
+    }
+
+    private fun updateBackgroundTask(id: String, progress: Float) {
+        _uiState.update { state ->
+            state.copy(backgroundTasks = state.backgroundTasks.map { t ->
+                if (t.id == id) t.copy(progress = progress.coerceIn(0f, 1f)) else t
+            })
+        }
+    }
+
+    private fun completeBackgroundTask(id: String, message: String? = null) {
+        _uiState.update { state ->
+            state.copy(
+                backgroundTasks      = state.backgroundTasks.map { t ->
+                    if (t.id == id) t.copy(isCompleted = true, errorMessage = message) else t
+                },
+                activeBackgroundTasks = (state.activeBackgroundTasks - 1).coerceAtLeast(0),
+            )
+        }
+        viewModelScope.launch {
+            delay(4_000)
+            _uiState.update { it.copy(backgroundTasks = it.backgroundTasks.filterNot { t -> t.id == id }) }
+        }
+    }
+
+    private fun failBackgroundTask(id: String, message: String) {
+        _uiState.update { state ->
+            state.copy(
+                backgroundTasks      = state.backgroundTasks.map { t ->
+                    if (t.id == id) t.copy(isFailed = true, errorMessage = message) else t
+                },
+                activeBackgroundTasks = (state.activeBackgroundTasks - 1).coerceAtLeast(0),
+            )
+        }
+    }
+
+    // ── Category / platform selection ─────────────────────────────────────────
 
     fun onCategorySelected(index: Int) {
         resetIdleTimer()
-        val categories = _uiState.value.categories
-        _uiState.update { it.copy(selectedCategoryIndex = index, selectedItemIndex = 0) }
-        loadItemsForCategory(categories.getOrNull(index))
+        val category = _uiState.value.categories.getOrNull(index)
+        _uiState.update { it.copy(selectedCategoryIndex = index, selectedItemIndex = 0, selectedPlatformId = null) }
+        tintWaveForCategory(category)
+        loadItemsForCategory(category)
     }
+
+    // ── Item selection ────────────────────────────────────────────────────────
 
     fun onItemSelected(index: Int) {
         resetIdleTimer()
         _uiState.update { it.copy(selectedItemIndex = index) }
+        val category = _uiState.value.categories.getOrNull(_uiState.value.selectedCategoryIndex)
+        val item     = _uiState.value.currentItems.getOrNull(index)
 
-        val selectedCategory = _uiState.value.categories
-            .getOrNull(_uiState.value.selectedCategoryIndex)
-        val item = _uiState.value.currentItems.getOrNull(index)
-
-        // Game items open the detail overlay regardless of which category they came from
         if (item?.gameId != null) {
             _uiState.update { it.copy(activeGameId = item.gameId) }
             return
         }
-
-        val itemId = item?.id
-        when (selectedCategory?.id) {
-            BuiltInCategory.SETTINGS -> {
-                if (itemId != null) _uiState.update { it.copy(activeSettingsScreen = itemId) }
-            }
-            BuiltInCategory.GAMES -> {
-                if (itemId == SETUP_ITEM_ID) {
-                    _uiState.update { it.copy(activeSettingsScreen = "settings_library") }
-                }
-                // Platform items: future pass adds per-platform drill-down
-            }
-            BuiltInCategory.ANDROID -> {
-                if (itemId?.startsWith("drawer_") == true) {
-                    val filter = itemId.removePrefix("drawer_").uppercase()
-                    _uiState.update { it.copy(activeAppDrawerFilter = filter) }
-                }
-            }
-            else -> Unit
+        if (item?.platformId != null) {
+            openPlatformFolder(item.platformId)
+            return
         }
-    }
 
-    fun onCloseGameDetail() {
-        _uiState.update { it.copy(activeGameId = null) }
-    }
-
-    fun onCloseSettingsScreen() {
-        _uiState.update { it.copy(activeSettingsScreen = null) }
-    }
-
-    fun onCloseAppDrawer() {
-        _uiState.update { it.copy(activeAppDrawerFilter = null) }
+        when (item?.id) {
+            SETUP_ITEM_ID -> _uiState.update { it.copy(activeSettingsScreen = "settings_library") }
+            else -> when (category?.id) {
+                BuiltInCategory.SETTINGS -> {
+                    if (item?.id != null) {
+                        _uiState.update { it.copy(activeSettingsScreen = item.id) }
+                        gamepadInputHandler.bypassToComposeFocus = true
+                    }
+                }
+                BuiltInCategory.ANDROID -> {
+                    if (item?.id?.startsWith("drawer_") == true) {
+                        val filter = item.id.removePrefix("drawer_").uppercase()
+                        _uiState.update { it.copy(activeAppDrawerFilter = filter) }
+                    }
+                }
+            }
+        }
     }
 
     fun onItemLongPress(index: Int) {
         resetIdleTimer()
-        val selectedCategory = _uiState.value.categories
-            .getOrNull(_uiState.value.selectedCategoryIndex)
-        val item = _uiState.value.currentItems.getOrNull(index) ?: return
-
-        if (selectedCategory?.id == BuiltInCategory.GAMES) {
-            pinPlatformFromGames(item.id)
+        val item = _uiState.value.currentItems.getOrNull(index)
+        when {
+            item?.gameId != null -> openGameContextMenu(item)
+            item?.platformId != null -> openPlatformContextMenu(item.platformId)
         }
     }
 
-    private fun pinPlatformFromGames(platformId: String) {
-        if (platformId == SETUP_ITEM_ID || platformId in RESERVED_CATEGORY_IDS) return
-
-        viewModelScope.launch {
-            val platform = platformDao.getById(platformId) ?: run {
-                Timber.w("Could not pin unknown platform: $platformId")
-                return@launch
-            }
-
-            if (!platform.isPinnedToBar) {
-                val nextPosition = platformCache.values
-                    .filter { it.isPinnedToBar }
-                    .maxOfOrNull { it.barPosition }
-                    ?.plus(1)
-                    ?: 0
-                platformDao.setPinned(platformId, pinned = true, position = nextPosition)
-                Timber.i("Pinned platform to XMB bar: $platformId")
-            }
-
-            createPlatformFolder(platformId)
+    private fun openPlatformFolder(platformId: String) {
+        val gamesCategoryIndex = _uiState.value.categories.indexOfFirst { it.id == BuiltInCategory.GAMES }
+        _uiState.update {
+            it.copy(
+                selectedCategoryIndex = gamesCategoryIndex.takeIf { index -> index >= 0 } ?: it.selectedCategoryIndex,
+                selectedPlatformId = platformId,
+                selectedItemIndex = 0,
+            )
         }
+        loadItemsForCategory(_uiState.value.categories.getOrNull(_uiState.value.selectedCategoryIndex))
     }
 
-    private suspend fun createPlatformFolder(platformId: String) {
-        val rootPath = context.pfpDataStore.data.first()[KEY_LIBRARY_ROOT]?.takeIf { it.isNotBlank() }
-            ?: return
-
-        withContext(Dispatchers.IO) {
-            val folder = File(rootPath, platformId.lowercase())
-            if (!folder.exists() && !folder.mkdirs()) {
-                Timber.w("Could not create platform folder: ${folder.absolutePath}")
-            } else {
-                Timber.i("Platform folder ready: ${folder.absolutePath}")
-            }
-        }
+    private fun closePlatformFolder() {
+        _uiState.update { it.copy(selectedPlatformId = null, selectedItemIndex = 0) }
+        loadItemsForCategory(_uiState.value.categories.getOrNull(_uiState.value.selectedCategoryIndex))
     }
+
+    // ── Game detail overlay ───────────────────────────────────────────────────
+
+    fun onCloseGameDetail() {
+        _uiState.update { it.copy(activeGameId = null, pendingGameDetailAction = null) }
+    }
+
+    fun consumeGameDetailAction() {
+        _uiState.update { it.copy(pendingGameDetailAction = null) }
+    }
+
+    // ── Settings overlay ──────────────────────────────────────────────────────
+
+    fun onCloseSettingsScreen() {
+        _uiState.update { it.copy(activeSettingsScreen = null) }
+        gamepadInputHandler.bypassToComposeFocus = false
+    }
+
+    // ── App drawer overlay ────────────────────────────────────────────────────
+
+    fun onOpenAppDrawer() {
+        _uiState.update { it.copy(activeAppDrawerFilter = "ALL") }
+    }
+
+    fun onCloseAppDrawer() {
+        _uiState.update { it.copy(activeAppDrawerFilter = null, pendingDrawerAction = null) }
+    }
+
+    fun consumeDrawerAction() {
+        _uiState.update { it.copy(pendingDrawerAction = null) }
+    }
+
+    // ── Task tray ─────────────────────────────────────────────────────────────
+
+    fun onTaskTrayVisibility(visible: Boolean) {
+        _uiState.update { it.copy(showTaskTray = visible) }
+    }
+
+    fun onDismissTaskTray() {
+        _uiState.update { it.copy(showTaskTray = false) }
+    }
+
+    // ── Boot sequence ─────────────────────────────────────────────────────────
+
+    fun onBootSequenceComplete() {
+        _uiState.update { it.copy(showBootSequence = false) }
+    }
+
+    // ── User interaction ──────────────────────────────────────────────────────
 
     fun onUserInteraction() {
         if (_uiState.value.waveRenderMode != WaveRenderMode.FULL) {
@@ -486,16 +733,28 @@ class XMBViewModel @Inject constructor(
         resetIdleTimer()
     }
 
-    fun onBootSequenceComplete() {
-        _uiState.update { it.copy(showBootSequence = false) }
+    // ── Library setup state ───────────────────────────────────────────────────
+
+    private fun observeLibrarySetupState() {
+        viewModelScope.launch {
+            context.pfpDataStore.data.collect { prefs ->
+                val complete = prefs[KEY_SETUP_COMPLETE] ?: false
+                _uiState.update { it.copy(librarySetupComplete = complete) }
+            }
+        }
     }
 
-    fun onTaskTrayVisibility(visible: Boolean) {
-        _uiState.update { it.copy(showTaskTray = visible) }
-    }
+    // ── Icon style ────────────────────────────────────────────────────────────
 
-    fun onDismissTaskTray() {
-        _uiState.update { it.copy(showTaskTray = false) }
+    private fun observeIconStyle() {
+        viewModelScope.launch {
+            context.pfpDataStore.data.collect { prefs ->
+                val styleName = prefs[KEY_ICON_STYLE] ?: GameIconStyle.PSP_RECTANGLE.name
+                val style = runCatching { GameIconStyle.valueOf(styleName) }
+                    .getOrDefault(GameIconStyle.PSP_RECTANGLE)
+                _uiState.update { it.copy(iconStyle = style) }
+            }
+        }
     }
 
     // ── Idle wave timer ───────────────────────────────────────────────────────
@@ -515,35 +774,34 @@ class XMBViewModel @Inject constructor(
     companion object {
         private val KEY_ICON_STYLE     = stringPreferencesKey("display_icon_style")
         private val KEY_SETUP_COMPLETE = booleanPreferencesKey("library_setup_complete")
-        private val KEY_LIBRARY_ROOT   = stringPreferencesKey("library_root_path")
         private const val SETUP_ITEM_ID = "library_setup"
 
-        private val RESERVED_CATEGORY_IDS = setOf(
-            BuiltInCategory.FAVORITES,
-            BuiltInCategory.RECENTLY_PLAYED,
-            BuiltInCategory.GAMES,
-            BuiltInCategory.ANDROID,
-            BuiltInCategory.APP_DRAWER,
-            BuiltInCategory.SETTINGS,
+        val PSP_CATEGORIES = listOf(
+            Category(id = BuiltInCategory.SETTINGS, name = "Settings", iconKey = "ic_settings", type = CategoryType.BUILT_IN, position = 0),
+            Category(id = "photos",                 name = "Photos",   iconKey = "ic_photos",   type = CategoryType.BUILT_IN, position = 1),
+            Category(id = "music",                  name = "Music",    iconKey = "ic_music",    type = CategoryType.BUILT_IN, position = 2),
+            Category(id = "videos",                 name = "Videos",   iconKey = "ic_videos",   type = CategoryType.BUILT_IN, position = 3),
+            Category(id = BuiltInCategory.GAMES,    name = "Games",    iconKey = "ic_games",    type = CategoryType.BUILT_IN, position = 4),
+            Category(id = "network",                name = "Network",  iconKey = "ic_network",  type = CategoryType.BUILT_IN, position = 5),
         )
 
         private val ANDROID_ITEMS = listOf(
-            XMBItem(id = "drawer_all",       title = "All Apps",         subtitle = "Browse every installed app"),
-            XMBItem(id = "drawer_games",     title = "Games",            subtitle = "Apps categorized as games"),
-            XMBItem(id = "drawer_emulators", title = "Emulators",        subtitle = "RetroArch, PPSSPP, Dolphin and more"),
-            XMBItem(id = "drawer_recent",    title = "Recently Used",    subtitle = "Apps you've used lately"),
+            XMBItem(id = "drawer_all",       title = "All Apps",      subtitle = "Browse every installed app"),
+            XMBItem(id = "drawer_games",     title = "Games",         subtitle = "Apps categorized as games"),
+            XMBItem(id = "drawer_emulators", title = "Emulators",     subtitle = "RetroArch, PPSSPP, Dolphin and more"),
+            XMBItem(id = "drawer_recent",    title = "Recently Used", subtitle = "Apps you've used lately"),
         )
 
         private val SETTINGS_ITEMS = listOf(
             XMBItem(id = "settings_library",    title = "Library",          subtitle = "ROM sources & scanning"),
-            XMBItem(id = "settings_artwork",     title = "Artwork",          subtitle = "SteamGridDB & cache"),
-            XMBItem(id = "settings_emulators",   title = "Emulators",        subtitle = "Launch profiles"),
-            XMBItem(id = "settings_themes",      title = "Themes",           subtitle = "XMB appearance"),
-            XMBItem(id = "settings_display",     title = "Display",          subtitle = "Wave, boot animation"),
-            XMBItem(id = "settings_controller",  title = "Controller",       subtitle = "Button mapping"),
-            XMBItem(id = "settings_backup",      title = "Backup & Restore", subtitle = "Export & import"),
-            XMBItem(id = "settings_logs",        title = "Logs",             subtitle = "Debug & error log viewer"),
-            XMBItem(id = "settings_about",       title = "About",            subtitle = "Play Field Portal"),
+            XMBItem(id = "settings_artwork",    title = "Artwork",          subtitle = "SteamGridDB & cache"),
+            XMBItem(id = "settings_emulators",  title = "Emulators",        subtitle = "Launch profiles"),
+            XMBItem(id = "settings_themes",     title = "Themes",           subtitle = "XMB appearance"),
+            XMBItem(id = "settings_display",    title = "Display",          subtitle = "Wave, boot animation"),
+            XMBItem(id = "settings_controller", title = "Controller",       subtitle = "Button mapping"),
+            XMBItem(id = "settings_backup",     title = "Backup & Restore", subtitle = "Export & import"),
+            XMBItem(id = "settings_logs",       title = "Logs",             subtitle = "Debug & error log viewer"),
+            XMBItem(id = "settings_about",      title = "About",            subtitle = "Play Field Portal"),
         )
     }
 }

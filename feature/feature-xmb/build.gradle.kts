@@ -30,6 +30,10 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     ksp(libs.hilt.compiler)
 
+    implementation(libs.coil.compose)
+    implementation(libs.datastore.preferences)
+    implementation(libs.material.icons.extended)
+
     implementation(project(":core:core-common"))
     implementation(project(":core:core-domain"))
     implementation(project(":core:core-data"))
@@ -38,6 +42,7 @@ dependencies {
     implementation(project(":feature:feature-settings"))
     implementation(project(":feature:feature-launcher"))
     implementation(project(":feature:feature-artwork"))
+    implementation(project(":feature:feature-library"))
 
     testImplementation(libs.bundles.test.unit)
     testImplementation(libs.hilt.android.testing)

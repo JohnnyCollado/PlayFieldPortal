@@ -2,8 +2,8 @@ package com.playfieldportal.launcher.debug
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.playfieldportal.core.ui.preview.PreviewData
-import com.playfieldportal.feature.xmb.ui.XMBUiState
+import com.playfieldportal.feature.xmb.preview.PreviewData
+import com.playfieldportal.feature.xmb.viewmodel.XMBUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow

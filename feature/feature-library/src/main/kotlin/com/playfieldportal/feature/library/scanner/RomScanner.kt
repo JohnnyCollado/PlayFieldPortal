@@ -43,6 +43,7 @@ class RomScanner @Inject constructor(
     @ApplicationContext private val context: Context,
     private val platformExtensionMap: PlatformExtensionMap,
     private val discImageResolver: DiscImageResolver,
+    private val folderHintResolver: PlatformFolderHintResolver,
 ) {
     private val defaultFolders = listOf(
         "/storage/emulated/0/ROMs",
@@ -97,20 +98,39 @@ class RomScanner @Inject constructor(
                 Timber.d("Disc game added: ${disc.launchFile.name} → platform=${disc.platformId}")
             }
 
-            // Flag .chd / .img for user assignment
+            // .chd / .img: try folder hint first, fall back to user assignment
             for (ambiguousFile in discResolution.requiresUserAssignment) {
-                requiresUserAssignment.add(
-                    UnmatchedRom(
-                        filePath           = ambiguousFile.absolutePath,
-                        fileName           = ambiguousFile.name,
-                        detectedPlatformId = null,
+                val hint = folderHintResolver.detectFromPath(ambiguousFile.absolutePath)
+                if (hint != null) {
+                    if (scanType == ScanType.NEW_FILES_ONLY &&
+                        ambiguousFile.absolutePath in existingRomPaths) {
+                        alreadyInLibrary++
+                        continue
+                    }
+                    newGames.add(
+                        Game(
+                            title      = ambiguousFile.nameWithoutExtension.sanitizeRomName(),
+                            platformId = hint,
+                            romPath    = ambiguousFile.absolutePath,
+                        )
                     )
-                )
+                    Timber.d("Folder-hinted ambiguous disc: ${ambiguousFile.name} → $hint")
+                } else {
+                    requiresUserAssignment.add(
+                        UnmatchedRom(
+                            filePath           = ambiguousFile.absolutePath,
+                            fileName           = ambiguousFile.name,
+                            detectedPlatformId = null,
+                        )
+                    )
+                }
             }
 
-            // ── Phase 2: Scan all remaining definitive-extension files ──────
+            // ── Phase 2: Scan definitive + folder-sensitive extension files ──
             val allFiles = folder.walkTopDown()
-                .filter { it.isFile && platformExtensionMap.isDefinitive(it.extension) }
+                .filter { it.isFile &&
+                    (platformExtensionMap.isDefinitive(it.extension) ||
+                     platformExtensionMap.isFolderSensitive(it.extension)) }
                 .toList()
 
             for (file in allFiles) {
@@ -134,7 +154,19 @@ class RomScanner @Inject constructor(
                     )
                 ))
 
-                val platformId = platformExtensionMap.detectPlatform(file.extension)
+                // For folder-sensitive extensions (.iso), let parent folder name win;
+                // fall back to the extension's default platform.
+                val platformId = if (platformExtensionMap.isFolderSensitive(file.extension)) {
+                    val hint = folderHintResolver.detectFromPath(file.absolutePath)
+                    if (hint != null) {
+                        Timber.d("Folder-hinted: ${file.name} → $hint")
+                        hint
+                    } else {
+                        platformExtensionMap.folderSensitiveDefault(file.extension)
+                    }
+                } else {
+                    platformExtensionMap.detectPlatform(file.extension)
+                }
 
                 if (platformId != null) {
                     newGames.add(

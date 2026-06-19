@@ -2,6 +2,7 @@ package com.playfieldportal.feature.appbar
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.playfieldportal.core.domain.model.GamepadAction
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -9,6 +10,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+const val GRID_COLUMNS = 5
 
 enum class AppFilter(val label: String) {
     ALL("All Apps"),
@@ -79,6 +82,35 @@ class AppDrawerViewModel @Inject constructor(
 
     fun openUsageAccessSettings() {
         appRepository.openUsageAccessSettings()
+    }
+
+    fun handleGamepadAction(action: GamepadAction) {
+        val state = _uiState.value
+        val size  = state.visibleApps.size
+        if (size == 0) return
+        val cur = state.selectedIndex
+        when (action) {
+            GamepadAction.NAVIGATE_LEFT  -> {
+                if (cur % GRID_COLUMNS > 0) _uiState.update { it.copy(selectedIndex = cur - 1) }
+            }
+            GamepadAction.NAVIGATE_RIGHT -> {
+                if (cur % GRID_COLUMNS < GRID_COLUMNS - 1 && cur + 1 < size)
+                    _uiState.update { it.copy(selectedIndex = cur + 1) }
+            }
+            GamepadAction.NAVIGATE_UP    -> {
+                val next = cur - GRID_COLUMNS
+                if (next >= 0) _uiState.update { it.copy(selectedIndex = next) }
+            }
+            GamepadAction.NAVIGATE_DOWN  -> {
+                val next = cur + GRID_COLUMNS
+                if (next < size) _uiState.update { it.copy(selectedIndex = next) }
+            }
+            GamepadAction.SELECT -> {
+                val app = state.visibleApps.getOrNull(cur)
+                if (app != null) launchApp(app.packageName)
+            }
+            else -> Unit
+        }
     }
 
     private fun applyFilter() {

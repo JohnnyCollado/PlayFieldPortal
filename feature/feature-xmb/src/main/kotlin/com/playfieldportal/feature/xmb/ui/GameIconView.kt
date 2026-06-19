@@ -24,7 +24,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.GenericShape
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.ContentScale
@@ -154,20 +159,22 @@ fun CartridgeIcon(
     // Build the notch shape (top-right corner cut)
     val density = LocalDensity.current
     val cartridgeShape = remember(density) {
-        GenericShape { size, d ->
-            val notchPx = with(d) { 14.dp.toPx() }
-            val radiusPx = with(d) { 4.dp.toPx() }
-
-            moveTo(radiusPx, 0f)
-            lineTo(size.width - notchPx, 0f)
-            lineTo(size.width, notchPx)
-            lineTo(size.width, size.height - radiusPx)
-            quadTo(size.width, size.height, size.width - radiusPx, size.height)
-            lineTo(radiusPx, size.height)
-            quadTo(0f, size.height, 0f, size.height - radiusPx)
-            lineTo(0f, radiusPx)
-            quadTo(0f, 0f, radiusPx, 0f)
-            close()
+        object : Shape {
+            override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density) =
+                Outline.Generic(Path().apply {
+                    val notchPx = with(density) { 14.dp.toPx() }
+                    val radiusPx = with(density) { 4.dp.toPx() }
+                    moveTo(radiusPx, 0f)
+                    lineTo(size.width - notchPx, 0f)
+                    lineTo(size.width, notchPx)
+                    lineTo(size.width, size.height - radiusPx)
+                    quadraticBezierTo(size.width, size.height, size.width - radiusPx, size.height)
+                    lineTo(radiusPx, size.height)
+                    quadraticBezierTo(0f, size.height, 0f, size.height - radiusPx)
+                    lineTo(0f, radiusPx)
+                    quadraticBezierTo(0f, 0f, radiusPx, 0f)
+                    close()
+                })
         }
     }
 

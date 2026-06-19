@@ -3,11 +3,11 @@ package com.playfieldportal.feature.settings.viewmodel
 import android.view.KeyEvent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.playfieldportal.feature.xmb.gamepad.ControllerMappingRepository
-import com.playfieldportal.feature.xmb.gamepad.GamepadAction
-import com.playfieldportal.feature.xmb.gamepad.GamepadMappings
-import com.playfieldportal.feature.xmb.gamepad.displayLabel
-import com.playfieldportal.feature.xmb.gamepad.keycodeDisplayName
+import com.playfieldportal.core.data.repository.ControllerMappingRepository
+import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.domain.model.GamepadMappings
+import com.playfieldportal.core.domain.model.displayLabel
+import com.playfieldportal.core.domain.model.keycodeDisplayName
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted

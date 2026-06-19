@@ -95,8 +95,33 @@ interface GameDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAllReplace(games: List<GameEntity>)
 
-    @Query("SELECT * FROM games WHERE steam_grid_db_id IS NULL AND rom_path IS NOT NULL")
+    @Query("SELECT * FROM games WHERE artwork_uri IS NULL AND rom_path IS NOT NULL")
     suspend fun getGamesWithoutArtwork(): List<GameEntity>
+
+    // Updates only non-null fields — COALESCE keeps existing value when new value is null.
+    @Query("""
+        UPDATE games SET
+            description  = COALESCE(:description, description),
+            developer    = COALESCE(:developer,   developer),
+            publisher    = COALESCE(:publisher,   publisher),
+            release_year = COALESCE(:releaseYear, release_year),
+            genre        = COALESCE(:genre,       genre),
+            artwork_uri  = COALESCE(:artworkUri,  artwork_uri),
+            hero_uri     = COALESCE(:heroUri,     hero_uri),
+            logo_uri     = COALESCE(:logoUri,     logo_uri)
+        WHERE id = :id
+    """)
+    suspend fun updateMetadata(
+        id: Long,
+        description: String? = null,
+        developer: String?   = null,
+        publisher: String?   = null,
+        releaseYear: Int?    = null,
+        genre: String?       = null,
+        artworkUri: String?  = null,
+        heroUri: String?     = null,
+        logoUri: String?     = null,
+    )
 
     @Query("DELETE FROM games")
     suspend fun deleteAll()

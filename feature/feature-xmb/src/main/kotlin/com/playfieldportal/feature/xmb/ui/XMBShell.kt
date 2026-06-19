@@ -1,23 +1,35 @@
 package com.playfieldportal.feature.xmb.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import com.playfieldportal.core.domain.model.BuiltInCategory
-import com.playfieldportal.core.domain.model.Category
-import com.playfieldportal.core.ui.preview.PreviewData
+import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.feature.xmb.preview.PreviewData
 import com.playfieldportal.core.ui.theme.PFPTheme
 import com.playfieldportal.feature.appbar.AppDrawerScreen
 import com.playfieldportal.feature.appbar.AppFilter
@@ -45,14 +57,19 @@ fun XMBShellContainer(
         onCategorySelected    = viewModel::onCategorySelected,
         onItemSelected        = viewModel::onItemSelected,
         onItemLongPress       = viewModel::onItemLongPress,
+        onPlatformLongPress   = viewModel::onPlatformLongPress,
         onUserInteraction     = viewModel::onUserInteraction,
         onBootComplete        = viewModel::onBootSequenceComplete,
         onTaskBadgeTapped     = { viewModel.onTaskTrayVisibility(true) },
         onDismissTaskTray     = viewModel::onDismissTaskTray,
         onSettingsLongPress   = onSettingsLongPress,
         onCloseSettingsScreen = viewModel::onCloseSettingsScreen,
-        onCloseAppDrawer      = viewModel::onCloseAppDrawer,
-        onCloseGameDetail     = viewModel::onCloseGameDetail,
+        onCloseAppDrawer           = viewModel::onCloseAppDrawer,
+        onDrawerActionConsumed     = viewModel::consumeDrawerAction,
+        onCloseGameDetail          = viewModel::onCloseGameDetail,
+        onGameDetailActionConsumed = viewModel::consumeGameDetailAction,
+        onContextMenuItemActivated = viewModel::onContextMenuItemActivatedAt,
+        onContextMenuDismiss       = viewModel::closeContextMenu,
     )
 }
 
@@ -64,6 +81,7 @@ fun XMBShell(
     onCategorySelected: (Int) -> Unit = {},
     onItemSelected: (Int) -> Unit = {},
     onItemLongPress: (Int) -> Unit = {},
+    onPlatformLongPress: (Int) -> Unit = {},
     onUserInteraction: () -> Unit = {},
     onBootComplete: () -> Unit = {},
     onTaskBadgeTapped: () -> Unit = {},
@@ -71,19 +89,98 @@ fun XMBShell(
     onSettingsLongPress: () -> Unit = {},
     onCloseSettingsScreen: () -> Unit = {},
     onCloseAppDrawer: () -> Unit = {},
+    onDrawerActionConsumed: () -> Unit = {},
     onCloseGameDetail: () -> Unit = {},
+    onGameDetailActionConsumed: () -> Unit = {},
+    onContextMenuItemActivated: (Int) -> Unit = {},
+    onContextMenuDismiss: () -> Unit = {},
 ) {
+    // Derive game background from the selected item when browsing a game list
+    // (not when a detail overlay is open — the overlay has its own background)
+    val selectedItem  = uiState.currentItems.getOrNull(uiState.selectedItemIndex)
+    val bgArtworkUri  = selectedItem?.artworkUri?.takeIf {
+        uiState.activeGameId == null && uiState.activeSettingsScreen == null &&
+        uiState.activeAppDrawerFilter == null
+    }
+    val adjacentItems = if (bgArtworkUri != null) {
+        listOfNotNull(
+            uiState.currentItems.getOrNull(uiState.selectedItemIndex - 1)
+                ?.takeIf { it.artworkUri != null },
+            uiState.currentItems.getOrNull(uiState.selectedItemIndex + 1)
+                ?.takeIf { it.artworkUri != null },
+        )
+    } else emptyList()
+
     PFPTheme(colors = uiState.themeColors) {
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black),
     ) {
-        // ── Wave background ──────────────────────────────────────────────
-        XMBWave(
+        // ── Game background artwork (when a game is selected in the list) ─
+        AnimatedVisibility(
+            visible  = bgArtworkUri != null,
+            enter    = fadeIn(tween(400)),
+            exit     = fadeOut(tween(300)),
             modifier = Modifier.fillMaxSize(),
-            renderMode = uiState.waveRenderMode,
-        )
+        ) {
+            if (bgArtworkUri != null) {
+                AsyncImage(
+                    model              = bgArtworkUri,
+                    contentDescription = null,
+                    contentScale       = ContentScale.Crop,
+                    modifier           = Modifier.fillMaxSize(),
+                )
+            }
+        }
+
+        // ── Gradient overlay when game art is showing ─────────────────────
+        if (bgArtworkUri != null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.horizontalGradient(
+                            colorStops = arrayOf(
+                                0.0f  to Color(0xCC000000),
+                                0.4f  to Color(0x88000000),
+                                1.0f  to Color(0xDD000000),
+                            )
+                        )
+                    )
+            )
+        }
+
+        // ── Wave background (shown when no game art, or blended behind) ──
+        if (bgArtworkUri == null) {
+            XMBWave(
+                modifier   = Modifier.fillMaxSize(),
+                renderMode = uiState.waveRenderMode,
+            )
+        }
+
+        // ── Adjacent game thumbnail strip (upper-left) ────────────────────
+        if (adjacentItems.isNotEmpty()) {
+            Column(
+                modifier            = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 20.dp, top = 72.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                adjacentItems.take(2).forEach { adj ->
+                    AsyncImage(
+                        model              = adj.artworkUri,
+                        contentDescription = adj.title,
+                        contentScale       = ContentScale.Crop,
+                        modifier           = Modifier
+                            .size(width = 66.dp, height = 44.dp)
+                            .clip(RoundedCornerShape(3.dp))
+                            .border(1.dp, Color(0x44FFFFFF), RoundedCornerShape(3.dp))
+                            .background(Color(0x33000000)),
+                    )
+                }
+            }
+        }
 
         // ── XMB Chrome ───────────────────────────────────────────────────
         Column(modifier = Modifier.fillMaxSize()) {
@@ -97,9 +194,9 @@ fun XMBShell(
             )
 
             XMBCategoryBar(
-                categories         = uiState.categories,
-                selectedIndex      = uiState.selectedCategoryIndex,
-                onCategorySelected = onCategorySelected,
+                categories          = uiState.categories,
+                selectedIndex       = uiState.selectedCategoryIndex,
+                onCategorySelected  = onCategorySelected,
                 onCategoryLongPress = { index ->
                     val id = uiState.categories.getOrNull(index)?.id
                     if (id == BuiltInCategory.SETTINGS) onSettingsLongPress()
@@ -114,7 +211,7 @@ fun XMBShell(
                 onItemLongPress = onItemLongPress,
                 iconStyle       = uiState.iconStyle,
                 modifier = Modifier
-                    .padding(top = 24.dp, start = 80.dp)
+                    .padding(top = 16.dp, start = 80.dp)
                     .weight(1f),
             )
         }
@@ -146,18 +243,31 @@ fun XMBShell(
             val initialFilter = runCatching { AppFilter.valueOf(filterName) }
                 .getOrDefault(AppFilter.ALL)
             AppDrawerScreen(
-                initialFilter = initialFilter,
-                onBack        = onCloseAppDrawer,
-                modifier      = Modifier.fillMaxSize(),
+                initialFilter        = initialFilter,
+                onBack               = onCloseAppDrawer,
+                pendingGamepadAction = uiState.pendingDrawerAction,
+                onGamepadActionConsumed = onDrawerActionConsumed,
+                modifier             = Modifier.fillMaxSize(),
+            )
+        }
+
+        // ── Context menu overlay (Y / Triangle) ──────────────────────────
+        uiState.activeContextMenu?.let { menu ->
+            ContextMenuOverlay(
+                menu             = menu,
+                onItemActivated  = onContextMenuItemActivated,
+                onDismiss        = onContextMenuDismiss,
             )
         }
 
         // ── Game Detail overlay ───────────────────────────────────────────
         uiState.activeGameId?.let { gameId ->
             GameDetailScreen(
-                gameId   = gameId,
-                onBack   = onCloseGameDetail,
-                modifier = Modifier.fillMaxSize(),
+                gameId                  = gameId,
+                onBack                  = onCloseGameDetail,
+                pendingGamepadAction    = uiState.pendingGameDetailAction,
+                onGamepadActionConsumed = onGameDetailActionConsumed,
+                modifier                = Modifier.fillMaxSize(),
             )
         }
     }

@@ -1,6 +1,6 @@
 package com.playfieldportal.feature.xmb.di
 
-import com.playfieldportal.feature.xmb.gamepad.ControllerMappingRepository
+import com.playfieldportal.core.data.repository.ControllerMappingRepository
 import com.playfieldportal.feature.xmb.gamepad.GamepadInputHandler
 import dagger.Module
 import dagger.Provides

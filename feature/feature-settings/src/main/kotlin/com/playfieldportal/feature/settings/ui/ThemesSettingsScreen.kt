@@ -2,6 +2,7 @@ package com.playfieldportal.feature.settings.ui
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -124,7 +125,7 @@ private fun ThemeRow(
                     color = SettingsAccent,
                     modifier = Modifier
                         .padding(start = 8.dp)
-                        .let { m -> m.then(androidx.compose.foundation.clickable { onUninstall() }) },
+                        .clickable { onUninstall() },
                 )
             }
         },

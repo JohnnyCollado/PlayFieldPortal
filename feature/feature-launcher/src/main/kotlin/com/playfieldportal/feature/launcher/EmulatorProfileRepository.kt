@@ -7,6 +7,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import timber.log.Timber
 import javax.inject.Inject
@@ -104,7 +105,7 @@ class EmulatorProfileRepository @Inject constructor(
             val dir = java.io.File(context.filesDir, "emulator_profiles")
             dir.mkdirs()
             val file = java.io.File(dir, "custom_profiles.json")
-            file.writeText(json.encodeToString(profiles))
+            file.writeText(json.encodeToString(ListSerializer(EmulatorProfile.serializer()), profiles))
         } catch (e: Exception) {
             Timber.e(e, "Failed to persist custom emulator profiles")
         }

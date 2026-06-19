@@ -3,7 +3,7 @@ package com.playfieldportal.feature.settings.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.feature.artwork.api.SgdbApiKeyProvider
-import com.playfieldportal.feature.artwork.ArtworkRepository
+import com.playfieldportal.feature.artwork.api.ArtworkRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted

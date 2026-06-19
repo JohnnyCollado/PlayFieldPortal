@@ -5,7 +5,6 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
-import com.playfieldportal.launcher.BuildConfig
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 
@@ -18,11 +17,14 @@ class BackupWorker @AssistedInject constructor(
 
     override suspend fun doWork(): Result {
         val now = System.currentTimeMillis()
+        // Version info passed in by the caller (app module owns BuildConfig)
+        val versionCode = inputData.getInt(KEY_INPUT_VERSION_CODE, 0)
+        val versionName = inputData.getString(KEY_INPUT_VERSION_NAME) ?: "unknown"
         return when (
             val result = backupManager.createBackup(
-                appVersionCode = BuildConfig.VERSION_CODE,
-                appVersionName = BuildConfig.VERSION_NAME,
-                createdAt = now,
+                appVersionCode = versionCode,
+                appVersionName = versionName,
+                createdAt      = now,
             )
         ) {
             is BackupResult.Success -> Result.success(
@@ -35,8 +37,10 @@ class BackupWorker @AssistedInject constructor(
     }
 
     companion object {
-        const val TAG             = "pfp_backup"
-        const val KEY_OUTPUT_PATH = "output_path"
-        const val KEY_ERROR       = "error"
+        const val TAG                    = "pfp_backup"
+        const val KEY_INPUT_VERSION_CODE = "version_code"
+        const val KEY_INPUT_VERSION_NAME = "version_name"
+        const val KEY_OUTPUT_PATH        = "output_path"
+        const val KEY_ERROR              = "error"
     }
 }

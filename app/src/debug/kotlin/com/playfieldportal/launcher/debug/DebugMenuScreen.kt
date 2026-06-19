@@ -16,7 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -58,7 +58,7 @@ fun DebugMenuScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             DebugHeader(onDismiss = onDismiss)
-            Divider(color = Color.White.copy(alpha = 0.15f))
+            HorizontalDivider(color = Color.White.copy(alpha = 0.15f))
 
             // ── Data source ───────────────────────────────────────────────
             DebugSection("DATA SOURCE")
@@ -81,7 +81,7 @@ fun DebugMenuScreen(
                 )
             }
 
-            Divider(color = Color.White.copy(alpha = 0.15f))
+            HorizontalDivider(color = Color.White.copy(alpha = 0.15f))
 
             // ── Wave control ──────────────────────────────────────────────
             DebugSection("WAVE RENDER MODE")
@@ -93,7 +93,7 @@ fun DebugMenuScreen(
                 )
             }
 
-            Divider(color = Color.White.copy(alpha = 0.15f))
+            HorizontalDivider(color = Color.White.copy(alpha = 0.15f))
 
             // ── Thermal simulation ────────────────────────────────────────
             DebugSection("THERMAL SIMULATION")
@@ -105,7 +105,7 @@ fun DebugMenuScreen(
                 )
             }
 
-            Divider(color = Color.White.copy(alpha = 0.15f))
+            HorizontalDivider(color = Color.White.copy(alpha = 0.15f))
 
             // ── UI triggers ───────────────────────────────────────────────
             DebugSection("UI TRIGGERS")
@@ -125,7 +125,7 @@ fun DebugMenuScreen(
                 onToggle = { viewModel.setShowPerfOverlay(it) },
             )
 
-            Divider(color = Color.White.copy(alpha = 0.15f))
+            HorizontalDivider(color = Color.White.copy(alpha = 0.15f))
 
             // ── Reset ─────────────────────────────────────────────────────
             Button(

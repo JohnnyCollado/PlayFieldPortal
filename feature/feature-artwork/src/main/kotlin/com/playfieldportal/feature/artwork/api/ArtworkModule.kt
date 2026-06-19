@@ -4,6 +4,10 @@ import android.content.Context
 import coil.ImageLoader
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
+import com.playfieldportal.feature.artwork.MetadataApiKeyProvider
+import com.playfieldportal.feature.artwork.MetadataRepository
+import com.playfieldportal.feature.artwork.ScreenScraperApi
+import com.playfieldportal.feature.artwork.TheGamesDbApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -52,15 +56,21 @@ object ArtworkModule {
         ImageLoader.Builder(context)
             .memoryCache {
                 MemoryCache.Builder(context)
-                    .maxSizePercent(0.20)   // 20% of available RAM — performance budget
+                    .maxSizePercent(0.20)
                     .build()
             }
             .diskCache {
                 DiskCache.Builder()
                     .directory(context.cacheDir.resolve("artwork_cache").toOkioPath())
-                    .maxSizeBytes(512L * 1024 * 1024)   // 512MB disk cap
+                    .maxSizeBytes(512L * 1024 * 1024)
                     .build()
             }
             .crossfade(true)
             .build()
+
+    // MetadataApiKeyProvider, ScreenScraperApi, TheGamesDbApi, and MetadataRepository
+    // are all @Singleton @Inject constructor classes — Hilt can inject them without
+    // explicit @Provides. They are listed here only for documentation purposes and
+    // to ensure their transitive dependencies (HttpClient, ImageLoader) are resolved
+    // from this module. No @Provides needed — Hilt resolves them via constructor injection.
 }

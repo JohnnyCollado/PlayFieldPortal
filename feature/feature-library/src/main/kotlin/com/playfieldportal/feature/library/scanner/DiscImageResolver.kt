@@ -5,20 +5,16 @@ import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Resolves disc-based game formats where multiple files represent one game.
- *
- * Rules:
- *  .cue + .bin(s) → one PS1 game, .cue is the launch file, all .bin files are suppressed
- *  .bin alone (no sibling .cue) → Mega Drive ROM
- *  .chd alone → platform unknown, flagged for user assignment
- *  .img alone → platform unknown, flagged for user assignment
- *
- * Called once per folder before the main scan loop so the scanner
- * receives a clean, deduplicated file list with platforms already resolved.
- */
+// Resolves disc-based game formats where multiple files represent one game.
+//
+// .cue + .bin(s) → disc game; folder hint picks platform (psx/saturn/pcengine),
+//                  falls back to "psx" since .cue is most common for PS1
+// .bin alone      → folder hint picks platform, falls back to "megadrive"
+// .chd / .img     → flagged for caller to resolve via folder hint or user input
 @Singleton
-class DiscImageResolver @Inject constructor() {
+class DiscImageResolver @Inject constructor(
+    private val folderHintResolver: PlatformFolderHintResolver,
+) {
 
     data class ResolvedDisc(
         val launchFile: File,
@@ -50,14 +46,15 @@ class DiscImageResolver @Inject constructor() {
             val chdFiles = siblings.filter { it.extension.lowercase() == "chd" }
             val imgFiles = siblings.filter { it.extension.lowercase() == "img" }
 
-            // ── .cue + .bin → PS1 (one entry per .cue) ──────────────────
+            // ── .cue + .bin → disc game; platform from folder hint ────────
             for (cueFile in cueFiles) {
                 val companionBins = findCompanionBins(cueFile, binFiles)
+                val platformId = folderHintResolver.detectFromPath(cueFile.absolutePath) ?: "psx"
 
                 resolvedDiscs.add(
                     ResolvedDisc(
                         launchFile = cueFile,
-                        platformId = "ps1",
+                        platformId = platformId,
                         suppressedFiles = companionBins.toSet(),
                     )
                 )
@@ -85,14 +82,15 @@ class DiscImageResolver @Inject constructor() {
                 }
 
                 if (!hasCueSibling) {
+                    val platformId = folderHintResolver.detectFromPath(binFile.absolutePath) ?: "megadrive"
                     resolvedDiscs.add(
                         ResolvedDisc(
                             launchFile = binFile,
-                            platformId = "megadrive",
+                            platformId = platformId,
                             suppressedFiles = emptySet(),
                         )
                     )
-                    Timber.d("Orphan .bin resolved as Mega Drive: ${binFile.name}")
+                    Timber.d("Orphan .bin resolved as $platformId: ${binFile.name}")
                 }
             }
 

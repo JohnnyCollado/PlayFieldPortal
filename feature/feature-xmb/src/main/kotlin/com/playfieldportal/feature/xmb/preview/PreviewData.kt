@@ -1,4 +1,4 @@
-package com.playfieldportal.core.ui.preview
+package com.playfieldportal.feature.xmb.preview
 
 import com.playfieldportal.core.domain.model.BuiltInCategory
 import com.playfieldportal.core.domain.model.Category
@@ -13,14 +13,12 @@ import com.playfieldportal.feature.xmb.viewmodel.XMBUiState
 object PreviewData {
 
     val categories = listOf(
-        Category(BuiltInCategory.FAVORITES,       "Favorites",       "ic_favorites",  type = CategoryType.BUILT_IN, position = 0),
-        Category(BuiltInCategory.RECENTLY_PLAYED, "Recently Played", "ic_recent",     type = CategoryType.BUILT_IN, position = 1),
-        Category(BuiltInCategory.GAMES,           "Games",           "ic_games",      type = CategoryType.BUILT_IN, position = 2),
-        Category("ps2",                           "PlayStation 2",   "ic_platform_ps2", type = CategoryType.PLATFORM, position = 3),
-        Category("gba",                           "Game Boy Advance","ic_platform_gba", type = CategoryType.PLATFORM, position = 4),
-        Category(BuiltInCategory.ANDROID,         "Android",         "ic_android",    type = CategoryType.BUILT_IN, position = 5),
-        Category(BuiltInCategory.APP_DRAWER,      "App Drawer",      "ic_apps",       type = CategoryType.BUILT_IN, position = 6),
-        Category(BuiltInCategory.SETTINGS,        "Settings",        "ic_settings",   type = CategoryType.BUILT_IN, position = 7),
+        Category(BuiltInCategory.SETTINGS, "Settings", "ic_settings", type = CategoryType.BUILT_IN, position = 0),
+        Category("photos",                 "Photos",   "ic_photos",   type = CategoryType.BUILT_IN, position = 1),
+        Category("music",                  "Music",    "ic_music",    type = CategoryType.BUILT_IN, position = 2),
+        Category("videos",                 "Videos",   "ic_videos",   type = CategoryType.BUILT_IN, position = 3),
+        Category(BuiltInCategory.GAMES,    "Games",    "ic_games",    type = CategoryType.BUILT_IN, position = 4),
+        Category("network",                "Network",  "ic_network",  type = CategoryType.BUILT_IN, position = 5),
     )
 
     val ps2Games = listOf(
@@ -53,6 +51,15 @@ object PreviewData {
 
     val emptyItems = emptyList<XMBItem>()
 
+    val platformFolders = listOf(
+        XMBItem("platform_psp",    "PSP",            subtitle = "3 games",  platformId = "psp"),
+        XMBItem("platform_ps2",    "PlayStation 2",  subtitle = "10 games", platformId = "ps2"),
+        XMBItem("platform_n64",    "Nintendo 64",    subtitle = "7 games",  platformId = "n64"),
+        XMBItem("platform_snes",   "Super Nintendo", subtitle = "12 games", platformId = "snes"),
+        XMBItem("platform_arcade", "Arcade",         subtitle = "18 games", platformId = "arcade"),
+        XMBItem("platform_dc",     "Dreamcast",      subtitle = "6 games",  platformId = "dreamcast"),
+    )
+
     val runningTasks = listOf(
         BackgroundTaskInfo("scan",    "Library Scan",    progress = 0.62f),
         BackgroundTaskInfo("artwork", "Artwork Fetch",   progress = 0.31f),
@@ -63,26 +70,25 @@ object PreviewData {
         BackgroundTaskInfo("fail",  "Backup",        progress = null, isFailed = true, errorMessage = "Storage full"),
     )
 
-    // Pre-built UiState snapshots for different preview scenarios
     val defaultState = XMBUiState(
-        categories           = categories,
-        selectedCategoryIndex = 2,
-        currentItems         = ps2Games,
-        selectedItemIndex    = 0,
-        showBootSequence     = false,
-        waveRenderMode       = WaveRenderMode.FULL,
+        categories            = categories,
+        selectedCategoryIndex = 4,
+        currentItems          = platformFolders,
+        selectedItemIndex     = 0,
+        showBootSequence      = false,
+        waveRenderMode        = WaveRenderMode.FULL,
     )
 
     val emptyLibraryState = XMBUiState(
-        categories           = categories,
-        selectedCategoryIndex = 2,
-        currentItems         = emptyItems,
-        showBootSequence     = false,
+        categories            = categories,
+        selectedCategoryIndex = 4,
+        currentItems          = emptyItems,
+        showBootSequence      = false,
     )
 
     val withTasksState = XMBUiState(
         categories            = categories,
-        selectedCategoryIndex = 2,
+        selectedCategoryIndex = 4,
         currentItems          = ps2Games,
         showBootSequence      = false,
         showTaskTray          = true,

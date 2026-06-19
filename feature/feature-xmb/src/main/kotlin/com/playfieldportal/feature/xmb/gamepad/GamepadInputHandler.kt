@@ -1,6 +1,9 @@
 package com.playfieldportal.feature.xmb.gamepad
 
 import android.view.InputDevice
+import com.playfieldportal.core.data.repository.ControllerMappingRepository
+import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.domain.model.GamepadMappings
 import android.view.KeyEvent
 import android.view.MotionEvent
 import kotlinx.coroutines.CoroutineScope
@@ -34,15 +37,26 @@ class GamepadInputHandler @Inject constructor(
     // Current live mappings — updated from the repository flow by the ViewModel
     var currentMappings: GamepadMappings = GamepadMappings()
 
+    // Scope for repeat jobs — set by XMBViewModel on init so repeats survive config changes
+    var scope: CoroutineScope? = null
+
+    // When true (settings overlay active), only BACK is intercepted here; everything else
+    // falls through to super.dispatchKeyEvent() so Compose handles D-pad focus traversal.
+    var bypassToComposeFocus: Boolean = false
+
     // Repeat job for held directional input
     private var repeatJob: Job? = null
     private var lastStickAction: GamepadAction? = null
 
     // Called by MainActivity.dispatchKeyEvent
     fun onKeyEvent(event: KeyEvent): Boolean {
-        if (!isGamepadSource(event.source)) return false
-
+        // Accept any keycode we have a binding for — don't filter by source because
+        // Android handhelds (Ayn Thor, Retroid, etc.) sometimes report SOURCE_KEYBOARD
+        // for built-in controller buttons even when they're physically a gamepad.
         val action = currentMappings.actionFor(event.keyCode) ?: return false
+
+        // Settings overlay: only BACK is ours — let Compose handle D-pad/select natively
+        if (bypassToComposeFocus && action != GamepadAction.BACK) return false
 
         return when (event.action) {
             KeyEvent.ACTION_DOWN -> {
@@ -105,14 +119,20 @@ class GamepadInputHandler @Inject constructor(
 
     private fun startRepeat(action: GamepadAction) {
         repeatJob?.cancel()
-        // repeatJob needs a scope — provided externally via startRepeating()
-        // The ViewModel calls startRepeating() with its viewModelScope
+        val s = scope ?: return
+        repeatJob = s.launch {
+            delay(REPEAT_INITIAL_DELAY_MS)
+            while (true) {
+                emit(action)
+                delay(REPEAT_RATE_MS)
+            }
+        }
     }
 
     // Called by XMBViewModel.init with viewModelScope so repeat jobs survive config changes
-    fun startRepeating(action: GamepadAction, scope: CoroutineScope) {
+    fun startRepeating(action: GamepadAction, s: CoroutineScope) {
         repeatJob?.cancel()
-        repeatJob = scope.launch {
+        repeatJob = s.launch {
             delay(REPEAT_INITIAL_DELAY_MS)
             while (true) {
                 emit(action)
@@ -126,10 +146,6 @@ class GamepadInputHandler @Inject constructor(
         repeatJob = null
         lastStickAction = null
     }
-
-    private fun isGamepadSource(source: Int): Boolean =
-        source and InputDevice.SOURCE_GAMEPAD == InputDevice.SOURCE_GAMEPAD ||
-        source and InputDevice.SOURCE_DPAD    == InputDevice.SOURCE_DPAD
 
     private fun GamepadAction.isDirectional() = this in setOf(
         GamepadAction.NAVIGATE_UP,

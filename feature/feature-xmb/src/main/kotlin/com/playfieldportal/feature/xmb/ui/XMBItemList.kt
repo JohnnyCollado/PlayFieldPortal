@@ -84,6 +84,14 @@ fun XMBItemList(
                     )
                     .padding(vertical = 5.dp, horizontal = 8.dp),
             ) {
+                Text(
+                    text = if (isSelected) ">" else " ",
+                    color = colors.textPrimary,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(end = 10.dp),
+                )
+
                 // Only game items (gameId != null) get styled icons;
                 // non-game items (platform shortcuts, settings) show no icon.
                 if (item.gameId != null) {

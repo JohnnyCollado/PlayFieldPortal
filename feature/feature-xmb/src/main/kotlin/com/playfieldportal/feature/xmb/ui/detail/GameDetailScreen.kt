@@ -7,11 +7,13 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,32 +21,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.BrokenImage
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import com.playfieldportal.feature.artwork.api.SgdbArtItem
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -67,29 +54,27 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import com.playfieldportal.core.domain.model.GamepadAction
 
-private val OverlayBg   = Color(0xF0080808)
-private val SurfaceBg   = Color(0x22FFFFFF)
-private val TextPrimary = Color(0xFFEEEEEE)
-private val TextMuted   = Color(0xFF888888)
-private val AccentBlue  = Color(0xFF4A9EFF)
+private val TextPrimary  = Color(0xFFEEEEEE)
+private val TextMuted    = Color(0xAAEEEEEE)
+private val AccentBlue   = Color(0xFF4A9EFF)
+private val MenuSelected = Color(0x55000000)  // PSP-style semi-dark highlight
+private val MenuHoverBorder = Color(0x88FFFFFF)
 
 @Composable
 fun GameDetailScreen(
     gameId: Long,
     onBack: () -> Unit,
+    pendingGamepadAction: GamepadAction? = null,
+    onGamepadActionConsumed: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: GameDetailViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
-    // Track which artwork slot the picker was opened for
     var pendingArtworkType by remember { mutableStateOf<ArtworkType?>(null) }
-
     val artworkPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri ->
@@ -98,357 +83,354 @@ fun GameDetailScreen(
         pendingArtworkType = null
     }
 
-    fun pickArtwork(type: ArtworkType) {
-        pendingArtworkType = type
-        artworkPicker.launch(arrayOf("image/*"))
-    }
-
-    // Load game when screen opens or gameId changes
     LaunchedEffect(gameId) { viewModel.loadGame(gameId) }
 
-    // Collect one-shot launch intents
     LaunchedEffect(Unit) {
-        viewModel.launchEffect.collect { intent ->
-            context.startActivity(intent)
+        viewModel.launchEffect.collect { intent -> context.startActivity(intent) }
+    }
+
+    LaunchedEffect(pendingGamepadAction) {
+        if (pendingGamepadAction != null) {
+            viewModel.handleGamepadAction(pendingGamepadAction)
+            onGamepadActionConsumed()
         }
     }
 
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(OverlayBg),
-    ) {
-        if (state.isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier.align(Alignment.Center),
-                color    = AccentBlue,
-            )
-        } else {
-            val game     = state.game
-            val platform = state.platform
-
-            if (game == null) {
-                Text(
-                    text     = "Game not found",
-                    color    = TextMuted,
-                    modifier = Modifier.align(Alignment.Center),
-                )
-            } else {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState()),
-                ) {
-                    // ── Hero banner ───────────────────────────────────────────
-                    HeroBanner(
-                        heroUri      = game.heroUri,
-                        artworkUri   = game.artworkUri,
-                        logoUri      = game.logoUri,
-                        accentColor  = platform?.accentColor?.let { Color(it) } ?: AccentBlue,
-                    )
-
-                    // ── Title + metadata ──────────────────────────────────────
-                    Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)) {
-
-                        Text(
-                            text       = game.title,
-                            fontSize   = 26.sp,
-                            fontWeight = FontWeight.Bold,
-                            color      = TextPrimary,
-                        )
-
-                        Spacer(Modifier.height(4.dp))
-
-                        val platformLine = buildString {
-                            append(platform?.name ?: game.platformId.uppercase())
-                            game.releaseYear?.let { append("  ·  $it") }
-                            game.genre?.let { append("  ·  $it") }
-                        }
-                        Text(text = platformLine, fontSize = 13.sp, color = TextMuted)
-
-                        if (game.developer != null || game.publisher != null) {
-                            Spacer(Modifier.height(2.dp))
-                            val devLine = listOfNotNull(game.developer, game.publisher)
-                                .joinToString("  /  ")
-                            Text(text = devLine, fontSize = 12.sp, color = TextMuted)
-                        }
-
-                        Spacer(Modifier.height(16.dp))
-                        Divider(color = Color(0x33FFFFFF))
-                        Spacer(Modifier.height(12.dp))
-
-                        // ── Stats row ─────────────────────────────────────────
-                        Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                            StatChip(
-                                label = "Play time",
-                                value = game.totalPlayTimeMillis.formatPlayTime(),
-                            )
-                            StatChip(
-                                label = "Last played",
-                                value = game.lastPlayedAt?.formatLastPlayed() ?: "Never",
-                            )
-                        }
-
-                        Spacer(Modifier.height(16.dp))
-                        Divider(color = Color(0x33FFFFFF))
-                        Spacer(Modifier.height(16.dp))
-
-                        // ── Action row ────────────────────────────────────────
-                        ActionRow(
-                            isFavorite             = game.isFavorite,
-                            isFetchingArtwork      = state.isFetchingArtwork,
-                            showCustomArtwork      = state.showCustomArtwork,
-                            isProcessingCustomArtwork = state.isProcessingCustomArtwork,
-                            onLaunch               = viewModel::launch,
-                            onToggleFavorite       = viewModel::toggleFavorite,
-                            onFetchArtwork         = viewModel::fetchArtwork,
-                            onEditNote             = viewModel::startEditNote,
-                            onToggleCustomArtwork  = viewModel::toggleCustomArtworkPanel,
-                        )
-
-                        // ── Custom artwork panel ──────────────────────────────
-                        AnimatedVisibility(visible = state.showCustomArtwork) {
-                            CustomArtworkPanel(
-                                hasBoxArt = game.artworkUri != null,
-                                hasHero   = game.heroUri != null,
-                                hasLogo   = game.logoUri != null,
-                                isWorking = state.isProcessingCustomArtwork,
-                                onPickBoxArt  = { pickArtwork(ArtworkType.BOX_ART) },
-                                onPickHero    = { pickArtwork(ArtworkType.HERO) },
-                                onPickLogo    = { pickArtwork(ArtworkType.LOGO) },
-                                onClearBoxArt = { viewModel.clearArtwork(ArtworkType.BOX_ART) },
-                                onClearHero   = { viewModel.clearArtwork(ArtworkType.HERO) },
-                                onClearLogo   = { viewModel.clearArtwork(ArtworkType.LOGO) },
-                            )
-                        }
-
-                        // ── Feedback messages ─────────────────────────────────
-                        state.artworkMessage?.let { msg ->
-                            Spacer(Modifier.height(8.dp))
-                            FeedbackBanner(msg, isError = !msg.contains("updated") && !msg.contains("already", ignoreCase = true)) {
-                                viewModel.dismissArtworkMessage()
-                            }
-                        }
-
-                        state.launchError?.let { err ->
-                            Spacer(Modifier.height(8.dp))
-                            FeedbackBanner(err, isError = true) { viewModel.dismissLaunchError() }
-                        }
-
-                        // ── Description ───────────────────────────────────────
-                        game.description?.let { desc ->
-                            Spacer(Modifier.height(16.dp))
-                            Divider(color = Color(0x33FFFFFF))
-                            Spacer(Modifier.height(12.dp))
-                            Text(
-                                text      = desc,
-                                fontSize  = 13.sp,
-                                color     = TextMuted,
-                                lineHeight = 20.sp,
-                            )
-                        }
-
-                        // ── Note section ──────────────────────────────────────
-                        AnimatedVisibility(visible = state.isEditingNote) {
-                            NoteEditor(
-                                text      = state.noteText,
-                                onChange  = viewModel::onNoteChanged,
-                                onSave    = viewModel::saveNote,
-                                onCancel  = viewModel::cancelNote,
-                            )
-                        }
-
-                        if (!state.isEditingNote && game.userNote != null) {
-                            Spacer(Modifier.height(12.dp))
-                            Text(
-                                text      = "\"${game.userNote}\"",
-                                fontSize  = 13.sp,
-                                fontStyle = FontStyle.Italic,
-                                color     = TextMuted,
-                            )
-                        }
-
-                        Spacer(Modifier.height(32.dp))
-                    }
-                }
-            }
+    if (state.isLoading) {
+        Box(modifier.fillMaxSize()) {
+            CircularProgressIndicator(Modifier.align(Alignment.Center), color = AccentBlue)
         }
-
-        // ── Back button ───────────────────────────────────────────────────
-        IconButton(
-            onClick  = onBack,
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(8.dp),
-        ) {
-            Icon(
-                imageVector        = Icons.Default.ArrowBack,
-                contentDescription = "Back",
-                tint               = TextPrimary,
-            )
-        }
+        return
     }
-}
 
-// ── Hero banner ───────────────────────────────────────────────────────────────
+    val game = state.game ?: return
+    val platform = state.platform
+    val accentColor = platform?.accentColor?.let { Color(it) } ?: AccentBlue
 
-@Composable
-private fun HeroBanner(
-    heroUri: String?,
-    artworkUri: String?,
-    logoUri: String?,
-    accentColor: Color,
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(210.dp),
-    ) {
-        // Hero background image
-        if (heroUri != null) {
+    val menuLabels = listOf(
+        "Start",
+        if (game.isFavorite) "Remove Favorite" else "Add to Favorites",
+        if (state.isFetchingArtwork) "Fetching Artwork…" else "Fetch Artwork",
+        "Edit Note",
+        "Custom Artwork",
+        "Information",
+    )
+
+    Box(modifier = modifier.fillMaxSize()) {
+
+        // ── Full-screen background artwork ────────────────────────────────
+        val bgUri = game.heroUri ?: game.artworkUri
+        if (bgUri != null) {
             AsyncImage(
-                model              = heroUri,
+                model              = bgUri,
                 contentDescription = null,
                 contentScale       = ContentScale.Crop,
                 modifier           = Modifier.fillMaxSize(),
             )
         } else {
-            // Fallback gradient when no hero art
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
                         Brush.horizontalGradient(
-                            listOf(accentColor.copy(alpha = 0.4f), Color.Black)
+                            listOf(accentColor.copy(alpha = 0.35f), Color(0xFF050510))
                         )
                     )
             )
         }
 
-        // Bottom gradient — fades hero into the content below
+        // ── Dark gradient overlay (heavy on right, lighter on left) ───────
         Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(80.dp)
-                .align(Alignment.BottomCenter)
+                .fillMaxSize()
                 .background(
-                    Brush.verticalGradient(
-                        listOf(Color.Transparent, OverlayBg)
+                    Brush.horizontalGradient(
+                        colorStops = arrayOf(
+                            0.0f to Color(0x55000000),
+                            0.45f to Color(0x99000000),
+                            1.0f to Color(0xEE000000),
+                        )
                     )
                 )
         )
 
-        // Platform accent color strip
+        // ── Bottom gradient (title area readability) ───────────────────────
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(3.dp)
+                .fillMaxHeight(0.45f)
                 .align(Alignment.BottomCenter)
-                .background(accentColor),
+                .background(
+                    Brush.verticalGradient(listOf(Color.Transparent, Color(0xCC000000)))
+                )
         )
 
-        // Grid art (box art thumbnail — top-right)
-        if (artworkUri != null) {
-            AsyncImage(
-                model              = artworkUri,
-                contentDescription = "Box art",
-                contentScale       = ContentScale.Fit,
-                modifier           = Modifier
-                    .size(width = 80.dp, height = 106.dp)
-                    .align(Alignment.TopEnd)
-                    .padding(top = 12.dp, end = 16.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(4.dp)),
+        // ── Left: box art + title block ───────────────────────────────────
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(start = 48.dp, bottom = 48.dp)
+                .widthIn(max = 340.dp),
+            verticalArrangement = Arrangement.Bottom,
+        ) {
+            // Box art (UMD-proportioned rectangle)
+            if (game.artworkUri != null) {
+                AsyncImage(
+                    model              = game.artworkUri,
+                    contentDescription = "Box art",
+                    contentScale       = ContentScale.Fit,
+                    modifier           = Modifier
+                        .size(width = 88.dp, height = 124.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .border(1.dp, Color(0x55FFFFFF), RoundedCornerShape(4.dp)),
+                )
+                Spacer(Modifier.height(12.dp))
+            }
+
+            Text(
+                text       = game.title,
+                fontSize   = 26.sp,
+                fontWeight = FontWeight.Bold,
+                color      = TextPrimary,
             )
+            Spacer(Modifier.height(4.dp))
+
+            val metaLine = buildString {
+                append(platform?.name ?: game.platformId.uppercase())
+                game.releaseYear?.let { append("  ·  $it") }
+            }
+            Text(text = metaLine, fontSize = 13.sp, color = TextMuted)
+
+            // Play-time stat
+            val playTime = game.totalPlayTimeMillis.formatPlayTime()
+            if (playTime.isNotEmpty()) {
+                Spacer(Modifier.height(2.dp))
+                Text(text = "Played: $playTime", fontSize = 12.sp, color = TextMuted)
+            }
+
+            // Information panel (description + note)
+            AnimatedVisibility(visible = state.showInformation) {
+                Column(modifier = Modifier.padding(top = 10.dp)) {
+                    game.description?.let { desc ->
+                        Text(
+                            text       = desc,
+                            fontSize   = 12.sp,
+                            color      = TextMuted,
+                            lineHeight = 18.sp,
+                            maxLines   = 4,
+                        )
+                    }
+                    game.userNote?.let { note ->
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            text      = "\"$note\"",
+                            fontSize  = 12.sp,
+                            fontStyle = FontStyle.Italic,
+                            color     = TextMuted,
+                        )
+                    }
+                }
+            }
+
+            // Artwork / launch feedback
+            val feedbackMsg = state.artworkMessage ?: state.launchError
+            if (feedbackMsg != null) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text     = feedbackMsg,
+                    fontSize = 12.sp,
+                    color    = if (state.launchError != null) Color(0xFFFF6B6B) else AccentBlue,
+                )
+            }
+
+            // Note editor inline
+            AnimatedVisibility(visible = state.isEditingNote, enter = fadeIn(), exit = fadeOut()) {
+                NoteEditor(
+                    text     = state.noteText,
+                    onChange = viewModel::onNoteChanged,
+                    onSave   = viewModel::saveNote,
+                    onCancel = viewModel::cancelNote,
+                )
+            }
         }
 
-        // Logo (transparent PNG — bottom-left)
-        if (logoUri != null) {
-            AsyncImage(
-                model              = logoUri,
-                contentDescription = "Game logo",
-                contentScale       = ContentScale.Fit,
-                modifier           = Modifier
-                    .widthIn(max = 200.dp)
-                    .height(60.dp)
-                    .align(Alignment.BottomStart)
-                    .padding(start = 20.dp, bottom = 12.dp),
-            )
+        // ── Right: PSP-style action menu ─────────────────────────────────
+        Column(
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .padding(end = 72.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            menuLabels.forEachIndexed { index, label ->
+                PspMenuItem(
+                    text       = label,
+                    isSelected = index == state.selectedMenuIndex,
+                    onClick    = {
+                        viewModel.selectMenuItem(index)
+                        viewModel.activateSelectedMenuItem()
+                    },
+                )
+            }
+        }
+
+        // ── Custom artwork panel overlay ──────────────────────────────────
+        AnimatedVisibility(
+            visible = state.showCustomArtwork,
+            enter   = fadeIn(),
+            exit    = fadeOut(),
+            modifier = Modifier.align(Alignment.CenterEnd).padding(end = 72.dp, top = 160.dp),
+        ) {
+            Column(
+                modifier = Modifier
+                    .widthIn(min = 280.dp, max = 340.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(Color(0xDD0A0A12))
+                    .padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                listOf(
+                    Triple(ArtworkType.BOX_ART, "Box Art", game.artworkUri != null),
+                    Triple(ArtworkType.HERO,    "Hero",    game.heroUri    != null),
+                    Triple(ArtworkType.LOGO,    "Logo",    game.logoUri    != null),
+                ).forEach { (type, label, hasImage) ->
+                    ArtworkSlotRow(
+                        label        = label,
+                        hasImage     = hasImage,
+                        isWorking    = state.isProcessingCustomArtwork,
+                        onPick       = { pendingArtworkType = type; artworkPicker.launch(arrayOf("image/*")) },
+                        onBrowseSgdb = { viewModel.openSgdbPicker(type) },
+                        onClear      = { viewModel.clearArtwork(type) },
+                    )
+                    // SGDB browser expands inline below the active slot row
+                    if (state.sgdbBrowsingType == type) {
+                        SgdbBrowserRow(
+                            isLoading = state.sgdbIsLoading,
+                            error     = state.sgdbError,
+                            items     = state.sgdbItems,
+                            onPick    = { url -> viewModel.pickSgdbArtwork(url, type) },
+                            onClose   = viewModel::closeSgdbPicker,
+                        )
+                    }
+                }
+            }
         }
     }
 }
 
-// ── Action row ────────────────────────────────────────────────────────────────
+// ── PSP-style menu item ───────────────────────────────────────────────────────
 
 @Composable
-private fun ActionRow(
-    isFavorite: Boolean,
-    isFetchingArtwork: Boolean,
-    showCustomArtwork: Boolean,
-    isProcessingCustomArtwork: Boolean,
-    onLaunch: () -> Unit,
-    onToggleFavorite: () -> Unit,
-    onFetchArtwork: () -> Unit,
-    onEditNote: () -> Unit,
-    onToggleCustomArtwork: () -> Unit,
+private fun PspMenuItem(
+    text: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
 ) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment     = Alignment.CenterVertically,
+    Box(
+        modifier = Modifier
+            .width(260.dp)
+            .clip(RoundedCornerShape(3.dp))
+            .then(
+                if (isSelected)
+                    Modifier
+                        .background(MenuSelected)
+                        .border(1.dp, MenuHoverBorder, RoundedCornerShape(3.dp))
+                else Modifier
+            )
+            .clickable { onClick() }
+            .padding(horizontal = 20.dp, vertical = 10.dp),
     ) {
-        Button(
-            onClick = onLaunch,
-            colors  = ButtonDefaults.buttonColors(containerColor = AccentBlue),
-            shape   = RoundedCornerShape(6.dp),
-        ) {
-            Icon(
-                imageVector        = Icons.Default.PlayArrow,
-                contentDescription = null,
-                modifier           = Modifier.size(18.dp),
-            )
-            Spacer(Modifier.width(6.dp))
-            Text("Launch", fontWeight = FontWeight.SemiBold)
-        }
+        Text(
+            text       = text,
+            fontSize   = 15.sp,
+            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+            color      = if (isSelected) TextPrimary else TextMuted,
+        )
+    }
+}
 
-        IconButton(onClick = onToggleFavorite) {
-            Icon(
-                imageVector        = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
-                tint               = if (isFavorite) Color(0xFFFF4D6D) else TextMuted,
-            )
-        }
+// ── Artwork slot row ──────────────────────────────────────────────────────────
 
-        IconButton(onClick = onFetchArtwork, enabled = !isFetchingArtwork) {
-            if (isFetchingArtwork) {
-                CircularProgressIndicator(modifier = Modifier.size(20.dp), color = AccentBlue, strokeWidth = 2.dp)
-            } else {
-                Icon(
-                    imageVector        = Icons.Default.Image,
-                    contentDescription = "Fetch artwork from SteamGridDB",
-                    tint               = TextMuted,
-                )
+@Composable
+private fun ArtworkSlotRow(
+    label: String,
+    hasImage: Boolean,
+    isWorking: Boolean,
+    onPick: () -> Unit,
+    onBrowseSgdb: () -> Unit,
+    onClear: () -> Unit,
+) {
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(label, fontSize = 13.sp, color = if (hasImage) TextPrimary else TextMuted, modifier = Modifier.weight(1f))
+        if (hasImage) {
+            Box(Modifier.size(6.dp).clip(RoundedCornerShape(50)).background(Color(0xFF44CC88)))
+            Spacer(Modifier.width(4.dp))
+        }
+        TextButton(onClick = onPick, enabled = !isWorking) {
+            Text(if (hasImage) "File" else "File", fontSize = 11.sp, color = AccentBlue)
+        }
+        TextButton(onClick = onBrowseSgdb, enabled = !isWorking) {
+            Text("SGDB", fontSize = 11.sp, color = Color(0xFF44BBFF))
+        }
+        if (hasImage) {
+            TextButton(onClick = onClear, enabled = !isWorking) {
+                Text("✕", fontSize = 11.sp, color = TextMuted)
             }
         }
+    }
+}
 
-        // Custom artwork — palette icon, tinted blue when panel is open
-        IconButton(onClick = onToggleCustomArtwork, enabled = !isProcessingCustomArtwork) {
-            if (isProcessingCustomArtwork) {
-                CircularProgressIndicator(modifier = Modifier.size(20.dp), color = AccentBlue, strokeWidth = 2.dp)
-            } else {
-                Icon(
-                    imageVector        = Icons.Default.Palette,
-                    contentDescription = "Custom artwork",
-                    tint               = if (showCustomArtwork) AccentBlue else TextMuted,
-                )
+// ── SteamGridDB inline browser ────────────────────────────────────────────────
+
+@Composable
+private fun SgdbBrowserRow(
+    isLoading: Boolean,
+    error: String?,
+    items: List<SgdbArtItem>,
+    onPick: (String) -> Unit,
+    onClose: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(4.dp))
+            .background(Color(0x22FFFFFF))
+            .padding(8.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text("SteamGridDB", fontSize = 11.sp, color = Color(0xFF44BBFF), modifier = Modifier.weight(1f))
+            TextButton(onClick = onClose) {
+                Text("✕", fontSize = 11.sp, color = TextMuted)
             }
         }
-
-        IconButton(onClick = onEditNote) {
-            Icon(
-                imageVector        = Icons.Default.Edit,
-                contentDescription = "Edit note",
-                tint               = TextMuted,
-            )
+        when {
+            isLoading -> {
+                Box(modifier = Modifier.fillMaxWidth().height(64.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = AccentBlue, strokeWidth = 2.dp)
+                }
+            }
+            error != null -> {
+                Text(error, fontSize = 11.sp, color = Color(0xFFFF6B6B))
+            }
+            items.isEmpty() -> {
+                Text("No artwork found", fontSize = 11.sp, color = TextMuted)
+            }
+            else -> {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    items(items) { art ->
+                        AsyncImage(
+                            model              = art.thumb ?: art.url,
+                            contentDescription = null,
+                            contentScale       = ContentScale.Crop,
+                            modifier           = Modifier
+                                .size(width = 72.dp, height = 58.dp)
+                                .clip(RoundedCornerShape(3.dp))
+                                .border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(3.dp))
+                                .clickable { onPick(art.url) },
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -462,18 +444,18 @@ private fun NoteEditor(
     onSave: () -> Unit,
     onCancel: () -> Unit,
 ) {
-    Column(modifier = Modifier.padding(top = 12.dp)) {
+    Column(modifier = Modifier.padding(top = 10.dp).widthIn(max = 300.dp)) {
         OutlinedTextField(
             value         = text,
             onValueChange = onChange,
             label         = { Text("Note", color = TextMuted) },
             modifier      = Modifier.fillMaxWidth(),
             colors        = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor   = AccentBlue,
-                unfocusedBorderColor = Color(0x44FFFFFF),
-                focusedTextColor     = TextPrimary,
-                unfocusedTextColor   = TextPrimary,
-                cursorColor          = AccentBlue,
+                focusedBorderColor    = AccentBlue,
+                unfocusedBorderColor  = Color(0x44FFFFFF),
+                focusedTextColor      = TextPrimary,
+                unfocusedTextColor    = TextPrimary,
+                cursorColor           = AccentBlue,
             ),
             keyboardOptions = KeyboardOptions(
                 capitalization = KeyboardCapitalization.Sentences,
@@ -482,166 +464,9 @@ private fun NoteEditor(
             keyboardActions = KeyboardActions(onDone = { onSave() }),
             maxLines        = 4,
         )
-        Row(
-            modifier              = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End,
-        ) {
-            TextButton(onClick = onCancel) {
-                Text("Cancel", color = TextMuted)
-            }
-            Spacer(Modifier.width(8.dp))
-            TextButton(onClick = onSave) {
-                Text("Save", color = AccentBlue, fontWeight = FontWeight.SemiBold)
-            }
-        }
-    }
-}
-
-// ── Stat chip ─────────────────────────────────────────────────────────────────
-
-@Composable
-private fun StatChip(label: String, value: String) {
-    Column {
-        Text(text = label, fontSize = 10.sp, color = TextMuted)
-        Text(text = value, fontSize = 14.sp, color = TextPrimary, fontWeight = FontWeight.Medium)
-    }
-}
-
-// ── Feedback banner ───────────────────────────────────────────────────────────
-
-@Composable
-private fun FeedbackBanner(message: String, isError: Boolean, onDismiss: () -> Unit) {
-    val bg = if (isError) Color(0x33FF4D4D) else Color(0x3344CC88)
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(6.dp))
-            .background(bg)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text     = message,
-            color    = TextPrimary,
-            fontSize = 13.sp,
-            modifier = Modifier.weight(1f),
-        )
-        TextButton(onClick = onDismiss) {
-            Text("✕", color = TextMuted, fontSize = 12.sp)
-        }
-    }
-}
-
-// ── Custom artwork panel ──────────────────────────────────────────────────────
-
-@Composable
-private fun CustomArtworkPanel(
-    hasBoxArt: Boolean,
-    hasHero: Boolean,
-    hasLogo: Boolean,
-    isWorking: Boolean,
-    onPickBoxArt: () -> Unit,
-    onPickHero: () -> Unit,
-    onPickLogo: () -> Unit,
-    onClearBoxArt: () -> Unit,
-    onClearHero: () -> Unit,
-    onClearLogo: () -> Unit,
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .background(Color(0x1AFFFFFF))
-            .padding(horizontal = 12.dp, vertical = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Text(
-            text       = "Custom Artwork",
-            fontSize   = 11.sp,
-            color      = TextMuted,
-            fontWeight = FontWeight.SemiBold,
-        )
-
-        ArtworkSlotRow(
-            label        = "Box Art",
-            hasImage     = hasBoxArt,
-            isWorking    = isWorking,
-            onPick       = onPickBoxArt,
-            onClear      = onClearBoxArt,
-        )
-        ArtworkSlotRow(
-            label        = "Hero Banner",
-            hasImage     = hasHero,
-            isWorking    = isWorking,
-            onPick       = onPickHero,
-            onClear      = onClearHero,
-        )
-        ArtworkSlotRow(
-            label        = "Logo (transparent PNG)",
-            hasImage     = hasLogo,
-            isWorking    = isWorking,
-            onPick       = onPickLogo,
-            onClear      = onClearLogo,
-        )
-    }
-}
-
-@Composable
-private fun ArtworkSlotRow(
-    label: String,
-    hasImage: Boolean,
-    isWorking: Boolean,
-    onPick: () -> Unit,
-    onClear: () -> Unit,
-) {
-    Row(
-        modifier          = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text     = label,
-            fontSize = 13.sp,
-            color    = if (hasImage) TextPrimary else TextMuted,
-            modifier = Modifier.weight(1f),
-        )
-
-        if (hasImage) {
-            // Green dot indicating an image is set
-            Box(
-                modifier = Modifier
-                    .size(6.dp)
-                    .clip(RoundedCornerShape(50))
-                    .background(Color(0xFF44CC88)),
-            )
-            Spacer(Modifier.width(6.dp))
-        }
-
-        TextButton(
-            onClick  = onPick,
-            enabled  = !isWorking,
-            modifier = Modifier.height(32.dp),
-        ) {
-            Text(
-                text     = if (hasImage) "Replace" else "Choose",
-                fontSize = 12.sp,
-                color    = AccentBlue,
-            )
-        }
-
-        if (hasImage) {
-            IconButton(
-                onClick  = onClear,
-                enabled  = !isWorking,
-                modifier = Modifier.size(32.dp),
-            ) {
-                Icon(
-                    imageVector        = Icons.Default.Delete,
-                    contentDescription = "Clear $label",
-                    tint               = TextMuted,
-                    modifier           = Modifier.size(16.dp),
-                )
-            }
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            TextButton(onClick = onCancel) { Text("Cancel", color = TextMuted) }
+            TextButton(onClick = onSave)   { Text("Save",   color = AccentBlue, fontWeight = FontWeight.SemiBold) }
         }
     }
 }
@@ -649,22 +474,11 @@ private fun ArtworkSlotRow(
 // ── Formatters ────────────────────────────────────────────────────────────────
 
 private fun Long.formatPlayTime(): String = when {
-    this < 60_000L        -> "< 1 min"
-    this < 3_600_000L     -> "${this / 60_000} min"
+    this < 60_000L    -> ""
+    this < 3_600_000L -> "${this / 60_000} min"
     else -> {
         val h = this / 3_600_000L
         val m = (this % 3_600_000L) / 60_000L
         if (m > 0) "${h}h ${m}m" else "${h}h"
-    }
-}
-
-private fun Long.formatLastPlayed(): String {
-    val now  = System.currentTimeMillis()
-    val diff = now - this
-    return when {
-        diff < 86_400_000L    -> "Today"
-        diff < 172_800_000L   -> "Yesterday"
-        diff < 604_800_000L   -> "${diff / 86_400_000L} days ago"
-        else -> SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date(this))
     }
 }

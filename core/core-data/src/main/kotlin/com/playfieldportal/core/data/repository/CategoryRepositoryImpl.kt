@@ -1,7 +1,6 @@
 package com.playfieldportal.core.data.repository
 
 import com.playfieldportal.core.data.database.dao.CategoryDao
-import com.playfieldportal.core.data.database.dao.PlatformDao
 import com.playfieldportal.core.data.database.entity.CategoryItemEntity
 import com.playfieldportal.core.data.database.entity.toDomain
 import com.playfieldportal.core.data.database.entity.toEntity
@@ -9,43 +8,16 @@ import com.playfieldportal.core.domain.model.BuiltInCategory
 import com.playfieldportal.core.domain.model.Category
 import com.playfieldportal.core.domain.model.CategoryType
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import timber.log.Timber
 import javax.inject.Inject
 
 class CategoryRepositoryImpl @Inject constructor(
     private val categoryDao: CategoryDao,
-    private val platformDao: PlatformDao,
 ) {
     fun observeVisible(): Flow<List<Category>> =
-        combine(
-            categoryDao.observeVisible(),
-            platformDao.observePinnedToBar(),
-        ) { categoryEntities, pinnedPlatforms ->
-            val categories = categoryEntities.map { it.toDomain() }
-            val gamesPosition = categories
-                .firstOrNull { it.id == BuiltInCategory.GAMES }
-                ?.position
-                ?: 2
-
-            val pinnedCategories = pinnedPlatforms.mapIndexed { index, platform ->
-                Category(
-                    id = platform.id,
-                    name = platform.name,
-                    iconKey = platform.iconRes ?: "ic_platform_${platform.id}",
-                    accentColor = platform.accentColor,
-                    type = CategoryType.PLATFORM,
-                    position = gamesPosition + 1 + index,
-                )
-            }
-
-            val beforePinned = categories.filter { it.position <= gamesPosition }
-            val afterPinned = categories
-                .filter { it.position > gamesPosition }
-                .map { it.copy(position = it.position + pinnedCategories.size) }
-
-            beforePinned + pinnedCategories + afterPinned
+        categoryDao.observeVisible().map { categoryEntities ->
+            categoryEntities.map { it.toDomain() }
         }
 
     fun observeAll(): Flow<List<Category>> =
@@ -63,6 +35,10 @@ class CategoryRepositoryImpl @Inject constructor(
                 BuiltInCategory.ANDROID,
                 BuiltInCategory.APP_DRAWER,
                 BuiltInCategory.SETTINGS,
+                "photos",
+                "music",
+                "videos",
+                "network",
             )
         ) {
             Timber.w("Attempted to delete built-in category '$id' — blocked")
@@ -89,12 +65,12 @@ class CategoryRepositoryImpl @Inject constructor(
     // Seeds built-in categories on first launch — idempotent
     suspend fun seedBuiltInCategories() {
         val builtIns = listOf(
-            Category(BuiltInCategory.FAVORITES,       "Favorites",       "ic_favorites",      type = CategoryType.BUILT_IN, position = 0),
-            Category(BuiltInCategory.RECENTLY_PLAYED, "Recently Played", "ic_recent",         type = CategoryType.BUILT_IN, position = 1),
-            Category(BuiltInCategory.GAMES,           "Games",           "ic_games",          type = CategoryType.BUILT_IN, position = 2),
-            Category(BuiltInCategory.ANDROID,         "Android",         "ic_android",        type = CategoryType.BUILT_IN, position = 3),
-            Category(BuiltInCategory.APP_DRAWER,      "App Drawer",      "ic_apps",           type = CategoryType.BUILT_IN, position = 4),
-            Category(BuiltInCategory.SETTINGS,        "Settings",        "ic_settings",       type = CategoryType.BUILT_IN, position = 5),
+            Category(BuiltInCategory.SETTINGS, "Settings", "ic_settings", type = CategoryType.BUILT_IN, position = 0),
+            Category("photos",                 "Photos",   "ic_photos",   type = CategoryType.BUILT_IN, position = 1),
+            Category("music",                  "Music",    "ic_music",    type = CategoryType.BUILT_IN, position = 2),
+            Category("videos",                 "Videos",   "ic_videos",   type = CategoryType.BUILT_IN, position = 3),
+            Category(BuiltInCategory.GAMES,    "Games",    "ic_games",    type = CategoryType.BUILT_IN, position = 4),
+            Category("network",                "Network",  "ic_network",  type = CategoryType.BUILT_IN, position = 5),
         )
         categoryDao.insertAll(builtIns.map { it.toEntity() })
         Timber.i("Built-in categories seeded")

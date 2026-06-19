@@ -18,8 +18,9 @@ interface PlaySessionDao {
     // Distinct platforms that have sessions, ordered by most recently played
     // Used to drive Recently Played → per-platform list
     @Query("""
-        SELECT DISTINCT platform_id
+        SELECT platform_id
         FROM play_sessions
+        GROUP BY platform_id
         ORDER BY MAX(launched_at) DESC
     """)
     fun observeRecentPlatformIds(): Flow<List<String>>

@@ -1,5 +1,5 @@
 # Play Field Portal — Design Document
-**Version 2.2 · June 2026**
+**Version 2.3 · June 2026**
 
 ---
 
@@ -31,11 +31,15 @@ The name **PFP** is a deliberate double entendre: *Play Field Portal* as the pro
 - **Rationale:** Immersion. Launching RetroArch and pressing home should return to PFP, not the stock launcher.
 - **Implementation:** `AndroidManifest.xml` declares `CATEGORY_HOME` + `CATEGORY_DEFAULT` + `CATEGORY_LAUNCHER`.
 
-### 3.2 XMB Category Bar
-- **Decision:** Horizontal categories at the top, vertical item list below. Matches PSP XMB layout exactly.
-- **Pinnable platforms:** Any platform can be pinned to the top bar. Platforms also appear under the Games category as a drill-down.
-- **Hybrid approach:** Platforms live under Games AND can be promoted to top-level bar icons — best of both worlds.
-- **Settings long-press:** In debug builds, long-pressing the Settings category icon opens the debug control panel.
+### 3.2 XMB Navigation - PSP Category Bar
+- **Decision:** The horizontal XMB remains faithful to PSP-style categories: Settings, Photos, Music, Videos, Games, Network.
+- **No horizontal platforms:** Consoles/platforms must not appear as top-level horizontal XMB categories.
+- **Games drill-down:** Selecting Games shows platforms/consoles in the vertical list. Platforms behave like folders.
+- **Platform drill-down:** Selecting a platform opens `Games > Platform` and replaces the vertical list with that platform's games.
+- **Controller behavior:** D-pad/stick left/right moves categories; up/down moves the vertical list. A/Cross enters a platform or opens a game. B/Circle backs out from a platform to the platform list. Triangle/Y opens platform options or the game hub/options for the focused item.
+- **Category icons:** Use PSP-inspired icons for Settings, Photos, Music, Videos, Games, Network. Games uses a PSP-style controller icon.
+- **Game counts:** `XMBUiState.platformGameCounts: Map<String, Int>` is populated reactively from `GameDao` and displayed in platform folder subtitles.
+- **Settings long-press:** Long-pressing the Settings slot still opens the debug control panel in debug builds.
 
 ### 3.3 Categories
 
@@ -76,12 +80,16 @@ The name **PFP** is a deliberate double entendre: *Play Field Portal* as the pro
 | v1 → v2 | Added `is_active` column to `themes` table |
 | v2 → v3 | `ALTER TABLE library_sources ADD COLUMN platform_id TEXT` |
 
-### 3.5 Artwork Scraping — SteamGridDB
-- **API:** SteamGridDB (primary). Second source TBD.
-- **Rate limiting:** 1.1s between requests (above SteamGridDB's 1 req/s limit).
-- **Cache:** Coil disk cache (512 MB) + memory cache (20% available RAM).
+### 3.5 Artwork Scraping — Three-Tier Metadata Pipeline
+- **Tier 1 — ScreenScraper:** Hash-based match (MD5/SHA1 of ROM file). Most accurate; used first.
+- **Tier 2 — TheGamesDB (TGDB):** Title-based fallback when ScreenScraper returns no match. Returns metadata + artwork URLs.
+- **Tier 3 — SteamGridDB:** Artwork-only fallback. Also used as the primary user-facing artwork picker in Game Detail.
+- **Rate limiting:** 1.1s between requests per source (above SteamGridDB's 1 req/s limit).
+- **Cache:** Coil disk cache (512 MB) + memory cache (20% available RAM). `MetadataRepository.prewarm()` pre-fetches API keys from DataStore on init.
 - **Art types:** Grid (box art), Hero (banner), Logo (transparent PNG), Icon.
-- **Trigger:** Manual — user initiates artwork fetch from game detail or Settings.
+- **Trigger:** Manual — user initiates from Game Detail screen or XMB game context menu (Y/Triangle → Refresh Artwork).
+- **`ArtworkRepository.fetchArtworkForGame(gameId, title)`** — entry point for all artwork refresh actions; delegates to `MetadataRepository` which runs the three-tier cascade.
+- **`CardArtworkProcessor`:** Downloads artwork via Coil (`allowHardware(false)` for pixel access), composites onto a platform card template using Android `Canvas`/`Matrix`, saves result as PNG to `artwork/cards/{platformId}/{gameId}.png`. Used for the SD card tile thumbnails in `PlatformSdCardRow`.
 
 ### 3.6 Emulator Compatibility Layer
 - **Decision:** JSON profiles per emulator, bundled in assets, remote-updatable, user-editable in-app.
@@ -121,8 +129,18 @@ The name **PFP** is a deliberate double entendre: *Play Field Portal* as the pro
 ### 3.11 Controller Mapping
 - **Decision:** Full XMB navigation via physical controller — must-have for the couch gaming use case.
 - **API:** Android `InputDevice` — D-Pad, analog stick, face buttons, shoulder buttons.
-- **Default mapping:** D-Pad/stick = navigate, A = select, B = back, Y = options/long-press, L1/R1 = jump between categories.
+- **Default mapping:** D-Pad/stick = navigate, A = select, B = back, Y = options/long-press (context menu), L1/R1 = jump between categories.
+- **Y / Triangle — Context Menu:** Long-press (Y button) opens a context menu overlay. When a platform tile is focused, opens the platform context menu. When a game item is focused, opens the game context menu. All gamepad input is captured by the context menu until it is dismissed.
 - **Implementation:** `GamepadInputHandler` (`@Singleton`), `GamepadAction` enum, `ControllerMappingRepository` (DataStore), tap-to-remap UI in Controller Settings.
+
+### 3.22 Context Menu System
+- **Trigger:** `GamepadAction.LONG_PRESS` (Y/Triangle). Dispatched in `XMBViewModel.dispatchGamepadAction()` before any overlay routing — the context menu intercepts all input when open.
+- **Data model:** `XMBContextMenu(title, items, selectedIndex, platformId?, gameId?)` + `XMBContextMenuItem(id, label, isDestructive)`.
+- **UI:** `ContextMenuOverlay` — right-aligned panel (256–340dp), 6dp corners, PSP/Xbox-style. Full-screen scrim dismisses on tap. `LazyColumn` auto-scrolls to `selectedIndex` via `LaunchedEffect`.
+- **Platform context menu items:** Pin to XMB, Unpin from XMB, Scan ROMs, Refresh Artwork, Refresh Metadata.
+- **Game context menu items:** Add to Favorites / Remove from Favorites, Refresh Artwork, Refresh Metadata.
+- **Platform scan from XMB:** `scanPlatformRoms(platformId)` — reads `LibrarySourceDao.getEnabled()`, filters by `platformId` (falls back to all sources if none are platform-locked), runs `RomScanner.scan()`, upserts new games, updates the background task tray with progress.
+- **Background task lifecycle:** `addBackgroundTask` → `updateBackgroundTask` → `completeBackgroundTask` (auto-removes after 4s via `delay + filterNot`) or `failBackgroundTask`.
 
 ### 3.12 Background Tasks
 - **Engine:** WorkManager (battery-constrained, thermal-aware).
@@ -283,17 +301,20 @@ feature/
 | 15 | GameIconStyle enum (core-ui) | ✅ Complete | PSP_RECTANGLE / CARTRIDGE, shared across modules |
 | **XMB Shell** | | | |
 | 16 | XMBShell (state-hoisted) + @Previews | ✅ Complete | Pure UI + Container; 4 previews at 960×540dp |
-| 17 | XMBCategoryBar (long-press support) | ✅ Complete | LazyRow, animated icon size, combinedClickable |
+| 17 | PlatformSdCardRow + PlatformInfoStrip | ✅ Complete | SD card shape via SdCardShapeImpl : Shape, glow + scale animations, game count strip |
+| 17a | XMBCategoryBar (legacy) | ✅ Replaced | Superseded by PlatformSdCardRow in v2.3 |
 | 18 | XMBItemList + GameIconView (icon styles) | ✅ Complete | PSP rectangle, cartridge, Android squircle icons |
 | 19 | XMBStatusBar | ✅ Complete | Clock, battery, task badge, BroadcastReceiver |
 | 20 | BootSequenceOverlay | ✅ Complete | Animatable phases, themeable timing |
 | 21 | BackgroundTaskTray | ✅ Complete | Progress bars, color-coded states |
 | 22 | XMBViewModel (DB data, overlay state, icon style, setup flag) | ✅ Complete | Full category dispatch, overlay routing, DataStore observation |
+| 22a | XMBViewModel — platform-first architecture | ✅ Complete | combine(platformDao, gameRepo) → reactive category list; pin/unpin; context menu; scan; artwork refresh |
+| 22b | ContextMenuOverlay | ✅ Complete | Right-aligned PSP-style panel; gamepad input captured by VM when activeContextMenu != null |
 | 23 | XMB first-run library setup prompt | ✅ Complete | Injects "Set up ROM Library →" item in GAMES when unconfigured |
 | **Emulator Launcher** | | | |
 | 24 | EmulatorIntentResolver + FileProvider | ✅ Complete | All 4 intent types, SAF URI support |
 | 25 | EmulatorProfileRepository + 13 bundled profiles | ✅ Complete | Bundled + custom JSON, installed check |
-| 26 | In-app emulator profile editor UI | ❌ Incomplete | Stubs in EmulatorsSettingsViewModel |
+| 26 | In-app emulator profile editor UI | ✅ Complete | Full CRUD form; add/edit/delete custom profiles; intent type picker; EmulatorProfileEditorScreen |
 | **ROM Library** | | | |
 | 27 | PlatformExtensionMap + DiscImageResolver | ✅ Complete | CUE/BIN suppression, orphan BIN → Mega Drive |
 | 28 | RomScanner (two-phase, manual) | ✅ Complete | Phase 1 disc, Phase 2 definitive walk |
@@ -301,14 +322,16 @@ feature/
 | 30 | ROM root dir picker + first-run setup | ✅ Complete | SAF OpenDocumentTree, path extraction, DataStore persistence |
 | 31 | Library scan fully wired (upsert, unmatched, timestamps) | ✅ Complete | RomScanner → GameRepository.upsert, UnmatchedRomDao.insertAll |
 | 32 | Per-platform extra source folder | ✅ Complete | addExtraFolder(uri, platformId?) in LibrarySettingsViewModel |
-| 33 | Platform subfolder creation on XMB pin | ✅ Complete | Long-press platform under Games pins it to the bar and creates {root}/{platformId}/ |
+| 33 | PSP-style platform folders under Games | ✅ Complete | Platforms appear vertically inside Games; selecting one opens its game list |
 | 34 | Unmatched ROM assignment UI | ❌ Incomplete | User resolves .chd/.img platform ambiguity |
 | 35 | Missing ROM indicator in game list | ❌ Incomplete | Flag games whose romPath no longer exists |
 | **Artwork** | | | |
 | 36 | SteamGridDB API client (Ktor) | ✅ Complete | Search, Grid/Hero/Logo/Icon endpoints |
 | 37 | SgdbApiKeyProvider + ArtworkRepository | ✅ Complete | Rate limiting, Coil pre-warm, persistence, clearCache() |
+| 37a | Three-tier metadata pipeline | ✅ Complete | ScreenScraper (hash) → TheGamesDB (title) → SteamGridDB (artwork); MetadataRepository.prewarm() |
+| 37b | CardArtworkProcessor + PlatformCardTemplate | ✅ Complete | Coil download (allowHardware=false) → Canvas composite onto platform template → PNG to artwork/cards/ |
 | 38 | Custom per-game artwork (box art, hero, logo) | ✅ Complete | OpenDocument picker, copy to filesDir, GameRepository updates |
-| 39 | Second metadata source (IGDB/TGDB) | ❌ Incomplete | Deferred — SteamGridDB ships first |
+| 39 | SteamGridDB inline artwork picker (Game Detail) | ✅ Complete | Grid of results shown in-screen; tap to apply; updates artworkUri in DB |
 | **Game Detail** | | | |
 | 40 | GameDetailViewModel (load, launch, favorite, notes, artwork) | ✅ Complete | SharedFlow<Intent> for launch, ArtworkType enum, custom art copy |
 | 41 | GameDetailScreen (hero banner, metadata, action row) | ✅ Complete | HeroBanner, ActionRow, NoteEditor, FeedbackBanner, CustomArtworkPanel |
@@ -367,7 +390,7 @@ feature/
 | 79 | Smart category builder (filter rules UI) | ❌ Incomplete | FilterRules model + @Serializable ready |
 | 80 | Manual category (drag-to-add game list) | ❌ Incomplete | — |
 | **Known Technical Debt** | | | |
-| T1 | feature-xmb ↔ feature-settings circular dep | ⚠️ Known | Fix: extract GamepadAction + ControllerMappingRepository to core-domain |
+| T1 | feature-xmb ↔ feature-settings circular dep | ✅ Fixed | GamepadAction/GamepadBinding/GamepadMappings → core-domain; ControllerMappingRepository → core-data |
 | T2 | PACKAGE_USAGE_STATS not requested at runtime | ✅ Fixed | App drawer opens Usage Access settings and refreshes usage stats on resume |
 | T3 | DataStore settings not included in backup ZIP | ✅ Fixed | BackupManager writes/restores settings.json with typed preference handling |
 | **Previously Fixed Bugs** | | | |
@@ -378,15 +401,20 @@ feature/
 | B5 | ArtworkSettingsViewModel wrong callback arity | ✅ Fixed | Correct 3-param lambda |
 | B6 | accompanist-drawablepainter missing from catalog | ✅ Fixed | Added to libs.versions.toml + feature-appbar gradle |
 | B7 | Game nullable fields missing defaults | ✅ Fixed | All `String?`/`Int?`/`Long?` fields now have `= null` defaults |
+| B8 | GenericShape lambda — unresolved path methods | ✅ Fixed | Replaced with `SdCardShapeImpl : Shape` using `createOutline()` + `Outline.Generic(path)` |
+| B9 | `quadraticTo` unresolved in custom Shape | ✅ Fixed | Compose version requires `quadraticBezierTo` — renamed |
+| B10 | `BlurMaskFilter` unresolved import in PlatformSdCardRow | ✅ Fixed | Removed unused import |
+| B11 | `MetadataApiKeyProvider.firstValue()` using wrong collector | ✅ Fixed | Changed `collect {}` to `first()` suspend call |
+| B12 | `MetadataRepository.prewarmCache()` broken context injection | ✅ Fixed | Switched to `@ApplicationContext` constructor injection |
 
 ---
 
 ## 6. Next Moves — Priority Order
 
-1. **Emulator profile editor UI** — `EmulatorsSettingsViewModel` stubs exist; build the Compose form for adding/editing launch profiles.
-2. **Smart + Manual category builder UI** — `FilterRules` model is `@Serializable` and ready; build the creation flow and drag-to-add game list.
-3. **Unmatched ROM assignment UI** — let users resolve `.chd`/`.img` platform ambiguity from a dedicated screen in Library Settings.
-4. **Missing ROM indicator** — flag games whose `romPath` no longer exists on disk; surface in the game list.
+1. **Smart + Manual category builder UI** — `FilterRules` model is `@Serializable` and ready; build the creation flow and drag-to-add game list.
+2. **Unmatched ROM assignment UI** — let users resolve `.chd`/`.img` platform ambiguity from a dedicated screen in Library Settings.
+3. **Missing ROM indicator** — flag games whose `romPath` no longer exists on disk; surface in the game list.
+4. **Game Detail screen visual refresh** — redesign for a richer layout (hero art, metadata columns, launch button). Implement using the Write tool directly, not as inline text.
 5. **Theme sound playback** — `sounds/` assets already extracted to `filesDir/themes/{id}/sounds/`; wire `SoundPool` player triggered by `ThemeSoundEvent`.
 6. **Boot animation override** — `bootAnimationUri` stored in DB; feed into `BootSequenceOverlay` as a `VideoPlayer` composable.
 7. **Custom font support** — `fontKey` stored in DB; apply via `FontFamily` inside the `PFPTheme` composable.
