@@ -109,6 +109,17 @@ class AppDrawerViewModel @Inject constructor(
                 val app = state.visibleApps.getOrNull(cur)
                 if (app != null) launchApp(app.packageName)
             }
+            // L1 / R1 — cycle through filter tabs (App Drawer only)
+            GamepadAction.PREV_CATEGORY -> {
+                val filters = AppFilter.values()
+                val idx = filters.indexOf(state.activeFilter)
+                if (idx > 0) setFilter(filters[idx - 1])
+            }
+            GamepadAction.NEXT_CATEGORY -> {
+                val filters = AppFilter.values()
+                val idx = filters.indexOf(state.activeFilter)
+                if (idx < filters.size - 1) setFilter(filters[idx + 1])
+            }
             else -> Unit
         }
     }

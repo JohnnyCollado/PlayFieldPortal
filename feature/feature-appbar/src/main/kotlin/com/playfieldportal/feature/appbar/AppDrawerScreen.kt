@@ -76,6 +76,7 @@ fun AppDrawerScreen(
 
     LaunchedEffect(pendingGamepadAction) {
         if (pendingGamepadAction != null) {
+            timber.log.Timber.d("AppDrawer: action=$pendingGamepadAction filter=${viewModel.uiState.value.activeFilter}")
             viewModel.handleGamepadAction(pendingGamepadAction)
             onGamepadActionConsumed()
         }

@@ -63,7 +63,8 @@ fun XMBShellContainer(
         onTaskBadgeTapped     = { viewModel.onTaskTrayVisibility(true) },
         onDismissTaskTray     = viewModel::onDismissTaskTray,
         onSettingsLongPress   = onSettingsLongPress,
-        onCloseSettingsScreen = viewModel::onCloseSettingsScreen,
+        onCloseSettingsScreen    = viewModel::onCloseSettingsScreen,
+        onSettingsActionConsumed = viewModel::consumeSettingsAction,
         onCloseAppDrawer           = viewModel::onCloseAppDrawer,
         onDrawerActionConsumed     = viewModel::consumeDrawerAction,
         onCloseGameDetail          = viewModel::onCloseGameDetail,
@@ -88,6 +89,7 @@ fun XMBShell(
     onDismissTaskTray: () -> Unit = {},
     onSettingsLongPress: () -> Unit = {},
     onCloseSettingsScreen: () -> Unit = {},
+    onSettingsActionConsumed: () -> Unit = {},
     onCloseAppDrawer: () -> Unit = {},
     onDrawerActionConsumed: () -> Unit = {},
     onCloseGameDetail: () -> Unit = {},
@@ -232,9 +234,11 @@ fun XMBShell(
         // ── Settings sub-screen overlay ───────────────────────────────────
         uiState.activeSettingsScreen?.let { screenId ->
             SettingsNavHost(
-                screenId  = screenId,
-                onBack    = onCloseSettingsScreen,
-                modifier  = Modifier.fillMaxSize(),
+                screenId                = screenId,
+                onBack                  = onCloseSettingsScreen,
+                pendingGamepadAction    = uiState.pendingSettingsAction,
+                onGamepadActionConsumed = onSettingsActionConsumed,
+                modifier                = Modifier.fillMaxSize(),
             )
         }
 

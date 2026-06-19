@@ -88,6 +88,7 @@ data class XMBUiState(
 
     // ── Overlay screens ───────────────────────────────────────────────────
     val activeSettingsScreen: String? = null,
+    val pendingSettingsAction: GamepadAction? = null,
     val activeAppDrawerFilter: String? = null,
     val pendingDrawerAction: GamepadAction? = null,
     val pendingGameDetailAction: GamepadAction? = null,
@@ -339,7 +340,14 @@ class XMBViewModel @Inject constructor(
                 return
             }
             state.activeSettingsScreen != null -> {
-                if (action == GamepadAction.BACK) onCloseSettingsScreen()
+                Timber.d("Gamepad → settings(${state.activeSettingsScreen}): $action")
+                when (action) {
+                    GamepadAction.BACK -> onCloseSettingsScreen()
+                    GamepadAction.NAVIGATE_UP,
+                    GamepadAction.NAVIGATE_DOWN,
+                    GamepadAction.SELECT -> _uiState.update { it.copy(pendingSettingsAction = action) }
+                    else -> Unit
+                }
                 return
             }
             state.activeAppDrawerFilter != null -> {
@@ -633,12 +641,15 @@ class XMBViewModel @Inject constructor(
         }
 
         when (item?.id) {
-            SETUP_ITEM_ID -> _uiState.update { it.copy(activeSettingsScreen = "settings_library") }
+            SETUP_ITEM_ID -> {
+                Timber.d("Opening settings screen: settings_library (via setup prompt)")
+                _uiState.update { it.copy(activeSettingsScreen = "settings_library") }
+            }
             else -> when (category?.id) {
                 BuiltInCategory.SETTINGS -> {
                     if (item?.id != null) {
+                        Timber.d("Opening settings screen: ${item.id}")
                         _uiState.update { it.copy(activeSettingsScreen = item.id) }
-                        gamepadInputHandler.bypassToComposeFocus = true
                     }
                 }
                 BuiltInCategory.ANDROID -> {
@@ -690,8 +701,12 @@ class XMBViewModel @Inject constructor(
     // ── Settings overlay ──────────────────────────────────────────────────────
 
     fun onCloseSettingsScreen() {
-        _uiState.update { it.copy(activeSettingsScreen = null) }
-        gamepadInputHandler.bypassToComposeFocus = false
+        Timber.d("Settings closed")
+        _uiState.update { it.copy(activeSettingsScreen = null, pendingSettingsAction = null) }
+    }
+
+    fun consumeSettingsAction() {
+        _uiState.update { it.copy(pendingSettingsAction = null) }
     }
 
     // ── App drawer overlay ────────────────────────────────────────────────────
