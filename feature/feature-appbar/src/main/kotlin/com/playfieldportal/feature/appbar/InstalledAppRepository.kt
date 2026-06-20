@@ -24,6 +24,8 @@ data class InstalledApp(
     val isGame: Boolean,
     val isEmulator: Boolean,
     val lastUsedAt: Long = 0L,
+    // ApplicationInfo.category (CATEGORY_VIDEO, CATEGORY_AUDIO, …) or -1 when undefined.
+    val systemCategory: Int = ApplicationInfo.CATEGORY_UNDEFINED,
 )
 
 // Known emulator package name prefixes — used to tag emulators in the app list
@@ -77,12 +79,13 @@ class InstalledAppRepository @Inject constructor(
                 val isEmulator = EMULATOR_PACKAGES.any { packageName.startsWith(it) }
 
                 InstalledApp(
-                    packageName = packageName,
-                    label       = label,
-                    icon        = icon,
-                    isGame      = isGame || isEmulator,
-                    isEmulator  = isEmulator,
-                    lastUsedAt  = lastUsedByPackage[packageName] ?: 0L,
+                    packageName    = packageName,
+                    label          = label,
+                    icon           = icon,
+                    isGame         = isGame || isEmulator,
+                    isEmulator     = isEmulator,
+                    lastUsedAt     = lastUsedByPackage[packageName] ?: 0L,
+                    systemCategory = appInfo.category,
                 )
             } catch (e: Exception) {
                 Timber.w("Failed to load app info: ${e.message}")

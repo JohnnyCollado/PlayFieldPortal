@@ -19,12 +19,16 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateMap
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
@@ -37,7 +41,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.domain.model.GamepadAction
-import kotlinx.coroutines.delay
 import timber.log.Timber
 
 // ── CompositionLocals — provided by SettingsNavHost, consumed by SettingsScaffold ──
@@ -49,6 +52,12 @@ val LocalSettingsActionConsumed = compositionLocalOf<() -> Unit> { {} }
 // can invoke the right action on a controller SELECT press.
 internal val LocalSettingsFocusTracker =
     compositionLocalOf<(((() -> Unit)?) -> Unit)> { {} }
+
+// Internal registry: rows that declare a focusKey register a FocusRequester here so the
+// scaffold can restore focus to a specific row (the one that opened a child screen) when
+// returning, instead of always snapping back to the first row.
+internal val LocalSettingsFocusRegistry =
+    compositionLocalOf<SnapshotStateMap<String, FocusRequester>> { mutableStateMapOf() }
 
 // ── Colors ────────────────────────────────────────────────────────────────────
 
@@ -67,6 +76,9 @@ fun SettingsScaffold(
     subtitle: String,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    // When set, focus is restored to the row whose focusKey matches (used when returning
+    // from a child screen). When null, focus starts at the first interactive row.
+    restoreFocusKey: String? = null,
     content: @Composable () -> Unit,
 ) {
     val focusManager    = LocalFocusManager.current
@@ -77,13 +89,37 @@ fun SettingsScaffold(
     // Tracks the onclick of whichever row currently has controller focus
     val focusedRowClick = remember { mutableStateOf<(() -> Unit)?>(null) }
 
-    // After the screen is laid out, focus the invisible bootstrap element at the top of the
-    // content area. Its onFocusChanged immediately calls moveFocus(Down) which transfers
-    // focus to the first interactive SettingsRow without needing focusGroup().
+    // Per-row FocusRequesters keyed by focusKey, for focus-restoration on child return.
+    val focusRegistry   = remember { mutableStateMapOf<String, FocusRequester>() }
+
+    // Set true once any row has actually received focus (the menu is no longer "dead").
+    var focusRedirected by remember { mutableStateOf(false) }
+
+    // Assign controller focus the moment the menu mounts. Rather than a single delayed
+    // attempt (which silently fails if the focusable subtree isn't laid out yet, leaving the
+    // menu visible with nothing focused), we re-issue requestFocus() every frame until a row
+    // actually gains focus. This guarantees focus + visible highlight appear immediately with
+    // no directional input. When restoreFocusKey is set we target that specific row (returning
+    // from a child); otherwise we redirect Down from the top so a fresh open always starts at
+    // the first item with no stale focus restored.
     LaunchedEffect(Unit) {
-        delay(80)
-        runCatching { bootstrapFR.requestFocus() }
-        Timber.d("Settings focus: bootstrap requested ($title / $subtitle)")
+        Timber.d("Settings focus: screen opened ($title / $subtitle) restoreKey=$restoreFocusKey")
+        var attempts = 0
+        while (!focusRedirected && attempts < 12) {
+            withFrameNanos { /* wait for this frame's layout pass */ }
+            if (restoreFocusKey != null) {
+                focusRegistry[restoreFocusKey]?.let { runCatching { it.requestFocus() } }
+            } else {
+                runCatching { bootstrapFR.requestFocus() }
+            }
+            attempts++
+        }
+        // Restore target never materialised (e.g. the row was removed) — fall back to the
+        // first row so the menu is never left without a focused item.
+        if (!focusRedirected && restoreFocusKey != null) {
+            runCatching { bootstrapFR.requestFocus() }
+        }
+        Timber.d("Settings focus: default focus assigned=$focusRedirected after $attempts frame(s) ($subtitle)")
     }
 
     // Handle UP / DOWN / SELECT forwarded from XMBViewModel via pendingSettingsAction
@@ -100,7 +136,10 @@ fun SettingsScaffold(
     }
 
     CompositionLocalProvider(
-        LocalSettingsFocusTracker provides { click -> focusedRowClick.value = click },
+        // Marking focusRedirected here means ANY row gaining focus stops the bootstrap loop,
+        // covering both the first-row redirect and the restore-to-key path.
+        LocalSettingsFocusTracker provides { click -> focusedRowClick.value = click; focusRedirected = true },
+        LocalSettingsFocusRegistry provides focusRegistry,
     ) {
         Box(
             modifier = modifier
@@ -155,8 +194,10 @@ fun SettingsScaffold(
                         .focusable()
                         .onFocusChanged { state ->
                             if (state.isFocused) {
-                                Timber.d("Settings focus: bootstrap hit, redirecting Down")
+                                // Hand off to the first interactive row (the default focus target).
                                 focusManager.moveFocus(FocusDirection.Down)
+                                focusRedirected = true
+                                Timber.d("Settings focus: default focus → first item ($subtitle)")
                             }
                         }
                 )
@@ -185,15 +226,28 @@ fun SettingsGroup(title: String) {
 fun SettingsRow(
     label: String,
     sublabel: String? = null,
+    focusKey: String? = null,
     trailing: @Composable (() -> Unit)? = null,
     onClick: (() -> Unit)? = null,
 ) {
-    val focusTracker = LocalSettingsFocusTracker.current
+    val focusTracker  = LocalSettingsFocusTracker.current
+    val focusRegistry = LocalSettingsFocusRegistry.current
     var isFocused by remember { mutableStateOf(false) }
+
+    // Clickable rows with a focusKey publish a FocusRequester so the scaffold can restore
+    // focus to them. (A non-clickable row has no focus target, so a requester would be unusable.)
+    val focusRequester = if (focusKey != null && onClick != null) remember(focusKey) { FocusRequester() } else null
+    if (focusKey != null && focusRequester != null) {
+        DisposableEffect(focusKey) {
+            focusRegistry[focusKey] = focusRequester
+            onDispose { if (focusRegistry[focusKey] === focusRequester) focusRegistry.remove(focusKey) }
+        }
+    }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
             // Observe focus to register onclick with scaffold (for SELECT) and show highlight
             .onFocusChanged { state ->
                 isFocused = state.isFocused
@@ -231,12 +285,14 @@ fun SettingsRow(
 fun SettingsToggleRow(
     label: String,
     sublabel: String? = null,
+    focusKey: String? = null,
     checked: Boolean,
     onToggle: (Boolean) -> Unit,
 ) {
     SettingsRow(
         label    = label,
         sublabel = sublabel,
+        focusKey = focusKey,
         // Row-level click so controller SELECT can toggle it
         onClick  = { onToggle(!checked) },
         trailing = {
@@ -259,11 +315,13 @@ fun SettingsValueRow(
     label: String,
     value: String,
     sublabel: String? = null,
+    focusKey: String? = null,
     onClick: (() -> Unit)? = null,
 ) {
     SettingsRow(
         label    = label,
         sublabel = sublabel,
+        focusKey = focusKey,
         onClick  = onClick,
         trailing = {
             Text(

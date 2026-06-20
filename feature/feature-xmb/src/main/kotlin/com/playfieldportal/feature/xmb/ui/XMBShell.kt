@@ -1,81 +1,76 @@
 package com.playfieldportal.feature.xmb.ui
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.AsyncImage
 import com.playfieldportal.core.domain.model.BuiltInCategory
-import com.playfieldportal.core.domain.model.GamepadAction
-import com.playfieldportal.feature.xmb.preview.PreviewData
 import com.playfieldportal.core.ui.theme.PFPTheme
 import com.playfieldportal.feature.appbar.AppDrawerScreen
 import com.playfieldportal.feature.appbar.AppFilter
 import com.playfieldportal.feature.settings.ui.SettingsNavHost
+import com.playfieldportal.feature.xmb.preview.PreviewData
 import com.playfieldportal.feature.xmb.ui.detail.GameDetailScreen
-import com.playfieldportal.core.ui.wave.WaveRenderMode
-import com.playfieldportal.core.ui.wave.XMBWave
-import com.playfieldportal.feature.xmb.viewmodel.BackgroundTaskInfo
-import com.playfieldportal.feature.xmb.viewmodel.XMBItem
 import com.playfieldportal.feature.xmb.viewmodel.XMBUiState
 import com.playfieldportal.feature.xmb.viewmodel.XMBViewModel
 
-// ── Production entry point ────────────────────────────────────────────────────
-// Wires the real ViewModel — used in MainActivity and DebugAwareXMBHost
 @Composable
 fun XMBShellContainer(
     viewModel: XMBViewModel = hiltViewModel(),
-    // Debug builds pass a callback here to intercept Settings long-press
     onSettingsLongPress: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
     XMBShell(
-        uiState               = uiState,
-        onCategorySelected    = viewModel::onCategorySelected,
-        onItemSelected        = viewModel::onItemSelected,
-        onItemLongPress       = viewModel::onItemLongPress,
-        onPlatformLongPress   = viewModel::onPlatformLongPress,
-        onUserInteraction     = viewModel::onUserInteraction,
-        onBootComplete        = viewModel::onBootSequenceComplete,
-        onTaskBadgeTapped     = { viewModel.onTaskTrayVisibility(true) },
-        onDismissTaskTray     = viewModel::onDismissTaskTray,
-        onSettingsLongPress   = onSettingsLongPress,
-        onCloseSettingsScreen    = viewModel::onCloseSettingsScreen,
+        uiState = uiState,
+        onCategorySelected = viewModel::onCategorySelected,
+        onItemSelected = viewModel::onItemSelected,
+        onItemLongPress = viewModel::onItemLongPress,
+        onPlatformLongPress = viewModel::onPlatformLongPress,
+        onUserInteraction = viewModel::onUserInteraction,
+        onBootComplete = viewModel::onBootSequenceComplete,
+        onTaskBadgeTapped = { viewModel.onTaskTrayVisibility(true) },
+        onDismissTaskTray = viewModel::onDismissTaskTray,
+        onSettingsLongPress = onSettingsLongPress,
+        onCloseSettingsScreen = viewModel::onCloseSettingsScreen,
         onSettingsActionConsumed = viewModel::consumeSettingsAction,
-        onCloseAppDrawer           = viewModel::onCloseAppDrawer,
-        onDrawerActionConsumed     = viewModel::consumeDrawerAction,
-        onCloseGameDetail          = viewModel::onCloseGameDetail,
+        onCloseAppDrawer = viewModel::onCloseAppDrawer,
+        onDrawerActionConsumed = viewModel::consumeDrawerAction,
+        onCloseGameDetail = viewModel::onCloseGameDetail,
         onGameDetailActionConsumed = viewModel::consumeGameDetailAction,
         onContextMenuItemActivated = viewModel::onContextMenuItemActivatedAt,
-        onContextMenuDismiss       = viewModel::closeContextMenu,
+        onContextMenuDismiss = viewModel::closeContextMenu,
+        onConfirmAppRename = viewModel::onConfirmAppRename,
+        onCancelAppRename = viewModel::onCancelAppRename,
     )
 }
 
-// ── Pure UI shell — accepts state and callbacks, no ViewModel dependency ──────
-// Used directly in Compose previews and the debug menu
 @Composable
 fun XMBShell(
     uiState: XMBUiState,
@@ -96,209 +91,179 @@ fun XMBShell(
     onGameDetailActionConsumed: () -> Unit = {},
     onContextMenuItemActivated: (Int) -> Unit = {},
     onContextMenuDismiss: () -> Unit = {},
+    onConfirmAppRename: (String) -> Unit = {},
+    onCancelAppRename: () -> Unit = {},
 ) {
-    // Derive game background from the selected item when browsing a game list
-    // (not when a detail overlay is open — the overlay has its own background)
-    val selectedItem  = uiState.currentItems.getOrNull(uiState.selectedItemIndex)
-    val bgArtworkUri  = selectedItem?.artworkUri?.takeIf {
-        uiState.activeGameId == null && uiState.activeSettingsScreen == null &&
-        uiState.activeAppDrawerFilter == null
-    }
-    val adjacentItems = if (bgArtworkUri != null) {
-        listOfNotNull(
-            uiState.currentItems.getOrNull(uiState.selectedItemIndex - 1)
-                ?.takeIf { it.artworkUri != null },
-            uiState.currentItems.getOrNull(uiState.selectedItemIndex + 1)
-                ?.takeIf { it.artworkUri != null },
-        )
-    } else emptyList()
-
     PFPTheme(colors = uiState.themeColors) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black),
-    ) {
-        // ── Game background artwork (when a game is selected in the list) ─
-        AnimatedVisibility(
-            visible  = bgArtworkUri != null,
-            enter    = fadeIn(tween(400)),
-            exit     = fadeOut(tween(300)),
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            if (bgArtworkUri != null) {
-                AsyncImage(
-                    model              = bgArtworkUri,
-                    contentDescription = null,
-                    contentScale       = ContentScale.Crop,
-                    modifier           = Modifier.fillMaxSize(),
-                )
-            }
-        }
-
-        // ── Gradient overlay when game art is showing ─────────────────────
-        if (bgArtworkUri != null) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.horizontalGradient(
-                            colorStops = arrayOf(
-                                0.0f  to Color(0xCC000000),
-                                0.4f  to Color(0x88000000),
-                                1.0f  to Color(0xDD000000),
-                            )
-                        )
-                    )
-            )
-        }
-
-        // ── Wave background (shown when no game art, or blended behind) ──
-        if (bgArtworkUri == null) {
-            XMBWave(
-                modifier   = Modifier.fillMaxSize(),
+        Box(modifier = Modifier.fillMaxSize()) {
+            XmbBackground(
                 renderMode = uiState.waveRenderMode,
+                modifier = Modifier.fillMaxSize(),
             )
-        }
 
-        // ── Adjacent game thumbnail strip (upper-left) ────────────────────
-        if (adjacentItems.isNotEmpty()) {
-            Column(
-                modifier            = Modifier
+            XMBClock(
+                modifier = Modifier
                     .align(Alignment.TopStart)
-                    .padding(start = 20.dp, top = 72.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                adjacentItems.take(2).forEach { adj ->
-                    AsyncImage(
-                        model              = adj.artworkUri,
-                        contentDescription = adj.title,
-                        contentScale       = ContentScale.Crop,
-                        modifier           = Modifier
-                            .size(width = 66.dp, height = 44.dp)
-                            .clip(RoundedCornerShape(3.dp))
-                            .border(1.dp, Color(0x44FFFFFF), RoundedCornerShape(3.dp))
-                            .background(Color(0x33000000)),
-                    )
-                }
-            }
-        }
-
-        // ── XMB Chrome ───────────────────────────────────────────────────
-        Column(modifier = Modifier.fillMaxSize()) {
+                    .padding(start = 28.dp, top = 22.dp),
+            )
 
             XMBStatusBar(
                 backgroundTaskCount = uiState.activeBackgroundTasks,
-                onTaskBadgeTapped   = onTaskBadgeTapped,
+                onTaskBadgeTapped = onTaskBadgeTapped,
                 modifier = Modifier
-                    .align(Alignment.End)
-                    .padding(horizontal = 24.dp, vertical = 12.dp),
+                    .align(Alignment.TopEnd)
+                    .padding(end = 30.dp, top = 22.dp),
             )
 
-            XMBCategoryBar(
-                categories          = uiState.categories,
-                selectedIndex       = uiState.selectedCategoryIndex,
-                onCategorySelected  = onCategorySelected,
-                onCategoryLongPress = { index ->
-                    val id = uiState.categories.getOrNull(index)?.id
-                    if (id == BuiltInCategory.SETTINGS) onSettingsLongPress()
-                },
-                modifier = Modifier.padding(top = 16.dp),
-            )
-
-            XMBItemList(
-                items           = uiState.currentItems,
-                selectedIndex   = uiState.selectedItemIndex,
-                onItemSelected  = onItemSelected,
-                onItemLongPress = onItemLongPress,
-                iconStyle       = uiState.iconStyle,
+            Column(
                 modifier = Modifier
-                    .padding(top = 16.dp, start = 80.dp)
-                    .weight(1f),
-            )
-        }
+                    .fillMaxSize()
+                    .padding(top = 70.dp),
+            ) {
+                XMBCategoryBar(
+                    categories = uiState.categories,
+                    selectedIndex = uiState.selectedCategoryIndex,
+                    onCategorySelected = onCategorySelected,
+                    onCategoryLongPress = { index ->
+                        val id = uiState.categories.getOrNull(index)?.id
+                        if (id == BuiltInCategory.SETTINGS) onSettingsLongPress()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(128.dp),
+                )
 
-        // ── Boot sequence overlay ─────────────────────────────────────────
-        if (uiState.showBootSequence) {
-            BootSequenceOverlay(onComplete = onBootComplete)
-        }
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                ) {
+                    AnimatedContent(
+                        targetState = uiState.selectedCategoryIndex,
+                        transitionSpec = {
+                            (fadeIn(tween(220)) + slideInVertically(tween(260)) { it / 8 })
+                                .togetherWith(fadeOut(tween(160)) + slideOutVertically(tween(180)) { -it / 10 })
+                                .using(SizeTransform(clip = false))
+                        },
+                        label = "xmbCategoryItems",
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .fillMaxWidth(0.46f)
+                            .widthIn(max = 560.dp)
+                            .padding(top = 8.dp),
+                    ) {
+                        XMBItemList(
+                            items = uiState.currentItems,
+                            selectedIndex = uiState.selectedItemIndex,
+                            onItemSelected = onItemSelected,
+                            onItemLongPress = onItemLongPress,
+                            iconStyle = uiState.iconStyle,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                }
+            }
 
-        // ── Background task tray ──────────────────────────────────────────
-        if (uiState.showTaskTray) {
-            BackgroundTaskTray(
-                tasks     = uiState.backgroundTasks,
-                onDismiss = onDismissTaskTray,
-            )
-        }
+            if (uiState.showBootSequence) {
+                BootSequenceOverlay(onComplete = onBootComplete)
+            }
 
-        // ── Settings sub-screen overlay ───────────────────────────────────
-        uiState.activeSettingsScreen?.let { screenId ->
-            SettingsNavHost(
-                screenId                = screenId,
-                onBack                  = onCloseSettingsScreen,
-                pendingGamepadAction    = uiState.pendingSettingsAction,
-                onGamepadActionConsumed = onSettingsActionConsumed,
-                modifier                = Modifier.fillMaxSize(),
-            )
-        }
+            if (uiState.showTaskTray) {
+                BackgroundTaskTray(
+                    tasks = uiState.backgroundTasks,
+                    onDismiss = onDismissTaskTray,
+                )
+            }
 
-        // ── App Drawer overlay ────────────────────────────────────────────
-        uiState.activeAppDrawerFilter?.let { filterName ->
-            val initialFilter = runCatching { AppFilter.valueOf(filterName) }
-                .getOrDefault(AppFilter.ALL)
-            AppDrawerScreen(
-                initialFilter        = initialFilter,
-                onBack               = onCloseAppDrawer,
-                pendingGamepadAction = uiState.pendingDrawerAction,
-                onGamepadActionConsumed = onDrawerActionConsumed,
-                modifier             = Modifier.fillMaxSize(),
-            )
-        }
+            uiState.activeSettingsScreen?.let { screenId ->
+                SettingsNavHost(
+                    screenId = screenId,
+                    onBack = onCloseSettingsScreen,
+                    pendingGamepadAction = uiState.pendingSettingsAction,
+                    onGamepadActionConsumed = onSettingsActionConsumed,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
 
-        // ── Context menu overlay (Y / Triangle) ──────────────────────────
-        uiState.activeContextMenu?.let { menu ->
-            ContextMenuOverlay(
-                menu             = menu,
-                onItemActivated  = onContextMenuItemActivated,
-                onDismiss        = onContextMenuDismiss,
-            )
-        }
+            uiState.activeAppDrawerFilter?.let { filterName ->
+                val initialFilter = runCatching { AppFilter.valueOf(filterName) }
+                    .getOrDefault(AppFilter.ALL)
+                AppDrawerScreen(
+                    initialFilter = initialFilter,
+                    onBack = onCloseAppDrawer,
+                    pendingGamepadAction = uiState.pendingDrawerAction,
+                    onGamepadActionConsumed = onDrawerActionConsumed,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
 
-        // ── Game Detail overlay ───────────────────────────────────────────
-        uiState.activeGameId?.let { gameId ->
-            GameDetailScreen(
-                gameId                  = gameId,
-                onBack                  = onCloseGameDetail,
-                pendingGamepadAction    = uiState.pendingGameDetailAction,
-                onGamepadActionConsumed = onGameDetailActionConsumed,
-                modifier                = Modifier.fillMaxSize(),
-            )
+            uiState.activeContextMenu?.let { menu ->
+                ContextMenuOverlay(
+                    menu = menu,
+                    onItemActivated = onContextMenuItemActivated,
+                    onDismiss = onContextMenuDismiss,
+                )
+            }
+
+            uiState.renameAppTarget?.let {
+                AppRenameDialog(
+                    currentLabel = uiState.renameAppCurrent.orEmpty(),
+                    onConfirm = onConfirmAppRename,
+                    onCancel = onCancelAppRename,
+                )
+            }
+
+            uiState.activeGameId?.let { gameId ->
+                GameDetailScreen(
+                    gameId = gameId,
+                    onBack = onCloseGameDetail,
+                    pendingGamepadAction = uiState.pendingGameDetailAction,
+                    onGamepadActionConsumed = onGameDetailActionConsumed,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
         }
     }
-    } // end PFPTheme
+
 }
 
-// ── Compose Previews ──────────────────────────────────────────────────────────
+@Composable
+private fun AppRenameDialog(
+    currentLabel: String,
+    onConfirm: (String) -> Unit,
+    onCancel: () -> Unit,
+) {
+    var text by remember(currentLabel) { mutableStateOf(currentLabel) }
+    AlertDialog(
+        onDismissRequest = onCancel,
+        title = { Text("Rename Shortcut") },
+        text = {
+            OutlinedTextField(value = text, onValueChange = { text = it }, singleLine = true)
+        },
+        confirmButton = { TextButton(onClick = { onConfirm(text) }) { Text("Save") } },
+        dismissButton = { TextButton(onClick = onCancel) { Text("Cancel") } },
+    )
+}
 
-@Preview(name = "XMB — Default (Games)", widthDp = 960, heightDp = 540, showBackground = true)
+@Preview(name = "XMB - Default (Games)", widthDp = 960, heightDp = 540, showBackground = true)
 @Composable
 private fun PreviewXMBDefault() {
     XMBShell(uiState = PreviewData.defaultState)
 }
 
-@Preview(name = "XMB — Empty Library", widthDp = 960, heightDp = 540, showBackground = true)
+@Preview(name = "XMB - Empty Library", widthDp = 960, heightDp = 540, showBackground = true)
 @Composable
 private fun PreviewXMBEmpty() {
     XMBShell(uiState = PreviewData.emptyLibraryState)
 }
 
-@Preview(name = "XMB — With Task Tray", widthDp = 960, heightDp = 540, showBackground = true)
+@Preview(name = "XMB - With Task Tray", widthDp = 960, heightDp = 540, showBackground = true)
 @Composable
 private fun PreviewXMBWithTasks() {
     XMBShell(uiState = PreviewData.withTasksState)
 }
 
-@Preview(name = "XMB — Boot Sequence", widthDp = 960, heightDp = 540, showBackground = true)
+@Preview(name = "XMB - Boot Sequence", widthDp = 960, heightDp = 540, showBackground = true)
 @Composable
 private fun PreviewXMBBoot() {
     XMBShell(uiState = PreviewData.bootState)

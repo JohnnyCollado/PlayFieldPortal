@@ -4,30 +4,53 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.playfieldportal.core.ui.icons.GameIconStyle
-import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.feature.xmb.viewmodel.XMBItem
+import com.playfieldportal.feature.xmb.viewmodel.XMBItemType
+
+private val RowShape = RoundedCornerShape(7.dp)
+private val RowSelectedFill = Color(0xFF574DDB)
+private val RowSelectedBorder = Color(0xFF8F7CFF)
+private val RowGlow = Color(0xFF9B79FF)
+private val PrimaryText = Color.White
+private val SecondaryText = Color(0xFFC9C7E8)
+private val InactiveText = Color(0xFFE3E1F0)
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -40,13 +63,12 @@ fun XMBItemList(
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
-    val colors = LocalPFPColors.current
 
-    LaunchedEffect(selectedIndex) {
+    LaunchedEffect(selectedIndex, items.size) {
         if (items.isNotEmpty()) {
             listState.animateScrollToItem(
-                index = selectedIndex.coerceIn(0, items.size - 1),
-                scrollOffset = -80,
+                index = selectedIndex.coerceIn(0, items.lastIndex),
+                scrollOffset = -44,
             )
         }
     }
@@ -55,80 +77,162 @@ fun XMBItemList(
         state = listState,
         modifier = modifier,
     ) {
-        itemsIndexed(items) { index, item ->
-            val isSelected = index == selectedIndex
-
-            val scale by animateFloatAsState(
-                targetValue = if (isSelected) 1.05f else 1f,
-                animationSpec = spring(stiffness = Spring.StiffnessMedium),
-                label = "itemScale",
-            )
-            val alpha by animateFloatAsState(
-                targetValue = when {
-                    isSelected -> 1f
-                    index == selectedIndex - 1 || index == selectedIndex + 1 -> 0.7f
-                    else -> 0.4f
-                },
-                label = "itemAlpha",
-            )
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
+        itemsIndexed(items, key = { _, item -> item.id }) { index, item ->
+            XmbVerticalListRow(
+                item = item,
+                isSelected = index == selectedIndex,
+                iconStyle = iconStyle,
+                onClick = { onItemSelected(index) },
+                onLongPress = { onItemLongPress(index) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .scale(scale)
-                    .alpha(alpha)
-                    .combinedClickable(
-                        onClick = { onItemSelected(index) },
-                        onLongClick = { onItemLongPress(index) },
-                    )
-                    .padding(vertical = 5.dp, horizontal = 8.dp),
-            ) {
-                Text(
-                    text = if (isSelected) ">" else " ",
-                    color = colors.textPrimary,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(end = 10.dp),
-                )
+                    .padding(vertical = 4.dp),
+            )
+        }
+    }
+}
 
-                // Only game items (gameId != null) get styled icons;
-                // non-game items (platform shortcuts, settings) show no icon.
-                if (item.gameId != null) {
-                    GameIcon(
-                        item      = item,
-                        iconStyle = iconStyle,
-                        modifier  = Modifier.padding(end = 12.dp),
-                    )
-                }
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun XmbVerticalListRow(
+    item: XMBItem,
+    isSelected: Boolean,
+    iconStyle: GameIconStyle,
+    onClick: () -> Unit,
+    onLongPress: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val scale by animateFloatAsState(
+        targetValue = if (isSelected) 1.035f else 1f,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "xmbListRowScale",
+    )
+    val rowAlpha by animateFloatAsState(
+        targetValue = when {
+            isSelected -> 1f
+            item.type == XMBItemType.EMPTY -> 0.62f
+            else -> 0.76f
+        },
+        animationSpec = spring(stiffness = Spring.StiffnessMedium),
+        label = "xmbListRowAlpha",
+    )
+    val selectionAlpha by animateFloatAsState(
+        targetValue = if (isSelected) 1f else 0f,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "xmbListRowSelection",
+    )
 
-                Column {
-                    Text(
-                        text = item.title,
-                        color = if (isSelected) colors.accentColor else colors.textPrimary,
-                        fontSize = if (isSelected) 16.sp else 14.sp,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .drawBehind {
+                if (selectionAlpha > 0f) {
+                    drawRoundRect(
+                        color = RowGlow.copy(alpha = 0.30f * selectionAlpha),
+                        topLeft = Offset(-10f, -8f),
+                        size = Size(size.width + 20f, size.height + 16f),
+                        cornerRadius = CornerRadius(18f, 18f),
                     )
-                    if (!item.subtitle.isNullOrBlank()) {
-                        Text(
-                            text = item.subtitle,
-                            color = colors.textSecondary,
-                            fontSize = 11.sp,
-                        )
-                    }
                 }
             }
+            .clip(RowShape)
+            .background(RowSelectedFill.copy(alpha = 0.26f * selectionAlpha), RowShape)
+            .then(
+                if (isSelected) {
+                    Modifier.border(1.dp, RowSelectedBorder.copy(alpha = 0.78f), RowShape)
+                } else {
+                    Modifier
+                }
+            )
+            .combinedClickable(onClick = onClick, onLongClick = onLongPress)
+            .padding(horizontal = 18.dp, vertical = 10.dp)
+            .alpha(rowAlpha),
+    ) {
+        XmbItemLeadingIcon(
+            item = item,
+            isSelected = isSelected,
+            iconStyle = iconStyle,
+        )
 
-            // Separator line under selected item — PSP XMB detail
-            if (isSelected) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 8.dp)
-                        .height(1.dp)
-                        .alpha(0.3f),
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = item.title,
+                color = if (isSelected) PrimaryText else InactiveText,
+                fontSize = if (isSelected) 19.sp else 16.sp,
+                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                maxLines = 1,
+            )
+            if (!item.subtitle.isNullOrBlank()) {
+                Text(
+                    text = item.subtitle,
+                    color = SecondaryText,
+                    fontSize = if (isSelected) 12.sp else 11.sp,
+                    fontWeight = FontWeight.Normal,
+                    maxLines = 1,
+                    modifier = Modifier.padding(top = 1.dp),
                 )
             }
         }
     }
+}
+
+@Composable
+private fun XmbItemLeadingIcon(
+    item: XMBItem,
+    isSelected: Boolean,
+    iconStyle: GameIconStyle,
+) {
+    val iconTint = if (isSelected) Color.White else Color(0xFFD4D2E8)
+    when {
+        item.type == XMBItemType.ALL_GAMES || item.type == XMBItemType.MEMORY_CARD -> {
+            Box(
+                contentAlignment = Alignment.CenterStart,
+                modifier = Modifier.width(58.dp),
+            ) {
+                XmbMemoryCardIcon(
+                    tint = iconTint,
+                    cutoutColor = Color(0xFF263190).copy(alpha = if (isSelected) 0.95f else 0.70f),
+                    modifier = Modifier.size(width = 42.dp, height = 30.dp),
+                )
+            }
+        }
+        item.gameId != null -> {
+            Box(modifier = Modifier.width(58.dp)) {
+                GameIcon(
+                    item = item,
+                    iconStyle = iconStyle,
+                    modifier = Modifier.size(38.dp),
+                )
+            }
+        }
+        item.isAndroidApp && item.packageName != null -> {
+            Box(modifier = Modifier.width(58.dp)) {
+                AppListIcon(
+                    packageName = item.packageName,
+                    modifier = Modifier.size(34.dp),
+                )
+            }
+        }
+        else -> Spacer(modifier = Modifier.width(12.dp))
+    }
+}
+
+@Composable
+private fun AppListIcon(
+    packageName: String,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    val drawable = remember(packageName) {
+        runCatching { context.packageManager.getApplicationIcon(packageName) }.getOrNull()
+    } ?: return
+    Image(
+        painter = rememberDrawablePainter(drawable),
+        contentDescription = null,
+        modifier = modifier.clip(RoundedCornerShape(6.dp)),
+    )
 }

@@ -52,8 +52,24 @@ interface CategoryDao {
     @Query("SELECT * FROM category_items WHERE category_id = :categoryId ORDER BY sort_order ASC")
     fun observeItemsForCategory(categoryId: String): Flow<List<CategoryItemEntity>>
 
+    // All app-assignment rows, streamed — drives the App categories' membership.
+    @Query("SELECT * FROM category_items WHERE item_type = 'app'")
+    fun observeAppItems(): Flow<List<CategoryItemEntity>>
+
+    @Query("SELECT * FROM category_items WHERE item_type = 'app'")
+    suspend fun getAppItems(): List<CategoryItemEntity>
+
+    @Query("SELECT * FROM category_items WHERE item_id = :itemId AND item_type = 'app'")
+    suspend fun getCategoriesForApp(itemId: String): List<CategoryItemEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun addItem(item: CategoryItemEntity)
+
+    @Query("UPDATE category_items SET pinned = :pinned WHERE category_id = :categoryId AND item_id = :itemId")
+    suspend fun setItemPinned(categoryId: String, itemId: String, pinned: Boolean)
+
+    @Query("DELETE FROM category_items WHERE item_id = :itemId AND item_type = 'app'")
+    suspend fun removeAppFromAllCategories(itemId: String)
 
     @Query("DELETE FROM category_items WHERE category_id = :categoryId AND item_id = :itemId")
     suspend fun removeItem(categoryId: String, itemId: String)

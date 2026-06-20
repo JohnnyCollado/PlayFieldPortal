@@ -6,6 +6,7 @@ import com.playfieldportal.core.domain.model.CategoryType
 import com.playfieldportal.core.ui.wave.WaveRenderMode
 import com.playfieldportal.feature.xmb.viewmodel.BackgroundTaskInfo
 import com.playfieldportal.feature.xmb.viewmodel.XMBItem
+import com.playfieldportal.feature.xmb.viewmodel.XMBItemType
 import com.playfieldportal.feature.xmb.viewmodel.XMBUiState
 
 // Shared fake data used by Compose @Preview annotations and the debug menu.
@@ -14,11 +15,12 @@ object PreviewData {
 
     val categories = listOf(
         Category(BuiltInCategory.SETTINGS, "Settings", "ic_settings", type = CategoryType.BUILT_IN, position = 0),
-        Category("photos",                 "Photos",   "ic_photos",   type = CategoryType.BUILT_IN, position = 1),
+        Category("photos",                 "Photo",    "ic_photos",   type = CategoryType.BUILT_IN, position = 1),
         Category("music",                  "Music",    "ic_music",    type = CategoryType.BUILT_IN, position = 2),
-        Category("videos",                 "Videos",   "ic_videos",   type = CategoryType.BUILT_IN, position = 3),
-        Category(BuiltInCategory.GAMES,    "Games",    "ic_games",    type = CategoryType.BUILT_IN, position = 4),
+        Category("videos",                 "Video",    "ic_videos",   type = CategoryType.BUILT_IN, position = 3),
+        Category(BuiltInCategory.GAMES,    "Game",     "ic_games",    type = CategoryType.BUILT_IN, position = 4),
         Category("network",                "Network",  "ic_network",  type = CategoryType.BUILT_IN, position = 5),
+        Category("app_store",              "App Store", "ic_appstore", type = CategoryType.BUILT_IN, position = 6),
     )
 
     val ps2Games = listOf(
@@ -52,12 +54,10 @@ object PreviewData {
     val emptyItems = emptyList<XMBItem>()
 
     val platformFolders = listOf(
-        XMBItem("platform_psp",    "PSP",            subtitle = "3 games",  platformId = "psp"),
-        XMBItem("platform_ps2",    "PlayStation 2",  subtitle = "10 games", platformId = "ps2"),
-        XMBItem("platform_n64",    "Nintendo 64",    subtitle = "7 games",  platformId = "n64"),
-        XMBItem("platform_snes",   "Super Nintendo", subtitle = "12 games", platformId = "snes"),
-        XMBItem("platform_arcade", "Arcade",         subtitle = "18 games", platformId = "arcade"),
-        XMBItem("platform_dc",     "Dreamcast",      subtitle = "6 games",  platformId = "dreamcast"),
+        XMBItem("all_games",       "All Games",                   subtitle = "Total Games 73", type = XMBItemType.ALL_GAMES),
+        XMBItem("platform_psp",    "PSP Memory Card",             subtitle = "24 Games", platformId = "psp", type = XMBItemType.MEMORY_CARD),
+        XMBItem("platform_ps2",    "PlayStation 2 Memory Card",   subtitle = "32 Games", platformId = "ps2", type = XMBItemType.MEMORY_CARD),
+        XMBItem("platform_n64",    "Nintendo 64 Memory Card",     subtitle = "17 Games", platformId = "n64", type = XMBItemType.MEMORY_CARD),
     )
 
     val runningTasks = listOf(

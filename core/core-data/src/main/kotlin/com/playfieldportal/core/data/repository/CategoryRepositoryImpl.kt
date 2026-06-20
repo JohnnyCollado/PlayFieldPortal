@@ -27,31 +27,64 @@ class CategoryRepositoryImpl @Inject constructor(
         categoryDao.upsert(category.toEntity())
 
     suspend fun delete(id: String) {
-        // Protect built-in categories from deletion
-        if (id in setOf(
-                BuiltInCategory.FAVORITES,
-                BuiltInCategory.RECENTLY_PLAYED,
-                BuiltInCategory.GAMES,
-                BuiltInCategory.ANDROID,
-                BuiltInCategory.APP_DRAWER,
-                BuiltInCategory.SETTINGS,
-                "photos",
-                "music",
-                "videos",
-                "network",
-            )
-        ) {
+        if (id in PROTECTED_BUILTINS) {
             Timber.w("Attempted to delete built-in category '$id' — blocked")
             return
         }
-        categoryDao.deleteById(id)
+        categoryDao.deleteById(id)   // category_items rows cascade-delete
     }
+
+    fun isProtected(id: String): Boolean = id in PROTECTED_BUILTINS
 
     suspend fun updatePosition(id: String, position: Int) =
         categoryDao.updatePosition(id, position)
 
     suspend fun setVisible(id: String, visible: Boolean) =
         categoryDao.setVisible(id, visible)
+
+    suspend fun rename(id: String, name: String) {
+        val existing = categoryDao.getById(id) ?: return
+        categoryDao.update(existing.copy(name = name))
+    }
+
+    suspend fun setIcon(id: String, iconKey: String) {
+        val existing = categoryDao.getById(id) ?: return
+        categoryDao.update(existing.copy(iconKey = iconKey))
+    }
+
+    // Creates a user category appended after the existing ones. Returns its generated id.
+    suspend fun createCustomCategory(name: String, iconKey: String): String {
+        val maxPosition = categoryDao.getAll().maxOfOrNull { it.position } ?: -1
+        val id = "custom_" + name.trim().lowercase()
+            .replace(Regex("[^a-z0-9]+"), "_")
+            .trim('_')
+            .ifBlank { System.currentTimeMillis().toString() } + "_" + (maxPosition + 1)
+        upsert(
+            Category(
+                id       = id,
+                name     = name.trim(),
+                iconKey  = iconKey,
+                type     = CategoryType.MANUAL,
+                position = maxPosition + 1,
+            )
+        )
+        Timber.i("Custom category created: $id ($name)")
+        return id
+    }
+
+    // Swaps position with the adjacent category in the given direction. Returns true on move.
+    suspend fun move(id: String, up: Boolean): Boolean {
+        val ordered = categoryDao.getAll().sortedBy { it.position }
+        val index = ordered.indexOfFirst { it.id == id }
+        if (index < 0) return false
+        val targetIndex = if (up) index - 1 else index + 1
+        if (targetIndex !in ordered.indices) return false
+        val current = ordered[index]
+        val target  = ordered[targetIndex]
+        categoryDao.updatePosition(current.id, target.position)
+        categoryDao.updatePosition(target.id, current.position)
+        return true
+    }
 
     suspend fun addItemToCategory(categoryId: String, itemId: String, itemType: String, order: Int = 0) =
         categoryDao.addItem(CategoryItemEntity(categoryId, itemId, itemType, order))
@@ -62,17 +95,31 @@ class CategoryRepositoryImpl @Inject constructor(
     fun observeCategoryItems(categoryId: String) =
         categoryDao.observeItemsForCategory(categoryId)
 
-    // Seeds built-in categories on first launch — idempotent
+    // Seeds built-in categories on first launch — idempotent (INSERT OR IGNORE).
     suspend fun seedBuiltInCategories() {
         val builtIns = listOf(
-            Category(BuiltInCategory.SETTINGS, "Settings", "ic_settings", type = CategoryType.BUILT_IN, position = 0),
-            Category("photos",                 "Photos",   "ic_photos",   type = CategoryType.BUILT_IN, position = 1),
-            Category("music",                  "Music",    "ic_music",    type = CategoryType.BUILT_IN, position = 2),
-            Category("videos",                 "Videos",   "ic_videos",   type = CategoryType.BUILT_IN, position = 3),
-            Category(BuiltInCategory.GAMES,    "Games",    "ic_games",    type = CategoryType.BUILT_IN, position = 4),
-            Category("network",                "Network",  "ic_network",  type = CategoryType.BUILT_IN, position = 5),
+            Category(BuiltInCategory.SETTINGS, "Settings",  "ic_settings", type = CategoryType.BUILT_IN, position = 0),
+            Category("photos",                 "Photo",     "ic_photos",   type = CategoryType.BUILT_IN, position = 1),
+            Category("music",                  "Music",     "ic_music",    type = CategoryType.BUILT_IN, position = 2),
+            Category("videos",                 "Video",     "ic_videos",   type = CategoryType.BUILT_IN, position = 3),
+            Category(BuiltInCategory.GAMES,    "Game",      "ic_games",    type = CategoryType.BUILT_IN, position = 4),
+            Category("network",                "Network",   "ic_network",  type = CategoryType.BUILT_IN, position = 5),
+            Category("app_store",              "App Store", "ic_appstore", type = CategoryType.BUILT_IN, position = 6),
         )
         categoryDao.insertAll(builtIns.map { it.toEntity() })
         Timber.i("Built-in categories seeded")
+    }
+
+    companion object {
+        // Built-in categories the user may hide/reorder but never delete.
+        val PROTECTED_BUILTINS = setOf(
+            BuiltInCategory.FAVORITES,
+            BuiltInCategory.RECENTLY_PLAYED,
+            BuiltInCategory.GAMES,
+            BuiltInCategory.ANDROID,
+            BuiltInCategory.APP_DRAWER,
+            BuiltInCategory.SETTINGS,
+            "photos", "music", "videos", "network", "app_store",
+        )
     }
 }

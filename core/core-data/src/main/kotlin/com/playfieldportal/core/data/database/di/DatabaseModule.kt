@@ -3,9 +3,11 @@ package com.playfieldportal.core.data.database.di
 import android.content.Context
 import androidx.room.Room
 import com.playfieldportal.core.data.database.PFPDatabase
+import com.playfieldportal.core.data.database.dao.AppOverrideDao
 import com.playfieldportal.core.data.database.dao.CategoryDao
 import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.data.database.dao.LibrarySourceDao
+import com.playfieldportal.core.data.database.dao.MemoryCardDao
 import com.playfieldportal.core.data.database.dao.PlaySessionDao
 import com.playfieldportal.core.data.database.dao.PlatformDao
 import com.playfieldportal.core.data.database.dao.ThemeDao
@@ -34,7 +36,12 @@ object DatabaseModule {
             PFPDatabase.DATABASE_NAME,
         )
         // Never use fallbackToDestructiveMigration — users would lose their entire library
-        .addMigrations(PFPDatabase.MIGRATION_1_2, PFPDatabase.MIGRATION_2_3)
+        .addMigrations(
+            PFPDatabase.MIGRATION_1_2,
+            PFPDatabase.MIGRATION_2_3,
+            PFPDatabase.MIGRATION_3_4,
+            PFPDatabase.MIGRATION_4_5,
+        )
         .build()
 
     @Provides fun provideGameDao(db: PFPDatabase): GameDao = db.gameDao()
@@ -44,6 +51,8 @@ object DatabaseModule {
     @Provides fun provideLibrarySourceDao(db: PFPDatabase): LibrarySourceDao = db.librarySourceDao()
     @Provides fun provideUnmatchedRomDao(db: PFPDatabase): UnmatchedRomDao = db.unmatchedRomDao()
     @Provides fun provideThemeDao(db: PFPDatabase): ThemeDao = db.themeDao()
+    @Provides fun provideMemoryCardDao(db: PFPDatabase): MemoryCardDao = db.memoryCardDao()
+    @Provides fun provideAppOverrideDao(db: PFPDatabase): AppOverrideDao = db.appOverrideDao()
 }
 
 @Module

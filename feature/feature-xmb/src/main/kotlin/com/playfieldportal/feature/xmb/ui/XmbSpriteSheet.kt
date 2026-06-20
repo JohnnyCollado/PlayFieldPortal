@@ -48,6 +48,8 @@ internal val XMB_SPRITE_MAP: Map<String, Pair<Int, Int>> = mapOf(
     "ic_games"       to (3 to 0),   // PSP-style controller — Games category
     "ic_network"     to (4 to 0),
     "ic_photos"      to (5 to 0),
+    // App Store reuses the ring / three-connected-circles sprite (the "sharing circles" cell).
+    "ic_appstore"    to (5 to 0),
     // ── Platform / console icons (rows 1–4) ──────────────────────────────
     "ic_arcade"      to (0 to 1),
     "ic_atari"       to (1 to 1),

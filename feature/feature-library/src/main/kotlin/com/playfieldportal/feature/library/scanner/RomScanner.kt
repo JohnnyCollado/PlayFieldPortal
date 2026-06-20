@@ -200,13 +200,99 @@ class RomScanner @Inject constructor(
 
     }.flowOn(Dispatchers.IO)
 
+    // ── Per-Memory-Card scan ──────────────────────────────────────────────────
+    //
+    // Scans exactly one directory and assigns every match to a single platform. Only
+    // files whose extension is in [extensions] are considered; everything else (including
+    // hidden files and unsupported types) is ignored. This is the authoritative scan path
+    // for the Memory Card library: a PSP card scans only its PSP folder for PSP ROMs and
+    // can never pull in another console's files.
+    fun scanDirectory(
+        directory: String,
+        extensions: List<String>,
+        platformId: String,
+        recursive: Boolean,
+        existingRomPaths: Set<String>,
+    ): Flow<ScanResult> = flow {
+        Timber.i("Memory Card scan — platform=$platformId dir=$directory exts=$extensions recursive=$recursive")
+
+        val root = File(directory)
+        if (!root.exists() || !root.isDirectory) {
+            emit(ScanResult.Error("ROM directory not found: $directory"))
+            return@flow
+        }
+
+        val allowed = extensions.map { it.removePrefix(".").lowercase() }.toSet()
+        if (allowed.isEmpty()) {
+            emit(ScanResult.Complete(emptyList(), 0, emptyList(), emptyList()))
+            return@flow
+        }
+
+        val candidates = (if (recursive) root.walkTopDown() else root.listFiles()?.asSequence() ?: emptySequence())
+            .filter { it.isFile }
+            .filter { !it.name.startsWith(".") }                 // ignore hidden files
+            .filter { it.extension.lowercase() in allowed }      // only supported extensions
+            .toList()
+
+        val newGames         = mutableListOf<Game>()
+        val seenPaths        = HashSet<String>()                 // de-dupe within this scan
+        var alreadyInLibrary = 0
+        var filesScanned     = 0
+
+        for (file in candidates) {
+            filesScanned++
+            val path = file.absolutePath
+
+            if (path in existingRomPaths || !seenPaths.add(path)) {
+                alreadyInLibrary++
+                continue
+            }
+
+            emit(ScanResult.Progress(
+                ScanProgress(
+                    currentFolder  = directory,
+                    filesScanned   = filesScanned,
+                    filesFound     = newGames.size,
+                    totalEstimated = candidates.size,
+                )
+            ))
+
+            newGames.add(
+                Game(
+                    title      = cleanRomTitle(file.nameWithoutExtension),
+                    platformId = platformId,
+                    romPath    = path,
+                )
+            )
+        }
+
+        Timber.i("Memory Card scan complete — platform=$platformId new=${newGames.size} existing=$alreadyInLibrary")
+        emit(ScanResult.Complete(newGames, alreadyInLibrary, emptyList(), emptyList()))
+
+    }.flowOn(Dispatchers.IO)
+
     suspend fun findMissingRoms(knownPaths: List<String>): List<String> =
         knownPaths.filter { path -> !File(path).exists() }
 
-    private fun String.sanitizeRomName(): String =
-        this.replace(Regex("\\(.*?\\)"), "")
-            .replace(Regex("\\[.*?\\]"), "")
-            .replace("_", " ")
-            .replace("-", " ")
-            .trim()
+    private fun String.sanitizeRomName(): String = cleanRomTitle(this)
+}
+
+// ── ROM title cleaning ──────────────────────────────────────────────────────────
+//
+// Turns a raw ROM filename stem into a clean display title by stripping the noise that
+// dump groups add: region tags, revision/version tags, dump-status tags and any other
+// bracketed/parenthesised metadata. e.g.
+//   "God of War - Ghost of Sparta (USA) (v1.01)"  ->  "God of War: Ghost of Sparta"
+fun cleanRomTitle(raw: String): String {
+    var title = raw
+        .replace(Regex("\\([^)]*\\)"), " ")   // (USA), (v1.01), (Rev 1), (!) …
+        .replace(Regex("\\[[^]]*]"), " ")      // [!], [b1], [T+Eng] …
+        .replace('_', ' ')
+        .replace(Regex("\\s+"), " ")
+        .trim()
+
+    // " - " between two words is almost always a subtitle separator → ": "
+    title = title.replace(Regex("\\s-\\s"), ": ")
+
+    return title.trim().trim(':', '-', ' ').ifBlank { raw.trim() }
 }

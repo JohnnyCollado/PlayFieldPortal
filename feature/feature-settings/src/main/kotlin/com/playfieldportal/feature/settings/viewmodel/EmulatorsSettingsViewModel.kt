@@ -39,11 +39,16 @@ data class ProfileEditorState(
     val errorMessage: String? = null,
 )
 
+// Focus key for the "Add Custom Emulator" row so focus returns to it after the editor closes.
+const val ADD_CUSTOM_EMULATOR_FOCUS_KEY = "add_custom_emulator"
+
 data class EmulatorsSettingsUiState(
     val installedProfiles: List<ProfileListItem> = emptyList(),
     val availableProfiles: List<ProfileListItem> = emptyList(),
     val customProfiles: List<ProfileListItem> = emptyList(),
     val editorState: ProfileEditorState? = null,
+    // Row to restore focus to when returning from the editor to the list.
+    val returnFocusKey: String? = null,
 )
 
 @HiltViewModel
@@ -84,6 +89,7 @@ class EmulatorsSettingsViewModel @Inject constructor(
             allProfiles.firstOrNull { it.id == id }
         }
         _uiState.update { it.copy(
+            returnFocusKey = profileId ?: ADD_CUSTOM_EMULATOR_FOCUS_KEY,
             editorState = if (profile != null) {
                 ProfileEditorState(
                     isNew                = false,

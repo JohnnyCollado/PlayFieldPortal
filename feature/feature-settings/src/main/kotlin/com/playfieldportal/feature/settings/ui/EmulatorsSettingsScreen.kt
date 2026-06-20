@@ -12,6 +12,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.playfieldportal.feature.settings.viewmodel.ADD_CUSTOM_EMULATOR_FOCUS_KEY
 import com.playfieldportal.feature.settings.viewmodel.EmulatorsSettingsViewModel
 import com.playfieldportal.feature.settings.viewmodel.ProfileListItem
 
@@ -53,6 +54,7 @@ fun EmulatorsSettingsScreen(
         subtitle = "Emulators",
         onBack   = onBack,
         modifier = modifier,
+        restoreFocusKey = state.returnFocusKey,
     ) {
         Column(
             modifier = Modifier
@@ -99,6 +101,7 @@ fun EmulatorsSettingsScreen(
             SettingsRow(
                 label    = "Add Custom Emulator",
                 sublabel = "Define a launch profile for any app",
+                focusKey = ADD_CUSTOM_EMULATOR_FOCUS_KEY,
                 onClick  = { viewModel.openEditor(null) },
             )
         }
@@ -113,6 +116,7 @@ private fun EmulatorProfileRow(
     SettingsRow(
         label    = profile.name,
         sublabel = "${profile.packageName}  ·  ${profile.intentType}",
+        focusKey = profile.id,
         trailing = if (onEdit != null) {
             { Text("Edit", color = SettingsAccent) }
         } else null,

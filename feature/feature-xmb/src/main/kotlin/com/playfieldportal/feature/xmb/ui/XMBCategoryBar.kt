@@ -2,14 +2,19 @@ package com.playfieldportal.feature.xmb.ui
 
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -20,11 +25,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.domain.model.Category
-import com.playfieldportal.core.ui.theme.LocalPFPColors
+
+private val SelectedIcon = Color.White
+private val InactiveIcon = Color(0xFFC7C6DF)
+private val SelectedGlow = Color(0xFF9C74FF)
+private val LabelInactive = Color(0xFFE4E2F5)
+private val ItemSlotWidth = 124.dp
 
 @Composable
 fun XMBCategoryBar(
@@ -35,31 +48,32 @@ fun XMBCategoryBar(
     onCategoryLongPress: (Int) -> Unit = {},
 ) {
     val listState = rememberLazyListState()
-    val colors = LocalPFPColors.current
 
-    // Auto-scroll to keep selected category visible
-    LaunchedEffect(selectedIndex) {
-        listState.animateScrollToItem(
-            index = selectedIndex.coerceIn(0, (categories.size - 1).coerceAtLeast(0)),
-            scrollOffset = -120,
-        )
+    LaunchedEffect(selectedIndex, categories.size) {
+        if (categories.isNotEmpty()) {
+            listState.animateScrollToItem(
+                index = selectedIndex.coerceIn(0, categories.lastIndex),
+            )
+        }
     }
 
-    LazyRow(
-        state = listState,
-        modifier = modifier,
-        contentPadding = PaddingValues(horizontal = 48.dp),
-        horizontalArrangement = Arrangement.spacedBy(40.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        itemsIndexed(categories) { index, category ->
-            XMBCategoryItem(
-                category    = category,
-                isSelected  = index == selectedIndex,
-                onClick     = { onCategorySelected(index) },
-                onLongPress = { onCategoryLongPress(index) },
-                colors      = colors,
-            )
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+        val sidePadding = ((maxWidth - ItemSlotWidth) / 2f).coerceAtLeast(24.dp)
+        LazyRow(
+            state = listState,
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = sidePadding),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            itemsIndexed(categories, key = { _, category -> category.id }) { index, category ->
+                XMBCategoryItem(
+                    category = category,
+                    isSelected = index == selectedIndex,
+                    onClick = { onCategorySelected(index) },
+                    onLongPress = { onCategoryLongPress(index) },
+                    modifier = Modifier.width(ItemSlotWidth),
+                )
+            }
         }
     }
 }
@@ -70,49 +84,70 @@ private fun XMBCategoryItem(
     category: Category,
     isSelected: Boolean,
     onClick: () -> Unit,
-    onLongPress: () -> Unit = {},
-    colors: com.playfieldportal.core.ui.theme.PFPColors,
+    onLongPress: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val iconSize by animateDpAsState(
-        targetValue = if (isSelected) 36.dp else 24.dp,
-        animationSpec = spring(stiffness = Spring.StiffnessMedium),
-        label = "iconSize",
+        targetValue = if (isSelected) 72.dp else 48.dp,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "xmbCategoryIconSize",
     )
-    val textAlpha by androidx.compose.animation.core.animateFloatAsState(
+    val glowAlpha by animateFloatAsState(
         targetValue = if (isSelected) 1f else 0f,
-        animationSpec = spring(stiffness = Spring.StiffnessMedium),
-        label = "textAlpha",
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "xmbCategoryGlow",
     )
-    val iconAlpha by androidx.compose.animation.core.animateFloatAsState(
-        targetValue = if (isSelected) 1f else 0.5f,
-        label = "iconAlpha",
+    val itemAlpha by animateFloatAsState(
+        targetValue = if (isSelected) 1f else 0.58f,
+        animationSpec = spring(stiffness = Spring.StiffnessMedium),
+        label = "xmbCategoryAlpha",
     )
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
+        modifier = modifier
+            .height(112.dp)
             .combinedClickable(onClick = onClick, onLongClick = onLongPress)
-            .padding(vertical = 8.dp),
+            .padding(top = 4.dp),
     ) {
-        // Category icon — rendered from xmb_icon_sprite_sheet.png
-        XmbSpriteIcon(
-            iconKey            = category.iconKey,
-            contentDescription = category.name,
-            modifier           = Modifier
-                .size(iconSize)
-                .alpha(iconAlpha),
-        )
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(82.dp)
+                .drawBehind {
+                    if (glowAlpha > 0f) {
+                        drawCircle(
+                            color = SelectedGlow.copy(alpha = 0.30f * glowAlpha),
+                            radius = size.minDimension * 0.50f,
+                            center = center,
+                        )
+                        drawCircle(
+                            color = SelectedGlow.copy(alpha = 0.18f * glowAlpha),
+                            radius = size.minDimension * 0.66f,
+                            center = center,
+                        )
+                    }
+                }
+                .alpha(itemAlpha),
+        ) {
+            XmbCategoryIcon(
+                type = xmbCategoryIconType(category),
+                tint = if (isSelected) SelectedIcon else InactiveIcon,
+                modifier = Modifier.size(iconSize),
+            )
+        }
 
-        // Label only visible for selected item — PSP XMB behavior
         Text(
             text = category.name,
-            color = colors.textPrimary,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Medium,
+            color = if (isSelected) SelectedIcon else LabelInactive,
+            fontSize = if (isSelected) 15.sp else 13.sp,
+            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
             modifier = Modifier
-                .alpha(textAlpha)
-                .padding(top = 4.dp),
+                .fillMaxWidth()
+                .padding(top = 4.dp)
+                .alpha(if (isSelected) 1f else 0.82f),
         )
     }
 }
-

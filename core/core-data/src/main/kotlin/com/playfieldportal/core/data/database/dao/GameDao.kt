@@ -51,6 +51,12 @@ interface GameDao {
     @Query("DELETE FROM games WHERE id = :id")
     suspend fun deleteById(id: Long)
 
+    @Query("DELETE FROM games WHERE platform_id = :platformId")
+    suspend fun deleteByPlatform(platformId: String)
+
+    @Query("SELECT COUNT(*) FROM games WHERE platform_id = :platformId")
+    suspend fun countByPlatform(platformId: String): Int
+
     @Query("UPDATE games SET is_favorite = :isFavorite WHERE id = :id")
     suspend fun setFavorite(id: Long, isFavorite: Boolean)
 

@@ -43,8 +43,8 @@ fun GamepadAction.displayLabel(): String = when (this) {
     GamepadAction.SELECT          -> "Select / Launch"
     GamepadAction.BACK            -> "Back / Close"
     GamepadAction.LONG_PRESS      -> "Options / Long Press"
-    GamepadAction.PREV_CATEGORY   -> "Previous Category (L1)"
-    GamepadAction.NEXT_CATEGORY   -> "Next Category (R1)"
+    GamepadAction.PREV_CATEGORY   -> "Previous Tab (App Drawer)"
+    GamepadAction.NEXT_CATEGORY   -> "Next Tab (App Drawer)"
     GamepadAction.HOME            -> "Home / Boot Screen"
     GamepadAction.OPEN_TASK_TRAY  -> "Open Task Tray"
 }

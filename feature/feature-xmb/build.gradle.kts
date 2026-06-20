@@ -31,6 +31,7 @@ dependencies {
     ksp(libs.hilt.compiler)
 
     implementation(libs.coil.compose)
+    implementation(libs.accompanist.drawablepainter)
     implementation(libs.datastore.preferences)
     implementation(libs.material.icons.extended)
 

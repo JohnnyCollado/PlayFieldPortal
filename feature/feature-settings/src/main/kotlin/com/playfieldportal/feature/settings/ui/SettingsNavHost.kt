@@ -20,7 +20,8 @@ fun SettingsNavHost(
         LocalSettingsActionConsumed provides onGamepadActionConsumed,
     ) {
         when (screenId) {
-            "settings_library"    -> LibrarySettingsScreen(onBack = onBack, modifier = modifier)
+            "settings_library"    -> LibraryManagerScreen(onBack = onBack, modifier = modifier)
+            "settings_categories" -> CategoryManagerScreen(onBack = onBack, modifier = modifier)
             "settings_artwork"    -> ArtworkSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_emulators"  -> EmulatorsSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_themes"     -> ThemesSettingsScreen(onBack = onBack, modifier = modifier)

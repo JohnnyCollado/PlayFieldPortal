@@ -1,0 +1,71 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(**)",
+      "Glob(**)",
+      "Grep(**)",
+      "Bash(git status*)",
+      "Bash(git branch*)",
+      "Bash(git checkout*)",
+      "Bash(git switch*)",
+      "Bash(git fetch*)",
+      "Bash(git log*)",
+      "Bash(git diff*)",
+      "Bash(git show*)",
+      "Bash(git add*)",
+      "Bash(git stash*)",
+      "Bash(git remote*)",
+      "Bash(./gradlew *)",
+      "Bash(ls*)",
+      "Bash(find*)",
+      "Bash(tree*)",
+      "Bash(pwd)",
+      "Bash(wc*)",
+      "Bash(file*)",
+      "Bash(stat*)",
+      "Bash(cat*)",
+      "Bash(head*)",
+      "Bash(tail*)",
+      "Bash(sort*)",
+      "Bash(uniq*)",
+      "Bash(cut*)",
+      "Bash(grep*)",
+      "Bash(rg*)",
+      "Bash(mkdir*)",
+      "Bash(touch*)"
+    ],
+    "deny": [
+      "Edit(*.env)",
+      "Write(*.env)",
+      "Edit(*.keystore)",
+      "Write(*.keystore)",
+      "Edit(*.jks)",
+      "Write(*.jks)",
+      "Edit(**/google-services.json)",
+      "Write(**/google-services.json)",
+      "Edit(**/credentials*)",
+      "Write(**/credentials*)",
+      "Edit(**/local.properties)",
+      "Write(**/local.properties)",
+      "Edit(**/signing*)",
+      "Write(**/signing*)",
+      "Bash(rm -rf*)",
+      "Bash(git push --force*)",
+      "Bash(git reset --hard*)",
+      "Bash(./gradlew clean build)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'File modified: '\"$CLAUDE_FILE_PATH\""
+          }
+        ]
+      }
+    ]
+  }
+}

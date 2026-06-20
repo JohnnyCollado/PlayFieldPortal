@@ -35,4 +35,7 @@ data class CategoryItemEntity(
 
     @ColumnInfo(name = "sort_order")
     val sortOrder: Int = 0,
+
+    // Pinned items sort to the top of their category.
+    val pinned: Boolean = false,
 )
