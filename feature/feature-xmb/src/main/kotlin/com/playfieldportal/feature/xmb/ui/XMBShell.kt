@@ -2,7 +2,13 @@ package com.playfieldportal.feature.xmb.ui
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -68,6 +74,9 @@ fun XMBShellContainer(
         onContextMenuDismiss = viewModel::closeContextMenu,
         onConfirmAppRename = viewModel::onConfirmAppRename,
         onCancelAppRename = viewModel::onCancelAppRename,
+        onAppPickerActivatedAt = viewModel::onAppPickerActivatedAt,
+        onAppPickerConfirm = viewModel::onAppPickerConfirm,
+        onAppPickerDismiss = viewModel::closeAppPicker,
     )
 }
 
@@ -93,6 +102,9 @@ fun XMBShell(
     onContextMenuDismiss: () -> Unit = {},
     onConfirmAppRename: (String) -> Unit = {},
     onCancelAppRename: () -> Unit = {},
+    onAppPickerActivatedAt: (Int) -> Unit = {},
+    onAppPickerConfirm: () -> Unit = {},
+    onAppPickerDismiss: () -> Unit = {},
 ) {
     PFPTheme(colors = uiState.themeColors) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -100,6 +112,32 @@ fun XMBShell(
                 renderMode = uiState.waveRenderMode,
                 modifier = Modifier.fillMaxSize(),
             )
+
+            // Per-game background art for the selected item (all platforms): prefer PIC1 / hero,
+            // fall back to box art. Crossfades over the wave and is scrimmed for readability.
+            val selectedBg = uiState.currentItems.getOrNull(uiState.selectedItemIndex)
+                ?.let { it.heroUri ?: it.artworkUri }
+            Crossfade(targetState = selectedBg, animationSpec = tween(320), label = "xmbGameBackground") { bg ->
+                if (bg != null) {
+                    Box(Modifier.fillMaxSize()) {
+                        AsyncImage(
+                            model = bg,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                        Box(
+                            Modifier.fillMaxSize().background(
+                                Brush.horizontalGradient(
+                                    0.0f to Color(0xCC05050C),
+                                    0.5f to Color(0x9905050C),
+                                    1.0f to Color(0xE605050C),
+                                )
+                            )
+                        )
+                    }
+                }
+            }
 
             XMBClock(
                 modifier = Modifier
@@ -210,6 +248,16 @@ fun XMBShell(
                     currentLabel = uiState.renameAppCurrent.orEmpty(),
                     onConfirm = onConfirmAppRename,
                     onCancel = onCancelAppRename,
+                )
+            }
+
+            uiState.appPicker?.let { picker ->
+                InstalledAppPicker(
+                    state = picker,
+                    onActivateAt = onAppPickerActivatedAt,
+                    onConfirm = onAppPickerConfirm,
+                    onDismiss = onAppPickerDismiss,
+                    modifier = Modifier.fillMaxSize(),
                 )
             }
 

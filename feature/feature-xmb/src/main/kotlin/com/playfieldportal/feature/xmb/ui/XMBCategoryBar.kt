@@ -5,6 +5,7 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -22,11 +23,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -75,6 +79,23 @@ fun XMBCategoryBar(
                 )
             }
         }
+    }
+}
+
+// Bundled category-bar artwork (from the xmb-menu-es-de set) for the categories that have
+// a clean match. Categories without one (Settings/Photo/Network/App Store) fall back to the
+// built-in vector icons. Returns 0 when there is no art for this category.
+@Composable
+private fun rememberCategoryArtId(category: Category): Int {
+    val context = LocalContext.current
+    return remember(category.id) {
+        val name = when (category.id) {
+            "games"  -> "catbar_games"
+            "music"  -> "catbar_music"
+            "videos" -> "catbar_video"
+            else     -> return@remember 0
+        }
+        context.resources.getIdentifier(name, "drawable", context.packageName)
     }
 }
 
@@ -130,11 +151,20 @@ private fun XMBCategoryItem(
                 }
                 .alpha(itemAlpha),
         ) {
-            XmbCategoryIcon(
-                type = xmbCategoryIconType(category),
-                tint = if (isSelected) SelectedIcon else InactiveIcon,
-                modifier = Modifier.size(iconSize),
-            )
+            val artIcon = rememberCategoryArtId(category)
+            if (artIcon != 0) {
+                Image(
+                    painter = painterResource(artIcon),
+                    contentDescription = category.name,
+                    modifier = Modifier.size(iconSize),
+                )
+            } else {
+                XmbCategoryIcon(
+                    type = xmbCategoryIconType(category),
+                    tint = if (isSelected) SelectedIcon else InactiveIcon,
+                    modifier = Modifier.size(iconSize),
+                )
+            }
         }
 
         Text(

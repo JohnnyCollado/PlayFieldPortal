@@ -54,9 +54,11 @@ class ControllerSettingsViewModelTest {
 
     @Test
     fun `initial state shows default mappings`() = runTest {
-        testDispatcher.scheduler.advanceUntilIdle()
         viewModel.uiState.test {
-            val state = awaitItem()
+            // uiState is a WhileSubscribed stateIn: the first emission is the empty initial
+            // value, the mappings arrive on a later emission once the upstream is collected.
+            var state = awaitItem()
+            while (state.mappings.isEmpty()) state = awaitItem()
             assertEquals(defaultMappings.bindings.size, state.mappings.size)
             cancelAndIgnoreRemainingEvents()
         }
@@ -66,11 +68,11 @@ class ControllerSettingsViewModelTest {
 
     @Test
     fun `startRemap sets remappingAction`() = runTest {
-        testDispatcher.scheduler.advanceUntilIdle()
         viewModel.startRemap(GamepadAction.SELECT)
-        testDispatcher.scheduler.advanceUntilIdle()
         viewModel.uiState.test {
-            val state = awaitItem()
+            // Skip the empty initial emission and await the one reflecting the remap state.
+            var state = awaitItem()
+            while (state.remappingAction == null) state = awaitItem()
             assertEquals(GamepadAction.SELECT, state.remappingAction)
             cancelAndIgnoreRemainingEvents()
         }

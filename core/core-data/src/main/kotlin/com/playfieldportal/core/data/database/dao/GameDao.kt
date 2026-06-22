@@ -114,7 +114,8 @@ interface GameDao {
             genre        = COALESCE(:genre,       genre),
             artwork_uri  = COALESCE(:artworkUri,  artwork_uri),
             hero_uri     = COALESCE(:heroUri,     hero_uri),
-            logo_uri     = COALESCE(:logoUri,     logo_uri)
+            logo_uri     = COALESCE(:logoUri,     logo_uri),
+            icon_uri     = COALESCE(:iconUri,     icon_uri)
         WHERE id = :id
     """)
     suspend fun updateMetadata(
@@ -127,7 +128,18 @@ interface GameDao {
         artworkUri: String?  = null,
         heroUri: String?     = null,
         logoUri: String?     = null,
+        iconUri: String?     = null,
     )
+
+    @Query("UPDATE games SET icon_uri = :iconUri WHERE id = :id")
+    suspend fun updateIconUri(id: Long, iconUri: String?)
+
+    // Clears all artwork references so a re-scrape starts from a clean slate.
+    @Query("UPDATE games SET artwork_uri = NULL, hero_uri = NULL, logo_uri = NULL, icon_uri = NULL")
+    suspend fun clearAllArtwork()
+
+    @Query("UPDATE games SET artwork_uri = NULL, hero_uri = NULL, logo_uri = NULL, icon_uri = NULL WHERE id = :id")
+    suspend fun clearArtworkForGame(id: Long)
 
     @Query("DELETE FROM games")
     suspend fun deleteAll()

@@ -29,6 +29,9 @@ import javax.inject.Inject
 // Focus key for the "Add Console" row so focus returns to it after the add flow.
 const val ADD_CONSOLE_FOCUS_KEY = "add_console"
 
+// Platform whose library is built from installed apps (picker) rather than a ROM folder.
+private const val ANDROID_PLATFORM_ID = "android"
+
 enum class LibraryStep { LIST, PICK_PLATFORM, PICK_EMULATOR, SCAN_PROMPT, CARD_DETAIL }
 
 enum class DirectoryPickPurpose { ADD, CHANGE }
@@ -157,6 +160,24 @@ class LibraryManagerViewModel @Inject constructor(
     }
 
     fun onPlatformChosen(option: PlatformOption) {
+        // Android libraries are built from installed apps, not a scanned ROM folder. Create the
+        // card straight away (no directory / emulator) — the user then adds apps from the
+        // Android card in Games via "Find Games" (the installed-app picker).
+        if (option.id == ANDROID_PLATFORM_ID) {
+            viewModelScope.launch {
+                memoryCardRepository.addCard(
+                    platformId   = option.id,
+                    displayName  = defaultDisplayName(option.name),
+                    romDirectory = null,
+                    emulatorId   = null,
+                )
+                resetToList()
+                _scratch.update {
+                    it.copy(message = "Android library added. Open it in Games → Find Games to add apps.")
+                }
+            }
+            return
+        }
         _scratch.update {
             it.copy(
                 pendingPlatformId   = option.id,

@@ -212,6 +212,22 @@ Custom profiles can be added in **Settings → Emulators**.
 
 ---
 
+## Credits
+
+### System & console artwork
+
+The system, console and category icons in the launcher come from the **[XMB Menu for ES-DE](https://github.com/anthonycaccese/xmb-menu-es-de)** theme — a translation of the PSP XMB interface for ES-DE.
+
+**All rights to this artwork belong to its creators — [Anthony Caccese](https://github.com/anthonycaccese), building on the original work by InitialDin.** The icons are used here with gratitude and remain the property of their respective authors.
+
+- Project: XMB Menu for ES-DE
+- Authors: Anthony Caccese · InitialDin
+- Source: https://github.com/anthonycaccese/xmb-menu-es-de
+
+If you are a rights holder and would like attribution changed or the artwork removed, please open an issue and it will be addressed promptly.
+
+---
+
 ## License
 
-Private repository — all rights reserved. Not licensed for redistribution.
+Private repository — all rights reserved. Not licensed for redistribution. Third-party artwork remains the property of its respective authors (see [Credits](#credits)).

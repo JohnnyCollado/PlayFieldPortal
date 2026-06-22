@@ -7,9 +7,10 @@ data class Game(
     val romPath: String?          = null,   // null for native Android games
     val packageName: String?      = null,   // null for ROM-based games
     val emulatorPackage: String?  = null,   // preferred emulator override
-    val artworkUri: String?       = null,   // cached SteamGridDB art path
-    val heroUri: String?          = null,   // hero/banner artwork
+    val artworkUri: String?       = null,   // cached box/grid art path
+    val heroUri: String?          = null,   // hero/banner artwork (full-screen background)
     val logoUri: String?          = null,   // logo artwork
+    val iconUri: String?          = null,   // landscape 144:80 icon art (SteamGridDB horizontal grid)
     val description: String?      = null,
     val developer: String?        = null,
     val publisher: String?        = null,

@@ -38,7 +38,7 @@ import com.playfieldportal.core.data.database.entity.UnmatchedRomEntity
         MemoryCardEntity::class,
         AppOverrideEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -129,6 +129,13 @@ abstract class PFPDatabase : RoomDatabase() {
                 db.execSQL("UPDATE categories SET name = 'Photo' WHERE id = 'photos' AND name = 'Photos'")
                 db.execSQL("UPDATE categories SET name = 'Video' WHERE id = 'videos' AND name = 'Videos'")
                 db.execSQL("UPDATE categories SET name = 'Game'  WHERE id = 'games'  AND name = 'Games'")
+            }
+        }
+
+        // v6 — landscape game icon art (SteamGridDB horizontal grid) used for the 144:80 tile.
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE games ADD COLUMN icon_uri TEXT")
             }
         }
     }

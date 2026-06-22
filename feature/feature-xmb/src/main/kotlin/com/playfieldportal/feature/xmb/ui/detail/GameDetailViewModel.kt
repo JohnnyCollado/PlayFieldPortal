@@ -52,13 +52,34 @@ data class GameDetailUiState(
     val sgdbItems: List<SgdbArtItem> = emptyList(),
     val sgdbIsLoading: Boolean = false,
     val sgdbError: String? = null,
-    // PSP-style menu navigation
-    val selectedMenuIndex: Int = 0,
-    val showInformation: Boolean = false,
+    // ── Steam Deck-style details navigation ───────────────────────────────
+    val focusSection: DetailSection = DetailSection.PLAY,
+    val actionIndex: Int = 0,                  // index into DetailAction.entries
+    val screenshotIndex: Int = 0,
+    val mediaUris: List<String> = emptyList(), // hero / box / logo for the media strip
+    val emulatorName: String? = null,          // resolved emulator for this game
+    val showMediaViewer: Boolean = false,
+    val mediaViewerIndex: Int = 0,
+    val confirmRemove: Boolean = false,
+    val actionMessage: String? = null,         // transient feedback for info-only actions
+    val closed: Boolean = false,               // signals the screen to pop back
 )
 
-// Menu item count — must match activateSelectedMenuItem() branches
-private const val MENU_SIZE = 6
+// Page sections the controller moves between with Up/Down.
+enum class DetailSection { PLAY, ACTIONS, SCREENSHOTS }
+
+// Action buttons (after Play), navigated Left/Right within the ACTIONS section.
+enum class DetailAction(val label: String) {
+    FAVORITE("Favorite"),
+    SETTINGS("Game Settings"),
+    SAVES("Saves"),
+    EMULATOR("Emulator"),
+    MANUAL("Manual"),
+    REFRESH("Refresh"),
+    EDIT("Edit Metadata"),
+    LOCATION("Open Location"),
+    REMOVE("Remove"),
+}
 
 @HiltViewModel
 class GameDetailViewModel @Inject constructor(
@@ -84,42 +105,163 @@ class GameDetailViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true) }
             val game = gameRepository.getById(id)
             val platform = game?.let { platformDao.getById(it.platformId) }
+            val media = mediaOf(game)
+            val emulator = game?.let { resolveProfile(it)?.name }
+            // Reset all transient navigation/overlay state so each open starts fresh, even if
+            // the ViewModel instance is reused (activity-scoped) across opens.
             _uiState.update {
                 it.copy(
-                    game       = game,
-                    platform   = platform,
-                    noteText   = game?.userNote ?: "",
-                    isLoading  = false,
+                    game            = game,
+                    platform        = platform,
+                    noteText        = game?.userNote ?: "",
+                    mediaUris       = media,
+                    emulatorName    = emulator,
+                    isLoading       = false,
+                    focusSection    = DetailSection.PLAY,
+                    actionIndex     = 0,
+                    screenshotIndex = 0,
+                    showMediaViewer = false,
+                    confirmRemove   = false,
+                    isEditingNote   = false,
+                    showCustomArtwork = false,
+                    actionMessage   = null,
+                    launchError     = null,
+                    closed          = false,
                 )
             }
         }
     }
 
-    // ── Gamepad menu navigation ───────────────────────────────────────────
+    // ── Controller navigation (Steam Deck-style sections) ─────────────────────
 
     fun handleGamepadAction(action: GamepadAction) {
+        // Dialogs / overlays capture input first.
+        val s = _uiState.value
+        if (s.showMediaViewer) {
+            when (action) {
+                GamepadAction.NAVIGATE_LEFT  -> stepMediaViewer(-1)
+                GamepadAction.NAVIGATE_RIGHT -> stepMediaViewer(+1)
+                GamepadAction.BACK, GamepadAction.SELECT -> closeMediaViewer()
+                else -> Unit
+            }
+            return
+        }
+        if (s.confirmRemove) {
+            when (action) {
+                GamepadAction.SELECT -> confirmRemoveGame()
+                GamepadAction.BACK   -> _uiState.update { it.copy(confirmRemove = false) }
+                else -> Unit
+            }
+            return
+        }
+        if (s.isEditingNote) {
+            if (action == GamepadAction.BACK) cancelNote()
+            return
+        }
+        if (s.showCustomArtwork) {
+            if (action == GamepadAction.BACK) {
+                if (s.sgdbBrowsingType != null) closeSgdbPicker() else toggleCustomArtworkPanel()
+            }
+            return
+        }
+
         when (action) {
-            GamepadAction.NAVIGATE_UP ->
-                _uiState.update { it.copy(selectedMenuIndex = (it.selectedMenuIndex - 1).coerceAtLeast(0)) }
-            GamepadAction.NAVIGATE_DOWN ->
-                _uiState.update { it.copy(selectedMenuIndex = (it.selectedMenuIndex + 1).coerceAtMost(MENU_SIZE - 1)) }
-            GamepadAction.SELECT -> activateSelectedMenuItem()
+            GamepadAction.NAVIGATE_UP   -> moveSection(-1)
+            GamepadAction.NAVIGATE_DOWN -> moveSection(+1)
+            GamepadAction.NAVIGATE_LEFT -> moveWithinSection(-1)
+            GamepadAction.NAVIGATE_RIGHT -> moveWithinSection(+1)
+            GamepadAction.SELECT        -> activateFocused()
+            // Top-level Back closes the Details page (returns to the previous screen).
+            GamepadAction.BACK          -> _uiState.update { it.copy(closed = true) }
             else -> Unit
         }
     }
 
-    fun selectMenuItem(index: Int) {
-        _uiState.update { it.copy(selectedMenuIndex = index) }
+    private fun maxSection(): Int = if (_uiState.value.mediaUris.isNotEmpty()) 2 else 1
+
+    private fun moveSection(delta: Int) {
+        val sections = DetailSection.entries
+        val current = _uiState.value.focusSection.ordinal
+        val next = (current + delta).coerceIn(0, maxSection())
+        _uiState.update { it.copy(focusSection = sections[next], actionMessage = null) }
     }
 
-    fun activateSelectedMenuItem() {
-        when (_uiState.value.selectedMenuIndex) {
-            0 -> launch()
-            1 -> toggleFavorite()
-            2 -> fetchArtwork()
-            3 -> startEditNote()
-            4 -> toggleCustomArtworkPanel()
-            5 -> _uiState.update { it.copy(showInformation = !it.showInformation) }
+    private fun moveWithinSection(delta: Int) {
+        when (_uiState.value.focusSection) {
+            DetailSection.ACTIONS -> {
+                val count = DetailAction.entries.size
+                _uiState.update { it.copy(actionIndex = (it.actionIndex + delta).coerceIn(0, count - 1)) }
+            }
+            DetailSection.SCREENSHOTS -> {
+                val count = _uiState.value.mediaUris.size
+                if (count > 0) _uiState.update {
+                    it.copy(screenshotIndex = (it.screenshotIndex + delta).coerceIn(0, count - 1))
+                }
+            }
+            DetailSection.PLAY -> Unit
+        }
+    }
+
+    private fun activateFocused() {
+        when (_uiState.value.focusSection) {
+            DetailSection.PLAY        -> launch()
+            DetailSection.ACTIONS     -> activateAction(DetailAction.entries[_uiState.value.actionIndex])
+            DetailSection.SCREENSHOTS -> openMediaViewer(_uiState.value.screenshotIndex)
+        }
+    }
+
+    // Touch / mouse entry points
+    fun focusPlay() = _uiState.update { it.copy(focusSection = DetailSection.PLAY) }
+    fun onActionClicked(action: DetailAction) {
+        _uiState.update { it.copy(focusSection = DetailSection.ACTIONS, actionIndex = DetailAction.entries.indexOf(action)) }
+        activateAction(action)
+    }
+
+    fun activateAction(action: DetailAction) {
+        when (action) {
+            DetailAction.FAVORITE -> toggleFavorite()
+            DetailAction.SETTINGS -> toggleCustomArtworkPanel()
+            DetailAction.SAVES    -> showActionMessage("Save management isn't available yet")
+            DetailAction.EMULATOR -> showActionMessage(
+                _uiState.value.emulatorName?.let { "Emulator: $it" } ?: "No emulator installed for this platform"
+            )
+            DetailAction.MANUAL   -> showActionMessage("No manual available for this game")
+            DetailAction.REFRESH  -> fetchArtwork()
+            DetailAction.EDIT     -> startEditNote()
+            DetailAction.LOCATION -> showActionMessage(
+                _uiState.value.game?.romPath
+                    ?: _uiState.value.game?.packageName?.let { "Package: $it" }
+                    ?: "No file location on record"
+            )
+            DetailAction.REMOVE   -> _uiState.update { it.copy(confirmRemove = true) }
+        }
+    }
+
+    private fun showActionMessage(message: String) =
+        _uiState.update { it.copy(actionMessage = message) }
+
+    fun dismissActionMessage() = _uiState.update { it.copy(actionMessage = null) }
+
+    // ── Media viewer ──────────────────────────────────────────────────────────
+
+    fun openMediaViewer(index: Int) {
+        if (_uiState.value.mediaUris.isEmpty()) return
+        _uiState.update { it.copy(showMediaViewer = true, mediaViewerIndex = index.coerceIn(0, it.mediaUris.lastIndex)) }
+    }
+    fun closeMediaViewer() = _uiState.update { it.copy(showMediaViewer = false) }
+    private fun stepMediaViewer(delta: Int) {
+        _uiState.update { it.copy(mediaViewerIndex = (it.mediaViewerIndex + delta).coerceIn(0, it.mediaUris.lastIndex)) }
+    }
+
+    // ── Remove from library ─────────────────────────────────────────────────────
+
+    fun requestRemove() = _uiState.update { it.copy(confirmRemove = true) }
+    fun cancelRemove() = _uiState.update { it.copy(confirmRemove = false) }
+    fun confirmRemoveGame() {
+        val game = _uiState.value.game ?: return
+        viewModelScope.launch {
+            gameRepository.delete(game.id)
+            _uiState.update { it.copy(confirmRemove = false, closed = true) }
         }
     }
 
@@ -204,6 +346,7 @@ class GameDetailViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     game             = updated ?: it.game,
+                    mediaUris        = mediaOf(updated ?: it.game),
                     isFetchingArtwork = false,
                     artworkMessage   = when {
                         result.success  -> "Artwork updated"
@@ -217,6 +360,9 @@ class GameDetailViewModel @Inject constructor(
 
     fun dismissArtworkMessage() = _uiState.update { it.copy(artworkMessage = null) }
     fun dismissLaunchError()    = _uiState.update { it.copy(launchError = null) }
+
+    private fun mediaOf(game: Game?): List<String> =
+        listOfNotNull(game?.heroUri, game?.artworkUri, game?.logoUri).distinct()
 
     // ── Custom artwork ────────────────────────────────────────────────────
 
@@ -243,6 +389,7 @@ class GameDetailViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     game                    = updated ?: it.game,
+                    mediaUris               = mediaOf(updated ?: it.game),
                     isProcessingCustomArtwork = false,
                     artworkMessage          = "${type.label} updated",
                 )
@@ -259,7 +406,7 @@ class GameDetailViewModel @Inject constructor(
                 ArtworkType.LOGO    -> gameRepository.updateLogoArt(gameId, null)
             }
             val updated = gameRepository.getById(gameId)
-            _uiState.update { it.copy(game = updated ?: it.game, artworkMessage = "${type.label} cleared") }
+            _uiState.update { it.copy(game = updated ?: it.game, mediaUris = mediaOf(updated ?: it.game), artworkMessage = "${type.label} cleared") }
         }
     }
 
@@ -310,6 +457,7 @@ class GameDetailViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     game                    = updated ?: it.game,
+                    mediaUris               = mediaOf(updated ?: it.game),
                     isProcessingCustomArtwork = false,
                     artworkMessage          = "${type.label} updated from SteamGridDB",
                 )

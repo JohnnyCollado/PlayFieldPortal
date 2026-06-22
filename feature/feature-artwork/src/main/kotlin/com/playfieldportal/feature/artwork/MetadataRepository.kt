@@ -67,6 +67,7 @@ class MetadataRepository @Inject constructor(
                 logoUri     = logoPath ?: ssInfo.logoUrl,
             )
             prewarm(cardPath, heroPath, logoPath)
+            fetchHorizontalIcon(gameId, title)
             Timber.i("Metadata from ScreenScraper: '$title'")
             return MetadataFetchResult(true, "screenscraper", "Found on ScreenScraper")
         }
@@ -86,6 +87,7 @@ class MetadataRepository @Inject constructor(
                 logoUri     = logoPath ?: tgdbInfo.logoUrl,
             )
             prewarm(cardPath, heroPath, logoPath)
+            fetchHorizontalIcon(gameId, title)
             Timber.i("Metadata from TheGamesDB: '$title'")
             return MetadataFetchResult(true, "thegamesdb", "Found on TheGamesDB")
         }
@@ -98,17 +100,20 @@ class MetadataRepository @Inject constructor(
                 val gridUrl = steamGridDb.getBestGridUrl(match.id)
                 val heroUrl = steamGridDb.getBestHeroUrl(match.id)
                 val logoUrl = steamGridDb.getBestLogoUrl(match.id)
-                if (gridUrl != null || heroUrl != null) {
+                val iconUrl = steamGridDb.getBestHorizontalGridUrl(match.id)
+                if (gridUrl != null || heroUrl != null || iconUrl != null) {
                     val cardPath = gridUrl?.let { cardProcessor.processBoxArt(gameId, platformId, it) }
                     val heroPath = heroUrl?.let { cardProcessor.downloadRaw(gameId, it, "hero.jpg") }
                     val logoPath = logoUrl?.let { cardProcessor.downloadRaw(gameId, it, "logo.png", asPng = true) }
+                    val iconPath = iconUrl?.let { cardProcessor.downloadRaw(gameId, it, "icon.jpg") }
                     gameDao.updateMetadata(
                         id        = gameId,
                         artworkUri = cardPath ?: gridUrl,
                         heroUri   = heroPath ?: heroUrl,
                         logoUri   = logoPath ?: logoUrl,
+                        iconUri   = iconPath ?: iconUrl,
                     )
-                    prewarm(cardPath, heroPath, logoPath)
+                    prewarm(cardPath, heroPath, logoPath, iconPath)
                     Timber.i("Artwork-only from SteamGridDB: '$title'")
                     return MetadataFetchResult(true, "steamgriddb", "Artwork from SteamGridDB")
                 }
@@ -132,6 +137,22 @@ class MetadataRepository @Inject constructor(
                 romPath    = game.romPath,
             )
             if (index < games.size - 1) delay(1_100)
+        }
+    }
+
+    // Fetches the SteamGridDB "Steam Horizontal" grid for the landscape 144:80 game icon.
+    // ScreenScraper / TheGamesDB don't provide horizontal capsule art, so we always source it
+    // from SteamGridDB when a key is configured.
+    private suspend fun fetchHorizontalIcon(gameId: Long, title: String) {
+        val key = sgdbKeyProvider.getKey()
+        if (key.isNullOrBlank()) return
+        runCatching {
+            val match = steamGridDb.searchGame(title).getOrNull()?.firstOrNull() ?: return
+            val url = steamGridDb.getBestHorizontalGridUrl(match.id) ?: return
+            val path = cardProcessor.downloadRaw(gameId, url, "icon.jpg") ?: url
+            gameDao.updateIconUri(gameId, path)
+            prewarm(path)
+            Timber.d("Horizontal icon from SteamGridDB: '$title'")
         }
     }
 

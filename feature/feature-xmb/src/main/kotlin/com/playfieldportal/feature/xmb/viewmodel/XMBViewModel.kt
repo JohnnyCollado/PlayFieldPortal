@@ -76,6 +76,31 @@ data class XMBContextMenuItem(
     val isDestructive: Boolean = false,
 )
 
+// ── Installed-app picker ───────────────────────────────────────────────────────
+// A reusable multi-select picker over installed apps. Where the selection goes is
+// described by the target, so the same flow serves the Android Library ("Find Games")
+// and app sections like Video / Music ("Add Apps").
+
+sealed interface AppPickerTarget {
+    // Selected apps become launchable Game entries under an Android-style Memory Card.
+    data class AndroidGames(val platformId: String) : AppPickerTarget
+    // Selected apps become launchable shortcuts in an app category (Video, Music, …).
+    data class CategoryShortcuts(val categoryId: String) : AppPickerTarget
+}
+
+data class AppPickerEntry(
+    val packageName: String,
+    val label: String,
+)
+
+data class AppPickerState(
+    val title: String,
+    val target: AppPickerTarget,
+    val apps: List<AppPickerEntry>,
+    val selected: Set<String> = emptySet(),
+    val selectedIndex: Int = 0,   // index 0 = the Confirm row; 1..n = apps
+)
+
 // ── Main XMB state ────────────────────────────────────────────────────────────
 
 data class XMBUiState(
@@ -111,6 +136,9 @@ data class XMBUiState(
     val renameAppTarget: String? = null,    // package name being renamed
     val renameAppCurrent: String? = null,   // current label, prefills the field
 
+    // ── Installed-app picker (Android Library / Video / Music) ─────────────
+    val appPicker: AppPickerState? = null,
+
     // ── Misc ──────────────────────────────────────────────────────────────
     val iconStyle: GameIconStyle = GameIconStyle.PSP_RECTANGLE,
     val librarySetupComplete: Boolean = false,
@@ -128,6 +156,8 @@ data class XMBItem(
     val id: String,
     val title: String,
     val artworkUri: String? = null,
+    val heroUri: String? = null,        // PIC1 / hero background art
+    val iconUri: String? = null,        // landscape 144:80 icon art (SGDB horizontal grid)
     val subtitle: String? = null,
     val gameId: Long? = null,
     val platformId: String? = null,
@@ -322,9 +352,11 @@ class XMBViewModel @Inject constructor(
                 // are populated by classified + user-assigned Android apps.
                 else -> {
                     val apps = appCategoryRepository.appsForCategory(category.id)
-                    val items = if (apps.isEmpty()) listOf(emptyCategoryItem(category))
-                                else apps.map { it.toXmbItem() }
-                    _uiState.update { it.copy(currentItems = items) }
+                    val appItems = if (apps.isEmpty()) listOf(emptyCategoryItem(category))
+                                   else apps.map { it.toXmbItem() }
+                    // "Add Apps" is offered on every app section so the same picker serves
+                    // Video, Music, Network, App Store and custom categories alike.
+                    _uiState.update { it.copy(currentItems = appItems + addAppsItem()) }
                 }
             }
         }
@@ -336,6 +368,12 @@ class XMBViewModel @Inject constructor(
         subtitle     = if (pinned) "Pinned" else null,
         packageName  = packageName,
         isAndroidApp = true,
+    )
+
+    private fun addAppsItem(): XMBItem = XMBItem(
+        id       = ADD_APPS_ITEM_ID,
+        title    = "Add Apps",
+        subtitle = "Pick installed apps to add to this section",
     )
 
     private fun emptyCategoryItem(category: Category): XMBItem {
@@ -401,6 +439,15 @@ class XMBViewModel @Inject constructor(
     // Shown when an opened Memory Card has no games yet. Keeps the platformId so the
     // context menu (Triangle) can still offer "Scan This Console".
     private fun emptyFolderItem(platformId: String): XMBItem {
+        // Android-style libraries pick installed apps instead of scanning folders.
+        if (platformId == ANDROID_PLATFORM_ID) {
+            return XMBItem(
+                id         = FIND_GAMES_ITEM_ID,
+                title      = "Find Games",
+                subtitle   = "Pick installed apps to add to this library",
+                platformId = platformId,
+            )
+        }
         val card = enabledCards.firstOrNull { it.platformId == platformId }
         val subtitle = when {
             card?.romDirectory == null -> "ROM directory not configured"
@@ -420,8 +467,11 @@ class XMBViewModel @Inject constructor(
             id           = g.id.toString(),
             title        = g.title,
             artworkUri   = g.artworkUri,
+            heroUri      = g.heroUri,
+            iconUri      = g.iconUri,
             subtitle     = g.releaseYear?.toString(),
             gameId       = g.id,
+            platformId   = g.platformId,
             accentColor  = platformCache[g.platformId]?.accentColor,
             isFavorite   = g.isFavorite,
             isAndroidApp = g.packageName != null,
@@ -458,6 +508,21 @@ class XMBViewModel @Inject constructor(
     private fun dispatchGamepadAction(action: GamepadAction) {
         val state = _uiState.value
 
+        // ── Installed-app picker captures ALL input when open ──────────────────
+        if (state.appPicker != null) {
+            when (action) {
+                GamepadAction.NAVIGATE_UP   -> moveAppPicker(-1)
+                GamepadAction.NAVIGATE_DOWN -> moveAppPicker(+1)
+                GamepadAction.SELECT        -> activateAppPicker()
+                // Start button confirms the picker (Add apps / Done), regardless of row.
+                GamepadAction.HOME          -> confirmAppPicker()
+                GamepadAction.BACK,
+                GamepadAction.LONG_PRESS    -> closeAppPicker()
+                else -> Unit
+            }
+            return
+        }
+
         // ── Context menu captures ALL input when open ──────────────────────────
         if (state.activeContextMenu != null) {
             when (action) {
@@ -474,14 +539,19 @@ class XMBViewModel @Inject constructor(
         // ── Overlays (innermost wins) ──────────────────────────────────────────
         when {
             state.activeGameId != null -> {
-                if (action == GamepadAction.BACK) onCloseGameDetail()
-                else _uiState.update { it.copy(pendingGameDetailAction = action) }
+                // Forward everything (incl. BACK) so the Details page can close its own inner
+                // overlays first and only then pop back to the XMB (via onCloseGameDetail).
+                _uiState.update { it.copy(pendingGameDetailAction = action) }
                 return
             }
             state.activeSettingsScreen != null -> {
                 Timber.d("Gamepad → settings(${state.activeSettingsScreen}): $action")
+                // BACK is forwarded into the settings layer (not handled here) so the active
+                // screen can do one-level-up navigation through its own back handler — exactly
+                // like the on-screen Back button. The screen calls onCloseSettingsScreen() only
+                // when it's already at its top level, which returns to the XMB.
                 when (action) {
-                    GamepadAction.BACK -> onCloseSettingsScreen()
+                    GamepadAction.BACK,
                     GamepadAction.NAVIGATE_UP,
                     GamepadAction.NAVIGATE_DOWN,
                     GamepadAction.SELECT -> _uiState.update { it.copy(pendingSettingsAction = action) }
@@ -537,7 +607,8 @@ class XMBViewModel @Inject constructor(
                     item?.packageName != null -> openAppContextMenu(item)
                 }
             }
-            GamepadAction.HOME          -> _uiState.update { it.copy(showBootSequence = true) }
+            // Start button no longer restarts / shows the boot screen.
+            GamepadAction.HOME          -> Unit
             GamepadAction.OPEN_TASK_TRAY -> onTaskTrayVisibility(true)
             GamepadAction.PREV_CATEGORY,
             GamepadAction.NEXT_CATEGORY -> Unit
@@ -561,8 +632,11 @@ class XMBViewModel @Inject constructor(
 
     private fun openPlatformContextMenu(platformId: String) {
         val card = enabledCards.firstOrNull { it.platformId == platformId } ?: return
+        val isAndroid = platformId == ANDROID_PLATFORM_ID
         val items = buildList {
-            add(XMBContextMenuItem("scan_roms",        "Scan This Console"))
+            // Android libraries pick installed apps; consoles scan ROM folders.
+            if (isAndroid) add(XMBContextMenuItem("find_games", "Find Games"))
+            else           add(XMBContextMenuItem("scan_roms",  "Scan This Console"))
             add(XMBContextMenuItem("refresh_metadata", "Refresh Metadata"))
             add(XMBContextMenuItem("refresh_artwork",  "Refresh Artwork"))
             if (card.pinned) add(XMBContextMenuItem("unpin", "Unpin"))
@@ -653,6 +727,7 @@ class XMBViewModel @Inject constructor(
 
         when {
             menu.platformId != null -> when (itemId) {
+                "find_games"       -> openAppPicker(AppPickerTarget.AndroidGames(menu.platformId), "Find Games")
                 "scan_roms"        -> scanCard(menu.platformId)
                 "refresh_artwork"  -> refreshPlatformArtwork(menu.platformId)
                 "refresh_metadata" -> refreshPlatformArtwork(menu.platformId) // same path for now
@@ -727,6 +802,91 @@ class XMBViewModel @Inject constructor(
 
     fun closeContextMenu() {
         _uiState.update { it.copy(activeContextMenu = null) }
+    }
+
+    // ── Installed-app picker ────────────────────────────────────────────────────
+
+    private fun openAppPicker(target: AppPickerTarget, title: String) {
+        viewModelScope.launch {
+            val entries = appCategoryRepository.allInstalledApps()
+                .map { AppPickerEntry(it.packageName, it.label) }   // already sorted by label
+            _uiState.update {
+                it.copy(appPicker = AppPickerState(title = title, target = target, apps = entries))
+            }
+        }
+    }
+
+    private fun moveAppPicker(delta: Int) {
+        val picker = _uiState.value.appPicker ?: return
+        val maxIndex = picker.apps.size   // 0 = Confirm row, 1..size = apps
+        val next = (picker.selectedIndex + delta).coerceIn(0, maxIndex)
+        _uiState.update { it.copy(appPicker = picker.copy(selectedIndex = next)) }
+    }
+
+    private fun activateAppPicker() {
+        val picker = _uiState.value.appPicker ?: return
+        if (picker.selectedIndex == 0) {
+            confirmAppPicker()
+        } else {
+            val app = picker.apps.getOrNull(picker.selectedIndex - 1) ?: return
+            val selected = if (app.packageName in picker.selected) {
+                picker.selected - app.packageName
+            } else {
+                picker.selected + app.packageName
+            }
+            _uiState.update { it.copy(appPicker = picker.copy(selected = selected)) }
+        }
+    }
+
+    // Touch entry point: toggling an app or pressing Confirm in the overlay.
+    fun onAppPickerActivatedAt(index: Int) {
+        _uiState.update { it.copy(appPicker = it.appPicker?.copy(selectedIndex = index)) }
+        activateAppPicker()
+    }
+
+    fun onAppPickerConfirm() = confirmAppPicker()
+
+    fun closeAppPicker() {
+        _uiState.update { it.copy(appPicker = null) }
+    }
+
+    private fun confirmAppPicker() {
+        val picker = _uiState.value.appPicker ?: return
+        val packages = picker.selected
+        val target = picker.target
+        closeAppPicker()
+        if (packages.isEmpty()) return
+
+        viewModelScope.launch {
+            when (target) {
+                is AppPickerTarget.AndroidGames -> importAndroidGames(target.platformId, packages)
+                is AppPickerTarget.CategoryShortcuts ->
+                    packages.forEach { pkg -> appCategoryRepository.addToCategory(pkg, target.categoryId) }
+            }
+        }
+    }
+
+    // Adds the selected apps as launchable Game entries under an Android Memory Card. Stores
+    // the package name (launch reference) and label; the icon is loaded by package at render
+    // time. Skips apps already present so re-running the picker is safe.
+    private suspend fun importAndroidGames(platformId: String, packages: Set<String>) {
+        val labels = appCategoryRepository.allInstalledApps().associateBy { it.packageName }
+        val existing = runCatching {
+            gameRepository.observeByPlatform(platformId).first().mapNotNull { it.packageName }.toSet()
+        }.getOrDefault(emptySet())
+
+        packages.filterNot { it in existing }.forEach { pkg ->
+            gameRepository.upsert(
+                com.playfieldportal.core.domain.model.Game(
+                    title         = labels[pkg]?.label ?: pkg,
+                    platformId    = platformId,
+                    packageName   = pkg,
+                    isManualEntry = true,
+                )
+            )
+        }
+        memoryCardRepository.recountGames(platformId)
+        Timber.i("Android library import: ${packages.size} app(s) selected for $platformId")
     }
 
     // ── Platform actions ──────────────────────────────────────────────────────
@@ -898,6 +1058,16 @@ class XMBViewModel @Inject constructor(
             }
             ALL_GAMES_ITEM_ID -> {
                 openAllGamesFolder()
+                return
+            }
+            ADD_APPS_ITEM_ID -> {
+                category?.id?.let { openAppPicker(AppPickerTarget.CategoryShortcuts(it), "Add Apps") }
+                return
+            }
+            FIND_GAMES_ITEM_ID -> {
+                (item.platformId ?: _uiState.value.selectedPlatformId)?.let {
+                    openAppPicker(AppPickerTarget.AndroidGames(it), "Find Games")
+                }
                 return
             }
             NO_GAMES_ITEM_ID,
@@ -1087,6 +1257,10 @@ class XMBViewModel @Inject constructor(
         private const val EMPTY_CATEGORY_ITEM_ID = "empty_category"
         private const val ALL_GAMES_ITEM_ID = "all_games"
         private const val ALL_GAMES_PLATFORM_ID = "__all_games__"
+        private const val ADD_APPS_ITEM_ID = "add_apps"
+        private const val FIND_GAMES_ITEM_ID = "find_games"
+        // Platform id whose library is built from installed apps (picker) instead of ROM scans.
+        private const val ANDROID_PLATFORM_ID = "android"
 
         // Used only if the categories table hasn't been seeded yet (first frame on first run).
         // The main XMB always presents these seven categories in this order.
@@ -1118,6 +1292,7 @@ class XMBViewModel @Inject constructor(
             XMBItem(id = "settings_backup",     title = "Backup & Restore", subtitle = "Export & import"),
             XMBItem(id = "settings_logs",       title = "Logs",             subtitle = "Debug & error log viewer"),
             XMBItem(id = "settings_about",      title = "About",            subtitle = "Play Field Portal"),
+            XMBItem(id = "settings_credits",    title = "Credits",          subtitle = "Artwork & attributions"),
         )
     }
 

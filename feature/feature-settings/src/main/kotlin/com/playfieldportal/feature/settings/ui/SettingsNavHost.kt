@@ -30,6 +30,7 @@ fun SettingsNavHost(
             "settings_backup"     -> BackupSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_logs"       -> LogsSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_about"      -> AboutSettingsScreen(onBack = onBack, modifier = modifier)
+            "settings_credits"    -> CreditsSettingsScreen(onBack = onBack, modifier = modifier)
         }
     }
 }

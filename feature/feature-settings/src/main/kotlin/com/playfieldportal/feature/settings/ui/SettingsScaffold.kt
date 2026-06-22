@@ -130,6 +130,10 @@ fun SettingsScaffold(
             GamepadAction.NAVIGATE_UP   -> focusManager.moveFocus(FocusDirection.Up)
             GamepadAction.NAVIGATE_DOWN -> focusManager.moveFocus(FocusDirection.Down)
             GamepadAction.SELECT        -> focusedRowClick.value?.invoke()
+            // One-level-up navigation: invoke this screen's back handler. For multi-step
+            // screens that's "collapse a sub-step (else close)"; for leaf screens it closes
+            // the overlay back to the XMB. Mirrors the on-screen Back button exactly.
+            GamepadAction.BACK          -> onBack()
             else                        -> Unit
         }
         onConsumed()

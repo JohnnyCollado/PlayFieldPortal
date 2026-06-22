@@ -45,7 +45,7 @@ fun GamepadAction.displayLabel(): String = when (this) {
     GamepadAction.LONG_PRESS      -> "Options / Long Press"
     GamepadAction.PREV_CATEGORY   -> "Previous Tab (App Drawer)"
     GamepadAction.NEXT_CATEGORY   -> "Next Tab (App Drawer)"
-    GamepadAction.HOME            -> "Home / Boot Screen"
+    GamepadAction.HOME            -> "Start (Confirm in pickers)"
     GamepadAction.OPEN_TASK_TRAY  -> "Open Task Tray"
 }
 

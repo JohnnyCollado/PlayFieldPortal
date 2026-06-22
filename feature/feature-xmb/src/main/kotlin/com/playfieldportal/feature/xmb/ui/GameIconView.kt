@@ -46,6 +46,10 @@ import com.playfieldportal.feature.xmb.viewmodel.XMBItem
 private val ICON_WIDTH  = 62.dp
 private val ICON_HEIGHT = 86.dp
 
+// Native PSP ICON0.PNG presentation — 144 × 80 (ratio 1.8). The icon FILLS the size the
+// caller gives it (see GAME_ICON_* in XMBItemList) so it's a proper 144:80 rectangle, not a
+// tiny square. Used for every console's game icons for a consistent XMB look.
+
 private val PspShape    = RoundedCornerShape(4.dp)
 private val SquircleShape = RoundedCornerShape(14.dp)
 
@@ -70,18 +74,69 @@ fun GameIcon(
             modifier    = modifier,
         )
 
-        iconStyle == GameIconStyle.CARTRIDGE -> CartridgeIcon(
-            artworkUri  = item.artworkUri,
+        // All console games use the authentic PSP ICON0.PNG 144:80 landscape presentation
+        // for a consistent XMB look across every platform. Prefer the SteamGridDB horizontal
+        // grid (icon), then hero, then box art — landscape sources that fill the 16:9 tile.
+        else -> PspIcon0Icon(
+            artworkUri  = item.iconUri ?: item.heroUri ?: item.artworkUri,
             accentColor = item.accentColor?.let { Color(it) },
             title       = item.title,
             modifier    = modifier,
         )
+    }
+}
 
-        else -> PspRectangleIcon(
-            artworkUri  = item.artworkUri,
-            accentColor = item.accentColor?.let { Color(it) },
-            title       = item.title,
-            modifier    = modifier,
+// ── Native PSP ICON0.PNG (144 × 80, 16:9 landscape) ───────────────────────────
+
+@Composable
+fun PspIcon0Icon(
+    artworkUri: String?,
+    accentColor: Color?,
+    title: String,
+    modifier: Modifier = Modifier,
+) {
+    val accent = accentColor ?: Color(0xFF4A9EFF)
+
+    Box(
+        modifier = modifier
+            .clip(PspShape)
+            .background(Color(0xFF0A0A0F))   // backing behind the art
+            .border(1.dp, IconBorder, PspShape),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (artworkUri != null) {
+            // Crop fills the 144:80 tile edge-to-edge with the (landscape) hero art.
+            AsyncImage(
+                model              = artworkUri,
+                contentDescription = null,
+                contentScale       = ContentScale.Crop,
+                modifier           = Modifier.fillMaxSize(),
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(listOf(accent.copy(alpha = 0.6f), Color(0xFF0A0A0F)))
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text       = title.firstOrNull()?.uppercaseChar()?.toString() ?: "?",
+                    fontSize   = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color      = Color.White.copy(alpha = 0.85f),
+                )
+            }
+        }
+
+        // Gloss shine at top
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.3f)
+                .align(Alignment.TopCenter)
+                .background(Brush.verticalGradient(listOf(ShineColor, Color.Transparent)))
         )
     }
 }
@@ -288,8 +343,11 @@ fun AndroidAppIcon(
         }.getOrNull()
     }
 
+    // Center a fixed square inside whatever box we're given, so a wide game-icon container
+    // never stretches the app squircle.
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
     Box(
-        modifier = modifier
+        modifier = Modifier
             .size(52.dp)
             .clip(SquircleShape)
             .background(Color(0xFF1A1A20)),
@@ -311,5 +369,6 @@ fun AndroidAppIcon(
                 color      = Color.White.copy(alpha = 0.7f),
             )
         }
+    }
     }
 }

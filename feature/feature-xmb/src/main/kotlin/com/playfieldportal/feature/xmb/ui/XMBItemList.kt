@@ -36,6 +36,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -43,6 +44,10 @@ import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.playfieldportal.core.ui.icons.GameIconStyle
 import com.playfieldportal.feature.xmb.viewmodel.XMBItem
 import com.playfieldportal.feature.xmb.viewmodel.XMBItemType
+
+// Game icons use the authentic PSP ICON0 ratio 144:80 (= 1.8), scaled for the list.
+private val GAME_ICON_WIDTH = 126.dp
+private val GAME_ICON_HEIGHT = 70.dp
 
 private val RowShape = RoundedCornerShape(7.dp)
 private val RowSelectedFill = Color(0xFF574DDB)
@@ -193,21 +198,31 @@ private fun XmbItemLeadingIcon(
                 contentAlignment = Alignment.CenterStart,
                 modifier = Modifier.width(58.dp),
             ) {
-                XmbMemoryCardIcon(
-                    tint = iconTint,
-                    cutoutColor = Color(0xFF263190).copy(alpha = if (isSelected) 0.95f else 0.70f),
-                    modifier = Modifier.size(width = 42.dp, height = 30.dp),
-                )
+                val consoleIcon = if (item.type == XMBItemType.MEMORY_CARD) {
+                    rememberConsoleIconId(item.platformId)
+                } else 0
+                if (consoleIcon != 0) {
+                    Image(
+                        painter = painterResource(consoleIcon),
+                        contentDescription = null,
+                        modifier = Modifier.size(40.dp),
+                    )
+                } else {
+                    XmbMemoryCardIcon(
+                        tint = iconTint,
+                        cutoutColor = Color(0xFF263190).copy(alpha = if (isSelected) 0.95f else 0.70f),
+                        modifier = Modifier.size(width = 42.dp, height = 30.dp),
+                    )
+                }
             }
         }
         item.gameId != null -> {
-            Box(modifier = Modifier.width(58.dp)) {
-                GameIcon(
-                    item = item,
-                    iconStyle = iconStyle,
-                    modifier = Modifier.size(38.dp),
-                )
-            }
+            // Full 144:80 landscape tile (ratio 1.8) — the authentic PSP ICON0 rectangle.
+            GameIcon(
+                item = item,
+                iconStyle = iconStyle,
+                modifier = Modifier.size(width = GAME_ICON_WIDTH, height = GAME_ICON_HEIGHT),
+            )
         }
         item.isAndroidApp && item.packageName != null -> {
             Box(modifier = Modifier.width(58.dp)) {
@@ -218,6 +233,19 @@ private fun XmbItemLeadingIcon(
             }
         }
         else -> Spacer(modifier = Modifier.width(12.dp))
+    }
+}
+
+// Resolves a per-console icon (bundled from the xmb-menu-es-de set) by platform id,
+// e.g. platformId "psp" -> R.drawable.sysicon_psp. Returns 0 when no icon is available,
+// in which case the caller falls back to the generic Memory Card glyph.
+@Composable
+private fun rememberConsoleIconId(platformId: String?): Int {
+    val context = LocalContext.current
+    return remember(platformId) {
+        if (platformId.isNullOrBlank()) return@remember 0
+        val safe = platformId.lowercase().filter { it.isLetterOrDigit() || it == '_' }
+        context.resources.getIdentifier("sysicon_$safe", "drawable", context.packageName)
     }
 }
 

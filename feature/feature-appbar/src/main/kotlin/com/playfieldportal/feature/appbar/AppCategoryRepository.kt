@@ -55,6 +55,9 @@ class AppCategoryRepository @Inject constructor(
         return cache
     }
 
+    // Public accessor for the installed-app picker (Android Library / Video / Music "add apps").
+    suspend fun allInstalledApps(): List<InstalledApp> = installedApps()
+
     private fun appByPackage(pkg: String): InstalledApp? = cache.firstOrNull { it.packageName == pkg }
 
     // ── Resolution ───────────────────────────────────────────────────────────────

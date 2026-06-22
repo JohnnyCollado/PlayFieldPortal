@@ -44,6 +44,9 @@ data class GameEntity(
     @ColumnInfo(name = "logo_uri")
     val logoUri: String?,
 
+    @ColumnInfo(name = "icon_uri")
+    val iconUri: String? = null,
+
     val description: String?,
     val developer: String?,
     val publisher: String?,
@@ -88,6 +91,7 @@ fun GameEntity.toDomain() = Game(
     artworkUri          = artworkUri,
     heroUri             = heroUri,
     logoUri             = logoUri,
+    iconUri             = iconUri,
     description         = description,
     developer           = developer,
     publisher           = publisher,
@@ -112,6 +116,7 @@ fun Game.toEntity() = GameEntity(
     artworkUri          = artworkUri,
     heroUri             = heroUri,
     logoUri             = logoUri,
+    iconUri             = iconUri,
     description         = description,
     developer           = developer,
     publisher           = publisher,

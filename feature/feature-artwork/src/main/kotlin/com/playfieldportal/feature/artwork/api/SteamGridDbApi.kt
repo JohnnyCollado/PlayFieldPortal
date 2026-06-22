@@ -78,6 +78,7 @@ class SteamGridDbApi @Inject constructor(
         gameId: Long,
         type: SgdbArtType,
         styles: List<String> = emptyList(),
+        dimensions: List<String> = emptyList(),
     ): Result<List<SgdbArtItem>> = runCatching {
         val key = apiKeyProvider.getKey()
             ?: error("SteamGridDB API key not configured")
@@ -85,11 +86,20 @@ class SteamGridDbApi @Inject constructor(
         val response: SgdbArtResponse = httpClient.get("$BASE_URL/${type.endpoint}/game/$gameId") {
             header("Authorization", "Bearer $key")
             if (styles.isNotEmpty()) parameter("styles", styles.joinToString(","))
+            if (dimensions.isNotEmpty()) parameter("dimensions", dimensions.joinToString(","))
         }.body()
 
         if (!response.success) error("SGDB art fetch failed for gameId=$gameId type=$type")
         response.data.also { Timber.d("SGDB ${type.name} for $gameId → ${it.size} results") }
     }
+
+    // "Steam Horizontal" grids — landscape capsule art (460×215 / 920×430), ideal for the
+    // 144:80 game icon tile.
+    suspend fun getBestHorizontalGridUrl(gameId: Long): String? =
+        getArt(gameId, SgdbArtType.GRID, dimensions = listOf("920x430", "460x215"))
+            .getOrNull()
+            ?.firstOrNull()
+            ?.url
 
     // Convenience — fetch best grid art URL for a game
     suspend fun getBestGridUrl(gameId: Long): String? =
