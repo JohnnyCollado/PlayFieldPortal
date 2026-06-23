@@ -11,8 +11,6 @@ import com.playfieldportal.core.data.repository.MemoryCardRepository
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.core.domain.model.GamepadAction
-import com.playfieldportal.feature.artwork.ScreenScraperApi
-import com.playfieldportal.feature.artwork.SsFailureReason
 import com.playfieldportal.feature.artwork.TheGamesDbApi
 import com.playfieldportal.feature.artwork.api.ArtworkRepository
 import com.playfieldportal.core.domain.model.EmulatorProfile
@@ -51,21 +49,20 @@ val ArtworkType.displayLabel: String
 // ── Artwork Manager focus zones ───────────────────────────────────────────────
 enum class ArtworkManagerFocus { TYPE_TABS, SOURCE_ROW, ART_GRID }
 
-// Source row indices — SGDB and Local/Clear keep their original positions
+// Source row indices
 const val SOURCE_SGDB  = 0
-const val SOURCE_SS    = 1   // ScreenScraper
+const val SOURCE_TGDB  = 1
 const val SOURCE_IGDB  = 2
-const val SOURCE_TGDB  = 3
-const val SOURCE_LOCAL = 4
-const val SOURCE_CLEAR = 5
-const val SOURCE_COUNT = 6
+const val SOURCE_LOCAL = 3
+const val SOURCE_CLEAR = 4
+const val SOURCE_COUNT = 5
 
 // True for sources that populate the art grid; false for action-only sources.
 fun isDataSource(index: Int) = index !in listOf(SOURCE_LOCAL, SOURCE_CLEAR)
 
 // ── Unified artwork picker item ───────────────────────────────────────────────
 //
-// Used by all grid-based sources (SGDB, ScreenScraper, IGDB, TheGamesDB).
+// Used by all grid-based sources (SGDB, IGDB, TheGamesDB).
 // SGDB items carry a thumbUrl for faster thumbnail loading; other sources use
 // the full URL as thumb since no separate thumbnail endpoint is available.
 data class ArtPickerItem(
@@ -153,7 +150,6 @@ class GameDetailViewModel @Inject constructor(
     private val intentResolver: EmulatorIntentResolver,
     private val artworkRepository: ArtworkRepository,
     private val steamGridDb: SteamGridDbApi,
-    private val screenScraper: ScreenScraperApi,
     private val igdbApi: IgdbApi,
     private val theGamesDb: TheGamesDbApi,
     private val cardProcessor: CardArtworkProcessor,
@@ -424,9 +420,8 @@ class GameDetailViewModel @Inject constructor(
     private fun loadSourceForCurrentTab(sourceIndex: Int) {
         when (sourceIndex) {
             SOURCE_SGDB -> loadSgdbForCurrentTab()
-            SOURCE_SS   -> loadSsForCurrentTab()
-            SOURCE_IGDB -> loadIgdbForCurrentTab()
             SOURCE_TGDB -> loadTgdbForCurrentTab()
+            SOURCE_IGDB -> loadIgdbForCurrentTab()
         }
     }
 
@@ -474,95 +469,6 @@ class GameDetailViewModel @Inject constructor(
                 return@launch
             }
             val items = arts.map { ArtPickerItem(url = it.url, thumbUrl = it.thumb) }
-            _uiState.update {
-                it.copy(artworkPickerLoading = false, artworkPickerItems = items, artworkPickerIndex = 0)
-            }
-        }
-    }
-
-    private fun loadSsForCurrentTab() {
-        val game = _uiState.value.game ?: return
-        val type = _uiState.value.artworkTab
-        if (_uiState.value.artworkPickerLoading) return
-        viewModelScope.launch {
-            _uiState.update {
-                it.copy(
-                    artworkPickerLoading = true,
-                    artworkPickerItems   = emptyList(),
-                    artworkPickerError   = null,
-                    artworkFocus         = ArtworkManagerFocus.ART_GRID,
-                )
-            }
-            val romFile = game.romPath?.let { File(it) }?.takeIf { it.exists() }
-            val ssResult = runCatching {
-                screenScraper.fetchGameInfoWithDiagnostics(
-                    platformId = game.platformId,
-                    romFile    = romFile,
-                    title      = game.displayTitle,
-                )
-            }.onFailure { Timber.w(it, "ScreenScraper fetch failed for '${game.displayTitle}'") }.getOrNull()
-            val info = ssResult?.info
-
-            if (info == null) {
-                val errorMsg = ssResult?.diagnostics?.let { diag ->
-                    when (diag.failureReason) {
-                        SsFailureReason.NO_SYSTEM_ID_MAPPING ->
-                            "ScreenScraper: Platform '${game.platformId}' is not mapped to a ScreenScraper system"
-                        SsFailureReason.MISSING_CREDENTIALS, SsFailureReason.BAD_CREDENTIALS ->
-                            "ScreenScraper: Invalid credentials — check Artwork Settings"
-                        SsFailureReason.RATE_LIMITED ->
-                            "ScreenScraper: Rate limited — wait a moment and try again"
-                        SsFailureReason.NO_MATCH ->
-                            "ScreenScraper: No results for \"${game.displayTitle}\""
-                        SsFailureReason.NETWORK_ERROR ->
-                            "ScreenScraper: Network error — ${diag.failureDetail}"
-                        SsFailureReason.PARSE_ERROR ->
-                            "ScreenScraper: Unexpected response format"
-                        null -> "ScreenScraper: No results for \"${game.displayTitle}\""
-                    }
-                } ?: "ScreenScraper: No results for \"${game.displayTitle}\""
-                _uiState.update {
-                    it.copy(
-                        artworkPickerLoading = false,
-                        artworkPickerError   = errorMsg,
-                        artworkFocus         = ArtworkManagerFocus.SOURCE_ROW,
-                    )
-                }
-                return@launch
-            }
-
-            // Build picker items relevant to the selected tab, showing all available asset types.
-            val items = buildList {
-                when (type) {
-                    ArtworkType.ICON -> {
-                        info.artworkUrl?.let { add(ArtPickerItem(it, label = "Box Art")) }
-                        info.heroUrl?.let    { add(ArtPickerItem(it, label = "Hero")) }
-                        info.logoUrl?.let    { add(ArtPickerItem(it, label = "Logo")) }
-                    }
-                    ArtworkType.HERO -> {
-                        info.heroUrl?.let    { add(ArtPickerItem(it, label = "Hero / Fanart")) }
-                        info.artworkUrl?.let { add(ArtPickerItem(it, label = "Box Art")) }
-                        info.logoUrl?.let    { add(ArtPickerItem(it, label = "Logo")) }
-                    }
-                    ArtworkType.BACKGROUND -> {
-                        info.artworkUrl?.let { add(ArtPickerItem(it, label = "Box Art")) }
-                        info.heroUrl?.let    { add(ArtPickerItem(it, label = "Hero")) }
-                        info.logoUrl?.let    { add(ArtPickerItem(it, label = "Logo")) }
-                    }
-                }
-            }
-
-            if (items.isEmpty()) {
-                _uiState.update {
-                    it.copy(
-                        artworkPickerLoading = false,
-                        artworkPickerError   = "ScreenScraper: No artwork available for this tab",
-                        artworkFocus         = ArtworkManagerFocus.SOURCE_ROW,
-                    )
-                }
-                return@launch
-            }
-
             _uiState.update {
                 it.copy(artworkPickerLoading = false, artworkPickerItems = items, artworkPickerIndex = 0)
             }

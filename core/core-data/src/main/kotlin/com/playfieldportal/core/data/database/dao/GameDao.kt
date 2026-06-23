@@ -26,6 +26,9 @@ interface GameDao {
     @Query("SELECT * FROM games WHERE rom_path = :romPath LIMIT 1")
     suspend fun getByRomPath(romPath: String): GameEntity?
 
+    @Query("SELECT * FROM games WHERE package_name = :packageName LIMIT 1")
+    suspend fun getByPackageName(packageName: String): GameEntity?
+
     @Query("SELECT * FROM games WHERE last_played_at IS NOT NULL ORDER BY last_played_at DESC LIMIT :limit")
     fun observeRecentlyPlayed(limit: Int): Flow<List<GameEntity>>
 

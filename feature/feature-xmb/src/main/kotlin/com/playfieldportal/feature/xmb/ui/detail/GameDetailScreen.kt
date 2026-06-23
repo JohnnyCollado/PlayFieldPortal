@@ -179,7 +179,7 @@ fun GameDetailScreen(
             Spacer(Modifier.height(HeroBannerHeight))
 
             GameSummary(
-                title = game.title,
+                title = game.displayTitle,
                 platform = platform?.name ?: game.platformId.uppercase(),
                 releaseYear = game.releaseYear,
                 genre = game.genre,
@@ -469,14 +469,14 @@ private fun DetailAction.dynamicLabel(favorite: Boolean, refreshing: Boolean): S
 //
 // Three-zone controller-navigable UI:
 //   TYPE_TABS  — L/R cycles artwork type (Icon / Hero / Background)
-//   SOURCE_ROW — L/R scrolls through 6 sources (SGDB / Scraper / IGDB / TGDB / Local / Clear)
+//   SOURCE_ROW — L/R scrolls through 5 sources (SGDB / TGDB / IGDB / Local / Clear)
 //   ART_GRID   — L/R moves between thumbnails; SELECT picks
 //
 // Back moves up one zone; pressing Back at TYPE_TABS closes the manager.
-// Data sources (SGDB, Scraper, IGDB, TGDB) populate the art grid.
+// Data sources (SGDB, TGDB, IGDB) populate the art grid.
 // Action sources (Local, Clear) fire immediately on SELECT/tap.
 
-private val ArtworkSourceLabels = listOf("SGDB", "Scraper", "IGDB", "TGDB", "Local", "Clear")
+private val ArtworkSourceLabels = listOf("SGDB", "TGDB", "IGDB", "Local", "Clear")
 
 @Composable
 private fun ArtworkManagerPanel(

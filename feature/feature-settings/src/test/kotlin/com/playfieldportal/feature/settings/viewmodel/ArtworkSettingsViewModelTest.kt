@@ -2,7 +2,6 @@ package com.playfieldportal.feature.settings.viewmodel
 
 import app.cash.turbine.test
 import com.playfieldportal.feature.artwork.MetadataApiKeyProvider
-import com.playfieldportal.feature.artwork.MetadataFetchResult
 import com.playfieldportal.feature.artwork.api.ArtworkRepository
 import com.playfieldportal.feature.artwork.api.ArtworkScrapePreferences
 import com.playfieldportal.feature.artwork.api.ArtworkStatus
@@ -45,18 +44,17 @@ class ArtworkSettingsViewModelTest {
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
 
-        sgdbKeyProvider    = mockk(relaxed = true)
+        sgdbKeyProvider     = mockk(relaxed = true)
         metadataKeyProvider = mockk(relaxed = true)
-        artworkRepository  = mockk(relaxed = true)
-        scrapePreferences  = mockk(relaxed = true)
-        igdbApi            = mockk(relaxed = true)
+        artworkRepository   = mockk(relaxed = true)
+        scrapePreferences   = mockk(relaxed = true)
+        igdbApi             = mockk(relaxed = true)
 
-        every { sgdbKeyProvider.apiKeyFlow }      returns flowOf(null)
-        every { metadataKeyProvider.ssUsernameFlow }   returns flowOf(null)
-        every { metadataKeyProvider.igdbClientIdFlow } returns flowOf(null)
+        every { sgdbKeyProvider.apiKeyFlow }             returns flowOf(null)
+        every { metadataKeyProvider.igdbClientIdFlow }   returns flowOf(null)
         every { scrapePreferences.preferSteamGridDbHeroesFlow } returns flowOf(false)
-        coEvery { artworkRepository.computeStatus() } returns ArtworkStatus(total = 10, complete = 8, missing = 2)
-        coEvery { scrapePreferences.getOptions() }    returns ScrapeOptions()
+        coEvery { artworkRepository.computeStatus() }    returns ArtworkStatus(total = 10, complete = 8, missing = 2)
+        coEvery { scrapePreferences.getOptions() }       returns ScrapeOptions()
     }
 
     @After
@@ -66,7 +64,7 @@ class ArtworkSettingsViewModelTest {
 
     private fun buildViewModel() = ArtworkSettingsViewModel(
         sgdbKeyProvider     = sgdbKeyProvider,
-        metadataKeyProvider  = metadataKeyProvider,
+        metadataKeyProvider = metadataKeyProvider,
         artworkRepository   = artworkRepository,
         scrapePreferences   = scrapePreferences,
         igdbApi             = igdbApi,
@@ -87,15 +85,6 @@ class ArtworkSettingsViewModelTest {
         viewModel = buildViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
         assertTrue(viewModel.uiState.value.hasApiKey)
-    }
-
-    @Test
-    fun `hasSsCredentials is true when ss username flow is non-blank`() = runTest {
-        every { metadataKeyProvider.ssUsernameFlow } returns flowOf("john")
-        viewModel = buildViewModel()
-        testDispatcher.scheduler.advanceUntilIdle()
-        assertTrue(viewModel.uiState.value.hasSsCredentials)
-        assertEquals("john", viewModel.uiState.value.ssUsername)
     }
 
     @Test
@@ -165,42 +154,6 @@ class ArtworkSettingsViewModelTest {
     }
 
     @Test
-    fun `setPreferScreenScraperBoxArt updates state and persists`() = runTest {
-        viewModel = buildViewModel()
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        viewModel.setPreferScreenScraperBoxArt(false)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        assertFalse(viewModel.uiState.value.preferScreenScraperBoxArt)
-        coVerify { scrapePreferences.setPreferScreenScraperBoxArt(false) }
-    }
-
-    @Test
-    fun `setDownloadManuals updates state and persists`() = runTest {
-        viewModel = buildViewModel()
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        viewModel.setDownloadManuals(true)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        assertTrue(viewModel.uiState.value.downloadManuals)
-        coVerify { scrapePreferences.setDownloadManuals(true) }
-    }
-
-    @Test
-    fun `setDownloadVideoSnaps updates state and persists`() = runTest {
-        viewModel = buildViewModel()
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        viewModel.setDownloadVideoSnaps(true)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        assertTrue(viewModel.uiState.value.downloadVideoSnaps)
-        coVerify { scrapePreferences.setDownloadVideoSnaps(true) }
-    }
-
-    @Test
     fun `setDownloadLogos updates state and persists as clear logos`() = runTest {
         viewModel = buildViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
@@ -244,7 +197,7 @@ class ArtworkSettingsViewModelTest {
     fun `scrape progress exposes source and asset from ScrapeProgress`() = runTest {
         coEvery { artworkRepository.scrapeMissingOnly(any()) } coAnswers {
             val callback = firstArg<(ScrapeProgress) -> Unit>()
-            callback(ScrapeProgress(1, 5, 0, 0, "Doom", scrapeSource = "ScreenScraper", scrapeAsset = "Box Art"))
+            callback(ScrapeProgress(1, 5, 0, 0, "Doom", scrapeSource = "TheGamesDB", scrapeAsset = "Box Art"))
             ScrapeProgress(5, 5, 4, 1, "")
         }
         viewModel = buildViewModel()
@@ -252,11 +205,10 @@ class ArtworkSettingsViewModelTest {
 
         viewModel.uiState.test {
             viewModel.scrapeMissingOnly()
-            // Advance until we see the mid-scrape progress update
             var found = false
             repeat(20) {
                 val s = awaitItem()
-                if (s.scrapeSource == "ScreenScraper" && s.scrapeAsset == "Box Art") {
+                if (s.scrapeSource == "TheGamesDB" && s.scrapeAsset == "Box Art") {
                     found = true
                     cancelAndIgnoreRemainingEvents()
                     return@test
@@ -286,7 +238,7 @@ class ArtworkSettingsViewModelTest {
     }
 
     @Test
-    fun `dismissCredentialStatus clears both status fields`() = runTest {
+    fun `dismissCredentialStatus clears igdb status`() = runTest {
         coEvery { igdbApi.testCredentials(any(), any()) } returns true
         viewModel = buildViewModel()
         testDispatcher.scheduler.advanceUntilIdle()
@@ -297,6 +249,5 @@ class ArtworkSettingsViewModelTest {
 
         viewModel.dismissCredentialStatus()
         assertNull(viewModel.uiState.value.igdbCredentialStatus)
-        assertNull(viewModel.uiState.value.ssCredentialStatus)
     }
 }

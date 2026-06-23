@@ -19,26 +19,21 @@ import javax.inject.Singleton
 
 data class MetadataFetchResult(
     val success: Boolean,
-    val source: String,   // "screenscraper" | "thegamesdb" | "steamgriddb" | "igdb" | "none"
+    val source: String,   // "thegamesdb" | "steamgriddb" | "igdb" | "none"
     val message: String,
     val scrapedTitle: String? = null,
-    val ssDiagnostics: SsLookupDiagnostics? = null,
 )
 
 // Fetches metadata + artwork from multiple sources in priority order.
 //
-// Default source priority: ScreenScraper → SteamGridDB → IGDB → TheGamesDB
+// Default source priority: TheGamesDB → IGDB → SteamGridDB (artwork only)
 //
 // Per-asset overrides:
 //   • preferSteamGridDbHeroes  → SGDB is tried first for hero art
-//   • preferScreenScraperBoxArt → SS is tried first for box art (default on)
-//
-// Only non-null fields are written to the DB (COALESCE in SQL keeps existing values).
 @Singleton
 class MetadataRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val gameDao: GameDao,
-    private val screenScraper: ScreenScraperApi,
     private val theGamesDb: TheGamesDbApi,
     private val steamGridDb: SteamGridDbApi,
     private val igdbApi: IgdbApi,
@@ -54,10 +49,7 @@ class MetadataRepository @Inject constructor(
         options: ScrapeOptions = ScrapeOptions(),
         onAssetProgress: ((source: String, asset: String) -> Unit)? = null,
     ): MetadataFetchResult {
-        val romFile = romPath?.let { File(it) }?.takeIf { it.exists() }
-
-        // Resolve the best search title: user override → scraped title → caller-supplied title.
-        // Reading from DB here so the caller doesn't need to pass extra fields.
+        // Resolve best search title: user override → scraped title → caller-supplied title.
         val gameEntity = gameDao.getById(gameId)
         val bestTitle = gameEntity?.userTitleOverride?.takeIf { it.isNotBlank() }
             ?: gameEntity?.scrapedTitle?.takeIf { it.isNotBlank() }
@@ -67,123 +59,74 @@ class MetadataRepository @Inject constructor(
             Timber.d("MetadataRepository: using bestTitle='$bestTitle' instead of raw title='$title'")
         }
 
-        // ── 1. ScreenScraper (hash-based — most accurate, has manuals/videos) ──
-        onAssetProgress?.invoke("ScreenScraper", "Searching…")
-        val ssResult = runCatching {
-            screenScraper.fetchGameInfoWithDiagnostics(
-                platformId = platformId, romFile = romFile, title = bestTitle,
-            )
-        }.onFailure { Timber.w(it, "ScreenScraper error for '$bestTitle'") }.getOrNull()
+        // ── 1. TheGamesDB (primary metadata source) ───────────────────────────
+        onAssetProgress?.invoke("TheGamesDB", "Searching…")
+        val tgdbInfo = runCatching {
+            theGamesDb.fetchGameInfo(platformId = platformId, title = bestTitle)
+        }.onFailure { Timber.w(it, "TheGamesDB error for '$bestTitle'") }.getOrNull()
 
-        val ssInfo = ssResult?.info
-        val ssDiag = ssResult?.diagnostics
-
-        // Log structured diagnostics (no passwords)
-        if (ssDiag != null) {
-            if (ssDiag.failureReason != null) {
-                Timber.w(
-                    "ScreenScraper diagnostics: " +
-                    "platform=${ssDiag.platformId} systemId=${ssDiag.screenScraperSystemId} " +
-                    "file='${ssDiag.originalFileName}' cleaned='${ssDiag.cleanedSearchName}' " +
-                    "credentialsPresent=${ssDiag.credentialsPresent} httpStatus=${ssDiag.httpStatus} " +
-                    "reason=${ssDiag.failureReason} detail='${ssDiag.failureDetail}'"
-                )
+        // ── 2. IGDB (secondary artwork) ───────────────────────────────────────
+        var igdbInfo: IgdbGameInfo? = null
+        if (igdbApi.hasCredentials()) {
+            val needsBoxArt = tgdbInfo?.artworkUrl == null
+            val needsHero   = tgdbInfo?.heroUrl == null
+            if (needsBoxArt || needsHero) {
+                onAssetProgress?.invoke("IGDB", "Searching…")
+                igdbInfo = runCatching {
+                    igdbApi.fetchGameInfo(platformId, bestTitle)
+                }.onFailure { Timber.w(it, "IGDB error for '$bestTitle'") }.getOrNull()
             }
         }
 
-        // ── 2. SteamGridDB ────────────────────────────────────────────────────
-        // Called when: key is present AND (hero preference requires it OR SS returned nothing)
+        // ── 3. SteamGridDB (artwork) ──────────────────────────────────────────
         val sgdbKey = sgdbKeyProvider.getKey()
-        var sgdbGridUrl:  String? = null
-        var sgdbHeroUrl:  String? = null
-        var sgdbLogoUrl:  String? = null
-        var sgdbIconUrl:  String? = null
-        var sgdbGameId:   Long?   = null
+        var sgdbGridUrl: String? = null
+        var sgdbHeroUrl: String? = null
+        var sgdbLogoUrl: String? = null
+        var sgdbGameId:  Long?   = null
 
-        val needSgdbForHero  = options.downloadHeroes && options.preferSteamGridDbHeroes
-        val needSgdbForBoxArt = !options.preferScreenScraperBoxArt && ssInfo?.artworkUrl == null
-        val needSgdbFallback  = ssInfo == null
-
-        if (!sgdbKey.isNullOrBlank() && (needSgdbForHero || needSgdbForBoxArt || needSgdbFallback)) {
+        if (!sgdbKey.isNullOrBlank()) {
             onAssetProgress?.invoke("SteamGridDB", "Searching…")
             runCatching {
                 val match = steamGridDb.searchGame(bestTitle).getOrNull()?.firstOrNull()
                 if (match != null) {
-                    sgdbGameId   = match.id
-                    sgdbGridUrl  = steamGridDb.getBestGridUrl(match.id)
+                    sgdbGameId  = match.id
+                    sgdbGridUrl = steamGridDb.getBestGridUrl(match.id)
                     if (options.downloadHeroes) sgdbHeroUrl = steamGridDb.getBestHeroUrl(match.id)
                     if (options.downloadClearLogos) sgdbLogoUrl = steamGridDb.getBestLogoUrl(match.id)
-                    sgdbIconUrl  = steamGridDb.getBestHorizontalGridUrl(match.id)
                 }
             }.onFailure { Timber.w(it, "SteamGridDB error for '$bestTitle'") }
         }
 
-        // ── 3. IGDB (if credentials configured and still missing art) ─────────
-        val boxArtSoFar = pickBoxArt(ssInfo?.artworkUrl, sgdbGridUrl, options)
-        val heroSoFar   = pickHero(ssInfo?.heroUrl, sgdbHeroUrl, options)
-        val logoSoFar   = if (options.downloadClearLogos) ssInfo?.logoUrl ?: sgdbLogoUrl else null
-
-        var igdbInfo: IgdbGameInfo? = null
-        if ((boxArtSoFar == null || heroSoFar == null || (options.downloadClearLogos && logoSoFar == null))
-            && igdbApi.hasCredentials()
-        ) {
-            onAssetProgress?.invoke("IGDB", "Searching…")
-            igdbInfo = runCatching {
-                igdbApi.fetchGameInfo(platformId, bestTitle)
-            }.onFailure { Timber.w(it, "IGDB error for '$bestTitle'") }.getOrNull()
-        }
-
-        // ── 4. TheGamesDB (title-based fallback) ──────────────────────────────
-        val boxArtWithIgdb = boxArtSoFar ?: igdbInfo?.artworkUrl
-        val heroWithIgdb   = heroSoFar   ?: igdbInfo?.heroUrl
-        val logoWithIgdb   = if (options.downloadClearLogos) logoSoFar ?: igdbInfo?.logoUrl else null
-
-        var tgdbInfo: TgdbGameInfo? = null
-        if (boxArtWithIgdb == null || heroWithIgdb == null || (options.downloadClearLogos && logoWithIgdb == null)) {
-            onAssetProgress?.invoke("TheGamesDB", "Searching…")
-            tgdbInfo = runCatching {
-                theGamesDb.fetchGameInfo(platformId = platformId, title = bestTitle)
-            }.onFailure { Timber.w(it, "TheGamesDB error for '$bestTitle'") }.getOrNull()
-        }
-
         // ── Nothing found ──────────────────────────────────────────────────────
-        if (ssInfo == null && sgdbGridUrl == null && igdbInfo == null && tgdbInfo == null) {
+        if (tgdbInfo == null && igdbInfo == null && sgdbGridUrl == null) {
             Timber.i("No metadata found for '$bestTitle'")
-            val failDetail = ssDiag?.failureDetail ?: "Not found on any source"
-            return MetadataFetchResult(false, "none", failDetail, ssDiagnostics = ssDiag)
+            return MetadataFetchResult(false, "none", "Not found on any source")
         }
 
         // ── Assemble per-asset winners ─────────────────────────────────────────
-        val finalBoxArtUrl = pickBoxArt(ssInfo?.artworkUrl, sgdbGridUrl, options)
-            ?: igdbInfo?.artworkUrl ?: tgdbInfo?.artworkUrl
-        val finalHeroUrl   = pickHero(ssInfo?.heroUrl, sgdbHeroUrl, options)
-            ?: igdbInfo?.heroUrl   ?: tgdbInfo?.heroUrl
-        val finalLogoUrl   = if (options.downloadClearLogos)
-            ssInfo?.logoUrl ?: sgdbLogoUrl ?: igdbInfo?.logoUrl ?: tgdbInfo?.logoUrl
+        val finalBoxArtUrl = tgdbInfo?.artworkUrl ?: igdbInfo?.artworkUrl ?: sgdbGridUrl
+        val finalHeroUrl   = if (options.preferSteamGridDbHeroes)
+            sgdbHeroUrl ?: tgdbInfo?.heroUrl ?: igdbInfo?.heroUrl
+        else
+            tgdbInfo?.heroUrl ?: igdbInfo?.heroUrl ?: sgdbHeroUrl
+        val finalLogoUrl = if (options.downloadClearLogos)
+            igdbInfo?.logoUrl ?: tgdbInfo?.logoUrl ?: sgdbLogoUrl
         else null
-        val finalManualUrl = if (options.downloadManuals) ssInfo?.manualUrl else null
-        val finalVideoUrl  = if (options.downloadVideoSnaps) ssInfo?.videoUrl else null
 
         // ── Download to disk ───────────────────────────────────────────────────
-        onAssetProgress?.invoke(primarySource(ssInfo, sgdbGridUrl, igdbInfo, tgdbInfo), "Box Art")
+        val src = primarySource(tgdbInfo, igdbInfo, sgdbGridUrl)
+        onAssetProgress?.invoke(src, "Box Art")
         val cardPath = finalBoxArtUrl?.let { cardProcessor.processBoxArt(gameId, platformId, it) }
 
-        if (options.downloadHeroes) {
-            onAssetProgress?.invoke(primarySource(ssInfo, sgdbGridUrl, igdbInfo, tgdbInfo), "Hero")
-        }
+        if (options.downloadHeroes) onAssetProgress?.invoke(src, "Hero")
         val heroPath = if (options.downloadHeroes) finalHeroUrl?.let { cardProcessor.downloadRaw(gameId, it, "hero.jpg") } else null
 
-        if (options.downloadClearLogos) {
-            onAssetProgress?.invoke(primarySource(ssInfo, sgdbGridUrl, igdbInfo, tgdbInfo), "Logo")
-        }
+        if (options.downloadClearLogos) onAssetProgress?.invoke(src, "Logo")
         val logoPath = finalLogoUrl?.let { cardProcessor.downloadRaw(gameId, it, "logo.png", asPng = true) }
 
-        val manualPath = finalManualUrl?.let { cardProcessor.downloadRaw(gameId, it, "manual.pdf") }
-        val videoPath  = finalVideoUrl?.let  { cardProcessor.downloadRaw(gameId, it, "video.mp4") }
-
-        // Scraped title from metadata (only from ScreenScraper — most authoritative).
-        // Only update if the user hasn't manually set a title override.
-        val newScrapedTitle = ssInfo?.title
+        // Scraped title from TheGamesDB — only update if no user override exists.
+        val newScrapedTitle = tgdbInfo?.title
         val existingOverride = gameEntity?.userTitleOverride
         if (newScrapedTitle != null && existingOverride == null) {
             Timber.d("Updating scraped title to '$newScrapedTitle' for gameId=$gameId")
@@ -192,74 +135,56 @@ class MetadataRepository @Inject constructor(
         // ── Persist metadata (COALESCE in SQL preserves existing non-null values) ─
         gameDao.updateMetadata(
             id           = gameId,
-            description  = ssInfo?.description ?: tgdbInfo?.description,
-            developer    = ssInfo?.developer,
-            publisher    = ssInfo?.publisher,
-            releaseYear  = ssInfo?.releaseYear ?: tgdbInfo?.releaseYear,
-            genre        = ssInfo?.genre,
+            description  = tgdbInfo?.description,
+            developer    = null,
+            publisher    = null,
+            releaseYear  = tgdbInfo?.releaseYear,
+            genre        = null,
             artworkUri   = cardPath ?: finalBoxArtUrl,
             heroUri      = heroPath ?: finalHeroUrl,
             logoUri      = logoPath ?: finalLogoUrl,
-            // Only set scraped title when no user override exists — preserve manual renames.
             scrapedTitle = if (existingOverride == null) newScrapedTitle else null,
         )
 
         prewarm(cardPath, heroPath, logoPath)
         fetchHorizontalIcon(gameId, bestTitle, sgdbGameId)
 
-        val src = primarySource(ssInfo, sgdbGridUrl, igdbInfo, tgdbInfo)
         Timber.i("Metadata from $src: '$bestTitle' (scrapedTitle='$newScrapedTitle')")
-        return MetadataFetchResult(true, src, "Found via $src",
-            scrapedTitle = newScrapedTitle, ssDiagnostics = ssDiag)
+        return MetadataFetchResult(true, src, "Found via $src", scrapedTitle = newScrapedTitle)
     }
 
-    // Bulk fetch for games missing artwork.
     suspend fun fetchMissingMetadata(onProgress: (current: Int, total: Int) -> Unit) {
         val games = gameDao.getGamesWithoutArtwork()
         games.forEachIndexed { index, game ->
             onProgress(index + 1, games.size)
-            // fetchForGame reads the entity again for scrapedTitle/userTitleOverride internally.
             fetchForGame(
                 gameId     = game.id,
                 title      = game.title,
                 platformId = game.platformId,
                 romPath    = game.romPath,
             )
-            if (index < games.size - 1) delay(1_100)
+            if (index < games.size - 1) delay(500)
         }
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────────
 
-    private fun pickBoxArt(ssUrl: String?, sgdbUrl: String?, options: ScrapeOptions): String? =
-        if (options.preferScreenScraperBoxArt) ssUrl ?: sgdbUrl else sgdbUrl ?: ssUrl
+    private fun primarySource(tgdb: TgdbGameInfo?, igdb: IgdbGameInfo?, sgdbUrl: String?): String =
+        when {
+            tgdb != null    -> "thegamesdb"
+            igdb != null    -> "igdb"
+            sgdbUrl != null -> "steamgriddb"
+            else            -> "mixed"
+        }
 
-    private fun pickHero(ssUrl: String?, sgdbUrl: String?, options: ScrapeOptions): String? =
-        if (options.preferSteamGridDbHeroes) sgdbUrl ?: ssUrl else ssUrl ?: sgdbUrl
-
-    private fun primarySource(
-        ssInfo: SsGameInfo?,
-        sgdbGridUrl: String?,
-        igdbInfo: IgdbGameInfo?,
-        tgdbInfo: TgdbGameInfo?,
-    ): String = when {
-        ssInfo != null     -> "screenscraper"
-        tgdbInfo != null   -> "thegamesdb"
-        igdbInfo != null   -> "igdb"
-        sgdbGridUrl != null -> "steamgriddb"
-        else               -> "mixed"
-    }
-
-    // Always sources the landscape 144:80 icon from SteamGridDB since ScreenScraper /
-    // IGDB / TheGamesDB don't provide the horizontal capsule format.
     private suspend fun fetchHorizontalIcon(gameId: Long, title: String, knownSgdbId: Long?) {
         val key = sgdbKeyProvider.getKey()
         if (key.isNullOrBlank()) return
         runCatching {
-            val gameId2 = knownSgdbId
+            val id = knownSgdbId
                 ?: steamGridDb.searchGame(title).getOrNull()?.firstOrNull()?.id
                 ?: return
-            val url = steamGridDb.getBestHorizontalGridUrl(gameId2) ?: return
+            val url  = steamGridDb.getBestHorizontalGridUrl(id) ?: return
             val path = cardProcessor.downloadRaw(gameId, url, "icon.jpg") ?: url
             gameDao.updateIconUri(gameId, path)
             prewarm(path)

@@ -4,10 +4,6 @@ import android.content.Context
 import coil.ImageLoader
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
-import com.playfieldportal.feature.artwork.MetadataApiKeyProvider
-import com.playfieldportal.feature.artwork.MetadataRepository
-import com.playfieldportal.feature.artwork.ScreenScraperApi
-import com.playfieldportal.feature.artwork.TheGamesDbApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -32,6 +28,7 @@ object ArtworkModule {
     @Provides
     @Singleton
     fun provideHttpClient(): HttpClient = HttpClient(Android) {
+        expectSuccess = false
         install(ContentNegotiation) {
             json(Json {
                 ignoreUnknownKeys = true
@@ -67,10 +64,4 @@ object ArtworkModule {
             }
             .crossfade(true)
             .build()
-
-    // MetadataApiKeyProvider, ScreenScraperApi, TheGamesDbApi, and MetadataRepository
-    // are all @Singleton @Inject constructor classes — Hilt can inject them without
-    // explicit @Provides. They are listed here only for documentation purposes and
-    // to ensure their transitive dependencies (HttpClient, ImageLoader) are resolved
-    // from this module. No @Provides needed — Hilt resolves them via constructor injection.
 }

@@ -21,21 +21,13 @@ import timber.log.Timber
 import javax.inject.Inject
 
 data class ArtworkSettingsUiState(
-    // ── SteamGridDB key (existing) ────────────────────────────────────────────
     val hasApiKey: Boolean = false,
     val apiKeyMasked: String = "",
-    // ── ScreenScraper credentials ─────────────────────────────────────────────
-    val hasSsCredentials: Boolean = false,
-    val ssUsername: String = "",
-    val ssCredentialStatus: String? = null,
-    // ── IGDB credentials ──────────────────────────────────────────────────────
     val hasIgdbCredentials: Boolean = false,
     val igdbClientId: String = "",
     val igdbCredentialStatus: String? = null,
-    // ── Artwork status (existing) ─────────────────────────────────────────────
     val status: ArtworkStatus = ArtworkStatus(),
     val isLoadingStatus: Boolean = false,
-    // ── Scraping progress (existing + extended) ───────────────────────────────
     val isScraping: Boolean = false,
     val scrapeCurrent: Int = 0,
     val scrapeTotal: Int = 0,
@@ -46,17 +38,11 @@ data class ArtworkSettingsUiState(
     val scrapeAsset: String = "",
     val summary: String? = null,
     val confirmRescrapeAll: Boolean = false,
-    // ── Cache (existing) ──────────────────────────────────────────────────────
     val diskCacheSizeMb: String = "0 MB",
-    // ── Art preferences (existing + new) ─────────────────────────────────────
     val preferredGridStyle: String = "Any",
     val downloadHeroes: Boolean = true,
     val downloadLogos: Boolean = true,
-    // ── Scrape preferences (new) ──────────────────────────────────────────────
     val preferSteamGridDbHeroes: Boolean = false,
-    val preferScreenScraperBoxArt: Boolean = true,
-    val downloadManuals: Boolean = false,
-    val downloadVideoSnaps: Boolean = false,
 )
 
 @HiltViewModel
@@ -72,16 +58,13 @@ class ArtworkSettingsViewModel @Inject constructor(
 
     val uiState: StateFlow<ArtworkSettingsUiState> = combine(
         sgdbKeyProvider.apiKeyFlow,
-        metadataKeyProvider.ssUsernameFlow,
         metadataKeyProvider.igdbClientIdFlow,
         scrapePreferences.preferSteamGridDbHeroesFlow,
         _extra,
-    ) { sgdbKey, ssUsername, igdbClientId, preferSgdbHeroes, extra ->
+    ) { sgdbKey, igdbClientId, preferSgdbHeroes, extra ->
         extra.copy(
             hasApiKey             = !sgdbKey.isNullOrBlank(),
             apiKeyMasked          = if (!sgdbKey.isNullOrBlank()) "••••••" else "",
-            hasSsCredentials      = !ssUsername.isNullOrBlank(),
-            ssUsername            = ssUsername ?: "",
             hasIgdbCredentials    = !igdbClientId.isNullOrBlank(),
             igdbClientId          = igdbClientId ?: "",
             preferSteamGridDbHeroes = preferSgdbHeroes,
@@ -98,11 +81,8 @@ class ArtworkSettingsViewModel @Inject constructor(
             val opts = scrapePreferences.getOptions()
             _extra.update {
                 it.copy(
-                    downloadHeroes            = opts.downloadHeroes,
-                    downloadLogos             = opts.downloadClearLogos,
-                    preferScreenScraperBoxArt = opts.preferScreenScraperBoxArt,
-                    downloadManuals           = opts.downloadManuals,
-                    downloadVideoSnaps        = opts.downloadVideoSnaps,
+                    downloadHeroes = opts.downloadHeroes,
+                    downloadLogos  = opts.downloadClearLogos,
                 )
             }
         }
@@ -116,60 +96,17 @@ class ArtworkSettingsViewModel @Inject constructor(
         }
     }
 
-    // ── SteamGridDB API key (existing) ──────────────────────────────────────────
-
     fun saveApiKey(key: String) {
-        viewModelScope.launch {
-            sgdbKeyProvider.saveKey(key.trim())
-            Timber.i("SteamGridDB API key saved")
-        }
+        viewModelScope.launch { sgdbKeyProvider.saveKey(key.trim()) }
     }
 
     fun clearApiKey() {
-        viewModelScope.launch {
-            sgdbKeyProvider.clearKey()
-            Timber.i("SteamGridDB API key cleared")
-        }
+        viewModelScope.launch { sgdbKeyProvider.clearKey() }
     }
-
-    // ── ScreenScraper credentials ───────────────────────────────────────────────
-
-    fun saveSsCredentials(username: String, password: String) {
-        viewModelScope.launch {
-            metadataKeyProvider.saveSsCredentials(username.trim(), password.trim())
-            Timber.i("ScreenScraper credentials saved (username: ${username.trim()})")
-            _extra.update { it.copy(ssCredentialStatus = null) }
-        }
-    }
-
-    fun clearSsCredentials() {
-        viewModelScope.launch {
-            metadataKeyProvider.clearSsCredentials()
-            Timber.i("ScreenScraper credentials cleared")
-            _extra.update { it.copy(ssCredentialStatus = null) }
-        }
-    }
-
-    fun testSsCredentials(username: String, password: String) {
-        // ScreenScraper has no lightweight auth ping — credentials are validated on the first
-        // real scrape request. We only check that both fields are non-blank here.
-        val valid = username.isNotBlank() && password.isNotBlank()
-        _extra.update {
-            it.copy(
-                ssCredentialStatus = if (valid)
-                    "Fields look good — tap Save to store them"
-                else
-                    "Username and password are both required",
-            )
-        }
-    }
-
-    // ── IGDB credentials ────────────────────────────────────────────────────────
 
     fun saveIgdbCredentials(clientId: String, clientSecret: String) {
         viewModelScope.launch {
             metadataKeyProvider.saveIgdbCredentials(clientId.trim(), clientSecret.trim())
-            Timber.i("IGDB credentials saved")
             _extra.update { it.copy(igdbCredentialStatus = null) }
         }
     }
@@ -177,7 +114,6 @@ class ArtworkSettingsViewModel @Inject constructor(
     fun clearIgdbCredentials() {
         viewModelScope.launch {
             metadataKeyProvider.clearIgdbCredentials()
-            Timber.i("IGDB credentials cleared")
             _extra.update { it.copy(igdbCredentialStatus = null) }
         }
     }
@@ -189,15 +125,12 @@ class ArtworkSettingsViewModel @Inject constructor(
             _extra.update {
                 it.copy(igdbCredentialStatus = if (ok) "Valid" else "Invalid — check Client ID and Secret")
             }
-            Timber.i("IGDB credential test: $ok")
         }
     }
 
     fun dismissCredentialStatus() {
-        _extra.update { it.copy(ssCredentialStatus = null, igdbCredentialStatus = null) }
+        _extra.update { it.copy(igdbCredentialStatus = null) }
     }
-
-    // ── Scraping ─────────────────────────────────────────────────────────────────
 
     fun requestRescrapeAll() = _extra.update { it.copy(confirmRescrapeAll = true) }
     fun cancelRescrapeAll()  = _extra.update { it.copy(confirmRescrapeAll = false) }
@@ -259,11 +192,8 @@ class ArtworkSettingsViewModel @Inject constructor(
         viewModelScope.launch {
             artworkRepository.clearCache()
             _extra.update { it.copy(diskCacheSizeMb = "0 MB") }
-            Timber.i("Artwork image cache cleared")
         }
     }
-
-    // ── Art preferences (existing) ────────────────────────────────────────────
 
     fun cycleGridStyle() {
         val styles = listOf("Any", "Alternate", "Blurred", "White Logo", "Material")
@@ -282,24 +212,7 @@ class ArtworkSettingsViewModel @Inject constructor(
         viewModelScope.launch { scrapePreferences.setDownloadClearLogos(enabled) }
     }
 
-    // ── Scrape preferences (new) ──────────────────────────────────────────────
-
     fun setPreferSteamGridDbHeroes(enabled: Boolean) {
         viewModelScope.launch { scrapePreferences.setPreferSteamGridDbHeroes(enabled) }
-    }
-
-    fun setPreferScreenScraperBoxArt(enabled: Boolean) {
-        _extra.update { it.copy(preferScreenScraperBoxArt = enabled) }
-        viewModelScope.launch { scrapePreferences.setPreferScreenScraperBoxArt(enabled) }
-    }
-
-    fun setDownloadManuals(enabled: Boolean) {
-        _extra.update { it.copy(downloadManuals = enabled) }
-        viewModelScope.launch { scrapePreferences.setDownloadManuals(enabled) }
-    }
-
-    fun setDownloadVideoSnaps(enabled: Boolean) {
-        _extra.update { it.copy(downloadVideoSnaps = enabled) }
-        viewModelScope.launch { scrapePreferences.setDownloadVideoSnaps(enabled) }
     }
 }

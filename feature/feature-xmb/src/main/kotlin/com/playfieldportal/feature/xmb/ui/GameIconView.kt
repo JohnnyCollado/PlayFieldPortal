@@ -73,6 +73,12 @@ fun GameIcon(
     modifier: Modifier = Modifier,
 ) {
     when {
+        item.isAndroidApp && item.iconUri != null -> PspIcon0Icon(
+            artworkUri  = item.iconUri,
+            accentColor = item.accentColor?.let { Color(it) },
+            title       = item.title,
+            modifier    = modifier,
+        )
         item.isAndroidApp -> AndroidAppIcon(
             packageName = item.packageName,
             title       = item.title,

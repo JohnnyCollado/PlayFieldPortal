@@ -24,6 +24,7 @@ import com.playfieldportal.core.ui.theme.DefaultPFPColors
 import com.playfieldportal.core.ui.theme.PFPColors
 import com.playfieldportal.core.ui.wave.WaveRenderMode
 import com.playfieldportal.core.data.repository.ControllerMappingRepository
+import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.feature.artwork.api.ArtworkRepository
 import com.playfieldportal.feature.library.scanner.RomScanner
@@ -116,6 +117,8 @@ data class XMBUiState(
 
     // ── Background + rendering ────────────────────────────────────────────
     val waveRenderMode: WaveRenderMode = WaveRenderMode.FULL,
+    val customWallpaperPath: String? = null,
+
     val showBootSequence: Boolean = true,
     val showTaskTray: Boolean = false,
     val activeBackgroundTasks: Int = 0,
@@ -128,6 +131,8 @@ data class XMBUiState(
     val pendingDrawerAction: GamepadAction? = null,
     val pendingGameDetailAction: GamepadAction? = null,
     val activeGameId: Long? = null,
+    val activeAppId: Long? = null,
+    val pendingAppDetailAction: GamepadAction? = null,
 
     // ── Context menu (Y/Triangle) ─────────────────────────────────────────
     val activeContextMenu: XMBContextMenu? = null,
@@ -207,6 +212,7 @@ class XMBViewModel @Inject constructor(
     init {
         gamepadInputHandler.scope = viewModelScope
         observeIconStyle()
+        observeWallpaper()
         observeLibrarySetupState()
         observeActiveTheme()
         observeCategoryBar()
@@ -544,6 +550,12 @@ class XMBViewModel @Inject constructor(
                 _uiState.update { it.copy(pendingGameDetailAction = action) }
                 return
             }
+            state.activeAppId != null -> {
+                // Forward everything so the App Detail page can close its own inner overlays
+                // (artwork picker) before popping back to the XMB (via onCloseAppDetail).
+                _uiState.update { it.copy(pendingAppDetailAction = action) }
+                return
+            }
             state.activeSettingsScreen != null -> {
                 Timber.d("Gamepad → settings(${state.activeSettingsScreen}): $action")
                 // BACK is forwarded into the settings layer (not handled here) so the active
@@ -658,6 +670,7 @@ class XMBViewModel @Inject constructor(
     private fun openGameContextMenu(item: XMBItem) {
         val items = buildList {
             add(XMBContextMenuItem("launch", "Launch Game"))
+            if (item.packageName != null) add(XMBContextMenuItem("edit_app", "Edit App Details"))
             add(XMBContextMenuItem(
                 id    = if (item.isFavorite) "unfavorite" else "favorite",
                 label = if (item.isFavorite) "Remove from Favorites" else "Add to Favorites",
@@ -669,9 +682,10 @@ class XMBViewModel @Inject constructor(
 
         _uiState.update { it.copy(
             activeContextMenu = XMBContextMenu(
-                title  = item.title,
-                items  = items,
-                gameId = item.gameId,
+                title       = item.title,
+                items       = items,
+                gameId      = item.gameId,
+                packageName = item.packageName,
             )
         )}
     }
@@ -680,18 +694,20 @@ class XMBViewModel @Inject constructor(
         val pkg = item.packageName ?: return
         val categoryId = currentCategory()?.id
         val items = buildList {
-            add(XMBContextMenuItem("launch",  "Launch"))
-            add(XMBContextMenuItem("move",    "Move To Category"))
-            add(XMBContextMenuItem("add",     "Add To Category"))
+            add(XMBContextMenuItem("launch",   "Launch"))
+            add(XMBContextMenuItem("edit_app", "Edit App Details"))
+            add(XMBContextMenuItem("move",     "Move To Category"))
+            add(XMBContextMenuItem("add",      "Add To Category"))
             if (categoryId != null) add(XMBContextMenuItem("remove", "Remove From Category"))
             if (categoryId != null) add(XMBContextMenuItem("pin",    "Pin To Category"))
-            add(XMBContextMenuItem("hide",    "Hide App"))
-            add(XMBContextMenuItem("rename",  "Rename Shortcut"))
+            add(XMBContextMenuItem("hide",     "Hide App"))
+            add(XMBContextMenuItem("rename",   "Rename Shortcut"))
         }
         _uiState.update { it.copy(
             activeContextMenu = XMBContextMenu(
                 title           = item.title,
                 items           = items,
+                gameId          = item.gameId,
                 packageName     = pkg,
                 categoryContext = categoryId,
             )
@@ -739,6 +755,7 @@ class XMBViewModel @Inject constructor(
             }
             menu.gameId != null -> when (itemId) {
                 "launch"           -> _uiState.update { it.copy(activeGameId = menu.gameId) }
+                "edit_app"         -> openAppDetail(menu.gameId, menu.packageName ?: return)
                 "favorite"         -> toggleGameFavorite(menu.gameId, true)
                 "unfavorite"       -> toggleGameFavorite(menu.gameId, false)
                 "refresh_artwork"  -> refreshGameArtwork(menu.gameId)
@@ -754,13 +771,14 @@ class XMBViewModel @Inject constructor(
                         "add"  -> appAction { appCategoryRepository.addToCategory(pkg, targetCategory) }
                     }
                 } else when (itemId) {
-                    "launch" -> appCategoryRepository.launch(pkg)
-                    "move"   -> openCategoryPicker(pkg, menu.categoryContext, "move")
-                    "add"    -> openCategoryPicker(pkg, menu.categoryContext, "add")
-                    "remove" -> menu.categoryContext?.let { cat -> appAction { appCategoryRepository.removeFromCategory(pkg, cat) } }
-                    "pin"    -> menu.categoryContext?.let { cat -> appAction { appCategoryRepository.pinToCategory(pkg, cat) } }
-                    "hide"   -> appAction { appCategoryRepository.setHidden(pkg, true) }
-                    "rename" -> _uiState.update { it.copy(renameAppTarget = pkg, renameAppCurrent = menu.title) }
+                    "launch"    -> appCategoryRepository.launch(pkg)
+                    "edit_app"  -> openAppDetail(menu.gameId, pkg)
+                    "move"      -> openCategoryPicker(pkg, menu.categoryContext, "move")
+                    "add"       -> openCategoryPicker(pkg, menu.categoryContext, "add")
+                    "remove"    -> menu.categoryContext?.let { cat -> appAction { appCategoryRepository.removeFromCategory(pkg, cat) } }
+                    "pin"       -> menu.categoryContext?.let { cat -> appAction { appCategoryRepository.pinToCategory(pkg, cat) } }
+                    "hide"      -> appAction { appCategoryRepository.setHidden(pkg, true) }
+                    "rename"    -> _uiState.update { it.copy(renameAppTarget = pkg, renameAppCurrent = menu.title) }
                 }
             }
         }
@@ -1160,6 +1178,44 @@ class XMBViewModel @Inject constructor(
         _uiState.update { it.copy(pendingGameDetailAction = null) }
     }
 
+    // ── App detail overlay ────────────────────────────────────────────────────
+
+    private fun openAppDetail(knownGameId: Long?, packageName: String) {
+        if (knownGameId != null) {
+            _uiState.update { it.copy(activeAppId = knownGameId) }
+            return
+        }
+        viewModelScope.launch {
+            val game = gameRepository.getByPackageName(packageName)
+            if (game != null) {
+                _uiState.update { it.copy(activeAppId = game.id) }
+            } else {
+                val label = runCatching {
+                    context.packageManager.getApplicationLabel(
+                        context.packageManager.getApplicationInfo(packageName, 0)
+                    ).toString()
+                }.getOrDefault(packageName)
+                val newId = gameRepository.upsert(
+                    Game(
+                        title         = label,
+                        platformId    = "android",
+                        packageName   = packageName,
+                        isManualEntry = true,
+                    )
+                )
+                _uiState.update { it.copy(activeAppId = newId) }
+            }
+        }
+    }
+
+    fun onCloseAppDetail() {
+        _uiState.update { it.copy(activeAppId = null, pendingAppDetailAction = null) }
+    }
+
+    fun consumeAppDetailAction() {
+        _uiState.update { it.copy(pendingAppDetailAction = null) }
+    }
+
     // ── Settings overlay ──────────────────────────────────────────────────────
 
     fun onCloseSettingsScreen() {
@@ -1234,6 +1290,19 @@ class XMBViewModel @Inject constructor(
         }
     }
 
+    // ── Custom wallpaper ──────────────────────────────────────────────────────
+
+    private fun observeWallpaper() {
+        viewModelScope.launch {
+            context.pfpDataStore.data.collect { prefs ->
+                val path = prefs[KEY_CUSTOM_WALLPAPER]
+                // Validate the file still exists before surfacing it to the UI.
+                val validPath = if (path != null && java.io.File(path).exists()) path else null
+                _uiState.update { it.copy(customWallpaperPath = validPath) }
+            }
+        }
+    }
+
     // ── Idle wave timer ───────────────────────────────────────────────────────
 
     private fun resetIdleTimer() {
@@ -1249,8 +1318,9 @@ class XMBViewModel @Inject constructor(
     // ── Static data ───────────────────────────────────────────────────────────
 
     companion object {
-        private val KEY_ICON_STYLE     = stringPreferencesKey("display_icon_style")
-        private val KEY_SETUP_COMPLETE = booleanPreferencesKey("library_setup_complete")
+        private val KEY_ICON_STYLE        = stringPreferencesKey("display_icon_style")
+        private val KEY_SETUP_COMPLETE    = booleanPreferencesKey("library_setup_complete")
+        private val KEY_CUSTOM_WALLPAPER  = stringPreferencesKey("display_custom_wallpaper")
         private const val SETUP_ITEM_ID = "library_setup"
         private const val NO_CONSOLES_ITEM_ID = "no_consoles"
         private const val NO_GAMES_ITEM_ID    = "no_games"

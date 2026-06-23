@@ -8,7 +8,6 @@ import com.playfieldportal.core.data.repository.MemoryCardRepository
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.MemoryCard
 import com.playfieldportal.core.domain.repository.GameRepository
-import com.playfieldportal.feature.artwork.ScreenScraperApi
 import com.playfieldportal.feature.artwork.TheGamesDbApi
 import com.playfieldportal.feature.artwork.api.ArtworkFetchResult
 import com.playfieldportal.feature.artwork.api.ArtworkRepository
@@ -55,6 +54,8 @@ class GameDetailViewModelTest {
     private lateinit var intentResolver: EmulatorIntentResolver
     private lateinit var artworkRepository: ArtworkRepository
     private lateinit var steamGridDb: SteamGridDbApi
+    private lateinit var igdbApi: IgdbApi
+    private lateinit var theGamesDb: TheGamesDbApi
     private lateinit var cardProcessor: CardArtworkProcessor
     private lateinit var viewModel: GameDetailViewModel
 
@@ -102,6 +103,8 @@ class GameDetailViewModelTest {
         intentResolver    = mockk(relaxed = true)
         artworkRepository = mockk(relaxed = true)
         steamGridDb       = mockk(relaxed = true)
+        igdbApi           = mockk(relaxed = true)
+        theGamesDb        = mockk(relaxed = true)
         cardProcessor     = mockk(relaxed = true)
 
         coEvery { gameRepository.getById(1L) }    returns fakeGame
@@ -119,6 +122,8 @@ class GameDetailViewModelTest {
             intentResolver    = intentResolver,
             artworkRepository = artworkRepository,
             steamGridDb       = steamGridDb,
+            igdbApi           = igdbApi,
+            theGamesDb        = theGamesDb,
             cardProcessor     = cardProcessor,
         )
     }

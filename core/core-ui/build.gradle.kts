@@ -17,6 +17,7 @@ android {
 }
 
 dependencies {
+    api(project(":core:core-domain"))
     implementation(platform(libs.compose.bom))
     implementation(libs.bundles.compose)
     implementation(libs.coil.compose)

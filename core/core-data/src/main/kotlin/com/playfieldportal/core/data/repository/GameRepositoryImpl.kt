@@ -58,6 +58,9 @@ class GameRepositoryImpl @Inject constructor(
     override suspend fun getById(id: Long): Game? =
         gameDao.getById(id)?.toDomain()
 
+    override suspend fun getByPackageName(packageName: String): Game? =
+        gameDao.getByPackageName(packageName)?.toDomain()
+
     override suspend fun upsert(game: Game): Long =
         gameDao.upsert(game.toEntity())
 

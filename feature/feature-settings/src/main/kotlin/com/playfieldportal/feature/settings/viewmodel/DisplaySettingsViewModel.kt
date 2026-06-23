@@ -1,6 +1,7 @@
 package com.playfieldportal.feature.settings.viewmodel
 
 import android.content.Context
+import android.net.Uri
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -10,11 +11,15 @@ import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.ui.wave.WaveRenderMode
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import timber.log.Timber
+import java.io.File
 import javax.inject.Inject
 
 private val KEY_WAVE_MODE          = stringPreferencesKey("display_wave_mode")
@@ -24,12 +29,15 @@ private val KEY_BOOT_ON_RESUME     = booleanPreferencesKey("display_boot_on_resu
 private val KEY_THERMAL_AWARE      = booleanPreferencesKey("display_thermal_aware")
 private val KEY_RESPECT_BATTERY    = booleanPreferencesKey("display_battery_saver")
 private val KEY_ICON_STYLE         = stringPreferencesKey("display_icon_style")
+internal val KEY_CUSTOM_WALLPAPER  = stringPreferencesKey("display_custom_wallpaper")
 
 private val ICON_STYLE_LABELS = mapOf(
     "PSP_RECTANGLE" to "PSP Rectangle",
     "CARTRIDGE"     to "Cartridge",
 )
 private val ICON_STYLE_ORDER = listOf("PSP_RECTANGLE", "CARTRIDGE")
+
+private val SUPPORTED_WALLPAPER_MIME = setOf("image/png", "image/jpeg", "image/webp")
 
 data class DisplaySettingsUiState(
     val waveModeName: String = WaveRenderMode.FULL.name,
@@ -40,6 +48,9 @@ data class DisplaySettingsUiState(
     val respectBatterySaver: Boolean = true,
     // Raw enum name — mapped to a display label in the UI
     val iconStyleName: String = "PSP_RECTANGLE",
+    val customWallpaperPath: String? = null,
+    val wallpaperMessage: String? = null,
+    val wallpaperImporting: Boolean = false,
 )
 
 @HiltViewModel
@@ -47,18 +58,27 @@ class DisplaySettingsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
-    val uiState: StateFlow<DisplaySettingsUiState> = context.pfpDataStore.data
-        .map { prefs ->
-            DisplaySettingsUiState(
-                waveModeName       = prefs[KEY_WAVE_MODE]       ?: WaveRenderMode.FULL.name,
-                autoReduceOnIdle   = prefs[KEY_AUTO_REDUCE]     ?: true,
-                showBootSequence   = prefs[KEY_SHOW_BOOT]       ?: true,
-                showBootOnResume   = prefs[KEY_BOOT_ON_RESUME]  ?: false,
-                thermalThrottleAware = prefs[KEY_THERMAL_AWARE] ?: true,
-                respectBatterySaver  = prefs[KEY_RESPECT_BATTERY] ?: true,
-                iconStyleName      = prefs[KEY_ICON_STYLE]      ?: "PSP_RECTANGLE",
-            )
-        }
+    private val _wallpaperMessage  = MutableStateFlow<String?>(null)
+    private val _wallpaperImporting = MutableStateFlow(false)
+
+    val uiState: StateFlow<DisplaySettingsUiState> = combine(
+        context.pfpDataStore.data,
+        _wallpaperMessage,
+        _wallpaperImporting,
+    ) { prefs, msg, importing ->
+        DisplaySettingsUiState(
+            waveModeName         = prefs[KEY_WAVE_MODE]       ?: WaveRenderMode.FULL.name,
+            autoReduceOnIdle     = prefs[KEY_AUTO_REDUCE]     ?: true,
+            showBootSequence     = prefs[KEY_SHOW_BOOT]       ?: true,
+            showBootOnResume     = prefs[KEY_BOOT_ON_RESUME]  ?: false,
+            thermalThrottleAware = prefs[KEY_THERMAL_AWARE]   ?: true,
+            respectBatterySaver  = prefs[KEY_RESPECT_BATTERY] ?: true,
+            iconStyleName        = prefs[KEY_ICON_STYLE]      ?: "PSP_RECTANGLE",
+            customWallpaperPath  = prefs[KEY_CUSTOM_WALLPAPER],
+            wallpaperMessage     = msg,
+            wallpaperImporting   = importing,
+        )
+    }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DisplaySettingsUiState())
 
     fun cycleWaveMode() {
@@ -82,6 +102,48 @@ class DisplaySettingsViewModel @Inject constructor(
     }
 
     fun iconStyleLabel(): String = ICON_STYLE_LABELS[uiState.value.iconStyleName] ?: uiState.value.iconStyleName
+
+    // ── Wallpaper ─────────────────────────────────────────────────────────────
+
+    fun onWallpaperPicked(uri: Uri) {
+        viewModelScope.launch {
+            val mime = context.contentResolver.getType(uri)
+            if (mime != null && mime !in SUPPORTED_WALLPAPER_MIME) {
+                _wallpaperMessage.value = "Unsupported format — use PNG, JPG, or WEBP"
+                return@launch
+            }
+            _wallpaperImporting.value = true
+            val dest = File(context.filesDir, "wallpaper/wallpaper.jpg")
+            val ok = try {
+                dest.parentFile?.mkdirs()
+                context.contentResolver.openInputStream(uri)?.use { input ->
+                    dest.outputStream().use { out -> input.copyTo(out) }
+                }
+                true
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to import wallpaper")
+                false
+            }
+            _wallpaperImporting.value = false
+            if (ok) {
+                save { it[KEY_CUSTOM_WALLPAPER] = dest.absolutePath }
+                _wallpaperMessage.value = "Wallpaper applied"
+            } else {
+                _wallpaperMessage.value = "Failed to import wallpaper — please try again"
+            }
+        }
+    }
+
+    fun clearWallpaper() {
+        viewModelScope.launch {
+            save { it.remove(KEY_CUSTOM_WALLPAPER) }
+            _wallpaperMessage.value = "Wallpaper reset to default"
+        }
+    }
+
+    fun dismissWallpaperMessage() {
+        _wallpaperMessage.value = null
+    }
 
     private fun save(block: suspend (androidx.datastore.preferences.core.MutablePreferences) -> Unit) {
         viewModelScope.launch { context.pfpDataStore.edit { block(it) } }

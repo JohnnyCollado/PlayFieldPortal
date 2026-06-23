@@ -50,7 +50,6 @@ dependencies {
     implementation(project(":core:core-domain"))
     implementation(project(":core:core-data"))
     implementation(project(":core:core-ui"))
-    // ArtworkRepository and SgdbApiKeyProvider
     implementation(project(":feature:feature-artwork"))
     // EmulatorProfileRepository
     implementation(project(":feature:feature-launcher"))

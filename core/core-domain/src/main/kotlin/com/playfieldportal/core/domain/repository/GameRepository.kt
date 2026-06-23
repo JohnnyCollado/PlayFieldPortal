@@ -11,6 +11,7 @@ interface GameRepository {
     fun observeByPlatform(platformId: String): Flow<List<Game>>
     fun observeRecentPlatforms(limit: Int): Flow<List<RecentPlatform>>
     suspend fun getById(id: Long): Game?
+    suspend fun getByPackageName(packageName: String): Game?
     suspend fun upsert(game: Game): Long
     suspend fun delete(id: Long)
     suspend fun setFavorite(id: Long, isFavorite: Boolean)

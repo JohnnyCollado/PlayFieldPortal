@@ -36,10 +36,7 @@ fun ArtworkSettingsScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
 
-    // Local draft state for credential inputs
     var sgdbKeyDraft by remember(state.apiKeyMasked) { mutableStateOf("") }
-    var ssUsernameDraft by remember(state.ssUsername) { mutableStateOf("") }
-    var ssPasswordDraft by remember { mutableStateOf("") }
     var igdbClientIdDraft by remember(state.igdbClientId) { mutableStateOf("") }
     var igdbClientSecretDraft by remember { mutableStateOf("") }
 
@@ -58,17 +55,17 @@ fun ArtworkSettingsScreen(
             // ── Artwork status ────────────────────────────────────────────────
             SettingsGroup("Library Artwork Status")
 
-            SettingsValueRow(label = "Total Games",    value = state.status.total.toString())
-            SettingsValueRow(label = "Complete",       value = state.status.complete.toString())
-            SettingsValueRow(label = "Missing",        value = state.status.missing.toString())
-            SettingsValueRow(label = "Stale / Invalid", value = state.status.stale.toString())
+            SettingsValueRow(label = "Total Games",      value = state.status.total.toString())
+            SettingsValueRow(label = "Complete",         value = state.status.complete.toString())
+            SettingsValueRow(label = "Missing",          value = state.status.missing.toString())
+            SettingsValueRow(label = "Stale / Invalid",  value = state.status.stale.toString())
             SettingsRow(
                 label    = "Refresh Status",
                 sublabel = if (state.isLoadingStatus) "Checking files…" else "Re-check artwork on disk",
                 onClick  = if (state.isLoadingStatus) null else ({ viewModel.refreshStatus() }),
             )
 
-            // ── Scraping mode ─────────────────────────────────────────────────
+            // ── Scraping ──────────────────────────────────────────────────────
             SettingsGroup("Scrape Artwork")
 
             if (state.isScraping) {
@@ -87,7 +84,7 @@ fun ArtworkSettingsScreen(
                     )
                     if (state.scrapeSource.isNotEmpty() || state.scrapeAsset.isNotEmpty()) {
                         Text(
-                            text  = buildString {
+                            text = buildString {
                                 if (state.scrapeSource.isNotEmpty()) append(state.scrapeSource)
                                 if (state.scrapeSource.isNotEmpty() && state.scrapeAsset.isNotEmpty()) append(" › ")
                                 if (state.scrapeAsset.isNotEmpty()) append(state.scrapeAsset)
@@ -121,13 +118,12 @@ fun ArtworkSettingsScreen(
                 )
             }
 
-            // ── Source priority (informational) ───────────────────────────────
+            // ── Source priority ───────────────────────────────────────────────
             SettingsGroup("Source Priority")
 
-            SettingsValueRow(label = "Primary",         value = "ScreenScraper")
-            SettingsValueRow(label = "Fallback 1",      value = "SteamGridDB")
-            SettingsValueRow(label = "Fallback 2",      value = "IGDB")
-            SettingsValueRow(label = "Fallback 3",      value = "TheGamesDB")
+            SettingsValueRow(label = "Primary",    value = "TheGamesDB")
+            SettingsValueRow(label = "Fallback 1", value = "IGDB")
+            SettingsValueRow(label = "Fallback 2", value = "SteamGridDB (artwork)")
 
             // ── Art preferences ───────────────────────────────────────────────
             SettingsGroup("Art Preferences")
@@ -137,13 +133,6 @@ fun ArtworkSettingsScreen(
                 sublabel = "Style used when multiple grids are available",
                 value    = state.preferredGridStyle,
                 onClick  = { viewModel.cycleGridStyle() },
-            )
-
-            SettingsToggleRow(
-                label    = "Prefer ScreenScraper Box Art",
-                sublabel = "Try ScreenScraper first for box art; fall back to SteamGridDB → IGDB → TheGamesDB",
-                checked  = state.preferScreenScraperBoxArt,
-                onToggle = { viewModel.setPreferScreenScraperBoxArt(it) },
             )
 
             SettingsToggleRow(
@@ -166,87 +155,6 @@ fun ArtworkSettingsScreen(
                 checked  = state.downloadLogos,
                 onToggle = { viewModel.setDownloadLogos(it) },
             )
-
-            SettingsToggleRow(
-                label    = "Download Manuals",
-                sublabel = "PDF manuals from ScreenScraper (where available)",
-                checked  = state.downloadManuals,
-                onToggle = { viewModel.setDownloadManuals(it) },
-            )
-
-            SettingsToggleRow(
-                label    = "Download Video Snaps",
-                sublabel = "Video previews from ScreenScraper (where available)",
-                checked  = state.downloadVideoSnaps,
-                onToggle = { viewModel.setDownloadVideoSnaps(it) },
-            )
-
-            // ── ScreenScraper credentials ─────────────────────────────────────
-            SettingsGroup("ScreenScraper Credentials")
-
-            Column(modifier = Modifier.padding(horizontal = 48.dp, vertical = 8.dp)) {
-                Text(
-                    text  = if (state.hasSsCredentials) "Username (saved: ${state.ssUsername})" else "Username",
-                    color = SettingsSubtext,
-                )
-                Spacer(Modifier.height(4.dp))
-                OutlinedTextField(
-                    value         = ssUsernameDraft,
-                    onValueChange = { ssUsernameDraft = it },
-                    placeholder   = {
-                        Text(
-                            text  = if (state.hasSsCredentials) state.ssUsername else "ScreenScraper username",
-                            color = SettingsSubtext,
-                        )
-                    },
-                    singleLine = true,
-                    colors     = credentialFieldColors(),
-                )
-                Spacer(Modifier.height(8.dp))
-                Text(text = "Password", color = SettingsSubtext)
-                Spacer(Modifier.height(4.dp))
-                OutlinedTextField(
-                    value                = ssPasswordDraft,
-                    onValueChange        = { ssPasswordDraft = it },
-                    placeholder          = { Text("••••••••", color = SettingsSubtext) },
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions      = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    singleLine           = true,
-                    colors               = credentialFieldColors(),
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text  = "Register at screenscraper.fr for higher rate limits",
-                    color = SettingsSubtext.copy(alpha = 0.6f),
-                )
-            }
-
-            state.ssCredentialStatus?.let {
-                SettingsRow(label = it, sublabel = "Tap to dismiss", onClick = { viewModel.dismissCredentialStatus() })
-            }
-
-            if (ssUsernameDraft.isNotBlank() && ssPasswordDraft.isNotBlank()) {
-                SettingsRow(
-                    label   = "Test Credentials",
-                    onClick = { viewModel.testSsCredentials(ssUsernameDraft, ssPasswordDraft) },
-                )
-                SettingsRow(
-                    label   = "Save Credentials",
-                    onClick = {
-                        viewModel.saveSsCredentials(ssUsernameDraft, ssPasswordDraft)
-                        ssUsernameDraft = ""
-                        ssPasswordDraft = ""
-                    },
-                )
-            }
-
-            if (state.hasSsCredentials) {
-                SettingsRow(
-                    label    = "Clear ScreenScraper Credentials",
-                    sublabel = "ScreenScraper will run anonymously (lower rate limit)",
-                    onClick  = { viewModel.clearSsCredentials() },
-                )
-            }
 
             // ── SteamGridDB API key ───────────────────────────────────────────
             SettingsGroup("SteamGridDB API")
@@ -291,13 +199,13 @@ fun ArtworkSettingsScreen(
             if (state.hasApiKey) {
                 SettingsRow(
                     label    = "Remove API Key",
-                    sublabel = "SteamGridDB fallback art will be disabled",
+                    sublabel = "SteamGridDB artwork will be disabled",
                     onClick  = { viewModel.clearApiKey() },
                 )
             }
 
-            // ── IGDB credentials ──────────────────────────────────────────────
-            SettingsGroup("IGDB Credentials")
+            // ── IGDB credentials (optional) ───────────────────────────────────
+            SettingsGroup("IGDB Credentials (Optional)")
 
             Column(modifier = Modifier.padding(horizontal = 48.dp, vertical = 8.dp)) {
                 Text(
@@ -331,7 +239,7 @@ fun ArtworkSettingsScreen(
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text  = "Create app at dev.twitch.tv — IGDB is optional but improves fallback coverage",
+                    text  = "Create app at dev.twitch.tv — improves fallback coverage for modern games",
                     color = SettingsSubtext.copy(alpha = 0.6f),
                 )
             }

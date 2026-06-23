@@ -42,6 +42,7 @@ import com.playfieldportal.feature.appbar.AppDrawerScreen
 import com.playfieldportal.feature.appbar.AppFilter
 import com.playfieldportal.feature.settings.ui.SettingsNavHost
 import com.playfieldportal.feature.xmb.preview.PreviewData
+import com.playfieldportal.feature.xmb.ui.app.AppDetailScreen
 import com.playfieldportal.feature.xmb.ui.detail.GameDetailScreen
 import com.playfieldportal.feature.xmb.viewmodel.XMBUiState
 import com.playfieldportal.feature.xmb.viewmodel.XMBViewModel
@@ -70,6 +71,8 @@ fun XMBShellContainer(
         onDrawerActionConsumed = viewModel::consumeDrawerAction,
         onCloseGameDetail = viewModel::onCloseGameDetail,
         onGameDetailActionConsumed = viewModel::consumeGameDetailAction,
+        onCloseAppDetail = viewModel::onCloseAppDetail,
+        onAppDetailActionConsumed = viewModel::consumeAppDetailAction,
         onContextMenuItemActivated = viewModel::onContextMenuItemActivatedAt,
         onContextMenuDismiss = viewModel::closeContextMenu,
         onConfirmAppRename = viewModel::onConfirmAppRename,
@@ -98,6 +101,8 @@ fun XMBShell(
     onDrawerActionConsumed: () -> Unit = {},
     onCloseGameDetail: () -> Unit = {},
     onGameDetailActionConsumed: () -> Unit = {},
+    onCloseAppDetail: () -> Unit = {},
+    onAppDetailActionConsumed: () -> Unit = {},
     onContextMenuItemActivated: (Int) -> Unit = {},
     onContextMenuDismiss: () -> Unit = {},
     onConfirmAppRename: (String) -> Unit = {},
@@ -109,8 +114,9 @@ fun XMBShell(
     PFPTheme(colors = uiState.themeColors) {
         Box(modifier = Modifier.fillMaxSize()) {
             XmbBackground(
-                renderMode = uiState.waveRenderMode,
-                modifier = Modifier.fillMaxSize(),
+                renderMode          = uiState.waveRenderMode,
+                customWallpaperPath = uiState.customWallpaperPath,
+                modifier            = Modifier.fillMaxSize(),
             )
 
             // Per-game background art (XMB hover): reads only artworkUri — the dedicated
@@ -167,6 +173,7 @@ fun XMBShell(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
+                    contentAlignment = Alignment.BottomCenter,
                 ) {
                     AnimatedContent(
                         targetState = uiState.selectedCategoryIndex,
@@ -191,6 +198,7 @@ fun XMBShell(
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
+
                 }
             }
 
@@ -259,6 +267,16 @@ fun XMBShell(
                     onBack = onCloseGameDetail,
                     pendingGamepadAction = uiState.pendingGameDetailAction,
                     onGamepadActionConsumed = onGameDetailActionConsumed,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+
+            uiState.activeAppId?.let { appId ->
+                AppDetailScreen(
+                    gameId = appId,
+                    onBack = onCloseAppDetail,
+                    pendingGamepadAction = uiState.pendingAppDetailAction,
+                    onGamepadActionConsumed = onAppDetailActionConsumed,
                     modifier = Modifier.fillMaxSize(),
                 )
             }

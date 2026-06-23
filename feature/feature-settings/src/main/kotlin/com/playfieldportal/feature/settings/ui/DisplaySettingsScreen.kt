@@ -1,13 +1,21 @@
 package com.playfieldportal.feature.settings.ui
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.playfieldportal.feature.settings.viewmodel.DisplaySettingsViewModel
 
@@ -18,6 +26,10 @@ fun DisplaySettingsScreen(
     viewModel: DisplaySettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
+
+    val wallpaperPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri -> uri?.let { viewModel.onWallpaperPicked(it) } }
 
     SettingsScaffold(
         title    = "Settings",
@@ -94,6 +106,52 @@ fun DisplaySettingsScreen(
                 checked  = state.respectBatterySaver,
                 onToggle = { viewModel.setRespectBatterySaver(it) },
             )
+
+            SettingsGroup("Background / Wallpaper")
+
+            SettingsValueRow(
+                label    = "Current Wallpaper",
+                sublabel = "Displayed behind the XMB interface",
+                value    = if (state.customWallpaperPath != null) "Custom" else "Default Theme",
+            )
+
+            if (state.wallpaperImporting) {
+                LinearProgressIndicator(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 48.dp, vertical = 8.dp),
+                )
+            } else {
+                SettingsRow(
+                    label    = "Choose Custom Wallpaper",
+                    sublabel = "PNG, JPG, JPEG, or WEBP",
+                    onClick  = {
+                        wallpaperPicker.launch(
+                            arrayOf("image/png", "image/jpeg", "image/webp")
+                        )
+                    },
+                )
+
+                if (state.customWallpaperPath != null) {
+                    SettingsRow(
+                        label    = "Reset to Default Wallpaper",
+                        sublabel = "Remove custom wallpaper and restore theme background",
+                        onClick  = { viewModel.clearWallpaper() },
+                    )
+                }
+            }
         }
+    }
+
+    if (state.wallpaperMessage != null) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissWallpaperMessage() },
+            confirmButton = {
+                TextButton(onClick = { viewModel.dismissWallpaperMessage() }) {
+                    Text("OK")
+                }
+            },
+            text = { Text(state.wallpaperMessage!!) },
+        )
     }
 }

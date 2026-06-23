@@ -36,7 +36,7 @@ data class ScrapeProgress(
     val succeeded: Int,
     val failed: Int,
     val title: String,
-    val scrapeSource: String = "",   // e.g. "ScreenScraper", "SteamGridDB"
+    val scrapeSource: String = "",   // e.g. "TheGamesDB", "SteamGridDB"
     val scrapeAsset: String = "",    // e.g. "Box Art", "Hero", "Logo"
 )
 
@@ -172,8 +172,7 @@ class ArtworkRepository @Inject constructor(
                 )
             }.getOrNull()
             if (result?.success == true) ok++ else fail++
-            // Respect ScreenScraper ~1 req/sec rate limit.
-            if (index < games.size - 1) delay(1_100)
+            if (index < games.size - 1) delay(500)
         }
         return ScrapeProgress(games.size, games.size, ok, fail, "")
             .also { Timber.i("Scrape complete: ${it.succeeded} ok, ${it.failed} failed of ${it.total}") }

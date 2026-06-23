@@ -1,10 +1,7 @@
 package com.playfieldportal.feature.settings.ui
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -12,16 +9,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.domain.model.ConfirmBackLayout
+import com.playfieldportal.core.domain.model.XYLayout
+import com.playfieldportal.core.domain.model.displayLabel
 import com.playfieldportal.feature.settings.viewmodel.ControllerSettingsViewModel
 
 @Composable
@@ -32,118 +26,76 @@ fun ControllerSettingsScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
 
-    // While a remap is in progress, capture every incoming GamepadAction as a button
-    // assignment instead of letting it navigate back / move focus / trigger row clicks.
-    // Reverse-lookup the current keyCode for that action so we store the raw key, not the
-    // logical action. null when not remapping so the scaffold behaves normally.
-    val remapInterceptor = remember(state.remappingAction) {
-        if (state.remappingAction != null) {
-            { action: GamepadAction ->
-                val keyCode = viewModel.keycodeForAction(action)
-                if (keyCode != null) {
-                    viewModel.onKeyPressedDuringRemap(keyCode)
-                    true
-                } else {
-                    false
-                }
-            }
-        } else null
-    }
-
     SettingsScaffold(
-        title             = "Settings",
-        subtitle          = "Controller",
-        onBack            = onBack,
-        modifier          = modifier,
-        onInterceptAction = remapInterceptor,
+        title    = "Settings",
+        subtitle = "Controller",
+        onBack   = onBack,
+        modifier = modifier,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState()),
         ) {
-            // ── Remapping prompt overlay ──────────────────────────────────
-            if (state.remappingAction != null) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFF4A90D9).copy(alpha = 0.15f))
-                        .padding(vertical = 16.dp, horizontal = 48.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text       = "Press any button to bind to:",
-                            color      = SettingsSubtext,
-                            fontSize   = 12.sp,
-                        )
-                        Text(
-                            text       = state.remappingAction!!.name
-                                .replace('_', ' ')
-                                .lowercase()
-                                .replaceFirstChar { it.uppercase() },
-                            color      = SettingsAccent,
-                            fontSize   = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                        )
-                        Text(
-                            text    = "(tap this row again to cancel)",
-                            color   = SettingsSubtext,
-                            fontSize = 11.sp,
-                        )
-                    }
-                }
-            }
-
-            SettingsGroup("Button Mappings")
+            SettingsGroup("A / B Swap")
             Text(
-                text     = "Tap any row to remap that action to a new button.",
+                text     = "Controls which button confirms and which goes back. " +
+                    "Applies globally to all launcher menus.",
                 color    = SettingsSubtext,
                 fontSize = 12.sp,
                 modifier = Modifier.padding(horizontal = 48.dp, vertical = 4.dp),
             )
 
-            state.mappings.forEach { row ->
-                SettingsRow(
-                    label    = row.actionLabel,
-                    sublabel = if (row.isRemapping) "▶  Press a button now…" else null,
-                    trailing = {
-                        Text(
-                            text      = if (row.isRemapping) "Listening…" else row.keyLabel,
-                            color     = if (row.isRemapping) SettingsAccent else SettingsSubtext,
-                            fontSize  = 13.sp,
-                            textAlign = TextAlign.End,
-                        )
-                    },
-                    onClick = {
-                        if (state.remappingAction == row.action) {
-                            viewModel.cancelRemap()
-                        } else {
-                            viewModel.startRemap(row.action)
-                        }
-                    },
-                )
-            }
-
-            SettingsGroup("Repeat Timing")
-
             SettingsValueRow(
-                label    = "Initial Delay",
-                sublabel = "Hold time before navigation starts repeating",
-                value    = "${state.repeatDelayMs}ms",
+                label    = "A / B Swap",
+                sublabel = state.layoutPrefs.confirmBackLayout.displayLabel(),
+                value    = if (state.layoutPrefs.confirmBackLayout == ConfirmBackLayout.STANDARD) {
+                    "Off"
+                } else {
+                    "On"
+                },
+                onClick  = { viewModel.cycleConfirmBackLayout() },
+            )
+
+            SettingsGroup("X / Y Swap")
+            Text(
+                text     = "Swaps X and Y actions within the launcher UI only. " +
+                    "Does not affect emulator controls.",
+                color    = SettingsSubtext,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(horizontal = 48.dp, vertical = 4.dp),
             )
 
             SettingsValueRow(
-                label    = "Repeat Rate",
-                sublabel = "Interval between repeat firings while held",
-                value    = "${state.repeatRateMs}ms",
+                label    = "X / Y Swap",
+                sublabel = state.layoutPrefs.xyLayout.displayLabel(),
+                value    = if (state.layoutPrefs.xyLayout == XYLayout.STANDARD) {
+                    "Off"
+                } else {
+                    "On"
+                },
+                onClick  = { viewModel.cycleXYLayout() },
+            )
+
+            SettingsGroup("Controller Type")
+            Text(
+                text     = "Changes which button icons and labels are shown in help prompts.",
+                color    = SettingsSubtext,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(horizontal = 48.dp, vertical = 4.dp),
+            )
+
+            SettingsValueRow(
+                label    = "Type",
+                sublabel = "Affects the help bar at the bottom of the launcher",
+                value    = state.layoutPrefs.displayType.displayLabel(),
+                onClick  = { viewModel.cycleDisplayType() },
             )
 
             SettingsGroup("Reset")
-
             SettingsRow(
-                label    = "Reset All Bindings to Default",
-                sublabel = "Restores factory controller mapping",
+                label    = "Reset All Controller Settings",
+                sublabel = "Restores default swap and type presets",
                 onClick  = { viewModel.resetToDefaults() },
             )
         }
