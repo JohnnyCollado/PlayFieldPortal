@@ -12,6 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -20,6 +21,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.feature.settings.viewmodel.ControllerSettingsViewModel
 
 @Composable
@@ -30,11 +32,30 @@ fun ControllerSettingsScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
 
+    // While a remap is in progress, capture every incoming GamepadAction as a button
+    // assignment instead of letting it navigate back / move focus / trigger row clicks.
+    // Reverse-lookup the current keyCode for that action so we store the raw key, not the
+    // logical action. null when not remapping so the scaffold behaves normally.
+    val remapInterceptor = remember(state.remappingAction) {
+        if (state.remappingAction != null) {
+            { action: GamepadAction ->
+                val keyCode = viewModel.keycodeForAction(action)
+                if (keyCode != null) {
+                    viewModel.onKeyPressedDuringRemap(keyCode)
+                    true
+                } else {
+                    false
+                }
+            }
+        } else null
+    }
+
     SettingsScaffold(
-        title    = "Settings",
-        subtitle = "Controller",
-        onBack   = onBack,
-        modifier = modifier,
+        title             = "Settings",
+        subtitle          = "Controller",
+        onBack            = onBack,
+        modifier          = modifier,
+        onInterceptAction = remapInterceptor,
     ) {
         Column(
             modifier = Modifier
@@ -66,7 +87,7 @@ fun ControllerSettingsScreen(
                             fontWeight = FontWeight.Bold,
                         )
                         Text(
-                            text    = "(press Back / B to cancel)",
+                            text    = "(tap this row again to cancel)",
                             color   = SettingsSubtext,
                             fontSize = 11.sp,
                         )

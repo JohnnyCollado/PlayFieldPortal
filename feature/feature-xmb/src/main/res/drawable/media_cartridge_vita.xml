@@ -1,0 +1,56 @@
+<!--
+  PS Vita proprietary game card — tiny portrait format, distinctive notch on top-left
+  Source: _inc/physical-media — https://github.com/anthonycaccese/xmb-menu-es-de
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <!-- Card body -->
+    <path
+        android:fillColor="#3C3C58"
+        android:pathData="M14,4 Q14,2 16,2 L32,2 Q34,2 34,4 L34,46 Q34,48 32,48 L16,48 Q14,48 14,46 Z" />
+
+    <!-- Top-left notch (Vita distinctive corner cut) -->
+    <path
+        android:fillColor="#0E0E1C"
+        android:pathData="M14,2 L20,2 L20,4 L16,4 Q14,4 14,6 Z" />
+
+    <!-- Label area -->
+    <path
+        android:fillColor="#1C1C2E"
+        android:pathData="M16,7 L32,7 L32,32 L16,32 Z" />
+
+    <!-- Label shine -->
+    <path
+        android:fillColor="#242438"
+        android:pathData="M16,7 L32,7 L32,8 L16,8 Z" />
+
+    <!-- Bottom connector -->
+    <path
+        android:fillColor="#0E0E1C"
+        android:pathData="M14,40 L34,40 L34,48 L14,48 Z" />
+
+    <!-- Contacts (small Vita-style pins) -->
+    <path android:fillColor="#C8A840"
+        android:pathData="M16,41 L17,41 L17,47 L16,47 Z" />
+    <path android:fillColor="#C8A840"
+        android:pathData="M18.5,41 L19.5,41 L19.5,47 L18.5,47 Z" />
+    <path android:fillColor="#C8A840"
+        android:pathData="M21,41 L22,41 L22,47 L21,47 Z" />
+    <path android:fillColor="#C8A840"
+        android:pathData="M23.5,41 L24.5,41 L24.5,47 L23.5,47 Z" />
+    <path android:fillColor="#C8A840"
+        android:pathData="M26,41 L27,41 L27,47 L26,47 Z" />
+    <path android:fillColor="#C8A840"
+        android:pathData="M28.5,41 L29.5,41 L29.5,47 L28.5,47 Z" />
+    <path android:fillColor="#C8A840"
+        android:pathData="M31,41 L32,41 L32,47 L31,47 Z" />
+
+    <!-- Body highlight -->
+    <path
+        android:fillColor="#505078"
+        android:pathData="M20,2 L32,2 Q34,2 34,4 L34,5 Q34,3 32,3 L20,3 Z" />
+</vector>

@@ -1,0 +1,72 @@
+<!--
+  Floppy disk — 3.5" (C64 / Amiga / DOS)
+  Source: _inc/physical-media — https://github.com/anthonycaccese/xmb-menu-es-de
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <!-- Disk body -->
+    <path
+        android:fillColor="#3C3C58"
+        android:pathData="M6,4 Q6,2 8,2 L36,2 L42,8 L42,46 Q42,48 40,48 L8,48 Q6,48 6,46 Z" />
+
+    <!-- Angled top-right cut -->
+    <path
+        android:fillColor="#28283E"
+        android:pathData="M36,2 L42,8 L36,8 Z" />
+
+    <!-- Label window (top area) -->
+    <path
+        android:fillColor="#E8E8F0"
+        android:pathData="M10,6 L34,6 L34,22 L10,22 Z" />
+
+    <!-- Label lines -->
+    <path
+        android:fillColor="#C8C8DC"
+        android:pathData="M11,9 L33,9 L33,10 L11,10 Z" />
+    <path
+        android:fillColor="#C8C8DC"
+        android:pathData="M11,12 L33,12 L33,13 L11,13 Z" />
+    <path
+        android:fillColor="#C8C8DC"
+        android:pathData="M11,15 L33,15 L33,16 L11,16 Z" />
+    <path
+        android:fillColor="#C8C8DC"
+        android:pathData="M11,18 L26,18 L26,19 L11,19 Z" />
+
+    <!-- Metal shutter -->
+    <path
+        android:fillColor="#9090A8"
+        android:pathData="M8,26 L40,26 L40,44 L8,44 Z" />
+
+    <!-- Shutter slot opening -->
+    <path
+        android:fillColor="#0E0E1C"
+        android:pathData="M14,28 L34,28 L34,42 L14,42 Z" />
+
+    <!-- Hub disc (on shutter) -->
+    <path
+        android:fillColor="#707088"
+        android:pathData="M24,31 A6,6 0 1,1 23.999,31 Z" />
+
+    <!-- Hub hole -->
+    <path
+        android:fillColor="#1A1A2E"
+        android:pathData="M24,34 A3,3 0 1,1 23.999,34 Z" />
+
+    <!-- Write protect tab -->
+    <path
+        android:fillColor="#0E0E1C"
+        android:pathData="M8,40 L12,40 L12,46 L8,46 Z" />
+    <path
+        android:fillColor="#505070"
+        android:pathData="M9,41 L11,41 L11,45 L9,45 Z" />
+
+    <!-- Edge highlight -->
+    <path
+        android:fillColor="#505078"
+        android:pathData="M6,4 Q6,2 8,2 L36,2 L36,3 L8,3 Q7,3 7,4 Z" />
+</vector>

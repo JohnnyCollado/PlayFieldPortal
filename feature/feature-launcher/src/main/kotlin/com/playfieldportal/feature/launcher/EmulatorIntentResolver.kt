@@ -1,9 +1,12 @@
 package com.playfieldportal.feature.launcher
 
+import android.content.ClipData
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import androidx.core.content.FileProvider
 import com.playfieldportal.core.domain.model.EmulatorProfile
 import com.playfieldportal.core.domain.model.Game
@@ -18,46 +21,142 @@ import javax.inject.Singleton
 @Singleton
 class EmulatorIntentResolver @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val profileRepository: EmulatorProfileRepository,
 ) {
 
-    fun resolve(game: Game, profile: EmulatorProfile): Intent? {
-        return try {
-            when (profile.intentType) {
+    /**
+     * Resolves a launch [Intent] for the given [game] and selected [profile].
+     *
+     * Returns [Result.success] with the intent on success, or [Result.failure] with a
+     * user-readable message explaining why launch cannot proceed. Never throws.
+     */
+    fun resolve(game: Game, profile: EmulatorProfile): Result<Intent> {
+        return runCatching {
+            validateBeforeLaunch(game, profile)
+            val intent = when (profile.intentType) {
                 IntentType.ACTION_VIEW    -> buildViewIntent(game, profile)
                 IntentType.COMPONENT      -> buildComponentIntent(game, profile)
                 IntentType.CUSTOM_COMMAND -> buildCustomCommandIntent(game, profile)
-                IntentType.SHORTCUT       -> null // handled separately via LauncherApps
+                IntentType.SHORTCUT       -> error("Shortcut launch not supported from this screen")
             }
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to build intent for ${profile.name} — game: ${game.title}")
-            null
+            Timber.d(
+                "Launch intent resolved: gameId=${game.id}, title=${game.title}, platform=${game.platformId}, emulatorId=${profile.id}, emulatorName=${profile.name}, package=${profile.packageName}, intentType=${profile.intentType}, core=${profile.corePathFor(game.platformId).orEmpty()}, rom=${game.romPath.orEmpty()}, summary=${intent.toUri(Intent.URI_INTENT_SCHEME)}"
+            )
+            intent
+        }.onFailure { e ->
+            Timber.e(
+                e,
+                "Failed to build launch intent: gameId=${game.id}, title=${game.title}, platform=${game.platformId}, emulatorId=${profile.id}, emulatorName=${profile.name}, rom=${game.romPath.orEmpty()}"
+            )
+        }
+    }
+
+    fun resolveNativeApp(game: Game): Result<Intent> {
+        return runCatching {
+            val packageName = game.packageName
+                ?: error("No Android package recorded for ${game.title}")
+            val intent = context.packageManager.getLaunchIntentForPackage(packageName)
+                ?: error("Android app not installed or not launchable: $packageName")
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            Timber.d(
+                "Native game intent resolved: gameId=${game.id}, title=${game.title}, package=$packageName, summary=${intent.toUri(Intent.URI_INTENT_SCHEME)}"
+            )
+            intent
+        }.onFailure { e ->
+            Timber.e(
+                e,
+                "Failed to build native game launch intent: gameId=${game.id}, title=${game.title}, package=${game.packageName.orEmpty()}"
+            )
+        }
+    }
+
+    private fun validateBeforeLaunch(game: Game, profile: EmulatorProfile) {
+        if (profile.intentType != IntentType.CUSTOM_COMMAND) {
+            try {
+                context.packageManager.getPackageInfo(profile.packageName, 0)
+            } catch (_: PackageManager.NameNotFoundException) {
+                error("Emulator not installed: ${profile.name} (${profile.packageName})")
+            }
+        }
+
+        val romPath = game.romPath ?: error("ROM path is required to launch ${game.title}")
+        val romFile = File(romPath)
+        if (!romFile.exists()) error("ROM file not found: $romPath")
+
+        if (profile.intentType == IntentType.COMPONENT && profile.coreMap.isNotEmpty()) {
+            val corePath = profile.corePathFor(game.platformId)
+            if (corePath.isNullOrBlank()) {
+                error("No RetroArch core configured for platform '${game.platformId}' in profile '${profile.name}'. Open RetroArch → Core Downloader to install a core for this system.")
+            }
+            // We cannot read /data/data/<pkg>/cores/ — it's the emulator's private internal
+            // storage. Skip the file-existence check and let RetroArch report a missing core.
         }
     }
 
     private fun buildViewIntent(game: Game, profile: EmulatorProfile): Intent {
-        val romFile = File(game.romPath ?: error("ROM path required for VIEW intent"))
-        val uri = if (profile.useSafUri) {
-            FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", romFile)
-        } else {
-            Uri.fromFile(romFile)
+        val romPath = game.romPath ?: error("ROM path is required to launch ${game.title}")
+        val romFile = File(romPath)
+        val uri = resolveRomUri(romFile, profile)
+
+        val activityClass = profile.activityClass
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, profile.mimeType ?: "application/octet-stream")
+            if (activityClass != null) {
+                component = ComponentName(profile.packageName, activityClass)
+            } else {
+                setPackage(profile.packageName)
+            }
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            grantReadPermissionIfNeeded(uri, game.title, profile.packageName)
         }
 
-        return Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(uri, profile.mimeType ?: "application/octet-stream")
-            setPackage(profile.packageName)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        val resolves = context.packageManager.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY)
+        if (resolves.isEmpty()) {
+            Timber.w(
+                "Intent not resolvable: profile=${profile.name}, package=${profile.packageName}, uri=${uri.scheme}://, mime=${profile.mimeType}"
+            )
+            error("${profile.name} cannot open this ROM type. Try reinstalling the emulator, or verify its app permissions in Android Settings.")
         }
+
+        return intent
     }
 
     private fun buildComponentIntent(game: Game, profile: EmulatorProfile): Intent {
         val activity = profile.activityClass
-            ?: error("Activity class required for COMPONENT intent — profile: ${profile.name}")
+            ?: error("Activity class required for COMPONENT intent - profile: ${profile.name}")
 
-        return Intent(Intent.ACTION_MAIN).apply {
+        val needsRomUri = profile.intentExtras.values.any { it.contains(LaunchTemplate.ROM_URI) }
+        val romUri: Uri? = if (needsRomUri) {
+            val romFile = File(game.romPath ?: error("ROM path required for ${profile.name}"))
+            runCatching {
+                FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", romFile)
+            }.getOrNull()
+        } else null
+
+        val action = profile.intentAction ?: Intent.ACTION_MAIN
+        return Intent(action).apply {
             component = ComponentName(profile.packageName, activity)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+            profile.intentFlags.forEach { flag ->
+                when (flag) {
+                    "CLEAR_TASK" -> addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                    "CLEAR_TOP"  -> addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                }
+            }
+
+            profile.intentCategory?.let { addCategory(it) }
+
             profile.intentExtras.forEach { (key, valueTemplate) ->
-                putExtra(key, resolveTemplate(valueTemplate, game, profile))
+                putExtra(key, resolveTemplate(valueTemplate, game, profile, romUri))
+            }
+            profile.intentBoolExtras.forEach { (key, value) ->
+                putExtra(key, value)
+            }
+
+            if (romUri != null) {
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                clipData = ClipData.newUri(context.contentResolver, game.title, romUri)
+                context.grantUriPermission(profile.packageName, romUri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
         }
     }
@@ -66,39 +165,134 @@ class EmulatorIntentResolver @Inject constructor(
         val command = profile.customCommand
             ?: error("Custom command required for CUSTOM_COMMAND intent")
         val resolved = resolveTemplate(command, game, profile)
-
         Timber.d("Custom launch command resolved: $resolved")
-
-        // Parse am-style command into an Intent
         return parseAmCommand(resolved, profile.packageName)
     }
 
-    private fun resolveTemplate(template: String, game: Game, profile: EmulatorProfile): String {
-        val romFile = game.romPath?.let { File(it) }
-        val coreFile = game.platformId.let { platformId ->
-            profile.coreMap[platformId]?.let { File(it) }
+    private fun resolveRomUri(romFile: File, profile: EmulatorProfile): Uri {
+        if (profile.useFileUri && !profile.useSafUri && Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+            return Uri.fromFile(romFile)
         }
+
+        if (profile.useFileUri && !profile.useSafUri) {
+            Timber.d(
+                "Profile ${profile.id} requests file:// ROM launch; using granted content:// URI on API ${Build.VERSION.SDK_INT}"
+            )
+        }
+
+        return FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            romFile,
+        )
+    }
+
+    private fun Intent.grantReadPermissionIfNeeded(uri: Uri, title: String, packageName: String) {
+        if (uri.scheme != "content") return
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        clipData = ClipData.newUri(context.contentResolver, title, uri)
+        context.grantUriPermission(packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+
+    private fun resolveTemplate(
+        template: String,
+        game: Game,
+        profile: EmulatorProfile,
+        romUri: Uri? = null,
+    ): String {
+        val romFile = game.romPath?.let { File(it) }
+        val corePath = profile.corePathFor(game.platformId) ?: ""
 
         return template
-            .replace(LaunchTemplate.ROM_PATH,    game.romPath ?: "")
-            .replace(LaunchTemplate.ROM_NAME,    romFile?.nameWithoutExtension ?: "")
-            .replace(LaunchTemplate.ROM_DIR,     romFile?.parent ?: "")
-            .replace(LaunchTemplate.CORE_PATH,   coreFile?.absolutePath ?: "")
-            .replace(LaunchTemplate.CONFIG_PATH, resolveConfigPath(profile))
-            .replace(LaunchTemplate.PACKAGE,     profile.packageName)
-            .replace(LaunchTemplate.PLATFORM,    game.platformId)
+            .replace(LaunchTemplate.ROM_PATH, game.romPath ?: "")
+            .replace(LaunchTemplate.ROM_URI, romUri?.toString() ?: "")
+            .replace(LaunchTemplate.ROM_NAME, romFile?.nameWithoutExtension ?: "")
+            .replace(LaunchTemplate.ROM_DIR, romFile?.parent ?: "")
+            .replace(LaunchTemplate.CORE_PATH, corePath)
+            .replace(LaunchTemplate.CONFIG_PATH, retroarchConfigPath(profile.packageName))
+            .replace(LaunchTemplate.PACKAGE, profile.packageName)
+            .replace(LaunchTemplate.PLATFORM, game.platformId)
     }
 
-    private fun resolveConfigPath(profile: EmulatorProfile): String {
-        // RetroArch config lives in its data dir — approximate for non-rooted devices
-        return "/storage/emulated/0/RetroArch/retroarch.cfg"
-    }
+    private fun retroarchConfigPath(packageName: String): String =
+        "/storage/emulated/0/Android/data/$packageName/files/retroarch.cfg"
 
     private fun parseAmCommand(command: String, packageName: String): Intent {
-        // Basic am-command → Intent parser for custom commands
-        // Full implementation handles -n (component), -a (action), -d (data), -e (extras)
-        return Intent(Intent.ACTION_MAIN).apply {
+        // Minimal am-start parser: extracts -e/--es key value pairs as intent extras.
+        // Full am-start syntax is not supported — use COMPONENT or ACTION_VIEW profiles instead.
+        val intent = Intent(Intent.ACTION_MAIN).apply {
             setPackage(packageName)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
+        val tokens = command.trim().split("\\s+".toRegex())
+        var i = 0
+        while (i < tokens.size) {
+            when (tokens[i]) {
+                "-e", "--es" -> {
+                    if (i + 2 < tokens.size) {
+                        intent.putExtra(tokens[i + 1], tokens[i + 2])
+                        i += 3
+                    } else i++
+                }
+                "-n" -> {
+                    if (i + 1 < tokens.size) {
+                        val cn = tokens[i + 1].split("/")
+                        if (cn.size == 2) intent.component = ComponentName(cn[0], cn[1])
+                        i += 2
+                    } else i++
+                }
+                else -> i++
+            }
+        }
+        Timber.d("Parsed am command: package=$packageName, extras=${intent.extras?.keySet()?.joinToString()}, component=${intent.component}")
+        return intent
+    }
+
+    private fun EmulatorProfile.corePathFor(platformId: String): String? {
+        for (alias in platformAliases(platformId)) {
+            coreMap[alias]?.let { return normalizeRetroArchCorePath(it) }
+        }
+        return null
+    }
+
+    private fun EmulatorProfile.normalizeRetroArchCorePath(corePath: String): String {
+        if (!packageName.startsWith("com.retroarch")) return corePath
+        return corePath
+            .replace("/data/data/com.retroarch.aarch64/cores/", "/data/data/$packageName/cores/")
+            .replace("/data/data/com.retroarch.ra64/cores/", "/data/data/$packageName/cores/")
+            .replace("/data/data/com.retroarch.ra32/cores/", "/data/data/$packageName/cores/")
+            .replace("/data/data/com.retroarch/cores/", "/data/data/$packageName/cores/")
+    }
+
+    private fun platformAliases(platformId: String): List<String> = when (platformId) {
+        "psx"          -> listOf("psx", "ps1")
+        "ps1"          -> listOf("ps1", "psx")
+        "n3ds"         -> listOf("n3ds", "3ds")
+        "3ds"          -> listOf("3ds", "n3ds")
+        "gc"           -> listOf("gc", "gamecube")
+        "gamecube"     -> listOf("gamecube", "gc")
+        "nds"          -> listOf("nds", "ds")
+        "ds"           -> listOf("ds", "nds")
+        "pcengine"     -> listOf("pcengine", "pce", "tgfx16")
+        "pce"          -> listOf("pce", "pcengine", "tgfx16")
+        "tgfx16"       -> listOf("tgfx16", "pce", "pcengine")
+        "mastersystem" -> listOf("mastersystem", "sms")
+        "sms"          -> listOf("sms", "mastersystem")
+        "genesis"      -> listOf("genesis", "megadrive", "md")
+        "megadrive"    -> listOf("megadrive", "genesis", "md")
+        "md"           -> listOf("md", "genesis", "megadrive")
+        "dreamcast"    -> listOf("dreamcast", "dc")
+        "dc"           -> listOf("dc", "dreamcast")
+        "virtualboy"   -> listOf("virtualboy", "vb")
+        "vb"           -> listOf("vb", "virtualboy")
+        "atarilynx"    -> listOf("atarilynx", "lynx")
+        "lynx"         -> listOf("lynx", "atarilynx")
+        "wonderswan"   -> listOf("wonderswan", "ws")
+        "ws"           -> listOf("ws", "wonderswan")
+        "wonderswancolor" -> listOf("wonderswancolor", "wsc")
+        "wsc"          -> listOf("wsc", "wonderswancolor")
+        "ngp"          -> listOf("ngp", "ngpc")
+        "ngpc"         -> listOf("ngpc", "ngp")
+        else           -> listOf(platformId)
     }
 }

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Source: anthonycaccese/xmb-menu-es-de _inc/images/icon-battery-low.svg (25–1%) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="31dp"
+    android:height="14dp"
+    android:viewportWidth="620"
+    android:viewportHeight="280">
+    <group android:scaleX="1.10714">
+        <group
+            android:scaleX="0.802611"
+            android:scaleY="10.7692"
+            android:translateX="6.34797">
+            <path
+                android:fillColor="@android:color/white"
+                android:fillType="evenOdd"
+                android:pathData="M70.866,19.661L-7.909,19.661L-7.909,6.661L70.866,6.661L70.866,0L622.292,0L622.292,26L70.866,26L70.866,19.661ZM594.158,2.321L99,2.321L99,23.679L594.158,23.679L594.158,2.321Z" />
+        </group>
+        <!-- Single small bar (low) — matches icon-battery-low.svg transform -->
+        <group
+            android:scaleX="1.37652"
+            android:scaleY="1.19945"
+            android:translateX="358.581"
+            android:translateY="-30">
+            <path
+                android:fillColor="@android:color/white"
+                android:pathData="M0,70.866L70.866,70.866L70.866,212.598L0,212.598Z" />
+        </group>
+    </group>
+</vector>

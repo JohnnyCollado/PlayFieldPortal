@@ -1,7 +1,7 @@
 package com.playfieldportal.feature.xmb.gamepad
 
 import android.view.InputDevice
-import com.playfieldportal.core.data.repository.ControllerMappingRepository
+import com.playfieldportal.core.data.repository.RemapCoordinator
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.GamepadMappings
 import android.view.KeyEvent
@@ -29,7 +29,7 @@ private const val STICK_DEAD_ZONE = 0.5f
 
 @Singleton
 class GamepadInputHandler @Inject constructor(
-    private val mappingRepository: ControllerMappingRepository,
+    private val remapCoordinator: RemapCoordinator,
 ) {
     private val _actions = MutableSharedFlow<GamepadAction>(extraBufferCapacity = 16)
     val actions: SharedFlow<GamepadAction> = _actions.asSharedFlow()
@@ -50,6 +50,17 @@ class GamepadInputHandler @Inject constructor(
 
     // Called by MainActivity.dispatchKeyEvent
     fun onKeyEvent(event: KeyEvent): Boolean {
+        // During button remapping: capture the raw keyCode before any action translation.
+        // This ensures every button — including the one mapped to BACK — can be assigned.
+        // Both ACTION_DOWN and ACTION_UP are consumed so nothing leaks into normal handling.
+        remapCoordinator.captureNextKey?.let { capture ->
+            if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+                remapCoordinator.captureNextKey = null
+                capture(event.keyCode)
+            }
+            return true
+        }
+
         // Accept any keycode we have a binding for — don't filter by source because
         // Android handhelds (Ayn Thor, Retroid, etc.) sometimes report SOURCE_KEYBOARD
         // for built-in controller buttons even when they're physically a gamepad.

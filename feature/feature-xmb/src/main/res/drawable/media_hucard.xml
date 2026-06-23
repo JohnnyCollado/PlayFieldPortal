@@ -1,0 +1,57 @@
+<!--
+  PC Engine HuCard — thin wide credit-card-style format
+  Source: _inc/physical-media — https://github.com/anthonycaccese/xmb-menu-es-de
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <!-- Card body (landscape, thin) -->
+    <path
+        android:fillColor="#3C3C58"
+        android:pathData="M2,10 Q2,8 4,8 L44,8 Q46,8 46,10 L46,38 Q46,40 44,40 L4,40 Q2,40 2,38 Z" />
+
+    <!-- Label area -->
+    <path
+        android:fillColor="#1C1C2E"
+        android:pathData="M4,10 L40,10 L40,36 L4,36 Z" />
+
+    <!-- Label shine -->
+    <path
+        android:fillColor="#242438"
+        android:pathData="M4,10 L40,10 L40,11 L4,11 Z" />
+
+    <!-- Bottom connector strip (right edge for HuCard) -->
+    <path
+        android:fillColor="#0E0E1C"
+        android:pathData="M40,8 L46,8 L46,40 L40,40 Z" />
+
+    <!-- Gold contacts (vertical strips on right edge) -->
+    <path android:fillColor="#C8A840"
+        android:pathData="M41,10 L42.2,10 L42.2,14 L41,14 Z" />
+    <path android:fillColor="#C8A840"
+        android:pathData="M41,16 L42.2,16 L42.2,20 L41,20 Z" />
+    <path android:fillColor="#C8A840"
+        android:pathData="M41,22 L42.2,22 L42.2,26 L41,26 Z" />
+    <path android:fillColor="#C8A840"
+        android:pathData="M41,28 L42.2,28 L42.2,32 L41,32 Z" />
+    <path android:fillColor="#C8A840"
+        android:pathData="M41,34 L42.2,34 L42.2,38 L41,38 Z" />
+    <path android:fillColor="#C8A840"
+        android:pathData="M43.2,10 L44.4,10 L44.4,14 L43.2,14 Z" />
+    <path android:fillColor="#C8A840"
+        android:pathData="M43.2,16 L44.4,16 L44.4,20 L43.2,20 Z" />
+    <path android:fillColor="#C8A840"
+        android:pathData="M43.2,22 L44.4,22 L44.4,26 L43.2,26 Z" />
+    <path android:fillColor="#C8A840"
+        android:pathData="M43.2,28 L44.4,28 L44.4,32 L43.2,32 Z" />
+    <path android:fillColor="#C8A840"
+        android:pathData="M43.2,34 L44.4,34 L44.4,38 L43.2,38 Z" />
+
+    <!-- Edge highlight -->
+    <path
+        android:fillColor="#505078"
+        android:pathData="M2,10 Q2,8 4,8 L44,8 L44,9 L4,9 Q3,9 3,10 Z" />
+</vector>

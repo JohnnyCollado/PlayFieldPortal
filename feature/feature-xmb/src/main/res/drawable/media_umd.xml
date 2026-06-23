@@ -1,0 +1,55 @@
+<!--
+  PSP Universal Media Disc (UMD) — proprietary disc in protective carrier
+  Source: _inc/physical-media — https://github.com/anthonycaccese/xmb-menu-es-de
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <!-- Carrier body (rounded rect, landscape) -->
+    <path
+        android:fillColor="#2E2E46"
+        android:pathData="M4,8 Q4,4 8,4 L40,4 Q44,4 44,8 L44,44 Q44,48 40,48 L8,48 Q4,48 4,44 Z" />
+
+    <!-- Carrier top cutouts (left) -->
+    <path
+        android:fillColor="#0E0E1C"
+        android:pathData="M4,4 L16,4 L16,10 Q16,12 14,12 L6,12 Q4,12 4,10 Z" />
+
+    <!-- Carrier top cutouts (right) -->
+    <path
+        android:fillColor="#0E0E1C"
+        android:pathData="M44,4 L32,4 L32,10 Q32,12 34,12 L42,12 Q44,12 44,10 Z" />
+
+    <!-- Carrier edge highlight -->
+    <path
+        android:fillColor="#48486A"
+        android:pathData="M4,8 Q4,4 8,4 L40,4 Q44,4 44,8 L44,9 Q44,5 40,5 L8,5 Q4,5 4,9 Z" />
+
+    <!-- Window / disc visible area (dark circle background) -->
+    <path
+        android:fillColor="#14141E"
+        android:pathData="M24,14 A18,18 0 1,1 23.999,14 Z" />
+
+    <!-- Disc surface -->
+    <path
+        android:fillColor="#B8B8CC"
+        android:pathData="M24,16 A16,16 0 1,1 23.999,16 Z" />
+
+    <!-- Disc inner ring -->
+    <path
+        android:fillColor="#D0D0E0"
+        android:pathData="M24,20 A12,12 0 1,1 23.999,20 Z" />
+
+    <!-- Hub -->
+    <path
+        android:fillColor="#7878A0"
+        android:pathData="M24,26 A6,6 0 1,1 23.999,26 Z" />
+
+    <!-- Centre hole -->
+    <path
+        android:fillColor="#0E0E1C"
+        android:pathData="M24,29 A3,3 0 1,1 23.999,29 Z" />
+</vector>

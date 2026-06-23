@@ -113,10 +113,10 @@ fun XMBShell(
                 modifier = Modifier.fillMaxSize(),
             )
 
-            // Per-game background art for the selected item (all platforms): prefer PIC1 / hero,
-            // fall back to box art. Crossfades over the wave and is scrimmed for readability.
+            // Per-game background art (XMB hover): reads only artworkUri — the dedicated
+            // background slot. heroUri is reserved for the Game Detail hero banner.
             val selectedBg = uiState.currentItems.getOrNull(uiState.selectedItemIndex)
-                ?.let { it.heroUri ?: it.artworkUri }
+                ?.artworkUri
             Crossfade(targetState = selectedBg, animationSpec = tween(320), label = "xmbGameBackground") { bg ->
                 if (bg != null) {
                     Box(Modifier.fillMaxSize()) {
@@ -139,24 +139,16 @@ fun XMBShell(
                 }
             }
 
-            XMBClock(
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(start = 28.dp, top = 22.dp),
-            )
-
-            XMBStatusBar(
+            XmbPspStatusStrip(
                 backgroundTaskCount = uiState.activeBackgroundTasks,
-                onTaskBadgeTapped = onTaskBadgeTapped,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(end = 30.dp, top = 22.dp),
+                onTaskBadgeTapped   = onTaskBadgeTapped,
+                modifier            = Modifier.align(Alignment.TopCenter),
             )
 
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(top = 70.dp),
+                    .padding(top = 44.dp),
             ) {
                 XMBCategoryBar(
                     categories = uiState.categories,

@@ -1,0 +1,60 @@
+<!--
+  Nintendo DS / 3DS Game Card — small portrait cartridge with top notch
+  Source: _inc/physical-media — https://github.com/anthonycaccese/xmb-menu-es-de
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <!-- Cartridge body -->
+    <path
+        android:fillColor="#3C3C58"
+        android:pathData="M12,4 Q12,2 14,2 L34,2 Q36,2 36,4 L36,46 Q36,48 34,48 L14,48 Q12,48 12,46 Z" />
+
+    <!-- Top notch cutout (right side of top) — DS distinctive feature -->
+    <path
+        android:fillColor="#0E0E1C"
+        android:pathData="M28,2 L36,2 L36,4 L36,10 Q34,10 34,8 L34,4 L28,4 Z" />
+
+    <!-- Label area -->
+    <path
+        android:fillColor="#1C1C2E"
+        android:pathData="M14,7 L34,7 L34,34 L14,34 Z" />
+
+    <!-- Label shine -->
+    <path
+        android:fillColor="#242438"
+        android:pathData="M14,7 L34,7 L34,8 L14,8 Z" />
+
+    <!-- Bottom connector ridge -->
+    <path
+        android:fillColor="#0E0E1C"
+        android:pathData="M12,40 L36,40 L36,48 L12,48 Z" />
+
+    <!-- Gold contacts (narrower for DS) -->
+    <path android:fillColor="#C8A840"
+        android:pathData="M14,41 L15,41 L15,47 L14,47 Z" />
+    <path android:fillColor="#C8A840"
+        android:pathData="M16.5,41 L17.5,41 L17.5,47 L16.5,47 Z" />
+    <path android:fillColor="#C8A840"
+        android:pathData="M19,41 L20,41 L20,47 L19,47 Z" />
+    <path android:fillColor="#C8A840"
+        android:pathData="M21.5,41 L22.5,41 L22.5,47 L21.5,47 Z" />
+    <path android:fillColor="#C8A840"
+        android:pathData="M24,41 L25,41 L25,47 L24,47 Z" />
+    <path android:fillColor="#C8A840"
+        android:pathData="M26.5,41 L27.5,41 L27.5,47 L26.5,47 Z" />
+    <path android:fillColor="#C8A840"
+        android:pathData="M29,41 L30,41 L30,47 L29,47 Z" />
+    <path android:fillColor="#C8A840"
+        android:pathData="M31.5,41 L32.5,41 L32.5,47 L31.5,47 Z" />
+    <path android:fillColor="#C8A840"
+        android:pathData="M34,41 L35,41 L35,47 L34,47 Z" />
+
+    <!-- Edge highlight -->
+    <path
+        android:fillColor="#505078"
+        android:pathData="M12,4 Q12,2 14,2 L28,2 L28,3 L14,3 Q13,3 13,4 Z" />
+</vector>

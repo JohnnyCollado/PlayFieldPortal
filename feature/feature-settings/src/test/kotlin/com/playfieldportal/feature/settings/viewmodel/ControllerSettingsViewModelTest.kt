@@ -3,6 +3,7 @@ package com.playfieldportal.feature.settings.viewmodel
 import android.view.KeyEvent
 import app.cash.turbine.test
 import com.playfieldportal.core.data.repository.ControllerMappingRepository
+import com.playfieldportal.core.data.repository.RemapCoordinator
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.GamepadBinding
 import com.playfieldportal.core.domain.model.GamepadMappings
@@ -27,6 +28,7 @@ class ControllerSettingsViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var mappingRepository: ControllerMappingRepository
+    private lateinit var remapCoordinator: RemapCoordinator
     private lateinit var viewModel: ControllerSettingsViewModel
 
     private val defaultMappings = GamepadMappings(
@@ -41,8 +43,9 @@ class ControllerSettingsViewModelTest {
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         mappingRepository = mockk(relaxed = true)
+        remapCoordinator  = RemapCoordinator()
         coEvery { mappingRepository.mappings } returns flowOf(defaultMappings)
-        viewModel = ControllerSettingsViewModel(mappingRepository)
+        viewModel = ControllerSettingsViewModel(mappingRepository, remapCoordinator)
     }
 
     @After
@@ -117,6 +120,63 @@ class ControllerSettingsViewModelTest {
         viewModel.uiState.test {
             val state = awaitItem()
             assertNull(state.remappingAction)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    // ── RemapCoordinator wiring ───────────────────────────────────────────
+
+    @Test
+    fun `startRemap registers captureNextKey on RemapCoordinator`() = runTest {
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.startRemap(GamepadAction.SELECT)
+        assert(remapCoordinator.captureNextKey != null) { "captureNextKey should be set after startRemap" }
+    }
+
+    @Test
+    fun `cancelRemap clears captureNextKey on RemapCoordinator`() = runTest {
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.startRemap(GamepadAction.SELECT)
+        viewModel.cancelRemap()
+        assert(remapCoordinator.captureNextKey == null) { "captureNextKey should be null after cancelRemap" }
+    }
+
+    @Test
+    fun `physical Back key via coordinator cancels remap without assigning`() = runTest {
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.startRemap(GamepadAction.SELECT)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Simulate physical Back key arriving through RemapCoordinator
+        remapCoordinator.captureNextKey?.invoke(KeyEvent.KEYCODE_BACK)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 0) { mappingRepository.remap(any(), any()) }
+
+        viewModel.uiState.test {
+            val state = awaitItem()
+            assertNull("remappingAction must be null after Back-key cancel", state.remappingAction)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `B button via coordinator assigns B and does not navigate back`() = runTest {
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.startRemap(GamepadAction.SELECT)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coEvery { mappingRepository.remap(any(), any()) } returns Unit
+
+        // Simulate B button arriving through RemapCoordinator
+        remapCoordinator.captureNextKey?.invoke(KeyEvent.KEYCODE_BUTTON_B)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify { mappingRepository.remap(GamepadAction.SELECT, KeyEvent.KEYCODE_BUTTON_B) }
+
+        viewModel.uiState.test {
+            val state = awaitItem()
+            assertNull("remappingAction must be null after successful assignment", state.remappingAction)
             cancelAndIgnoreRemainingEvents()
         }
     }

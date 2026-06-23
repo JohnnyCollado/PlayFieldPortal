@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Source: anthonycaccese/xmb-menu-es-de _inc/images/icon-battery-high.svg (75–51%) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="31dp"
+    android:height="14dp"
+    android:viewportWidth="620"
+    android:viewportHeight="280">
+    <group android:scaleX="1.10714">
+        <group
+            android:scaleX="0.802611"
+            android:scaleY="10.7692"
+            android:translateX="6.34797">
+            <path
+                android:fillColor="@android:color/white"
+                android:fillType="evenOdd"
+                android:pathData="M70.866,19.661L-7.909,19.661L-7.909,6.661L70.866,6.661L70.866,0L622.292,0L622.292,26L70.866,26L70.866,19.661ZM594.158,2.321L99,2.321L99,23.679L594.158,23.679L594.158,2.321Z" />
+        </group>
+        <!-- Two fill bars (high = bars 2 and 3) -->
+        <group android:scaleX="0.903226">
+            <group
+                android:scaleX="1.524"
+                android:scaleY="1.19945"
+                android:translateX="261"
+                android:translateY="-30">
+                <path
+                    android:fillColor="@android:color/white"
+                    android:pathData="M0,70.866L70.866,70.866L70.866,212.598L0,212.598Z" />
+            </group>
+            <group
+                android:scaleX="1.524"
+                android:scaleY="1.19945"
+                android:translateX="397"
+                android:translateY="-30">
+                <path
+                    android:fillColor="@android:color/white"
+                    android:pathData="M0,70.866L70.866,70.866L70.866,212.598L0,212.598Z" />
+            </group>
+        </group>
+    </group>
+</vector>

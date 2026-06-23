@@ -4,6 +4,9 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.HttpStatusCode
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
@@ -80,7 +83,40 @@ data class SsGameInfo(
     val artworkUrl: String?,   // box-2D front
     val heroUrl: String?,      // fanart / wide banner
     val logoUrl: String?,      // wheel / logo
+    val manualUrl: String?,    // PDF manual
+    val videoUrl: String?,     // video snap (video-normalized)
 )
+
+// ── Diagnostic result ──────────────────────────────────────────────────────────
+
+enum class SsFailureReason {
+    NO_SYSTEM_ID_MAPPING,
+    MISSING_CREDENTIALS,
+    BAD_CREDENTIALS,
+    RATE_LIMITED,
+    NO_MATCH,
+    NETWORK_ERROR,
+    PARSE_ERROR,
+}
+
+data class SsLookupDiagnostics(
+    val originalFileName: String,
+    val cleanedSearchName: String,
+    val platformId: String,
+    val screenScraperSystemId: Int?,
+    val credentialsPresent: Boolean,
+    val httpStatus: Int? = null,
+    val matchCount: Int = 0,
+    val failureReason: SsFailureReason? = null,
+    val failureDetail: String? = null,
+)
+
+data class SsLookupResult(
+    val info: SsGameInfo?,
+    val diagnostics: SsLookupDiagnostics,
+) {
+    val success: Boolean get() = info != null
+}
 
 // ── API client ─────────────────────────────────────────────────────────────────
 
@@ -132,28 +168,60 @@ class ScreenScraperApi @Inject constructor(
         )
     }
 
+    // Convenience wrapper — returns just the game info for callers that don't need diagnostics.
     suspend fun fetchGameInfo(
         platformId: String,
         romFile: File?,
         title: String,
-    ): SsGameInfo? {
-        val systemId = PLATFORM_IDS[platformId] ?: run {
-            Timber.d("ScreenScraper: no system ID for platform=$platformId")
-            return null
+    ): SsGameInfo? = fetchGameInfoWithDiagnostics(platformId, romFile, title).info
+
+    // Full lookup with structured diagnostics for display in UI and logging.
+    suspend fun fetchGameInfoWithDiagnostics(
+        platformId: String,
+        romFile: File?,
+        title: String,
+    ): SsLookupResult {
+        val systemId = PLATFORM_IDS[platformId]
+        val filename = romFile?.name ?: "$title.rom"
+        val cleanedName = cleanSearchName(filename)
+        val username = keyProvider.getSsUsername()
+        val credentialsPresent = !username.isNullOrBlank()
+
+        val baseDiag = SsLookupDiagnostics(
+            originalFileName  = filename,
+            cleanedSearchName = cleanedName,
+            platformId        = platformId,
+            screenScraperSystemId = systemId,
+            credentialsPresent    = credentialsPresent,
+        )
+
+        if (systemId == null) {
+            Timber.w("ScreenScraper: no system ID mapping for platform='$platformId', skipping")
+            return SsLookupResult(null, baseDiag.copy(
+                failureReason = SsFailureReason.NO_SYSTEM_ID_MAPPING,
+                failureDetail = "No ScreenScraper system ID mapped for platform '$platformId'",
+            ))
         }
 
-        val username = keyProvider.getSsUsername() ?: ""
-        val password = keyProvider.getSsPassword() ?: ""
+        if (!credentialsPresent) {
+            Timber.w("ScreenScraper: no credentials configured — anonymous requests have very low rate limits")
+        }
 
+        val password = keyProvider.getSsPassword() ?: ""
         val crc = romFile?.let { computeCrc32(it) }
         val md5 = romFile?.let { computeMd5(it) }
-        val filename = romFile?.name ?: "$title.rom"
+
+        Timber.d(
+            "ScreenScraper lookup: platform=$platformId systemId=$systemId " +
+            "file='$filename' cleaned='$cleanedName' " +
+            "credentialsPresent=$credentialsPresent crc=${crc ?: "n/a"}"
+        )
 
         return try {
-            val response: SsResponse = httpClient.get("$BASE/jeuInfos.php") {
+            val httpResponse: HttpResponse = httpClient.get("$BASE/jeuInfos.php") {
                 parameter("devid",       MetadataApiKeyProvider.SS_DEV_ID)
                 parameter("devpassword", MetadataApiKeyProvider.SS_DEV_PASSWORD)
-                parameter("ssid",        username)
+                parameter("ssid",        username ?: "")
                 parameter("sspassword",  password)
                 parameter("softname",    MetadataApiKeyProvider.SS_SOFT_NAME)
                 parameter("output",      "json")
@@ -162,13 +230,73 @@ class ScreenScraperApi @Inject constructor(
                 parameter("romnom",      filename)
                 if (crc != null) parameter("crc", crc)
                 if (md5 != null) parameter("md5", md5)
-            }.body()
+            }
 
-            response.response?.game?.toInfo()
+            val statusCode = httpResponse.status.value
+            val diagWithStatus = baseDiag.copy(httpStatus = statusCode)
+
+            when (httpResponse.status) {
+                HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden -> {
+                    Timber.w("ScreenScraper: bad credentials (HTTP $statusCode) for '$title'")
+                    return SsLookupResult(null, diagWithStatus.copy(
+                        failureReason = SsFailureReason.BAD_CREDENTIALS,
+                        failureDetail = "HTTP $statusCode — check username/password in Artwork Settings",
+                    ))
+                }
+                HttpStatusCode.TooManyRequests -> {
+                    Timber.w("ScreenScraper: rate limited (HTTP 429) for '$title'")
+                    return SsLookupResult(null, diagWithStatus.copy(
+                        failureReason = SsFailureReason.RATE_LIMITED,
+                        failureDetail = "Rate limited — wait before retrying",
+                    ))
+                }
+            }
+
+            val ssResponse: SsResponse = try {
+                httpResponse.body()
+            } catch (parseEx: Exception) {
+                val raw = runCatching { httpResponse.bodyAsText() }.getOrDefault("(unreadable)")
+                Timber.w(parseEx, "ScreenScraper: parse error for '$title', status=$statusCode, body prefix='${raw.take(200)}'")
+                return SsLookupResult(null, diagWithStatus.copy(
+                    failureReason = SsFailureReason.PARSE_ERROR,
+                    failureDetail = "JSON parse error: ${parseEx.message}",
+                ))
+            }
+
+            val game = ssResponse.response?.game
+            if (game == null) {
+                Timber.i("ScreenScraper: no match — platform=$platformId file='$filename'")
+                return SsLookupResult(null, diagWithStatus.copy(
+                    matchCount    = 0,
+                    failureReason = SsFailureReason.NO_MATCH,
+                    failureDetail = "No game found for file '$filename' on platform '$platformId'",
+                ))
+            }
+
+            val info = game.toInfo()
+            Timber.i("ScreenScraper: match found — '${info.title}' for '$filename' (platform=$platformId)")
+            SsLookupResult(info, diagWithStatus.copy(matchCount = 1))
+
         } catch (e: Exception) {
-            Timber.w(e, "ScreenScraper fetch failed for '$title'")
-            null
+            Timber.w(e, "ScreenScraper: network error for '$title'")
+            SsLookupResult(null, baseDiag.copy(
+                failureReason = SsFailureReason.NETWORK_ERROR,
+                failureDetail = e.message ?: "Network error",
+            ))
         }
+    }
+
+    // Strips region tags, revision markers, disc labels, and file extensions from a ROM filename
+    // to produce a cleaner search name. Used only for logging/diagnostics — the raw filename
+    // is still sent to ScreenScraper since hash-based matching ignores the name anyway.
+    private fun cleanSearchName(filename: String): String {
+        return filename
+            .substringBeforeLast(".")                             // strip extension
+            .replace(Regex("""\s*\(.*?\)"""), "")                // (USA), (Rev 1), (Disc 2), etc.
+            .replace(Regex("""\s*\[.*?]"""), "")                 // [!], [T+Eng], etc.
+            .replace(Regex("[_\\-]+"), " ")                      // underscores / dashes → spaces
+            .replace(Regex("\\s{2,}"), " ")
+            .trim()
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -206,6 +334,8 @@ class ScreenScraperApi @Inject constructor(
             artworkUrl  = bestMedia("box-2D") ?: bestMedia("box-3D"),
             heroUrl     = bestMedia("fanart") ?: bestMedia("ss"),
             logoUrl     = bestMedia("wheel") ?: bestMedia("wheel-hd"),
+            manualUrl   = bestMedia("manuel"),
+            videoUrl    = bestMedia("video-normalized") ?: bestMedia("video"),
         )
     }
 

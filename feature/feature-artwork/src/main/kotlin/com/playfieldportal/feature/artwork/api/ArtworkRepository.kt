@@ -36,6 +36,8 @@ data class ScrapeProgress(
     val succeeded: Int,
     val failed: Int,
     val title: String,
+    val scrapeSource: String = "",   // e.g. "ScreenScraper", "SteamGridDB"
+    val scrapeAsset: String = "",    // e.g. "Box Art", "Hero", "Logo"
 )
 
 @Singleton
@@ -43,6 +45,7 @@ class ArtworkRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val gameDao: GameDao,
     private val metadataRepository: MetadataRepository,
+    private val scrapePreferences: ArtworkScrapePreferences,
 ) {
     // Fetch artwork + metadata for all games that don't have any artwork yet.
     suspend fun fetchMissingArtwork(
@@ -149,13 +152,24 @@ class ArtworkRepository @Inject constructor(
         games: List<Pair<Long, Triple<String, String, String?>>>,
         onProgress: (ScrapeProgress) -> Unit,
     ): ScrapeProgress {
+        val options = scrapePreferences.getOptions()
         var ok = 0
         var fail = 0
         games.forEachIndexed { index, (id, info) ->
             val (title, platformId, romPath) = info
             onProgress(ScrapeProgress(index + 1, games.size, ok, fail, title))
             val result = runCatching {
-                metadataRepository.fetchForGame(id, title, platformId, romPath)
+                metadataRepository.fetchForGame(
+                    gameId   = id,
+                    title    = title,
+                    platformId = platformId,
+                    romPath  = romPath,
+                    options  = options,
+                    onAssetProgress = { source, asset ->
+                        onProgress(ScrapeProgress(index + 1, games.size, ok, fail, title,
+                            scrapeSource = source, scrapeAsset = asset))
+                    },
+                )
             }.getOrNull()
             if (result?.success == true) ok++ else fail++
             // Respect ScreenScraper ~1 req/sec rate limit.

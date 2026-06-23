@@ -38,7 +38,7 @@ import com.playfieldportal.core.data.database.entity.UnmatchedRomEntity
         MemoryCardEntity::class,
         AppOverrideEntity::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -136,6 +136,15 @@ abstract class PFPDatabase : RoomDatabase() {
         val MIGRATION_5_6 = object : Migration(5, 6) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE games ADD COLUMN icon_uri TEXT")
+            }
+        }
+
+        // v7 — display title fields: scraped_title (from metadata) and user_title_override
+        // (user-set). displayTitle = userTitleOverride ?: scrapedTitle ?: title.
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE games ADD COLUMN scraped_title TEXT")
+                db.execSQL("ALTER TABLE games ADD COLUMN user_title_override TEXT")
             }
         }
     }

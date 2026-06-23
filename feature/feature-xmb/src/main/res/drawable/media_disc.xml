@@ -1,0 +1,45 @@
+<!--
+  Optical disc — CD / DVD  (PSX / PS2 / PS3 / Saturn / Dreamcast / Wii / Wii U)
+  Source: _inc/physical-media — https://github.com/anthonycaccese/xmb-menu-es-de
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <!-- Outer disc ring -->
+    <path
+        android:fillColor="#C8C8D8"
+        android:pathData="M24,1 A23,23 0 1,1 23.999,1 Z" />
+
+    <!-- Data band (slightly darker ring) -->
+    <path
+        android:fillColor="#B0B0C4"
+        android:pathData="M24,5 A19,19 0 1,1 23.999,5 Z" />
+
+    <!-- Inner reflective area -->
+    <path
+        android:fillColor="#D8D8E8"
+        android:pathData="M24,8 A16,16 0 1,1 23.999,8 Z" />
+
+    <!-- Rainbow sheen arc (purple/blue) -->
+    <path
+        android:fillColor="#7070C840"
+        android:pathData="M8,24 A16,16 0 0,1 40,24 A16,16 0 0,0 8,24 Z" />
+
+    <!-- Hub ring -->
+    <path
+        android:fillColor="#888898"
+        android:pathData="M24,17 A7,7 0 1,1 23.999,17 Z" />
+
+    <!-- Centre hole -->
+    <path
+        android:fillColor="#0E0E1C"
+        android:pathData="M24,20 A4,4 0 1,1 23.999,20 Z" />
+
+    <!-- Outer edge highlight -->
+    <path
+        android:fillColor="#E8E8F8"
+        android:pathData="M24,1 A23,23 0 0,1 47,24 L46,24 A22,22 0 0,0 24,2 Z" />
+</vector>

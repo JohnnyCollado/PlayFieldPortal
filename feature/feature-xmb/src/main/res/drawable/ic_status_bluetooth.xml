@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Source: anthonycaccese/xmb-menu-es-de _inc/images/icon-bluetooth.svg -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="14dp"
+    android:height="20dp"
+    android:viewportWidth="14"
+    android:viewportHeight="20">
+    <group
+        android:scaleX="0.111111"
+        android:scaleY="0.111111"
+        android:translateX="-6.74423"
+        android:translateY="-4.7777">
+        <path
+            android:fillColor="@android:color/white"
+            android:fillType="evenOdd"
+            android:pathData="M182.533,168.995L134.535,132.999L182.533,97.002C186.224,94.234 186.224,88.696 182.533,85.926L127.154,44.392C122.89,41.195 116.766,43.811 116.128,49.102C116.095,49.378 116.078,49.654 116.078,49.93L116.078,119.154L71.775,85.926C67.512,82.73 61.387,85.346 60.748,90.636C60.453,93.092 61.489,95.519 63.468,97.002L111.465,132.999L63.468,168.995C59.205,172.193 60.002,178.806 64.903,180.899C67.177,181.87 69.796,181.556 71.775,180.071L116.078,146.844L116.078,216.068C116.078,221.396 121.846,224.727 126.462,222.062C126.7,221.925 126.932,221.771 127.154,221.606L182.533,180.071C186.224,177.303 186.224,171.765 182.533,168.995ZM129.922,63.776L166.845,91.464L129.922,119.154L129.922,63.776ZM129.922,202.223L129.922,146.844L166.845,174.533L129.922,202.223Z" />
+    </group>
+</vector>

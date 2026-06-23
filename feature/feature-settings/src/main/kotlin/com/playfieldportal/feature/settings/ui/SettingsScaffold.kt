@@ -79,6 +79,10 @@ fun SettingsScaffold(
     // When set, focus is restored to the row whose focusKey matches (used when returning
     // from a child screen). When null, focus starts at the first interactive row.
     restoreFocusKey: String? = null,
+    // When set, called with every incoming action BEFORE normal navigation handling.
+    // Return true to consume the action (suppresses back/select/focus movement).
+    // Used by ControllerSettingsScreen to capture button presses during remap mode.
+    onInterceptAction: ((GamepadAction) -> Boolean)? = null,
     content: @Composable () -> Unit,
 ) {
     val focusManager    = LocalFocusManager.current
@@ -126,6 +130,12 @@ fun SettingsScaffold(
     LaunchedEffect(pendingAction) {
         if (pendingAction == null) return@LaunchedEffect
         Timber.d("Settings focus: action=$pendingAction focusedClick=${focusedRowClick.value != null}")
+        // Give the screen a chance to consume the action first (e.g. remap capture mode).
+        // If the interceptor returns true the action is fully consumed — no navigation fires.
+        if (onInterceptAction?.invoke(pendingAction) == true) {
+            onConsumed()
+            return@LaunchedEffect
+        }
         when (pendingAction) {
             GamepadAction.NAVIGATE_UP   -> focusManager.moveFocus(FocusDirection.Up)
             GamepadAction.NAVIGATE_DOWN -> focusManager.moveFocus(FocusDirection.Down)

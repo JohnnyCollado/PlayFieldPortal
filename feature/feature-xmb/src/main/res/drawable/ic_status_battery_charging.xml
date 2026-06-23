@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Source: anthonycaccese/xmb-menu-es-de _inc/images/icon-battery-charging.svg -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="31dp"
+    android:height="14dp"
+    android:viewportWidth="620"
+    android:viewportHeight="280">
+    <group android:scaleX="1.10714">
+        <group
+            android:scaleX="0.802611"
+            android:scaleY="10.7692"
+            android:translateX="6.34797">
+            <path
+                android:fillColor="@android:color/white"
+                android:fillType="evenOdd"
+                android:pathData="M70.866,19.661L-7.909,19.661L-7.909,6.661L70.866,6.661L70.866,0L622.292,0L622.292,26L70.866,26L70.866,19.661ZM594.158,2.321L99,2.321L99,23.679L594.158,23.679L594.158,2.321Z" />
+        </group>
+        <!-- Lightning bolt fill -->
+        <group
+            android:scaleX="4.84331"
+            android:scaleY="1.19945"
+            android:translateX="112.903"
+            android:translateY="-30">
+            <path
+                android:fillColor="@android:color/white"
+                android:fillType="evenOdd"
+                android:pathData="M70.866,70.866L70.866,212.598L0,212.598L0,70.866L70.866,70.866ZM42.876,135.59C42.401,132.154 41.558,130.058 40.654,130.061L34.435,130.061L37.769,100.272C37.951,98.651 38.045,96.863 38.045,95.05C38.045,88.643 36.866,83.372 35.433,83.372C34.445,83.372 33.538,85.877 33.097,89.827L27.876,136.509C27.694,138.131 27.6,139.919 27.6,141.732C27.6,148.134 28.779,153.403 30.211,153.403L36.432,153.403L33.097,183.192C32.915,184.813 32.821,186.601 32.821,188.414C32.821,194.821 34,200.092 35.433,200.092C36.421,200.092 37.328,197.587 37.769,193.637L42.991,146.955C43.395,143.338 43.352,139.03 42.876,135.59Z" />
+        </group>
+    </group>
+</vector>

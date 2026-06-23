@@ -4,6 +4,10 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -40,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.playfieldportal.core.ui.icons.GameIconStyle
+import com.playfieldportal.feature.xmb.R
 import com.playfieldportal.feature.xmb.viewmodel.XMBItem
 
 // Canonical icon dimensions — portrait, close to actual PSP game case proportions
@@ -70,6 +75,13 @@ fun GameIcon(
     when {
         item.isAndroidApp -> AndroidAppIcon(
             packageName = item.packageName,
+            title       = item.title,
+            modifier    = modifier,
+        )
+
+        iconStyle == GameIconStyle.CARTRIDGE -> PhysicalMediaIcon(
+            platformId  = item.platformId,
+            accentColor = item.accentColor?.let { Color(it) },
             title       = item.title,
             modifier    = modifier,
         )
@@ -314,6 +326,55 @@ fun CartridgeIcon(
                 .height(2.dp)
                 .background(accent.copy(alpha = 0.7f)),
         )
+    }
+}
+
+// ── Physical media icon (Cartridge mode) ──────────────────────────────────────
+//
+// Replaces the entire game-icon slot with the platform's physical-media image.
+// No container, no border, no dark background — just the PNG.
+//
+// Image source: drop PNGs named {platformId}.png into
+//   feature/feature-xmb/src/main/assets/systems/physical-media/
+//   e.g. psx.png, snes.png, psp.png, megadrive.png …
+//
+// Fallback: built-in generic shape vector when the PNG is absent.
+
+private const val ASSET_BASE = "file:///android_asset/systems/physical-media"
+
+@Composable
+fun PhysicalMediaIcon(
+    platformId: String?,
+    accentColor: Color?,
+    title: String,
+    modifier: Modifier = Modifier,
+) {
+    val assetName   = physicalMediaAssetName(platformId)
+    val fallbackRes = physicalMediaIconRes(platformId) ?: R.drawable.media_cartridge
+    var assetFailed by remember(assetName) { mutableStateOf(false) }
+
+    Box(
+        modifier         = modifier,
+        contentAlignment = Alignment.Center,
+    ) {
+        if (assetName != null && !assetFailed) {
+            // Resolved filename: e.g. "ps1" → "psx.png", "dc" → "dreamcast.png".
+            AsyncImage(
+                model              = "$ASSET_BASE/$assetName.png",
+                contentDescription = null,
+                contentScale       = ContentScale.Fit,
+                modifier           = Modifier.fillMaxSize(),
+                onError            = { assetFailed = true },
+            )
+        } else {
+            // Generic shape vector fallback (no container).
+            Image(
+                painter            = painterResource(id = fallbackRes),
+                contentDescription = null,
+                contentScale       = ContentScale.Fit,
+                modifier           = Modifier.fillMaxSize(),
+            )
+        }
     }
 }
 

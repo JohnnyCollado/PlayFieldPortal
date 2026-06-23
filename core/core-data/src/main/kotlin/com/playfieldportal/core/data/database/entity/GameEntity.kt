@@ -79,6 +79,14 @@ data class GameEntity(
 
     @ColumnInfo(name = "created_at")
     val createdAt: Long = System.currentTimeMillis(),
+
+    // Title resolved from a metadata scrape — updated by the scraper, never by ROM scanning.
+    @ColumnInfo(name = "scraped_title")
+    val scrapedTitle: String? = null,
+
+    // User-set display name override — preserved across re-scrapes unless explicitly cleared.
+    @ColumnInfo(name = "user_title_override")
+    val userTitleOverride: String? = null,
 )
 
 fun GameEntity.toDomain() = Game(
@@ -104,6 +112,8 @@ fun GameEntity.toDomain() = Game(
     lastPlayedAt        = lastPlayedAt,
     userNote            = userNote,
     isManualEntry       = isManualEntry,
+    scrapedTitle        = scrapedTitle,
+    userTitleOverride   = userTitleOverride,
 )
 
 fun Game.toEntity() = GameEntity(
@@ -129,4 +139,6 @@ fun Game.toEntity() = GameEntity(
     lastPlayedAt        = lastPlayedAt,
     userNote            = userNote,
     isManualEntry       = isManualEntry,
+    scrapedTitle        = scrapedTitle,
+    userTitleOverride   = userTitleOverride,
 )

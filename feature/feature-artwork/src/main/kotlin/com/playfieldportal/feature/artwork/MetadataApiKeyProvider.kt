@@ -53,15 +53,41 @@ class MetadataApiKeyProvider @Inject constructor(
         context.pfpDataStore.edit { it.remove(KEY_TGDB_API_KEY) }
     }
 
+    // ── IGDB ──────────────────────────────────────────────────────────────────
+    // Credentials from dev.twitch.tv — Client ID + Client Secret for client_credentials flow.
+    val igdbClientIdFlow: Flow<String?> = context.pfpDataStore.data.map { it[KEY_IGDB_CLIENT_ID] }
+
+    suspend fun getIgdbClientId(): String?     = igdbClientIdFlow.firstValue()
+    suspend fun getIgdbClientSecret(): String? =
+        context.pfpDataStore.data.first()[KEY_IGDB_CLIENT_SECRET]
+
+    suspend fun saveIgdbCredentials(clientId: String, clientSecret: String) {
+        context.pfpDataStore.edit {
+            it[KEY_IGDB_CLIENT_ID]     = clientId.trim()
+            it[KEY_IGDB_CLIENT_SECRET] = clientSecret.trim()
+        }
+    }
+
+    suspend fun clearIgdbCredentials() {
+        context.pfpDataStore.edit {
+            it.remove(KEY_IGDB_CLIENT_ID)
+            it.remove(KEY_IGDB_CLIENT_SECRET)
+        }
+    }
+
     suspend fun hasSsCredentials(): Boolean = getSsUsername()?.isNotBlank() == true
     suspend fun hasTgdbKey(): Boolean = getTgdbKey()?.isNotBlank() == true
+    suspend fun hasIgdbCredentials(): Boolean = getIgdbClientId()?.isNotBlank() == true &&
+        getIgdbClientSecret()?.isNotBlank() == true
 
     private suspend fun Flow<String?>.firstValue(): String? = first()
 
     companion object {
-        private val KEY_SS_USERNAME  = stringPreferencesKey("ss_username")
-        private val KEY_SS_PASSWORD  = stringPreferencesKey("ss_password")
-        private val KEY_TGDB_API_KEY = stringPreferencesKey("tgdb_api_key")
+        private val KEY_SS_USERNAME      = stringPreferencesKey("ss_username")
+        private val KEY_SS_PASSWORD      = stringPreferencesKey("ss_password")
+        private val KEY_TGDB_API_KEY     = stringPreferencesKey("tgdb_api_key")
+        private val KEY_IGDB_CLIENT_ID     = stringPreferencesKey("igdb_client_id")
+        private val KEY_IGDB_CLIENT_SECRET = stringPreferencesKey("igdb_client_secret")
 
         // Register your app at screenscraper.fr to get dev credentials.
         const val SS_DEV_ID       = "PlayFieldPortal"

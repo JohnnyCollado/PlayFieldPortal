@@ -3,6 +3,7 @@ package com.playfieldportal.feature.xmb.gamepad
 import android.view.KeyEvent
 import android.view.MotionEvent
 import app.cash.turbine.test
+import com.playfieldportal.core.data.repository.RemapCoordinator
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
@@ -18,7 +19,7 @@ class GamepadInputHandlerTest {
 
     @Before
     fun setUp() {
-        handler = GamepadInputHandler()
+        handler = GamepadInputHandler(RemapCoordinator())
     }
 
     // ── Key events ───────────────────────────────────────────────────────

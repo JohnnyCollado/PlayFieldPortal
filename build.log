@@ -1,0 +1,402 @@
+Build started Mon 06/22/2026 23:17:48.71 
+Command: gradlew.bat -Dorg.gradle.problems.report=false :app:assembleDebug 
+ 
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.14.5/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :core:core-common:preBuild UP-TO-DATE
+> Task :core:core-data:preBuild UP-TO-DATE
+> Task :core:core-ui:preBuild UP-TO-DATE
+> Task :core:core-domain:preBuild UP-TO-DATE
+> Task :app:preBuild UP-TO-DATE
+> Task :feature:feature-artwork:preBuild UP-TO-DATE
+> Task :feature:feature-appbar:preBuild UP-TO-DATE
+> Task :feature:feature-backup:preBuild UP-TO-DATE
+> Task :core:core-data:preDebugBuild UP-TO-DATE
+> Task :feature:feature-appbar:preDebugBuild UP-TO-DATE
+> Task :core:core-common:preDebugBuild UP-TO-DATE
+> Task :feature:feature-backup:preDebugBuild UP-TO-DATE
+> Task :core:core-ui:preDebugBuild UP-TO-DATE
+> Task :feature:feature-artwork:preDebugBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :core:core-domain:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :core:core-domain:writeDebugAarMetadata UP-TO-DATE
+> Task :feature:feature-backup:writeDebugAarMetadata UP-TO-DATE
+> Task :core:core-data:writeDebugAarMetadata UP-TO-DATE
+> Task :core:core-common:writeDebugAarMetadata UP-TO-DATE
+> Task :feature:feature-artwork:writeDebugAarMetadata UP-TO-DATE
+> Task :app:generateDebugBuildConfig UP-TO-DATE
+> Task :feature:feature-appbar:writeDebugAarMetadata UP-TO-DATE
+> Task :core:core-ui:writeDebugAarMetadata UP-TO-DATE
+> Task :feature:feature-themes:preBuild UP-TO-DATE
+> Task :feature:feature-library:preBuild UP-TO-DATE
+> Task :feature:feature-launcher:preBuild UP-TO-DATE
+> Task :feature:feature-settings:preBuild UP-TO-DATE
+> Task :feature:feature-library:preDebugBuild UP-TO-DATE
+> Task :feature:feature-settings:preDebugBuild UP-TO-DATE
+> Task :feature:feature-launcher:preDebugBuild UP-TO-DATE
+> Task :feature:feature-xmb:preBuild UP-TO-DATE
+> Task :feature:feature-themes:preDebugBuild UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :core:core-common:generateDebugResValues UP-TO-DATE
+> Task :feature:feature-xmb:preDebugBuild UP-TO-DATE
+> Task :core:core-data:generateDebugResValues UP-TO-DATE
+> Task :feature:feature-settings:writeDebugAarMetadata UP-TO-DATE
+> Task :feature:feature-launcher:writeDebugAarMetadata UP-TO-DATE
+> Task :feature:feature-library:writeDebugAarMetadata UP-TO-DATE
+> Task :feature:feature-themes:writeDebugAarMetadata UP-TO-DATE
+> Task :core:core-domain:generateDebugResValues UP-TO-DATE
+> Task :feature:feature-xmb:writeDebugAarMetadata UP-TO-DATE
+> Task :core:core-ui:generateDebugResValues UP-TO-DATE
+> Task :feature:feature-artwork:generateDebugResValues UP-TO-DATE
+> Task :feature:feature-appbar:generateDebugResValues UP-TO-DATE
+> Task :feature:feature-backup:generateDebugResValues UP-TO-DATE
+> Task :core:core-data:generateDebugResources UP-TO-DATE
+> Task :core:core-domain:generateDebugResources UP-TO-DATE
+> Task :core:core-common:generateDebugResources UP-TO-DATE
+> Task :feature:feature-appbar:generateDebugResources UP-TO-DATE
+> Task :feature:feature-artwork:generateDebugResources UP-TO-DATE
+> Task :core:core-ui:generateDebugResources UP-TO-DATE
+> Task :feature:feature-backup:generateDebugResources UP-TO-DATE
+> Task :core:core-data:packageDebugResources UP-TO-DATE
+> Task :feature:feature-backup:packageDebugResources UP-TO-DATE
+> Task :core:core-domain:packageDebugResources UP-TO-DATE
+> Task :core:core-common:packageDebugResources UP-TO-DATE
+> Task :feature:feature-artwork:packageDebugResources UP-TO-DATE
+> Task :core:core-ui:packageDebugResources UP-TO-DATE
+> Task :feature:feature-appbar:packageDebugResources UP-TO-DATE
+> Task :feature:feature-themes:generateDebugResValues UP-TO-DATE
+> Task :feature:feature-library:generateDebugResValues UP-TO-DATE
+> Task :feature:feature-launcher:generateDebugResValues UP-TO-DATE
+> Task :feature:feature-settings:generateDebugResValues UP-TO-DATE
+> Task :core:core-common:extractDeepLinksDebug UP-TO-DATE
+> Task :feature:feature-xmb:generateDebugResValues UP-TO-DATE
+> Task :core:core-data:extractDeepLinksDebug UP-TO-DATE
+> Task :feature:feature-library:generateDebugResources UP-TO-DATE
+> Task :feature:feature-themes:generateDebugResources UP-TO-DATE
+> Task :feature:feature-launcher:generateDebugResources UP-TO-DATE
+> Task :feature:feature-settings:generateDebugResources UP-TO-DATE
+> Task :core:core-data:processDebugManifest UP-TO-DATE
+> Task :feature:feature-themes:packageDebugResources UP-TO-DATE
+> Task :core:core-domain:extractDeepLinksDebug UP-TO-DATE
+> Task :feature:feature-library:packageDebugResources UP-TO-DATE
+> Task :feature:feature-xmb:generateDebugResources UP-TO-DATE
+> Task :feature:feature-appbar:extractDeepLinksDebug UP-TO-DATE
+> Task :feature:feature-launcher:packageDebugResources UP-TO-DATE
+> Task :core:core-ui:extractDeepLinksDebug UP-TO-DATE
+> Task :core:core-common:processDebugManifest UP-TO-DATE
+> Task :feature:feature-artwork:extractDeepLinksDebug UP-TO-DATE
+> Task :feature:feature-settings:packageDebugResources UP-TO-DATE
+> Task :feature:feature-backup:extractDeepLinksDebug UP-TO-DATE
+> Task :core:core-domain:processDebugManifest UP-TO-DATE
+> Task :feature:feature-launcher:extractDeepLinksDebug UP-TO-DATE
+> Task :core:core-ui:processDebugManifest UP-TO-DATE
+> Task :feature:feature-library:extractDeepLinksDebug UP-TO-DATE
+> Task :feature:feature-appbar:processDebugManifest UP-TO-DATE
+> Task :feature:feature-settings:extractDeepLinksDebug UP-TO-DATE
+> Task :feature:feature-themes:extractDeepLinksDebug UP-TO-DATE
+> Task :feature:feature-artwork:processDebugManifest UP-TO-DATE
+> Task :core:core-common:compileDebugLibraryResources UP-TO-DATE
+> Task :feature:feature-launcher:processDebugManifest UP-TO-DATE
+> Task :feature:feature-xmb:packageDebugResources UP-TO-DATE
+> Task :feature:feature-library:processDebugManifest UP-TO-DATE
+> Task :feature:feature-backup:processDebugManifest UP-TO-DATE
+> Task :core:core-data:compileDebugLibraryResources UP-TO-DATE
+> Task :feature:feature-themes:processDebugManifest UP-TO-DATE
+> Task :core:core-domain:compileDebugLibraryResources UP-TO-DATE
+> Task :feature:feature-xmb:extractDeepLinksDebug UP-TO-DATE
+> Task :core:core-ui:compileDebugLibraryResources UP-TO-DATE
+> Task :feature:feature-appbar:compileDebugLibraryResources UP-TO-DATE
+> Task :feature:feature-settings:processDebugManifest UP-TO-DATE
+> Task :feature:feature-artwork:compileDebugLibraryResources UP-TO-DATE
+> Task :feature:feature-xmb:processDebugManifest UP-TO-DATE
+> Task :feature:feature-backup:compileDebugLibraryResources UP-TO-DATE
+> Task :core:core-common:parseDebugLocalResources UP-TO-DATE
+> Task :core:core-ui:parseDebugLocalResources UP-TO-DATE
+> Task :core:core-data:parseDebugLocalResources UP-TO-DATE
+> Task :core:core-domain:parseDebugLocalResources UP-TO-DATE
+> Task :feature:feature-appbar:parseDebugLocalResources UP-TO-DATE
+> Task :feature:feature-artwork:parseDebugLocalResources UP-TO-DATE
+> Task :feature:feature-backup:parseDebugLocalResources UP-TO-DATE
+> Task :core:core-domain:generateDebugRFile UP-TO-DATE
+> Task :feature:feature-artwork:generateDebugRFile UP-TO-DATE
+> Task :core:core-common:generateDebugRFile UP-TO-DATE
+> Task :core:core-ui:generateDebugRFile UP-TO-DATE
+> Task :feature:feature-appbar:generateDebugRFile UP-TO-DATE
+> Task :core:core-data:generateDebugRFile UP-TO-DATE
+> Task :core:core-common:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :feature:feature-library:compileDebugLibraryResources UP-TO-DATE
+> Task :feature:feature-launcher:compileDebugLibraryResources UP-TO-DATE
+> Task :feature:feature-backup:generateDebugRFile UP-TO-DATE
+> Task :core:core-data:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :feature:feature-themes:compileDebugLibraryResources UP-TO-DATE
+> Task :core:core-domain:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :feature:feature-settings:compileDebugLibraryResources UP-TO-DATE
+> Task :feature:feature-library:parseDebugLocalResources UP-TO-DATE
+> Task :feature:feature-launcher:parseDebugLocalResources UP-TO-DATE
+> Task :feature:feature-settings:parseDebugLocalResources UP-TO-DATE
+> Task :feature:feature-themes:parseDebugLocalResources UP-TO-DATE
+> Task :feature:feature-launcher:generateDebugRFile UP-TO-DATE
+> Task :feature:feature-library:generateDebugRFile UP-TO-DATE
+> Task :core:core-ui:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :core:core-common:compileDebugKotlin NO-SOURCE
+> Task :feature:feature-themes:generateDebugRFile UP-TO-DATE
+> Task :feature:feature-appbar:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :feature:feature-xmb:compileDebugLibraryResources UP-TO-DATE
+> Task :core:core-common:javaPreCompileDebug UP-TO-DATE
+> Task :feature:feature-settings:generateDebugRFile UP-TO-DATE
+> Task :feature:feature-artwork:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :feature:feature-xmb:parseDebugLocalResources UP-TO-DATE
+> Task :core:core-common:compileDebugJavaWithJavac NO-SOURCE
+> Task :core:core-common:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :feature:feature-xmb:generateDebugRFile UP-TO-DATE
+> Task :core:core-common:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :feature:feature-backup:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :feature:feature-launcher:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :feature:feature-artwork:javaPreCompileDebug UP-TO-DATE
+> Task :feature:feature-library:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :feature:feature-launcher:javaPreCompileDebug UP-TO-DATE
+> Task :feature:feature-appbar:javaPreCompileDebug UP-TO-DATE
+> Task :feature:feature-settings:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :feature:feature-themes:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :feature:feature-backup:javaPreCompileDebug UP-TO-DATE
+> Task :feature:feature-settings:generateDebugBuildConfig UP-TO-DATE
+> Task :feature:feature-xmb:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :core:core-data:javaPreCompileDebug UP-TO-DATE
+> Task :feature:feature-library:javaPreCompileDebug UP-TO-DATE
+> Task :feature:feature-themes:javaPreCompileDebug UP-TO-DATE
+> Task :feature:feature-appbar:mergeDebugShaders UP-TO-DATE
+> Task :core:core-data:mergeDebugShaders UP-TO-DATE
+> Task :core:core-common:mergeDebugShaders UP-TO-DATE
+> Task :feature:feature-appbar:compileDebugShaders NO-SOURCE
+> Task :feature:feature-appbar:generateDebugAssets UP-TO-DATE
+> Task :core:core-data:compileDebugShaders NO-SOURCE
+> Task :feature:feature-settings:javaPreCompileDebug UP-TO-DATE
+> Task :core:core-data:generateDebugAssets UP-TO-DATE
+> Task :core:core-common:compileDebugShaders NO-SOURCE
+> Task :core:core-common:generateDebugAssets UP-TO-DATE
+> Task :feature:feature-appbar:mergeDebugAssets UP-TO-DATE
+> Task :core:core-data:mergeDebugAssets UP-TO-DATE
+> Task :core:core-common:mergeDebugAssets UP-TO-DATE
+> Task :feature:feature-artwork:mergeDebugShaders UP-TO-DATE
+> Task :feature:feature-artwork:compileDebugShaders NO-SOURCE
+> Task :feature:feature-library:mergeDebugShaders UP-TO-DATE
+> Task :feature:feature-backup:mergeDebugShaders UP-TO-DATE
+> Task :feature:feature-artwork:generateDebugAssets UP-TO-DATE
+> Task :feature:feature-launcher:mergeDebugShaders UP-TO-DATE
+> Task :feature:feature-library:compileDebugShaders NO-SOURCE
+> Task :feature:feature-backup:compileDebugShaders NO-SOURCE
+> Task :feature:feature-library:generateDebugAssets UP-TO-DATE
+> Task :feature:feature-backup:generateDebugAssets UP-TO-DATE
+> Task :feature:feature-launcher:compileDebugShaders NO-SOURCE
+> Task :feature:feature-launcher:generateDebugAssets UP-TO-DATE
+> Task :feature:feature-artwork:mergeDebugAssets UP-TO-DATE
+> Task :feature:feature-xmb:javaPreCompileDebug UP-TO-DATE
+> Task :feature:feature-backup:mergeDebugAssets UP-TO-DATE
+> Task :feature:feature-settings:mergeDebugShaders UP-TO-DATE
+> Task :feature:feature-library:mergeDebugAssets UP-TO-DATE
+> Task :feature:feature-launcher:mergeDebugAssets UP-TO-DATE
+> Task :feature:feature-xmb:mergeDebugShaders UP-TO-DATE
+> Task :feature:feature-themes:mergeDebugShaders UP-TO-DATE
+> Task :feature:feature-settings:compileDebugShaders NO-SOURCE
+> Task :feature:feature-settings:generateDebugAssets UP-TO-DATE
+> Task :feature:feature-xmb:compileDebugShaders NO-SOURCE
+> Task :feature:feature-xmb:generateDebugAssets UP-TO-DATE
+> Task :feature:feature-themes:compileDebugShaders NO-SOURCE
+> Task :feature:feature-themes:generateDebugAssets UP-TO-DATE
+> Task :feature:feature-settings:mergeDebugAssets UP-TO-DATE
+> Task :core:core-common:processDebugJavaRes NO-SOURCE
+> Task :core:core-data:mergeDebugJniLibFolders UP-TO-DATE
+> Task :core:core-common:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :feature:feature-xmb:mergeDebugAssets UP-TO-DATE
+> Task :core:core-common:mergeDebugJniLibFolders UP-TO-DATE
+> Task :feature:feature-themes:mergeDebugAssets UP-TO-DATE
+> Task :core:core-common:mergeDebugNativeLibs NO-SOURCE
+> Task :core:core-data:mergeDebugNativeLibs NO-SOURCE
+> Task :feature:feature-artwork:mergeDebugJniLibFolders UP-TO-DATE
+> Task :feature:feature-appbar:mergeDebugJniLibFolders UP-TO-DATE
+> Task :core:core-common:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :core:core-data:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :feature:feature-artwork:mergeDebugNativeLibs NO-SOURCE
+> Task :feature:feature-appbar:mergeDebugNativeLibs NO-SOURCE
+> Task :feature:feature-launcher:mergeDebugJniLibFolders UP-TO-DATE
+> Task :feature:feature-library:mergeDebugJniLibFolders UP-TO-DATE
+> Task :feature:feature-backup:mergeDebugJniLibFolders UP-TO-DATE
+> Task :feature:feature-appbar:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :feature:feature-artwork:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :feature:feature-launcher:mergeDebugNativeLibs NO-SOURCE
+> Task :feature:feature-backup:mergeDebugNativeLibs NO-SOURCE
+> Task :feature:feature-library:mergeDebugNativeLibs NO-SOURCE
+> Task :feature:feature-settings:mergeDebugJniLibFolders UP-TO-DATE
+> Task :feature:feature-themes:mergeDebugJniLibFolders UP-TO-DATE
+> Task :feature:feature-launcher:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :feature:feature-library:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :feature:feature-backup:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :feature:feature-settings:mergeDebugNativeLibs NO-SOURCE
+> Task :feature:feature-themes:mergeDebugNativeLibs NO-SOURCE
+> Task :feature:feature-xmb:mergeDebugJniLibFolders UP-TO-DATE
+> Task :feature:feature-settings:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :feature:feature-themes:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :feature:feature-xmb:mergeDebugNativeLibs NO-SOURCE
+> Task :feature:feature-xmb:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :core:core-ui:compileDebugKotlin UP-TO-DATE
+> Task :core:core-ui:javaPreCompileDebug UP-TO-DATE
+> Task :core:core-ui:compileDebugJavaWithJavac NO-SOURCE
+> Task :core:core-ui:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :core:core-ui:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :core:core-ui:mergeDebugShaders UP-TO-DATE
+> Task :core:core-ui:compileDebugShaders NO-SOURCE
+> Task :core:core-ui:generateDebugAssets UP-TO-DATE
+> Task :core:core-ui:mergeDebugAssets UP-TO-DATE
+> Task :core:core-ui:processDebugJavaRes UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :core:core-ui:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :core:core-ui:mergeDebugJniLibFolders UP-TO-DATE
+> Task :core:core-ui:mergeDebugNativeLibs NO-SOURCE
+> Task :core:core-ui:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :core:core-domain:javaPreCompileDebug UP-TO-DATE
+> Task :core:core-domain:mergeDebugShaders UP-TO-DATE
+> Task :core:core-domain:compileDebugShaders NO-SOURCE
+> Task :core:core-domain:generateDebugAssets UP-TO-DATE
+> Task :core:core-domain:mergeDebugAssets UP-TO-DATE
+> Task :core:core-domain:mergeDebugJniLibFolders UP-TO-DATE
+> Task :core:core-domain:mergeDebugNativeLibs NO-SOURCE
+> Task :core:core-domain:copyDebugJniLibsProjectOnly UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:mergeDebugShaders UP-TO-DATE
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets UP-TO-DATE
+> Task :app:compressDebugAssets UP-TO-DATE
+> Task :app:desugarDebugFileDependencies UP-TO-DATE
+> Task :app:checkDebugDuplicateClasses UP-TO-DATE
+> Task :app:mergeExtDexDebug UP-TO-DATE
+> Task :app:mergeDebugJniLibFolders UP-TO-DATE
+> Task :app:mergeDebugNativeLibs UP-TO-DATE
+> Task :app:stripDebugDebugSymbols UP-TO-DATE
+> Task :app:validateSigningDebug UP-TO-DATE
+> Task :app:writeDebugAppMetadata UP-TO-DATE
+> Task :app:writeDebugSigningConfigVersions UP-TO-DATE
+> Task :core:core-domain:compileDebugKotlin
+> Task :core:core-domain:compileDebugJavaWithJavac NO-SOURCE
+> Task :core:core-domain:processDebugJavaRes UP-TO-DATE
+> Task :core:core-domain:bundleLibRuntimeToDirDebug
+> Task :core:core-domain:bundleLibRuntimeToJarDebug
+> Task :core:core-domain:bundleLibCompileToJarDebug
+
+> Task :core:core-data:kspDebugKotlin
+w: [ksp] C:/Users/johnn/Documents/NEXTJJEN/xmbdroid/core/core-data/src/main/kotlin/com/playfieldportal/core/data/database/PFPDatabase.kt:45: Schema export directory was not provided to the annotation processor so Room cannot export the schema. You can either provide `room.schemaLocation` annotation processor argument by applying the Room Gradle plugin (id 'androidx.room') OR set exportSchema to false.
+
+> Task :core:core-data:compileDebugKotlin
+> Task :core:core-data:compileDebugJavaWithJavac
+> Task :core:core-data:processDebugJavaRes UP-TO-DATE
+> Task :core:core-data:transformDebugClassesWithAsm
+> Task :core:core-data:bundleLibCompileToJarDebug
+> Task :core:core-data:bundleLibRuntimeToJarDebug
+> Task :core:core-data:bundleLibRuntimeToDirDebug
+> Task :feature:feature-library:kspDebugKotlin
+> Task :feature:feature-themes:kspDebugKotlin
+> Task :feature:feature-appbar:kspDebugKotlin
+> Task :feature:feature-launcher:kspDebugKotlin
+> Task :feature:feature-appbar:compileDebugKotlin
+> Task :feature:feature-appbar:compileDebugJavaWithJavac UP-TO-DATE
+> Task :feature:feature-appbar:processDebugJavaRes UP-TO-DATE
+> Task :feature:feature-artwork:kspDebugKotlin
+> Task :feature:feature-appbar:transformDebugClassesWithAsm
+> Task :feature:feature-appbar:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :feature:feature-appbar:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :feature:feature-themes:compileDebugKotlin
+> Task :feature:feature-appbar:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :feature:feature-themes:compileDebugJavaWithJavac UP-TO-DATE
+> Task :feature:feature-themes:processDebugJavaRes UP-TO-DATE
+> Task :feature:feature-backup:kspDebugKotlin
+> Task :feature:feature-themes:transformDebugClassesWithAsm
+> Task :feature:feature-themes:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :feature:feature-themes:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :feature:feature-themes:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :feature:feature-library:compileDebugKotlin
+> Task :feature:feature-library:compileDebugJavaWithJavac UP-TO-DATE
+> Task :feature:feature-library:processDebugJavaRes UP-TO-DATE
+> Task :feature:feature-library:transformDebugClassesWithAsm
+> Task :feature:feature-library:bundleLibCompileToJarDebug
+> Task :feature:feature-library:bundleLibRuntimeToDirDebug
+> Task :feature:feature-library:bundleLibRuntimeToJarDebug
+> Task :feature:feature-launcher:compileDebugKotlin
+> Task :feature:feature-launcher:compileDebugJavaWithJavac
+> Task :feature:feature-launcher:processDebugJavaRes UP-TO-DATE
+> Task :feature:feature-launcher:transformDebugClassesWithAsm
+> Task :feature:feature-launcher:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :feature:feature-launcher:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :feature:feature-launcher:bundleLibRuntimeToDirDebug UP-TO-DATE
+> Task :feature:feature-backup:compileDebugKotlin
+> Task :feature:feature-backup:compileDebugJavaWithJavac
+> Task :feature:feature-backup:processDebugJavaRes UP-TO-DATE
+> Task :feature:feature-backup:transformDebugClassesWithAsm
+> Task :feature:feature-backup:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :feature:feature-backup:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :feature:feature-backup:bundleLibRuntimeToDirDebug UP-TO-DATE
+
+> Task :feature:feature-artwork:compileDebugKotlin
+w: file:///C:/Users/johnn/Documents/NEXTJJEN/xmbdroid/feature/feature-artwork/src/main/kotlin/com/playfieldportal/feature/artwork/api/ArtworkRepository.kt:91:40 This declaration needs opt-in. Its usage should be marked with '@coil.annotation.ExperimentalCoilApi' or '@OptIn(coil.annotation.ExperimentalCoilApi::class)'
+
+> Task :feature:feature-artwork:compileDebugJavaWithJavac
+> Task :feature:feature-artwork:processDebugJavaRes UP-TO-DATE
+> Task :feature:feature-artwork:transformDebugClassesWithAsm
+> Task :feature:feature-artwork:bundleLibCompileToJarDebug
+> Task :feature:feature-artwork:bundleLibRuntimeToJarDebug
+> Task :feature:feature-artwork:bundleLibRuntimeToDirDebug
+> Task :feature:feature-settings:kspDebugKotlin
+> Task :feature:feature-settings:compileDebugKotlin
+> Task :feature:feature-settings:compileDebugJavaWithJavac
+> Task :feature:feature-settings:processDebugJavaRes UP-TO-DATE
+> Task :feature:feature-settings:transformDebugClassesWithAsm
+> Task :feature:feature-settings:bundleLibRuntimeToDirDebug
+> Task :feature:feature-settings:bundleLibCompileToJarDebug
+> Task :feature:feature-settings:bundleLibRuntimeToJarDebug
+> Task :feature:feature-xmb:kspDebugKotlin
+> Task :feature:feature-xmb:compileDebugKotlin
+> Task :feature:feature-xmb:compileDebugJavaWithJavac
+> Task :feature:feature-xmb:processDebugJavaRes UP-TO-DATE
+> Task :feature:feature-xmb:transformDebugClassesWithAsm
+> Task :feature:feature-xmb:bundleLibCompileToJarDebug
+> Task :feature:feature-xmb:bundleLibRuntimeToJarDebug
+> Task :feature:feature-xmb:bundleLibRuntimeToDirDebug
+> Task :app:kspDebugKotlin
+> Task :app:compileDebugKotlin
+> Task :app:compileDebugJavaWithJavac
+> Task :app:hiltAggregateDepsDebug UP-TO-DATE
+> Task :app:hiltJavaCompileDebug
+> Task :app:processDebugJavaRes UP-TO-DATE
+> Task :app:mergeDebugJavaResource UP-TO-DATE
+> Task :app:transformDebugClassesWithAsm
+> Task :app:mergeLibDexDebug
+> Task :app:dexBuilderDebug
+> Task :app:mergeDebugGlobalSynthetics UP-TO-DATE
+> Task :app:mergeProjectDexDebug
+> Task :app:packageDebug
+> Task :app:createDebugApkListingFileRedirect UP-TO-DATE
+> Task :app:assembleDebug
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.14.5/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 3m 28s
+295 actionable tasks: 61 executed, 234 up-to-date
+ 
+Build completed Mon 06/22/2026 23:21:18.93 
+APK: C:\Users\johnn\Documents\NEXTJJEN\xmbdroid\app\build\outputs\apk\debug\app-debug.apk 

@@ -3,6 +3,8 @@ package com.playfieldportal.launcher
 import android.app.Application
 import androidx.work.Configuration
 import com.playfieldportal.core.data.database.seeder.DatabaseInitializer
+import com.playfieldportal.feature.launcher.EmulatorAutoConfigService
+import com.playfieldportal.feature.launcher.EmulatorProfileRepository
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -16,14 +18,16 @@ class PFPApplication : Application(), Configuration.Provider {
 
     @Inject lateinit var workerFactory: androidx.hilt.work.HiltWorkerFactory
     @Inject lateinit var databaseInitializer: DatabaseInitializer
+    @Inject lateinit var emulatorProfileRepository: EmulatorProfileRepository
+    @Inject lateinit var emulatorAutoConfigService: EmulatorAutoConfigService
 
-    // App-scoped coroutine scope — lives as long as the process
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onCreate() {
         super.onCreate()
         initLogging()
         initDatabase()
+        initEmulators()
     }
 
     private fun initDatabase() {
@@ -33,12 +37,19 @@ class PFPApplication : Application(), Configuration.Provider {
         }
     }
 
+    private fun initEmulators() {
+        appScope.launch {
+            runCatching {
+                emulatorProfileRepository.initialize()
+                emulatorAutoConfigService.runOnStartup()
+            }.onFailure { Timber.e(it, "Emulator initialization failed") }
+        }
+    }
+
     private fun initLogging() {
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
         }
-        // File logging tree always planted — writes to rolling 7-day logs
-        // FileLoggingTree planted after DI is ready (injected via WorkManager init)
     }
 
     override val workManagerConfiguration: Configuration

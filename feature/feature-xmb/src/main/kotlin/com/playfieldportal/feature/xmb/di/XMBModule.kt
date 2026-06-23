@@ -1,6 +1,6 @@
 package com.playfieldportal.feature.xmb.di
 
-import com.playfieldportal.core.data.repository.ControllerMappingRepository
+import com.playfieldportal.core.data.repository.RemapCoordinator
 import com.playfieldportal.feature.xmb.gamepad.GamepadInputHandler
 import dagger.Module
 import dagger.Provides
@@ -15,6 +15,6 @@ object XMBModule {
     @Provides
     @Singleton
     fun provideGamepadInputHandler(
-        mappingRepository: ControllerMappingRepository,
-    ): GamepadInputHandler = GamepadInputHandler(mappingRepository)
+        remapCoordinator: RemapCoordinator,
+    ): GamepadInputHandler = GamepadInputHandler(remapCoordinator)
 }

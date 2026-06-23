@@ -10,6 +10,7 @@ import android.graphics.PorterDuffXfermode
 import android.graphics.RectF
 import android.graphics.drawable.BitmapDrawable
 import coil.ImageLoader
+import coil.request.CachePolicy
 import coil.request.ImageRequest
 import coil.request.SuccessResult
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -146,7 +147,10 @@ class CardArtworkProcessor @Inject constructor(
     private suspend fun downloadBitmap(url: String): Bitmap? {
         val request = ImageRequest.Builder(context)
             .data(url)
-            .allowHardware(false)   // must be software-backed for Canvas operations
+            .allowHardware(false)           // must be software-backed for Canvas operations
+            .memoryCachePolicy(CachePolicy.DISABLED) // we recycle the bitmap after saving; disabling
+                                            // memory cache prevents Coil returning the recycled
+                                            // instance on a subsequent request for the same URL
             .build()
 
         return when (val result = imageLoader.execute(request)) {

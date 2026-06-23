@@ -105,31 +105,42 @@ interface GameDao {
     suspend fun getGamesWithoutArtwork(): List<GameEntity>
 
     // Updates only non-null fields — COALESCE keeps existing value when new value is null.
+    // scraped_title is updated when a metadata source returns a title.
+    // user_title_override is NEVER touched here — only explicit user action changes it.
     @Query("""
         UPDATE games SET
-            description  = COALESCE(:description, description),
-            developer    = COALESCE(:developer,   developer),
-            publisher    = COALESCE(:publisher,   publisher),
-            release_year = COALESCE(:releaseYear, release_year),
-            genre        = COALESCE(:genre,       genre),
-            artwork_uri  = COALESCE(:artworkUri,  artwork_uri),
-            hero_uri     = COALESCE(:heroUri,     hero_uri),
-            logo_uri     = COALESCE(:logoUri,     logo_uri),
-            icon_uri     = COALESCE(:iconUri,     icon_uri)
+            description     = COALESCE(:description,  description),
+            developer       = COALESCE(:developer,    developer),
+            publisher       = COALESCE(:publisher,    publisher),
+            release_year    = COALESCE(:releaseYear,  release_year),
+            genre           = COALESCE(:genre,        genre),
+            artwork_uri     = COALESCE(:artworkUri,   artwork_uri),
+            hero_uri        = COALESCE(:heroUri,      hero_uri),
+            logo_uri        = COALESCE(:logoUri,      logo_uri),
+            icon_uri        = COALESCE(:iconUri,      icon_uri),
+            scraped_title   = COALESCE(:scrapedTitle, scraped_title)
         WHERE id = :id
     """)
     suspend fun updateMetadata(
         id: Long,
-        description: String? = null,
-        developer: String?   = null,
-        publisher: String?   = null,
-        releaseYear: Int?    = null,
-        genre: String?       = null,
-        artworkUri: String?  = null,
-        heroUri: String?     = null,
-        logoUri: String?     = null,
-        iconUri: String?     = null,
+        description: String?  = null,
+        developer: String?    = null,
+        publisher: String?    = null,
+        releaseYear: Int?     = null,
+        genre: String?        = null,
+        artworkUri: String?   = null,
+        heroUri: String?      = null,
+        logoUri: String?      = null,
+        iconUri: String?      = null,
+        scrapedTitle: String? = null,
     )
+
+    @Query("UPDATE games SET scraped_title = :scrapedTitle WHERE id = :id")
+    suspend fun updateScrapedTitle(id: Long, scrapedTitle: String?)
+
+    // Stores the user-chosen display name. Pass null to clear and fall back to scrapedTitle/title.
+    @Query("UPDATE games SET user_title_override = :override WHERE id = :id")
+    suspend fun updateUserTitleOverride(id: Long, override: String?)
 
     @Query("UPDATE games SET icon_uri = :iconUri WHERE id = :id")
     suspend fun updateIconUri(id: Long, iconUri: String?)

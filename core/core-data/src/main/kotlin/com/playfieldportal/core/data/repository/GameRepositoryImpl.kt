@@ -84,6 +84,12 @@ class GameRepositoryImpl @Inject constructor(
     override suspend fun updateLogoArt(id: Long, uri: String?) =
         gameDao.updateLogo(id, uri)
 
+    override suspend fun updateIconArt(id: Long, uri: String?) =
+        gameDao.updateIconUri(id, uri)
+
+    override suspend fun setPreferredEmulator(id: Long, profileIdOrPackage: String?) =
+        gameDao.setPreferredEmulator(id, profileIdOrPackage)
+
     override suspend fun recordPlaySession(session: PlaySession) {
         playSessionDao.insert(session.toEntity())
         gameDao.addPlayTime(
@@ -93,6 +99,12 @@ class GameRepositoryImpl @Inject constructor(
         )
         Timber.d("Play session recorded: gameId=${session.gameId}, platform=${session.platformId}")
     }
+
+    override suspend fun updateScrapedTitle(id: Long, scrapedTitle: String?) =
+        gameDao.updateScrapedTitle(id, scrapedTitle)
+
+    override suspend fun updateUserTitleOverride(id: Long, override: String?) =
+        gameDao.updateUserTitleOverride(id, override)
 
     override suspend fun getMissingRoms(): List<Game> {
         val romPaths = gameDao.getAllRomPaths()

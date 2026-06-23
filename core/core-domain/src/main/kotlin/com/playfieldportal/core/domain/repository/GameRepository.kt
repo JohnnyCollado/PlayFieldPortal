@@ -19,6 +19,11 @@ interface GameRepository {
     suspend fun updateBoxArt(id: Long, uri: String?)
     suspend fun updateHeroArt(id: Long, uri: String?)
     suspend fun updateLogoArt(id: Long, uri: String?)
+    suspend fun updateIconArt(id: Long, uri: String?)
+    suspend fun setPreferredEmulator(id: Long, profileIdOrPackage: String?)
     suspend fun recordPlaySession(session: PlaySession)
     suspend fun getMissingRoms(): List<Game>
+    suspend fun updateScrapedTitle(id: Long, scrapedTitle: String?)
+    // Pass null to clear the override and fall back to scrapedTitle / title.
+    suspend fun updateUserTitleOverride(id: Long, override: String?)
 }

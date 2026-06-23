@@ -23,4 +23,12 @@ data class Game(
     val lastPlayedAt: Long? = null,
     val userNote: String?   = null,
     val isManualEntry: Boolean = false,
-)
+    // Title derived from a metadata scrape (e.g. "Super Mario World" from "Super_Mario_World_USA.sfc").
+    // Never overwrites userTitleOverride.
+    val scrapedTitle: String?      = null,
+    // User-set display name override. Takes priority over everything else in the UI.
+    val userTitleOverride: String? = null,
+) {
+    // Resolved display name: user override → scraped metadata title → raw scan title.
+    val displayTitle: String get() = userTitleOverride ?: scrapedTitle ?: title
+}

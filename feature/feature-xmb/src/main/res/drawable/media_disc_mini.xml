@@ -1,0 +1,46 @@
+<!--
+  GameCube proprietary mini optical disc (80 mm)
+  Source: _inc/physical-media — https://github.com/anthonycaccese/xmb-menu-es-de
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <!-- Outer disc -->
+    <path
+        android:fillColor="#C0C0D0"
+        android:pathData="M24,4 A20,20 0 1,1 23.999,4 Z" />
+
+    <!-- Data band -->
+    <path
+        android:fillColor="#A8A8BC"
+        android:pathData="M24,7 A17,17 0 1,1 23.999,7 Z" />
+
+    <!-- Inner area -->
+    <path
+        android:fillColor="#D0D0E0"
+        android:pathData="M24,10 A14,14 0 1,1 23.999,10 Z" />
+
+    <!-- Purple GameCube sheen -->
+    <path
+        android:fillColor="#603090"
+        android:pathData="M24,14 A10,10 0 0,1 34,24 A10,10 0 0,0 24,14 Z"
+        android:fillAlpha="0.35" />
+
+    <!-- Hub ring -->
+    <path
+        android:fillColor="#808090"
+        android:pathData="M24,18 A6,6 0 1,1 23.999,18 Z" />
+
+    <!-- Centre hole -->
+    <path
+        android:fillColor="#0E0E1C"
+        android:pathData="M24,21 A3,3 0 1,1 23.999,21 Z" />
+
+    <!-- Outer edge highlight -->
+    <path
+        android:fillColor="#E0E0EE"
+        android:pathData="M24,4 A20,20 0 0,1 44,24 L43,24 A19,19 0 0,0 24,5 Z" />
+</vector>

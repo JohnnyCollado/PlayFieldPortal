@@ -465,7 +465,7 @@ class XMBViewModel @Inject constructor(
     private fun List<com.playfieldportal.core.domain.model.Game>.toXmbItems() = map { g ->
         XMBItem(
             id           = g.id.toString(),
-            title        = g.title,
+            title        = g.displayTitle,
             artworkUri   = g.artworkUri,
             heroUri      = g.heroUri,
             iconUri      = g.iconUri,
@@ -789,7 +789,7 @@ class XMBViewModel @Inject constructor(
         viewModelScope.launch {
             val game   = gameRepository.getById(gameId) ?: return@launch
             val taskId = "location_$gameId"
-            addBackgroundTask(BackgroundTaskInfo(id = taskId, label = game.title, progress = null))
+            addBackgroundTask(BackgroundTaskInfo(id = taskId, label = game.displayTitle, progress = null))
             completeBackgroundTask(taskId, game.romPath ?: "No file path on record")
         }
     }
@@ -979,8 +979,8 @@ class XMBViewModel @Inject constructor(
         viewModelScope.launch {
             val game   = gameRepository.getById(gameId) ?: return@launch
             val taskId = "artwork_$gameId"
-            addBackgroundTask(BackgroundTaskInfo(id = taskId, label = "Fetching artwork: ${game.title}", progress = null))
-            val result = artworkRepository.fetchArtworkForGame(gameId, game.title)
+            addBackgroundTask(BackgroundTaskInfo(id = taskId, label = "Fetching artwork: ${game.displayTitle}", progress = null))
+            val result = artworkRepository.fetchArtworkForGame(gameId, game.displayTitle)
             if (result.success) {
                 completeBackgroundTask(taskId, "Artwork updated")
             } else {
