@@ -8,7 +8,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.datastore.pfpDataStore
-import com.playfieldportal.core.ui.wave.WaveRenderMode
+import com.playfieldportal.core.ui.wave.WaveStyle
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,8 +22,7 @@ import timber.log.Timber
 import java.io.File
 import javax.inject.Inject
 
-private val KEY_WAVE_MODE          = stringPreferencesKey("display_wave_mode")
-private val KEY_AUTO_REDUCE        = booleanPreferencesKey("display_auto_reduce")
+private val KEY_WAVE_STYLE         = stringPreferencesKey("display_wave_style")
 private val KEY_SHOW_BOOT          = booleanPreferencesKey("display_show_boot")
 private val KEY_BOOT_ON_RESUME     = booleanPreferencesKey("display_boot_on_resume")
 private val KEY_THERMAL_AWARE      = booleanPreferencesKey("display_thermal_aware")
@@ -39,9 +38,15 @@ private val ICON_STYLE_ORDER = listOf("PSP_RECTANGLE", "CARTRIDGE")
 
 private val SUPPORTED_WALLPAPER_MIME = setOf("image/png", "image/jpeg", "image/webp")
 
+private val WAVE_STYLE_LABELS = mapOf(
+    WaveStyle.ANIMATED       to "Animated",
+    WaveStyle.REDUCED        to "Reduced",
+    WaveStyle.STATIC         to "Static",
+    WaveStyle.REDUCED_STATIC to "Reduced + Static",
+)
+
 data class DisplaySettingsUiState(
-    val waveModeName: String = WaveRenderMode.FULL.name,
-    val autoReduceOnIdle: Boolean = true,
+    val waveStyle: WaveStyle = WaveStyle.ANIMATED,
     val showBootSequence: Boolean = true,
     val showBootOnResume: Boolean = false,
     val thermalThrottleAware: Boolean = true,
@@ -51,7 +56,10 @@ data class DisplaySettingsUiState(
     val customWallpaperPath: String? = null,
     val wallpaperMessage: String? = null,
     val wallpaperImporting: Boolean = false,
-)
+    val wallpaperPreviewVisible: Boolean = false,
+) {
+    val waveStyleLabel: String get() = WAVE_STYLE_LABELS[waveStyle] ?: waveStyle.name
+}
 
 @HiltViewModel
 class DisplaySettingsViewModel @Inject constructor(
@@ -60,15 +68,18 @@ class DisplaySettingsViewModel @Inject constructor(
 
     private val _wallpaperMessage  = MutableStateFlow<String?>(null)
     private val _wallpaperImporting = MutableStateFlow(false)
+    private val _wallpaperPreviewVisible = MutableStateFlow(false)
 
     val uiState: StateFlow<DisplaySettingsUiState> = combine(
         context.pfpDataStore.data,
         _wallpaperMessage,
         _wallpaperImporting,
-    ) { prefs, msg, importing ->
+        _wallpaperPreviewVisible,
+    ) { prefs, msg, importing, previewVisible ->
         DisplaySettingsUiState(
-            waveModeName         = prefs[KEY_WAVE_MODE]       ?: WaveRenderMode.FULL.name,
-            autoReduceOnIdle     = prefs[KEY_AUTO_REDUCE]     ?: true,
+            waveStyle            = runCatching {
+                WaveStyle.valueOf(prefs[KEY_WAVE_STYLE] ?: WaveStyle.ANIMATED.name)
+            }.getOrDefault(WaveStyle.ANIMATED),
             showBootSequence     = prefs[KEY_SHOW_BOOT]       ?: true,
             showBootOnResume     = prefs[KEY_BOOT_ON_RESUME]  ?: false,
             thermalThrottleAware = prefs[KEY_THERMAL_AWARE]   ?: true,
@@ -77,18 +88,17 @@ class DisplaySettingsViewModel @Inject constructor(
             customWallpaperPath  = prefs[KEY_CUSTOM_WALLPAPER],
             wallpaperMessage     = msg,
             wallpaperImporting   = importing,
+            wallpaperPreviewVisible = previewVisible,
         )
     }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DisplaySettingsUiState())
 
-    fun cycleWaveMode() {
-        val modes = WaveRenderMode.values()
-        val current = WaveRenderMode.valueOf(uiState.value.waveModeName)
-        val next = modes[(modes.indexOf(current) + 1) % modes.size]
-        save { it[KEY_WAVE_MODE] = next.name }
+    fun cycleWaveStyle() {
+        val styles = WaveStyle.values()
+        val next = styles[(styles.indexOf(uiState.value.waveStyle) + 1) % styles.size]
+        save { it[KEY_WAVE_STYLE] = next.name }
     }
 
-    fun setAutoReduceOnIdle(v: Boolean)      = save { it[KEY_AUTO_REDUCE]     = v }
     fun setShowBootSequence(v: Boolean)      = save { it[KEY_SHOW_BOOT]       = v }
     fun setShowBootOnResume(v: Boolean)      = save { it[KEY_BOOT_ON_RESUME]  = v }
     fun setThermalThrottleAware(v: Boolean)  = save { it[KEY_THERMAL_AWARE]   = v }
@@ -143,6 +153,18 @@ class DisplaySettingsViewModel @Inject constructor(
 
     fun dismissWallpaperMessage() {
         _wallpaperMessage.value = null
+    }
+
+    fun showWallpaperPreview() {
+        if (uiState.value.customWallpaperPath != null) {
+            _wallpaperPreviewVisible.value = true
+        } else {
+            _wallpaperMessage.value = "No wallpaper selected yet"
+        }
+    }
+
+    fun hideWallpaperPreview() {
+        _wallpaperPreviewVisible.value = false
     }
 
     private fun save(block: suspend (androidx.datastore.preferences.core.MutablePreferences) -> Unit) {

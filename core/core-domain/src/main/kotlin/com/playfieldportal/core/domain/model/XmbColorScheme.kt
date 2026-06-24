@@ -1,0 +1,84 @@
+package com.playfieldportal.core.domain.model
+
+/**
+ * Selectable XMB color schemes, in the spirit of the classic PSP.
+ *
+ * [ORIGINAL] reproduces the PSP "Original" theme whose background color changes with the
+ * calendar month. All other entries are fixed presets. Resolve a scheme to a concrete
+ * [XmbPalette] with [resolve], passing the current month (1-12) — only [ORIGINAL] uses it.
+ */
+enum class XmbColorScheme {
+    ORIGINAL,
+    CLASSIC_BLUE,
+    SUNSET_ORANGE,
+    FRESH_GREEN,
+    ROYAL_PURPLE,
+    CRIMSON_RED,
+    SILVER_MONO,
+}
+
+/** A fully-resolved color palette for the XMB. Colors are ARGB longs (0xAARRGGBB). */
+data class XmbPalette(
+    val waveColor: Long,
+    val accentColor: Long,
+    val textColor: Long,
+    val backgroundTop: Long,
+    val backgroundBottom: Long,
+)
+
+fun XmbColorScheme.displayLabel(): String = when (this) {
+    XmbColorScheme.ORIGINAL      -> "Original (Monthly)"
+    XmbColorScheme.CLASSIC_BLUE  -> "Classic Blue"
+    XmbColorScheme.SUNSET_ORANGE -> "Sunset Orange"
+    XmbColorScheme.FRESH_GREEN   -> "Fresh Green"
+    XmbColorScheme.ROYAL_PURPLE  -> "Royal Purple"
+    XmbColorScheme.CRIMSON_RED   -> "Crimson Red"
+    XmbColorScheme.SILVER_MONO   -> "Silver"
+}
+
+/**
+ * Resolve this scheme to a concrete palette. [month] is 1-12 and only affects [ORIGINAL];
+ * out-of-range values are clamped.
+ */
+fun XmbColorScheme.resolve(month: Int): XmbPalette {
+    val wave = when (this) {
+        XmbColorScheme.ORIGINAL      -> ORIGINAL_MONTH_WAVE[month.coerceIn(1, 12) - 1]
+        XmbColorScheme.CLASSIC_BLUE  -> 0xFF0055AAL
+        XmbColorScheme.SUNSET_ORANGE -> 0xFFFF8A3DL
+        XmbColorScheme.FRESH_GREEN   -> 0xFF36C26BL
+        XmbColorScheme.ROYAL_PURPLE  -> 0xFF7A4DD6L
+        XmbColorScheme.CRIMSON_RED   -> 0xFFE03B4FL
+        XmbColorScheme.SILVER_MONO   -> 0xFFB8C4D0L
+    }
+    return XmbPalette(
+        waveColor        = wave,
+        accentColor      = 0xFFFFFFFFL,
+        textColor        = 0xFFFFFFFFL,
+        backgroundTop    = darken(wave, 0.30f),
+        backgroundBottom = darken(wave, 0.10f),
+    )
+}
+
+// PSP "Original" theme — approximate wave color for each month, Jan..Dec.
+private val ORIGINAL_MONTH_WAVE = longArrayOf(
+    0xFF1FA89CL, // Jan — teal
+    0xFFE56BA0L, // Feb — pink
+    0xFF6FBF3BL, // Mar — green
+    0xFFE99BC4L, // Apr — sakura
+    0xFF34B3A0L, // May — aqua-green
+    0xFF3A7BD5L, // Jun — blue
+    0xFF35B6D6L, // Jul — light aqua
+    0xFF2E54A8L, // Aug — deep blue
+    0xFFE08A2EL, // Sep — amber
+    0xFF8A5AC2L, // Oct — purple
+    0xFFB5642EL, // Nov — autumn brown
+    0xFFD23B4EL, // Dec — red
+)
+
+/** Multiply the RGB channels of an opaque ARGB color by [factor] (0 = black, 1 = unchanged). */
+private fun darken(argb: Long, factor: Float): Long {
+    val r = (((argb shr 16) and 0xFFL) * factor).toLong().coerceIn(0L, 255L)
+    val g = (((argb shr 8) and 0xFFL) * factor).toLong().coerceIn(0L, 255L)
+    val b = ((argb and 0xFFL) * factor).toLong().coerceIn(0L, 255L)
+    return (0xFFL shl 24) or (r shl 16) or (g shl 8) or b
+}

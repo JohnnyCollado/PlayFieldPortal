@@ -22,10 +22,13 @@ import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.core.ui.icons.GameIconStyle
 import com.playfieldportal.core.ui.theme.DefaultPFPColors
 import com.playfieldportal.core.ui.theme.PFPColors
-import com.playfieldportal.core.ui.wave.WaveRenderMode
+import com.playfieldportal.core.ui.wave.WaveStyle
 import com.playfieldportal.core.data.repository.ControllerMappingRepository
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.domain.model.XmbColorScheme
+import com.playfieldportal.core.domain.model.XmbPalette
+import com.playfieldportal.core.domain.model.resolve
 import com.playfieldportal.feature.artwork.api.ArtworkRepository
 import com.playfieldportal.feature.library.scanner.RomScanner
 import com.playfieldportal.feature.library.scanner.ScanResult
@@ -39,13 +42,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
-private fun com.playfieldportal.core.data.database.entity.ThemeEntity.toPFPColors() = PFPColors(
+private fun XmbPalette.toPFPColors() = PFPColors(
     waveColor         = androidx.compose.ui.graphics.Color(waveColor),
     accentColor       = androidx.compose.ui.graphics.Color(accentColor),
     textPrimary       = androidx.compose.ui.graphics.Color(textColor),
@@ -53,6 +58,8 @@ private fun com.playfieldportal.core.data.database.entity.ThemeEntity.toPFPColor
     backgroundOverlay = androidx.compose.ui.graphics.Color(0x88000000),
     selectedItem      = androidx.compose.ui.graphics.Color(accentColor),
     categoryBar       = androidx.compose.ui.graphics.Color(0x00000000),
+    backgroundTop     = androidx.compose.ui.graphics.Color(backgroundTop),
+    backgroundBottom  = androidx.compose.ui.graphics.Color(backgroundBottom),
 )
 
 // ── Context menu types ────────────────────────────────────────────────────────
@@ -116,7 +123,8 @@ data class XMBUiState(
     val selectedItemIndex: Int = 0,
 
     // ── Background + rendering ────────────────────────────────────────────
-    val waveRenderMode: WaveRenderMode = WaveRenderMode.FULL,
+    // A custom wallpaper, when set, automatically replaces the wave.
+    val waveStyle: WaveStyle = WaveStyle.ANIMATED,
     val customWallpaperPath: String? = null,
 
     val showBootSequence: Boolean = true,
@@ -203,7 +211,6 @@ class XMBViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(XMBUiState())
     val uiState: StateFlow<XMBUiState> = _uiState.asStateFlow()
 
-    private var idleJob: Job? = null
     private var currentItemsJob: Job? = null
     private var platformCache: Map<String, PlatformEntity> = emptyMap()
     private var enabledCards: List<MemoryCard> = emptyList()
@@ -212,9 +219,10 @@ class XMBViewModel @Inject constructor(
     init {
         gamepadInputHandler.scope = viewModelScope
         observeIconStyle()
+        observeBackgroundSettings()
         observeWallpaper()
         observeLibrarySetupState()
-        observeActiveTheme()
+        observeColorScheme()
         observeCategoryBar()
         observeCategories()
         observeAppChanges()
@@ -222,21 +230,29 @@ class XMBViewModel @Inject constructor(
         collectGamepadActions()
     }
 
-    // ── Theme ─────────────────────────────────────────────────────────────────
+    // ── Color scheme ────────────────────────────────────────────────────────────
 
-    private fun observeActiveTheme() {
+    // The active XMB color scheme (PSP-style presets + the month-based "Original" theme)
+    // is the source of truth for the palette. ORIGINAL re-resolves to the current month each
+    // time the scheme is (re)observed — i.e. on app start and whenever the user changes it.
+    private fun observeColorScheme() {
         viewModelScope.launch {
-            themeDao.observeAll().collect { themes ->
-                val active = themes.firstOrNull { it.isActive }
-                val colors = active?.toPFPColors() ?: DefaultPFPColors
-                baseThemeColors = colors
-                val accentFromPlatform = _uiState.value.categories
-                    .getOrNull(_uiState.value.selectedCategoryIndex)?.accentColor
-                val waveColor = accentFromPlatform
-                    ?.let { androidx.compose.ui.graphics.Color(it) }
-                    ?: colors.waveColor
-                _uiState.update { it.copy(themeColors = colors.copy(waveColor = waveColor)) }
-            }
+            context.pfpDataStore.data
+                .map { it[KEY_COLOR_SCHEME] ?: XmbColorScheme.CLASSIC_BLUE.name }
+                .distinctUntilChanged()
+                .collect { name ->
+                    val scheme = runCatching { XmbColorScheme.valueOf(name) }
+                        .getOrDefault(XmbColorScheme.CLASSIC_BLUE)
+                    val month = java.time.LocalDate.now().monthValue
+                    baseThemeColors = scheme.resolve(month).toPFPColors()
+                    // Re-apply the current category's accent tint on top of the new base palette.
+                    val category = _uiState.value.categories
+                        .getOrNull(_uiState.value.selectedCategoryIndex)
+                    val waveColor = category?.accentColor
+                        ?.let { androidx.compose.ui.graphics.Color(it) }
+                        ?: baseThemeColors.waveColor
+                    _uiState.update { it.copy(themeColors = baseThemeColors.copy(waveColor = waveColor)) }
+                }
         }
     }
 
@@ -585,13 +601,13 @@ class XMBViewModel @Inject constructor(
         when (action) {
             GamepadAction.NAVIGATE_UP -> {
                 val next = (state.selectedItemIndex - 1).coerceAtLeast(0)
-                if (next != state.selectedItemIndex) { resetIdleTimer(); _uiState.update { it.copy(selectedItemIndex = next) } }
+                if (next != state.selectedItemIndex) { _uiState.update { it.copy(selectedItemIndex = next) } }
                 else gamepadInputHandler.cancelRepeat()
             }
             GamepadAction.NAVIGATE_DOWN -> {
                 val max  = (state.currentItems.size - 1).coerceAtLeast(0)
                 val next = (state.selectedItemIndex + 1).coerceAtMost(max)
-                if (next != state.selectedItemIndex) { resetIdleTimer(); _uiState.update { it.copy(selectedItemIndex = next) } }
+                if (next != state.selectedItemIndex) { _uiState.update { it.copy(selectedItemIndex = next) } }
                 else gamepadInputHandler.cancelRepeat()
             }
             GamepadAction.NAVIGATE_LEFT -> {
@@ -1053,7 +1069,6 @@ class XMBViewModel @Inject constructor(
     // ── Category / platform selection ─────────────────────────────────────────
 
     fun onCategorySelected(index: Int) {
-        resetIdleTimer()
         val category = _uiState.value.categories.getOrNull(index)
         _uiState.update { it.copy(selectedCategoryIndex = index, selectedItemIndex = 0, selectedPlatformId = null) }
         tintWaveForCategory(category)
@@ -1063,7 +1078,6 @@ class XMBViewModel @Inject constructor(
     // ── Item selection ────────────────────────────────────────────────────────
 
     fun onItemSelected(index: Int) {
-        resetIdleTimer()
         _uiState.update { it.copy(selectedItemIndex = index) }
         val category = _uiState.value.categories.getOrNull(_uiState.value.selectedCategoryIndex)
         val item     = _uiState.value.currentItems.getOrNull(index)
@@ -1130,7 +1144,6 @@ class XMBViewModel @Inject constructor(
     }
 
     fun onItemLongPress(index: Int) {
-        resetIdleTimer()
         val item = _uiState.value.currentItems.getOrNull(index)
         when {
             item?.gameId != null -> openGameContextMenu(item)
@@ -1259,12 +1272,11 @@ class XMBViewModel @Inject constructor(
 
     // ── User interaction ──────────────────────────────────────────────────────
 
-    fun onUserInteraction() {
-        if (_uiState.value.waveRenderMode != WaveRenderMode.FULL) {
-            _uiState.update { it.copy(waveRenderMode = WaveRenderMode.FULL) }
-        }
-        resetIdleTimer()
-    }
+    /**
+     * Hook invoked on every gamepad action. The background mode and wave style are now
+     * explicit, user-controlled settings, so interaction no longer mutates the wave.
+     */
+    fun onUserInteraction() = Unit
 
     // ── Library setup state ───────────────────────────────────────────────────
 
@@ -1290,6 +1302,19 @@ class XMBViewModel @Inject constructor(
         }
     }
 
+    // ── Wave style ──────────────────────────────────────────────────────────────
+
+    private fun observeBackgroundSettings() {
+        viewModelScope.launch {
+            context.pfpDataStore.data.collect { prefs ->
+                val style = runCatching {
+                    WaveStyle.valueOf(prefs[KEY_WAVE_STYLE] ?: WaveStyle.ANIMATED.name)
+                }.getOrDefault(WaveStyle.ANIMATED)
+                _uiState.update { it.copy(waveStyle = style) }
+            }
+        }
+    }
+
     // ── Custom wallpaper ──────────────────────────────────────────────────────
 
     private fun observeWallpaper() {
@@ -1303,22 +1328,12 @@ class XMBViewModel @Inject constructor(
         }
     }
 
-    // ── Idle wave timer ───────────────────────────────────────────────────────
-
-    private fun resetIdleTimer() {
-        idleJob?.cancel()
-        idleJob = viewModelScope.launch {
-            delay(3_000)
-            _uiState.update { it.copy(waveRenderMode = WaveRenderMode.REDUCED) }
-            delay(7_000)
-            _uiState.update { it.copy(waveRenderMode = WaveRenderMode.STATIC) }
-        }
-    }
-
     // ── Static data ───────────────────────────────────────────────────────────
 
     companion object {
         private val KEY_ICON_STYLE        = stringPreferencesKey("display_icon_style")
+        private val KEY_WAVE_STYLE        = stringPreferencesKey("display_wave_style")
+        private val KEY_COLOR_SCHEME      = stringPreferencesKey("display_color_scheme")
         private val KEY_SETUP_COMPLETE    = booleanPreferencesKey("library_setup_complete")
         private val KEY_CUSTOM_WALLPAPER  = stringPreferencesKey("display_custom_wallpaper")
         private const val SETUP_ITEM_ID = "library_setup"
@@ -1357,6 +1372,7 @@ class XMBViewModel @Inject constructor(
             XMBItem(id = "settings_artwork",    title = "Artwork",          subtitle = "SteamGridDB & cache"),
             XMBItem(id = "settings_emulators",  title = "Emulators",        subtitle = "Launch profiles"),
             XMBItem(id = "settings_themes",     title = "Themes",           subtitle = "XMB appearance"),
+            XMBItem(id = "settings_color",      title = "Color Scheme",     subtitle = "PSP-style background colors"),
             XMBItem(id = "settings_display",    title = "Display",          subtitle = "Wave, boot animation"),
             XMBItem(id = "settings_controller", title = "Controller",       subtitle = "Button mapping"),
             XMBItem(id = "settings_backup",     title = "Backup & Restore", subtitle = "Export & import"),

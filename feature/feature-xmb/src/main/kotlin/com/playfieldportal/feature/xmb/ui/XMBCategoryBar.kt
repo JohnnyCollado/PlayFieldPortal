@@ -28,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -39,7 +40,6 @@ import com.playfieldportal.core.domain.model.Category
 
 private val SelectedIcon = Color.White
 private val InactiveIcon = Color(0xFFC7C6DF)
-private val SelectedGlow = Color(0xFF9C74FF)
 private val LabelInactive = Color(0xFFE4E2F5)
 private val ItemSlotWidth = 124.dp
 
@@ -109,7 +109,7 @@ private fun XMBCategoryItem(
     modifier: Modifier = Modifier,
 ) {
     val iconSize by animateDpAsState(
-        targetValue = if (isSelected) 72.dp else 48.dp,
+        targetValue = if (isSelected) 60.dp else 48.dp,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "xmbCategoryIconSize",
     )
@@ -137,14 +137,19 @@ private fun XMBCategoryItem(
                 .size(82.dp)
                 .drawBehind {
                     if (glowAlpha > 0f) {
+                        // Soft, neutral halo behind the selected icon — no colored cursor.
+                        val haloRadius = size.minDimension * 0.62f
                         drawCircle(
-                            color = SelectedGlow.copy(alpha = 0.30f * glowAlpha),
-                            radius = size.minDimension * 0.50f,
-                            center = center,
-                        )
-                        drawCircle(
-                            color = SelectedGlow.copy(alpha = 0.18f * glowAlpha),
-                            radius = size.minDimension * 0.66f,
+                            brush = Brush.radialGradient(
+                                colors = listOf(
+                                    Color.White.copy(alpha = 0.26f * glowAlpha),
+                                    Color.White.copy(alpha = 0.08f * glowAlpha),
+                                    Color.Transparent,
+                                ),
+                                center = center,
+                                radius = haloRadius,
+                            ),
+                            radius = haloRadius,
                             center = center,
                         )
                     }

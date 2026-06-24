@@ -17,28 +17,64 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
-import com.playfieldportal.core.ui.wave.WaveRenderMode
+import com.playfieldportal.core.ui.theme.LocalPFPColors
+import com.playfieldportal.core.ui.wave.WaveStyle
 import kotlin.math.sin
 
-private val XmbPurple = Color(0xFF3B148C)
-private val XmbViolet = Color(0xFF26106C)
-private val XmbBlue = Color(0xFF073B9C)
-private val XmbDeepBlue = Color(0xFF061E69)
-private val XmbCyanWave = Color(0xFF0FB5F4)
-private val XmbIndigoWave = Color(0xFF5368FF)
+/** Frozen phase used when the wave animation is disabled. */
+private const val STATIC_PHASE = 0.6f
 
+/**
+ * Root background behind the XMB UI. The wallpaper automatically replaces the wave:
+ *
+ *  - When [customWallpaperPath] is set, the wallpaper is rendered alone — no wave is drawn
+ *    or animated, and no wave resources are allocated.
+ *  - When no wallpaper is set, the XMB wave is rendered, honoring [waveStyle].
+ */
 @Composable
 fun XmbBackground(
-    renderMode: WaveRenderMode,
+    waveStyle: WaveStyle,
     customWallpaperPath: String? = null,
     modifier: Modifier = Modifier,
 ) {
-    val phase = if (renderMode == WaveRenderMode.STATIC) {
-        0.6f
+    if (customWallpaperPath != null) {
+        WallpaperBackground(customWallpaperPath, modifier)
     } else {
-        val duration = if (renderMode == WaveRenderMode.FULL) 6200 else 12000
+        WaveBackground(waveStyle, modifier)
+    }
+}
+
+@Composable
+private fun WallpaperBackground(
+    customWallpaperPath: String,
+    modifier: Modifier,
+) {
+    Box(modifier = modifier.fillMaxSize()) {
+        AsyncImage(
+            model              = customWallpaperPath,
+            contentDescription = null,
+            contentScale       = ContentScale.Crop,
+            modifier           = Modifier.fillMaxSize(),
+        )
+        // Light scrim so the XMB labels stay readable over any wallpaper.
+        Box(Modifier.fillMaxSize().background(Color(0x59000000)))
+    }
+}
+
+@Composable
+private fun WaveBackground(
+    waveStyle: WaveStyle,
+    modifier: Modifier,
+) {
+    val colors = LocalPFPColors.current
+
+    val phase = if (!waveStyle.animated) {
+        STATIC_PHASE
+    } else {
+        val duration = if (waveStyle.reduced) 12000 else 6200
         val transition = rememberInfiniteTransition(label = "xmbBackgroundWave")
         val animatedPhase by transition.animateFloat(
             initialValue = 0f,
@@ -52,93 +88,50 @@ fun XmbBackground(
         animatedPhase
     }
 
-    if (customWallpaperPath != null) {
-        // Custom wallpaper: fill with the image, then draw a dark scrim + waves on top.
-        Box(modifier = modifier.fillMaxSize()) {
-            AsyncImage(
-                model              = customWallpaperPath,
-                contentDescription = null,
-                contentScale       = ContentScale.Crop,
-                modifier           = Modifier.fillMaxSize(),
-            )
-            // Dark scrim so the XMB UI stays readable over any wallpaper.
-            Box(
-                Modifier.fillMaxSize().background(Color(0x99000000))
-            )
-            // Waves drawn at reduced opacity to preserve the PSP feel.
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                drawXmbWaveLayersDimmed(phase)
-            }
-        }
-    } else {
-        Box(
-            modifier = modifier
-                .fillMaxSize()
-                .background(
-                    Brush.linearGradient(
-                        colorStops = arrayOf(
-                            0.00f to XmbViolet,
-                            0.30f to XmbDeepBlue,
-                            0.58f to XmbBlue,
-                            1.00f to XmbPurple,
-                        )
-                    )
+    val alphaScale = if (waveStyle.reduced) 0.45f else 1f
+    val ampScale   = if (waveStyle.reduced) 0.6f else 1f
+
+    val gradient = Brush.linearGradient(
+        colorStops = arrayOf(
+            0.00f to colors.backgroundTop,
+            0.55f to lerp(colors.backgroundTop, colors.backgroundBottom, 0.5f),
+            1.00f to colors.backgroundBottom,
+        )
+    )
+
+    Box(modifier = modifier.fillMaxSize().background(gradient)) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            drawXmbWaveLayers(phase, colors.waveColor, alphaScale, ampScale)
+            drawRect(
+                brush = Brush.radialGradient(
+                    colors = listOf(Color.White.copy(alpha = 0.10f), Color.Transparent),
+                    center = center.copy(x = size.width * 0.48f, y = size.height * 0.30f),
+                    radius = size.minDimension * 0.62f,
                 )
-        ) {
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                drawXmbWaveLayers(phase)
-                drawRect(
-                    brush = Brush.radialGradient(
-                        colors = listOf(Color.White.copy(alpha = 0.10f), Color.Transparent),
-                        center = center.copy(x = size.width * 0.48f, y = size.height * 0.30f),
-                        radius = size.minDimension * 0.62f,
-                    )
-                )
-            }
+            )
         }
     }
 }
 
-private fun DrawScope.drawXmbWaveLayersDimmed(phase: Float) {
+private fun DrawScope.drawXmbWaveLayers(phase: Float, waveColor: Color, alphaScale: Float, ampScale: Float) {
     val w = size.width
     val h = size.height
-    drawWaveLayer(width = w, height = h, midY = h * 0.78f, phase = phase * 0.80f, amplitude = h * 0.075f,
-        color = XmbCyanWave.copy(alpha = 0.30f), points = 34)
-    drawWaveLayer(width = w, height = h, midY = h * 0.72f, phase = phase + 1.4f, amplitude = h * 0.065f,
-        color = XmbIndigoWave.copy(alpha = 0.18f), points = 30)
-    drawWaveLayer(width = w, height = h, midY = h * 0.84f, phase = phase * 1.18f + 0.8f, amplitude = h * 0.050f,
-        color = Color(0xFF43D9FF).copy(alpha = 0.12f), points = 26)
-}
-
-private fun DrawScope.drawXmbWaveLayers(phase: Float) {
-    val w = size.width
-    val h = size.height
+    // Lighter crest tone for the front layer to keep the PSP sense of depth.
+    val crest = lerp(waveColor, Color.White, 0.25f)
     drawWaveLayer(
-        width = w,
-        height = h,
-        midY = h * 0.78f,
-        phase = phase * 0.80f,
-        amplitude = h * 0.075f,
-        color = XmbCyanWave.copy(alpha = 0.74f),
-        points = 34,
+        width = w, height = h, midY = h * 0.78f, phase = phase * 0.80f,
+        amplitude = h * 0.075f * ampScale,
+        color = crest.copy(alpha = 0.74f * alphaScale), points = 34,
     )
     drawWaveLayer(
-        width = w,
-        height = h,
-        midY = h * 0.72f,
-        phase = phase + 1.4f,
-        amplitude = h * 0.065f,
-        color = XmbIndigoWave.copy(alpha = 0.42f),
-        points = 30,
+        width = w, height = h, midY = h * 0.72f, phase = phase + 1.4f,
+        amplitude = h * 0.065f * ampScale,
+        color = waveColor.copy(alpha = 0.42f * alphaScale), points = 30,
     )
     drawWaveLayer(
-        width = w,
-        height = h,
-        midY = h * 0.84f,
-        phase = phase * 1.18f + 0.8f,
-        amplitude = h * 0.050f,
-        color = Color(0xFF43D9FF).copy(alpha = 0.30f),
-        points = 26,
+        width = w, height = h, midY = h * 0.84f, phase = phase * 1.18f + 0.8f,
+        amplitude = h * 0.050f * ampScale,
+        color = crest.copy(alpha = 0.30f * alphaScale), points = 26,
     )
 }
 

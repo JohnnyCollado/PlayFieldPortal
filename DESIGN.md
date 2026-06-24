@@ -251,8 +251,8 @@ feature/
 ### 4.4 DataStore Keys (all in `pfp_prefs`)
 | Key | Type | Owner | Purpose |
 |---|---|---|---|
-| `display_wave_mode` | String | DisplaySettingsVM | WaveRenderMode enum name |
-| `display_auto_reduce` | Boolean | DisplaySettingsVM | Auto-reduce wave on idle |
+| `display_wave_style` | String | DisplaySettingsVM / XMBViewModel | WaveStyle enum name (ANIMATED \| REDUCED \| STATIC \| REDUCED_STATIC); applies only when no wallpaper is set |
+| `display_color_scheme` | String | ColorSchemeSettingsVM / XMBViewModel | XmbColorScheme enum name (ORIGINAL \| CLASSIC_BLUE \| SUNSET_ORANGE \| FRESH_GREEN \| ROYAL_PURPLE \| CRIMSON_RED \| SILVER_MONO); ORIGINAL resolves to a month-based palette. Source of truth for the XMB palette (supersedes the DB theme's colors). |
 | `display_show_boot` | Boolean | DisplaySettingsVM | Boot sequence on launch |
 | `display_boot_on_resume` | Boolean | DisplaySettingsVM | Boot sequence on resume |
 | `display_thermal_aware` | Boolean | DisplaySettingsVM | Thermal throttle awareness |

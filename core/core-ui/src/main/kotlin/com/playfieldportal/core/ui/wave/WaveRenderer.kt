@@ -23,24 +23,49 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import kotlin.math.sin
 
-enum class WaveRenderMode { FULL, REDUCED, STATIC }
+/**
+ * Visual treatment for the XMB wave. Only applies when no custom wallpaper is set — a
+ * wallpaper automatically replaces the wave.
+ *
+ *  - [ANIMATED]        full opacity, animated
+ *  - [REDUCED]         lower opacity + amplitude, animated (slower)
+ *  - [STATIC]          full opacity, frozen wave — no animation updates
+ *  - [REDUCED_STATIC]  lower opacity + amplitude, frozen wave
+ */
+enum class WaveStyle {
+    ANIMATED,
+    REDUCED,
+    STATIC,
+    REDUCED_STATIC;
+
+    /** Whether the wave should animate at all. */
+    val animated: Boolean get() = this == ANIMATED || this == REDUCED
+
+    /** Whether the wave should be drawn at reduced opacity / amplitude. */
+    val reduced: Boolean get() = this == REDUCED || this == REDUCED_STATIC
+}
+
+/** Fixed phase used to freeze the wave shape when animation is disabled. */
+internal const val STATIC_WAVE_PHASE = 0.5f
 
 @Composable
 fun XMBWave(
     modifier: Modifier = Modifier,
-    renderMode: WaveRenderMode = WaveRenderMode.FULL,
+    waveStyle: WaveStyle = WaveStyle.ANIMATED,
 ) {
     val colors = LocalPFPColors.current
+    val alphaScale = if (waveStyle.reduced) 0.5f else 1f
+    val ampScale   = if (waveStyle.reduced) 0.6f else 1f
 
-    if (renderMode == WaveRenderMode.STATIC) {
-        // Zero-cost static fallback — frozen wave shape
+    if (!waveStyle.animated) {
+        // Frozen wave — no infinite transition, so no recompositions / animation updates.
         Canvas(modifier = modifier.fillMaxSize()) {
-            drawStaticWave(colors.waveColor, colors.waveColor.copy(alpha = 0.4f))
+            drawWaveLayers(STATIC_WAVE_PHASE, colors.waveColor, alphaScale, ampScale)
         }
         return
     }
 
-    val targetDurationMs = if (renderMode == WaveRenderMode.FULL) 6000 else 12000
+    val targetDurationMs = if (waveStyle.reduced) 12000 else 6000
 
     val infiniteTransition = rememberInfiniteTransition(label = "wave")
     val phase by infiniteTransition.animateFloat(
@@ -54,19 +79,24 @@ fun XMBWave(
     )
 
     Canvas(modifier = modifier.fillMaxSize()) {
-        drawWaveLayers(phase, colors.waveColor)
+        drawWaveLayers(phase, colors.waveColor, alphaScale, ampScale)
     }
 }
 
-private fun DrawScope.drawWaveLayers(phase: Float, baseColor: Color) {
+private fun DrawScope.drawWaveLayers(
+    phase: Float,
+    baseColor: Color,
+    alphaScale: Float,
+    ampScale: Float,
+) {
     val w = size.width
     val h = size.height
     val midY = h * 0.72f        // wave sits in lower third — PSP-accurate position
 
     // Three layers for depth — same approach as PSP XMB
-    drawWaveLayer(w, h, midY, phase,        amplitude = h * 0.06f, color = baseColor.copy(alpha = 0.9f), points = 32)
-    drawWaveLayer(w, h, midY, phase * 0.7f, amplitude = h * 0.04f, color = baseColor.copy(alpha = 0.5f), points = 24)
-    drawWaveLayer(w, h, midY, phase * 1.3f, amplitude = h * 0.03f, color = baseColor.copy(alpha = 0.3f), points = 20)
+    drawWaveLayer(w, h, midY, phase,        amplitude = h * 0.06f * ampScale, color = baseColor.copy(alpha = 0.9f * alphaScale), points = 32)
+    drawWaveLayer(w, h, midY, phase * 0.7f, amplitude = h * 0.04f * ampScale, color = baseColor.copy(alpha = 0.5f * alphaScale), points = 24)
+    drawWaveLayer(w, h, midY, phase * 1.3f, amplitude = h * 0.03f * ampScale, color = baseColor.copy(alpha = 0.3f * alphaScale), points = 20)
 }
 
 private fun DrawScope.drawWaveLayer(
@@ -91,13 +121,4 @@ private fun DrawScope.drawWaveLayer(
     path.close()
 
     drawPath(path = path, color = color)
-}
-
-private fun DrawScope.drawStaticWave(color: Color, secondaryColor: Color) {
-    drawWaveLayer(size.width, size.height, size.height * 0.72f,
-        phase = 0.5f, amplitude = size.height * 0.06f,
-        color = color.copy(alpha = 0.9f), points = 32)
-    drawWaveLayer(size.width, size.height, size.height * 0.72f,
-        phase = 1.2f, amplitude = size.height * 0.04f,
-        color = secondaryColor, points = 24)
 }

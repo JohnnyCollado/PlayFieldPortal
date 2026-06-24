@@ -6,7 +6,6 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -50,9 +49,6 @@ private val GAME_ICON_WIDTH = 126.dp
 private val GAME_ICON_HEIGHT = 70.dp
 
 private val RowShape = RoundedCornerShape(7.dp)
-private val RowSelectedFill = Color(0xFF574DDB)
-private val RowSelectedBorder = Color(0xFF8F7CFF)
-private val RowGlow = Color(0xFF9B79FF)
 private val PrimaryText = Color.White
 private val SecondaryText = Color(0xFFC9C7E8)
 private val InactiveText = Color(0xFFE3E1F0)
@@ -136,23 +132,23 @@ private fun XmbVerticalListRow(
             }
             .drawBehind {
                 if (selectionAlpha > 0f) {
+                    // Soft whitish glow behind the active item — no colored cursor/border.
                     drawRoundRect(
-                        color = RowGlow.copy(alpha = 0.30f * selectionAlpha),
-                        topLeft = Offset(-10f, -8f),
-                        size = Size(size.width + 20f, size.height + 16f),
-                        cornerRadius = CornerRadius(18f, 18f),
+                        color = Color.White.copy(alpha = 0.14f * selectionAlpha),
+                        topLeft = Offset(-14f, -12f),
+                        size = Size(size.width + 28f, size.height + 24f),
+                        cornerRadius = CornerRadius(22f, 22f),
+                    )
+                    drawRoundRect(
+                        color = Color.White.copy(alpha = 0.10f * selectionAlpha),
+                        topLeft = Offset(-6f, -5f),
+                        size = Size(size.width + 12f, size.height + 10f),
+                        cornerRadius = CornerRadius(16f, 16f),
                     )
                 }
             }
             .clip(RowShape)
-            .background(RowSelectedFill.copy(alpha = 0.26f * selectionAlpha), RowShape)
-            .then(
-                if (isSelected) {
-                    Modifier.border(1.dp, RowSelectedBorder.copy(alpha = 0.78f), RowShape)
-                } else {
-                    Modifier
-                }
-            )
+            .background(Color.White.copy(alpha = 0.08f * selectionAlpha), RowShape)
             .combinedClickable(onClick = onClick, onLongClick = onLongPress)
             .padding(horizontal = 18.dp, vertical = 10.dp)
             .alpha(rowAlpha),

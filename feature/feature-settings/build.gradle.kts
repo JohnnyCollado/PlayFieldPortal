@@ -45,6 +45,7 @@ dependencies {
 
     implementation(libs.datastore.preferences)
     implementation(libs.workmanager.ktx)
+    implementation(libs.coil.compose)
 
     implementation(project(":core:core-common"))
     implementation(project(":core:core-domain"))

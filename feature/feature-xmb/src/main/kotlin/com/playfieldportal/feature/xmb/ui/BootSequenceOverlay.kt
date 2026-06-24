@@ -18,7 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.playfieldportal.core.ui.wave.WaveRenderMode
+import com.playfieldportal.core.ui.wave.WaveStyle
 import com.playfieldportal.core.ui.wave.XMBWave
 import kotlinx.coroutines.delay
 
@@ -65,7 +65,7 @@ fun BootSequenceOverlay(
     ) {
         // Wave — sweeps in during step 3
         Box(modifier = Modifier.fillMaxSize().alpha(waveAlpha.value)) {
-            XMBWave(renderMode = WaveRenderMode.FULL)
+            XMBWave(waveStyle = WaveStyle.ANIMATED)
         }
 
         // PFP logo / wordmark

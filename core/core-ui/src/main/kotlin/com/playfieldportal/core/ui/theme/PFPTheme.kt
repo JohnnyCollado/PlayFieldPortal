@@ -13,6 +13,9 @@ data class PFPColors(
     val backgroundOverlay: Color,
     val selectedItem: Color,
     val categoryBar: Color,
+    // Background gradient anchors behind the wave (top → bottom).
+    val backgroundTop: Color = Color(0xFF26106C),
+    val backgroundBottom: Color = Color(0xFF3B148C),
 )
 
 val LocalPFPColors = staticCompositionLocalOf {
@@ -27,6 +30,8 @@ val DefaultPFPColors = PFPColors(
     backgroundOverlay = Color(0x88000000),
     selectedItem      = Color(0xFFFFFFFF),
     categoryBar       = Color(0x00000000),
+    backgroundTop     = Color(0xFF062A66),
+    backgroundBottom  = Color(0xFF010A1F),
 )
 
 @Composable

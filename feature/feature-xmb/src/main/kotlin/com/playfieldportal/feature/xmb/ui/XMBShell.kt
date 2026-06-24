@@ -114,7 +114,7 @@ fun XMBShell(
     PFPTheme(colors = uiState.themeColors) {
         Box(modifier = Modifier.fillMaxSize()) {
             XmbBackground(
-                renderMode          = uiState.waveRenderMode,
+                waveStyle           = uiState.waveStyle,
                 customWallpaperPath = uiState.customWallpaperPath,
                 modifier            = Modifier.fillMaxSize(),
             )

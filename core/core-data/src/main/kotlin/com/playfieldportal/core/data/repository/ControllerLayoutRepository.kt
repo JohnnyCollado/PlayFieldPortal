@@ -8,10 +8,14 @@ import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.domain.model.ConfirmBackLayout
 import com.playfieldportal.core.domain.model.ControllerDisplayType
 import com.playfieldportal.core.domain.model.ControllerLayoutPrefs
+import com.playfieldportal.core.domain.model.DEFAULT_BINDINGS
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.domain.model.GamepadBinding
+import com.playfieldportal.core.domain.model.GamepadMappings
 import com.playfieldportal.core.domain.model.XYLayout
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import timber.log.Timber
 import javax.inject.Inject
@@ -45,16 +49,7 @@ class ControllerLayoutRepository @Inject constructor(
 
     suspend fun setConfirmBackLayout(layout: ConfirmBackLayout) {
         context.pfpDataStore.edit { it[KEY_CONFIRM_BACK] = layout.name }
-        when (layout) {
-            ConfirmBackLayout.STANDARD -> {
-                mappingRepository.remap(GamepadAction.SELECT, KeyEvent.KEYCODE_BUTTON_A)
-                mappingRepository.remap(GamepadAction.BACK,   KeyEvent.KEYCODE_BUTTON_B)
-            }
-            ConfirmBackLayout.REVERSED -> {
-                mappingRepository.remap(GamepadAction.SELECT, KeyEvent.KEYCODE_BUTTON_B)
-                mappingRepository.remap(GamepadAction.BACK,   KeyEvent.KEYCODE_BUTTON_A)
-            }
-        }
+        applyLayout(confirmBack = layout, xy = currentXyLayout())
         Timber.i("ConfirmBackLayout set: $layout")
     }
 
@@ -62,18 +57,42 @@ class ControllerLayoutRepository @Inject constructor(
 
     suspend fun setXYLayout(layout: XYLayout) {
         context.pfpDataStore.edit { it[KEY_XY_LAYOUT] = layout.name }
-        when (layout) {
-            XYLayout.STANDARD -> {
-                mappingRepository.remap(GamepadAction.OPEN_TASK_TRAY, KeyEvent.KEYCODE_BUTTON_X)
-                mappingRepository.remap(GamepadAction.LONG_PRESS,     KeyEvent.KEYCODE_BUTTON_Y)
-            }
-            XYLayout.SWAPPED -> {
-                mappingRepository.remap(GamepadAction.LONG_PRESS,     KeyEvent.KEYCODE_BUTTON_X)
-                mappingRepository.remap(GamepadAction.OPEN_TASK_TRAY, KeyEvent.KEYCODE_BUTTON_Y)
-            }
-        }
+        applyLayout(confirmBack = currentConfirmBackLayout(), xy = layout)
         Timber.i("XYLayout set: $layout")
     }
+
+    // ── Binding rebuild ─────────────────────────────────────────────────────────
+    //
+    // Rebuild the full mapping set from DEFAULT_BINDINGS on every change rather than
+    // mutating individual bindings. This is idempotent (toggling back and forth always
+    // lands on a clean default state) and preserves every non-face-button binding —
+    // including the SELECT/BACK aliases (Enter, D-pad center, hardware Back) that the old
+    // per-action remap path stripped away.
+    private suspend fun applyLayout(confirmBack: ConfirmBackLayout, xy: XYLayout) {
+        val confirmKey = if (confirmBack == ConfirmBackLayout.STANDARD) KeyEvent.KEYCODE_BUTTON_A else KeyEvent.KEYCODE_BUTTON_B
+        val taskTrayKey = if (xy == XYLayout.STANDARD) KeyEvent.KEYCODE_BUTTON_X else KeyEvent.KEYCODE_BUTTON_Y
+
+        val bindings = DEFAULT_BINDINGS.map { binding ->
+            when (binding.keyCode) {
+                KeyEvent.KEYCODE_BUTTON_A, KeyEvent.KEYCODE_BUTTON_B ->
+                    GamepadBinding(binding.keyCode, if (binding.keyCode == confirmKey) GamepadAction.SELECT else GamepadAction.BACK)
+                KeyEvent.KEYCODE_BUTTON_X, KeyEvent.KEYCODE_BUTTON_Y ->
+                    GamepadBinding(binding.keyCode, if (binding.keyCode == taskTrayKey) GamepadAction.OPEN_TASK_TRAY else GamepadAction.LONG_PRESS)
+                else -> binding
+            }
+        }
+        mappingRepository.saveMappings(GamepadMappings(bindings))
+    }
+
+    private suspend fun currentConfirmBackLayout(): ConfirmBackLayout =
+        context.pfpDataStore.data.first()[KEY_CONFIRM_BACK]
+            ?.let { runCatching { ConfirmBackLayout.valueOf(it) }.getOrNull() }
+            ?: ConfirmBackLayout.STANDARD
+
+    private suspend fun currentXyLayout(): XYLayout =
+        context.pfpDataStore.data.first()[KEY_XY_LAYOUT]
+            ?.let { runCatching { XYLayout.valueOf(it) }.getOrNull() }
+            ?: XYLayout.STANDARD
 
     // ── Display type ──────────────────────────────────────────────────────────
 

@@ -3,7 +3,6 @@ package com.playfieldportal.feature.xmb.preview
 import com.playfieldportal.core.domain.model.BuiltInCategory
 import com.playfieldportal.core.domain.model.Category
 import com.playfieldportal.core.domain.model.CategoryType
-import com.playfieldportal.core.ui.wave.WaveRenderMode
 import com.playfieldportal.feature.xmb.viewmodel.BackgroundTaskInfo
 import com.playfieldportal.feature.xmb.viewmodel.XMBItem
 import com.playfieldportal.feature.xmb.viewmodel.XMBItemType
@@ -76,7 +75,6 @@ object PreviewData {
         currentItems          = platformFolders,
         selectedItemIndex     = 0,
         showBootSequence      = false,
-        waveRenderMode        = WaveRenderMode.FULL,
     )
 
     val emptyLibraryState = XMBUiState(

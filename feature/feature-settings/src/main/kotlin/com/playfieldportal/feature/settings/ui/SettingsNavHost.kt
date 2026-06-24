@@ -25,6 +25,7 @@ fun SettingsNavHost(
             "settings_artwork"    -> ArtworkSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_emulators"  -> EmulatorsSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_themes"     -> ThemesSettingsScreen(onBack = onBack, modifier = modifier)
+            "settings_color"      -> ColorSchemeSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_display"    -> DisplaySettingsScreen(onBack = onBack, modifier = modifier)
             "settings_controller" -> ControllerSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_backup"     -> BackupSettingsScreen(onBack = onBack, modifier = modifier)
