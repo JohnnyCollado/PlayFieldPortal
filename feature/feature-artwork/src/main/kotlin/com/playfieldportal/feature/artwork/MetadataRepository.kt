@@ -116,11 +116,18 @@ class MetadataRepository @Inject constructor(
 
         // ── Download to disk ───────────────────────────────────────────────────
         val src = primarySource(tgdbInfo, igdbInfo, sgdbGridUrl)
-        onAssetProgress?.invoke(src, "Box Art")
-        val cardPath = finalBoxArtUrl?.let { cardProcessor.processBoxArt(gameId, platformId, it) }
 
         if (options.downloadHeroes) onAssetProgress?.invoke(src, "Hero")
         val heroPath = if (options.downloadHeroes) finalHeroUrl?.let { cardProcessor.downloadRaw(gameId, it, "hero.jpg") } else null
+
+        // Background (artworkUri) drives the full-screen XMB background, so it MUST be full
+        // resolution. The old path composited box art into a tiny fixed-size card (≈288px) which
+        // looked crunchy stretched to fullscreen. Download full-res instead, preferring a landscape
+        // hero (reuse the hero file if we already have it), else the box/grid art.
+        onAssetProgress?.invoke(src, "Background")
+        val backgroundPath = heroPath
+            ?: finalHeroUrl?.let { cardProcessor.downloadRaw(gameId, it, "background.jpg") }
+            ?: finalBoxArtUrl?.let { cardProcessor.downloadRaw(gameId, it, "background.jpg") }
 
         if (options.downloadClearLogos) onAssetProgress?.invoke(src, "Logo")
         val logoPath = finalLogoUrl?.let { cardProcessor.downloadRaw(gameId, it, "logo.png", asPng = true) }
@@ -140,13 +147,13 @@ class MetadataRepository @Inject constructor(
             publisher    = null,
             releaseYear  = tgdbInfo?.releaseYear,
             genre        = null,
-            artworkUri   = cardPath ?: finalBoxArtUrl,
+            artworkUri   = backgroundPath ?: finalHeroUrl ?: finalBoxArtUrl,
             heroUri      = heroPath ?: finalHeroUrl,
             logoUri      = logoPath ?: finalLogoUrl,
             scrapedTitle = if (existingOverride == null) newScrapedTitle else null,
         )
 
-        prewarm(cardPath, heroPath, logoPath)
+        prewarm(backgroundPath, heroPath, logoPath)
         fetchHorizontalIcon(gameId, bestTitle, sgdbGameId)
 
         Timber.i("Metadata from $src: '$bestTitle' (scrapedTitle='$newScrapedTitle')")

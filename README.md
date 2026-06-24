@@ -23,8 +23,10 @@ An Android game launcher styled after the PlayStation Portable's XMB (Cross Medi
 | Idle wave degradation (FULL → REDUCED → STATIC) | ✅ Done |
 | PSP-style platform folders under Games | ✅ Done |
 | Emulator profile editor UI — add/edit/delete custom launch profiles | ✅ Done |
+| Custom Emulator Wizard — pick an app, auto-detect launch settings, test-launch, save | ✅ Done |
 | User collections — custom many-to-many game folders (like Favorites, user-defined) | ✅ Done |
 | Content-type filtering — All Games shows real games only (apps stay in their sections) | ✅ Done |
+| Android-app & launcher shortcuts — add apps to Favorites/Collections; pull per-game shortcuts (GameHub/Moonlight, BannerHub, Winlator) | ✅ Done |
 | XMB color schemes — PSP-style presets with live preview, in Themes | ✅ Done |
 | Background tasks surfaced to the Android notification bar | ✅ Done |
 | Smart / manual category builder | ⏳ Upcoming |
@@ -78,6 +80,11 @@ Pressing **△** (or long-press) on a game opens its options: Launch, Add/Remove
 
 - **App sections** (App Store / Video / Music / Network / custom): open the section and choose **Add Apps** to pick installed apps.
 - **Android games under Games:** open the Android library card and choose **Find Games**. These are tagged as apps, so they stay out of All Games but remain in their card and can be added to any collection.
+- **Shortcut any app to Favorites / Collections:** press **△** on an app and choose **Add to Favorites** or **Add to Collection** — a shortcut entry is created that references the app (no metadata duplication).
+
+### Pulling per-game shortcuts
+
+PFP can surface another app's individual items as launchable entries — press **△** on a host app and choose **Import Game Shortcuts**. This reads the app's published launcher shortcuts (e.g. GameHub/Moonlight PCs) and groups them into a collection named after the app. Apps that create shortcuts via the modern pin API (**BannerHub**, modern **Winlator**) land automatically when you create a shortcut in them. Both require PFP to be the active default launcher.
 
 ### Background tasks
 
@@ -260,14 +267,27 @@ Bundled launch profiles (in `assets/emulators/`):
 | Dolphin | ACTION_VIEW |
 | DuckStation | ACTION_VIEW |
 | NetherSX2 | ACTION_VIEW |
-| Azahar (3DS) | ACTION_VIEW |
+| Azahar / AzaharPlus (3DS) | ACTION_VIEW |
+| Lime3DS | ACTION_VIEW |
+| Eden (Switch) | ACTION_VIEW |
 | Sudachi (Switch) | ACTION_VIEW |
 | melonDS | ACTION_VIEW |
 | mGBA | ACTION_VIEW |
+| Flycast / Redream (Dreamcast) | ACTION_VIEW |
+| Mupen64Plus FZ | ACTION_VIEW |
 | Winlator | SHORTCUT |
-| GameHub | SHORTCUT |
 
-Custom profiles can be added in **Settings → Emulators**.
+### Custom Emulator Wizard
+
+For anything not bundled, **Settings → Emulators → Add Custom Emulator** runs an assisted setup:
+
+1. **Pick an installed app** from a controller-navigable list.
+2. PFP **auto-detects** launch settings — matching a curated catalog where possible, or inspecting the app's `ACTION_VIEW` handlers via `PackageManager`.
+3. The editor opens **pre-filled** (with a confidence banner). Every field is editable — intent type, activity, action, MIME, URI mode, extras, flags, RetroArch core — and **recommended templates** fill common launch shapes in one tap.
+4. **Test Launch** with a scanned ROM: preview the exact intent, attempt it, and get an actionable error if it fails.
+5. **Save** — usable as a platform / Memory Card / per-game emulator.
+
+ROMs on **removable SD cards / USB volumes** (`/storage/<uuid>/…`) launch correctly via FileProvider.
 
 ---
 

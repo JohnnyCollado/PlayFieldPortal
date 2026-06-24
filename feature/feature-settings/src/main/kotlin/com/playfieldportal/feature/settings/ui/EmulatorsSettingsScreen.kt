@@ -63,6 +63,13 @@ fun EmulatorsSettingsScreen(
             onUseSafUriChange     = viewModel::updateEditorUseSafUri,
             onCustomCommandChange = viewModel::updateEditorCustomCommand,
             onNotesChange         = viewModel::updateEditorNotes,
+            onIntentActionChange  = viewModel::updateEditorIntentAction,
+            onIntentExtrasChange  = viewModel::updateEditorIntentExtras,
+            onIntentFlagsChange   = viewModel::updateEditorIntentFlags,
+            onIntentCategoryChange = viewModel::updateEditorIntentCategory,
+            onCoreChange          = viewModel::updateEditorCore,
+            onExtensionsChange    = viewModel::updateEditorExtensions,
+            onApplyTemplate       = viewModel::applyTemplate,
             onSave                = viewModel::saveEditorProfile,
             onCancel              = viewModel::closeEditor,
             onDelete              = if (!editor.isNew && editor.originalId != null) {

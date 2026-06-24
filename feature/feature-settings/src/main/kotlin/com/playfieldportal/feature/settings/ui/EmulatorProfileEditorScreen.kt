@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.playfieldportal.core.domain.model.IntentType
+import com.playfieldportal.feature.settings.viewmodel.EmulatorTemplate
 import com.playfieldportal.feature.settings.viewmodel.ProfileEditorState
 
 private val EditorText     = Color(0xFFFFFFFF)
@@ -37,6 +38,13 @@ fun EmulatorProfileEditorScreen(
     onUseSafUriChange: (Boolean) -> Unit,
     onCustomCommandChange: (String) -> Unit,
     onNotesChange: (String) -> Unit,
+    onIntentActionChange: (String) -> Unit,
+    onIntentExtrasChange: (String) -> Unit,
+    onIntentFlagsChange: (String) -> Unit,
+    onIntentCategoryChange: (String) -> Unit,
+    onCoreChange: (String) -> Unit,
+    onExtensionsChange: (String) -> Unit,
+    onApplyTemplate: (EmulatorTemplate) -> Unit,
     onSave: () -> Unit,
     onCancel: () -> Unit,
     onDelete: (() -> Unit)?,
@@ -66,7 +74,15 @@ fun EmulatorProfileEditorScreen(
                 )
             }
 
-            AutoFilledAdvancedSummary(editorState)
+            // ── Recommended templates ─────────────────────────────────────
+            SettingsGroup("Recommended Templates")
+            EmulatorTemplate.entries.forEach { template ->
+                SettingsRow(
+                    label    = template.label,
+                    sublabel = template.description,
+                    onClick  = { onApplyTemplate(template) },
+                )
+            }
 
             // ── Required fields ───────────────────────────────────────────
             SettingsGroup("Required")
@@ -161,6 +177,47 @@ fun EmulatorProfileEditorScreen(
                 onToggle = onUseSafUriChange,
             )
 
+            // ── Advanced ──────────────────────────────────────────────────
+            SettingsGroup("Advanced")
+
+            EditorTextField(
+                label         = "Intent Action",
+                value         = editorState.intentActionText,
+                onValueChange = onIntentActionChange,
+                placeholder   = "e.g. me.magnum.melonds.LAUNCH_ROM (blank = default)",
+            )
+            EditorTextField(
+                label         = "Intent Extras",
+                value         = editorState.intentExtrasText,
+                onValueChange = onIntentExtrasChange,
+                placeholder   = "key=value per line. {rom_path}, {rom_uri}, {core_path} tokens. true/false = boolean.",
+                singleLine    = false,
+            )
+            EditorTextField(
+                label         = "Intent Flags",
+                value         = editorState.intentFlagsText,
+                onValueChange = onIntentFlagsChange,
+                placeholder   = "CLEAR_TASK, CLEAR_TOP, NEW_TASK (comma-separated)",
+            )
+            EditorTextField(
+                label         = "Intent Category",
+                value         = editorState.intentCategoryText,
+                onValueChange = onIntentCategoryChange,
+                placeholder   = "e.g. android.intent.category.LEANBACK_LAUNCHER",
+            )
+            EditorTextField(
+                label         = "RetroArch Core Path",
+                value         = editorState.coreText,
+                onValueChange = onCoreChange,
+                placeholder   = "/data/data/com.retroarch/cores/xxx_libretro_android.so",
+            )
+            EditorTextField(
+                label         = "Supported Extensions",
+                value         = editorState.extensionsText,
+                onValueChange = onExtensionsChange,
+                placeholder   = "iso,cso,chd  (informational)",
+            )
+
             // ── Error message ─────────────────────────────────────────────
             editorState.errorMessage?.let { msg ->
                 Spacer(modifier = Modifier.height(8.dp))
@@ -201,35 +258,6 @@ fun EmulatorProfileEditorScreen(
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
-}
-
-// Read-only summary of advanced launch fields carried from the wizard / auto-detection. The form
-// doesn't edit these yet, but they ARE preserved on save — surfacing them avoids silent surprises.
-@Composable
-private fun AutoFilledAdvancedSummary(state: ProfileEditorState) {
-    val lines = buildList {
-        state.intentAction?.takeIf { it.isNotBlank() }?.let { add("Action: $it") }
-        if (state.intentExtras.isNotEmpty()) {
-            add("Extras: " + state.intentExtras.entries.joinToString(", ") { "${it.key}=${it.value}" })
-        }
-        if (state.intentBoolExtras.isNotEmpty()) {
-            add("Bool extras: " + state.intentBoolExtras.entries.joinToString(", ") { "${it.key}=${it.value}" })
-        }
-        if (state.intentFlags.isNotEmpty()) add("Flags: " + state.intentFlags.joinToString(", "))
-        state.intentCategory?.takeIf { it.isNotBlank() }?.let { add("Category: $it") }
-        if (state.coreMap.isNotEmpty()) add("RetroArch core: " + state.coreMap.values.distinct().joinToString(", "))
-    }
-    if (lines.isEmpty()) return
-
-    SettingsGroup("Advanced (auto-filled)")
-    lines.forEach { line ->
-        Text(text = line, color = EditorSubtext, modifier = Modifier.padding(horizontal = 48.dp, vertical = 2.dp))
-    }
-    Text(
-        text     = "Preserved when you save. In-app editing of these is coming soon.",
-        color    = EditorSubtext,
-        modifier = Modifier.padding(horizontal = 48.dp, vertical = 6.dp),
-    )
 }
 
 @Composable

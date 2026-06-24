@@ -55,17 +55,24 @@ data class ProfileEditorState(
     val errorMessage: String? = null,
     // Wizard banner explaining detection confidence (null = plain edit).
     val detectionNote: String? = null,
-    // Advanced launch fields carried opaquely so wizard prefills / auto-gen profiles are not lost
-    // on save. The form doesn't edit these yet, but a read-only summary is shown when present.
-    val intentExtras: Map<String, String> = emptyMap(),
-    val intentBoolExtras: Map<String, Boolean> = emptyMap(),
-    val intentAction: String? = null,
-    val intentFlags: List<String> = emptyList(),
-    val intentCategory: String? = null,
-    val coreMap: Map<String, String> = emptyMap(),
+    // ── Advanced launch fields (editable as text; parsed back to typed on save) ──
+    val intentActionText: String = "",
+    val intentExtrasText: String = "",      // one "key=value" per line; true/false → bool extras
+    val intentFlagsText: String = "",       // comma-separated (CLEAR_TASK, CLEAR_TOP, NEW_TASK)
+    val intentCategoryText: String = "",
+    val coreText: String = "",              // single RetroArch core path applied to all platforms
+    val extensionsText: String = "",        // comma-separated file extensions
 )
 
 const val ADD_CUSTOM_EMULATOR_FOCUS_KEY = "add_custom_emulator"
+
+// Recommended launch-shape presets offered when auto-detection can't infer the settings.
+enum class EmulatorTemplate(val label: String, val description: String) {
+    VIEW_CONTENT("ACTION_VIEW + content:// URI", "Most modern emulators (Eden, Azahar, PPSSPP)"),
+    VIEW_FILE("ACTION_VIEW + file:// path", "Older emulators that read a raw file path"),
+    COMPONENT_BOOTPATH("COMPONENT + bootPath extra", "DuckStation / AetherSX2 style"),
+    RETROARCH_CORE("RetroArch core (ROM + LIBRETRO)", "Set the core path in LIBRETRO"),
+}
 
 // ── Test launch (wizard step) ──────────────────────────────────────────────────
 
@@ -209,13 +216,40 @@ class EmulatorsSettingsViewModel @Inject constructor(
             customCommand        = profile.customCommand ?: "",
             notes                = profile.notes ?: "",
             detectionNote        = detectionNote,
-            intentExtras         = profile.intentExtras,
-            intentBoolExtras     = profile.intentBoolExtras,
-            intentAction         = profile.intentAction,
-            intentFlags          = profile.intentFlags,
-            intentCategory       = profile.intentCategory,
-            coreMap              = profile.coreMap,
+            intentActionText     = profile.intentAction ?: "",
+            intentExtrasText     = extrasToText(profile.intentExtras, profile.intentBoolExtras),
+            intentFlagsText      = profile.intentFlags.joinToString(", "),
+            intentCategoryText   = profile.intentCategory ?: "",
+            coreText             = profile.coreMap.values.firstOrNull() ?: "",
+            extensionsText       = profile.supportedExtensions.joinToString(", "),
         )
+
+    private fun extrasToText(extras: Map<String, String>, bools: Map<String, Boolean>): String =
+        buildList {
+            extras.forEach { (k, v) -> add("$k=$v") }
+            bools.forEach { (k, v) -> add("$k=$v") }
+        }.joinToString("\n")
+
+    private fun parseExtras(text: String): Pair<Map<String, String>, Map<String, Boolean>> {
+        val strings = linkedMapOf<String, String>()
+        val booleans = linkedMapOf<String, Boolean>()
+        text.lineSequence().forEach { line ->
+            val t = line.trim()
+            val eq = t.indexOf('=')
+            if (eq <= 0) return@forEach
+            val key = t.substring(0, eq).trim()
+            val value = t.substring(eq + 1).trim()
+            when (value.lowercase()) {
+                "true"  -> booleans[key] = true
+                "false" -> booleans[key] = false
+                else    -> strings[key] = value
+            }
+        }
+        return strings to booleans
+    }
+
+    private fun parseCsv(text: String): List<String> =
+        text.split(",", "\n").map { it.trim() }.filter { it.isNotEmpty() }
 
     // ── Test launch ────────────────────────────────────────────────────────────
 
@@ -293,25 +327,32 @@ class EmulatorsSettingsViewModel @Inject constructor(
         _uiState.update { it.copy(testLaunch = null) }
     }
 
-    private fun ProfileEditorState.draftProfile() = EmulatorProfile(
-        id                   = originalId ?: "draft_test",
-        name                 = name.trim().ifEmpty { packageName },
-        packageName          = packageName.trim(),
-        activityClass        = activityClass.trimToNull(),
-        intentType           = intentType,
-        supportedPlatformIds = supportedPlatformIds.split(",").map { it.trim() }.filter { it.isNotEmpty() },
-        mimeType             = mimeType.trimToNull(),
-        useFileUri           = useFileUri,
-        useSafUri            = useSafUri,
-        customCommand        = customCommand.trimToNull(),
-        intentExtras         = intentExtras,
-        intentBoolExtras     = intentBoolExtras,
-        intentAction         = intentAction,
-        intentFlags          = intentFlags,
-        intentCategory       = intentCategory,
-        coreMap              = coreMap,
-        isCustom             = true,
-    )
+    private fun ProfileEditorState.draftProfile(): EmulatorProfile {
+        val platforms = parseCsv(supportedPlatformIds)
+        val (extras, boolExtras) = parseExtras(intentExtrasText)
+        val core = coreText.trim()
+        return EmulatorProfile(
+            id                   = originalId ?: "draft_test",
+            name                 = name.trim().ifEmpty { packageName },
+            packageName          = packageName.trim(),
+            activityClass        = activityClass.trimToNull(),
+            intentType           = intentType,
+            supportedPlatformIds = platforms,
+            mimeType             = mimeType.trimToNull(),
+            useFileUri           = useFileUri,
+            useSafUri            = useSafUri,
+            customCommand        = customCommand.trimToNull(),
+            intentExtras         = extras,
+            intentBoolExtras     = boolExtras,
+            intentAction         = intentActionText.trimToNull(),
+            intentFlags          = parseCsv(intentFlagsText),
+            intentCategory       = intentCategoryText.trimToNull(),
+            coreMap              = if (core.isEmpty() || platforms.isEmpty()) emptyMap()
+                                   else platforms.associateWith { core },
+            supportedExtensions  = parseCsv(extensionsText),
+            isCustom             = true,
+        )
+    }
 
     private fun buildPreview(profile: EmulatorProfile, game: Game): IntentPreview {
         val uriMode = when {
@@ -375,6 +416,38 @@ class EmulatorsSettingsViewModel @Inject constructor(
     fun updateEditorUseSafUri(value: Boolean)     = updateEditor { copy(useSafUri = value) }
     fun updateEditorCustomCommand(value: String)  = updateEditor { copy(customCommand = value) }
     fun updateEditorNotes(value: String)          = updateEditor { copy(notes = value) }
+    fun updateEditorIntentAction(value: String)   = updateEditor { copy(intentActionText = value) }
+    fun updateEditorIntentExtras(value: String)   = updateEditor { copy(intentExtrasText = value) }
+    fun updateEditorIntentFlags(value: String)    = updateEditor { copy(intentFlagsText = value) }
+    fun updateEditorIntentCategory(value: String) = updateEditor { copy(intentCategoryText = value) }
+    fun updateEditorCore(value: String)           = updateEditor { copy(coreText = value) }
+    fun updateEditorExtensions(value: String)     = updateEditor { copy(extensionsText = value) }
+
+    // Recommended templates — quick presets for undetected apps. Each fills the launch shape;
+    // the user then sets package/activity/platforms.
+    fun applyTemplate(template: EmulatorTemplate) = updateEditor {
+        when (template) {
+            EmulatorTemplate.VIEW_CONTENT -> copy(
+                intentType = IntentType.ACTION_VIEW, mimeType = "application/octet-stream",
+                useSafUri = true, useFileUri = false,
+                intentExtrasText = "", intentActionText = "", intentFlagsText = "", errorMessage = null,
+            )
+            EmulatorTemplate.VIEW_FILE -> copy(
+                intentType = IntentType.ACTION_VIEW, mimeType = "application/octet-stream",
+                useSafUri = false, useFileUri = true,
+                intentExtrasText = "", intentActionText = "", intentFlagsText = "", errorMessage = null,
+            )
+            EmulatorTemplate.COMPONENT_BOOTPATH -> copy(
+                intentType = IntentType.COMPONENT, useSafUri = false, useFileUri = true,
+                intentExtrasText = "bootPath={rom_path}", intentFlagsText = "CLEAR_TASK, CLEAR_TOP", errorMessage = null,
+            )
+            EmulatorTemplate.RETROARCH_CORE -> copy(
+                intentType = IntentType.COMPONENT,
+                activityClass = "com.retroarch.browser.retroactivity.RetroActivityFuture",
+                intentExtrasText = "ROM={rom_path}\nLIBRETRO={core_path}", errorMessage = null,
+            )
+        }
+    }
 
     private fun updateEditor(block: ProfileEditorState.() -> ProfileEditorState) {
         _uiState.update { state -> state.copy(editorState = state.editorState?.block()) }
@@ -393,34 +466,19 @@ class EmulatorsSettingsViewModel @Inject constructor(
         updateEditor { copy(isSaving = true, errorMessage = null) }
         viewModelScope.launch {
             val existing = editor.originalId?.let { id -> allProfiles.firstOrNull { it.id == id } }
-            val profile = EmulatorProfile(
+            val now = System.currentTimeMillis()
+            val profile = editor.draftProfile().copy(
                 id                   = editor.originalId ?: UUID.randomUUID().toString(),
                 name                 = editor.name.trim(),
-                packageName          = editor.packageName.trim(),
-                activityClass        = editor.activityClass.trimToNull(),
-                intentType           = editor.intentType,
-                supportedPlatformIds = editor.supportedPlatformIds
-                    .split(",").map { it.trim() }.filter { it.isNotEmpty() },
-                mimeType             = editor.mimeType.trimToNull(),
-                useFileUri           = editor.useFileUri,
-                useSafUri            = editor.useSafUri,
-                customCommand        = editor.customCommand.trimToNull(),
                 notes                = editor.notes.trimToNull(),
-                // Carried opaquely from the wizard/auto-gen source so prefilled launch details
-                // (extras, flags, action, category, RetroArch core map) survive the save.
-                intentExtras         = editor.intentExtras,
-                intentBoolExtras     = editor.intentBoolExtras,
-                intentAction         = editor.intentAction,
-                intentFlags          = editor.intentFlags,
-                intentCategory       = editor.intentCategory,
-                coreMap              = editor.coreMap,
-                isCustom             = true,
-                // Preserve auto-gen metadata; mark as user-modified so auto-config skips it
+                // Preserve auto-gen metadata; mark as user-modified so auto-config skips it.
                 isAutoGenerated      = existing?.isAutoGenerated ?: false,
                 autoSource           = existing?.autoSource,
                 lastDetectedAt       = existing?.lastDetectedAt,
                 userModified         = true,
                 isAvailable          = existing?.isAvailable ?: true,
+                createdAt            = existing?.createdAt ?: now,
+                updatedAt            = now,
             )
             profileRepository.savePersistedProfile(profile)
             _uiState.update { it.copy(editorState = null) }
