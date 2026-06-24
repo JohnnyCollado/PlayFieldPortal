@@ -78,8 +78,6 @@ object XmbStatusIcons {
 
 @Composable
 fun XmbPspStatusStrip(
-    backgroundTaskCount: Int,
-    onTaskBadgeTapped: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -127,21 +125,6 @@ fun XmbPspStatusStrip(
             Text(dateString, color = StripMuted,   fontSize = StripFontSize, fontWeight = FontWeight.Normal)
             StripSeparator()
             Text(timeString, color = StripPrimary, fontSize = StripFontSize, fontWeight = FontWeight.Medium)
-
-            if (backgroundTaskCount > 0) {
-                Spacer(Modifier.width(4.dp))
-                BadgedBox(
-                    badge    = { Badge { Text(backgroundTaskCount.toString(), fontSize = 8.sp) } },
-                    modifier = Modifier.clickable(onClick = onTaskBadgeTapped),
-                ) {
-                    Icon(
-                        imageVector        = Icons.Default.Refresh,
-                        contentDescription = "Background tasks",
-                        tint               = StripPrimary,
-                        modifier           = Modifier.size(13.dp),
-                    )
-                }
-            }
         }
 
         // ── Right: BT  WiFi  Signal  Battery ──────────────────────────────

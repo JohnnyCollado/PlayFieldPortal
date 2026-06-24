@@ -1,30 +1,31 @@
 package com.playfieldportal.feature.xmb.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -34,8 +35,21 @@ import com.playfieldportal.feature.xmb.viewmodel.XMBContextMenuItem
 
 // ── Context menu overlay — appears on Y/Triangle press ───────────────────────
 //
+// Styled after the PSP XMB sub-menu: a translucent column anchored to the right
+// edge, a plain title underlined by a thin rule, and the selected item marked by
+// a soft horizontal glow band that bleeds to the screen edge (no boxed panel).
+//
 // Controller nav is handled by XMBViewModel.dispatchGamepadAction when
 // activeContextMenu != null. This composable handles touch/click interaction.
+
+private val PanelWidth = 300.dp
+
+// Black drop shadow on the menu text so it stays legible over the wave/backdrop.
+private val TextDropShadow = Shadow(
+    color = Color.Black.copy(alpha = 0.75f),
+    offset = Offset(0f, 2f),
+    blurRadius = 4f,
+)
 
 @Composable
 fun ContextMenuOverlay(
@@ -56,49 +70,52 @@ fun ContextMenuOverlay(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0x66000000))
+            // Light scrim — the wave stays visible behind, PSP-style.
+            .background(Color(0x40000000))
             .clickable(onClick = onDismiss),
     ) {
-        // Panel — right-aligned, PSP XMB / Xbox Dashboard style
+        // Right-edge column. A solid backdrop at 75% alpha in the scheme's theme
+        // color (the wave color — blue for Classic Blue, etc.) gives contrast
+        // while still letting the wave show through.
         Column(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
-                .padding(end = 72.dp)
-                .widthIn(min = 256.dp, max = 340.dp)
-                .clip(RoundedCornerShape(6.dp))
-                .background(Color(0xF2080812))
-                .border(1.dp, Color(0x2AFFFFFF), RoundedCornerShape(6.dp))
-                .clickable(onClick = {}), // consume clicks so scrim isn't triggered inside panel
+                .fillMaxHeight()
+                .width(PanelWidth)
+                .background(colors.waveColor.copy(alpha = 0.75f))
+                .clickable(onClick = {}) // consume clicks so the scrim isn't triggered inside
+                .padding(start = 28.dp, end = 40.dp),
+            verticalArrangement = Arrangement.Center,
         ) {
-            // ── Header ────────────────────────────────────────────────────
+            // ── Title ─────────────────────────────────────────────────────
+            Text(
+                text = menu.title,
+                fontSize = 19.sp,
+                fontWeight = FontWeight.Light,
+                color = Color.White.copy(alpha = 0.92f),
+                style = TextStyle(shadow = TextDropShadow),
+                maxLines = 2,
+                modifier = Modifier.padding(bottom = 10.dp),
+            )
+            // Thin underline rule beneath the title.
             Box(
-                modifier = Modifier
+                Modifier
                     .fillMaxWidth()
-                    .background(colors.accentColor.copy(alpha = 0.16f))
-                    .padding(horizontal = 20.dp, vertical = 13.dp),
-            ) {
-                Text(
-                    text = menu.title,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.White.copy(alpha = 0.85f),
-                    maxLines = 2,
-                )
-            }
-
-            Box(Modifier.fillMaxWidth().size(1.dp).background(Color(0x1AFFFFFF)))
+                    .padding(end = 8.dp)
+                    .height(1.dp)
+                    .background(Color.White.copy(alpha = 0.30f)),
+            )
 
             // ── Items ──────────────────────────────────────────────────────
             LazyColumn(
                 state = listState,
-                modifier = Modifier.padding(vertical = 6.dp),
+                modifier = Modifier.padding(top = 10.dp),
             ) {
                 itemsIndexed(menu.items) { index, item ->
                     ContextMenuRow(
-                        item        = item,
-                        isSelected  = index == menu.selectedIndex,
-                        accentColor = colors.accentColor,
-                        onClick     = { onItemActivated(index) },
+                        item       = item,
+                        isSelected = index == menu.selectedIndex,
+                        onClick    = { onItemActivated(index) },
                     )
                 }
             }
@@ -110,38 +127,52 @@ fun ContextMenuOverlay(
 private fun ContextMenuRow(
     item: XMBContextMenuItem,
     isSelected: Boolean,
-    accentColor: Color,
     onClick: () -> Unit,
 ) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(if (isSelected) accentColor.copy(alpha = 0.20f) else Color.Transparent)
+            // Soft horizontal glow band for the active item — brighter toward the
+            // screen edge, fading out to the left. No border or rounded box.
+            .background(
+                if (isSelected) {
+                    Brush.horizontalGradient(
+                        0f to Color.Transparent,
+                        1f to Color.White.copy(alpha = 0.22f),
+                    )
+                } else {
+                    Brush.horizontalGradient(0f to Color.Transparent, 1f to Color.Transparent)
+                }
+            )
             .clickable(onClick = onClick)
-            .padding(vertical = 11.dp, horizontal = 20.dp),
+            .padding(vertical = 12.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            // Left accent bar (visible when selected)
-            Box(
-                modifier = Modifier
-                    .size(width = 3.dp, height = 16.dp)
-                    .background(
-                        if (isSelected) accentColor else Color.Transparent,
-                        RoundedCornerShape(1.5.dp),
-                    )
-            )
-            Spacer(Modifier.width(12.dp))
             Text(
                 text = item.label,
-                fontSize = 14.sp,
+                fontSize = if (isSelected) 16.sp else 15.sp,
                 fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                 color = when {
                     item.isDestructive && isSelected -> Color(0xFFFF7070)
                     item.isDestructive               -> Color(0xAAFF7070)
                     isSelected                       -> Color.White
-                    else                             -> Color.White.copy(alpha = 0.60f)
+                    else                             -> Color.White.copy(alpha = 0.62f)
                 },
+                style = TextStyle(shadow = TextDropShadow),
+                modifier = Modifier.weight(1f, fill = false),
             )
+            // Checkmark for items that represent a current membership/selection (e.g. the
+            // collections a game already belongs to in "Add to Collection").
+            if (item.checked) {
+                Spacer(Modifier.width(10.dp))
+                Text(
+                    text = "✓",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    style = TextStyle(shadow = TextDropShadow),
+                )
+            }
         }
     }
 }

@@ -63,6 +63,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.feature.xmb.ui.collection.CollectionPickerPanel
 import timber.log.Timber
 
 private val TextPrimary = Color(0xFFEEEEEE)
@@ -248,6 +249,17 @@ fun GameDetailScreen(
                 onPick       = viewModel::confirmEmulatorPick,
                 onMove       = viewModel::onEmulatorPickerMove,
                 onClose      = viewModel::closeEmulatorPicker,
+            )
+        }
+
+        AnimatedVisibility(state.collectionPicker.visible, enter = fadeIn(), exit = fadeOut()) {
+            CollectionPickerPanel(
+                ui                  = state.collectionPicker,
+                onRowClick          = viewModel::onCollectionRowClick,
+                onClose             = viewModel::closeCollectionPicker,
+                onCreateTextChanged = viewModel::onCreateCollectionTextChanged,
+                onConfirmCreate     = viewModel::confirmCreateCollection,
+                onCancelCreate      = viewModel::cancelCreateCollection,
             )
         }
 
@@ -448,6 +460,7 @@ private fun ActionButton(
 
 private fun DetailAction.iconFor(favorite: Boolean): String = when (this) {
     DetailAction.FAVORITE -> if (favorite) "*" else "+"
+    DetailAction.COLLECTIONS -> "C"
     DetailAction.ARTWORK -> "*"
     DetailAction.SAVES -> "S"
     DetailAction.EMULATOR -> "E"

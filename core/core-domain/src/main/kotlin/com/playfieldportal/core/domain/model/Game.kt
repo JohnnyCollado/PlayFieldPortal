@@ -28,6 +28,8 @@ data class Game(
     val scrapedTitle: String?      = null,
     // User-set display name override. Takes priority over everything else in the UI.
     val userTitleOverride: String? = null,
+    // What this entry actually is. Drives "All Games" filtering — only GAME aggregates there.
+    val contentType: GameContentType = GameContentType.GAME,
 ) {
     // Resolved display name: user override → scraped metadata title → raw scan title.
     val displayTitle: String get() = userTitleOverride ?: scrapedTitle ?: title

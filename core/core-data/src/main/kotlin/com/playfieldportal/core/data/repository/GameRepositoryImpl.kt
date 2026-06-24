@@ -27,6 +27,9 @@ class GameRepositoryImpl @Inject constructor(
     override fun observeAll(): Flow<List<Game>> =
         gameDao.observeAll().map { entities -> entities.map { it.toDomain() } }
 
+    override fun observeGamesOnly(): Flow<List<Game>> =
+        gameDao.observeGamesOnly().map { entities -> entities.map { it.toDomain() } }
+
     override fun observeFavorites(): Flow<List<Game>> =
         gameDao.observeFavorites().map { entities -> entities.map { it.toDomain() } }
 

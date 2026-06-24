@@ -2,6 +2,7 @@ package com.playfieldportal.feature.xmb.viewmodel
 
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -10,6 +11,7 @@ import com.playfieldportal.core.data.database.dao.PlatformDao
 import com.playfieldportal.core.data.database.dao.ThemeDao
 import com.playfieldportal.core.data.database.entity.PlatformEntity
 import com.playfieldportal.core.data.repository.CategoryRepositoryImpl
+import com.playfieldportal.core.data.repository.CollectionRepository
 import com.playfieldportal.core.data.repository.MemoryCardRepository
 import com.playfieldportal.core.domain.model.MemoryCard
 import com.playfieldportal.feature.appbar.AppCategoryRepository
@@ -25,15 +27,19 @@ import com.playfieldportal.core.ui.theme.PFPColors
 import com.playfieldportal.core.ui.wave.WaveStyle
 import com.playfieldportal.core.data.repository.ControllerMappingRepository
 import com.playfieldportal.core.domain.model.Game
+import com.playfieldportal.core.domain.model.GameCollection
+import com.playfieldportal.core.domain.model.GameContentType
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.XmbColorScheme
 import com.playfieldportal.core.domain.model.XmbPalette
+import com.playfieldportal.core.domain.model.displayLabel
 import com.playfieldportal.core.domain.model.resolve
 import com.playfieldportal.feature.artwork.api.ArtworkRepository
 import com.playfieldportal.feature.library.scanner.RomScanner
 import com.playfieldportal.feature.library.scanner.ScanResult
 import com.playfieldportal.feature.library.scanner.ScanType
 import com.playfieldportal.feature.xmb.gamepad.GamepadInputHandler
+import com.playfieldportal.feature.xmb.notification.BackgroundTaskNotifier
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
@@ -76,12 +82,43 @@ data class XMBContextMenu(
     val categoryContext: String? = null,
     // Set on the category-picker submenu: "move" or "add"
     val pendingAppAction: String? = null,
+    // Set on the "Add to Collection" submenu — the game being added.
+    val collectionGameId: Long? = null,
+    // Set on a collection row's own options menu (rename / delete / open).
+    val collectionRowId: Long? = null,
 )
 
 data class XMBContextMenuItem(
     val id: String,
     val label: String,
     val isDestructive: Boolean = false,
+    // Renders a checkmark (e.g. collections the game already belongs to).
+    val checked: Boolean = false,
+)
+
+// Drives the "Create New Collection" text dialog. When [forGameId] is set, the freshly
+// created collection immediately receives that game.
+data class CollectionNameDialogState(
+    val title: String,
+    val initialText: String = "",
+    val forGameId: Long? = null,
+    // When set, confirming renames this collection instead of creating a new one.
+    val renameCollectionId: Long? = null,
+)
+
+// ── Color-scheme picker (opened from Settings ▸ Themes ▸ Color Scheme) ──────────
+// A PSP-style submenu that previews each scheme live as the cursor moves over it.
+
+data class ColorSchemePickerState(
+    val options: List<ColorSchemeOption>,
+    val selectedIndex: Int = 0,
+)
+
+data class ColorSchemeOption(
+    val scheme: XmbColorScheme,
+    val label: String,
+    val sublabel: String,
+    val swatch: Long, // ARGB preview color (the scheme's wave color)
 )
 
 // ── Installed-app picker ───────────────────────────────────────────────────────
@@ -116,7 +153,13 @@ data class XMBUiState(
     val categories: List<Category> = emptyList(),
     val selectedCategoryIndex: Int = 0,
     val platformGameCounts: Map<String, Int> = emptyMap(),
+    // Total real games (content_type = GAME) across all platforms — the "All Games" count.
+    val allGamesCount: Int = 0,
     val selectedPlatformId: String? = null,
+    // When non-null, the Games category is showing the contents of a user collection.
+    val selectedCollectionId: Long? = null,
+    // User-created collections, ordered, shown under "All Games" in the Games root.
+    val collections: List<GameCollection> = emptyList(),
 
     // ── Vertical axis: games / settings items ─────────────────────────────
     val currentItems: List<XMBItem> = emptyList(),
@@ -128,9 +171,6 @@ data class XMBUiState(
     val customWallpaperPath: String? = null,
 
     val showBootSequence: Boolean = true,
-    val showTaskTray: Boolean = false,
-    val activeBackgroundTasks: Int = 0,
-    val backgroundTasks: List<BackgroundTaskInfo> = emptyList(),
 
     // ── Overlay screens ───────────────────────────────────────────────────
     val activeSettingsScreen: String? = null,
@@ -145,9 +185,15 @@ data class XMBUiState(
     // ── Context menu (Y/Triangle) ─────────────────────────────────────────
     val activeContextMenu: XMBContextMenu? = null,
 
+    // ── Color-scheme picker (Settings ▸ Themes ▸ Color Scheme) ─────────────
+    val colorSchemePicker: ColorSchemePickerState? = null,
+
     // ── App rename dialog ─────────────────────────────────────────────────
     val renameAppTarget: String? = null,    // package name being renamed
     val renameAppCurrent: String? = null,   // current label, prefills the field
+
+    // ── Create-collection text dialog ─────────────────────────────────────
+    val collectionNameDialog: CollectionNameDialogState? = null,
 
     // ── Installed-app picker (Android Library / Video / Music) ─────────────
     val appPicker: AppPickerState? = null,
@@ -156,12 +202,27 @@ data class XMBUiState(
     val iconStyle: GameIconStyle = GameIconStyle.PSP_RECTANGLE,
     val librarySetupComplete: Boolean = false,
     val themeColors: PFPColors = DefaultPFPColors,
-)
+) {
+    // True whenever something is layered over the main XMB. The gamepad dispatcher uses this
+    // as a final guard so D-Pad/A never drives the category bar or item list behind an overlay.
+    val hasBlockingOverlay: Boolean
+        get() = showBootSequence ||
+            activeSettingsScreen != null ||
+            activeAppDrawerFilter != null ||
+            activeGameId != null ||
+            activeAppId != null ||
+            activeContextMenu != null ||
+            colorSchemePicker != null ||
+            appPicker != null ||
+            renameAppTarget != null ||
+            collectionNameDialog != null
+}
 
 enum class XMBItemType {
     STANDARD,
     ALL_GAMES,
     MEMORY_CARD,
+    COLLECTION,
     EMPTY,
 }
 
@@ -174,6 +235,7 @@ data class XMBItem(
     val subtitle: String? = null,
     val gameId: Long? = null,
     val platformId: String? = null,
+    val collectionId: Long? = null,     // set on COLLECTION rows in the Games root
     val accentColor: Long? = null,
     val isFavorite: Boolean = false,
     val isAndroidApp: Boolean = false,
@@ -181,13 +243,11 @@ data class XMBItem(
     val type: XMBItemType = XMBItemType.STANDARD,
 )
 
+// A unit of background work surfaced to the notification bar. [progress] null = indeterminate.
 data class BackgroundTaskInfo(
     val id: String,
     val label: String,
     val progress: Float?,
-    val isCompleted: Boolean = false,
-    val isFailed: Boolean = false,
-    val errorMessage: String? = null,
 )
 
 // ── ViewModel ─────────────────────────────────────────────────────────────────
@@ -199,6 +259,7 @@ class XMBViewModel @Inject constructor(
     private val themeDao: ThemeDao,
     private val librarySourceDao: LibrarySourceDao,
     private val memoryCardRepository: MemoryCardRepository,
+    private val collectionRepository: CollectionRepository,
     private val categoryRepository: CategoryRepositoryImpl,
     private val appCategoryRepository: AppCategoryRepository,
     private val romScanner: RomScanner,
@@ -215,6 +276,9 @@ class XMBViewModel @Inject constructor(
     private var platformCache: Map<String, PlatformEntity> = emptyMap()
     private var enabledCards: List<MemoryCard> = emptyList()
     private var baseThemeColors: PFPColors = DefaultPFPColors
+
+    // Background work is surfaced to the Android notification bar, not an in-app tray.
+    private val taskNotifier = BackgroundTaskNotifier(context)
 
     init {
         gamepadInputHandler.scope = viewModelScope
@@ -294,28 +358,43 @@ class XMBViewModel @Inject constructor(
                 memoryCardRepository.observeEnabled(),
                 gameRepository.observeAll(),
                 platformDao.observeAll(),
-            ) { cards, games, platforms -> Triple(cards, games, platforms) }
-                .collect { (cards, games, platforms) ->
+                collectionRepository.observeCollections(),
+            ) { cards, games, platforms, collections -> CardsGamesPlatformsCollections(cards, games, platforms, collections) }
+                .collect { (cards, games, platforms, collections) ->
                     platformCache = platforms.associateBy { it.id }
                     enabledCards  = cards
                     val counts = games.groupBy { it.platformId }.mapValues { it.value.size }
+                    val gamesOnlyTotal = games.count { it.contentType == GameContentType.GAME }
 
                     // Drop a stale platform folder if its card was removed or disabled.
                     val validPlatformId = _uiState.value.selectedPlatformId
                         ?.takeIf { id -> id == ALL_GAMES_PLATFORM_ID || cards.any { c -> c.platformId == id } }
+                    // Drop a stale collection folder if the collection was deleted.
+                    val validCollectionId = _uiState.value.selectedCollectionId
+                        ?.takeIf { id -> collections.any { c -> c.id == id } }
 
                     _uiState.update { it.copy(
                         platformGameCounts = counts,
+                        allGamesCount = gamesOnlyTotal,
                         selectedPlatformId = validPlatformId,
+                        selectedCollectionId = validCollectionId,
+                        collections = collections,
                     )}
 
-                    // Refresh the Games view live as cards/counts change.
+                    // Refresh the Games view live as cards/counts/collections change.
                     if (currentCategory()?.id == BuiltInCategory.GAMES) {
                         loadItemsForCategory(currentCategory())
                     }
                 }
         }
     }
+
+    private data class CardsGamesPlatformsCollections(
+        val cards: List<MemoryCard>,
+        val games: List<Game>,
+        val platforms: List<PlatformEntity>,
+        val collections: List<GameCollection>,
+    )
 
     // ── App category changes (assignments / overrides) ──────────────────────────
 
@@ -354,8 +433,18 @@ class XMBViewModel @Inject constructor(
                 }
                 BuiltInCategory.GAMES -> {
                     val platformId = _uiState.value.selectedPlatformId
-                    if (platformId == ALL_GAMES_PLATFORM_ID) {
-                        gameRepository.observeAll().collect { games ->
+                    val collectionId = _uiState.value.selectedCollectionId
+                    if (collectionId != null) {
+                        // A user collection — games from any platform, app entries allowed only
+                        // because they were explicitly added by the user.
+                        collectionRepository.observeGames(collectionId).collect { games ->
+                            val items = if (games.isEmpty()) listOf(emptyCollectionItem())
+                                        else games.toXmbItems()
+                            _uiState.update { it.copy(currentItems = items) }
+                        }
+                    } else if (platformId == ALL_GAMES_PLATFORM_ID) {
+                        // All Games aggregates real games only (content_type = GAME).
+                        gameRepository.observeGamesOnly().collect { games ->
                             val items = if (games.isEmpty()) listOf(emptyAllGamesItem())
                                         else games.toXmbItems()
                             _uiState.update { it.copy(currentItems = items) }
@@ -417,11 +506,8 @@ class XMBViewModel @Inject constructor(
 
     // Games root: one item per enabled Memory Card (already ordered pinned-first by the DAO).
     private fun memoryCardItems(): List<XMBItem> {
-        val totalGames = if (_uiState.value.platformGameCounts.isNotEmpty()) {
-            _uiState.value.platformGameCounts.values.sum()
-        } else {
-            enabledCards.sumOf { it.gameCount }
-        }
+        // Real games only (excludes app-style entries), matching what All Games actually shows.
+        val totalGames = _uiState.value.allGamesCount
         val allGamesItem = XMBItem(
             id       = ALL_GAMES_ITEM_ID,
             title    = "All Games",
@@ -429,16 +515,27 @@ class XMBViewModel @Inject constructor(
             type     = XMBItemType.ALL_GAMES,
         )
 
+        // User collections sit just under All Games — like Favorites but user-defined.
+        val collectionItems = _uiState.value.collections.map { collection ->
+            XMBItem(
+                id           = "collection_${collection.id}",
+                title        = collection.name,
+                subtitle     = "${collection.gameCount} ${if (collection.gameCount == 1) "Game" else "Games"}",
+                collectionId = collection.id,
+                type         = XMBItemType.COLLECTION,
+            )
+        }
+
         if (enabledCards.isEmpty()) {
-            return listOf(allGamesItem, XMBItem(
+            return listOf(allGamesItem) + collectionItems + XMBItem(
                 id       = NO_CONSOLES_ITEM_ID,
                 title    = "No consoles configured",
                 subtitle = "Open Library Manager to add a Memory Card",
                 type     = XMBItemType.EMPTY,
-            ))
+            )
         }
 
-        return listOf(allGamesItem) + enabledCards.map { card ->
+        return listOf(allGamesItem) + collectionItems + enabledCards.map { card ->
             val count = _uiState.value.platformGameCounts[card.platformId] ?: card.gameCount
             XMBItem(
                 id          = "card_${card.platformId}",
@@ -455,6 +552,13 @@ class XMBViewModel @Inject constructor(
         id       = NO_GAMES_ITEM_ID,
         title    = "No games imported yet",
         subtitle = "Open a Memory Card to scan your library.",
+        type     = XMBItemType.EMPTY,
+    )
+
+    private fun emptyCollectionItem(): XMBItem = XMBItem(
+        id       = EMPTY_COLLECTION_ITEM_ID,
+        title    = "This collection is empty",
+        subtitle = "Add games from any console with the options (△) menu.",
         type     = XMBItemType.EMPTY,
     )
 
@@ -558,6 +662,33 @@ class XMBViewModel @Inject constructor(
             return
         }
 
+        // ── Color-scheme picker captures ALL input when open (sits above Settings) ──
+        if (state.colorSchemePicker != null) {
+            when (action) {
+                GamepadAction.NAVIGATE_UP   -> moveColorSchemePicker(-1)
+                GamepadAction.NAVIGATE_DOWN -> moveColorSchemePicker(+1)
+                GamepadAction.SELECT        -> confirmColorSchemePicker()
+                GamepadAction.BACK,
+                GamepadAction.LONG_PRESS    -> cancelColorSchemePicker()
+                else -> Unit
+            }
+            return
+        }
+
+        // ── Modal text dialogs capture ALL input — text entry needs a keyboard, so
+        //    only BACK is meaningful (cancel). The XMB behind must never move. ──────
+        if (state.renameAppTarget != null) {
+            if (action == GamepadAction.BACK) onCancelAppRename()
+            return
+        }
+        if (state.collectionNameDialog != null) {
+            if (action == GamepadAction.BACK) onCancelCollectionName()
+            return
+        }
+
+        // ── Boot sequence overlay swallows input until it finishes/auto-completes ──
+        if (state.showBootSequence) return
+
         // ── Overlays (innermost wins) ──────────────────────────────────────────
         when {
             state.activeGameId != null -> {
@@ -592,11 +723,12 @@ class XMBViewModel @Inject constructor(
                 else _uiState.update { it.copy(pendingDrawerAction = action) }
                 return
             }
-            state.showTaskTray -> {
-                if (action == GamepadAction.BACK) onDismissTaskTray()
-                return
-            }
         }
+
+        // Defensive net: the main XMB navigation below must NEVER run while any overlay,
+        // menu, or modal dialog is on screen. Each case above returns for its own handling;
+        // this guards against a future overlay being added without its own branch.
+        if (state.hasBlockingOverlay) return
 
         when (action) {
             GamepadAction.NAVIGATE_UP -> {
@@ -623,7 +755,7 @@ class XMBViewModel @Inject constructor(
             }
             GamepadAction.SELECT     -> onItemSelected(state.selectedItemIndex)
             GamepadAction.BACK       -> {
-                if (state.selectedPlatformId != null) closePlatformFolder()
+                if (state.selectedPlatformId != null || state.selectedCollectionId != null) closePlatformFolder()
                 else onOpenAppDrawer()
             }
             GamepadAction.LONG_PRESS -> {
@@ -631,13 +763,15 @@ class XMBViewModel @Inject constructor(
                 val item = state.currentItems.getOrNull(state.selectedItemIndex)
                 when {
                     item?.gameId != null -> openGameContextMenu(item)
+                    item?.collectionId != null && item.type == XMBItemType.COLLECTION -> openCollectionRowContextMenu(item.collectionId)
                     item?.platformId != null -> openPlatformContextMenu(item.platformId)
                     item?.packageName != null -> openAppContextMenu(item)
                 }
             }
             // Start button no longer restarts / shows the boot screen.
             GamepadAction.HOME          -> Unit
-            GamepadAction.OPEN_TASK_TRAY -> onTaskTrayVisibility(true)
+            // Task tray removed — background work now lives in the notification bar.
+            GamepadAction.OPEN_TASK_TRAY -> Unit
             GamepadAction.PREV_CATEGORY,
             GamepadAction.NEXT_CATEGORY -> Unit
         }
@@ -684,6 +818,7 @@ class XMBViewModel @Inject constructor(
     }
 
     private fun openGameContextMenu(item: XMBItem) {
+        val inCollection = _uiState.value.selectedCollectionId != null
         val items = buildList {
             add(XMBContextMenuItem("launch", "Launch Game"))
             if (item.packageName != null) add(XMBContextMenuItem("edit_app", "Edit App Details"))
@@ -691,6 +826,10 @@ class XMBViewModel @Inject constructor(
                 id    = if (item.isFavorite) "unfavorite" else "favorite",
                 label = if (item.isFavorite) "Remove from Favorites" else "Add to Favorites",
             ))
+            add(XMBContextMenuItem("add_to_collection", "Add to Collection"))
+            // Only offer removal when viewing the game from inside a collection.
+            if (inCollection) add(XMBContextMenuItem("remove_from_collection", "Remove from Collection"))
+            add(XMBContextMenuItem("manage_collections", "Manage Collections"))
             add(XMBContextMenuItem("refresh_metadata", "Refresh Metadata"))
             add(XMBContextMenuItem("refresh_artwork",  "Refresh Artwork"))
             add(XMBContextMenuItem("file_location",    "View File Location"))
@@ -704,6 +843,35 @@ class XMBViewModel @Inject constructor(
                 packageName = item.packageName,
             )
         )}
+    }
+
+    // Second-level menu: the collections a game can be added to (checkmarks show current
+    // membership), plus "Create New Collection". Opened from the game options menu. The menu
+    // stays open while toggling so the user can add to several collections at once.
+    private fun openCollectionPicker(gameId: Long, selectIndex: Int = 0) {
+        viewModelScope.launch {
+            val collections = collectionRepository.getAll()
+            val memberOf = collectionRepository.getCollectionIdsForGame(gameId).toSet()
+            val items = buildList {
+                collections.forEach { c ->
+                    add(XMBContextMenuItem(
+                        id      = "col_${c.id}",
+                        label   = c.name,
+                        checked = c.id in memberOf,
+                    ))
+                }
+                add(XMBContextMenuItem("col_new", "Create New Collection"))
+            }
+            _uiState.update { it.copy(
+                activeContextMenu = XMBContextMenu(
+                    title            = "Add to Collection",
+                    items            = items,
+                    selectedIndex    = selectIndex.coerceIn(0, items.size - 1),
+                    gameId           = gameId,
+                    collectionGameId = gameId,
+                )
+            )}
+        }
     }
 
     private fun openAppContextMenu(item: XMBItem) {
@@ -726,6 +894,24 @@ class XMBViewModel @Inject constructor(
                 gameId          = item.gameId,
                 packageName     = pkg,
                 categoryContext = categoryId,
+            )
+        )}
+    }
+
+    // Options menu for a collection row in the Games root (long-press / △).
+    private fun openCollectionRowContextMenu(collectionId: Long) {
+        val collection = _uiState.value.collections.firstOrNull { it.id == collectionId } ?: return
+        val items = listOf(
+            XMBContextMenuItem("open_collection",    "Open"),
+            XMBContextMenuItem("rename_collection",  "Rename Collection"),
+            XMBContextMenuItem("manage_collections", "Manage Collections"),
+            XMBContextMenuItem("delete_collection",  "Delete Collection", isDestructive = true),
+        )
+        _uiState.update { it.copy(
+            activeContextMenu = XMBContextMenu(
+                title           = collection.name,
+                items           = items,
+                collectionRowId = collectionId,
             )
         )}
     }
@@ -755,7 +941,44 @@ class XMBViewModel @Inject constructor(
     private fun activateContextMenuItem() {
         val menu   = _uiState.value.activeContextMenu ?: return
         val itemId = menu.items.getOrNull(menu.selectedIndex)?.id ?: return
+
+        // ── Collection picker submenu — handled before closing so toggles stay in place ──
+        if (menu.collectionGameId != null) {
+            val gameId = menu.collectionGameId
+            val keepIndex = menu.selectedIndex
+            when {
+                itemId == "col_new" -> {
+                    closeContextMenu()
+                    promptCreateCollection(forGameId = gameId)
+                }
+                itemId.startsWith("col_") -> {
+                    val collectionId = itemId.removePrefix("col_").toLongOrNull() ?: return
+                    viewModelScope.launch {
+                        collectionRepository.toggleGame(collectionId, gameId)
+                        // Re-open so the checkmark reflects the new membership.
+                        openCollectionPicker(gameId, keepIndex)
+                    }
+                }
+            }
+            return
+        }
+
         closeContextMenu()
+
+        // ── Collection row options menu ────────────────────────────────────────
+        if (menu.collectionRowId != null) {
+            val collectionId = menu.collectionRowId
+            when (itemId) {
+                "open_collection"    -> openCollectionFolder(collectionId)
+                "rename_collection"  -> promptRenameCollection(collectionId)
+                "manage_collections" -> _uiState.update { it.copy(activeSettingsScreen = "settings_collections") }
+                "delete_collection"  -> appAction {
+                    collectionRepository.delete(collectionId)
+                    if (_uiState.value.selectedCollectionId == collectionId) closePlatformFolder()
+                }
+            }
+            return
+        }
 
         when {
             menu.platformId != null -> when (itemId) {
@@ -770,13 +993,21 @@ class XMBViewModel @Inject constructor(
                 "remove"           -> removeCard(menu.platformId)
             }
             menu.gameId != null -> when (itemId) {
-                "launch"           -> _uiState.update { it.copy(activeGameId = menu.gameId) }
-                "edit_app"         -> openAppDetail(menu.gameId, menu.packageName ?: return)
-                "favorite"         -> toggleGameFavorite(menu.gameId, true)
-                "unfavorite"       -> toggleGameFavorite(menu.gameId, false)
-                "refresh_artwork"  -> refreshGameArtwork(menu.gameId)
-                "refresh_metadata" -> refreshGameArtwork(menu.gameId)
-                "file_location"    -> showGameFileLocation(menu.gameId)
+                "launch"                 -> _uiState.update { it.copy(activeGameId = menu.gameId) }
+                "edit_app"               -> openAppDetail(menu.gameId, menu.packageName ?: return)
+                "favorite"               -> toggleGameFavorite(menu.gameId, true)
+                "unfavorite"             -> toggleGameFavorite(menu.gameId, false)
+                "add_to_collection"      -> openCollectionPicker(menu.gameId)
+                "remove_from_collection" -> {
+                    val gid = menu.gameId   // local val so it smart-casts inside the lambda
+                    _uiState.value.selectedCollectionId?.let { cid ->
+                        appAction { collectionRepository.removeGame(cid, gid) }
+                    }
+                }
+                "manage_collections"     -> _uiState.update { it.copy(activeSettingsScreen = "settings_collections") }
+                "refresh_artwork"        -> refreshGameArtwork(menu.gameId)
+                "refresh_metadata"       -> refreshGameArtwork(menu.gameId)
+                "file_location"          -> showGameFileLocation(menu.gameId)
             }
             menu.packageName != null -> {
                 val pkg = menu.packageName
@@ -817,6 +1048,44 @@ class XMBViewModel @Inject constructor(
 
     fun onCancelAppRename() {
         _uiState.update { it.copy(renameAppTarget = null, renameAppCurrent = null) }
+    }
+
+    // ── Create-collection dialog ───────────────────────────────────────────────
+
+    private fun promptCreateCollection(forGameId: Long? = null) {
+        _uiState.update { it.copy(
+            collectionNameDialog = CollectionNameDialogState(title = "New Collection", forGameId = forGameId)
+        )}
+    }
+
+    private fun promptRenameCollection(collectionId: Long) {
+        val name = _uiState.value.collections.firstOrNull { it.id == collectionId }?.name.orEmpty()
+        _uiState.update { it.copy(
+            collectionNameDialog = CollectionNameDialogState(
+                title = "Rename Collection",
+                initialText = name,
+                renameCollectionId = collectionId,
+            )
+        )}
+    }
+
+    fun onConfirmCollectionName(name: String) {
+        val dialog = _uiState.value.collectionNameDialog ?: return
+        _uiState.update { it.copy(collectionNameDialog = null) }
+        if (name.isBlank()) return
+        viewModelScope.launch {
+            val renameId = dialog.renameCollectionId
+            if (renameId != null) {
+                collectionRepository.rename(renameId, name)
+            } else {
+                val id = collectionRepository.create(name)
+                dialog.forGameId?.let { collectionRepository.addGame(id, it) }
+            }
+        }
+    }
+
+    fun onCancelCollectionName() {
+        _uiState.update { it.copy(collectionNameDialog = null) }
     }
 
     private fun showGameFileLocation(gameId: Long) {
@@ -916,6 +1185,8 @@ class XMBViewModel @Inject constructor(
                     platformId    = platformId,
                     packageName   = pkg,
                     isManualEntry = true,
+                    // Package-based entry — classified as an app so it stays out of All Games.
+                    contentType   = com.playfieldportal.core.domain.model.GameContentType.ANDROID_APP,
                 )
             )
         }
@@ -1025,52 +1296,36 @@ class XMBViewModel @Inject constructor(
 
     // ── Background task management ────────────────────────────────────────────
 
+    // Background work is reported through the Android notification bar. We keep a
+    // tiny in-memory label map so progress/complete updates can re-title the same
+    // notification without the caller having to re-supply the label each time.
+    private val taskLabels = mutableMapOf<String, String>()
+
     private fun addBackgroundTask(task: BackgroundTaskInfo) {
-        _uiState.update { it.copy(
-            backgroundTasks      = it.backgroundTasks + task,
-            activeBackgroundTasks = it.activeBackgroundTasks + 1,
-        )}
+        taskLabels[task.id] = task.label
+        taskNotifier.running(task.id, task.label, task.progress)
     }
 
     private fun updateBackgroundTask(id: String, progress: Float) {
-        _uiState.update { state ->
-            state.copy(backgroundTasks = state.backgroundTasks.map { t ->
-                if (t.id == id) t.copy(progress = progress.coerceIn(0f, 1f)) else t
-            })
-        }
+        val label = taskLabels[id] ?: return
+        taskNotifier.running(id, label, progress.coerceIn(0f, 1f))
     }
 
     private fun completeBackgroundTask(id: String, message: String? = null) {
-        _uiState.update { state ->
-            state.copy(
-                backgroundTasks      = state.backgroundTasks.map { t ->
-                    if (t.id == id) t.copy(isCompleted = true, errorMessage = message) else t
-                },
-                activeBackgroundTasks = (state.activeBackgroundTasks - 1).coerceAtLeast(0),
-            )
-        }
-        viewModelScope.launch {
-            delay(4_000)
-            _uiState.update { it.copy(backgroundTasks = it.backgroundTasks.filterNot { t -> t.id == id }) }
-        }
+        val label = taskLabels.remove(id) ?: "Done"
+        taskNotifier.complete(id, label, message)
     }
 
     private fun failBackgroundTask(id: String, message: String) {
-        _uiState.update { state ->
-            state.copy(
-                backgroundTasks      = state.backgroundTasks.map { t ->
-                    if (t.id == id) t.copy(isFailed = true, errorMessage = message) else t
-                },
-                activeBackgroundTasks = (state.activeBackgroundTasks - 1).coerceAtLeast(0),
-            )
-        }
+        val label = taskLabels.remove(id) ?: "Task failed"
+        taskNotifier.failed(id, label, message)
     }
 
     // ── Category / platform selection ─────────────────────────────────────────
 
     fun onCategorySelected(index: Int) {
         val category = _uiState.value.categories.getOrNull(index)
-        _uiState.update { it.copy(selectedCategoryIndex = index, selectedItemIndex = 0, selectedPlatformId = null) }
+        _uiState.update { it.copy(selectedCategoryIndex = index, selectedItemIndex = 0, selectedPlatformId = null, selectedCollectionId = null) }
         tintWaveForCategory(category)
         loadItemsForCategory(category)
     }
@@ -1103,7 +1358,14 @@ class XMBViewModel @Inject constructor(
                 return
             }
             NO_GAMES_ITEM_ID,
+            EMPTY_COLLECTION_ITEM_ID,
             EMPTY_CATEGORY_ITEM_ID -> return   // not selectable
+        }
+
+        // User collection folder — open it.
+        if (item?.collectionId != null && item.type == XMBItemType.COLLECTION) {
+            openCollectionFolder(item.collectionId)
+            return
         }
 
         // Android app — A/Cross launches it
@@ -1147,6 +1409,7 @@ class XMBViewModel @Inject constructor(
         val item = _uiState.value.currentItems.getOrNull(index)
         when {
             item?.gameId != null -> openGameContextMenu(item)
+            item?.collectionId != null && item.type == XMBItemType.COLLECTION -> openCollectionRowContextMenu(item.collectionId)
             item?.platformId != null -> openPlatformContextMenu(item.platformId)
             item?.packageName != null -> openAppContextMenu(item)
         }
@@ -1170,14 +1433,29 @@ class XMBViewModel @Inject constructor(
             it.copy(
                 selectedCategoryIndex = gamesCategoryIndex.takeIf { index -> index >= 0 } ?: it.selectedCategoryIndex,
                 selectedPlatformId = ALL_GAMES_PLATFORM_ID,
+                selectedCollectionId = null,
                 selectedItemIndex = 0,
             )
         }
         loadItemsForCategory(_uiState.value.categories.getOrNull(_uiState.value.selectedCategoryIndex))
     }
 
+    private fun openCollectionFolder(collectionId: Long) {
+        val gamesCategoryIndex = _uiState.value.categories.indexOfFirst { it.id == BuiltInCategory.GAMES }
+        _uiState.update {
+            it.copy(
+                selectedCategoryIndex = gamesCategoryIndex.takeIf { index -> index >= 0 } ?: it.selectedCategoryIndex,
+                selectedPlatformId = null,
+                selectedCollectionId = collectionId,
+                selectedItemIndex = 0,
+            )
+        }
+        loadItemsForCategory(_uiState.value.categories.getOrNull(_uiState.value.selectedCategoryIndex))
+    }
+
+    // Closes any open Games-root drill-down (platform card, All Games, or a collection).
     private fun closePlatformFolder() {
-        _uiState.update { it.copy(selectedPlatformId = null, selectedItemIndex = 0) }
+        _uiState.update { it.copy(selectedPlatformId = null, selectedCollectionId = null, selectedItemIndex = 0) }
         loadItemsForCategory(_uiState.value.categories.getOrNull(_uiState.value.selectedCategoryIndex))
     }
 
@@ -1254,14 +1532,73 @@ class XMBViewModel @Inject constructor(
         _uiState.update { it.copy(pendingDrawerAction = null) }
     }
 
-    // ── Task tray ─────────────────────────────────────────────────────────────
+    // ── Color-scheme picker ─────────────────────────────────────────────────────
+    //
+    // The picker previews schemes live: moving the cursor writes the highlighted
+    // scheme to DataStore so observeColorScheme repaints the wave/background. BACK
+    // restores whatever scheme was active when the picker opened; SELECT commits.
 
-    fun onTaskTrayVisibility(visible: Boolean) {
-        _uiState.update { it.copy(showTaskTray = visible) }
+    private var colorSchemeOriginal: XmbColorScheme? = null
+
+    fun openColorSchemePicker() {
+        viewModelScope.launch {
+            val prefs = context.pfpDataStore.data.first()
+            val current = runCatching {
+                XmbColorScheme.valueOf(prefs[KEY_COLOR_SCHEME] ?: XmbColorScheme.CLASSIC_BLUE.name)
+            }.getOrDefault(XmbColorScheme.CLASSIC_BLUE)
+            colorSchemeOriginal = current
+
+            val month = java.time.LocalDate.now().monthValue
+            val options = XmbColorScheme.values().map { scheme ->
+                ColorSchemeOption(
+                    scheme   = scheme,
+                    label    = scheme.displayLabel(),
+                    sublabel = if (scheme == XmbColorScheme.ORIGINAL) "Changes with the month" else "Fixed color preset",
+                    swatch   = scheme.resolve(month).waveColor,
+                )
+            }
+            val index = options.indexOfFirst { it.scheme == current }.coerceAtLeast(0)
+            _uiState.update { it.copy(colorSchemePicker = ColorSchemePickerState(options, index)) }
+        }
     }
 
-    fun onDismissTaskTray() {
-        _uiState.update { it.copy(showTaskTray = false) }
+    private fun moveColorSchemePicker(delta: Int) {
+        val picker = _uiState.value.colorSchemePicker ?: return
+        val next = (picker.selectedIndex + delta).coerceIn(0, picker.options.lastIndex)
+        if (next == picker.selectedIndex) { gamepadInputHandler.cancelRepeat(); return }
+        _uiState.update { it.copy(colorSchemePicker = picker.copy(selectedIndex = next)) }
+        previewColorScheme(picker.options[next].scheme)
+    }
+
+    /** Touch handler — highlight (and live-preview) the tapped row. */
+    fun onColorSchemeHighlightedAt(index: Int) {
+        val picker = _uiState.value.colorSchemePicker ?: return
+        if (index !in picker.options.indices || index == picker.selectedIndex) return
+        _uiState.update { it.copy(colorSchemePicker = picker.copy(selectedIndex = index)) }
+        previewColorScheme(picker.options[index].scheme)
+    }
+
+    private fun previewColorScheme(scheme: XmbColorScheme) {
+        viewModelScope.launch { context.pfpDataStore.edit { it[KEY_COLOR_SCHEME] = scheme.name } }
+    }
+
+    fun confirmColorSchemePicker() {
+        val picker = _uiState.value.colorSchemePicker ?: return
+        val chosen = picker.options.getOrNull(picker.selectedIndex)?.scheme
+        viewModelScope.launch {
+            if (chosen != null) context.pfpDataStore.edit { it[KEY_COLOR_SCHEME] = chosen.name }
+            colorSchemeOriginal = null
+            _uiState.update { it.copy(colorSchemePicker = null) }
+        }
+    }
+
+    fun cancelColorSchemePicker() {
+        val original = colorSchemeOriginal
+        viewModelScope.launch {
+            if (original != null) context.pfpDataStore.edit { it[KEY_COLOR_SCHEME] = original.name }
+            colorSchemeOriginal = null
+            _uiState.update { it.copy(colorSchemePicker = null) }
+        }
     }
 
     // ── Boot sequence ─────────────────────────────────────────────────────────
@@ -1339,6 +1676,7 @@ class XMBViewModel @Inject constructor(
         private const val SETUP_ITEM_ID = "library_setup"
         private const val NO_CONSOLES_ITEM_ID = "no_consoles"
         private const val NO_GAMES_ITEM_ID    = "no_games"
+        private const val EMPTY_COLLECTION_ITEM_ID = "empty_collection"
         private const val EMPTY_CATEGORY_ITEM_ID = "empty_category"
         private const val ALL_GAMES_ITEM_ID = "all_games"
         private const val ALL_GAMES_PLATFORM_ID = "__all_games__"
@@ -1369,10 +1707,10 @@ class XMBViewModel @Inject constructor(
         private val SETTINGS_ITEMS = listOf(
             XMBItem(id = "settings_library",    title = "Library",          subtitle = "ROM sources & scanning"),
             XMBItem(id = "settings_categories", title = "Categories",       subtitle = "Manage XMB categories"),
+            XMBItem(id = "settings_collections", title = "Collections",     subtitle = "Create & manage game collections"),
             XMBItem(id = "settings_artwork",    title = "Artwork",          subtitle = "SteamGridDB & cache"),
             XMBItem(id = "settings_emulators",  title = "Emulators",        subtitle = "Launch profiles"),
-            XMBItem(id = "settings_themes",     title = "Themes",           subtitle = "XMB appearance"),
-            XMBItem(id = "settings_color",      title = "Color Scheme",     subtitle = "PSP-style background colors"),
+            XMBItem(id = "settings_themes",     title = "Themes",           subtitle = "XMB appearance & color scheme"),
             XMBItem(id = "settings_display",    title = "Display",          subtitle = "Wave, boot animation"),
             XMBItem(id = "settings_controller", title = "Controller",       subtitle = "Button mapping"),
             XMBItem(id = "settings_backup",     title = "Backup & Restore", subtitle = "Export & import"),

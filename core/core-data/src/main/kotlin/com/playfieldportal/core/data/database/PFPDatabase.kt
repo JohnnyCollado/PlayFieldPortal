@@ -7,6 +7,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.playfieldportal.core.data.database.dao.AppOverrideDao
 import com.playfieldportal.core.data.database.dao.CategoryDao
+import com.playfieldportal.core.data.database.dao.CollectionDao
 import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.data.database.dao.LibrarySourceDao
 import com.playfieldportal.core.data.database.dao.MemoryCardDao
@@ -17,6 +18,8 @@ import com.playfieldportal.core.data.database.dao.UnmatchedRomDao
 import com.playfieldportal.core.data.database.entity.AppOverrideEntity
 import com.playfieldportal.core.data.database.entity.CategoryEntity
 import com.playfieldportal.core.data.database.entity.CategoryItemEntity
+import com.playfieldportal.core.data.database.entity.CollectionEntity
+import com.playfieldportal.core.data.database.entity.CollectionGameEntity
 import com.playfieldportal.core.data.database.entity.GameEntity
 import com.playfieldportal.core.data.database.entity.LibrarySourceEntity
 import com.playfieldportal.core.data.database.entity.MemoryCardEntity
@@ -37,8 +40,10 @@ import com.playfieldportal.core.data.database.entity.UnmatchedRomEntity
         ThemeEntity::class,
         MemoryCardEntity::class,
         AppOverrideEntity::class,
+        CollectionEntity::class,
+        CollectionGameEntity::class,
     ],
-    version = 7,
+    version = 8,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -53,6 +58,7 @@ abstract class PFPDatabase : RoomDatabase() {
     abstract fun themeDao(): ThemeDao
     abstract fun memoryCardDao(): MemoryCardDao
     abstract fun appOverrideDao(): AppOverrideDao
+    abstract fun collectionDao(): CollectionDao
 
     companion object {
         const val DATABASE_NAME = "pfp_database"
@@ -145,6 +151,47 @@ abstract class PFPDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE games ADD COLUMN scraped_title TEXT")
                 db.execSQL("ALTER TABLE games ADD COLUMN user_title_override TEXT")
+            }
+        }
+
+        // v8 — user collections + game content typing.
+        //  • content_type classifies each game so "All Games" can aggregate real games only.
+        //    Backfill reclassifies existing app-style entries (package-based) as ANDROID_APP so
+        //    they drop out of All Games but stay in their own card/category. No rows are deleted.
+        //  • collections / collection_games implement user-created folders (many-to-many).
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE games ADD COLUMN content_type TEXT NOT NULL DEFAULT 'GAME'")
+                // Existing package-based (Android app) entries are not real games — reclassify
+                // so they no longer appear in All Games automatically. Their rows are preserved.
+                db.execSQL("UPDATE games SET content_type = 'ANDROID_APP' WHERE package_name IS NOT NULL")
+
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS collections (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        name TEXT NOT NULL,
+                        created_at INTEGER NOT NULL,
+                        updated_at INTEGER NOT NULL,
+                        sort_order INTEGER NOT NULL DEFAULT 0
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS collection_games (
+                        collection_id INTEGER NOT NULL,
+                        game_id INTEGER NOT NULL,
+                        added_at INTEGER NOT NULL,
+                        PRIMARY KEY(collection_id, game_id),
+                        FOREIGN KEY(collection_id) REFERENCES collections(id) ON UPDATE NO ACTION ON DELETE CASCADE,
+                        FOREIGN KEY(game_id) REFERENCES games(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_collection_games_game_id ON collection_games (game_id)"
+                )
             }
         }
     }

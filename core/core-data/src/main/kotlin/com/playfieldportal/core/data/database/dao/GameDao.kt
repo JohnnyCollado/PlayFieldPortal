@@ -14,6 +14,14 @@ interface GameDao {
     @Query("SELECT * FROM games ORDER BY title ASC")
     fun observeAll(): Flow<List<GameEntity>>
 
+    // "All Games" aggregate — real games only. App-style entries (content_type != 'GAME',
+    // e.g. ANDROID_APP / VIDEO_APP) are excluded so they never show up here automatically.
+    @Query("SELECT * FROM games WHERE content_type = 'GAME' ORDER BY title ASC")
+    fun observeGamesOnly(): Flow<List<GameEntity>>
+
+    @Query("UPDATE games SET content_type = :contentType WHERE id = :id")
+    suspend fun setContentType(id: Long, contentType: String)
+
     @Query("SELECT * FROM games WHERE is_favorite = 1 ORDER BY favorite_sort_order ASC")
     fun observeFavorites(): Flow<List<GameEntity>>
 

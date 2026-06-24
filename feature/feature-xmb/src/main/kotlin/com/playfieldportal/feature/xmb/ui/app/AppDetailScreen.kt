@@ -61,6 +61,7 @@ import androidx.core.graphics.drawable.toBitmap
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.feature.xmb.ui.collection.CollectionPickerPanel
 import com.playfieldportal.feature.xmb.ui.detail.ArtworkType
 import com.playfieldportal.feature.xmb.ui.detail.displayLabel
 
@@ -215,37 +216,44 @@ fun AppDetailScreen(
                     onClick = viewModel::launchApp,
                 )
                 AppActionButton(
+                    icon     = "C",
+                    label    = "Add to Collection",
+                    sublabel = "Add this app to a collection",
+                    focused  = state.mainFocus == 1,
+                    onClick  = viewModel::onCollectionsClicked,
+                )
+                AppActionButton(
                     icon     = "T",
                     label    = "Change Display Name",
                     sublabel = game.userTitleOverride?.let { "\"$it\"" } ?: "Using default name",
-                    focused  = state.mainFocus == 1,
+                    focused  = state.mainFocus == 2,
                     onClick  = viewModel::startEditingName,
                 )
                 AppActionButton(
                     icon     = "I",
                     label    = "Change Game Icon",
                     sublabel = if (game.iconUri != null) "Custom icon set" else "Using native icon",
-                    focused  = state.mainFocus == 2,
+                    focused  = state.mainFocus == 3,
                     onClick  = { viewModel.openArtworkPickerFor(ArtworkType.ICON) },
                 )
                 AppActionButton(
                     icon     = "H",
                     label    = "Change Hero Banner",
                     sublabel = if (game.heroUri != null) "Custom banner set" else "None",
-                    focused  = state.mainFocus == 3,
+                    focused  = state.mainFocus == 4,
                     onClick  = { viewModel.openArtworkPickerFor(ArtworkType.HERO) },
                 )
                 AppActionButton(
                     icon     = "B",
                     label    = "Change Background",
                     sublabel = if (game.artworkUri != null) "Custom background set" else "None",
-                    focused  = state.mainFocus == 4,
+                    focused  = state.mainFocus == 5,
                     onClick  = { viewModel.openArtworkPickerFor(ArtworkType.BACKGROUND) },
                 )
                 AppActionButton(
                     icon        = "X",
                     label       = "Reset All Artwork",
-                    focused     = state.mainFocus == 5,
+                    focused     = state.mainFocus == 6,
                     destructive = true,
                     onClick     = viewModel::clearAllArtwork,
                 )
@@ -299,6 +307,22 @@ fun AppDetailScreen(
                 onPickLocal = { viewModel.requestLocalFilePick(state.artworkPickerType) },
                 onClear     = { viewModel.clearArtwork(state.artworkPickerType) },
                 onClose     = viewModel::closeArtworkPicker,
+            )
+        }
+
+        // Add-to-collection overlay
+        AnimatedVisibility(
+            visible = state.collectionPicker.visible,
+            enter   = fadeIn(),
+            exit    = fadeOut(),
+        ) {
+            CollectionPickerPanel(
+                ui                  = state.collectionPicker,
+                onRowClick          = viewModel::onCollectionRowClick,
+                onClose             = viewModel::closeCollectionPicker,
+                onCreateTextChanged = viewModel::onCreateCollectionTextChanged,
+                onConfirmCreate     = viewModel::confirmCreateCollection,
+                onCancelCreate      = viewModel::cancelCreateCollection,
             )
         }
     }

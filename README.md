@@ -23,10 +23,69 @@ An Android game launcher styled after the PlayStation Portable's XMB (Cross Medi
 | Idle wave degradation (FULL → REDUCED → STATIC) | ✅ Done |
 | PSP-style platform folders under Games | ✅ Done |
 | Emulator profile editor UI — add/edit/delete custom launch profiles | ✅ Done |
+| User collections — custom many-to-many game folders (like Favorites, user-defined) | ✅ Done |
+| Content-type filtering — All Games shows real games only (apps stay in their sections) | ✅ Done |
+| XMB color schemes — PSP-style presets with live preview, in Themes | ✅ Done |
+| Background tasks surfaced to the Android notification bar | ✅ Done |
 | Smart / manual category builder | ⏳ Upcoming |
 | Unmatched ROM assignment UI | ⏳ Upcoming |
 | Theme sound playback | ⏳ Upcoming |
 | Boot animation override from theme | ⏳ Upcoming |
+
+---
+
+## How to Use the Launcher
+
+### Setting it as your home screen
+PFP registers as an Android **HOME** launcher. The first time you press Home, Android asks which launcher to use — pick **Play Field Portal** (choose "Always" to make it the default). You can change this later in *Android Settings → Apps → Default apps → Home app*. On Android 13+ the app also asks for notification permission so background tasks can report progress.
+
+### Navigation
+
+PFP is built for a controller but works with touch too.
+
+| Input | Controller | Touch |
+|---|---|---|
+| Move between items | D-Pad / Left Stick | Tap an item |
+| Select / launch / open | **A / Cross** | Tap |
+| Back / close / exit a folder | **B / Circle** | On-screen Back |
+| Options (context) menu | **Y / Triangle** (or long-press) | Long-press |
+| Switch app-drawer tabs | **L1 / R1** | Tap a tab |
+| Confirm in pickers | **Start** | Confirm button |
+
+The horizontal bar is your **categories** (Settings, Photo, Music, Video, Game, Network, App Store, plus any custom ones). Move left/right to switch; the vertical list shows that category's items. While any menu, settings screen, picker, or dialog is open, the main XMB is locked — input only affects the overlay on top.
+
+### The Game category
+
+Selecting **Game** shows, in order:
+
+1. **All Games** — every real game across all consoles, aggregated. Only actual games appear here; Android/Video/Music apps never show up automatically.
+2. **Your Collections** — user-made folders (see below).
+3. **Memory Cards** — one per console you've configured. Open a card to see its games; press **△** on a card for *Scan This Console / Refresh / Pin / Hide / Remove*.
+
+### Collections
+
+Collections are custom folders of games (e.g. "RPGs", "Currently Playing", "Best PSP Games"). They behave like Favorites but are user-defined, and a game can live in several at once.
+
+- **Create:** *Settings → Collections → Create New Collection*, or from a game's **△** options → *Add to Collection → Create New Collection*. The same action is on the **Game Detail** and **App Detail** screens.
+- **Add / remove a game:** open a game's options (**△**), choose **Add to Collection**, and toggle the collections (a ✓ marks current membership). When viewing a game from inside a collection, **Remove from Collection** appears.
+- **Manage:** *Settings → Collections* (rename, reorder, delete, remove games) or press **△** on a collection row in the Games list.
+
+### Game & app options (△)
+
+Pressing **△** (or long-press) on a game opens its options: Launch, Add/Remove Favorite, Add to Collection, Manage Collections, Refresh Metadata/Artwork, View File Location. Android apps add Move/Add/Remove/Pin to category, Hide, and Rename. The same actions are reachable from the full **Game Detail** screen.
+
+### Adding Android apps
+
+- **App sections** (App Store / Video / Music / Network / custom): open the section and choose **Add Apps** to pick installed apps.
+- **Android games under Games:** open the Android library card and choose **Find Games**. These are tagged as apps, so they stay out of All Games but remain in their card and can be added to any collection.
+
+### Background tasks
+
+ROM scans, artwork fetches and metadata refreshes run in the background and report to the **Android notification bar** with live progress — pull down the shade to watch them.
+
+### Settings
+
+*Settings* (gear category) covers: Library, Categories, Collections, Artwork, Emulators, Themes (including the **Color Scheme** picker with live preview), Display, Controller, Backup & Restore, Logs, About, and Credits.
 
 ---
 
@@ -214,17 +273,33 @@ Custom profiles can be added in **Settings → Emulators**.
 
 ## Credits
 
+### XMB design — Sony
+
+The entire look and feel of this launcher is inspired by the **XMB (XrossMediaBar)**, the interface Sony created for the PlayStation Portable, PlayStation 3 and other devices. The cross-bar layout, the flowing wave background, the category/item navigation model and the options-menu behaviour are all homages to Sony's original design.
+
+**"XrossMediaBar", "XMB", "PSP", "PlayStation" and related marks are trademarks of Sony Interactive Entertainment Inc.** Play Field Portal is an independent, non-commercial fan project. It is **not affiliated with, endorsed by, or sponsored by Sony** in any way, and ships none of Sony's code, firmware, fonts or proprietary assets.
+
 ### System & console artwork
 
-The system, console and category icons in the launcher come from the **[XMB Menu for ES-DE](https://github.com/anthonycaccese/xmb-menu-es-de)** theme — a translation of the PSP XMB interface for ES-DE.
+The system, console and category icons in the launcher come from the **[XMB Menu for ES-DE](https://github.com/anthonycaccese/xmb-menu-es-de)** theme — a community recreation of the PSP XMB interface for ES-DE.
 
 **All rights to this artwork belong to its creators — [Anthony Caccese](https://github.com/anthonycaccese), building on the original work by InitialDin.** The icons are used here with gratitude and remain the property of their respective authors.
 
 - Project: XMB Menu for ES-DE
 - Authors: Anthony Caccese · InitialDin
 - Source: https://github.com/anthonycaccese/xmb-menu-es-de
+- Used for: category-bar icons, per-console system icons, and the physical-media (cartridge) icon set
 
-If you are a rights holder and would like attribution changed or the artwork removed, please open an issue and it will be addressed promptly.
+### Game artwork & metadata
+
+Box art, hero banners, logos and grid icons are fetched at the user's request from third-party providers and remain the property of their respective owners:
+
+- **SteamGridDB** — community artwork (grids, heroes, logos, icons)
+- **IGDB** and **TheGamesDB** — optional metadata and artwork sources
+
+### Notes
+
+If you are a rights holder and would like attribution changed or any asset removed, please open an issue and it will be addressed promptly.
 
 ---
 

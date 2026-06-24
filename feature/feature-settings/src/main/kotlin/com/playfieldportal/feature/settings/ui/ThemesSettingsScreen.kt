@@ -24,6 +24,7 @@ import com.playfieldportal.feature.settings.viewmodel.ThemesSettingsViewModel
 fun ThemesSettingsScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenColorSchemePicker: () -> Unit = {},
     viewModel: ThemesSettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -44,6 +45,17 @@ fun ThemesSettingsScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState()),
         ) {
+
+            // ── Appearance ────────────────────────────────────────────────
+            SettingsGroup("Appearance")
+
+            // Opens a PSP-style submenu over the live XMB for picking & previewing
+            // the background color scheme.
+            SettingsRow(
+                label    = "Color Scheme",
+                sublabel = "PSP-style background colors — preview live",
+                onClick  = onOpenColorSchemePicker,
+            )
 
             // ── Active theme ──────────────────────────────────────────────
             SettingsGroup("Active Theme")

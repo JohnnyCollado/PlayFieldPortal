@@ -7,8 +7,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.database.dao.PlatformDao
 import com.playfieldportal.core.data.database.entity.PlatformEntity
+import com.playfieldportal.core.data.repository.CollectionRepository
 import com.playfieldportal.core.data.repository.MemoryCardRepository
 import com.playfieldportal.core.domain.model.Game
+import com.playfieldportal.feature.xmb.ui.collection.CollectionPickerOption
+import com.playfieldportal.feature.xmb.ui.collection.CollectionPickerUi
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.feature.artwork.TheGamesDbApi
@@ -112,6 +115,9 @@ data class GameDetailUiState(
     val showEmulatorPicker: Boolean = false,
     val emulatorPickerOptions: List<EmulatorProfile> = emptyList(),
     val emulatorPickerIndex: Int = 0,
+
+    // ── Add-to-collection picker ──────────────────────────────────────────
+    val collectionPicker: CollectionPickerUi = CollectionPickerUi(),
 )
 
 // Keep old field names as transparent aliases so existing code compiles without changes.
@@ -128,6 +134,7 @@ private data class ResolvedLaunchProfile(
 // ── Options menu ──────────────────────────────────────────────────────────────
 enum class DetailAction(val label: String) {
     FAVORITE("Favorite"),
+    COLLECTIONS("Collections"),
     ARTWORK("Artwork"),
     SAVES("Saves"),
     EMULATOR("Emulator"),
@@ -146,6 +153,7 @@ class GameDetailViewModel @Inject constructor(
     private val gameRepository: GameRepository,
     private val platformDao: PlatformDao,
     private val memoryCardRepository: MemoryCardRepository,
+    private val collectionRepository: CollectionRepository,
     private val profileRepository: EmulatorProfileRepository,
     private val intentResolver: EmulatorIntentResolver,
     private val artworkRepository: ArtworkRepository,
@@ -241,6 +249,11 @@ class GameDetailViewModel @Inject constructor(
 
         if (s.showEmulatorPicker) {
             handleEmulatorPickerInput(action)
+            return
+        }
+
+        if (s.collectionPicker.visible) {
+            handleCollectionPickerInput(action)
             return
         }
 
@@ -711,6 +724,7 @@ class GameDetailViewModel @Inject constructor(
         _uiState.update { it.copy(showOptions = false) }
         when (action) {
             DetailAction.FAVORITE  -> toggleFavorite()
+            DetailAction.COLLECTIONS -> openCollectionPicker()
             DetailAction.ARTWORK   -> openArtworkManager()
             DetailAction.SAVES     -> showActionMessage("Save management isn't available yet")
             DetailAction.EMULATOR  -> openEmulatorPicker()
@@ -1002,6 +1016,102 @@ class GameDetailViewModel @Inject constructor(
         "ngp"          -> setOf("ngp", "ngpc")
         "ngpc"         -> setOf("ngpc", "ngp")
         else           -> setOf(platformId)
+    }
+
+    // ── Add-to-collection picker ──────────────────────────────────────────
+
+    private fun openCollectionPicker() {
+        val gameId = _uiState.value.game?.id ?: return
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    showOptions = false,
+                    collectionPicker = CollectionPickerUi(
+                        visible = true,
+                        options = buildCollectionOptions(gameId),
+                        selectedIndex = 0,
+                    ),
+                )
+            }
+        }
+    }
+
+    private suspend fun buildCollectionOptions(gameId: Long): List<CollectionPickerOption> {
+        val memberOf = collectionRepository.getCollectionIdsForGame(gameId).toSet()
+        return collectionRepository.getAll().map {
+            CollectionPickerOption(id = it.id, name = it.name, checked = it.id in memberOf)
+        }
+    }
+
+    fun onCollectionRowClick(index: Int) {
+        _uiState.update { it.copy(collectionPicker = it.collectionPicker.copy(selectedIndex = index)) }
+        activateCollectionRow()
+    }
+
+    private fun moveCollectionPicker(delta: Int) {
+        _uiState.update {
+            val cp = it.collectionPicker
+            it.copy(collectionPicker = cp.copy(
+                selectedIndex = (cp.selectedIndex + delta).coerceIn(0, cp.rowCount - 1),
+            ))
+        }
+    }
+
+    private fun activateCollectionRow() {
+        val cp = _uiState.value.collectionPicker
+        val gameId = _uiState.value.game?.id ?: return
+        if (cp.isCreateRow) {
+            _uiState.update { it.copy(collectionPicker = it.collectionPicker.copy(showCreateDialog = true, createText = "")) }
+            return
+        }
+        val option = cp.options.getOrNull(cp.selectedIndex) ?: return
+        viewModelScope.launch {
+            collectionRepository.toggleGame(option.id, gameId)
+            _uiState.update { it.copy(collectionPicker = it.collectionPicker.copy(options = buildCollectionOptions(gameId))) }
+        }
+    }
+
+    fun onCreateCollectionTextChanged(text: String) {
+        _uiState.update { it.copy(collectionPicker = it.collectionPicker.copy(createText = text)) }
+    }
+
+    fun confirmCreateCollection() {
+        val gameId = _uiState.value.game?.id ?: return
+        val name = _uiState.value.collectionPicker.createText
+        if (name.isBlank()) { cancelCreateCollection(); return }
+        viewModelScope.launch {
+            val id = collectionRepository.create(name)
+            collectionRepository.addGame(id, gameId)
+            _uiState.update {
+                it.copy(collectionPicker = it.collectionPicker.copy(
+                    showCreateDialog = false,
+                    createText = "",
+                    options = buildCollectionOptions(gameId),
+                ))
+            }
+        }
+    }
+
+    fun cancelCreateCollection() {
+        _uiState.update { it.copy(collectionPicker = it.collectionPicker.copy(showCreateDialog = false, createText = "")) }
+    }
+
+    fun closeCollectionPicker() {
+        _uiState.update { it.copy(collectionPicker = CollectionPickerUi()) }
+    }
+
+    private fun handleCollectionPickerInput(action: GamepadAction) {
+        if (_uiState.value.collectionPicker.showCreateDialog) {
+            if (action == GamepadAction.BACK) cancelCreateCollection()
+            return // text entry needs the keyboard; SELECT is handled by the dialog button
+        }
+        when (action) {
+            GamepadAction.NAVIGATE_UP   -> moveCollectionPicker(-1)
+            GamepadAction.NAVIGATE_DOWN -> moveCollectionPicker(+1)
+            GamepadAction.SELECT        -> activateCollectionRow()
+            GamepadAction.BACK          -> closeCollectionPicker()
+            else -> Unit
+        }
     }
 
     // ── Favorite ──────────────────────────────────────────────────────────

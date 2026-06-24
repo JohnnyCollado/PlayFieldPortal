@@ -25,11 +25,26 @@ fun CreditsSettingsScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 48.dp),
         ) {
+            SettingsGroup("XMB Design — Sony")
+
+            CreditParagraph(
+                "The look and feel of this launcher is inspired by the XMB (XrossMediaBar), the " +
+                    "interface Sony created for the PlayStation Portable and PlayStation 3 — the " +
+                    "cross-bar layout, the flowing wave, and the navigation model are all homages to it."
+            )
+            CreditParagraph(
+                "\"XrossMediaBar\", \"XMB\", \"PSP\" and \"PlayStation\" are trademarks of Sony " +
+                    "Interactive Entertainment Inc. Play Field Portal is an independent, non-commercial " +
+                    "fan project — not affiliated with, endorsed by, or sponsored by Sony, and it ships " +
+                    "none of Sony's code, fonts or proprietary assets."
+            )
+
+            Spacer(Modifier.height(16.dp))
             SettingsGroup("System & Console Artwork")
 
             CreditParagraph(
                 "The system, console and category icons used throughout this launcher are from " +
-                    "the \"XMB Menu for ES-DE\" theme."
+                    "the \"XMB Menu for ES-DE\" theme — a community recreation of the PSP XMB."
             )
             CreditParagraph(
                 "All rights to this artwork belong to its creators — Anthony Caccese, building on the " +
@@ -41,9 +56,19 @@ fun CreditsSettingsScreen(
             CreditLine("Source", "github.com/anthonycaccese/xmb-menu-es-de")
 
             Spacer(Modifier.height(16.dp))
+            SettingsGroup("Game Artwork & Metadata")
+
+            CreditParagraph(
+                "Box art, hero banners, logos and icons are fetched at your request from third-party " +
+                    "providers and remain the property of their respective owners."
+            )
+            CreditLine("Artwork", "SteamGridDB")
+            CreditLine("Metadata", "IGDB · TheGamesDB")
+
+            Spacer(Modifier.height(16.dp))
             SettingsGroup("Notes")
             CreditParagraph(
-                "If you are a rights holder and would like attribution changed or the artwork removed, " +
+                "If you are a rights holder and would like attribution changed or any asset removed, " +
                     "please reach out and it will be addressed promptly."
             )
             Spacer(Modifier.height(24.dp))

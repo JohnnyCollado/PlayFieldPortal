@@ -1,11 +1,15 @@
 package com.playfieldportal.launcher
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.MotionEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -21,12 +25,16 @@ class MainActivity : ComponentActivity() {
 
     @Inject lateinit var gamepadInputHandler: GamepadInputHandler
 
+    private val requestNotificationPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* best-effort */ }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
 
         enableEdgeToEdge()
         hideSystemBars()
+        requestNotificationPermissionIfNeeded()
 
         setContent {
             PFPTheme {
@@ -46,6 +54,15 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         hideSystemBars()
+    }
+
+    // Background-task notifications need the POST_NOTIFICATIONS runtime grant on API 33+.
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED
+        ) return
+        requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 
     private fun hideSystemBars() {

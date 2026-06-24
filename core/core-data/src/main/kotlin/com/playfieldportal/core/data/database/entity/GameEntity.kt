@@ -5,6 +5,7 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.playfieldportal.core.domain.model.Game
+import com.playfieldportal.core.domain.model.GameContentType
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -87,6 +88,11 @@ data class GameEntity(
     // User-set display name override — preserved across re-scrapes unless explicitly cleared.
     @ColumnInfo(name = "user_title_override")
     val userTitleOverride: String? = null,
+
+    // Content classification (GAME / ANDROID_APP / VIDEO_APP / …). Only GAME rows aggregate
+    // into "All Games". Stored as the enum name; defaults to GAME for legacy/console rows.
+    @ColumnInfo(name = "content_type")
+    val contentType: String = GameContentType.GAME.name,
 )
 
 fun GameEntity.toDomain() = Game(
@@ -114,6 +120,7 @@ fun GameEntity.toDomain() = Game(
     isManualEntry       = isManualEntry,
     scrapedTitle        = scrapedTitle,
     userTitleOverride   = userTitleOverride,
+    contentType         = GameContentType.fromName(contentType),
 )
 
 fun Game.toEntity() = GameEntity(
@@ -141,4 +148,5 @@ fun Game.toEntity() = GameEntity(
     isManualEntry       = isManualEntry,
     scrapedTitle        = scrapedTitle,
     userTitleOverride   = userTitleOverride,
+    contentType         = contentType.name,
 )

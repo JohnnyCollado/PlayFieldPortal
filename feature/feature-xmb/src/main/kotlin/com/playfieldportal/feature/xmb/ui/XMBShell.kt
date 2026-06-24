@@ -15,12 +15,12 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -62,8 +62,6 @@ fun XMBShellContainer(
         onPlatformLongPress = viewModel::onPlatformLongPress,
         onUserInteraction = viewModel::onUserInteraction,
         onBootComplete = viewModel::onBootSequenceComplete,
-        onTaskBadgeTapped = { viewModel.onTaskTrayVisibility(true) },
-        onDismissTaskTray = viewModel::onDismissTaskTray,
         onSettingsLongPress = onSettingsLongPress,
         onCloseSettingsScreen = viewModel::onCloseSettingsScreen,
         onSettingsActionConsumed = viewModel::consumeSettingsAction,
@@ -75,8 +73,14 @@ fun XMBShellContainer(
         onAppDetailActionConsumed = viewModel::consumeAppDetailAction,
         onContextMenuItemActivated = viewModel::onContextMenuItemActivatedAt,
         onContextMenuDismiss = viewModel::closeContextMenu,
+        onOpenColorSchemePicker = viewModel::openColorSchemePicker,
+        onColorSchemeHighlightedAt = viewModel::onColorSchemeHighlightedAt,
+        onColorSchemeConfirm = viewModel::confirmColorSchemePicker,
+        onColorSchemeCancel = viewModel::cancelColorSchemePicker,
         onConfirmAppRename = viewModel::onConfirmAppRename,
         onCancelAppRename = viewModel::onCancelAppRename,
+        onConfirmCollectionName = viewModel::onConfirmCollectionName,
+        onCancelCollectionName = viewModel::onCancelCollectionName,
         onAppPickerActivatedAt = viewModel::onAppPickerActivatedAt,
         onAppPickerConfirm = viewModel::onAppPickerConfirm,
         onAppPickerDismiss = viewModel::closeAppPicker,
@@ -92,8 +96,6 @@ fun XMBShell(
     onPlatformLongPress: (Int) -> Unit = {},
     onUserInteraction: () -> Unit = {},
     onBootComplete: () -> Unit = {},
-    onTaskBadgeTapped: () -> Unit = {},
-    onDismissTaskTray: () -> Unit = {},
     onSettingsLongPress: () -> Unit = {},
     onCloseSettingsScreen: () -> Unit = {},
     onSettingsActionConsumed: () -> Unit = {},
@@ -105,8 +107,14 @@ fun XMBShell(
     onAppDetailActionConsumed: () -> Unit = {},
     onContextMenuItemActivated: (Int) -> Unit = {},
     onContextMenuDismiss: () -> Unit = {},
+    onOpenColorSchemePicker: () -> Unit = {},
+    onColorSchemeHighlightedAt: (Int) -> Unit = {},
+    onColorSchemeConfirm: () -> Unit = {},
+    onColorSchemeCancel: () -> Unit = {},
     onConfirmAppRename: (String) -> Unit = {},
     onCancelAppRename: () -> Unit = {},
+    onConfirmCollectionName: (String) -> Unit = {},
+    onCancelCollectionName: () -> Unit = {},
     onAppPickerActivatedAt: (Int) -> Unit = {},
     onAppPickerConfirm: () -> Unit = {},
     onAppPickerDismiss: () -> Unit = {},
@@ -146,9 +154,7 @@ fun XMBShell(
             }
 
             XmbPspStatusStrip(
-                backgroundTaskCount = uiState.activeBackgroundTasks,
-                onTaskBadgeTapped   = onTaskBadgeTapped,
-                modifier            = Modifier.align(Alignment.TopCenter),
+                modifier = Modifier.align(Alignment.TopCenter),
             )
 
             Column(
@@ -169,12 +175,18 @@ fun XMBShell(
                         .height(128.dp),
                 )
 
-                Box(
+                BoxWithConstraints(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
-                    contentAlignment = Alignment.BottomCenter,
                 ) {
+                    // Line the subitem column up with the XMB crossbar: the selected
+                    // category icon sits centered (XMBCategoryBar centers its slot with
+                    // sidePadding = (maxWidth - CategorySlotWidth)/2), so anchor the
+                    // item column's left edge to that same x. The selected category and
+                    // its subitems then share one vertical line.
+                    val startPad = ((maxWidth - CategorySlotWidth) / 2f).coerceAtLeast(24.dp)
+
                     AnimatedContent(
                         targetState = uiState.selectedCategoryIndex,
                         transitionSpec = {
@@ -184,10 +196,9 @@ fun XMBShell(
                         },
                         label = "xmbCategoryItems",
                         modifier = Modifier
-                            .align(Alignment.TopCenter)
-                            .fillMaxWidth(0.46f)
-                            .widthIn(max = 560.dp)
-                            .padding(top = 8.dp),
+                            .align(Alignment.TopStart)
+                            .fillMaxWidth()
+                            .padding(start = startPad, end = 24.dp, top = 6.dp),
                     ) {
                         XMBItemList(
                             items = uiState.currentItems,
@@ -198,7 +209,6 @@ fun XMBShell(
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
-
                 }
             }
 
@@ -206,21 +216,19 @@ fun XMBShell(
                 BootSequenceOverlay(onComplete = onBootComplete)
             }
 
-            if (uiState.showTaskTray) {
-                BackgroundTaskTray(
-                    tasks = uiState.backgroundTasks,
-                    onDismiss = onDismissTaskTray,
-                )
-            }
-
-            uiState.activeSettingsScreen?.let { screenId ->
-                SettingsNavHost(
-                    screenId = screenId,
-                    onBack = onCloseSettingsScreen,
-                    pendingGamepadAction = uiState.pendingSettingsAction,
-                    onGamepadActionConsumed = onSettingsActionConsumed,
-                    modifier = Modifier.fillMaxSize(),
-                )
+            // The Settings screen is suppressed while the color-scheme picker is open so
+            // the live wave preview shows through behind the picker (PSP-style).
+            if (uiState.colorSchemePicker == null) {
+                uiState.activeSettingsScreen?.let { screenId ->
+                    SettingsNavHost(
+                        screenId = screenId,
+                        onBack = onCloseSettingsScreen,
+                        pendingGamepadAction = uiState.pendingSettingsAction,
+                        onGamepadActionConsumed = onSettingsActionConsumed,
+                        onOpenColorSchemePicker = onOpenColorSchemePicker,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
             }
 
             uiState.activeAppDrawerFilter?.let { filterName ->
@@ -243,11 +251,30 @@ fun XMBShell(
                 )
             }
 
+            uiState.colorSchemePicker?.let { picker ->
+                ColorSchemePickerOverlay(
+                    state = picker,
+                    onHighlightedAt = onColorSchemeHighlightedAt,
+                    onConfirm = onColorSchemeConfirm,
+                    onDismiss = onColorSchemeCancel,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+
             uiState.renameAppTarget?.let {
                 AppRenameDialog(
                     currentLabel = uiState.renameAppCurrent.orEmpty(),
                     onConfirm = onConfirmAppRename,
                     onCancel = onCancelAppRename,
+                )
+            }
+
+            uiState.collectionNameDialog?.let { dialog ->
+                CollectionNameDialog(
+                    title = dialog.title,
+                    initialText = dialog.initialText,
+                    onConfirm = onConfirmCollectionName,
+                    onCancel = onCancelCollectionName,
                 )
             }
 
@@ -303,6 +330,30 @@ private fun AppRenameDialog(
     )
 }
 
+@Composable
+private fun CollectionNameDialog(
+    title: String,
+    initialText: String,
+    onConfirm: (String) -> Unit,
+    onCancel: () -> Unit,
+) {
+    var text by remember(initialText) { mutableStateOf(initialText) }
+    AlertDialog(
+        onDismissRequest = onCancel,
+        title = { Text(title) },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                singleLine = true,
+                placeholder = { Text("e.g. RPGs, Currently Playing") },
+            )
+        },
+        confirmButton = { TextButton(onClick = { onConfirm(text) }) { Text("Save") } },
+        dismissButton = { TextButton(onClick = onCancel) { Text("Cancel") } },
+    )
+}
+
 @Preview(name = "XMB - Default (Games)", widthDp = 960, heightDp = 540, showBackground = true)
 @Composable
 private fun PreviewXMBDefault() {
@@ -313,12 +364,6 @@ private fun PreviewXMBDefault() {
 @Composable
 private fun PreviewXMBEmpty() {
     XMBShell(uiState = PreviewData.emptyLibraryState)
-}
-
-@Preview(name = "XMB - With Task Tray", widthDp = 960, heightDp = 540, showBackground = true)
-@Composable
-private fun PreviewXMBWithTasks() {
-    XMBShell(uiState = PreviewData.withTasksState)
 }
 
 @Preview(name = "XMB - Boot Sequence", widthDp = 960, heightDp = 540, showBackground = true)

@@ -5,7 +5,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,10 +27,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
@@ -48,7 +43,6 @@ import com.playfieldportal.feature.xmb.viewmodel.XMBItemType
 private val GAME_ICON_WIDTH = 126.dp
 private val GAME_ICON_HEIGHT = 70.dp
 
-private val RowShape = RoundedCornerShape(7.dp)
 private val PrimaryText = Color.White
 private val SecondaryText = Color(0xFFC9C7E8)
 private val InactiveText = Color(0xFFE3E1F0)
@@ -117,12 +111,6 @@ private fun XmbVerticalListRow(
         animationSpec = spring(stiffness = Spring.StiffnessMedium),
         label = "xmbListRowAlpha",
     )
-    val selectionAlpha by animateFloatAsState(
-        targetValue = if (isSelected) 1f else 0f,
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-        label = "xmbListRowSelection",
-    )
-
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
@@ -130,25 +118,6 @@ private fun XmbVerticalListRow(
                 scaleX = scale
                 scaleY = scale
             }
-            .drawBehind {
-                if (selectionAlpha > 0f) {
-                    // Soft whitish glow behind the active item — no colored cursor/border.
-                    drawRoundRect(
-                        color = Color.White.copy(alpha = 0.14f * selectionAlpha),
-                        topLeft = Offset(-14f, -12f),
-                        size = Size(size.width + 28f, size.height + 24f),
-                        cornerRadius = CornerRadius(22f, 22f),
-                    )
-                    drawRoundRect(
-                        color = Color.White.copy(alpha = 0.10f * selectionAlpha),
-                        topLeft = Offset(-6f, -5f),
-                        size = Size(size.width + 12f, size.height + 10f),
-                        cornerRadius = CornerRadius(16f, 16f),
-                    )
-                }
-            }
-            .clip(RowShape)
-            .background(Color.White.copy(alpha = 0.08f * selectionAlpha), RowShape)
             .combinedClickable(onClick = onClick, onLongClick = onLongPress)
             .padding(horizontal = 18.dp, vertical = 10.dp)
             .alpha(rowAlpha),
@@ -189,7 +158,9 @@ private fun XmbItemLeadingIcon(
 ) {
     val iconTint = if (isSelected) Color.White else Color(0xFFD4D2E8)
     when {
-        item.type == XMBItemType.ALL_GAMES || item.type == XMBItemType.MEMORY_CARD -> {
+        item.type == XMBItemType.ALL_GAMES ||
+            item.type == XMBItemType.MEMORY_CARD ||
+            item.type == XMBItemType.COLLECTION -> {
             Box(
                 contentAlignment = Alignment.CenterStart,
                 modifier = Modifier.width(58.dp),

@@ -41,7 +41,11 @@ import com.playfieldportal.core.domain.model.Category
 private val SelectedIcon = Color.White
 private val InactiveIcon = Color(0xFFC7C6DF)
 private val LabelInactive = Color(0xFFE4E2F5)
-private val ItemSlotWidth = 124.dp
+
+// Width of a single category slot. Exposed so the subitem column (XMBShell) can
+// align its left edge to the selected category's centered slot — the XMB crossbar.
+internal val CategorySlotWidth = 124.dp
+private val ItemSlotWidth = CategorySlotWidth
 
 @Composable
 fun XMBCategoryBar(

@@ -118,6 +118,7 @@ class GameDetailViewModelTest {
             gameRepository    = gameRepository,
             platformDao       = platformDao,
             memoryCardRepository = memoryCardRepository,
+            collectionRepository = mockk(relaxed = true),
             profileRepository = profileRepository,
             intentResolver    = intentResolver,
             artworkRepository = artworkRepository,

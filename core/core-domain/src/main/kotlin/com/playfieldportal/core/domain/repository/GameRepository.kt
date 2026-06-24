@@ -7,6 +7,9 @@ import kotlinx.coroutines.flow.Flow
 
 interface GameRepository {
     fun observeAll(): Flow<List<Game>>
+    // Real games only (content_type = GAME) — drives the "All Games" aggregate so app-style
+    // entries never appear there automatically.
+    fun observeGamesOnly(): Flow<List<Game>>
     fun observeFavorites(): Flow<List<Game>>
     fun observeByPlatform(platformId: String): Flow<List<Game>>
     fun observeRecentPlatforms(limit: Int): Flow<List<RecentPlatform>>

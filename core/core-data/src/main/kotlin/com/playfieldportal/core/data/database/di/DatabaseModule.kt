@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.playfieldportal.core.data.database.PFPDatabase
 import com.playfieldportal.core.data.database.dao.AppOverrideDao
 import com.playfieldportal.core.data.database.dao.CategoryDao
+import com.playfieldportal.core.data.database.dao.CollectionDao
 import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.data.database.dao.LibrarySourceDao
 import com.playfieldportal.core.data.database.dao.MemoryCardDao
@@ -43,6 +44,7 @@ object DatabaseModule {
             PFPDatabase.MIGRATION_4_5,
             PFPDatabase.MIGRATION_5_6,
             PFPDatabase.MIGRATION_6_7,
+            PFPDatabase.MIGRATION_7_8,
         )
         .build()
 
@@ -55,6 +57,7 @@ object DatabaseModule {
     @Provides fun provideThemeDao(db: PFPDatabase): ThemeDao = db.themeDao()
     @Provides fun provideMemoryCardDao(db: PFPDatabase): MemoryCardDao = db.memoryCardDao()
     @Provides fun provideAppOverrideDao(db: PFPDatabase): AppOverrideDao = db.appOverrideDao()
+    @Provides fun provideCollectionDao(db: PFPDatabase): CollectionDao = db.collectionDao()
 }
 
 @Module

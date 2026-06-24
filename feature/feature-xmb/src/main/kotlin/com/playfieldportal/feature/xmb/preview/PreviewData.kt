@@ -3,7 +3,6 @@ package com.playfieldportal.feature.xmb.preview
 import com.playfieldportal.core.domain.model.BuiltInCategory
 import com.playfieldportal.core.domain.model.Category
 import com.playfieldportal.core.domain.model.CategoryType
-import com.playfieldportal.feature.xmb.viewmodel.BackgroundTaskInfo
 import com.playfieldportal.feature.xmb.viewmodel.XMBItem
 import com.playfieldportal.feature.xmb.viewmodel.XMBItemType
 import com.playfieldportal.feature.xmb.viewmodel.XMBUiState
@@ -59,16 +58,6 @@ object PreviewData {
         XMBItem("platform_n64",    "Nintendo 64 Memory Card",     subtitle = "17 Games", platformId = "n64", type = XMBItemType.MEMORY_CARD),
     )
 
-    val runningTasks = listOf(
-        BackgroundTaskInfo("scan",    "Library Scan",    progress = 0.62f),
-        BackgroundTaskInfo("artwork", "Artwork Fetch",   progress = 0.31f),
-    )
-
-    val completedTasks = listOf(
-        BackgroundTaskInfo("sync",  "Profile Sync",  progress = 1f,  isCompleted = true),
-        BackgroundTaskInfo("fail",  "Backup",        progress = null, isFailed = true, errorMessage = "Storage full"),
-    )
-
     val defaultState = XMBUiState(
         categories            = categories,
         selectedCategoryIndex = 4,
@@ -82,16 +71,6 @@ object PreviewData {
         selectedCategoryIndex = 4,
         currentItems          = emptyItems,
         showBootSequence      = false,
-    )
-
-    val withTasksState = XMBUiState(
-        categories            = categories,
-        selectedCategoryIndex = 4,
-        currentItems          = ps2Games,
-        showBootSequence      = false,
-        showTaskTray          = true,
-        activeBackgroundTasks = 2,
-        backgroundTasks       = runningTasks + completedTasks,
     )
 
     val bootState = XMBUiState(
