@@ -30,6 +30,13 @@ data class Game(
     val userTitleOverride: String? = null,
     // What this entry actually is. Drives "All Games" filtering — only GAME aggregates there.
     val contentType: GameContentType = GameContentType.GAME,
+    // For launcher-shortcut entries harvested from another app (GameHub PCs, etc.): the host
+    // app's published shortcut id. Launched via LauncherApps.startShortcut(packageName, this).
+    // Null for ordinary apps (launched by package) and ROM games.
+    val shortcutId: String? = null,
+    // For legacy INSTALL_SHORTCUT entries (BannerHub, old Winlator): the captured launch Intent
+    // serialized via Intent.toUri(URI_INTENT_SCHEME). Launched by parsing and starting it.
+    val launchIntentUri: String? = null,
 ) {
     // Resolved display name: user override → scraped metadata title → raw scan title.
     val displayTitle: String get() = userTitleOverride ?: scrapedTitle ?: title

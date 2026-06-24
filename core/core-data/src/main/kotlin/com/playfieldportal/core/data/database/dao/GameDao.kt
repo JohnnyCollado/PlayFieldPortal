@@ -37,6 +37,19 @@ interface GameDao {
     @Query("SELECT * FROM games WHERE package_name = :packageName LIMIT 1")
     suspend fun getByPackageName(packageName: String): GameEntity?
 
+    // The plain app-launch row (no launcher shortcut). Distinguishes the "open the app" entry
+    // from per-game launcher-shortcut rows that share the same package_name.
+    @Query("SELECT * FROM games WHERE package_name = :packageName AND launch_shortcut_id IS NULL LIMIT 1")
+    suspend fun getAppEntry(packageName: String): GameEntity?
+
+    // A specific harvested launcher-shortcut row (package + shortcut id) — used to dedupe imports.
+    @Query("SELECT * FROM games WHERE package_name = :packageName AND launch_shortcut_id = :shortcutId LIMIT 1")
+    suspend fun getLauncherShortcut(packageName: String, shortcutId: String): GameEntity?
+
+    // A legacy INSTALL_SHORTCUT row, deduped by its captured launch intent.
+    @Query("SELECT * FROM games WHERE launch_intent_uri = :intentUri LIMIT 1")
+    suspend fun getByIntentUri(intentUri: String): GameEntity?
+
     @Query("SELECT * FROM games WHERE last_played_at IS NOT NULL ORDER BY last_played_at DESC LIMIT :limit")
     fun observeRecentlyPlayed(limit: Int): Flow<List<GameEntity>>
 

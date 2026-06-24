@@ -1,6 +1,7 @@
 package com.playfieldportal.launcher
 
 import android.Manifest
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -10,6 +11,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -17,6 +19,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import com.playfieldportal.core.ui.theme.PFPTheme
 import com.playfieldportal.feature.xmb.gamepad.GamepadInputHandler
 import com.playfieldportal.feature.xmb.ui.XMBShellContainer
+import com.playfieldportal.launcher.receiver.InstallShortcutReceiver
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -24,6 +27,10 @@ import javax.inject.Inject
 class MainActivity : ComponentActivity() {
 
     @Inject lateinit var gamepadInputHandler: GamepadInputHandler
+
+    // Runtime-registered so it actually fires on Android 8+ (manifest receivers are blocked for
+    // this implicit broadcast). Lives for the activity's lifetime.
+    private val installShortcutReceiver = InstallShortcutReceiver()
 
     private val requestNotificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* best-effort */ }
@@ -35,6 +42,12 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         hideSystemBars()
         requestNotificationPermissionIfNeeded()
+        ContextCompat.registerReceiver(
+            this,
+            installShortcutReceiver,
+            IntentFilter(InstallShortcutReceiver.ACTION_INSTALL_SHORTCUT),
+            ContextCompat.RECEIVER_EXPORTED,
+        )
 
         setContent {
             PFPTheme {
@@ -54,6 +67,11 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         hideSystemBars()
+    }
+
+    override fun onDestroy() {
+        runCatching { unregisterReceiver(installShortcutReceiver) }
+        super.onDestroy()
     }
 
     // Background-task notifications need the POST_NOTIFICATIONS runtime grant on API 33+.

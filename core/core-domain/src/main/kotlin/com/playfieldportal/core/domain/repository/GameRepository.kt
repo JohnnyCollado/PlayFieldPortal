@@ -15,6 +15,12 @@ interface GameRepository {
     fun observeRecentPlatforms(limit: Int): Flow<List<RecentPlatform>>
     suspend fun getById(id: Long): Game?
     suspend fun getByPackageName(packageName: String): Game?
+    // The "open the app" row (no launcher shortcut id).
+    suspend fun getAppEntry(packageName: String): Game?
+    // A specific harvested launcher-shortcut row (host package + shortcut id).
+    suspend fun getLauncherShortcut(packageName: String, shortcutId: String): Game?
+    // A legacy INSTALL_SHORTCUT row, deduped by its captured launch intent uri.
+    suspend fun getByIntentUri(intentUri: String): Game?
     suspend fun upsert(game: Game): Long
     suspend fun delete(id: Long)
     suspend fun setFavorite(id: Long, isFavorite: Boolean)

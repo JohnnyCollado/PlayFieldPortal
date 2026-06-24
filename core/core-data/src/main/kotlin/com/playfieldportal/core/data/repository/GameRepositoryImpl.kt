@@ -64,6 +64,15 @@ class GameRepositoryImpl @Inject constructor(
     override suspend fun getByPackageName(packageName: String): Game? =
         gameDao.getByPackageName(packageName)?.toDomain()
 
+    override suspend fun getAppEntry(packageName: String): Game? =
+        gameDao.getAppEntry(packageName)?.toDomain()
+
+    override suspend fun getLauncherShortcut(packageName: String, shortcutId: String): Game? =
+        gameDao.getLauncherShortcut(packageName, shortcutId)?.toDomain()
+
+    override suspend fun getByIntentUri(intentUri: String): Game? =
+        gameDao.getByIntentUri(intentUri)?.toDomain()
+
     override suspend fun upsert(game: Game): Long =
         gameDao.upsert(game.toEntity())
 

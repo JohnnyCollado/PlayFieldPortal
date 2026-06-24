@@ -93,6 +93,15 @@ data class GameEntity(
     // into "All Games". Stored as the enum name; defaults to GAME for legacy/console rows.
     @ColumnInfo(name = "content_type")
     val contentType: String = GameContentType.GAME.name,
+
+    // Host app's launcher-shortcut id for harvested per-game entries (GameHub PCs, etc.).
+    // Null for ordinary apps and ROM games. Launched via LauncherApps.startShortcut.
+    @ColumnInfo(name = "launch_shortcut_id")
+    val launchShortcutId: String? = null,
+
+    // Captured legacy INSTALL_SHORTCUT launch intent (Intent.toUri), for BannerHub / old Winlator.
+    @ColumnInfo(name = "launch_intent_uri")
+    val launchIntentUri: String? = null,
 )
 
 fun GameEntity.toDomain() = Game(
@@ -121,6 +130,8 @@ fun GameEntity.toDomain() = Game(
     scrapedTitle        = scrapedTitle,
     userTitleOverride   = userTitleOverride,
     contentType         = GameContentType.fromName(contentType),
+    shortcutId          = launchShortcutId,
+    launchIntentUri     = launchIntentUri,
 )
 
 fun Game.toEntity() = GameEntity(
@@ -149,4 +160,6 @@ fun Game.toEntity() = GameEntity(
     scrapedTitle        = scrapedTitle,
     userTitleOverride   = userTitleOverride,
     contentType         = contentType.name,
+    launchShortcutId    = shortcutId,
+    launchIntentUri     = launchIntentUri,
 )

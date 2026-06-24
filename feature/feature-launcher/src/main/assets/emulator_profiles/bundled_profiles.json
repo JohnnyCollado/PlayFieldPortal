@@ -374,11 +374,22 @@
     "id": "lime3ds",
     "name": "Lime3DS",
     "packageName": "io.github.lime3ds.android",
-    "activityClass": "io.github.lime3ds.android.activities.EmulationActivity",
     "intentType": "ACTION_VIEW",
     "supportedPlatformIds": ["3ds","n3ds"],
     "mimeType": "application/octet-stream",
-    "useSafUri": true
+    "useSafUri": true,
+    "notes": "Resolves the EmulationActivity by package (no hardcoded class) so it also works with the AzaharPlus 'replaces' build, which reuses this package but uses org.citra.citra_emu activities."
+  },
+  {
+    "id": "azaharplus",
+    "name": "AzaharPlus (3DS)",
+    "packageName": "io.github.azaharplus.android",
+    "activityClass": "org.citra.citra_emu.activities.EmulationActivity",
+    "intentType": "ACTION_VIEW",
+    "supportedPlatformIds": ["3ds","n3ds"],
+    "mimeType": "application/octet-stream",
+    "useSafUri": true,
+    "notes": "AzaharPlus — Citra/Azahar fork. This is the 'coexists with Azahar' build (io.github.azaharplus.android). Boots a ROM via ACTION_VIEW + content:// URI into the exported EmulationActivity."
   },
 
   {
@@ -573,6 +584,18 @@
     "supportedPlatformIds": ["dreamcast","dc"],
     "mimeType": "application/octet-stream",
     "useSafUri": true
+  },
+
+  {
+    "id": "eden",
+    "name": "Eden (Switch)",
+    "packageName": "dev.eden.eden_emulator",
+    "activityClass": "org.yuzu.yuzu_emu.activities.EmulationActivity",
+    "intentType": "ACTION_VIEW",
+    "supportedPlatformIds": ["switch","nx"],
+    "mimeType": "application/octet-stream",
+    "useSafUri": true,
+    "notes": "Eden is a Yuzu fork; its EmulationActivity (org.yuzu.yuzu_emu) is exported and boots a ROM via ACTION_VIEW + content:// URI. Loads single-file NSP/XCI."
   },
 
   {

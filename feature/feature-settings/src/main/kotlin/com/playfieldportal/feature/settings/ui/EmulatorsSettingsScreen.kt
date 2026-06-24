@@ -19,9 +19,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.playfieldportal.feature.launcher.DetectableApp
 import com.playfieldportal.feature.settings.viewmodel.ADD_CUSTOM_EMULATOR_FOCUS_KEY
 import com.playfieldportal.feature.settings.viewmodel.EmulatorsSettingsViewModel
 import com.playfieldportal.feature.settings.viewmodel.ProfileListItem
+import com.playfieldportal.feature.settings.viewmodel.TestLaunchState
 
 private val AutoBadgeColor    = Color(0xFF4A9EFF)
 private val UnavailableColor  = Color(0xFFFF6B6B)
@@ -36,6 +38,19 @@ fun EmulatorsSettingsScreen(
     val state by viewModel.uiState.collectAsState()
 
     state.editorState?.let { editor ->
+        // Test-launch flow renders over the editor when active.
+        state.testLaunch?.let { test ->
+            TestLaunchFlow(
+                test       = test,
+                onPickRom  = viewModel::selectTestRom,
+                onLaunch   = viewModel::launchTest,
+                onPickOther = viewModel::pickDifferentTestRom,
+                onBack     = viewModel::closeTestLaunch,
+                modifier   = modifier,
+            )
+            return
+        }
+
         EmulatorProfileEditorScreen(
             editorState           = editor,
             onNameChange          = viewModel::updateEditorName,
@@ -53,8 +68,28 @@ fun EmulatorsSettingsScreen(
             onDelete              = if (!editor.isNew && editor.originalId != null) {
                 { viewModel.deleteProfile(editor.originalId) }
             } else null,
+            onTestLaunch          = viewModel::startTestLaunch,
             modifier              = modifier,
         )
+        return
+    }
+
+    // Wizard step 1 — pick an installed app.
+    state.wizardApps?.let { apps ->
+        WizardPickAppStep(
+            apps     = apps,
+            onPick   = viewModel::selectWizardApp,
+            onBack   = viewModel::cancelWizard,
+            modifier = modifier,
+        )
+        return
+    }
+
+    // Brief loading windows: scanning apps, or inspecting the chosen app.
+    if (state.isInspecting) {
+        SettingsScaffold(title = "Add Emulator", subtitle = "Detecting…", onBack = viewModel::cancelWizard, modifier = modifier) {
+            EmulatorHint("Inspecting installed apps…")
+        }
         return
     }
 
@@ -108,9 +143,9 @@ fun EmulatorsSettingsScreen(
 
             SettingsRow(
                 label    = "Add Custom Emulator",
-                sublabel = "Define a launch profile for any app",
+                sublabel = "Pick an app — we auto-detect its launch settings",
                 focusKey = ADD_CUSTOM_EMULATOR_FOCUS_KEY,
-                onClick  = { viewModel.openEditor(null) },
+                onClick  = { viewModel.startAddEmulatorWizard() },
             )
 
             SettingsGroup("Maintenance")
@@ -146,6 +181,115 @@ fun EmulatorsSettingsScreen(
                 }
             },
         )
+    }
+}
+
+@Composable
+private fun WizardPickAppStep(
+    apps: List<DetectableApp>,
+    onPick: (String) -> Unit,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    SettingsScaffold(
+        title    = "Add Emulator",
+        subtitle = "Pick an App",
+        onBack   = onBack,
+        modifier = modifier,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
+        ) {
+            SettingsGroup("Installed Apps")
+            if (apps.isEmpty()) {
+                EmulatorHint("No launchable apps found.")
+            } else {
+                apps.forEach { app ->
+                    SettingsRow(
+                        label    = app.label,
+                        sublabel = app.packageName,
+                        onClick  = { onPick(app.packageName) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TestLaunchFlow(
+    test: TestLaunchState,
+    onPickRom: (Long) -> Unit,
+    onLaunch: () -> Unit,
+    onPickOther: () -> Unit,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    // Step A — pick a ROM from the scanned library.
+    if (test.selectedRom == null) {
+        SettingsScaffold(title = "Test Launch", subtitle = "Pick a ROM", onBack = onBack, modifier = modifier) {
+            Column(
+                modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+            ) {
+                SettingsGroup("Your ROMs")
+                if (test.roms.isEmpty()) {
+                    EmulatorHint("No scanned ROMs to test with. Scan a console first, or just save and try in the library.")
+                } else {
+                    test.roms.forEach { rom ->
+                        SettingsRow(
+                            label    = rom.title,
+                            sublabel = rom.platformId.uppercase(),
+                            onClick  = { onPickRom(rom.gameId) },
+                        )
+                    }
+                }
+            }
+        }
+        return
+    }
+
+    // Step B — intent preview + launch + result.
+    SettingsScaffold(title = "Test Launch", subtitle = test.selectedRom.title, onBack = onBack, modifier = modifier) {
+        Column(
+            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+        ) {
+            test.preview?.let { p ->
+                SettingsGroup("Intent Preview")
+                PreviewLine("Package", p.packageName)
+                PreviewLine("Activity", p.activity ?: "(resolved by package)")
+                PreviewLine("Action", p.action)
+                PreviewLine("MIME", p.mimeType ?: "(none)")
+                PreviewLine("URI mode", p.uriMode)
+                PreviewLine("ROM", p.romRef)
+                if (p.extras.isNotEmpty()) PreviewLine("Extras", p.extras.joinToString("\n"))
+                if (p.flags.isNotEmpty()) PreviewLine("Flags", p.flags.joinToString(", "))
+            }
+
+            test.resultMessage?.let { msg ->
+                SettingsGroup("Result")
+                Text(
+                    text     = msg,
+                    color    = if (test.isError) UnavailableColor else ModifiedBadgeColor,
+                    modifier = Modifier.padding(horizontal = 48.dp, vertical = 8.dp),
+                )
+            }
+
+            SettingsGroup("Actions")
+            if (test.canLaunch) {
+                SettingsRow(label = "Launch Now", sublabel = "Send the intent to the app", onClick = onLaunch)
+            }
+            SettingsRow(label = "Pick a Different ROM", onClick = onPickOther)
+        }
+    }
+}
+
+@Composable
+private fun PreviewLine(label: String, value: String) {
+    Column(modifier = Modifier.padding(horizontal = 48.dp, vertical = 4.dp)) {
+        Text(text = label.uppercase(), color = AutoBadgeColor, fontSize = 10.sp)
+        Text(text = value, color = SettingsText, fontSize = 13.sp)
     }
 }
 

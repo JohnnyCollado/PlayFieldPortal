@@ -43,7 +43,7 @@ import com.playfieldportal.core.data.database.entity.UnmatchedRomEntity
         CollectionEntity::class,
         CollectionGameEntity::class,
     ],
-    version = 8,
+    version = 10,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -192,6 +192,23 @@ abstract class PFPDatabase : RoomDatabase() {
                 db.execSQL(
                     "CREATE INDEX IF NOT EXISTS index_collection_games_game_id ON collection_games (game_id)"
                 )
+            }
+        }
+
+        // v9 — launcher-shortcut entries: per-game shortcuts harvested from other apps
+        // (GameHub PCs, etc.) store the host app's shortcut id so they can be launched via
+        // LauncherApps.startShortcut. Nullable; existing rows are unaffected.
+        val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE games ADD COLUMN launch_shortcut_id TEXT")
+            }
+        }
+
+        // v10 — legacy INSTALL_SHORTCUT capture: stores the broadcast's launch intent so PFP can
+        // launch shortcuts from apps that still use the old broadcast (BannerHub, old Winlator).
+        val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE games ADD COLUMN launch_intent_uri TEXT")
             }
         }
     }

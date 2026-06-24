@@ -16,6 +16,8 @@ import com.playfieldportal.core.data.repository.MemoryCardRepository
 import com.playfieldportal.core.domain.model.MemoryCard
 import com.playfieldportal.feature.appbar.AppCategoryRepository
 import com.playfieldportal.feature.appbar.CategorizedApp
+import com.playfieldportal.feature.appbar.LauncherShortcutRepository
+import com.playfieldportal.feature.appbar.ShortcutHarvestResult
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.domain.model.BuiltInCategory
 import com.playfieldportal.core.domain.model.Category
@@ -86,6 +88,10 @@ data class XMBContextMenu(
     val collectionGameId: Long? = null,
     // Set on a collection row's own options menu (rename / delete / open).
     val collectionRowId: Long? = null,
+    // Host app's launcher-shortcut id when the menu is for a harvested per-game entry.
+    val shortcutId: String? = null,
+    // Captured legacy INSTALL_SHORTCUT launch intent when the menu is for such an entry.
+    val launchIntentUri: String? = null,
 )
 
 data class XMBContextMenuItem(
@@ -240,6 +246,10 @@ data class XMBItem(
     val isFavorite: Boolean = false,
     val isAndroidApp: Boolean = false,
     val packageName: String? = null,
+    // Host app's launcher-shortcut id for harvested per-game entries; launched via LauncherApps.
+    val shortcutId: String? = null,
+    // Captured legacy INSTALL_SHORTCUT launch intent (Intent.toUri); launched by parsing it.
+    val launchIntentUri: String? = null,
     val type: XMBItemType = XMBItemType.STANDARD,
 )
 
@@ -262,6 +272,7 @@ class XMBViewModel @Inject constructor(
     private val collectionRepository: CollectionRepository,
     private val categoryRepository: CategoryRepositoryImpl,
     private val appCategoryRepository: AppCategoryRepository,
+    private val launcherShortcutRepository: LauncherShortcutRepository,
     private val romScanner: RomScanner,
     private val artworkRepository: ArtworkRepository,
     @ApplicationContext private val context: Context,
@@ -602,6 +613,8 @@ class XMBViewModel @Inject constructor(
             isFavorite   = g.isFavorite,
             isAndroidApp = g.packageName != null,
             packageName  = g.packageName,
+            shortcutId   = g.shortcutId,
+            launchIntentUri = g.launchIntentUri,
         )
     }
 
@@ -841,6 +854,8 @@ class XMBViewModel @Inject constructor(
                 items       = items,
                 gameId      = item.gameId,
                 packageName = item.packageName,
+                shortcutId  = item.shortcutId,
+                launchIntentUri = item.launchIntentUri,
             )
         )}
     }
@@ -880,6 +895,13 @@ class XMBViewModel @Inject constructor(
         val items = buildList {
             add(XMBContextMenuItem("launch",   "Launch"))
             add(XMBContextMenuItem("edit_app", "Edit App Details"))
+            // Shortcut actions — these materialize a launch shortcut (a games-table row that
+            // references the app by package) so it can live in Favorites / Collections without
+            // duplicating the app's metadata. Works for every Android app, GameHub included.
+            add(XMBContextMenuItem("favorite",          "Add to Favorites"))
+            add(XMBContextMenuItem("add_to_collection", "Add to Collection"))
+            // Pull the app's own per-game launcher shortcuts (GameHub PCs, etc.) into PFP.
+            add(XMBContextMenuItem("import_shortcuts",  "Import Game Shortcuts"))
             add(XMBContextMenuItem("move",     "Move To Category"))
             add(XMBContextMenuItem("add",      "Add To Category"))
             if (categoryId != null) add(XMBContextMenuItem("remove", "Remove From Category"))
@@ -993,7 +1015,11 @@ class XMBViewModel @Inject constructor(
                 "remove"           -> removeCard(menu.platformId)
             }
             menu.gameId != null -> when (itemId) {
-                "launch"                 -> _uiState.update { it.copy(activeGameId = menu.gameId) }
+                "launch"                 -> when {
+                    menu.launchIntentUri != null -> launchStoredIntent(menu.launchIntentUri, menu.title)
+                    menu.shortcutId != null -> launchHarvestedShortcut(menu.packageName, menu.shortcutId)
+                    else -> _uiState.update { it.copy(activeGameId = menu.gameId) }
+                }
                 "edit_app"               -> openAppDetail(menu.gameId, menu.packageName ?: return)
                 "favorite"               -> toggleGameFavorite(menu.gameId, true)
                 "unfavorite"             -> toggleGameFavorite(menu.gameId, false)
@@ -1020,6 +1046,9 @@ class XMBViewModel @Inject constructor(
                 } else when (itemId) {
                     "launch"    -> appCategoryRepository.launch(pkg)
                     "edit_app"  -> openAppDetail(menu.gameId, pkg)
+                    "favorite"          -> addAppToFavorites(pkg, menu.title)
+                    "add_to_collection" -> addAppToCollection(pkg, menu.title)
+                    "import_shortcuts"  -> importGameShortcuts(pkg, menu.title)
                     "move"      -> openCategoryPicker(pkg, menu.categoryContext, "move")
                     "add"       -> openCategoryPicker(pkg, menu.categoryContext, "add")
                     "remove"    -> menu.categoryContext?.let { cat -> appAction { appCategoryRepository.removeFromCategory(pkg, cat) } }
@@ -1368,6 +1397,18 @@ class XMBViewModel @Inject constructor(
             return
         }
 
+        // Legacy captured shortcut (BannerHub / old Winlator) — launch its stored intent.
+        if (item?.launchIntentUri != null) {
+            launchStoredIntent(item.launchIntentUri, item.title)
+            return
+        }
+
+        // Harvested launcher shortcut — A/Cross launches the host app's specific shortcut.
+        if (item?.shortcutId != null && item.packageName != null) {
+            launchHarvestedShortcut(item.packageName, item.shortcutId)
+            return
+        }
+
         // Android app — A/Cross launches it
         if (item?.packageName != null) {
             appCategoryRepository.launch(item.packageName)
@@ -1477,25 +1518,132 @@ class XMBViewModel @Inject constructor(
             return
         }
         viewModelScope.launch {
-            val game = gameRepository.getByPackageName(packageName)
-            if (game != null) {
-                _uiState.update { it.copy(activeAppId = game.id) }
-            } else {
-                val label = runCatching {
-                    context.packageManager.getApplicationLabel(
-                        context.packageManager.getApplicationInfo(packageName, 0)
-                    ).toString()
-                }.getOrDefault(packageName)
-                val newId = gameRepository.upsert(
-                    Game(
-                        title         = label,
-                        platformId    = "android",
-                        packageName   = packageName,
-                        isManualEntry = true,
-                    )
-                )
-                _uiState.update { it.copy(activeAppId = newId) }
+            val id = ensureAppShortcut(packageName)
+            _uiState.update { it.copy(activeAppId = id) }
+        }
+    }
+
+    // ── Android-app launch shortcuts ───────────────────────────────────────────
+    //
+    // Favorites and Collections are keyed on a games-table row id. Apps placed in XMB
+    // categories are package-based (no game row), so they can't join either until they have a
+    // "shortcut" row. A shortcut is a GameEntity that REFERENCES the app by packageName (the only
+    // duplicated field is the display label) and is typed ANDROID_APP so it never aggregates into
+    // All Games. It is deduped by package — one shortcut per app, reused by Favorites, every
+    // Collection, and the App Detail screen. This is what makes GameHub (and any Android app)
+    // shortcutable; GameHub is otherwise treated identically to any other app.
+    private suspend fun ensureAppShortcut(packageName: String): Long {
+        gameRepository.getAppEntry(packageName)?.let { return it.id }
+        val label = runCatching {
+            context.packageManager.getApplicationLabel(
+                context.packageManager.getApplicationInfo(packageName, 0)
+            ).toString()
+        }.getOrDefault(packageName)
+        return gameRepository.upsert(
+            Game(
+                title         = label,
+                platformId    = ANDROID_PLATFORM_ID,
+                packageName   = packageName,
+                isManualEntry = true,
+                contentType   = GameContentType.ANDROID_APP,
+            )
+        )
+    }
+
+    private fun addAppToFavorites(packageName: String, label: String) {
+        viewModelScope.launch {
+            runCatching {
+                val id = ensureAppShortcut(packageName)
+                gameRepository.setFavorite(id, true)
+            }.onSuccess {
+                Timber.i("App shortcut favorited: $packageName")
+                taskNotifier.complete("shortcut_fav_$packageName", label, "Added to Favorites")
+            }.onFailure { e ->
+                Timber.e(e, "Failed to add app to Favorites: $packageName")
+                taskNotifier.failed("shortcut_fav_$packageName", label, "Couldn't add to Favorites: ${e.message}")
             }
+        }
+    }
+
+    private fun addAppToCollection(packageName: String, label: String) {
+        viewModelScope.launch {
+            runCatching { ensureAppShortcut(packageName) }
+                .onSuccess { id -> openCollectionPicker(id) }
+                .onFailure { e ->
+                    Timber.e(e, "Failed to prepare app shortcut for collection: $packageName")
+                    taskNotifier.failed("shortcut_col_$packageName", label, "Couldn't create shortcut: ${e.message}")
+                }
+        }
+    }
+
+    // ── Launcher-shortcut harvesting (GameHub PCs, Lime3DS games, …) ────────────
+    //
+    // Pulls the host app's published launcher shortcuts and imports each as a launchable PFP
+    // entry (a games-table row carrying the host package + shortcut id), grouped into a
+    // collection named after the app. Requires PFP to be the active default launcher.
+    private fun importGameShortcuts(hostPackage: String, hostLabel: String) {
+        val taskId = "harvest_$hostPackage"
+        viewModelScope.launch {
+            when (val result = launcherShortcutRepository.harvest(hostPackage)) {
+                is ShortcutHarvestResult.NotDefaultLauncher ->
+                    taskNotifier.failed(taskId, hostLabel,
+                        "Set Play Field Portal as your default Home app, then try again.")
+                is ShortcutHarvestResult.Error ->
+                    taskNotifier.failed(taskId, hostLabel, result.message)
+                is ShortcutHarvestResult.Success -> {
+                    val shortcuts = result.shortcuts
+                    if (shortcuts.isEmpty()) {
+                        taskNotifier.complete(taskId, hostLabel, "No game shortcuts published by this app.")
+                        return@launch
+                    }
+                    runCatching {
+                        val collectionId = collectionRepository.getAll().firstOrNull { it.name == hostLabel }?.id
+                            ?: collectionRepository.create(hostLabel)
+                        shortcuts.forEach { sc ->
+                            val gameId = gameRepository.getLauncherShortcut(sc.hostPackage, sc.shortcutId)?.id
+                                ?: gameRepository.upsert(
+                                    Game(
+                                        title         = sc.label,
+                                        platformId    = ANDROID_PLATFORM_ID,
+                                        packageName   = sc.hostPackage,
+                                        isManualEntry = true,
+                                        contentType   = GameContentType.ANDROID_APP,
+                                        shortcutId    = sc.shortcutId,
+                                    )
+                                )
+                            collectionRepository.addGame(collectionId, gameId)
+                        }
+                        shortcuts.size
+                    }.onSuccess { count ->
+                        Timber.i("Imported $count launcher shortcut(s) from $hostPackage")
+                        taskNotifier.complete(taskId, hostLabel,
+                            "Imported $count shortcut${if (count == 1) "" else "s"} into collection \"$hostLabel\"")
+                    }.onFailure { e ->
+                        Timber.e(e, "Failed to import shortcuts from $hostPackage")
+                        taskNotifier.failed(taskId, hostLabel, "Import failed: ${e.message}")
+                    }
+                }
+            }
+        }
+    }
+
+    private fun launchHarvestedShortcut(hostPackage: String?, shortcutId: String?) {
+        if (hostPackage == null || shortcutId == null) return
+        launcherShortcutRepository.launch(hostPackage, shortcutId).onFailure { e ->
+            Timber.e(e, "Failed to launch shortcut $hostPackage/$shortcutId")
+            taskNotifier.failed("launch_sc_$shortcutId", hostPackage, "Couldn't launch: ${e.message}")
+        }
+    }
+
+    // Launches a captured legacy INSTALL_SHORTCUT entry by parsing its stored intent.
+    private fun launchStoredIntent(intentUri: String, label: String) {
+        runCatching {
+            val launch = android.content.Intent.parseUri(intentUri, android.content.Intent.URI_INTENT_SCHEME)
+                .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(launch)
+        }.onFailure { e ->
+            Timber.e(e, "Failed to launch captured shortcut: $label")
+            taskNotifier.failed("launch_intent_${label.hashCode()}", label, "Couldn't launch: ${e.message}")
         }
     }
 

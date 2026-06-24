@@ -1,7 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- ROM files passed to emulators via FileProvider SAF URIs -->
+    <!-- ROM files on primary storage (/storage/emulated/0) passed to emulators -->
     <external-path name="roms" path="." />
+
+    <!-- ROMs on any mounted volume — removable SD cards and USB drives live under
+         /storage/<volume-uuid>/... (e.g. /storage/408C-3861/...), which <external-path>
+         does NOT cover. Without this, FileProvider.getUriForFile throws
+         "Failed to find configured root" and the launch fails before the intent is sent. -->
+    <root-path name="storage_volumes" path="/storage/" />
 
     <!-- Theme packs and backups in the PlayFieldPortal folder -->
     <external-path name="pfp_root" path="PlayFieldPortal/" />

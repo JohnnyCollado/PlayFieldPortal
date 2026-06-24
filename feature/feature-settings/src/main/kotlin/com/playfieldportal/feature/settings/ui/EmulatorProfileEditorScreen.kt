@@ -40,6 +40,7 @@ fun EmulatorProfileEditorScreen(
     onSave: () -> Unit,
     onCancel: () -> Unit,
     onDelete: (() -> Unit)?,
+    onTestLaunch: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val subtitle = if (editorState.isNew) "New Profile" else "Edit Profile"
@@ -55,6 +56,17 @@ fun EmulatorProfileEditorScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState()),
         ) {
+
+            // ── Detection banner (wizard) ─────────────────────────────────
+            editorState.detectionNote?.let { note ->
+                Text(
+                    text     = note,
+                    color    = EditorAccent,
+                    modifier = Modifier.padding(horizontal = 48.dp, vertical = 12.dp),
+                )
+            }
+
+            AutoFilledAdvancedSummary(editorState)
 
             // ── Required fields ───────────────────────────────────────────
             SettingsGroup("Required")
@@ -159,6 +171,15 @@ fun EmulatorProfileEditorScreen(
                 )
             }
 
+            // ── Test ──────────────────────────────────────────────────────
+            SettingsGroup("Test")
+
+            SettingsRow(
+                label    = "Test Launch with a ROM",
+                sublabel = "Pick a scanned ROM, preview the intent, and try launching",
+                onClick  = onTestLaunch,
+            )
+
             // ── Actions ───────────────────────────────────────────────────
             SettingsGroup("Actions")
 
@@ -180,6 +201,35 @@ fun EmulatorProfileEditorScreen(
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
+}
+
+// Read-only summary of advanced launch fields carried from the wizard / auto-detection. The form
+// doesn't edit these yet, but they ARE preserved on save — surfacing them avoids silent surprises.
+@Composable
+private fun AutoFilledAdvancedSummary(state: ProfileEditorState) {
+    val lines = buildList {
+        state.intentAction?.takeIf { it.isNotBlank() }?.let { add("Action: $it") }
+        if (state.intentExtras.isNotEmpty()) {
+            add("Extras: " + state.intentExtras.entries.joinToString(", ") { "${it.key}=${it.value}" })
+        }
+        if (state.intentBoolExtras.isNotEmpty()) {
+            add("Bool extras: " + state.intentBoolExtras.entries.joinToString(", ") { "${it.key}=${it.value}" })
+        }
+        if (state.intentFlags.isNotEmpty()) add("Flags: " + state.intentFlags.joinToString(", "))
+        state.intentCategory?.takeIf { it.isNotBlank() }?.let { add("Category: $it") }
+        if (state.coreMap.isNotEmpty()) add("RetroArch core: " + state.coreMap.values.distinct().joinToString(", "))
+    }
+    if (lines.isEmpty()) return
+
+    SettingsGroup("Advanced (auto-filled)")
+    lines.forEach { line ->
+        Text(text = line, color = EditorSubtext, modifier = Modifier.padding(horizontal = 48.dp, vertical = 2.dp))
+    }
+    Text(
+        text     = "Preserved when you save. In-app editing of these is coming soon.",
+        color    = EditorSubtext,
+        modifier = Modifier.padding(horizontal = 48.dp, vertical = 6.dp),
+    )
 }
 
 @Composable

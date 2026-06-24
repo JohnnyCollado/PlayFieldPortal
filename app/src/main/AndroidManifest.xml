@@ -31,6 +31,10 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- Capture legacy game shortcuts from apps that still use the old broadcast
+         (BannerHub, older Winlator). The modern path is LauncherApps shortcut harvesting. -->
+    <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT" />
+
     <!-- Playtime tracking -->
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
@@ -68,6 +72,32 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- ═══ Pinned-shortcut confirmation ═══════════════════════════════ -->
+        <!-- Declaring this makes PFP advertise pin support so apps using the modern
+             requestPinShortcut() (BannerHub, modern Winlator) can create game shortcuts.
+             Invisible: it accepts the pin, records the entry, and finishes. -->
+        <activity
+            android:name=".pin.PinShortcutActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.content.pm.action.CONFIRM_PIN_SHORTCUT" />
+            </intent-filter>
+        </activity>
+
+        <!-- ═══ Legacy INSTALL_SHORTCUT capture (BannerHub, old Winlator) ═══ -->
+        <!-- Best-effort manifest registration. Android 8+ blocks this implicit broadcast for
+             background manifest receivers, so MainActivity also registers it at runtime. -->
+        <receiver
+            android:name=".receiver.InstallShortcutReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.android.launcher.action.INSTALL_SHORTCUT" />
+            </intent-filter>
+        </receiver>
 
         <!-- ═══ Boot Receiver ════════════════════════════════════════════ -->
         <receiver
