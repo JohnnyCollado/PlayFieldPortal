@@ -156,7 +156,7 @@ private fun CollectionDetailStep(
         games.forEach { game ->
             SettingsRow(
                 label    = game.displayTitle,
-                sublabel = "${game.platformId} — tap to remove from collection",
+                sublabel = "${game.platformId.uppercase()}  ·  tap to remove from collection",
                 onClick  = { onRemoveGame(game) },
             )
         }

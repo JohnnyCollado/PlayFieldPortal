@@ -125,7 +125,7 @@ fun DisplaySettingsScreen(
 
             SettingsValueRow(
                 label    = "Icon Style",
-                sublabel = "PSP Rectangle — portrait box art   |   Cartridge — styled chip shape   |   Android apps always use their own icon",
+                sublabel = "PSP Rectangle — horizontal 144:80 icon art   |   Cartridge — game cartridge shape   |   Android apps always use their own icon",
                 value    = viewModel.iconStyleLabel(),
                 onClick  = { viewModel.cycleIconStyle() },
             )

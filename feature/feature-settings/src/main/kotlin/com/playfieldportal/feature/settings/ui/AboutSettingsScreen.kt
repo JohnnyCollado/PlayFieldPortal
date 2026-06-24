@@ -44,13 +44,15 @@ fun AboutSettingsScreen(
             SettingsGroup("Credits")
 
             SettingsValueRow(label = "Artwork",      value = "SteamGridDB")
+            SettingsValueRow(label = "Metadata",     value = "IGDB · TheGamesDB")
             SettingsValueRow(label = "Inspired by",  value = "Sony PSP XMB")
+            SettingsValueRow(label = "See also",     value = "Settings ▸ Credits")
 
             SettingsGroup("Legal")
 
             SettingsRow(
-                label    = "Play Field Portal is not affiliated with Sony Interactive Entertainment.",
-                sublabel = "PlayStation and XMB are trademarks of Sony Interactive Entertainment LLC.",
+                label    = "Play Field Portal is an independent fan project, not affiliated with Sony Interactive Entertainment.",
+                sublabel = "PlayStation, PSP and XMB are trademarks of Sony Interactive Entertainment Inc.",
             )
         }
     }
