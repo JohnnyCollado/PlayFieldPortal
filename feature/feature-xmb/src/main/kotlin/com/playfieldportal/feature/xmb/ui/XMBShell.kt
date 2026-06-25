@@ -84,6 +84,8 @@ fun XMBShellContainer(
         onAppPickerActivatedAt = viewModel::onAppPickerActivatedAt,
         onAppPickerConfirm = viewModel::onAppPickerConfirm,
         onAppPickerDismiss = viewModel::closeAppPicker,
+        onGamePickerConfirm = viewModel::confirmGamePicker,
+        onGamePickerDismiss = viewModel::closeGamePicker,
     )
 }
 
@@ -118,6 +120,8 @@ fun XMBShell(
     onAppPickerActivatedAt: (Int) -> Unit = {},
     onAppPickerConfirm: () -> Unit = {},
     onAppPickerDismiss: () -> Unit = {},
+    onGamePickerConfirm: (Set<Long>, Set<Long>) -> Unit = { _, _ -> },
+    onGamePickerDismiss: () -> Unit = {},
 ) {
     PFPTheme(colors = uiState.themeColors) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -284,6 +288,14 @@ fun XMBShell(
                     onActivateAt = onAppPickerActivatedAt,
                     onConfirm = onAppPickerConfirm,
                     onDismiss = onAppPickerDismiss,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+
+            uiState.gamePickerCategoryId?.let {
+                GamePickerScreen(
+                    onConfirm = onGamePickerConfirm,
+                    onCancel = onGamePickerDismiss,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
