@@ -204,6 +204,9 @@ data class XMBUiState(
     // ── Installed-app picker (Android Library / Video / Music) ─────────────
     val appPicker: AppPickerState? = null,
 
+    // ── Game picker (for adding games to gaming categories) ────────────────
+    val gamePickerCategoryId: String? = null,
+
     // ── Misc ──────────────────────────────────────────────────────────────
     val iconStyle: GameIconStyle = GameIconStyle.PSP_RECTANGLE,
     val librarySetupComplete: Boolean = false,
@@ -220,6 +223,7 @@ data class XMBUiState(
             activeContextMenu != null ||
             colorSchemePicker != null ||
             appPicker != null ||
+            gamePickerCategoryId != null ||
             renameAppTarget != null ||
             collectionNameDialog != null
 }
@@ -272,6 +276,7 @@ class XMBViewModel @Inject constructor(
     private val collectionRepository: CollectionRepository,
     private val categoryRepository: CategoryRepositoryImpl,
     private val appCategoryRepository: AppCategoryRepository,
+    private val gameCategoryRepository: com.playfieldportal.core.data.repository.GameCategoryRepository,
     private val launcherShortcutRepository: LauncherShortcutRepository,
     private val romScanner: RomScanner,
     private val artworkRepository: ArtworkRepository,
@@ -471,10 +476,35 @@ class XMBViewModel @Inject constructor(
                     }
                 }
                 else -> {
-                    // Gaming categories show games from assigned items
+                    // Gaming categories show games and collections
                     if (category.isGamingCategory) {
-                        // For now, show empty state. Games can be added via collection UI or future game picker.
-                        _uiState.update { it.copy(currentItems = listOf(emptyCategoryItem(category))) }
+                        val gameItems = gameCategoryRepository.itemsForCategory(category.id)
+                        val items = if (gameItems.isEmpty()) listOf(emptyCategoryItem(category))
+                                    else gameItems.map { item ->
+                                        when (item) {
+                                            is com.playfieldportal.core.data.repository.GameCategoryItem.GameItem -> {
+                                                XMBItem(
+                                                    id = "game_${item.game.id}",
+                                                    title = item.game.displayTitle,
+                                                    artworkUri = item.game.artworkUri,
+                                                    subtitle = if (item.pinned) "Pinned" else null,
+                                                    gameId = item.game.id,
+                                                    platformId = item.game.platformId,
+                                                    accentColor = platformCache[item.game.platformId]?.accentColor,
+                                                )
+                                            }
+                                            is com.playfieldportal.core.data.repository.GameCategoryItem.CollectionItem -> {
+                                                XMBItem(
+                                                    id = "col_${item.collection.id}",
+                                                    title = item.collection.name,
+                                                    subtitle = "${item.collection.gameCount} ${if (item.collection.gameCount == 1) "Game" else "Games"}",
+                                                    collectionId = item.collection.id,
+                                                    type = XMBItemType.COLLECTION,
+                                                )
+                                            }
+                                        }
+                                    }
+                        _uiState.update { it.copy(currentItems = items + addGamesItem()) }
                     } else {
                         // Non-gaming categories show apps (Photo / Music / Video / Network / App Store / custom)
                         val apps = appCategoryRepository.appsForCategory(category.id)
@@ -501,6 +531,12 @@ class XMBViewModel @Inject constructor(
         id       = ADD_APPS_ITEM_ID,
         title    = "Add Apps",
         subtitle = "Pick installed apps to add to this section",
+    )
+
+    private fun addGamesItem(): XMBItem = XMBItem(
+        id       = ADD_GAMES_ITEM_ID,
+        title    = "Add Games",
+        subtitle = "Pick games and collections to add to this category",
     )
 
     private fun emptyCategoryItem(category: Category): XMBItem {
@@ -1208,6 +1244,35 @@ class XMBViewModel @Inject constructor(
         }
     }
 
+    // ── Game picker (for gaming categories) ────────────────────────────────────
+
+    fun openGamePicker(categoryId: String) {
+        _uiState.update { it.copy(gamePickerCategoryId = categoryId) }
+    }
+
+    fun closeGamePicker() {
+        _uiState.update { it.copy(gamePickerCategoryId = null) }
+    }
+
+    fun confirmGamePicker(selectedGameIds: Set<Long>, selectedCollectionIds: Set<Long>) {
+        val categoryId = _uiState.value.gamePickerCategoryId ?: return
+        closeGamePicker()
+
+        viewModelScope.launch {
+            selectedGameIds.forEach { gameId ->
+                gameCategoryRepository.addGameToCategory(gameId, categoryId)
+            }
+            selectedCollectionIds.forEach { collectionId ->
+                gameCategoryRepository.addCollectionToCategory(collectionId, categoryId)
+            }
+            // Refresh the current category display
+            val category = _uiState.value.categories.getOrNull(_uiState.value.selectedCategoryIndex)
+            if (category?.id == categoryId) {
+                loadItemsForCategory(category)
+            }
+        }
+    }
+
     // Adds the selected apps as launchable Game entries under an Android Memory Card. Stores
     // the package name (launch reference) and label; the icon is loaded by package at render
     // time. Skips apps already present so re-running the picker is safe.
@@ -1388,6 +1453,10 @@ class XMBViewModel @Inject constructor(
             }
             ADD_APPS_ITEM_ID -> {
                 category?.id?.let { openAppPicker(AppPickerTarget.CategoryShortcuts(it), "Add Apps") }
+                return
+            }
+            ADD_GAMES_ITEM_ID -> {
+                category?.id?.let { openGamePicker(it) }
                 return
             }
             FIND_GAMES_ITEM_ID -> {
@@ -1839,6 +1908,7 @@ class XMBViewModel @Inject constructor(
         private const val ALL_GAMES_ITEM_ID = "all_games"
         private const val ALL_GAMES_PLATFORM_ID = "__all_games__"
         private const val ADD_APPS_ITEM_ID = "add_apps"
+        private const val ADD_GAMES_ITEM_ID = "add_games"
         private const val FIND_GAMES_ITEM_ID = "find_games"
         // Platform id whose library is built from installed apps (picker) instead of ROM scans.
         private const val ANDROID_PLATFORM_ID = "android"
