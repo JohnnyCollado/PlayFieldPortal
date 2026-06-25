@@ -12,6 +12,7 @@ data class Category(
     val position: Int,
     val isVisible: Boolean = true,
     val filterRules: FilterRules? = null, // only for SMART type
+    val isGamingCategory: Boolean = false, // true for games/collections, false for apps
 )
 
 enum class CategoryType {

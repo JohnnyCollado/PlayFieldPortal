@@ -36,6 +36,7 @@ fun CategoryManagerScreen(
     when (state.step) {
         CategoryStep.LIST      -> CategoryListContent(state, viewModel, handleBack, modifier)
         CategoryStep.PICK_ICON -> PickIconContent(state, viewModel, handleBack, modifier)
+        CategoryStep.PICK_TYPE -> PickTypeContent(state, viewModel, handleBack, modifier)
         CategoryStep.DETAIL    -> CategoryDetailContent(state, viewModel, handleBack, modifier)
     }
 
@@ -123,6 +124,32 @@ private fun PickIconContent(
     }
 }
 
+// ── PICK TYPE ──────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun PickTypeContent(
+    state: CategoryManagerUiState,
+    vm: CategoryManagerViewModel,
+    onBack: () -> Unit,
+    modifier: Modifier,
+) {
+    SettingsScaffold(title = "Category", subtitle = "Content Type", onBack = onBack, modifier = modifier) {
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+            SettingsGroup(state.pendingName ?: "Category Type")
+            SettingsRow(
+                label    = "Gaming",
+                sublabel = "For games and collections",
+                onClick  = { vm.chooseType(isGaming = true) },
+            )
+            SettingsRow(
+                label    = "Non-Gaming",
+                sublabel = "For apps like Video, Music, Photos",
+                onClick  = { vm.chooseType(isGaming = false) },
+            )
+        }
+    }
+}
+
 // ── DETAIL ──────────────────────────────────────────────────────────────────────
 
 @Composable
@@ -147,6 +174,12 @@ private fun CategoryDetailContent(
                 sublabel = "Hide or show this category in the XMB",
                 checked  = cat.visible,
                 onToggle = { vm.toggleVisible(cat.id, it) },
+            )
+            SettingsToggleRow(
+                label    = "Gaming Category",
+                sublabel = "Gaming: games & collections · Non-gaming: apps",
+                checked  = cat.isGamingCategory,
+                onToggle = { vm.setGamingCategory(cat.id, it) },
             )
 
             SettingsGroup("Order")

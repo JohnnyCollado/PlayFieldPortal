@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-enum class CategoryStep { LIST, PICK_ICON, DETAIL }
+enum class CategoryStep { LIST, PICK_ICON, PICK_TYPE, DETAIL }
 
 data class CategoryRow(
     val id: String,
@@ -22,6 +22,7 @@ data class CategoryRow(
     val iconKey: String,
     val visible: Boolean,
     val protected: Boolean,
+    val isGamingCategory: Boolean = false,
 )
 
 data class IconOption(val key: String, val label: String)
@@ -52,7 +53,10 @@ data class CategoryManagerUiState(
     val detailId: String? = null,
     // Create flow scratch
     val pendingName: String? = null,
+    val pendingIconKey: String? = null,
     val pickingIconForCreate: Boolean = false,
+    val pendingIsGamingCategory: Boolean = false,
+    val pickingTypeForCreate: Boolean = false,
     // Dialogs
     val showCreateNameDialog: Boolean = false,
     val renameTargetId: String? = null,
@@ -78,23 +82,33 @@ class CategoryManagerViewModel @Inject constructor(
         scratch.copy(
             categories = categories.map {
                 CategoryRow(
-                    id        = it.id,
-                    name      = it.name,
-                    iconKey   = it.iconKey,
-                    visible   = it.isVisible,
-                    protected = categoryRepository.isProtected(it.id),
+                    id                 = it.id,
+                    name               = it.name,
+                    iconKey            = it.iconKey,
+                    visible            = it.isVisible,
+                    protected          = categoryRepository.isProtected(it.id),
+                    isGamingCategory   = it.isGamingCategory,
                 )
             },
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CategoryManagerUiState())
 
     fun onBack(): Boolean {
-        if (_scratch.value.step == CategoryStep.LIST) return false
+        val s = _scratch.value
+        if (s.step == CategoryStep.LIST) return false
+        if (s.step == CategoryStep.PICK_TYPE) {
+            _scratch.update {
+                it.copy(step = CategoryStep.PICK_ICON, pickingTypeForCreate = false)
+            }
+            return true
+        }
         _scratch.update {
             it.copy(
                 step = CategoryStep.LIST,
                 pendingName = null,
+                pendingIconKey = null,
                 pickingIconForCreate = false,
+                pickingTypeForCreate = false,
                 detailId = null,
                 returnFocusKey = it.returnFocusKey,
             )
@@ -124,15 +138,38 @@ class CategoryManagerViewModel @Inject constructor(
         val s = _scratch.value
         viewModelScope.launch {
             if (s.pickingIconForCreate) {
-                val name = s.pendingName ?: return@launch
-                categoryRepository.createCustomCategory(name, iconKey)
                 _scratch.update {
-                    it.copy(step = CategoryStep.LIST, pendingName = null, pickingIconForCreate = false)
+                    it.copy(
+                        step = CategoryStep.PICK_TYPE,
+                        pendingIconKey = iconKey,
+                        pickingTypeForCreate = true,
+                    )
                 }
             } else {
                 val id = s.detailId ?: return@launch
                 categoryRepository.setIcon(id, iconKey)
                 _scratch.update { it.copy(step = CategoryStep.DETAIL) }
+            }
+        }
+    }
+
+    fun chooseType(isGaming: Boolean) {
+        val s = _scratch.value
+        viewModelScope.launch {
+            if (s.pickingTypeForCreate) {
+                val name = s.pendingName ?: return@launch
+                val iconKey = s.pendingIconKey ?: return@launch
+                categoryRepository.createCustomCategory(name, iconKey, isGaming)
+                _scratch.update {
+                    it.copy(
+                        step = CategoryStep.LIST,
+                        pendingName = null,
+                        pendingIconKey = null,
+                        pickingIconForCreate = false,
+                        pickingTypeForCreate = false,
+                        pendingIsGamingCategory = false,
+                    )
+                }
             }
         }
     }
@@ -155,6 +192,10 @@ class CategoryManagerViewModel @Inject constructor(
 
     fun toggleVisible(id: String, visible: Boolean) {
         viewModelScope.launch { categoryRepository.setVisible(id, visible) }
+    }
+
+    fun setGamingCategory(id: String, isGaming: Boolean) {
+        viewModelScope.launch { categoryRepository.setGamingCategory(id, isGaming) }
     }
 
     fun move(id: String, up: Boolean) {

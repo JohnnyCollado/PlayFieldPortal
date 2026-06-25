@@ -34,6 +34,9 @@ data class CategoryEntity(
     @ColumnInfo(name = "is_visible")
     val isVisible: Boolean = true,
 
+    @ColumnInfo(name = "is_gaming_category")
+    val isGamingCategory: Boolean = false,
+
     // JSON-serialized FilterRules — null for non-SMART categories
     @ColumnInfo(name = "filter_rules_json")
     val filterRulesJson: String? = null,
@@ -42,29 +45,31 @@ data class CategoryEntity(
 private val json = Json { ignoreUnknownKeys = true }
 
 fun CategoryEntity.toDomain() = Category(
-    id             = id,
-    name           = name,
-    iconKey        = iconKey,
-    customIconUri  = customIconUri,
-    accentColor    = accentColor,
-    type           = CategoryType.valueOf(type),
-    position       = position,
-    isVisible      = isVisible,
-    filterRules    = filterRulesJson?.let {
+    id                 = id,
+    name               = name,
+    iconKey            = iconKey,
+    customIconUri      = customIconUri,
+    accentColor        = accentColor,
+    type               = CategoryType.valueOf(type),
+    position           = position,
+    isVisible          = isVisible,
+    isGamingCategory   = isGamingCategory,
+    filterRules        = filterRulesJson?.let {
         runCatching { json.decodeFromString<FilterRules>(it) }.getOrNull()
     },
 )
 
 fun Category.toEntity() = CategoryEntity(
-    id              = id,
-    name            = name,
-    iconKey         = iconKey,
-    customIconUri   = customIconUri,
-    accentColor     = accentColor,
-    type            = type.name,
-    position        = position,
-    isVisible       = isVisible,
-    filterRulesJson = filterRules?.let {
+    id                  = id,
+    name                = name,
+    iconKey             = iconKey,
+    customIconUri       = customIconUri,
+    accentColor         = accentColor,
+    type                = type.name,
+    position            = position,
+    isVisible           = isVisible,
+    isGamingCategory    = isGamingCategory,
+    filterRulesJson     = filterRules?.let {
         runCatching { json.encodeToString(it) }.getOrNull()
     },
 )

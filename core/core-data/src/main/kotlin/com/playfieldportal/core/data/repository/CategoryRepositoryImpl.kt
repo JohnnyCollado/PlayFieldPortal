@@ -42,6 +42,11 @@ class CategoryRepositoryImpl @Inject constructor(
     suspend fun setVisible(id: String, visible: Boolean) =
         categoryDao.setVisible(id, visible)
 
+    suspend fun setGamingCategory(id: String, isGaming: Boolean) {
+        val existing = categoryDao.getById(id) ?: return
+        categoryDao.update(existing.copy(isGamingCategory = isGaming))
+    }
+
     suspend fun rename(id: String, name: String) {
         val existing = categoryDao.getById(id) ?: return
         categoryDao.update(existing.copy(name = name))
@@ -53,7 +58,7 @@ class CategoryRepositoryImpl @Inject constructor(
     }
 
     // Creates a user category appended after the existing ones. Returns its generated id.
-    suspend fun createCustomCategory(name: String, iconKey: String): String {
+    suspend fun createCustomCategory(name: String, iconKey: String, isGamingCategory: Boolean = false): String {
         val maxPosition = categoryDao.getAll().maxOfOrNull { it.position } ?: -1
         val id = "custom_" + name.trim().lowercase()
             .replace(Regex("[^a-z0-9]+"), "_")
@@ -61,14 +66,15 @@ class CategoryRepositoryImpl @Inject constructor(
             .ifBlank { System.currentTimeMillis().toString() } + "_" + (maxPosition + 1)
         upsert(
             Category(
-                id       = id,
-                name     = name.trim(),
-                iconKey  = iconKey,
-                type     = CategoryType.MANUAL,
-                position = maxPosition + 1,
+                id                 = id,
+                name               = name.trim(),
+                iconKey            = iconKey,
+                type               = CategoryType.MANUAL,
+                position           = maxPosition + 1,
+                isGamingCategory   = isGamingCategory,
             )
         )
-        Timber.i("Custom category created: $id ($name)")
+        Timber.i("Custom category created: $id ($name, isGaming=$isGamingCategory)")
         return id
     }
 
