@@ -49,8 +49,11 @@ interface CategoryDao {
 
     // ── Category Items (junction table) ────────────────────────────────
 
-    @Query("SELECT * FROM category_items WHERE category_id = :categoryId ORDER BY sort_order ASC")
+    @Query("SELECT * FROM category_items WHERE category_id = :categoryId ORDER BY pinned DESC, sort_order ASC")
     fun observeItemsForCategory(categoryId: String): Flow<List<CategoryItemEntity>>
+
+    @Query("SELECT * FROM category_items WHERE category_id = :categoryId ORDER BY pinned DESC, sort_order ASC")
+    suspend fun getItemsForCategory(categoryId: String): List<CategoryItemEntity>
 
     // All app-assignment rows, streamed — drives the App categories' membership.
     @Query("SELECT * FROM category_items WHERE item_type = 'app'")
