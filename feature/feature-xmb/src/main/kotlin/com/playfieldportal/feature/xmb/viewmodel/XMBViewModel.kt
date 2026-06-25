@@ -470,15 +470,20 @@ class XMBViewModel @Inject constructor(
                         _uiState.update { it.copy(currentItems = memoryCardItems()) }
                     }
                 }
-                // All other categories (Photo / Music / Video / Network / App Store / custom)
-                // are populated by classified + user-assigned Android apps.
                 else -> {
-                    val apps = appCategoryRepository.appsForCategory(category.id)
-                    val appItems = if (apps.isEmpty()) listOf(emptyCategoryItem(category))
-                                   else apps.map { it.toXmbItem() }
-                    // "Add Apps" is offered on every app section so the same picker serves
-                    // Video, Music, Network, App Store and custom categories alike.
-                    _uiState.update { it.copy(currentItems = appItems + addAppsItem()) }
+                    // Gaming categories show games from assigned items
+                    if (category.isGamingCategory) {
+                        // For now, show empty state. Games can be added via collection UI or future game picker.
+                        _uiState.update { it.copy(currentItems = listOf(emptyCategoryItem(category))) }
+                    } else {
+                        // Non-gaming categories show apps (Photo / Music / Video / Network / App Store / custom)
+                        val apps = appCategoryRepository.appsForCategory(category.id)
+                        val appItems = if (apps.isEmpty()) listOf(emptyCategoryItem(category))
+                                       else apps.map { it.toXmbItem() }
+                        // "Add Apps" is offered on every app section so the same picker serves
+                        // Video, Music, Network, App Store and custom categories alike.
+                        _uiState.update { it.copy(currentItems = appItems + addAppsItem()) }
+                    }
                 }
             }
         }
@@ -499,18 +504,23 @@ class XMBViewModel @Inject constructor(
     )
 
     private fun emptyCategoryItem(category: Category): XMBItem {
-        val message = when (category.id) {
-            "videos"    -> "No video apps found."
-            "network"   -> "No browser apps found."
-            "app_store" -> "No app stores found."
-            "music"     -> "No music apps found."
-            "photos"    -> "No photo apps found."
-            else        -> "No apps assigned."
+        val (message, subtitle) = if (category.isGamingCategory) {
+            "No games assigned." to "Add games to this category."
+        } else {
+            val msg = when (category.id) {
+                "videos"    -> "No video apps found."
+                "network"   -> "No browser apps found."
+                "app_store" -> "No app stores found."
+                "music"     -> "No music apps found."
+                "photos"    -> "No photo apps found."
+                else        -> "No apps assigned."
+            }
+            msg to "Install some apps to get started."
         }
         return XMBItem(
             id       = EMPTY_CATEGORY_ITEM_ID,
             title    = message,
-            subtitle = "Install some apps to get started.",
+            subtitle = subtitle,
             type     = XMBItemType.EMPTY,
         )
     }
