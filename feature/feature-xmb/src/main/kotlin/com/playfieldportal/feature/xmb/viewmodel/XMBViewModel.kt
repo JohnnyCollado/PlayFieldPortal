@@ -1870,7 +1870,9 @@ class XMBViewModel @Inject constructor(
 
     private fun canonicalXmbCategories(categories: List<Category>): List<Category> {
         val byId = categories.associateBy { it.id }
-        return FALLBACK_CATEGORIES.map { fallback ->
+        val builtInIds = FALLBACK_CATEGORIES.map { it.id }.toSet()
+
+        val builtIns = FALLBACK_CATEGORIES.map { fallback ->
             val stored = byId[fallback.id]
             fallback.copy(
                 accentColor   = stored?.accentColor,
@@ -1878,6 +1880,10 @@ class XMBViewModel @Inject constructor(
                 filterRules   = stored?.filterRules,
             )
         }
+
+        val customCategories = categories.filter { it.id !in builtInIds }
+
+        return (builtIns + customCategories).sortedBy { it.position }
     }
 
     private fun defaultXmbCategoryIndex(categories: List<Category>): Int =
