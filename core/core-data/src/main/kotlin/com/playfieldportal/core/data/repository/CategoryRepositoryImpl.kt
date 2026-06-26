@@ -103,20 +103,35 @@ class CategoryRepositoryImpl @Inject constructor(
 
     // Seeds built-in categories on first launch — idempotent (INSERT OR IGNORE).
     suspend fun seedBuiltInCategories() {
-        val builtIns = listOf(
+        categoryDao.insertAll(BUILT_IN_CATEGORIES.map { it.toEntity() })
+        Timber.i("Built-in categories seeded")
+    }
+
+    // Corrects system-defined flags on built-in rows that already exist. Runs on every
+    // launch so changes to built-in definitions (e.g. marking Games as a gaming category)
+    // propagate to databases seeded by older builds — without wiping user data. Only the
+    // gaming flag is reconciled; user-editable fields (name, position, visibility, icon)
+    // are deliberately left alone.
+    suspend fun reconcileBuiltInCategories() {
+        for (category in BUILT_IN_CATEGORIES) {
+            categoryDao.setGamingFlag(category.id, category.isGamingCategory)
+        }
+        Timber.i("Built-in category flags reconciled")
+    }
+
+    companion object {
+        // Canonical built-in category definitions — single source of truth for both
+        // first-launch seeding and per-launch flag reconciliation.
+        private val BUILT_IN_CATEGORIES = listOf(
             Category(BuiltInCategory.SETTINGS, "Settings",  "ic_settings", type = CategoryType.BUILT_IN, position = 0),
             Category("photos",                 "Photo",     "ic_photos",   type = CategoryType.BUILT_IN, position = 1),
             Category("music",                  "Music",     "ic_music",    type = CategoryType.BUILT_IN, position = 2),
             Category("videos",                 "Video",     "ic_videos",   type = CategoryType.BUILT_IN, position = 3),
-            Category(BuiltInCategory.GAMES,    "Game",      "ic_games",    type = CategoryType.BUILT_IN, position = 4),
+            Category(BuiltInCategory.GAMES,    "Game",      "ic_games",    type = CategoryType.BUILT_IN, position = 4, isGamingCategory = true),
             Category("network",                "Network",   "ic_network",  type = CategoryType.BUILT_IN, position = 5),
             Category("app_store",              "App Store", "ic_appstore", type = CategoryType.BUILT_IN, position = 6),
         )
-        categoryDao.insertAll(builtIns.map { it.toEntity() })
-        Timber.i("Built-in categories seeded")
-    }
 
-    companion object {
         // Built-in categories the user may hide/reorder but never delete.
         val PROTECTED_BUILTINS = setOf(
             BuiltInCategory.FAVORITES,

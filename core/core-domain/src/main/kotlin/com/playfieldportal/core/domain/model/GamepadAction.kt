@@ -7,6 +7,7 @@ enum class GamepadAction {
     NAVIGATE_RIGHT,
     SELECT,
     BACK,
+    BUTTON_Y,
     LONG_PRESS,
     PREV_CATEGORY,
     NEXT_CATEGORY,

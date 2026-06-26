@@ -3,12 +3,15 @@ package com.playfieldportal.feature.settings.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.repository.CollectionRepository
+import com.playfieldportal.core.data.repository.CategoryRepositoryImpl
+import com.playfieldportal.core.domain.model.Category
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GameCollection
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -16,18 +19,24 @@ import javax.inject.Inject
 @HiltViewModel
 class CollectionsSettingsViewModel @Inject constructor(
     private val collectionRepository: CollectionRepository,
+    private val categoryRepository: CategoryRepositoryImpl,
 ) : ViewModel() {
 
     val collections: StateFlow<List<GameCollection>> =
         collectionRepository.observeCollections()
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    val gamingCategories: StateFlow<List<Category>> =
+        categoryRepository.observeAll()
+            .map { categories -> categories.filter { it.isGamingCategory } }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     fun gamesIn(collectionId: Long): Flow<List<Game>> =
         collectionRepository.observeGames(collectionId)
 
-    fun create(name: String) {
+    fun create(name: String, categoryId: String = "games") {
         if (name.isBlank()) return
-        viewModelScope.launch { collectionRepository.create(name) }
+        viewModelScope.launch { collectionRepository.create(name, categoryId) }
     }
 
     fun rename(id: Long, name: String) {

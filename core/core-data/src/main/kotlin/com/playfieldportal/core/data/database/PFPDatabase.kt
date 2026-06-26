@@ -43,7 +43,7 @@ import com.playfieldportal.core.data.database.entity.UnmatchedRomEntity
         CollectionEntity::class,
         CollectionGameEntity::class,
     ],
-    version = 10,
+    version = 11,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)

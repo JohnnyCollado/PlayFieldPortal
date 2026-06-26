@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,28 +9,69 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.playfieldportal.core.domain.model.GamepadAction
 
 @Composable
 fun GamePickerScreen(
     onConfirm: (selectedGameIds: Set<Long>, selectedCollectionIds: Set<Long>) -> Unit,
     onCancel: () -> Unit,
+    pendingGamepadAction: GamepadAction? = null,
+    onGamepadActionConsumed: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: GamePickerViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
+    val listState = rememberLazyListState()
+
+    // Scroll to keep selected item visible
+    LaunchedEffect(state.selectedItemId) {
+        if (state.selectedItemId != null) {
+            val itemIds = buildItemIdList(state)
+            val index = itemIds.indexOf(state.selectedItemId)
+            if (index >= 0) {
+                listState.animateScrollToItem(
+                    index = index,
+                    scrollOffset = -80,
+                )
+            }
+        }
+    }
+
+    // Handle gamepad input
+    LaunchedEffect(pendingGamepadAction) {
+        if (pendingGamepadAction != null) {
+            when (pendingGamepadAction) {
+                GamepadAction.NAVIGATE_UP -> viewModel.moveSelection(-1)
+                GamepadAction.NAVIGATE_DOWN -> viewModel.moveSelection(+1)
+                GamepadAction.SELECT -> viewModel.activateSelection()
+                GamepadAction.BUTTON_Y -> viewModel.toggleSelectedPlatform()
+                GamepadAction.BACK -> onCancel()
+                GamepadAction.HOME -> {
+                    val (gameIds, collectionIds) = viewModel.getSelectedItems()
+                    onConfirm(gameIds, collectionIds)
+                }
+                else -> {} // Other actions handled by parent
+            }
+            onGamepadActionConsumed()
+        }
+    }
 
     if (state.isLoading) {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -38,7 +80,11 @@ fun GamePickerScreen(
         return
     }
 
-    Column(modifier = modifier.fillMaxSize()) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xF00A0A14))
+    ) {
         // Header
         Row(
             modifier = Modifier
@@ -50,59 +96,88 @@ fun GamePickerScreen(
                 text = "Add Games to Category",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.SemiBold,
+                color = Color.White,
                 modifier = Modifier.weight(1f),
             )
         }
 
-        // Content
-        LazyColumn(modifier = Modifier.weight(1f)) {
-            // Platform groups
-            items(state.platformGroups) { group ->
-                PlatformGroupItem(
-                    group = group,
-                    isExpanded = state.platformExpandedStates[group.platform.platformId] ?: true,
-                    onToggleExpanded = { viewModel.togglePlatformExpanded(group.platform.platformId) },
-                    onToggleSelectAll = { selectAll ->
-                        viewModel.togglePlatformAllSelection(group.platform.platformId, selectAll)
-                    },
-                    onGameToggled = { gameId ->
-                        viewModel.toggleGameSelection(gameId)
-                    },
-                    selectedGameIds = state.selectedGameIds,
-                )
-            }
+        Text(
+            text = "${state.selectedGameIds.size + state.selectedCollectionIds.size} selected  ·  A to toggle  ·  Y to expand  ·  Start to add  ·  B to cancel",
+            fontSize = 12.sp,
+            color = Color(0xFFC9C7E8),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 0.dp),
+        )
 
-            // PC Shortcuts section
-            if (state.pcShortcuts.isNotEmpty()) {
+        // Content
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.weight(1f),
+        ) {
+            // Platform groups - use identity-based selection
+            for ((groupIndex, group) in state.platformGroups.withIndex()) {
+                val platformId = group.platform.platformId
+
                 item {
-                    Text(
-                        text = "PC Shortcuts",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp),
+                    PlatformGroupHeader(
+                        group = group,
+                        isExpanded = state.platformExpandedStates[platformId] ?: true,
+                        isSelected = platformId == state.selectedItemId,
+                        onToggleExpanded = { viewModel.togglePlatformExpanded(platformId) },
+                        onToggleSelectAll = { selectAll ->
+                            viewModel.togglePlatformAllSelection(platformId, selectAll)
+                        },
                     )
                 }
 
-                items(state.pcShortcuts) { collection ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 32.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Checkbox(
-                            checked = collection.id in state.selectedCollectionIds,
-                            onCheckedChange = { viewModel.toggleCollectionSelection(collection.id) },
-                        )
-                        Text(
-                            text = collection.name,
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(start = 8.dp),
+                // Games in this platform
+                if (state.platformExpandedStates[platformId] == true) {
+                    items(group.games) { game ->
+                        val gameId = game.id.toString()
+
+                        GamePickerRow(
+                            title = game.displayTitle,
+                            isSelected = gameId == state.selectedItemId,
+                            isChecked = game.id in state.selectedGameIds,
+                            onToggle = { viewModel.toggleGameSelection(game.id) },
+                            modifier = Modifier.padding(start = 48.dp),
                         )
                     }
                 }
             }
+
+            // Collections section
+            if (state.pcShortcuts.isNotEmpty()) {
+                item {
+                    Text(
+                        text = "Collections",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
+                            .background(
+                                if ("COLLECTIONS_HEADER" == state.selectedItemId)
+                                    Color(0xFF574DDB).copy(alpha = 0.2f)
+                                else
+                                    Color.Transparent
+                            ),
+                    )
+                }
+
+                items(state.pcShortcuts) { collection ->
+                    val collectionId = collection.id.toString()
+
+                    GamePickerRow(
+                        title = collection.name,
+                        isSelected = collectionId == state.selectedItemId,
+                        isChecked = collection.id in state.selectedCollectionIds,
+                        onToggle = { viewModel.toggleCollectionSelection(collection.id) },
+                        modifier = Modifier.padding(start = 32.dp),
+                    )
+                }
+            }
+
         }
 
         // Bottom buttons
@@ -115,7 +190,7 @@ fun GamePickerScreen(
                 onClick = onCancel,
                 modifier = Modifier.weight(1f),
             ) {
-                Text("Cancel")
+                Text("Cancel", color = Color.White)
             }
 
             TextButton(
@@ -125,79 +200,114 @@ fun GamePickerScreen(
                 },
                 modifier = Modifier.weight(1f),
             ) {
-                Text("Add (${state.selectedGameIds.size + state.selectedCollectionIds.size})")
+                Text("Add (${state.selectedGameIds.size + state.selectedCollectionIds.size})", color = Color.White)
             }
         }
     }
 }
 
+private fun buildItemIdList(state: GamePickerState): List<String> {
+    val ids = mutableListOf<String>()
+
+    for (group in state.platformGroups) {
+        ids.add(group.platform.platformId)
+        if (state.platformExpandedStates[group.platform.platformId] == true) {
+            for (game in group.games) {
+                ids.add(game.id.toString())
+            }
+        }
+    }
+
+    if (state.pcShortcuts.isNotEmpty()) {
+        ids.add("COLLECTIONS_HEADER")
+        for (collection in state.pcShortcuts) {
+            ids.add(collection.id.toString())
+        }
+    }
+
+    return ids
+}
+
 @Composable
-private fun PlatformGroupItem(
+private fun PlatformGroupHeader(
     group: PlatformGameGroup,
     isExpanded: Boolean,
+    isSelected: Boolean,
     onToggleExpanded: () -> Unit,
     onToggleSelectAll: (Boolean) -> Unit,
-    onGameToggled: (Long) -> Unit,
-    selectedGameIds: Set<Long>,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .background(
+                if (isSelected)
+                    Color(0xFF574DDB).copy(alpha = 0.2f)
+                else
+                    Color.Transparent
+            ),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Checkbox(
+            checked = group.isAllSelected || group.selectedCount > 0,
+            onCheckedChange = { selectAll -> onToggleSelectAll(selectAll) },
+        )
+
+        Text(
+            text = group.platform.displayName,
+            fontSize = if (isSelected) 15.sp else 14.sp,
+            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+            color = if (isSelected) Color.White else Color.White.copy(alpha = 0.8f),
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 8.dp),
+        )
+
+        Text(
+            text = "${group.selectedCount}/${group.games.size}",
+            fontSize = 12.sp,
+            color = if (isSelected) Color.White else Color.White.copy(alpha = 0.7f),
+            modifier = Modifier.padding(end = 8.dp),
+        )
+
+        TextButton(onClick = onToggleExpanded) {
+            Text(if (isExpanded) "▼" else "▶", fontSize = 12.sp, color = Color.White)
+        }
+    }
+}
+
+@Composable
+private fun GamePickerRow(
+    title: String,
+    isSelected: Boolean,
+    isChecked: Boolean,
+    onToggle: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier) {
-        // Platform header with select all toggle
-        Row(
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(end = 16.dp, top = 4.dp, bottom = 4.dp)
+            .background(
+                if (isSelected)
+                    Color(0xFF574DDB).copy(alpha = 0.2f)
+                else
+                    Color.Transparent
+            ),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Checkbox(
+            checked = isChecked,
+            onCheckedChange = { onToggle() },
+        )
+        Text(
+            text = title,
+            color = if (isSelected) Color.White else Color.White.copy(alpha = 0.8f),
+            fontSize = if (isSelected) 14.sp else 13.sp,
+            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Checkbox(
-                checked = group.isAllSelected || group.selectedCount > 0,
-                onCheckedChange = { selectAll -> onToggleSelectAll(selectAll) },
-            )
-
-            Text(
-                text = group.platform.displayName,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 8.dp),
-            )
-
-            Text(
-                text = "${group.selectedCount}/${group.games.size}",
-                fontSize = 12.sp,
-                modifier = Modifier.padding(end = 8.dp),
-            )
-
-            TextButton(onClick = onToggleExpanded) {
-                Text(if (isExpanded) "▼" else "▶", fontSize = 12.sp)
-            }
-        }
-
-        // Expanded game list
-        if (isExpanded && group.games.isNotEmpty()) {
-            Column {
-                group.games.forEach { game ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 48.dp, end = 16.dp, top = 4.dp, bottom = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Checkbox(
-                            checked = game.id in selectedGameIds,
-                            onCheckedChange = { onGameToggled(game.id) },
-                        )
-                        Text(
-                            text = game.displayTitle,
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(start = 8.dp),
-                            fontSize = 13.sp,
-                        )
-                    }
-                }
-            }
-        }
+                .weight(1f)
+                .padding(start = 8.dp),
+        )
     }
 }

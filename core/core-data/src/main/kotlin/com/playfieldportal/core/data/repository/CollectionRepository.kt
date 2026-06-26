@@ -39,17 +39,18 @@ class CollectionRepository @Inject constructor(
         collectionDao.getCollectionIdsForGame(gameId)
 
     /** Creates a collection appended to the end of the list. Returns the new id. */
-    suspend fun create(name: String): Long {
+    suspend fun create(name: String, categoryId: String = "games"): Long {
         val now = System.currentTimeMillis()
         val id = collectionDao.insert(
             CollectionEntity(
                 name      = name.trim().ifBlank { "Untitled Collection" },
+                categoryId = categoryId,
                 createdAt = now,
                 updatedAt = now,
                 sortOrder = collectionDao.maxSortOrder() + 1,
             )
         )
-        Timber.i("Collection created: id=$id name=$name")
+        Timber.i("Collection created: id=$id name=$name categoryId=$categoryId")
         return id
     }
 

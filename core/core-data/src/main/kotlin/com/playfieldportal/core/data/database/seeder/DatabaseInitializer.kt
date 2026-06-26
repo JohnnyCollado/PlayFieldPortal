@@ -49,6 +49,9 @@ class DatabaseInitializer @Inject constructor(
     // Safe to call multiple times — guarded by DataStore flags and INSERT OR IGNORE.
     suspend fun initialize() {
         seedMainDb()
+        // Runs every launch (not gated by DB_SEEDED): corrects system-defined flags on
+        // built-in categories so definition changes reach databases seeded by older builds.
+        categoryRepository.reconcileBuiltInCategories()
         seedThemes()
     }
 

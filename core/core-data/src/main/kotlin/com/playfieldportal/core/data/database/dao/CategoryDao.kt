@@ -47,6 +47,11 @@ interface CategoryDao {
     @Query("UPDATE categories SET is_visible = :visible WHERE id = :id")
     suspend fun setVisible(id: String, visible: Boolean)
 
+    // Corrects only the system-defined gaming flag on an existing row, leaving
+    // user-editable fields (name, position, visibility, icon) untouched. No-op if absent.
+    @Query("UPDATE categories SET is_gaming_category = :gaming WHERE id = :id")
+    suspend fun setGamingFlag(id: String, gaming: Boolean)
+
     // ── Category Items (junction table) ────────────────────────────────
 
     @Query("SELECT * FROM category_items WHERE category_id = :categoryId ORDER BY pinned DESC, sort_order ASC")

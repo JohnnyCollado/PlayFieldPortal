@@ -12,6 +12,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -24,6 +26,7 @@ data class GamePickerState(
     val selectedCollectionIds: Set<Long> = emptySet(),
     val platformExpandedStates: Map<String, Boolean> = emptyMap(),
     val isLoading: Boolean = false,
+    val selectedItemId: String? = null,  // Identity of selected item (platform/game/collection ID)
 )
 
 data class PlatformGameGroup(
@@ -42,7 +45,7 @@ class GamePickerViewModel @Inject constructor(
     private val memoryCardRepository: MemoryCardRepository,
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(GamePickerState(isLoading = true))
+    private val _state = MutableStateFlow(GamePickerState(isLoading = true, selectedItemId = null))
     val state: StateFlow<GamePickerState> = _state.asStateFlow()
 
     init {
@@ -52,37 +55,58 @@ class GamePickerViewModel @Inject constructor(
     private fun loadData() {
         viewModelScope.launch {
             try {
-                val cards = memoryCardRepository.observeEnabled().first()
-                val allGames = gameRepository.observeAll().first()
-                val collections = collectionRepository.getAll()
+                // Combine memory cards and games streams to listen for updates
+                memoryCardRepository.observeEnabled().combine(gameRepository.observeAll()) { cards, allGames ->
+                    Pair(cards, allGames)
+                }.collect { (cards, allGames) ->
+                    try {
+                        val collections = try {
+                            collectionRepository.getAll()
+                        } catch (e: Exception) {
+                            emptyList()
+                        }
 
-                // Group games by platform
-                val platformGroups = cards.map { card ->
-                    val platformGames = allGames.filter { it.platformId == card.platformId }
-                    PlatformGameGroup(
-                        platform = card,
-                        games = platformGames,
-                        isExpanded = true,
-                    )
-                }
+                        // Group games by platform, excluding empty platforms
+                        val platformGroups = cards.mapNotNull { card ->
+                            val platformGames = allGames.filter { it.platformId == card.platformId }
+                            if (platformGames.isNotEmpty()) {
+                                PlatformGameGroup(
+                                    platform = card,
+                                    games = platformGames,
+                                    isExpanded = true,
+                                )
+                            } else {
+                                null
+                            }
+                        }
 
-                // Filter for PC shortcut collections
-                val pcShortcuts = collections.filter {
-                    it.name.contains("PC", ignoreCase = true) ||
-                    it.name.contains("Shortcut", ignoreCase = true)
-                }
+                        // All user collections available to add
+                        val allCollections = collections
 
-                _state.update {
-                    it.copy(
-                        platformGroups = platformGroups,
-                        pcShortcuts = pcShortcuts,
-                        isLoading = false,
-                        platformExpandedStates = platformGroups.associate { group ->
-                            group.platform.platformId to true
-                        },
-                    )
+                        val newExpandedStates = platformGroups.associate { group ->
+                            group.platform.platformId to false
+                        }
+
+                        // Initialize selectedItemId to first item if not already set
+                        val newState = GamePickerState(
+                            platformGroups = platformGroups,
+                            pcShortcuts = allCollections,
+                            isLoading = false,
+                            platformExpandedStates = newExpandedStates,
+                            selectedItemId = if (_state.value.selectedItemId == null) {
+                                platformGroups.firstOrNull()?.platform?.platformId
+                            } else {
+                                _state.value.selectedItemId
+                            }
+                        )
+
+                        _state.update { newState }
+                    } catch (e: Exception) {
+                        android.util.Log.e("GamePickerViewModel", "Error processing picker data", e)
+                    }
                 }
             } catch (e: Exception) {
+                android.util.Log.e("GamePickerViewModel", "Error loading picker data", e)
                 _state.update { it.copy(isLoading = false) }
             }
         }
@@ -146,4 +170,119 @@ class GamePickerViewModel @Inject constructor(
     fun getSelectedItems(): Pair<Set<Long>, Set<Long>> {
         return _state.value.selectedGameIds to _state.value.selectedCollectionIds
     }
+
+    fun addNewCollection(name: String) {
+        viewModelScope.launch {
+            try {
+                val newCollection = com.playfieldportal.core.domain.model.GameCollection(
+                    name = name,
+                    gameCount = 0,
+                )
+                // Note: This assumes collectionRepository has a method to create collections
+                // If not, this will need to be implemented
+            } catch (e: Exception) {
+                android.util.Log.e("GamePickerViewModel", "Error creating collection", e)
+            }
+        }
+    }
+
+    fun moveSelection(delta: Int) {
+        val state = _state.value
+
+        // Build a list of all selectable item IDs in order
+        val itemIds = buildItemIdList(state)
+        if (itemIds.isEmpty()) return
+
+        // Find current position
+        val currentId = state.selectedItemId
+        val currentIndex = if (currentId != null) itemIds.indexOf(currentId) else -1
+
+        // Calculate new position
+        val newIndex = if (currentIndex < 0) {
+            // No selection yet, start at first item
+            0
+        } else {
+            (currentIndex + delta).coerceIn(0, itemIds.size - 1)
+        }
+
+        if (newIndex >= 0 && newIndex < itemIds.size) {
+            _state.update { it.copy(selectedItemId = itemIds[newIndex]) }
+        }
+    }
+
+    fun activateSelection() {
+        val state = _state.value
+        val selectedId = state.selectedItemId ?: return
+
+        // Determine what type of item was selected
+        for (group in state.platformGroups) {
+            if (group.platform.platformId == selectedId) {
+                // Platform header selected
+                val selectAll = !group.isAllSelected
+                togglePlatformAllSelection(group.platform.platformId, selectAll)
+                return
+            }
+
+            for (game in group.games) {
+                if (game.id.toString() == selectedId) {
+                    // Game selected
+                    toggleGameSelection(game.id)
+                    return
+                }
+            }
+        }
+
+        // Check collections
+        if (selectedId == "COLLECTIONS_HEADER") {
+            // Header selected, no action
+            return
+        }
+
+        for (collection in state.pcShortcuts) {
+            if (collection.id.toString() == selectedId) {
+                toggleCollectionSelection(collection.id)
+                return
+            }
+        }
+    }
+
+    fun toggleSelectedPlatform() {
+        val state = _state.value
+        val selectedId = state.selectedItemId ?: return
+
+        // If the selected item is a platform header, toggle its expanded state
+        for (group in state.platformGroups) {
+            if (group.platform.platformId == selectedId) {
+                togglePlatformExpanded(group.platform.platformId)
+                return
+            }
+        }
+    }
+
+    private fun buildItemIdList(state: GamePickerState): List<String> {
+        val ids = mutableListOf<String>()
+
+        for (group in state.platformGroups) {
+            // Add platform header ID
+            ids.add(group.platform.platformId)
+
+            // Add game IDs if platform is expanded
+            if (state.platformExpandedStates[group.platform.platformId] == true) {
+                for (game in group.games) {
+                    ids.add(game.id.toString())
+                }
+            }
+        }
+
+        // Add collections section
+        if (state.pcShortcuts.isNotEmpty()) {
+            ids.add("COLLECTIONS_HEADER")
+            for (collection in state.pcShortcuts) {
+                ids.add(collection.id.toString())
+            }
+        }
+
+        return ids
+    }
+
 }

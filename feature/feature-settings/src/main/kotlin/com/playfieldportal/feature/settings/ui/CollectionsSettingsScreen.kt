@@ -2,12 +2,16 @@ package com.playfieldportal.feature.settings.ui
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -16,6 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.playfieldportal.core.domain.model.Category
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GameCollection
 import com.playfieldportal.feature.settings.viewmodel.CollectionsSettingsViewModel
@@ -32,16 +37,19 @@ fun CollectionsSettingsScreen(
     viewModel: CollectionsSettingsViewModel = hiltViewModel(),
 ) {
     val collections by viewModel.collections.collectAsState()
+    val gamingCategories by viewModel.gamingCategories.collectAsState()
 
     var openCollectionId by remember { mutableStateOf<Long?>(null) }
     // Pending text dialog: Pair(title, renameId?) — renameId null means "create new".
     var dialog by remember { mutableStateOf<CollectionDialog?>(null) }
+    var selectedCategoryForNewCollection by remember { mutableStateOf<String?>(null) }
 
     val openCollection = collections.firstOrNull { it.id == openCollectionId }
 
     // BACK collapses the current sub-step before leaving the screen.
     val handleBack: () -> Unit = {
         when {
+            selectedCategoryForNewCollection != null -> selectedCategoryForNewCollection = null
             dialog != null            -> dialog = null
             openCollectionId != null  -> openCollectionId = null
             else                      -> onBack()
@@ -79,16 +87,42 @@ fun CollectionsSettingsScreen(
         }
     }
 
-    dialog?.let { d ->
-        CollectionTextDialog(
-            title = d.title,
-            initial = d.initial,
-            onConfirm = { name ->
-                if (d.renameId != null) viewModel.rename(d.renameId, name) else viewModel.create(name)
-                dialog = null
-            },
-            onCancel = { dialog = null },
-        )
+    // Show text dialog for name entry (new or rename)
+    if (selectedCategoryForNewCollection == null) {
+        dialog?.let { d ->
+            CollectionTextDialog(
+                title = d.title,
+                initial = d.initial,
+                onConfirm = { name ->
+                    if (d.renameId != null) {
+                        // Rename existing collection
+                        viewModel.rename(d.renameId, name)
+                        dialog = null
+                    } else {
+                        // Creating new collection — ask which category to add to
+                        d.pendingName = name
+                        selectedCategoryForNewCollection = gamingCategories.firstOrNull()?.id ?: "games"
+                    }
+                },
+                onCancel = { dialog = null },
+            )
+        }
+    }
+
+    // Show category picker for new collection
+    dialog?.pendingName?.let { name ->
+        if (selectedCategoryForNewCollection != null) {
+            CollectionCategoryPickerDialog(
+                categories = gamingCategories,
+                selectedCategoryId = selectedCategoryForNewCollection ?: "games",
+                onCategorySelected = { categoryId ->
+                    viewModel.create(name, categoryId)
+                    selectedCategoryForNewCollection = null
+                    dialog = null
+                },
+                onCancel = { selectedCategoryForNewCollection = null },
+            )
+        }
     }
 }
 
@@ -96,6 +130,7 @@ private data class CollectionDialog(
     val title: String,
     val renameId: Long? = null,
     val initial: String = "",
+    var pendingName: String? = null,  // Temporarily holds name while category is selected
 )
 
 @Composable
@@ -184,5 +219,42 @@ private fun CollectionTextDialog(
         },
         confirmButton = { TextButton(onClick = { onConfirm(text) }) { Text("Save") } },
         dismissButton = { TextButton(onClick = onCancel) { Text("Cancel") } },
+    )
+}
+
+@Composable
+private fun CollectionCategoryPickerDialog(
+    categories: List<Category>,
+    selectedCategoryId: String,
+    onCategorySelected: (String) -> Unit,
+    onCancel: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onCancel,
+        title = { Text("Add to Category") },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onCancel) { Text("Cancel") } },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+            ) {
+                categories.forEach { category ->
+                    TextButton(
+                        onClick = { onCategorySelected(category.id) },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(
+                            category.name,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp),
+                            color = if (category.id == selectedCategoryId) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                }
+            }
+        },
     )
 }

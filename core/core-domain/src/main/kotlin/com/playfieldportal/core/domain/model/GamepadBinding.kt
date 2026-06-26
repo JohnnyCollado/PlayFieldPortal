@@ -21,7 +21,7 @@ val DEFAULT_BINDINGS = listOf(
     GamepadBinding(KeyEvent.KEYCODE_BUTTON_A,      GamepadAction.SELECT),
     GamepadBinding(KeyEvent.KEYCODE_BUTTON_B,      GamepadAction.BACK),
     GamepadBinding(KeyEvent.KEYCODE_BUTTON_X,      GamepadAction.OPEN_TASK_TRAY),
-    GamepadBinding(KeyEvent.KEYCODE_BUTTON_Y,      GamepadAction.LONG_PRESS),
+    GamepadBinding(KeyEvent.KEYCODE_BUTTON_Y,      GamepadAction.BUTTON_Y),
     GamepadBinding(KeyEvent.KEYCODE_DPAD_UP,       GamepadAction.NAVIGATE_UP),
     GamepadBinding(KeyEvent.KEYCODE_DPAD_DOWN,     GamepadAction.NAVIGATE_DOWN),
     GamepadBinding(KeyEvent.KEYCODE_DPAD_LEFT,     GamepadAction.NAVIGATE_LEFT),
@@ -42,6 +42,7 @@ fun GamepadAction.displayLabel(): String = when (this) {
     GamepadAction.NAVIGATE_RIGHT  -> "Navigate Right (Next Category)"
     GamepadAction.SELECT          -> "Select / Launch"
     GamepadAction.BACK            -> "Back / Close"
+    GamepadAction.BUTTON_Y        -> "Collapse / Expand"
     GamepadAction.LONG_PRESS      -> "Options / Long Press"
     GamepadAction.PREV_CATEGORY   -> "Previous Tab (App Drawer)"
     GamepadAction.NEXT_CATEGORY   -> "Next Tab (App Drawer)"

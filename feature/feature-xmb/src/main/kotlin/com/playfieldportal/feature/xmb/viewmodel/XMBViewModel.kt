@@ -206,6 +206,7 @@ data class XMBUiState(
 
     // ── Game picker (for adding games to gaming categories) ────────────────
     val gamePickerCategoryId: String? = null,
+    val pendingGamePickerAction: GamepadAction? = null,
 
     // ── Misc ──────────────────────────────────────────────────────────────
     val iconStyle: GameIconStyle = GameIconStyle.PSP_RECTANGLE,
@@ -708,6 +709,21 @@ class XMBViewModel @Inject constructor(
             return
         }
 
+        // ── Game picker captures ALL input when open ───────────────────────────
+        if (state.gamePickerCategoryId != null) {
+            when (action) {
+                GamepadAction.NAVIGATE_UP,
+                GamepadAction.NAVIGATE_DOWN,
+                GamepadAction.SELECT,
+                GamepadAction.HOME,
+                GamepadAction.BACK,
+                GamepadAction.BUTTON_Y,
+                GamepadAction.LONG_PRESS -> _uiState.update { it.copy(pendingGamePickerAction = action) }
+                else -> Unit
+            }
+            return
+        }
+
         // ── Context menu captures ALL input when open ──────────────────────────
         if (state.activeContextMenu != null) {
             when (action) {
@@ -715,7 +731,8 @@ class XMBViewModel @Inject constructor(
                 GamepadAction.NAVIGATE_DOWN -> shiftContextMenu(+1)
                 GamepadAction.SELECT        -> activateContextMenuItem()
                 GamepadAction.BACK,
-                GamepadAction.LONG_PRESS    -> closeContextMenu()
+                GamepadAction.LONG_PRESS,
+                GamepadAction.BUTTON_Y      -> closeContextMenu()
                 else -> Unit
             }
             return
@@ -817,7 +834,8 @@ class XMBViewModel @Inject constructor(
                 if (state.selectedPlatformId != null || state.selectedCollectionId != null) closePlatformFolder()
                 else onOpenAppDrawer()
             }
-            GamepadAction.LONG_PRESS -> {
+            GamepadAction.LONG_PRESS,
+            GamepadAction.BUTTON_Y -> {
                 // Y / Triangle — open context menu for whichever item type has focus
                 val item = state.currentItems.getOrNull(state.selectedItemIndex)
                 when {
@@ -831,6 +849,7 @@ class XMBViewModel @Inject constructor(
             GamepadAction.HOME          -> Unit
             // Task tray removed — background work now lives in the notification bar.
             GamepadAction.OPEN_TASK_TRAY -> Unit
+            GamepadAction.BUTTON_Y,
             GamepadAction.PREV_CATEGORY,
             GamepadAction.NEXT_CATEGORY -> Unit
         }
@@ -878,6 +897,9 @@ class XMBViewModel @Inject constructor(
 
     private fun openGameContextMenu(item: XMBItem) {
         val inCollection = _uiState.value.selectedCollectionId != null
+        val currentCat = currentCategory()
+        val inGamingCategory = currentCat?.isGamingCategory == true
+
         val items = buildList {
             add(XMBContextMenuItem("launch", "Launch Game"))
             if (item.packageName != null) add(XMBContextMenuItem("edit_app", "Edit App Details"))
@@ -889,6 +911,14 @@ class XMBViewModel @Inject constructor(
             // Only offer removal when viewing the game from inside a collection.
             if (inCollection) add(XMBContextMenuItem("remove_from_collection", "Remove from Collection"))
             add(XMBContextMenuItem("manage_collections", "Manage Collections"))
+
+            // Gaming category options
+            if (inGamingCategory && currentCat != null) {
+                add(XMBContextMenuItem("move_category", "Move to Category"))
+                add(XMBContextMenuItem("remove_category", "Remove from Category"))
+                add(XMBContextMenuItem("pin_category", if (item.subtitle == "Pinned") "Unpin" else "Pin"))
+            }
+
             add(XMBContextMenuItem("refresh_metadata", "Refresh Metadata"))
             add(XMBContextMenuItem("refresh_artwork",  "Refresh Artwork"))
             add(XMBContextMenuItem("file_location",    "View File Location"))
@@ -902,6 +932,7 @@ class XMBViewModel @Inject constructor(
                 packageName = item.packageName,
                 shortcutId  = item.shortcutId,
                 launchIntentUri = item.launchIntentUri,
+                categoryContext = if (inGamingCategory) currentCat?.id else null,
             )
         )}
     }
@@ -1010,6 +1041,24 @@ class XMBViewModel @Inject constructor(
         val menu   = _uiState.value.activeContextMenu ?: return
         val itemId = menu.items.getOrNull(menu.selectedIndex)?.id ?: return
 
+        // ── Gaming category picker submenu — move or add game to another category ──
+        if (itemId.startsWith("cat_") && menu.gameId != null && menu.categoryContext != null && menu.pendingAppAction != null) {
+            val gameId = menu.gameId
+            val fromCategory = menu.categoryContext
+            val toCategory = itemId.removePrefix("cat_")
+            closeContextMenu()
+            when (menu.pendingAppAction) {
+                "move" -> appAction { gameCategoryRepository.moveGameToCategory(gameId, fromCategory, toCategory) }
+                "add"  -> appAction { gameCategoryRepository.addGameToCategory(gameId, toCategory) }
+            }
+            // Refresh the current category display if we just moved/added from this category
+            val currentCat = currentCategory()
+            if (currentCat?.id == fromCategory) {
+                loadItemsForCategory(currentCat)
+            }
+            return
+        }
+
         // ── Collection picker submenu — handled before closing so toggles stay in place ──
         if (menu.collectionGameId != null) {
             val gameId = menu.collectionGameId
@@ -1077,6 +1126,9 @@ class XMBViewModel @Inject constructor(
                     }
                 }
                 "manage_collections"     -> _uiState.update { it.copy(activeSettingsScreen = "settings_collections") }
+                "move_category"          -> menu.categoryContext?.let { openGameCategoryPicker(menu.gameId, it, "move") }
+                "remove_category"        -> menu.categoryContext?.let { cat -> appAction { gameCategoryRepository.removeGameFromCategory(menu.gameId, cat) } }
+                "pin_category"           -> menu.categoryContext?.let { cat -> appAction { gameCategoryRepository.pinGameInCategory(menu.gameId, cat, true) } }
                 "refresh_artwork"        -> refreshGameArtwork(menu.gameId)
                 "refresh_metadata"       -> refreshGameArtwork(menu.gameId)
                 "file_location"          -> showGameFileLocation(menu.gameId)
@@ -1251,7 +1303,11 @@ class XMBViewModel @Inject constructor(
     }
 
     fun closeGamePicker() {
-        _uiState.update { it.copy(gamePickerCategoryId = null) }
+        _uiState.update { it.copy(gamePickerCategoryId = null, pendingGamePickerAction = null) }
+    }
+
+    fun consumeGamePickerAction() {
+        _uiState.update { it.copy(pendingGamePickerAction = null) }
     }
 
     fun confirmGamePicker(selectedGameIds: Set<Long>, selectedCollectionIds: Set<Long>) {
@@ -1271,6 +1327,27 @@ class XMBViewModel @Inject constructor(
                 loadItemsForCategory(category)
             }
         }
+    }
+
+    // Shows a menu of other gaming categories for moving/adding a game
+    private fun openGameCategoryPicker(gameId: Long, fromCategoryId: String, action: String) {
+        val items = buildList {
+            _uiState.value.categories.filter { it.isGamingCategory && it.id != fromCategoryId }.forEach { cat ->
+                add(XMBContextMenuItem("cat_${cat.id}", cat.name))
+            }
+        }
+
+        if (items.isEmpty()) return
+
+        _uiState.update { it.copy(
+            activeContextMenu = XMBContextMenu(
+                title       = if (action == "move") "Move Game To" else "Add Game To",
+                items       = items,
+                gameId      = gameId,
+                categoryContext = fromCategoryId,
+                pendingAppAction = action,  // reuse this field to store the action type
+            )
+        )}
     }
 
     // Adds the selected apps as launchable Game entries under an Android Memory Card. Stores

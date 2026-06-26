@@ -12,6 +12,9 @@ data class CollectionEntity(
 
     val name: String,
 
+    @ColumnInfo(name = "category_id")
+    val categoryId: String = "games",  // Default to Main Game category
+
     @ColumnInfo(name = "created_at")
     val createdAt: Long = System.currentTimeMillis(),
 
@@ -25,6 +28,7 @@ data class CollectionEntity(
 fun CollectionEntity.toDomain(gameCount: Int = 0) = GameCollection(
     id        = id,
     name      = name,
+    categoryId = categoryId,
     createdAt = createdAt,
     updatedAt = updatedAt,
     sortOrder = sortOrder,
@@ -34,6 +38,7 @@ fun CollectionEntity.toDomain(gameCount: Int = 0) = GameCollection(
 fun GameCollection.toEntity() = CollectionEntity(
     id        = id,
     name      = name,
+    categoryId = categoryId,
     createdAt = createdAt,
     updatedAt = updatedAt,
     sortOrder = sortOrder,
