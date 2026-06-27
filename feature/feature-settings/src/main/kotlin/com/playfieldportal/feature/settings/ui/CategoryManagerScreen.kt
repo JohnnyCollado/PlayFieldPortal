@@ -16,9 +16,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.size
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.playfieldportal.core.ui.icons.CategoryIconGlyph
 import com.playfieldportal.feature.settings.viewmodel.CREATE_CATEGORY_FOCUS_KEY
 import com.playfieldportal.feature.settings.viewmodel.CategoryManagerUiState
 import com.playfieldportal.feature.settings.viewmodel.CategoryManagerViewModel
@@ -118,7 +120,11 @@ private fun PickIconContent(
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
             SettingsGroup(state.pendingName ?: state.detail?.name ?: "Icon")
             state.iconOptions.forEach { option ->
-                SettingsRow(label = option.label, onClick = { vm.chooseIcon(option.key) })
+                SettingsRow(
+                    label    = option.label,
+                    trailing = { CategoryIconGlyph(option.key, contentDescription = option.label, modifier = Modifier.size(40.dp)) },
+                    onClick  = { vm.chooseIcon(option.key) },
+                )
             }
         }
     }

@@ -96,27 +96,44 @@ class EmulatorIntentResolver @Inject constructor(
         val romPath = game.romPath ?: error("ROM path is required to launch ${game.title}")
         val romFile = File(romPath)
         val uri = resolveRomUri(romFile, profile)
-
         val activityClass = profile.activityClass
-        val intent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(uri, profile.mimeType ?: "application/octet-stream")
-            if (activityClass != null) {
-                component = ComponentName(profile.packageName, activityClass)
-            } else {
-                setPackage(profile.packageName)
-            }
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            grantReadPermissionIfNeeded(uri, game.title, profile.packageName)
-        }
+        val mime = profile.mimeType ?: "application/octet-stream"
 
-        val resolves = context.packageManager.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY)
-        if (resolves.isEmpty()) {
+        fun build(withType: Boolean, withComponent: Boolean): Intent =
+            Intent(Intent.ACTION_VIEW).apply {
+                // Android matching rule: if the intent sets a MIME type, the target's intent
+                // filter must ALSO declare a type. Some emulators (e.g. the AzaharPlus build on
+                // the Lime3DS package) declare ACTION_VIEW with only a content scheme and NO type,
+                // so a typed intent fails to resolve — hence the no-type fallback.
+                if (withType) setDataAndType(uri, mime) else data = uri
+                if (withComponent && activityClass != null) {
+                    component = ComponentName(profile.packageName, activityClass)
+                } else {
+                    setPackage(profile.packageName)
+                }
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+
+        // Most-specific first (preserves behaviour for emulators that already work), then relax:
+        // drop the MIME type (scheme-only filters), then drop the pinned component (resolve by the
+        // app's own declared ACTION_VIEW handler).
+        val candidates = listOf(
+            build(withType = true,  withComponent = true),
+            build(withType = false, withComponent = true),
+            build(withType = true,  withComponent = false),
+            build(withType = false, withComponent = false),
+        )
+        val intent = candidates.firstOrNull {
+            context.packageManager.queryIntentActivities(it, PackageManager.MATCH_DEFAULT_ONLY).isNotEmpty()
+        } ?: run {
             Timber.w(
-                "Intent not resolvable: profile=${profile.name}, package=${profile.packageName}, uri=${uri.scheme}://, mime=${profile.mimeType}"
+                "Intent not resolvable: profile=${profile.name}, package=${profile.packageName}, uri=${uri.scheme}://, mime=$mime, activity=${activityClass ?: "(by package)"}"
             )
             error("${profile.name} cannot open this ROM type. Try reinstalling the emulator, or verify its app permissions in Android Settings.")
         }
 
+        intent.grantReadPermissionIfNeeded(uri, game.title, profile.packageName)
+        Timber.d("View intent resolved: package=${profile.packageName}, type=${intent.type ?: "(none)"}, component=${intent.component?.shortClassName ?: "(by package)"}")
         return intent
     }
 

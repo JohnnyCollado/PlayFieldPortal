@@ -27,14 +27,21 @@ internal enum class XmbCategoryIconType {
     APP_STORE,
 }
 
-internal fun xmbCategoryIconType(category: Category): XmbCategoryIconType = when (category.iconKey) {
+internal fun xmbCategoryIconType(category: Category): XmbCategoryIconType =
+    xmbCategoryIconTypeOrNull(category) ?: XmbCategoryIconType.GAME
+
+// The Canvas icon set only has glyphs for these built-in types. Other keys (the console icons
+// picked for custom gaming categories — SNES, PSP, N64, …) return null so the caller can render
+// them from the shared sprite sheet instead of collapsing them all to the controller glyph.
+internal fun xmbCategoryIconTypeOrNull(category: Category): XmbCategoryIconType? = when (category.iconKey) {
     "ic_settings" -> XmbCategoryIconType.SETTINGS
     "ic_photos" -> XmbCategoryIconType.PHOTO
     "ic_music" -> XmbCategoryIconType.MUSIC
     "ic_videos" -> XmbCategoryIconType.VIDEO
     "ic_network" -> XmbCategoryIconType.NETWORK
     "ic_appstore" -> XmbCategoryIconType.APP_STORE
-    else -> XmbCategoryIconType.GAME
+    "ic_games" -> XmbCategoryIconType.GAME
+    else -> null
 }
 
 @Composable

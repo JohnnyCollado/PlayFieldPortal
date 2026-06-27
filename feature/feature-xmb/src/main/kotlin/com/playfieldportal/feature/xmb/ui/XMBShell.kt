@@ -186,12 +186,10 @@ fun XMBShell(
                         .fillMaxWidth()
                         .weight(1f),
                 ) {
-                    // Line the subitem column up with the XMB crossbar: the selected
-                    // category icon sits centered (XMBCategoryBar centers its slot with
-                    // sidePadding = (maxWidth - CategorySlotWidth)/2), so anchor the
-                    // item column's left edge to that same x. The selected category and
-                    // its subitems then share one vertical line.
-                    val startPad = ((maxWidth - CategorySlotWidth) / 2f).coerceAtLeast(24.dp)
+                    // Line the subitem column up with the XMB crossbar: the category bar anchors
+                    // its selected slot to XmbLeftAnchor, so anchor the item column's left edge to
+                    // that same x. The selected category and its subitems share one vertical line.
+                    val startPad = XmbLeftAnchor
 
                     AnimatedContent(
                         targetState = uiState.selectedCategoryIndex,

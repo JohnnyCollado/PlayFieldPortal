@@ -37,15 +37,24 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.domain.model.Category
+import com.playfieldportal.core.ui.icons.CategoryIconGlyph
 
 private val SelectedIcon = Color.White
 private val InactiveIcon = Color(0xFFC7C6DF)
 private val LabelInactive = Color(0xFFE4E2F5)
 
 // Width of a single category slot. Exposed so the subitem column (XMBShell) can
-// align its left edge to the selected category's centered slot — the XMB crossbar.
+// align its left edge to the selected category's slot — the XMB crossbar.
 internal val CategorySlotWidth = 124.dp
 private val ItemSlotWidth = CategorySlotWidth
+
+// The XMB is left-anchored: the selected category slot (and the subitem column below it) sit
+// at this fixed left offset instead of centering, keeping the right side clear for the context
+// menu. It's exactly one slot width so the *previous* category tiles fully into x=0..slot with
+// no partial "poke", and the category before that lands fully off-screen. At the last category
+// you therefore see exactly the previous + selected — the last two, and only them — with no
+// clipping. XMBShell reads this so the crossbar and its subitems stay on the same vertical line.
+internal val XmbLeftAnchor = CategorySlotWidth
 
 @Composable
 fun XMBCategoryBar(
@@ -66,11 +75,13 @@ fun XMBCategoryBar(
     }
 
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
-        val sidePadding = ((maxWidth - ItemSlotWidth) / 2f).coerceAtLeast(24.dp)
+        // Left-anchored: the selected slot rests at XmbLeftAnchor. The trailing padding is sized
+        // so even the last category can scroll to that same left anchor.
+        val endPadding = (maxWidth - XmbLeftAnchor - ItemSlotWidth).coerceAtLeast(24.dp)
         LazyRow(
             state = listState,
             modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(horizontal = sidePadding),
+            contentPadding = PaddingValues(start = XmbLeftAnchor, end = endPadding),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             itemsIndexed(categories, key = { _, category -> category.id }) { index, category ->
@@ -161,16 +172,25 @@ private fun XMBCategoryItem(
                 .alpha(itemAlpha),
         ) {
             val artIcon = rememberCategoryArtId(category)
-            if (artIcon != 0) {
-                Image(
+            val canvasType = xmbCategoryIconTypeOrNull(category)
+            when {
+                // Bundled category-bar artwork (Games / Music / Video) — the polished look.
+                artIcon != 0 -> Image(
                     painter = painterResource(artIcon),
                     contentDescription = category.name,
                     modifier = Modifier.size(iconSize),
                 )
-            } else {
-                XmbCategoryIcon(
-                    type = xmbCategoryIconType(category),
+                // Built-in Canvas glyphs (Settings / Photo / Network / App Store / Games).
+                canvasType != null -> XmbCategoryIcon(
+                    type = canvasType,
                     tint = if (isSelected) SelectedIcon else InactiveIcon,
+                    modifier = Modifier.size(iconSize),
+                )
+                // Console icons picked for custom categories (SNES, PSP, N64, …) — render the
+                // real sprite so the category bar matches what the icon picker showed.
+                else -> CategoryIconGlyph(
+                    iconKey = category.iconKey,
+                    contentDescription = category.name,
                     modifier = Modifier.size(iconSize),
                 )
             }
