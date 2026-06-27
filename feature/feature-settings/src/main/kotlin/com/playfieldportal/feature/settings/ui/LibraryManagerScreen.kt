@@ -222,6 +222,7 @@ private fun CardDetailContent(
 
     var showEmulatorDialog by remember { mutableStateOf(false) }
     var showRemoveConfirm  by remember { mutableStateOf(false) }
+    var newExt             by remember(card.platformId) { mutableStateOf("") }
     val isScanning = card.platformId in state.scanningPlatformIds
 
     SettingsScaffold(title = "Library Manager", subtitle = card.displayName, onBack = onBack, modifier = modifier) {
@@ -239,11 +240,36 @@ private fun CardDetailContent(
                 value   = card.emulatorName ?: "None",
                 onClick = { vm.loadEmulatorOptionsForDetail(); showEmulatorDialog = true },
             )
-            SettingsValueRow(
-                label    = "Supported Files",
-                value    = card.extensions.joinToString(", ").ifBlank { "—" },
-            )
             SettingsValueRow(label = "Games", value = card.gameCount.toString())
+
+            // ── Supported scan extensions (user-managed) ──────────────────────
+            SettingsGroup("Supported Files")
+            if (card.extensions.isEmpty()) {
+                Hint("No extensions set — add at least one so scanning can match this console's ROMs.")
+            } else {
+                card.extensions.forEach { ext ->
+                    SettingsRow(
+                        label    = ".$ext",
+                        trailing = { Text("Remove", color = SettingsAccent) },
+                        onClick  = { vm.removeExtension(card.platformId, ext) },
+                    )
+                }
+            }
+            SettingsTextFieldRow(
+                label         = "Add Extension",
+                value         = newExt,
+                onValueChange = { newExt = it },
+                placeholder   = "e.g. iso, chd, zip",
+                helper        = "Matched case-insensitively when scanning. Press A to type.",
+            )
+            newExt.trim().lowercase().removePrefix(".").filter { it.isLetterOrDigit() }
+                .takeIf { it.isNotBlank() }
+                ?.let { clean ->
+                    SettingsRow(
+                        label   = "Add \".$clean\"",
+                        onClick = { vm.addExtension(card.platformId, newExt); newExt = "" },
+                    )
+                }
 
             SettingsGroup("Actions")
             SettingsRow(

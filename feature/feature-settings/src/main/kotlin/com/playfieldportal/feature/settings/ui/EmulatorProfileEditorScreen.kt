@@ -260,6 +260,8 @@ fun EmulatorProfileEditorScreen(
     }
 }
 
+// Confirm-to-edit: navigating onto the field no longer auto-opens the keyboard; the user
+// presses SELECT (A) to start typing. Delegates to the shared settings field.
 @Composable
 private fun EditorTextField(
     label: String,
@@ -268,31 +270,13 @@ private fun EditorTextField(
     placeholder: String = "",
     singleLine: Boolean = true,
 ) {
-    Column(
-        modifier = Modifier.padding(horizontal = 48.dp, vertical = 8.dp),
-    ) {
-        Text(
-            text     = label,
-            color    = EditorSubtext,
-            modifier = Modifier.padding(bottom = 4.dp),
-        )
-        OutlinedTextField(
-            value         = value,
-            onValueChange = onValueChange,
-            singleLine    = singleLine,
-            placeholder   = { Text(placeholder, color = EditorBorder) },
-            colors        = OutlinedTextFieldDefaults.colors(
-                focusedTextColor      = EditorText,
-                unfocusedTextColor    = EditorText,
-                focusedBorderColor    = EditorAccent,
-                unfocusedBorderColor  = EditorBorder,
-                cursorColor           = EditorAccent,
-                focusedContainerColor = Color.Transparent,
-                unfocusedContainerColor = Color.Transparent,
-            ),
-            modifier = Modifier.fillMaxWidth(),
-        )
-    }
+    SettingsTextFieldRow(
+        label         = label,
+        value         = value,
+        onValueChange = onValueChange,
+        placeholder   = placeholder,
+        singleLine    = singleLine,
+    )
 }
 
 private fun intentTypeDescription(type: IntentType) = when (type) {

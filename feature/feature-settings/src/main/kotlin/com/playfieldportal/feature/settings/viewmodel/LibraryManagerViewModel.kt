@@ -312,6 +312,25 @@ class LibraryManagerViewModel @Inject constructor(
         viewModelScope.launch { memoryCardRepository.setEmulator(platformId, option.id) }
     }
 
+    // ── Supported scan extensions ───────────────────────────────────────────────
+
+    fun addExtension(platformId: String, ext: String) {
+        val clean = ext.trim().lowercase().removePrefix(".").filter { it.isLetterOrDigit() }
+        if (clean.isBlank()) return
+        viewModelScope.launch {
+            val card = memoryCardRepository.getById(platformId) ?: return@launch
+            if (clean in card.supportedExtensions) return@launch
+            memoryCardRepository.setExtensions(platformId, card.supportedExtensions + clean)
+        }
+    }
+
+    fun removeExtension(platformId: String, ext: String) {
+        viewModelScope.launch {
+            val card = memoryCardRepository.getById(platformId) ?: return@launch
+            memoryCardRepository.setExtensions(platformId, card.supportedExtensions - ext)
+        }
+    }
+
     fun loadEmulatorOptionsForDetail() {
         viewModelScope.launch {
             val platformId = _scratch.value.detailPlatformId

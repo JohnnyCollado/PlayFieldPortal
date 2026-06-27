@@ -159,32 +159,14 @@ fun ArtworkSettingsScreen(
             // ── SteamGridDB API key ───────────────────────────────────────────
             SettingsGroup("SteamGridDB API")
 
-            Column(modifier = Modifier.padding(horizontal = 48.dp, vertical = 8.dp)) {
-                Text(
-                    text  = if (state.hasApiKey) "API Key (saved)" else "API Key",
-                    color = SettingsSubtext,
-                )
-                Spacer(Modifier.height(6.dp))
-                OutlinedTextField(
-                    value         = sgdbKeyDraft,
-                    onValueChange = { sgdbKeyDraft = it },
-                    placeholder   = {
-                        Text(
-                            text  = if (state.hasApiKey) "••••••••  (tap to replace)" else "Paste your SteamGridDB key",
-                            color = SettingsSubtext,
-                        )
-                    },
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions      = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    singleLine           = true,
-                    colors               = credentialFieldColors(),
-                )
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    text  = "Get a free key at steamgriddb.com/api",
-                    color = SettingsSubtext.copy(alpha = 0.6f),
-                )
-            }
+            SettingsTextFieldRow(
+                label         = if (state.hasApiKey) "API Key (saved)" else "API Key",
+                value         = sgdbKeyDraft,
+                onValueChange = { sgdbKeyDraft = it },
+                placeholder   = if (state.hasApiKey) "••••••••  (tap to replace)" else "Paste your SteamGridDB key",
+                isPassword    = true,
+                helper        = "Get a free key at steamgriddb.com/api",
+            )
 
             if (sgdbKeyDraft.isNotBlank()) {
                 SettingsRow(
@@ -207,42 +189,20 @@ fun ArtworkSettingsScreen(
             // ── IGDB credentials (optional) ───────────────────────────────────
             SettingsGroup("IGDB Credentials (Optional)")
 
-            Column(modifier = Modifier.padding(horizontal = 48.dp, vertical = 8.dp)) {
-                Text(
-                    text  = if (state.hasIgdbCredentials) "Client ID (saved)" else "Client ID",
-                    color = SettingsSubtext,
-                )
-                Spacer(Modifier.height(4.dp))
-                OutlinedTextField(
-                    value         = igdbClientIdDraft,
-                    onValueChange = { igdbClientIdDraft = it },
-                    placeholder   = {
-                        Text(
-                            text  = if (state.hasIgdbCredentials) "••••••••" else "Twitch Client ID",
-                            color = SettingsSubtext,
-                        )
-                    },
-                    singleLine = true,
-                    colors     = credentialFieldColors(),
-                )
-                Spacer(Modifier.height(8.dp))
-                Text(text = "Client Secret", color = SettingsSubtext)
-                Spacer(Modifier.height(4.dp))
-                OutlinedTextField(
-                    value                = igdbClientSecretDraft,
-                    onValueChange        = { igdbClientSecretDraft = it },
-                    placeholder          = { Text("Twitch Client Secret", color = SettingsSubtext) },
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions      = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    singleLine           = true,
-                    colors               = credentialFieldColors(),
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text  = "Create app at dev.twitch.tv — improves fallback coverage for modern games",
-                    color = SettingsSubtext.copy(alpha = 0.6f),
-                )
-            }
+            SettingsTextFieldRow(
+                label         = if (state.hasIgdbCredentials) "Client ID (saved)" else "Client ID",
+                value         = igdbClientIdDraft,
+                onValueChange = { igdbClientIdDraft = it },
+                placeholder   = if (state.hasIgdbCredentials) "••••••••" else "Twitch Client ID",
+            )
+            SettingsTextFieldRow(
+                label         = "Client Secret",
+                value         = igdbClientSecretDraft,
+                onValueChange = { igdbClientSecretDraft = it },
+                placeholder   = "Twitch Client Secret",
+                isPassword    = true,
+                helper        = "Create app at dev.twitch.tv — improves fallback coverage for modern games",
+            )
 
             state.igdbCredentialStatus?.let {
                 SettingsRow(label = it, sublabel = "Tap to dismiss", onClick = { viewModel.dismissCredentialStatus() })

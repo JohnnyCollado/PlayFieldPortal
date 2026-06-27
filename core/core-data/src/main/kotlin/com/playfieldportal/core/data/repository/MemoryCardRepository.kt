@@ -98,6 +98,17 @@ class MemoryCardRepository @Inject constructor(
     suspend fun setEmulator(platformId: String, emulatorId: String?) =
         memoryCardDao.setEmulator(platformId, emulatorId)
 
+    // Overwrites the card's scan extensions. Entries are normalized to the stored form
+    // (lowercase, no leading dot, trimmed, de-duplicated) so scanning matches reliably.
+    suspend fun setExtensions(platformId: String, extensions: List<String>) {
+        val normalized = extensions
+            .map { it.trim().lowercase().removePrefix(".") }
+            .filter { it.isNotBlank() }
+            .distinct()
+        memoryCardDao.setSupportedExtensions(platformId, normalized.joinToString(","))
+        Timber.i("Memory Card $platformId extensions set: $normalized")
+    }
+
     // Recomputes the persisted game count from the actual games table.
     suspend fun recountGames(platformId: String) {
         memoryCardDao.updateGameCount(platformId, gameDao.countByPlatform(platformId))

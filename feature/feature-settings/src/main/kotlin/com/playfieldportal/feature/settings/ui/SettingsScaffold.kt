@@ -3,6 +3,7 @@ package com.playfieldportal.feature.settings.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,10 +14,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -345,4 +357,93 @@ fun SettingsValueRow(
             )
         },
     )
+}
+
+// Confirm-to-edit text field for controller navigation. Navigating onto the field only
+// highlights it (read-only, no keyboard); pressing SELECT (A) — or tapping, for touch —
+// enters edit mode and opens the keyboard. IME "Done", or focus leaving the field, exits
+// edit mode. This keeps the keyboard from popping up just by scrolling past the field.
+@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+fun SettingsTextFieldRow(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String = "",
+    focusKey: String? = null,
+    singleLine: Boolean = true,
+    isPassword: Boolean = false,
+    helper: String? = null,
+) {
+    val focusTracker  = LocalSettingsFocusTracker.current
+    val focusRegistry = LocalSettingsFocusRegistry.current
+    val keyboard      = LocalSoftwareKeyboardController.current
+    var editing by remember { mutableStateOf(false) }
+
+    val fr = if (focusKey != null) remember(focusKey) { FocusRequester() } else null
+    if (focusKey != null && fr != null) {
+        DisposableEffect(focusKey) {
+            focusRegistry[focusKey] = fr
+            onDispose { if (focusRegistry[focusKey] === fr) focusRegistry.remove(focusKey) }
+        }
+    }
+
+    // The keyboard follows edit mode only — focus alone (navigating onto the field) never
+    // opens it, because the field stays read-only until SELECT/tap flips `editing`.
+    LaunchedEffect(editing) {
+        if (editing) keyboard?.show() else keyboard?.hide()
+    }
+
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 48.dp, vertical = 8.dp)) {
+        Text(text = label, color = SettingsSubtext, fontSize = 12.sp, modifier = Modifier.padding(bottom = 4.dp))
+        Box {
+            OutlinedTextField(
+                value         = value,
+                onValueChange = onValueChange,
+                readOnly      = !editing,
+                singleLine    = singleLine,
+                placeholder   = { Text(placeholder, color = SettingsSubtext) },
+                visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = if (isPassword) KeyboardType.Password else KeyboardType.Text,
+                    imeAction    = if (singleLine) ImeAction.Done else ImeAction.Default,
+                ),
+                keyboardActions = KeyboardActions(onDone = { editing = false }),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor        = SettingsText,
+                    unfocusedTextColor      = SettingsText,
+                    focusedBorderColor      = SettingsAccent,
+                    unfocusedBorderColor    = SettingsDivider,
+                    cursorColor             = SettingsAccent,
+                    focusedContainerColor   = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent,
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(if (fr != null) Modifier.focusRequester(fr) else Modifier)
+                    .onFocusChanged { state ->
+                        if (state.isFocused) {
+                            // Controller SELECT over the field starts editing (opens the keyboard).
+                            focusTracker { editing = true }
+                        } else {
+                            editing = false
+                        }
+                    },
+            )
+            // While not editing, a non-focusable tap layer lets touch users enter edit mode
+            // (a read-only field ignores taps). pointerInput adds no focus target, so it never
+            // interferes with controller D-pad traversal.
+            if (!editing) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .pointerInput(Unit) { detectTapGestures { editing = true } },
+                )
+            }
+        }
+        if (!helper.isNullOrBlank()) {
+            Spacer(Modifier.height(4.dp))
+            Text(text = helper, color = SettingsSubtext.copy(alpha = 0.6f), fontSize = 11.sp)
+        }
+    }
 }

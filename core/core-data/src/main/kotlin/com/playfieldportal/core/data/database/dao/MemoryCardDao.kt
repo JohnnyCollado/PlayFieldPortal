@@ -44,6 +44,9 @@ interface MemoryCardDao {
     @Query("UPDATE memory_cards SET emulator_id = :emulatorId WHERE platform_id = :platformId")
     suspend fun setEmulator(platformId: String, emulatorId: String?)
 
+    @Query("UPDATE memory_cards SET supported_extensions = :exts WHERE platform_id = :platformId")
+    suspend fun setSupportedExtensions(platformId: String, exts: String)
+
     @Query("UPDATE memory_cards SET sort_order = :order WHERE platform_id = :platformId")
     suspend fun setSortOrder(platformId: String, order: Int)
 
