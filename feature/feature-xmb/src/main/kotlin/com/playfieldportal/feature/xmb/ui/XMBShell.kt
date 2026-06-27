@@ -33,7 +33,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -167,16 +166,7 @@ fun XMBShell(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(top = 44.dp)
-                    // While any overlay is up, the XMB's clickable items must not be focus
-                    // targets — otherwise a controller moving past the last row of a short menu
-                    // (e.g. empty Collections) escapes the overlay and Compose hands focus to
-                    // the XMB behind it. canFocus is inherited, so this disables the whole subtree.
-                    .then(
-                        if (uiState.hasBlockingOverlay)
-                            Modifier.focusProperties { canFocus = false }
-                        else Modifier
-                    ),
+                    .padding(top = 44.dp),
             ) {
                 XMBCategoryBar(
                     categories = uiState.categories,
