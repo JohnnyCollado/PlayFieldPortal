@@ -491,20 +491,15 @@ class XMBViewModel @Inject constructor(
                             }
                             return@launch
                         }
-                        // Games are assigned via the junction table (echo/copy model).
-                        val gameItems = gameCategoryRepository.itemsForCategory(category.id)
+                        // Games are assigned via the junction table (echo/copy model). Reuse the
+                        // canonical Game→XMBItem mapping so icons/artwork/launch fields match the
+                        // Main Game category exactly; only overlay the "Pinned" marker.
+                        val gameRows = gameCategoryRepository.itemsForCategory(category.id)
                             .filterIsInstance<com.playfieldportal.core.data.repository.GameCategoryItem.GameItem>()
-                            .map { item ->
-                                XMBItem(
-                                    id = "game_${item.game.id}",
-                                    title = item.game.displayTitle,
-                                    artworkUri = item.game.artworkUri,
-                                    subtitle = if (item.pinned) "Pinned" else null,
-                                    gameId = item.game.id,
-                                    platformId = item.game.platformId,
-                                    accentColor = platformCache[item.game.platformId]?.accentColor,
-                                )
-                            }
+                        val pinnedGameIds = gameRows.filter { it.pinned }.map { it.game.id }.toSet()
+                        val gameItems = gameRows.map { it.game }.toXmbItems().map { xmb ->
+                            if (xmb.gameId in pinnedGameIds) xmb.copy(subtitle = "Pinned") else xmb
+                        }
                         // Collections belong to exactly one category, tracked by categoryId —
                         // the single source of truth for placement (not the junction table).
                         // Pinned collections sort to the top.
@@ -938,12 +933,16 @@ class XMBViewModel @Inject constructor(
 
             // Gaming category options. Games in the Main Game category can only be COPIED into
             // another category (never moved out or removed); custom gaming categories allow
-            // move / remove / pin.
+            // move / remove / pin. Move/Add only appear when a real destination exists — a
+            // custom gaming category other than the current one (Main Game is never a target).
             if (inGamingCategory && currentCat != null) {
+                val hasOtherCustomCategory = _uiState.value.categories.any {
+                    it.isGamingCategory && it.id != BuiltInCategory.GAMES && it.id != currentCat.id
+                }
                 if (currentCat.id == BuiltInCategory.GAMES) {
-                    add(XMBContextMenuItem("add_category", "Add to Category"))
+                    if (hasOtherCustomCategory) add(XMBContextMenuItem("add_category", "Add to Category"))
                 } else {
-                    add(XMBContextMenuItem("move_category", "Move to Category"))
+                    if (hasOtherCustomCategory) add(XMBContextMenuItem("move_category", "Move to Category"))
                     add(XMBContextMenuItem("remove_category", "Remove from Category"))
                     val pinned = item.subtitle == "Pinned"
                     add(XMBContextMenuItem(
@@ -1103,15 +1102,18 @@ class XMBViewModel @Inject constructor(
             val gameId = menu.gameId
             val fromCategory = menu.categoryContext
             val toCategory = itemId.removePrefix("cat_")
+            val action = menu.pendingAppAction
             closeContextMenu()
-            when (menu.pendingAppAction) {
-                "move" -> appAction { gameCategoryRepository.moveGameToCategory(gameId, fromCategory, toCategory) }
-                "add"  -> appAction { gameCategoryRepository.addGameToCategory(gameId, toCategory) }
-            }
-            // Refresh the current category display if we just moved/added from this category
-            val currentCat = currentCategory()
-            if (currentCat?.id == fromCategory) {
-                loadItemsForCategory(currentCat)
+            // Reload AFTER the write completes — reloading synchronously would read stale
+            // junction rows and leave the moved game visible in the source category.
+            appAction {
+                when (action) {
+                    "move" -> gameCategoryRepository.moveGameToCategory(gameId, fromCategory, toCategory)
+                    "add"  -> gameCategoryRepository.addGameToCategory(gameId, toCategory)
+                }
+                if (currentCategory()?.id == fromCategory) {
+                    loadItemsForCategory(currentCategory())
+                }
             }
             return
         }
@@ -1297,6 +1299,12 @@ class XMBViewModel @Inject constructor(
                 val id = collectionRepository.create(name)
                 dialog.forGameId?.let { collectionRepository.addGame(id, it) }
             }
+            // Reflect the new/renamed collection in the XMB right away — a collection created
+            // here lands in the Main Game category (the default), so refresh the current
+            // gaming category instead of waiting on the reactive collection stream.
+            if (currentCategory()?.isGamingCategory == true) {
+                loadItemsForCategory(currentCategory())
+            }
         }
     }
 
@@ -1419,12 +1427,16 @@ class XMBViewModel @Inject constructor(
         }
     }
 
-    // Shows a menu of other gaming categories for moving/adding a game
+    // Shows a menu of other gaming categories for moving/adding a game. Main Game is never a
+    // destination for an individual game — every game already lives there via its platform, so
+    // moving a game "to Main Game" is redundant (and would only leave a stray junction row).
     private fun openGameCategoryPicker(gameId: Long, fromCategoryId: String, action: String) {
         val items = buildList {
-            _uiState.value.categories.filter { it.isGamingCategory && it.id != fromCategoryId }.forEach { cat ->
-                add(XMBContextMenuItem("cat_${cat.id}", cat.name))
-            }
+            _uiState.value.categories
+                .filter { it.isGamingCategory && it.id != fromCategoryId && it.id != BuiltInCategory.GAMES }
+                .forEach { cat ->
+                    add(XMBContextMenuItem("cat_${cat.id}", cat.name))
+                }
         }
 
         if (items.isEmpty()) return

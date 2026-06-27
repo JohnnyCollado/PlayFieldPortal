@@ -40,6 +40,18 @@ fun GamePickerScreen(
     val state by viewModel.state.collectAsState()
     val listState = rememberLazyListState()
 
+    // Confirm/cancel both clear the picker — the ViewModel is retained across open/close, so
+    // selections must not carry over to the next time the picker is opened.
+    val confirmAndClear: () -> Unit = {
+        val (gameIds, collectionIds) = viewModel.getSelectedItems()
+        onConfirm(gameIds, collectionIds)
+        viewModel.clearSelection()
+    }
+    val cancelAndClear: () -> Unit = {
+        viewModel.clearSelection()
+        onCancel()
+    }
+
     // Scroll to keep selected item visible
     LaunchedEffect(state.selectedItemId) {
         if (state.selectedItemId != null) {
@@ -62,11 +74,8 @@ fun GamePickerScreen(
                 GamepadAction.NAVIGATE_DOWN -> viewModel.moveSelection(+1)
                 GamepadAction.SELECT -> viewModel.activateSelection()
                 GamepadAction.BUTTON_Y -> viewModel.toggleSelectedPlatform()
-                GamepadAction.BACK -> onCancel()
-                GamepadAction.HOME -> {
-                    val (gameIds, collectionIds) = viewModel.getSelectedItems()
-                    onConfirm(gameIds, collectionIds)
-                }
+                GamepadAction.BACK -> cancelAndClear()
+                GamepadAction.HOME -> confirmAndClear()
                 else -> {} // Other actions handled by parent
             }
             onGamepadActionConsumed()
@@ -183,17 +192,14 @@ fun GamePickerScreen(
                 .padding(16.dp),
         ) {
             TextButton(
-                onClick = onCancel,
+                onClick = cancelAndClear,
                 modifier = Modifier.weight(1f),
             ) {
                 Text("Cancel", color = Color.White)
             }
 
             TextButton(
-                onClick = {
-                    val (gameIds, collectionIds) = viewModel.getSelectedItems()
-                    onConfirm(gameIds, collectionIds)
-                },
+                onClick = confirmAndClear,
                 modifier = Modifier.weight(1f),
             ) {
                 Text("Add (${state.selectedGameIds.size + state.selectedCollectionIds.size})", color = Color.White)

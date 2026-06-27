@@ -179,6 +179,21 @@ class GamePickerViewModel @Inject constructor(
         return _state.value.selectedGameIds to _state.value.selectedCollectionIds
     }
 
+    // Resets the picker to a fresh state. The ViewModel is retained across open/close cycles,
+    // so this must run when the picker is cancelled or its selection confirmed — otherwise the
+    // previous checkmarks, cursor, and expanded groups carry over the next time it opens.
+    fun clearSelection() {
+        _state.update { state ->
+            state.copy(
+                selectedGameIds = emptySet(),
+                selectedCollectionIds = emptySet(),
+                platformGroups = state.platformGroups.map { it.copy(selectedCount = 0) },
+                platformExpandedStates = state.platformGroups.associate { it.platform.platformId to false },
+                selectedItemId = state.platformGroups.firstOrNull()?.platform?.platformId?.let { pickerPlatformId(it) },
+            )
+        }
+    }
+
     fun addNewCollection(name: String) {
         viewModelScope.launch {
             try {
