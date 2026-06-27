@@ -57,6 +57,19 @@ class CollectionRepository @Inject constructor(
     suspend fun rename(id: Long, name: String) =
         collectionDao.rename(id, name.trim().ifBlank { "Untitled Collection" }, System.currentTimeMillis())
 
+    /** Reassigns a collection to a different gaming category. categoryId is the single source
+     *  of truth for where a collection appears (collections belong to exactly one category). */
+    suspend fun setCategory(id: Long, categoryId: String) {
+        collectionDao.setCategory(id, categoryId, System.currentTimeMillis())
+        Timber.i("Collection $id moved to category $categoryId")
+    }
+
+    /** Pins/unpins a collection to the top of its category. */
+    suspend fun setPinned(id: Long, pinned: Boolean) {
+        collectionDao.setPinned(id, pinned, System.currentTimeMillis())
+        Timber.i("Collection $id pinned=$pinned")
+    }
+
     suspend fun delete(id: Long) {
         collectionDao.delete(id) // cascades membership rows; game records are untouched
         Timber.i("Collection deleted: id=$id")

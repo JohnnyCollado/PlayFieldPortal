@@ -19,6 +19,14 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+// Stable, namespaced identities for picker rows. Games and collections come from separate
+// tables with overlapping numeric IDs, so they MUST be namespaced — otherwise a game and a
+// collection that share an id collide, highlighting two rows at once and trapping the cursor.
+internal const val PICKER_COLLECTIONS_HEADER = "COLLECTIONS_HEADER"
+internal fun pickerPlatformId(platformId: String) = "platform_$platformId"
+internal fun pickerGameId(gameId: Long) = "game_$gameId"
+internal fun pickerCollectionId(collectionId: Long) = "collection_$collectionId"
+
 data class GamePickerState(
     val platformGroups: List<PlatformGameGroup> = emptyList(),
     val pcShortcuts: List<GameCollection> = emptyList(),
@@ -94,7 +102,7 @@ class GamePickerViewModel @Inject constructor(
                             isLoading = false,
                             platformExpandedStates = newExpandedStates,
                             selectedItemId = if (_state.value.selectedItemId == null) {
-                                platformGroups.firstOrNull()?.platform?.platformId
+                                platformGroups.firstOrNull()?.platform?.platformId?.let { pickerPlatformId(it) }
                             } else {
                                 _state.value.selectedItemId
                             }
@@ -190,7 +198,7 @@ class GamePickerViewModel @Inject constructor(
         val state = _state.value
 
         // Build a list of all selectable item IDs in order
-        val itemIds = buildItemIdList(state)
+        val itemIds = buildPickerItemIds(state)
         if (itemIds.isEmpty()) return
 
         // Find current position
@@ -216,7 +224,7 @@ class GamePickerViewModel @Inject constructor(
 
         // Determine what type of item was selected
         for (group in state.platformGroups) {
-            if (group.platform.platformId == selectedId) {
+            if (pickerPlatformId(group.platform.platformId) == selectedId) {
                 // Platform header selected
                 val selectAll = !group.isAllSelected
                 togglePlatformAllSelection(group.platform.platformId, selectAll)
@@ -224,7 +232,7 @@ class GamePickerViewModel @Inject constructor(
             }
 
             for (game in group.games) {
-                if (game.id.toString() == selectedId) {
+                if (pickerGameId(game.id) == selectedId) {
                     // Game selected
                     toggleGameSelection(game.id)
                     return
@@ -233,13 +241,13 @@ class GamePickerViewModel @Inject constructor(
         }
 
         // Check collections
-        if (selectedId == "COLLECTIONS_HEADER") {
+        if (selectedId == PICKER_COLLECTIONS_HEADER) {
             // Header selected, no action
             return
         }
 
         for (collection in state.pcShortcuts) {
-            if (collection.id.toString() == selectedId) {
+            if (pickerCollectionId(collection.id) == selectedId) {
                 toggleCollectionSelection(collection.id)
                 return
             }
@@ -252,37 +260,36 @@ class GamePickerViewModel @Inject constructor(
 
         // If the selected item is a platform header, toggle its expanded state
         for (group in state.platformGroups) {
-            if (group.platform.platformId == selectedId) {
+            if (pickerPlatformId(group.platform.platformId) == selectedId) {
                 togglePlatformExpanded(group.platform.platformId)
                 return
             }
         }
     }
 
-    private fun buildItemIdList(state: GamePickerState): List<String> {
-        val ids = mutableListOf<String>()
+}
 
-        for (group in state.platformGroups) {
-            // Add platform header ID
-            ids.add(group.platform.platformId)
+// Ordered, namespaced list of every navigable picker row ID — the single source of truth for
+// cursor movement (ViewModel.moveSelection) and scroll positioning (GamePickerScreen). The IDs
+// here MUST match the per-row identities rendered by the screen (pickerPlatformId/GameId/etc.).
+internal fun buildPickerItemIds(state: GamePickerState): List<String> {
+    val ids = mutableListOf<String>()
 
-            // Add game IDs if platform is expanded
-            if (state.platformExpandedStates[group.platform.platformId] == true) {
-                for (game in group.games) {
-                    ids.add(game.id.toString())
-                }
+    for (group in state.platformGroups) {
+        ids.add(pickerPlatformId(group.platform.platformId))
+        if (state.platformExpandedStates[group.platform.platformId] == true) {
+            for (game in group.games) {
+                ids.add(pickerGameId(game.id))
             }
         }
-
-        // Add collections section
-        if (state.pcShortcuts.isNotEmpty()) {
-            ids.add("COLLECTIONS_HEADER")
-            for (collection in state.pcShortcuts) {
-                ids.add(collection.id.toString())
-            }
-        }
-
-        return ids
     }
 
+    if (state.pcShortcuts.isNotEmpty()) {
+        ids.add(PICKER_COLLECTIONS_HEADER)
+        for (collection in state.pcShortcuts) {
+            ids.add(pickerCollectionId(collection.id))
+        }
+    }
+
+    return ids
 }

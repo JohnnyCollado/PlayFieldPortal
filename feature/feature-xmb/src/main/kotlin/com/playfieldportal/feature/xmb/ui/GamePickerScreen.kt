@@ -43,7 +43,7 @@ fun GamePickerScreen(
     // Scroll to keep selected item visible
     LaunchedEffect(state.selectedItemId) {
         if (state.selectedItemId != null) {
-            val itemIds = buildItemIdList(state)
+            val itemIds = buildPickerItemIds(state)
             val index = itemIds.indexOf(state.selectedItemId)
             if (index >= 0) {
                 listState.animateScrollToItem(
@@ -121,7 +121,7 @@ fun GamePickerScreen(
                     PlatformGroupHeader(
                         group = group,
                         isExpanded = state.platformExpandedStates[platformId] ?: true,
-                        isSelected = platformId == state.selectedItemId,
+                        isSelected = pickerPlatformId(platformId) == state.selectedItemId,
                         onToggleExpanded = { viewModel.togglePlatformExpanded(platformId) },
                         onToggleSelectAll = { selectAll ->
                             viewModel.togglePlatformAllSelection(platformId, selectAll)
@@ -132,11 +132,9 @@ fun GamePickerScreen(
                 // Games in this platform
                 if (state.platformExpandedStates[platformId] == true) {
                     items(group.games) { game ->
-                        val gameId = game.id.toString()
-
                         GamePickerRow(
                             title = game.displayTitle,
-                            isSelected = gameId == state.selectedItemId,
+                            isSelected = pickerGameId(game.id) == state.selectedItemId,
                             isChecked = game.id in state.selectedGameIds,
                             onToggle = { viewModel.toggleGameSelection(game.id) },
                             modifier = Modifier.padding(start = 48.dp),
@@ -157,7 +155,7 @@ fun GamePickerScreen(
                             .fillMaxWidth()
                             .padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
                             .background(
-                                if ("COLLECTIONS_HEADER" == state.selectedItemId)
+                                if (PICKER_COLLECTIONS_HEADER == state.selectedItemId)
                                     Color(0xFF574DDB).copy(alpha = 0.2f)
                                 else
                                     Color.Transparent
@@ -166,11 +164,9 @@ fun GamePickerScreen(
                 }
 
                 items(state.pcShortcuts) { collection ->
-                    val collectionId = collection.id.toString()
-
                     GamePickerRow(
                         title = collection.name,
-                        isSelected = collectionId == state.selectedItemId,
+                        isSelected = pickerCollectionId(collection.id) == state.selectedItemId,
                         isChecked = collection.id in state.selectedCollectionIds,
                         onToggle = { viewModel.toggleCollectionSelection(collection.id) },
                         modifier = Modifier.padding(start = 32.dp),
@@ -204,28 +200,6 @@ fun GamePickerScreen(
             }
         }
     }
-}
-
-private fun buildItemIdList(state: GamePickerState): List<String> {
-    val ids = mutableListOf<String>()
-
-    for (group in state.platformGroups) {
-        ids.add(group.platform.platformId)
-        if (state.platformExpandedStates[group.platform.platformId] == true) {
-            for (game in group.games) {
-                ids.add(game.id.toString())
-            }
-        }
-    }
-
-    if (state.pcShortcuts.isNotEmpty()) {
-        ids.add("COLLECTIONS_HEADER")
-        for (collection in state.pcShortcuts) {
-            ids.add(collection.id.toString())
-        }
-    }
-
-    return ids
 }
 
 @Composable

@@ -84,6 +84,12 @@ interface CollectionDao {
     @Query("UPDATE collections SET sort_order = :order WHERE id = :id")
     suspend fun setSortOrder(id: Long, order: Int)
 
+    @Query("UPDATE collections SET category_id = :categoryId, updated_at = :updatedAt WHERE id = :id")
+    suspend fun setCategory(id: Long, categoryId: String, updatedAt: Long)
+
+    @Query("UPDATE collections SET is_pinned = :pinned, updated_at = :updatedAt WHERE id = :id")
+    suspend fun setPinned(id: Long, pinned: Boolean, updatedAt: Long)
+
     @Query("DELETE FROM collections WHERE id = :id")
     suspend fun delete(id: Long)
 

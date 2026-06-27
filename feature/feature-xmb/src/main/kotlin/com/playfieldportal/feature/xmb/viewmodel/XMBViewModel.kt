@@ -398,8 +398,10 @@ class XMBViewModel @Inject constructor(
                         collections = collections,
                     )}
 
-                    // Refresh the Games view live as cards/counts/collections change.
-                    if (currentCategory()?.id == BuiltInCategory.GAMES) {
+                    // Refresh any gaming category live as cards/counts/collections change —
+                    // collections now place themselves by categoryId, so a custom gaming
+                    // category must also re-render when the collection list changes.
+                    if (currentCategory()?.isGamingCategory == true) {
                         loadItemsForCategory(currentCategory())
                     }
                 }
@@ -479,32 +481,48 @@ class XMBViewModel @Inject constructor(
                 else -> {
                     // Gaming categories show games and collections
                     if (category.isGamingCategory) {
+                        // Drilled into one of this category's collections — show its games.
+                        val openCollectionId = _uiState.value.selectedCollectionId
+                        if (openCollectionId != null) {
+                            collectionRepository.observeGames(openCollectionId).collect { games ->
+                                val items = if (games.isEmpty()) listOf(emptyCollectionItem())
+                                            else games.toXmbItems()
+                                _uiState.update { it.copy(currentItems = items) }
+                            }
+                            return@launch
+                        }
+                        // Games are assigned via the junction table (echo/copy model).
                         val gameItems = gameCategoryRepository.itemsForCategory(category.id)
-                        val items = if (gameItems.isEmpty()) listOf(emptyCategoryItem(category))
-                                    else gameItems.map { item ->
-                                        when (item) {
-                                            is com.playfieldportal.core.data.repository.GameCategoryItem.GameItem -> {
-                                                XMBItem(
-                                                    id = "game_${item.game.id}",
-                                                    title = item.game.displayTitle,
-                                                    artworkUri = item.game.artworkUri,
-                                                    subtitle = if (item.pinned) "Pinned" else null,
-                                                    gameId = item.game.id,
-                                                    platformId = item.game.platformId,
-                                                    accentColor = platformCache[item.game.platformId]?.accentColor,
-                                                )
-                                            }
-                                            is com.playfieldportal.core.data.repository.GameCategoryItem.CollectionItem -> {
-                                                XMBItem(
-                                                    id = "col_${item.collection.id}",
-                                                    title = item.collection.name,
-                                                    subtitle = "${item.collection.gameCount} ${if (item.collection.gameCount == 1) "Game" else "Games"}",
-                                                    collectionId = item.collection.id,
-                                                    type = XMBItemType.COLLECTION,
-                                                )
-                                            }
-                                        }
-                                    }
+                            .filterIsInstance<com.playfieldportal.core.data.repository.GameCategoryItem.GameItem>()
+                            .map { item ->
+                                XMBItem(
+                                    id = "game_${item.game.id}",
+                                    title = item.game.displayTitle,
+                                    artworkUri = item.game.artworkUri,
+                                    subtitle = if (item.pinned) "Pinned" else null,
+                                    gameId = item.game.id,
+                                    platformId = item.game.platformId,
+                                    accentColor = platformCache[item.game.platformId]?.accentColor,
+                                )
+                            }
+                        // Collections belong to exactly one category, tracked by categoryId —
+                        // the single source of truth for placement (not the junction table).
+                        // Pinned collections sort to the top.
+                        val collectionItems = _uiState.value.collections
+                            .filter { it.categoryId == category.id }
+                            .sortedByDescending { it.isPinned }
+                            .map { collection ->
+                                val games = "${collection.gameCount} ${if (collection.gameCount == 1) "Game" else "Games"}"
+                                XMBItem(
+                                    id = "col_${collection.id}",
+                                    title = collection.name,
+                                    subtitle = if (collection.isPinned) "Pinned · $games" else games,
+                                    collectionId = collection.id,
+                                    type = XMBItemType.COLLECTION,
+                                )
+                            }
+                        val combined = collectionItems + gameItems
+                        val items = if (combined.isEmpty()) listOf(emptyCategoryItem(category)) else combined
                         _uiState.update { it.copy(currentItems = items + addGamesItem()) }
                     } else {
                         // Non-gaming categories show apps (Photo / Music / Video / Network / App Store / custom)
@@ -574,11 +592,17 @@ class XMBViewModel @Inject constructor(
         )
 
         // User collections sit just under All Games — like Favorites but user-defined.
-        val collectionItems = _uiState.value.collections.map { collection ->
+        // Only collections assigned to this (the Main Game) category appear here; categoryId
+        // is the single source of truth for a collection's placement. Pinned collections first.
+        val collectionItems = _uiState.value.collections
+            .filter { it.categoryId == BuiltInCategory.GAMES }
+            .sortedByDescending { it.isPinned }
+            .map { collection ->
+            val games = "${collection.gameCount} ${if (collection.gameCount == 1) "Game" else "Games"}"
             XMBItem(
                 id           = "collection_${collection.id}",
                 title        = collection.name,
-                subtitle     = "${collection.gameCount} ${if (collection.gameCount == 1) "Game" else "Games"}",
+                subtitle     = if (collection.isPinned) "Pinned · $games" else games,
                 collectionId = collection.id,
                 type         = XMBItemType.COLLECTION,
             )
@@ -912,11 +936,21 @@ class XMBViewModel @Inject constructor(
             if (inCollection) add(XMBContextMenuItem("remove_from_collection", "Remove from Collection"))
             add(XMBContextMenuItem("manage_collections", "Manage Collections"))
 
-            // Gaming category options
+            // Gaming category options. Games in the Main Game category can only be COPIED into
+            // another category (never moved out or removed); custom gaming categories allow
+            // move / remove / pin.
             if (inGamingCategory && currentCat != null) {
-                add(XMBContextMenuItem("move_category", "Move to Category"))
-                add(XMBContextMenuItem("remove_category", "Remove from Category"))
-                add(XMBContextMenuItem("pin_category", if (item.subtitle == "Pinned") "Unpin" else "Pin"))
+                if (currentCat.id == BuiltInCategory.GAMES) {
+                    add(XMBContextMenuItem("add_category", "Add to Category"))
+                } else {
+                    add(XMBContextMenuItem("move_category", "Move to Category"))
+                    add(XMBContextMenuItem("remove_category", "Remove from Category"))
+                    val pinned = item.subtitle == "Pinned"
+                    add(XMBContextMenuItem(
+                        if (pinned) "unpin_category" else "pin_category",
+                        if (pinned) "Unpin" else "Pin",
+                    ))
+                }
             }
 
             add(XMBContextMenuItem("refresh_metadata", "Refresh Metadata"))
@@ -997,18 +1031,41 @@ class XMBViewModel @Inject constructor(
         )}
     }
 
-    // Options menu for a collection row in the Games root (long-press / △).
+    // Options menu for a collection row (long-press / △), in the Games root or any gaming category.
     private fun openCollectionRowContextMenu(collectionId: Long) {
         val collection = _uiState.value.collections.firstOrNull { it.id == collectionId } ?: return
-        val items = listOf(
-            XMBContextMenuItem("open_collection",    "Open"),
-            XMBContextMenuItem("rename_collection",  "Rename Collection"),
-            XMBContextMenuItem("manage_collections", "Manage Collections"),
-            XMBContextMenuItem("delete_collection",  "Delete Collection", isDestructive = true),
-        )
+        // Move is only meaningful when there's another gaming category to move into.
+        val hasOtherCategory = _uiState.value.categories.any { it.isGamingCategory && it.id != collection.categoryId }
+        val items = buildList {
+            add(XMBContextMenuItem("open_collection",   "Open"))
+            add(XMBContextMenuItem("rename_collection", "Rename Collection"))
+            if (hasOtherCategory) add(XMBContextMenuItem("move_collection_category", "Move to Category"))
+            add(XMBContextMenuItem(
+                if (collection.isPinned) "unpin_collection" else "pin_collection",
+                if (collection.isPinned) "Unpin" else "Pin",
+            ))
+            add(XMBContextMenuItem("manage_collections", "Manage Collections"))
+            add(XMBContextMenuItem("delete_collection",  "Delete Collection", isDestructive = true))
+        }
         _uiState.update { it.copy(
             activeContextMenu = XMBContextMenu(
                 title           = collection.name,
+                items           = items,
+                collectionRowId = collectionId,
+            )
+        )}
+    }
+
+    // Second-level menu: pick a destination gaming category for moving a collection. Collections
+    // belong to exactly one category, so this reassigns categoryId (the source of truth).
+    private fun openCollectionCategoryPicker(collectionId: Long, fromCategoryId: String) {
+        val items = _uiState.value.categories
+            .filter { it.isGamingCategory && it.id != fromCategoryId }
+            .map { cat -> XMBContextMenuItem("movecol_${cat.id}", cat.name) }
+        if (items.isEmpty()) return
+        _uiState.update { it.copy(
+            activeContextMenu = XMBContextMenu(
+                title           = "Move Collection To",
                 items           = items,
                 collectionRowId = collectionId,
             )
@@ -1082,14 +1139,26 @@ class XMBViewModel @Inject constructor(
 
         closeContextMenu()
 
-        // ── Collection row options menu ────────────────────────────────────────
+        // ── Collection row options menu (and the Move-to-Category submenu) ──────
         if (menu.collectionRowId != null) {
             val collectionId = menu.collectionRowId
-            when (itemId) {
-                "open_collection"    -> openCollectionFolder(collectionId)
-                "rename_collection"  -> promptRenameCollection(collectionId)
-                "manage_collections" -> _uiState.update { it.copy(activeSettingsScreen = "settings_collections") }
-                "delete_collection"  -> appAction {
+            when {
+                // Destination chosen in the Move submenu — reassign the collection's category.
+                itemId.startsWith("movecol_") -> {
+                    val toCategory = itemId.removePrefix("movecol_")
+                    appAction { collectionRepository.setCategory(collectionId, toCategory) }
+                }
+                itemId == "open_collection"   -> openCollectionFolder(collectionId)
+                itemId == "rename_collection" -> promptRenameCollection(collectionId)
+                itemId == "move_collection_category" -> {
+                    val from = _uiState.value.collections.firstOrNull { it.id == collectionId }?.categoryId
+                        ?: BuiltInCategory.GAMES
+                    openCollectionCategoryPicker(collectionId, from)
+                }
+                itemId == "pin_collection"   -> appAction { collectionRepository.setPinned(collectionId, true) }
+                itemId == "unpin_collection" -> appAction { collectionRepository.setPinned(collectionId, false) }
+                itemId == "manage_collections" -> _uiState.update { it.copy(activeSettingsScreen = "settings_collections") }
+                itemId == "delete_collection"  -> appAction {
                     collectionRepository.delete(collectionId)
                     if (_uiState.value.selectedCollectionId == collectionId) closePlatformFolder()
                 }
@@ -1126,9 +1195,29 @@ class XMBViewModel @Inject constructor(
                     }
                 }
                 "manage_collections"     -> _uiState.update { it.copy(activeSettingsScreen = "settings_collections") }
+                "add_category"           -> menu.categoryContext?.let { openGameCategoryPicker(menu.gameId, it, "add") }
                 "move_category"          -> menu.categoryContext?.let { openGameCategoryPicker(menu.gameId, it, "move") }
-                "remove_category"        -> menu.categoryContext?.let { cat -> appAction { gameCategoryRepository.removeGameFromCategory(menu.gameId, cat) } }
-                "pin_category"           -> menu.categoryContext?.let { cat -> appAction { gameCategoryRepository.pinGameInCategory(menu.gameId, cat, true) } }
+                "remove_category"        -> menu.categoryContext?.let { cat ->
+                    val gid = menu.gameId
+                    appAction {
+                        gameCategoryRepository.removeGameFromCategory(gid, cat)
+                        loadItemsForCategory(currentCategory())
+                    }
+                }
+                "pin_category"           -> menu.categoryContext?.let { cat ->
+                    val gid = menu.gameId
+                    appAction {
+                        gameCategoryRepository.pinGameInCategory(gid, cat, true)
+                        loadItemsForCategory(currentCategory())
+                    }
+                }
+                "unpin_category"         -> menu.categoryContext?.let { cat ->
+                    val gid = menu.gameId
+                    appAction {
+                        gameCategoryRepository.pinGameInCategory(gid, cat, false)
+                        loadItemsForCategory(currentCategory())
+                    }
+                }
                 "refresh_artwork"        -> refreshGameArtwork(menu.gameId)
                 "refresh_metadata"       -> refreshGameArtwork(menu.gameId)
                 "file_location"          -> showGameFileLocation(menu.gameId)
@@ -1318,8 +1407,9 @@ class XMBViewModel @Inject constructor(
             selectedGameIds.forEach { gameId ->
                 gameCategoryRepository.addGameToCategory(gameId, categoryId)
             }
+            // Collections are placed by categoryId (one category each), not the junction table.
             selectedCollectionIds.forEach { collectionId ->
-                gameCategoryRepository.addCollectionToCategory(collectionId, categoryId)
+                collectionRepository.setCategory(collectionId, categoryId)
             }
             // Refresh the current category display
             val category = _uiState.value.categories.getOrNull(_uiState.value.selectedCategoryIndex)
@@ -1638,10 +1728,14 @@ class XMBViewModel @Inject constructor(
     }
 
     private fun openCollectionFolder(collectionId: Long) {
-        val gamesCategoryIndex = _uiState.value.categories.indexOfFirst { it.id == BuiltInCategory.GAMES }
+        // Open the collection within the category it belongs to — a collection in a custom
+        // gaming category must stay in that category, not jump back to Main Game.
+        val targetCategoryId = _uiState.value.collections
+            .firstOrNull { it.id == collectionId }?.categoryId ?: BuiltInCategory.GAMES
+        val categoryIndex = _uiState.value.categories.indexOfFirst { it.id == targetCategoryId }
         _uiState.update {
             it.copy(
-                selectedCategoryIndex = gamesCategoryIndex.takeIf { index -> index >= 0 } ?: it.selectedCategoryIndex,
+                selectedCategoryIndex = categoryIndex.takeIf { index -> index >= 0 } ?: it.selectedCategoryIndex,
                 selectedPlatformId = null,
                 selectedCollectionId = collectionId,
                 selectedItemIndex = 0,
@@ -1997,7 +2091,7 @@ class XMBViewModel @Inject constructor(
             Category(id = "photos",                 name = "Photo",     iconKey = "ic_photos",   type = CategoryType.BUILT_IN, position = 1),
             Category(id = "music",                  name = "Music",     iconKey = "ic_music",    type = CategoryType.BUILT_IN, position = 2),
             Category(id = "videos",                 name = "Video",     iconKey = "ic_videos",   type = CategoryType.BUILT_IN, position = 3),
-            Category(id = BuiltInCategory.GAMES,    name = "Game",      iconKey = "ic_games",    type = CategoryType.BUILT_IN, position = 4),
+            Category(id = BuiltInCategory.GAMES,    name = "Game",      iconKey = "ic_games",    type = CategoryType.BUILT_IN, position = 4, isGamingCategory = true),
             Category(id = "network",                name = "Network",   iconKey = "ic_network",  type = CategoryType.BUILT_IN, position = 5),
             Category(id = "app_store",              name = "App Store", iconKey = "ic_appstore", type = CategoryType.BUILT_IN, position = 6),
         )
@@ -2032,9 +2126,13 @@ class XMBViewModel @Inject constructor(
         val builtIns = FALLBACK_CATEGORIES.map { fallback ->
             val stored = byId[fallback.id]
             fallback.copy(
-                accentColor   = stored?.accentColor,
-                customIconUri = stored?.customIconUri,
-                filterRules   = stored?.filterRules,
+                accentColor      = stored?.accentColor,
+                customIconUri    = stored?.customIconUri,
+                filterRules      = stored?.filterRules,
+                // Preserve the system-defined gaming flag from the DB (reconciled each launch);
+                // without this the rebuilt Main Game category loses isGamingCategory, which hides
+                // "Move to Category" for collections and suppresses live refresh.
+                isGamingCategory = stored?.isGamingCategory ?: fallback.isGamingCategory,
             )
         }
 

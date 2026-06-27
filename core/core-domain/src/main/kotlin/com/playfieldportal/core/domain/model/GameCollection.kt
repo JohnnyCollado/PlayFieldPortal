@@ -11,6 +11,7 @@ data class GameCollection(
     val id: Long = 0,
     val name: String,
     val categoryId: String = "games",  // Category this collection belongs to
+    val isPinned: Boolean = false,     // Pinned to the top of its category
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
     val sortOrder: Int = 0,

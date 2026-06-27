@@ -15,6 +15,9 @@ data class CollectionEntity(
     @ColumnInfo(name = "category_id")
     val categoryId: String = "games",  // Default to Main Game category
 
+    @ColumnInfo(name = "is_pinned")
+    val isPinned: Boolean = false,  // Pinned to the top of its category
+
     @ColumnInfo(name = "created_at")
     val createdAt: Long = System.currentTimeMillis(),
 
@@ -29,6 +32,7 @@ fun CollectionEntity.toDomain(gameCount: Int = 0) = GameCollection(
     id        = id,
     name      = name,
     categoryId = categoryId,
+    isPinned  = isPinned,
     createdAt = createdAt,
     updatedAt = updatedAt,
     sortOrder = sortOrder,
@@ -39,6 +43,7 @@ fun GameCollection.toEntity() = CollectionEntity(
     id        = id,
     name      = name,
     categoryId = categoryId,
+    isPinned  = isPinned,
     createdAt = createdAt,
     updatedAt = updatedAt,
     sortOrder = sortOrder,

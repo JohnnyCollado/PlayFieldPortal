@@ -43,7 +43,7 @@ import com.playfieldportal.core.data.database.entity.UnmatchedRomEntity
         CollectionEntity::class,
         CollectionGameEntity::class,
     ],
-    version = 11,
+    version = 12,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -209,6 +209,22 @@ abstract class PFPDatabase : RoomDatabase() {
         val MIGRATION_9_10 = object : Migration(9, 10) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE games ADD COLUMN launch_intent_uri TEXT")
+            }
+        }
+
+        // v11 — collections belong to exactly one gaming category. category_id is the single
+        // source of truth for a collection's placement; existing collections default to the
+        // built-in Game category ('games').
+        val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE collections ADD COLUMN category_id TEXT NOT NULL DEFAULT 'games'")
+            }
+        }
+
+        // v12 — collections can be pinned to the top of their category.
+        val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE collections ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0")
             }
         }
     }

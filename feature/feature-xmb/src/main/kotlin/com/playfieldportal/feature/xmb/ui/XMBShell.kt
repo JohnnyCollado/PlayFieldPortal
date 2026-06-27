@@ -205,10 +205,14 @@ fun XMBShell(
                             .align(Alignment.TopStart)
                             .fillMaxWidth()
                             .padding(start = startPad, end = 24.dp, top = 6.dp),
-                    ) {
+                    ) { categoryIndex ->
+                        // During a category transition AnimatedContent briefly composes BOTH the
+                        // outgoing and incoming lists. Only the settled (current) category may
+                        // render the selection highlight — otherwise the outgoing copy shows a
+                        // duplicate enlarged row that slides away (a "second cursor").
                         XMBItemList(
                             items = uiState.currentItems,
-                            selectedIndex = uiState.selectedItemIndex,
+                            selectedIndex = if (categoryIndex == uiState.selectedCategoryIndex) uiState.selectedItemIndex else -1,
                             onItemSelected = onItemSelected,
                             onItemLongPress = onItemLongPress,
                             iconStyle = uiState.iconStyle,
