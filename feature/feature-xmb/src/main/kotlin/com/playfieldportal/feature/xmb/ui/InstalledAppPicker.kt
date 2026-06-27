@@ -55,10 +55,16 @@ fun InstalledAppPicker(
         listState.animateScrollToItem(state.selectedIndex.coerceAtLeast(0))
     }
 
+    val pfpColors = com.playfieldportal.core.ui.theme.LocalPFPColors.current
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(PickerScrim)
+            .background(
+                androidx.compose.ui.graphics.Brush.verticalGradient(
+                    0f to pfpColors.backgroundTop.copy(alpha = 0.94f),
+                    1f to pfpColors.backgroundBottom.copy(alpha = 0.94f),
+                )
+            )
             .clickable(onClick = onDismiss),
     ) {
         Column(modifier = Modifier.fillMaxSize().padding(horizontal = 48.dp, vertical = 28.dp)) {

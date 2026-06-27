@@ -89,10 +89,16 @@ fun GamePickerScreen(
         return
     }
 
+    val pfpColors = com.playfieldportal.core.ui.theme.LocalPFPColors.current
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xF00A0A14))
+            .background(
+                androidx.compose.ui.graphics.Brush.verticalGradient(
+                    0f to pfpColors.backgroundTop.copy(alpha = 0.94f),
+                    1f to pfpColors.backgroundBottom.copy(alpha = 0.94f),
+                )
+            )
     ) {
         // Header
         Row(

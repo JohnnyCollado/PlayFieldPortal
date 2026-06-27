@@ -47,8 +47,10 @@ import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
+import com.playfieldportal.core.ui.theme.LocalPFPColors
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -70,6 +72,12 @@ internal val LocalSettingsFocusTracker =
 // returning, instead of always snapping back to the first row.
 internal val LocalSettingsFocusRegistry =
     compositionLocalOf<SnapshotStateMap<String, FocusRequester>> { mutableStateMapOf() }
+
+// Internal registrar: the first interactive row to compose reports its FocusRequester here so
+// the scaffold can place initial focus on a real, laid-out row. (The old 0dp bootstrap box
+// never reliably gained focus, leaving menus opening with nothing selected.)
+internal val LocalSettingsRegisterFirstFocusable =
+    compositionLocalOf<(FocusRequester) -> Unit> { {} }
 
 // ── Colors ────────────────────────────────────────────────────────────────────
 
@@ -101,12 +109,18 @@ fun SettingsScaffold(
     val bootstrapFR     = remember { FocusRequester() }
     val pendingAction   = LocalSettingsPendingAction.current
     val onConsumed      = LocalSettingsActionConsumed.current
+    // Menu backdrop is tinted by the user's chosen color scheme (the same background anchors
+    // the XMB wave uses), so settings screens match the theme instead of a flat black panel.
+    val pfpColors       = LocalPFPColors.current
 
     // Tracks the onclick of whichever row currently has controller focus
     val focusedRowClick = remember { mutableStateOf<(() -> Unit)?>(null) }
 
     // Per-row FocusRequesters keyed by focusKey, for focus-restoration on child return.
     val focusRegistry   = remember { mutableStateMapOf<String, FocusRequester>() }
+
+    // FocusRequester of the first interactive row — the reliable initial-focus target.
+    val firstRowFocus   = remember { mutableStateOf<FocusRequester?>(null) }
 
     // Set true once any row has actually received focus (the menu is no longer "dead").
     var focusRedirected by remember { mutableStateOf(false) }
@@ -121,19 +135,23 @@ fun SettingsScaffold(
     LaunchedEffect(Unit) {
         Timber.d("Settings focus: screen opened ($title / $subtitle) restoreKey=$restoreFocusKey")
         var attempts = 0
-        while (!focusRedirected && attempts < 12) {
+        // Keep trying until a row actually takes focus. The target is the row we're restoring
+        // to (returning from a child) or the first interactive row; both are real, laid-out
+        // FocusRequesters. They may not be registered on the very first frame, so we retry —
+        // falling back to the 0dp bootstrap only until the real target appears.
+        while (!focusRedirected && attempts < 30) {
             withFrameNanos { /* wait for this frame's layout pass */ }
-            if (restoreFocusKey != null) {
-                focusRegistry[restoreFocusKey]?.let { runCatching { it.requestFocus() } }
+            val target = if (restoreFocusKey != null) focusRegistry[restoreFocusKey] else firstRowFocus.value
+            if (target != null) {
+                runCatching { target.requestFocus() }
             } else {
                 runCatching { bootstrapFR.requestFocus() }
             }
             attempts++
         }
-        // Restore target never materialised (e.g. the row was removed) — fall back to the
-        // first row so the menu is never left without a focused item.
-        if (!focusRedirected && restoreFocusKey != null) {
-            runCatching { bootstrapFR.requestFocus() }
+        // Last resort if nothing took focus: first row, then bootstrap.
+        if (!focusRedirected) {
+            (firstRowFocus.value ?: bootstrapFR).let { runCatching { it.requestFocus() } }
         }
         Timber.d("Settings focus: default focus assigned=$focusRedirected after $attempts frame(s) ($subtitle)")
     }
@@ -166,11 +184,18 @@ fun SettingsScaffold(
         // covering both the first-row redirect and the restore-to-key path.
         LocalSettingsFocusTracker provides { click -> focusedRowClick.value = click; focusRedirected = true },
         LocalSettingsFocusRegistry provides focusRegistry,
+        // First clickable row to compose wins the initial-focus slot.
+        LocalSettingsRegisterFirstFocusable provides { fr -> if (firstRowFocus.value == null) firstRowFocus.value = fr },
     ) {
         Box(
             modifier = modifier
                 .fillMaxSize()
-                .background(SettingsBg),
+                .background(
+                    Brush.verticalGradient(
+                        0f to pfpColors.backgroundTop.copy(alpha = 0.94f),
+                        1f to pfpColors.backgroundBottom.copy(alpha = 0.94f),
+                    )
+                ),
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
 
@@ -258,15 +283,23 @@ fun SettingsRow(
 ) {
     val focusTracker  = LocalSettingsFocusTracker.current
     val focusRegistry = LocalSettingsFocusRegistry.current
+    val registerFirst = LocalSettingsRegisterFirstFocusable.current
     var isFocused by remember { mutableStateOf(false) }
 
-    // Clickable rows with a focusKey publish a FocusRequester so the scaffold can restore
-    // focus to them. (A non-clickable row has no focus target, so a requester would be unusable.)
-    val focusRequester = if (focusKey != null && onClick != null) remember(focusKey) { FocusRequester() } else null
+    // Every clickable row owns a FocusRequester. Rows with a focusKey publish it so the scaffold
+    // can restore focus to them; and the first clickable row to compose claims the initial-focus
+    // slot so the menu always opens with a real, selectable row highlighted.
+    val focusRequester = if (onClick != null) remember { FocusRequester() } else null
     if (focusKey != null && focusRequester != null) {
         DisposableEffect(focusKey) {
             focusRegistry[focusKey] = focusRequester
             onDispose { if (focusRegistry[focusKey] === focusRequester) focusRegistry.remove(focusKey) }
+        }
+    }
+    if (focusRequester != null) {
+        DisposableEffect(Unit) {
+            registerFirst(focusRequester)
+            onDispose { }
         }
     }
 
@@ -377,15 +410,22 @@ fun SettingsTextFieldRow(
 ) {
     val focusTracker  = LocalSettingsFocusTracker.current
     val focusRegistry = LocalSettingsFocusRegistry.current
+    val registerFirst = LocalSettingsRegisterFirstFocusable.current
     val keyboard      = LocalSoftwareKeyboardController.current
     var editing by remember { mutableStateOf(false) }
 
-    val fr = if (focusKey != null) remember(focusKey) { FocusRequester() } else null
-    if (focusKey != null && fr != null) {
+    // Always own a FocusRequester so this field can be the screen's initial-focus target
+    // (a screen that starts with a text field still opens with it highlighted, read-only).
+    val fr = remember { FocusRequester() }
+    if (focusKey != null) {
         DisposableEffect(focusKey) {
             focusRegistry[focusKey] = fr
             onDispose { if (focusRegistry[focusKey] === fr) focusRegistry.remove(focusKey) }
         }
+    }
+    DisposableEffect(Unit) {
+        registerFirst(fr)
+        onDispose { }
     }
 
     // The keyboard follows edit mode only — focus alone (navigating onto the field) never
@@ -420,7 +460,7 @@ fun SettingsTextFieldRow(
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .then(if (fr != null) Modifier.focusRequester(fr) else Modifier)
+                    .focusRequester(fr)
                     .onFocusChanged { state ->
                         if (state.isFocused) {
                             // Controller SELECT over the field starts editing (opens the keyboard).

@@ -26,6 +26,8 @@ import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,13 +38,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import com.playfieldportal.core.domain.model.GamepadAction
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -62,6 +70,7 @@ private val DrawerSubtext = Color(0xFFAAAAAA)
 private val DrawerChip    = Color(0xFF1A1A2E)
 private val DrawerSelected = Color(0xFF4A90D9).copy(alpha = 0.25f)
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun AppDrawerScreen(
     onBack: () -> Unit,
@@ -73,20 +82,45 @@ fun AppDrawerScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     var searchActive by remember { mutableStateOf(false) }
+    val searchFocus = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
 
+    // Y toggles the search field. Other actions drive grid navigation as before. (BACK never
+    // reaches here — XMBViewModel intercepts it to close the drawer.)
     LaunchedEffect(pendingGamepadAction) {
         if (pendingGamepadAction != null) {
             timber.log.Timber.d("AppDrawer: action=$pendingGamepadAction filter=${viewModel.uiState.value.activeFilter}")
-            viewModel.handleGamepadAction(pendingGamepadAction)
+            if (pendingGamepadAction == GamepadAction.BUTTON_Y) {
+                searchActive = !searchActive
+                if (!searchActive) viewModel.setSearchQuery("")
+            } else {
+                viewModel.handleGamepadAction(pendingGamepadAction)
+            }
             onGamepadActionConsumed()
+        }
+    }
+
+    // When search turns on, focus the field and open the keyboard; off hides it. Wait a couple
+    // of frames first because the field mounts inside an AnimatedVisibility that lags a frame.
+    LaunchedEffect(searchActive) {
+        if (searchActive) {
+            withFrameNanos {}
+            withFrameNanos {}
+            runCatching { searchFocus.requestFocus() }
+            keyboard?.show()
+        } else {
+            keyboard?.hide()
         }
     }
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    // Apply initial filter once on first composition
+    // Apply initial filter once on first composition. Also clear any stale search query so the
+    // drawer always opens showing the full (unfiltered) list — the ViewModel is retained across
+    // open/close, and the search field starts hidden.
     val appliedInitial = remember { mutableStateOf(false) }
     if (!appliedInitial.value) {
         viewModel.setFilter(initialFilter)
+        viewModel.setSearchQuery("")
         appliedInitial.value = true
     }
 
@@ -102,10 +136,16 @@ fun AppDrawerScreen(
         }
     }
 
+    val pfpColors = com.playfieldportal.core.ui.theme.LocalPFPColors.current
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(DrawerBg),
+            .background(
+                androidx.compose.ui.graphics.Brush.verticalGradient(
+                    0f to pfpColors.backgroundTop.copy(alpha = 0.94f),
+                    1f to pfpColors.backgroundBottom.copy(alpha = 0.94f),
+                )
+            ),
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
 
@@ -115,8 +155,10 @@ fun AppDrawerScreen(
                 appCount     = state.visibleApps.size,
                 searchQuery  = state.searchQuery,
                 searchActive = searchActive,
+                searchFocus  = searchFocus,
                 onSearchToggle   = { searchActive = it; if (!it) viewModel.setSearchQuery("") },
                 onSearchChange   = { viewModel.setSearchQuery(it) },
+                onSearchDone     = { keyboard?.hide() },
                 onBack           = onBack,
             )
 
@@ -168,8 +210,10 @@ private fun DrawerHeader(
     appCount: Int,
     searchQuery: String,
     searchActive: Boolean,
+    searchFocus: FocusRequester,
     onSearchToggle: (Boolean) -> Unit,
     onSearchChange: (String) -> Unit,
+    onSearchDone: () -> Unit,
     onBack: () -> Unit,
 ) {
     Row(
@@ -216,17 +260,30 @@ private fun DrawerHeader(
                 singleLine    = true,
                 textStyle     = TextStyle(color = DrawerText, fontSize = 14.sp),
                 cursorBrush   = SolidColor(DrawerAccent),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = { onSearchDone() }, onDone = { onSearchDone() }),
+                decorationBox = { inner ->
+                    Box {
+                        if (searchQuery.isEmpty()) {
+                            Text("Search apps…", color = DrawerSubtext, fontSize = 14.sp)
+                        }
+                        inner()
+                    }
+                },
                 modifier      = Modifier
                     .width(240.dp)
+                    .focusRequester(searchFocus)
                     .background(DrawerChip, RoundedCornerShape(8.dp))
                     .padding(horizontal = 12.dp, vertical = 8.dp),
             )
         }
 
+        // Touch toggle + controller hint: navigating with a pad, press Y to open search.
         Text(
-            text     = if (searchActive) "✕" else "⌕",
+            text     = if (searchActive) "✕" else "Y  ⌕",
             color    = DrawerAccent,
-            fontSize = 18.sp,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.SemiBold,
             modifier = Modifier.clickable { onSearchToggle(!searchActive) },
         )
     }
