@@ -51,15 +51,10 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             PFPTheme {
-                // Debug builds wrap the shell so long-pressing Settings opens DebugMenuScreen.
-                // Release builds call XMBShellContainer directly — no debug code in the APK.
-                if (BuildConfig.DEBUG) {
-                    com.playfieldportal.launcher.debug.DebugAwareXMBHost { onSettingsLongPress ->
-                        XMBShellContainer(onSettingsLongPress = onSettingsLongPress)
-                    }
-                } else {
-                    XMBShellContainer()
-                }
+                // AppXmbHost is defined per build variant: the debug source set wraps the shell so
+                // long-pressing Settings opens DebugMenuScreen; the release source set calls
+                // XMBShellContainer directly, keeping debug code out of the APK.
+                AppXmbHost()
             }
         }
     }

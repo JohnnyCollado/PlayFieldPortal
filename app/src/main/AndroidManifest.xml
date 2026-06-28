@@ -121,6 +121,8 @@
         </receiver>
 
         <!-- ═══ WorkManager ══════════════════════════════════════════════ -->
+        <!-- On-demand init: PFPApplication is the Configuration.Provider (Hilt-Work), so the -->
+        <!-- default WorkManagerInitializer must be removed from the startup provider.        -->
         <provider
             android:name="androidx.startup.InitializationProvider"
             android:authorities="${applicationId}.androidx-startup"
@@ -128,7 +130,7 @@
             tools:node="merge">
             <meta-data
                 android:name="androidx.work.WorkManagerInitializer"
-                android:value="androidx.startup" />
+                tools:node="remove" />
         </provider>
 
         <!-- ═══ FileProvider — ROM URIs passed to emulators ════════════ -->

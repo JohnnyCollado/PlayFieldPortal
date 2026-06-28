@@ -59,7 +59,10 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
+// compose-ui 1.6.x (Compose BOM 2024.06) only provides the platform LocalLifecycleOwner.
+// The androidx.lifecycle.compose variant requires compose-ui 1.7+, so reading it crashes
+// with "LocalLifecycleOwner not present". Use the platform one until the BOM is upgraded.
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.foundation.Image
 import com.google.accompanist.drawablepainter.DrawablePainter
 
