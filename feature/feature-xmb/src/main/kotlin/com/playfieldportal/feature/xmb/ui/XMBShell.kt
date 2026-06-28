@@ -14,6 +14,9 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -21,6 +24,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -33,6 +38,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -61,6 +71,9 @@ fun XMBShellContainer(
     XMBShell(
         uiState = uiState,
         onCategorySelected = viewModel::onCategorySelected,
+        onStepCategory = viewModel::stepCategory,
+        onTouchBack = viewModel::onHomeBack,
+        onOpenAppDrawer = viewModel::onOpenAppDrawer,
         onItemSelected = viewModel::onItemSelected,
         onItemLongPress = viewModel::onItemLongPress,
         onPlatformLongPress = viewModel::onPlatformLongPress,
@@ -99,6 +112,9 @@ fun XMBShellContainer(
 fun XMBShell(
     uiState: XMBUiState,
     onCategorySelected: (Int) -> Unit = {},
+    onStepCategory: (Int) -> Unit = {},
+    onTouchBack: () -> Unit = {},
+    onOpenAppDrawer: () -> Unit = {},
     onItemSelected: (Int) -> Unit = {},
     onItemLongPress: (Int) -> Unit = {},
     onPlatformLongPress: (Int) -> Unit = {},
@@ -172,7 +188,28 @@ fun XMBShell(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(top = 44.dp),
+                    .padding(top = 44.dp)
+                    // Touch gestures on the home screen: a horizontal swipe steps the category
+                    // selection (D-pad ◀ ▶ equivalent); a swipe that starts at the left edge goes
+                    // Back (exit a folder, or open the app drawer at the root). Taps still pass
+                    // through to the category/item rows; vertical list scrolling is unaffected.
+                    .pointerInput(Unit) {
+                        val edgePx      = 32.dp.toPx()
+                        val thresholdPx = 64.dp.toPx()
+                        var startX = 0f
+                        var totalDx = 0f
+                        detectHorizontalDragGestures(
+                            onDragStart = { offset -> startX = offset.x; totalDx = 0f },
+                            onHorizontalDrag = { _, delta -> totalDx += delta },
+                            onDragEnd = {
+                                when {
+                                    startX <= edgePx && totalDx > thresholdPx -> onTouchBack()
+                                    totalDx <= -thresholdPx -> onStepCategory(1)   // swipe left → next
+                                    totalDx >= thresholdPx  -> onStepCategory(-1)  // swipe right → previous
+                                }
+                            },
+                        )
+                    },
             ) {
                 XMBCategoryBar(
                     categories = uiState.categories,
@@ -224,6 +261,17 @@ fun XMBShell(
                         )
                     }
                 }
+            }
+
+            // Touch affordance for the app drawer (controller users press BACK at the root).
+            // Hidden whenever an overlay/dialog is up so it never floats over them.
+            if (!uiState.hasBlockingOverlay) {
+                AppDrawerButton(
+                    onClick = onOpenAppDrawer,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(bottom = 24.dp, end = 20.dp),
+                )
             }
 
             if (uiState.showBootSequence) {
@@ -384,6 +432,39 @@ private fun CollectionNameDialog(
         confirmButton = { TextButton(onClick = { onConfirm(text) }) { Text("Save") } },
         dismissButton = { TextButton(onClick = onCancel) { Text("Cancel") } },
     )
+}
+
+/** Bottom-corner touch button that opens the app drawer — a 2×2 grid glyph drawn on a Canvas
+ *  (no icon-library dependency). Controller users reach the drawer with BACK at the root instead. */
+@Composable
+private fun AppDrawerButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .size(48.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(Color.White.copy(alpha = 0.12f))
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Canvas(modifier = Modifier.size(22.dp)) {
+            val cell = size.minDimension * 0.38f
+            val gap = size.minDimension - 2 * cell
+            val radius = CornerRadius(cell * 0.28f, cell * 0.28f)
+            for (row in 0..1) {
+                for (col in 0..1) {
+                    drawRoundRect(
+                        color = Color.White.copy(alpha = 0.92f),
+                        topLeft = Offset(col * (cell + gap), row * (cell + gap)),
+                        size = Size(cell, cell),
+                        cornerRadius = radius,
+                    )
+                }
+            }
+        }
+    }
 }
 
 @Composable

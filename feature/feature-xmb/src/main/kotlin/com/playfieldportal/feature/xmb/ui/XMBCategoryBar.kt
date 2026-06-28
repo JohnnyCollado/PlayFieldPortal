@@ -75,6 +75,10 @@ fun XMBCategoryBar(
         val endPadding = (maxWidth - XmbLeftAnchor - ItemSlotWidth).coerceAtLeast(24.dp)
         LazyRow(
             state = listState,
+            // Selection-driven only: the bar auto-scrolls to the selected slot (above), and touch
+            // swipes are handled by the home-screen gesture (step category), so user scrolling is
+            // disabled to keep the bar from drifting out of sync with the selection.
+            userScrollEnabled = false,
             modifier = Modifier.fillMaxWidth(),
             contentPadding = PaddingValues(start = XmbLeftAnchor, end = endPadding),
             verticalAlignment = Alignment.CenterVertically,

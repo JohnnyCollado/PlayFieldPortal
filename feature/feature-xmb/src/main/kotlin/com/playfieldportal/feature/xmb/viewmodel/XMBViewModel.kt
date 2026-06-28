@@ -1693,6 +1693,25 @@ class XMBViewModel @Inject constructor(
         loadItemsForCategory(category)
     }
 
+    /** Touch: step the category selection by [direction] (-1 / +1) from the current one — the swipe
+     *  equivalent of D-pad ◀ ▶. */
+    fun stepCategory(direction: Int) {
+        val s = _uiState.value
+        if (s.hasBlockingOverlay) return
+        val next = (s.selectedCategoryIndex + direction)
+            .coerceIn(0, (s.categories.size - 1).coerceAtLeast(0))
+        if (next != s.selectedCategoryIndex) onCategorySelected(next)
+    }
+
+    /** Touch: the left-edge-swipe Back — exit an open folder, or open the app drawer at the root
+     *  (mirrors the gamepad BACK behaviour on the home screen). No-op while an overlay is up. */
+    fun onHomeBack() {
+        val s = _uiState.value
+        if (s.hasBlockingOverlay) return
+        if (s.selectedPlatformId != null || s.selectedCollectionId != null) closePlatformFolder()
+        else onOpenAppDrawer()
+    }
+
     // ── Item selection ────────────────────────────────────────────────────────
 
     fun onItemSelected(index: Int) {
