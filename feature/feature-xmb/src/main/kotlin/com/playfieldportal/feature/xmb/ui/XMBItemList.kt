@@ -124,7 +124,6 @@ private fun XmbVerticalListRow(
     ) {
         XmbItemLeadingIcon(
             item = item,
-            isSelected = isSelected,
             iconStyle = iconStyle,
         )
 
@@ -153,10 +152,8 @@ private fun XmbVerticalListRow(
 @Composable
 private fun XmbItemLeadingIcon(
     item: XMBItem,
-    isSelected: Boolean,
     iconStyle: GameIconStyle,
 ) {
-    val iconTint = if (isSelected) Color.White else Color(0xFFD4D2E8)
     when {
         item.type == XMBItemType.ALL_GAMES ||
             item.type == XMBItemType.MEMORY_CARD ||
@@ -165,22 +162,14 @@ private fun XmbItemLeadingIcon(
                 contentAlignment = Alignment.CenterStart,
                 modifier = Modifier.width(58.dp),
             ) {
-                val consoleIcon = if (item.type == XMBItemType.MEMORY_CARD) {
-                    rememberConsoleIconId(item.platformId)
-                } else 0
-                if (consoleIcon != 0) {
-                    Image(
-                        painter = painterResource(consoleIcon),
-                        contentDescription = null,
-                        modifier = Modifier.size(40.dp),
-                    )
-                } else {
-                    XmbMemoryCardIcon(
-                        tint = iconTint,
-                        cutoutColor = Color(0xFF263190).copy(alpha = if (isSelected) 0.95f else 0.70f),
-                        modifier = Modifier.size(width = 42.dp, height = 30.dp),
-                    )
-                }
+                // Memory-card rows show their matching console icon; All Games / Collections and
+                // any unknown console fall back to the theme's generic _default console art.
+                val platformId = if (item.type == XMBItemType.MEMORY_CARD) item.platformId else null
+                Image(
+                    painter = painterResource(rememberConsoleIconId(platformId)),
+                    contentDescription = null,
+                    modifier = Modifier.size(40.dp),
+                )
             }
         }
         item.gameId != null -> {
@@ -204,15 +193,18 @@ private fun XmbItemLeadingIcon(
 }
 
 // Resolves a per-console icon (bundled from the xmb-menu-es-de set) by platform id,
-// e.g. platformId "psp" -> R.drawable.sysicon_psp. Returns 0 when no icon is available,
-// in which case the caller falls back to the generic Memory Card glyph.
+// e.g. platformId "psp" -> R.drawable.sysicon_psp. Falls back to the theme's generic
+// sysicon_default when the platform is unknown or has no dedicated icon.
 @Composable
 private fun rememberConsoleIconId(platformId: String?): Int {
     val context = LocalContext.current
     return remember(platformId) {
-        if (platformId.isNullOrBlank()) return@remember 0
-        val safe = platformId.lowercase().filter { it.isLetterOrDigit() || it == '_' }
-        context.resources.getIdentifier("sysicon_$safe", "drawable", context.packageName)
+        val safe = platformId?.lowercase()?.filter { it.isLetterOrDigit() || it == '_' }
+        val specific = if (!safe.isNullOrBlank()) {
+            context.resources.getIdentifier("sysicon_$safe", "drawable", context.packageName)
+        } else 0
+        if (specific != 0) specific
+        else context.resources.getIdentifier("sysicon_default", "drawable", context.packageName)
     }
 }
 

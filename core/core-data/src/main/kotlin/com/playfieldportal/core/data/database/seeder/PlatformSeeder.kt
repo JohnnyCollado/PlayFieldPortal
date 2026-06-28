@@ -327,6 +327,17 @@ class PlatformSeeder @Inject constructor(
                 romExtensions = "zip,7z,neo",
             ),
 
+            // ── Microsoft ──────────────────────────────────────────────────
+            PlatformEntity(
+                id            = "x360",
+                name          = "Xbox 360",
+                shortName     = "X360",
+                iconRes       = "ic_platform_xbox360",
+                accentColor   = 0xFF107C10L,
+                romExtensions = "iso,xex,zar,xbla",
+                preferredEmulatorPackage = "emu.x360.mobile",
+            ),
+
             // ── Windows / Android ──────────────────────────────────────────
             PlatformEntity(
                 id            = "windows",

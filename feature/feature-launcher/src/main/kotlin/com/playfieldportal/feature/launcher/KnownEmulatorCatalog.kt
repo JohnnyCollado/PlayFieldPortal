@@ -283,5 +283,17 @@ internal object KnownEmulatorCatalog {
             platformIds   = listOf("symbian"),
             mimeType      = "application/octet-stream",
         ),
+
+        // ── Xbox 360 ──────────────────────────────────────────────────────────
+        // X360 Mobile exposes X360MobileGameLaunchActivity with an ACTION_VIEW filter
+        // (file/content scheme, */* type, pathPattern *.iso/.xex/.zar/.xbla).
+        KnownEmulator(
+            packageNames  = listOf("emu.x360.mobile"),
+            suggestedName = "X360 Mobile",
+            platformIds   = listOf("x360", "xbox360"),
+            activityClass = "emu.x360.mobile.X360MobileGameLaunchActivity",
+            mimeType      = "application/octet-stream",
+            useSafUri     = true,
+        ),
     )
 }

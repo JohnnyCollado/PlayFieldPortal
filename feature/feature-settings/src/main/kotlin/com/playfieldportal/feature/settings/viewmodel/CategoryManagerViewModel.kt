@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.repository.CategoryRepositoryImpl
 import com.playfieldportal.core.domain.model.CategoryType
+import com.playfieldportal.core.ui.icons.CATEGORY_ICON_CATALOG
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -27,24 +28,9 @@ data class CategoryRow(
 
 data class IconOption(val key: String, val label: String)
 
-// Selectable category icons (mapped to the XMB sprite sheet keys).
-val ICON_OPTIONS = listOf(
-    IconOption("ic_settings", "Settings (toolbox)"),
-    IconOption("ic_photos",   "Photo / Share"),
-    IconOption("ic_appstore", "App Store (rings)"),
-    IconOption("ic_music",    "Music (note)"),
-    IconOption("ic_videos",   "Video (film)"),
-    IconOption("ic_games",    "Controller"),
-    IconOption("ic_network",  "Globe"),
-    IconOption("ic_arcade",   "Arcade"),
-    IconOption("ic_snes",     "SNES"),
-    IconOption("ic_n64",      "Nintendo 64"),
-    IconOption("ic_psp",      "PSP"),
-    IconOption("ic_ps2",      "PlayStation"),
-    IconOption("ic_switch",   "Switch"),
-    IconOption("ic_android",  "Android"),
-    IconOption("ic_pc",       "PC"),
-)
+// Selectable category icons, sourced from the shared core-ui catalog (the 7 XMB glyphs plus every
+// bundled console icon). No sprite sheet — each entry renders from its own resource.
+val ICON_OPTIONS: List<IconOption> = CATEGORY_ICON_CATALOG.map { IconOption(it.key, it.label) }
 
 data class CategoryManagerUiState(
     val step: CategoryStep = CategoryStep.LIST,

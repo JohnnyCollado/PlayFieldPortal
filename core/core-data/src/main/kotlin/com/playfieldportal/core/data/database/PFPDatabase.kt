@@ -43,7 +43,7 @@ import com.playfieldportal.core.data.database.entity.UnmatchedRomEntity
         CollectionEntity::class,
         CollectionGameEntity::class,
     ],
-    version = 12,
+    version = 13,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -225,6 +225,24 @@ abstract class PFPDatabase : RoomDatabase() {
         val MIGRATION_11_12 = object : Migration(11, 12) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE collections ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        // v13 — Xbox 360 platform (X360 Mobile emulator). Adds the built-in platform definition
+        // to databases seeded by older builds. Idempotent; user customizations are preserved.
+        // accent_color 0xFF107C10 (Xbox green) = 4279270416.
+        val MIGRATION_12_13 = object : Migration(12, 13) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    INSERT OR IGNORE INTO platforms
+                        (id, name, short_name, icon_res, accent_color, is_pinned_to_bar,
+                         bar_position, preferred_emulator_package, rom_extensions)
+                    VALUES
+                        ('x360', 'Xbox 360', 'X360', 'ic_platform_xbox360', 4279270416, 0,
+                         -1, 'emu.x360.mobile', 'iso,xex,zar,xbla')
+                    """.trimIndent()
+                )
             }
         }
     }
