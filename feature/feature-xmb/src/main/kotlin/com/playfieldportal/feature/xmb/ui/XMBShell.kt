@@ -87,6 +87,7 @@ fun XMBShellContainer(
         onGamePickerConfirm = viewModel::confirmGamePicker,
         onGamePickerDismiss = viewModel::closeGamePicker,
         onGamePickerActionConsumed = viewModel::consumeGamePickerAction,
+        onDismissInfoDialog = viewModel::dismissInfoDialog,
     )
 }
 
@@ -124,6 +125,7 @@ fun XMBShell(
     onGamePickerConfirm: (Set<Long>, Set<Long>) -> Unit = { _, _ -> },
     onGamePickerDismiss: () -> Unit = {},
     onGamePickerActionConsumed: () -> Unit = {},
+    onDismissInfoDialog: () -> Unit = {},
 ) {
     PFPTheme(colors = uiState.themeColors) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -286,6 +288,14 @@ fun XMBShell(
                 )
             }
 
+            uiState.infoDialog?.let { dialog ->
+                InfoDialog(
+                    title = dialog.title,
+                    message = dialog.message,
+                    onDismiss = onDismissInfoDialog,
+                )
+            }
+
             uiState.appPicker?.let { picker ->
                 InstalledAppPicker(
                     state = picker,
@@ -369,6 +379,20 @@ private fun CollectionNameDialog(
         },
         confirmButton = { TextButton(onClick = { onConfirm(text) }) { Text("Save") } },
         dismissButton = { TextButton(onClick = onCancel) { Text("Cancel") } },
+    )
+}
+
+@Composable
+private fun InfoDialog(
+    title: String,
+    message: String,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = { Text(message) },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
     )
 }
 

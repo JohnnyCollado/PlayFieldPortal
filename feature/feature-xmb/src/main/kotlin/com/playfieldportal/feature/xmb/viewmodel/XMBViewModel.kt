@@ -112,6 +112,12 @@ data class CollectionNameDialogState(
     val renameCollectionId: Long? = null,
 )
 
+// A simple read-only message dialog (e.g. "View File Location"). Dismissed with A/B or tap.
+data class InfoDialogState(
+    val title: String,
+    val message: String,
+)
+
 // ── Color-scheme picker (opened from Settings ▸ Themes ▸ Color Scheme) ──────────
 // A PSP-style submenu that previews each scheme live as the cursor moves over it.
 
@@ -161,6 +167,8 @@ data class XMBUiState(
     val platformGameCounts: Map<String, Int> = emptyMap(),
     // Total real games (content_type = GAME) across all platforms — the "All Games" count.
     val allGamesCount: Int = 0,
+    // Count of favorited entries — drives the Games-root "Favorites" item visibility.
+    val favoritesCount: Int = 0,
     val selectedPlatformId: String? = null,
     // When non-null, the Games category is showing the contents of a user collection.
     val selectedCollectionId: Long? = null,
@@ -201,6 +209,9 @@ data class XMBUiState(
     // ── Create-collection text dialog ─────────────────────────────────────
     val collectionNameDialog: CollectionNameDialogState? = null,
 
+    // ── Simple read-only info dialog (e.g. file location) ──────────────────
+    val infoDialog: InfoDialogState? = null,
+
     // ── Installed-app picker (Android Library / Video / Music) ─────────────
     val appPicker: AppPickerState? = null,
 
@@ -226,12 +237,14 @@ data class XMBUiState(
             appPicker != null ||
             gamePickerCategoryId != null ||
             renameAppTarget != null ||
-            collectionNameDialog != null
+            collectionNameDialog != null ||
+            infoDialog != null
 }
 
 enum class XMBItemType {
     STANDARD,
     ALL_GAMES,
+    FAVORITES,
     MEMORY_CARD,
     COLLECTION,
     EMPTY,
@@ -382,10 +395,16 @@ class XMBViewModel @Inject constructor(
                     enabledCards  = cards
                     val counts = games.groupBy { it.platformId }.mapValues { it.value.size }
                     val gamesOnlyTotal = games.count { it.contentType == GameContentType.GAME }
+                    val favoritesTotal = games.count { it.isFavorite }
 
-                    // Drop a stale platform folder if its card was removed or disabled.
+                    // Drop a stale platform folder if its card was removed or disabled. The
+                    // synthetic All Games and Favorites folders are always valid.
                     val validPlatformId = _uiState.value.selectedPlatformId
-                        ?.takeIf { id -> id == ALL_GAMES_PLATFORM_ID || cards.any { c -> c.platformId == id } }
+                        ?.takeIf { id ->
+                            id == ALL_GAMES_PLATFORM_ID ||
+                                id == FAVORITES_PLATFORM_ID ||
+                                cards.any { c -> c.platformId == id }
+                        }
                     // Drop a stale collection folder if the collection was deleted.
                     val validCollectionId = _uiState.value.selectedCollectionId
                         ?.takeIf { id -> collections.any { c -> c.id == id } }
@@ -393,6 +412,7 @@ class XMBViewModel @Inject constructor(
                     _uiState.update { it.copy(
                         platformGameCounts = counts,
                         allGamesCount = gamesOnlyTotal,
+                        favoritesCount = favoritesTotal,
                         selectedPlatformId = validPlatformId,
                         selectedCollectionId = validCollectionId,
                         collections = collections,
@@ -468,6 +488,13 @@ class XMBViewModel @Inject constructor(
                                         else games.toXmbItems()
                             _uiState.update { it.copy(currentItems = items) }
                         }
+                    } else if (platformId == FAVORITES_PLATFORM_ID) {
+                        // Favorites folder — every favorited entry (games and app shortcuts).
+                        gameRepository.observeFavorites().collect { games ->
+                            val items = if (games.isEmpty()) listOf(emptyFavoritesItem())
+                                        else games.toXmbItems()
+                            _uiState.update { it.copy(currentItems = items) }
+                        }
                     } else if (platformId != null) {
                         gameRepository.observeByPlatform(platformId).collect { games ->
                             val items = if (games.isEmpty()) listOf(emptyFolderItem(platformId))
@@ -520,10 +547,13 @@ class XMBViewModel @Inject constructor(
                         val items = if (combined.isEmpty()) listOf(emptyCategoryItem(category)) else combined
                         _uiState.update { it.copy(currentItems = items + addGamesItem()) }
                     } else {
-                        // Non-gaming categories show apps (Photo / Music / Video / Network / App Store / custom)
+                        // Non-gaming categories show apps (Photo / Music / Video / Network / App Store / custom).
+                        // Apps the user has given artwork (via Edit App Details → a games-table row keyed
+                        // by package, typed ANDROID_APP) render that art so the category looks uniform.
+                        // The rows stay ANDROID_APP, so this never makes them appear in All Games.
                         val apps = appCategoryRepository.appsForCategory(category.id)
                         val appItems = if (apps.isEmpty()) listOf(emptyCategoryItem(category))
-                                       else apps.map { it.toXmbItem() }
+                                       else apps.map { it.toXmbItem(gameRepository.getAppEntry(it.packageName)) }
                         // "Add Apps" is offered on every app section so the same picker serves
                         // Video, Music, Network, App Store and custom categories alike.
                         _uiState.update { it.copy(currentItems = appItems + addAppsItem()) }
@@ -533,12 +563,19 @@ class XMBViewModel @Inject constructor(
         }
     }
 
-    private fun CategorizedApp.toXmbItem(): XMBItem = XMBItem(
+    // [artwork] is the app's optional games-table row (ANDROID_APP, keyed by package). When it
+    // carries landscape art, the item shows the game-style tile; gameId stays null so the row keeps
+    // app behaviour (app context menu, package launch) and never aggregates into All Games.
+    private fun CategorizedApp.toXmbItem(
+        artwork: com.playfieldportal.core.domain.model.Game? = null,
+    ): XMBItem = XMBItem(
         id           = "app_$packageName",
         title        = label,
         subtitle     = if (pinned) "Pinned" else null,
         packageName  = packageName,
         isAndroidApp = true,
+        iconUri      = artwork?.let { it.iconUri ?: it.heroUri ?: it.artworkUri },
+        accentColor  = artwork?.let { platformCache[it.platformId]?.accentColor },
     )
 
     private fun addAppsItem(): XMBItem = XMBItem(
@@ -586,7 +623,19 @@ class XMBViewModel @Inject constructor(
             type     = XMBItemType.ALL_GAMES,
         )
 
-        // User collections sit just under All Games — like Favorites but user-defined.
+        // Favorites sits directly under All Games, but only when at least one game is favorited.
+        val favoritesCount = _uiState.value.favoritesCount
+        val favoritesItem = if (favoritesCount > 0) {
+            XMBItem(
+                id       = FAVORITES_ITEM_ID,
+                title    = "Favorites",
+                subtitle = "$favoritesCount ${if (favoritesCount == 1) "Game" else "Games"}",
+                type     = XMBItemType.FAVORITES,
+            )
+        } else null
+        val header = listOfNotNull(allGamesItem, favoritesItem)
+
+        // User collections sit just under All Games / Favorites — like Favorites but user-defined.
         // Only collections assigned to this (the Main Game) category appear here; categoryId
         // is the single source of truth for a collection's placement. Pinned collections first.
         val collectionItems = _uiState.value.collections
@@ -604,7 +653,7 @@ class XMBViewModel @Inject constructor(
         }
 
         if (enabledCards.isEmpty()) {
-            return listOf(allGamesItem) + collectionItems + XMBItem(
+            return header + collectionItems + XMBItem(
                 id       = NO_CONSOLES_ITEM_ID,
                 title    = "No consoles configured",
                 subtitle = "Open Library Manager to add a Memory Card",
@@ -612,7 +661,7 @@ class XMBViewModel @Inject constructor(
             )
         }
 
-        return listOf(allGamesItem) + collectionItems + enabledCards.map { card ->
+        return header + collectionItems + enabledCards.map { card ->
             val count = _uiState.value.platformGameCounts[card.platformId] ?: card.gameCount
             XMBItem(
                 id          = "card_${card.platformId}",
@@ -636,6 +685,13 @@ class XMBViewModel @Inject constructor(
         id       = EMPTY_COLLECTION_ITEM_ID,
         title    = "This collection is empty",
         subtitle = "Add games from any console with the options (△) menu.",
+        type     = XMBItemType.EMPTY,
+    )
+
+    private fun emptyFavoritesItem(): XMBItem = XMBItem(
+        id       = EMPTY_FAVORITES_ITEM_ID,
+        title    = "No favorites yet",
+        subtitle = "Mark a game as a favorite from its options (△) menu.",
         type     = XMBItemType.EMPTY,
     )
 
@@ -778,6 +834,11 @@ class XMBViewModel @Inject constructor(
         }
         if (state.collectionNameDialog != null) {
             if (action == GamepadAction.BACK) onCancelCollectionName()
+            return
+        }
+        // Read-only info dialog (e.g. file location) — A or B closes it.
+        if (state.infoDialog != null) {
+            if (action == GamepadAction.BACK || action == GamepadAction.SELECT) dismissInfoDialog()
             return
         }
 
@@ -1314,12 +1375,17 @@ class XMBViewModel @Inject constructor(
 
     private fun showGameFileLocation(gameId: Long) {
         viewModelScope.launch {
-            val game   = gameRepository.getById(gameId) ?: return@launch
-            val taskId = "location_$gameId"
-            addBackgroundTask(BackgroundTaskInfo(id = taskId, label = game.displayTitle, progress = null))
-            completeBackgroundTask(taskId, game.romPath ?: "No file path on record")
+            val game = gameRepository.getById(gameId) ?: return@launch
+            val location = game.romPath
+                ?: game.packageName?.let { "Package: $it" }
+                ?: "No file location on record"
+            _uiState.update {
+                it.copy(infoDialog = InfoDialogState(title = game.displayTitle, message = location))
+            }
         }
     }
+
+    fun dismissInfoDialog() = _uiState.update { it.copy(infoDialog = null) }
 
     // Called from touch interaction on the overlay
     fun onContextMenuItemActivatedAt(index: Int) {
@@ -1630,6 +1696,10 @@ class XMBViewModel @Inject constructor(
                 openAllGamesFolder()
                 return
             }
+            FAVORITES_ITEM_ID -> {
+                openFavoritesFolder()
+                return
+            }
             ADD_APPS_ITEM_ID -> {
                 category?.id?.let { openAppPicker(AppPickerTarget.CategoryShortcuts(it), "Add Apps") }
                 return
@@ -1732,6 +1802,19 @@ class XMBViewModel @Inject constructor(
             it.copy(
                 selectedCategoryIndex = gamesCategoryIndex.takeIf { index -> index >= 0 } ?: it.selectedCategoryIndex,
                 selectedPlatformId = ALL_GAMES_PLATFORM_ID,
+                selectedCollectionId = null,
+                selectedItemIndex = 0,
+            )
+        }
+        loadItemsForCategory(_uiState.value.categories.getOrNull(_uiState.value.selectedCategoryIndex))
+    }
+
+    private fun openFavoritesFolder() {
+        val gamesCategoryIndex = _uiState.value.categories.indexOfFirst { it.id == BuiltInCategory.GAMES }
+        _uiState.update {
+            it.copy(
+                selectedCategoryIndex = gamesCategoryIndex.takeIf { index -> index >= 0 } ?: it.selectedCategoryIndex,
+                selectedPlatformId = FAVORITES_PLATFORM_ID,
                 selectedCollectionId = null,
                 selectedItemIndex = 0,
             )
@@ -2087,9 +2170,12 @@ class XMBViewModel @Inject constructor(
         private const val NO_CONSOLES_ITEM_ID = "no_consoles"
         private const val NO_GAMES_ITEM_ID    = "no_games"
         private const val EMPTY_COLLECTION_ITEM_ID = "empty_collection"
+        private const val EMPTY_FAVORITES_ITEM_ID = "empty_favorites"
         private const val EMPTY_CATEGORY_ITEM_ID = "empty_category"
         private const val ALL_GAMES_ITEM_ID = "all_games"
         private const val ALL_GAMES_PLATFORM_ID = "__all_games__"
+        private const val FAVORITES_ITEM_ID = "favorites_folder"
+        private const val FAVORITES_PLATFORM_ID = "__favorites__"
         private const val ADD_APPS_ITEM_ID = "add_apps"
         private const val ADD_GAMES_ITEM_ID = "add_games"
         private const val FIND_GAMES_ITEM_ID = "find_games"

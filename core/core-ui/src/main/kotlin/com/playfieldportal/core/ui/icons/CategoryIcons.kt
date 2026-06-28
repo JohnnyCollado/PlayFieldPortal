@@ -63,6 +63,7 @@ val CATEGORY_ICON_CATALOG: List<CategoryIcon> = listOf(
     CategoryIcon("ic_c64",            "Commodore 64",         R.drawable.sysicon_c64),
     CategoryIcon("ic_mame",           "Arcade (MAME)",        R.drawable.sysicon_mame),
     CategoryIcon("ic_windows",        "Windows / PC",         R.drawable.sysicon_windows),
+    CategoryIcon("ic_desktop",        "Desktop PC",           R.drawable.sysicon_desktop),
     CategoryIcon("ic_xbox360",        "Xbox 360",             R.drawable.sysicon_x360),
     CategoryIcon("ic_android",        "Android",              R.drawable.sysicon_android),
 )

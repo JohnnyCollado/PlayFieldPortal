@@ -156,17 +156,25 @@ private fun XmbItemLeadingIcon(
 ) {
     when {
         item.type == XMBItemType.ALL_GAMES ||
+            item.type == XMBItemType.FAVORITES ||
             item.type == XMBItemType.MEMORY_CARD ||
             item.type == XMBItemType.COLLECTION -> {
             Box(
                 contentAlignment = Alignment.CenterStart,
                 modifier = Modifier.width(58.dp),
             ) {
-                // Memory-card rows show their matching console icon; All Games / Collections and
-                // any unknown console fall back to the theme's generic _default console art.
-                val platformId = if (item.type == XMBItemType.MEMORY_CARD) item.platformId else null
+                // Memory-card rows show their matching console icon. All Games gets the generic
+                // cartridge art (sysicon_allgames) and Favorites the star (sysicon_favorites), both
+                // to stand apart from the Game controller; any other unknown row (Collections,
+                // unmatched console) falls back to sysicon_default.
+                val iconKey = when (item.type) {
+                    XMBItemType.MEMORY_CARD -> item.platformId
+                    XMBItemType.ALL_GAMES   -> "allgames"
+                    XMBItemType.FAVORITES   -> "favorites"
+                    else                    -> null
+                }
                 Image(
-                    painter = painterResource(rememberConsoleIconId(platformId)),
+                    painter = painterResource(rememberConsoleIconId(iconKey)),
                     contentDescription = null,
                     modifier = Modifier.size(40.dp),
                 )
@@ -174,6 +182,16 @@ private fun XmbItemLeadingIcon(
         }
         item.gameId != null -> {
             // Full 144:80 landscape tile (ratio 1.8) — the authentic PSP ICON0 rectangle.
+            GameIcon(
+                item = item,
+                iconStyle = iconStyle,
+                modifier = Modifier.size(width = GAME_ICON_WIDTH, height = GAME_ICON_HEIGHT),
+            )
+        }
+        item.isAndroidApp && item.iconUri != null -> {
+            // Apps the user has given artwork render the same 144:80 landscape tile as games, so
+            // non-gaming categories (Video / Music / custom) look uniform. These rows stay
+            // content_type ANDROID_APP, so artwork never makes them appear in All Games.
             GameIcon(
                 item = item,
                 iconStyle = iconStyle,
