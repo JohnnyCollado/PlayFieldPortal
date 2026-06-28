@@ -47,6 +47,10 @@ import com.playfieldportal.feature.xmb.ui.detail.GameDetailScreen
 import com.playfieldportal.feature.xmb.viewmodel.XMBUiState
 import com.playfieldportal.feature.xmb.viewmodel.XMBViewModel
 
+/**
+ * Stateful entry point for the XMB home screen: collects [XMBViewModel.uiState] and wires the
+ * ViewModel's callbacks into the stateless [XMBShell]. This is what the host activity renders.
+ */
 @Composable
 fun XMBShellContainer(
     viewModel: XMBViewModel = hiltViewModel(),

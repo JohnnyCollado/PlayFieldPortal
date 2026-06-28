@@ -12,6 +12,12 @@ import kotlinx.coroutines.flow.map
 import timber.log.Timber
 import javax.inject.Inject
 
+/**
+ * CRUD and ordering for XMB categories (the horizontal bar). Seeds the built-in categories on first
+ * run and reconciles their system-defined flags every launch so definition changes reach databases
+ * seeded by older builds. Custom categories are fully editable; built-ins are protected from
+ * deletion.
+ */
 class CategoryRepositoryImpl @Inject constructor(
     private val categoryDao: CategoryDao,
 ) {

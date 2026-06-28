@@ -13,6 +13,11 @@ import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * Manages installed themes and the active theme. Themes are `.xmbtheme` ZIP packages extracted into
+ * internal storage. Note: the in-app entry point for [installTheme] is gated "coming soon" pre-launch
+ * (see `ThemesSettingsScreen`); the loader/repository below is complete and ready to re-enable.
+ */
 interface ThemeRepository {
     /** Emits the currently active theme, or null if none is set. */
     fun observeActiveTheme(): Flow<PFPTheme?>

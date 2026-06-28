@@ -104,10 +104,15 @@ fun ThemesSettingsScreen(
                 )
             }
 
+            // Custom theme installation (.xmbtheme packages) is the next development stage.
+            // The loader/repository is wired (see feature-themes); only this entry point is
+            // gated off until that work ships. Re-enable by restoring the picker launch:
+            //   onClick = if (state.isInstalling) null else { themePicker.launch(arrayOf("*/*")) }
             SettingsRow(
                 label    = "Install from File",
-                sublabel = "Browse to a .xmbtheme package",
-                onClick  = if (state.isInstalling) null else ({ themePicker.launch(arrayOf("*/*")) }),
+                sublabel = "Coming soon — custom theme packs arrive in a future update",
+                onClick  = null,
+                trailing = { Text("Coming Soon", color = SettingsAccent) },
             )
 
             SettingsRow(

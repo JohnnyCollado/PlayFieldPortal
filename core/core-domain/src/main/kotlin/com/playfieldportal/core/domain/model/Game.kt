@@ -1,5 +1,12 @@
 package com.playfieldportal.core.domain.model
 
+/**
+ * A single library entry. Despite the name this models both real games and Android app shortcuts —
+ * [contentType] distinguishes them ([GameContentType.GAME] vs [GameContentType.ANDROID_APP]), and
+ * only `GAME` rows aggregate into "All Games". A ROM-backed game carries [romPath]; an app shortcut
+ * carries [packageName] instead. Artwork ([iconUri]/[heroUri]/[artworkUri]) is optional and applies
+ * to both kinds.
+ */
 data class Game(
     val id: Long = 0,
     val title: String,

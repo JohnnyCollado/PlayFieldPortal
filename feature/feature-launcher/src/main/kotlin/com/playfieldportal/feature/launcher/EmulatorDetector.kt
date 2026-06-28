@@ -9,6 +9,13 @@ import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * Discovers installed emulators and turns them into launchable [EmulatorProfile]s.
+ *
+ * Two sources: the curated [KnownEmulatorCatalog] (one profile per installed package) and RetroArch
+ * (one profile per installed libretro core). Run on startup by [EmulatorAutoConfigService], which
+ * persists the results without clobbering the user's own edits.
+ */
 @Singleton
 class EmulatorDetector @Inject constructor(
     @ApplicationContext private val context: Context,

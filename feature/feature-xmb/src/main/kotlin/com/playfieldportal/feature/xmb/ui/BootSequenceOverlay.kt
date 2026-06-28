@@ -2,11 +2,15 @@ package com.playfieldportal.feature.xmb.ui
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
+import androidx.compose.ui.res.painterResource
+import com.playfieldportal.feature.xmb.R
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -15,7 +19,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.ui.wave.WaveStyle
@@ -68,21 +71,15 @@ fun BootSequenceOverlay(
             XMBWave(waveStyle = WaveStyle.ANIMATED)
         }
 
-        // PFP logo / wordmark
-        Box(
+        // PFP logo
+        Image(
+            painter = painterResource(R.drawable.ic_pfp_logo),
+            contentDescription = "Play Field Portal",
             modifier = Modifier
                 .align(Alignment.Center)
+                .size(176.dp)
                 .alpha(logoAlpha.value),
-        ) {
-            Text(
-                text = "PFP",
-                color = Color.White,
-                fontSize = 64.sp,
-                fontWeight = FontWeight.Thin,
-                letterSpacing = 24.sp,
-                textAlign = TextAlign.Center,
-            )
-        }
+        )
 
         // Subtitle
         Text(

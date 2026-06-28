@@ -5,6 +5,14 @@ import com.playfieldportal.core.domain.model.PlaySession
 import com.playfieldportal.core.domain.model.RecentPlatform
 import kotlinx.coroutines.flow.Flow
 
+/**
+ * Read/write access to the game library — the boundary between features and the data layer.
+ *
+ * The `games` table holds both real games (`content_type = GAME`) and Android app-shortcut rows
+ * (`content_type = ANDROID_APP`); [observeGamesOnly] / [getAppEntry] distinguish them so app
+ * shortcuts never aggregate into "All Games". Flows emit on every underlying change so the UI
+ * stays reactive.
+ */
 interface GameRepository {
     fun observeAll(): Flow<List<Game>>
     // Real games only (content_type = GAME) — drives the "All Games" aggregate so app-style

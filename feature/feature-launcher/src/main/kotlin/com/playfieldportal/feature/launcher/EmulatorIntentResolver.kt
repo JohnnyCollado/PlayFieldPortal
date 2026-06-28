@@ -18,6 +18,15 @@ import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * Builds the Android launch [android.content.Intent] for a game + chosen emulator profile.
+ *
+ * Supports `ACTION_VIEW` (ROM passed as a FileProvider content URI, with type/component fallbacks
+ * for emulators whose intent filters omit a MIME type), `COMPONENT` (explicit activity + extras,
+ * e.g. RetroArch's `ROM`/`LIBRETRO`), and `CUSTOM_COMMAND`. Validation (emulator installed, ROM
+ * exists, core configured) happens up front; [resolve] never throws — it returns a [Result] with a
+ * user-readable failure message instead.
+ */
 @Singleton
 class EmulatorIntentResolver @Inject constructor(
     @ApplicationContext private val context: Context,

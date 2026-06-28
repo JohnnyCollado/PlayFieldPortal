@@ -280,6 +280,20 @@ data class BackgroundTaskInfo(
 
 // ── ViewModel ─────────────────────────────────────────────────────────────────
 
+/**
+ * The single source of truth for the XMB home screen.
+ *
+ * Exposes one [XMBUiState] via [uiState] that the stateless `XMBShell` renders. It owns:
+ *  - the category bar (built-in + custom categories) and the item list under the selected category;
+ *  - navigation into synthetic Games-root folders (All Games, Favorites, collections) and Memory
+ *    Card consoles, tracked by [XMBUiState.selectedPlatformId] / `selectedCollectionId`;
+ *  - the gamepad input dispatcher, which routes D-pad/A/B/Y to whichever overlay or layer has focus
+ *    (guarded by [XMBUiState.hasBlockingOverlay]);
+ *  - game/app launching, context menus, and the various modal overlays (pickers, dialogs).
+ *
+ * Library state (memory cards, game counts, collections, favorites) is observed reactively, so the
+ * XMB re-renders as the underlying data changes.
+ */
 @HiltViewModel
 class XMBViewModel @Inject constructor(
     private val gameRepository: GameRepository,
