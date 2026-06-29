@@ -709,6 +709,10 @@ class XMBViewModel @Inject constructor(
         packageName  = packageName,
         isAndroidApp = true,
         iconUri      = artwork?.let { it.iconUri ?: it.heroUri ?: it.artworkUri },
+        // The XMB hover background reads artworkUri — populate it (with a hero fallback) so a
+        // non-gaming category app shows its assigned background, like games do.
+        artworkUri   = artwork?.let { it.artworkUri ?: it.heroUri },
+        heroUri      = artwork?.heroUri,
         accentColor  = artwork?.let { platformCache[it.platformId]?.accentColor },
     )
 
@@ -1413,6 +1417,10 @@ class XMBViewModel @Inject constructor(
             add(XMBContextMenuItem("refresh_metadata", "Refresh Metadata"))
             add(XMBContextMenuItem("refresh_artwork",  "Refresh Artwork"))
             add(XMBContextMenuItem("file_location",    "View File Location"))
+            // Android-library apps are user-curated, so let the user remove one like any game.
+            if (item.platformId == ANDROID_PLATFORM_ID && item.packageName != null && !inCollection) {
+                add(XMBContextMenuItem("remove_app", "Remove from Library", isDestructive = true))
+            }
         }
 
         _uiState.update { it.copy(
@@ -1687,6 +1695,13 @@ class XMBViewModel @Inject constructor(
                 "refresh_artwork"        -> refreshGameArtwork(menu.gameId)
                 "refresh_metadata"       -> refreshGameArtwork(menu.gameId)
                 "file_location"          -> showGameFileLocation(menu.gameId)
+                "remove_app"             -> {
+                    val gid = menu.gameId
+                    appAction {
+                        gameRepository.delete(gid)
+                        memoryCardRepository.recountGames(ANDROID_PLATFORM_ID)
+                    }
+                }
             }
             menu.packageName != null -> {
                 val pkg = menu.packageName
@@ -1926,21 +1941,26 @@ class XMBViewModel @Inject constructor(
     // time. Skips apps already present so re-running the picker is safe.
     private suspend fun importAndroidGames(platformId: String, packages: Set<String>) {
         val labels = appCategoryRepository.allInstalledApps().associateBy { it.packageName }
-        val existing = runCatching {
-            gameRepository.observeByPlatform(platformId).first().mapNotNull { it.packageName }.toSet()
-        }.getOrDefault(emptySet())
 
-        packages.filterNot { it in existing }.forEach { pkg ->
-            gameRepository.upsert(
-                com.playfieldportal.core.domain.model.Game(
-                    title         = labels[pkg]?.label ?: pkg,
-                    platformId    = platformId,
-                    packageName   = pkg,
-                    isManualEntry = true,
-                    // Package-based entry — classified as an app so it stays out of All Games.
-                    contentType   = com.playfieldportal.core.domain.model.GameContentType.ANDROID_APP,
+        packages.forEach { pkg ->
+            // One row per app. If a shortcut row already exists (from artwork/favorites), promote
+            // it into the Android library instead of creating a duplicate; otherwise add a new row.
+            val existing = gameRepository.getAppEntry(pkg)
+            when {
+                existing == null -> gameRepository.upsert(
+                    com.playfieldportal.core.domain.model.Game(
+                        title         = labels[pkg]?.label ?: pkg,
+                        platformId    = platformId,
+                        packageName   = pkg,
+                        isManualEntry = true,
+                        // Package-based entry — classified as an app so it stays out of All Games.
+                        contentType   = com.playfieldportal.core.domain.model.GameContentType.ANDROID_APP,
+                    )
                 )
-            )
+                existing.platformId != platformId ->
+                    gameRepository.upsert(existing.copy(platformId = platformId))
+                // else: already in the library — nothing to do.
+            }
         }
         memoryCardRepository.recountGames(platformId)
         Timber.i("Android library import: ${packages.size} app(s) selected for $platformId")
@@ -2338,7 +2358,9 @@ class XMBViewModel @Inject constructor(
         return gameRepository.upsert(
             Game(
                 title         = label,
-                platformId    = ANDROID_PLATFORM_ID,
+                // Sentinel platform: a shortcut row backs artwork/favorites/collections without
+                // placing the app in the Android library (which is observeByPlatform("android")).
+                platformId    = APP_SHORTCUT_PLATFORM_ID,
                 packageName   = packageName,
                 isManualEntry = true,
                 contentType   = GameContentType.ANDROID_APP,
@@ -2401,7 +2423,8 @@ class XMBViewModel @Inject constructor(
                                 ?: gameRepository.upsert(
                                     Game(
                                         title         = sc.label,
-                                        platformId    = ANDROID_PLATFORM_ID,
+                                        // Harvested shortcuts live in a collection, not the Android library.
+                                        platformId    = APP_SHORTCUT_PLATFORM_ID,
                                         packageName   = sc.hostPackage,
                                         isManualEntry = true,
                                         contentType   = GameContentType.ANDROID_APP,
@@ -2457,6 +2480,13 @@ class XMBViewModel @Inject constructor(
     fun onCloseSettingsScreen() {
         Timber.d("Settings closed")
         _uiState.update { it.copy(activeSettingsScreen = null, pendingSettingsAction = null) }
+    }
+
+    // Bridge from Library Settings → the shared installed-app picker. Closes the settings overlay
+    // and opens the same picker the XMB Android card uses, so apps are added the one way.
+    fun openAndroidLibraryPicker() {
+        _uiState.update { it.copy(activeSettingsScreen = null, pendingSettingsAction = null) }
+        openAppPicker(AppPickerTarget.AndroidGames(ANDROID_PLATFORM_ID), "Add Android Apps")
     }
 
     fun consumeSettingsAction() {
@@ -2634,6 +2664,10 @@ class XMBViewModel @Inject constructor(
         private const val FIND_GAMES_ITEM_ID = "find_games"
         // Platform id whose library is built from installed apps (picker) instead of ROM scans.
         private const val ANDROID_PLATFORM_ID = "android"
+        // Sentinel platform for app rows that merely BACK a category app's artwork / favorite /
+        // collection membership. They reference an app by package but are NOT in the Android
+        // library, so they use this id instead of "android" to stay out of observeByPlatform.
+        private const val APP_SHORTCUT_PLATFORM_ID = "app_shortcut"
 
         // Music category synthetic rows / drill ids.
         private const val ADD_MUSIC_FOLDER_ITEM_ID = "add_music_folder"

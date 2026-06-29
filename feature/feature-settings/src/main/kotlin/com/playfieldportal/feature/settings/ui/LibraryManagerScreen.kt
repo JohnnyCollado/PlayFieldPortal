@@ -33,6 +33,7 @@ import com.playfieldportal.feature.settings.viewmodel.LibraryStep
 fun LibraryManagerScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    onAddAndroidApps: () -> Unit = {},
     viewModel: LibraryManagerViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -56,7 +57,7 @@ fun LibraryManagerScreen(
         LibraryStep.PICK_PLATFORM -> PickPlatformContent(state, viewModel, handleBack, modifier)
         LibraryStep.PICK_EMULATOR -> PickEmulatorContent(state, viewModel, handleBack, modifier)
         LibraryStep.SCAN_PROMPT   -> ScanPromptContent(state, viewModel, handleBack, modifier)
-        LibraryStep.CARD_DETAIL   -> CardDetailContent(state, viewModel, handleBack, modifier)
+        LibraryStep.CARD_DETAIL   -> CardDetailContent(state, viewModel, handleBack, onAddAndroidApps, modifier)
     }
 
     // ── Rename dialog ─────────────────────────────────────────────────────────
@@ -215,6 +216,7 @@ private fun CardDetailContent(
     state: LibraryManagerUiState,
     vm: LibraryManagerViewModel,
     onBack: () -> Unit,
+    onAddAndroidApps: () -> Unit,
     modifier: Modifier,
 ) {
     val card = state.detailCard
@@ -224,63 +226,88 @@ private fun CardDetailContent(
     var showRemoveConfirm  by remember { mutableStateOf(false) }
     var newExt             by remember(card.platformId) { mutableStateOf("") }
     val isScanning = card.platformId in state.scanningPlatformIds
+    // The Android library is curated from installed apps — no ROM folder, emulator, extensions,
+    // or scanning. It's managed by the app picker + a removable app list instead.
+    val isAndroid = card.platformId == "android"
 
     SettingsScaffold(title = "Library Manager", subtitle = card.displayName, onBack = onBack, modifier = modifier) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
 
-            SettingsGroup("Library")
-            SettingsValueRow(
-                label    = "ROM Directory",
-                value    = card.romDirectory?.substringAfterLast('/') ?: "Not set",
-                sublabel = card.romDirectory ?: "Choose the folder this console scans",
-                onClick  = { vm.requestChangeDirectory(card.platformId) },
-            )
-            SettingsValueRow(
-                label   = "Emulator",
-                value   = card.emulatorName ?: "None",
-                onClick = { vm.loadEmulatorOptionsForDetail(); showEmulatorDialog = true },
-            )
-            SettingsValueRow(label = "Games", value = card.gameCount.toString())
-
-            // ── Supported scan extensions (user-managed) ──────────────────────
-            SettingsGroup("Supported Files")
-            if (card.extensions.isEmpty()) {
-                Hint("No extensions set — add at least one so scanning can match this console's ROMs.")
+            if (isAndroid) {
+                SettingsGroup("Apps")
+                SettingsRow(
+                    label    = "Add Apps",
+                    sublabel = "Pick installed apps to add to this library",
+                    onClick  = onAddAndroidApps,
+                )
+                if (state.androidApps.isEmpty()) {
+                    Hint("No apps yet — use Add Apps to pick installed apps for this library.")
+                } else {
+                    state.androidApps.forEach { app ->
+                        SettingsRow(
+                            label    = app.label,
+                            trailing = { Text("Remove", color = SettingsAccent) },
+                            onClick  = { vm.removeApp(app.gameId) },
+                        )
+                    }
+                }
             } else {
-                card.extensions.forEach { ext ->
-                    SettingsRow(
-                        label    = ".$ext",
-                        trailing = { Text("Remove", color = SettingsAccent) },
-                        onClick  = { vm.removeExtension(card.platformId, ext) },
-                    )
-                }
-            }
-            SettingsTextFieldRow(
-                label         = "Add Extension",
-                value         = newExt,
-                onValueChange = { newExt = it },
-                placeholder   = "e.g. iso, chd, zip",
-                helper        = "Matched case-insensitively when scanning. Press A to type.",
-            )
-            newExt.trim().lowercase().removePrefix(".").filter { it.isLetterOrDigit() }
-                .takeIf { it.isNotBlank() }
-                ?.let { clean ->
-                    SettingsRow(
-                        label   = "Add \".$clean\"",
-                        onClick = { vm.addExtension(card.platformId, newExt); newExt = "" },
-                    )
-                }
+                SettingsGroup("Library")
+                SettingsValueRow(
+                    label    = "ROM Directory",
+                    value    = card.romDirectory?.substringAfterLast('/') ?: "Not set",
+                    sublabel = card.romDirectory ?: "Choose the folder this console scans",
+                    onClick  = { vm.requestChangeDirectory(card.platformId) },
+                )
+                SettingsValueRow(
+                    label   = "Emulator",
+                    value   = card.emulatorName ?: "None",
+                    onClick = { vm.loadEmulatorOptionsForDetail(); showEmulatorDialog = true },
+                )
+                SettingsValueRow(label = "Games", value = card.gameCount.toString())
 
-            SettingsGroup("Actions")
-            SettingsRow(
-                label    = "Scan This Console",
-                sublabel = when {
-                    isScanning -> "Scanning…"
-                    card.romDirectory == null -> "ROM directory not configured"
-                    else -> "Scan only this console's folder"
-                },
-                onClick  = if (!isScanning && card.romDirectory != null) ({ vm.scanConsole(card.platformId) }) else null,
-            )
+                // ── Supported scan extensions (user-managed) ──────────────────────
+                SettingsGroup("Supported Files")
+                if (card.extensions.isEmpty()) {
+                    Hint("No extensions set — add at least one so scanning can match this console's ROMs.")
+                } else {
+                    card.extensions.forEach { ext ->
+                        SettingsRow(
+                            label    = ".$ext",
+                            trailing = { Text("Remove", color = SettingsAccent) },
+                            onClick  = { vm.removeExtension(card.platformId, ext) },
+                        )
+                    }
+                }
+                SettingsTextFieldRow(
+                    label         = "Add Extension",
+                    value         = newExt,
+                    onValueChange = { newExt = it },
+                    placeholder   = "e.g. iso, chd, zip",
+                    helper        = "Matched case-insensitively when scanning. Press A to type.",
+                )
+                newExt.trim().lowercase().removePrefix(".").filter { it.isLetterOrDigit() }
+                    .takeIf { it.isNotBlank() }
+                    ?.let { clean ->
+                        SettingsRow(
+                            label   = "Add \".$clean\"",
+                            onClick = { vm.addExtension(card.platformId, newExt); newExt = "" },
+                        )
+                    }
+
+                SettingsGroup("Actions")
+                SettingsRow(
+                    label    = "Scan This Console",
+                    sublabel = when {
+                        isScanning -> "Scanning…"
+                        card.romDirectory == null -> "ROM directory not configured"
+                        else -> "Scan only this console's folder"
+                    },
+                    onClick  = if (!isScanning && card.romDirectory != null) ({ vm.scanConsole(card.platformId) }) else null,
+                )
+            }
+
+            if (isAndroid) SettingsGroup("Actions")
             SettingsRow(label = "Rename Memory Card", onClick = { vm.beginRename(card.platformId) })
             SettingsToggleRow(
                 label    = "Show In Games",
