@@ -145,6 +145,15 @@ fun DisplaySettingsScreen(
                 checked  = state.respectBatterySaver,
                 onToggle = { viewModel.setRespectBatterySaver(it) },
             )
+
+            SettingsGroup("Sound")
+
+            SettingsToggleRow(
+                label    = "Menu Sounds",
+                sublabel = "Play navigation, select, and launch sound effects",
+                checked  = state.menuSoundEnabled,
+                onToggle = { viewModel.setMenuSoundEnabled(it) },
+            )
         }
     }
 

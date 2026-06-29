@@ -3,6 +3,8 @@ package com.playfieldportal.feature.appbar
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.ui.sound.MenuSound
+import com.playfieldportal.core.ui.sound.MenuSoundPlayer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -33,6 +35,7 @@ data class AppDrawerUiState(
 @HiltViewModel
 class AppDrawerViewModel @Inject constructor(
     private val appRepository: InstalledAppRepository,
+    private val menuSound: MenuSoundPlayer,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AppDrawerUiState())
@@ -59,6 +62,7 @@ class AppDrawerViewModel @Inject constructor(
     }
 
     fun setFilter(filter: AppFilter) {
+        if (filter != _uiState.value.activeFilter) menuSound.play(MenuSound.SYSTEM_BROWSE)
         _uiState.update { it.copy(activeFilter = filter, selectedIndex = 0) }
         applyFilter()
     }
@@ -73,6 +77,8 @@ class AppDrawerViewModel @Inject constructor(
     }
 
     fun launchApp(packageName: String) {
+        // Fires for both controller SELECT and a touch tap on an app tile.
+        menuSound.play(MenuSound.LAUNCH)
         appRepository.launchApp(packageName)
     }
 
@@ -91,19 +97,20 @@ class AppDrawerViewModel @Inject constructor(
         val cur = state.selectedIndex
         when (action) {
             GamepadAction.NAVIGATE_LEFT  -> {
-                if (cur % GRID_COLUMNS > 0) _uiState.update { it.copy(selectedIndex = cur - 1) }
+                if (cur % GRID_COLUMNS > 0) { _uiState.update { it.copy(selectedIndex = cur - 1) }; menuSound.play(MenuSound.SCROLL) }
             }
             GamepadAction.NAVIGATE_RIGHT -> {
-                if (cur % GRID_COLUMNS < GRID_COLUMNS - 1 && cur + 1 < size)
-                    _uiState.update { it.copy(selectedIndex = cur + 1) }
+                if (cur % GRID_COLUMNS < GRID_COLUMNS - 1 && cur + 1 < size) {
+                    _uiState.update { it.copy(selectedIndex = cur + 1) }; menuSound.play(MenuSound.SCROLL)
+                }
             }
             GamepadAction.NAVIGATE_UP    -> {
                 val next = cur - GRID_COLUMNS
-                if (next >= 0) _uiState.update { it.copy(selectedIndex = next) }
+                if (next >= 0) { _uiState.update { it.copy(selectedIndex = next) }; menuSound.play(MenuSound.SCROLL) }
             }
             GamepadAction.NAVIGATE_DOWN  -> {
                 val next = cur + GRID_COLUMNS
-                if (next < size) _uiState.update { it.copy(selectedIndex = next) }
+                if (next < size) { _uiState.update { it.copy(selectedIndex = next) }; menuSound.play(MenuSound.SCROLL) }
             }
             GamepadAction.SELECT -> {
                 val app = state.visibleApps.getOrNull(cur)

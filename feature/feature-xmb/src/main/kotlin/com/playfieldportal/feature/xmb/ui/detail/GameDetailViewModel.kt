@@ -161,6 +161,7 @@ class GameDetailViewModel @Inject constructor(
     private val igdbApi: IgdbApi,
     private val theGamesDb: TheGamesDbApi,
     private val cardProcessor: CardArtworkProcessor,
+    private val menuSound: com.playfieldportal.core.ui.sound.MenuSoundPlayer,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GameDetailUiState())
@@ -765,6 +766,7 @@ class GameDetailViewModel @Inject constructor(
             _uiState.update { it.copy(actionMessage = null, launchError = "Game is still loading") }
             return
         }
+        menuSound.play(com.playfieldportal.core.ui.sound.MenuSound.LAUNCH)
         _uiState.update {
             it.copy(
                 launchError = null,

@@ -42,6 +42,7 @@ import com.playfieldportal.feature.library.scanner.ScanResult
 import com.playfieldportal.feature.library.scanner.ScanType
 import com.playfieldportal.feature.xmb.gamepad.GamepadInputHandler
 import com.playfieldportal.feature.xmb.notification.BackgroundTaskNotifier
+import com.playfieldportal.core.ui.sound.MenuSound
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
@@ -311,6 +312,7 @@ class XMBViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val gamepadInputHandler: GamepadInputHandler,
     private val mappingRepository: ControllerMappingRepository,
+    private val menuSound: com.playfieldportal.core.ui.sound.MenuSoundPlayer,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(XMBUiState())
@@ -335,7 +337,18 @@ class XMBViewModel @Inject constructor(
         observeCategories()
         observeAppChanges()
         observeGamepadMappings()
+        observeSoundSetting()
         collectGamepadActions()
+    }
+
+    // Menu sounds default on; the Display settings toggle persists the override.
+    private fun observeSoundSetting() {
+        viewModelScope.launch {
+            context.pfpDataStore.data
+                .map { it[KEY_MENU_SOUND_ENABLED] ?: true }
+                .distinctUntilChanged()
+                .collect { menuSound.enabled = it }
+        }
     }
 
     // ── Color scheme ────────────────────────────────────────────────────────────
@@ -903,13 +916,13 @@ class XMBViewModel @Inject constructor(
         when (action) {
             GamepadAction.NAVIGATE_UP -> {
                 val next = (state.selectedItemIndex - 1).coerceAtLeast(0)
-                if (next != state.selectedItemIndex) { _uiState.update { it.copy(selectedItemIndex = next) } }
+                if (next != state.selectedItemIndex) { _uiState.update { it.copy(selectedItemIndex = next) }; menuSound.play(MenuSound.SCROLL) }
                 else gamepadInputHandler.cancelRepeat()
             }
             GamepadAction.NAVIGATE_DOWN -> {
                 val max  = (state.currentItems.size - 1).coerceAtLeast(0)
                 val next = (state.selectedItemIndex + 1).coerceAtMost(max)
-                if (next != state.selectedItemIndex) { _uiState.update { it.copy(selectedItemIndex = next) } }
+                if (next != state.selectedItemIndex) { _uiState.update { it.copy(selectedItemIndex = next) }; menuSound.play(MenuSound.SCROLL) }
                 else gamepadInputHandler.cancelRepeat()
             }
             GamepadAction.NAVIGATE_LEFT -> {
@@ -925,6 +938,7 @@ class XMBViewModel @Inject constructor(
             }
             GamepadAction.SELECT     -> onItemSelected(state.selectedItemIndex)
             GamepadAction.BACK       -> {
+                menuSound.play(MenuSound.BACK)
                 if (state.selectedPlatformId != null || state.selectedCollectionId != null) closePlatformFolder()
                 else onOpenAppDrawer()
             }
@@ -1638,6 +1652,7 @@ class XMBViewModel @Inject constructor(
     // ── Game actions ──────────────────────────────────────────────────────────
 
     private fun toggleGameFavorite(gameId: Long, isFavorite: Boolean) {
+        if (isFavorite) menuSound.play(MenuSound.FAVORITE)
         viewModelScope.launch {
             gameRepository.setFavorite(gameId, isFavorite)
         }
@@ -1687,6 +1702,7 @@ class XMBViewModel @Inject constructor(
     // ── Category / platform selection ─────────────────────────────────────────
 
     fun onCategorySelected(index: Int) {
+        if (index != _uiState.value.selectedCategoryIndex) menuSound.play(MenuSound.SYSTEM_BROWSE)
         val category = _uiState.value.categories.getOrNull(index)
         _uiState.update { it.copy(selectedCategoryIndex = index, selectedItemIndex = 0, selectedPlatformId = null, selectedCollectionId = null) }
         tintWaveForCategory(category)
@@ -1708,6 +1724,7 @@ class XMBViewModel @Inject constructor(
     fun onHomeBack() {
         val s = _uiState.value
         if (s.hasBlockingOverlay) return
+        menuSound.play(MenuSound.BACK)
         if (s.selectedPlatformId != null || s.selectedCollectionId != null) closePlatformFolder()
         else onOpenAppDrawer()
     }
@@ -1718,6 +1735,14 @@ class XMBViewModel @Inject constructor(
         _uiState.update { it.copy(selectedItemIndex = index) }
         val category = _uiState.value.categories.getOrNull(_uiState.value.selectedCategoryIndex)
         val item     = _uiState.value.currentItems.getOrNull(index)
+
+        // Sound: launch for items that boot something immediately; select for opening a folder,
+        // detail, picker, or settings; silent for non-selectable placeholder rows.
+        val silentRow = item?.id in setOf(NO_GAMES_ITEM_ID, EMPTY_COLLECTION_ITEM_ID, EMPTY_CATEGORY_ITEM_ID)
+        val launches  = item?.launchIntentUri != null ||
+            (item?.shortcutId != null && item.packageName != null) ||
+            item?.packageName != null
+        if (!silentRow) menuSound.play(if (launches) MenuSound.LAUNCH else MenuSound.SELECT)
 
         // Empty-state rows
         when (item?.id) {
@@ -1929,6 +1954,7 @@ class XMBViewModel @Inject constructor(
     }
 
     private fun addAppToFavorites(packageName: String, label: String) {
+        menuSound.play(MenuSound.FAVORITE)
         viewModelScope.launch {
             runCatching {
                 val id = ensureAppShortcut(packageName)
@@ -2199,6 +2225,7 @@ class XMBViewModel @Inject constructor(
         private val KEY_COLOR_SCHEME      = stringPreferencesKey("display_color_scheme")
         private val KEY_SETUP_COMPLETE    = booleanPreferencesKey("library_setup_complete")
         private val KEY_CUSTOM_WALLPAPER  = stringPreferencesKey("display_custom_wallpaper")
+        private val KEY_MENU_SOUND_ENABLED = booleanPreferencesKey("sound_menu_enabled")
         private const val SETUP_ITEM_ID = "library_setup"
         private const val NO_CONSOLES_ITEM_ID = "no_consoles"
         private const val NO_GAMES_ITEM_ID    = "no_games"

@@ -29,6 +29,8 @@ private val KEY_THERMAL_AWARE      = booleanPreferencesKey("display_thermal_awar
 private val KEY_RESPECT_BATTERY    = booleanPreferencesKey("display_battery_saver")
 private val KEY_ICON_STYLE         = stringPreferencesKey("display_icon_style")
 internal val KEY_CUSTOM_WALLPAPER  = stringPreferencesKey("display_custom_wallpaper")
+// Must match XMBViewModel.KEY_MENU_SOUND_ENABLED — both read/write this same pref.
+private val KEY_MENU_SOUND         = booleanPreferencesKey("sound_menu_enabled")
 
 private val ICON_STYLE_LABELS = mapOf(
     "PSP_RECTANGLE" to "PSP Rectangle",
@@ -53,6 +55,7 @@ data class DisplaySettingsUiState(
     val respectBatterySaver: Boolean = true,
     // Raw enum name — mapped to a display label in the UI
     val iconStyleName: String = "PSP_RECTANGLE",
+    val menuSoundEnabled: Boolean = true,
     val customWallpaperPath: String? = null,
     val wallpaperMessage: String? = null,
     val wallpaperImporting: Boolean = false,
@@ -85,6 +88,7 @@ class DisplaySettingsViewModel @Inject constructor(
             thermalThrottleAware = prefs[KEY_THERMAL_AWARE]   ?: true,
             respectBatterySaver  = prefs[KEY_RESPECT_BATTERY] ?: true,
             iconStyleName        = prefs[KEY_ICON_STYLE]      ?: "PSP_RECTANGLE",
+            menuSoundEnabled     = prefs[KEY_MENU_SOUND]      ?: true,
             customWallpaperPath  = prefs[KEY_CUSTOM_WALLPAPER],
             wallpaperMessage     = msg,
             wallpaperImporting   = importing,
@@ -103,6 +107,7 @@ class DisplaySettingsViewModel @Inject constructor(
     fun setShowBootOnResume(v: Boolean)      = save { it[KEY_BOOT_ON_RESUME]  = v }
     fun setThermalThrottleAware(v: Boolean)  = save { it[KEY_THERMAL_AWARE]   = v }
     fun setRespectBatterySaver(v: Boolean)   = save { it[KEY_RESPECT_BATTERY] = v }
+    fun setMenuSoundEnabled(v: Boolean)      = save { it[KEY_MENU_SOUND]      = v }
 
     fun cycleIconStyle() {
         val current = uiState.value.iconStyleName

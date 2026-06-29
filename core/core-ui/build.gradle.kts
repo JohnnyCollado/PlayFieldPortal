@@ -21,4 +21,8 @@ dependencies {
     implementation(platform(libs.compose.bom))
     implementation(libs.bundles.compose)
     implementation(libs.coil.compose)
+    // For MenuSoundPlayer: @Inject/@Singleton + @ApplicationContext annotations on the classpath.
+    // The app module's Hilt processor does the code-gen, so no Hilt plugin/KSP needed here.
+    implementation(libs.hilt.android)
+    implementation(libs.timber)
 }
