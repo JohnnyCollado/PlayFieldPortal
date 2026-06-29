@@ -74,7 +74,12 @@ private fun WaveBackground(
     val phase = if (!waveStyle.animated) {
         STATIC_PHASE
     } else {
-        val duration = if (waveStyle.reduced) 12000 else 6200
+        // The driver sweeps one full 2π cycle and Restarts. For a seamless loop, every layer
+        // must advance a whole number of 2π cycles over this span — drawXmbWaveLayers multiplies
+        // this base phase by the integer cycle counts (5/6/7) to guarantee that. The duration is
+        // the per-layer cycle time (≈6.2s) × the middle layer's 6 cycles so on-screen speed is
+        // unchanged from the original single-cycle driver.
+        val duration = if (waveStyle.reduced) 72000 else 37200
         val transition = rememberInfiniteTransition(label = "xmbBackgroundWave")
         val animatedPhase by transition.animateFloat(
             initialValue = 0f,
@@ -118,18 +123,22 @@ private fun DrawScope.drawXmbWaveLayers(phase: Float, waveColor: Color, alphaSca
     val h = size.height
     // Lighter crest tone for the front layer to keep the PSP sense of depth.
     val crest = lerp(waveColor, Color.White, 0.25f)
+    // Each layer's phase = base × an INTEGER cycle count (+ a constant offset). The integer
+    // multipliers (5/6/7) keep the original slow/medium/fast parallax ratio while ensuring every
+    // layer completes whole cycles when the base wraps 2π → 0, so the loop has no visible skip.
+    // Constant offsets don't affect seamlessness, only the layers' relative starting positions.
     drawWaveLayer(
-        width = w, height = h, midY = h * 0.78f, phase = phase * 0.80f,
+        width = w, height = h, midY = h * 0.78f, phase = phase * 5f,
         amplitude = h * 0.075f * ampScale,
         color = crest.copy(alpha = 0.74f * alphaScale), points = 34,
     )
     drawWaveLayer(
-        width = w, height = h, midY = h * 0.72f, phase = phase + 1.4f,
+        width = w, height = h, midY = h * 0.72f, phase = phase * 6f + 1.4f,
         amplitude = h * 0.065f * ampScale,
         color = waveColor.copy(alpha = 0.42f * alphaScale), points = 30,
     )
     drawWaveLayer(
-        width = w, height = h, midY = h * 0.84f, phase = phase * 1.18f + 0.8f,
+        width = w, height = h, midY = h * 0.84f, phase = phase * 7f + 0.8f,
         amplitude = h * 0.050f * ampScale,
         color = crest.copy(alpha = 0.30f * alphaScale), points = 26,
     )
