@@ -16,15 +16,10 @@ import com.playfieldportal.feature.artwork.api.SteamGridDbApi
 import com.playfieldportal.feature.artwork.card.CardArtworkProcessor
 import com.playfieldportal.feature.launcher.EmulatorIntentResolver
 import com.playfieldportal.feature.launcher.EmulatorProfileRepository
-import io.mockk.any
-import io.mockk.anyOrNull
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.eq
 import io.mockk.every
-import io.mockk.match
 import io.mockk.mockk
-import io.mockk.returnsMany
 import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -126,6 +121,7 @@ class GameDetailViewModelTest {
             igdbApi           = igdbApi,
             theGamesDb        = theGamesDb,
             cardProcessor     = cardProcessor,
+            menuSound         = mockk(relaxed = true),
         )
     }
 
@@ -529,8 +525,8 @@ class GameDetailViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         coVerify { gameRepository.updateBoxArt(1L, null) }
-        coVerify(exactly = 0) { gameRepository.updateIconArt(any(), anyOrNull()) }
-        coVerify(exactly = 0) { gameRepository.updateHeroArt(any(), anyOrNull()) }
+        coVerify(exactly = 0) { gameRepository.updateIconArt(any(), any()) }
+        coVerify(exactly = 0) { gameRepository.updateHeroArt(any(), any()) }
     }
 
     @Test
@@ -542,8 +538,8 @@ class GameDetailViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         coVerify { gameRepository.updateHeroArt(1L, null) }
-        coVerify(exactly = 0) { gameRepository.updateIconArt(any(), anyOrNull()) }
-        coVerify(exactly = 0) { gameRepository.updateBoxArt(any(), anyOrNull()) }
+        coVerify(exactly = 0) { gameRepository.updateIconArt(any(), any()) }
+        coVerify(exactly = 0) { gameRepository.updateBoxArt(any(), any()) }
     }
 
     @Test
@@ -555,8 +551,8 @@ class GameDetailViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         coVerify { gameRepository.updateIconArt(1L, null) }
-        coVerify(exactly = 0) { gameRepository.updateHeroArt(any(), anyOrNull()) }
-        coVerify(exactly = 0) { gameRepository.updateBoxArt(any(), anyOrNull()) }
+        coVerify(exactly = 0) { gameRepository.updateHeroArt(any(), any()) }
+        coVerify(exactly = 0) { gameRepository.updateBoxArt(any(), any()) }
     }
 
     // ── pickSgdbArtwork ───────────────────────────────────────────────────

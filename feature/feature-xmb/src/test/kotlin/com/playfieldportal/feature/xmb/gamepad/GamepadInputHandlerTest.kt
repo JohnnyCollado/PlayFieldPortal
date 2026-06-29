@@ -4,6 +4,9 @@ import android.view.KeyEvent
 import android.view.MotionEvent
 import app.cash.turbine.test
 import com.playfieldportal.core.data.repository.RemapCoordinator
+import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.domain.model.GamepadBinding
+import com.playfieldportal.core.domain.model.GamepadMappings
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest

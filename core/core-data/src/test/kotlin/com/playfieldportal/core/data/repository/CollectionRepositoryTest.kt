@@ -187,4 +187,12 @@ private class FakeCollectionDao : CollectionDao {
     override suspend fun touch(id: Long, updatedAt: Long) {
         collections[id]?.let { collections[id] = it.copy(updatedAt = updatedAt) }
     }
+
+    override suspend fun setCategory(id: Long, categoryId: String, updatedAt: Long) {
+        collections[id]?.let { collections[id] = it.copy(categoryId = categoryId, updatedAt = updatedAt) }
+    }
+
+    override suspend fun setPinned(id: Long, pinned: Boolean, updatedAt: Long) {
+        collections[id]?.let { collections[id] = it.copy(isPinned = pinned, updatedAt = updatedAt) }
+    }
 }

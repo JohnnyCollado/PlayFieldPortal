@@ -1,6 +1,11 @@
 package com.playfieldportal.feature.xmb.gamepad
 
 import android.view.KeyEvent
+import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.domain.model.GamepadBinding
+import com.playfieldportal.core.domain.model.GamepadMappings
+import com.playfieldportal.core.domain.model.displayLabel
+import com.playfieldportal.core.domain.model.keycodeDisplayName
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
