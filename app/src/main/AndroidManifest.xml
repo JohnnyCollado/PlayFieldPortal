@@ -29,6 +29,7 @@
 
     <!-- WorkManager background tasks -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- Capture legacy game shortcuts from apps that still use the old broadcast
@@ -132,6 +133,14 @@
                 android:name="androidx.work.WorkManagerInitializer"
                 tools:node="remove" />
         </provider>
+
+        <!-- ═══ Music playback foreground service ══════════════════════ -->
+        <!-- Keeps in-app music playing (with a media notification) while the user is in other
+             apps. Started on-demand from the player's "Play in Background". -->
+        <service
+            android:name="com.playfieldportal.feature.xmb.music.MusicPlaybackService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
 
         <!-- ═══ FileProvider — ROM URIs passed to emulators ════════════ -->
         <!-- EmulatorIntentResolver uses this to build content:// URIs    -->

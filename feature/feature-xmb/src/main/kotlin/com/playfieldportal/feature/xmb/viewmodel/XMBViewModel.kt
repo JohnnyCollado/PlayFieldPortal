@@ -829,16 +829,12 @@ class XMBViewModel @Inject constructor(
         }
     }
 
-    // Hand off the currently-playing track to the external player so audio keeps going in the
-    // background, and tear down the in-app player.
+    // Keep PFP's own playback going and promote it to a foreground media notification so the user
+    // can leave PFP and use other apps; just hide the full-screen player UI.
     private fun musicPlayInBackground() {
-        val track = musicPlayer.currentTrack()
-        musicPlayer.stop()
+        if (musicPlayer.currentTrack() == null) return
+        com.playfieldportal.feature.xmb.music.MusicPlaybackService.start(context)
         _uiState.update { it.copy(musicPlayerVisible = false) }
-        if (track != null) {
-            val error = musicIntentResolver.launch(track, defaultMusicPlayer)
-            if (error != null) taskNotifier.complete("music_launch", "Music", error)
-        }
     }
 
     private fun openMusicTrackContextMenu(item: XMBItem) {
@@ -890,10 +886,14 @@ class XMBViewModel @Inject constructor(
                     _uiState.update { it.copy(musicPlayerVisible = true) }
                 }
             }
-            // Hand straight to the external player for background playback.
-            "play_background" -> appAction {
-                val track = musicRepository.getTrack(trackId) ?: return@appAction
-                musicIntentResolver.launch(track, defaultMusicPlayer)
+            // Play in PFP and promote straight to the background media notification (no full
+            // player UI), queuing from the current on-screen list.
+            "play_background" -> {
+                val startIndex = currentMusicTracks.indexOfFirst { it.id == trackId }.coerceAtLeast(0)
+                if (currentMusicTracks.isNotEmpty()) {
+                    musicPlayer.setQueue(currentMusicTracks, startIndex)
+                    com.playfieldportal.feature.xmb.music.MusicPlaybackService.start(context)
+                }
             }
             "remove_track" -> appAction {
                 val track = musicRepository.getTrack(trackId) ?: return@appAction
