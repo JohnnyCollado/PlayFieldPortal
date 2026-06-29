@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.floor
@@ -53,6 +54,11 @@ private val ROW_HEIGHT = 88.dp
 // Gap between a wide artwork tile and its title. Small-icon rows get this spacing for free from
 // their 58dp icon box; the 126dp artwork tiles have none, so the text butts against the art.
 private val ARTWORK_TEXT_GAP = 16.dp
+
+// The tap target is shorter than the full row so there are inert gaps between rows, and it wraps
+// the content width so the empty space to the right of the text isn't clickable — both keep stray
+// touches from selecting/launching items.
+private val TAP_TARGET_HEIGHT = 72.dp
 
 private val PrimaryText = Color.White
 private val SecondaryText = Color(0xFFC9C7E8)
@@ -132,6 +138,7 @@ private fun XmbVerticalListRow(
         animationSpec = spring(stiffness = Spring.StiffnessMedium),
         label = "xmbListRowAlpha",
     )
+    // Outer row fills the slot for layout/centering; only the inner cluster is the tap target.
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
@@ -139,32 +146,44 @@ private fun XmbVerticalListRow(
                 scaleX = scale
                 scaleY = scale
             }
-            .combinedClickable(onClick = onClick, onLongClick = onLongPress)
-            .padding(horizontal = 18.dp)
             .alpha(rowAlpha),
     ) {
-        XmbItemLeadingIcon(
-            item = item,
-            iconStyle = iconStyle,
-        )
-
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = item.title,
-                color = if (isSelected) PrimaryText else InactiveText,
-                fontSize = if (isSelected) 19.sp else 16.sp,
-                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                maxLines = 1,
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                // fill = false: shrink to the content width when the title is short (so the empty
+                // trailing area stays inert), but cap at the available width so long titles still
+                // truncate instead of overflowing.
+                .weight(1f, fill = false)
+                .height(TAP_TARGET_HEIGHT)
+                .combinedClickable(onClick = onClick, onLongClick = onLongPress)
+                .padding(horizontal = 18.dp),
+        ) {
+            XmbItemLeadingIcon(
+                item = item,
+                iconStyle = iconStyle,
             )
-            if (!item.subtitle.isNullOrBlank()) {
+
+            Column(modifier = Modifier.weight(1f, fill = false)) {
                 Text(
-                    text = item.subtitle,
-                    color = SecondaryText,
-                    fontSize = if (isSelected) 12.sp else 11.sp,
-                    fontWeight = FontWeight.Normal,
+                    text = item.title,
+                    color = if (isSelected) PrimaryText else InactiveText,
+                    fontSize = if (isSelected) 19.sp else 16.sp,
+                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                     maxLines = 1,
-                    modifier = Modifier.padding(top = 1.dp),
+                    overflow = TextOverflow.Ellipsis,
                 )
+                if (!item.subtitle.isNullOrBlank()) {
+                    Text(
+                        text = item.subtitle,
+                        color = SecondaryText,
+                        fontSize = if (isSelected) 12.sp else 11.sp,
+                        fontWeight = FontWeight.Normal,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 1.dp),
+                    )
+                }
             }
         }
     }
