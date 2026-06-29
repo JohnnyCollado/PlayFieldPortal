@@ -50,6 +50,10 @@ private val GAME_ICON_HEIGHT = 70.dp
 // this is what lets us "hard stop" at a row boundary and never render a partially-clipped row.
 private val ROW_HEIGHT = 88.dp
 
+// Gap between a wide artwork tile and its title. Small-icon rows get this spacing for free from
+// their 58dp icon box; the 126dp artwork tiles have none, so the text butts against the art.
+private val ARTWORK_TEXT_GAP = 16.dp
+
 private val PrimaryText = Color.White
 private val SecondaryText = Color(0xFFC9C7E8)
 private val InactiveText = Color(0xFFE3E1F0)
@@ -204,6 +208,7 @@ private fun XmbItemLeadingIcon(
                 iconStyle = iconStyle,
                 modifier = Modifier.size(width = GAME_ICON_WIDTH, height = GAME_ICON_HEIGHT),
             )
+            Spacer(modifier = Modifier.width(ARTWORK_TEXT_GAP))
         }
         item.isAndroidApp && item.iconUri != null -> {
             // Apps the user has given artwork render the same 144:80 landscape tile as games, so
@@ -214,6 +219,7 @@ private fun XmbItemLeadingIcon(
                 iconStyle = iconStyle,
                 modifier = Modifier.size(width = GAME_ICON_WIDTH, height = GAME_ICON_HEIGHT),
             )
+            Spacer(modifier = Modifier.width(ARTWORK_TEXT_GAP))
         }
         item.isAndroidApp && item.packageName != null -> {
             Box(modifier = Modifier.width(58.dp)) {
