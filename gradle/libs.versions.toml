@@ -31,6 +31,7 @@ accompanist             = "0.34.0"
 androidx-core-ktx               = { group = "androidx.core",         name = "core-ktx",                   version.ref = "core-ktx" }
 androidx-activity-compose       = { group = "androidx.activity",      name = "activity-compose",            version.ref = "activity-compose" }
 androidx-splashscreen           = { group = "androidx.core",          name = "core-splashscreen",           version.ref = "splashscreen" }
+androidx-documentfile           = { group = "androidx.documentfile",  name = "documentfile",                version = "1.0.1" }
 
 # Compose BOM
 compose-bom                     = { group = "androidx.compose",       name = "compose-bom",                 version.ref = "compose-bom" }

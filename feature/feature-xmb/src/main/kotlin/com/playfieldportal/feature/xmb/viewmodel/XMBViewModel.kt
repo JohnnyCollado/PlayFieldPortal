@@ -41,8 +41,9 @@ import com.playfieldportal.feature.library.scanner.RomScanner
 import com.playfieldportal.feature.library.scanner.ScanResult
 import com.playfieldportal.feature.library.scanner.ScanType
 import com.playfieldportal.feature.xmb.gamepad.GamepadInputHandler
-import com.playfieldportal.feature.xmb.notification.BackgroundTaskNotifier
+import com.playfieldportal.core.ui.notification.BackgroundTaskNotifier
 import com.playfieldportal.core.ui.sound.MenuSound
+import com.playfieldportal.core.domain.model.MusicTrack
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
@@ -93,6 +94,9 @@ data class XMBContextMenu(
     val shortcutId: String? = null,
     // Captured legacy INSTALL_SHORTCUT launch intent when the menu is for such an entry.
     val launchIntentUri: String? = null,
+    // Set on a music folder's options menu / a music track's options menu.
+    val musicFolderId: String? = null,
+    val musicTrackId: String? = null,
 )
 
 data class XMBContextMenuItem(
@@ -175,6 +179,18 @@ data class XMBUiState(
     val selectedCollectionId: Long? = null,
     // User-created collections, ordered, shown under "All Games" in the Games root.
     val collections: List<GameCollection> = emptyList(),
+    // Music drill-down: null = Music root (folder list); else ALL_MUSIC_FOLDER_ID or a folder id.
+    val selectedMusicFolderId: String? = null,
+    val musicFolders: List<com.playfieldportal.core.domain.model.MusicFolder> = emptyList(),
+    // PSP-style sort (X / Square). Tracked per context so switching categories doesn't carry a
+    // music sort into games. sortLabel is the status-bar hint, non-null only on a sortable list.
+    val gameSortMode: XmbSortMode = XmbSortMode.TITLE,
+    val musicSortMode: XmbSortMode = XmbSortMode.TITLE,
+    val sortLabel: String? = null,
+    // In-app music player: visible when a song is selected; playback state mirrors the controller.
+    val musicPlayerVisible: Boolean = false,
+    val musicPlayback: com.playfieldportal.feature.xmb.music.MusicPlaybackState =
+        com.playfieldportal.feature.xmb.music.MusicPlaybackState(),
 
     // ── Vertical axis: games / settings items ─────────────────────────────
     val currentItems: List<XMBItem> = emptyList(),
@@ -239,6 +255,7 @@ data class XMBUiState(
             gamePickerCategoryId != null ||
             renameAppTarget != null ||
             collectionNameDialog != null ||
+            musicPlayerVisible ||
             infoDialog != null
 }
 
@@ -248,7 +265,45 @@ enum class XMBItemType {
     FAVORITES,
     MEMORY_CARD,
     COLLECTION,
+    MUSIC_FOLDER,
+    MUSIC_TRACK,
     EMPTY,
+}
+
+// PSP-style sort cycling (X / Square). Each list type cycles only the modes that make sense for
+// it (see MUSIC_SORTS / GAME_SORTS); a shared enum keeps the status-bar label simple.
+enum class XmbSortMode(val label: String) {
+    TITLE("Title"),
+    ARTIST("Artist"),
+    ALBUM("Album"),
+    RECENT_PLAYED("Recently Played"),
+    DATE_ADDED("Date Added"),
+}
+
+private val MUSIC_SORTS = listOf(XmbSortMode.TITLE, XmbSortMode.ARTIST, XmbSortMode.ALBUM, XmbSortMode.DATE_ADDED)
+private val GAME_SORTS  = listOf(XmbSortMode.TITLE, XmbSortMode.RECENT_PLAYED, XmbSortMode.DATE_ADDED)
+
+// Pure sort comparators (top-level so they're unit-testable). DATE_ADDED uses the autoincrement
+// game id / file lastModified as the recency proxy; modes that don't apply fall back to title.
+internal fun List<Game>.gameSorted(mode: XmbSortMode): List<Game> = when (mode) {
+    XmbSortMode.RECENT_PLAYED -> sortedByDescending { it.lastPlayedAt ?: 0L }
+    XmbSortMode.DATE_ADDED    -> sortedByDescending { it.id }
+    else                      -> sortedBy { it.displayTitle.lowercase() }
+}
+
+internal fun List<MusicTrack>.trackSorted(mode: XmbSortMode): List<MusicTrack> = when (mode) {
+    XmbSortMode.ARTIST     -> sortedWith(
+        compareBy(nullsLast<String>()) { t: MusicTrack -> t.artist?.lowercase() }
+            .thenBy(nullsLast<String>()) { t -> t.album?.lowercase() }
+            .thenBy { t -> t.displayTitle.lowercase() }
+    )
+    XmbSortMode.ALBUM      -> sortedWith(
+        compareBy(nullsLast<String>()) { t: MusicTrack -> t.album?.lowercase() }
+            .thenBy { t -> t.trackNumber ?: Int.MAX_VALUE }
+            .thenBy { t -> t.displayTitle.lowercase() }
+    )
+    XmbSortMode.DATE_ADDED -> sortedByDescending { it.lastModified ?: 0L }
+    else                   -> sortedBy { it.displayTitle.lowercase() }
 }
 
 data class XMBItem(
@@ -269,6 +324,10 @@ data class XMBItem(
     val shortcutId: String? = null,
     // Captured legacy INSTALL_SHORTCUT launch intent (Intent.toUri); launched by parsing it.
     val launchIntentUri: String? = null,
+    // Music: folder id (on MUSIC_FOLDER rows) and the track's SAF uri + mime (on MUSIC_TRACK rows).
+    val musicFolderId: String? = null,
+    val mediaUri: String? = null,
+    val mimeType: String? = null,
     val type: XMBItemType = XMBItemType.STANDARD,
 )
 
@@ -313,7 +372,18 @@ class XMBViewModel @Inject constructor(
     private val gamepadInputHandler: GamepadInputHandler,
     private val mappingRepository: ControllerMappingRepository,
     private val menuSound: com.playfieldportal.core.ui.sound.MenuSoundPlayer,
+    private val musicRepository: com.playfieldportal.core.domain.repository.MusicRepository,
+    private val musicScanner: com.playfieldportal.feature.library.scanner.MusicScanner,
+    private val musicIntentResolver: com.playfieldportal.core.data.music.MusicIntentResolver,
+    private val musicPlayer: com.playfieldportal.feature.xmb.music.MusicPlayerController,
 ) : ViewModel() {
+
+    // The track list currently on screen, used as the in-app player's queue when a song is picked.
+    private var currentMusicTracks: List<MusicTrack> = emptyList()
+
+    // Cached so a track launch (a discrete event) doesn't need to suspend-read DataStore.
+    @Volatile
+    private var defaultMusicPlayer: String? = null
 
     private val _uiState = MutableStateFlow(XMBUiState())
     val uiState: StateFlow<XMBUiState> = _uiState.asStateFlow()
@@ -338,7 +408,28 @@ class XMBViewModel @Inject constructor(
         observeAppChanges()
         observeGamepadMappings()
         observeSoundSetting()
+        observeMusic()
         collectGamepadActions()
+    }
+
+    // Music folders drive the Music category's root list; the default player is cached for launch.
+    private fun observeMusic() {
+        viewModelScope.launch {
+            musicRepository.observeFolders().collect { folders ->
+                _uiState.update { it.copy(musicFolders = folders) }
+                if (currentCategory()?.id == BuiltInCategory.MUSIC &&
+                    _uiState.value.selectedMusicFolderId == null
+                ) {
+                    loadItemsForCategory(currentCategory())
+                }
+            }
+        }
+        viewModelScope.launch {
+            musicRepository.observeDefaultPlayerPackage().collect { defaultMusicPlayer = it }
+        }
+        viewModelScope.launch {
+            musicPlayer.state.collect { playback -> _uiState.update { it.copy(musicPlayback = playback) } }
+        }
     }
 
     // Menu sounds default on; the Display settings toggle persists the override.
@@ -482,13 +573,14 @@ class XMBViewModel @Inject constructor(
 
     private fun loadItemsForCategory(category: Category?) {
         currentItemsJob?.cancel()
-        if (category == null) { _uiState.update { it.copy(currentItems = emptyList()) }; return }
+        if (category == null) { _uiState.update { it.copy(currentItems = emptyList(), sortLabel = null) }; return }
+        _uiState.update { it.copy(sortLabel = currentSortLabel()) }
 
         currentItemsJob = viewModelScope.launch {
             when (category.id) {
                 BuiltInCategory.FAVORITES -> {
                     gameRepository.observeFavorites().collect { games ->
-                        _uiState.update { it.copy(currentItems = games.toXmbItems()) }
+                        _uiState.update { it.copy(currentItems = games.gameSorted(_uiState.value.gameSortMode).toXmbItems()) }
                     }
                 }
                 BuiltInCategory.ANDROID -> {
@@ -505,31 +597,46 @@ class XMBViewModel @Inject constructor(
                         // because they were explicitly added by the user.
                         collectionRepository.observeGames(collectionId).collect { games ->
                             val items = if (games.isEmpty()) listOf(emptyCollectionItem())
-                                        else games.toXmbItems()
+                                        else games.gameSorted(_uiState.value.gameSortMode).toXmbItems()
                             _uiState.update { it.copy(currentItems = items) }
                         }
                     } else if (platformId == ALL_GAMES_PLATFORM_ID) {
                         // All Games aggregates real games only (content_type = GAME).
                         gameRepository.observeGamesOnly().collect { games ->
                             val items = if (games.isEmpty()) listOf(emptyAllGamesItem())
-                                        else games.toXmbItems()
+                                        else games.gameSorted(_uiState.value.gameSortMode).toXmbItems()
                             _uiState.update { it.copy(currentItems = items) }
                         }
                     } else if (platformId == FAVORITES_PLATFORM_ID) {
                         // Favorites folder — every favorited entry (games and app shortcuts).
                         gameRepository.observeFavorites().collect { games ->
                             val items = if (games.isEmpty()) listOf(emptyFavoritesItem())
-                                        else games.toXmbItems()
+                                        else games.gameSorted(_uiState.value.gameSortMode).toXmbItems()
                             _uiState.update { it.copy(currentItems = items) }
                         }
                     } else if (platformId != null) {
                         gameRepository.observeByPlatform(platformId).collect { games ->
                             val items = if (games.isEmpty()) listOf(emptyFolderItem(platformId))
-                                        else games.toXmbItems()
+                                        else games.gameSorted(_uiState.value.gameSortMode).toXmbItems()
                             _uiState.update { it.copy(currentItems = items) }
                         }
                     } else {
                         _uiState.update { it.copy(currentItems = memoryCardItems()) }
+                    }
+                }
+                BuiltInCategory.MUSIC -> {
+                    when (val sel = _uiState.value.selectedMusicFolderId) {
+                        null -> { currentMusicTracks = emptyList(); _uiState.update { it.copy(currentItems = musicRootItems()) } }
+                        ALL_MUSIC_FOLDER_ID -> musicRepository.observeAllTracks().collect { tracks ->
+                            val sorted = tracks.trackSorted(_uiState.value.musicSortMode)
+                            currentMusicTracks = sorted
+                            _uiState.update { it.copy(currentItems = sorted.toMusicItems()) }
+                        }
+                        else -> musicRepository.observeTracksByFolder(sel).collect { tracks ->
+                            val sorted = tracks.trackSorted(_uiState.value.musicSortMode)
+                            currentMusicTracks = sorted
+                            _uiState.update { it.copy(currentItems = sorted.toMusicItems()) }
+                        }
                     }
                 }
                 else -> {
@@ -540,7 +647,7 @@ class XMBViewModel @Inject constructor(
                         if (openCollectionId != null) {
                             collectionRepository.observeGames(openCollectionId).collect { games ->
                                 val items = if (games.isEmpty()) listOf(emptyCollectionItem())
-                                            else games.toXmbItems()
+                                            else games.gameSorted(_uiState.value.gameSortMode).toXmbItems()
                                 _uiState.update { it.copy(currentItems = items) }
                             }
                             return@launch
@@ -551,7 +658,7 @@ class XMBViewModel @Inject constructor(
                         val gameRows = gameCategoryRepository.itemsForCategory(category.id)
                             .filterIsInstance<com.playfieldportal.core.data.repository.GameCategoryItem.GameItem>()
                         val pinnedGameIds = gameRows.filter { it.pinned }.map { it.game.id }.toSet()
-                        val gameItems = gameRows.map { it.game }.toXmbItems().map { xmb ->
+                        val gameItems = gameRows.map { it.game }.gameSorted(_uiState.value.gameSortMode).toXmbItems().map { xmb ->
                             if (xmb.gameId in pinnedGameIds) xmb.copy(subtitle = "Pinned") else xmb
                         }
                         // Collections belong to exactly one category, tracked by categoryId —
@@ -616,6 +723,242 @@ class XMBViewModel @Inject constructor(
         title    = "Add Games",
         subtitle = "Pick games and collections to add to this category",
     )
+
+    // ── Music ───────────────────────────────────────────────────────────────────
+
+    // Music root: "All Music" + one row per folder + an "Add Music Folder" row. With no folders,
+    // only the setup row shows (which opens Settings → Music).
+    private fun musicRootItems(): List<XMBItem> {
+        val folders = _uiState.value.musicFolders
+        val addRow = XMBItem(
+            id       = ADD_MUSIC_FOLDER_ITEM_ID,
+            title    = "Add Music Folder",
+            subtitle = if (folders.isEmpty()) "Pick a folder of music to get started" else "Pick another folder of music",
+        )
+        if (folders.isEmpty()) return listOf(addRow)
+
+        val totalTracks = folders.sumOf { it.trackCount }
+        val allMusic = XMBItem(
+            id            = ALL_MUSIC_ITEM_ID,
+            title         = "All Music",
+            subtitle      = "$totalTracks ${if (totalTracks == 1) "track" else "tracks"}",
+            type          = XMBItemType.MUSIC_FOLDER,
+            musicFolderId = ALL_MUSIC_FOLDER_ID,
+        )
+        val folderItems = folders.map { f ->
+            XMBItem(
+                id            = "mf_${f.id}",
+                title         = f.displayName,
+                subtitle      = "${f.trackCount} ${if (f.trackCount == 1) "track" else "tracks"}" +
+                    if (!f.enabled) "  ·  Disabled" else "",
+                type          = XMBItemType.MUSIC_FOLDER,
+                musicFolderId = f.id,
+            )
+        }
+        return listOf(allMusic) + folderItems + addRow
+    }
+
+    private fun List<com.playfieldportal.core.domain.model.MusicTrack>.toMusicItems(): List<XMBItem> =
+        if (isEmpty()) listOf(
+            XMBItem(
+                id       = EMPTY_CATEGORY_ITEM_ID,
+                title    = "No music found",
+                subtitle = "Scan this folder in Settings → Music",
+                type     = XMBItemType.EMPTY,
+            )
+        ) else map { track ->
+            XMBItem(
+                id            = "mt_${track.id}",
+                title         = track.displayTitle,
+                subtitle      = listOfNotNull(track.artist, track.album)
+                    .joinToString("  ·  ").ifBlank { null },
+                type          = XMBItemType.MUSIC_TRACK,
+                mediaUri      = track.uri,
+                mimeType      = track.mimeType,
+                musicFolderId = track.folderId,
+            )
+        }
+
+    // Drill into All Music / a folder; resets the cursor and reloads the track list.
+    private fun openMusicFolder(folderId: String?) {
+        if (folderId == null) return
+        _uiState.update { it.copy(selectedMusicFolderId = folderId, selectedItemIndex = 0) }
+        loadItemsForCategory(currentCategory())
+    }
+
+    // Back out of a music track list to the Music root (folder list).
+    private fun closeMusicFolder() {
+        _uiState.update { it.copy(selectedMusicFolderId = null, selectedItemIndex = 0) }
+        loadItemsForCategory(currentCategory())
+    }
+
+    // Selecting a song opens the in-app full player, with the on-screen track list as the queue.
+    private fun openMusicPlayerForItem(item: XMBItem) {
+        val trackId = item.id.removePrefix("mt_")
+        val startIndex = currentMusicTracks.indexOfFirst { it.id == trackId }.coerceAtLeast(0)
+        if (currentMusicTracks.isEmpty()) return
+        musicPlayer.setQueue(currentMusicTracks, startIndex)
+        _uiState.update { it.copy(musicPlayerVisible = true) }
+    }
+
+    // ── In-app player controls (driven by the player overlay) ───────────────────
+    fun musicPlayPause() = musicPlayer.playPause()
+    fun musicNext() = musicPlayer.next()
+    fun musicPrev() = musicPlayer.prev()
+    fun musicSeekTo(ms: Int) = musicPlayer.seekTo(ms)
+    private fun musicSeekBy(deltaMs: Int) = musicPlayer.seekBy(deltaMs)
+
+    fun closeMusicPlayer() {
+        musicPlayer.stop()
+        _uiState.update { it.copy(musicPlayerVisible = false) }
+    }
+
+    private fun openMusicPlayerOptions() {
+        val title = musicPlayer.currentTrack()?.displayTitle ?: "Now Playing"
+        _uiState.update {
+            it.copy(
+                activeContextMenu = XMBContextMenu(
+                    title = title,
+                    items = listOf(
+                        XMBContextMenuItem("music_background", "Play in Background"),
+                        XMBContextMenuItem("music_close", "Stop & Close"),
+                    ),
+                    musicTrackId = MUSIC_PLAYER_MENU_MARKER,
+                )
+            )
+        }
+    }
+
+    // Hand off the currently-playing track to the external player so audio keeps going in the
+    // background, and tear down the in-app player.
+    private fun musicPlayInBackground() {
+        val track = musicPlayer.currentTrack()
+        musicPlayer.stop()
+        _uiState.update { it.copy(musicPlayerVisible = false) }
+        if (track != null) {
+            val error = musicIntentResolver.launch(track, defaultMusicPlayer)
+            if (error != null) taskNotifier.complete("music_launch", "Music", error)
+        }
+    }
+
+    private fun openMusicTrackContextMenu(item: XMBItem) {
+        val menu = XMBContextMenu(
+            title = item.title,
+            items = listOf(
+                XMBContextMenuItem("play", "Play"),
+                XMBContextMenuItem("play_background", "Play in Background"),
+                XMBContextMenuItem("remove_track", "Remove From Library", isDestructive = true),
+            ),
+            musicTrackId = item.id.removePrefix("mt_"),
+        )
+        _uiState.update { it.copy(activeContextMenu = menu) }
+    }
+
+    private fun openMusicFolderContextMenu(item: XMBItem) {
+        val folderId = item.musicFolderId ?: return
+        val folder = _uiState.value.musicFolders.firstOrNull { it.id == folderId }
+        val items = buildList {
+            add(XMBContextMenuItem("scan_folder", "Scan Folder"))
+            add(XMBContextMenuItem("rename_folder", "Rename"))
+            add(
+                if (folder?.enabled == false) XMBContextMenuItem("enable_folder", "Enable")
+                else XMBContextMenuItem("disable_folder", "Disable")
+            )
+            add(XMBContextMenuItem("remove_folder", "Remove", isDestructive = true))
+        }
+        _uiState.update { it.copy(activeContextMenu = XMBContextMenu(item.title, items, musicFolderId = folderId)) }
+    }
+
+    // Music context-menu actions, dispatched from activateContextMenuItem.
+    private fun handleMusicFolderAction(folderId: String, itemId: String) {
+        when (itemId) {
+            "scan_folder" -> scanMusicFolder(folderId)
+            "rename_folder" -> _uiState.update { it.copy(activeSettingsScreen = "settings_music") }
+            "enable_folder" -> appAction { musicRepository.setFolderEnabled(folderId, true) }
+            "disable_folder" -> appAction { musicRepository.setFolderEnabled(folderId, false) }
+            "remove_folder" -> appAction { musicRepository.removeFolder(folderId) }
+        }
+    }
+
+    private fun handleMusicTrackAction(trackId: String, itemId: String) {
+        when (itemId) {
+            // Play in the in-app full player, queuing from the current on-screen list.
+            "play" -> {
+                val startIndex = currentMusicTracks.indexOfFirst { it.id == trackId }.coerceAtLeast(0)
+                if (currentMusicTracks.isNotEmpty()) {
+                    musicPlayer.setQueue(currentMusicTracks, startIndex)
+                    _uiState.update { it.copy(musicPlayerVisible = true) }
+                }
+            }
+            // Hand straight to the external player for background playback.
+            "play_background" -> appAction {
+                val track = musicRepository.getTrack(trackId) ?: return@appAction
+                musicIntentResolver.launch(track, defaultMusicPlayer)
+            }
+            "remove_track" -> appAction {
+                val track = musicRepository.getTrack(trackId) ?: return@appAction
+                removeSingleTrack(track.folderId, trackId)
+            }
+        }
+    }
+
+    private fun scanMusicFolder(folderId: String) {
+        viewModelScope.launch {
+            val folder = musicRepository.getFolder(folderId) ?: return@launch
+            val taskId = "music_scan_$folderId"
+            addBackgroundTask(BackgroundTaskInfo(taskId, "Scanning ${folder.displayName}", null))
+            musicScanner.scan(folder).collect { result ->
+                when (result) {
+                    is com.playfieldportal.feature.library.scanner.MusicScanResult.Progress -> Unit
+                    is com.playfieldportal.feature.library.scanner.MusicScanResult.Complete -> {
+                        musicRepository.replaceTracksForFolder(result.folderId, result.tracks, System.currentTimeMillis())
+                        completeBackgroundTask(taskId, "${result.tracks.size} tracks")
+                    }
+                    is com.playfieldportal.feature.library.scanner.MusicScanResult.Error ->
+                        failBackgroundTask(taskId, result.message)
+                }
+            }
+        }
+    }
+
+    private suspend fun removeSingleTrack(folderId: String, trackId: String) {
+        // Read current tracks once, drop the removed one, and replace the folder set.
+        val tracks = musicRepository.observeTracksByFolder(folderId).first().filterNot { it.id == trackId }
+        musicRepository.replaceTracksForFolder(folderId, tracks, System.currentTimeMillis())
+    }
+
+    // ── Sort (X / Square) ─────────────────────────────────────────────────────
+
+    // The sort modes valid for the list currently on screen, or null when it isn't sortable
+    // (the Games memory-card root, the Music folder root, and app sections don't sort).
+    private fun activeSortContext(): List<XmbSortMode>? {
+        val cat = currentCategory() ?: return null
+        val s = _uiState.value
+        return when {
+            cat.id == BuiltInCategory.MUSIC && s.selectedMusicFolderId != null -> MUSIC_SORTS
+            cat.id == BuiltInCategory.GAMES &&
+                (s.selectedPlatformId != null || s.selectedCollectionId != null) -> GAME_SORTS
+            cat.isGamingCategory -> GAME_SORTS
+            else -> null
+        }
+    }
+
+    private fun cycleSort() {
+        val cycle = activeSortContext() ?: return
+        val isMusic = cycle === MUSIC_SORTS
+        val current = if (isMusic) _uiState.value.musicSortMode else _uiState.value.gameSortMode
+        val next = cycle[(cycle.indexOf(current).coerceAtLeast(0) + 1) % cycle.size]
+        menuSound.play(MenuSound.SYSTEM_BROWSE)
+        _uiState.update { if (isMusic) it.copy(musicSortMode = next) else it.copy(gameSortMode = next) }
+        loadItemsForCategory(currentCategory())
+    }
+
+    // Status-bar hint for the current list ("Sort: Title"), or null when the list isn't sortable.
+    private fun currentSortLabel(): String? {
+        val cycle = activeSortContext() ?: return null
+        val mode = if (cycle === MUSIC_SORTS) _uiState.value.musicSortMode else _uiState.value.gameSortMode
+        return "Sort: ${mode.label}"
+    }
 
     private fun emptyCategoryItem(category: Category): XMBItem {
         val (message, subtitle) = if (category.isGamingCategory) {
@@ -840,6 +1183,23 @@ class XMBViewModel @Inject constructor(
             return
         }
 
+        // ── In-app music player captures ALL input while open ──────────────────
+        // (Below the context-menu branch so the player's own Y options menu wins when shown.)
+        if (state.musicPlayerVisible) {
+            when (action) {
+                GamepadAction.SELECT         -> musicPlayPause()
+                GamepadAction.NAVIGATE_LEFT  -> musicPrev()
+                GamepadAction.NAVIGATE_RIGHT -> musicNext()
+                GamepadAction.NAVIGATE_UP    -> musicSeekBy(10_000)
+                GamepadAction.NAVIGATE_DOWN  -> musicSeekBy(-10_000)
+                GamepadAction.BUTTON_Y,
+                GamepadAction.LONG_PRESS     -> openMusicPlayerOptions()
+                GamepadAction.BACK           -> closeMusicPlayer()
+                else -> Unit
+            }
+            return
+        }
+
         // ── Color-scheme picker captures ALL input when open (sits above Settings) ──
         if (state.colorSchemePicker != null) {
             when (action) {
@@ -939,14 +1299,20 @@ class XMBViewModel @Inject constructor(
             GamepadAction.SELECT     -> onItemSelected(state.selectedItemIndex)
             GamepadAction.BACK       -> {
                 menuSound.play(MenuSound.BACK)
-                if (state.selectedPlatformId != null || state.selectedCollectionId != null) closePlatformFolder()
-                else onOpenAppDrawer()
+                when {
+                    state.selectedMusicFolderId != null -> closeMusicFolder()
+                    state.selectedPlatformId != null || state.selectedCollectionId != null -> closePlatformFolder()
+                    else -> onOpenAppDrawer()
+                }
             }
             GamepadAction.LONG_PRESS,
             GamepadAction.BUTTON_Y -> {
                 // Y / Triangle — open context menu for whichever item type has focus
                 val item = state.currentItems.getOrNull(state.selectedItemIndex)
                 when {
+                    item?.type == XMBItemType.MUSIC_TRACK -> openMusicTrackContextMenu(item)
+                    item?.type == XMBItemType.MUSIC_FOLDER && item.musicFolderId != ALL_MUSIC_FOLDER_ID ->
+                        openMusicFolderContextMenu(item)
                     item?.gameId != null -> openGameContextMenu(item)
                     item?.collectionId != null && item.type == XMBItemType.COLLECTION -> openCollectionRowContextMenu(item.collectionId)
                     item?.platformId != null -> openPlatformContextMenu(item.platformId)
@@ -955,8 +1321,11 @@ class XMBViewModel @Inject constructor(
             }
             // Start button no longer restarts / shows the boot screen.
             GamepadAction.HOME          -> Unit
-            // Task tray removed — background work now lives in the notification bar.
-            GamepadAction.OPEN_TASK_TRAY -> Unit
+            // X / Square — cycle the sort order of the current list (PSP-style). The task tray was
+            // removed, so its old action is repurposed to sort too (covers stale saved mappings
+            // where X is still bound to OPEN_TASK_TRAY).
+            GamepadAction.OPEN_TASK_TRAY,
+            GamepadAction.CHANGE_SORT -> cycleSort()
             GamepadAction.BUTTON_Y,
             GamepadAction.PREV_CATEGORY,
             GamepadAction.NEXT_CATEGORY -> Unit
@@ -1258,6 +1627,12 @@ class XMBViewModel @Inject constructor(
         }
 
         when {
+            menu.musicTrackId == MUSIC_PLAYER_MENU_MARKER -> when (itemId) {
+                "music_background" -> musicPlayInBackground()
+                "music_close"      -> closeMusicPlayer()
+            }
+            menu.musicTrackId != null -> handleMusicTrackAction(menu.musicTrackId, itemId)
+            menu.musicFolderId != null -> handleMusicFolderAction(menu.musicFolderId, itemId)
             menu.platformId != null -> when (itemId) {
                 "find_games"       -> openAppPicker(AppPickerTarget.AndroidGames(menu.platformId), "Find Games")
                 "scan_roms"        -> scanCard(menu.platformId)
@@ -1704,7 +2079,7 @@ class XMBViewModel @Inject constructor(
     fun onCategorySelected(index: Int) {
         if (index != _uiState.value.selectedCategoryIndex) menuSound.play(MenuSound.SYSTEM_BROWSE)
         val category = _uiState.value.categories.getOrNull(index)
-        _uiState.update { it.copy(selectedCategoryIndex = index, selectedItemIndex = 0, selectedPlatformId = null, selectedCollectionId = null) }
+        _uiState.update { it.copy(selectedCategoryIndex = index, selectedItemIndex = 0, selectedPlatformId = null, selectedCollectionId = null, selectedMusicFolderId = null) }
         tintWaveForCategory(category)
         loadItemsForCategory(category)
     }
@@ -1725,8 +2100,11 @@ class XMBViewModel @Inject constructor(
         val s = _uiState.value
         if (s.hasBlockingOverlay) return
         menuSound.play(MenuSound.BACK)
-        if (s.selectedPlatformId != null || s.selectedCollectionId != null) closePlatformFolder()
-        else onOpenAppDrawer()
+        when {
+            s.selectedMusicFolderId != null -> closeMusicFolder()
+            s.selectedPlatformId != null || s.selectedCollectionId != null -> closePlatformFolder()
+            else -> onOpenAppDrawer()
+        }
     }
 
     // ── Item selection ────────────────────────────────────────────────────────
@@ -1735,6 +2113,18 @@ class XMBViewModel @Inject constructor(
         _uiState.update { it.copy(selectedItemIndex = index) }
         val category = _uiState.value.categories.getOrNull(_uiState.value.selectedCategoryIndex)
         val item     = _uiState.value.currentItems.getOrNull(index)
+
+        // Music rows: a track launches the external player; a folder drills in; the setup row
+        // opens Settings → Music. Each owns its own sound and returns early.
+        when {
+            item?.type == XMBItemType.MUSIC_TRACK -> { menuSound.play(MenuSound.SELECT); openMusicPlayerForItem(item); return }
+            item?.type == XMBItemType.MUSIC_FOLDER -> { menuSound.play(MenuSound.SELECT); openMusicFolder(item.musicFolderId); return }
+            item?.id == ADD_MUSIC_FOLDER_ITEM_ID -> {
+                menuSound.play(MenuSound.SELECT)
+                _uiState.update { it.copy(activeSettingsScreen = "settings_music") }
+                return
+            }
+        }
 
         // Sound: launch for items that boot something immediately; select for opening a folder,
         // detail, picker, or settings; silent for non-selectable placeholder rows.
@@ -1835,6 +2225,9 @@ class XMBViewModel @Inject constructor(
     fun onItemLongPress(index: Int) {
         val item = _uiState.value.currentItems.getOrNull(index)
         when {
+            item?.type == XMBItemType.MUSIC_TRACK -> openMusicTrackContextMenu(item)
+            item?.type == XMBItemType.MUSIC_FOLDER && item.musicFolderId != ALL_MUSIC_FOLDER_ID ->
+                openMusicFolderContextMenu(item)
             item?.gameId != null -> openGameContextMenu(item)
             item?.collectionId != null && item.type == XMBItemType.COLLECTION -> openCollectionRowContextMenu(item.collectionId)
             item?.platformId != null -> openPlatformContextMenu(item.platformId)
@@ -2242,6 +2635,13 @@ class XMBViewModel @Inject constructor(
         // Platform id whose library is built from installed apps (picker) instead of ROM scans.
         private const val ANDROID_PLATFORM_ID = "android"
 
+        // Music category synthetic rows / drill ids.
+        private const val ADD_MUSIC_FOLDER_ITEM_ID = "add_music_folder"
+        private const val ALL_MUSIC_ITEM_ID = "all_music"
+        private const val ALL_MUSIC_FOLDER_ID = "__all_music__"
+        // Sentinel in XMBContextMenu.musicTrackId marking the in-app player's own options menu.
+        private const val MUSIC_PLAYER_MENU_MARKER = "__music_player__"
+
         // Used only if the categories table hasn't been seeded yet (first frame on first run).
         // The main XMB always presents these seven categories in this order.
         val FALLBACK_CATEGORIES = listOf(
@@ -2263,6 +2663,7 @@ class XMBViewModel @Inject constructor(
 
         private val SETTINGS_ITEMS = listOf(
             XMBItem(id = "settings_library",    title = "Library",          subtitle = "ROM sources & scanning"),
+            XMBItem(id = "settings_music",      title = "Music",            subtitle = "Music folders & default player"),
             XMBItem(id = "settings_categories", title = "Categories",       subtitle = "Manage XMB categories"),
             XMBItem(id = "settings_collections", title = "Collections",     subtitle = "Create & manage game collections"),
             XMBItem(id = "settings_artwork",    title = "Artwork",          subtitle = "Scraping sources & cache"),

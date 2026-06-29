@@ -28,6 +28,7 @@ dependencies {
     implementation(libs.timber)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.androidx.documentfile)
     ksp(libs.hilt.compiler)
 
     implementation(project(":core:core-common"))

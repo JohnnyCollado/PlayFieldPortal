@@ -78,6 +78,7 @@ object XmbStatusIcons {
 
 @Composable
 fun XmbPspStatusStrip(
+    sortLabel: String? = null,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -125,6 +126,11 @@ fun XmbPspStatusStrip(
             Text(dateString, color = StripMuted,   fontSize = StripFontSize, fontWeight = FontWeight.Normal)
             StripSeparator()
             Text(timeString, color = StripPrimary, fontSize = StripFontSize, fontWeight = FontWeight.Medium)
+            // Current sort mode (X / Square cycles it) — shown only on sortable lists.
+            if (sortLabel != null) {
+                StripSeparator()
+                Text(sortLabel, color = StripPrimary, fontSize = StripFontSize, fontWeight = FontWeight.Medium)
+            }
         }
 
         // ── Right: BT  WiFi  Signal  Battery ──────────────────────────────

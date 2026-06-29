@@ -20,7 +20,7 @@ data class GamepadMappings(
 val DEFAULT_BINDINGS = listOf(
     GamepadBinding(KeyEvent.KEYCODE_BUTTON_A,      GamepadAction.SELECT),
     GamepadBinding(KeyEvent.KEYCODE_BUTTON_B,      GamepadAction.BACK),
-    GamepadBinding(KeyEvent.KEYCODE_BUTTON_X,      GamepadAction.OPEN_TASK_TRAY),
+    GamepadBinding(KeyEvent.KEYCODE_BUTTON_X,      GamepadAction.CHANGE_SORT),
     GamepadBinding(KeyEvent.KEYCODE_BUTTON_Y,      GamepadAction.BUTTON_Y),
     GamepadBinding(KeyEvent.KEYCODE_DPAD_UP,       GamepadAction.NAVIGATE_UP),
     GamepadBinding(KeyEvent.KEYCODE_DPAD_DOWN,     GamepadAction.NAVIGATE_DOWN),
@@ -48,6 +48,7 @@ fun GamepadAction.displayLabel(): String = when (this) {
     GamepadAction.NEXT_CATEGORY   -> "Next Tab (App Drawer)"
     GamepadAction.HOME            -> "Start (Confirm in pickers)"
     GamepadAction.OPEN_TASK_TRAY  -> "Open Task Tray"
+    GamepadAction.CHANGE_SORT     -> "Change Sort Order"
 }
 
 fun Int.keycodeDisplayName(): String = when (this) {

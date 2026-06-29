@@ -11,6 +11,8 @@ import com.playfieldportal.core.data.database.dao.CollectionDao
 import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.data.database.dao.LibrarySourceDao
 import com.playfieldportal.core.data.database.dao.MemoryCardDao
+import com.playfieldportal.core.data.database.dao.MusicFolderDao
+import com.playfieldportal.core.data.database.dao.MusicTrackDao
 import com.playfieldportal.core.data.database.dao.PlaySessionDao
 import com.playfieldportal.core.data.database.dao.PlatformDao
 import com.playfieldportal.core.data.database.dao.ThemeDao
@@ -23,6 +25,8 @@ import com.playfieldportal.core.data.database.entity.CollectionGameEntity
 import com.playfieldportal.core.data.database.entity.GameEntity
 import com.playfieldportal.core.data.database.entity.LibrarySourceEntity
 import com.playfieldportal.core.data.database.entity.MemoryCardEntity
+import com.playfieldportal.core.data.database.entity.MusicFolderEntity
+import com.playfieldportal.core.data.database.entity.MusicTrackEntity
 import com.playfieldportal.core.data.database.entity.PlaySessionEntity
 import com.playfieldportal.core.data.database.entity.PlatformEntity
 import com.playfieldportal.core.data.database.entity.ThemeEntity
@@ -42,8 +46,10 @@ import com.playfieldportal.core.data.database.entity.UnmatchedRomEntity
         AppOverrideEntity::class,
         CollectionEntity::class,
         CollectionGameEntity::class,
+        MusicFolderEntity::class,
+        MusicTrackEntity::class,
     ],
-    version = 13,
+    version = 14,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -59,6 +65,8 @@ abstract class PFPDatabase : RoomDatabase() {
     abstract fun memoryCardDao(): MemoryCardDao
     abstract fun appOverrideDao(): AppOverrideDao
     abstract fun collectionDao(): CollectionDao
+    abstract fun musicFolderDao(): MusicFolderDao
+    abstract fun musicTrackDao(): MusicTrackDao
 
     companion object {
         const val DATABASE_NAME = "pfp_database"
@@ -242,6 +250,51 @@ abstract class PFPDatabase : RoomDatabase() {
                         ('x360', 'Xbox 360', 'X360', 'ic_platform_xbox360', 4279270416, 0,
                          -1, 'emu.x360.mobile', 'iso,xex,zar,xbla')
                     """.trimIndent()
+                )
+            }
+        }
+
+        // v14 — Music library. Adds music_folders (user-added SAF sources) and music_tracks
+        // (scanned audio, cascade-deleted with their folder). Additive only; no existing data
+        // is touched.
+        val MIGRATION_13_14 = object : Migration(13, 14) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS music_folders (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        display_name TEXT NOT NULL,
+                        tree_uri TEXT NOT NULL,
+                        enabled INTEGER NOT NULL DEFAULT 1,
+                        track_count INTEGER NOT NULL DEFAULT 0,
+                        last_scanned_at INTEGER,
+                        created_at INTEGER NOT NULL,
+                        updated_at INTEGER NOT NULL
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS music_tracks (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        folder_id TEXT NOT NULL,
+                        uri TEXT NOT NULL,
+                        display_name TEXT NOT NULL,
+                        title TEXT,
+                        artist TEXT,
+                        album TEXT,
+                        duration_ms INTEGER,
+                        mime_type TEXT,
+                        size_bytes INTEGER,
+                        last_modified INTEGER,
+                        track_number INTEGER,
+                        relative_path TEXT,
+                        FOREIGN KEY(folder_id) REFERENCES music_folders(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_music_tracks_folder_id ON music_tracks (folder_id)"
                 )
             }
         }

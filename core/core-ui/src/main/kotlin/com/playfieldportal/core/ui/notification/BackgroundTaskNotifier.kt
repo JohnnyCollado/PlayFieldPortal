@@ -1,4 +1,4 @@
-package com.playfieldportal.feature.xmb.notification
+package com.playfieldportal.core.ui.notification
 
 import android.Manifest
 import android.app.Notification
@@ -9,9 +9,12 @@ import android.content.pm.PackageManager
 import android.os.Build
 
 /**
- * Surfaces background work (ROM scans, artwork fetches, etc.) as Android system
- * notifications instead of an in-app tray. Each task is keyed by its string id so
- * progress updates replace the same notification rather than stacking.
+ * Surfaces background work (ROM scans, music scans, artwork fetches, etc.) as Android system
+ * notifications instead of an in-app tray. Each task is keyed by its string id so progress
+ * updates replace the same notification rather than stacking.
+ *
+ * Lives in core-ui so any feature module (xmb, settings, …) can report background progress the
+ * same way.
  */
 class BackgroundTaskNotifier(private val context: Context) {
 
@@ -24,7 +27,7 @@ class BackgroundTaskNotifier(private val context: Context) {
             "Background Tasks",
             NotificationManager.IMPORTANCE_LOW, // quiet — no sound/peek for progress
         ).apply {
-            description = "ROM scans, artwork downloads and other background work"
+            description = "ROM scans, music scans, artwork downloads and other background work"
             setShowBadge(false)
         }
         manager.createNotificationChannel(channel)

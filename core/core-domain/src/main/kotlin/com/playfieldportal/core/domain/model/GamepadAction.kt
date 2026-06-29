@@ -13,4 +13,5 @@ enum class GamepadAction {
     NEXT_CATEGORY,
     HOME,
     OPEN_TASK_TRAY,
+    CHANGE_SORT,
 }

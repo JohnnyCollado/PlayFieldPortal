@@ -9,13 +9,17 @@ import com.playfieldportal.core.data.database.dao.CollectionDao
 import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.data.database.dao.LibrarySourceDao
 import com.playfieldportal.core.data.database.dao.MemoryCardDao
+import com.playfieldportal.core.data.database.dao.MusicFolderDao
+import com.playfieldportal.core.data.database.dao.MusicTrackDao
 import com.playfieldportal.core.data.database.dao.PlaySessionDao
 import com.playfieldportal.core.data.database.dao.PlatformDao
 import com.playfieldportal.core.data.database.dao.ThemeDao
 import com.playfieldportal.core.data.database.dao.UnmatchedRomDao
 import com.playfieldportal.core.data.repository.CategoryRepositoryImpl
 import com.playfieldportal.core.data.repository.GameRepositoryImpl
+import com.playfieldportal.core.data.repository.MusicRepositoryImpl
 import com.playfieldportal.core.domain.repository.GameRepository
+import com.playfieldportal.core.domain.repository.MusicRepository
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -50,6 +54,7 @@ object DatabaseModule {
             PFPDatabase.MIGRATION_10_11,
             PFPDatabase.MIGRATION_11_12,
             PFPDatabase.MIGRATION_12_13,
+            PFPDatabase.MIGRATION_13_14,
         )
         .build()
 
@@ -63,6 +68,8 @@ object DatabaseModule {
     @Provides fun provideMemoryCardDao(db: PFPDatabase): MemoryCardDao = db.memoryCardDao()
     @Provides fun provideAppOverrideDao(db: PFPDatabase): AppOverrideDao = db.appOverrideDao()
     @Provides fun provideCollectionDao(db: PFPDatabase): CollectionDao = db.collectionDao()
+    @Provides fun provideMusicFolderDao(db: PFPDatabase): MusicFolderDao = db.musicFolderDao()
+    @Provides fun provideMusicTrackDao(db: PFPDatabase): MusicTrackDao = db.musicTrackDao()
 }
 
 @Module
@@ -72,4 +79,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindGameRepository(impl: GameRepositoryImpl): GameRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindMusicRepository(impl: MusicRepositoryImpl): MusicRepository
 }

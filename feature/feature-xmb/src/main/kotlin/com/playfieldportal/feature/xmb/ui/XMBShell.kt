@@ -105,6 +105,11 @@ fun XMBShellContainer(
         onGamePickerDismiss = viewModel::closeGamePicker,
         onGamePickerActionConsumed = viewModel::consumeGamePickerAction,
         onDismissInfoDialog = viewModel::dismissInfoDialog,
+        onMusicPlayPause = viewModel::musicPlayPause,
+        onMusicPrev = viewModel::musicPrev,
+        onMusicNext = viewModel::musicNext,
+        onMusicSeekTo = viewModel::musicSeekTo,
+        onMusicPlayerBack = viewModel::closeMusicPlayer,
     )
 }
 
@@ -131,6 +136,11 @@ fun XMBShell(
     onAppDetailActionConsumed: () -> Unit = {},
     onContextMenuItemActivated: (Int) -> Unit = {},
     onContextMenuDismiss: () -> Unit = {},
+    onMusicPlayPause: () -> Unit = {},
+    onMusicPrev: () -> Unit = {},
+    onMusicNext: () -> Unit = {},
+    onMusicSeekTo: (Int) -> Unit = {},
+    onMusicPlayerBack: () -> Unit = {},
     onOpenColorSchemePicker: () -> Unit = {},
     onColorSchemeHighlightedAt: (Int) -> Unit = {},
     onColorSchemeConfirm: () -> Unit = {},
@@ -182,6 +192,7 @@ fun XMBShell(
             }
 
             XmbPspStatusStrip(
+                sortLabel = uiState.sortLabel,
                 modifier = Modifier.align(Alignment.TopCenter),
             )
 
@@ -301,6 +312,20 @@ fun XMBShell(
                     onBack = onCloseAppDrawer,
                     pendingGamepadAction = uiState.pendingDrawerAction,
                     onGamepadActionConsumed = onDrawerActionConsumed,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+
+            // In-app music player — rendered before the context menu so the Y options menu
+            // (Play in Background) draws on top of it.
+            if (uiState.musicPlayerVisible) {
+                MusicPlayerScreen(
+                    state = uiState.musicPlayback,
+                    onPlayPause = onMusicPlayPause,
+                    onPrev = onMusicPrev,
+                    onNext = onMusicNext,
+                    onSeekTo = onMusicSeekTo,
+                    onBack = onMusicPlayerBack,
                     modifier = Modifier.fillMaxSize(),
                 )
             }

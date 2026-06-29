@@ -36,6 +36,7 @@ object BuiltInCategory {
     const val FAVORITES        = "favorites"
     const val RECENTLY_PLAYED  = "recently_played"
     const val GAMES            = "games"
+    const val MUSIC            = "music"
     const val ANDROID          = "android"
     const val APP_DRAWER       = "app_drawer"
     const val SETTINGS         = "settings"
