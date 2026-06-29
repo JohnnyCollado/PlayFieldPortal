@@ -7,10 +7,12 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -34,6 +36,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.floor
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.playfieldportal.core.ui.icons.GameIconStyle
 import com.playfieldportal.feature.xmb.viewmodel.XMBItem
@@ -42,6 +45,10 @@ import com.playfieldportal.feature.xmb.viewmodel.XMBItemType
 // Game icons use the authentic PSP ICON0 ratio 144:80 (= 1.8), scaled for the list.
 private val GAME_ICON_WIDTH = 126.dp
 private val GAME_ICON_HEIGHT = 70.dp
+
+// Every row is exactly this tall so the list viewport can be sized to a whole number of rows —
+// this is what lets us "hard stop" at a row boundary and never render a partially-clipped row.
+private val ROW_HEIGHT = 88.dp
 
 private val PrimaryText = Color.White
 private val SecondaryText = Color(0xFFC9C7E8)
@@ -59,30 +66,40 @@ fun XMBItemList(
 ) {
     val listState = rememberLazyListState()
 
-    LaunchedEffect(selectedIndex, items.size) {
-        if (items.isNotEmpty()) {
-            listState.animateScrollToItem(
-                index = selectedIndex.coerceIn(0, items.lastIndex),
-                scrollOffset = -44,
-            )
-        }
-    }
+    // Size the list to a whole number of rows (BoxWithConstraints gives the height available from
+    // the parent), then scroll on row boundaries — so only fully-visible rows ever render. No fade,
+    // no partial row at the top or bottom.
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+        val visibleRows = floor(maxHeight / ROW_HEIGHT).toInt().coerceAtLeast(1)
+        val listHeight = ROW_HEIGHT * visibleRows
 
-    LazyColumn(
-        state = listState,
-        modifier = modifier,
-    ) {
-        itemsIndexed(items, key = { _, item -> item.id }) { index, item ->
-            XmbVerticalListRow(
-                item = item,
-                isSelected = index == selectedIndex,
-                iconStyle = iconStyle,
-                onClick = { onItemSelected(index) },
-                onLongPress = { onItemLongPress(index) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp),
-            )
+        LaunchedEffect(selectedIndex, items.size, visibleRows) {
+            if (items.isNotEmpty()) {
+                // Keep one full row of context above the selection where possible; scrolling to an
+                // item with offset 0 lands the viewport exactly on a row boundary.
+                val target = (selectedIndex - 1).coerceIn(0, items.lastIndex)
+                listState.animateScrollToItem(target)
+            }
+        }
+
+        LazyColumn(
+            state = listState,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(listHeight),
+        ) {
+            itemsIndexed(items, key = { _, item -> item.id }) { index, item ->
+                XmbVerticalListRow(
+                    item = item,
+                    isSelected = index == selectedIndex,
+                    iconStyle = iconStyle,
+                    onClick = { onItemSelected(index) },
+                    onLongPress = { onItemLongPress(index) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(ROW_HEIGHT),
+                )
+            }
         }
     }
 }
@@ -119,7 +136,7 @@ private fun XmbVerticalListRow(
                 scaleY = scale
             }
             .combinedClickable(onClick = onClick, onLongClick = onLongPress)
-            .padding(horizontal = 18.dp, vertical = 10.dp)
+            .padding(horizontal = 18.dp)
             .alpha(rowAlpha),
     ) {
         XmbItemLeadingIcon(
