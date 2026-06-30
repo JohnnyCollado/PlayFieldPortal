@@ -97,6 +97,11 @@ data class XMBContextMenu(
     // Set on a music folder's options menu / a music track's options menu.
     val musicFolderId: String? = null,
     val musicTrackId: String? = null,
+    // Set on a playlist row's options menu, and as context on a track menu opened inside a playlist
+    // (so "Remove from this Playlist" knows which playlist).
+    val playlistId: Long? = null,
+    // Set on the "Add to Playlist" submenu — the track being added (marks that submenu).
+    val playlistPickerTrackId: String? = null,
 )
 
 data class XMBContextMenuItem(
@@ -163,6 +168,38 @@ data class AppPickerState(
     val selectedIndex: Int = 0,   // index 0 = the Confirm row; 1..n = apps
 )
 
+// ── Music navigation ───────────────────────────────────────────────────────────
+// Which Music sub-screen is open. The Music root shows the static items (Now Playing / Playlist /
+// Music Apps) plus the single "All Music" memory-card item; drilling into any of them swaps the
+// item list without leaving the Music category.
+
+sealed interface MusicNav {
+    data object Root : MusicNav
+    data object AllMusic : MusicNav
+    data object Playlists : MusicNav
+    data class Playlist(val id: Long, val name: String) : MusicNav
+    data object MusicApps : MusicNav
+}
+
+// Drives the "New / Rename Playlist" text dialog. When [forTrackId] is set, the freshly created
+// playlist immediately receives that track.
+data class PlaylistNameDialogState(
+    val title: String,
+    val initialText: String = "",
+    val forTrackId: String? = null,
+    // When set, confirming renames this playlist instead of creating a new one.
+    val renamePlaylistId: Long? = null,
+)
+
+// Multi-select picker over all scanned tracks, used by a playlist's "Add Tracks" row.
+data class MusicTrackPickerState(
+    val playlistId: Long,
+    val playlistName: String,
+    val tracks: List<MusicTrack>,
+    val selected: Set<String> = emptySet(),
+    val selectedIndex: Int = 0,   // index 0 = the Confirm row; 1..n = tracks
+)
+
 // ── Main XMB state ────────────────────────────────────────────────────────────
 
 data class XMBUiState(
@@ -179,8 +216,8 @@ data class XMBUiState(
     val selectedCollectionId: Long? = null,
     // User-created collections, ordered, shown under "All Games" in the Games root.
     val collections: List<GameCollection> = emptyList(),
-    // Music drill-down: null = Music root (folder list); else ALL_MUSIC_FOLDER_ID or a folder id.
-    val selectedMusicFolderId: String? = null,
+    // Music drill-down: which Music sub-screen is open (Root shows the static items + All Music).
+    val musicNav: MusicNav = MusicNav.Root,
     val musicFolders: List<com.playfieldportal.core.domain.model.MusicFolder> = emptyList(),
     // PSP-style sort (X / Square). Tracked per context so switching categories doesn't carry a
     // music sort into games. sortLabel is the status-bar hint, non-null only on a sortable list.
@@ -195,6 +232,10 @@ data class XMBUiState(
     // ── Vertical axis: games / settings items ─────────────────────────────
     val currentItems: List<XMBItem> = emptyList(),
     val selectedItemIndex: Int = 0,
+    // Bumped whenever the list should snap back to the top regardless of cursor position — e.g. a
+    // sort cycle. The item list scrolls to item 0 each time this changes (keyed reorders otherwise
+    // keep the viewport anchored to the old top item).
+    val scrollToTopToken: Int = 0,
 
     // ── Background + rendering ────────────────────────────────────────────
     // A custom wallpaper, when set, automatically replaces the wave.
@@ -226,6 +267,12 @@ data class XMBUiState(
     // ── Create-collection text dialog ─────────────────────────────────────
     val collectionNameDialog: CollectionNameDialogState? = null,
 
+    // ── Create/rename-playlist text dialog ────────────────────────────────
+    val playlistNameDialog: PlaylistNameDialogState? = null,
+
+    // ── "Add Tracks" picker (inside a playlist) ───────────────────────────
+    val musicTrackPicker: MusicTrackPickerState? = null,
+
     // ── Simple read-only info dialog (e.g. file location) ──────────────────
     val infoDialog: InfoDialogState? = null,
 
@@ -255,6 +302,8 @@ data class XMBUiState(
             gamePickerCategoryId != null ||
             renameAppTarget != null ||
             collectionNameDialog != null ||
+            playlistNameDialog != null ||
+            musicTrackPicker != null ||
             musicPlayerVisible ||
             infoDialog != null
 }
@@ -267,6 +316,8 @@ enum class XMBItemType {
     COLLECTION,
     MUSIC_FOLDER,
     MUSIC_TRACK,
+    PLAYLIST,
+    MUSIC_APPS,
     EMPTY,
 }
 
@@ -328,6 +379,10 @@ data class XMBItem(
     val musicFolderId: String? = null,
     val mediaUri: String? = null,
     val mimeType: String? = null,
+    // Square album-cover art (on MUSIC_TRACK rows); a file:// uri cached during scan, may be null.
+    val coverUri: String? = null,
+    // Playlist id on PLAYLIST rows.
+    val playlistId: Long? = null,
     val type: XMBItemType = XMBItemType.STANDARD,
 )
 
@@ -378,8 +433,15 @@ class XMBViewModel @Inject constructor(
     private val musicPlayer: com.playfieldportal.feature.xmb.music.MusicPlayerController,
 ) : ViewModel() {
 
-    // The track list currently on screen, used as the in-app player's queue when a song is picked.
+    // The track list currently on screen (in display/sort order), used as the in-app player's queue
+    // when a song is picked. [currentMusicTracksRaw] is the same set in DB order, kept so a sort
+    // cycle can re-order instantly without waiting on a fresh DB emission.
     private var currentMusicTracks: List<MusicTrack> = emptyList()
+    private var currentMusicTracksRaw: List<MusicTrack> = emptyList()
+
+    // Tracks whether playback currently has a track, so the Music root only rebuilds (to add/drop
+    // the "Now Playing" row) when that flips — not on every half-second playback tick.
+    private var lastHadPlayingTrack = false
 
     // Cached so a track launch (a discrete event) doesn't need to suspend-read DataStore.
     @Volatile
@@ -418,7 +480,7 @@ class XMBViewModel @Inject constructor(
             musicRepository.observeFolders().collect { folders ->
                 _uiState.update { it.copy(musicFolders = folders) }
                 if (currentCategory()?.id == BuiltInCategory.MUSIC &&
-                    _uiState.value.selectedMusicFolderId == null
+                    _uiState.value.musicNav == MusicNav.Root
                 ) {
                     loadItemsForCategory(currentCategory())
                 }
@@ -428,7 +490,20 @@ class XMBViewModel @Inject constructor(
             musicRepository.observeDefaultPlayerPackage().collect { defaultMusicPlayer = it }
         }
         viewModelScope.launch {
-            musicPlayer.state.collect { playback -> _uiState.update { it.copy(musicPlayback = playback) } }
+            musicPlayer.state.collect { playback ->
+                _uiState.update { it.copy(musicPlayback = playback) }
+                // Rebuild the Music root only when playback gains/loses a track, so the "Now Playing"
+                // row appears/disappears — never on the half-second position ticks.
+                val hasTrack = playback.track != null
+                if (hasTrack != lastHadPlayingTrack) {
+                    lastHadPlayingTrack = hasTrack
+                    if (currentCategory()?.id == BuiltInCategory.MUSIC &&
+                        _uiState.value.musicNav == MusicNav.Root
+                    ) {
+                        loadItemsForCategory(currentCategory())
+                    }
+                }
+            }
         }
     }
 
@@ -624,19 +699,27 @@ class XMBViewModel @Inject constructor(
                         _uiState.update { it.copy(currentItems = memoryCardItems()) }
                     }
                 }
-                BuiltInCategory.MUSIC -> {
-                    when (val sel = _uiState.value.selectedMusicFolderId) {
-                        null -> { currentMusicTracks = emptyList(); _uiState.update { it.copy(currentItems = musicRootItems()) } }
-                        ALL_MUSIC_FOLDER_ID -> musicRepository.observeAllTracks().collect { tracks ->
-                            val sorted = tracks.trackSorted(_uiState.value.musicSortMode)
-                            currentMusicTracks = sorted
-                            _uiState.update { it.copy(currentItems = sorted.toMusicItems()) }
+                BuiltInCategory.MUSIC -> when (val nav = _uiState.value.musicNav) {
+                    MusicNav.Root -> {
+                        clearMusicTrackCache()
+                        _uiState.update { it.copy(currentItems = musicRootItems()) }
+                    }
+                    MusicNav.AllMusic -> musicRepository.observeAllTracks().collect { tracks ->
+                        setMusicTrackItems(tracks, emptyAllMusicItem())
+                    }
+                    is MusicNav.Playlist -> musicRepository.observePlaylistTracks(nav.id).collect { tracks ->
+                        setMusicTrackItems(tracks, emptyPlaylistItem(), trailing = listOf(addTracksItem()))
+                    }
+                    MusicNav.Playlists -> {
+                        clearMusicTrackCache()
+                        musicRepository.observePlaylists().collect { playlists ->
+                            _uiState.update { it.copy(currentItems = playlistRootItems(playlists)) }
                         }
-                        else -> musicRepository.observeTracksByFolder(sel).collect { tracks ->
-                            val sorted = tracks.trackSorted(_uiState.value.musicSortMode)
-                            currentMusicTracks = sorted
-                            _uiState.update { it.copy(currentItems = sorted.toMusicItems()) }
-                        }
+                    }
+                    MusicNav.MusicApps -> {
+                        clearMusicTrackCache()
+                        val items = musicAppItems()
+                        _uiState.update { it.copy(currentItems = items) }
                     }
                 }
                 else -> {
@@ -726,70 +809,195 @@ class XMBViewModel @Inject constructor(
 
     // ── Music ───────────────────────────────────────────────────────────────────
 
-    // Music root: "All Music" + one row per folder + an "Add Music Folder" row. With no folders,
-    // only the setup row shows (which opens Settings → Music).
+    // Music root: the static items (Now Playing, when something is playing; Playlist; Music Apps)
+    // followed by the single "All Music" memory-card item. Folder management lives in Settings →
+    // Music; an "Add Music Folder" row only appears here while no folders are configured yet.
     private fun musicRootItems(): List<XMBItem> {
         val folders = _uiState.value.musicFolders
-        val addRow = XMBItem(
-            id       = ADD_MUSIC_FOLDER_ITEM_ID,
-            title    = "Add Music Folder",
-            subtitle = if (folders.isEmpty()) "Pick a folder of music to get started" else "Pick another folder of music",
-        )
-        if (folders.isEmpty()) return listOf(addRow)
-
         val totalTracks = folders.sumOf { it.trackCount }
-        val allMusic = XMBItem(
-            id            = ALL_MUSIC_ITEM_ID,
-            title         = "All Music",
-            subtitle      = "$totalTracks ${if (totalTracks == 1) "track" else "tracks"}",
-            type          = XMBItemType.MUSIC_FOLDER,
-            musicFolderId = ALL_MUSIC_FOLDER_ID,
-        )
-        val folderItems = folders.map { f ->
-            XMBItem(
-                id            = "mf_${f.id}",
-                title         = f.displayName,
-                subtitle      = "${f.trackCount} ${if (f.trackCount == 1) "track" else "tracks"}" +
-                    if (!f.enabled) "  ·  Disabled" else "",
-                type          = XMBItemType.MUSIC_FOLDER,
-                musicFolderId = f.id,
+        return buildList {
+            // Now Playing — only when a track is loaded; clicking returns to the active song.
+            _uiState.value.musicPlayback.track?.let { track ->
+                add(
+                    XMBItem(
+                        id       = NOW_PLAYING_ITEM_ID,
+                        title    = track.displayTitle,
+                        subtitle = listOfNotNull("Now Playing", track.artist).joinToString("  ·  "),
+                        coverUri = track.artUri,
+                        type     = XMBItemType.MUSIC_TRACK,   // renders the album-cover leading tile
+                    )
+                )
+            }
+            add(
+                XMBItem(
+                    id       = PLAYLISTS_ITEM_ID,
+                    title    = "Playlist",
+                    subtitle = "Build and play your own track lists",
+                    type     = XMBItemType.PLAYLIST,
+                )
             )
+            add(
+                XMBItem(
+                    id       = MUSIC_APPS_ITEM_ID,
+                    title    = "Music Apps",
+                    subtitle = "Open your installed music apps",
+                    type     = XMBItemType.MUSIC_APPS,
+                )
+            )
+            // All scanned music collapses into one memory-card item (like All Games). Uses the
+            // physical-media "_default.png" memory-card art rather than the blank console fallback.
+            add(
+                XMBItem(
+                    id       = ALL_MUSIC_ITEM_ID,
+                    title    = "Music",
+                    subtitle = "$totalTracks ${if (totalTracks == 1) "track" else "tracks"}",
+                    coverUri = MEMORY_CARD_ASSET_URI,
+                    type     = XMBItemType.MEMORY_CARD,
+                )
+            )
+            if (folders.isEmpty()) {
+                add(
+                    XMBItem(
+                        id       = ADD_MUSIC_FOLDER_ITEM_ID,
+                        title    = "Add Music Folder",
+                        subtitle = "Pick a folder of music to get started",
+                    )
+                )
+            }
         }
-        return listOf(allMusic) + folderItems + addRow
     }
 
-    private fun List<com.playfieldportal.core.domain.model.MusicTrack>.toMusicItems(): List<XMBItem> =
-        if (isEmpty()) listOf(
+    // Playlist list: one row per playlist + a "Create Playlist" row.
+    private fun playlistRootItems(playlists: List<com.playfieldportal.core.domain.model.Playlist>): List<XMBItem> {
+        val rows = playlists.map { pl ->
             XMBItem(
-                id       = EMPTY_CATEGORY_ITEM_ID,
-                title    = "No music found",
-                subtitle = "Scan this folder in Settings → Music",
-                type     = XMBItemType.EMPTY,
+                id         = "pl_${pl.id}",
+                title      = pl.name,
+                subtitle   = "${pl.trackCount} ${if (pl.trackCount == 1) "track" else "tracks"}",
+                playlistId = pl.id,
+                type       = XMBItemType.PLAYLIST,
             )
-        ) else map { track ->
+        }
+        return rows + XMBItem(
+            id       = CREATE_PLAYLIST_ITEM_ID,
+            title    = "Create Playlist",
+            subtitle = "Start a new playlist",
+        )
+    }
+
+    // Music Apps: the apps the user added (stored under a dedicated pseudo-category so they don't
+    // mix with the built-in Music category), plus an "Add Music Apps" row.
+    private suspend fun musicAppItems(): List<XMBItem> {
+        val apps = appCategoryRepository.appsForCategory(MUSIC_APPS_CATEGORY_ID)
+        val appItems = apps.map { it.toXmbItem(gameRepository.getAppEntry(it.packageName)) }
+        return appItems + XMBItem(
+            id       = ADD_MUSIC_APPS_ITEM_ID,
+            title    = "Add Music Apps",
+            subtitle = "Pick installed apps to show here",
+        )
+    }
+
+    private fun addTracksItem(): XMBItem = XMBItem(
+        id       = ADD_TRACKS_ITEM_ID,
+        title    = "Add Tracks",
+        subtitle = "Pick songs to add to this playlist",
+    )
+
+    private fun List<com.playfieldportal.core.domain.model.MusicTrack>.toMusicItems(): List<XMBItem> =
+        map { track ->
             XMBItem(
                 id            = "mt_${track.id}",
                 title         = track.displayTitle,
-                subtitle      = listOfNotNull(track.artist, track.album)
-                    .joinToString("  ·  ").ifBlank { null },
+                subtitle      = track.artist?.takeIf { it.isNotBlank() },
                 type          = XMBItemType.MUSIC_TRACK,
                 mediaUri      = track.uri,
                 mimeType      = track.mimeType,
+                coverUri      = track.artUri,
                 musicFolderId = track.folderId,
             )
         }
 
-    // Drill into All Music / a folder; resets the cursor and reloads the track list.
-    private fun openMusicFolder(folderId: String?) {
-        if (folderId == null) return
-        _uiState.update { it.copy(selectedMusicFolderId = folderId, selectedItemIndex = 0) }
+    // Caches the on-screen track list (raw + sorted) and pushes the sorted items, or an empty-state
+    // row when there are none. [trailing] rows (e.g. a playlist's "Add Tracks") always show.
+    private fun setMusicTrackItems(
+        tracks: List<MusicTrack>,
+        emptyItem: XMBItem,
+        trailing: List<XMBItem> = emptyList(),
+    ) {
+        currentMusicTracksRaw = tracks
+        val sorted = tracks.trackSorted(_uiState.value.musicSortMode)
+        currentMusicTracks = sorted
+        val items = if (sorted.isEmpty()) listOf(emptyItem) else sorted.toMusicItems()
+        _uiState.update { it.copy(currentItems = items + trailing) }
+    }
+
+    private fun clearMusicTrackCache() {
+        currentMusicTracks = emptyList()
+        currentMusicTracksRaw = emptyList()
+    }
+
+    private fun emptyAllMusicItem(): XMBItem = XMBItem(
+        id       = EMPTY_CATEGORY_ITEM_ID,
+        title    = "No music found",
+        subtitle = "Add a music folder in Settings → Music",
+        type     = XMBItemType.EMPTY,
+    )
+
+    private fun emptyPlaylistItem(): XMBItem = XMBItem(
+        id       = EMPTY_PLAYLIST_ITEM_ID,
+        title    = "This playlist is empty",
+        subtitle = "Add tracks below or from a song's options (△) menu.",
+        type     = XMBItemType.EMPTY,
+    )
+
+    // ── Music navigation (drill into / out of the Music sub-screens) ────────────
+    private fun openMusicView(nav: MusicNav) {
+        _uiState.update { it.copy(musicNav = nav, selectedItemIndex = 0) }
         loadItemsForCategory(currentCategory())
     }
 
-    // Back out of a music track list to the Music root (folder list).
-    private fun closeMusicFolder() {
-        _uiState.update { it.copy(selectedMusicFolderId = null, selectedItemIndex = 0) }
+    private fun closeMusicView() {
+        _uiState.update { it.copy(musicNav = MusicNav.Root, selectedItemIndex = 0) }
         loadItemsForCategory(currentCategory())
+    }
+
+    // Handles A/Cross on any Music row. Returns true when [item] is a Music row it owns. Empty-state
+    // rows are consumed silently; everything else plays its own select/launch sound.
+    private fun handleMusicSelection(item: XMBItem): Boolean = when {
+        item.type == XMBItemType.EMPTY -> true   // not selectable
+        item.id == NOW_PLAYING_ITEM_ID -> {
+            menuSound.play(MenuSound.SELECT)
+            if (_uiState.value.musicPlayback.track != null) _uiState.update { it.copy(musicPlayerVisible = true) }
+            true
+        }
+        item.id == PLAYLISTS_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openMusicView(MusicNav.Playlists); true }
+        item.id == MUSIC_APPS_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openMusicView(MusicNav.MusicApps); true }
+        item.id == ALL_MUSIC_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openMusicView(MusicNav.AllMusic); true }
+        item.id == ADD_MUSIC_FOLDER_ITEM_ID -> {
+            menuSound.play(MenuSound.SELECT)
+            _uiState.update { it.copy(activeSettingsScreen = "settings_music") }
+            true
+        }
+        item.id == CREATE_PLAYLIST_ITEM_ID -> { menuSound.play(MenuSound.SELECT); promptCreatePlaylist(); true }
+        item.id == ADD_MUSIC_APPS_ITEM_ID -> {
+            menuSound.play(MenuSound.SELECT)
+            openAppPicker(AppPickerTarget.CategoryShortcuts(MUSIC_APPS_CATEGORY_ID), "Add Music Apps")
+            true
+        }
+        item.id == ADD_TRACKS_ITEM_ID -> {
+            menuSound.play(MenuSound.SELECT)
+            (_uiState.value.musicNav as? MusicNav.Playlist)?.let { openMusicTrackPicker(it.id) }
+            true
+        }
+        item.type == XMBItemType.MUSIC_TRACK -> { menuSound.play(MenuSound.SELECT); openMusicPlayerForItem(item); true }
+        item.type == XMBItemType.PLAYLIST && item.playlistId != null -> {
+            menuSound.play(MenuSound.SELECT); openMusicView(MusicNav.Playlist(item.playlistId, item.title)); true
+        }
+        // Music-app rows launch the app.
+        _uiState.value.musicNav == MusicNav.MusicApps && item.packageName != null -> {
+            menuSound.play(MenuSound.LAUNCH); appCategoryRepository.launch(item.packageName); true
+        }
+        else -> false
     }
 
     // Selecting a song opens the in-app full player, with the on-screen track list as the queue.
@@ -808,7 +1016,13 @@ class XMBViewModel @Inject constructor(
     fun musicSeekTo(ms: Int) = musicPlayer.seekTo(ms)
     private fun musicSeekBy(deltaMs: Int) = musicPlayer.seekBy(deltaMs)
 
+    // Back / tap-outside on the player only hides the overlay — playback keeps going so the Music
+    // root's "Now Playing" item can return to it. Stopping is explicit (player Y → Stop & Close).
     fun closeMusicPlayer() {
+        _uiState.update { it.copy(musicPlayerVisible = false) }
+    }
+
+    private fun stopAndCloseMusicPlayer() {
         musicPlayer.stop()
         _uiState.update { it.copy(musicPlayerVisible = false) }
     }
@@ -829,6 +1043,24 @@ class XMBViewModel @Inject constructor(
         }
     }
 
+    // Options (△) for the "Now Playing" row in the Music root: toggle playback or stop & close.
+    private fun openNowPlayingContextMenu() {
+        val playback = _uiState.value.musicPlayback
+        if (playback.track == null) return
+        _uiState.update {
+            it.copy(
+                activeContextMenu = XMBContextMenu(
+                    title = playback.track.displayTitle,
+                    items = listOf(
+                        XMBContextMenuItem("music_playpause", if (playback.isPlaying) "Pause" else "Resume"),
+                        XMBContextMenuItem("music_close", "Stop and Close"),
+                    ),
+                    musicTrackId = MUSIC_PLAYER_MENU_MARKER,
+                )
+            )
+        }
+    }
+
     // Keep PFP's own playback going and promote it to a foreground media notification so the user
     // can leave PFP and use other apps; just hide the full-screen player UI.
     private fun musicPlayInBackground() {
@@ -838,34 +1070,178 @@ class XMBViewModel @Inject constructor(
     }
 
     private fun openMusicTrackContextMenu(item: XMBItem) {
-        val menu = XMBContextMenu(
-            title = item.title,
-            items = listOf(
-                XMBContextMenuItem("play", "Play"),
-                XMBContextMenuItem("play_background", "Play in Background"),
-                XMBContextMenuItem("remove_track", "Remove From Library", isDestructive = true),
-            ),
-            musicTrackId = item.id.removePrefix("mt_"),
-        )
-        _uiState.update { it.copy(activeContextMenu = menu) }
-    }
-
-    private fun openMusicFolderContextMenu(item: XMBItem) {
-        val folderId = item.musicFolderId ?: return
-        val folder = _uiState.value.musicFolders.firstOrNull { it.id == folderId }
+        // Inside a playlist, offer "Remove from this Playlist"; the playlist id rides on the menu.
+        val playlist = _uiState.value.musicNav as? MusicNav.Playlist
         val items = buildList {
-            add(XMBContextMenuItem("scan_folder", "Scan Folder"))
-            add(XMBContextMenuItem("rename_folder", "Rename"))
-            add(
-                if (folder?.enabled == false) XMBContextMenuItem("enable_folder", "Enable")
-                else XMBContextMenuItem("disable_folder", "Disable")
-            )
-            add(XMBContextMenuItem("remove_folder", "Remove", isDestructive = true))
+            add(XMBContextMenuItem("play", "Play"))
+            add(XMBContextMenuItem("play_background", "Play in Background"))
+            add(XMBContextMenuItem("add_to_playlist", "Add to Playlist"))
+            if (playlist != null) {
+                add(XMBContextMenuItem("remove_from_playlist", "Remove from this Playlist", isDestructive = true))
+            }
+            add(XMBContextMenuItem("remove_track", "Remove From Library", isDestructive = true))
         }
-        _uiState.update { it.copy(activeContextMenu = XMBContextMenu(item.title, items, musicFolderId = folderId)) }
+        _uiState.update { it.copy(
+            activeContextMenu = XMBContextMenu(
+                title        = item.title,
+                items        = items,
+                musicTrackId = item.id.removePrefix("mt_"),
+                playlistId   = playlist?.id,
+            )
+        )}
     }
 
-    // Music context-menu actions, dispatched from activateContextMenuItem.
+    // Options menu for a playlist row: open / rename / add tracks / delete.
+    private fun openPlaylistRowContextMenu(playlistId: Long, name: String) {
+        val items = listOf(
+            XMBContextMenuItem("open_playlist", "Open"),
+            XMBContextMenuItem("add_tracks", "Add Tracks"),
+            XMBContextMenuItem("rename_playlist", "Rename Playlist"),
+            XMBContextMenuItem("delete_playlist", "Delete Playlist", isDestructive = true),
+        )
+        _uiState.update { it.copy(activeContextMenu = XMBContextMenu(name, items, playlistId = playlistId)) }
+    }
+
+    // Second-level menu: the playlists a track can be added to (checkmarks show membership), plus
+    // "Create New Playlist". Stays open while toggling so several can be picked at once.
+    private fun openPlaylistPicker(trackId: String, selectIndex: Int = 0) {
+        viewModelScope.launch {
+            val playlists = musicRepository.observePlaylists().first()
+            val memberOf = musicRepository.getPlaylistIdsForTrack(trackId).toSet()
+            val items = buildList {
+                playlists.forEach { pl ->
+                    add(XMBContextMenuItem("pl_${pl.id}", pl.name, checked = pl.id in memberOf))
+                }
+                add(XMBContextMenuItem("pl_new", "Create New Playlist"))
+            }
+            _uiState.update { it.copy(
+                activeContextMenu = XMBContextMenu(
+                    title                 = "Add to Playlist",
+                    items                 = items,
+                    selectedIndex         = selectIndex.coerceIn(0, items.size - 1),
+                    playlistPickerTrackId = trackId,
+                )
+            )}
+        }
+    }
+
+    // Opens the right options (△) menu for a Music item. Returns true when [item] is a music row
+    // it owns (track / playlist / music-app), so the generic Y handler can stop. The Now Playing
+    // row is consumed without a menu (its options live in the full player).
+    private fun openMusicContextMenu(item: XMBItem): Boolean {
+        if (currentCategory()?.id != BuiltInCategory.MUSIC) return false
+        return when {
+            item.id == NOW_PLAYING_ITEM_ID -> { openNowPlayingContextMenu(); true }
+            item.type == XMBItemType.MUSIC_TRACK -> { openMusicTrackContextMenu(item); true }
+            item.type == XMBItemType.PLAYLIST && item.playlistId != null -> {
+                openPlaylistRowContextMenu(item.playlistId, item.title); true
+            }
+            _uiState.value.musicNav == MusicNav.MusicApps && item.packageName != null -> {
+                openAppContextMenu(item, categoryIdOverride = MUSIC_APPS_CATEGORY_ID); true
+            }
+            else -> false
+        }
+    }
+
+    // ── Playlist name dialog (create / rename) ──────────────────────────────────
+    private fun promptCreatePlaylist(forTrackId: String? = null) {
+        _uiState.update { it.copy(
+            playlistNameDialog = PlaylistNameDialogState(title = "New Playlist", forTrackId = forTrackId)
+        )}
+    }
+
+    private fun promptRenamePlaylist(playlistId: Long) {
+        val name = _uiState.value.currentItems.firstOrNull { it.playlistId == playlistId }?.title.orEmpty()
+        _uiState.update { it.copy(
+            playlistNameDialog = PlaylistNameDialogState(
+                title = "Rename Playlist",
+                initialText = name,
+                renamePlaylistId = playlistId,
+            )
+        )}
+    }
+
+    fun onConfirmPlaylistName(name: String) {
+        val dialog = _uiState.value.playlistNameDialog ?: return
+        _uiState.update { it.copy(playlistNameDialog = null) }
+        if (name.isBlank()) return
+        viewModelScope.launch {
+            val renameId = dialog.renamePlaylistId
+            if (renameId != null) {
+                musicRepository.renamePlaylist(renameId, name)
+            } else {
+                val id = musicRepository.createPlaylist(name)
+                dialog.forTrackId?.let { musicRepository.addTrackToPlaylist(id, it) }
+            }
+        }
+    }
+
+    fun onCancelPlaylistName() {
+        _uiState.update { it.copy(playlistNameDialog = null) }
+    }
+
+    // ── "Add Tracks" picker (inside a playlist) ─────────────────────────────────
+    private fun openMusicTrackPicker(playlistId: Long) {
+        viewModelScope.launch {
+            val playlist = musicRepository.observePlaylists().first().firstOrNull { it.id == playlistId }
+            // Offer tracks not already in the playlist.
+            val inPlaylist = musicRepository.observePlaylistTracks(playlistId).first().map { it.id }.toSet()
+            val tracks = musicRepository.observeAllTracks().first()
+                .filterNot { it.id in inPlaylist }
+                .trackSorted(_uiState.value.musicSortMode)
+            _uiState.update { it.copy(
+                musicTrackPicker = MusicTrackPickerState(
+                    playlistId   = playlistId,
+                    playlistName = playlist?.name ?: "Playlist",
+                    tracks       = tracks,
+                )
+            )}
+        }
+    }
+
+    private fun moveMusicTrackPicker(delta: Int) {
+        val picker = _uiState.value.musicTrackPicker ?: return
+        val maxIndex = picker.tracks.size   // 0 = Confirm row, 1..size = tracks
+        val next = (picker.selectedIndex + delta).coerceIn(0, maxIndex)
+        _uiState.update { it.copy(musicTrackPicker = picker.copy(selectedIndex = next)) }
+    }
+
+    private fun activateMusicTrackPicker() {
+        val picker = _uiState.value.musicTrackPicker ?: return
+        if (picker.selectedIndex == 0) {
+            confirmMusicTrackPicker()
+        } else {
+            val track = picker.tracks.getOrNull(picker.selectedIndex - 1) ?: return
+            val selected = if (track.id in picker.selected) picker.selected - track.id
+                           else picker.selected + track.id
+            _uiState.update { it.copy(musicTrackPicker = picker.copy(selected = selected)) }
+        }
+    }
+
+    fun onMusicTrackPickerActivatedAt(index: Int) {
+        _uiState.update { it.copy(musicTrackPicker = it.musicTrackPicker?.copy(selectedIndex = index)) }
+        activateMusicTrackPicker()
+    }
+
+    fun onMusicTrackPickerConfirm() = confirmMusicTrackPicker()
+
+    fun closeMusicTrackPicker() {
+        _uiState.update { it.copy(musicTrackPicker = null) }
+    }
+
+    private fun confirmMusicTrackPicker() {
+        val picker = _uiState.value.musicTrackPicker ?: return
+        val playlistId = picker.playlistId
+        val trackIds = picker.tracks.map { it.id }.filter { it in picker.selected }
+        closeMusicTrackPicker()
+        if (trackIds.isEmpty()) return
+        viewModelScope.launch {
+            trackIds.forEach { musicRepository.addTrackToPlaylist(playlistId, it) }
+        }
+    }
+
+    // Music folder context-menu actions, dispatched from activateContextMenuItem. Folder management
+    // now lives in Settings → Music; this is retained for the scan/enable/remove paths it backs.
     private fun handleMusicFolderAction(folderId: String, itemId: String) {
         when (itemId) {
             "scan_folder" -> scanMusicFolder(folderId)
@@ -876,7 +1252,7 @@ class XMBViewModel @Inject constructor(
         }
     }
 
-    private fun handleMusicTrackAction(trackId: String, itemId: String) {
+    private fun handleMusicTrackAction(trackId: String, itemId: String, playlistId: Long?) {
         when (itemId) {
             // Play in the in-app full player, queuing from the current on-screen list.
             "play" -> {
@@ -895,9 +1271,29 @@ class XMBViewModel @Inject constructor(
                     com.playfieldportal.feature.xmb.music.MusicPlaybackService.start(context)
                 }
             }
+            "add_to_playlist" -> openPlaylistPicker(trackId)
+            "remove_from_playlist" -> if (playlistId != null) {
+                appAction { musicRepository.removeTrackFromPlaylist(playlistId, trackId) }
+            }
             "remove_track" -> appAction {
                 val track = musicRepository.getTrack(trackId) ?: return@appAction
                 removeSingleTrack(track.folderId, trackId)
+            }
+        }
+    }
+
+    // Playlist row actions, dispatched from activateContextMenuItem.
+    private fun handlePlaylistRowAction(playlistId: Long, itemId: String) {
+        when (itemId) {
+            "open_playlist"   -> {
+                val name = _uiState.value.currentItems.firstOrNull { it.playlistId == playlistId }?.title.orEmpty()
+                openMusicView(MusicNav.Playlist(playlistId, name))
+            }
+            "add_tracks"      -> openMusicTrackPicker(playlistId)
+            "rename_playlist" -> promptRenamePlaylist(playlistId)
+            "delete_playlist" -> appAction {
+                musicRepository.deletePlaylist(playlistId)
+                if ((_uiState.value.musicNav as? MusicNav.Playlist)?.id == playlistId) closeMusicView()
             }
         }
     }
@@ -930,12 +1326,13 @@ class XMBViewModel @Inject constructor(
     // ── Sort (X / Square) ─────────────────────────────────────────────────────
 
     // The sort modes valid for the list currently on screen, or null when it isn't sortable
-    // (the Games memory-card root, the Music folder root, and app sections don't sort).
+    // (the Games memory-card root, the Music root, playlist list, and app sections don't sort).
     private fun activeSortContext(): List<XmbSortMode>? {
         val cat = currentCategory() ?: return null
         val s = _uiState.value
         return when {
-            cat.id == BuiltInCategory.MUSIC && s.selectedMusicFolderId != null -> MUSIC_SORTS
+            cat.id == BuiltInCategory.MUSIC &&
+                (s.musicNav == MusicNav.AllMusic || s.musicNav is MusicNav.Playlist) -> MUSIC_SORTS
             cat.id == BuiltInCategory.GAMES &&
                 (s.selectedPlatformId != null || s.selectedCollectionId != null) -> GAME_SORTS
             cat.isGamingCategory -> GAME_SORTS
@@ -949,7 +1346,22 @@ class XMBViewModel @Inject constructor(
         val current = if (isMusic) _uiState.value.musicSortMode else _uiState.value.gameSortMode
         val next = cycle[(cycle.indexOf(current).coerceAtLeast(0) + 1) % cycle.size]
         menuSound.play(MenuSound.SYSTEM_BROWSE)
-        _uiState.update { if (isMusic) it.copy(musicSortMode = next) else it.copy(gameSortMode = next) }
+        // Re-sorting moves the cursor back to the top item so the user sees the new ordering from
+        // the start, and bumps the scroll token so the list snaps to the top every time (not just
+        // the first sort after the cursor moved).
+        _uiState.update {
+            (if (isMusic) it.copy(musicSortMode = next) else it.copy(gameSortMode = next))
+                .copy(selectedItemIndex = 0, scrollToTopToken = it.scrollToTopToken + 1)
+        }
+        // Music track lists re-sort instantly from the cached raw list — no DB round-trip, so the
+        // reorder is always visible immediately. A playlist keeps its trailing "Add Tracks" row.
+        if (isMusic) {
+            val trailing = if (_uiState.value.musicNav is MusicNav.Playlist) listOf(addTracksItem()) else emptyList()
+            val emptyItem = if (_uiState.value.musicNav is MusicNav.Playlist) emptyPlaylistItem() else emptyAllMusicItem()
+            setMusicTrackItems(currentMusicTracksRaw, emptyItem, trailing)
+            _uiState.update { it.copy(sortLabel = currentSortLabel()) }
+            return
+        }
         loadItemsForCategory(currentCategory())
     }
 
@@ -1154,6 +1566,20 @@ class XMBViewModel @Inject constructor(
             return
         }
 
+        // ── "Add Tracks" music picker captures ALL input when open ─────────────
+        if (state.musicTrackPicker != null) {
+            when (action) {
+                GamepadAction.NAVIGATE_UP   -> moveMusicTrackPicker(-1)
+                GamepadAction.NAVIGATE_DOWN -> moveMusicTrackPicker(+1)
+                GamepadAction.SELECT        -> activateMusicTrackPicker()
+                GamepadAction.HOME          -> confirmMusicTrackPicker()
+                GamepadAction.BACK,
+                GamepadAction.LONG_PRESS    -> closeMusicTrackPicker()
+                else -> Unit
+            }
+            return
+        }
+
         // ── Game picker captures ALL input when open ───────────────────────────
         if (state.gamePickerCategoryId != null) {
             when (action) {
@@ -1221,6 +1647,10 @@ class XMBViewModel @Inject constructor(
         }
         if (state.collectionNameDialog != null) {
             if (action == GamepadAction.BACK) onCancelCollectionName()
+            return
+        }
+        if (state.playlistNameDialog != null) {
+            if (action == GamepadAction.BACK) onCancelPlaylistName()
             return
         }
         // Read-only info dialog (e.g. file location) — A or B closes it.
@@ -1300,7 +1730,7 @@ class XMBViewModel @Inject constructor(
             GamepadAction.BACK       -> {
                 menuSound.play(MenuSound.BACK)
                 when {
-                    state.selectedMusicFolderId != null -> closeMusicFolder()
+                    state.musicNav != MusicNav.Root -> closeMusicView()
                     state.selectedPlatformId != null || state.selectedCollectionId != null -> closePlatformFolder()
                     else -> onOpenAppDrawer()
                 }
@@ -1310,9 +1740,7 @@ class XMBViewModel @Inject constructor(
                 // Y / Triangle — open context menu for whichever item type has focus
                 val item = state.currentItems.getOrNull(state.selectedItemIndex)
                 when {
-                    item?.type == XMBItemType.MUSIC_TRACK -> openMusicTrackContextMenu(item)
-                    item?.type == XMBItemType.MUSIC_FOLDER && item.musicFolderId != ALL_MUSIC_FOLDER_ID ->
-                        openMusicFolderContextMenu(item)
+                    item != null && openMusicContextMenu(item) -> Unit
                     item?.gameId != null -> openGameContextMenu(item)
                     item?.collectionId != null && item.type == XMBItemType.COLLECTION -> openCollectionRowContextMenu(item.collectionId)
                     item?.platformId != null -> openPlatformContextMenu(item.platformId)
@@ -1457,9 +1885,9 @@ class XMBViewModel @Inject constructor(
         }
     }
 
-    private fun openAppContextMenu(item: XMBItem) {
+    private fun openAppContextMenu(item: XMBItem, categoryIdOverride: String? = null) {
         val pkg = item.packageName ?: return
-        val categoryId = currentCategory()?.id
+        val categoryId = categoryIdOverride ?: currentCategory()?.id
         val items = buildList {
             add(XMBContextMenuItem("launch",   "Launch"))
             add(XMBContextMenuItem("edit_app", "Edit App Details"))
@@ -1597,7 +2025,34 @@ class XMBViewModel @Inject constructor(
             return
         }
 
+        // ── Playlist picker submenu — handled before closing so toggles stay in place ──
+        if (menu.playlistPickerTrackId != null) {
+            val trackId = menu.playlistPickerTrackId
+            val keepIndex = menu.selectedIndex
+            when {
+                itemId == "pl_new" -> {
+                    closeContextMenu()
+                    promptCreatePlaylist(forTrackId = trackId)
+                }
+                itemId.startsWith("pl_") -> {
+                    val playlistId = itemId.removePrefix("pl_").toLongOrNull() ?: return
+                    viewModelScope.launch {
+                        musicRepository.toggleTrackInPlaylist(playlistId, trackId)
+                        // Re-open so the checkmark reflects the new membership.
+                        openPlaylistPicker(trackId, keepIndex)
+                    }
+                }
+            }
+            return
+        }
+
         closeContextMenu()
+
+        // ── Playlist row options menu ──────────────────────────────────────────
+        if (menu.playlistId != null && menu.musicTrackId == null) {
+            handlePlaylistRowAction(menu.playlistId, itemId)
+            return
+        }
 
         // ── Collection row options menu (and the Move-to-Category submenu) ──────
         if (menu.collectionRowId != null) {
@@ -1629,9 +2084,10 @@ class XMBViewModel @Inject constructor(
         when {
             menu.musicTrackId == MUSIC_PLAYER_MENU_MARKER -> when (itemId) {
                 "music_background" -> musicPlayInBackground()
-                "music_close"      -> closeMusicPlayer()
+                "music_playpause"  -> musicPlayPause()
+                "music_close"      -> stopAndCloseMusicPlayer()
             }
-            menu.musicTrackId != null -> handleMusicTrackAction(menu.musicTrackId, itemId)
+            menu.musicTrackId != null -> handleMusicTrackAction(menu.musicTrackId, itemId, menu.playlistId)
             menu.musicFolderId != null -> handleMusicFolderAction(menu.musicFolderId, itemId)
             menu.platformId != null -> when (itemId) {
                 "find_games"       -> openAppPicker(AppPickerTarget.AndroidGames(menu.platformId), "Find Games")
@@ -1856,10 +2312,34 @@ class XMBViewModel @Inject constructor(
         viewModelScope.launch {
             when (target) {
                 is AppPickerTarget.AndroidGames -> importAndroidGames(target.platformId, packages)
-                is AppPickerTarget.CategoryShortcuts ->
+                is AppPickerTarget.CategoryShortcuts -> {
+                    // Music Apps live under a synthetic category that isn't seeded in the categories
+                    // table; category_items has a FK to categories, so the row must exist first or
+                    // the insert throws (crash). Seed it (hidden) before adding.
+                    if (target.categoryId == MUSIC_APPS_CATEGORY_ID) ensureMusicAppsCategory()
                     packages.forEach { pkg -> appCategoryRepository.addToCategory(pkg, target.categoryId) }
+                }
             }
         }
+    }
+
+    // Creates the hidden pseudo-category that backs Music Apps the first time it's used, so the
+    // category_items foreign key is satisfied. Hidden (is_visible = false) so it never shows in the
+    // XMB bar or category pickers. Only inserted when absent — never overwritten (a REPLACE would
+    // cascade-delete its items).
+    private suspend fun ensureMusicAppsCategory() {
+        val exists = categoryRepository.observeAll().first().any { it.id == MUSIC_APPS_CATEGORY_ID }
+        if (exists) return
+        categoryRepository.upsert(
+            Category(
+                id        = MUSIC_APPS_CATEGORY_ID,
+                name      = "Music Apps",
+                iconKey   = "ic_music",
+                type      = CategoryType.BUILT_IN,
+                position  = 900,
+                isVisible = false,
+            )
+        )
     }
 
     // ── Game picker (for gaming categories) ────────────────────────────────────
@@ -2079,7 +2559,7 @@ class XMBViewModel @Inject constructor(
     fun onCategorySelected(index: Int) {
         if (index != _uiState.value.selectedCategoryIndex) menuSound.play(MenuSound.SYSTEM_BROWSE)
         val category = _uiState.value.categories.getOrNull(index)
-        _uiState.update { it.copy(selectedCategoryIndex = index, selectedItemIndex = 0, selectedPlatformId = null, selectedCollectionId = null, selectedMusicFolderId = null) }
+        _uiState.update { it.copy(selectedCategoryIndex = index, selectedItemIndex = 0, selectedPlatformId = null, selectedCollectionId = null, musicNav = MusicNav.Root) }
         tintWaveForCategory(category)
         loadItemsForCategory(category)
     }
@@ -2101,7 +2581,7 @@ class XMBViewModel @Inject constructor(
         if (s.hasBlockingOverlay) return
         menuSound.play(MenuSound.BACK)
         when {
-            s.selectedMusicFolderId != null -> closeMusicFolder()
+            s.musicNav != MusicNav.Root -> closeMusicView()
             s.selectedPlatformId != null || s.selectedCollectionId != null -> closePlatformFolder()
             else -> onOpenAppDrawer()
         }
@@ -2114,17 +2594,9 @@ class XMBViewModel @Inject constructor(
         val category = _uiState.value.categories.getOrNull(_uiState.value.selectedCategoryIndex)
         val item     = _uiState.value.currentItems.getOrNull(index)
 
-        // Music rows: a track launches the external player; a folder drills in; the setup row
-        // opens Settings → Music. Each owns its own sound and returns early.
-        when {
-            item?.type == XMBItemType.MUSIC_TRACK -> { menuSound.play(MenuSound.SELECT); openMusicPlayerForItem(item); return }
-            item?.type == XMBItemType.MUSIC_FOLDER -> { menuSound.play(MenuSound.SELECT); openMusicFolder(item.musicFolderId); return }
-            item?.id == ADD_MUSIC_FOLDER_ITEM_ID -> {
-                menuSound.play(MenuSound.SELECT)
-                _uiState.update { it.copy(activeSettingsScreen = "settings_music") }
-                return
-            }
-        }
+        // Music rows are handled together (static items, the All Music card, playlists, tracks,
+        // and the various add/setup rows), each owning its sound and returning early.
+        if (category?.id == BuiltInCategory.MUSIC && item != null && handleMusicSelection(item)) return
 
         // Sound: launch for items that boot something immediately; select for opening a folder,
         // detail, picker, or settings; silent for non-selectable placeholder rows.
@@ -2225,9 +2697,7 @@ class XMBViewModel @Inject constructor(
     fun onItemLongPress(index: Int) {
         val item = _uiState.value.currentItems.getOrNull(index)
         when {
-            item?.type == XMBItemType.MUSIC_TRACK -> openMusicTrackContextMenu(item)
-            item?.type == XMBItemType.MUSIC_FOLDER && item.musicFolderId != ALL_MUSIC_FOLDER_ID ->
-                openMusicFolderContextMenu(item)
+            item != null && openMusicContextMenu(item) -> Unit
             item?.gameId != null -> openGameContextMenu(item)
             item?.collectionId != null && item.type == XMBItemType.COLLECTION -> openCollectionRowContextMenu(item.collectionId)
             item?.platformId != null -> openPlatformContextMenu(item.platformId)
@@ -2638,7 +3108,20 @@ class XMBViewModel @Inject constructor(
         // Music category synthetic rows / drill ids.
         private const val ADD_MUSIC_FOLDER_ITEM_ID = "add_music_folder"
         private const val ALL_MUSIC_ITEM_ID = "all_music"
-        private const val ALL_MUSIC_FOLDER_ID = "__all_music__"
+        private const val NOW_PLAYING_ITEM_ID = "now_playing"
+        private const val PLAYLISTS_ITEM_ID = "playlists"
+        private const val MUSIC_APPS_ITEM_ID = "music_apps_item"
+        private const val ADD_MUSIC_APPS_ITEM_ID = "add_music_apps"
+        private const val CREATE_PLAYLIST_ITEM_ID = "create_playlist"
+        private const val ADD_TRACKS_ITEM_ID = "add_tracks"
+        private const val EMPTY_PLAYLIST_ITEM_ID = "empty_playlist"
+        // Pseudo-category id the user's chosen Music Apps are stored under (kept apart from the
+        // built-in "music" category so the two never mix).
+        private const val MUSIC_APPS_CATEGORY_ID = "music_apps"
+        // Generic memory-card art for the "Music" (All Music) item — the physical-media default
+        // PNG, loaded from assets via Coil (same convention as PhysicalMediaIcon).
+        private const val MEMORY_CARD_ASSET_URI =
+            "file:///android_asset/systems/physical-media/_default.png"
         // Sentinel in XMBContextMenu.musicTrackId marking the in-app player's own options menu.
         private const val MUSIC_PLAYER_MENU_MARKER = "__music_player__"
 

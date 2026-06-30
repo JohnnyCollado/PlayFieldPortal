@@ -5,6 +5,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -20,6 +21,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LibraryMusic
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.QueueMusic
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -38,6 +44,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.floor
+import coil.compose.AsyncImage
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.playfieldportal.core.ui.icons.GameIconStyle
 import com.playfieldportal.feature.xmb.viewmodel.XMBItem
@@ -72,9 +79,20 @@ fun XMBItemList(
     onItemSelected: (Int) -> Unit,
     onItemLongPress: (Int) -> Unit,
     iconStyle: GameIconStyle = GameIconStyle.PSP_RECTANGLE,
+    // Increments when the list must snap to the top regardless of cursor position (e.g. a sort
+    // cycle). Necessary because keyed reorders otherwise keep the viewport anchored to the old item.
+    scrollToTopToken: Int = 0,
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
+
+    // Snap to the top on every sort, even when the cursor was already at index 0 (so the selection
+    // scroll effect below wouldn't re-fire). Skips the initial composition (token 0).
+    LaunchedEffect(scrollToTopToken) {
+        if (scrollToTopToken > 0 && items.isNotEmpty()) {
+            listState.scrollToItem(0)
+        }
+    }
 
     // Size the list to a whole number of rows (BoxWithConstraints gives the height available from
     // the parent), then scroll on row boundaries — so only fully-visible rows ever render. No fade,
@@ -195,6 +213,66 @@ private fun XmbItemLeadingIcon(
     iconStyle: GameIconStyle,
 ) {
     when {
+        // Music tracks (and the "Now Playing" row) show a square album cover, falling back to a
+        // framed music-note glyph when the track had no embedded art. The 58dp box keeps every
+        // track's title left-aligned with the small-icon rows above/below.
+        item.type == XMBItemType.MUSIC_TRACK -> {
+            Box(
+                contentAlignment = Alignment.CenterStart,
+                modifier = Modifier.width(58.dp),
+            ) {
+                if (item.coverUri != null) {
+                    AsyncImage(
+                        model = item.coverUri,
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp).clip(RoundedCornerShape(6.dp)),
+                    )
+                } else {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(Color(0xFF1B1B27)),
+                    ) {
+                        Icon(
+                            Icons.Filled.MusicNote,
+                            contentDescription = null,
+                            tint = SecondaryText,
+                            modifier = Modifier.size(26.dp),
+                        )
+                    }
+                }
+            }
+        }
+        // Playlist rows (and the static "Playlist" item) use a queue-music glyph.
+        item.type == XMBItemType.PLAYLIST -> {
+            Box(
+                contentAlignment = Alignment.CenterStart,
+                modifier = Modifier.width(58.dp),
+            ) {
+                Icon(
+                    Icons.Filled.QueueMusic,
+                    contentDescription = null,
+                    tint = InactiveText,
+                    modifier = Modifier.size(34.dp),
+                )
+            }
+        }
+        // The static "Music Apps" item uses a music-library glyph.
+        item.type == XMBItemType.MUSIC_APPS -> {
+            Box(
+                contentAlignment = Alignment.CenterStart,
+                modifier = Modifier.width(58.dp),
+            ) {
+                Icon(
+                    Icons.Filled.LibraryMusic,
+                    contentDescription = null,
+                    tint = InactiveText,
+                    modifier = Modifier.size(34.dp),
+                )
+            }
+        }
         item.type == XMBItemType.ALL_GAMES ||
             item.type == XMBItemType.FAVORITES ||
             item.type == XMBItemType.MEMORY_CARD ||
@@ -203,21 +281,31 @@ private fun XmbItemLeadingIcon(
                 contentAlignment = Alignment.CenterStart,
                 modifier = Modifier.width(58.dp),
             ) {
-                // Memory-card rows show their matching console icon. All Games gets the generic
-                // cartridge art (sysicon_allgames) and Favorites the star (sysicon_favorites), both
-                // to stand apart from the Game controller; any other unknown row (Collections,
-                // unmatched console) falls back to sysicon_default.
-                val iconKey = when (item.type) {
-                    XMBItemType.MEMORY_CARD -> item.platformId
-                    XMBItemType.ALL_GAMES   -> "allgames"
-                    XMBItemType.FAVORITES   -> "favorites"
-                    else                    -> null
+                if (item.type == XMBItemType.MEMORY_CARD && item.coverUri != null) {
+                    // A memory-card row with explicit art (e.g. the "Music" item) loads it directly
+                    // — used for the physical-media memory-card PNG served from assets.
+                    AsyncImage(
+                        model = item.coverUri,
+                        contentDescription = null,
+                        modifier = Modifier.size(40.dp),
+                    )
+                } else {
+                    // Memory-card rows show their matching console icon. All Games gets the generic
+                    // cartridge art (sysicon_allgames) and Favorites the star (sysicon_favorites),
+                    // both to stand apart from the Game controller; any other unknown row
+                    // (Collections, unmatched console) falls back to sysicon_default.
+                    val iconKey = when (item.type) {
+                        XMBItemType.MEMORY_CARD -> item.platformId
+                        XMBItemType.ALL_GAMES   -> "allgames"
+                        XMBItemType.FAVORITES   -> "favorites"
+                        else                    -> null
+                    }
+                    Image(
+                        painter = painterResource(rememberConsoleIconId(iconKey)),
+                        contentDescription = null,
+                        modifier = Modifier.size(40.dp),
+                    )
                 }
-                Image(
-                    painter = painterResource(rememberConsoleIconId(iconKey)),
-                    contentDescription = null,
-                    modifier = Modifier.size(40.dp),
-                )
             }
         }
         item.gameId != null -> {

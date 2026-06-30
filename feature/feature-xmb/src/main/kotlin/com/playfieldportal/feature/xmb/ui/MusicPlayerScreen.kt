@@ -34,8 +34,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.playfieldportal.feature.xmb.music.MusicPlaybackState
 
 private val Backdrop   = Color(0xF20A0A12)
@@ -73,7 +75,7 @@ fun MusicPlayerScreen(
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // Artwork placeholder (no album art extracted yet) — a framed music glyph.
+            // Album art when the track had embedded artwork; otherwise a framed music glyph.
             Box(
                 modifier = Modifier
                     .fillMaxWidth(0.5f)
@@ -82,7 +84,17 @@ fun MusicPlayerScreen(
                     .background(Color(0xFF15151F)),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(Icons.Filled.MusicNote, contentDescription = null, tint = Secondary, modifier = Modifier.size(72.dp))
+                val art = track?.artUri
+                if (art != null) {
+                    AsyncImage(
+                        model = art,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                } else {
+                    Icon(Icons.Filled.MusicNote, contentDescription = null, tint = Secondary, modifier = Modifier.size(72.dp))
+                }
             }
 
             Spacer(Modifier.height(20.dp))

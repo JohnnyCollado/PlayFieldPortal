@@ -98,6 +98,11 @@ fun XMBShellContainer(
         onCancelAppRename = viewModel::onCancelAppRename,
         onConfirmCollectionName = viewModel::onConfirmCollectionName,
         onCancelCollectionName = viewModel::onCancelCollectionName,
+        onConfirmPlaylistName = viewModel::onConfirmPlaylistName,
+        onCancelPlaylistName = viewModel::onCancelPlaylistName,
+        onMusicTrackPickerActivatedAt = viewModel::onMusicTrackPickerActivatedAt,
+        onMusicTrackPickerConfirm = viewModel::onMusicTrackPickerConfirm,
+        onMusicTrackPickerDismiss = viewModel::closeMusicTrackPicker,
         onAppPickerActivatedAt = viewModel::onAppPickerActivatedAt,
         onAppPickerConfirm = viewModel::onAppPickerConfirm,
         onAppPickerDismiss = viewModel::closeAppPicker,
@@ -149,6 +154,11 @@ fun XMBShell(
     onCancelAppRename: () -> Unit = {},
     onConfirmCollectionName: (String) -> Unit = {},
     onCancelCollectionName: () -> Unit = {},
+    onConfirmPlaylistName: (String) -> Unit = {},
+    onCancelPlaylistName: () -> Unit = {},
+    onMusicTrackPickerActivatedAt: (Int) -> Unit = {},
+    onMusicTrackPickerConfirm: () -> Unit = {},
+    onMusicTrackPickerDismiss: () -> Unit = {},
     onAppPickerActivatedAt: (Int) -> Unit = {},
     onAppPickerConfirm: () -> Unit = {},
     onAppPickerDismiss: () -> Unit = {},
@@ -268,6 +278,7 @@ fun XMBShell(
                             onItemSelected = onItemSelected,
                             onItemLongPress = onItemLongPress,
                             iconStyle = uiState.iconStyle,
+                            scrollToTopToken = uiState.scrollToTopToken,
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
@@ -365,11 +376,30 @@ fun XMBShell(
                 )
             }
 
+            uiState.playlistNameDialog?.let { dialog ->
+                CollectionNameDialog(
+                    title = dialog.title,
+                    initialText = dialog.initialText,
+                    onConfirm = onConfirmPlaylistName,
+                    onCancel = onCancelPlaylistName,
+                )
+            }
+
             uiState.infoDialog?.let { dialog ->
                 InfoDialog(
                     title = dialog.title,
                     message = dialog.message,
                     onDismiss = onDismissInfoDialog,
+                )
+            }
+
+            uiState.musicTrackPicker?.let { picker ->
+                MusicTrackPicker(
+                    state = picker,
+                    onActivateAt = onMusicTrackPickerActivatedAt,
+                    onConfirm = onMusicTrackPickerConfirm,
+                    onDismiss = onMusicTrackPickerDismiss,
+                    modifier = Modifier.fillMaxSize(),
                 )
             }
 
