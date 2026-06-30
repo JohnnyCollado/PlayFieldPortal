@@ -104,6 +104,13 @@
             </intent-filter>
         </receiver>
 
+        <!-- Handles the Add/Ignore decision for a captured shortcut. NOT exported and has no
+             intent-filter, so only PFP's own notification PendingIntents can trigger it — the
+             sending app cannot forge a confirmation. -->
+        <receiver
+            android:name=".receiver.ShortcutConfirmReceiver"
+            android:exported="false" />
+
         <!-- ═══ WorkManager ══════════════════════════════════════════════ -->
         <!-- On-demand init: PFPApplication is the Configuration.Provider (Hilt-Work), so the -->
         <!-- default WorkManagerInitializer must be removed from the startup provider.        -->
