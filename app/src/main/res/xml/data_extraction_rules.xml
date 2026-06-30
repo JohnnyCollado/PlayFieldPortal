@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 12+ (API 31+) backup/transfer rules. PFP's DataStore holds user-entered API secrets
+  (IGDB client secret, SteamGridDB / TheGamesDB keys) and the Room library DB, so we keep all app
+  data on-device: no cloud backup, no device-to-device transfer. Re-enter keys after a device move.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" path="." />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" path="." />
+    </device-transfer>
+</data-extraction-rules>

@@ -3,6 +3,7 @@ package com.playfieldportal.launcher.receiver
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import com.playfieldportal.core.common.security.ShortcutIntentSanitizer
 import com.playfieldportal.core.data.repository.CollectionRepository
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GameContentType
@@ -44,8 +45,15 @@ class InstallShortcutReceiver : BroadcastReceiver() {
         if (intent.action != ACTION_INSTALL_SHORTCUT) return
 
         @Suppress("DEPRECATION")
-        val launch = intent.getParcelableExtra<Intent>(Intent.EXTRA_SHORTCUT_INTENT) ?: run {
+        val rawLaunch = intent.getParcelableExtra<Intent>(Intent.EXTRA_SHORTCUT_INTENT) ?: run {
             Timber.w("INSTALL_SHORTCUT received with no EXTRA_SHORTCUT_INTENT — ignoring")
+            return
+        }
+        // The broadcast is unauthenticated (any app can send it), so harden the supplied intent
+        // before storing it: strip URI-permission grants and pin a real component. This blocks a
+        // crafted shortcut from later coercing PFP into granting file access (confused deputy).
+        val launch = ShortcutIntentSanitizer.sanitize(rawLaunch, context.packageManager) ?: run {
+            Timber.w("INSTALL_SHORTCUT intent could not be made safe — ignoring")
             return
         }
         @Suppress("DEPRECATION")

@@ -3218,7 +3218,12 @@ class XMBViewModel @Inject constructor(
     // Launches a captured legacy INSTALL_SHORTCUT entry by parsing its stored intent.
     private fun launchStoredIntent(intentUri: String, label: String) {
         runCatching {
-            val launch = android.content.Intent.parseUri(intentUri, android.content.Intent.URI_INTENT_SCHEME)
+            val parsed = android.content.Intent.parseUri(intentUri, android.content.Intent.URI_INTENT_SCHEME)
+            // Defense in depth: re-harden at launch (also cleans entries captured before the
+            // sanitizer existed) so a stored intent can never grant file access or be redirected.
+            val launch = (com.playfieldportal.core.common.security.ShortcutIntentSanitizer
+                .sanitize(parsed, context.packageManager)
+                ?: error("Captured shortcut is not safe to launch"))
                 .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(launch)
         }.onFailure { e ->

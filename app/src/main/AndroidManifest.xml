@@ -49,7 +49,10 @@
         android:icon="@mipmap/ic_launcher"
         android:theme="@style/Theme.PFP"
         android:supportsRtl="true"
-        android:hardwareAccelerated="true">
+        android:hardwareAccelerated="true"
+        android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:allowBackup="false">
 
         <!-- ═══ Launcher Activity ═══════════════════════════════════════ -->
         <activity
