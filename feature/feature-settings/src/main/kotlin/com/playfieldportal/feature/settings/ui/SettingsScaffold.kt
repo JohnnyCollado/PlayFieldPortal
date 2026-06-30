@@ -228,10 +228,12 @@ fun SettingsScaffold(
         Box(
             modifier = modifier
                 .fillMaxSize()
+                // Semi-transparent scrim so the XMB wave/wallpaper background stays visible behind
+                // Settings (the XMB foreground is hidden by XMBShell while a Settings screen is up).
                 .background(
                     Brush.verticalGradient(
-                        0f to pfpColors.backgroundTop.copy(alpha = 0.94f),
-                        1f to pfpColors.backgroundBottom.copy(alpha = 0.94f),
+                        0f to pfpColors.backgroundTop.copy(alpha = 0.72f),
+                        1f to pfpColors.backgroundBottom.copy(alpha = 0.90f),
                     )
                 ),
         ) {

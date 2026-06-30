@@ -154,6 +154,14 @@ fun DisplaySettingsScreen(
                 checked  = state.menuSoundEnabled,
                 onToggle = { viewModel.setMenuSoundEnabled(it) },
             )
+
+            SettingsGroup("Apps")
+
+            SettingsRow(
+                label    = "Reset Hidden Apps",
+                sublabel = "Unhide every app you've hidden — they reappear in their categories",
+                onClick  = { viewModel.resetHiddenApps() },
+            )
         }
     }
 

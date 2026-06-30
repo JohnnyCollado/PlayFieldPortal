@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.playfieldportal.core.data.database.dao.AppOverrideDao
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.ui.wave.WaveStyle
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -67,6 +68,7 @@ data class DisplaySettingsUiState(
 @HiltViewModel
 class DisplaySettingsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val appOverrideDao: AppOverrideDao,
 ) : ViewModel() {
 
     private val _wallpaperMessage  = MutableStateFlow<String?>(null)
@@ -128,9 +130,13 @@ class DisplaySettingsViewModel @Inject constructor(
                 return@launch
             }
             _wallpaperImporting.value = true
-            val dest = File(context.filesDir, "wallpaper/wallpaper.jpg")
+            // Write each wallpaper to a UNIQUE file. A fixed filename kept the stored path string
+            // identical across replacements, so neither the state (same value) nor Coil's
+            // path-keyed image cache ever updated — the old wallpaper stayed on screen. A unique
+            // path changes the value (triggering recomposition) and is a fresh Coil key.
+            val dir = File(context.filesDir, "wallpaper").apply { mkdirs() }
+            val dest = File(dir, "wallpaper_${System.currentTimeMillis()}.jpg")
             val ok = try {
-                dest.parentFile?.mkdirs()
                 context.contentResolver.openInputStream(uri)?.use { input ->
                     dest.outputStream().use { out -> input.copyTo(out) }
                 }
@@ -142,8 +148,14 @@ class DisplaySettingsViewModel @Inject constructor(
             _wallpaperImporting.value = false
             if (ok) {
                 save { it[KEY_CUSTOM_WALLPAPER] = dest.absolutePath }
+                // Remove any previous wallpaper files (including the legacy wallpaper.jpg) so they
+                // don't accumulate; keep only the one we just applied.
+                dir.listFiles()?.forEach { f ->
+                    if (f.absolutePath != dest.absolutePath) runCatching { f.delete() }
+                }
                 _wallpaperMessage.value = "Wallpaper applied"
             } else {
+                runCatching { dest.delete() }
                 _wallpaperMessage.value = "Failed to import wallpaper — please try again"
             }
         }
@@ -153,6 +165,21 @@ class DisplaySettingsViewModel @Inject constructor(
         viewModelScope.launch {
             save { it.remove(KEY_CUSTOM_WALLPAPER) }
             _wallpaperMessage.value = "Wallpaper reset to default"
+        }
+    }
+
+    // ── Hidden apps recovery ────────────────────────────────────────────────────
+
+    // Clears the hidden flag on every app so they reappear in their categories. The XMB observes
+    // app-override changes reactively, so apps come back without a restart. Reuses the message
+    // dialog channel to confirm. (The result text isn't wallpaper-specific.)
+    fun resetHiddenApps() {
+        viewModelScope.launch {
+            val count = appOverrideDao.countHidden()
+            appOverrideDao.unhideAll()
+            _wallpaperMessage.value =
+                if (count == 0) "No hidden apps to restore."
+                else "Unhid $count app${if (count == 1) "" else "s"} — they'll reappear in their categories."
         }
     }
 
