@@ -19,9 +19,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.playfieldportal.core.common.security.StorageAccess
 import com.playfieldportal.feature.settings.viewmodel.ADD_CONSOLE_FOCUS_KEY
 import com.playfieldportal.feature.settings.viewmodel.EmulatorOption
 import com.playfieldportal.feature.settings.viewmodel.LibraryCardRow
@@ -85,6 +87,15 @@ private fun LibraryListContent(
     onBack: () -> Unit,
     modifier: Modifier,
 ) {
+    val context = LocalContext.current
+    // Point-of-need All-Files-Access: only file-based ROM scanning needs it, so we only prompt
+    // here (where ROM folders are managed) and only while it's actually missing. SAF music + the
+    // app-picker Android library never trigger this. Re-checked when returning from settings.
+    var storageGranted by remember { mutableStateOf(StorageAccess.isManagerGranted()) }
+    val storageAccessLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { storageGranted = StorageAccess.isManagerGranted() }
+
     SettingsScaffold(
         title = "Settings",
         subtitle = "Library Manager",
@@ -93,6 +104,16 @@ private fun LibraryListContent(
         restoreFocusKey = state.returnFocusKey,
     ) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+
+            if (!storageGranted) {
+                SettingsGroup("Storage Access")
+                SettingsRow(
+                    label    = "Grant All-Files Access",
+                    sublabel = "Only needed to scan file-based ROM folders. The app-picker Android " +
+                        "library and music folders don't require it.",
+                    onClick  = { runCatching { storageAccessLauncher.launch(StorageAccess.manageAccessIntent(context)) } },
+                )
+            }
 
             SettingsGroup("Consoles")
 
