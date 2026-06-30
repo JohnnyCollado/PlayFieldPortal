@@ -3,6 +3,7 @@ package com.playfieldportal.feature.artwork
 import android.content.Context
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.playfieldportal.core.common.security.KeystoreSecretCipher
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -15,13 +16,17 @@ import javax.inject.Singleton
 class MetadataApiKeyProvider @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
+    // Secrets (TGDB key, IGDB client secret) are encrypted at rest via the Keystore-backed cipher;
+    // the IGDB client id is a public identifier and stays plaintext. decryptOrLegacy keeps any
+    // pre-encryption values working until they're re-saved.
     // ── TheGamesDB ────────────────────────────────────────────────────────────
-    val tgdbKeyFlow: Flow<String?> = context.pfpDataStore.data.map { it[KEY_TGDB_API_KEY] }
+    val tgdbKeyFlow: Flow<String?> = context.pfpDataStore.data
+        .map { prefs -> prefs[KEY_TGDB_API_KEY]?.let { KeystoreSecretCipher.decryptOrLegacy(it) } }
 
     suspend fun getTgdbKey(): String? = tgdbKeyFlow.first()
 
     suspend fun saveTgdbKey(key: String) {
-        context.pfpDataStore.edit { it[KEY_TGDB_API_KEY] = key.trim() }
+        context.pfpDataStore.edit { it[KEY_TGDB_API_KEY] = KeystoreSecretCipher.encrypt(key.trim()) }
     }
 
     suspend fun clearTgdbKey() {
@@ -33,12 +38,12 @@ class MetadataApiKeyProvider @Inject constructor(
 
     suspend fun getIgdbClientId(): String? = igdbClientIdFlow.first()
     suspend fun getIgdbClientSecret(): String? =
-        context.pfpDataStore.data.first()[KEY_IGDB_CLIENT_SECRET]
+        context.pfpDataStore.data.first()[KEY_IGDB_CLIENT_SECRET]?.let { KeystoreSecretCipher.decryptOrLegacy(it) }
 
     suspend fun saveIgdbCredentials(clientId: String, clientSecret: String) {
         context.pfpDataStore.edit {
             it[KEY_IGDB_CLIENT_ID]     = clientId.trim()
-            it[KEY_IGDB_CLIENT_SECRET] = clientSecret.trim()
+            it[KEY_IGDB_CLIENT_SECRET] = KeystoreSecretCipher.encrypt(clientSecret.trim())
         }
     }
 

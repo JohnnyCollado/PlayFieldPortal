@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Explicit network policy. Cleartext (HTTP) is denied app-wide (artwork/metadata APIs are all
+  HTTPS); release builds trust only the system CA store, so a user-installed CA cannot MITM PFP's
+  traffic. Debug builds also trust user CAs so a dev proxy (Charles/mitmproxy) still works.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+    <debug-overrides>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </debug-overrides>
+</network-security-config>
