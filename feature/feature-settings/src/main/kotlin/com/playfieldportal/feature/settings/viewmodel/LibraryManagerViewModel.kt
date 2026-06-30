@@ -48,6 +48,7 @@ data class LibraryCardRow(
 )
 
 data class PlatformOption(val id: String, val name: String, val shortName: String)
+data class LibraryAppRow(val gameId: Long, val label: String)
 
 data class EmulatorOption(val id: String?, val name: String)
 
@@ -65,6 +66,8 @@ data class LibraryManagerUiState(
 
     // Card detail (edit) target
     val detailPlatformId: String? = null,
+    // Apps in the Android library (managed from its detail screen, not scanned).
+    val androidApps: List<LibraryAppRow> = emptyList(),
 
     // UI signals
     val awaitingDirectoryPick: DirectoryPickPurpose? = null,
@@ -109,8 +112,19 @@ class LibraryManagerViewModel @Inject constructor(
                     gameCount    = counts[card.platformId] ?: card.gameCount,
                 )
             },
+            androidApps = games.filter { it.platformId == ANDROID_PLATFORM_ID }
+                .map { LibraryAppRow(it.id, it.displayTitle) }
+                .sortedBy { it.label.lowercase() },
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LibraryManagerUiState())
+
+    /** Remove an app from the Android library (deletes its entry, like removing a game). */
+    fun removeApp(gameId: Long) {
+        viewModelScope.launch {
+            gameRepository.delete(gameId)
+            memoryCardRepository.recountGames(ANDROID_PLATFORM_ID)
+        }
+    }
 
     // ── Navigation ──────────────────────────────────────────────────────────────
 

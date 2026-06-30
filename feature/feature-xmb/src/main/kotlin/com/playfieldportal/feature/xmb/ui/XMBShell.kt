@@ -115,6 +115,7 @@ fun XMBShellContainer(
         onMusicNext = viewModel::musicNext,
         onMusicSeekTo = viewModel::musicSeekTo,
         onMusicPlayerBack = viewModel::closeMusicPlayer,
+        onOpenAndroidLibraryPicker = viewModel::openAndroidLibraryPicker,
     )
 }
 
@@ -146,6 +147,7 @@ fun XMBShell(
     onMusicNext: () -> Unit = {},
     onMusicSeekTo: (Int) -> Unit = {},
     onMusicPlayerBack: () -> Unit = {},
+    onOpenAndroidLibraryPicker: () -> Unit = {},
     onOpenColorSchemePicker: () -> Unit = {},
     onColorSchemeHighlightedAt: (Int) -> Unit = {},
     onColorSchemeConfirm: () -> Unit = {},
@@ -310,6 +312,7 @@ fun XMBShell(
                         pendingGamepadAction = uiState.pendingSettingsAction,
                         onGamepadActionConsumed = onSettingsActionConsumed,
                         onOpenColorSchemePicker = onOpenColorSchemePicker,
+                        onAddAndroidApps = onOpenAndroidLibraryPicker,
                         modifier = Modifier.fillMaxSize(),
                     )
                 }

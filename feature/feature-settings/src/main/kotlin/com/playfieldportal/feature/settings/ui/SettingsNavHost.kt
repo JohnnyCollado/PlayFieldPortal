@@ -14,6 +14,7 @@ fun SettingsNavHost(
     pendingGamepadAction: GamepadAction? = null,
     onGamepadActionConsumed: () -> Unit = {},
     onOpenColorSchemePicker: () -> Unit = {},
+    onAddAndroidApps: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     CompositionLocalProvider(
@@ -21,7 +22,7 @@ fun SettingsNavHost(
         LocalSettingsActionConsumed provides onGamepadActionConsumed,
     ) {
         when (screenId) {
-            "settings_library"    -> LibraryManagerScreen(onBack = onBack, modifier = modifier)
+            "settings_library"    -> LibraryManagerScreen(onBack = onBack, onAddAndroidApps = onAddAndroidApps, modifier = modifier)
             "settings_music"      -> MusicSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_categories" -> CategoryManagerScreen(onBack = onBack, modifier = modifier)
             "settings_artwork"    -> ArtworkSettingsScreen(onBack = onBack, modifier = modifier)
