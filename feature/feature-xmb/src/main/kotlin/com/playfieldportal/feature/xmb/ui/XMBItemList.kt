@@ -6,18 +6,23 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -41,12 +46,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.floor
 import coil.compose.AsyncImage
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.playfieldportal.core.ui.icons.GameIconStyle
+import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.feature.xmb.viewmodel.XMBItem
 import com.playfieldportal.feature.xmb.viewmodel.XMBItemType
 
@@ -70,6 +77,146 @@ private val TAP_TARGET_HEIGHT = 72.dp
 private val PrimaryText = Color.White
 private val SecondaryText = Color(0xFFC9C7E8)
 private val InactiveText = Color(0xFFE3E1F0)
+
+// Width reserved for the parent label column in the two-pane drill flyout.
+private val FLYOUT_PARENT_WIDTH = 200.dp
+
+// Height of one icon slot in the sibling column.
+private val SIBLING_SLOT = 72.dp
+
+// ── Two-pane drill flyout (PSP/XMB style) ────────────────────────────────────
+//
+// Used when drilled into a Games sub-item: the category's sibling icons sit in a centre-locked
+// column on the left, the active one aligned with the fixed ▶ arrow; the children scroll in a
+// centre-locked column on the right. Both columns use the same centring so they stay in sync.
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun XmbDrillFlyout(
+    siblings: List<XMBItem>,
+    siblingIndex: Int,
+    items: List<XMBItem>,
+    selectedIndex: Int,
+    onItemSelected: (Int) -> Unit,
+    onItemLongPress: (Int) -> Unit,
+    iconStyle: GameIconStyle = GameIconStyle.PSP_RECTANGLE,
+    modifier: Modifier = Modifier,
+) {
+    val accent = LocalPFPColors.current.accentColor
+    Row(modifier = modifier.fillMaxSize()) {
+        // Left: the category's sibling icons, the current one centred on the arrow.
+        CenterLockedColumn(
+            count = siblings.size,
+            selectedIndex = siblingIndex,
+            rowHeight = SIBLING_SLOT,
+            modifier = Modifier.width(FLYOUT_PARENT_WIDTH).fillMaxHeight(),
+        ) { index ->
+            SiblingIcon(item = siblings[index], selected = index == siblingIndex)
+        }
+
+        // Right: the children, centre-locked under the fixed arrow.
+        Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+            CenterLockedColumn(
+                count = items.size,
+                selectedIndex = selectedIndex,
+                rowHeight = ROW_HEIGHT,
+                modifier = Modifier.fillMaxSize().padding(start = 30.dp),
+            ) { index ->
+                XmbVerticalListRow(
+                    item = items[index],
+                    isSelected = index == selectedIndex,
+                    iconStyle = iconStyle,
+                    onClick = { onItemSelected(index) },
+                    onLongPress = { onItemLongPress(index) },
+                    modifier = Modifier.fillMaxWidth().height(ROW_HEIGHT),
+                )
+            }
+            // The fixed arrow — never moves; the active child is scrolled to align with it.
+            Text(
+                text = "▶",
+                color = accent,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.align(Alignment.CenterStart),
+            )
+        }
+    }
+}
+
+// One sibling icon on a dark rounded tile (so it stays visible over any wallpaper).
+@Composable
+private fun SiblingIcon(item: XMBItem, selected: Boolean) {
+    val chip = if (selected) 60.dp else 42.dp
+    Box(
+        modifier = Modifier.fillMaxWidth().padding(end = 14.dp),
+        contentAlignment = Alignment.CenterEnd,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(chip)
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color.Black.copy(alpha = if (selected) 0.5f else 0.3f))
+                .alpha(if (selected) 1f else 0.6f),
+            contentAlignment = Alignment.Center,
+        ) {
+            Image(
+                painter = painterResource(rememberConsoleIconId(consoleIconKeyFor(item))),
+                contentDescription = item.title,
+                modifier = Modifier.size(chip * 0.72f),
+            )
+        }
+    }
+}
+
+// Maps a memory-card-style item to its sysicon key (mirrors XmbItemLeadingIcon's mapping).
+private fun consoleIconKeyFor(item: XMBItem): String? = when (item.type) {
+    XMBItemType.ALL_GAMES   -> "allgames"
+    XMBItemType.FAVORITES   -> "favorites"
+    XMBItemType.MEMORY_CARD -> item.platformId
+    else                    -> null   // collections / unknown fall back to sysicon_default
+}
+
+// A vertical list whose [selectedIndex] row is always pinned to the vertical centre; rows scroll
+// under it. Each row is exactly [rowHeight] tall. Used for both flyout columns so they stay aligned.
+@Composable
+private fun CenterLockedColumn(
+    count: Int,
+    selectedIndex: Int,
+    rowHeight: Dp,
+    modifier: Modifier = Modifier,
+    row: @Composable (index: Int) -> Unit,
+) {
+    BoxWithConstraints(modifier = modifier) {
+        // Symmetric padding so the first AND last items can scroll all the way to the centre.
+        val centerPad = ((maxHeight - rowHeight) / 2).coerceAtLeast(0.dp)
+        val listState = rememberLazyListState()
+
+        LaunchedEffect(selectedIndex, count) {
+            if (count == 0) return@LaunchedEffect
+            val idx = selectedIndex.coerceIn(0, count - 1)
+            // Ensure the target is measured, then scroll by the exact delta to centre it. Measuring
+            // (rather than a fixed offset) centres edge items correctly and never over-scrolls.
+            if (listState.layoutInfo.visibleItemsInfo.none { it.index == idx }) {
+                listState.scrollToItem(idx)
+            }
+            val info = listState.layoutInfo
+            val item = info.visibleItemsInfo.firstOrNull { it.index == idx } ?: return@LaunchedEffect
+            val viewportCenter = (info.viewportStartOffset + info.viewportEndOffset) / 2f
+            val delta = (item.offset + item.size / 2f) - viewportCenter
+            listState.animateScrollBy(delta)
+        }
+
+        LazyColumn(
+            state = listState,
+            contentPadding = PaddingValues(vertical = centerPad),
+            userScrollEnabled = false,   // selection-driven; taps still work, drag can't fight the lock
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            items(count) { index ->
+                Box(modifier = Modifier.fillMaxWidth().height(rowHeight)) { row(index) }
+            }
+        }
+    }
+}
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable

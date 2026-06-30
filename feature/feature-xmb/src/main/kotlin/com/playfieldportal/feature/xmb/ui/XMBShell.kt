@@ -43,8 +43,10 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.playfieldportal.core.domain.model.BuiltInCategory
 import com.playfieldportal.core.ui.theme.PFPTheme
@@ -103,6 +105,10 @@ fun XMBShellContainer(
         onMusicTrackPickerActivatedAt = viewModel::onMusicTrackPickerActivatedAt,
         onMusicTrackPickerConfirm = viewModel::onMusicTrackPickerConfirm,
         onMusicTrackPickerDismiss = viewModel::closeMusicTrackPicker,
+        onMusicBrowserQueryChange = viewModel::onMusicBrowserQueryChange,
+        onMusicBrowserActivatedAt = viewModel::onMusicBrowserActivatedAt,
+        onMusicBrowserLongPressAt = viewModel::onMusicBrowserLongPressAt,
+        onMusicBrowserBack = viewModel::onMusicBrowserBack,
         onAppPickerActivatedAt = viewModel::onAppPickerActivatedAt,
         onAppPickerConfirm = viewModel::onAppPickerConfirm,
         onAppPickerDismiss = viewModel::closeAppPicker,
@@ -158,6 +164,10 @@ fun XMBShell(
     onCancelCollectionName: () -> Unit = {},
     onConfirmPlaylistName: (String) -> Unit = {},
     onCancelPlaylistName: () -> Unit = {},
+    onMusicBrowserQueryChange: (String) -> Unit = {},
+    onMusicBrowserActivatedAt: (Int) -> Unit = {},
+    onMusicBrowserLongPressAt: (Int) -> Unit = {},
+    onMusicBrowserBack: () -> Unit = {},
     onMusicTrackPickerActivatedAt: (Int) -> Unit = {},
     onMusicTrackPickerConfirm: () -> Unit = {},
     onMusicTrackPickerDismiss: () -> Unit = {},
@@ -203,6 +213,10 @@ fun XMBShell(
                 }
             }
 
+            // Hide the XMB foreground (status strip + category bar + item list) while a fullscreen
+            // menu (the music browser or a Settings screen) is open — only the wallpaper/wave
+            // background shows behind it. Restored automatically when the menu closes.
+            if (uiState.musicBrowser == null && uiState.activeSettingsScreen == null) {
             XmbPspStatusStrip(
                 sortLabel = uiState.sortLabel,
                 modifier = Modifier.align(Alignment.TopCenter),
@@ -257,45 +271,67 @@ fun XMBShell(
                     // that same x. The selected category and its subitems share one vertical line.
                     val startPad = XmbLeftAnchor
 
-                    AnimatedContent(
-                        targetState = uiState.selectedCategoryIndex,
-                        transitionSpec = {
-                            (fadeIn(tween(220)) + slideInVertically(tween(260)) { it / 8 })
-                                .togetherWith(fadeOut(tween(160)) + slideOutVertically(tween(180)) { -it / 10 })
-                                .using(SizeTransform(clip = false))
-                        },
-                        label = "xmbCategoryItems",
-                        modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .fillMaxWidth()
-                            .padding(start = startPad, end = 24.dp, top = 6.dp),
-                    ) { categoryIndex ->
-                        // During a category transition AnimatedContent briefly composes BOTH the
-                        // outgoing and incoming lists. Only the settled (current) category may
-                        // render the selection highlight — otherwise the outgoing copy shows a
-                        // duplicate enlarged row that slides away (a "second cursor").
-                        XMBItemList(
+                    if (uiState.drillTitle != null) {
+                        // Drilled into a Games sub-item: render the two-pane flyout directly here so
+                        // it gets this BoxWithConstraints' definite height (centre-locking needs a
+                        // reliable height; nesting it in AnimatedContent did not provide one).
+                        XmbDrillFlyout(
+                            siblings = uiState.drillSiblings,
+                            siblingIndex = uiState.drillSiblingIndex,
                             items = uiState.currentItems,
-                            selectedIndex = if (categoryIndex == uiState.selectedCategoryIndex) uiState.selectedItemIndex else -1,
+                            selectedIndex = uiState.selectedItemIndex,
                             onItemSelected = onItemSelected,
                             onItemLongPress = onItemLongPress,
                             iconStyle = uiState.iconStyle,
-                            scrollToTopToken = uiState.scrollToTopToken,
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxSize().padding(top = 6.dp),
                         )
+                    } else {
+                        AnimatedContent(
+                            targetState = uiState.selectedCategoryIndex,
+                            transitionSpec = {
+                                (fadeIn(tween(220)) + slideInVertically(tween(260)) { it / 8 })
+                                    .togetherWith(fadeOut(tween(160)) + slideOutVertically(tween(180)) { -it / 10 })
+                                    .using(SizeTransform(clip = false))
+                            },
+                            label = "xmbCategoryItems",
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .fillMaxWidth()
+                                .padding(start = startPad, end = 24.dp, top = 6.dp),
+                        ) { categoryIndex ->
+                            // During a category transition AnimatedContent briefly composes BOTH the
+                            // outgoing and incoming lists. Only the settled (current) category may
+                            // render the selection highlight — otherwise the outgoing copy shows a
+                            // duplicate enlarged row that slides away (a "second cursor").
+                            val itemSelectedIndex =
+                                if (categoryIndex == uiState.selectedCategoryIndex) uiState.selectedItemIndex else -1
+                            XMBItemList(
+                                items = uiState.currentItems,
+                                selectedIndex = itemSelectedIndex,
+                                onItemSelected = onItemSelected,
+                                onItemLongPress = onItemLongPress,
+                                iconStyle = uiState.iconStyle,
+                                scrollToTopToken = uiState.scrollToTopToken,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
                     }
                 }
             }
+            } // end: XMB foreground hidden while music browser is open
 
-            // Touch affordance for the app drawer (controller users press BACK at the root).
-            // Hidden whenever an overlay/dialog is up so it never floats over them.
+            // Bottom-right floating affordance. While drilled into a sub-item it becomes a Back
+            // button (exits the sub-item); at the root it opens the app drawer. Hidden whenever an
+            // overlay/dialog is up so it never floats over them.
             if (!uiState.hasBlockingOverlay) {
-                AppDrawerButton(
-                    onClick = onOpenAppDrawer,
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(bottom = 24.dp, end = 20.dp),
-                )
+                val floatModifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(bottom = 24.dp, end = 20.dp)
+                if (uiState.isInSubItem) {
+                    BackFloatingButton(onClick = onTouchBack, modifier = floatModifier)
+                } else {
+                    AppDrawerButton(onClick = onOpenAppDrawer, modifier = floatModifier)
+                }
             }
 
             if (uiState.showBootSequence) {
@@ -326,6 +362,19 @@ fun XMBShell(
                     onBack = onCloseAppDrawer,
                     pendingGamepadAction = uiState.pendingDrawerAction,
                     onGamepadActionConsumed = onDrawerActionConsumed,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+
+            // Fullscreen searchable music browser (Music / Playlist) — rendered before the player
+            // and context menu so a track's options menu and the player draw on top of it.
+            uiState.musicBrowser?.let { browser ->
+                MusicBrowserScreen(
+                    state = browser,
+                    onQueryChange = onMusicBrowserQueryChange,
+                    onActivateAt = onMusicBrowserActivatedAt,
+                    onLongPressAt = onMusicBrowserLongPressAt,
+                    onBack = onMusicBrowserBack,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -522,6 +571,29 @@ private fun AppDrawerButton(
                 }
             }
         }
+    }
+}
+
+// Floating Back button shown (in place of the app-drawer button) while drilled into a sub-item.
+@Composable
+private fun BackFloatingButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .size(48.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(Color.White.copy(alpha = 0.12f))
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = "◀",
+            color = Color.White.copy(alpha = 0.92f),
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+        )
     }
 }
 

@@ -181,6 +181,29 @@ sealed interface MusicNav {
     data object MusicApps : MusicNav
 }
 
+// ── Fullscreen music browser (Settings-style, searchable) ───────────────────────
+// Opened from the "Music" and "Playlist" root items as a fullscreen overlay (not the inline XMB
+// list). Rows reuse XMBItem so the same row visuals/actions apply: tracks play, playlists drill in,
+// plus Create Playlist / Add Tracks action rows.
+
+sealed interface MusicBrowserView {
+    data object AllMusic : MusicBrowserView
+    data object Playlists : MusicBrowserView
+    data class Playlist(val id: Long, val name: String) : MusicBrowserView
+}
+
+data class MusicBrowserState(
+    val view: MusicBrowserView,
+    val title: String,
+    val query: String = "",
+    val rows: List<XMBItem> = emptyList(),   // already filtered + sorted, ready to render
+    val selectedIndex: Int = 0,
+    // Status-bar style sort hint, non-null on track views (AllMusic / a Playlist's tracks).
+    val sortLabel: String? = null,
+    // Bumped to snap the list back to the top (sort change / query change).
+    val scrollToTopToken: Int = 0,
+)
+
 // Drives the "New / Rename Playlist" text dialog. When [forTrackId] is set, the freshly created
 // playlist immediately receives that track.
 data class PlaylistNameDialogState(
@@ -232,6 +255,15 @@ data class XMBUiState(
     // ── Vertical axis: games / settings items ─────────────────────────────
     val currentItems: List<XMBItem> = emptyList(),
     val selectedItemIndex: Int = 0,
+    // Non-null while drilled into a Games sub-item (a platform card, All Games, Favorites, or a
+    // collection): the parent's label, which drives the two-pane "flyout" listing (parent on the
+    // left, children in a centre-locked column on the right). Null = normal single-column list.
+    val drillTitle: String? = null,
+    // The current category's sibling items (All Games / Favorites / collections / memory cards),
+    // shown as the flyout's left icon column (PSP-style); [drillSiblingIndex] is the one currently
+    // drilled into, which sits centred on the arrow. Empty when not drilled in.
+    val drillSiblings: List<XMBItem> = emptyList(),
+    val drillSiblingIndex: Int = 0,
     // Bumped whenever the list should snap back to the top regardless of cursor position — e.g. a
     // sort cycle. The item list scrolls to item 0 each time this changes (keyed reorders otherwise
     // keep the viewport anchored to the old top item).
@@ -273,6 +305,9 @@ data class XMBUiState(
     // ── "Add Tracks" picker (inside a playlist) ───────────────────────────
     val musicTrackPicker: MusicTrackPickerState? = null,
 
+    // ── Fullscreen searchable music browser (Music / Playlist) ─────────────
+    val musicBrowser: MusicBrowserState? = null,
+
     // ── Simple read-only info dialog (e.g. file location) ──────────────────
     val infoDialog: InfoDialogState? = null,
 
@@ -288,6 +323,14 @@ data class XMBUiState(
     val librarySetupComplete: Boolean = false,
     val themeColors: PFPColors = DefaultPFPColors,
 ) {
+    // True when the user has drilled into a sub-item on the home screen (a Games platform/collection/
+    // All Games/Favorites, or a Music sub-view). Drives the floating Back button and locks Left/Right
+    // category switching until the user backs out.
+    val isInSubItem: Boolean
+        get() = musicNav != MusicNav.Root ||
+            selectedPlatformId != null ||
+            selectedCollectionId != null
+
     // True whenever something is layered over the main XMB. The gamepad dispatcher uses this
     // as a final guard so D-Pad/A never drives the category bar or item list behind an overlay.
     val hasBlockingOverlay: Boolean
@@ -304,6 +347,7 @@ data class XMBUiState(
             collectionNameDialog != null ||
             playlistNameDialog != null ||
             musicTrackPicker != null ||
+            musicBrowser != null ||
             musicPlayerVisible ||
             infoDialog != null
 }
@@ -451,6 +495,11 @@ class XMBViewModel @Inject constructor(
     val uiState: StateFlow<XMBUiState> = _uiState.asStateFlow()
 
     private var currentItemsJob: Job? = null
+    // Backs the fullscreen music browser: a collector job over the active view's data, plus the raw
+    // (unfiltered, DB-order) lists kept so query/sort changes re-derive rows without a DB round-trip.
+    private var musicBrowserJob: Job? = null
+    private var browserRawTracks: List<MusicTrack> = emptyList()
+    private var browserRawPlaylists: List<com.playfieldportal.core.domain.model.Playlist> = emptyList()
     private var platformCache: Map<String, PlatformEntity> = emptyMap()
     private var enabledCards: List<MemoryCard> = emptyList()
     private var baseThemeColors: PFPColors = DefaultPFPColors
@@ -648,8 +697,10 @@ class XMBViewModel @Inject constructor(
 
     private fun loadItemsForCategory(category: Category?) {
         currentItemsJob?.cancel()
-        if (category == null) { _uiState.update { it.copy(currentItems = emptyList(), sortLabel = null) }; return }
-        _uiState.update { it.copy(sortLabel = currentSortLabel()) }
+        if (category == null) { _uiState.update { it.copy(currentItems = emptyList(), sortLabel = null, drillTitle = null, drillSiblings = emptyList(), drillSiblingIndex = 0) }; return }
+        val drill = computeDrillTitle()
+        val (sibs, sibIdx) = if (drill != null) computeDrillSiblings(category) else (emptyList<XMBItem>() to 0)
+        _uiState.update { it.copy(sortLabel = currentSortLabel(), drillTitle = drill, drillSiblings = sibs, drillSiblingIndex = sibIdx) }
 
         currentItemsJob = viewModelScope.launch {
             when (category.id) {
@@ -965,6 +1016,158 @@ class XMBViewModel @Inject constructor(
         loadItemsForCategory(currentCategory())
     }
 
+    // ── Fullscreen music browser (searchable) ───────────────────────────────────
+    // Opens "Music" (all tracks) or "Playlist" (playlists → a playlist's tracks) as a fullscreen,
+    // searchable overlay. A collector keeps the active view in sync with the DB; query/sort changes
+    // re-derive the visible rows from the cached raw list without re-hitting the DB.
+    private fun openMusicBrowser(view: MusicBrowserView) {
+        musicBrowserJob?.cancel()
+        val title = when (view) {
+            MusicBrowserView.AllMusic    -> "Music"
+            MusicBrowserView.Playlists   -> "Playlists"
+            is MusicBrowserView.Playlist -> view.name
+        }
+        _uiState.update { it.copy(musicBrowser = MusicBrowserState(view = view, title = title)) }
+        musicBrowserJob = viewModelScope.launch {
+            when (view) {
+                MusicBrowserView.AllMusic -> musicRepository.observeAllTracks().collect { tracks ->
+                    browserRawTracks = tracks; rebuildBrowserTrackRows()
+                }
+                is MusicBrowserView.Playlist -> musicRepository.observePlaylistTracks(view.id).collect { tracks ->
+                    browserRawTracks = tracks; rebuildBrowserTrackRows()
+                }
+                MusicBrowserView.Playlists -> musicRepository.observePlaylists().collect { playlists ->
+                    browserRawPlaylists = playlists; rebuildBrowserPlaylistRows()
+                }
+            }
+        }
+    }
+
+    private fun MusicTrack.matchesQuery(q: String): Boolean =
+        displayTitle.lowercase().contains(q) ||
+            artist?.lowercase()?.contains(q) == true ||
+            album?.lowercase()?.contains(q) == true
+
+    private fun rebuildBrowserTrackRows() {
+        val state = _uiState.value.musicBrowser ?: return
+        val isPlaylist = state.view is MusicBrowserView.Playlist
+        val q = state.query.trim().lowercase()
+        val sorted = browserRawTracks.trackSorted(_uiState.value.musicSortMode)
+        val filtered = if (q.isBlank()) sorted else sorted.filter { it.matchesQuery(q) }
+        currentMusicTracks = filtered   // the play queue is exactly what's on screen
+        val baseRows = when {
+            filtered.isNotEmpty() -> filtered.toMusicItems()
+            q.isNotBlank()        -> listOf(browserNoResultsItem())
+            isPlaylist            -> listOf(emptyPlaylistItem())
+            else                  -> listOf(emptyAllMusicItem())
+        }
+        val rows = if (isPlaylist) baseRows + addTracksItem() else baseRows
+        val label = "Sort: ${_uiState.value.musicSortMode.label}"
+        _uiState.update { it.copy(musicBrowser = it.musicBrowser?.copy(
+            rows = rows,
+            selectedIndex = state.selectedIndex.coerceIn(0, (rows.size - 1).coerceAtLeast(0)),
+            sortLabel = label,
+        )) }
+    }
+
+    private fun rebuildBrowserPlaylistRows() {
+        val state = _uiState.value.musicBrowser ?: return
+        val q = state.query.trim().lowercase()
+        val filtered = if (q.isBlank()) browserRawPlaylists
+                       else browserRawPlaylists.filter { it.name.lowercase().contains(q) }
+        val rows = playlistRootItems(filtered)   // playlist rows + "Create Playlist"
+        _uiState.update { it.copy(musicBrowser = it.musicBrowser?.copy(
+            rows = rows,
+            selectedIndex = state.selectedIndex.coerceIn(0, (rows.size - 1).coerceAtLeast(0)),
+            sortLabel = null,
+        )) }
+    }
+
+    private fun browserNoResultsItem(): XMBItem = XMBItem(
+        id = EMPTY_CATEGORY_ITEM_ID, title = "No matches", subtitle = "Try a different search.",
+        type = XMBItemType.EMPTY,
+    )
+
+    fun onMusicBrowserQueryChange(query: String) {
+        val state = _uiState.value.musicBrowser ?: return
+        _uiState.update { it.copy(musicBrowser = it.musicBrowser?.copy(
+            query = query, selectedIndex = 0,
+            scrollToTopToken = state.scrollToTopToken + 1,
+        )) }
+        if (state.view is MusicBrowserView.Playlists) rebuildBrowserPlaylistRows() else rebuildBrowserTrackRows()
+    }
+
+    private fun moveMusicBrowser(delta: Int) {
+        val b = _uiState.value.musicBrowser ?: return
+        val next = (b.selectedIndex + delta).coerceIn(0, (b.rows.size - 1).coerceAtLeast(0))
+        if (next != b.selectedIndex) {
+            _uiState.update { it.copy(musicBrowser = b.copy(selectedIndex = next)) }
+            menuSound.play(MenuSound.SCROLL)
+        }
+    }
+
+    private fun activateMusicBrowser() {
+        val b = _uiState.value.musicBrowser ?: return
+        handleMusicBrowserRow(b.rows.getOrNull(b.selectedIndex) ?: return)
+    }
+
+    fun onMusicBrowserActivatedAt(index: Int) {
+        _uiState.update { it.copy(musicBrowser = it.musicBrowser?.copy(selectedIndex = index)) }
+        activateMusicBrowser()
+    }
+
+    private fun handleMusicBrowserRow(item: XMBItem) {
+        when {
+            item.type == XMBItemType.EMPTY -> Unit
+            item.id == CREATE_PLAYLIST_ITEM_ID -> { menuSound.play(MenuSound.SELECT); promptCreatePlaylist() }
+            item.id == ADD_TRACKS_ITEM_ID -> {
+                menuSound.play(MenuSound.SELECT)
+                (_uiState.value.musicBrowser?.view as? MusicBrowserView.Playlist)?.let { openMusicTrackPicker(it.id) }
+            }
+            item.type == XMBItemType.PLAYLIST && item.playlistId != null -> {
+                menuSound.play(MenuSound.SELECT)
+                openMusicBrowser(MusicBrowserView.Playlist(item.playlistId, item.title))
+            }
+            item.type == XMBItemType.MUSIC_TRACK -> { menuSound.play(MenuSound.SELECT); openMusicPlayerForItem(item) }
+        }
+    }
+
+    private fun openMusicBrowserContextMenu() {
+        val b = _uiState.value.musicBrowser ?: return
+        val item = b.rows.getOrNull(b.selectedIndex) ?: return
+        when {
+            item.type == XMBItemType.MUSIC_TRACK -> openMusicTrackContextMenu(item)
+            item.type == XMBItemType.PLAYLIST && item.playlistId != null ->
+                openPlaylistRowContextMenu(item.playlistId, item.title)
+        }
+    }
+
+    fun onMusicBrowserLongPressAt(index: Int) {
+        _uiState.update { it.copy(musicBrowser = it.musicBrowser?.copy(selectedIndex = index)) }
+        openMusicBrowserContextMenu()
+    }
+
+    fun onMusicBrowserBack() {
+        val b = _uiState.value.musicBrowser ?: return
+        menuSound.play(MenuSound.BACK)
+        when (b.view) {
+            // A playlist's tracks back out to the playlists list; everything else closes the browser.
+            is MusicBrowserView.Playlist -> openMusicBrowser(MusicBrowserView.Playlists)
+            else -> closeMusicBrowser()
+        }
+    }
+
+    private fun closeMusicBrowser() {
+        musicBrowserJob?.cancel(); musicBrowserJob = null
+        browserRawTracks = emptyList(); browserRawPlaylists = emptyList()
+        _uiState.update { it.copy(musicBrowser = null) }
+    }
+
+    // Playlist context for a track's options menu, resolved from the browser or the inline view.
+    private fun currentPlaylistContextId(): Long? =
+        (_uiState.value.musicBrowser?.view as? MusicBrowserView.Playlist)?.id
+            ?: (_uiState.value.musicNav as? MusicNav.Playlist)?.id
+
     // Handles A/Cross on any Music row. Returns true when [item] is a Music row it owns. Empty-state
     // rows are consumed silently; everything else plays its own select/launch sound.
     private fun handleMusicSelection(item: XMBItem): Boolean = when {
@@ -974,9 +1177,10 @@ class XMBViewModel @Inject constructor(
             if (_uiState.value.musicPlayback.track != null) _uiState.update { it.copy(musicPlayerVisible = true) }
             true
         }
-        item.id == PLAYLISTS_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openMusicView(MusicNav.Playlists); true }
+        // "Music" and "Playlist" open the fullscreen, searchable browser instead of the inline list.
+        item.id == PLAYLISTS_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openMusicBrowser(MusicBrowserView.Playlists); true }
+        item.id == ALL_MUSIC_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openMusicBrowser(MusicBrowserView.AllMusic); true }
         item.id == MUSIC_APPS_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openMusicView(MusicNav.MusicApps); true }
-        item.id == ALL_MUSIC_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openMusicView(MusicNav.AllMusic); true }
         item.id == ADD_MUSIC_FOLDER_ITEM_ID -> {
             menuSound.play(MenuSound.SELECT)
             _uiState.update { it.copy(activeSettingsScreen = "settings_music") }
@@ -1074,13 +1278,14 @@ class XMBViewModel @Inject constructor(
     }
 
     private fun openMusicTrackContextMenu(item: XMBItem) {
-        // Inside a playlist, offer "Remove from this Playlist"; the playlist id rides on the menu.
-        val playlist = _uiState.value.musicNav as? MusicNav.Playlist
+        // Inside a playlist (inline or browser), offer "Remove from this Playlist"; the playlist id
+        // rides on the menu so the action knows which playlist.
+        val playlistId = currentPlaylistContextId()
         val items = buildList {
             add(XMBContextMenuItem("play", "Play"))
             add(XMBContextMenuItem("play_background", "Play in Background"))
             add(XMBContextMenuItem("add_to_playlist", "Add to Playlist"))
-            if (playlist != null) {
+            if (playlistId != null) {
                 add(XMBContextMenuItem("remove_from_playlist", "Remove from this Playlist", isDestructive = true))
             }
             add(XMBContextMenuItem("remove_track", "Remove From Library", isDestructive = true))
@@ -1090,7 +1295,7 @@ class XMBViewModel @Inject constructor(
                 title        = item.title,
                 items        = items,
                 musicTrackId = item.id.removePrefix("mt_"),
-                playlistId   = playlist?.id,
+                playlistId   = playlistId,
             )
         )}
     }
@@ -1345,6 +1550,21 @@ class XMBViewModel @Inject constructor(
     }
 
     private fun cycleSort() {
+        // The fullscreen music browser sorts its own track views (not the playlists list).
+        _uiState.value.musicBrowser?.let { browser ->
+            if (browser.view is MusicBrowserView.Playlists) return
+            val next = MUSIC_SORTS[(MUSIC_SORTS.indexOf(_uiState.value.musicSortMode).coerceAtLeast(0) + 1) % MUSIC_SORTS.size]
+            menuSound.play(MenuSound.SYSTEM_BROWSE)
+            _uiState.update { it.copy(
+                musicSortMode = next,
+                musicBrowser = it.musicBrowser?.copy(
+                    selectedIndex = 0,
+                    scrollToTopToken = browser.scrollToTopToken + 1,
+                ),
+            )}
+            rebuildBrowserTrackRows()
+            return
+        }
         val cycle = activeSortContext() ?: return
         val isMusic = cycle === MUSIC_SORTS
         val current = if (isMusic) _uiState.value.musicSortMode else _uiState.value.gameSortMode
@@ -1367,6 +1587,50 @@ class XMBViewModel @Inject constructor(
             return
         }
         loadItemsForCategory(currentCategory())
+    }
+
+    // The parent label for the two-pane flyout, non-null exactly when drilled into a Games sub-item
+    // (a platform card, All Games, Favorites, or a collection). Null = normal single-column list.
+    private fun computeDrillTitle(): String? {
+        val s = _uiState.value
+        return when {
+            s.selectedCollectionId != null ->
+                s.collections.firstOrNull { it.id == s.selectedCollectionId }?.name ?: "Collection"
+            s.selectedPlatformId == ALL_GAMES_PLATFORM_ID -> "All Games"
+            s.selectedPlatformId == FAVORITES_PLATFORM_ID -> "Favorites"
+            s.selectedPlatformId != null ->
+                enabledCards.firstOrNull { it.platformId == s.selectedPlatformId }?.displayName
+                    ?: platformCache[s.selectedPlatformId]?.name
+                    ?: s.selectedPlatformId
+            else -> null
+        }
+    }
+
+    // The sibling icon column for the flyout's left side. In the Main Game category these are the
+    // memory-card root items (All Games / Favorites / collections / consoles); the currently
+    // drilled-into one is returned as the centred index. Other categories fall back to just the
+    // single parent so the flyout still shows one icon.
+    private fun computeDrillSiblings(category: Category?): Pair<List<XMBItem>, Int> {
+        val s = _uiState.value
+        if (category?.id == BuiltInCategory.GAMES) {
+            val sibs = memoryCardItems().filter {
+                it.type == XMBItemType.ALL_GAMES || it.type == XMBItemType.FAVORITES ||
+                    it.type == XMBItemType.MEMORY_CARD || it.type == XMBItemType.COLLECTION
+            }
+            val idx = sibs.indexOfFirst { sib ->
+                when {
+                    s.selectedPlatformId == ALL_GAMES_PLATFORM_ID -> sib.type == XMBItemType.ALL_GAMES
+                    s.selectedPlatformId == FAVORITES_PLATFORM_ID -> sib.type == XMBItemType.FAVORITES
+                    s.selectedCollectionId != null               -> sib.collectionId == s.selectedCollectionId
+                    s.selectedPlatformId != null                 -> sib.platformId == s.selectedPlatformId
+                    else -> false
+                }
+            }.coerceAtLeast(0)
+            return sibs to idx
+        }
+        // Custom gaming category drilled into a collection — just show the single collection icon.
+        val parent = XMBItem(id = "drill_parent", title = computeDrillTitle().orEmpty(), type = XMBItemType.COLLECTION)
+        return listOf(parent) to 0
     }
 
     // Status-bar hint for the current list ("Sort: Title"), or null when the list isn't sortable.
@@ -1663,6 +1927,23 @@ class XMBViewModel @Inject constructor(
             return
         }
 
+        // ── Fullscreen music browser captures input. Below the context-menu / player / dialog
+        //    branches above, so a menu (Y) or the player opened from it wins. ─────────────────
+        if (state.musicBrowser != null) {
+            when (action) {
+                GamepadAction.NAVIGATE_UP    -> moveMusicBrowser(-1)
+                GamepadAction.NAVIGATE_DOWN  -> moveMusicBrowser(+1)
+                GamepadAction.SELECT         -> activateMusicBrowser()
+                GamepadAction.BACK           -> onMusicBrowserBack()
+                GamepadAction.BUTTON_Y,
+                GamepadAction.LONG_PRESS     -> openMusicBrowserContextMenu()
+                GamepadAction.OPEN_TASK_TRAY,
+                GamepadAction.CHANGE_SORT    -> cycleSort()
+                else -> Unit
+            }
+            return
+        }
+
         // ── Boot sequence overlay swallows input until it finishes/auto-completes ──
         if (state.showBootSequence) return
 
@@ -1720,11 +2001,15 @@ class XMBViewModel @Inject constructor(
                 else gamepadInputHandler.cancelRepeat()
             }
             GamepadAction.NAVIGATE_LEFT -> {
+                // While drilled into a sub-item, Left/Right no longer escape to other categories —
+                // the user must Back out first.
+                if (state.isInSubItem) { gamepadInputHandler.cancelRepeat(); return }
                 val next = (state.selectedCategoryIndex - 1).coerceAtLeast(0)
                 if (next != state.selectedCategoryIndex) onCategorySelected(next)
                 else gamepadInputHandler.cancelRepeat()
             }
             GamepadAction.NAVIGATE_RIGHT -> {
+                if (state.isInSubItem) { gamepadInputHandler.cancelRepeat(); return }
                 val max  = (state.categories.size - 1).coerceAtLeast(0)
                 val next = (state.selectedCategoryIndex + 1).coerceAtMost(max)
                 if (next != state.selectedCategoryIndex) onCategorySelected(next)
@@ -1896,6 +2181,9 @@ class XMBViewModel @Inject constructor(
     private fun openAppContextMenu(item: XMBItem, categoryIdOverride: String? = null) {
         val pkg = item.packageName ?: return
         val categoryId = categoryIdOverride ?: currentCategory()?.id
+        // In non-gaming (app) categories the user wants to simply remove an app from the category,
+        // not hide it globally — so "Hide App" is only offered in gaming categories.
+        val isGamingCat = _uiState.value.categories.firstOrNull { it.id == categoryId }?.isGamingCategory == true
         val items = buildList {
             add(XMBContextMenuItem("launch",   "Launch"))
             add(XMBContextMenuItem("edit_app", "Edit App Details"))
@@ -1910,7 +2198,7 @@ class XMBViewModel @Inject constructor(
             add(XMBContextMenuItem("add",      "Add To Category"))
             if (categoryId != null) add(XMBContextMenuItem("remove", "Remove From Category"))
             if (categoryId != null) add(XMBContextMenuItem("pin",    "Pin To Category"))
-            add(XMBContextMenuItem("hide",     "Hide App"))
+            if (isGamingCat) add(XMBContextMenuItem("hide", "Hide App"))
             add(XMBContextMenuItem("rename",   "Rename Shortcut"))
         }
         _uiState.update { it.copy(
@@ -2589,6 +2877,8 @@ class XMBViewModel @Inject constructor(
     fun stepCategory(direction: Int) {
         val s = _uiState.value
         if (s.hasBlockingOverlay) return
+        // Locked while drilled into a sub-item — the user must Back out before changing category.
+        if (s.isInSubItem) return
         val next = (s.selectedCategoryIndex + direction)
             .coerceIn(0, (s.categories.size - 1).coerceAtLeast(0))
         if (next != s.selectedCategoryIndex) onCategorySelected(next)
