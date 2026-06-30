@@ -14,6 +14,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import timber.log.Timber
+import java.io.File
+import java.security.MessageDigest
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -46,6 +48,9 @@ class MusicScanner @Inject constructor(
 
         Timber.i("Music scan started: \"${folder.displayName}\" (${folder.treeUri})")
         val tracks = mutableListOf<MusicTrack>()
+        // Album art is deduped within a scan: the first track of an album writes the cached file,
+        // every other track of that album reuses the same uri. Keyed by "artist|album".
+        val artByAlbum = HashMap<String, String?>()
         var filesSeen = 0
 
         // Iterative DFS so deeply nested trees don't blow the stack.
@@ -66,7 +71,7 @@ class MusicScanner @Inject constructor(
                     continue
                 }
                 filesSeen++
-                val track = runCatching { child.toTrackOrNull(folder.id, relPath) }
+                val track = runCatching { child.toTrackOrNull(folder.id, relPath, artByAlbum) }
                     .getOrElse { Timber.w(it, "Skipping unreadable file ${child.uri}"); null }
                 if (track != null) tracks.add(track)
 
@@ -80,14 +85,30 @@ class MusicScanner @Inject constructor(
         emit(MusicScanResult.Complete(folder.id, tracks))
     }.flowOn(Dispatchers.IO)
 
-    private fun DocumentFile.toTrackOrNull(folderId: String, relPath: String): MusicTrack? {
+    private fun DocumentFile.toTrackOrNull(
+        folderId: String,
+        relPath: String,
+        artByAlbum: MutableMap<String, String?>,
+    ): MusicTrack? {
         val name = name ?: return null
         val mime = type
         if (!AudioFileFilter.isAudio(name, mime)) return null
 
+        val trackId = UUID.randomUUID().toString()
         val meta = readMetadata(uri)
+        // Resolve album art, reusing one cached file per album so a 20-track album writes once.
+        val albumKey = "${meta?.artist.orEmpty()}|${meta?.album.orEmpty()}"
+            .takeIf { meta?.album?.isNotBlank() == true }
+        val artUri = if (albumKey != null && artByAlbum.containsKey(albumKey)) {
+            artByAlbum[albumKey]
+        } else {
+            val cached = cacheAlbumArt(meta?.artwork, albumKey ?: trackId)
+            if (albumKey != null) artByAlbum[albumKey] = cached
+            cached
+        }
+
         return MusicTrack(
-            id = UUID.randomUUID().toString(),
+            id = trackId,
             folderId = folderId,
             uri = uri.toString(),
             displayName = name,
@@ -100,6 +121,7 @@ class MusicScanner @Inject constructor(
             lastModified = lastModified().takeIf { it > 0 },
             trackNumber = meta?.trackNumber,
             relativePath = relPath.takeIf { it.isNotEmpty() },
+            artUri = artUri,
         )
     }
 
@@ -110,10 +132,12 @@ class MusicScanner @Inject constructor(
         val durationMs: Long?,
         val trackNumber: Int?,
         val mimeType: String?,
+        val artwork: ByteArray?,
     )
 
     // Best-effort metadata. MediaMetadataRetriever throws on DRM/odd files — never let that abort
-    // the scan; we still keep the track using its file name.
+    // the scan; we still keep the track using its file name. Embedded art (if any) comes from the
+    // same retriever so we never open the file twice.
     private fun readMetadata(uri: Uri): TrackMeta? = runCatching {
         MediaMetadataRetriever().use { mmr ->
             mmr.setDataSource(context, uri)
@@ -125,10 +149,30 @@ class MusicScanner @Inject constructor(
                 trackNumber = mmr.str(MediaMetadataRetriever.METADATA_KEY_CD_TRACK_NUMBER)
                     ?.substringBefore('/')?.trim()?.toIntOrNull(),
                 mimeType = mmr.str(MediaMetadataRetriever.METADATA_KEY_MIMETYPE),
+                artwork = runCatching { mmr.embeddedPicture }.getOrNull(),
             )
         }
     }.getOrNull()
 
     private fun MediaMetadataRetriever.str(key: Int): String? =
         runCatching { extractMetadata(key)?.takeIf { it.isNotBlank() } }.getOrNull()
+
+    // Album art cache lives in app-internal storage so it needs no extra permission. Files are
+    // named by a hash of their dedup key (album or track id), so re-scans reuse existing files.
+    private val artCacheDir: File by lazy {
+        File(context.filesDir, "music_art").apply { mkdirs() }
+    }
+
+    private fun cacheAlbumArt(bytes: ByteArray?, key: String): String? {
+        if (bytes == null || bytes.isEmpty()) return null
+        return runCatching {
+            val file = File(artCacheDir, "${sha1(key)}.img")
+            if (!file.exists()) file.writeBytes(bytes)
+            Uri.fromFile(file).toString()
+        }.getOrNull()
+    }
+
+    private fun sha1(value: String): String =
+        MessageDigest.getInstance("SHA-1").digest(value.toByteArray())
+            .joinToString("") { "%02x".format(it) }
 }

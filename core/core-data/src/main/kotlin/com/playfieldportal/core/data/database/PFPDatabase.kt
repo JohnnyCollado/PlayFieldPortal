@@ -13,6 +13,7 @@ import com.playfieldportal.core.data.database.dao.LibrarySourceDao
 import com.playfieldportal.core.data.database.dao.MemoryCardDao
 import com.playfieldportal.core.data.database.dao.MusicFolderDao
 import com.playfieldportal.core.data.database.dao.MusicTrackDao
+import com.playfieldportal.core.data.database.dao.PlaylistDao
 import com.playfieldportal.core.data.database.dao.PlaySessionDao
 import com.playfieldportal.core.data.database.dao.PlatformDao
 import com.playfieldportal.core.data.database.dao.ThemeDao
@@ -27,6 +28,8 @@ import com.playfieldportal.core.data.database.entity.LibrarySourceEntity
 import com.playfieldportal.core.data.database.entity.MemoryCardEntity
 import com.playfieldportal.core.data.database.entity.MusicFolderEntity
 import com.playfieldportal.core.data.database.entity.MusicTrackEntity
+import com.playfieldportal.core.data.database.entity.PlaylistEntity
+import com.playfieldportal.core.data.database.entity.PlaylistTrackEntity
 import com.playfieldportal.core.data.database.entity.PlaySessionEntity
 import com.playfieldportal.core.data.database.entity.PlatformEntity
 import com.playfieldportal.core.data.database.entity.ThemeEntity
@@ -48,8 +51,10 @@ import com.playfieldportal.core.data.database.entity.UnmatchedRomEntity
         CollectionGameEntity::class,
         MusicFolderEntity::class,
         MusicTrackEntity::class,
+        PlaylistEntity::class,
+        PlaylistTrackEntity::class,
     ],
-    version = 14,
+    version = 15,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -67,6 +72,7 @@ abstract class PFPDatabase : RoomDatabase() {
     abstract fun collectionDao(): CollectionDao
     abstract fun musicFolderDao(): MusicFolderDao
     abstract fun musicTrackDao(): MusicTrackDao
+    abstract fun playlistDao(): PlaylistDao
 
     companion object {
         const val DATABASE_NAME = "pfp_database"
@@ -295,6 +301,44 @@ abstract class PFPDatabase : RoomDatabase() {
                 )
                 db.execSQL(
                     "CREATE INDEX IF NOT EXISTS index_music_tracks_folder_id ON music_tracks (folder_id)"
+                )
+            }
+        }
+
+        // v15 — album art on tracks + user playlists. Adds music_tracks.art_uri (cached embedded
+        // art), and the playlists / playlist_tracks tables (an ordered, cross-folder track list).
+        // Additive only; no existing data is touched.
+        val MIGRATION_14_15 = object : Migration(14, 15) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE music_tracks ADD COLUMN art_uri TEXT")
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS playlists (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        name TEXT NOT NULL,
+                        created_at INTEGER NOT NULL,
+                        updated_at INTEGER NOT NULL,
+                        sort_order INTEGER NOT NULL DEFAULT 0
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS playlist_tracks (
+                        playlist_id INTEGER NOT NULL,
+                        track_id TEXT NOT NULL,
+                        position INTEGER NOT NULL,
+                        added_at INTEGER NOT NULL,
+                        PRIMARY KEY(playlist_id, track_id),
+                        FOREIGN KEY(playlist_id) REFERENCES playlists(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_playlist_tracks_playlist_id ON playlist_tracks (playlist_id)"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_playlist_tracks_track_id ON playlist_tracks (track_id)"
                 )
             }
         }

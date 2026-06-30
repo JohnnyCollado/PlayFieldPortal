@@ -2,6 +2,7 @@ package com.playfieldportal.core.domain.repository
 
 import com.playfieldportal.core.domain.model.MusicFolder
 import com.playfieldportal.core.domain.model.MusicTrack
+import com.playfieldportal.core.domain.model.Playlist
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -33,4 +34,17 @@ interface MusicRepository {
     fun observeDefaultPlayerPackage(): Flow<String?>
     suspend fun getDefaultPlayerPackage(): String?
     suspend fun setDefaultPlayerPackage(packageName: String?)
+
+    // ── Playlists ───────────────────────────────────────────────────────────────
+    fun observePlaylists(): Flow<List<Playlist>>
+    fun observePlaylistTracks(playlistId: Long): Flow<List<MusicTrack>>
+    /** Playlist ids the track belongs to — drives the checkmarks in "Add to Playlist". */
+    suspend fun getPlaylistIdsForTrack(trackId: String): List<Long>
+    suspend fun createPlaylist(name: String): Long
+    suspend fun renamePlaylist(id: Long, name: String)
+    suspend fun deletePlaylist(id: Long)
+    suspend fun addTrackToPlaylist(playlistId: Long, trackId: String)
+    suspend fun removeTrackFromPlaylist(playlistId: Long, trackId: String)
+    /** Adds the track if absent, removes it if present; returns the new membership state. */
+    suspend fun toggleTrackInPlaylist(playlistId: Long, trackId: String): Boolean
 }

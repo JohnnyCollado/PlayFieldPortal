@@ -3,8 +3,12 @@ package com.playfieldportal.core.data.repository
 import android.content.Context
 import com.playfieldportal.core.data.database.dao.MusicFolderDao
 import com.playfieldportal.core.data.database.dao.MusicTrackDao
+import com.playfieldportal.core.data.database.dao.PlaylistDao
+import com.playfieldportal.core.data.database.dao.PlaylistWithCount
 import com.playfieldportal.core.data.database.entity.MusicFolderEntity
 import com.playfieldportal.core.data.database.entity.MusicTrackEntity
+import com.playfieldportal.core.data.database.entity.PlaylistEntity
+import com.playfieldportal.core.data.database.entity.PlaylistTrackEntity
 import com.playfieldportal.core.domain.model.MusicTrack
 import io.mockk.mockk
 import kotlinx.coroutines.flow.Flow
@@ -13,6 +17,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -27,7 +32,8 @@ class MusicRepositoryImplTest {
     private val context = mockk<Context>(relaxed = true) // folder/track paths never touch context
     private val folderDao = FakeMusicFolderDao()
     private val trackDao = FakeMusicTrackDao()
-    private val repo = MusicRepositoryImpl(context, folderDao, trackDao)
+    private val playlistDao = FakePlaylistDao(trackDao)
+    private val repo = MusicRepositoryImpl(context, folderDao, trackDao, playlistDao)
 
     private fun track(id: String, folderId: String) =
         MusicTrack(id = id, folderId = folderId, uri = "content://$id", displayName = "$id.mp3")
@@ -74,6 +80,26 @@ class MusicRepositoryImplTest {
         assertEquals("Renamed", stored.displayName)
         assertEquals(false, stored.enabled)
     }
+
+    @Test
+    fun `playlist create, add, toggle, and remove track`() = runTest {
+        val folder = repo.addFolder("A", "content://tree/a")
+        repo.replaceTracksForFolder(folder.id, listOf(track("t1", folder.id), track("t2", folder.id)), 1L)
+
+        val playlistId = repo.createPlaylist("Road Trip")
+        repo.addTrackToPlaylist(playlistId, "t1")
+        repo.addTrackToPlaylist(playlistId, "t2")
+        assertEquals(2, repo.observePlaylistTracks(playlistId).first().size)
+        assertEquals(2, repo.observePlaylists().first().single().trackCount)
+
+        // Toggle removes the present track and reports the new state.
+        assertFalse(repo.toggleTrackInPlaylist(playlistId, "t1"))
+        assertEquals(listOf("t2"), repo.observePlaylistTracks(playlistId).first().map { it.id })
+        assertEquals(listOf(playlistId), repo.getPlaylistIdsForTrack("t2"))
+
+        repo.deletePlaylist(playlistId)
+        assertTrue(repo.observePlaylists().first().isEmpty())
+    }
 }
 
 // ── Fakes ───────────────────────────────────────────────────────────────────────
@@ -100,6 +126,7 @@ private class FakeMusicFolderDao : MusicFolderDao {
 private class FakeMusicTrackDao : MusicTrackDao {
     // Keyed by folderId to mirror per-folder isolation in SQL.
     private val byFolder = linkedMapOf<String, MutableList<MusicTrackEntity>>()
+    fun snapshot(): List<MusicTrackEntity> = byFolder.values.flatten()
     override fun observeAll(): Flow<List<MusicTrackEntity>> = flowOf(byFolder.values.flatten())
     override fun observeByFolder(folderId: String): Flow<List<MusicTrackEntity>> =
         flowOf(byFolder[folderId]?.toList().orEmpty())
@@ -110,4 +137,59 @@ private class FakeMusicTrackDao : MusicTrackDao {
     }
     override suspend fun deleteForFolder(folderId: String) { byFolder[folderId]?.clear() }
     // replaceForFolder is a default interface method (deleteForFolder + insertAll) — inherited.
+}
+
+private class FakePlaylistDao(private val trackDao: FakeMusicTrackDao) : PlaylistDao {
+    private val playlists = linkedMapOf<Long, PlaylistEntity>()
+    private val members = mutableListOf<PlaylistTrackEntity>()
+    private var nextId = 1L
+
+    override fun observeAllWithCounts(): Flow<List<PlaylistWithCount>> = flowOf(
+        playlists.values
+            .sortedWith(compareBy({ it.sortOrder }, { it.createdAt }))
+            .map { p -> PlaylistWithCount(p, members.count { it.playlistId == p.id }) }
+    )
+
+    override suspend fun getById(id: Long) = playlists[id]
+
+    // Mirrors the INNER JOIN: only members whose track still exists are returned, in position order.
+    override fun observeTracks(playlistId: Long): Flow<List<MusicTrackEntity>> {
+        val tracksById = trackDao.snapshot().associateBy { it.id }
+        return flowOf(
+            members.filter { it.playlistId == playlistId }
+                .sortedWith(compareBy({ it.position }, { it.addedAt }))
+                .mapNotNull { tracksById[it.trackId] }
+        )
+    }
+
+    override suspend fun getPlaylistIdsForTrack(trackId: String) =
+        members.filter { it.trackId == trackId }.map { it.playlistId }
+
+    override suspend fun maxSortOrder() = playlists.values.maxOfOrNull { it.sortOrder } ?: -1
+    override suspend fun maxPosition(playlistId: Long) =
+        members.filter { it.playlistId == playlistId }.maxOfOrNull { it.position } ?: -1
+    override suspend fun isTrackInPlaylist(playlistId: Long, trackId: String) =
+        members.count { it.playlistId == playlistId && it.trackId == trackId }
+
+    override suspend fun insert(playlist: PlaylistEntity): Long {
+        val id = nextId++
+        playlists[id] = playlist.copy(id = id)
+        return id
+    }
+    override suspend fun rename(id: Long, name: String, updatedAt: Long) {
+        playlists[id]?.let { playlists[id] = it.copy(name = name, updatedAt = updatedAt) }
+    }
+    override suspend fun delete(id: Long) {
+        playlists.remove(id)
+        members.removeAll { it.playlistId == id }
+    }
+    override suspend fun addTrack(join: PlaylistTrackEntity) {
+        if (members.none { it.playlistId == join.playlistId && it.trackId == join.trackId }) members.add(join)
+    }
+    override suspend fun removeTrack(playlistId: Long, trackId: String) {
+        members.removeAll { it.playlistId == playlistId && it.trackId == trackId }
+    }
+    override suspend fun touch(id: Long, updatedAt: Long) {
+        playlists[id]?.let { playlists[id] = it.copy(updatedAt = updatedAt) }
+    }
 }

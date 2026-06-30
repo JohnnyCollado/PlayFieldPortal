@@ -5,11 +5,15 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.playfieldportal.core.data.database.dao.MusicFolderDao
 import com.playfieldportal.core.data.database.dao.MusicTrackDao
+import com.playfieldportal.core.data.database.dao.PlaylistDao
+import com.playfieldportal.core.data.database.entity.PlaylistEntity
+import com.playfieldportal.core.data.database.entity.PlaylistTrackEntity
 import com.playfieldportal.core.data.database.entity.toDomain
 import com.playfieldportal.core.data.database.entity.toEntity
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.domain.model.MusicFolder
 import com.playfieldportal.core.domain.model.MusicTrack
+import com.playfieldportal.core.domain.model.Playlist
 import com.playfieldportal.core.domain.repository.MusicRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -27,6 +31,7 @@ class MusicRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     private val folderDao: MusicFolderDao,
     private val trackDao: MusicTrackDao,
+    private val playlistDao: PlaylistDao,
 ) : MusicRepository {
 
     override fun observeFolders(): Flow<List<MusicFolder>> =
@@ -100,5 +105,65 @@ class MusicRepositoryImpl @Inject constructor(
             if (packageName.isNullOrBlank()) prefs.remove(KEY_DEFAULT_PLAYER)
             else prefs[KEY_DEFAULT_PLAYER] = packageName
         }
+    }
+
+    // ── Playlists ───────────────────────────────────────────────────────────────
+
+    override fun observePlaylists(): Flow<List<Playlist>> =
+        playlistDao.observeAllWithCounts().map { rows ->
+            rows.map { it.playlist.toDomain(trackCount = it.track_count) }
+        }
+
+    override fun observePlaylistTracks(playlistId: Long): Flow<List<MusicTrack>> =
+        playlistDao.observeTracks(playlistId).map { list -> list.map { it.toDomain() } }
+
+    override suspend fun getPlaylistIdsForTrack(trackId: String): List<Long> =
+        playlistDao.getPlaylistIdsForTrack(trackId)
+
+    override suspend fun createPlaylist(name: String): Long {
+        val now = System.currentTimeMillis()
+        val id = playlistDao.insert(
+            PlaylistEntity(
+                name = name,
+                createdAt = now,
+                updatedAt = now,
+                sortOrder = playlistDao.maxSortOrder() + 1,
+            )
+        )
+        Timber.i("Playlist created: \"$name\" (id=$id)")
+        return id
+    }
+
+    override suspend fun renamePlaylist(id: Long, name: String) =
+        playlistDao.rename(id, name, System.currentTimeMillis())
+
+    override suspend fun deletePlaylist(id: Long) {
+        playlistDao.delete(id)
+        Timber.i("Playlist removed: $id")
+    }
+
+    override suspend fun addTrackToPlaylist(playlistId: Long, trackId: String) {
+        val now = System.currentTimeMillis()
+        playlistDao.addTrack(
+            PlaylistTrackEntity(
+                playlistId = playlistId,
+                trackId = trackId,
+                position = playlistDao.maxPosition(playlistId) + 1,
+                addedAt = now,
+            )
+        )
+        playlistDao.touch(playlistId, now)
+    }
+
+    override suspend fun removeTrackFromPlaylist(playlistId: Long, trackId: String) {
+        playlistDao.removeTrack(playlistId, trackId)
+        playlistDao.touch(playlistId, System.currentTimeMillis())
+    }
+
+    override suspend fun toggleTrackInPlaylist(playlistId: Long, trackId: String): Boolean {
+        val present = playlistDao.isTrackInPlaylist(playlistId, trackId) > 0
+        if (present) removeTrackFromPlaylist(playlistId, trackId)
+        else addTrackToPlaylist(playlistId, trackId)
+        return !present
     }
 }

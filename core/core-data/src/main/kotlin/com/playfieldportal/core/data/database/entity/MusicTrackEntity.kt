@@ -54,6 +54,9 @@ data class MusicTrackEntity(
 
     @ColumnInfo(name = "relative_path")
     val relativePath: String? = null,
+
+    @ColumnInfo(name = "art_uri")
+    val artUri: String? = null,
 )
 
 fun MusicTrackEntity.toDomain() = MusicTrack(
@@ -70,6 +73,7 @@ fun MusicTrackEntity.toDomain() = MusicTrack(
     lastModified = lastModified,
     trackNumber  = trackNumber,
     relativePath = relativePath,
+    artUri       = artUri,
 )
 
 fun MusicTrack.toEntity() = MusicTrackEntity(
@@ -86,4 +90,5 @@ fun MusicTrack.toEntity() = MusicTrackEntity(
     lastModified = lastModified,
     trackNumber  = trackNumber,
     relativePath = relativePath,
+    artUri       = artUri,
 )

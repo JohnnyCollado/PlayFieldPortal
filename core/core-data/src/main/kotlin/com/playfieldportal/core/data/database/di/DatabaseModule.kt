@@ -11,6 +11,7 @@ import com.playfieldportal.core.data.database.dao.LibrarySourceDao
 import com.playfieldportal.core.data.database.dao.MemoryCardDao
 import com.playfieldportal.core.data.database.dao.MusicFolderDao
 import com.playfieldportal.core.data.database.dao.MusicTrackDao
+import com.playfieldportal.core.data.database.dao.PlaylistDao
 import com.playfieldportal.core.data.database.dao.PlaySessionDao
 import com.playfieldportal.core.data.database.dao.PlatformDao
 import com.playfieldportal.core.data.database.dao.ThemeDao
@@ -55,6 +56,7 @@ object DatabaseModule {
             PFPDatabase.MIGRATION_11_12,
             PFPDatabase.MIGRATION_12_13,
             PFPDatabase.MIGRATION_13_14,
+            PFPDatabase.MIGRATION_14_15,
         )
         .build()
 
@@ -70,6 +72,7 @@ object DatabaseModule {
     @Provides fun provideCollectionDao(db: PFPDatabase): CollectionDao = db.collectionDao()
     @Provides fun provideMusicFolderDao(db: PFPDatabase): MusicFolderDao = db.musicFolderDao()
     @Provides fun provideMusicTrackDao(db: PFPDatabase): MusicTrackDao = db.musicTrackDao()
+    @Provides fun providePlaylistDao(db: PFPDatabase): PlaylistDao = db.playlistDao()
 }
 
 @Module
