@@ -20,6 +20,7 @@ For a developer-oriented overview of the codebase, see **[ARCHITECTURE.md](ARCHI
 - [Feature status](#feature-status)
 - [Roadmap](#roadmap)
 - [Setup & first run](#setup--first-run)
+- [Permissions & privacy](#permissions--privacy)
 - [Using the launcher](#using-the-launcher)
   - [Navigation & controls](#navigation--controls)
   - [The Game category](#the-game-category)
@@ -117,10 +118,15 @@ change this later in *Android Settings → Apps → Default apps → Home app*.
 > require PFP to be the **active default launcher**.
 
 ### 3. Grant permissions
-- **Notifications** (Android 13+) — so background scans/fetches can report progress in the shade.
-- **All files access / storage** — so PFP can read your ROM folders. Grant it when prompted, or in
-  *Android Settings → Apps → Play Field Portal → Permissions*.
+- **Notifications** (Android 13+) — so background scans/fetches can report progress in the shade,
+  and so apps that try to add a game shortcut can ask you to confirm it first.
+- **All-files access / storage** — only needed to scan **file-based ROM folders** (disc/multi-file
+  games are read by emulators from real paths). PFP asks for it **point-of-need** — a *Grant
+  All-Files Access* prompt appears in **Settings → Library** when it's missing. If you only use
+  SAF music folders or the app-picker Android library, you never need it.
 - **Usage access** (optional) — enables the "Recently Used" app-drawer filter.
+
+See [Permissions & privacy](#permissions--privacy) for the full breakdown.
 
 ### 4. Boot sequence
 On launch you'll see the **PFP logo** fade in over the XMB wave, then the home screen. (Boot is
@@ -130,6 +136,35 @@ shorter on repeat launches.)
 Open **Settings → Library**, choose your ROM **root folder**, then add consoles — see
 [Setting up a console](#setting-up-a-console-memory-card). The **Game** category shows an inline
 setup prompt on first launch if no library is configured yet.
+
+---
+
+## Permissions & privacy
+
+PFP is a local-first launcher: **your data stays on your device.** There is no analytics, no
+telemetry, and no account — PFP only talks to the network when *you* trigger artwork/metadata
+scraping, and only over HTTPS.
+
+**What PFP stores, and how:**
+- **Stays on-device.** Your library, settings, and artwork live in app storage. **Backup is
+  disabled** (`allowBackup=false`), so none of it is uploaded to the cloud or transferred to a new
+  phone — re-add folders / re-enter keys after a device move.
+- **Your scraper API keys are encrypted at rest.** If you add SteamGridDB / TheGamesDB / IGDB
+  keys, they're sealed with a hardware-backed Android Keystore key, not stored in plain text.
+- **Network is HTTPS-only.** Cleartext traffic is blocked, and release builds trust only the
+  system certificate store.
+
+**Why the broad permissions exist (and how they're minimized):**
+- **All-files access** is requested **only when you add a file-based ROM folder** — disc and
+  multi-file games (`.cue`+`.bin`, multi-disc, `.m3u`) must be read by emulators from real paths,
+  which scoped storage can't provide. Use SAF music + the app-picker Android library and you never
+  grant it.
+- **Query installed apps** is required to *be* a launcher (showing/launching your apps).
+- **Usage access** is optional and only powers the "Recently Used" filter.
+
+**Other apps can't silently change your library.** Apps that broadcast a legacy "install shortcut"
+request can no longer add entries on their own — PFP sanitizes the request and asks you to **confirm
+each one** via a notification before it appears.
 
 ---
 
