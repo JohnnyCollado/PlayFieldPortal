@@ -394,6 +394,7 @@ enum class XMBItemType {
     PLAYLIST,
     MUSIC_APPS,
     VIDEO_LIBRARY,
+    VIDEO_FOLDER,
     VIDEO_FILE,
     VIDEO_APPS,
     EMPTY,
@@ -1157,8 +1158,8 @@ class XMBViewModel @Inject constructor(
                 id       = "vlib_${lib.id}",
                 title    = lib.displayName,
                 subtitle = "${lib.videoCount} ${if (lib.videoCount == 1) "video" else "videos"}",
-                coverUri = lib.artworkUri ?: MEMORY_CARD_ASSET_URI,
-                type     = XMBItemType.MEMORY_CARD,
+                coverUri = lib.artworkUri,
+                type     = XMBItemType.VIDEO_FOLDER,
             )
         }
         return if (rows.isEmpty()) {

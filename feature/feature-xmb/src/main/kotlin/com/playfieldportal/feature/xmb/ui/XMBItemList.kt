@@ -30,6 +30,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.MusicNote
@@ -234,19 +235,35 @@ private fun XmbGameColumn(
     }
 }
 
-// One sibling console icon — plain glyph (no tile/shadow), dimmed when not the active sibling.
+// One sibling icon — plain glyph (no tile/shadow), dimmed when not the active sibling. Video
+// sections use vector glyphs (folder / library / movie); everything else uses console art.
 @Composable
 private fun SiblingIcon(item: XMBItem, selected: Boolean) {
     val chip = if (selected) 56.dp else 40.dp
+    val videoGlyph = when (item.type) {
+        XMBItemType.VIDEO_FOLDER  -> Icons.Filled.Folder
+        XMBItemType.VIDEO_LIBRARY -> Icons.Filled.VideoLibrary
+        XMBItemType.VIDEO_APPS    -> Icons.Filled.Movie
+        else                      -> null
+    }
     Box(
         modifier = Modifier.fillMaxWidth().padding(end = 16.dp),
         contentAlignment = Alignment.CenterEnd,
     ) {
-        Image(
-            painter = painterResource(rememberConsoleIconId(consoleIconKeyFor(item))),
-            contentDescription = item.title,
-            modifier = Modifier.size(chip).alpha(if (selected) 1f else 0.5f),
-        )
+        if (videoGlyph != null) {
+            Icon(
+                videoGlyph,
+                contentDescription = item.title,
+                tint = Color.White.copy(alpha = if (selected) 1f else 0.5f),
+                modifier = Modifier.size(chip),
+            )
+        } else {
+            Image(
+                painter = painterResource(rememberConsoleIconId(consoleIconKeyFor(item))),
+                contentDescription = item.title,
+                modifier = Modifier.size(chip).alpha(if (selected) 1f else 0.5f),
+            )
+        }
     }
 }
 
@@ -629,6 +646,20 @@ private fun XmbItemLeadingIcon(
                             modifier = Modifier.size(28.dp),
                         )
                     }
+                }
+            }
+        }
+        // A video library / "All Videos" folder: custom artwork when set, else a folder glyph.
+        item.type == XMBItemType.VIDEO_FOLDER -> {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
+                if (item.coverUri != null) {
+                    AsyncImage(
+                        model = item.coverUri,
+                        contentDescription = null,
+                        modifier = Modifier.size(LEADING_ICON_SIZE).clip(RoundedCornerShape(8.dp)),
+                    )
+                } else {
+                    Icon(Icons.Filled.Folder, contentDescription = null, tint = InactiveText, modifier = Modifier.size(48.dp))
                 }
             }
         }
