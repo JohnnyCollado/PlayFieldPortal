@@ -61,12 +61,13 @@ fun XmbColorScheme.resolve(month: Int): XmbPalette {
 
 /**
  * Vertical gradient anchors derived from the wave hue, in the classic PSP "Original" style: a DEEP,
- * dark shade of the hue at the TOP (`first`, the hue multiplied down toward navy) easing to a BRIGHT,
- * light shade at the BOTTOM (`second`, the hue blended up toward white). Dark → bright, top → bottom.
- * Used by [resolve] and re-applied when a category tints the wave so the two always match.
+ * saturated shade of the hue at the TOP (`first`) easing to a BRIGHTER shade near the wave (`second`).
+ * Dark → bright, top → bottom — but both keep the hue's saturation (the real XMB gradient stays a
+ * rich colour, it does not fade to navy/white). Used by [resolve] and re-applied when a category
+ * tints the wave so the two always match.
  */
 fun lightBackgroundAnchors(waveArgb: Long): Pair<Long, Long> =
-    darken(waveArgb, 0.40f) to lighten(waveArgb, 0.40f)
+    darken(waveArgb, 0.62f) to lighten(waveArgb, 0.28f)
 
 /** Blend the RGB channels of an opaque ARGB color toward white by [t] (0 = unchanged, 1 = white). */
 private fun lighten(argb: Long, t: Float): Long {

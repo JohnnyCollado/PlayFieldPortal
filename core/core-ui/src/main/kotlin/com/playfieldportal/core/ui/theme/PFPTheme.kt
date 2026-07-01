@@ -30,9 +30,10 @@ val DefaultPFPColors = PFPColors(
     backgroundOverlay = Color(0x88000000),
     selectedItem      = Color(0xFFFFFFFF),
     categoryBar       = Color(0x00000000),
-    // Classic PSP "Original" blue gradient — deep navy at the top, bright sky-blue at the bottom.
-    backgroundTop     = Color(0xFF0C2A78),
-    backgroundBottom  = Color(0xFF52A6E0),
+    // Classic PSP "Original" blue gradient, sampled from the real XMB wave video: a saturated azure
+    // top easing to a brighter cyan-blue near the wave (not a washed-out sky-blue).
+    backgroundTop     = Color(0xFF0743A2),
+    backgroundBottom  = Color(0xFF128BC9),
 )
 
 @Composable
