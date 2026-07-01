@@ -58,6 +58,8 @@ class MusicPlayerController @Inject constructor(
     fun playPause() {
         val p = player ?: return
         runCatching { if (p.isPlaying) p.pause() else p.start() }
+        // Only run the 500ms position ticker while actually playing — no churn while paused.
+        if (p.isPlaying) startTicker() else { tickJob?.cancel(); tickJob = null }
         emit()
     }
 

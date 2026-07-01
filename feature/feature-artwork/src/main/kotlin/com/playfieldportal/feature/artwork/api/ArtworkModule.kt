@@ -11,10 +11,12 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.android.Android
+import com.playfieldportal.feature.artwork.BuildConfig
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
+import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import okio.Path.Companion.toOkioPath
@@ -35,11 +37,15 @@ object ArtworkModule {
                 isLenient = true
             })
         }
+        // Release logs nothing (no request lines that could carry a key in a query string); debug
+        // logs headers but with the Authorization token redacted so an API secret never lands in a
+        // log even on a dev machine.
         install(Logging) {
-            level = LogLevel.HEADERS
+            level = if (BuildConfig.DEBUG) LogLevel.HEADERS else LogLevel.NONE
             logger = object : Logger {
                 override fun log(message: String) = Timber.tag("Ktor").d(message)
             }
+            sanitizeHeader { header -> header.equals(HttpHeaders.Authorization, ignoreCase = true) }
         }
         engine {
             connectTimeout = 15_000

@@ -45,6 +45,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.text.TextStyle
 import com.playfieldportal.core.ui.theme.LocalPFPColors
+import com.playfieldportal.core.ui.wave.WaveStyle
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
@@ -192,8 +193,22 @@ fun XMBShell(
 ) {
     PFPTheme(colors = uiState.themeColors) {
         Box(modifier = Modifier.fillMaxSize()) {
+            // Freeze the wave's per-frame animation whenever an opaque fullscreen layer fully covers
+            // it (boot, a detail/player overlay, the app drawer, the music player). Those hide the
+            // wave anyway, so animating it just burns GPU/battery — worst case competing with the
+            // video player. Settings/dialogs use a see-through scrim, so the wave keeps animating there.
+            val waveCovered = uiState.showBootSequence ||
+                uiState.activeVideoId != null || uiState.activeGameId != null ||
+                uiState.activeAppId != null || uiState.activeAppDrawerFilter != null ||
+                uiState.musicPlayerVisible
+            val effectiveWaveStyle = if (waveCovered) {
+                when (uiState.waveStyle) {
+                    WaveStyle.ANIMATED, WaveStyle.STATIC -> WaveStyle.STATIC
+                    WaveStyle.REDUCED, WaveStyle.REDUCED_STATIC -> WaveStyle.REDUCED_STATIC
+                }
+            } else uiState.waveStyle
             XmbBackground(
-                waveStyle           = uiState.waveStyle,
+                waveStyle           = effectiveWaveStyle,
                 customWallpaperPath = uiState.customWallpaperPath,
                 modifier            = Modifier.fillMaxSize(),
             )
