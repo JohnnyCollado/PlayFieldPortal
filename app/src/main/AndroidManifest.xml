@@ -20,6 +20,10 @@
     <!-- Launcher role — see all installed apps -->
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
 
+    <!-- App Drawer uninstall action — lets the system uninstaller accept our ACTION_DELETE intent
+         (normal permission, auto-granted; the OS still shows its own confirmation). -->
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
+
     <!-- Internet — SteamGridDB, emulator profile updates -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
