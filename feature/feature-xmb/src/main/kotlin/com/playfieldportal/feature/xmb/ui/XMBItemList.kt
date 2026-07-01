@@ -112,6 +112,10 @@ private val SelectedTextShadow = Shadow(
 // (e.g. the flyout cursor) can derive its position from the same number the row lays out with.
 private val ROW_HORIZONTAL_PADDING = 18.dp
 
+// Physical-media memory-card art for rows that should read as a memory card but have no console icon
+// of their own (collections). Mirrors the ViewModel's MEMORY_CARD_ASSET_URI.
+private const val MEMORY_CARD_DEFAULT_ART = "file:///android_asset/systems/physical-media/_default.png"
+
 // ── Drill flyout layout ──────────────────────────────────────────────────────
 // Left inset of the game-card column, measured from the flyout's left edge (which the caller has
 // already shifted under the caticon). Clears the memory-card icon column on the left so the game
@@ -606,19 +610,21 @@ private fun XmbItemLeadingIcon(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier.size(LEADING_ICON_SIZE).selectedIconBloom(isSelected),
               ) {
-                if (item.type == XMBItemType.MEMORY_CARD && item.coverUri != null) {
-                    // A memory-card row with explicit art (e.g. the "Music" item) loads it directly
-                    // — used for the physical-media memory-card PNG served from assets.
+                // Explicit art (the "Music" card) loads directly; collections have no console icon of
+                // their own, so they use the physical-media memory-card art (_default.png) and read as
+                // a memory card instead of falling back to the blank sysicon_default.
+                val memoryCardArt = item.coverUri
+                    ?: MEMORY_CARD_DEFAULT_ART.takeIf { item.type == XMBItemType.COLLECTION }
+                if (memoryCardArt != null) {
                     AsyncImage(
-                        model = item.coverUri,
+                        model = memoryCardArt,
                         contentDescription = null,
                         modifier = Modifier.size(LEADING_ICON_SIZE),
                     )
                 } else {
                     // Memory-card rows show their matching console icon. All Games gets the generic
                     // cartridge art (sysicon_allgames) and Favorites the star (sysicon_favorites),
-                    // both to stand apart from the Game controller; any other unknown row
-                    // (Collections, unmatched console) falls back to sysicon_default.
+                    // both to stand apart from the Game controller.
                     val iconKey = when (item.type) {
                         XMBItemType.MEMORY_CARD -> item.platformId
                         XMBItemType.ALL_GAMES   -> "allgames"
@@ -662,6 +668,21 @@ private fun XmbItemLeadingIcon(
                 AppListIcon(
                     packageName = item.packageName,
                     modifier = Modifier.size(48.dp),
+                )
+            }
+        }
+        // Every Settings item shares the wrench badge (sysicon_settings) so Settings reads like the
+        // rest of the XMB — an icon + label per row — instead of a blank-led list. Sized and slotted
+        // exactly like the memory-card console icons.
+        item.id.startsWith("settings_") -> {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.width(LEADING_ICON_SLOT),
+            ) {
+                Image(
+                    painter = painterResource(rememberConsoleIconId("settings")),
+                    contentDescription = null,
+                    modifier = Modifier.size(LEADING_ICON_SIZE),
                 )
             }
         }
