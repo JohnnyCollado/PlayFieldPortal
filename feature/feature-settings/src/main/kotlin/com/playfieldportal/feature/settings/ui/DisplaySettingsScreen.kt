@@ -169,8 +169,8 @@ fun DisplaySettingsScreen(
             SettingsGroup("Apps")
 
             SettingsRow(
-                label    = "Hidden Apps",
-                sublabel = "See every hidden app and show or hide apps individually",
+                label    = "Hidden Items",
+                sublabel = "Review apps & games you've hidden, grouped by item and location",
                 onClick  = { showHiddenApps = true },
             )
         }

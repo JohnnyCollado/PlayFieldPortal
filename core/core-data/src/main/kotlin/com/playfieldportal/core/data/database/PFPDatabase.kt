@@ -18,6 +18,7 @@ import com.playfieldportal.core.data.database.dao.PlaySessionDao
 import com.playfieldportal.core.data.database.dao.PlatformDao
 import com.playfieldportal.core.data.database.dao.ThemeDao
 import com.playfieldportal.core.data.database.dao.UnmatchedRomDao
+import com.playfieldportal.core.data.database.dao.HiddenPlacementDao
 import com.playfieldportal.core.data.database.dao.VideoDao
 import com.playfieldportal.core.data.database.dao.VideoLibraryDao
 import com.playfieldportal.core.data.database.dao.VideoPlaylistDao
@@ -37,6 +38,7 @@ import com.playfieldportal.core.data.database.entity.PlaySessionEntity
 import com.playfieldportal.core.data.database.entity.PlatformEntity
 import com.playfieldportal.core.data.database.entity.ThemeEntity
 import com.playfieldportal.core.data.database.entity.UnmatchedRomEntity
+import com.playfieldportal.core.data.database.entity.HiddenPlacementEntity
 import com.playfieldportal.core.data.database.entity.VideoEntity
 import com.playfieldportal.core.data.database.entity.VideoLibraryEntity
 import com.playfieldportal.core.data.database.entity.VideoPlaylistEntity
@@ -64,8 +66,9 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         VideoEntity::class,
         VideoPlaylistEntity::class,
         VideoPlaylistItemEntity::class,
+        HiddenPlacementEntity::class,
     ],
-    version = 17,
+    version = 18,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -87,6 +90,7 @@ abstract class PFPDatabase : RoomDatabase() {
     abstract fun videoLibraryDao(): VideoLibraryDao
     abstract fun videoDao(): VideoDao
     abstract fun videoPlaylistDao(): VideoPlaylistDao
+    abstract fun hiddenPlacementDao(): HiddenPlacementDao
 
     companion object {
         const val DATABASE_NAME = "pfp_database"
@@ -439,6 +443,28 @@ abstract class PFPDatabase : RoomDatabase() {
                 )
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_video_playlist_items_playlist_id ON video_playlist_items (playlist_id)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_video_playlist_items_video_id ON video_playlist_items (video_id)")
+            }
+        }
+
+        // v18 — per-location hiding. Adds hidden_placements ("this item is hidden from this
+        // location"). The legacy global app hide (app_overrides.is_hidden) is left untouched and
+        // treated as a GLOBAL placement by the manager. Additive only.
+        val MIGRATION_17_18 = object : Migration(17, 18) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS hidden_placements (
+                        item_key TEXT NOT NULL,
+                        item_label TEXT NOT NULL,
+                        location_type TEXT NOT NULL,
+                        location_id TEXT NOT NULL,
+                        location_label TEXT NOT NULL,
+                        created_at INTEGER NOT NULL,
+                        PRIMARY KEY(item_key, location_type, location_id)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_hidden_placements_item_key ON hidden_placements (item_key)")
             }
         }
     }

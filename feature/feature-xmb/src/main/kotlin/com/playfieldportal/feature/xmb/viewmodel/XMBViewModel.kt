@@ -13,6 +13,9 @@ import com.playfieldportal.core.data.database.entity.PlatformEntity
 import com.playfieldportal.core.data.repository.CategoryRepositoryImpl
 import com.playfieldportal.core.data.repository.CollectionRepository
 import com.playfieldportal.core.data.repository.MemoryCardRepository
+import com.playfieldportal.core.domain.model.HideLocationType
+import com.playfieldportal.core.domain.model.HiddenPlacement
+import com.playfieldportal.core.data.database.entity.HiddenPlacementEntity
 import com.playfieldportal.core.domain.model.MemoryCard
 import com.playfieldportal.feature.appbar.AppCategoryRepository
 import com.playfieldportal.feature.appbar.CategorizedApp
@@ -538,6 +541,7 @@ class XMBViewModel @Inject constructor(
     private val musicPlayer: com.playfieldportal.feature.xmb.music.MusicPlayerController,
     private val emulatorProfileRepository: com.playfieldportal.feature.launcher.EmulatorProfileRepository,
     private val videoRepository: com.playfieldportal.core.domain.repository.VideoRepository,
+    private val hiddenPlacementDao: com.playfieldportal.core.data.database.dao.HiddenPlacementDao,
 ) : ViewModel() {
 
     // The track list currently on screen (in display/sort order), used as the in-app player's queue
@@ -587,6 +591,7 @@ class XMBViewModel @Inject constructor(
         observeSoundSetting()
         observeMusic()
         observeVideo()
+        observeHiddenPlacements()
         observeEmulatorProfiles()
         collectGamepadActions()
     }
@@ -794,7 +799,7 @@ class XMBViewModel @Inject constructor(
             when (category.id) {
                 BuiltInCategory.FAVORITES -> {
                     gameRepository.observeFavorites().collect { games ->
-                        _uiState.update { it.copy(currentItems = games.gameSorted(_uiState.value.gameSortMode).toXmbItems()) }
+                        _uiState.update { it.copy(currentItems = games.notHiddenAt(HideLocationType.FAVORITES).gameSorted(_uiState.value.gameSortMode).toXmbItems()) }
                     }
                 }
                 BuiltInCategory.ANDROID -> {
@@ -810,8 +815,9 @@ class XMBViewModel @Inject constructor(
                         // A user collection — games from any platform, app entries allowed only
                         // because they were explicitly added by the user.
                         collectionRepository.observeGames(collectionId).collect { games ->
-                            val items = if (games.isEmpty()) listOf(emptyCollectionItem())
-                                        else games.gameSorted(_uiState.value.gameSortMode).toXmbItems()
+                            val visible = games.notHiddenAt(HideLocationType.COLLECTION, collectionId.toString())
+                            val items = if (visible.isEmpty()) listOf(emptyCollectionItem())
+                                        else visible.gameSorted(_uiState.value.gameSortMode).toXmbItems()
                             _uiState.update { it.copy(currentItems = items) }
                         }
                     } else if (platformId == ALL_GAMES_PLATFORM_ID) {
@@ -824,14 +830,18 @@ class XMBViewModel @Inject constructor(
                     } else if (platformId == FAVORITES_PLATFORM_ID) {
                         // Favorites folder — every favorited entry (games and app shortcuts).
                         gameRepository.observeFavorites().collect { games ->
-                            val items = if (games.isEmpty()) listOf(emptyFavoritesItem())
-                                        else games.gameSorted(_uiState.value.gameSortMode).toXmbItems()
+                            val visible = games.notHiddenAt(HideLocationType.FAVORITES)
+                            val items = if (visible.isEmpty()) listOf(emptyFavoritesItem())
+                                        else visible.gameSorted(_uiState.value.gameSortMode).toXmbItems()
                             _uiState.update { it.copy(currentItems = items) }
                         }
                     } else if (platformId != null) {
                         gameRepository.observeByPlatform(platformId).collect { games ->
-                            val items = if (games.isEmpty()) listOf(emptyFolderItem(platformId))
-                                        else games.gameSorted(_uiState.value.gameSortMode).toXmbItems()
+                            // Only the Android platform supports per-location hiding (ROM platforms don't).
+                            val visible = if (platformId == ANDROID_PLATFORM_ID)
+                                games.notHiddenAt(HideLocationType.ANDROID_PLATFORM) else games
+                            val items = if (visible.isEmpty()) listOf(emptyFolderItem(platformId))
+                                        else visible.gameSorted(_uiState.value.gameSortMode).toXmbItems()
                             _uiState.update { it.copy(currentItems = items) }
                         }
                     } else {
@@ -898,8 +908,9 @@ class XMBViewModel @Inject constructor(
                         val openCollectionId = _uiState.value.selectedCollectionId
                         if (openCollectionId != null) {
                             collectionRepository.observeGames(openCollectionId).collect { games ->
-                                val items = if (games.isEmpty()) listOf(emptyCollectionItem())
-                                            else games.gameSorted(_uiState.value.gameSortMode).toXmbItems()
+                                val visible = games.notHiddenAt(HideLocationType.COLLECTION, openCollectionId.toString())
+                                val items = if (visible.isEmpty()) listOf(emptyCollectionItem())
+                                            else visible.gameSorted(_uiState.value.gameSortMode).toXmbItems()
                                 _uiState.update { it.copy(currentItems = items) }
                             }
                             return@launch
@@ -909,6 +920,7 @@ class XMBViewModel @Inject constructor(
                         // Main Game category exactly; only overlay the "Pinned" marker.
                         val gameRows = gameCategoryRepository.itemsForCategory(category.id)
                             .filterIsInstance<com.playfieldportal.core.data.repository.GameCategoryItem.GameItem>()
+                            .filterNot { isHiddenAt(HiddenPlacement.gameKey(it.game.id), HideLocationType.CATEGORY, category.id) }
                         val pinnedGameIds = gameRows.filter { it.pinned }.map { it.game.id }.toSet()
                         val gameItems = gameRows.map { it.game }.gameSorted(_uiState.value.gameSortMode).toXmbItems().map { xmb ->
                             if (xmb.gameId in pinnedGameIds) xmb.copy(subtitle = "Pinned") else xmb
@@ -938,6 +950,7 @@ class XMBViewModel @Inject constructor(
                         // by package, typed ANDROID_APP) render that art so the category looks uniform.
                         // The rows stay ANDROID_APP, so this never makes them appear in All Games.
                         val apps = appCategoryRepository.appsForCategory(category.id)
+                            .notHiddenAt(HideLocationType.CATEGORY, category.id)
                         val appItems = if (apps.isEmpty()) listOf(emptyCategoryItem(category))
                                        else apps.map { it.toXmbItem(gameRepository.getAppEntry(it.packageName)) }
                         // "Add Apps" is offered on every app section so the same picker serves
@@ -1062,6 +1075,7 @@ class XMBViewModel @Inject constructor(
     // mix with the built-in Music category), plus an "Add Music Apps" row.
     private suspend fun musicAppItems(): List<XMBItem> {
         val apps = appCategoryRepository.appsForCategory(MUSIC_APPS_CATEGORY_ID)
+            .notHiddenAt(HideLocationType.CATEGORY, MUSIC_APPS_CATEGORY_ID)
         val appItems = apps.map { it.toXmbItem(gameRepository.getAppEntry(it.packageName)) }
         return appItems + XMBItem(
             id       = ADD_MUSIC_APPS_ITEM_ID,
@@ -1132,6 +1146,68 @@ class XMBViewModel @Inject constructor(
     private fun closeMusicView() {
         _uiState.update { it.copy(musicNav = MusicNav.Root, selectedItemIndex = 0) }
         loadItemsForCategory(currentCategory())
+    }
+
+    // ── Per-location hiding ───────────────────────────────────────────────────────
+
+    // Fast lookup set of "itemKey|LOCATION_TYPE|locationId" for every hidden placement, refreshed
+    // reactively. Item lists are filtered against it as they're built.
+    @Volatile private var hiddenKeys: Set<String> = emptySet()
+
+    private fun observeHiddenPlacements() {
+        viewModelScope.launch {
+            hiddenPlacementDao.observeAll().collect { rows ->
+                hiddenKeys = rows.map { "${it.itemKey}|${it.locationType}|${it.locationId}" }.toSet()
+                // Re-render the current list so a hide/unhide takes effect immediately.
+                loadItemsForCategory(currentCategory())
+            }
+        }
+    }
+
+    private fun isHiddenAt(itemKey: String, type: HideLocationType, locationId: String = ""): Boolean =
+        hiddenKeys.contains("$itemKey|${type.name}|$locationId")
+
+    @JvmName("gamesNotHiddenAt")
+    private fun List<Game>.notHiddenAt(type: HideLocationType, locationId: String = ""): List<Game> =
+        filterNot { isHiddenAt(HiddenPlacement.gameKey(it.id), type, locationId) }
+
+    @JvmName("appsNotHiddenAt")
+    private fun List<CategorizedApp>.notHiddenAt(type: HideLocationType, locationId: String = ""): List<CategorizedApp> =
+        filterNot { isHiddenAt(HiddenPlacement.appKey(it.packageName), type, locationId) }
+
+    // Persists a hide placement, caching labels so the Hidden Items manager renders without joins.
+    private fun persistHide(itemKey: String, itemLabel: String, type: HideLocationType, locationId: String, locationLabel: String) {
+        viewModelScope.launch {
+            hiddenPlacementDao.upsert(
+                HiddenPlacementEntity(itemKey, itemLabel, type.name, locationId, locationLabel, System.currentTimeMillis())
+            )
+        }
+    }
+
+    private fun categoryDisplayName(id: String): String = when (id) {
+        MUSIC_APPS_CATEGORY_ID -> "Music Apps"
+        VIDEO_APPS_CATEGORY_ID -> "Video Apps"
+        else -> _uiState.value.categories.firstOrNull { it.id == id }?.name ?: id
+    }
+
+    // The location a GAME row is currently being shown in (for "Hide from here"), or null when the
+    // current view doesn't support per-location hiding (All Games, a ROM platform, the Games root).
+    private fun currentHideLocation(): Triple<HideLocationType, String, String>? {
+        val s = _uiState.value
+        val cat = currentCategory()
+        return when {
+            s.selectedCollectionId != null -> {
+                val name = s.collections.firstOrNull { it.id == s.selectedCollectionId }?.name ?: "Collection"
+                Triple(HideLocationType.COLLECTION, s.selectedCollectionId.toString(), name)
+            }
+            s.selectedPlatformId == FAVORITES_PLATFORM_ID || cat?.id == BuiltInCategory.FAVORITES ->
+                Triple(HideLocationType.FAVORITES, "", "Favorites")
+            s.selectedPlatformId == ANDROID_PLATFORM_ID -> Triple(HideLocationType.ANDROID_PLATFORM, "", "Android")
+            cat != null && cat.isGamingCategory && cat.id != BuiltInCategory.GAMES &&
+                s.selectedPlatformId == null && s.selectedCollectionId == null ->
+                Triple(HideLocationType.CATEGORY, cat.id, cat.name)
+            else -> null
+        }
     }
 
     // ── Video ───────────────────────────────────────────────────────────────────
@@ -1241,6 +1317,7 @@ class XMBViewModel @Inject constructor(
 
     private suspend fun videoAppItems(): List<XMBItem> {
         val apps = appCategoryRepository.appsForCategory(VIDEO_APPS_CATEGORY_ID)
+            .notHiddenAt(HideLocationType.CATEGORY, VIDEO_APPS_CATEGORY_ID)
         val appItems = apps.map { it.toXmbItem(gameRepository.getAppEntry(it.packageName)) }
         return appItems + XMBItem(
             id       = ADD_VIDEO_APPS_ITEM_ID,
@@ -2757,6 +2834,8 @@ class XMBViewModel @Inject constructor(
             add(XMBContextMenuItem("refresh_metadata", "Refresh Metadata"))
             add(XMBContextMenuItem("refresh_artwork",  "Refresh Artwork"))
             add(XMBContextMenuItem("file_location",    "View File Location"))
+            // Per-location hide for the spot this game is shown in (recoverable in Hidden Items).
+            currentHideLocation()?.let { (_, _, label) -> add(XMBContextMenuItem("hide_here", "Hide from $label")) }
             // Android-library apps are user-curated, so let the user remove one like any game.
             if (item.platformId == ANDROID_PLATFORM_ID && item.packageName != null && !inCollection) {
                 add(XMBContextMenuItem("remove_app", "Remove from Library", isDestructive = true))
@@ -2825,7 +2904,9 @@ class XMBViewModel @Inject constructor(
             add(XMBContextMenuItem("add",      "Add To Category"))
             if (categoryId != null) add(XMBContextMenuItem("remove", "Remove From Category"))
             if (categoryId != null) add(XMBContextMenuItem("pin",    "Pin To Category"))
-            if (isGamingCat) add(XMBContextMenuItem("hide", "Hide App"))
+            // Per-location hide (recoverable in Settings ▸ Hidden Items) + global hide-everywhere.
+            if (categoryId != null) add(XMBContextMenuItem("hide_from_category", "Hide from ${categoryDisplayName(categoryId)}"))
+            add(XMBContextMenuItem("hide_everywhere", "Hide Everywhere"))
             add(XMBContextMenuItem("rename",   "Rename Shortcut"))
         }
         _uiState.update { it.copy(
@@ -3100,6 +3181,9 @@ class XMBViewModel @Inject constructor(
                 "refresh_artwork"        -> refreshGameArtwork(menu.gameId)
                 "refresh_metadata"       -> refreshGameArtwork(menu.gameId)
                 "file_location"          -> showGameFileLocation(menu.gameId)
+                "hide_here"              -> currentHideLocation()?.let { (type, id, label) ->
+                    persistHide(HiddenPlacement.gameKey(menu.gameId), menu.title, type, id, label)
+                }
                 "remove_app"             -> {
                     val gid = menu.gameId
                     appAction {
@@ -3126,7 +3210,10 @@ class XMBViewModel @Inject constructor(
                     "add"       -> openCategoryPicker(pkg, menu.categoryContext, "add")
                     "remove"    -> menu.categoryContext?.let { cat -> appAction { appCategoryRepository.removeFromCategory(pkg, cat) } }
                     "pin"       -> menu.categoryContext?.let { cat -> appAction { appCategoryRepository.pinToCategory(pkg, cat) } }
-                    "hide"      -> appAction { appCategoryRepository.setHidden(pkg, true) }
+                    "hide_from_category" -> menu.categoryContext?.let { cat ->
+                        persistHide(HiddenPlacement.appKey(pkg), menu.title, HideLocationType.CATEGORY, cat, categoryDisplayName(cat))
+                    }
+                    "hide_everywhere" -> appAction { appCategoryRepository.setHidden(pkg, true) }
                     "rename"    -> _uiState.update { it.copy(renameAppTarget = pkg, renameAppCurrent = menu.title) }
                 }
             }

@@ -4,6 +4,9 @@ import android.graphics.drawable.Drawable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.database.dao.AppOverrideDao
+import com.playfieldportal.core.data.database.dao.HiddenPlacementDao
+import com.playfieldportal.core.domain.model.HideLocationType
+import com.playfieldportal.core.domain.model.HiddenPlacement
 import com.playfieldportal.feature.appbar.AppCategoryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,61 +17,110 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-// One installed app plus whether the user has hidden it from every XMB category.
-data class AppVisibilityRow(
-    val packageName: String,
+// One "hidden from <location>" row under an item.
+data class HiddenEntry(
+    val itemKey: String,
+    val locationType: HideLocationType,
+    val locationId: String,
+    val locationLabel: String,   // "Everywhere" for a global hide
+)
+
+// An item (app or game/shortcut) with all the places it's hidden from.
+data class HiddenItemGroup(
+    val itemKey: String,
     val label: String,
-    val icon: Drawable,
-    val hidden: Boolean,
+    val icon: Drawable?,         // app icon when resolvable; null for games
+    val entries: List<HiddenEntry>,
 )
 
 data class AppVisibilityUiState(
     val loading: Boolean = true,
-    val apps: List<AppVisibilityRow> = emptyList(),
-    val hiddenCount: Int = 0,
-)
+    val groups: List<HiddenItemGroup> = emptyList(),
+) {
+    val totalHidden: Int get() = groups.size
+}
 
-// Backs the "Hidden Apps" manager: lists every launchable app with a per-app Hidden toggle so the
-// user can hide new apps or unhide existing ones individually. The XMB observes app-override changes
-// reactively (AppCategoryRepository.setHidden → app_overrides), so toggles take effect with no restart.
 @HiltViewModel
 class AppVisibilityViewModel @Inject constructor(
     private val appCategoryRepository: AppCategoryRepository,
     private val appOverrideDao: AppOverrideDao,
+    private val hiddenPlacementDao: HiddenPlacementDao,
 ) : ViewModel() {
 
-    // Installed apps are loaded once (cached in the repository); hidden state comes from the live
-    // override flow, so toggling re-emits without reloading the whole app list.
-    private val installedApps = MutableStateFlow<List<AppVisibilityRow>>(emptyList())
+    // packageName -> (label, icon) for resolving global-hidden apps; loaded once.
+    private val installedInfo = MutableStateFlow<Map<String, Pair<String, Drawable>>>(emptyMap())
     private val loading = MutableStateFlow(true)
 
     init {
         viewModelScope.launch {
             appCategoryRepository.ensureLoaded()
-            installedApps.value = appCategoryRepository.allInstalledApps()
-                .map { AppVisibilityRow(it.packageName, it.label, it.icon, hidden = false) }
+            installedInfo.value = appCategoryRepository.allInstalledApps()
+                .associate { it.packageName to (it.label to it.icon) }
             loading.value = false
         }
     }
 
     val uiState: StateFlow<AppVisibilityUiState> = combine(
-        installedApps,
+        hiddenPlacementDao.observeAll(),
         appOverrideDao.observeAll(),
+        installedInfo,
         loading,
-    ) { apps, overrides, isLoading ->
-        val hidden = overrides.filter { it.isHidden }.map { it.packageName }.toSet()
-        val rows = apps
-            .map { it.copy(hidden = it.packageName in hidden) }
-            // Stable alphabetical order so a row never jumps position when toggled.
+    ) { placements, overrides, info, isLoading ->
+        // entries keyed by itemKey
+        val byItem = linkedMapOf<String, MutableList<HiddenEntry>>()
+        val labels = hashMapOf<String, String>()
+
+        // Global hides (legacy app_overrides.is_hidden) → an "Everywhere" entry per app.
+        overrides.filter { it.isHidden }.forEach { ov ->
+            val itemKey = HiddenPlacement.appKey(ov.packageName)
+            val label = info[ov.packageName]?.first ?: ov.customLabel ?: ov.packageName
+            labels[itemKey] = label
+            byItem.getOrPut(itemKey) { mutableListOf() }.add(
+                HiddenEntry(itemKey, HideLocationType.GLOBAL, "", "Everywhere")
+            )
+        }
+
+        // Per-location placements.
+        placements.forEach { p ->
+            val type = runCatching { HideLocationType.valueOf(p.locationType) }.getOrDefault(HideLocationType.GLOBAL)
+            labels.putIfAbsent(p.itemKey, p.itemLabel)
+            byItem.getOrPut(p.itemKey) { mutableListOf() }.add(
+                HiddenEntry(p.itemKey, type, p.locationId, p.locationLabel)
+            )
+        }
+
+        val groups = byItem.entries
+            .map { (itemKey, entries) ->
+                val pkg = itemKey.removePrefix("app:").takeIf { itemKey.startsWith("app:") }
+                HiddenItemGroup(
+                    itemKey = itemKey,
+                    label = labels[itemKey] ?: itemKey,
+                    icon = pkg?.let { info[it]?.second },
+                    entries = entries.sortedBy { it.locationLabel.lowercase() },
+                )
+            }
             .sortedBy { it.label.lowercase() }
-        AppVisibilityUiState(
-            loading = isLoading,
-            apps = rows,
-            hiddenCount = rows.count { it.hidden },
-        )
+
+        AppVisibilityUiState(loading = isLoading, groups = groups)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AppVisibilityUiState())
 
-    fun setHidden(packageName: String, hidden: Boolean) {
-        viewModelScope.launch { appCategoryRepository.setHidden(packageName, hidden) }
+    fun unhide(entry: HiddenEntry) {
+        viewModelScope.launch {
+            if (entry.locationType == HideLocationType.GLOBAL) {
+                val pkg = entry.itemKey.removePrefix("app:")
+                appOverrideDao.setHidden(pkg, false)
+            } else {
+                hiddenPlacementDao.delete(entry.itemKey, entry.locationType.name, entry.locationId)
+            }
+        }
+    }
+
+    fun unhideAll(group: HiddenItemGroup) {
+        viewModelScope.launch {
+            if (group.itemKey.startsWith("app:")) {
+                appOverrideDao.setHidden(group.itemKey.removePrefix("app:"), false)
+            }
+            hiddenPlacementDao.deleteAllForItem(group.itemKey)
+        }
     }
 }

@@ -1,11 +1,15 @@
 package com.playfieldportal.feature.settings.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -18,11 +22,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.playfieldportal.feature.settings.viewmodel.AppVisibilityViewModel
+import com.playfieldportal.feature.settings.viewmodel.HiddenEntry
+import com.playfieldportal.feature.settings.viewmodel.HiddenItemGroup
 
 @Composable
 fun AppVisibilitySettingsScreen(
@@ -34,7 +41,7 @@ fun AppVisibilitySettingsScreen(
 
     SettingsScaffold(
         title    = "Settings",
-        subtitle = "Hidden Apps",
+        subtitle = "Hidden Items",
         onBack   = onBack,
         modifier = modifier,
     ) {
@@ -50,42 +57,99 @@ fun AppVisibilitySettingsScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState()),
         ) {
-            SettingsGroup("App Visibility")
+            SettingsGroup("Hidden Items")
 
             Text(
-                text = "Turn an app off to hide it from every XMB category; turn it back on to show " +
-                    "it again. ${state.hiddenCount} app${if (state.hiddenCount == 1) "" else "s"} hidden.",
+                text = "Apps and games you've hidden, grouped by item with the places each is hidden " +
+                    "from. Hide items from their △ Options menu; unhide them here.",
                 color = SettingsSubtext,
                 fontSize = 12.sp,
                 modifier = Modifier.padding(start = 48.dp, end = 48.dp, bottom = 8.dp),
             )
 
-            state.apps.forEach { app ->
-                SettingsToggleRow(
-                    label    = app.label,
-                    sublabel = if (app.hidden) "Hidden" else null,
-                    leading  = {
-                        AsyncImage(
-                            model              = app.icon,
-                            contentDescription = null,
-                            contentScale       = ContentScale.Fit,
-                            modifier           = Modifier
-                                .size(36.dp)
-                                .clip(RoundedCornerShape(8.dp)),
-                        )
-                    },
-                    // Switch reads as "visible": ON = shown, OFF = hidden.
-                    checked  = !app.hidden,
-                    onToggle = { visible -> viewModel.setHidden(app.packageName, !visible) },
-                )
-            }
-
-            if (state.apps.isEmpty()) {
+            if (state.groups.isEmpty()) {
                 Text(
-                    text = "No apps found.",
+                    text = "Nothing is hidden.",
                     color = SettingsSubtext,
                     fontSize = 13.sp,
                     modifier = Modifier.fillMaxWidth().padding(48.dp),
+                )
+            } else {
+                state.groups.forEach { group ->
+                    HiddenItemCard(
+                        group = group,
+                        onUnhide = { viewModel.unhide(it) },
+                        onUnhideAll = { viewModel.unhideAll(group) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HiddenItemCard(
+    group: HiddenItemGroup,
+    onUnhide: (HiddenEntry) -> Unit,
+    onUnhideAll: () -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxWidth().padding(top = 6.dp)) {
+        // Item header: icon + label + "Unhide all".
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 48.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (group.icon != null) {
+                AsyncImage(
+                    model = group.icon,
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.size(32.dp).clip(RoundedCornerShape(8.dp)),
+                )
+                Spacer(Modifier.width(12.dp))
+            }
+            Text(
+                text = group.label,
+                color = SettingsText,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f),
+            )
+            if (group.entries.size > 1) {
+                Text(
+                    text = "Unhide all",
+                    color = SettingsAccent,
+                    fontSize = 12.sp,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .clickable { onUnhideAll() }
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                )
+            }
+        }
+        // One row per location this item is hidden from.
+        group.entries.forEach { entry ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 92.dp, end = 48.dp, top = 2.dp, bottom = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = entry.locationLabel,
+                    color = SettingsSubtext,
+                    fontSize = 13.sp,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    text = "Unhide",
+                    color = SettingsAccent,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .clickable { onUnhide(entry) }
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
                 )
             }
         }
