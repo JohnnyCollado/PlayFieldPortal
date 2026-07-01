@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,9 +24,13 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -79,6 +84,24 @@ fun VideoDetailScreen(
         if (!state.playing) {
             viewModel.handleGamepadAction(action)
             onGamepadActionConsumed()
+        }
+    }
+
+    // When PFP regains focus after an external hand-off, drop the launch overlay and refresh this
+    // video's metadata (resume / last-watched) — no rescan, no focus/scroll reset.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) viewModel.onReturnedFromExternal()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    // Defensive timeout: if the hand-off never backgrounded us, don't let the overlay stick.
+    LaunchedEffect(state.externalLaunch) {
+        if (state.externalLaunch != null) {
+            kotlinx.coroutines.delay(8000)
+            viewModel.clearExternalOverlay()
         }
     }
 
@@ -203,6 +226,26 @@ fun VideoDetailScreen(
             )
         }
 
+        // External-player launch error (real dialog, controller-dismissible via A/B).
+        state.launchError?.let { err ->
+            AlertDialog(
+                onDismissRequest = viewModel::dismissLaunchError,
+                confirmButton = { TextButton(onClick = viewModel::dismissLaunchError) { Text("OK") } },
+                title = { Text("Can't play video") },
+                text = { Text(err) },
+            )
+        }
+
+        // Themed launch overlay — shown while handing off to an external player; fades in, and is
+        // dropped when PFP regains focus (or after the safety timeout).
+        androidx.compose.animation.AnimatedVisibility(
+            visible = state.externalLaunch != null,
+            enter = androidx.compose.animation.fadeIn(),
+            exit = androidx.compose.animation.fadeOut(),
+        ) {
+            state.externalLaunch?.let { launch -> ExternalLaunchOverlay(launch) }
+        }
+
         // Fullscreen player overlay.
         if (state.playing) {
             VideoPlayerScreen(
@@ -215,6 +258,34 @@ fun VideoDetailScreen(
                 onGamepadActionConsumed = onGamepadActionConsumed,
                 modifier = Modifier.fillMaxSize(),
             )
+        }
+    }
+}
+
+@Composable
+private fun ExternalLaunchOverlay(launch: com.playfieldportal.feature.xmb.ui.detail.ExternalLaunch) {
+    val colors = com.playfieldportal.core.ui.theme.LocalPFPColors.current
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Brush.verticalGradient(listOf(colors.backgroundTop, colors.backgroundBottom))),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            if (launch.thumbnailUri != null) {
+                AsyncImage(
+                    model = launch.thumbnailUri,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.size(width = 240.dp, height = 135.dp).clip(RoundedCornerShape(12.dp)),
+                )
+                Spacer(Modifier.height(20.dp))
+            }
+            CircularProgressIndicator(color = Color.White, strokeWidth = 3.dp)
+            Spacer(Modifier.height(16.dp))
+            Text("Launching…", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(4.dp))
+            Text(launch.playerLabel, color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp)
         }
     }
 }

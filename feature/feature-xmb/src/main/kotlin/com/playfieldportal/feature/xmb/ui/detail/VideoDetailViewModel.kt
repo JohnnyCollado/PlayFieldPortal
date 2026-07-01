@@ -39,6 +39,9 @@ enum class VideoDetailAction(val label: String) {
 // One playlist choice in the "Add to Playlist" picker; checked = the video is already a member.
 data class VideoPlaylistOption(val id: Long, val name: String, val checked: Boolean)
 
+// Shown while an external player is being launched (themed overlay), until PFP regains focus.
+data class ExternalLaunch(val thumbnailUri: String?, val playerLabel: String)
+
 data class VideoDetailUiState(
     val video: Video? = null,
     val siblings: List<Video> = emptyList(),
@@ -63,6 +66,9 @@ data class VideoDetailUiState(
     // Playback overlay.
     val playing: Boolean = false,
     val playStartPositionMs: Long = 0,
+    // External-player hand-off: overlay while launching, and a hard error dialog on failure.
+    val externalLaunch: ExternalLaunch? = null,
+    val launchError: String? = null,
     val closed: Boolean = false,
 ) {
     val hasResume: Boolean get() = (video?.resumePositionMs ?: 0) > 0
@@ -106,6 +112,12 @@ class VideoDetailViewModel @Inject constructor(
     // for the detail page itself.
     fun handleGamepadAction(action: GamepadAction) {
         val s = _uiState.value
+        // The launch overlay swallows input; a launch error dialog dismisses on A/B.
+        if (s.externalLaunch != null) return
+        if (s.launchError != null) {
+            if (action == GamepadAction.SELECT || action == GamepadAction.BACK) dismissLaunchError()
+            return
+        }
         when {
             s.confirmRemove -> when (action) {
                 GamepadAction.SELECT -> confirmRemove()
@@ -244,23 +256,48 @@ class VideoDetailViewModel @Inject constructor(
     // ── Playback ──────────────────────────────────────────────────────────────
 
     // Routes a play request to the built-in player, an external app, or the system chooser based on
-    // the Default Player setting.
+    // the Default Player setting. External hand-off is validated first, shows a themed launch
+    // overlay, and surfaces a real error dialog (never fails silently, never crashes).
     fun play(positionMs: Long) {
         val video = _uiState.value.video ?: return
         viewModelScope.launch {
-            when (val pref = videoRepository.getDefaultVideoPlayer()) {
-                null, "builtin" -> startPlayback(positionMs)
-                "ask" -> {
-                    markWatchedExternally(video)
-                    intentResolver.launchChooser(video)?.let { showMessage(it) }
-                }
-                else -> {
-                    markWatchedExternally(video)
-                    intentResolver.launch(video, pref)?.let { showMessage(it) }
-                }
+            val pref = videoRepository.getDefaultVideoPlayer()
+            if (pref == null || pref == "builtin") { startPlayback(positionMs); return@launch }
+
+            val ask = pref == "ask"
+            val pkg = if (ask) null else pref
+            // Verify the file, uri and a resolving activity BEFORE we fade out / hand off.
+            intentResolver.validate(video, pkg)?.let { err ->
+                _uiState.update { it.copy(showOptions = false, launchError = err) }
+                return@launch
             }
+            val label = if (ask) "an external player" else (intentResolver.playerLabel(pref) ?: "external player")
+            _uiState.update {
+                it.copy(showOptions = false, externalLaunch = ExternalLaunch(video.effectiveThumbnailUri, label))
+            }
+            // Best-effort: record that it was opened now so it appears under Recently Watched.
+            markWatchedExternally(video)
+            val err = if (ask) intentResolver.launchChooser(video) else intentResolver.launch(video, pref)
+            if (err != null) _uiState.update { it.copy(externalLaunch = null, launchError = err) }
         }
     }
+
+    // Called when PFP regains focus after an external launch: drop the overlay and refresh just this
+    // video's metadata (resume / last-watched) — no library rescan, no focus/scroll reset.
+    fun onReturnedFromExternal() {
+        if (_uiState.value.externalLaunch == null) return
+        _uiState.update { it.copy(externalLaunch = null) }
+        val id = _uiState.value.video?.id ?: return
+        viewModelScope.launch {
+            val fresh = videoRepository.getVideo(id)
+            _uiState.update { it.copy(video = fresh ?: it.video) }
+        }
+    }
+
+    // Defensive: if the hand-off never backgrounded us (rare), clear the overlay so it can't stick.
+    fun clearExternalOverlay() = _uiState.update { it.copy(externalLaunch = null) }
+
+    fun dismissLaunchError() = _uiState.update { it.copy(launchError = null) }
 
     fun startPlayback(positionMs: Long) {
         _uiState.update { it.copy(playing = true, playStartPositionMs = positionMs, showOptions = false) }
