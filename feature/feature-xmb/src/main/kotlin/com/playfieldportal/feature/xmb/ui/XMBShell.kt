@@ -55,8 +55,10 @@ import com.playfieldportal.feature.appbar.AppDrawerScreen
 import com.playfieldportal.feature.appbar.AppFilter
 import com.playfieldportal.feature.settings.ui.SettingsNavHost
 import com.playfieldportal.feature.xmb.preview.PreviewData
+import androidx.media3.common.util.UnstableApi
 import com.playfieldportal.feature.xmb.ui.app.AppDetailScreen
 import com.playfieldportal.feature.xmb.ui.detail.GameDetailScreen
+import com.playfieldportal.feature.xmb.ui.detail.VideoDetailScreen
 import com.playfieldportal.feature.xmb.viewmodel.XMBUiState
 import com.playfieldportal.feature.xmb.viewmodel.XMBViewModel
 
@@ -89,6 +91,8 @@ fun XMBShellContainer(
         onDrawerActionConsumed = viewModel::consumeDrawerAction,
         onCloseGameDetail = viewModel::onCloseGameDetail,
         onGameDetailActionConsumed = viewModel::consumeGameDetailAction,
+        onCloseVideoDetail = viewModel::onCloseVideoDetail,
+        onVideoDetailActionConsumed = viewModel::consumeVideoDetailAction,
         onCloseAppDetail = viewModel::onCloseAppDetail,
         onAppDetailActionConsumed = viewModel::consumeAppDetailAction,
         onContextMenuItemActivated = viewModel::onContextMenuItemActivatedAt,
@@ -126,6 +130,7 @@ fun XMBShellContainer(
     )
 }
 
+@OptIn(UnstableApi::class)
 @Composable
 fun XMBShell(
     uiState: XMBUiState,
@@ -145,6 +150,8 @@ fun XMBShell(
     onDrawerActionConsumed: () -> Unit = {},
     onCloseGameDetail: () -> Unit = {},
     onGameDetailActionConsumed: () -> Unit = {},
+    onCloseVideoDetail: () -> Unit = {},
+    onVideoDetailActionConsumed: () -> Unit = {},
     onCloseAppDetail: () -> Unit = {},
     onAppDetailActionConsumed: () -> Unit = {},
     onContextMenuItemActivated: (Int) -> Unit = {},
@@ -511,6 +518,16 @@ fun XMBShell(
                     onBack = onCloseAppDetail,
                     pendingGamepadAction = uiState.pendingAppDetailAction,
                     onGamepadActionConsumed = onAppDetailActionConsumed,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+
+            uiState.activeVideoId?.let { videoId ->
+                VideoDetailScreen(
+                    videoId = videoId,
+                    onBack = onCloseVideoDetail,
+                    pendingGamepadAction = uiState.pendingVideoDetailAction,
+                    onGamepadActionConsumed = onVideoDetailActionConsumed,
                     modifier = Modifier.fillMaxSize(),
                 )
             }

@@ -186,6 +186,17 @@ data class AppPickerState(
 // Music Apps) plus the single "All Music" memory-card item; drilling into any of them swaps the
 // item list without leaving the Music category.
 
+// Which Video sub-screen is open. Mirrors [MusicNav]: the Video root shows the static items
+// (All Videos / Video Libraries / Android Video Apps + add rows); drilling swaps the item list
+// without leaving the Video category.
+sealed interface VideoNav {
+    data object Root : VideoNav
+    data object AllVideos : VideoNav
+    data object Libraries : VideoNav
+    data class Library(val id: String, val name: String) : VideoNav
+    data object VideoApps : VideoNav
+}
+
 sealed interface MusicNav {
     data object Root : MusicNav
     data object AllMusic : MusicNav
@@ -298,6 +309,11 @@ data class XMBUiState(
     val activeGameId: Long? = null,
     val activeAppId: Long? = null,
     val pendingAppDetailAction: GamepadAction? = null,
+    // ── Video ─────────────────────────────────────────────────────────────
+    val videoNav: VideoNav = VideoNav.Root,
+    val videoLibraries: List<com.playfieldportal.core.domain.model.VideoLibrary> = emptyList(),
+    val activeVideoId: String? = null,
+    val pendingVideoDetailAction: GamepadAction? = null,
 
     // ── Context menu (Y/Triangle) ─────────────────────────────────────────
     val activeContextMenu: XMBContextMenu? = null,
@@ -341,6 +357,7 @@ data class XMBUiState(
     // category switching until the user backs out.
     val isInSubItem: Boolean
         get() = musicNav != MusicNav.Root ||
+            videoNav != VideoNav.Root ||
             selectedPlatformId != null ||
             selectedCollectionId != null
 
@@ -352,6 +369,7 @@ data class XMBUiState(
             activeAppDrawerFilter != null ||
             activeGameId != null ||
             activeAppId != null ||
+            activeVideoId != null ||
             activeContextMenu != null ||
             colorSchemePicker != null ||
             appPicker != null ||
@@ -375,6 +393,9 @@ enum class XMBItemType {
     MUSIC_TRACK,
     PLAYLIST,
     MUSIC_APPS,
+    VIDEO_LIBRARY,
+    VIDEO_FILE,
+    VIDEO_APPS,
     EMPTY,
 }
 
@@ -489,6 +510,7 @@ class XMBViewModel @Inject constructor(
     private val musicIntentResolver: com.playfieldportal.core.data.music.MusicIntentResolver,
     private val musicPlayer: com.playfieldportal.feature.xmb.music.MusicPlayerController,
     private val emulatorProfileRepository: com.playfieldportal.feature.launcher.EmulatorProfileRepository,
+    private val videoRepository: com.playfieldportal.core.domain.repository.VideoRepository,
 ) : ViewModel() {
 
     // The track list currently on screen (in display/sort order), used as the in-app player's queue
@@ -537,6 +559,7 @@ class XMBViewModel @Inject constructor(
         observeGamepadMappings()
         observeSoundSetting()
         observeMusic()
+        observeVideo()
         observeEmulatorProfiles()
         collectGamepadActions()
     }
@@ -811,6 +834,22 @@ class XMBViewModel @Inject constructor(
                         _uiState.update { it.copy(currentItems = items) }
                     }
                 }
+                BuiltInCategory.VIDEO -> when (val nav = _uiState.value.videoNav) {
+                    VideoNav.Root -> _uiState.update { it.copy(currentItems = videoRootItems()) }
+                    VideoNav.AllVideos -> videoRepository.observeAllVideos().collect { videos ->
+                        setVideoItems(videos, emptyAllVideosItem())
+                    }
+                    VideoNav.Libraries -> videoRepository.observeLibraries().collect { libs ->
+                        _uiState.update { it.copy(currentItems = videoLibraryItems(libs)) }
+                    }
+                    is VideoNav.Library -> videoRepository.observeVideosByLibrary(nav.id).collect { videos ->
+                        setVideoItems(videos, emptyAllVideosItem())
+                    }
+                    VideoNav.VideoApps -> {
+                        val items = videoAppItems()
+                        _uiState.update { it.copy(currentItems = items) }
+                    }
+                }
                 else -> {
                     // Gaming categories show games and collections
                     if (category.isGamingCategory) {
@@ -1052,6 +1091,187 @@ class XMBViewModel @Inject constructor(
     private fun closeMusicView() {
         _uiState.update { it.copy(musicNav = MusicNav.Root, selectedItemIndex = 0) }
         loadItemsForCategory(currentCategory())
+    }
+
+    // ── Video ───────────────────────────────────────────────────────────────────
+
+    // Library list drives the Video root; re-render the root when it changes.
+    private fun observeVideo() {
+        viewModelScope.launch {
+            videoRepository.observeLibraries().collect { libraries ->
+                _uiState.update { it.copy(videoLibraries = libraries) }
+                if (currentCategory()?.id == BuiltInCategory.VIDEO &&
+                    _uiState.value.videoNav == VideoNav.Root
+                ) {
+                    loadItemsForCategory(currentCategory())
+                }
+            }
+        }
+    }
+
+    // Video root: static rows (All Videos, Video Libraries, Android Video Apps) + add rows.
+    // Video apps never appear in All Videos — they live only under "Android Video Apps".
+    private fun videoRootItems(): List<XMBItem> {
+        val libraries = _uiState.value.videoLibraries
+        val totalVideos = libraries.sumOf { it.videoCount }
+        return buildList {
+            add(
+                XMBItem(
+                    id       = ALL_VIDEOS_ITEM_ID,
+                    title    = "All Videos",
+                    subtitle = "$totalVideos ${if (totalVideos == 1) "video" else "videos"}",
+                    coverUri = MEMORY_CARD_ASSET_URI,
+                    type     = XMBItemType.MEMORY_CARD,
+                )
+            )
+            add(
+                XMBItem(
+                    id       = VIDEO_LIBRARIES_ITEM_ID,
+                    title    = "Video Libraries",
+                    subtitle = "${libraries.size} ${if (libraries.size == 1) "library" else "libraries"}",
+                    type     = XMBItemType.VIDEO_LIBRARY,
+                )
+            )
+            add(
+                XMBItem(
+                    id       = VIDEO_APPS_ITEM_ID,
+                    title    = "Android Video Apps",
+                    subtitle = "Open your installed video apps",
+                    type     = XMBItemType.VIDEO_APPS,
+                )
+            )
+            add(
+                XMBItem(
+                    id       = ADD_VIDEOS_ITEM_ID,
+                    title    = "Add Videos",
+                    subtitle = "Create a video library from a folder",
+                )
+            )
+        }
+    }
+
+    // One card per video library, drillable into its videos, plus an "Add Videos" row.
+    private fun videoLibraryItems(libraries: List<com.playfieldportal.core.domain.model.VideoLibrary>): List<XMBItem> {
+        val rows = libraries.map { lib ->
+            XMBItem(
+                id       = "vlib_${lib.id}",
+                title    = lib.displayName,
+                subtitle = "${lib.videoCount} ${if (lib.videoCount == 1) "video" else "videos"}",
+                coverUri = lib.artworkUri ?: MEMORY_CARD_ASSET_URI,
+                type     = XMBItemType.MEMORY_CARD,
+            )
+        }
+        return if (rows.isEmpty()) {
+            listOf(
+                XMBItem(
+                    id = EMPTY_CATEGORY_ITEM_ID,
+                    title = "No video libraries yet",
+                    subtitle = "Add one below or in Settings → Video",
+                    type = XMBItemType.EMPTY,
+                ),
+                addVideosItem(),
+            )
+        } else rows + addVideosItem()
+    }
+
+    private suspend fun videoAppItems(): List<XMBItem> {
+        val apps = appCategoryRepository.appsForCategory(VIDEO_APPS_CATEGORY_ID)
+        val appItems = apps.map { it.toXmbItem(gameRepository.getAppEntry(it.packageName)) }
+        return appItems + XMBItem(
+            id       = ADD_VIDEO_APPS_ITEM_ID,
+            title    = "Add Video Apps",
+            subtitle = "Pick installed apps to show here",
+        )
+    }
+
+    private fun addVideosItem(): XMBItem = XMBItem(
+        id       = ADD_VIDEOS_ITEM_ID,
+        title    = "Add Videos",
+        subtitle = "Create a video library from a folder",
+    )
+
+    private fun List<com.playfieldportal.core.domain.model.Video>.toVideoItems(): List<XMBItem> =
+        map { video ->
+            XMBItem(
+                id       = "vid_${video.id}",
+                title    = video.displayTitle,
+                subtitle = video.durationMs?.let { formatDuration(it) },
+                type     = XMBItemType.VIDEO_FILE,
+                mediaUri = video.uri,
+                mimeType = video.mimeType,
+                coverUri = video.effectiveThumbnailUri,
+            )
+        }
+
+    private fun setVideoItems(videos: List<com.playfieldportal.core.domain.model.Video>, emptyItem: XMBItem) {
+        val items = if (videos.isEmpty()) listOf(emptyItem) else videos.toVideoItems()
+        _uiState.update { it.copy(currentItems = items) }
+    }
+
+    private fun emptyAllVideosItem(): XMBItem = XMBItem(
+        id       = EMPTY_CATEGORY_ITEM_ID,
+        title    = "No videos found",
+        subtitle = "Add a video library in Settings → Video",
+        type     = XMBItemType.EMPTY,
+    )
+
+    private fun formatDuration(ms: Long): String {
+        if (ms <= 0) return ""
+        val totalSec = ms / 1000
+        val h = totalSec / 3600; val m = (totalSec % 3600) / 60; val s = totalSec % 60
+        return if (h > 0) "%d:%02d:%02d".format(h, m, s) else "%d:%02d".format(m, s)
+    }
+
+    // Handles A/Cross on any Video row. Returns true when [item] is a Video row it owns.
+    private fun handleVideoSelection(item: XMBItem): Boolean = when {
+        item.type == XMBItemType.EMPTY -> true
+        item.id == ALL_VIDEOS_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openVideoView(VideoNav.AllVideos); true }
+        item.id == VIDEO_LIBRARIES_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openVideoView(VideoNav.Libraries); true }
+        item.id == VIDEO_APPS_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openVideoView(VideoNav.VideoApps); true }
+        item.id == ADD_VIDEOS_ITEM_ID -> {
+            menuSound.play(MenuSound.SELECT)
+            _uiState.update { it.copy(activeSettingsScreen = "settings_video") }
+            true
+        }
+        item.id == ADD_VIDEO_APPS_ITEM_ID -> {
+            menuSound.play(MenuSound.SELECT)
+            openAppPicker(AppPickerTarget.CategoryShortcuts(VIDEO_APPS_CATEGORY_ID), "Add Video Apps")
+            true
+        }
+        item.id.startsWith("vlib_") -> {
+            menuSound.play(MenuSound.SELECT)
+            val libId = item.id.removePrefix("vlib_")
+            openVideoView(VideoNav.Library(libId, item.title))
+            true
+        }
+        item.type == XMBItemType.VIDEO_FILE -> {
+            menuSound.play(MenuSound.SELECT)
+            _uiState.update { it.copy(activeVideoId = item.id.removePrefix("vid_")) }
+            true
+        }
+        // Video-app rows launch the app.
+        _uiState.value.videoNav == VideoNav.VideoApps && item.packageName != null -> {
+            menuSound.play(MenuSound.LAUNCH); appCategoryRepository.launch(item.packageName); true
+        }
+        else -> false
+    }
+
+    private fun openVideoView(nav: VideoNav) {
+        _uiState.update { it.copy(videoNav = nav, selectedItemIndex = 0) }
+        loadItemsForCategory(currentCategory())
+    }
+
+    private fun closeVideoView() {
+        _uiState.update { it.copy(videoNav = VideoNav.Root, selectedItemIndex = 0) }
+        loadItemsForCategory(currentCategory())
+    }
+
+    fun onCloseVideoDetail() {
+        _uiState.update { it.copy(activeVideoId = null, pendingVideoDetailAction = null) }
+    }
+
+    fun consumeVideoDetailAction() {
+        _uiState.update { it.copy(pendingVideoDetailAction = null) }
     }
 
     // ── Fullscreen music browser (searchable) ───────────────────────────────────
@@ -2011,6 +2231,12 @@ class XMBViewModel @Inject constructor(
 
         // ── Overlays (innermost wins) ──────────────────────────────────────────
         when {
+            state.activeVideoId != null -> {
+                // Forward everything so the Video Detail page (and its player overlay) can handle
+                // input and close its own layers before popping back to the XMB.
+                _uiState.update { it.copy(pendingVideoDetailAction = action) }
+                return
+            }
             state.activeGameId != null -> {
                 // Forward everything (incl. BACK) so the Details page can close its own inner
                 // overlays first and only then pop back to the XMB (via onCloseGameDetail).
@@ -2082,6 +2308,7 @@ class XMBViewModel @Inject constructor(
                 menuSound.play(MenuSound.BACK)
                 when {
                     state.musicNav != MusicNav.Root -> closeMusicView()
+                    state.videoNav != VideoNav.Root -> closeVideoView()
                     state.selectedPlatformId != null || state.selectedCollectionId != null -> closePlatformFolder()
                     else -> onOpenAppDrawer()
                 }
@@ -2929,7 +3156,7 @@ class XMBViewModel @Inject constructor(
     fun onCategorySelected(index: Int) {
         if (index != _uiState.value.selectedCategoryIndex) menuSound.play(MenuSound.SYSTEM_BROWSE)
         val category = _uiState.value.categories.getOrNull(index)
-        _uiState.update { it.copy(selectedCategoryIndex = index, selectedItemIndex = 0, selectedPlatformId = null, selectedCollectionId = null, musicNav = MusicNav.Root) }
+        _uiState.update { it.copy(selectedCategoryIndex = index, selectedItemIndex = 0, selectedPlatformId = null, selectedCollectionId = null, musicNav = MusicNav.Root, videoNav = VideoNav.Root) }
         tintWaveForCategory(category)
         loadItemsForCategory(category)
     }
@@ -2969,6 +3196,9 @@ class XMBViewModel @Inject constructor(
         // Music rows are handled together (static items, the All Music card, playlists, tracks,
         // and the various add/setup rows), each owning its sound and returning early.
         if (category?.id == BuiltInCategory.MUSIC && item != null && handleMusicSelection(item)) return
+
+        // Video rows (static items, library cards, video files, app rows) are handled together.
+        if (category?.id == BuiltInCategory.VIDEO && item != null && handleVideoSelection(item)) return
 
         // Sound: launch for items that boot something immediately; select for opening a folder,
         // detail, picker, or settings; silent for non-selectable placeholder rows.
@@ -3509,6 +3739,14 @@ class XMBViewModel @Inject constructor(
         // Pseudo-category id the user's chosen Music Apps are stored under (kept apart from the
         // built-in "music" category so the two never mix).
         private const val MUSIC_APPS_CATEGORY_ID = "music_apps"
+        // Video root item ids and the pseudo-category that stores user-added video apps (kept out of
+        // the built-in "videos" category so they never mix with scanned video files / All Videos).
+        private const val ALL_VIDEOS_ITEM_ID = "all_videos"
+        private const val VIDEO_LIBRARIES_ITEM_ID = "video_libraries"
+        private const val VIDEO_APPS_ITEM_ID = "video_apps_item"
+        private const val ADD_VIDEOS_ITEM_ID = "add_videos"
+        private const val ADD_VIDEO_APPS_ITEM_ID = "add_video_apps"
+        private const val VIDEO_APPS_CATEGORY_ID = "video_apps"
         // Generic memory-card art for the "Music" (All Music) item — the physical-media default
         // PNG, loaded from assets via Coil (same convention as PhysicalMediaIcon).
         private const val MEMORY_CARD_ASSET_URI =
@@ -3538,6 +3776,7 @@ class XMBViewModel @Inject constructor(
         private val SETTINGS_ITEMS = listOf(
             XMBItem(id = "settings_library",    title = "Library",          subtitle = "ROM sources & scanning"),
             XMBItem(id = "settings_music",      title = "Music",            subtitle = "Music folders & default player"),
+            XMBItem(id = "settings_video",      title = "Video",            subtitle = "Video libraries, scanning & playback"),
             XMBItem(id = "settings_categories", title = "Categories",       subtitle = "Manage XMB categories"),
             XMBItem(id = "settings_collections", title = "Collections",     subtitle = "Create & manage game collections"),
             XMBItem(id = "settings_artwork",    title = "Artwork",          subtitle = "Scraping sources & cache"),

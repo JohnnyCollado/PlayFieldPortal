@@ -16,11 +16,15 @@ import com.playfieldportal.core.data.database.dao.PlaySessionDao
 import com.playfieldportal.core.data.database.dao.PlatformDao
 import com.playfieldportal.core.data.database.dao.ThemeDao
 import com.playfieldportal.core.data.database.dao.UnmatchedRomDao
+import com.playfieldportal.core.data.database.dao.VideoDao
+import com.playfieldportal.core.data.database.dao.VideoLibraryDao
 import com.playfieldportal.core.data.repository.CategoryRepositoryImpl
 import com.playfieldportal.core.data.repository.GameRepositoryImpl
 import com.playfieldportal.core.data.repository.MusicRepositoryImpl
+import com.playfieldportal.core.data.repository.VideoRepositoryImpl
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.core.domain.repository.MusicRepository
+import com.playfieldportal.core.domain.repository.VideoRepository
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -57,6 +61,7 @@ object DatabaseModule {
             PFPDatabase.MIGRATION_12_13,
             PFPDatabase.MIGRATION_13_14,
             PFPDatabase.MIGRATION_14_15,
+            PFPDatabase.MIGRATION_15_16,
         )
         .build()
 
@@ -73,6 +78,8 @@ object DatabaseModule {
     @Provides fun provideMusicFolderDao(db: PFPDatabase): MusicFolderDao = db.musicFolderDao()
     @Provides fun provideMusicTrackDao(db: PFPDatabase): MusicTrackDao = db.musicTrackDao()
     @Provides fun providePlaylistDao(db: PFPDatabase): PlaylistDao = db.playlistDao()
+    @Provides fun provideVideoLibraryDao(db: PFPDatabase): VideoLibraryDao = db.videoLibraryDao()
+    @Provides fun provideVideoDao(db: PFPDatabase): VideoDao = db.videoDao()
 }
 
 @Module
@@ -86,4 +93,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindMusicRepository(impl: MusicRepositoryImpl): MusicRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindVideoRepository(impl: VideoRepositoryImpl): VideoRepository
 }

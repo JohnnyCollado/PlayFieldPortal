@@ -34,6 +34,9 @@ dependencies {
     implementation(libs.accompanist.drawablepainter)
     implementation(libs.datastore.preferences)
     implementation(libs.material.icons.extended)
+    // Built-in video player (Media3 ExoPlayer + PlayerView)
+    implementation(libs.media3.exoplayer)
+    implementation(libs.media3.ui)
 
     implementation(project(":core:core-common"))
     implementation(project(":core:core-domain"))

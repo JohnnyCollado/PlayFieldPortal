@@ -37,6 +37,7 @@ object BuiltInCategory {
     const val RECENTLY_PLAYED  = "recently_played"
     const val GAMES            = "games"
     const val MUSIC            = "music"
+    const val VIDEO            = "videos"
     const val ANDROID          = "android"
     const val APP_DRAWER       = "app_drawer"
     const val SETTINGS         = "settings"

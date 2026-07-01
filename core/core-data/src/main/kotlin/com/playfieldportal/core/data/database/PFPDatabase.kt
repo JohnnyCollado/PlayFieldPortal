@@ -18,6 +18,8 @@ import com.playfieldportal.core.data.database.dao.PlaySessionDao
 import com.playfieldportal.core.data.database.dao.PlatformDao
 import com.playfieldportal.core.data.database.dao.ThemeDao
 import com.playfieldportal.core.data.database.dao.UnmatchedRomDao
+import com.playfieldportal.core.data.database.dao.VideoDao
+import com.playfieldportal.core.data.database.dao.VideoLibraryDao
 import com.playfieldportal.core.data.database.entity.AppOverrideEntity
 import com.playfieldportal.core.data.database.entity.CategoryEntity
 import com.playfieldportal.core.data.database.entity.CategoryItemEntity
@@ -34,6 +36,8 @@ import com.playfieldportal.core.data.database.entity.PlaySessionEntity
 import com.playfieldportal.core.data.database.entity.PlatformEntity
 import com.playfieldportal.core.data.database.entity.ThemeEntity
 import com.playfieldportal.core.data.database.entity.UnmatchedRomEntity
+import com.playfieldportal.core.data.database.entity.VideoEntity
+import com.playfieldportal.core.data.database.entity.VideoLibraryEntity
 
 @Database(
     entities = [
@@ -53,8 +57,10 @@ import com.playfieldportal.core.data.database.entity.UnmatchedRomEntity
         MusicTrackEntity::class,
         PlaylistEntity::class,
         PlaylistTrackEntity::class,
+        VideoLibraryEntity::class,
+        VideoEntity::class,
     ],
-    version = 15,
+    version = 16,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -73,6 +79,8 @@ abstract class PFPDatabase : RoomDatabase() {
     abstract fun musicFolderDao(): MusicFolderDao
     abstract fun musicTrackDao(): MusicTrackDao
     abstract fun playlistDao(): PlaylistDao
+    abstract fun videoLibraryDao(): VideoLibraryDao
+    abstract fun videoDao(): VideoDao
 
     companion object {
         const val DATABASE_NAME = "pfp_database"
@@ -340,6 +348,58 @@ abstract class PFPDatabase : RoomDatabase() {
                 db.execSQL(
                     "CREATE INDEX IF NOT EXISTS index_playlist_tracks_track_id ON playlist_tracks (track_id)"
                 )
+            }
+        }
+
+        // v16 — Video Experience (Phase 1). Adds video_libraries (SAF video sources, mirroring
+        // music_folders + memory cards) and videos (scanned files with metadata, thumbnails and
+        // resume position). No existing data is touched.
+        val MIGRATION_15_16 = object : Migration(15, 16) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS video_libraries (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        display_name TEXT NOT NULL,
+                        tree_uri TEXT NOT NULL,
+                        artwork_uri TEXT,
+                        enabled INTEGER NOT NULL DEFAULT 1,
+                        scan_recursively INTEGER NOT NULL DEFAULT 1,
+                        video_count INTEGER NOT NULL DEFAULT 0,
+                        last_scanned_at INTEGER,
+                        created_at INTEGER NOT NULL,
+                        updated_at INTEGER NOT NULL
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS videos (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        library_id TEXT NOT NULL,
+                        uri TEXT NOT NULL,
+                        display_name TEXT NOT NULL,
+                        title TEXT,
+                        duration_ms INTEGER,
+                        width INTEGER,
+                        height INTEGER,
+                        frame_rate REAL,
+                        codec TEXT,
+                        mime_type TEXT,
+                        size_bytes INTEGER,
+                        date_added INTEGER,
+                        last_modified INTEGER,
+                        relative_path TEXT,
+                        thumbnail_uri TEXT,
+                        custom_thumbnail_uri TEXT,
+                        resume_position_ms INTEGER NOT NULL DEFAULT 0,
+                        last_watched_at INTEGER,
+                        FOREIGN KEY(library_id) REFERENCES video_libraries(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_videos_library_id ON videos (library_id)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_videos_uri ON videos (uri)")
             }
         }
     }

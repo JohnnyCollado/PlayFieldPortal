@@ -31,8 +31,10 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LibraryMusic
+import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.QueueMusic
+import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -597,6 +599,48 @@ private fun XmbItemLeadingIcon(
                     tint = InactiveText,
                     modifier = Modifier.size(48.dp),
                 )
+            }
+        }
+        // Video files show a landscape thumbnail (a frame grab), falling back to a movie glyph.
+        item.type == XMBItemType.VIDEO_FILE -> {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.width(LEADING_ICON_SLOT),
+            ) {
+                if (item.coverUri != null) {
+                    AsyncImage(
+                        model = item.coverUri,
+                        contentDescription = null,
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                        modifier = Modifier.size(width = 60.dp, height = 40.dp).clip(RoundedCornerShape(6.dp)),
+                    )
+                } else {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(width = 60.dp, height = 40.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(Color(0xFF1B1B27)),
+                    ) {
+                        Icon(
+                            Icons.Filled.Movie,
+                            contentDescription = null,
+                            tint = SecondaryText,
+                            modifier = Modifier.size(28.dp),
+                        )
+                    }
+                }
+            }
+        }
+        // The static "Video Libraries" and "Android Video Apps" rows use glyphs.
+        item.type == XMBItemType.VIDEO_LIBRARY -> {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
+                Icon(Icons.Filled.VideoLibrary, contentDescription = null, tint = InactiveText, modifier = Modifier.size(48.dp))
+            }
+        }
+        item.type == XMBItemType.VIDEO_APPS -> {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
+                Icon(Icons.Filled.Movie, contentDescription = null, tint = InactiveText, modifier = Modifier.size(48.dp))
             }
         }
         item.type == XMBItemType.ALL_GAMES ||
