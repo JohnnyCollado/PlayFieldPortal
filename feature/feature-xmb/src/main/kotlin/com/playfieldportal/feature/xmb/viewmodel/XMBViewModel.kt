@@ -117,6 +117,12 @@ data class XMBContextMenu(
     val playlistPickerTrackId: String? = null,
     // Set on a video playlist row's options menu.
     val videoPlaylistId: Long? = null,
+    // Set on a video file's options menu.
+    val videoFileId: String? = null,
+    // Set on a video library card's options menu.
+    val videoLibraryId: String? = null,
+    // Set on the "Add to Playlist" submenu opened for a video (marks that submenu).
+    val videoPlaylistPickerVideoId: String? = null,
 )
 
 data class XMBContextMenuItem(
@@ -1384,9 +1390,9 @@ class XMBViewModel @Inject constructor(
         _uiState.update { it.copy(pendingVideoDetailAction = null) }
     }
 
-    private fun promptCreateVideoPlaylist() {
+    private fun promptCreateVideoPlaylist(forVideoId: String? = null) {
         _uiState.update { it.copy(
-            playlistNameDialog = PlaylistNameDialogState(title = "New Video Playlist", videoContext = true)
+            playlistNameDialog = PlaylistNameDialogState(title = "New Video Playlist", videoContext = true, forVideoId = forVideoId)
         )}
     }
 
@@ -1413,10 +1419,17 @@ class XMBViewModel @Inject constructor(
     }
 
     // Opens the △ options menu for a Video row. Returns true when [item] is a video row it owns
-    // (a playlist row, or a video-app row), so the generic Y/long-press handler can stop.
+    // (a video file, a library card, a playlist row, or a video-app row), so the generic
+    // Y/long-press handler can stop.
     private fun openVideoContextMenu(item: XMBItem): Boolean {
         if (currentCategory()?.id != BuiltInCategory.VIDEO) return false
         return when {
+            item.type == XMBItemType.VIDEO_FILE && item.id.startsWith("vid_") -> {
+                openVideoFileContextMenu(item.id.removePrefix("vid_"), item.title); true
+            }
+            item.type == XMBItemType.VIDEO_FOLDER && item.id.startsWith("vlib_") -> {
+                openVideoLibraryContextMenu(item.id.removePrefix("vlib_"), item.title); true
+            }
             item.type == XMBItemType.PLAYLIST && item.playlistId != null -> {
                 openVideoPlaylistContextMenu(item.playlistId, item.title); true
             }
@@ -1424,6 +1437,81 @@ class XMBViewModel @Inject constructor(
                 openAppContextMenu(item, categoryIdOverride = VIDEO_APPS_CATEGORY_ID); true
             }
             else -> false
+        }
+    }
+
+    // Options for a single video file. Favorite label + "Remove from this Playlist" reflect the
+    // current state/context. Fetches the video first so the favorite label is correct.
+    private fun openVideoFileContextMenu(videoId: String, title: String) {
+        viewModelScope.launch {
+            val video = videoRepository.getVideo(videoId) ?: return@launch
+            val inPlaylist = _uiState.value.videoNav is VideoNav.Playlist
+            val items = buildList {
+                add(XMBContextMenuItem("video_play", "Play"))
+                if (video.resumePositionMs > 0) add(XMBContextMenuItem("video_resume", "Resume"))
+                add(XMBContextMenuItem("video_favorite", if (video.isFavorite) "Remove from Favorites" else "Add to Favorites"))
+                add(XMBContextMenuItem("video_add_playlist", "Add to Playlist"))
+                if (inPlaylist) add(XMBContextMenuItem("video_remove_playlist", "Remove from this Playlist", isDestructive = true))
+                add(XMBContextMenuItem("video_details", "Details"))
+                add(XMBContextMenuItem("video_remove", "Remove From Library", isDestructive = true))
+            }
+            _uiState.update { it.copy(activeContextMenu = XMBContextMenu(title, items, videoFileId = videoId)) }
+        }
+    }
+
+    private fun handleVideoFileAction(videoId: String, itemId: String) {
+        when (itemId) {
+            "video_play", "video_resume", "video_details" ->
+                _uiState.update { it.copy(activeVideoId = videoId) }
+            "video_favorite" -> appAction {
+                val v = videoRepository.getVideo(videoId) ?: return@appAction
+                videoRepository.setFavorite(videoId, !v.isFavorite)
+            }
+            "video_add_playlist" -> openVideoPlaylistPicker(videoId)
+            "video_remove_playlist" -> (_uiState.value.videoNav as? VideoNav.Playlist)?.let { nav ->
+                appAction { videoRepository.removeVideoFromPlaylist(nav.id, videoId) }
+            }
+            "video_remove" -> appAction { videoRepository.removeVideo(videoId) }
+        }
+    }
+
+    // Second-level menu: the playlists a video can be added to (checkmarks show membership), plus
+    // "Create New Playlist". Stays open while toggling so several can be picked at once.
+    private fun openVideoPlaylistPicker(videoId: String, selectIndex: Int = 0) {
+        viewModelScope.launch {
+            val playlists = videoRepository.observePlaylists().first()
+            val memberOf = videoRepository.getPlaylistIdsForVideo(videoId).toSet()
+            val items = buildList {
+                playlists.forEach { pl -> add(XMBContextMenuItem("vpl_${pl.id}", pl.name, checked = pl.id in memberOf)) }
+                add(XMBContextMenuItem("vpl_new", "Create New Playlist"))
+            }
+            _uiState.update { it.copy(
+                activeContextMenu = XMBContextMenu(
+                    title = "Add to Playlist",
+                    items = items,
+                    selectedIndex = selectIndex.coerceIn(0, items.size - 1),
+                    videoPlaylistPickerVideoId = videoId,
+                )
+            )}
+        }
+    }
+
+    // Options for a video library card: open, scan, or manage in Settings.
+    private fun openVideoLibraryContextMenu(libraryId: String, name: String) {
+        val items = listOf(
+            XMBContextMenuItem("video_lib_open", "Open"),
+            XMBContextMenuItem("video_lib_manage", "Manage in Settings"),
+        )
+        _uiState.update { it.copy(activeContextMenu = XMBContextMenu(name, items, videoLibraryId = libraryId)) }
+    }
+
+    private fun handleVideoLibraryAction(libraryId: String, itemId: String) {
+        when (itemId) {
+            "video_lib_open" -> {
+                val name = _uiState.value.currentItems.firstOrNull { it.id == "vlib_$libraryId" }?.title.orEmpty()
+                openVideoView(VideoNav.Library(libraryId, name))
+            }
+            "video_lib_manage" -> _uiState.update { it.copy(activeSettingsScreen = "settings_video") }
         }
     }
 
@@ -2837,6 +2925,26 @@ class XMBViewModel @Inject constructor(
             return
         }
 
+        // ── Video "Add to Playlist" submenu — handled before closing so toggles stay in place ──
+        if (menu.videoPlaylistPickerVideoId != null) {
+            val videoId = menu.videoPlaylistPickerVideoId
+            val keepIndex = menu.selectedIndex
+            when {
+                itemId == "vpl_new" -> {
+                    closeContextMenu()
+                    promptCreateVideoPlaylist(forVideoId = videoId)
+                }
+                itemId.startsWith("vpl_") -> {
+                    val playlistId = itemId.removePrefix("vpl_").toLongOrNull() ?: return
+                    viewModelScope.launch {
+                        videoRepository.toggleVideoInPlaylist(playlistId, videoId)
+                        openVideoPlaylistPicker(videoId, keepIndex)  // re-open so the checkmark updates
+                    }
+                }
+            }
+            return
+        }
+
         // ── Playlist picker submenu — handled before closing so toggles stay in place ──
         if (menu.playlistPickerTrackId != null) {
             val trackId = menu.playlistPickerTrackId
@@ -2860,7 +2968,15 @@ class XMBViewModel @Inject constructor(
 
         closeContextMenu()
 
-        // ── Video playlist row options menu ─────────────────────────────────────
+        // ── Video file / library / playlist row options menus ───────────────────
+        if (menu.videoFileId != null) {
+            handleVideoFileAction(menu.videoFileId, itemId)
+            return
+        }
+        if (menu.videoLibraryId != null) {
+            handleVideoLibraryAction(menu.videoLibraryId, itemId)
+            return
+        }
         if (menu.videoPlaylistId != null) {
             handleVideoPlaylistRowAction(menu.videoPlaylistId, itemId)
             return
@@ -3142,6 +3258,7 @@ class XMBViewModel @Inject constructor(
                     // table; category_items has a FK to categories, so the row must exist first or
                     // the insert throws (crash). Seed it (hidden) before adding.
                     if (target.categoryId == MUSIC_APPS_CATEGORY_ID) ensureMusicAppsCategory()
+                    if (target.categoryId == VIDEO_APPS_CATEGORY_ID) ensureVideoAppsCategory()
                     packages.forEach { pkg -> appCategoryRepository.addToCategory(pkg, target.categoryId) }
                 }
             }
@@ -3162,6 +3279,23 @@ class XMBViewModel @Inject constructor(
                 iconKey   = "ic_music",
                 type      = CategoryType.BUILT_IN,
                 position  = 900,
+                isVisible = false,
+            )
+        )
+    }
+
+    // Same as [ensureMusicAppsCategory] for the Video Apps pseudo-category — seeds the hidden row so
+    // the category_items foreign key is satisfied before any video app is added (otherwise crash).
+    private suspend fun ensureVideoAppsCategory() {
+        val exists = categoryRepository.observeAll().first().any { it.id == VIDEO_APPS_CATEGORY_ID }
+        if (exists) return
+        categoryRepository.upsert(
+            Category(
+                id        = VIDEO_APPS_CATEGORY_ID,
+                name      = "Video Apps",
+                iconKey   = "ic_videos",
+                type      = CategoryType.BUILT_IN,
+                position  = 901,
                 isVisible = false,
             )
         )
