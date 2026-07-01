@@ -7,10 +7,7 @@ All notable changes to Play Field Portal are documented here. This project follo
 
 Second alpha. Adds a full Music section, a PSP-authentic XMB redesign (cross layout,
 two-pane drill flyout, and the real "wave" background), menu sound effects, and a round of
-security hardening.
-
-> Note: `versionName`/`versionCode` in `app/build.gradle.kts` are not yet bumped for this
-> release — set them (e.g. `1.0.0-alpha.2` / `2`) before tagging.
+security hardening. (`versionName 1.0.0-alpha.2` / `versionCode 2`.)
 
 ### Added
 - **Music library & player.** Scan SAF music folders, browse **All Music** as
