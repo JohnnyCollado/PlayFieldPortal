@@ -61,6 +61,8 @@ dependencies {
     implementation(project(":feature:feature-library"))
     // ThemeRepository, XmbThemeLoader
     implementation(project(":feature:feature-themes"))
+    // InstalledAppRepository, AppCategoryRepository — powers the Hidden Apps manager
+    implementation(project(":feature:feature-appbar"))
 
     testImplementation(libs.bundles.test.unit)
     testImplementation(libs.hilt.android.testing)

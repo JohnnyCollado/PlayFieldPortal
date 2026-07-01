@@ -490,6 +490,11 @@ Entertainment Inc.** Play Field Portal is an independent, non-commercial fan pro
 affiliated with, endorsed by, or sponsored by Sony**, and ships none of Sony's code, firmware, fonts
 or proprietary assets.
 
+### App icon & logo
+The Play Field Portal **app icon and logo** were created by **johakovi**
+([u/silverloc96](https://www.reddit.com/user/silverloc96) on Reddit), who generously volunteered
+their time to make them. The work is amazing — please go check out their work.
+
 ### System & console artwork
 The system, console and category icons come from the
 **[XMB Menu for ES-DE](https://github.com/anthonycaccese/xmb-menu-es-de)** theme — a community

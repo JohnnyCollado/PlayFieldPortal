@@ -7,6 +7,8 @@
         <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="android:windowBackground">@android:color/black</item>
+        <!-- Pre-Compose frame: the wave gradient's deep top blue, so the system splash blends
+             straight into the boot wave instead of flashing black. -->
+        <item name="android:windowBackground">#0743A2</item>
     </style>
 </resources>

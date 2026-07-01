@@ -403,8 +403,9 @@ fun XMBItemList(
                 XmbVerticalListRow(
                     item = items[selectedIndex - 1],
                     isSelected = false,
-                    // Force-show names the clipped previous card too; else icon/force-hide keep it bare.
-                    showText = forceShowText || (!forceHideText && !showIcons),
+                    // Show the previous item's label too, so its name rises up through the crossbar
+                    // with the icon (unless labels are force-hidden, e.g. the flyout's card column).
+                    showText = forceShowText || !forceHideText,
                     iconStyle = iconStyle,
                     onClick = { onItemSelected(selectedIndex - 1) },
                     onLongPress = { onItemLongPress(selectedIndex - 1) },

@@ -7,7 +7,6 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.playfieldportal.core.data.database.dao.AppOverrideDao
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.ui.wave.WaveStyle
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -68,7 +67,6 @@ data class DisplaySettingsUiState(
 @HiltViewModel
 class DisplaySettingsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val appOverrideDao: AppOverrideDao,
 ) : ViewModel() {
 
     private val _wallpaperMessage  = MutableStateFlow<String?>(null)
@@ -168,20 +166,8 @@ class DisplaySettingsViewModel @Inject constructor(
         }
     }
 
-    // ── Hidden apps recovery ────────────────────────────────────────────────────
-
-    // Clears the hidden flag on every app so they reappear in their categories. The XMB observes
-    // app-override changes reactively, so apps come back without a restart. Reuses the message
-    // dialog channel to confirm. (The result text isn't wallpaper-specific.)
-    fun resetHiddenApps() {
-        viewModelScope.launch {
-            val count = appOverrideDao.countHidden()
-            appOverrideDao.unhideAll()
-            _wallpaperMessage.value =
-                if (count == 0) "No hidden apps to restore."
-                else "Unhid $count app${if (count == 1) "" else "s"} — they'll reappear in their categories."
-        }
-    }
+    // Hidden-app management now lives in its own screen (AppVisibilityViewModel), reached from
+    // Display ▸ Hidden Apps — it lists every app with a per-app show/hide toggle.
 
     fun dismissWallpaperMessage() {
         _wallpaperMessage.value = null

@@ -40,6 +40,16 @@ fun CreditsSettingsScreen(
             )
 
             Spacer(Modifier.height(16.dp))
+            SettingsGroup("App Icon & Logo")
+
+            CreditParagraph(
+                "The Play Field Portal app icon and logo were designed by johakovi. Huge thanks for the " +
+                    "artwork that gives the launcher its identity."
+            )
+            CreditLine("Design", "johakovi")
+            CreditLine("Reddit", "u/silverloc96")
+
+            Spacer(Modifier.height(16.dp))
             SettingsGroup("System & Console Artwork")
 
             CreditParagraph(

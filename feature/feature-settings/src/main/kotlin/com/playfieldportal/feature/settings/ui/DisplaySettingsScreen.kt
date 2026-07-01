@@ -17,6 +17,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -32,6 +35,14 @@ fun DisplaySettingsScreen(
     viewModel: DisplaySettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
+
+    // Nested "Hidden Apps" manager — kept inside Display (as requested) rather than a separate
+    // top-level settings item. It fully replaces this screen while open; its Back returns here.
+    var showHiddenApps by rememberSaveable { mutableStateOf(false) }
+    if (showHiddenApps) {
+        AppVisibilitySettingsScreen(onBack = { showHiddenApps = false }, modifier = modifier)
+        return
+    }
 
     val wallpaperPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -158,9 +169,9 @@ fun DisplaySettingsScreen(
             SettingsGroup("Apps")
 
             SettingsRow(
-                label    = "Reset Hidden Apps",
-                sublabel = "Unhide every app you've hidden — they reappear in their categories",
-                onClick  = { viewModel.resetHiddenApps() },
+                label    = "Hidden Apps",
+                sublabel = "See every hidden app and show or hide apps individually",
+                onClick  = { showHiddenApps = true },
             )
         }
     }

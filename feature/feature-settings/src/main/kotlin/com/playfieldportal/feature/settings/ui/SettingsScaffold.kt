@@ -322,6 +322,7 @@ fun SettingsRow(
     label: String,
     sublabel: String? = null,
     focusKey: String? = null,
+    leading: @Composable (() -> Unit)? = null,
     trailing: @Composable (() -> Unit)? = null,
     onClick: (() -> Unit)? = null,
 ) {
@@ -376,6 +377,10 @@ fun SettingsRow(
         verticalAlignment     = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
+        if (leading != null) {
+            leading()
+            Spacer(Modifier.width(16.dp))
+        }
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text      = label,
@@ -400,6 +405,7 @@ fun SettingsToggleRow(
     label: String,
     sublabel: String? = null,
     focusKey: String? = null,
+    leading: @Composable (() -> Unit)? = null,
     checked: Boolean,
     onToggle: (Boolean) -> Unit,
 ) {
@@ -407,6 +413,7 @@ fun SettingsToggleRow(
         label    = label,
         sublabel = sublabel,
         focusKey = focusKey,
+        leading  = leading,
         // Row-level click so controller SELECT can toggle it
         onClick  = { onToggle(!checked) },
         trailing = {
