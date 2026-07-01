@@ -42,6 +42,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.text.TextStyle
+import com.playfieldportal.core.ui.theme.LocalPFPColors
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
@@ -585,26 +588,37 @@ private fun AppDrawerButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // Transparent background so the button blends into the wave; a thin accent ring + a soft dark
+    // drop-shadow on the glyph keep it legible over both the dark top and bright bottom of the
+    // gradient, and tie it to the active theme.
+    val accent = LocalPFPColors.current.accentColor
     Box(
         modifier = modifier
             .size(52.dp)
             .clip(RoundedCornerShape(14.dp))
-            // Solid translucent dark backdrop so the white grid glyph stays clearly visible over
-            // the bright lower half of the gradient.
-            .background(Color(0xCC0C2A55))
-            .border(1.dp, Color.White.copy(alpha = 0.55f), RoundedCornerShape(14.dp))
+            .border(1.5.dp, accent.copy(alpha = 0.7f), RoundedCornerShape(14.dp))
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Canvas(modifier = Modifier.size(24.dp)) {
+        Canvas(modifier = Modifier.size(26.dp)) {
             val cell = size.minDimension * 0.38f
             val gap = size.minDimension - 2 * cell
             val radius = CornerRadius(cell * 0.28f, cell * 0.28f)
+            val shadowOffset = size.minDimension * 0.06f
             for (row in 0..1) {
                 for (col in 0..1) {
+                    val x = col * (cell + gap)
+                    val y = row * (cell + gap)
+                    // Soft dark shadow cell behind, then the bright glyph cell on top.
+                    drawRoundRect(
+                        color = Color(0x99000000),
+                        topLeft = Offset(x + shadowOffset, y + shadowOffset),
+                        size = Size(cell, cell),
+                        cornerRadius = radius,
+                    )
                     drawRoundRect(
                         color = Color.White,
-                        topLeft = Offset(col * (cell + gap), row * (cell + gap)),
+                        topLeft = Offset(x, y),
                         size = Size(cell, cell),
                         cornerRadius = radius,
                     )
@@ -620,19 +634,22 @@ private fun BackFloatingButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val accent = LocalPFPColors.current.accentColor
     Box(
         modifier = modifier
-            .size(48.dp)
+            .size(52.dp)
             .clip(RoundedCornerShape(14.dp))
-            .background(Color.White.copy(alpha = 0.12f))
+            .border(1.5.dp, accent.copy(alpha = 0.7f), RoundedCornerShape(14.dp))
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = "◀",
-            color = Color.White.copy(alpha = 0.92f),
-            fontSize = 18.sp,
+            color = Color.White,
+            fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
+            // Soft dark halo so the glyph reads on the bright lower gradient too.
+            style = TextStyle(shadow = Shadow(Color(0xB3000000), Offset.Zero, 10f)),
         )
     }
 }
