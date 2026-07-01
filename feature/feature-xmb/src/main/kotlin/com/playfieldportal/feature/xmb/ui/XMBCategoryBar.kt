@@ -25,9 +25,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -35,8 +36,15 @@ import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.domain.model.Category
 import com.playfieldportal.core.ui.icons.CategoryIconGlyph
 
+// Classic PSP blue theme: selected label crisp white with a dark glow; unselected labels recede
+// into a dimmer blue-white so they read against the saturated blue gradient.
 private val SelectedIcon = Color.White
-private val LabelInactive = Color(0xFFE4E2F5)
+private val LabelInactive = Color(0xCCD8E6FF)
+private val SelectedLabelShadow = Shadow(
+    color = Color(0x73001627),
+    offset = Offset.Zero,
+    blurRadius = 12f,
+)
 
 // Width of a single category slot. Exposed so the subitem column (XMBShell) can
 // align its left edge to the selected category's slot — the XMB crossbar.
@@ -58,6 +66,9 @@ fun XMBCategoryBar(
     onCategorySelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
     onCategoryLongPress: (Int) -> Unit = {},
+    // When drilled into a sub-item, the XMB hides every category to the RIGHT of the active one so
+    // the focus collapses onto the active column (PSP second-level behaviour).
+    drilledIn: Boolean = false,
 ) {
     val listState = rememberLazyListState()
 
@@ -84,13 +95,16 @@ fun XMBCategoryBar(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             itemsIndexed(categories, key = { _, category -> category.id }) { index, category ->
-                XMBCategoryItem(
-                    category = category,
-                    isSelected = index == selectedIndex,
-                    onClick = { onCategorySelected(index) },
-                    onLongPress = { onCategoryLongPress(index) },
-                    modifier = Modifier.width(ItemSlotWidth),
-                )
+                // While drilled in, categories to the right of the active one are hidden.
+                if (!(drilledIn && index > selectedIndex)) {
+                    XMBCategoryItem(
+                        category = category,
+                        isSelected = index == selectedIndex,
+                        onClick = { onCategorySelected(index) },
+                        onLongPress = { onCategoryLongPress(index) },
+                        modifier = Modifier.width(ItemSlotWidth),
+                    )
+                }
             }
         }
     }
@@ -110,11 +124,6 @@ private fun XMBCategoryItem(
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "xmbCategoryIconSize",
     )
-    val glowAlpha by animateFloatAsState(
-        targetValue = if (isSelected) 1f else 0f,
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-        label = "xmbCategoryGlow",
-    )
     val itemAlpha by animateFloatAsState(
         targetValue = if (isSelected) 1f else 0.58f,
         animationSpec = spring(stiffness = Spring.StiffnessMedium),
@@ -132,29 +141,10 @@ private fun XMBCategoryItem(
             contentAlignment = Alignment.Center,
             modifier = Modifier
                 .size(82.dp)
-                .drawBehind {
-                    if (glowAlpha > 0f) {
-                        // Soft, neutral halo behind the selected icon — no colored cursor.
-                        val haloRadius = size.minDimension * 0.62f
-                        drawCircle(
-                            brush = Brush.radialGradient(
-                                colors = listOf(
-                                    Color.White.copy(alpha = 0.26f * glowAlpha),
-                                    Color.White.copy(alpha = 0.08f * glowAlpha),
-                                    Color.Transparent,
-                                ),
-                                center = center,
-                                radius = haloRadius,
-                            ),
-                            radius = haloRadius,
-                            center = center,
-                        )
-                    }
-                }
                 .alpha(itemAlpha),
         ) {
             // All category icons resolve through the shared core-ui catalog (catbar_* column
-            // glyphs and sysicon_* console art) — selection is conveyed by size, halo and alpha.
+            // glyphs and sysicon_* console art) — selection is conveyed by size and alpha (no halo).
             CategoryIconGlyph(
                 iconKey = category.iconKey,
                 contentDescription = category.name,
@@ -167,6 +157,7 @@ private fun XMBCategoryItem(
             color = if (isSelected) SelectedIcon else LabelInactive,
             fontSize = if (isSelected) 15.sp else 13.sp,
             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+            style = if (isSelected) TextStyle(shadow = SelectedLabelShadow) else TextStyle.Default,
             textAlign = TextAlign.Center,
             maxLines = 1,
             modifier = Modifier

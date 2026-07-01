@@ -99,7 +99,10 @@ private fun WaveBackground(
     val gradient = Brush.linearGradient(
         colorStops = arrayOf(
             0.00f to colors.backgroundTop,
-            0.55f to lerp(colors.backgroundTop, colors.backgroundBottom, 0.5f),
+            // Hold the deep top colour through the upper portion (so the status strip keeps a solid
+            // dark backdrop) before easing down to the pale bottom.
+            0.30f to colors.backgroundTop,
+            0.70f to lerp(colors.backgroundTop, colors.backgroundBottom, 0.5f),
             1.00f to colors.backgroundBottom,
         )
     )
@@ -121,26 +124,28 @@ private fun WaveBackground(
 private fun DrawScope.drawXmbWaveLayers(phase: Float, waveColor: Color, alphaScale: Float, ampScale: Float) {
     val w = size.width
     val h = size.height
-    // Lighter crest tone for the front layer to keep the PSP sense of depth.
-    val crest = lerp(waveColor, Color.White, 0.25f)
+    // PSP "Original" waves: soft, near-white ribbons low on the screen — barely-there highlights
+    // rather than coloured bands. The front layers fill in white (a gentle lightening of the pale
+    // gradient) and one middle layer carries a faint trace of the theme hue for depth.
+    val tint = lerp(waveColor, Color.White, 0.55f)
     // Each layer's phase = base × an INTEGER cycle count (+ a constant offset). The integer
     // multipliers (5/6/7) keep the original slow/medium/fast parallax ratio while ensuring every
     // layer completes whole cycles when the base wraps 2π → 0, so the loop has no visible skip.
     // Constant offsets don't affect seamlessness, only the layers' relative starting positions.
     drawWaveLayer(
-        width = w, height = h, midY = h * 0.78f, phase = phase * 5f,
-        amplitude = h * 0.075f * ampScale,
-        color = crest.copy(alpha = 0.74f * alphaScale), points = 34,
+        width = w, height = h, midY = h * 0.80f, phase = phase * 5f,
+        amplitude = h * 0.055f * ampScale,
+        color = Color.White.copy(alpha = 0.34f * alphaScale), points = 34,
     )
     drawWaveLayer(
-        width = w, height = h, midY = h * 0.72f, phase = phase * 6f + 1.4f,
-        amplitude = h * 0.065f * ampScale,
-        color = waveColor.copy(alpha = 0.42f * alphaScale), points = 30,
-    )
-    drawWaveLayer(
-        width = w, height = h, midY = h * 0.84f, phase = phase * 7f + 0.8f,
+        width = w, height = h, midY = h * 0.73f, phase = phase * 6f + 1.4f,
         amplitude = h * 0.050f * ampScale,
-        color = crest.copy(alpha = 0.30f * alphaScale), points = 26,
+        color = tint.copy(alpha = 0.28f * alphaScale), points = 30,
+    )
+    drawWaveLayer(
+        width = w, height = h, midY = h * 0.87f, phase = phase * 7f + 0.8f,
+        amplitude = h * 0.042f * ampScale,
+        color = Color.White.copy(alpha = 0.22f * alphaScale), points = 26,
     )
 }
 

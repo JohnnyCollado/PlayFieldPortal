@@ -18,12 +18,13 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -35,21 +36,30 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.isUnspecified
 import androidx.compose.ui.unit.sp
-import kotlin.math.floor
 import coil.compose.AsyncImage
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.playfieldportal.core.ui.icons.GameIconStyle
@@ -74,15 +84,36 @@ private val ARTWORK_TEXT_GAP = 16.dp
 // touches from selecting/launching items.
 private val TAP_TARGET_HEIGHT = 72.dp
 
+// Fixed-width slot every leading icon is centred in, so an icon's horizontal centre is independent
+// of its own size — icons can grow without breaking the caticon alignment.
+internal val LEADING_ICON_SLOT = 64.dp
+// Default size of the glyph/art inside that slot (selected rows additionally scale up via the row).
+private val LEADING_ICON_SIZE = 52.dp
+// Horizontal centre of a row's leading icon from the row's left edge: 18.dp row padding + half the
+// slot. The grow/shrink scale pivots here, and the column is shifted so this lands on the caticon's
+// vertical line. Shared with XMBShell's column offset so the two never drift apart.
+internal val LEADING_ICON_CENTER = 18.dp + LEADING_ICON_SLOT / 2
+
+// Classic PSP blue theme: the selected row is crisp white; unselected rows recede into a dimmer
+// blue-white so they read against the saturated blue gradient.
 private val PrimaryText = Color.White
-private val SecondaryText = Color(0xFFC9C7E8)
-private val InactiveText = Color(0xFFE3E1F0)
+private val SecondaryText = Color(0xAAC8DAF2)
+private val InactiveText = Color(0xCCD8E6FF)
+// Soft dark halo behind the bright selected label — keeps white legible on the light wave.
+private val SelectedTextShadow = Shadow(
+    color = Color(0x73001627),
+    offset = Offset.Zero,
+    blurRadius = 12f,
+)
 
 // Width reserved for the parent label column in the two-pane drill flyout.
 private val FLYOUT_PARENT_WIDTH = 200.dp
 
 // Height of one icon slot in the sibling column.
 private val SIBLING_SLOT = 72.dp
+
+// A bit of breathing space between consecutive game rows in the drill flyout's continuous list.
+private val GAME_ROW_GAP = 14.dp
 
 // ── Two-pane drill flyout (PSP/XMB style) ────────────────────────────────────
 //
@@ -99,71 +130,91 @@ fun XmbDrillFlyout(
     onItemSelected: (Int) -> Unit,
     onItemLongPress: (Int) -> Unit,
     iconStyle: GameIconStyle = GameIconStyle.PSP_RECTANGLE,
+    // The Y of the category bar's top edge and bottom edge — passed the SAME values as the main XMB
+    // so the drill is laid out identically: active row under the caticon, previous half-clipped above.
+    barTopY: Dp = 40.dp,
+    belowTopY: Dp = 152.dp,
     modifier: Modifier = Modifier,
 ) {
     val accent = LocalPFPColors.current.accentColor
     Row(modifier = modifier.fillMaxSize()) {
-        // Left: the category's sibling icons, the current one centred on the arrow.
-        CenterLockedColumn(
-            count = siblings.size,
-            selectedIndex = siblingIndex,
-            rowHeight = SIBLING_SLOT,
-            modifier = Modifier.width(FLYOUT_PARENT_WIDTH).fillMaxHeight(),
-        ) { index ->
-            SiblingIcon(item = siblings[index], selected = index == siblingIndex)
+        // Left: the PLATFORM (memory-card) icons — these do the XMB cross: the previous platform is
+        // half-clipped ABOVE the caticon, the active one sits BELOW it, the rest continue below.
+        Box(
+            modifier = Modifier.width(FLYOUT_PARENT_WIDTH).fillMaxHeight().clipToBounds(),
+        ) {
+            // Active platform + the ones after it, seated on the XMB line.
+            Column(modifier = Modifier.fillMaxWidth().offset(y = belowTopY)) {
+                for (i in siblingIndex.coerceAtLeast(0) until siblings.size) {
+                    Box(modifier = Modifier.fillMaxWidth().height(ROW_HEIGHT)) {
+                        SiblingIcon(item = siblings[i], selected = i == siblingIndex)
+                    }
+                }
+            }
+            // Previous platform, clipped to its bottom half just above the caticon.
+            if (siblingIndex in 1..siblings.lastIndex) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(ROW_HEIGHT / 2)
+                        .offset(y = barTopY - ROW_HEIGHT / 2)
+                        .clipToBounds(),
+                    contentAlignment = Alignment.BottomStart,
+                ) {
+                    Box(modifier = Modifier.fillMaxWidth().requiredHeight(ROW_HEIGHT)) {
+                        SiblingIcon(item = siblings[siblingIndex - 1], selected = false)
+                    }
+                }
+            }
         }
 
-        // Right: the children, centre-locked under the fixed arrow.
+        // Right: the GAME icons — a continuous list, one after another with a bit of space between
+        // them. The active game is aligned with the active platform's line; earlier games scroll up.
         Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
             CenterLockedColumn(
                 count = items.size,
                 selectedIndex = selectedIndex,
-                rowHeight = ROW_HEIGHT,
-                modifier = Modifier.fillMaxSize().padding(start = 30.dp),
+                rowHeight = ROW_HEIGHT + GAME_ROW_GAP,
+                anchorTopY = belowTopY,
+                modifier = Modifier.fillMaxSize().padding(start = 48.dp),
             ) { index ->
                 XmbVerticalListRow(
                     item = items[index],
                     isSelected = index == selectedIndex,
+                    showText = index == selectedIndex || index == selectedIndex + 1,
                     iconStyle = iconStyle,
                     onClick = { onItemSelected(index) },
                     onLongPress = { onItemLongPress(index) },
                     modifier = Modifier.fillMaxWidth().height(ROW_HEIGHT),
                 )
             }
-            // The fixed arrow — never moves; the active child is scrolled to align with it.
+            // Focus arrow — sits on the active line, pointing back toward the platform column (◀).
             Text(
-                text = "▶",
+                text = "◀",
                 color = accent,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.align(Alignment.CenterStart),
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .offset(y = belowTopY + ROW_HEIGHT / 2 - 14.dp),
             )
         }
     }
 }
 
-// One sibling icon on a dark rounded tile (so it stays visible over any wallpaper).
+// One sibling console icon — plain glyph (no tile/shadow), dimmed when not the active sibling.
 @Composable
 private fun SiblingIcon(item: XMBItem, selected: Boolean) {
-    val chip = if (selected) 60.dp else 42.dp
+    val chip = if (selected) 56.dp else 40.dp
     Box(
-        modifier = Modifier.fillMaxWidth().padding(end = 14.dp),
+        modifier = Modifier.fillMaxWidth().padding(end = 16.dp),
         contentAlignment = Alignment.CenterEnd,
     ) {
-        Box(
-            modifier = Modifier
-                .size(chip)
-                .clip(RoundedCornerShape(12.dp))
-                .background(Color.Black.copy(alpha = if (selected) 0.5f else 0.3f))
-                .alpha(if (selected) 1f else 0.6f),
-            contentAlignment = Alignment.Center,
-        ) {
-            Image(
-                painter = painterResource(rememberConsoleIconId(consoleIconKeyFor(item))),
-                contentDescription = item.title,
-                modifier = Modifier.size(chip * 0.72f),
-            )
-        }
+        Image(
+            painter = painterResource(rememberConsoleIconId(consoleIconKeyFor(item))),
+            contentDescription = item.title,
+            modifier = Modifier.size(chip).alpha(if (selected) 1f else 0.5f),
+        )
     }
 }
 
@@ -175,39 +226,44 @@ private fun consoleIconKeyFor(item: XMBItem): String? = when (item.type) {
     else                    -> null   // collections / unknown fall back to sysicon_default
 }
 
-// A vertical list whose [selectedIndex] row is always pinned to the vertical centre; rows scroll
-// under it. Each row is exactly [rowHeight] tall. Used for both flyout columns so they stay aligned.
+// A vertical list whose [selectedIndex] row is pinned to a fixed line; rows scroll under it. When
+// [anchorTopY] is unspecified the row centres vertically; otherwise the row's TOP is pinned at
+// [anchorTopY] (used by the drill flyout to seat the active row just below the caticon, exactly like
+// the main XMB, with earlier rows scrolling up past it). Each row is exactly [rowHeight] tall.
 @Composable
 private fun CenterLockedColumn(
     count: Int,
     selectedIndex: Int,
     rowHeight: Dp,
     modifier: Modifier = Modifier,
+    anchorTopY: Dp = Dp.Unspecified,
     row: @Composable (index: Int) -> Unit,
 ) {
-    BoxWithConstraints(modifier = modifier) {
-        // Symmetric padding so the first AND last items can scroll all the way to the centre.
-        val centerPad = ((maxHeight - rowHeight) / 2).coerceAtLeast(0.dp)
+    BoxWithConstraints(modifier = modifier.clipToBounds()) {
+        val density = LocalDensity.current
+        val centered = anchorTopY.isUnspecified
+        // Where the active row's TOP sits, and the padding that lets the first/last rows reach it.
+        val topPad = (if (centered) (maxHeight - rowHeight) / 2 else anchorTopY).coerceAtLeast(0.dp)
+        val bottomPad = (if (centered) (maxHeight - rowHeight) / 2 else maxHeight - anchorTopY - rowHeight)
+            .coerceAtLeast(0.dp)
+        val anchorPx = with(density) { topPad.toPx() }
         val listState = rememberLazyListState()
 
-        LaunchedEffect(selectedIndex, count) {
+        LaunchedEffect(selectedIndex, count, anchorPx) {
             if (count == 0) return@LaunchedEffect
             val idx = selectedIndex.coerceIn(0, count - 1)
-            // Ensure the target is measured, then scroll by the exact delta to centre it. Measuring
-            // (rather than a fixed offset) centres edge items correctly and never over-scrolls.
+            // Ensure the target is measured, then scroll by the exact delta to seat its top on the line.
             if (listState.layoutInfo.visibleItemsInfo.none { it.index == idx }) {
                 listState.scrollToItem(idx)
             }
-            val info = listState.layoutInfo
-            val item = info.visibleItemsInfo.firstOrNull { it.index == idx } ?: return@LaunchedEffect
-            val viewportCenter = (info.viewportStartOffset + info.viewportEndOffset) / 2f
-            val delta = (item.offset + item.size / 2f) - viewportCenter
-            listState.animateScrollBy(delta)
+            val item = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == idx }
+                ?: return@LaunchedEffect
+            listState.animateScrollBy(item.offset - anchorPx)
         }
 
         LazyColumn(
             state = listState,
-            contentPadding = PaddingValues(vertical = centerPad),
+            contentPadding = PaddingValues(top = topPad, bottom = bottomPad),
             userScrollEnabled = false,   // selection-driven; taps still work, drag can't fight the lock
             modifier = Modifier.fillMaxSize(),
         ) {
@@ -229,50 +285,74 @@ fun XMBItemList(
     // Increments when the list must snap to the top regardless of cursor position (e.g. a sort
     // cycle). Necessary because keyed reorders otherwise keep the viewport anchored to the old item.
     scrollToTopToken: Int = 0,
+    // Y of the category bar's TOP edge, measured from the top of this list.
+    barTopY: Dp = 40.dp,
+    // Y of the category bar's BOTTOM edge — where the selected item is seated, directly under the
+    // caticon. The previous item sits one row ABOVE barTopY; the bar is the gap between them.
+    belowTopY: Dp = 152.dp,
     modifier: Modifier = Modifier,
 ) {
-    val listState = rememberLazyListState()
+    // The XMB cross, exactly as the hardware does it:
+    //
+    //     [ previous item ]   ← one row above the bar (the only thing shown above it)
+    //     [ CATEGORY  BAR ]   ← fixed pivot
+    //     [ SELECTED item ]   ← directly below the bar
+    //     [ next item     ]
+    //     [ next+1 …       ]
+    //
+    // Pressing down slides the whole column up one: the old selected becomes the previous (above the
+    // bar) and the next becomes selected (below it). The bar is taller than a row, so the column is
+    // rendered in two pieces — one item above, selected + following below — rather than one list.
+    BoxWithConstraints(modifier = modifier.fillMaxWidth().fillMaxHeight().clipToBounds()) {
+        val rowsBelow = (((maxHeight.value - belowTopY.value) / ROW_HEIGHT.value).toInt() + 1)
+            .coerceAtLeast(1)
+        val sel = selectedIndex.coerceIn(0, (items.size - 1).coerceAtLeast(0))
 
-    // Snap to the top on every sort, even when the cursor was already at index 0 (so the selection
-    // scroll effect below wouldn't re-fire). Skips the initial composition (token 0).
-    LaunchedEffect(scrollToTopToken) {
-        if (scrollToTopToken > 0 && items.isNotEmpty()) {
-            listState.scrollToItem(0)
-        }
-    }
-
-    // Size the list to a whole number of rows (BoxWithConstraints gives the height available from
-    // the parent), then scroll on row boundaries — so only fully-visible rows ever render. No fade,
-    // no partial row at the top or bottom.
-    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
-        val visibleRows = floor(maxHeight / ROW_HEIGHT).toInt().coerceAtLeast(1)
-        val listHeight = ROW_HEIGHT * visibleRows
-
-        LaunchedEffect(selectedIndex, items.size, visibleRows) {
-            if (items.isNotEmpty()) {
-                // Keep one full row of context above the selection where possible; scrolling to an
-                // item with offset 0 lands the viewport exactly on a row boundary.
-                val target = (selectedIndex - 1).coerceIn(0, items.lastIndex)
-                listState.animateScrollToItem(target)
+        // BELOW the bar: the selected item first, then the items after it.
+        if (items.isNotEmpty()) {
+            Column(modifier = Modifier.fillMaxWidth().offset(y = belowTopY)) {
+                val last = minOf(items.size, sel + rowsBelow)
+                for (i in sel until last) {
+                    XmbVerticalListRow(
+                        item = items[i],
+                        isSelected = i == selectedIndex,
+                        // Only the selected row and the one directly below it carry text.
+                        showText = i == selectedIndex || i == selectedIndex + 1,
+                        iconStyle = iconStyle,
+                        onClick = { onItemSelected(i) },
+                        onLongPress = { onItemLongPress(i) },
+                        modifier = Modifier.fillMaxWidth().height(ROW_HEIGHT),
+                    )
+                }
             }
         }
 
-        LazyColumn(
-            state = listState,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(listHeight),
-        ) {
-            itemsIndexed(items, key = { _, item -> item.id }) { index, item ->
+        // ABOVE the bar: only the immediately-previous item, and only its BOTTOM HALF — the top half
+        // is clipped off above the bar, so it reads as "coming in" from behind the crossbar. The clip
+        // window is half a row tall, seated just above the bar; the full-height row inside is shifted
+        // up by half a row so its lower half lands in the window.
+        if (selectedIndex in 1..items.lastIndex) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(ROW_HEIGHT / 2)
+                    .offset(y = barTopY - ROW_HEIGHT / 2)
+                    .clipToBounds(),
+                // Bottom-align a full-height row inside a half-height window: its top half is clipped.
+                // requiredHeight keeps the row its full ROW_HEIGHT (the window would otherwise coerce
+                // it down to half) so it overflows upward and the clip cuts the top half off.
+                contentAlignment = Alignment.BottomStart,
+            ) {
                 XmbVerticalListRow(
-                    item = item,
-                    isSelected = index == selectedIndex,
+                    item = items[selectedIndex - 1],
+                    isSelected = false,
+                    showText = false,       // icon-only, like the rest of the non-active column
                     iconStyle = iconStyle,
-                    onClick = { onItemSelected(index) },
-                    onLongPress = { onItemLongPress(index) },
+                    onClick = { onItemSelected(selectedIndex - 1) },
+                    onLongPress = { onItemLongPress(selectedIndex - 1) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(ROW_HEIGHT),
+                        .requiredHeight(ROW_HEIGHT),
                 )
             }
         }
@@ -284,32 +364,46 @@ fun XMBItemList(
 private fun XmbVerticalListRow(
     item: XMBItem,
     isSelected: Boolean,
+    // Like the real XMB first-level column, rows are icon-only unless flagged: the caller shows text
+    // only for the active row and the one directly below it (the "up next" preview).
+    showText: Boolean,
     iconStyle: GameIconStyle,
     onClick: () -> Unit,
     onLongPress: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // Strong size delta between the locked selection and the rows scrolling past it — the PSP
+    // "the cursor stays, the list breathes" feel.
     val scale by animateFloatAsState(
-        targetValue = if (isSelected) 1.035f else 1f,
+        targetValue = if (isSelected) 1.06f else 0.9f,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "xmbListRowScale",
     )
     val rowAlpha by animateFloatAsState(
         targetValue = when {
             isSelected -> 1f
-            item.type == XMBItemType.EMPTY -> 0.62f
-            else -> 0.76f
+            item.type == XMBItemType.EMPTY -> 0.5f
+            else -> 0.68f
         },
         animationSpec = spring(stiffness = Spring.StiffnessMedium),
         label = "xmbListRowAlpha",
     )
+    // Pivot the grow/shrink scale at the leading icon's centre (not the row centre) so the icon
+    // never drifts horizontally as it scales — every row's icon stays on the caticon's vertical line.
+    val density = LocalDensity.current
+    val iconCenterPx = remember(density) { with(density) { LEADING_ICON_CENTER.toPx() } }
+    var rowWidthPx by remember { mutableStateOf(0f) }
     // Outer row fills the slot for layout/centering; only the inner cluster is the tap target.
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
+            .onSizeChanged { rowWidthPx = it.width.toFloat() }
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
+                if (rowWidthPx > 0f) {
+                    transformOrigin = TransformOrigin((iconCenterPx / rowWidthPx).coerceIn(0f, 1f), 0.5f)
+                }
             }
             .alpha(rowAlpha),
     ) {
@@ -327,37 +421,45 @@ private fun XmbVerticalListRow(
             XmbItemLeadingIcon(
                 item = item,
                 iconStyle = iconStyle,
+                isSelected = isSelected,
             )
 
-            Column(modifier = Modifier.weight(1f, fill = false)) {
-                Text(
-                    text = item.title,
-                    color = if (isSelected) PrimaryText else InactiveText,
-                    fontSize = if (isSelected) 19.sp else 16.sp,
-                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                if (!item.subtitle.isNullOrBlank()) {
+            if (showText) {
+                Column(modifier = Modifier.weight(1f, fill = false)) {
                     Text(
-                        text = item.subtitle,
-                        color = SecondaryText,
-                        fontSize = if (isSelected) 12.sp else 11.sp,
-                        fontWeight = FontWeight.Normal,
+                        text = item.title,
+                        color = if (isSelected) PrimaryText else InactiveText,
+                        fontSize = if (isSelected) 19.sp else 16.sp,
+                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                        style = if (isSelected) TextStyle(shadow = SelectedTextShadow) else TextStyle.Default,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(top = 1.dp),
                     )
+                    if (!item.subtitle.isNullOrBlank()) {
+                        Text(
+                            text = item.subtitle,
+                            color = SecondaryText,
+                            fontSize = if (isSelected) 12.sp else 11.sp,
+                            fontWeight = FontWeight.Normal,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(top = 1.dp),
+                        )
+                    }
                 }
             }
         }
     }
 }
 
+// Icon shadows/blooms dropped per design — selection is conveyed by the row's scale alone.
+private fun Modifier.selectedIconBloom(isSelected: Boolean): Modifier = this
+
 @Composable
 private fun XmbItemLeadingIcon(
     item: XMBItem,
     iconStyle: GameIconStyle,
+    isSelected: Boolean,
 ) {
     when {
         // Music tracks (and the "Now Playing" row) show a square album cover, falling back to a
@@ -365,20 +467,20 @@ private fun XmbItemLeadingIcon(
         // track's title left-aligned with the small-icon rows above/below.
         item.type == XMBItemType.MUSIC_TRACK -> {
             Box(
-                contentAlignment = Alignment.CenterStart,
-                modifier = Modifier.width(58.dp),
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.width(LEADING_ICON_SLOT),
             ) {
                 if (item.coverUri != null) {
                     AsyncImage(
                         model = item.coverUri,
                         contentDescription = null,
-                        modifier = Modifier.size(48.dp).clip(RoundedCornerShape(6.dp)),
+                        modifier = Modifier.size(56.dp).clip(RoundedCornerShape(6.dp)),
                     )
                 } else {
                     Box(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier
-                            .size(48.dp)
+                            .size(56.dp)
                             .clip(RoundedCornerShape(6.dp))
                             .background(Color(0xFF1B1B27)),
                     ) {
@@ -386,7 +488,7 @@ private fun XmbItemLeadingIcon(
                             Icons.Filled.MusicNote,
                             contentDescription = null,
                             tint = SecondaryText,
-                            modifier = Modifier.size(26.dp),
+                            modifier = Modifier.size(32.dp),
                         )
                     }
                 }
@@ -395,28 +497,28 @@ private fun XmbItemLeadingIcon(
         // Playlist rows (and the static "Playlist" item) use a queue-music glyph.
         item.type == XMBItemType.PLAYLIST -> {
             Box(
-                contentAlignment = Alignment.CenterStart,
-                modifier = Modifier.width(58.dp),
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.width(LEADING_ICON_SLOT),
             ) {
                 Icon(
                     Icons.Filled.QueueMusic,
                     contentDescription = null,
                     tint = InactiveText,
-                    modifier = Modifier.size(34.dp),
+                    modifier = Modifier.size(48.dp),
                 )
             }
         }
         // The static "Music Apps" item uses a music-library glyph.
         item.type == XMBItemType.MUSIC_APPS -> {
             Box(
-                contentAlignment = Alignment.CenterStart,
-                modifier = Modifier.width(58.dp),
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.width(LEADING_ICON_SLOT),
             ) {
                 Icon(
                     Icons.Filled.LibraryMusic,
                     contentDescription = null,
                     tint = InactiveText,
-                    modifier = Modifier.size(34.dp),
+                    modifier = Modifier.size(48.dp),
                 )
             }
         }
@@ -425,16 +527,20 @@ private fun XmbItemLeadingIcon(
             item.type == XMBItemType.MEMORY_CARD ||
             item.type == XMBItemType.COLLECTION -> {
             Box(
-                contentAlignment = Alignment.CenterStart,
-                modifier = Modifier.width(58.dp),
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.width(LEADING_ICON_SLOT),
             ) {
+              Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.size(LEADING_ICON_SIZE).selectedIconBloom(isSelected),
+              ) {
                 if (item.type == XMBItemType.MEMORY_CARD && item.coverUri != null) {
                     // A memory-card row with explicit art (e.g. the "Music" item) loads it directly
                     // — used for the physical-media memory-card PNG served from assets.
                     AsyncImage(
                         model = item.coverUri,
                         contentDescription = null,
-                        modifier = Modifier.size(40.dp),
+                        modifier = Modifier.size(LEADING_ICON_SIZE),
                     )
                 } else {
                     // Memory-card rows show their matching console icon. All Games gets the generic
@@ -450,9 +556,10 @@ private fun XmbItemLeadingIcon(
                     Image(
                         painter = painterResource(rememberConsoleIconId(iconKey)),
                         contentDescription = null,
-                        modifier = Modifier.size(40.dp),
+                        modifier = Modifier.size(LEADING_ICON_SIZE),
                     )
                 }
+              }
             }
         }
         item.gameId != null -> {
@@ -476,10 +583,13 @@ private fun XmbItemLeadingIcon(
             Spacer(modifier = Modifier.width(ARTWORK_TEXT_GAP))
         }
         item.isAndroidApp && item.packageName != null -> {
-            Box(modifier = Modifier.width(58.dp)) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.width(LEADING_ICON_SLOT),
+            ) {
                 AppListIcon(
                     packageName = item.packageName,
-                    modifier = Modifier.size(34.dp),
+                    modifier = Modifier.size(48.dp),
                 )
             }
         }

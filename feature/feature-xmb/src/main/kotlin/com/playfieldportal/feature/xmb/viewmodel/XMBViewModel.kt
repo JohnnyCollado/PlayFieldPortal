@@ -44,6 +44,7 @@ import com.playfieldportal.feature.xmb.gamepad.GamepadInputHandler
 import com.playfieldportal.core.ui.notification.BackgroundTaskNotifier
 import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.core.domain.model.MusicTrack
+import androidx.compose.ui.graphics.toArgb
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
@@ -71,6 +72,18 @@ private fun XmbPalette.toPFPColors() = PFPColors(
     backgroundTop     = androidx.compose.ui.graphics.Color(backgroundTop),
     backgroundBottom  = androidx.compose.ui.graphics.Color(backgroundBottom),
 )
+
+// Set the wave color AND re-derive the light PSP background gradient from it, so the background
+// always matches whatever hue the wave is (theme default or per-category accent tint).
+private fun PFPColors.withWaveTint(wave: androidx.compose.ui.graphics.Color): PFPColors {
+    val argb = wave.toArgb().toLong() and 0xFFFFFFFFL
+    val anchors = com.playfieldportal.core.domain.model.lightBackgroundAnchors(argb)
+    return copy(
+        waveColor        = wave,
+        backgroundTop    = androidx.compose.ui.graphics.Color(anchors.first),
+        backgroundBottom = androidx.compose.ui.graphics.Color(anchors.second),
+    )
+}
 
 // ── Context menu types ────────────────────────────────────────────────────────
 
@@ -581,13 +594,8 @@ class XMBViewModel @Inject constructor(
                         .getOrDefault(XmbColorScheme.CLASSIC_BLUE)
                     val month = java.time.LocalDate.now().monthValue
                     baseThemeColors = scheme.resolve(month).toPFPColors()
-                    // Re-apply the current category's accent tint on top of the new base palette.
-                    val category = _uiState.value.categories
-                        .getOrNull(_uiState.value.selectedCategoryIndex)
-                    val waveColor = category?.accentColor
-                        ?.let { androidx.compose.ui.graphics.Color(it) }
-                        ?: baseThemeColors.waveColor
-                    _uiState.update { it.copy(themeColors = baseThemeColors.copy(waveColor = waveColor)) }
+                    // One theme color across the whole XMB (PSP-authentic) — no per-category tint.
+                    _uiState.update { it.copy(themeColors = baseThemeColors) }
                 }
         }
     }
@@ -1791,10 +1799,8 @@ class XMBViewModel @Inject constructor(
     }
 
     private fun tintWaveForCategory(category: Category?) {
-        val accentColor = category?.accentColor
-            ?.let { androidx.compose.ui.graphics.Color(it) }
-            ?: baseThemeColors.waveColor
-        _uiState.update { it.copy(themeColors = it.themeColors.copy(waveColor = accentColor)) }
+        // PSP-authentic: one theme color across the whole XMB — no per-category wave re-tint.
+        _uiState.update { it.copy(themeColors = baseThemeColors) }
     }
 
     // ── Gamepad ───────────────────────────────────────────────────────────────

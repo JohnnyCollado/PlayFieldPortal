@@ -5,6 +5,7 @@ import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -19,10 +20,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -222,7 +223,7 @@ fun XMBShell(
                 modifier = Modifier.align(Alignment.TopCenter),
             )
 
-            Column(
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(top = 44.dp)
@@ -248,33 +249,25 @@ fun XMBShell(
                         )
                     },
             ) {
-                XMBCategoryBar(
-                    categories = uiState.categories,
-                    selectedIndex = uiState.selectedCategoryIndex,
-                    onCategorySelected = onCategorySelected,
-                    onCategoryLongPress = { index ->
-                        val id = uiState.categories.getOrNull(index)?.id
-                        if (id == BuiltInCategory.SETTINGS) onSettingsLongPress()
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(128.dp),
-                )
-
-                BoxWithConstraints(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                ) {
-                    // Line the subitem column up with the XMB crossbar: the category bar anchors
-                    // its selected slot to XmbLeftAnchor, so anchor the item column's left edge to
-                    // that same x. The selected category and its subitems share one vertical line.
-                    val startPad = XmbLeftAnchor
+                BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                    // The XMB cross: the crossbar sits toward the vertical centre so first-level items
+                    // appear BOTH above it (scrolled-past, dissolving) and below it. The bar is drawn
+                    // ON TOP of a full-height item column; the active item is anchored just under the
+                    // caticon (anchorTop = barTop + bar height) and previous items rise up through the
+                    // bar band to dissolve. The column's leading icon is shifted right so it lands on
+                    // the same vertical line as the caticon (centred in its slot).
+                    val catBarHeight = 112.dp
+                    // Push the crossbar down so there is room for a full previous item ABOVE it.
+                    val barTop = maxHeight * 0.26f
+                    val anchorTop = barTop + catBarHeight
+                    // Caticon centre minus the leading-icon inset ⇒ column shift that lands every
+                    // item's icon centre on the caticon's vertical line (shared constant keeps the
+                    // column offset and the row's scale pivot in lock-step).
+                    val startPad = XmbLeftAnchor + (CategorySlotWidth / 2) - LEADING_ICON_CENTER
 
                     if (uiState.drillTitle != null) {
-                        // Drilled into a Games sub-item: render the two-pane flyout directly here so
-                        // it gets this BoxWithConstraints' definite height (centre-locking needs a
-                        // reliable height; nesting it in AnimatedContent did not provide one).
+                        // Drilled into a Games sub-item: the two-pane flyout fills the same area and
+                        // seats its active row on the SAME line as the main XMB (just under the caticon).
                         XmbDrillFlyout(
                             siblings = uiState.drillSiblings,
                             siblingIndex = uiState.drillSiblingIndex,
@@ -283,7 +276,9 @@ fun XMBShell(
                             onItemSelected = onItemSelected,
                             onItemLongPress = onItemLongPress,
                             iconStyle = uiState.iconStyle,
-                            modifier = Modifier.fillMaxSize().padding(top = 6.dp),
+                            barTopY = barTop,
+                            belowTopY = anchorTop,
+                            modifier = Modifier.align(Alignment.TopStart).fillMaxSize(),
                         )
                     } else {
                         AnimatedContent(
@@ -296,8 +291,8 @@ fun XMBShell(
                             label = "xmbCategoryItems",
                             modifier = Modifier
                                 .align(Alignment.TopStart)
-                                .fillMaxWidth()
-                                .padding(start = startPad, end = 24.dp, top = 6.dp),
+                                .fillMaxSize()
+                                .padding(start = startPad, end = 24.dp),
                         ) { categoryIndex ->
                             // During a category transition AnimatedContent briefly composes BOTH the
                             // outgoing and incoming lists. Only the settled (current) category may
@@ -312,10 +307,30 @@ fun XMBShell(
                                 onItemLongPress = onItemLongPress,
                                 iconStyle = uiState.iconStyle,
                                 scrollToTopToken = uiState.scrollToTopToken,
-                                modifier = Modifier.fillMaxWidth(),
+                                barTopY = barTop,
+                                belowTopY = anchorTop,
+                                modifier = Modifier.fillMaxSize(),
                             )
                         }
                     }
+
+                    // Category bar drawn ON TOP, pushed down to the crossbar line — the fixed pivot
+                    // the first-level column appears to scroll beneath.
+                    XMBCategoryBar(
+                        categories = uiState.categories,
+                        selectedIndex = uiState.selectedCategoryIndex,
+                        onCategorySelected = onCategorySelected,
+                        onCategoryLongPress = { index ->
+                            val id = uiState.categories.getOrNull(index)?.id
+                            if (id == BuiltInCategory.SETTINGS) onSettingsLongPress()
+                        },
+                        drilledIn = uiState.drillTitle != null,
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .offset(y = barTop)
+                            .fillMaxWidth()
+                            .height(catBarHeight),
+                    )
                 }
             }
             } // end: XMB foreground hidden while music browser is open
@@ -550,20 +565,23 @@ private fun AppDrawerButton(
 ) {
     Box(
         modifier = modifier
-            .size(48.dp)
+            .size(52.dp)
             .clip(RoundedCornerShape(14.dp))
-            .background(Color.White.copy(alpha = 0.12f))
+            // Solid translucent dark backdrop so the white grid glyph stays clearly visible over
+            // the bright lower half of the gradient.
+            .background(Color(0xCC0C2A55))
+            .border(1.dp, Color.White.copy(alpha = 0.55f), RoundedCornerShape(14.dp))
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Canvas(modifier = Modifier.size(22.dp)) {
+        Canvas(modifier = Modifier.size(24.dp)) {
             val cell = size.minDimension * 0.38f
             val gap = size.minDimension - 2 * cell
             val radius = CornerRadius(cell * 0.28f, cell * 0.28f)
             for (row in 0..1) {
                 for (col in 0..1) {
                     drawRoundRect(
-                        color = Color.White.copy(alpha = 0.92f),
+                        color = Color.White,
                         topLeft = Offset(col * (cell + gap), row * (cell + gap)),
                         size = Size(cell, cell),
                         cornerRadius = radius,

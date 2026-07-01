@@ -54,9 +54,29 @@ fun XmbColorScheme.resolve(month: Int): XmbPalette {
         waveColor        = wave,
         accentColor      = 0xFFFFFFFFL,
         textColor        = 0xFFFFFFFFL,
-        backgroundTop    = darken(wave, 0.30f),
-        backgroundBottom = darken(wave, 0.10f),
+        backgroundTop    = lightBackgroundAnchors(wave).first,
+        backgroundBottom = lightBackgroundAnchors(wave).second,
     )
+}
+
+/**
+ * Vertical gradient anchors derived from the wave hue, in the classic PSP "Original" style: a DEEP,
+ * dark shade of the hue at the TOP (`first`, the hue multiplied down toward navy) easing to a BRIGHT,
+ * light shade at the BOTTOM (`second`, the hue blended up toward white). Dark → bright, top → bottom.
+ * Used by [resolve] and re-applied when a category tints the wave so the two always match.
+ */
+fun lightBackgroundAnchors(waveArgb: Long): Pair<Long, Long> =
+    darken(waveArgb, 0.40f) to lighten(waveArgb, 0.40f)
+
+/** Blend the RGB channels of an opaque ARGB color toward white by [t] (0 = unchanged, 1 = white). */
+private fun lighten(argb: Long, t: Float): Long {
+    val r = (argb shr 16) and 0xFFL
+    val g = (argb shr 8) and 0xFFL
+    val b = argb and 0xFFL
+    val nr = (r + (255 - r) * t).toLong().coerceIn(0L, 255L)
+    val ng = (g + (255 - g) * t).toLong().coerceIn(0L, 255L)
+    val nb = (b + (255 - b) * t).toLong().coerceIn(0L, 255L)
+    return (0xFFL shl 24) or (nr shl 16) or (ng shl 8) or nb
 }
 
 // PSP "Original" theme — approximate wave color for each month, Jan..Dec.
