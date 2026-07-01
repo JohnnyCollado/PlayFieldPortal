@@ -266,8 +266,10 @@ fun XMBShell(
                     val startPad = XmbLeftAnchor + (CategorySlotWidth / 2) - LEADING_ICON_CENTER
 
                     if (uiState.drillTitle != null) {
-                        // Drilled into a Games sub-item: the two-pane flyout fills the same area and
-                        // seats its active row on the SAME line as the main XMB (just under the caticon).
+                        // Drilled into a Games sub-item: two-pane flyout. LEFT = the platform MEMORY
+                        // CARDS (items) as the main-XMB cross, icon-only, ◀ after the active card.
+                        // RIGHT = the GAME CARDS (rom icons), icon-only, centre-pinned on that ◀ line.
+                        // The caticon bar keeps its drilled-in "hidden right".
                         XmbDrillFlyout(
                             siblings = uiState.drillSiblings,
                             siblingIndex = uiState.drillSiblingIndex,
@@ -278,7 +280,10 @@ fun XMBShell(
                             iconStyle = uiState.iconStyle,
                             barTopY = barTop,
                             belowTopY = anchorTop,
-                            modifier = Modifier.align(Alignment.TopStart).fillMaxSize(),
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .fillMaxSize()
+                                .padding(start = startPad, end = 24.dp),
                         )
                     } else {
                         AnimatedContent(

@@ -488,6 +488,7 @@ class XMBViewModel @Inject constructor(
     private val musicScanner: com.playfieldportal.feature.library.scanner.MusicScanner,
     private val musicIntentResolver: com.playfieldportal.core.data.music.MusicIntentResolver,
     private val musicPlayer: com.playfieldportal.feature.xmb.music.MusicPlayerController,
+    private val emulatorProfileRepository: com.playfieldportal.feature.launcher.EmulatorProfileRepository,
 ) : ViewModel() {
 
     // The track list currently on screen (in display/sort order), used as the in-app player's queue
@@ -514,6 +515,9 @@ class XMBViewModel @Inject constructor(
     private var browserRawTracks: List<MusicTrack> = emptyList()
     private var browserRawPlaylists: List<com.playfieldportal.core.domain.model.Playlist> = emptyList()
     private var platformCache: Map<String, PlatformEntity> = emptyMap()
+    // emulator package → friendly name (e.g. "org.ppsspp.ppsspp" → "PPSSPP"), for the game subtitle's
+    // "Platform (Emulator)" label. Populated from the emulator profiles.
+    private var emulatorNameByPackage: Map<String, String> = emptyMap()
     private var enabledCards: List<MemoryCard> = emptyList()
     private var baseThemeColors: PFPColors = DefaultPFPColors
 
@@ -533,7 +537,33 @@ class XMBViewModel @Inject constructor(
         observeGamepadMappings()
         observeSoundSetting()
         observeMusic()
+        observeEmulatorProfiles()
         collectGamepadActions()
+    }
+
+    // Keeps the emulator package → name map current so game subtitles can show "Platform (Emulator)".
+    // Reloads the on-screen items once names arrive so already-listed games pick up their emulator.
+    private fun observeEmulatorProfiles() {
+        viewModelScope.launch {
+            emulatorProfileRepository.profiles.collect { profiles ->
+                val map = profiles.associate { it.packageName to it.name }
+                if (map != emulatorNameByPackage) {
+                    emulatorNameByPackage = map
+                    if (_uiState.value.currentItems.any { it.gameId != null }) {
+                        loadItemsForCategory(currentCategory())
+                    }
+                }
+            }
+        }
+    }
+
+    // "Platform (Emulator)" for a game's subtitle: the platform's display name, plus the emulator's
+    // friendly name in parens when one is resolvable (the game's override, else the platform default).
+    private fun platformEmulatorLabel(g: Game): String {
+        val platform = platformCache[g.platformId]?.name ?: g.platformId
+        val emulatorPkg = g.emulatorPackage ?: platformCache[g.platformId]?.preferredEmulatorPackage
+        val emulator = emulatorPkg?.let { emulatorNameByPackage[it] }
+        return if (emulator != null) "$platform ($emulator)" else platform
     }
 
     // Music folders drive the Music category's root list; the default player is cached for launch.
@@ -1597,10 +1627,20 @@ class XMBViewModel @Inject constructor(
         loadItemsForCategory(currentCategory())
     }
 
-    // The parent label for the two-pane flyout, non-null exactly when drilled into a Games sub-item
-    // (a platform card, All Games, Favorites, or a collection). Null = normal single-column list.
+    // The parent label for the two-pane flyout, non-null whenever drilled into ANY sub-item — a Games
+    // sub-item (platform card / All Games / Favorites / collection) or a Music sub-view (Music Apps /
+    // a playlist / All Music). Null = top level, normal single-column list.
     private fun computeDrillTitle(): String? {
         val s = _uiState.value
+        // Music sub-navigation is a drill-in too — a non-null title makes it show the two-pane flyout.
+        val musicTitle = when (val nav = s.musicNav) {
+            MusicNav.MusicApps   -> "Music Apps"
+            MusicNav.AllMusic    -> "Music"
+            MusicNav.Playlists   -> "Playlist"
+            is MusicNav.Playlist -> nav.name
+            MusicNav.Root        -> null
+        }
+        if (musicTitle != null) return musicTitle
         return when {
             s.selectedCollectionId != null ->
                 s.collections.firstOrNull { it.id == s.selectedCollectionId }?.name ?: "Collection"
@@ -1620,6 +1660,22 @@ class XMBViewModel @Inject constructor(
     // single parent so the flyout still shows one icon.
     private fun computeDrillSiblings(category: Category?): Pair<List<XMBItem>, Int> {
         val s = _uiState.value
+        // Music sub-navigation: the left column is the Music root's sections (Playlist / Music Apps /
+        // Music), with the drilled-into one centred on the arrow.
+        if (s.musicNav != MusicNav.Root) {
+            val sibs = musicRootItems().filter {
+                it.type == XMBItemType.PLAYLIST || it.type == XMBItemType.MUSIC_APPS ||
+                    it.type == XMBItemType.MEMORY_CARD
+            }
+            val idx = sibs.indexOfFirst { sib ->
+                when (s.musicNav) {
+                    MusicNav.MusicApps -> sib.type == XMBItemType.MUSIC_APPS
+                    MusicNav.AllMusic  -> sib.type == XMBItemType.MEMORY_CARD
+                    else               -> sib.type == XMBItemType.PLAYLIST   // Playlists / a Playlist
+                }
+            }.coerceAtLeast(0)
+            return sibs to idx
+        }
         if (category?.id == BuiltInCategory.GAMES) {
             val sibs = memoryCardItems().filter {
                 it.type == XMBItemType.ALL_GAMES || it.type == XMBItemType.FAVORITES ||
@@ -1786,7 +1842,7 @@ class XMBViewModel @Inject constructor(
             artworkUri   = g.artworkUri,
             heroUri      = g.heroUri,
             iconUri      = g.iconUri,
-            subtitle     = g.releaseYear?.toString(),
+            subtitle     = platformEmulatorLabel(g),
             gameId       = g.id,
             platformId   = g.platformId,
             accentColor  = platformCache[g.platformId]?.accentColor,

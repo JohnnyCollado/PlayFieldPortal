@@ -1,8 +1,10 @@
 package com.playfieldportal.feature.xmb.ui
 
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -106,20 +108,32 @@ private val SelectedTextShadow = Shadow(
     blurRadius = 12f,
 )
 
-// Width reserved for the parent label column in the two-pane drill flyout.
-private val FLYOUT_PARENT_WIDTH = 200.dp
+// A row's inner content padding. Shared so anything that needs to land next to a row's artwork
+// (e.g. the flyout cursor) can derive its position from the same number the row lays out with.
+private val ROW_HORIZONTAL_PADDING = 18.dp
 
-// Height of one icon slot in the sibling column.
-private val SIBLING_SLOT = 72.dp
-
-// A bit of breathing space between consecutive game rows in the drill flyout's continuous list.
-private val GAME_ROW_GAP = 14.dp
+// ── Drill flyout layout ──────────────────────────────────────────────────────
+// Left inset of the game-card column, measured from the flyout's left edge (which the caller has
+// already shifted under the caticon). Clears the memory-card icon column on the left so the game
+// cards sit to its right, with room for the ◀ that trails the active memory card.
+private val DRILL_GAME_COLUMN_LEFT = 150.dp
 
 // ── Two-pane drill flyout (PSP/XMB style) ────────────────────────────────────
 //
-// Used when drilled into a Games sub-item: the category's sibling icons sit in a centre-locked
-// column on the left, the active one aligned with the fixed ▶ arrow; the children scroll in a
-// centre-locked column on the right. Both columns use the same centring so they stay in sync.
+// Two columns sharing the same [belowTopY] line (the row directly under the caticon):
+//
+//   • LEFT — the PLATFORM MEMORY CARDS (the items: All Games / Favorites / consoles / collections),
+//     rendered by the main [XMBItemList] itself so the cross is identical: the drilled-into card at
+//     belowTopY with a ◀ trailing it, the previous card half-clipped above the bar. Icon-only.
+//     This column is fixed while you run through the games.
+//   • RIGHT — the GAME CARDS (rom icons), icon-only, in a centre-pinned column: the active game is
+//     pinned on the belowTopY / ◀ line and the tween glides the next/previous card onto the pin.
+//
+//     [ card 3 ]   ½-clipped above the bar
+//  ═══ caticon bar (right hidden) ═══
+//     [ card 2 ] ◀      [ ACTIVE GAME ]   ← belowTopY: active memory card + ◀ + active game card
+//     [ card 1 ]        [ game ]
+//                       [ game ]
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun XmbDrillFlyout(
@@ -136,67 +150,79 @@ fun XmbDrillFlyout(
     belowTopY: Dp = 152.dp,
     modifier: Modifier = Modifier,
 ) {
-    val accent = LocalPFPColors.current.accentColor
-    Row(modifier = modifier.fillMaxSize()) {
-        // Left: the PLATFORM (memory-card) icons — these do the XMB cross: the previous platform is
-        // half-clipped ABOVE the caticon, the active one sits BELOW it, the rest continue below.
-        Box(
-            modifier = Modifier.width(FLYOUT_PARENT_WIDTH).fillMaxHeight().clipToBounds(),
-        ) {
-            // Active platform + the ones after it, seated on the XMB line.
-            Column(modifier = Modifier.fillMaxWidth().offset(y = belowTopY)) {
-                for (i in siblingIndex.coerceAtLeast(0) until siblings.size) {
-                    Box(modifier = Modifier.fillMaxWidth().height(ROW_HEIGHT)) {
-                        SiblingIcon(item = siblings[i], selected = i == siblingIndex)
-                    }
-                }
-            }
-            // Previous platform, clipped to its bottom half just above the caticon.
-            if (siblingIndex in 1..siblings.lastIndex) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(ROW_HEIGHT / 2)
-                        .offset(y = barTopY - ROW_HEIGHT / 2)
-                        .clipToBounds(),
-                    contentAlignment = Alignment.BottomStart,
-                ) {
-                    Box(modifier = Modifier.fillMaxWidth().requiredHeight(ROW_HEIGHT)) {
-                        SiblingIcon(item = siblings[siblingIndex - 1], selected = false)
-                    }
-                }
-            }
-        }
+    Box(modifier = modifier.fillMaxSize()) {
+        // LEFT: the memory-card cross — the main XMB list itself, icon-only, with a ◀ after the
+        // active (drilled-into) card. Static while navigating games.
+        XMBItemList(
+            items = siblings,
+            selectedIndex = siblingIndex,
+            onItemSelected = {},
+            onItemLongPress = {},
+            iconStyle = iconStyle,
+            barTopY = barTopY,
+            belowTopY = belowTopY,
+            forceHideText = true,
+            drillCursorOnSelected = true,
+            modifier = Modifier.fillMaxSize(),
+        )
 
-        // Right: the GAME icons — a continuous list, one after another with a bit of space between
-        // them. The active game is aligned with the active platform's line; earlier games scroll up.
-        Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-            CenterLockedColumn(
-                count = items.size,
-                selectedIndex = selectedIndex,
-                rowHeight = ROW_HEIGHT + GAME_ROW_GAP,
-                anchorTopY = belowTopY,
-                modifier = Modifier.fillMaxSize().padding(start = 48.dp),
-            ) { index ->
-                XmbVerticalListRow(
-                    item = items[index],
-                    isSelected = index == selectedIndex,
-                    showText = index == selectedIndex || index == selectedIndex + 1,
-                    iconStyle = iconStyle,
-                    onClick = { onItemSelected(index) },
-                    onLongPress = { onItemLongPress(index) },
-                    modifier = Modifier.fillMaxWidth().height(ROW_HEIGHT),
-                )
-            }
-            // Focus arrow — sits on the active line, pointing back toward the platform column (◀).
-            Text(
-                text = "◀",
-                color = accent,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
+        // RIGHT: the game cards — a single continuous column laid out (not scrolled) so the active
+        // game sits exactly on the belowTopY / ◀ line, with the previous card contiguous directly
+        // above it and the next below — uniform ROW_HEIGHT spacing throughout, no crossbar gap and
+        // no scroll state to lag the highlight. Offset to the right of the memory-card column.
+        XmbGameColumn(
+            items = items,
+            selectedIndex = selectedIndex,
+            iconStyle = iconStyle,
+            belowTopY = belowTopY,
+            onItemSelected = onItemSelected,
+            onItemLongPress = onItemLongPress,
+            modifier = Modifier.fillMaxSize().padding(start = DRILL_GAME_COLUMN_LEFT),
+        )
+    }
+}
+
+// The flyout's game column: every game in one continuous column, laid out so [selectedIndex] lands on
+// [belowTopY]. Because it's pure layout (no LazyColumn scroll), the active card is always exactly on
+// the line — the highlight can't drift — and the rows keep uniform ROW_HEIGHT spacing with no gap
+// above the active. Only the rows that can reach the viewport are rendered.
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun XmbGameColumn(
+    items: List<XMBItem>,
+    selectedIndex: Int,
+    iconStyle: GameIconStyle,
+    belowTopY: Dp,
+    onItemSelected: (Int) -> Unit,
+    onItemLongPress: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    BoxWithConstraints(modifier = modifier.fillMaxSize().clipToBounds()) {
+        if (items.isEmpty()) return@BoxWithConstraints
+        val sel = selectedIndex.coerceIn(0, items.lastIndex)
+        // Window: only the rows that can land on screen above/below the active one (+2 buffer each way
+        // so the next/previous card is always already composed before it scrolls into view).
+        val rowsAbove = (belowTopY.value / ROW_HEIGHT.value).toInt() + 2
+        val rowsBelow = ((maxHeight.value - belowTopY.value) / ROW_HEIGHT.value).toInt() + 2
+        val first = (sel - rowsAbove).coerceAtLeast(0)
+        val last = (sel + rowsBelow).coerceAtMost(items.lastIndex)
+        // Place each row by its OWN absolute offset from the anchor line: the active row (i == sel)
+        // lands exactly on belowTopY, earlier rows one ROW_HEIGHT up each, later rows one down each.
+        // Independent placement (not a shared Column) guarantees rows past the active are laid out.
+        for (i in first..last) {
+            XmbVerticalListRow(
+                item = items[i],
+                isSelected = i == selectedIndex,
+                showText = true,   // every game card keeps its [Title] / {Platform (Emulator)} label
+                iconStyle = iconStyle,
+                onClick = { onItemSelected(i) },
+                onLongPress = { onItemLongPress(i) },
+                showIcon = true,
                 modifier = Modifier
                     .align(Alignment.TopStart)
-                    .offset(y = belowTopY + ROW_HEIGHT / 2 - 14.dp),
+                    .fillMaxWidth()
+                    .height(ROW_HEIGHT)
+                    .offset(y = belowTopY + ROW_HEIGHT * (i - sel)),
             )
         }
     }
@@ -252,13 +278,23 @@ private fun CenterLockedColumn(
         LaunchedEffect(selectedIndex, count, anchorPx) {
             if (count == 0) return@LaunchedEffect
             val idx = selectedIndex.coerceIn(0, count - 1)
-            // Ensure the target is measured, then scroll by the exact delta to seat its top on the line.
+            // If the target is off-screen (e.g. a big jump or first composition), get it measured
+            // and roughly in view instantly so the visible glide covers only the final short delta —
+            // this avoids a long, laggy sweep across many rows.
             if (listState.layoutInfo.visibleItemsInfo.none { it.index == idx }) {
-                listState.scrollToItem(idx)
+                listState.scrollToItem(idx, scrollOffset = -anchorPx.toInt())
             }
             val item = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == idx }
                 ?: return@LaunchedEffect
-            listState.animateScrollBy(item.offset - anchorPx)
+            // Glide by the exact remaining delta so the row's top settles precisely on the line.
+            // A single ease-in-out tween reads as one smooth motion with no spring overshoot/bounce.
+            val delta = item.offset - anchorPx
+            if (delta != 0f) {
+                listState.animateScrollBy(
+                    delta,
+                    animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
+                )
+            }
         }
 
         LazyColumn(
@@ -268,7 +304,12 @@ private fun CenterLockedColumn(
             modifier = Modifier.fillMaxSize(),
         ) {
             items(count) { index ->
-                Box(modifier = Modifier.fillMaxWidth().height(rowHeight)) { row(index) }
+                // Centre the ROW_HEIGHT content within the taller (row + gap) cell so the card's
+                // midline lands exactly on the shared centre line — same line as the sibling & arrow.
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(rowHeight),
+                    contentAlignment = Alignment.Center,
+                ) { row(index) }
             }
         }
     }
@@ -290,6 +331,14 @@ fun XMBItemList(
     // Y of the category bar's BOTTOM edge — where the selected item is seated, directly under the
     // caticon. The previous item sits one row ABOVE barTopY; the bar is the gap between them.
     belowTopY: Dp = 152.dp,
+    // When false, rows render text-only (no game-icon artwork).
+    showIcons: Boolean = true,
+    // When true, EVERY row is icon-only (labels suppressed) — used by the flyout's memory-card column.
+    forceHideText: Boolean = false,
+    // When true, EVERY row shows its label — used by the flyout's game column so all cards are named.
+    forceShowText: Boolean = false,
+    // When true, the selected row gets a ◀ drill cursor pinned directly to its right.
+    drillCursorOnSelected: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     // The XMB cross, exactly as the hardware does it:
@@ -316,11 +365,15 @@ fun XMBItemList(
                     XmbVerticalListRow(
                         item = items[i],
                         isSelected = i == selectedIndex,
-                        // Only the selected row and the one directly below it carry text.
-                        showText = i == selectedIndex || i == selectedIndex + 1,
+                        // Force-show names every row; force-hide none; else the classic XMB shows the
+                        // selected row and the next one (and all rows when icons are hidden).
+                        showText = forceShowText ||
+                            (!forceHideText && (!showIcons || i == selectedIndex || i == selectedIndex + 1)),
                         iconStyle = iconStyle,
                         onClick = { onItemSelected(i) },
                         onLongPress = { onItemLongPress(i) },
+                        showIcon = showIcons,
+                        trailingCursor = drillCursorOnSelected && i == selectedIndex,
                         modifier = Modifier.fillMaxWidth().height(ROW_HEIGHT),
                     )
                 }
@@ -346,10 +399,12 @@ fun XMBItemList(
                 XmbVerticalListRow(
                     item = items[selectedIndex - 1],
                     isSelected = false,
-                    showText = false,       // icon-only, like the rest of the non-active column
+                    // Force-show names the clipped previous card too; else icon/force-hide keep it bare.
+                    showText = forceShowText || (!forceHideText && !showIcons),
                     iconStyle = iconStyle,
                     onClick = { onItemSelected(selectedIndex - 1) },
                     onLongPress = { onItemLongPress(selectedIndex - 1) },
+                    showIcon = showIcons,
                     modifier = Modifier
                         .fillMaxWidth()
                         .requiredHeight(ROW_HEIGHT),
@@ -370,6 +425,10 @@ private fun XmbVerticalListRow(
     iconStyle: GameIconStyle,
     onClick: () -> Unit,
     onLongPress: () -> Unit,
+    // When false, the leading game/console icon is omitted — the row is text-only.
+    showIcon: Boolean = true,
+    // When true, a ◀ drill cursor is drawn directly to the right of this row's content.
+    trailingCursor: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     // Strong size delta between the locked selection and the rows scrolling past it — the PSP
@@ -416,13 +475,15 @@ private fun XmbVerticalListRow(
                 .weight(1f, fill = false)
                 .height(TAP_TARGET_HEIGHT)
                 .combinedClickable(onClick = onClick, onLongClick = onLongPress)
-                .padding(horizontal = 18.dp),
+                .padding(horizontal = ROW_HORIZONTAL_PADDING),
         ) {
-            XmbItemLeadingIcon(
-                item = item,
-                iconStyle = iconStyle,
-                isSelected = isSelected,
-            )
+            if (showIcon) {
+                XmbItemLeadingIcon(
+                    item = item,
+                    iconStyle = iconStyle,
+                    isSelected = isSelected,
+                )
+            }
 
             if (showText) {
                 Column(modifier = Modifier.weight(1f, fill = false)) {
@@ -447,6 +508,17 @@ private fun XmbVerticalListRow(
                         )
                     }
                 }
+            }
+            // Drill cursor — a ◀ pinned directly to the RIGHT of the (active) card, vertically
+            // centred by the Row's CenterVertically. Only the selected row sets this.
+            if (trailingCursor) {
+                Text(
+                    text = "◀",
+                    color = LocalPFPColors.current.accentColor,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(start = 12.dp),
+                )
             }
         }
     }
