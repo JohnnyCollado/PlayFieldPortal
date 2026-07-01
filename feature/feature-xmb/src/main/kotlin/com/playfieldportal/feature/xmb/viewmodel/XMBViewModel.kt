@@ -1372,15 +1372,34 @@ class XMBViewModel @Inject constructor(
         else -> false
     }
 
+    // Remembered cursor position per Video view, so drilling in/out (or re-entering a view) lands
+    // where the user left off instead of snapping to the first item. Cleared on category movement
+    // (onCategorySelected) and overridden on sort — those intentionally reset to the top.
+    private val videoNavCursor = mutableMapOf<String, Int>()
+
+    private fun videoNavKey(nav: VideoNav): String = when (nav) {
+        VideoNav.Root            -> "root"
+        VideoNav.AllVideos       -> "all"
+        VideoNav.RecentlyWatched -> "recent"
+        VideoNav.Favorites       -> "favorites"
+        VideoNav.Playlists       -> "playlists"
+        is VideoNav.Playlist     -> "playlist_${nav.id}"
+        VideoNav.Libraries       -> "libraries"
+        is VideoNav.Library      -> "library_${nav.id}"
+        VideoNav.VideoApps       -> "apps"
+    }
+
     private fun openVideoView(nav: VideoNav) {
-        _uiState.update { it.copy(videoNav = nav, selectedItemIndex = 0) }
+        val cur = _uiState.value
+        // Save where the cursor is in the view we're leaving, restore it for the view we're entering
+        // (0 the first time). This keeps position across drill in/out and refreshes.
+        videoNavCursor[videoNavKey(cur.videoNav)] = cur.selectedItemIndex
+        val restore = videoNavCursor[videoNavKey(nav)] ?: 0
+        _uiState.update { it.copy(videoNav = nav, selectedItemIndex = restore) }
         loadItemsForCategory(currentCategory())
     }
 
-    private fun closeVideoView() {
-        _uiState.update { it.copy(videoNav = VideoNav.Root, selectedItemIndex = 0) }
-        loadItemsForCategory(currentCategory())
-    }
+    private fun closeVideoView() = openVideoView(VideoNav.Root)
 
     fun onCloseVideoDetail() {
         _uiState.update { it.copy(activeVideoId = null, pendingVideoDetailAction = null) }
@@ -3523,6 +3542,7 @@ class XMBViewModel @Inject constructor(
     fun onCategorySelected(index: Int) {
         if (index != _uiState.value.selectedCategoryIndex) menuSound.play(MenuSound.SYSTEM_BROWSE)
         val category = _uiState.value.categories.getOrNull(index)
+        videoNavCursor.clear()   // category movement resets Video positions to the top
         _uiState.update { it.copy(selectedCategoryIndex = index, selectedItemIndex = 0, selectedPlatformId = null, selectedCollectionId = null, musicNav = MusicNav.Root, videoNav = VideoNav.Root) }
         tintWaveForCategory(category)
         loadItemsForCategory(category)
