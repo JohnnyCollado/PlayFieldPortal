@@ -299,6 +299,10 @@ class VideoDetailViewModel @Inject constructor(
 
     fun dismissLaunchError() = _uiState.update { it.copy(launchError = null) }
 
+    // Clears the one-shot close flag once the screen has popped, so the retained ViewModel doesn't
+    // re-close the detail on the next open.
+    fun onClosedHandled() = _uiState.update { it.copy(closed = false) }
+
     fun startPlayback(positionMs: Long) {
         _uiState.update { it.copy(playing = true, playStartPositionMs = positionMs, showOptions = false) }
     }

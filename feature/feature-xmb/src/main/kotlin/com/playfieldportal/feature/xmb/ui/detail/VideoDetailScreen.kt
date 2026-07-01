@@ -71,7 +71,10 @@ fun VideoDetailScreen(
     ) { uri -> if (uri != null) viewModel.onThumbnailPicked(uri) }
 
     LaunchedEffect(videoId) { viewModel.loadVideo(videoId) }
-    LaunchedEffect(state.closed) { if (state.closed) onBack() }
+    // Reset `closed` after handling it: the ViewModel is retained across open/close, so a stale
+    // closed=true would otherwise instantly re-close the detail the next time it's opened (needing
+    // a second tap).
+    LaunchedEffect(state.closed) { if (state.closed) { onBack(); viewModel.onClosedHandled() } }
     LaunchedEffect(state.pickThumbnail) {
         if (state.pickThumbnail) {
             thumbnailPicker.launch(arrayOf("image/png", "image/jpeg", "image/webp"))
