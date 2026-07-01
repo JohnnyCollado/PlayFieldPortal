@@ -18,6 +18,7 @@ import com.playfieldportal.core.data.database.dao.ThemeDao
 import com.playfieldportal.core.data.database.dao.UnmatchedRomDao
 import com.playfieldportal.core.data.database.dao.VideoDao
 import com.playfieldportal.core.data.database.dao.VideoLibraryDao
+import com.playfieldportal.core.data.database.dao.VideoPlaylistDao
 import com.playfieldportal.core.data.repository.CategoryRepositoryImpl
 import com.playfieldportal.core.data.repository.GameRepositoryImpl
 import com.playfieldportal.core.data.repository.MusicRepositoryImpl
@@ -62,6 +63,7 @@ object DatabaseModule {
             PFPDatabase.MIGRATION_13_14,
             PFPDatabase.MIGRATION_14_15,
             PFPDatabase.MIGRATION_15_16,
+            PFPDatabase.MIGRATION_16_17,
         )
         .build()
 
@@ -80,6 +82,7 @@ object DatabaseModule {
     @Provides fun providePlaylistDao(db: PFPDatabase): PlaylistDao = db.playlistDao()
     @Provides fun provideVideoLibraryDao(db: PFPDatabase): VideoLibraryDao = db.videoLibraryDao()
     @Provides fun provideVideoDao(db: PFPDatabase): VideoDao = db.videoDao()
+    @Provides fun provideVideoPlaylistDao(db: PFPDatabase): VideoPlaylistDao = db.videoPlaylistDao()
 }
 
 @Module

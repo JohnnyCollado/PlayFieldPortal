@@ -4,6 +4,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -151,7 +152,31 @@ fun VideoDetailScreen(
             OptionsList(
                 actions = state.optionsActions,
                 selectedIndex = state.optionsIndex,
+                labelFor = { action ->
+                    if (action == VideoDetailAction.FAVORITE) {
+                        if (video.isFavorite) "Remove from Favorites" else "Add to Favorites"
+                    } else action.label
+                },
                 onClick = viewModel::activate,
+            )
+        }
+
+        if (state.showPlaylistPicker) {
+            PlaylistPicker(
+                options = state.playlistOptions,
+                selectedIndex = state.playlistPickerIndex,
+                onRowClick = viewModel::onPlaylistRowClick,
+            )
+        }
+
+        if (state.creatingPlaylist) {
+            RenameDialog(
+                title = "New Playlist",
+                confirmLabel = "Create",
+                text = state.newPlaylistName,
+                onTextChange = viewModel::onNewPlaylistNameChange,
+                onConfirm = viewModel::confirmCreatePlaylist,
+                onCancel = viewModel::cancelCreatePlaylist,
             )
         }
 
@@ -221,25 +246,65 @@ private fun DetailButton(
 private fun OptionsList(
     actions: List<VideoDetailAction>,
     selectedIndex: Int,
+    labelFor: (VideoDetailAction) -> String,
     onClick: (VideoDetailAction) -> Unit,
 ) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
         Column(
-            modifier = Modifier.padding(36.dp).width(300.dp)
+            modifier = Modifier.padding(36.dp).width(320.dp)
                 .background(Color(0xF0101018), RoundedCornerShape(14.dp)).padding(vertical = 12.dp),
         ) {
             Text("Options", color = Accent, fontSize = 12.sp, fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
             actions.forEachIndexed { i, action ->
                 Text(
-                    action.label,
+                    labelFor(action),
                     color = if (i == selectedIndex) Color.White else TextMuted,
                     fontSize = 15.sp,
                     modifier = Modifier.fillMaxWidth()
+                        .clickable { onClick(action) }
                         .background(if (i == selectedIndex) Color(0x334A90D9) else Color.Transparent)
                         .padding(horizontal = 20.dp, vertical = 11.dp),
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun PlaylistPicker(
+    options: List<VideoPlaylistOption>,
+    selectedIndex: Int,
+    onRowClick: (Int) -> Unit,
+) {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
+        Column(
+            modifier = Modifier.padding(36.dp).width(320.dp)
+                .background(Color(0xF0101018), RoundedCornerShape(14.dp)).padding(vertical = 12.dp),
+        ) {
+            Text("Add to Playlist", color = Accent, fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
+            options.forEachIndexed { i, opt ->
+                Text(
+                    (if (opt.checked) "● " else "○ ") + opt.name,
+                    color = if (i == selectedIndex) Color.White else TextMuted,
+                    fontSize = 15.sp,
+                    modifier = Modifier.fillMaxWidth()
+                        .clickable { onRowClick(i) }
+                        .background(if (i == selectedIndex) Color(0x334A90D9) else Color.Transparent)
+                        .padding(horizontal = 20.dp, vertical = 11.dp),
+                )
+            }
+            val createIndex = options.size
+            Text(
+                "+ Create New Playlist",
+                color = if (createIndex == selectedIndex) Color.White else Accent,
+                fontSize = 15.sp,
+                modifier = Modifier.fillMaxWidth()
+                    .clickable { onRowClick(createIndex) }
+                    .background(if (createIndex == selectedIndex) Color(0x334A90D9) else Color.Transparent)
+                    .padding(horizontal = 20.dp, vertical = 11.dp),
+            )
         }
     }
 }
@@ -279,12 +344,14 @@ private fun RenameDialog(
     onTextChange: (String) -> Unit,
     onConfirm: () -> Unit,
     onCancel: () -> Unit,
+    title: String = "Rename Title",
+    confirmLabel: String = "Save",
 ) {
     AlertDialog(
         onDismissRequest = onCancel,
-        confirmButton = { TextButton(onClick = onConfirm) { Text("Save") } },
+        confirmButton = { TextButton(onClick = onConfirm) { Text(confirmLabel) } },
         dismissButton = { TextButton(onClick = onCancel) { Text("Cancel") } },
-        title = { Text("Rename Title") },
+        title = { Text(title) },
         text = { OutlinedTextField(value = text, onValueChange = onTextChange, singleLine = true) },
     )
 }

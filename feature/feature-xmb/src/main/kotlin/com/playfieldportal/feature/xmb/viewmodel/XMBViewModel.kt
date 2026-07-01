@@ -115,6 +115,8 @@ data class XMBContextMenu(
     val playlistId: Long? = null,
     // Set on the "Add to Playlist" submenu — the track being added (marks that submenu).
     val playlistPickerTrackId: String? = null,
+    // Set on a video playlist row's options menu.
+    val videoPlaylistId: Long? = null,
 )
 
 data class XMBContextMenuItem(
@@ -192,6 +194,10 @@ data class AppPickerState(
 sealed interface VideoNav {
     data object Root : VideoNav
     data object AllVideos : VideoNav
+    data object RecentlyWatched : VideoNav
+    data object Favorites : VideoNav
+    data object Playlists : VideoNav
+    data class Playlist(val id: Long, val name: String) : VideoNav
     data object Libraries : VideoNav
     data class Library(val id: String, val name: String) : VideoNav
     data object VideoApps : VideoNav
@@ -236,6 +242,10 @@ data class PlaylistNameDialogState(
     val forTrackId: String? = null,
     // When set, confirming renames this playlist instead of creating a new one.
     val renamePlaylistId: Long? = null,
+    // Video playlist variant: routes create/rename to the video repository instead of music.
+    val videoContext: Boolean = false,
+    // When set (video create), the freshly-created playlist immediately receives this video.
+    val forVideoId: String? = null,
 )
 
 // Multi-select picker over all scanned tracks, used by a playlist's "Add Tracks" row.
@@ -270,6 +280,7 @@ data class XMBUiState(
     // music sort into games. sortLabel is the status-bar hint, non-null only on a sortable list.
     val gameSortMode: XmbSortMode = XmbSortMode.TITLE,
     val musicSortMode: XmbSortMode = XmbSortMode.TITLE,
+    val videoSortMode: XmbSortMode = XmbSortMode.TITLE,
     val sortLabel: String? = null,
     // In-app music player: visible when a song is selected; playback state mirrors the controller.
     val musicPlayerVisible: Boolean = false,
@@ -397,6 +408,8 @@ enum class XMBItemType {
     VIDEO_FOLDER,
     VIDEO_FILE,
     VIDEO_APPS,
+    VIDEO_RECENT,
+    VIDEO_FAVORITES,
     EMPTY,
 }
 
@@ -412,6 +425,13 @@ enum class XmbSortMode(val label: String) {
 
 private val MUSIC_SORTS = listOf(XmbSortMode.TITLE, XmbSortMode.ARTIST, XmbSortMode.ALBUM, XmbSortMode.DATE_ADDED)
 private val GAME_SORTS  = listOf(XmbSortMode.TITLE, XmbSortMode.RECENT_PLAYED, XmbSortMode.DATE_ADDED)
+private val VIDEO_SORTS = listOf(XmbSortMode.TITLE, XmbSortMode.DATE_ADDED, XmbSortMode.RECENT_PLAYED)
+
+internal fun List<com.playfieldportal.core.domain.model.Video>.videoSorted(mode: XmbSortMode): List<com.playfieldportal.core.domain.model.Video> = when (mode) {
+    XmbSortMode.RECENT_PLAYED -> sortedByDescending { it.lastWatchedAt ?: 0L }
+    XmbSortMode.DATE_ADDED    -> sortedByDescending { it.dateAdded ?: 0L }
+    else                      -> sortedBy { it.displayTitle.lowercase() }
+}
 
 // Pure sort comparators (top-level so they're unit-testable). DATE_ADDED uses the autoincrement
 // game id / file lastModified as the recency proxy; modes that don't apply fall back to title.
@@ -840,6 +860,20 @@ class XMBViewModel @Inject constructor(
                     VideoNav.AllVideos -> videoRepository.observeAllVideos().collect { videos ->
                         setVideoItems(videos, emptyAllVideosItem())
                     }
+                    VideoNav.RecentlyWatched -> videoRepository.observeRecentlyWatched().collect { videos ->
+                        // Recency order is intrinsic — don't apply the user sort here.
+                        setVideoItems(videos, emptyRecentItem(), sortable = false)
+                    }
+                    VideoNav.Favorites -> videoRepository.observeFavorites().collect { videos ->
+                        setVideoItems(videos, emptyFavoriteVideosItem())
+                    }
+                    VideoNav.Playlists -> videoRepository.observePlaylists().collect { playlists ->
+                        _uiState.update { it.copy(currentItems = videoPlaylistItems(playlists)) }
+                    }
+                    is VideoNav.Playlist -> videoRepository.observePlaylistVideos(nav.id).collect { videos ->
+                        // Manual playlist order — keep it, don't re-sort.
+                        setVideoItems(videos, emptyPlaylistVideosItem(), sortable = false)
+                    }
                     VideoNav.Libraries -> videoRepository.observeLibraries().collect { libs ->
                         _uiState.update { it.copy(currentItems = videoLibraryItems(libs)) }
                     }
@@ -1127,6 +1161,30 @@ class XMBViewModel @Inject constructor(
             )
             add(
                 XMBItem(
+                    id       = RECENTLY_WATCHED_ITEM_ID,
+                    title    = "Recently Watched",
+                    subtitle = "Pick up where you left off",
+                    type     = XMBItemType.VIDEO_RECENT,
+                )
+            )
+            add(
+                XMBItem(
+                    id       = FAVORITE_VIDEOS_ITEM_ID,
+                    title    = "Favorites",
+                    subtitle = "Your starred videos",
+                    type     = XMBItemType.VIDEO_FAVORITES,
+                )
+            )
+            add(
+                XMBItem(
+                    id       = VIDEO_PLAYLISTS_ITEM_ID,
+                    title    = "Playlists",
+                    subtitle = "Build and play your own lists",
+                    type     = XMBItemType.PLAYLIST,
+                )
+            )
+            add(
+                XMBItem(
                     id       = VIDEO_LIBRARIES_ITEM_ID,
                     title    = "Video Libraries",
                     subtitle = "${libraries.size} ${if (libraries.size == 1) "library" else "libraries"}",
@@ -1204,15 +1262,59 @@ class XMBViewModel @Inject constructor(
             )
         }
 
-    private fun setVideoItems(videos: List<com.playfieldportal.core.domain.model.Video>, emptyItem: XMBItem) {
-        val items = if (videos.isEmpty()) listOf(emptyItem) else videos.toVideoItems()
+    private fun setVideoItems(
+        videos: List<com.playfieldportal.core.domain.model.Video>,
+        emptyItem: XMBItem,
+        sortable: Boolean = true,
+    ) {
+        val ordered = if (sortable) videos.videoSorted(_uiState.value.videoSortMode) else videos
+        val items = if (ordered.isEmpty()) listOf(emptyItem) else ordered.toVideoItems()
         _uiState.update { it.copy(currentItems = items) }
+    }
+
+    // Playlist list: one row per playlist + a "Create Playlist" row.
+    private fun videoPlaylistItems(playlists: List<com.playfieldportal.core.domain.model.VideoPlaylist>): List<XMBItem> {
+        val rows = playlists.map { pl ->
+            XMBItem(
+                id         = "vpl_${pl.id}",
+                title      = pl.name,
+                subtitle   = "${pl.videoCount} ${if (pl.videoCount == 1) "video" else "videos"}",
+                playlistId = pl.id,
+                type       = XMBItemType.PLAYLIST,
+            )
+        }
+        return rows + XMBItem(
+            id       = CREATE_VIDEO_PLAYLIST_ITEM_ID,
+            title    = "Create Playlist",
+            subtitle = "Start a new video playlist",
+        )
     }
 
     private fun emptyAllVideosItem(): XMBItem = XMBItem(
         id       = EMPTY_CATEGORY_ITEM_ID,
         title    = "No videos found",
         subtitle = "Add a video library in Settings → Video",
+        type     = XMBItemType.EMPTY,
+    )
+
+    private fun emptyRecentItem(): XMBItem = XMBItem(
+        id       = EMPTY_CATEGORY_ITEM_ID,
+        title    = "Nothing watched yet",
+        subtitle = "Videos you play show up here",
+        type     = XMBItemType.EMPTY,
+    )
+
+    private fun emptyFavoriteVideosItem(): XMBItem = XMBItem(
+        id       = EMPTY_CATEGORY_ITEM_ID,
+        title    = "No favorites yet",
+        subtitle = "Star a video from its ⚙ Options menu",
+        type     = XMBItemType.EMPTY,
+    )
+
+    private fun emptyPlaylistVideosItem(): XMBItem = XMBItem(
+        id       = EMPTY_PLAYLIST_ITEM_ID,
+        title    = "This playlist is empty",
+        subtitle = "Add videos from a video's ⚙ Options menu",
         type     = XMBItemType.EMPTY,
     )
 
@@ -1227,6 +1329,13 @@ class XMBViewModel @Inject constructor(
     private fun handleVideoSelection(item: XMBItem): Boolean = when {
         item.type == XMBItemType.EMPTY -> true
         item.id == ALL_VIDEOS_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openVideoView(VideoNav.AllVideos); true }
+        item.id == RECENTLY_WATCHED_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openVideoView(VideoNav.RecentlyWatched); true }
+        item.id == FAVORITE_VIDEOS_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openVideoView(VideoNav.Favorites); true }
+        item.id == VIDEO_PLAYLISTS_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openVideoView(VideoNav.Playlists); true }
+        item.id == CREATE_VIDEO_PLAYLIST_ITEM_ID -> { menuSound.play(MenuSound.SELECT); promptCreateVideoPlaylist(); true }
+        item.id.startsWith("vpl_") && item.playlistId != null -> {
+            menuSound.play(MenuSound.SELECT); openVideoView(VideoNav.Playlist(item.playlistId, item.title)); true
+        }
         item.id == VIDEO_LIBRARIES_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openVideoView(VideoNav.Libraries); true }
         item.id == VIDEO_APPS_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openVideoView(VideoNav.VideoApps); true }
         item.id == ADD_VIDEOS_ITEM_ID -> {
@@ -1273,6 +1382,63 @@ class XMBViewModel @Inject constructor(
 
     fun consumeVideoDetailAction() {
         _uiState.update { it.copy(pendingVideoDetailAction = null) }
+    }
+
+    private fun promptCreateVideoPlaylist() {
+        _uiState.update { it.copy(
+            playlistNameDialog = PlaylistNameDialogState(title = "New Video Playlist", videoContext = true)
+        )}
+    }
+
+    private fun promptRenameVideoPlaylist(playlistId: Long) {
+        val name = _uiState.value.currentItems.firstOrNull { it.playlistId == playlistId }?.title.orEmpty()
+        _uiState.update { it.copy(
+            playlistNameDialog = PlaylistNameDialogState(
+                title = "Rename Playlist",
+                initialText = name,
+                renamePlaylistId = playlistId,
+                videoContext = true,
+            )
+        )}
+    }
+
+    // Long-press options for a video playlist row: open / rename / delete.
+    private fun openVideoPlaylistContextMenu(playlistId: Long, name: String) {
+        val items = listOf(
+            XMBContextMenuItem("open_video_playlist", "Open"),
+            XMBContextMenuItem("rename_video_playlist", "Rename Playlist"),
+            XMBContextMenuItem("delete_video_playlist", "Delete Playlist", isDestructive = true),
+        )
+        _uiState.update { it.copy(activeContextMenu = XMBContextMenu(name, items, videoPlaylistId = playlistId)) }
+    }
+
+    // Opens the △ options menu for a Video row. Returns true when [item] is a video row it owns
+    // (a playlist row, or a video-app row), so the generic Y/long-press handler can stop.
+    private fun openVideoContextMenu(item: XMBItem): Boolean {
+        if (currentCategory()?.id != BuiltInCategory.VIDEO) return false
+        return when {
+            item.type == XMBItemType.PLAYLIST && item.playlistId != null -> {
+                openVideoPlaylistContextMenu(item.playlistId, item.title); true
+            }
+            _uiState.value.videoNav == VideoNav.VideoApps && item.packageName != null -> {
+                openAppContextMenu(item, categoryIdOverride = VIDEO_APPS_CATEGORY_ID); true
+            }
+            else -> false
+        }
+    }
+
+    private fun handleVideoPlaylistRowAction(playlistId: Long, itemId: String) {
+        when (itemId) {
+            "open_video_playlist" -> {
+                val name = _uiState.value.currentItems.firstOrNull { it.playlistId == playlistId }?.title.orEmpty()
+                openVideoView(VideoNav.Playlist(playlistId, name))
+            }
+            "rename_video_playlist" -> promptRenameVideoPlaylist(playlistId)
+            "delete_video_playlist" -> appAction {
+                videoRepository.deletePlaylist(playlistId)
+                if ((_uiState.value.videoNav as? VideoNav.Playlist)?.id == playlistId) openVideoView(VideoNav.Playlists)
+            }
+        }
     }
 
     // ── Fullscreen music browser (searchable) ───────────────────────────────────
@@ -1635,7 +1801,14 @@ class XMBViewModel @Inject constructor(
         if (name.isBlank()) return
         viewModelScope.launch {
             val renameId = dialog.renamePlaylistId
-            if (renameId != null) {
+            if (dialog.videoContext) {
+                if (renameId != null) {
+                    videoRepository.renamePlaylist(renameId, name)
+                } else {
+                    val id = videoRepository.createPlaylist(name)
+                    dialog.forVideoId?.let { videoRepository.addVideoToPlaylist(id, it) }
+                }
+            } else if (renameId != null) {
                 musicRepository.renamePlaylist(renameId, name)
             } else {
                 val id = musicRepository.createPlaylist(name)
@@ -1801,6 +1974,10 @@ class XMBViewModel @Inject constructor(
         return when {
             cat.id == BuiltInCategory.MUSIC &&
                 (s.musicNav == MusicNav.AllMusic || s.musicNav is MusicNav.Playlist) -> MUSIC_SORTS
+            // Video lists sort, except the intrinsically-ordered ones (recency / manual playlist).
+            cat.id == BuiltInCategory.VIDEO &&
+                (s.videoNav == VideoNav.AllVideos || s.videoNav == VideoNav.Favorites ||
+                    s.videoNav is VideoNav.Library) -> VIDEO_SORTS
             cat.id == BuiltInCategory.GAMES &&
                 (s.selectedPlatformId != null || s.selectedCollectionId != null) -> GAME_SORTS
             cat.isGamingCategory -> GAME_SORTS
@@ -1826,15 +2003,23 @@ class XMBViewModel @Inject constructor(
         }
         val cycle = activeSortContext() ?: return
         val isMusic = cycle === MUSIC_SORTS
-        val current = if (isMusic) _uiState.value.musicSortMode else _uiState.value.gameSortMode
+        val isVideo = cycle === VIDEO_SORTS
+        val current = when {
+            isMusic -> _uiState.value.musicSortMode
+            isVideo -> _uiState.value.videoSortMode
+            else    -> _uiState.value.gameSortMode
+        }
         val next = cycle[(cycle.indexOf(current).coerceAtLeast(0) + 1) % cycle.size]
         menuSound.play(MenuSound.SYSTEM_BROWSE)
         // Re-sorting moves the cursor back to the top item so the user sees the new ordering from
         // the start, and bumps the scroll token so the list snaps to the top every time (not just
         // the first sort after the cursor moved).
         _uiState.update {
-            (if (isMusic) it.copy(musicSortMode = next) else it.copy(gameSortMode = next))
-                .copy(selectedItemIndex = 0, scrollToTopToken = it.scrollToTopToken + 1)
+            (when {
+                isMusic -> it.copy(musicSortMode = next)
+                isVideo -> it.copy(videoSortMode = next)
+                else    -> it.copy(gameSortMode = next)
+            }).copy(selectedItemIndex = 0, scrollToTopToken = it.scrollToTopToken + 1)
         }
         // Music track lists re-sort instantly from the cached raw list — no DB round-trip, so the
         // reorder is always visible immediately. A playlist keeps its trailing "Add Tracks" row.
@@ -1864,11 +2049,15 @@ class XMBViewModel @Inject constructor(
         if (musicTitle != null) return musicTitle
         // Video sub-navigation is a drill-in too — a non-null title shows the two-pane flyout.
         val videoTitle = when (val nav = s.videoNav) {
-            VideoNav.AllVideos   -> "All Videos"
-            VideoNav.Libraries   -> "Video Libraries"
-            is VideoNav.Library  -> nav.name
-            VideoNav.VideoApps   -> "Video Apps"
-            VideoNav.Root        -> null
+            VideoNav.AllVideos       -> "All Videos"
+            VideoNav.RecentlyWatched -> "Recently Watched"
+            VideoNav.Favorites       -> "Favorites"
+            VideoNav.Playlists       -> "Playlists"
+            is VideoNav.Playlist     -> nav.name
+            VideoNav.Libraries       -> "Video Libraries"
+            is VideoNav.Library      -> nav.name
+            VideoNav.VideoApps       -> "Video Apps"
+            VideoNav.Root            -> null
         }
         if (videoTitle != null) return videoTitle
         return when {
@@ -1906,18 +2095,22 @@ class XMBViewModel @Inject constructor(
             }.coerceAtLeast(0)
             return sibs to idx
         }
-        // Video sub-navigation: the left column is the Video root's sections (All Videos / Video
-        // Libraries / Video Apps), with the drilled-into one centred on the arrow.
+        // Video sub-navigation: the left column is the Video root's sections (All Videos / Recently
+        // Watched / Favorites / Playlists / Video Libraries / Video Apps), drilled-into one centred.
         if (s.videoNav != VideoNav.Root) {
             val sibs = videoRootItems().filter {
-                it.type == XMBItemType.MEMORY_CARD || it.type == XMBItemType.VIDEO_LIBRARY ||
-                    it.type == XMBItemType.VIDEO_APPS
+                it.type == XMBItemType.MEMORY_CARD || it.type == XMBItemType.VIDEO_RECENT ||
+                    it.type == XMBItemType.VIDEO_FAVORITES || it.type == XMBItemType.PLAYLIST ||
+                    it.type == XMBItemType.VIDEO_LIBRARY || it.type == XMBItemType.VIDEO_APPS
             }
             val idx = sibs.indexOfFirst { sib ->
                 when (s.videoNav) {
-                    VideoNav.AllVideos -> sib.type == XMBItemType.MEMORY_CARD
-                    VideoNav.VideoApps -> sib.type == XMBItemType.VIDEO_APPS
-                    else               -> sib.type == XMBItemType.VIDEO_LIBRARY  // Libraries / a Library
+                    VideoNav.AllVideos       -> sib.type == XMBItemType.MEMORY_CARD
+                    VideoNav.RecentlyWatched -> sib.type == XMBItemType.VIDEO_RECENT
+                    VideoNav.Favorites       -> sib.type == XMBItemType.VIDEO_FAVORITES
+                    VideoNav.Playlists, is VideoNav.Playlist -> sib.type == XMBItemType.PLAYLIST
+                    VideoNav.VideoApps       -> sib.type == XMBItemType.VIDEO_APPS
+                    else                     -> sib.type == XMBItemType.VIDEO_LIBRARY  // Libraries / a Library
                 }
             }.coerceAtLeast(0)
             return sibs to idx
@@ -1946,7 +2139,11 @@ class XMBViewModel @Inject constructor(
     // Status-bar hint for the current list ("Sort: Title"), or null when the list isn't sortable.
     private fun currentSortLabel(): String? {
         val cycle = activeSortContext() ?: return null
-        val mode = if (cycle === MUSIC_SORTS) _uiState.value.musicSortMode else _uiState.value.gameSortMode
+        val mode = when {
+            cycle === MUSIC_SORTS -> _uiState.value.musicSortMode
+            cycle === VIDEO_SORTS -> _uiState.value.videoSortMode
+            else                  -> _uiState.value.gameSortMode
+        }
         return "Sort: ${mode.label}"
     }
 
@@ -2334,8 +2531,9 @@ class XMBViewModel @Inject constructor(
                 menuSound.play(MenuSound.BACK)
                 when {
                     state.musicNav != MusicNav.Root -> closeMusicView()
-                    // Two-level video path: a specific library backs out to the library list first.
+                    // Two-level video paths back out one level first.
                     state.videoNav is VideoNav.Library -> openVideoView(VideoNav.Libraries)
+                    state.videoNav is VideoNav.Playlist -> openVideoView(VideoNav.Playlists)
                     state.videoNav != VideoNav.Root -> closeVideoView()
                     state.selectedPlatformId != null || state.selectedCollectionId != null -> closePlatformFolder()
                     else -> onOpenAppDrawer()
@@ -2347,6 +2545,7 @@ class XMBViewModel @Inject constructor(
                 val item = state.currentItems.getOrNull(state.selectedItemIndex)
                 when {
                     item != null && openMusicContextMenu(item) -> Unit
+                    item != null && openVideoContextMenu(item) -> Unit
                     item?.gameId != null -> openGameContextMenu(item)
                     item?.collectionId != null && item.type == XMBItemType.COLLECTION -> openCollectionRowContextMenu(item.collectionId)
                     item?.platformId != null -> openPlatformContextMenu(item.platformId)
@@ -2660,6 +2859,12 @@ class XMBViewModel @Inject constructor(
         }
 
         closeContextMenu()
+
+        // ── Video playlist row options menu ─────────────────────────────────────
+        if (menu.videoPlaylistId != null) {
+            handleVideoPlaylistRowAction(menu.videoPlaylistId, itemId)
+            return
+        }
 
         // ── Playlist row options menu ──────────────────────────────────────────
         if (menu.playlistId != null && menu.musicTrackId == null) {
@@ -3210,6 +3415,7 @@ class XMBViewModel @Inject constructor(
         when {
             s.musicNav != MusicNav.Root -> closeMusicView()
             s.videoNav is VideoNav.Library -> openVideoView(VideoNav.Libraries)
+            s.videoNav is VideoNav.Playlist -> openVideoView(VideoNav.Playlists)
             s.videoNav != VideoNav.Root -> closeVideoView()
             s.selectedPlatformId != null || s.selectedCollectionId != null -> closePlatformFolder()
             else -> onOpenAppDrawer()
@@ -3330,6 +3536,7 @@ class XMBViewModel @Inject constructor(
         val item = _uiState.value.currentItems.getOrNull(index)
         when {
             item != null && openMusicContextMenu(item) -> Unit
+            item != null && openVideoContextMenu(item) -> Unit
             item?.gameId != null -> openGameContextMenu(item)
             item?.collectionId != null && item.type == XMBItemType.COLLECTION -> openCollectionRowContextMenu(item.collectionId)
             item?.platformId != null -> openPlatformContextMenu(item.platformId)
@@ -3772,6 +3979,10 @@ class XMBViewModel @Inject constructor(
         // Video root item ids and the pseudo-category that stores user-added video apps (kept out of
         // the built-in "videos" category so they never mix with scanned video files / All Videos).
         private const val ALL_VIDEOS_ITEM_ID = "all_videos"
+        private const val RECENTLY_WATCHED_ITEM_ID = "recently_watched"
+        private const val FAVORITE_VIDEOS_ITEM_ID = "favorite_videos"
+        private const val VIDEO_PLAYLISTS_ITEM_ID = "video_playlists"
+        private const val CREATE_VIDEO_PLAYLIST_ITEM_ID = "create_video_playlist"
         private const val VIDEO_LIBRARIES_ITEM_ID = "video_libraries"
         private const val VIDEO_APPS_ITEM_ID = "video_apps_item"
         private const val ADD_VIDEOS_ITEM_ID = "add_videos"

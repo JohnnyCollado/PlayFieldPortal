@@ -2,6 +2,7 @@ package com.playfieldportal.core.domain.repository
 
 import com.playfieldportal.core.domain.model.Video
 import com.playfieldportal.core.domain.model.VideoLibrary
+import com.playfieldportal.core.domain.model.VideoPlaylist
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -37,4 +38,22 @@ interface VideoRepository {
     suspend fun setCustomTitle(id: String, title: String?)
     suspend fun setCustomThumbnail(id: String, uri: String?)
     suspend fun removeVideo(id: String)
+
+    // ── Favorites & recently watched ────────────────────────────────────────────
+    fun observeFavorites(): Flow<List<Video>>
+    fun observeRecentlyWatched(limit: Int = 30): Flow<List<Video>>
+    suspend fun setFavorite(id: String, favorite: Boolean)
+
+    // ── Playlists ───────────────────────────────────────────────────────────────
+    fun observePlaylists(): Flow<List<VideoPlaylist>>
+    fun observePlaylistVideos(playlistId: Long): Flow<List<Video>>
+    /** Playlist ids the video belongs to — drives the checkmarks in "Add to Playlist". */
+    suspend fun getPlaylistIdsForVideo(videoId: String): List<Long>
+    suspend fun createPlaylist(name: String): Long
+    suspend fun renamePlaylist(id: Long, name: String)
+    suspend fun deletePlaylist(id: Long)
+    suspend fun addVideoToPlaylist(playlistId: Long, videoId: String)
+    suspend fun removeVideoFromPlaylist(playlistId: Long, videoId: String)
+    /** Adds the video if absent, removes it if present; returns the new membership state. */
+    suspend fun toggleVideoInPlaylist(playlistId: Long, videoId: String): Boolean
 }

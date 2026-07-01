@@ -23,6 +23,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.coroutineContext
 
+// Average-luminance threshold (0..255) below which a sampled frame is treated as "too dark".
+private const val BRIGHT_ENOUGH = 30.0
+
 sealed interface VideoScanResult {
     data class Progress(val libraryName: String, val filesSeen: Int, val videosFound: Int) : VideoScanResult
     data class Complete(val libraryId: String, val videos: List<Video>) : VideoScanResult
@@ -144,6 +147,7 @@ class VideoScanner @Inject constructor(
             customThumbnailUri = prior?.customThumbnailUri,
             resumePositionMs = prior?.resumePositionMs ?: 0,
             lastWatchedAt = prior?.lastWatchedAt,
+            isFavorite = prior?.isFavorite ?: false,
         )
     }
 
@@ -196,15 +200,54 @@ class VideoScanner @Inject constructor(
         return runCatching {
             MediaMetadataRetriever().use { mmr ->
                 mmr.setDataSource(context, uri)
-                val atUs = (((durationMs ?: 0L) / 10).coerceAtLeast(1000L)) * 1000L
-                val frame: Bitmap? = mmr.getFrameAtTime(atUs, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
-                    ?: mmr.frameAtTime
-                if (frame == null) return@runCatching null
+                val dur = durationMs
+                    ?: mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull()
+                    ?: 0L
+                // Sample a few frames across the clip and keep the first that isn't near-black (skips
+                // dark intros/fades); fall back to the brightest sampled frame, then any frame.
+                val candidatesUs = if (dur > 0) {
+                    listOf(0.20, 0.35, 0.50, 0.65, 0.10).map { ((dur * it).toLong().coerceAtLeast(1000L)) * 1000L }
+                } else {
+                    listOf(1_000_000L)
+                }
+                var best: Bitmap? = null
+                var bestScore = -1.0
+                for (us in candidatesUs) {
+                    val f = mmr.getFrameAtTime(us, MediaMetadataRetriever.OPTION_CLOSEST_SYNC) ?: continue
+                    val score = averageLuma(f)
+                    if (score >= BRIGHT_ENOUGH) { best?.recycle(); best = f; break }
+                    if (score > bestScore) { best?.recycle(); best = f; bestScore = score } else f.recycle()
+                }
+                val frame = best ?: mmr.frameAtTime ?: return@runCatching null
                 FileOutputStream(file).use { out -> frame.compress(Bitmap.CompressFormat.JPEG, 85, out) }
                 frame.recycle()
                 Uri.fromFile(file).toString()
             }
         }.getOrElse { Timber.w(it, "Thumbnail generation failed for $uri"); null }
+    }
+
+    // Rough average luminance (0..255) over a sparse grid — cheap "is this frame basically black?".
+    private fun averageLuma(bmp: Bitmap): Double {
+        val steps = 8
+        val w = bmp.width.coerceAtLeast(1)
+        val h = bmp.height.coerceAtLeast(1)
+        var sum = 0.0
+        var n = 0
+        var yi = 0
+        while (yi < steps) {
+            var xi = 0
+            while (xi < steps) {
+                val px = bmp.getPixel((w - 1) * xi / (steps - 1), (h - 1) * yi / (steps - 1))
+                val r = (px shr 16) and 0xFF
+                val g = (px shr 8) and 0xFF
+                val b = px and 0xFF
+                sum += 0.299 * r + 0.587 * g + 0.114 * b
+                n++
+                xi++
+            }
+            yi++
+        }
+        return if (n == 0) 0.0 else sum / n
     }
 
     private fun fileExistsForUri(fileUri: String): Boolean =

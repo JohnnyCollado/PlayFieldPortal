@@ -31,6 +31,26 @@ interface VideoDao {
     @Query("SELECT * FROM videos WHERE library_id = :libraryId")
     suspend fun getForLibrary(libraryId: String): List<VideoEntity>
 
+    @Query(
+        """
+        SELECT * FROM videos
+        WHERE is_favorite = 1
+        ORDER BY COALESCE(title, display_name) COLLATE NOCASE ASC
+        """
+    )
+    fun observeFavorites(): Flow<List<VideoEntity>>
+
+    // Most-recently-watched first; only videos that have actually been played (have a timestamp).
+    @Query(
+        """
+        SELECT * FROM videos
+        WHERE last_watched_at IS NOT NULL
+        ORDER BY last_watched_at DESC
+        LIMIT :limit
+        """
+    )
+    fun observeRecentlyWatched(limit: Int): Flow<List<VideoEntity>>
+
     @Query("SELECT * FROM videos WHERE id = :id")
     suspend fun getById(id: String): VideoEntity?
 
@@ -57,6 +77,9 @@ interface VideoDao {
 
     @Query("UPDATE videos SET custom_thumbnail_uri = :uri WHERE id = :id")
     suspend fun setCustomThumbnail(id: String, uri: String?)
+
+    @Query("UPDATE videos SET is_favorite = :favorite WHERE id = :id")
+    suspend fun setFavorite(id: String, favorite: Boolean)
 
     // Replaces a single library's videos atomically; other libraries are never touched.
     @Transaction

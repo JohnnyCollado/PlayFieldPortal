@@ -20,6 +20,7 @@ import com.playfieldportal.core.data.database.dao.ThemeDao
 import com.playfieldportal.core.data.database.dao.UnmatchedRomDao
 import com.playfieldportal.core.data.database.dao.VideoDao
 import com.playfieldportal.core.data.database.dao.VideoLibraryDao
+import com.playfieldportal.core.data.database.dao.VideoPlaylistDao
 import com.playfieldportal.core.data.database.entity.AppOverrideEntity
 import com.playfieldportal.core.data.database.entity.CategoryEntity
 import com.playfieldportal.core.data.database.entity.CategoryItemEntity
@@ -38,6 +39,8 @@ import com.playfieldportal.core.data.database.entity.ThemeEntity
 import com.playfieldportal.core.data.database.entity.UnmatchedRomEntity
 import com.playfieldportal.core.data.database.entity.VideoEntity
 import com.playfieldportal.core.data.database.entity.VideoLibraryEntity
+import com.playfieldportal.core.data.database.entity.VideoPlaylistEntity
+import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
 
 @Database(
     entities = [
@@ -59,8 +62,10 @@ import com.playfieldportal.core.data.database.entity.VideoLibraryEntity
         PlaylistTrackEntity::class,
         VideoLibraryEntity::class,
         VideoEntity::class,
+        VideoPlaylistEntity::class,
+        VideoPlaylistItemEntity::class,
     ],
-    version = 16,
+    version = 17,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -81,6 +86,7 @@ abstract class PFPDatabase : RoomDatabase() {
     abstract fun playlistDao(): PlaylistDao
     abstract fun videoLibraryDao(): VideoLibraryDao
     abstract fun videoDao(): VideoDao
+    abstract fun videoPlaylistDao(): VideoPlaylistDao
 
     companion object {
         const val DATABASE_NAME = "pfp_database"
@@ -400,6 +406,39 @@ abstract class PFPDatabase : RoomDatabase() {
                 )
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_videos_library_id ON videos (library_id)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_videos_uri ON videos (uri)")
+            }
+        }
+
+        // v17 — Video Experience (Phase 2). Adds a favorite flag on videos and the video-playlist
+        // tables (mirroring the music playlist tables). Additive only — no existing data touched.
+        val MIGRATION_16_17 = object : Migration(16, 17) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE videos ADD COLUMN is_favorite INTEGER NOT NULL DEFAULT 0")
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS video_playlists (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        name TEXT NOT NULL,
+                        created_at INTEGER NOT NULL,
+                        updated_at INTEGER NOT NULL,
+                        sort_order INTEGER NOT NULL DEFAULT 0
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS video_playlist_items (
+                        playlist_id INTEGER NOT NULL,
+                        video_id TEXT NOT NULL,
+                        position INTEGER NOT NULL,
+                        added_at INTEGER NOT NULL,
+                        PRIMARY KEY(playlist_id, video_id),
+                        FOREIGN KEY(playlist_id) REFERENCES video_playlists(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_video_playlist_items_playlist_id ON video_playlist_items (playlist_id)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_video_playlist_items_video_id ON video_playlist_items (video_id)")
             }
         }
     }

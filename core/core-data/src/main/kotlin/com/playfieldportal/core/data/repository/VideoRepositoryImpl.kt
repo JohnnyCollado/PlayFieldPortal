@@ -2,10 +2,14 @@ package com.playfieldportal.core.data.repository
 
 import com.playfieldportal.core.data.database.dao.VideoDao
 import com.playfieldportal.core.data.database.dao.VideoLibraryDao
+import com.playfieldportal.core.data.database.dao.VideoPlaylistDao
+import com.playfieldportal.core.data.database.entity.VideoPlaylistEntity
+import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
 import com.playfieldportal.core.data.database.entity.toDomain
 import com.playfieldportal.core.data.database.entity.toEntity
 import com.playfieldportal.core.domain.model.Video
 import com.playfieldportal.core.domain.model.VideoLibrary
+import com.playfieldportal.core.domain.model.VideoPlaylist
 import com.playfieldportal.core.domain.repository.VideoRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -18,6 +22,7 @@ import javax.inject.Singleton
 class VideoRepositoryImpl @Inject constructor(
     private val libraryDao: VideoLibraryDao,
     private val videoDao: VideoDao,
+    private val playlistDao: VideoPlaylistDao,
 ) : VideoRepository {
 
     override fun observeLibraries(): Flow<List<VideoLibrary>> =
@@ -105,4 +110,75 @@ class VideoRepositoryImpl @Inject constructor(
 
     override suspend fun removeVideo(id: String) =
         videoDao.deleteById(id)
+
+    // ── Favorites & recently watched ────────────────────────────────────────────
+
+    override fun observeFavorites(): Flow<List<Video>> =
+        videoDao.observeFavorites().map { list -> list.map { it.toDomain() } }
+
+    override fun observeRecentlyWatched(limit: Int): Flow<List<Video>> =
+        videoDao.observeRecentlyWatched(limit).map { list -> list.map { it.toDomain() } }
+
+    override suspend fun setFavorite(id: String, favorite: Boolean) =
+        videoDao.setFavorite(id, favorite)
+
+    // ── Playlists ───────────────────────────────────────────────────────────────
+
+    override fun observePlaylists(): Flow<List<VideoPlaylist>> =
+        playlistDao.observeAllWithCounts().map { rows ->
+            rows.map { it.playlist.toDomain(videoCount = it.video_count) }
+        }
+
+    override fun observePlaylistVideos(playlistId: Long): Flow<List<Video>> =
+        playlistDao.observeVideos(playlistId).map { list -> list.map { it.toDomain() } }
+
+    override suspend fun getPlaylistIdsForVideo(videoId: String): List<Long> =
+        playlistDao.getPlaylistIdsForVideo(videoId)
+
+    override suspend fun createPlaylist(name: String): Long {
+        val now = System.currentTimeMillis()
+        val id = playlistDao.insert(
+            VideoPlaylistEntity(
+                name = name,
+                createdAt = now,
+                updatedAt = now,
+                sortOrder = playlistDao.maxSortOrder() + 1,
+            )
+        )
+        Timber.i("Video playlist created: \"$name\" (id=$id)")
+        return id
+    }
+
+    override suspend fun renamePlaylist(id: Long, name: String) =
+        playlistDao.rename(id, name, System.currentTimeMillis())
+
+    override suspend fun deletePlaylist(id: Long) {
+        playlistDao.delete(id)
+        Timber.i("Video playlist removed: $id")
+    }
+
+    override suspend fun addVideoToPlaylist(playlistId: Long, videoId: String) {
+        val now = System.currentTimeMillis()
+        playlistDao.addVideo(
+            VideoPlaylistItemEntity(
+                playlistId = playlistId,
+                videoId = videoId,
+                position = playlistDao.maxPosition(playlistId) + 1,
+                addedAt = now,
+            )
+        )
+        playlistDao.touch(playlistId, now)
+    }
+
+    override suspend fun removeVideoFromPlaylist(playlistId: Long, videoId: String) {
+        playlistDao.removeVideo(playlistId, videoId)
+        playlistDao.touch(playlistId, System.currentTimeMillis())
+    }
+
+    override suspend fun toggleVideoInPlaylist(playlistId: Long, videoId: String): Boolean {
+        val present = playlistDao.isVideoInPlaylist(playlistId, videoId) > 0
+        if (present) removeVideoFromPlaylist(playlistId, videoId)
+        else addVideoToPlaylist(playlistId, videoId)
+        return !present
+    }
 }

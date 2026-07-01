@@ -14,6 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -26,12 +27,17 @@ enum class VideoDetailAction(val label: String) {
     PLAY("Play"),
     RESUME("Resume"),
     RESTART("Restart"),
+    FAVORITE("Favorite"),
+    PLAYLIST("Add to Playlist"),
     RENAME("Rename Title"),
     THUMBNAIL("Change Thumbnail"),
     INFO("Information"),
     LOCATION("Open File Location"),
     REMOVE("Remove From Library"),
 }
+
+// One playlist choice in the "Add to Playlist" picker; checked = the video is already a member.
+data class VideoPlaylistOption(val id: Long, val name: String, val checked: Boolean)
 
 data class VideoDetailUiState(
     val video: Video? = null,
@@ -48,6 +54,12 @@ data class VideoDetailUiState(
     val actionMessage: String? = null,
     // Non-null triggers the system image picker for a custom thumbnail.
     val pickThumbnail: Boolean = false,
+    // Add-to-playlist picker.
+    val showPlaylistPicker: Boolean = false,
+    val playlistOptions: List<VideoPlaylistOption> = emptyList(),
+    val playlistPickerIndex: Int = 0,
+    val creatingPlaylist: Boolean = false,
+    val newPlaylistName: String = "",
     // Playback overlay.
     val playing: Boolean = false,
     val playStartPositionMs: Long = 0,
@@ -99,6 +111,19 @@ class VideoDetailViewModel @Inject constructor(
                 GamepadAction.BACK   -> _uiState.update { it.copy(confirmRemove = false) }
                 else -> Unit
             }
+            s.creatingPlaylist -> if (action == GamepadAction.BACK) {
+                _uiState.update { it.copy(creatingPlaylist = false, newPlaylistName = "") }
+            }
+            s.showPlaylistPicker -> {
+                val count = s.playlistOptions.size + 1  // +1 for "Create New Playlist"
+                when (action) {
+                    GamepadAction.NAVIGATE_UP   -> _uiState.update { it.copy(playlistPickerIndex = (it.playlistPickerIndex - 1 + count) % count) }
+                    GamepadAction.NAVIGATE_DOWN -> _uiState.update { it.copy(playlistPickerIndex = (it.playlistPickerIndex + 1) % count) }
+                    GamepadAction.SELECT        -> activatePlaylistPickerRow(s.playlistPickerIndex)
+                    GamepadAction.BACK          -> _uiState.update { it.copy(showPlaylistPicker = false) }
+                    else -> Unit
+                }
+            }
             s.infoVisible -> if (action == GamepadAction.SELECT || action == GamepadAction.BACK) {
                 _uiState.update { it.copy(infoVisible = false) }
             }
@@ -141,6 +166,8 @@ class VideoDetailViewModel @Inject constructor(
             VideoDetailAction.PLAY    -> startPlayback(0)
             VideoDetailAction.RESUME  -> startPlayback(video.resumePositionMs)
             VideoDetailAction.RESTART -> startPlayback(0)
+            VideoDetailAction.FAVORITE -> toggleFavorite()
+            VideoDetailAction.PLAYLIST -> openPlaylistPicker()
             VideoDetailAction.RENAME  -> startEditTitle()
             VideoDetailAction.THUMBNAIL -> _uiState.update { it.copy(pickThumbnail = true) }
             VideoDetailAction.INFO    -> _uiState.update { it.copy(infoVisible = true) }
@@ -148,6 +175,70 @@ class VideoDetailViewModel @Inject constructor(
             VideoDetailAction.REMOVE  -> _uiState.update { it.copy(confirmRemove = true) }
         }
     }
+
+    // ── Favorites ───────────────────────────────────────────────────────────────
+
+    fun toggleFavorite() {
+        val v = _uiState.value.video ?: return
+        viewModelScope.launch {
+            val next = !v.isFavorite
+            videoRepository.setFavorite(v.id, next)
+            _uiState.update { it.copy(video = it.video?.copy(isFavorite = next), actionMessage = if (next) "Added to Favorites" else "Removed from Favorites") }
+        }
+    }
+
+    // ── Add to playlist ───────────────────────────────────────────────────────────
+
+    fun openPlaylistPicker() {
+        val v = _uiState.value.video ?: return
+        viewModelScope.launch {
+            _uiState.update { it.copy(showPlaylistPicker = true, playlistPickerIndex = 0, playlistOptions = buildPlaylistOptions(v.id)) }
+        }
+    }
+
+    private suspend fun buildPlaylistOptions(videoId: String): List<VideoPlaylistOption> {
+        val memberOf = videoRepository.getPlaylistIdsForVideo(videoId).toSet()
+        return videoRepository.observePlaylists().first().map {
+            VideoPlaylistOption(id = it.id, name = it.name, checked = it.id in memberOf)
+        }
+    }
+
+    fun onPlaylistRowClick(index: Int) {
+        _uiState.update { it.copy(playlistPickerIndex = index) }
+        activatePlaylistPickerRow(index)
+    }
+
+    private fun activatePlaylistPickerRow(index: Int) {
+        val s = _uiState.value
+        val v = s.video ?: return
+        if (index >= s.playlistOptions.size) {
+            // "Create New Playlist" row.
+            _uiState.update { it.copy(creatingPlaylist = true, newPlaylistName = "") }
+            return
+        }
+        val option = s.playlistOptions.getOrNull(index) ?: return
+        viewModelScope.launch {
+            videoRepository.toggleVideoInPlaylist(option.id, v.id)
+            _uiState.update { it.copy(playlistOptions = buildPlaylistOptions(v.id)) }
+        }
+    }
+
+    fun closePlaylistPicker() = _uiState.update { it.copy(showPlaylistPicker = false) }
+
+    fun onNewPlaylistNameChange(text: String) = _uiState.update { it.copy(newPlaylistName = text) }
+
+    fun confirmCreatePlaylist() {
+        val v = _uiState.value.video ?: return
+        val name = _uiState.value.newPlaylistName.trim()
+        if (name.isBlank()) { _uiState.update { it.copy(creatingPlaylist = false) }; return }
+        viewModelScope.launch {
+            val id = videoRepository.createPlaylist(name)
+            videoRepository.addVideoToPlaylist(id, v.id)
+            _uiState.update { it.copy(creatingPlaylist = false, newPlaylistName = "", playlistOptions = buildPlaylistOptions(v.id)) }
+        }
+    }
+
+    fun cancelCreatePlaylist() = _uiState.update { it.copy(creatingPlaylist = false, newPlaylistName = "") }
 
     // ── Playback ──────────────────────────────────────────────────────────────
 

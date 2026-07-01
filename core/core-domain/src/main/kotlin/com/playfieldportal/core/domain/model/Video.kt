@@ -29,6 +29,7 @@ data class Video(
     /** Last playback position in ms; 0 = start / fully watched-and-reset. */
     val resumePositionMs: Long = 0,
     val lastWatchedAt: Long? = null,
+    val isFavorite: Boolean = false,
 ) {
     /** Best label for display: user title when set, else the file name. */
     val displayTitle: String get() = title?.takeIf { it.isNotBlank() } ?: displayName

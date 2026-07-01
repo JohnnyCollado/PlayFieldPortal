@@ -31,10 +31,12 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.QueueMusic
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -241,10 +243,14 @@ private fun XmbGameColumn(
 private fun SiblingIcon(item: XMBItem, selected: Boolean) {
     val chip = if (selected) 56.dp else 40.dp
     val videoGlyph = when (item.type) {
-        XMBItemType.VIDEO_FOLDER  -> Icons.Filled.Folder
-        XMBItemType.VIDEO_LIBRARY -> Icons.Filled.VideoLibrary
-        XMBItemType.VIDEO_APPS    -> Icons.Filled.Movie
-        else                      -> null
+        XMBItemType.VIDEO_FOLDER    -> Icons.Filled.Folder
+        XMBItemType.VIDEO_LIBRARY   -> Icons.Filled.VideoLibrary
+        XMBItemType.VIDEO_APPS      -> Icons.Filled.Movie
+        XMBItemType.VIDEO_RECENT    -> Icons.Filled.History
+        XMBItemType.VIDEO_FAVORITES -> Icons.Filled.Star
+        // The video "Playlists" section row (PLAYLIST type with no playlistId) uses a playlist glyph.
+        XMBItemType.PLAYLIST        -> Icons.Filled.QueueMusic
+        else                        -> null
     }
     Box(
         modifier = Modifier.fillMaxWidth().padding(end = 16.dp),
@@ -667,6 +673,16 @@ private fun XmbItemLeadingIcon(
         item.type == XMBItemType.VIDEO_LIBRARY -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
                 Icon(Icons.Filled.VideoLibrary, contentDescription = null, tint = InactiveText, modifier = Modifier.size(48.dp))
+            }
+        }
+        item.type == XMBItemType.VIDEO_RECENT -> {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
+                Icon(Icons.Filled.History, contentDescription = null, tint = InactiveText, modifier = Modifier.size(48.dp))
+            }
+        }
+        item.type == XMBItemType.VIDEO_FAVORITES -> {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
+                Icon(Icons.Filled.Star, contentDescription = null, tint = InactiveText, modifier = Modifier.size(48.dp))
             }
         }
         item.type == XMBItemType.VIDEO_APPS -> {

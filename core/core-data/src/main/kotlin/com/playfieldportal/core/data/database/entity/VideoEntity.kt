@@ -72,6 +72,9 @@ data class VideoEntity(
 
     @ColumnInfo(name = "last_watched_at")
     val lastWatchedAt: Long? = null,
+
+    @ColumnInfo(name = "is_favorite")
+    val isFavorite: Boolean = false,
 )
 
 fun VideoEntity.toDomain() = Video(
@@ -94,6 +97,7 @@ fun VideoEntity.toDomain() = Video(
     customThumbnailUri = customThumbnailUri,
     resumePositionMs   = resumePositionMs,
     lastWatchedAt      = lastWatchedAt,
+    isFavorite         = isFavorite,
 )
 
 fun Video.toEntity() = VideoEntity(
@@ -116,4 +120,5 @@ fun Video.toEntity() = VideoEntity(
     customThumbnailUri = customThumbnailUri,
     resumePositionMs   = resumePositionMs,
     lastWatchedAt      = lastWatchedAt,
+    isFavorite         = isFavorite,
 )
