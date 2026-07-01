@@ -1377,6 +1377,10 @@ class XMBViewModel @Inject constructor(
     // (onCategorySelected) and overridden on sort — those intentionally reset to the top.
     private val videoNavCursor = mutableMapOf<String, Int>()
 
+    // Remembered cursor position per category (keyed by category id), so switching categories and
+    // returning restores the item you were on instead of the first.
+    private val categoryCursor = mutableMapOf<String, Int>()
+
     private fun videoNavKey(nav: VideoNav): String = when (nav) {
         VideoNav.Root            -> "root"
         VideoNav.AllVideos       -> "all"
@@ -3541,9 +3545,14 @@ class XMBViewModel @Inject constructor(
 
     fun onCategorySelected(index: Int) {
         if (index != _uiState.value.selectedCategoryIndex) menuSound.play(MenuSound.SYSTEM_BROWSE)
-        val category = _uiState.value.categories.getOrNull(index)
-        videoNavCursor.clear()   // category movement resets Video positions to the top
-        _uiState.update { it.copy(selectedCategoryIndex = index, selectedItemIndex = 0, selectedPlatformId = null, selectedCollectionId = null, musicNav = MusicNav.Root, videoNav = VideoNav.Root) }
+        val prev = _uiState.value
+        // Remember each category's cursor so moving away and back restores your spot instead of
+        // snapping to the first item. Left/Right is locked while drilled in, so the saved index is
+        // always a root-level list position for that category.
+        prev.categories.getOrNull(prev.selectedCategoryIndex)?.id?.let { categoryCursor[it] = prev.selectedItemIndex }
+        val category = prev.categories.getOrNull(index)
+        val restore = category?.id?.let { categoryCursor[it] } ?: 0
+        _uiState.update { it.copy(selectedCategoryIndex = index, selectedItemIndex = restore, selectedPlatformId = null, selectedCollectionId = null, musicNav = MusicNav.Root, videoNav = VideoNav.Root) }
         tintWaveForCategory(category)
         loadItemsForCategory(category)
     }
