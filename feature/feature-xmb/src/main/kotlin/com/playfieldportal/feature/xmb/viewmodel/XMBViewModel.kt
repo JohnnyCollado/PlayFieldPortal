@@ -1861,6 +1861,15 @@ class XMBViewModel @Inject constructor(
             MusicNav.Root        -> null
         }
         if (musicTitle != null) return musicTitle
+        // Video sub-navigation is a drill-in too — a non-null title shows the two-pane flyout.
+        val videoTitle = when (val nav = s.videoNav) {
+            VideoNav.AllVideos   -> "All Videos"
+            VideoNav.Libraries   -> "Video Libraries"
+            is VideoNav.Library  -> nav.name
+            VideoNav.VideoApps   -> "Video Apps"
+            VideoNav.Root        -> null
+        }
+        if (videoTitle != null) return videoTitle
         return when {
             s.selectedCollectionId != null ->
                 s.collections.firstOrNull { it.id == s.selectedCollectionId }?.name ?: "Collection"
@@ -1892,6 +1901,22 @@ class XMBViewModel @Inject constructor(
                     MusicNav.MusicApps -> sib.type == XMBItemType.MUSIC_APPS
                     MusicNav.AllMusic  -> sib.type == XMBItemType.MEMORY_CARD
                     else               -> sib.type == XMBItemType.PLAYLIST   // Playlists / a Playlist
+                }
+            }.coerceAtLeast(0)
+            return sibs to idx
+        }
+        // Video sub-navigation: the left column is the Video root's sections (All Videos / Video
+        // Libraries / Video Apps), with the drilled-into one centred on the arrow.
+        if (s.videoNav != VideoNav.Root) {
+            val sibs = videoRootItems().filter {
+                it.type == XMBItemType.MEMORY_CARD || it.type == XMBItemType.VIDEO_LIBRARY ||
+                    it.type == XMBItemType.VIDEO_APPS
+            }
+            val idx = sibs.indexOfFirst { sib ->
+                when (s.videoNav) {
+                    VideoNav.AllVideos -> sib.type == XMBItemType.MEMORY_CARD
+                    VideoNav.VideoApps -> sib.type == XMBItemType.VIDEO_APPS
+                    else               -> sib.type == XMBItemType.VIDEO_LIBRARY  // Libraries / a Library
                 }
             }.coerceAtLeast(0)
             return sibs to idx
@@ -2308,6 +2333,8 @@ class XMBViewModel @Inject constructor(
                 menuSound.play(MenuSound.BACK)
                 when {
                     state.musicNav != MusicNav.Root -> closeMusicView()
+                    // Two-level video path: a specific library backs out to the library list first.
+                    state.videoNav is VideoNav.Library -> openVideoView(VideoNav.Libraries)
                     state.videoNav != VideoNav.Root -> closeVideoView()
                     state.selectedPlatformId != null || state.selectedCollectionId != null -> closePlatformFolder()
                     else -> onOpenAppDrawer()
@@ -3181,6 +3208,8 @@ class XMBViewModel @Inject constructor(
         menuSound.play(MenuSound.BACK)
         when {
             s.musicNav != MusicNav.Root -> closeMusicView()
+            s.videoNav is VideoNav.Library -> openVideoView(VideoNav.Libraries)
+            s.videoNav != VideoNav.Root -> closeVideoView()
             s.selectedPlatformId != null || s.selectedCollectionId != null -> closePlatformFolder()
             else -> onOpenAppDrawer()
         }
