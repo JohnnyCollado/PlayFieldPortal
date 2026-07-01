@@ -6,6 +6,8 @@ import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.playfieldportal.core.data.video.VideoIntentResolver
+import com.playfieldportal.core.data.video.VideoPlayerApp
 import com.playfieldportal.core.domain.model.VideoLibrary
 import com.playfieldportal.core.domain.repository.VideoRepository
 import com.playfieldportal.core.ui.notification.BackgroundTaskNotifier
@@ -20,18 +22,34 @@ import timber.log.Timber
 import java.io.File
 import javax.inject.Inject
 
+// Sentinel pref values for the default player (see VideoRepository).
+private const val PLAYER_BUILTIN = "builtin"
+private const val PLAYER_ASK = "ask"
+
 data class VideoSettingsUiState(
     val libraries: List<VideoLibrary> = emptyList(),
     val scanning: Boolean = false,
     val scanMessage: String? = null,
     val renameTarget: VideoLibrary? = null,
-)
+    // Default player: null/"builtin" = built-in, "ask" = chooser, else a package name.
+    val defaultPlayer: String? = null,
+    val availablePlayers: List<VideoPlayerApp> = emptyList(),
+    val showPlayerPicker: Boolean = false,
+) {
+    val defaultPlayerLabel: String
+        get() = when (defaultPlayer) {
+            null, PLAYER_BUILTIN -> "Built-in"
+            PLAYER_ASK           -> "Ask Every Time"
+            else -> availablePlayers.firstOrNull { it.packageName == defaultPlayer }?.label ?: defaultPlayer
+        }
+}
 
 @HiltViewModel
 class VideoSettingsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val videoRepository: VideoRepository,
     private val videoScanner: VideoScanner,
+    private val intentResolver: VideoIntentResolver,
 ) : ViewModel() {
 
     private val notifier = BackgroundTaskNotifier(context)
@@ -44,6 +62,25 @@ class VideoSettingsViewModel @Inject constructor(
                 _ui.value = _ui.value.copy(libraries = libs)
             }
         }
+        viewModelScope.launch {
+            videoRepository.observeDefaultVideoPlayer().collect { pref ->
+                _ui.value = _ui.value.copy(defaultPlayer = pref)
+            }
+        }
+    }
+
+    // ── Default player ──────────────────────────────────────────────────────────
+
+    fun openPlayerPicker() {
+        _ui.value = _ui.value.copy(showPlayerPicker = true, availablePlayers = intentResolver.availablePlayers())
+    }
+
+    fun dismissPlayerPicker() { _ui.value = _ui.value.copy(showPlayerPicker = false) }
+
+    /** value: null = built-in, "ask" = chooser, else a package name. */
+    fun chooseDefaultPlayer(value: String?) {
+        _ui.value = _ui.value.copy(showPlayerPicker = false)
+        viewModelScope.launch { videoRepository.setDefaultVideoPlayer(value) }
     }
 
     /** Called with the tree uri from ACTION_OPEN_DOCUMENT_TREE; persists read access and deep-scans. */

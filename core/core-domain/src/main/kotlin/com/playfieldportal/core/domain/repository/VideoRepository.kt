@@ -56,4 +56,10 @@ interface VideoRepository {
     suspend fun removeVideoFromPlaylist(playlistId: Long, videoId: String)
     /** Adds the video if absent, removes it if present; returns the new membership state. */
     suspend fun toggleVideoInPlaylist(playlistId: Long, videoId: String): Boolean
+
+    // ── Default player (DataStore-backed) ────────────────────────────────────────
+    // null / "builtin" = built-in Media3 player; "ask" = system chooser each time; else a package.
+    fun observeDefaultVideoPlayer(): Flow<String?>
+    suspend fun getDefaultVideoPlayer(): String?
+    suspend fun setDefaultVideoPlayer(value: String?)
 }

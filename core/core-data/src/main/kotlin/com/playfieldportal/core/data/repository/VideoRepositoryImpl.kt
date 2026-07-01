@@ -1,8 +1,14 @@
 package com.playfieldportal.core.data.repository
 
+import android.content.Context
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import com.playfieldportal.core.data.database.dao.VideoDao
 import com.playfieldportal.core.data.database.dao.VideoLibraryDao
 import com.playfieldportal.core.data.database.dao.VideoPlaylistDao
+import com.playfieldportal.core.data.datastore.pfpDataStore
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.first
 import com.playfieldportal.core.data.database.entity.VideoPlaylistEntity
 import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
 import com.playfieldportal.core.data.database.entity.toDomain
@@ -18,8 +24,11 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
+private val KEY_VIDEO_DEFAULT_PLAYER = stringPreferencesKey("video_default_player")
+
 @Singleton
 class VideoRepositoryImpl @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val libraryDao: VideoLibraryDao,
     private val videoDao: VideoDao,
     private val playlistDao: VideoPlaylistDao,
@@ -180,5 +189,18 @@ class VideoRepositoryImpl @Inject constructor(
         if (present) removeVideoFromPlaylist(playlistId, videoId)
         else addVideoToPlaylist(playlistId, videoId)
         return !present
+    }
+
+    override fun observeDefaultVideoPlayer(): Flow<String?> =
+        context.pfpDataStore.data.map { it[KEY_VIDEO_DEFAULT_PLAYER] }
+
+    override suspend fun getDefaultVideoPlayer(): String? =
+        context.pfpDataStore.data.first()[KEY_VIDEO_DEFAULT_PLAYER]
+
+    override suspend fun setDefaultVideoPlayer(value: String?) {
+        context.pfpDataStore.edit { prefs ->
+            if (value.isNullOrBlank()) prefs.remove(KEY_VIDEO_DEFAULT_PLAYER)
+            else prefs[KEY_VIDEO_DEFAULT_PLAYER] = value
+        }
     }
 }

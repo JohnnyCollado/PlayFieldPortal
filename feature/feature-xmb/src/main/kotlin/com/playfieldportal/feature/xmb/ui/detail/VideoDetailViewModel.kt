@@ -82,6 +82,7 @@ private const val RESUME_END_EPSILON_MS = 5_000L
 class VideoDetailViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val videoRepository: VideoRepository,
+    private val intentResolver: com.playfieldportal.core.data.video.VideoIntentResolver,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(VideoDetailUiState())
@@ -163,9 +164,9 @@ class VideoDetailViewModel @Inject constructor(
         _uiState.update { it.copy(showOptions = false) }
         val video = _uiState.value.video ?: return
         when (action) {
-            VideoDetailAction.PLAY    -> startPlayback(0)
-            VideoDetailAction.RESUME  -> startPlayback(video.resumePositionMs)
-            VideoDetailAction.RESTART -> startPlayback(0)
+            VideoDetailAction.PLAY    -> play(0)
+            VideoDetailAction.RESUME  -> play(video.resumePositionMs)
+            VideoDetailAction.RESTART -> play(0)
             VideoDetailAction.FAVORITE -> toggleFavorite()
             VideoDetailAction.PLAYLIST -> openPlaylistPicker()
             VideoDetailAction.RENAME  -> startEditTitle()
@@ -242,8 +243,33 @@ class VideoDetailViewModel @Inject constructor(
 
     // ── Playback ──────────────────────────────────────────────────────────────
 
+    // Routes a play request to the built-in player, an external app, or the system chooser based on
+    // the Default Player setting.
+    fun play(positionMs: Long) {
+        val video = _uiState.value.video ?: return
+        viewModelScope.launch {
+            when (val pref = videoRepository.getDefaultVideoPlayer()) {
+                null, "builtin" -> startPlayback(positionMs)
+                "ask" -> {
+                    markWatchedExternally(video)
+                    intentResolver.launchChooser(video)?.let { showMessage(it) }
+                }
+                else -> {
+                    markWatchedExternally(video)
+                    intentResolver.launch(video, pref)?.let { showMessage(it) }
+                }
+            }
+        }
+    }
+
     fun startPlayback(positionMs: Long) {
         _uiState.update { it.copy(playing = true, playStartPositionMs = positionMs, showOptions = false) }
+    }
+
+    // External playback position can't be tracked, so just stamp lastWatchedAt (keeping any resume
+    // position) so the video still shows up under Recently Watched.
+    private suspend fun markWatchedExternally(video: Video) {
+        videoRepository.setResumePosition(video.id, video.resumePositionMs, System.currentTimeMillis())
     }
 
     fun onPlaybackExit() {

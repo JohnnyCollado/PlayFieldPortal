@@ -52,9 +52,10 @@ fun VideoSettingsScreen(
 
             SettingsValueRow(
                 label    = "Default Player",
-                sublabel = "Videos play in the built-in Media3 player for a seamless, in-app experience.",
-                value    = "Built-in",
+                sublabel = "Built-in plays in-app. Or pick an external app, or be asked each time.",
+                value    = state.defaultPlayerLabel,
                 focusKey = "video_default_player",
+                onClick  = { viewModel.openPlayerPicker() },
             )
 
             // ── Libraries ───────────────────────────────────────────────────────
@@ -155,6 +156,54 @@ fun VideoSettingsScreen(
             },
             confirmButton = { TextButton(onClick = { viewModel.confirmRename(text) }) { Text("Rename") } },
             dismissButton = { TextButton(onClick = { viewModel.cancelRename() }) { Text("Cancel") } },
+        )
+    }
+
+    // ── Default player picker ─────────────────────────────────────────────────────
+    if (state.showPlayerPicker) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissPlayerPicker() },
+            title = { Text("Default Player") },
+            text = {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    PlayerChoiceRow(
+                        label = "Built-in Player (Recommended)",
+                        selected = state.defaultPlayer == null || state.defaultPlayer == "builtin",
+                        onClick = { viewModel.chooseDefaultPlayer(null) },
+                    )
+                    PlayerChoiceRow(
+                        label = "Ask Every Time",
+                        selected = state.defaultPlayer == "ask",
+                        onClick = { viewModel.chooseDefaultPlayer("ask") },
+                    )
+                    state.availablePlayers.forEach { player ->
+                        PlayerChoiceRow(
+                            label = player.label,
+                            selected = state.defaultPlayer == player.packageName,
+                            onClick = { viewModel.chooseDefaultPlayer(player.packageName) },
+                        )
+                    }
+                    if (state.availablePlayers.isEmpty()) {
+                        Text(
+                            "No external video players found on this device.",
+                            color = SettingsSubtext,
+                            modifier = Modifier.padding(vertical = 8.dp),
+                        )
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = { TextButton(onClick = { viewModel.dismissPlayerPicker() }) { Text("Close") } },
+        )
+    }
+}
+
+@Composable
+private fun PlayerChoiceRow(label: String, selected: Boolean, onClick: () -> Unit) {
+    TextButton(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = (if (selected) "● " else "○ ") + label,
+            modifier = Modifier.fillMaxWidth(),
         )
     }
 }
