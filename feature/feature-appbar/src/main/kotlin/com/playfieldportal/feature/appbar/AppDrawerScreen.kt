@@ -93,7 +93,10 @@ fun AppDrawerScreen(
     LaunchedEffect(pendingGamepadAction) {
         if (pendingGamepadAction != null) {
             timber.log.Timber.d("AppDrawer: action=$pendingGamepadAction filter=${viewModel.uiState.value.activeFilter}")
-            if (pendingGamepadAction == GamepadAction.BUTTON_Y) {
+            val overlayOpen = state.menuApp != null || state.confirmUninstall != null
+            // Y toggles search only when no mini menu / dialog is up — otherwise it's forwarded so
+            // the menu can consume it (Y/hold closes the menu).
+            if (!overlayOpen && pendingGamepadAction == GamepadAction.BUTTON_Y) {
                 searchActive = !searchActive
                 if (!searchActive) viewModel.setSearchQuery("")
             } else {
@@ -197,12 +200,110 @@ fun AppDrawerScreen(
                             selectedIndex = state.selectedIndex,
                             onAppSelected = { viewModel.onAppSelected(it) },
                             onAppLaunched = { viewModel.launchApp(it) },
+                            onAppMenu     = { viewModel.openAppMenu(it) },
                         )
                     }
                 }
             }
         }
+
+        // ── Long-press mini menu (App Info / Uninstall) ────────────────────────
+        state.menuApp?.let { app ->
+            AppMiniMenu(
+                app           = app,
+                actions       = state.menuActions,
+                selectedIndex = state.menuIndex,
+                onAction      = { viewModel.onMenuAction(it) },
+                onDismiss     = { viewModel.closeAppMenu() },
+            )
+        }
+
+        // ── Uninstall confirmation (guard rail) ────────────────────────────────
+        state.confirmUninstall?.let { app ->
+            UninstallConfirmDialog(
+                app       = app,
+                onConfirm = { viewModel.confirmUninstall() },
+                onCancel  = { viewModel.cancelUninstall() },
+            )
+        }
     }
+}
+
+// ── Long-press mini menu ────────────────────────────────────────────────────────
+
+@Composable
+private fun AppMiniMenu(
+    app: InstalledApp,
+    actions: List<AppMenuAction>,
+    selectedIndex: Int,
+    onAction: (AppMenuAction) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    // Full-screen scrim; tap outside dismisses. The menu itself is centered.
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0x99000000))
+            .clickable(indication = null, interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }) { onDismiss() },
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            modifier = Modifier
+                .width(280.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(Color(0xF0141420))
+                .padding(vertical = 10.dp),
+        ) {
+            Text(
+                text       = app.label,
+                color      = DrawerText,
+                fontSize   = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines   = 1,
+                overflow   = TextOverflow.Ellipsis,
+                modifier   = Modifier.padding(horizontal = 18.dp, vertical = 8.dp),
+            )
+            actions.forEachIndexed { i, action ->
+                val destructive = action == AppMenuAction.UNINSTALL
+                Text(
+                    text     = action.label,
+                    color    = when {
+                        i == selectedIndex && destructive -> Color(0xFFFF6B6B)
+                        i == selectedIndex                -> Color.White
+                        destructive                       -> Color(0xFFE06666)
+                        else                              -> DrawerSubtext
+                    },
+                    fontSize = 15.sp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(if (i == selectedIndex) DrawerSelected else Color.Transparent)
+                        .clickable { onAction(action) }
+                        .padding(horizontal = 18.dp, vertical = 12.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun UninstallConfirmDialog(
+    app: InstalledApp,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onCancel,
+        confirmButton = {
+            androidx.compose.material3.TextButton(onClick = onConfirm) {
+                Text("Uninstall", color = Color(0xFFFF6B6B))
+            }
+        },
+        dismissButton = {
+            androidx.compose.material3.TextButton(onClick = onCancel) { Text("Cancel") }
+        },
+        title = { Text("Uninstall ${app.label}?") },
+        text = { Text("This removes ${app.label} from your device. Android will ask you to confirm.") },
+    )
 }
 
 // ── Header ────────────────────────────────────────────────────────────────────
@@ -331,6 +432,7 @@ private fun AppGrid(
     selectedIndex: Int,
     onAppSelected: (Int) -> Unit,
     onAppLaunched: (String) -> Unit,
+    onAppMenu: (InstalledApp) -> Unit,
 ) {
     val gridState = rememberLazyGridState()
 
@@ -352,6 +454,7 @@ private fun AppGrid(
                 isSelected = index == selectedIndex,
                 onClick    = { onAppSelected(index) },
                 onLaunch   = { onAppLaunched(app.packageName) },
+                onMenu     = { onAppSelected(index); onAppMenu(app) },
             )
         }
     }
@@ -364,6 +467,7 @@ private fun AppGridItem(
     isSelected: Boolean,
     onClick: () -> Unit,
     onLaunch: () -> Unit,
+    onMenu: () -> Unit,
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -378,7 +482,7 @@ private fun AppGridItem(
             .combinedClickable(
                 onClick    = onClick,
                 onDoubleClick = onLaunch,
-                onLongClick   = onLaunch,
+                onLongClick   = onMenu,
             )
             .padding(vertical = 10.dp, horizontal = 8.dp),
     ) {

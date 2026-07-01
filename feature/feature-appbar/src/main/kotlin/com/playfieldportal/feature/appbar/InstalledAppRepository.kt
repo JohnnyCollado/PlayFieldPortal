@@ -7,6 +7,7 @@ import android.app.usage.UsageStatsManager
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
+import android.net.Uri
 import android.os.Process
 import android.provider.Settings
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -26,6 +27,9 @@ data class InstalledApp(
     val lastUsedAt: Long = 0L,
     // ApplicationInfo.category (CATEGORY_VIDEO, CATEGORY_AUDIO, …) or -1 when undefined.
     val systemCategory: Int = ApplicationInfo.CATEGORY_UNDEFINED,
+    // True for pre-installed system apps. Used as a guard rail: uninstall isn't offered for these
+    // (Android would reject it anyway), only "App Info".
+    val isSystemApp: Boolean = false,
 )
 
 // Known emulator package name prefixes — used to tag emulators in the app list
@@ -77,6 +81,10 @@ class InstalledAppRepository @Inject constructor(
                              (appInfo.flags and ApplicationInfo.FLAG_IS_GAME) != 0
 
                 val isEmulator = EMULATOR_PACKAGES.any { packageName.startsWith(it) }
+                // A system app that has NOT been updated by the user can't be uninstalled; treat
+                // updated system apps (Chrome, etc.) as uninstallable.
+                val isSystem = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0 &&
+                    (appInfo.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) == 0
 
                 InstalledApp(
                     packageName    = packageName,
@@ -86,6 +94,7 @@ class InstalledAppRepository @Inject constructor(
                     isEmulator     = isEmulator,
                     lastUsedAt     = lastUsedByPackage[packageName] ?: 0L,
                     systemCategory = appInfo.category,
+                    isSystemApp    = isSystem,
                 )
             } catch (e: Exception) {
                 Timber.w("Failed to load app info: ${e.message}")
@@ -115,6 +124,28 @@ class InstalledAppRepository @Inject constructor(
             context.packageName,
         )
         return mode == AppOpsManager.MODE_ALLOWED
+    }
+
+    /** Opens the system App Info (details & permissions) page for [packageName]. */
+    fun openAppInfo(packageName: String) {
+        val intent = Intent(
+            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+            Uri.fromParts("package", packageName, null),
+        ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        runCatching { context.startActivity(intent) }
+            .onFailure { Timber.w(it, "Could not open app info for $packageName") }
+    }
+
+    /** Launches the system uninstall flow for [packageName]. Android shows its own confirmation
+     *  dialog, so this is only ever fired after the in-app guard-rail confirmation. */
+    fun uninstallApp(packageName: String) {
+        if (packageName == context.packageName) return   // never offer to uninstall ourselves
+        val intent = Intent(
+            Intent.ACTION_DELETE,
+            Uri.fromParts("package", packageName, null),
+        ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        runCatching { context.startActivity(intent) }
+            .onFailure { Timber.w(it, "Could not launch uninstall for $packageName") }
     }
 
     fun openUsageAccessSettings() {
