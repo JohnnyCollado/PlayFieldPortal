@@ -23,7 +23,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -74,11 +76,19 @@ fun XMBCategoryBar(
 ) {
     val listState = rememberLazyListState()
 
+    // Seat the selected slot INSTANTLY on the bar's first composition — including every time the
+    // XMB foreground re-appears after a fullscreen menu closes (music browser, app drawer, Settings)
+    // — so the bar never visibly scrolls in from the start (the old "snap back" on close). Only real
+    // category changes after that glide smoothly.
+    var settled by remember { mutableStateOf(false) }
     LaunchedEffect(selectedIndex, categories.size) {
-        if (categories.isNotEmpty()) {
-            listState.animateScrollToItem(
-                index = selectedIndex.coerceIn(0, categories.lastIndex),
-            )
+        if (categories.isEmpty()) return@LaunchedEffect
+        val target = selectedIndex.coerceIn(0, categories.lastIndex)
+        if (settled) {
+            listState.animateScrollToItem(target)
+        } else {
+            listState.scrollToItem(target)
+            settled = true
         }
     }
 

@@ -33,6 +33,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bookmarks
+import androidx.compose.material.icons.filled.Collections
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.LibraryMusic
@@ -158,6 +159,9 @@ fun XmbDrillFlyout(
     selectedIndex: Int,
     onItemSelected: (Int) -> Unit,
     onItemLongPress: (Int) -> Unit,
+    // Tap on a LEFT-column memory card. The caller decides what it means (tapping the active card
+    // backs out of the drill); taps on other cards are delivered too so it can ignore them.
+    onSiblingTap: (Int) -> Unit = {},
     iconStyle: GameIconStyle = GameIconStyle.PSP_RECTANGLE,
     // The Y of the category bar's top edge and bottom edge — passed the SAME values as the main XMB
     // so the drill is laid out identically: active row under the caticon, previous half-clipped above.
@@ -171,7 +175,7 @@ fun XmbDrillFlyout(
         XMBItemList(
             items = siblings,
             selectedIndex = siblingIndex,
-            onItemSelected = {},
+            onItemSelected = onSiblingTap,
             onItemLongPress = {},
             iconStyle = iconStyle,
             barTopY = barTopY,
@@ -257,6 +261,7 @@ private fun SiblingIcon(item: XMBItem, selected: Boolean) {
         XMBItemType.VIDEO_COLLECTIONS -> Icons.Filled.Bookmarks
         XMBItemType.PHOTO_FOLDER    -> Icons.Filled.Folder
         XMBItemType.PHOTO_ALBUMS    -> Icons.Filled.PhotoLibrary
+        XMBItemType.PHOTO_APPS      -> Icons.Filled.Collections
         // The video "Playlists" section row (PLAYLIST type with no playlistId) uses a playlist glyph.
         XMBItemType.PLAYLIST        -> Icons.Filled.QueueMusic
         else                        -> null
@@ -757,6 +762,12 @@ private fun XmbItemLeadingIcon(
                 Icon(Icons.Filled.PhotoLibrary, contentDescription = null, tint = InactiveText, modifier = Modifier.size(48.dp))
             }
         }
+        // The "Photo Apps" section row at the Photo root (distinct glyph from Albums and Camera).
+        item.type == XMBItemType.PHOTO_APPS -> {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
+                Icon(Icons.Filled.Collections, contentDescription = null, tint = InactiveText, modifier = Modifier.size(48.dp))
+            }
+        }
         // The Camera row (only present when a camera app exists).
         item.type == XMBItemType.CAMERA -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
@@ -842,7 +853,8 @@ private fun XmbItemLeadingIcon(
                 )
             }
         }
-        // Every Settings item shares the wrench badge (sysicon_settings) so Settings reads like the
+        // Every Settings item — including "Android Settings" — shares the wrench badge
+        // (sysicon_settings) so Settings reads like the
         // rest of the XMB — an icon + label per row — instead of a blank-led list. Sized and slotted
         // exactly like the memory-card console icons.
         item.id.startsWith("settings_") -> {

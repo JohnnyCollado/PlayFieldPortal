@@ -10,6 +10,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,12 +23,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
@@ -34,7 +35,10 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -50,6 +54,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -61,16 +67,22 @@ import androidx.core.graphics.drawable.toBitmap
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.ui.components.XmbHeaderPill
+import com.playfieldportal.core.ui.theme.LocalPFPColors
+import com.playfieldportal.core.ui.theme.menuCursorEdge
+import com.playfieldportal.core.ui.theme.menuCursorFill
+import com.playfieldportal.feature.xmb.ui.DetailContextMenu
+import com.playfieldportal.feature.xmb.ui.DetailMenuRow
 import com.playfieldportal.feature.xmb.ui.collection.CollectionPickerPanel
 import com.playfieldportal.feature.xmb.ui.detail.ArtworkType
 import com.playfieldportal.feature.xmb.ui.detail.displayLabel
 
+// Neutral dark surfaces stay fixed; accent/focus colors come from the active theme via
+// menuCursorFill()/menuCursorEdge() so this screen follows the chosen color scheme.
 private val TextPrimary = Color(0xFFEEEEEE)
 private val TextMuted   = Color(0xAAEEEEEE)
-private val AccentBlue  = Color(0xFF4A9EFF)
 private val ActionFill    = Color(0xFF1B1B26)
-private val ActionFocused = Color(0xFF574DDB)
-private val ActionBorder  = Color(0xFF8F7CFF)
+private val LaunchGreen = Color(0xFF45C46A)
 private val PageBg = Color(0xFF06060C)
 private val HeroBannerHeight: Dp = 220.dp
 
@@ -78,8 +90,13 @@ private val HeroBannerHeight: Dp = 220.dp
 fun AppDetailScreen(
     gameId: Long,
     onBack: () -> Unit,
+    collectionCategoryId: String = "games",
     pendingGamepadAction: GamepadAction? = null,
     onGamepadActionConsumed: () -> Unit = {},
+    // Touch header pill shown only when the last input was touch (AUTO), like the XMB App Drawer
+    // button; any touch on the screen reports back via [onTouchInput].
+    showTouchControls: Boolean = true,
+    onTouchInput: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: AppDetailViewModel = hiltViewModel(),
 ) {
@@ -92,8 +109,9 @@ fun AppDetailScreen(
         pendingArtworkType = null
     }
 
-    LaunchedEffect(gameId) {
+    LaunchedEffect(gameId, collectionCategoryId) {
         viewModel.prepareForOpen()
+        viewModel.setCollectionCategory(collectionCategoryId)
         viewModel.loadApp(gameId)
     }
     LaunchedEffect(state.closed) {
@@ -115,34 +133,31 @@ fun AppDetailScreen(
         viewModel.consumeLocalFilePick()
     }
 
-    val scrollState = rememberScrollState()
-
-    // Each action button is ~62dp tall (13dp×2 padding + text + 8dp gap between items).
-    // Scroll so the focused button stays in view when navigating with the controller.
-    val actionRowScrollStep = with(androidx.compose.ui.platform.LocalDensity.current) { 70.dp.roundToPx() }
-    LaunchedEffect(state.mainFocus) {
-        if (!state.showArtworkPicker) {
-            scrollState.animateScrollTo(state.mainFocus * actionRowScrollStep)
-        }
-    }
-
     if (state.isLoading) {
         Box(modifier.fillMaxSize().background(PageBg)) {
-            CircularProgressIndicator(Modifier.align(Alignment.Center), color = AccentBlue)
+            CircularProgressIndicator(Modifier.align(Alignment.Center), color = menuCursorEdge())
         }
         return
     }
 
     val game = state.game ?: return
+    val pfpColors = LocalPFPColors.current
 
-    Box(modifier = modifier.fillMaxSize().background(PageBg)) {
-        // Accent gradient
-        Box(
-            Modifier.fillMaxSize().background(
-                Brush.verticalGradient(listOf(AccentBlue.copy(alpha = 0.12f), PageBg))
-            )
-        )
-
+    // Same translucent theme-gradient backdrop as the Music browser, so the XMB wave stays visible
+    // behind and all full-screen menus read consistently.
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            // Any touch marks the input source as touch (revealing the header pill) without
+            // consuming the event.
+            .pointerInput(Unit) { awaitEachGesture { awaitFirstDown(requireUnconsumed = false); onTouchInput() } }
+            .background(
+                Brush.verticalGradient(
+                    0f to pfpColors.backgroundTop.copy(alpha = 0.72f),
+                    1f to pfpColors.backgroundBottom.copy(alpha = 0.90f),
+                )
+            ),
+    ) {
         // ── Fixed structure: hero + header stay put, only buttons scroll ──────
         Column(
             modifier = Modifier
@@ -155,7 +170,7 @@ fun AppDetailScreen(
                 Modifier
                     .fillMaxWidth()
                     .height(HeroBannerHeight)
-                    .background(AccentBlue.copy(alpha = 0.18f)),
+                    .background(pfpColors.accentColor.copy(alpha = 0.18f)),
                 contentAlignment = Alignment.Center,
             ) {
                 if (game.heroUri != null) {
@@ -200,80 +215,62 @@ fun AppDetailScreen(
                 }
             }
 
-            // Action buttons — scrollable, fills remaining space
+            // A single prominent Launch button (mirrors the Game Detail page's Play button); every
+            // other action lives in the Options context menu (Options pill / Y).
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .verticalScroll(scrollState)
-                    .padding(start = 28.dp, end = 28.dp, bottom = 22.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                    .padding(start = 28.dp, end = 28.dp, top = 8.dp, bottom = 22.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                AppActionButton(
-                    icon    = ">",
-                    label   = "Launch App",
-                    focused = state.mainFocus == 0,
-                    onClick = viewModel::launchApp,
-                )
-                AppActionButton(
-                    icon     = "C",
-                    label    = "Add to Collection",
-                    sublabel = "Add this app to a collection",
-                    focused  = state.mainFocus == 1,
-                    onClick  = viewModel::onCollectionsClicked,
-                )
-                AppActionButton(
-                    icon     = "T",
-                    label    = "Change Display Name",
-                    sublabel = game.userTitleOverride?.let { "\"$it\"" } ?: "Using default name",
-                    focused  = state.mainFocus == 2,
-                    onClick  = viewModel::startEditingName,
-                )
-                AppActionButton(
-                    icon     = "I",
-                    label    = "Change Game Icon",
-                    sublabel = if (game.iconUri != null) "Custom icon set" else "Using native icon",
-                    focused  = state.mainFocus == 3,
-                    onClick  = { viewModel.openArtworkPickerFor(ArtworkType.ICON) },
-                )
-                AppActionButton(
-                    icon     = "H",
-                    label    = "Change Hero Banner",
-                    sublabel = if (game.heroUri != null) "Custom banner set" else "None",
-                    focused  = state.mainFocus == 4,
-                    onClick  = { viewModel.openArtworkPickerFor(ArtworkType.HERO) },
-                )
-                AppActionButton(
-                    icon     = "B",
-                    label    = "Change Background",
-                    sublabel = if (game.artworkUri != null) "Custom background set" else "None",
-                    focused  = state.mainFocus == 5,
-                    onClick  = { viewModel.openArtworkPickerFor(ArtworkType.BACKGROUND) },
-                )
-                AppActionButton(
-                    icon        = "X",
-                    label       = "Reset All Artwork",
-                    focused     = state.mainFocus == 6,
-                    destructive = true,
-                    onClick     = viewModel::clearAllArtwork,
-                )
-
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(LaunchGreen)
+                        .then(if (state.mainFocus == 0) Modifier.border(2.dp, Color.White, RoundedCornerShape(8.dp)) else Modifier)
+                        .clickable(onClick = viewModel::launchApp)
+                        .padding(vertical = 15.dp, horizontal = 18.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(Icons.Filled.PlayArrow, contentDescription = null, tint = Color(0xFF06140A), modifier = Modifier.size(22.dp))
+                    Spacer(Modifier.width(12.dp))
+                    Text("Launch", color = Color(0xFF06140A), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                }
                 state.artworkMessage?.let {
-                    Text(it, color = AccentBlue, fontSize = 12.sp)
+                    Text(it, color = menuCursorEdge(), fontSize = 12.sp)
                 }
             }
         }
 
-        // Back label — always visible over hero
-        Text(
-            "< Back",
-            color = TextMuted,
-            fontSize = 13.sp,
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(16.dp)
-                .clickable { viewModel.close() },
-        )
+        // Options context menu — all the app's actions, matching every other context menu.
+        if (state.showOptions) {
+            DetailContextMenu(
+                title = "Options",
+                rows = AppDetailOption.entries.map { DetailMenuRow(it.label, it.isDestructive) },
+                selectedIndex = state.optionsIndex,
+                onRowClick = { viewModel.activateOption(AppDetailOption.entries[it]) },
+                onDismiss = viewModel::closeOptions,
+            )
+        }
+
+        // Header pills over the hero (touch only, per the last-input source): Back top-left,
+        // Options top-right. Options keeps controller reachability (mainFocus == 1) via Y.
+        if (showTouchControls) {
+            XmbHeaderPill(
+                label = "Back",
+                leadingGlyph = "◀",
+                onClick = viewModel::close,
+                modifier = Modifier.align(Alignment.TopStart).padding(16.dp),
+            )
+            XmbHeaderPill(
+                label = "Options",
+                onClick = viewModel::openOptions,
+                focused = state.mainFocus == 1,
+                modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
+            )
+        }
 
         // Name editor overlay
         AnimatedVisibility(
@@ -377,44 +374,6 @@ private fun NativeAppIcon(packageName: String, modifier: Modifier = Modifier) {
     }
 }
 
-// ── Action button ─────────────────────────────────────────────────────────────
-
-@Composable
-private fun AppActionButton(
-    icon: String,
-    label: String,
-    focused: Boolean,
-    onClick: () -> Unit,
-    sublabel: String? = null,
-    destructive: Boolean = false,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(if (focused) ActionFocused.copy(alpha = 0.5f) else ActionFill)
-            .then(if (focused) Modifier.border(1.5.dp, ActionBorder, RoundedCornerShape(8.dp)) else Modifier)
-            .clickable(onClick = onClick)
-            .padding(vertical = 13.dp, horizontal = 14.dp),
-    ) {
-        Text(icon, fontSize = 16.sp, color = if (destructive) Color(0xFFFF8A8A) else TextPrimary)
-        Column {
-            Text(
-                label,
-                color    = if (destructive) Color(0xFFFF8A8A) else TextPrimary,
-                fontSize = 15.sp,
-                maxLines = 1,
-            )
-            if (!sublabel.isNullOrBlank()) {
-                Text(sublabel, color = TextMuted, fontSize = 12.sp, maxLines = 1)
-            }
-        }
-    }
-}
-
 // ── Artwork picker overlay ────────────────────────────────────────────────────
 
 @Composable
@@ -467,7 +426,7 @@ private fun AppArtworkPicker(
                     ) {
                         CircularProgressIndicator(
                             modifier    = Modifier.size(16.dp),
-                            color       = AccentBlue,
+                            color       = menuCursorEdge(),
                             strokeWidth = 2.dp,
                         )
                         Text("Saving…", color = TextMuted, fontSize = 12.sp)
@@ -475,7 +434,7 @@ private fun AppArtworkPicker(
                 }
                 state.artworkPickerLoading -> {
                     Box(Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(Modifier.size(24.dp), color = AccentBlue, strokeWidth = 2.dp)
+                        CircularProgressIndicator(Modifier.size(24.dp), color = menuCursorEdge(), strokeWidth = 2.dp)
                     }
                 }
                 state.artworkPickerError != null -> {
@@ -505,7 +464,7 @@ private fun AppArtworkPicker(
                                     .clip(RoundedCornerShape(4.dp))
                                     .border(
                                         width  = if (isFocused) 2.dp else 1.dp,
-                                        color  = if (isFocused) ActionBorder else Color(0x33FFFFFF),
+                                        color  = if (isFocused) menuCursorEdge() else Color(0x33FFFFFF),
                                         shape  = RoundedCornerShape(4.dp),
                                     )
                                     .clickable { onSelectArt(art.url) },
@@ -574,11 +533,11 @@ private fun AppNameEditor(
             label          = { Text("Display Name", color = TextMuted) },
             modifier       = Modifier.fillMaxWidth(),
             colors         = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor   = AccentBlue,
+                focusedBorderColor   = menuCursorEdge(),
                 unfocusedBorderColor = Color(0x44FFFFFF),
                 focusedTextColor     = TextPrimary,
                 unfocusedTextColor   = TextPrimary,
-                cursorColor          = AccentBlue,
+                cursorColor          = menuCursorEdge(),
             ),
             keyboardOptions = KeyboardOptions(
                 capitalization = KeyboardCapitalization.Words,
@@ -598,7 +557,7 @@ private fun AppNameEditor(
             Row {
                 TextButton(onClick = onCancel) { Text("Cancel", color = TextMuted) }
                 TextButton(onClick = onSave) {
-                    Text("Save", color = AccentBlue, fontWeight = FontWeight.SemiBold)
+                    Text("Save", color = menuCursorEdge(), fontWeight = FontWeight.SemiBold)
                 }
             }
         }

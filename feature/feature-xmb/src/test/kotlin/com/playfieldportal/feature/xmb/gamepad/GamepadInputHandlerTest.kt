@@ -170,6 +170,9 @@ class GamepadInputHandlerTest {
 
     private fun motionEvent(axisX: Float, axisY: Float): MotionEvent {
         val event = mockk<MotionEvent>(relaxed = true)
+        // onMotionEvent only processes ACTION_MOVE joystick events; a relaxed mock defaults action
+        // to 0 (ACTION_DOWN), which the handler ignores — stub it so the stick logic actually runs.
+        every { event.action } returns MotionEvent.ACTION_MOVE
         every { event.getAxisValue(MotionEvent.AXIS_X) } returns axisX
         every { event.getAxisValue(MotionEvent.AXIS_Y) } returns axisY
         every { event.source } returns android.view.InputDevice.SOURCE_JOYSTICK

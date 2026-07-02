@@ -26,17 +26,29 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.io.File
 import java.io.InputStream
 import javax.inject.Inject
 
-// Number of focusable actions on the main screen
-// (Launch, Collections, Rename, Icon, Hero, Background, Reset All)
-const val APP_ACTION_COUNT = 7
+// Mirrors the Game Detail page: the main screen has a single Launch button (mainFocus 0) with the
+// Options context menu (mainFocus 1 / Y); everything else lives in that menu.
+enum class AppDetailOption(val label: String, val isDestructive: Boolean = false) {
+    ADD_TO_COLLECTION("Add to Collection"),
+    CHANGE_NAME("Change Display Name"),
+    CHANGE_ICON("Change Game Icon"),
+    CHANGE_HERO("Change Hero Banner"),
+    CHANGE_BACKGROUND("Change Background"),
+    RESET_ARTWORK("Reset All Artwork", isDestructive = true),
+}
 
 data class AppDetailUiState(
     val game: Game? = null,
     val isLoading: Boolean = true,
+    // 0 = Launch, 1 = Options (matches the Game Detail page's Play / Options focus model).
     val mainFocus: Int = 0,
+    // Options context menu.
+    val showOptions: Boolean = false,
+    val optionsIndex: Int = 0,
     // Add-to-collection picker
     val collectionPicker: CollectionPickerUi = CollectionPickerUi(),
     // Artwork picker overlay
@@ -67,8 +79,16 @@ class AppDetailViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(AppDetailUiState())
     val uiState: StateFlow<AppDetailUiState> = _uiState.asStateFlow()
 
+    // Home category for collections created from this screen — set by the caller so a collection
+    // made from a Network/App Store/custom app lands in that category, not the Main Game default.
+    private var collectionCategoryId: String = "games"
+
     fun prepareForOpen() {
         _uiState.value = AppDetailUiState()
+    }
+
+    fun setCollectionCategory(categoryId: String) {
+        collectionCategoryId = categoryId
     }
 
     fun loadApp(gameId: Long) {
@@ -176,7 +196,7 @@ class AppDetailViewModel @Inject constructor(
         val type = _uiState.value.artworkPickerType
         viewModelScope.launch {
             _uiState.update { it.copy(artworkIsProcessing = true, artworkPickerItems = emptyList()) }
-            val localPath = cardProcessor.downloadRaw(game.id, url, artworkFileName(type))
+            val localPath = cardProcessor.downloadRaw(game.id, url, versionedArtworkFileName(type))
             if (localPath == null) {
                 _uiState.update {
                     it.copy(artworkIsProcessing = false, artworkMessage = "Could not download ${type.displayLabel}")
@@ -184,6 +204,7 @@ class AppDetailViewModel @Inject constructor(
                 return@launch
             }
             saveArtwork(game.id, type, localPath)
+            pruneOldArtworkFiles(game.id, type, localPath)
             val updated = gameRepository.getById(game.id)
             _uiState.update {
                 it.copy(
@@ -216,6 +237,7 @@ class AppDetailViewModel @Inject constructor(
                 return@launch
             }
             saveArtwork(game.id, type, localPath)
+            pruneOldArtworkFiles(game.id, type, localPath)
             val updated = gameRepository.getById(game.id)
             _uiState.update {
                 it.copy(
@@ -303,22 +325,53 @@ class AppDetailViewModel @Inject constructor(
         }
         if (_uiState.value.showArtworkPicker) {
             handlePickerGamepad(action)
-        } else {
-            handleMainGamepad(action)
+            return
         }
+        if (_uiState.value.showOptions) {
+            handleOptionsGamepad(action)
+            return
+        }
+        handleMainGamepad(action)
     }
 
     private fun handleMainGamepad(action: GamepadAction) {
         when (action) {
-            GamepadAction.NAVIGATE_DOWN -> _uiState.update {
-                it.copy(mainFocus = (it.mainFocus + 1).coerceAtMost(APP_ACTION_COUNT - 1))
-            }
-            GamepadAction.NAVIGATE_UP -> _uiState.update {
-                it.copy(mainFocus = (it.mainFocus - 1).coerceAtLeast(0))
-            }
-            GamepadAction.SELECT -> activateMainFocus()
+            // Two focus targets, like the Game Detail page: Launch (0) and Options (1).
+            GamepadAction.NAVIGATE_UP   -> _uiState.update { it.copy(mainFocus = 0, artworkMessage = null) }
+            GamepadAction.NAVIGATE_DOWN -> _uiState.update { it.copy(mainFocus = 1, artworkMessage = null) }
+            GamepadAction.SELECT -> if (_uiState.value.mainFocus == 0) launchApp() else openOptions()
+            // Y / Triangle opens the Options context menu directly.
+            GamepadAction.BUTTON_Y, GamepadAction.LONG_PRESS -> openOptions()
             GamepadAction.BACK   -> close()
             else -> Unit
+        }
+    }
+
+    private fun handleOptionsGamepad(action: GamepadAction) {
+        val count = AppDetailOption.entries.size
+        when (action) {
+            GamepadAction.NAVIGATE_UP   -> _uiState.update { it.copy(optionsIndex = (it.optionsIndex - 1).coerceIn(0, count - 1)) }
+            GamepadAction.NAVIGATE_DOWN -> _uiState.update { it.copy(optionsIndex = (it.optionsIndex + 1).coerceIn(0, count - 1)) }
+            GamepadAction.SELECT        -> activateOption(AppDetailOption.entries[_uiState.value.optionsIndex.coerceIn(0, count - 1)])
+            GamepadAction.BACK, GamepadAction.BUTTON_Y, GamepadAction.LONG_PRESS -> closeOptions()
+            else -> Unit
+        }
+    }
+
+    fun openOptions()  = _uiState.update { it.copy(showOptions = true, optionsIndex = 0, artworkMessage = null) }
+    fun closeOptions() = _uiState.update { it.copy(showOptions = false) }
+
+    /** Activates an Options-menu row: closes the menu, then runs the corresponding action (which may
+     *  open its own overlay — the collection picker, name editor, or artwork picker). */
+    fun activateOption(option: AppDetailOption) {
+        _uiState.update { it.copy(showOptions = false) }
+        when (option) {
+            AppDetailOption.ADD_TO_COLLECTION -> openCollectionPicker()
+            AppDetailOption.CHANGE_NAME       -> startEditingName()
+            AppDetailOption.CHANGE_ICON       -> openArtworkPickerFor(ArtworkType.ICON)
+            AppDetailOption.CHANGE_HERO       -> openArtworkPickerFor(ArtworkType.HERO)
+            AppDetailOption.CHANGE_BACKGROUND -> openArtworkPickerFor(ArtworkType.BACKGROUND)
+            AppDetailOption.RESET_ARTWORK     -> clearAllArtwork()
         }
     }
 
@@ -337,18 +390,6 @@ class AppDetailViewModel @Inject constructor(
             }
             GamepadAction.BACK -> closeArtworkPicker()
             else -> Unit
-        }
-    }
-
-    private fun activateMainFocus() {
-        when (_uiState.value.mainFocus) {
-            0 -> launchApp()
-            1 -> openCollectionPicker()
-            2 -> startEditingName()
-            3 -> openArtworkPickerFor(ArtworkType.ICON)
-            4 -> openArtworkPickerFor(ArtworkType.HERO)
-            5 -> openArtworkPickerFor(ArtworkType.BACKGROUND)
-            6 -> clearAllArtwork()
         }
     }
 
@@ -411,7 +452,7 @@ class AppDetailViewModel @Inject constructor(
         val name = _uiState.value.collectionPicker.createText
         if (name.isBlank()) { cancelCreateCollection(); return }
         viewModelScope.launch {
-            val id = collectionRepository.create(name)
+            val id = collectionRepository.create(name, collectionCategoryId)
             collectionRepository.addGame(id, gameId)
             _uiState.update {
                 it.copy(collectionPicker = it.collectionPicker.copy(
@@ -457,10 +498,31 @@ class AppDetailViewModel @Inject constructor(
         }
     }
 
-    private fun artworkFileName(type: ArtworkType): String = when (type) {
+    // Versioned filename (matches GameDetailViewModel): a fresh path on every save is what makes
+    // the change visible immediately — the DB row, Compose keys, and Coil's cache key all follow
+    // the path string, so a stable name like "background.jpg" would never look different.
+    private fun versionedArtworkFileName(type: ArtworkType, ext: String = "jpg"): String =
+        "${type.name.lowercase()}_${System.currentTimeMillis()}.$ext"
+
+    // Legacy fixed names written by older builds — pruned alongside stale versioned files.
+    private fun legacyArtworkFileName(type: ArtworkType): String = when (type) {
         ArtworkType.ICON       -> "icon.jpg"
         ArtworkType.HERO       -> "hero.jpg"
         ArtworkType.BACKGROUND -> "background.jpg"
+    }
+
+    /** Deletes older artwork files of [type] for this app, keeping only [keepPath]. Runs after a
+     *  successful save so versioned files never accumulate in filesDir/artwork/<gameId>/. */
+    private fun pruneOldArtworkFiles(gameId: Long, type: ArtworkType, keepPath: String) {
+        runCatching {
+            val dir = File(context.filesDir, "artwork/$gameId")
+            val prefix = "${type.name.lowercase()}_"
+            val legacy = legacyArtworkFileName(type)
+            dir.listFiles()?.forEach { f ->
+                val stale = (f.name.startsWith(prefix) || f.name == legacy) && f.absolutePath != keepPath
+                if (stale) f.delete()
+            }
+        }.onFailure { Timber.w(it, "Failed to prune old artwork for gameId=$gameId type=$type") }
     }
 
     private fun ArtworkType.toSgdbArtType() = when (this) {
@@ -470,7 +532,7 @@ class AppDetailViewModel @Inject constructor(
     }
 
     private fun copyToAppStorage(uri: Uri, gameId: Long, type: ArtworkType): String? = try {
-        val dest = cardProcessor.rawFile(gameId, artworkFileName(type))
+        val dest = cardProcessor.rawFile(gameId, versionedArtworkFileName(type))
         dest.parentFile?.mkdirs()
         context.contentResolver.openInputStream(uri)?.use { input: InputStream ->
             dest.outputStream().use { output -> input.copyTo(output) }

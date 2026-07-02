@@ -2,9 +2,14 @@ package com.playfieldportal.feature.xmb.ui.detail
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -14,14 +19,20 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Replay
+import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -30,6 +41,8 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -38,6 +51,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -47,11 +61,17 @@ import androidx.media3.common.util.UnstableApi
 import coil.compose.AsyncImage
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.Video
+import com.playfieldportal.core.ui.components.XmbHeaderPill
+import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.menuCursor
+import com.playfieldportal.core.ui.theme.menuCursorEdge
+import com.playfieldportal.feature.xmb.ui.DetailContextMenu
+import com.playfieldportal.feature.xmb.ui.DetailMenuRow
 import com.playfieldportal.feature.xmb.video.VideoPlayerScreen
 
+// Neutral dark surfaces stay fixed; accent colors come from the active theme so this screen
+// follows the chosen color scheme.
 private val PageBg = Color(0xFF06060C)
-private val Accent = Color(0xFF4A90D9)
 private val PlayGreen = Color(0xFF45C46A)
 private val ActionFill = Color(0xFF1B1B26)
 private val TextPrimary = Color(0xFFEEEEEE)
@@ -64,6 +84,10 @@ fun VideoDetailScreen(
     onBack: () -> Unit,
     pendingGamepadAction: GamepadAction? = null,
     onGamepadActionConsumed: () -> Unit = {},
+    // Touch Back pill shown only when the last input was touch (AUTO), like the XMB App Drawer
+    // button; any touch on the screen reports back via [onTouchInput].
+    showTouchControls: Boolean = true,
+    onTouchInput: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: VideoDetailViewModel = hiltViewModel(),
 ) {
@@ -113,29 +137,27 @@ fun VideoDetailScreen(
 
     if (state.isLoading) {
         Box(modifier.fillMaxSize().background(PageBg)) {
-            CircularProgressIndicator(Modifier.align(Alignment.Center), color = Accent)
+            CircularProgressIndicator(Modifier.align(Alignment.Center), color = menuCursorEdge())
         }
         return
     }
     val video = state.video ?: run { onBack(); return }
+    val pfpColors = LocalPFPColors.current
 
-    Box(modifier = modifier.fillMaxSize().background(PageBg)) {
-        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Accent.copy(alpha = 0.14f), PageBg))))
-
-        // Thumbnail banner
-        video.effectiveThumbnailUri?.let { thumb ->
-            AsyncImage(
-                model = thumb,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxWidth().height(260.dp).align(Alignment.TopCenter),
-            )
-            Box(
-                Modifier.fillMaxWidth().height(260.dp).align(Alignment.TopCenter)
-                    .background(Brush.verticalGradient(listOf(Color.Transparent, PageBg))),
-            )
-        }
-
+    // Same translucent theme-gradient backdrop as the Music browser, so the XMB wave stays visible
+    // behind and all full-screen menus read consistently.
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            // Any touch marks the input source as touch (revealing the Back pill) without consuming.
+            .pointerInput(Unit) { awaitEachGesture { awaitFirstDown(requireUnconsumed = false); onTouchInput() } }
+            .background(
+                Brush.verticalGradient(
+                    0f to pfpColors.backgroundTop.copy(alpha = 0.72f),
+                    1f to pfpColors.backgroundBottom.copy(alpha = 0.90f),
+                )
+            ),
+    ) {
         Column(
             modifier = Modifier.fillMaxSize().widthIn(max = 920.dp).align(Alignment.Center)
                 .verticalScroll(rememberScrollState())
@@ -143,12 +165,28 @@ fun VideoDetailScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Spacer(Modifier.height(150.dp))
+            // Clear the header pill row above.
+            Spacer(Modifier.height(56.dp))
+
+            // Prominent thumbnail card — sits below the pills, crisp (no fade), as the focal point.
+            video.effectiveThumbnailUri?.let { thumb ->
+                AsyncImage(
+                    model = thumb,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .widthIn(max = 460.dp)
+                        .fillMaxWidth()
+                        .aspectRatio(16f / 9f)
+                        .clip(RoundedCornerShape(14.dp))
+                        .border(1.dp, Color.White.copy(alpha = 0.18f), RoundedCornerShape(14.dp)),
+                )
+            }
 
             Text(video.displayTitle, color = TextPrimary, fontSize = 26.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
             Text(metadataLine(video), color = TextMuted, fontSize = 13.sp)
             if (video.resumePositionMs > 0) {
-                Text("Resume at ${fmtTime(video.resumePositionMs)}", color = Accent, fontSize = 12.sp)
+                Text("Resume at ${fmtTime(video.resumePositionMs)}", color = menuCursorEdge(), fontSize = 12.sp)
             }
 
             Spacer(Modifier.height(6.dp))
@@ -160,37 +198,52 @@ fun VideoDetailScreen(
                 val isLead = action == VideoDetailAction.PLAY || action == VideoDetailAction.RESUME
                 DetailButton(
                     label = action.label,
-                    symbol = if (action == VideoDetailAction.RESUME) "↺" else "▶",
+                    icon = when (action) {
+                        VideoDetailAction.RESUME  -> Icons.Filled.Replay
+                        VideoDetailAction.RESTART -> Icons.Filled.SkipPrevious
+                        else                      -> Icons.Filled.PlayArrow
+                    },
                     focused = state.mainFocus == i,
                     fill = if (isLead) PlayGreen else ActionFill,
                     textColor = if (isLead) Color(0xFF06140A) else TextPrimary,
                     onClick = { viewModel.activate(action) },
                 )
             }
-            DetailButton(
-                label = "Options",
-                symbol = "⚙",
-                focused = state.mainFocus == primaries.size,
-                fill = ActionFill,
-                textColor = TextPrimary,
-                onClick = viewModel::openOptions,
-            )
             state.actionMessage?.let {
-                Text(it, color = Accent, fontSize = 12.sp)
+                Text(it, color = menuCursorEdge(), fontSize = 12.sp)
                 LaunchedEffect(it) { kotlinx.coroutines.delay(2500); viewModel.dismissMessage() }
             }
         }
 
+        // Header pills over the banner (touch only, per the last-input source) — hidden while the
+        // fullscreen player is up (it draws over everything). Back closes the Options menu when it's
+        // open, otherwise backs out; the Options pill opens the Options context menu (controller: Y).
+        if (!state.playing && showTouchControls) {
+            XmbHeaderPill(
+                label = "Back",
+                leadingGlyph = "◀",
+                onClick = { if (state.showOptions) viewModel.closeOptions() else onBack() },
+                modifier = Modifier.align(Alignment.TopStart).padding(16.dp),
+            )
+            XmbHeaderPill(
+                label = "Options",
+                onClick = viewModel::openOptions,
+                modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
+            )
+        }
+
         if (state.showOptions) {
-            OptionsList(
-                actions = state.optionsActions,
-                selectedIndex = state.optionsIndex,
-                labelFor = { action ->
-                    if (action == VideoDetailAction.FAVORITE) {
+            DetailContextMenu(
+                title = "Options",
+                rows = state.optionsActions.map { action ->
+                    val label = if (action == VideoDetailAction.FAVORITE) {
                         if (video.isFavorite) "Remove from Favorites" else "Add to Favorites"
                     } else action.label
+                    DetailMenuRow(label)
                 },
-                onClick = viewModel::activate,
+                selectedIndex = state.optionsIndex,
+                onRowClick = { viewModel.activate(state.optionsActions[it]) },
+                onDismiss = viewModel::closeOptions,
             )
         }
 
@@ -300,55 +353,35 @@ private fun ExternalLaunchOverlay(launch: com.playfieldportal.feature.xmb.ui.det
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun DetailButton(
     label: String,
-    symbol: String,
+    icon: ImageVector,
     focused: Boolean,
     fill: Color,
     textColor: Color,
     onClick: () -> Unit,
 ) {
+    // Auto-scroll into view when a controller focuses this button, so the whole action list is
+    // reachable inside the scrolling content even when the thumbnail pushes it below the fold.
+    val bringIntoView = remember { BringIntoViewRequester() }
+    LaunchedEffect(focused) { if (focused) bringIntoView.bringIntoView() }
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .bringIntoViewRequester(bringIntoView)
             .clip(RoundedCornerShape(12.dp))
             .background(if (focused) fill else fill.copy(alpha = 0.55f))
             .then(if (focused) Modifier.border(2.dp, com.playfieldportal.core.ui.theme.menuCursorEdge(), RoundedCornerShape(12.dp)) else Modifier)
+            .clickable(onClick = onClick)
             .padding(vertical = 14.dp, horizontal = 18.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
     ) {
-        Text("$symbol  $label", color = textColor, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-    }
-}
-
-@Composable
-private fun OptionsList(
-    actions: List<VideoDetailAction>,
-    selectedIndex: Int,
-    labelFor: (VideoDetailAction) -> String,
-    onClick: (VideoDetailAction) -> Unit,
-) {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
-        Column(
-            modifier = Modifier.padding(36.dp).width(320.dp)
-                .background(Color(0xF0101018), RoundedCornerShape(14.dp)).padding(vertical = 12.dp),
-        ) {
-            Text("Options", color = Accent, fontSize = 12.sp, fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
-            actions.forEachIndexed { i, action ->
-                Text(
-                    labelFor(action),
-                    color = if (i == selectedIndex) Color.White else TextMuted,
-                    fontSize = 15.sp,
-                    modifier = Modifier.fillMaxWidth()
-                        .clickable { onClick(action) }
-                        .menuCursor(i == selectedIndex)
-                        .padding(horizontal = 20.dp, vertical = 11.dp),
-                )
-            }
-        }
+        Icon(icon, contentDescription = null, tint = textColor, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.width(10.dp))
+        Text(label, color = textColor, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -363,7 +396,7 @@ private fun PlaylistPicker(
             modifier = Modifier.padding(36.dp).width(320.dp)
                 .background(Color(0xF0101018), RoundedCornerShape(14.dp)).padding(vertical = 12.dp),
         ) {
-            Text("Add to Playlist", color = Accent, fontSize = 12.sp, fontWeight = FontWeight.Bold,
+            Text("Add to Playlist", color = menuCursorEdge(), fontSize = 12.sp, fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
             options.forEachIndexed { i, opt ->
                 Text(
@@ -379,7 +412,7 @@ private fun PlaylistPicker(
             val createIndex = options.size
             Text(
                 "+ Create New Playlist",
-                color = if (createIndex == selectedIndex) Color.White else Accent,
+                color = if (createIndex == selectedIndex) Color.White else menuCursorEdge(),
                 fontSize = 15.sp,
                 modifier = Modifier.fillMaxWidth()
                     .clickable { onRowClick(createIndex) }

@@ -44,11 +44,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.playfieldportal.core.ui.theme.LocalPFPColors
+import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.feature.xmb.viewmodel.MusicBrowserState
 import com.playfieldportal.feature.xmb.viewmodel.XMBItem
 import com.playfieldportal.feature.xmb.viewmodel.XMBItemType
 
-private val Border = Color(0xFF8F7CFF)
 private val PrimaryText = Color.White
 private val SecondaryText = Color(0xFFC9C7E8)
 private val CoverPlaceholder = Color(0xFF1B1B27)
@@ -65,6 +65,11 @@ fun MusicBrowserScreen(
     onActivateAt: (Int) -> Unit,
     onLongPressAt: (Int) -> Unit,
     onBack: () -> Unit,
+    onSortTapped: () -> Unit = {},
+    onOptionsTapped: () -> Unit = {},
+    // Show the touch header pills only when the last input was touch (AUTO), matching the XMB's
+    // contextual App Drawer button. Controller users rely on the on-screen A/X/Y/B hints below.
+    showTouchControls: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
@@ -89,25 +94,31 @@ fun MusicBrowserScreen(
             ),
     ) {
         Column(modifier = Modifier.fillMaxSize().padding(horizontal = 40.dp, vertical = 24.dp)) {
-            // Header: a clear back button (like the app drawer) + title + sort hint.
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0x1FFFFFFF))
-                        .clickable(onClick = onBack)
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                ) {
-                    Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = PrimaryText, modifier = Modifier.size(20.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("Back", color = PrimaryText, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            // Header: a clear back button (like the app drawer) + title, with touch pills for the
+            // X (sort) and Y (options) actions on the right.
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                if (showTouchControls) {
+                    HeaderPill(onClick = onBack) {
+                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = PrimaryText, modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Back", color = PrimaryText, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                    }
+                    Spacer(Modifier.width(16.dp))
                 }
-                Spacer(Modifier.width(16.dp))
                 Text(state.title, color = PrimaryText, fontSize = 24.sp, fontWeight = FontWeight.Light)
-                Spacer(Modifier.width(16.dp))
-                state.sortLabel?.let {
-                    Text(it, color = SecondaryText, fontSize = 12.sp)
+                Spacer(Modifier.weight(1f))
+                if (showTouchControls) {
+                    // Sort applies to track views only (the ViewModel ignores it for playlists, so the
+                    // pill is hidden there); the label shows the active sort.
+                    state.sortLabel?.let { label ->
+                        HeaderPill(onClick = onSortTapped) {
+                            Text("Sort: $label", color = PrimaryText, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                        }
+                        Spacer(Modifier.width(10.dp))
+                    }
+                    HeaderPill(onClick = onOptionsTapped) {
+                        Text("Options", color = PrimaryText, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                    }
                 }
             }
 
@@ -123,9 +134,9 @@ fun MusicBrowserScreen(
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedTextColor = PrimaryText,
                     unfocusedTextColor = PrimaryText,
-                    focusedBorderColor = Border,
+                    focusedBorderColor = menuCursorEdge(),
                     unfocusedBorderColor = Color(0x33FFFFFF),
-                    cursorColor = Border,
+                    cursorColor = menuCursorEdge(),
                     focusedContainerColor = Color(0x22FFFFFF),
                     unfocusedContainerColor = Color(0x14FFFFFF),
                 ),
@@ -154,6 +165,23 @@ fun MusicBrowserScreen(
             )
         }
     }
+}
+
+// The header's shared pill treatment (Back / Sort / Options): translucent chip, touch-first.
+@Composable
+private fun HeaderPill(
+    onClick: () -> Unit,
+    content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color(0x1FFFFFFF))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        content = content,
+    )
 }
 
 @OptIn(ExperimentalFoundationApi::class)

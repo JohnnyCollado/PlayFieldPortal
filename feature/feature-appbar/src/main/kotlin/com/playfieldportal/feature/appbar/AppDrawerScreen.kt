@@ -64,10 +64,14 @@ import androidx.lifecycle.LifecycleEventObserver
 // with "LocalLifecycleOwner not present". Use the platform one until the BOM is upgraded.
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.foundation.Image
+import androidx.compose.runtime.snapshotFlow
 import com.google.accompanist.drawablepainter.DrawablePainter
+import com.playfieldportal.core.ui.theme.menuCursorEdge
+import com.playfieldportal.core.ui.theme.menuCursorFill
+import kotlinx.coroutines.flow.distinctUntilChanged
 
-private val DrawerBg      = Color(0xF0080808)   // near-black, wave visible beneath
-private val DrawerAccent  = Color(0xFF4A90D9)
+// Neutral surfaces stay fixed; accent/highlight colors come from the active theme via
+// menuCursorFill()/menuCursorEdge() so the drawer follows the chosen color scheme.
 private val DrawerText    = Color.White
 private val DrawerSubtext = Color(0xFFAAAAAA)
 private val DrawerChip    = Color(0xFF1A1A2E)
@@ -178,7 +182,7 @@ fun AppDrawerScreen(
                 when {
                     state.isLoading -> {
                         CircularProgressIndicator(
-                            color    = DrawerAccent,
+                            color    = menuCursorEdge(),
                             modifier = Modifier.align(Alignment.Center),
                         )
                     }
@@ -197,9 +201,11 @@ fun AppDrawerScreen(
                         AppGrid(
                             apps          = state.visibleApps,
                             selectedIndex = state.selectedIndex,
-                            onAppSelected = { viewModel.onAppSelected(it) },
+                            usingTouch    = state.usingTouch,
+                            onAppTapped   = { viewModel.onAppTapped(it) },
                             onAppLaunched = { viewModel.launchApp(it) },
                             onAppMenu     = { viewModel.openAppMenu(it) },
+                            onTouchBrowse = { viewModel.onTouchBrowse(it) },
                         )
                     }
                 }
@@ -362,7 +368,7 @@ private fun DrawerHeader(
                 onValueChange = onSearchChange,
                 singleLine    = true,
                 textStyle     = TextStyle(color = DrawerText, fontSize = 14.sp),
-                cursorBrush   = SolidColor(DrawerAccent),
+                cursorBrush   = SolidColor(menuCursorEdge()),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 keyboardActions = KeyboardActions(onSearch = { onSearchDone() }, onDone = { onSearchDone() }),
                 decorationBox = { inner ->
@@ -384,7 +390,7 @@ private fun DrawerHeader(
         // Touch toggle + controller hint: navigating with a pad, press Y to open search.
         Text(
             text     = if (searchActive) "✕" else "Y  ⌕",
-            color    = DrawerAccent,
+            color    = menuCursorEdge(),
             fontSize = 16.sp,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.clickable { onSearchToggle(!searchActive) },
@@ -407,14 +413,21 @@ private fun FilterTabRow(
     ) {
         AppFilter.values().forEach { filter ->
             val isActive = filter == activeFilter
+            // Active tab: white label on a theme-tinted chip (the shared menu-cursor treatment),
+            // so the highlight follows the active color scheme.
             Text(
                 text       = filter.label,
-                color      = if (isActive) DrawerAccent else DrawerSubtext,
+                color      = if (isActive) Color.White else DrawerSubtext,
                 fontSize   = 13.sp,
                 fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
                 modifier   = Modifier
                     .clip(RoundedCornerShape(6.dp))
-                    .background(if (isActive) DrawerChip else Color.Transparent)
+                    .background(if (isActive) menuCursorFill() else Color.Transparent)
+                    .border(
+                        width = if (isActive) 1.dp else 0.dp,
+                        color = if (isActive) menuCursorEdge() else Color.Transparent,
+                        shape = RoundedCornerShape(6.dp),
+                    )
                     .clickable { onFilterSelected(filter) }
                     .padding(horizontal = 14.dp, vertical = 6.dp),
             )
@@ -429,14 +442,48 @@ private fun FilterTabRow(
 private fun AppGrid(
     apps: List<InstalledApp>,
     selectedIndex: Int,
-    onAppSelected: (Int) -> Unit,
+    usingTouch: Boolean,
+    onAppTapped: (Int) -> Unit,
     onAppLaunched: (String) -> Unit,
     onAppMenu: (InstalledApp) -> Unit,
+    onTouchBrowse: (Int) -> Unit,
 ) {
     val gridState = rememberLazyGridState()
 
-    LaunchedEffect(selectedIndex) {
-        if (apps.isNotEmpty()) gridState.animateScrollToItem(selectedIndex)
+    // Auto-scroll follows the cursor only in controller mode — while browsing by touch the silent
+    // cursor updates must never fight the user's finger.
+    LaunchedEffect(selectedIndex, usingTouch) {
+        if (!usingTouch && apps.isNotEmpty()) gridState.animateScrollToItem(selectedIndex)
+    }
+
+    // When a FINGER scroll settles, park the cursor on the tile nearest the viewport centre so a
+    // switch to the d-pad picks up where the finger left off. Keyed off drag interactions — never
+    // off isScrollInProgress alone, which programmatic (controller-driven) scrolls also flip.
+    var fingerScrolled by remember { mutableStateOf(false) }
+    LaunchedEffect(gridState) {
+        gridState.interactionSource.interactions.collect { interaction ->
+            if (interaction is androidx.compose.foundation.interaction.DragInteraction.Start) {
+                fingerScrolled = true
+                // Enter touch mode immediately so the cursor hides mid-drag.
+                onTouchBrowse(gridState.firstVisibleItemIndex)
+            }
+        }
+    }
+    LaunchedEffect(gridState) {
+        snapshotFlow { gridState.isScrollInProgress }
+            .distinctUntilChanged()
+            .collect { scrolling ->
+                if (!scrolling && fingerScrolled) {
+                    fingerScrolled = false
+                    val info = gridState.layoutInfo
+                    val center = (info.viewportStartOffset + info.viewportEndOffset) / 2
+                    val nearest = info.visibleItemsInfo.minByOrNull { item ->
+                        val itemCenter = item.offset.y + item.size.height / 2
+                        kotlin.math.abs(itemCenter - center)
+                    }?.index
+                    if (nearest != null) onTouchBrowse(nearest)
+                }
+            }
     }
 
     LazyVerticalGrid(
@@ -450,11 +497,12 @@ private fun AppGrid(
         itemsIndexed(apps) { index, app ->
             AppGridItem(
                 app        = app,
-                isSelected = index == selectedIndex,
-                // Single tap launches (moving focus there first so the highlight matches). Matches
-                // the controller SELECT behaviour and standard launcher expectations.
-                onClick    = { onAppSelected(index); onAppLaunched(app.packageName) },
-                onMenu     = { onAppSelected(index); onAppMenu(app) },
+                // The cursor highlight is controller-only; fingers don't need one.
+                isSelected = !usingTouch && index == selectedIndex,
+                // Single tap launches (moving focus there first so a later d-pad session resumes
+                // here). Matches the controller SELECT behaviour and standard launcher expectations.
+                onClick    = { onAppTapped(index); onAppLaunched(app.packageName) },
+                onMenu     = { onAppTapped(index); onAppMenu(app) },
             )
         }
     }
@@ -509,7 +557,7 @@ private fun AppGridItem(
         if (app.isEmulator) {
             Text(
                 text     = "EMU",
-                color    = DrawerAccent,
+                color    = menuCursorEdge(),
                 fontSize = 9.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(top = 2.dp),
@@ -563,7 +611,7 @@ private fun EmptyDrawerMessage(
             Spacer(Modifier.height(16.dp))
             Text(
                 text       = "Open Usage Access",
-                color      = DrawerAccent,
+                color      = menuCursorEdge(),
                 fontSize   = 13.sp,
                 fontWeight = FontWeight.Bold,
                 modifier   = Modifier

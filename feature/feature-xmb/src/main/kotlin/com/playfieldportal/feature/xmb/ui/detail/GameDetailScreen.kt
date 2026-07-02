@@ -9,6 +9,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,8 +33,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -49,6 +54,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -63,16 +70,21 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.ui.components.XmbHeaderPill
+import com.playfieldportal.core.ui.theme.LocalPFPColors
+import com.playfieldportal.core.ui.theme.menuCursorEdge
+import com.playfieldportal.core.ui.theme.menuCursorFill
+import com.playfieldportal.feature.xmb.ui.DetailContextMenu
+import com.playfieldportal.feature.xmb.ui.DetailMenuRow
 import com.playfieldportal.feature.xmb.ui.collection.CollectionPickerPanel
 import timber.log.Timber
 
+// Neutral dark surfaces stay fixed; every accent/focus color comes from the active theme via
+// menuCursorFill()/menuCursorEdge() so this screen follows the chosen color scheme.
 private val TextPrimary = Color(0xFFEEEEEE)
 private val TextMuted = Color(0xAAEEEEEE)
-private val AccentBlue = Color(0xFF4A9EFF)
 private val PlayGreen = Color(0xFF45C46A)
 private val ActionFill = Color(0xFF1B1B26)
-private val ActionFocused = Color(0xFF574DDB)
-private val ActionBorder = Color(0xFF8F7CFF)
 private val PageBg = Color(0xFF06060C)
 
 @Composable
@@ -81,6 +93,10 @@ fun GameDetailScreen(
     onBack: () -> Unit,
     pendingGamepadAction: GamepadAction? = null,
     onGamepadActionConsumed: () -> Unit = {},
+    // Show the touch header pills only when the last input was touch (AUTO), like the XMB's
+    // contextual App Drawer button; any touch on the screen reports back via [onTouchInput].
+    showTouchControls: Boolean = true,
+    onTouchInput: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: GameDetailViewModel = hiltViewModel(),
 ) {
@@ -140,22 +156,31 @@ fun GameDetailScreen(
 
     if (state.isLoading) {
         Box(modifier.fillMaxSize().background(PageBg)) {
-            CircularProgressIndicator(Modifier.align(Alignment.Center), color = AccentBlue)
+            CircularProgressIndicator(Modifier.align(Alignment.Center), color = menuCursorEdge())
         }
         return
     }
 
     val game = state.game ?: return
     val platform = state.platform
-    val accentColor = platform?.accentColor?.let { Color(it) } ?: AccentBlue
+    val pfpColors = LocalPFPColors.current
+    val accentColor = platform?.accentColor?.let { Color(it) } ?: pfpColors.accentColor
 
-    Box(modifier = modifier.fillMaxSize().background(PageBg)) {
-        Box(
-            Modifier.fillMaxSize().background(
-                Brush.verticalGradient(listOf(accentColor.copy(alpha = 0.16f), PageBg))
-            )
-        )
-
+    // Same translucent theme-gradient backdrop as the Music browser, so the XMB wave stays visible
+    // behind and all full-screen menus read consistently.
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            // Any touch anywhere marks the input source as touch (revealing the header pills),
+            // without consuming the event so buttons still work.
+            .pointerInput(Unit) { awaitEachGesture { awaitFirstDown(requireUnconsumed = false); onTouchInput() } }
+            .background(
+                Brush.verticalGradient(
+                    0f to pfpColors.backgroundTop.copy(alpha = 0.72f),
+                    1f to pfpColors.backgroundBottom.copy(alpha = 0.90f),
+                )
+            ),
+    ) {
         // Hero banner — edge-to-edge, no horizontal padding, no rounded corners
         HeroArt(
             uri = game.heroUri,
@@ -195,24 +220,16 @@ fun GameDetailScreen(
             ) {
                 ConsoleButton(
                     label = "Play",
-                    symbol = ">",
+                    icon = Icons.Filled.PlayArrow,
                     focused = state.mainFocus == 0,
                     fill = PlayGreen,
                     textColor = Color(0xFF06140A),
                     onClick = viewModel::onPlayClicked,
                 )
-                ConsoleButton(
-                    label = "Options",
-                    symbol = "*",
-                    focused = state.mainFocus == 1,
-                    fill = ActionFill,
-                    textColor = TextPrimary,
-                    onClick = viewModel::onOptionsClicked,
-                )
                 (state.launchError ?: state.actionMessage ?: state.artworkMessage)?.let {
                     Text(
                         it,
-                        color = AccentBlue,
+                        color = menuCursorEdge(),
                         fontSize = 12.sp,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth(),
@@ -221,23 +238,35 @@ fun GameDetailScreen(
             }
         }
 
-        Text(
-            "<  Back",
-            color = TextMuted,
-            fontSize = 13.sp,
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(16.dp)
-                .clickable { onBack() },
-        )
+        // Header pills over the hero (touch only, per the last-input source): Back top-left,
+        // Options top-right. Options keeps controller reachability (mainFocus == 1) via Y.
+        if (showTouchControls) {
+            XmbHeaderPill(
+                label = "Back",
+                leadingGlyph = "◀",
+                onClick = onBack,
+                modifier = Modifier.align(Alignment.TopStart).padding(16.dp),
+            )
+            XmbHeaderPill(
+                label = "Options",
+                onClick = viewModel::onOptionsClicked,
+                focused = state.mainFocus == 1,
+                modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
+            )
+        }
 
         AnimatedVisibility(state.showOptions, enter = fadeIn(), exit = fadeOut()) {
-            OptionsPanel(
-                favorite = game.isFavorite,
-                refreshing = state.isFetchingArtwork,
-                focusedIndex = state.optionsIndex,
-                onAction = viewModel::onOptionClicked,
-                onClose = viewModel::closeOptions,
+            DetailContextMenu(
+                title = "Options",
+                rows = DetailAction.entries.map { action ->
+                    DetailMenuRow(
+                        label = action.dynamicLabel(game.isFavorite, state.isFetchingArtwork),
+                        isDestructive = action == DetailAction.REMOVE,
+                    )
+                },
+                selectedIndex = state.optionsIndex,
+                onRowClick = { viewModel.onOptionClicked(DetailAction.entries[it]) },
+                onDismiss = viewModel::closeOptions,
             )
         }
 
@@ -360,7 +389,7 @@ private fun CompactMeta(value: String) {
 @Composable
 private fun ConsoleButton(
     label: String,
-    symbol: String,
+    icon: ImageVector,
     focused: Boolean,
     fill: Color,
     textColor: Color,
@@ -377,100 +406,15 @@ private fun ConsoleButton(
             .padding(vertical = 15.dp, horizontal = 18.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(symbol, color = textColor, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(32.dp))
+        Icon(icon, contentDescription = null, tint = textColor, modifier = Modifier.size(22.dp))
+        Spacer(Modifier.width(12.dp))
         Text(label, color = textColor, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-    }
-}
-
-@Composable
-private fun OptionsPanel(
-    favorite: Boolean,
-    refreshing: Boolean,
-    focusedIndex: Int,
-    onAction: (DetailAction) -> Unit,
-    onClose: () -> Unit,
-) {
-    Box(Modifier.fillMaxSize().background(Color(0xCC000000)).clickable(onClick = onClose), contentAlignment = Alignment.Center) {
-        val optionsScrollState = rememberScrollState()
-        val optionScrollStepPx = with(LocalDensity.current) { OptionsRowScrollStep.roundToPx() }
-        LaunchedEffect(focusedIndex) {
-            optionsScrollState.animateScrollTo(focusedIndex * optionScrollStepPx)
-        }
-        Column(
-            modifier = Modifier
-                .widthIn(min = 280.dp, max = 420.dp)
-                .fillMaxWidth(0.86f)
-                .heightIn(max = OptionsPanelMaxHeight)
-                .clip(RoundedCornerShape(8.dp))
-                .background(Color(0xF20A0A14))
-                .padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            Text("Options", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-            Column(
-                modifier = Modifier.verticalScroll(optionsScrollState),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                DetailAction.entries.forEachIndexed { index, action ->
-                    ActionButton(
-                        icon = action.iconFor(favorite),
-                        label = action.dynamicLabel(favorite, refreshing),
-                        focused = focusedIndex == index,
-                        destructive = action == DetailAction.REMOVE,
-                        onClick = { onAction(action) },
-                    )
-                }
-            }
-        }
     }
 }
 
 private val HeroBannerHeight: Dp = 220.dp
 private val OptionsPanelMaxHeight: Dp = 440.dp
 private val OptionsRowScrollStep: Dp = 58.dp
-
-@Composable
-private fun ActionButton(
-    icon: String,
-    label: String,
-    focused: Boolean,
-    destructive: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(if (focused) ActionFocused.copy(alpha = 0.5f) else ActionFill)
-            .then(if (focused) Modifier.border(1.5.dp, ActionBorder, RoundedCornerShape(8.dp)) else Modifier)
-            .clickable(onClick = onClick)
-            .padding(vertical = 12.dp, horizontal = 12.dp),
-    ) {
-        Text(icon, fontSize = 18.sp, modifier = Modifier.width(30.dp))
-        Text(
-            label,
-            color = if (destructive) Color(0xFFFF8A8A) else TextPrimary,
-            fontSize = 14.sp,
-            maxLines = 1,
-        )
-    }
-}
-
-private fun DetailAction.iconFor(favorite: Boolean): String = when (this) {
-    DetailAction.FAVORITE -> if (favorite) "*" else "+"
-    DetailAction.COLLECTIONS -> "C"
-    DetailAction.ARTWORK -> "*"
-    DetailAction.SAVES -> "S"
-    DetailAction.EMULATOR -> "E"
-    DetailAction.MANUAL -> "M"
-    DetailAction.REFRESH -> "R"
-    DetailAction.RENAME -> "T"
-    DetailAction.EDIT -> "N"
-    DetailAction.LOCATION -> "L"
-    DetailAction.REMOVE -> "!"
-}
 
 private fun DetailAction.dynamicLabel(favorite: Boolean, refreshing: Boolean): String = when (this) {
     DetailAction.FAVORITE -> if (favorite) "Unfavorite" else "Favorite"
@@ -535,10 +479,10 @@ private fun ArtworkManagerPanel(
                         modifier = Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(6.dp))
-                            .background(if (isActive) ActionFocused.copy(alpha = 0.4f) else ActionFill)
+                            .background(if (isActive) menuCursorFill() else ActionFill)
                             .then(
-                                if (isCursor)  Modifier.border(2.dp, ActionBorder, RoundedCornerShape(6.dp))
-                                else if (isActive) Modifier.border(1.dp, ActionBorder.copy(alpha = 0.45f), RoundedCornerShape(6.dp))
+                                if (isCursor)  Modifier.border(2.dp, menuCursorEdge(), RoundedCornerShape(6.dp))
+                                else if (isActive) Modifier.border(1.dp, menuCursorEdge().copy(alpha = 0.45f), RoundedCornerShape(6.dp))
                                 else Modifier
                             )
                             .clickable { onTabSelected(type) }
@@ -576,8 +520,8 @@ private fun ArtworkManagerPanel(
                         modifier = Modifier
                             .width(72.dp)
                             .clip(RoundedCornerShape(6.dp))
-                            .background(if (isFocused) ActionFocused.copy(alpha = 0.4f) else ActionFill)
-                            .then(if (isFocused) Modifier.border(1.5.dp, ActionBorder, RoundedCornerShape(6.dp)) else Modifier)
+                            .background(if (isFocused) menuCursorFill() else ActionFill)
+                            .then(if (isFocused) Modifier.border(1.5.dp, menuCursorEdge(), RoundedCornerShape(6.dp)) else Modifier)
                             .clickable(enabled = !state.artworkIsProcessing) { onActivateSourceAt(index) }
                             .padding(vertical = 9.dp),
                         contentAlignment = Alignment.Center,
@@ -602,7 +546,7 @@ private fun ArtworkManagerPanel(
             when {
                 state.artworkPickerLoading -> {
                     Box(Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(Modifier.size(24.dp), color = AccentBlue, strokeWidth = 2.dp)
+                        CircularProgressIndicator(Modifier.size(24.dp), color = menuCursorEdge(), strokeWidth = 2.dp)
                     }
                 }
                 state.artworkPickerError != null -> {
@@ -634,7 +578,7 @@ private fun ArtworkManagerPanel(
                                         .clip(RoundedCornerShape(4.dp))
                                         .border(
                                             width  = if (isFocused) 2.dp else 1.dp,
-                                            color  = if (isFocused) ActionBorder else Color(0x33FFFFFF),
+                                            color  = if (isFocused) menuCursorEdge() else Color(0x33FFFFFF),
                                             shape  = RoundedCornerShape(4.dp),
                                         )
                                         .clickable { onPickArtwork(art.url, state.artworkTab) },
@@ -661,12 +605,12 @@ private fun ArtworkManagerPanel(
                     verticalAlignment     = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    CircularProgressIndicator(Modifier.size(14.dp), color = AccentBlue, strokeWidth = 2.dp)
+                    CircularProgressIndicator(Modifier.size(14.dp), color = menuCursorEdge(), strokeWidth = 2.dp)
                     Text("Saving…", color = TextMuted, fontSize = 12.sp)
                 }
             }
             state.artworkMessage?.let {
-                Text(it, color = AccentBlue, fontSize = 12.sp)
+                Text(it, color = menuCursorEdge(), fontSize = 12.sp)
             }
 
             // Controller hint
@@ -740,11 +684,11 @@ private fun NoteEditor(text: String, onChange: (String) -> Unit, onSave: () -> U
             label = { Text("Note", color = TextMuted) },
             modifier = Modifier.fillMaxWidth(),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = AccentBlue,
+                focusedBorderColor = menuCursorEdge(),
                 unfocusedBorderColor = Color(0x44FFFFFF),
                 focusedTextColor = TextPrimary,
                 unfocusedTextColor = TextPrimary,
-                cursorColor = AccentBlue,
+                cursorColor = menuCursorEdge(),
             ),
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { onSave() }),
@@ -752,7 +696,7 @@ private fun NoteEditor(text: String, onChange: (String) -> Unit, onSave: () -> U
         )
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
             TextButton(onClick = onCancel) { Text("Cancel", color = TextMuted) }
-            TextButton(onClick = onSave) { Text("Save", color = AccentBlue, fontWeight = FontWeight.SemiBold) }
+            TextButton(onClick = onSave) { Text("Save", color = menuCursorEdge(), fontWeight = FontWeight.SemiBold) }
         }
     }
 }
@@ -788,11 +732,11 @@ private fun TitleEditor(
             label = { Text("Display Title", color = TextMuted) },
             modifier = Modifier.fillMaxWidth(),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = AccentBlue,
+                focusedBorderColor = menuCursorEdge(),
                 unfocusedBorderColor = Color(0x44FFFFFF),
                 focusedTextColor = TextPrimary,
                 unfocusedTextColor = TextPrimary,
-                cursorColor = AccentBlue,
+                cursorColor = menuCursorEdge(),
             ),
             keyboardOptions = KeyboardOptions(
                 capitalization = KeyboardCapitalization.Words,
@@ -805,7 +749,7 @@ private fun TitleEditor(
             TextButton(onClick = onReset) { Text("Reset to Default", color = TextMuted, fontSize = 12.sp) }
             Row {
                 TextButton(onClick = onCancel) { Text("Cancel", color = TextMuted) }
-                TextButton(onClick = onSave) { Text("Save", color = AccentBlue, fontWeight = FontWeight.SemiBold) }
+                TextButton(onClick = onSave) { Text("Save", color = menuCursorEdge(), fontWeight = FontWeight.SemiBold) }
             }
         }
     }
@@ -867,14 +811,14 @@ private fun EmulatorPickerPanel(
                             .clip(RoundedCornerShape(8.dp))
                             .background(
                                 when {
-                                    isFocused  -> ActionFocused.copy(alpha = 0.5f)
-                                    isSelected -> ActionFocused.copy(alpha = 0.25f)
+                                    isFocused  -> menuCursorFill()
+                                    isSelected -> menuCursorFill().copy(alpha = 0.17f)
                                     else       -> ActionFill
                                 }
                             )
                             .then(
-                                if (isFocused) Modifier.border(1.5.dp, ActionBorder, RoundedCornerShape(8.dp))
-                                else if (isSelected) Modifier.border(1.dp, ActionBorder.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                                if (isFocused) Modifier.border(1.5.dp, menuCursorEdge(), RoundedCornerShape(8.dp))
+                                else if (isSelected) Modifier.border(1.dp, menuCursorEdge().copy(alpha = 0.5f), RoundedCornerShape(8.dp))
                                 else Modifier
                             )
                             .clickable { onPick(profile.id) }

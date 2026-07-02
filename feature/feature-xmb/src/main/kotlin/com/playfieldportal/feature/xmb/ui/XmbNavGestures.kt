@@ -40,10 +40,14 @@ fun Modifier.xmbNavGestures(
     onStepCategory: (Int) -> Unit,
     onStepItem: (Int) -> Unit,
     onEdgeBack: () -> Unit,
-): Modifier = pointerInput(Unit) {
+    // Sensitivity multiplier from Settings ▸ Display (see TouchSensitivity.stepScale): >1 = more
+    // finger travel per step, <1 = less. Scales both axes; edge-Back and fling stay fixed. The
+    // pointerInput is keyed on it so a preference change re-arms the detector with the new scale.
+    stepScale: Float = 1f,
+): Modifier = pointerInput(stepScale) {
     val slop = viewConfiguration.touchSlop
-    val itemStepPx = ITEM_STEP_DP.toPx()
-    val categoryStepPx = CATEGORY_STEP_DP.toPx()
+    val itemStepPx = ITEM_STEP_DP.toPx() * stepScale
+    val categoryStepPx = CATEGORY_STEP_DP.toPx() * stepScale
     val edgePx = EDGE_DP.toPx()
     val edgeCommitPx = EDGE_COMMIT_DP.toPx()
     val flingPx = FLING_DP_PER_S * density   // dp/s → px/s

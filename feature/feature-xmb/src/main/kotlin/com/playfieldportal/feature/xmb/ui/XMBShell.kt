@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.playfieldportal.core.domain.model.BuiltInCategory
+import com.playfieldportal.core.ui.components.XmbTouchButton
 import com.playfieldportal.core.ui.theme.PFPTheme
 import com.playfieldportal.feature.appbar.AppDrawerScreen
 import com.playfieldportal.feature.appbar.AppFilter
@@ -77,14 +78,22 @@ fun XMBShellContainer(
 ) {
     // Lifecycle-aware collection: state observation stops while PFP is STOPPED (backgrounded behind
     // a game/emulator), so the shell isn't recomposing off-screen — less CPU/battery under load.
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    // The lifecycle owner is passed explicitly from the PLATFORM composition local: this Compose
+    // BOM doesn't provide androidx.lifecycle.compose.LocalLifecycleOwner (the default source), so
+    // letting collectAsStateWithLifecycle read it crashes at root composition with
+    // "CompositionLocal LocalLifecycleOwner not present" (same reason the rest of the app uses the
+    // platform variant). See AppDrawerScreen for the same workaround.
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle(
+        lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current,
+    )
 
     XMBShell(
         uiState = uiState,
-        onCategorySelected = viewModel::onCategorySelected,
+        onCategorySelected = viewModel::onCategoryTapped,
         onStepCategory = viewModel::stepCategory,
         onStepItem = viewModel::stepItem,
         onTouchBack = viewModel::onHomeBack,
+        onTouchInput = viewModel::markTouchInput,
         onOpenAppDrawer = viewModel::onOpenAppDrawer,
         onItemTap = viewModel::onItemTap,
         onItemLongPress = viewModel::onItemLongPress,
@@ -123,6 +132,8 @@ fun XMBShellContainer(
         onMusicBrowserActivatedAt = viewModel::onMusicBrowserActivatedAt,
         onMusicBrowserLongPressAt = viewModel::onMusicBrowserLongPressAt,
         onMusicBrowserBack = viewModel::onMusicBrowserBack,
+        onMusicBrowserSortTapped = viewModel::onMusicBrowserSortTapped,
+        onMusicBrowserOptionsTapped = viewModel::onMusicBrowserOptionsTapped,
         onAppPickerActivatedAt = viewModel::onAppPickerActivatedAt,
         onAppPickerConfirm = viewModel::onAppPickerConfirm,
         onAppPickerDismiss = viewModel::closeAppPicker,
@@ -147,6 +158,7 @@ fun XMBShell(
     onStepCategory: (Int) -> Unit = {},
     onStepItem: (Int) -> Unit = {},
     onTouchBack: () -> Unit = {},
+    onTouchInput: () -> Unit = {},
     onOpenAppDrawer: () -> Unit = {},
     // Row tap: move the cursor there, or activate if it's already selected (see XMBViewModel.onItemTap).
     onItemTap: (Int) -> Unit = {},
@@ -189,6 +201,8 @@ fun XMBShell(
     onMusicBrowserActivatedAt: (Int) -> Unit = {},
     onMusicBrowserLongPressAt: (Int) -> Unit = {},
     onMusicBrowserBack: () -> Unit = {},
+    onMusicBrowserSortTapped: () -> Unit = {},
+    onMusicBrowserOptionsTapped: () -> Unit = {},
     onMusicTrackPickerActivatedAt: (Int) -> Unit = {},
     onMusicTrackPickerConfirm: () -> Unit = {},
     onMusicTrackPickerDismiss: () -> Unit = {},
@@ -250,14 +264,19 @@ fun XMBShell(
             }
 
             // Hide the XMB foreground (status strip + category bar + item list) while a fullscreen
-            // menu (the app drawer, the music browser, or a Settings screen) is open — only the
-            // wallpaper/wave background shows behind it. Restored automatically when the menu
-            // closes. Besides the visual, this REMOVES the XMB's clickable rows from composition,
-            // so a tap on the overlay's empty space can never fall through and activate an XMB
-            // item behind it.
+            // menu is open — only the wallpaper/wave background shows behind it. Restored
+            // automatically when the menu closes. Besides the visual, this REMOVES the XMB's
+            // clickable rows from composition, so a tap on the overlay's empty space can never fall
+            // through and activate an XMB item behind it. Covers the app drawer, music browser,
+            // Settings, and the fullscreen detail screens (Game / Video / App / Photo) — those now
+            // use a translucent backdrop, so the XMB would otherwise show through them.
             if (uiState.activeAppDrawerFilter == null &&
                 uiState.musicBrowser == null &&
-                uiState.activeSettingsScreen == null
+                uiState.activeSettingsScreen == null &&
+                uiState.activeGameId == null &&
+                uiState.activeVideoId == null &&
+                uiState.activeAppId == null &&
+                uiState.activePhotoViewer == null
             ) {
             XmbPspStatusStrip(
                 sortLabel = uiState.sortLabel,
@@ -275,6 +294,7 @@ fun XMBShell(
                         onStepCategory = onStepCategory,
                         onStepItem = onStepItem,
                         onEdgeBack = onTouchBack,
+                        stepScale = uiState.touchSensitivity.stepScale,
                     ),
             ) {
                 BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
@@ -305,6 +325,9 @@ fun XMBShell(
                             selectedIndex = uiState.selectedItemIndex,
                             onItemSelected = onItemTap,
                             onItemLongPress = onItemLongPress,
+                            // Tapping the active memory card under the caticon backs out of the
+                            // drill; taps on the other (dimmed) cards are ignored.
+                            onSiblingTap = { i -> if (i == uiState.drillSiblingIndex) onTouchBack() },
                             iconStyle = uiState.iconStyle,
                             barTopY = barTop,
                             belowTopY = anchorTop,
@@ -368,23 +391,22 @@ fun XMBShell(
             }
             } // end: XMB foreground hidden while music browser is open
 
-            // Bottom-right floating affordance. While drilled into a sub-item it becomes a Back
-            // button (exits the sub-item); at the root it opens the app drawer. Hidden whenever an
-            // overlay/dialog is up so it never floats over them. Visibility follows the last input
-            // source (Auto) or the user's override, and fades in/out so picking up a controller
-            // cleanly hides the touch-only affordance. What the button DOES is unchanged.
+            // Bottom-right App Drawer affordance. Shown only at the XMB root — while drilled into a
+            // sub-item it's hidden entirely (going back is done by the left-edge swipe or by tapping
+            // the active memory-card icon under the caticon, so no Back button is needed here).
+            // Also hidden whenever an overlay/dialog is up. Visibility follows the last input source
+            // (Auto) or the user's override, and fades in/out so picking up a controller cleanly
+            // hides the touch-only affordance.
             AnimatedVisibility(
-                visible = uiState.resolvedShowTouchButton && !uiState.hasBlockingOverlay,
+                visible = uiState.resolvedShowTouchButton && !uiState.hasBlockingOverlay && !uiState.isInSubItem,
                 enter = fadeIn(tween(180)),
                 exit = fadeOut(tween(220)),
                 modifier = Modifier.align(Alignment.BottomEnd),
             ) {
-                val floatModifier = Modifier.padding(bottom = 24.dp, end = 20.dp)
-                if (uiState.isInSubItem) {
-                    BackFloatingButton(onClick = onTouchBack, modifier = floatModifier)
-                } else {
-                    AppDrawerButton(onClick = onOpenAppDrawer, modifier = floatModifier)
-                }
+                AppDrawerButton(
+                    onClick = onOpenAppDrawer,
+                    modifier = Modifier.padding(bottom = 24.dp, end = 20.dp),
+                )
             }
 
             if (uiState.showBootSequence) {
@@ -428,6 +450,9 @@ fun XMBShell(
                     onActivateAt = onMusicBrowserActivatedAt,
                     onLongPressAt = onMusicBrowserLongPressAt,
                     onBack = onMusicBrowserBack,
+                    onSortTapped = onMusicBrowserSortTapped,
+                    onOptionsTapped = onMusicBrowserOptionsTapped,
+                    showTouchControls = uiState.resolvedShowTouchButton,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -534,6 +559,8 @@ fun XMBShell(
                     onBack = onCloseGameDetail,
                     pendingGamepadAction = uiState.pendingGameDetailAction,
                     onGamepadActionConsumed = onGameDetailActionConsumed,
+                    showTouchControls = uiState.resolvedShowTouchButton,
+                    onTouchInput = onTouchInput,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -541,9 +568,12 @@ fun XMBShell(
             uiState.activeAppId?.let { appId ->
                 AppDetailScreen(
                     gameId = appId,
+                    collectionCategoryId = uiState.activeAppCollectionCategoryId,
                     onBack = onCloseAppDetail,
                     pendingGamepadAction = uiState.pendingAppDetailAction,
                     onGamepadActionConsumed = onAppDetailActionConsumed,
+                    showTouchControls = uiState.resolvedShowTouchButton,
+                    onTouchInput = onTouchInput,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -554,6 +584,8 @@ fun XMBShell(
                     onBack = onCloseVideoDetail,
                     pendingGamepadAction = uiState.pendingVideoDetailAction,
                     onGamepadActionConsumed = onVideoDetailActionConsumed,
+                    showTouchControls = uiState.resolvedShowTouchButton,
+                    onTouchInput = onTouchInput,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -566,6 +598,8 @@ fun XMBShell(
                     onBack = onClosePhotoViewer,
                     pendingGamepadAction = uiState.pendingPhotoViewerAction,
                     onGamepadActionConsumed = onPhotoViewerActionConsumed,
+                    showTouchControls = uiState.resolvedShowTouchButton,
+                    onTouchInput = onTouchInput,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -623,18 +657,8 @@ private fun AppDrawerButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Transparent background so the button blends into the wave; a thin accent ring + a soft dark
-    // drop-shadow on the glyph keep it legible over both the dark top and bright bottom of the
-    // gradient, and tie it to the active theme.
-    val accent = LocalPFPColors.current.accentColor
-    Box(
-        modifier = modifier
-            .size(52.dp)
-            .clip(RoundedCornerShape(14.dp))
-            .border(1.5.dp, accent.copy(alpha = 0.7f), RoundedCornerShape(14.dp))
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
+    // Delegates the frame to the shared themed touch button; only the 2×2 grid glyph is local.
+    XmbTouchButton(onClick = onClick, modifier = modifier) {
         Canvas(modifier = Modifier.size(26.dp)) {
             val cell = size.minDimension * 0.38f
             val gap = size.minDimension - 2 * cell
@@ -663,31 +687,6 @@ private fun AppDrawerButton(
     }
 }
 
-// Floating Back button shown (in place of the app-drawer button) while drilled into a sub-item.
-@Composable
-private fun BackFloatingButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val accent = LocalPFPColors.current.accentColor
-    Box(
-        modifier = modifier
-            .size(52.dp)
-            .clip(RoundedCornerShape(14.dp))
-            .border(1.5.dp, accent.copy(alpha = 0.7f), RoundedCornerShape(14.dp))
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = "◀",
-            color = Color.White,
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold,
-            // Soft dark halo so the glyph reads on the bright lower gradient too.
-            style = TextStyle(shadow = Shadow(Color(0xB3000000), Offset.Zero, 10f)),
-        )
-    }
-}
 
 @Composable
 private fun InfoDialog(

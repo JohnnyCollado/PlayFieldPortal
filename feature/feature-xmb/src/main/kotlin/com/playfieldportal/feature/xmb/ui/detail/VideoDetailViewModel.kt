@@ -162,15 +162,13 @@ class VideoDetailViewModel @Inject constructor(
                 }
             }
             else -> {
-                // Primary row: [primaryActions...] then Options at the end.
-                val total = s.primaryActions.size + 1
+                // Primary row: just [primaryActions]. Options is reached with Y/Triangle (below) or
+                // the touch Options pill — not an inline row.
+                val total = s.primaryActions.size.coerceAtLeast(1)
                 when (action) {
                     GamepadAction.NAVIGATE_UP   -> _uiState.update { it.copy(mainFocus = (it.mainFocus - 1 + total) % total) }
                     GamepadAction.NAVIGATE_DOWN -> _uiState.update { it.copy(mainFocus = (it.mainFocus + 1) % total) }
-                    GamepadAction.SELECT -> {
-                        if (s.mainFocus < s.primaryActions.size) activate(s.primaryActions[s.mainFocus])
-                        else openOptions()
-                    }
+                    GamepadAction.SELECT -> s.primaryActions.getOrNull(s.mainFocus)?.let { activate(it) }
                     GamepadAction.BACK -> _uiState.update { it.copy(closed = true) }
                     GamepadAction.BUTTON_Y, GamepadAction.LONG_PRESS -> openOptions()
                     else -> Unit

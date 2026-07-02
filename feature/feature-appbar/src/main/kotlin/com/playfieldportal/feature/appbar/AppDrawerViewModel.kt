@@ -35,6 +35,10 @@ data class AppDrawerUiState(
     val searchQuery: String = "",
     val isLoading: Boolean = true,
     val selectedIndex: Int = 0,
+    // True while the user is browsing by touch: the grid cursor is hidden (fingers don't need
+    // one) and the auto-scroll-to-selection effect is suppressed so it can't fight the finger.
+    // Flips false on the first d-pad action, revealing the cursor at the last touch position.
+    val usingTouch: Boolean = false,
     val hasUsageAccess: Boolean = false,
     // Long-press mini menu: the app it targets (null = closed) and the focused row.
     val menuApp: InstalledApp? = null,
@@ -92,6 +96,19 @@ class AppDrawerViewModel @Inject constructor(
 
     fun onAppSelected(index: Int) {
         _uiState.update { it.copy(selectedIndex = index) }
+    }
+
+    /** Touch tap on a grid tile: moves the (hidden) cursor there and enters touch mode. */
+    fun onAppTapped(index: Int) {
+        _uiState.update { it.copy(selectedIndex = index, usingTouch = true) }
+    }
+
+    /** Touch scroll settled: silently park the cursor on the tile nearest the viewport centre so a
+     *  later switch to the d-pad starts where the finger left off. No sound — nothing visible moves. */
+    fun onTouchBrowse(index: Int) {
+        val size = _uiState.value.visibleApps.size
+        if (size == 0) return
+        _uiState.update { it.copy(selectedIndex = index.coerceIn(0, size - 1), usingTouch = true) }
     }
 
     fun launchApp(packageName: String) {
@@ -172,6 +189,9 @@ class AppDrawerViewModel @Inject constructor(
 
         val size  = state.visibleApps.size
         if (size == 0) return
+        // Controller input ends touch mode: the cursor appears at the position the last touch
+        // browse/tap parked it, and navigation continues from there.
+        if (state.usingTouch) _uiState.update { it.copy(usingTouch = false) }
         val cur = state.selectedIndex
         when (action) {
             // Hold a button to open the focused app's mini menu (controller equivalent of long-press).

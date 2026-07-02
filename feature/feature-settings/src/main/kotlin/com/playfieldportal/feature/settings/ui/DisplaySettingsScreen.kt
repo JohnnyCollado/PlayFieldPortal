@@ -151,6 +151,13 @@ fun DisplaySettingsScreen(
                 onClick  = { viewModel.cycleTouchNavButtonMode() },
             )
 
+            SettingsValueRow(
+                label    = "Touch Sensitivity",
+                sublabel = "How far a swipe travels per XMB step.  Low — steadier  |  Normal  |  High — faster scrubbing",
+                value    = viewModel.touchSensitivityLabel(),
+                onClick  = { viewModel.cycleTouchSensitivity() },
+            )
+
             SettingsGroup("Performance")
 
             SettingsToggleRow(

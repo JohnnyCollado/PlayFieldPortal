@@ -233,6 +233,7 @@ sealed interface PhotoNav {
     data object Root : PhotoNav
     data object AllPhotos : PhotoNav
     data object Albums : PhotoNav
+    data object PhotoApps : PhotoNav
     data class Library(val id: String, val name: String) : PhotoNav
 }
 
@@ -356,6 +357,9 @@ data class XMBUiState(
     val lastInputWasTouch: Boolean = false,
     val touchNavButtonMode: com.playfieldportal.core.domain.model.TouchNavButtonMode =
         com.playfieldportal.core.domain.model.TouchNavButtonMode.AUTO,
+    // Swipe sensitivity for the XMB gesture layer (Settings ▸ Display ▸ Touch Sensitivity).
+    val touchSensitivity: com.playfieldportal.core.domain.model.TouchSensitivity =
+        com.playfieldportal.core.domain.model.TouchSensitivity.NORMAL,
 
     // ── Background + rendering ────────────────────────────────────────────
     // A custom wallpaper, when set, automatically replaces the wave.
@@ -372,6 +376,9 @@ data class XMBUiState(
     val pendingGameDetailAction: GamepadAction? = null,
     val activeGameId: Long? = null,
     val activeAppId: Long? = null,
+    // Where a collection created from the App Detail screen should live — the category the app
+    // row was opened from when it renders collections, otherwise the Main Game default.
+    val activeAppCollectionCategoryId: String = BuiltInCategory.GAMES,
     val pendingAppDetailAction: GamepadAction? = null,
     // ── Video ─────────────────────────────────────────────────────────────
     val videoNav: VideoNav = VideoNav.Root,
@@ -484,6 +491,7 @@ enum class XMBItemType {
     PHOTO_ALBUMS,
     PHOTO_FOLDER,
     PHOTO_FILE,
+    PHOTO_APPS,
     CAMERA,
     // "Add …" / "Create …" rows (add library/folder/apps/tracks, create playlist) — plus glyph.
     ADD_ACTION,
@@ -719,7 +727,10 @@ class XMBViewModel @Inject constructor(
                     if (currentCategory()?.id == BuiltInCategory.MUSIC &&
                         _uiState.value.musicNav == MusicNav.Root
                     ) {
-                        loadItemsForCategory(currentCategory())
+                        // Preserve the cursor by row id: the new "Now Playing" row shifts every
+                        // index, and this often happens behind the fullscreen browser — the XMB
+                        // must already be re-anchored when it's revealed (no visible snap).
+                        refreshMusicRootPreservingCursor()
                     }
                 }
             }
@@ -825,10 +836,11 @@ class XMBViewModel @Inject constructor(
                         collections = collections,
                     )}
 
-                    // Refresh any gaming category live as cards/counts/collections change —
-                    // collections now place themselves by categoryId, so a custom gaming
-                    // category must also re-render when the collection list changes.
-                    if (currentCategory()?.isGamingCategory == true) {
+                    // Refresh any collection-rendering category live as cards/counts/collections
+                    // change — collections place themselves by categoryId, so gaming categories
+                    // AND non-gaming app categories (Network / App Store / custom) must re-render
+                    // when the collection list changes.
+                    if (categoryShowsCollections(currentCategory())) {
                         loadItemsForCategory(currentCategory())
                     }
                 }
@@ -859,6 +871,28 @@ class XMBViewModel @Inject constructor(
     // App-populated categories are everything except Settings and Games.
     private fun isAppCategory(categoryId: String): Boolean =
         categoryId != BuiltInCategory.SETTINGS && categoryId != BuiltInCategory.GAMES
+
+    // Categories with their own dedicated loadItemsForCategory branch — these never render
+    // collection rows (media/system sections own their layouts).
+    private val nonCollectionCategoryIds = setOf(
+        BuiltInCategory.FAVORITES, BuiltInCategory.RECENTLY_PLAYED, BuiltInCategory.MUSIC,
+        BuiltInCategory.VIDEO, BuiltInCategory.PHOTO, BuiltInCategory.ANDROID,
+        BuiltInCategory.APP_DRAWER, BuiltInCategory.SETTINGS,
+    )
+
+    /** True for categories that render collection rows: gaming categories, and the generic app
+     *  categories (Network / App Store / custom non-gaming) served by the `else` item branch. */
+    private fun categoryShowsCollections(category: Category?): Boolean {
+        if (category == null) return false
+        return category.isGamingCategory || category.id !in nonCollectionCategoryIds
+    }
+
+    /** The category a collection created from the current context should live in: the current
+     *  category when it renders collections, otherwise the Main Game default. */
+    private fun collectionHomeCategoryId(): String {
+        val cat = currentCategory() ?: return BuiltInCategory.GAMES
+        return if (categoryShowsCollections(cat)) cat.id else BuiltInCategory.GAMES
+    }
 
     private fun loadItemsForCategory(category: Category?) {
         currentItemsJob?.cancel()
@@ -985,21 +1019,28 @@ class XMBViewModel @Inject constructor(
                     is PhotoNav.Library -> photoRepository.observePhotosByLibrary(nav.id).collect { photos ->
                         setPhotoItems(photos, emptyLibraryPhotosItem())
                     }
+                    PhotoNav.PhotoApps -> {
+                        val items = photoAppItems()
+                        _uiState.update { it.copy(currentItems = items) }
+                    }
                 }
                 else -> {
                     // Gaming categories show games and collections
-                    if (category.isGamingCategory) {
-                        // Drilled into one of this category's collections — show its games.
-                        val openCollectionId = _uiState.value.selectedCollectionId
-                        if (openCollectionId != null) {
-                            collectionRepository.observeGames(openCollectionId).collect { games ->
-                                val visible = games.notHiddenAt(HideLocationType.COLLECTION, openCollectionId.toString())
-                                val items = if (visible.isEmpty()) listOf(emptyCollectionItem())
-                                            else visible.gameSorted(_uiState.value.gameSortMode).toXmbItems()
-                                _uiState.update { it.copy(currentItems = items) }
-                            }
-                            return@launch
+                    // Drilled into one of this category's collections — show its members. Works
+                    // for gaming and non-gaming categories alike: members are games-table rows,
+                    // which in non-gaming (app) collections are ANDROID_APP shortcut rows that
+                    // launch by package like anywhere else.
+                    val openCollectionId = _uiState.value.selectedCollectionId
+                    if (openCollectionId != null) {
+                        collectionRepository.observeGames(openCollectionId).collect { games ->
+                            val visible = games.notHiddenAt(HideLocationType.COLLECTION, openCollectionId.toString())
+                            val items = if (visible.isEmpty()) listOf(emptyCollectionItem())
+                                        else visible.gameSorted(_uiState.value.gameSortMode).toXmbItems()
+                            _uiState.update { it.copy(currentItems = items) }
                         }
+                        return@launch
+                    }
+                    if (category.isGamingCategory) {
                         // Games are assigned via the junction table (echo/copy model). Reuse the
                         // canonical Game→XMBItem mapping so icons/artwork/launch fields match the
                         // Main Game category exactly; only overlay the "Pinned" marker.
@@ -1036,11 +1077,27 @@ class XMBViewModel @Inject constructor(
                         // The rows stay ANDROID_APP, so this never makes them appear in All Games.
                         val apps = appCategoryRepository.appsForCategory(category.id)
                             .notHiddenAt(HideLocationType.CATEGORY, category.id)
-                        val appItems = if (apps.isEmpty()) listOf(emptyCategoryItem(category))
-                                       else apps.map { it.toXmbItem(gameRepository.getAppEntry(it.packageName)) }
+                        val appItems = apps.map { it.toXmbItem(gameRepository.getAppEntry(it.packageName)) }
+                        // App collections homed in this category (categoryId is the single source
+                        // of truth for placement, same as gaming categories). Pinned sort first.
+                        val collectionItems = _uiState.value.collections
+                            .filter { it.categoryId == category.id }
+                            .sortedByDescending { it.isPinned }
+                            .map { collection ->
+                                val count = "${collection.gameCount} ${if (collection.gameCount == 1) "App" else "Apps"}"
+                                XMBItem(
+                                    id = "col_${collection.id}",
+                                    title = collection.name,
+                                    subtitle = if (collection.isPinned) "Pinned · $count" else count,
+                                    collectionId = collection.id,
+                                    type = XMBItemType.COLLECTION,
+                                )
+                            }
+                        val combined = collectionItems + appItems
+                        val items = if (combined.isEmpty()) listOf(emptyCategoryItem(category)) else combined
                         // "Add Apps" is offered on every app section so the same picker serves
                         // Video, Music, Network, App Store and custom categories alike.
-                        _uiState.update { it.copy(currentItems = appItems + addAppsItem()) }
+                        _uiState.update { it.copy(currentItems = items + addAppsItem()) }
                     }
                 }
             }
@@ -1070,15 +1127,31 @@ class XMBViewModel @Inject constructor(
         id       = ADD_APPS_ITEM_ID,
         title    = "Add Apps",
         subtitle = "Pick installed apps to add to this section",
+        type     = XMBItemType.ADD_ACTION,
     )
 
     private fun addGamesItem(): XMBItem = XMBItem(
         id       = ADD_GAMES_ITEM_ID,
         title    = "Add Games",
         subtitle = "Pick games and collections to add to this category",
+        type     = XMBItemType.ADD_ACTION,
     )
 
     // ── Music ───────────────────────────────────────────────────────────────────
+
+    /** Rebuilds the Music root list in place, relocating the cursor to the same row id so a shape
+     *  change (the "Now Playing" row appearing/disappearing) never moves the visible selection. */
+    private fun refreshMusicRootPreservingCursor() {
+        val s = _uiState.value
+        val selectedId = s.currentItems.getOrNull(s.selectedItemIndex)?.id
+        clearMusicTrackCache()
+        val items = musicRootItems()
+        val restored = selectedId
+            ?.let { id -> items.indexOfFirst { it.id == id } }
+            ?.takeIf { it >= 0 }
+            ?: s.selectedItemIndex.coerceIn(0, (items.size - 1).coerceAtLeast(0))
+        _uiState.update { it.copy(currentItems = items, selectedItemIndex = restored) }
+    }
 
     // Music root: the static items (Now Playing, when something is playing; Playlist; Music Apps)
     // followed by the single "All Music" memory-card item. Folder management lives in Settings →
@@ -1818,6 +1891,14 @@ class XMBViewModel @Inject constructor(
                     type     = XMBItemType.PHOTO_ALBUMS,
                 )
             )
+            add(
+                XMBItem(
+                    id       = PHOTO_APPS_ITEM_ID,
+                    title    = "Photo Apps",
+                    subtitle = "Open your installed photo apps",
+                    type     = XMBItemType.PHOTO_APPS,
+                )
+            )
             add(addPhotoLibraryItem())
         }
     }
@@ -1828,6 +1909,20 @@ class XMBViewModel @Inject constructor(
         subtitle = "Create an album from a folder of photos",
         type     = XMBItemType.ADD_ACTION,
     )
+
+    // Photo Apps: the apps the user added (stored under a dedicated pseudo-category so they don't
+    // mix with the built-in Photo category), plus an "Add Photo Apps" row. Mirrors Music/Video Apps.
+    private suspend fun photoAppItems(): List<XMBItem> {
+        val apps = appCategoryRepository.appsForCategory(PHOTO_APPS_CATEGORY_ID)
+            .notHiddenAt(HideLocationType.CATEGORY, PHOTO_APPS_CATEGORY_ID)
+        val appItems = apps.map { it.toXmbItem(gameRepository.getAppEntry(it.packageName)) }
+        return appItems + XMBItem(
+            id       = ADD_PHOTO_APPS_ITEM_ID,
+            title    = "Add Photo Apps",
+            subtitle = "Pick installed apps to show here",
+            type     = XMBItemType.ADD_ACTION,
+        )
+    }
 
     // One folder card per Album, drillable into its photos, plus an "Add Photo Library" row.
     private fun photoAlbumItems(libraries: List<com.playfieldportal.core.domain.model.PhotoLibrary>): List<XMBItem> {
@@ -1901,11 +1996,21 @@ class XMBViewModel @Inject constructor(
     private fun handlePhotoSelection(item: XMBItem): Boolean = when {
         item.id == ALL_PHOTOS_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openPhotoView(PhotoNav.AllPhotos); true }
         item.id == PHOTO_ALBUMS_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openPhotoView(PhotoNav.Albums); true }
+        item.id == PHOTO_APPS_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openPhotoView(PhotoNav.PhotoApps); true }
         item.id == CAMERA_ITEM_ID -> { menuSound.play(MenuSound.LAUNCH); launchCamera(); true }
         item.id == ADD_PHOTO_LIBRARY_ITEM_ID -> {
             menuSound.play(MenuSound.SELECT)
             _uiState.update { it.copy(activeSettingsScreen = "settings_photo") }
             true
+        }
+        item.id == ADD_PHOTO_APPS_ITEM_ID -> {
+            menuSound.play(MenuSound.SELECT)
+            openAppPicker(AppPickerTarget.CategoryShortcuts(PHOTO_APPS_CATEGORY_ID), "Add Photo Apps")
+            true
+        }
+        // Photo-app rows launch the app.
+        _uiState.value.photoNav == PhotoNav.PhotoApps && item.packageName != null -> {
+            menuSound.play(MenuSound.LAUNCH); appCategoryRepository.launch(item.packageName); true
         }
         item.type == XMBItemType.PHOTO_FOLDER && item.id.startsWith("plib_") -> {
             menuSound.play(MenuSound.SELECT)
@@ -1924,6 +2029,7 @@ class XMBViewModel @Inject constructor(
         PhotoNav.Root       -> "root"
         PhotoNav.AllPhotos  -> "all"
         PhotoNav.Albums     -> "albums"
+        PhotoNav.PhotoApps  -> "apps"
         is PhotoNav.Library -> "library_${nav.id}"
     }
 
@@ -1958,6 +2064,9 @@ class XMBViewModel @Inject constructor(
             }
             item.type == XMBItemType.PHOTO_FOLDER && item.id.startsWith("plib_") -> {
                 openPhotoLibraryContextMenu(item.id.removePrefix("plib_"), item.title); true
+            }
+            _uiState.value.photoNav == PhotoNav.PhotoApps && item.packageName != null -> {
+                openAppContextMenu(item, categoryIdOverride = PHOTO_APPS_CATEGORY_ID); true
             }
             else -> false
         }
@@ -2101,6 +2210,7 @@ class XMBViewModel @Inject constructor(
     )
 
     fun onMusicBrowserQueryChange(query: String) {
+        markTouchInput()
         val state = _uiState.value.musicBrowser ?: return
         _uiState.update { it.copy(musicBrowser = it.musicBrowser?.copy(
             query = query, selectedIndex = 0,
@@ -2124,6 +2234,7 @@ class XMBViewModel @Inject constructor(
     }
 
     fun onMusicBrowserActivatedAt(index: Int) {
+        markTouchInput()
         _uiState.update { it.copy(musicBrowser = it.musicBrowser?.copy(selectedIndex = index)) }
         activateMusicBrowser()
     }
@@ -2155,11 +2266,13 @@ class XMBViewModel @Inject constructor(
     }
 
     fun onMusicBrowserLongPressAt(index: Int) {
+        markTouchInput()
         _uiState.update { it.copy(musicBrowser = it.musicBrowser?.copy(selectedIndex = index)) }
         openMusicBrowserContextMenu()
     }
 
     fun onMusicBrowserBack() {
+        markTouchInput()
         val b = _uiState.value.musicBrowser ?: return
         menuSound.play(MenuSound.BACK)
         when (b.view) {
@@ -2171,8 +2284,32 @@ class XMBViewModel @Inject constructor(
 
     private fun closeMusicBrowser() {
         musicBrowserJob?.cancel(); musicBrowserJob = null
+        val view = _uiState.value.musicBrowser?.view
         browserRawTracks = emptyList(); browserRawPlaylists = emptyList()
         _uiState.update { it.copy(musicBrowser = null) }
+        // Re-anchor the XMB cursor on the row the browser was opened from, so the reveal is
+        // seamless even if the root list changed shape while the browser was open.
+        if (currentCategory()?.id == BuiltInCategory.MUSIC && _uiState.value.musicNav == MusicNav.Root) {
+            val targetId = when (view) {
+                is MusicBrowserView.Playlists, is MusicBrowserView.Playlist -> PLAYLISTS_ITEM_ID
+                else -> ALL_MUSIC_ITEM_ID
+            }
+            val idx = _uiState.value.currentItems.indexOfFirst { it.id == targetId }
+            if (idx >= 0) _uiState.update { it.copy(selectedItemIndex = idx) }
+        }
+    }
+
+    /** Touch: the browser's Sort pill — same as the X button. */
+    fun onMusicBrowserSortTapped() {
+        markTouchInput()
+        cycleSort()
+    }
+
+    /** Touch: the browser's Options pill — opens the context menu for the highlighted row,
+     *  same as the Y button. */
+    fun onMusicBrowserOptionsTapped() {
+        markTouchInput()
+        openMusicBrowserContextMenu()
     }
 
     // Playlist context for a track's options menu, resolved from the browser or the inline view.
@@ -2652,6 +2789,7 @@ class XMBViewModel @Inject constructor(
         val photoTitle = when (val nav = s.photoNav) {
             PhotoNav.AllPhotos  -> "All Photos"
             PhotoNav.Albums     -> "Albums"
+            PhotoNav.PhotoApps  -> "Photo Apps"
             is PhotoNav.Library -> nav.name
             PhotoNav.Root       -> null
         }
@@ -2763,11 +2901,13 @@ class XMBViewModel @Inject constructor(
                 if (albums.isNotEmpty()) return albums to albums.indexOfFirst { it.id == "plib_${nav.id}" }.coerceAtLeast(0)
             }
             val sibs = photoRootItems().filter {
-                it.type == XMBItemType.MEMORY_CARD || it.type == XMBItemType.PHOTO_ALBUMS
+                it.type == XMBItemType.MEMORY_CARD || it.type == XMBItemType.PHOTO_ALBUMS ||
+                    it.type == XMBItemType.PHOTO_APPS
             }
             val idx = sibs.indexOfFirst { sib ->
                 when (s.photoNav) {
                     PhotoNav.AllPhotos -> sib.type == XMBItemType.MEMORY_CARD
+                    PhotoNav.PhotoApps -> sib.type == XMBItemType.PHOTO_APPS
                     else               -> sib.type == XMBItemType.PHOTO_ALBUMS  // Albums (list view)
                 }
             }.coerceAtLeast(0)
@@ -3395,11 +3535,12 @@ class XMBViewModel @Inject constructor(
         )}
     }
 
-    // Options menu for a collection row (long-press / △), in the Games root or any gaming category.
+    // Options menu for a collection row (long-press / △), in any collection-rendering category.
     private fun openCollectionRowContextMenu(collectionId: Long) {
         val collection = _uiState.value.collections.firstOrNull { it.id == collectionId } ?: return
-        // Move is only meaningful when there's another gaming category to move into.
-        val hasOtherCategory = _uiState.value.categories.any { it.isGamingCategory && it.id != collection.categoryId }
+        // Move is only meaningful when there's another category of the same kind to move into
+        // (game collections move between gaming categories, app collections between app ones).
+        val hasOtherCategory = collectionMoveTargets(collection.categoryId).isNotEmpty()
         val items = buildList {
             add(XMBContextMenuItem("open_collection",   "Open"))
             add(XMBContextMenuItem("rename_collection", "Rename Collection"))
@@ -3422,9 +3563,19 @@ class XMBViewModel @Inject constructor(
 
     // Second-level menu: pick a destination gaming category for moving a collection. Collections
     // belong to exactly one category, so this reassigns categoryId (the source of truth).
+    /** Valid destinations for moving a collection out of [fromCategoryId]: categories of the same
+     *  kind (gaming ↔ gaming, app ↔ app) that render collections — an app collection can never
+     *  land in a gaming category or a media section, and vice versa. */
+    private fun collectionMoveTargets(fromCategoryId: String): List<Category> {
+        val fromIsGaming = _uiState.value.categories.firstOrNull { it.id == fromCategoryId }?.isGamingCategory
+            ?: (fromCategoryId == BuiltInCategory.GAMES)
+        return _uiState.value.categories.filter { cat ->
+            cat.id != fromCategoryId && categoryShowsCollections(cat) && cat.isGamingCategory == fromIsGaming
+        }
+    }
+
     private fun openCollectionCategoryPicker(collectionId: Long, fromCategoryId: String) {
-        val items = _uiState.value.categories
-            .filter { it.isGamingCategory && it.id != fromCategoryId }
+        val items = collectionMoveTargets(fromCategoryId)
             .map { cat -> XMBContextMenuItem("movecol_${cat.id}", cat.name) }
         if (items.isEmpty()) return
         _uiState.update { it.copy(
@@ -3750,13 +3901,14 @@ class XMBViewModel @Inject constructor(
             if (renameId != null) {
                 collectionRepository.rename(renameId, name)
             } else {
-                val id = collectionRepository.create(name)
+                // A collection created from a collection-rendering category (gaming, Network,
+                // App Store, custom) is homed there; other contexts default to Main Game.
+                val id = collectionRepository.create(name, collectionHomeCategoryId())
                 dialog.forGameId?.let { collectionRepository.addGame(id, it) }
             }
-            // Reflect the new/renamed collection in the XMB right away — a collection created
-            // here lands in the Main Game category (the default), so refresh the current
-            // gaming category instead of waiting on the reactive collection stream.
-            if (currentCategory()?.isGamingCategory == true) {
+            // Reflect the new/renamed collection in the XMB right away instead of waiting on the
+            // reactive collection stream.
+            if (categoryShowsCollections(currentCategory())) {
                 loadItemsForCategory(currentCategory())
             }
         }
@@ -3852,6 +4004,7 @@ class XMBViewModel @Inject constructor(
                     // the insert throws (crash). Seed it (hidden) before adding.
                     if (target.categoryId == MUSIC_APPS_CATEGORY_ID) ensureMusicAppsCategory()
                     if (target.categoryId == VIDEO_APPS_CATEGORY_ID) ensureVideoAppsCategory()
+                    if (target.categoryId == PHOTO_APPS_CATEGORY_ID) ensurePhotoAppsCategory()
                     packages.forEach { pkg -> appCategoryRepository.addToCategory(pkg, target.categoryId) }
                 }
             }
@@ -3889,6 +4042,22 @@ class XMBViewModel @Inject constructor(
                 iconKey   = "ic_videos",
                 type      = CategoryType.BUILT_IN,
                 position  = 901,
+                isVisible = false,
+            )
+        )
+    }
+
+    // Same as above for the Photo Apps pseudo-category.
+    private suspend fun ensurePhotoAppsCategory() {
+        val exists = categoryRepository.observeAll().first().any { it.id == PHOTO_APPS_CATEGORY_ID }
+        if (exists) return
+        categoryRepository.upsert(
+            Category(
+                id        = PHOTO_APPS_CATEGORY_ID,
+                name      = "Photo Apps",
+                iconKey   = "ic_photos",
+                type      = CategoryType.BUILT_IN,
+                position  = 902,
                 isVisible = false,
             )
         )
@@ -4122,9 +4291,23 @@ class XMBViewModel @Inject constructor(
         prev.categories.getOrNull(prev.selectedCategoryIndex)?.id?.let { categoryCursor[it] = prev.selectedItemIndex }
         val category = prev.categories.getOrNull(index)
         val restore = category?.id?.let { categoryCursor[it] } ?: 0
-        _uiState.update { it.copy(selectedCategoryIndex = index, selectedItemIndex = restore, selectedPlatformId = null, selectedCollectionId = null, musicNav = MusicNav.Root, videoNav = VideoNav.Root, photoNav = PhotoNav.Root) }
+        // activeAppDrawerFilter is cleared as an invariant: landing on a category always shows the
+        // plain XMB (the drawer can't normally be open here, but this keeps the contextual button
+        // state correct no matter which path selected the category).
+        _uiState.update { it.copy(selectedCategoryIndex = index, selectedItemIndex = restore, selectedPlatformId = null, selectedCollectionId = null, musicNav = MusicNav.Root, videoNav = VideoNav.Root, photoNav = PhotoNav.Root, activeAppDrawerFilter = null) }
         tintWaveForCategory(category)
         loadItemsForCategory(category)
+    }
+
+    /** Touch tap on a caticon. Unlike the shared [onCategorySelected] (also driven by gamepad ◀ ▶),
+     *  this marks the input as touch so the contextual button returns in Auto mode, and it is a
+     *  no-op while drilled into a sub-item — matching [stepCategory]'s lock, so a stray tap can't
+     *  yank the user out of a folder. */
+    fun onCategoryTapped(index: Int) {
+        markTouchInput()
+        val s = _uiState.value
+        if (s.hasBlockingOverlay || s.isInSubItem) return
+        onCategorySelected(index)
     }
 
     /** Touch: step the category selection by [direction] (-1 / +1) from the current one — the swipe
@@ -4192,7 +4375,10 @@ class XMBViewModel @Inject constructor(
 
     // ── Input-source tracking (drives the touch-navigation button) ────────────────
 
-    private fun markTouchInput() {
+    /** Marks the last input source as touch. Public so fullscreen overlays (detail screens, the
+     *  music browser) can report a touch interaction, keeping the single `lastInputWasTouch` source
+     *  of truth — the same one that drives the XMB's contextual App Drawer button. */
+    fun markTouchInput() {
         if (!_uiState.value.lastInputWasTouch) _uiState.update { it.copy(lastInputWasTouch = true) }
     }
 
@@ -4320,6 +4506,16 @@ class XMBViewModel @Inject constructor(
                 Timber.d("Opening settings screen: settings_library (via setup prompt)")
                 _uiState.update { it.copy(activeSettingsScreen = "settings_library") }
             }
+            // Fixed system intent constant, no user-controlled data; NEW_TASK because the
+            // launcher isn't an activity task the settings app should join.
+            ANDROID_SETTINGS_ITEM_ID -> {
+                runCatching {
+                    context.startActivity(
+                        android.content.Intent(android.provider.Settings.ACTION_SETTINGS)
+                            .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                    )
+                }.onFailure { Timber.w(it, "Could not open device settings") }
+            }
             else -> when (category?.id) {
                 BuiltInCategory.SETTINGS -> {
                     if (item?.id != null) {
@@ -4407,6 +4603,9 @@ class XMBViewModel @Inject constructor(
 
     fun onCloseGameDetail() {
         _uiState.update { it.copy(activeGameId = null, pendingGameDetailAction = null) }
+        // Rebuild the visible list: title/artwork edits made in the detail screen must show the
+        // moment the overlay closes (the item build is one-shot, not reactive to those tables).
+        loadItemsForCategory(currentCategory())
     }
 
     fun consumeGameDetailAction() {
@@ -4416,13 +4615,14 @@ class XMBViewModel @Inject constructor(
     // ── App detail overlay ────────────────────────────────────────────────────
 
     private fun openAppDetail(knownGameId: Long?, packageName: String) {
+        val collectionHome = collectionHomeCategoryId()
         if (knownGameId != null) {
-            _uiState.update { it.copy(activeAppId = knownGameId) }
+            _uiState.update { it.copy(activeAppId = knownGameId, activeAppCollectionCategoryId = collectionHome) }
             return
         }
         viewModelScope.launch {
             val id = ensureAppShortcut(packageName)
-            _uiState.update { it.copy(activeAppId = id) }
+            _uiState.update { it.copy(activeAppId = id, activeAppCollectionCategoryId = collectionHome) }
         }
     }
 
@@ -4561,6 +4761,9 @@ class XMBViewModel @Inject constructor(
 
     fun onCloseAppDetail() {
         _uiState.update { it.copy(activeAppId = null, pendingAppDetailAction = null) }
+        // Rebuild the visible list so a freshly assigned background/icon (games-table row keyed by
+        // package) reaches the XMB rows immediately — this is what puts artworkUri on app items.
+        loadItemsForCategory(currentCategory())
     }
 
     fun consumeAppDetailAction() {
@@ -4713,7 +4916,9 @@ class XMBViewModel @Inject constructor(
             context.pfpDataStore.data.collect { prefs ->
                 val mode = com.playfieldportal.core.domain.model.TouchNavButtonMode
                     .fromName(prefs[KEY_TOUCH_NAV_BUTTON])
-                _uiState.update { it.copy(touchNavButtonMode = mode) }
+                val sensitivity = com.playfieldportal.core.domain.model.TouchSensitivity
+                    .fromName(prefs[KEY_TOUCH_SENSITIVITY])
+                _uiState.update { it.copy(touchNavButtonMode = mode, touchSensitivity = sensitivity) }
             }
         }
     }
@@ -4755,6 +4960,8 @@ class XMBViewModel @Inject constructor(
         private val KEY_MENU_SOUND_ENABLED = booleanPreferencesKey("sound_menu_enabled")
         // Must match DisplaySettingsViewModel.KEY_TOUCH_NAV_BUTTON — both read/write this pref.
         private val KEY_TOUCH_NAV_BUTTON  = stringPreferencesKey("interface_touch_nav_button")
+        // Must match DisplaySettingsViewModel.KEY_TOUCH_SENSITIVITY — both read/write this pref.
+        private val KEY_TOUCH_SENSITIVITY = stringPreferencesKey("interface_touch_sensitivity")
         private const val SETUP_ITEM_ID = "library_setup"
         private const val NO_CONSOLES_ITEM_ID = "no_consoles"
         private const val NO_GAMES_ITEM_ID    = "no_games"
@@ -4807,6 +5014,9 @@ class XMBViewModel @Inject constructor(
         private const val CAMERA_ITEM_ID = "photo_camera"
         private const val ADD_PHOTO_LIBRARY_ITEM_ID = "add_photo_library"
         private const val PHOTO_ALBUMS_ITEM_ID = "photo_albums"
+        private const val PHOTO_APPS_ITEM_ID = "photo_apps_item"
+        private const val ADD_PHOTO_APPS_ITEM_ID = "add_photo_apps"
+        private const val PHOTO_APPS_CATEGORY_ID = "photo_apps"
         // Generic memory-card art for the "Music" (All Music) item — the physical-media default
         // PNG, loaded from assets via Coil (same convention as PhysicalMediaIcon).
         private const val MEMORY_CARD_ASSET_URI =
@@ -4833,7 +5043,11 @@ class XMBViewModel @Inject constructor(
             XMBItem(id = "drawer_recent",    title = "Recently Used", subtitle = "Apps you've used lately"),
         )
 
+        // First item opens the device's own Settings app (not a PFP screen).
+        internal const val ANDROID_SETTINGS_ITEM_ID = "settings_android_system"
+
         private val SETTINGS_ITEMS = listOf(
+            XMBItem(id = ANDROID_SETTINGS_ITEM_ID,  title = "Android Settings", subtitle = "Opens device settings"),
             XMBItem(id = "settings_library",    title = "Library",          subtitle = "ROM sources & scanning"),
             XMBItem(id = "settings_music",      title = "Music",            subtitle = "Music folders & default player"),
             XMBItem(id = "settings_video",      title = "Video",            subtitle = "Video libraries, scanning & playback"),

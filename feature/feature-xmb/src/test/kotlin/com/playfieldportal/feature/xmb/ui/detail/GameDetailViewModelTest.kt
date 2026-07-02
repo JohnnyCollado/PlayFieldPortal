@@ -128,6 +128,14 @@ class GameDetailViewModelTest {
     @After
     fun tearDown() { Dispatchers.resetMain() }
 
+    // A launch Intent as a mock, not a real android.content.Intent: the ViewModel logs
+    // intent.toUri(...) on the success path, and that real Android method throws "not mocked" in a
+    // plain JVM unit test. Stubbing toUri lets the launch flow run while keeping reference identity
+    // (mockk uses identity equals) so assertEquals on the emitted intent still holds.
+    private fun fakeLaunchIntent(): android.content.Intent = mockk(relaxed = true) {
+        every { toUri(any()) } returns "intent://fake"
+    }
+
     // ── loadGame ──────────────────────────────────────────────────────────
 
     @Test
@@ -263,7 +271,7 @@ class GameDetailViewModelTest {
             intentType           = com.playfieldportal.core.domain.model.IntentType.ACTION_VIEW,
             supportedPlatformIds = listOf("psx"),
         )
-        val fakeIntent = android.content.Intent(android.content.Intent.ACTION_VIEW)
+        val fakeIntent = fakeLaunchIntent()
         every { profileRepository.getInstalledProfiles() }        returns listOf(fakeProfile)
         every { profileRepository.getProfilesForPlatform("psx") } returns listOf(fakeProfile)
         every { intentResolver.resolve(any(), any()) }            returns Result.success(fakeIntent)
@@ -298,7 +306,7 @@ class GameDetailViewModelTest {
             intentType           = com.playfieldportal.core.domain.model.IntentType.COMPONENT,
             supportedPlatformIds = listOf("psx"),
         )
-        val fakeIntent = android.content.Intent(android.content.Intent.ACTION_VIEW)
+        val fakeIntent = fakeLaunchIntent()
         coEvery { gameRepository.getById(1L) } returns overrideGame
         coEvery { platformDao.getById("psx") } returns platformDefault
         every { profileRepository.getInstalledProfiles() } returns listOf(retroarch, duckstation)
@@ -335,7 +343,7 @@ class GameDetailViewModelTest {
             intentType           = com.playfieldportal.core.domain.model.IntentType.COMPONENT,
             supportedPlatformIds = listOf("psx"),
         )
-        val fakeIntent = android.content.Intent(android.content.Intent.ACTION_VIEW)
+        val fakeIntent = fakeLaunchIntent()
         coEvery { platformDao.getById("psx") } returns platformDefault
         coEvery { memoryCardRepository.getById("psx") } returns memoryCard
         every { profileRepository.getInstalledProfiles() } returns listOf(retroarch, duckstation)
@@ -367,7 +375,7 @@ class GameDetailViewModelTest {
             intentType           = com.playfieldportal.core.domain.model.IntentType.COMPONENT,
             supportedPlatformIds = listOf("psx"),
         )
-        val fakeIntent = android.content.Intent(android.content.Intent.ACTION_VIEW)
+        val fakeIntent = fakeLaunchIntent()
         coEvery { platformDao.getById("psx") } returns platformDefault
         every { profileRepository.getInstalledProfiles() } returns listOf(retroarch, duckstation)
         every { profileRepository.getProfilesForPlatform("psx") } returns listOf(retroarch, duckstation)

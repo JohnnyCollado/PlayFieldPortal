@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.domain.model.TouchNavButtonMode
+import com.playfieldportal.core.domain.model.TouchSensitivity
 import com.playfieldportal.core.ui.wave.WaveStyle
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -31,6 +32,8 @@ private val KEY_RESPECT_BATTERY    = booleanPreferencesKey("display_battery_save
 private val KEY_ICON_STYLE         = stringPreferencesKey("display_icon_style")
 // Must match XMBViewModel.KEY_TOUCH_NAV_BUTTON — both read/write this same pref.
 private val KEY_TOUCH_NAV_BUTTON   = stringPreferencesKey("interface_touch_nav_button")
+// Must match XMBViewModel.KEY_TOUCH_SENSITIVITY — both read/write this same pref.
+private val KEY_TOUCH_SENSITIVITY  = stringPreferencesKey("interface_touch_sensitivity")
 internal val KEY_CUSTOM_WALLPAPER  = stringPreferencesKey("display_custom_wallpaper")
 // Must match XMBViewModel.KEY_MENU_SOUND_ENABLED — both read/write this same pref.
 private val KEY_MENU_SOUND         = booleanPreferencesKey("sound_menu_enabled")
@@ -49,6 +52,12 @@ private val TOUCH_NAV_BUTTON_LABELS = mapOf(
     TouchNavButtonMode.ALWAYS_HIDE to "Always Hide",
 )
 
+private val TOUCH_SENSITIVITY_LABELS = mapOf(
+    TouchSensitivity.LOW    to "Low",
+    TouchSensitivity.NORMAL to "Normal",
+    TouchSensitivity.HIGH   to "High",
+)
+
 private val WAVE_STYLE_LABELS = mapOf(
     WaveStyle.ANIMATED       to "Animated",
     WaveStyle.REDUCED        to "Reduced",
@@ -65,6 +74,7 @@ data class DisplaySettingsUiState(
     // Raw enum name — mapped to a display label in the UI
     val iconStyleName: String = "PSP_RECTANGLE",
     val touchNavButtonMode: TouchNavButtonMode = TouchNavButtonMode.AUTO,
+    val touchSensitivity: TouchSensitivity = TouchSensitivity.NORMAL,
     val menuSoundEnabled: Boolean = true,
     val customWallpaperPath: String? = null,
     val wallpaperMessage: String? = null,
@@ -99,6 +109,7 @@ class DisplaySettingsViewModel @Inject constructor(
             respectBatterySaver  = prefs[KEY_RESPECT_BATTERY] ?: true,
             iconStyleName        = prefs[KEY_ICON_STYLE]      ?: "PSP_RECTANGLE",
             touchNavButtonMode   = TouchNavButtonMode.fromName(prefs[KEY_TOUCH_NAV_BUTTON]),
+            touchSensitivity     = TouchSensitivity.fromName(prefs[KEY_TOUCH_SENSITIVITY]),
             menuSoundEnabled     = prefs[KEY_MENU_SOUND]      ?: true,
             customWallpaperPath  = prefs[KEY_CUSTOM_WALLPAPER],
             wallpaperMessage     = msg,
@@ -137,6 +148,15 @@ class DisplaySettingsViewModel @Inject constructor(
 
     fun touchNavButtonLabel(): String =
         TOUCH_NAV_BUTTON_LABELS[uiState.value.touchNavButtonMode] ?: uiState.value.touchNavButtonMode.name
+
+    fun cycleTouchSensitivity() {
+        val levels = TouchSensitivity.entries
+        val next = levels[(levels.indexOf(uiState.value.touchSensitivity) + 1) % levels.size]
+        save { it[KEY_TOUCH_SENSITIVITY] = next.name }
+    }
+
+    fun touchSensitivityLabel(): String =
+        TOUCH_SENSITIVITY_LABELS[uiState.value.touchSensitivity] ?: uiState.value.touchSensitivity.name
 
     // ── Wallpaper ─────────────────────────────────────────────────────────────
 

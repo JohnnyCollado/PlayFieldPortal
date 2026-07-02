@@ -45,6 +45,7 @@ import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.theme.menuCursor
+import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.core.domain.model.Video
 import kotlinx.coroutines.delay
 import timber.log.Timber
@@ -339,7 +340,7 @@ private fun OptionsOverlay(
         ) {
             Text(
                 "Options",
-                color = Color(0xFF7FB2E8),
+                color = menuCursorEdge(),
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
@@ -353,7 +354,7 @@ private fun OptionsOverlay(
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(label, color = Color.White, fontSize = 15.sp)
-                    Text(value, color = Color(0xFF7FB2E8), fontSize = 14.sp)
+                    Text(value, color = menuCursorEdge(), fontSize = 14.sp)
                 }
             }
             Spacer(Modifier.height(4.dp))

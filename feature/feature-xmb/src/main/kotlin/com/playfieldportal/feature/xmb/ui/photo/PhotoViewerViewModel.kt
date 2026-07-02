@@ -160,6 +160,7 @@ class PhotoViewerViewModel @Inject constructor(
 
     fun toggleControls() = _uiState.update { it.copy(controlsVisible = !it.controlsVisible) }
     fun openOptions() = _uiState.update { it.copy(showOptions = true, optionsIndex = 0) }
+    fun closeOptions() = _uiState.update { it.copy(showOptions = false) }
     fun onClosedHandled() = _uiState.update { it.copy(closed = false) }
     fun dismissMessage() = _uiState.update { it.copy(actionMessage = null) }
 
