@@ -492,8 +492,9 @@ background, navigation model and options-menu behaviour are homages to Sony's or
 
 **"XrossMediaBar", "XMB", "PSP", "PlayStation" and related marks are trademarks of Sony Interactive
 Entertainment Inc.** Play Field Portal is an independent, non-commercial fan project. It is **not
-affiliated with, endorsed by, or sponsored by Sony**, and ships none of Sony's code, firmware, fonts
-or proprietary assets.
+affiliated with, endorsed by, or sponsored by Sony**, and ships none of Sony's code, firmware or
+fonts. The bundled UI artwork and menu sounds come from the community *XMB Menu for ES-DE* theme
+(see below) and remain the property of their respective authors.
 
 ### App icon & logo
 The Play Field Portal **app icon and logo** were created by **johakovi**
@@ -512,6 +513,15 @@ its respective authors.
 - Project: XMB Menu for ES-DE · Authors: Anthony Caccese · InitialDin
 - Source: https://github.com/anthonycaccese/xmb-menu-es-de
 - Used for: category-bar icons, per-console system icons, the physical-media (cartridge) icon set
+
+### Menu sounds
+The navigation, select, back and launch **sound effects** are bundled from the same
+**[XMB Menu for ES-DE](https://github.com/anthonycaccese/xmb-menu-es-de)** theme and remain the
+property of their respective authors. Used here with gratitude.
+
+- Project: XMB Menu for ES-DE
+- Source: https://github.com/anthonycaccese/xmb-menu-es-de
+- Used for: the XMB menu sound effects (scroll, select, back, launch, favorite, system browse)
 
 ### Game artwork & metadata
 Fetched at the user's request from third-party providers and remaining the property of their owners:

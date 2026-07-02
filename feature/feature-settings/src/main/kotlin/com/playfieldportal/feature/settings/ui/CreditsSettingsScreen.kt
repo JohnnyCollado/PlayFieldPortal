@@ -35,8 +35,9 @@ fun CreditsSettingsScreen(
             CreditParagraph(
                 "\"XrossMediaBar\", \"XMB\", \"PSP\" and \"PlayStation\" are trademarks of Sony " +
                     "Interactive Entertainment Inc. Play Field Portal is an independent, non-commercial " +
-                    "fan project — not affiliated with, endorsed by, or sponsored by Sony, and it ships " +
-                    "none of Sony's code, fonts or proprietary assets."
+                    "fan project — not affiliated with, endorsed by, or sponsored by Sony. Bundled UI " +
+                    "artwork and menu sounds come from the community \"XMB Menu for ES-DE\" theme " +
+                    "(credited below) and remain the property of their respective authors."
             )
 
             Spacer(Modifier.height(16.dp))
@@ -63,6 +64,18 @@ fun CreditsSettingsScreen(
             )
             CreditLine("Project", "XMB Menu for ES-DE")
             CreditLine("Authors", "Anthony Caccese · InitialDin")
+            CreditLine("Source", "github.com/anthonycaccese/xmb-menu-es-de")
+
+            Spacer(Modifier.height(16.dp))
+            SettingsGroup("Menu Sounds")
+
+            CreditParagraph(
+                "The navigation, select, back and launch sound effects are bundled from the same " +
+                    "\"XMB Menu for ES-DE\" theme and remain the property of their respective authors. " +
+                    "If they are your work, or you hold the rights, please reach out for attribution " +
+                    "or removal."
+            )
+            CreditLine("Project", "XMB Menu for ES-DE")
             CreditLine("Source", "github.com/anthonycaccese/xmb-menu-es-de")
 
             Spacer(Modifier.height(16.dp))
