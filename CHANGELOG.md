@@ -3,6 +3,64 @@
 All notable changes to Play Field Portal are documented here. This project follows
 [Keep a Changelog](https://keepachangelog.com/) and [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+Touch-first navigation and a consistent, theme-matched UI across every full-screen menu.
+(Still `versionName 1.0.0-alpha.3` / `versionCode 3` — not yet cut as a release.)
+
+### Added
+- **Full XMB touch navigation.** Swipe to step categories/items (discrete, D-pad-equivalent
+  stepping with a small fling bonus), tap-to-point / tap-again-to-open, and a left-edge
+  swipe for Back. A bottom-right contextual **App Drawer** button appears while using touch.
+- **Touch UI that follows the last input source.** The header pills on the Game/App/Video/
+  Photo detail screens and the Music browser (Back / Options / Sort) show only when the last
+  input was touch and hide when a controller is used — the same behaviour as the XMB's
+  contextual App Drawer button. Controllers keep their on-screen A/X/Y/B hints.
+- **App collections for non-gaming categories** (Network, App Store, custom): create one from
+  an app's Options, drill in, and move / rename / pin / delete — Android apps only.
+- **Android Settings** entry at the top of the Settings category, opening the device settings.
+- **Touch Sensitivity** setting (Low / Normal / High) in Settings ▸ Display, scaling swipe
+  step distance.
+- **Auto-fading photo title.** The photo viewer shows a centred title on each image, then
+  fades it out after a short delay.
+- **Status-bar sort chip.** On touch, the XMB status bar's sort label becomes a tappable chip
+  that cycles the sort order; on controller it stays a plain label (X / Square cycles it).
+- Icons on all detail-screen action buttons; plus (＋) glyph on "Add Apps / Add Games" rows.
+
+### Changed
+- **Detail screens reskinned to match the Music browser** — Game/App/Video/Photo now use the
+  translucent theme-gradient backdrop (the XMB wave shows through) with header pills, and the
+  XMB foreground is hidden behind them.
+- **One shared themed context menu** for the Game/App/Video/Photo option popups, matching every
+  other context menu (right-edge, wave-colour panel, accent cursor). App Detail now mirrors
+  Game Detail: a single **Launch** button plus an Options menu holding the rest.
+- **Y / Triangle** opens the Options menu on the Game and App detail pages.
+- App-artwork files are **versioned**, so an icon/hero/background change is reflected
+  immediately; closing App/Game detail refreshes the list so a new background shows on the XMB
+  at once.
+- **App Drawer:** white labels with a theme-accent filter highlight; a touch-aware grid cursor
+  that hides during touch scrolling and resumes near the last touch position on the d-pad.
+- Android Settings uses the wrench icon, matching the other Settings rows.
+
+### Removed
+- The dedicated **Photo Apps** section (the Photo category no longer lists installed photo apps).
+- The floating **Back** button that replaced the App Drawer button while drilled in — going back
+  is now the left-edge swipe or tapping the active memory-card icon under the caticon.
+
+### Fixed
+- **Seamless full-screen-menu back-out.** The category bar no longer animates back into place
+  when the XMB reappears after closing the Music browser / app drawer / Settings (the visible
+  "snap"); the selected slot is now seated instantly.
+- Non-gaming apps show their assigned background on the XMB, and artwork changes reflect
+  without a restart.
+- Tapping a caticon while drilled into a sub-item is a no-op; the contextual App Drawer button
+  returns after tapping caticons.
+- **Launch crash** on the current Compose BOM — `collectAsStateWithLifecycle` now reads the
+  platform `LocalLifecycleOwner` (the `androidx.lifecycle.compose` variant isn't present and
+  crashed at composition).
+- Repaired 8 pre-existing unit tests that used improper Android mocks (stick `MotionEvent`
+  action, launch `Intent`).
+
 ## [1.0.0-alpha.3] — 2026-07-02
 
 Third alpha. Adds a full **Photo** section and **Video** section polish, moves ROM libraries

@@ -33,7 +33,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bookmarks
-import androidx.compose.material.icons.filled.Collections
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.LibraryMusic
@@ -261,7 +260,6 @@ private fun SiblingIcon(item: XMBItem, selected: Boolean) {
         XMBItemType.VIDEO_COLLECTIONS -> Icons.Filled.Bookmarks
         XMBItemType.PHOTO_FOLDER    -> Icons.Filled.Folder
         XMBItemType.PHOTO_ALBUMS    -> Icons.Filled.PhotoLibrary
-        XMBItemType.PHOTO_APPS      -> Icons.Filled.Collections
         // The video "Playlists" section row (PLAYLIST type with no playlistId) uses a playlist glyph.
         XMBItemType.PLAYLIST        -> Icons.Filled.QueueMusic
         else                        -> null
@@ -760,12 +758,6 @@ private fun XmbItemLeadingIcon(
         item.type == XMBItemType.PHOTO_ALBUMS -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
                 Icon(Icons.Filled.PhotoLibrary, contentDescription = null, tint = InactiveText, modifier = Modifier.size(48.dp))
-            }
-        }
-        // The "Photo Apps" section row at the Photo root (distinct glyph from Albums and Camera).
-        item.type == XMBItemType.PHOTO_APPS -> {
-            Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.Collections, contentDescription = null, tint = InactiveText, modifier = Modifier.size(48.dp))
             }
         }
         // The Camera row (only present when a camera app exists).

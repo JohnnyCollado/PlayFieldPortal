@@ -233,7 +233,6 @@ sealed interface PhotoNav {
     data object Root : PhotoNav
     data object AllPhotos : PhotoNav
     data object Albums : PhotoNav
-    data object PhotoApps : PhotoNav
     data class Library(val id: String, val name: String) : PhotoNav
 }
 
@@ -491,7 +490,6 @@ enum class XMBItemType {
     PHOTO_ALBUMS,
     PHOTO_FOLDER,
     PHOTO_FILE,
-    PHOTO_APPS,
     CAMERA,
     // "Add …" / "Create …" rows (add library/folder/apps/tracks, create playlist) — plus glyph.
     ADD_ACTION,
@@ -1018,10 +1016,6 @@ class XMBViewModel @Inject constructor(
                     }
                     is PhotoNav.Library -> photoRepository.observePhotosByLibrary(nav.id).collect { photos ->
                         setPhotoItems(photos, emptyLibraryPhotosItem())
-                    }
-                    PhotoNav.PhotoApps -> {
-                        val items = photoAppItems()
-                        _uiState.update { it.copy(currentItems = items) }
                     }
                 }
                 else -> {
@@ -1891,14 +1885,6 @@ class XMBViewModel @Inject constructor(
                     type     = XMBItemType.PHOTO_ALBUMS,
                 )
             )
-            add(
-                XMBItem(
-                    id       = PHOTO_APPS_ITEM_ID,
-                    title    = "Photo Apps",
-                    subtitle = "Open your installed photo apps",
-                    type     = XMBItemType.PHOTO_APPS,
-                )
-            )
             add(addPhotoLibraryItem())
         }
     }
@@ -1909,20 +1895,6 @@ class XMBViewModel @Inject constructor(
         subtitle = "Create an album from a folder of photos",
         type     = XMBItemType.ADD_ACTION,
     )
-
-    // Photo Apps: the apps the user added (stored under a dedicated pseudo-category so they don't
-    // mix with the built-in Photo category), plus an "Add Photo Apps" row. Mirrors Music/Video Apps.
-    private suspend fun photoAppItems(): List<XMBItem> {
-        val apps = appCategoryRepository.appsForCategory(PHOTO_APPS_CATEGORY_ID)
-            .notHiddenAt(HideLocationType.CATEGORY, PHOTO_APPS_CATEGORY_ID)
-        val appItems = apps.map { it.toXmbItem(gameRepository.getAppEntry(it.packageName)) }
-        return appItems + XMBItem(
-            id       = ADD_PHOTO_APPS_ITEM_ID,
-            title    = "Add Photo Apps",
-            subtitle = "Pick installed apps to show here",
-            type     = XMBItemType.ADD_ACTION,
-        )
-    }
 
     // One folder card per Album, drillable into its photos, plus an "Add Photo Library" row.
     private fun photoAlbumItems(libraries: List<com.playfieldportal.core.domain.model.PhotoLibrary>): List<XMBItem> {
@@ -1996,21 +1968,11 @@ class XMBViewModel @Inject constructor(
     private fun handlePhotoSelection(item: XMBItem): Boolean = when {
         item.id == ALL_PHOTOS_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openPhotoView(PhotoNav.AllPhotos); true }
         item.id == PHOTO_ALBUMS_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openPhotoView(PhotoNav.Albums); true }
-        item.id == PHOTO_APPS_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openPhotoView(PhotoNav.PhotoApps); true }
         item.id == CAMERA_ITEM_ID -> { menuSound.play(MenuSound.LAUNCH); launchCamera(); true }
         item.id == ADD_PHOTO_LIBRARY_ITEM_ID -> {
             menuSound.play(MenuSound.SELECT)
             _uiState.update { it.copy(activeSettingsScreen = "settings_photo") }
             true
-        }
-        item.id == ADD_PHOTO_APPS_ITEM_ID -> {
-            menuSound.play(MenuSound.SELECT)
-            openAppPicker(AppPickerTarget.CategoryShortcuts(PHOTO_APPS_CATEGORY_ID), "Add Photo Apps")
-            true
-        }
-        // Photo-app rows launch the app.
-        _uiState.value.photoNav == PhotoNav.PhotoApps && item.packageName != null -> {
-            menuSound.play(MenuSound.LAUNCH); appCategoryRepository.launch(item.packageName); true
         }
         item.type == XMBItemType.PHOTO_FOLDER && item.id.startsWith("plib_") -> {
             menuSound.play(MenuSound.SELECT)
@@ -2029,7 +1991,6 @@ class XMBViewModel @Inject constructor(
         PhotoNav.Root       -> "root"
         PhotoNav.AllPhotos  -> "all"
         PhotoNav.Albums     -> "albums"
-        PhotoNav.PhotoApps  -> "apps"
         is PhotoNav.Library -> "library_${nav.id}"
     }
 
@@ -2064,9 +2025,6 @@ class XMBViewModel @Inject constructor(
             }
             item.type == XMBItemType.PHOTO_FOLDER && item.id.startsWith("plib_") -> {
                 openPhotoLibraryContextMenu(item.id.removePrefix("plib_"), item.title); true
-            }
-            _uiState.value.photoNav == PhotoNav.PhotoApps && item.packageName != null -> {
-                openAppContextMenu(item, categoryIdOverride = PHOTO_APPS_CATEGORY_ID); true
             }
             else -> false
         }
@@ -2709,6 +2667,12 @@ class XMBViewModel @Inject constructor(
         }
     }
 
+    /** Touch: the status-bar sort chip — cycles the sort order, same as X/Square. */
+    fun onSortLabelTapped() {
+        markTouchInput()
+        cycleSort()
+    }
+
     private fun cycleSort() {
         // The fullscreen music browser sorts its own track views (not the playlists list).
         _uiState.value.musicBrowser?.let { browser ->
@@ -2789,7 +2753,6 @@ class XMBViewModel @Inject constructor(
         val photoTitle = when (val nav = s.photoNav) {
             PhotoNav.AllPhotos  -> "All Photos"
             PhotoNav.Albums     -> "Albums"
-            PhotoNav.PhotoApps  -> "Photo Apps"
             is PhotoNav.Library -> nav.name
             PhotoNav.Root       -> null
         }
@@ -2901,13 +2864,11 @@ class XMBViewModel @Inject constructor(
                 if (albums.isNotEmpty()) return albums to albums.indexOfFirst { it.id == "plib_${nav.id}" }.coerceAtLeast(0)
             }
             val sibs = photoRootItems().filter {
-                it.type == XMBItemType.MEMORY_CARD || it.type == XMBItemType.PHOTO_ALBUMS ||
-                    it.type == XMBItemType.PHOTO_APPS
+                it.type == XMBItemType.MEMORY_CARD || it.type == XMBItemType.PHOTO_ALBUMS
             }
             val idx = sibs.indexOfFirst { sib ->
                 when (s.photoNav) {
                     PhotoNav.AllPhotos -> sib.type == XMBItemType.MEMORY_CARD
-                    PhotoNav.PhotoApps -> sib.type == XMBItemType.PHOTO_APPS
                     else               -> sib.type == XMBItemType.PHOTO_ALBUMS  // Albums (list view)
                 }
             }.coerceAtLeast(0)
@@ -4004,7 +3965,6 @@ class XMBViewModel @Inject constructor(
                     // the insert throws (crash). Seed it (hidden) before adding.
                     if (target.categoryId == MUSIC_APPS_CATEGORY_ID) ensureMusicAppsCategory()
                     if (target.categoryId == VIDEO_APPS_CATEGORY_ID) ensureVideoAppsCategory()
-                    if (target.categoryId == PHOTO_APPS_CATEGORY_ID) ensurePhotoAppsCategory()
                     packages.forEach { pkg -> appCategoryRepository.addToCategory(pkg, target.categoryId) }
                 }
             }
@@ -4042,22 +4002,6 @@ class XMBViewModel @Inject constructor(
                 iconKey   = "ic_videos",
                 type      = CategoryType.BUILT_IN,
                 position  = 901,
-                isVisible = false,
-            )
-        )
-    }
-
-    // Same as above for the Photo Apps pseudo-category.
-    private suspend fun ensurePhotoAppsCategory() {
-        val exists = categoryRepository.observeAll().first().any { it.id == PHOTO_APPS_CATEGORY_ID }
-        if (exists) return
-        categoryRepository.upsert(
-            Category(
-                id        = PHOTO_APPS_CATEGORY_ID,
-                name      = "Photo Apps",
-                iconKey   = "ic_photos",
-                type      = CategoryType.BUILT_IN,
-                position  = 902,
                 isVisible = false,
             )
         )
@@ -5014,9 +4958,6 @@ class XMBViewModel @Inject constructor(
         private const val CAMERA_ITEM_ID = "photo_camera"
         private const val ADD_PHOTO_LIBRARY_ITEM_ID = "add_photo_library"
         private const val PHOTO_ALBUMS_ITEM_ID = "photo_albums"
-        private const val PHOTO_APPS_ITEM_ID = "photo_apps_item"
-        private const val ADD_PHOTO_APPS_ITEM_ID = "add_photo_apps"
-        private const val PHOTO_APPS_CATEGORY_ID = "photo_apps"
         // Generic memory-card art for the "Music" (All Music) item — the physical-media default
         // PNG, loaded from assets via Coil (same convention as PhysicalMediaIcon).
         private const val MEMORY_CARD_ASSET_URI =

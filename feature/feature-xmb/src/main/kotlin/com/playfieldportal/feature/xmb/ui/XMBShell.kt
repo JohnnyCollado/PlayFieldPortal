@@ -94,6 +94,7 @@ fun XMBShellContainer(
         onStepItem = viewModel::stepItem,
         onTouchBack = viewModel::onHomeBack,
         onTouchInput = viewModel::markTouchInput,
+        onXmbSortTapped = viewModel::onSortLabelTapped,
         onOpenAppDrawer = viewModel::onOpenAppDrawer,
         onItemTap = viewModel::onItemTap,
         onItemLongPress = viewModel::onItemLongPress,
@@ -159,6 +160,7 @@ fun XMBShell(
     onStepItem: (Int) -> Unit = {},
     onTouchBack: () -> Unit = {},
     onTouchInput: () -> Unit = {},
+    onXmbSortTapped: () -> Unit = {},
     onOpenAppDrawer: () -> Unit = {},
     // Row tap: move the cursor there, or activate if it's already selected (see XMBViewModel.onItemTap).
     onItemTap: (Int) -> Unit = {},
@@ -280,6 +282,8 @@ fun XMBShell(
             ) {
             XmbPspStatusStrip(
                 sortLabel = uiState.sortLabel,
+                showSortButton = uiState.resolvedShowTouchButton,
+                onSortTapped = onXmbSortTapped,
                 modifier = Modifier.align(Alignment.TopCenter),
             )
 
