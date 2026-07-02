@@ -13,8 +13,9 @@
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
-    <!-- Required for full PlayFieldPortal/ folder access on API 30+ -->
-    <!-- Google Play justification: users install .xmbtheme packs and backups here -->
+    <!-- OPTIONAL / legacy. ROM libraries now use SAF (folder picker) and need no storage
+         permission; this is only requested at point-of-need for older raw-path console libraries
+         and the PlayFieldPortal/ theme-pack + backup folder. New installs never require it. -->
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
 
     <!-- Launcher role — see all installed apps -->

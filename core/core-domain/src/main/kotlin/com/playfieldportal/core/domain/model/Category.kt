@@ -38,6 +38,7 @@ object BuiltInCategory {
     const val GAMES            = "games"
     const val MUSIC            = "music"
     const val VIDEO            = "videos"
+    const val PHOTO            = "photos"
     const val ANDROID          = "android"
     const val APP_DRAWER       = "app_drawer"
     const val SETTINGS         = "settings"

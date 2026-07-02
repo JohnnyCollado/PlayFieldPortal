@@ -11,7 +11,11 @@ data class Game(
     val id: Long = 0,
     val title: String,
     val platformId: String,
-    val romPath: String?          = null,   // null for native Android games
+    val romPath: String?          = null,   // raw path (null for native Android games); for SAF
+                                            // games this is the derived path used by {rom_path}
+    // SAF document content:// URI for the ROM. Present when the game came from a SAF library and is
+    // the preferred launch handle (no storage permission needed); null for legacy raw-path games.
+    val romUri: String?           = null,
     val packageName: String?      = null,   // null for ROM-based games
     val emulatorPackage: String?  = null,   // preferred emulator override
     val artworkUri: String?       = null,   // cached box/grid art path

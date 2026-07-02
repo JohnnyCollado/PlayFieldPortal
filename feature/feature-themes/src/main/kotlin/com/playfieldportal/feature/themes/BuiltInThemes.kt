@@ -11,7 +11,7 @@ object BuiltInThemes {
 
     val CLASSIC_PSP_BLUE = ThemeEntity(
         id               = "builtin_classic_blue",
-        name             = "Classic PSP Blue",
+        name             = "Classic Blue",
         author           = "Play Field Portal",
         version          = "1.0",
         waveColor        = 0xFF0055AAL,

@@ -30,6 +30,11 @@ data class GameEntity(
     @ColumnInfo(name = "rom_path")
     val romPath: String?,
 
+    // SAF content:// URI for the ROM; null for legacy raw-path games. Not unique-indexed — dedupe
+    // stays on rom_path (always populated, raw or SAF-derived).
+    @ColumnInfo(name = "rom_uri")
+    val romUri: String? = null,
+
     @ColumnInfo(name = "package_name")
     val packageName: String?,
 
@@ -109,6 +114,7 @@ fun GameEntity.toDomain() = Game(
     title               = title,
     platformId          = platformId,
     romPath             = romPath,
+    romUri              = romUri,
     packageName         = packageName,
     emulatorPackage     = emulatorPackage,
     artworkUri          = artworkUri,
@@ -139,6 +145,7 @@ fun Game.toEntity() = GameEntity(
     title               = title,
     platformId          = platformId,
     romPath             = romPath,
+    romUri              = romUri,
     packageName         = packageName,
     emulatorPackage     = emulatorPackage,
     artworkUri          = artworkUri,

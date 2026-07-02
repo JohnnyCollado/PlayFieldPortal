@@ -41,6 +41,11 @@ interface MemoryCardDao {
     @Query("UPDATE memory_cards SET rom_directory = :dir WHERE platform_id = :platformId")
     suspend fun setRomDirectory(platformId: String, dir: String?)
 
+    // Sets both the SAF tree URI (launch/scan source of truth) and the derived raw path (display /
+    // {rom_path}) in one call so they never drift apart.
+    @Query("UPDATE memory_cards SET tree_uri = :treeUri, rom_directory = :dir WHERE platform_id = :platformId")
+    suspend fun setSafFolder(platformId: String, treeUri: String?, dir: String?)
+
     @Query("UPDATE memory_cards SET emulator_id = :emulatorId WHERE platform_id = :platformId")
     suspend fun setEmulator(platformId: String, emulatorId: String?)
 

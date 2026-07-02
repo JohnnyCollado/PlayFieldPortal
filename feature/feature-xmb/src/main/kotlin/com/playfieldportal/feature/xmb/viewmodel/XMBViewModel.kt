@@ -1,6 +1,8 @@
 package com.playfieldportal.feature.xmb.viewmodel
 
 import android.content.Context
+import android.content.Intent
+import android.provider.MediaStore
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -126,6 +128,10 @@ data class XMBContextMenu(
     val videoLibraryId: String? = null,
     // Set on the "Add to Playlist" submenu opened for a video (marks that submenu).
     val videoPlaylistPickerVideoId: String? = null,
+    // Set on a photo row's options menu.
+    val photoFileId: String? = null,
+    // Set on a photo library (Album) card's options menu.
+    val photoLibraryId: String? = null,
 )
 
 data class XMBContextMenuItem(
@@ -203,6 +209,9 @@ data class AppPickerState(
 sealed interface VideoNav {
     data object Root : VideoNav
     data object AllVideos : VideoNav
+    // "Collections" groups the three curated views (Recently Watched / Favorites / Playlists) under
+    // one root entry so the Video root stays uncluttered. Those three live one level below it.
+    data object Collections : VideoNav
     data object RecentlyWatched : VideoNav
     data object Favorites : VideoNav
     data object Playlists : VideoNav
@@ -211,6 +220,31 @@ sealed interface VideoNav {
     data class Library(val id: String, val name: String) : VideoNav
     data object VideoApps : VideoNav
 }
+
+// The three views that live under "Collections" — used so BACK from them returns to Collections
+// rather than the Video root. A Playlist backs to Playlists first (handled separately).
+private val VideoNav.isVideoCollectionChild: Boolean
+    get() = this == VideoNav.RecentlyWatched || this == VideoNav.Favorites || this == VideoNav.Playlists
+
+// Which Photo sub-screen is open. Mirrors [VideoNav], kept deliberately minimal (PSP memory-card
+// style): the Photo root shows All Photos / Camera / Add Photo Library / the user's Albums;
+// drilling swaps the item list without leaving the Photo category.
+sealed interface PhotoNav {
+    data object Root : PhotoNav
+    data object AllPhotos : PhotoNav
+    data object Albums : PhotoNav
+    data class Library(val id: String, val name: String) : PhotoNav
+}
+
+// A request to open the fullscreen photo viewer. [libraryId] scopes L1/R1 next/previous to the
+// list the photo was opened from (null = All Photos). [openWallpaperPreview] opens straight into
+// the wallpaper preview (the row's "Set as Launcher Wallpaper" context action) — still
+// preview-first, so nothing changes until the user confirms.
+data class PhotoViewerRequest(
+    val photoId: String,
+    val libraryId: String?,
+    val openWallpaperPreview: Boolean = false,
+)
 
 sealed interface MusicNav {
     data object Root : MusicNav
@@ -285,6 +319,9 @@ data class XMBUiState(
     // Music drill-down: which Music sub-screen is open (Root shows the static items + All Music).
     val musicNav: MusicNav = MusicNav.Root,
     val musicFolders: List<com.playfieldportal.core.domain.model.MusicFolder> = emptyList(),
+    // Last-seen playlist lists, cached so the drill flyout can show a specific playlist's siblings.
+    val musicPlaylists: List<com.playfieldportal.core.domain.model.Playlist> = emptyList(),
+    val videoPlaylists: List<com.playfieldportal.core.domain.model.VideoPlaylist> = emptyList(),
     // PSP-style sort (X / Square). Tracked per context so switching categories doesn't carry a
     // music sort into games. sortLabel is the status-bar hint, non-null only on a sortable list.
     val gameSortMode: XmbSortMode = XmbSortMode.TITLE,
@@ -335,6 +372,12 @@ data class XMBUiState(
     val activeVideoId: String? = null,
     val pendingVideoDetailAction: GamepadAction? = null,
 
+    // ── Photo ─────────────────────────────────────────────────────────────
+    val photoNav: PhotoNav = PhotoNav.Root,
+    val photoLibraries: List<com.playfieldportal.core.domain.model.PhotoLibrary> = emptyList(),
+    val activePhotoViewer: PhotoViewerRequest? = null,
+    val pendingPhotoViewerAction: GamepadAction? = null,
+
     // ── Context menu (Y/Triangle) ─────────────────────────────────────────
     val activeContextMenu: XMBContextMenu? = null,
 
@@ -378,6 +421,7 @@ data class XMBUiState(
     val isInSubItem: Boolean
         get() = musicNav != MusicNav.Root ||
             videoNav != VideoNav.Root ||
+            photoNav != PhotoNav.Root ||
             selectedPlatformId != null ||
             selectedCollectionId != null
 
@@ -390,6 +434,7 @@ data class XMBUiState(
             activeGameId != null ||
             activeAppId != null ||
             activeVideoId != null ||
+            activePhotoViewer != null ||
             activeContextMenu != null ||
             colorSchemePicker != null ||
             appPicker != null ||
@@ -419,6 +464,13 @@ enum class XMBItemType {
     VIDEO_APPS,
     VIDEO_RECENT,
     VIDEO_FAVORITES,
+    VIDEO_COLLECTIONS,
+    PHOTO_ALBUMS,
+    PHOTO_FOLDER,
+    PHOTO_FILE,
+    CAMERA,
+    // "Add …" / "Create …" rows (add library/folder/apps/tracks, create playlist) — plus glyph.
+    ADD_ACTION,
     EMPTY,
 }
 
@@ -541,6 +593,8 @@ class XMBViewModel @Inject constructor(
     private val musicPlayer: com.playfieldportal.feature.xmb.music.MusicPlayerController,
     private val emulatorProfileRepository: com.playfieldportal.feature.launcher.EmulatorProfileRepository,
     private val videoRepository: com.playfieldportal.core.domain.repository.VideoRepository,
+    private val photoRepository: com.playfieldportal.core.domain.repository.PhotoRepository,
+    private val photoScanner: com.playfieldportal.feature.library.scanner.PhotoScanner,
     private val hiddenPlacementDao: com.playfieldportal.core.data.database.dao.HiddenPlacementDao,
 ) : ViewModel() {
 
@@ -591,6 +645,7 @@ class XMBViewModel @Inject constructor(
         observeSoundSetting()
         observeMusic()
         observeVideo()
+        observePhoto()
         observeHiddenPlacements()
         observeEmulatorProfiles()
         collectGamepadActions()
@@ -862,7 +917,7 @@ class XMBViewModel @Inject constructor(
                     MusicNav.Playlists -> {
                         clearMusicTrackCache()
                         musicRepository.observePlaylists().collect { playlists ->
-                            _uiState.update { it.copy(currentItems = playlistRootItems(playlists)) }
+                            _uiState.update { it.copy(currentItems = playlistRootItems(playlists), musicPlaylists = playlists) }
                         }
                     }
                     MusicNav.MusicApps -> {
@@ -873,6 +928,7 @@ class XMBViewModel @Inject constructor(
                 }
                 BuiltInCategory.VIDEO -> when (val nav = _uiState.value.videoNav) {
                     VideoNav.Root -> _uiState.update { it.copy(currentItems = videoRootItems()) }
+                    VideoNav.Collections -> _uiState.update { it.copy(currentItems = videoCollectionsItems()) }
                     VideoNav.AllVideos -> videoRepository.observeAllVideos().collect { videos ->
                         setVideoItems(videos, emptyAllVideosItem())
                     }
@@ -884,7 +940,7 @@ class XMBViewModel @Inject constructor(
                         setVideoItems(videos, emptyFavoriteVideosItem())
                     }
                     VideoNav.Playlists -> videoRepository.observePlaylists().collect { playlists ->
-                        _uiState.update { it.copy(currentItems = videoPlaylistItems(playlists)) }
+                        _uiState.update { it.copy(currentItems = videoPlaylistItems(playlists), videoPlaylists = playlists) }
                     }
                     is VideoNav.Playlist -> videoRepository.observePlaylistVideos(nav.id).collect { videos ->
                         // Manual playlist order — keep it, don't re-sort.
@@ -899,6 +955,18 @@ class XMBViewModel @Inject constructor(
                     VideoNav.VideoApps -> {
                         val items = videoAppItems()
                         _uiState.update { it.copy(currentItems = items) }
+                    }
+                }
+                BuiltInCategory.PHOTO -> when (val nav = _uiState.value.photoNav) {
+                    PhotoNav.Root -> _uiState.update { it.copy(currentItems = photoRootItems()) }
+                    PhotoNav.AllPhotos -> photoRepository.observeAllPhotos().collect { photos ->
+                        setPhotoItems(photos, emptyAllPhotosItem())
+                    }
+                    PhotoNav.Albums -> photoRepository.observeLibraries().collect { libs ->
+                        _uiState.update { it.copy(currentItems = photoAlbumItems(libs)) }
+                    }
+                    is PhotoNav.Library -> photoRepository.observePhotosByLibrary(nav.id).collect { photos ->
+                        setPhotoItems(photos, emptyLibraryPhotosItem())
                     }
                 }
                 else -> {
@@ -1047,6 +1115,7 @@ class XMBViewModel @Inject constructor(
                         id       = ADD_MUSIC_FOLDER_ITEM_ID,
                         title    = "Add Music Folder",
                         subtitle = "Pick a folder of music to get started",
+                        type     = XMBItemType.ADD_ACTION,
                     )
                 )
             }
@@ -1068,6 +1137,7 @@ class XMBViewModel @Inject constructor(
             id       = CREATE_PLAYLIST_ITEM_ID,
             title    = "Create Playlist",
             subtitle = "Start a new playlist",
+            type     = XMBItemType.ADD_ACTION,
         )
     }
 
@@ -1081,6 +1151,7 @@ class XMBViewModel @Inject constructor(
             id       = ADD_MUSIC_APPS_ITEM_ID,
             title    = "Add Music Apps",
             subtitle = "Pick installed apps to show here",
+            type     = XMBItemType.ADD_ACTION,
         )
     }
 
@@ -1088,6 +1159,7 @@ class XMBViewModel @Inject constructor(
         id       = ADD_TRACKS_ITEM_ID,
         title    = "Add Tracks",
         subtitle = "Pick songs to add to this playlist",
+        type     = XMBItemType.ADD_ACTION,
     )
 
     private fun List<com.playfieldportal.core.domain.model.MusicTrack>.toMusicItems(): List<XMBItem> =
@@ -1138,15 +1210,9 @@ class XMBViewModel @Inject constructor(
     )
 
     // ── Music navigation (drill into / out of the Music sub-screens) ────────────
-    private fun openMusicView(nav: MusicNav) {
-        _uiState.update { it.copy(musicNav = nav, selectedItemIndex = 0) }
-        loadItemsForCategory(currentCategory())
-    }
+    private fun openMusicView(nav: MusicNav) = navigateRememberingCursor { it.copy(musicNav = nav) }
 
-    private fun closeMusicView() {
-        _uiState.update { it.copy(musicNav = MusicNav.Root, selectedItemIndex = 0) }
-        loadItemsForCategory(currentCategory())
-    }
+    private fun closeMusicView() = openMusicView(MusicNav.Root)
 
     // ── Per-location hiding ───────────────────────────────────────────────────────
 
@@ -1241,28 +1307,14 @@ class XMBViewModel @Inject constructor(
                     type     = XMBItemType.MEMORY_CARD,
                 )
             )
+            // The three curated views collapse into one "Collections" entry (drills into
+            // Recently Watched / Favorites / Playlists) to keep the Video root uncluttered.
             add(
                 XMBItem(
-                    id       = RECENTLY_WATCHED_ITEM_ID,
-                    title    = "Recently Watched",
-                    subtitle = "Pick up where you left off",
-                    type     = XMBItemType.VIDEO_RECENT,
-                )
-            )
-            add(
-                XMBItem(
-                    id       = FAVORITE_VIDEOS_ITEM_ID,
-                    title    = "Favorites",
-                    subtitle = "Your starred videos",
-                    type     = XMBItemType.VIDEO_FAVORITES,
-                )
-            )
-            add(
-                XMBItem(
-                    id       = VIDEO_PLAYLISTS_ITEM_ID,
-                    title    = "Playlists",
-                    subtitle = "Build and play your own lists",
-                    type     = XMBItemType.PLAYLIST,
+                    id       = VIDEO_COLLECTIONS_ITEM_ID,
+                    title    = "Collections",
+                    subtitle = "Recently Watched, Favorites & Playlists",
+                    type     = XMBItemType.VIDEO_COLLECTIONS,
                 )
             )
             add(
@@ -1281,15 +1333,31 @@ class XMBViewModel @Inject constructor(
                     type     = XMBItemType.VIDEO_APPS,
                 )
             )
-            add(
-                XMBItem(
-                    id       = ADD_VIDEOS_ITEM_ID,
-                    title    = "Add Videos",
-                    subtitle = "Create a video library from a folder",
-                )
-            )
+            add(addVideosItem())
         }
     }
+
+    // The "Collections" drill-in: the three curated views, one level below the Video root.
+    private fun videoCollectionsItems(): List<XMBItem> = listOf(
+        XMBItem(
+            id       = RECENTLY_WATCHED_ITEM_ID,
+            title    = "Recently Watched",
+            subtitle = "Pick up where you left off",
+            type     = XMBItemType.VIDEO_RECENT,
+        ),
+        XMBItem(
+            id       = FAVORITE_VIDEOS_ITEM_ID,
+            title    = "Favorites",
+            subtitle = "Your starred videos",
+            type     = XMBItemType.VIDEO_FAVORITES,
+        ),
+        XMBItem(
+            id       = VIDEO_PLAYLISTS_ITEM_ID,
+            title    = "Playlists",
+            subtitle = "Build and play your own lists",
+            type     = XMBItemType.PLAYLIST,
+        ),
+    )
 
     // One card per video library, drillable into its videos, plus an "Add Videos" row.
     private fun videoLibraryItems(libraries: List<com.playfieldportal.core.domain.model.VideoLibrary>): List<XMBItem> {
@@ -1323,6 +1391,7 @@ class XMBViewModel @Inject constructor(
             id       = ADD_VIDEO_APPS_ITEM_ID,
             title    = "Add Video Apps",
             subtitle = "Pick installed apps to show here",
+            type     = XMBItemType.ADD_ACTION,
         )
     }
 
@@ -1330,6 +1399,7 @@ class XMBViewModel @Inject constructor(
         id       = ADD_VIDEOS_ITEM_ID,
         title    = "Add Videos",
         subtitle = "Create a video library from a folder",
+        type     = XMBItemType.ADD_ACTION,
     )
 
     private fun List<com.playfieldportal.core.domain.model.Video>.toVideoItems(): List<XMBItem> =
@@ -1370,6 +1440,7 @@ class XMBViewModel @Inject constructor(
             id       = CREATE_VIDEO_PLAYLIST_ITEM_ID,
             title    = "Create Playlist",
             subtitle = "Start a new video playlist",
+            type     = XMBItemType.ADD_ACTION,
         )
     }
 
@@ -1412,6 +1483,7 @@ class XMBViewModel @Inject constructor(
     private fun handleVideoSelection(item: XMBItem): Boolean = when {
         item.type == XMBItemType.EMPTY -> true
         item.id == ALL_VIDEOS_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openVideoView(VideoNav.AllVideos); true }
+        item.id == VIDEO_COLLECTIONS_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openVideoView(VideoNav.Collections); true }
         item.id == RECENTLY_WATCHED_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openVideoView(VideoNav.RecentlyWatched); true }
         item.id == FAVORITE_VIDEOS_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openVideoView(VideoNav.Favorites); true }
         item.id == VIDEO_PLAYLISTS_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openVideoView(VideoNav.Playlists); true }
@@ -1449,18 +1521,57 @@ class XMBViewModel @Inject constructor(
         else -> false
     }
 
-    // Remembered cursor position per Video view, so drilling in/out (or re-entering a view) lands
-    // where the user left off instead of snapping to the first item. Cleared on category movement
-    // (onCategorySelected) and overridden on sort — those intentionally reset to the top.
-    private val videoNavCursor = mutableMapOf<String, Int>()
+    // ── View cursor memory ──────────────────────────────────────────────────────
+    // One remembered cursor position per drillable view, across EVERY category: Games memory-card
+    // folders / All Games / Favorites / collections (built-in and custom categories alike, keyed by
+    // category id so future custom categories get their own slots for free), and the Music / Video /
+    // Photo sub-views. Drilling in/out (or re-entering a view) lands where the user left off instead
+    // of snapping to the first item.
+    private val viewCursor = mutableMapOf<String, Int>()
 
     // Remembered cursor position per category (keyed by category id), so switching categories and
     // returning restores the item you were on instead of the first.
     private val categoryCursor = mutableMapOf<String, Int>()
 
+    // Stable key for whatever list [s] currently shows.
+    private fun viewCursorKey(s: XMBUiState): String {
+        val catId = s.categories.getOrNull(s.selectedCategoryIndex)?.id ?: "none"
+        val sub = when {
+            catId == BuiltInCategory.MUSIC -> "music_${musicNavKey(s.musicNav)}"
+            catId == BuiltInCategory.VIDEO -> "video_${videoNavKey(s.videoNav)}"
+            catId == BuiltInCategory.PHOTO -> "photo_${photoNavKey(s.photoNav)}"
+            s.selectedCollectionId != null -> "col_${s.selectedCollectionId}"
+            s.selectedPlatformId != null   -> "plat_${s.selectedPlatformId}"
+            else                           -> "root"
+        }
+        return "$catId/$sub"
+    }
+
+    // Performs a drill navigation with cursor memory: saves the current view's cursor, applies
+    // [mutate] (which must not touch selectedItemIndex), restores the destination view's remembered
+    // cursor (0 the first time), then reloads the item list.
+    private fun navigateRememberingCursor(mutate: (XMBUiState) -> XMBUiState) {
+        val cur = _uiState.value
+        viewCursor[viewCursorKey(cur)] = cur.selectedItemIndex
+        _uiState.update { state ->
+            val next = mutate(state)
+            next.copy(selectedItemIndex = viewCursor[viewCursorKey(next)] ?: 0)
+        }
+        loadItemsForCategory(currentCategory())
+    }
+
+    private fun musicNavKey(nav: MusicNav): String = when (nav) {
+        MusicNav.Root        -> "root"
+        MusicNav.AllMusic    -> "all"
+        MusicNav.Playlists   -> "playlists"
+        is MusicNav.Playlist -> "playlist_${nav.id}"
+        MusicNav.MusicApps   -> "apps"
+    }
+
     private fun videoNavKey(nav: VideoNav): String = when (nav) {
         VideoNav.Root            -> "root"
         VideoNav.AllVideos       -> "all"
+        VideoNav.Collections     -> "collections"
         VideoNav.RecentlyWatched -> "recent"
         VideoNav.Favorites       -> "favorites"
         VideoNav.Playlists       -> "playlists"
@@ -1470,15 +1581,7 @@ class XMBViewModel @Inject constructor(
         VideoNav.VideoApps       -> "apps"
     }
 
-    private fun openVideoView(nav: VideoNav) {
-        val cur = _uiState.value
-        // Save where the cursor is in the view we're leaving, restore it for the view we're entering
-        // (0 the first time). This keeps position across drill in/out and refreshes.
-        videoNavCursor[videoNavKey(cur.videoNav)] = cur.selectedItemIndex
-        val restore = videoNavCursor[videoNavKey(nav)] ?: 0
-        _uiState.update { it.copy(videoNav = nav, selectedItemIndex = restore) }
-        loadItemsForCategory(currentCategory())
-    }
+    private fun openVideoView(nav: VideoNav) = navigateRememberingCursor { it.copy(videoNav = nav) }
 
     private fun closeVideoView() = openVideoView(VideoNav.Root)
 
@@ -1625,6 +1728,285 @@ class XMBViewModel @Inject constructor(
             "delete_video_playlist" -> appAction {
                 videoRepository.deletePlaylist(playlistId)
                 if ((_uiState.value.videoNav as? VideoNav.Playlist)?.id == playlistId) openVideoView(VideoNav.Playlists)
+            }
+        }
+    }
+
+    // ── Photo ───────────────────────────────────────────────────────────────────
+
+    // Library (Album) list drives the Photo root; re-render the root when it changes.
+    private fun observePhoto() {
+        viewModelScope.launch {
+            photoRepository.observeLibraries().collect { libraries ->
+                _uiState.update { it.copy(photoLibraries = libraries) }
+                if (currentCategory()?.id == BuiltInCategory.PHOTO &&
+                    _uiState.value.photoNav == PhotoNav.Root
+                ) {
+                    _uiState.update { it.copy(currentItems = photoRootItems()) }
+                }
+            }
+        }
+    }
+
+    // Whether the device can open a camera app. Checked once (the set of camera apps doesn't
+    // change while PFP is on screen) so the Photo root never shows a broken Camera item.
+    private val cameraAvailable: Boolean by lazy {
+        runCatching {
+            Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA)
+                .resolveActivity(context.packageManager) != null
+        }.getOrDefault(false)
+    }
+
+    // Launches the system camera app (no result expected, no camera permission needed — the
+    // standard safe hand-off). Failure is logged, never crashes the shell.
+    private fun launchCamera() {
+        runCatching {
+            context.startActivity(
+                Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+        }.onFailure { Timber.w(it, "Could not launch a camera app") }
+    }
+
+    // Photo root, PSP-style and deliberately minimal: the All Photos memory card, Camera (only when
+    // a camera app exists), Add Photo Library, then one Album card per user library.
+    private fun photoRootItems(): List<XMBItem> {
+        val libraries = _uiState.value.photoLibraries
+        val totalPhotos = libraries.sumOf { it.photoCount }
+        return buildList {
+            add(
+                XMBItem(
+                    id       = ALL_PHOTOS_ITEM_ID,
+                    title    = "All Photos",
+                    subtitle = "$totalPhotos ${if (totalPhotos == 1) "photo" else "photos"}",
+                    coverUri = MEMORY_CARD_ASSET_URI,
+                    type     = XMBItemType.MEMORY_CARD,
+                )
+            )
+            if (cameraAvailable) {
+                add(
+                    XMBItem(
+                        id       = CAMERA_ITEM_ID,
+                        title    = "Camera",
+                        subtitle = "Open the camera",
+                        type     = XMBItemType.CAMERA,
+                    )
+                )
+            }
+            add(
+                XMBItem(
+                    id       = PHOTO_ALBUMS_ITEM_ID,
+                    title    = "Albums",
+                    subtitle = "${libraries.size} ${if (libraries.size == 1) "album" else "albums"}",
+                    type     = XMBItemType.PHOTO_ALBUMS,
+                )
+            )
+            add(addPhotoLibraryItem())
+        }
+    }
+
+    private fun addPhotoLibraryItem(): XMBItem = XMBItem(
+        id       = ADD_PHOTO_LIBRARY_ITEM_ID,
+        title    = "Add Photo Library",
+        subtitle = "Create an album from a folder of photos",
+        type     = XMBItemType.ADD_ACTION,
+    )
+
+    // One folder card per Album, drillable into its photos, plus an "Add Photo Library" row.
+    private fun photoAlbumItems(libraries: List<com.playfieldportal.core.domain.model.PhotoLibrary>): List<XMBItem> {
+        val rows = libraries.map { lib ->
+            XMBItem(
+                id       = "plib_${lib.id}",
+                title    = lib.displayName,
+                subtitle = "${lib.photoCount} ${if (lib.photoCount == 1) "photo" else "photos"}",
+                type     = XMBItemType.PHOTO_FOLDER,
+            )
+        }
+        return if (rows.isEmpty()) {
+            listOf(
+                XMBItem(
+                    id = EMPTY_CATEGORY_ITEM_ID,
+                    title = "No albums yet",
+                    subtitle = "Add one below or in Settings → Photo",
+                    type = XMBItemType.EMPTY,
+                ),
+                addPhotoLibraryItem(),
+            )
+        } else {
+            rows + addPhotoLibraryItem()
+        }
+    }
+
+    private fun List<com.playfieldportal.core.domain.model.Photo>.toPhotoItems(): List<XMBItem> =
+        map { photo ->
+            XMBItem(
+                id       = "pho_${photo.id}",
+                title    = photo.displayName,
+                subtitle = photoSubtitle(photo),
+                type     = XMBItemType.PHOTO_FILE,
+                mediaUri = photo.uri,
+                mimeType = photo.mimeType,
+                coverUri = photo.thumbnailUri,
+            )
+        }
+
+    // "4032×3024  ·  Jul 14, 2026" — whichever parts are known; null when neither is.
+    private fun photoSubtitle(photo: com.playfieldportal.core.domain.model.Photo): String? {
+        val date = photo.displayDateMs?.let {
+            java.text.SimpleDateFormat("MMM d, yyyy", java.util.Locale.getDefault()).format(java.util.Date(it))
+        }
+        return listOfNotNull(photo.resolutionLabel, date).joinToString("  ·  ").ifEmpty { null }
+    }
+
+    private fun setPhotoItems(
+        photos: List<com.playfieldportal.core.domain.model.Photo>,
+        emptyItem: XMBItem,
+    ) {
+        val items = if (photos.isEmpty()) listOf(emptyItem) else photos.toPhotoItems()
+        _uiState.update { it.copy(currentItems = items) }
+    }
+
+    private fun emptyAllPhotosItem(): XMBItem = XMBItem(
+        id       = EMPTY_CATEGORY_ITEM_ID,
+        title    = "No photos found",
+        subtitle = "Add a photo library and scan it",
+        type     = XMBItemType.EMPTY,
+    )
+
+    private fun emptyLibraryPhotosItem(): XMBItem = XMBItem(
+        id       = EMPTY_CATEGORY_ITEM_ID,
+        title    = "No photos in this album",
+        subtitle = "Scan it from its ⚙ Options menu or in Settings → Photo",
+        type     = XMBItemType.EMPTY,
+    )
+
+    // Handles A/Cross on any Photo row. Returns true when [item] is a Photo row it owns.
+    private fun handlePhotoSelection(item: XMBItem): Boolean = when {
+        item.id == ALL_PHOTOS_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openPhotoView(PhotoNav.AllPhotos); true }
+        item.id == PHOTO_ALBUMS_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openPhotoView(PhotoNav.Albums); true }
+        item.id == CAMERA_ITEM_ID -> { menuSound.play(MenuSound.LAUNCH); launchCamera(); true }
+        item.id == ADD_PHOTO_LIBRARY_ITEM_ID -> {
+            menuSound.play(MenuSound.SELECT)
+            _uiState.update { it.copy(activeSettingsScreen = "settings_photo") }
+            true
+        }
+        item.type == XMBItemType.PHOTO_FOLDER && item.id.startsWith("plib_") -> {
+            menuSound.play(MenuSound.SELECT)
+            openPhotoView(PhotoNav.Library(item.id.removePrefix("plib_"), item.title))
+            true
+        }
+        item.type == XMBItemType.PHOTO_FILE && item.id.startsWith("pho_") -> {
+            menuSound.play(MenuSound.SELECT)
+            openPhotoViewer(item.id.removePrefix("pho_"))
+            true
+        }
+        else -> false
+    }
+
+    private fun photoNavKey(nav: PhotoNav): String = when (nav) {
+        PhotoNav.Root       -> "root"
+        PhotoNav.AllPhotos  -> "all"
+        PhotoNav.Albums     -> "albums"
+        is PhotoNav.Library -> "library_${nav.id}"
+    }
+
+    private fun openPhotoView(nav: PhotoNav) = navigateRememberingCursor { it.copy(photoNav = nav) }
+
+    private fun closePhotoView() = openPhotoView(PhotoNav.Root)
+
+    // Opens the fullscreen viewer for a photo, scoped to the list it was opened from so L1/R1
+    // pages through the same set the user was browsing.
+    private fun openPhotoViewer(photoId: String, wallpaperPreview: Boolean = false) {
+        val libraryId = (_uiState.value.photoNav as? PhotoNav.Library)?.id
+        _uiState.update {
+            it.copy(activePhotoViewer = PhotoViewerRequest(photoId, libraryId, openWallpaperPreview = wallpaperPreview))
+        }
+    }
+
+    fun onClosePhotoViewer() {
+        _uiState.update { it.copy(activePhotoViewer = null, pendingPhotoViewerAction = null) }
+    }
+
+    fun consumePhotoViewerAction() {
+        _uiState.update { it.copy(pendingPhotoViewerAction = null) }
+    }
+
+    // Opens the △ options menu for a Photo row. Returns true when [item] is a photo row it owns
+    // (a photo file or an Album card), so the generic menus don't also fire.
+    private fun openPhotoContextMenu(item: XMBItem): Boolean {
+        if (currentCategory()?.id != BuiltInCategory.PHOTO) return false
+        return when {
+            item.type == XMBItemType.PHOTO_FILE && item.id.startsWith("pho_") -> {
+                openPhotoFileContextMenu(item.id.removePrefix("pho_"), item.title); true
+            }
+            item.type == XMBItemType.PHOTO_FOLDER && item.id.startsWith("plib_") -> {
+                openPhotoLibraryContextMenu(item.id.removePrefix("plib_"), item.title); true
+            }
+            else -> false
+        }
+    }
+
+    // Options for a single photo row. Viewing-related options (zoom, rotate, wallpaper) live in
+    // the fullscreen viewer's own Options menu; the list row only opens/removes.
+    private fun openPhotoFileContextMenu(photoId: String, title: String) {
+        val items = listOf(
+            XMBContextMenuItem("photo_open", "Open"),
+            XMBContextMenuItem("photo_set_wallpaper", "Set as Launcher Wallpaper"),
+            XMBContextMenuItem("photo_remove", "Remove From Library", isDestructive = true),
+        )
+        _uiState.update { it.copy(activeContextMenu = XMBContextMenu(title, items, photoFileId = photoId)) }
+    }
+
+    private fun handlePhotoFileAction(photoId: String, itemId: String) {
+        when (itemId) {
+            "photo_open"          -> openPhotoViewer(photoId)
+            // Opens the viewer with the wallpaper preview already up — apply/cancel from there.
+            "photo_set_wallpaper" -> openPhotoViewer(photoId, wallpaperPreview = true)
+            "photo_remove"        -> appAction { photoRepository.removePhoto(photoId) }
+        }
+    }
+
+    // Options for an Album card: open, scan, or manage (rename / change folder / remove) in Settings.
+    private fun openPhotoLibraryContextMenu(libraryId: String, name: String) {
+        val items = listOf(
+            XMBContextMenuItem("photo_lib_open", "Open"),
+            XMBContextMenuItem("photo_lib_scan", "Scan Album"),
+            XMBContextMenuItem("photo_lib_manage", "Manage in Settings"),
+        )
+        _uiState.update { it.copy(activeContextMenu = XMBContextMenu(name, items, photoLibraryId = libraryId)) }
+    }
+
+    private fun handlePhotoLibraryAction(libraryId: String, itemId: String) {
+        when (itemId) {
+            "photo_lib_open" -> {
+                val name = _uiState.value.photoLibraries.firstOrNull { it.id == libraryId }?.displayName.orEmpty()
+                openPhotoView(PhotoNav.Library(libraryId, name))
+            }
+            "photo_lib_scan" -> scanPhotoLibrary(libraryId)
+            "photo_lib_manage" -> _uiState.update { it.copy(activeSettingsScreen = "settings_photo") }
+        }
+    }
+
+    // Quick scan of one Album straight from the XMB card, surfaced via the notification tray like
+    // every other background scan. The library list flow refreshes the counts when it lands.
+    private fun scanPhotoLibrary(libraryId: String) {
+        viewModelScope.launch {
+            val library = photoRepository.getLibrary(libraryId) ?: return@launch
+            val taskId = "photo_scan_${library.id}"
+            val notifier = BackgroundTaskNotifier(context)
+            notifier.running(taskId, "Scanning ${library.displayName}", null)
+            val existing = photoRepository.getPhotosForLibrary(library.id)
+            photoScanner.scan(library, deep = false, existing = existing).collect { result ->
+                when (result) {
+                    is com.playfieldportal.feature.library.scanner.PhotoScanResult.Progress ->
+                        notifier.running(taskId, "Scanning ${result.libraryName}", null)
+                    is com.playfieldportal.feature.library.scanner.PhotoScanResult.Complete -> {
+                        photoRepository.replacePhotosForLibrary(result.libraryId, result.photos, System.currentTimeMillis())
+                        notifier.complete(taskId, "Scanned ${library.displayName}", "${result.photos.size} photos")
+                    }
+                    is com.playfieldportal.feature.library.scanner.PhotoScanResult.Error ->
+                        notifier.failed(taskId, "Scan failed: ${library.displayName}", result.message)
+                }
             }
         }
     }
@@ -2238,6 +2620,7 @@ class XMBViewModel @Inject constructor(
         // Video sub-navigation is a drill-in too — a non-null title shows the two-pane flyout.
         val videoTitle = when (val nav = s.videoNav) {
             VideoNav.AllVideos       -> "All Videos"
+            VideoNav.Collections     -> "Collections"
             VideoNav.RecentlyWatched -> "Recently Watched"
             VideoNav.Favorites       -> "Favorites"
             VideoNav.Playlists       -> "Playlists"
@@ -2248,6 +2631,14 @@ class XMBViewModel @Inject constructor(
             VideoNav.Root            -> null
         }
         if (videoTitle != null) return videoTitle
+        // Photo sub-navigation is a drill-in too.
+        val photoTitle = when (val nav = s.photoNav) {
+            PhotoNav.AllPhotos  -> "All Photos"
+            PhotoNav.Albums     -> "Albums"
+            is PhotoNav.Library -> nav.name
+            PhotoNav.Root       -> null
+        }
+        if (photoTitle != null) return photoTitle
         return when {
             s.selectedCollectionId != null ->
                 s.collections.firstOrNull { it.id == s.selectedCollectionId }?.name ?: "Collection"
@@ -2261,6 +2652,21 @@ class XMBViewModel @Inject constructor(
         }
     }
 
+    // Icon-only sibling lists for the deepest drill level, so the flyout's left column always shows
+    // the current level's peers (a library among libraries, an album among albums, a playlist among
+    // playlists) — mirroring how the Games flyout shows the console cross.
+    private fun videoLibrarySiblings(): List<XMBItem> =
+        _uiState.value.videoLibraries.map { XMBItem(id = "vlib_${it.id}", title = it.displayName, type = XMBItemType.VIDEO_FOLDER) }
+
+    private fun photoAlbumSiblings(): List<XMBItem> =
+        _uiState.value.photoLibraries.map { XMBItem(id = "plib_${it.id}", title = it.displayName, type = XMBItemType.PHOTO_FOLDER) }
+
+    private fun musicPlaylistSiblings(): List<XMBItem> =
+        _uiState.value.musicPlaylists.map { XMBItem(id = "pl_${it.id}", title = it.name, playlistId = it.id, type = XMBItemType.PLAYLIST) }
+
+    private fun videoPlaylistSiblings(): List<XMBItem> =
+        _uiState.value.videoPlaylists.map { XMBItem(id = "vpl_${it.id}", title = it.name, playlistId = it.id, type = XMBItemType.PLAYLIST) }
+
     // The sibling icon column for the flyout's left side. In the Main Game category these are the
     // memory-card root items (All Games / Favorites / collections / consoles); the currently
     // drilled-into one is returned as the centred index. Other categories fall back to just the
@@ -2270,6 +2676,11 @@ class XMBViewModel @Inject constructor(
         // Music sub-navigation: the left column is the Music root's sections (Playlist / Music Apps /
         // Music), with the drilled-into one centred on the arrow.
         if (s.musicNav != MusicNav.Root) {
+            // Inside a specific playlist: peers are the other playlists.
+            (s.musicNav as? MusicNav.Playlist)?.let { nav ->
+                val pls = musicPlaylistSiblings()
+                if (pls.isNotEmpty()) return pls to pls.indexOfFirst { it.playlistId == nav.id }.coerceAtLeast(0)
+            }
             val sibs = musicRootItems().filter {
                 it.type == XMBItemType.PLAYLIST || it.type == XMBItemType.MUSIC_APPS ||
                     it.type == XMBItemType.MEMORY_CARD
@@ -2283,22 +2694,64 @@ class XMBViewModel @Inject constructor(
             }.coerceAtLeast(0)
             return sibs to idx
         }
-        // Video sub-navigation: the left column is the Video root's sections (All Videos / Recently
-        // Watched / Favorites / Playlists / Video Libraries / Video Apps), drilled-into one centred.
+        // Video sub-navigation. Two levels now: the Collections children (Recently Watched /
+        // Favorites / Playlists / a Playlist) show the Collections sub-list as their sibling column;
+        // everything else shows the Video root's sections (All Videos / Collections / Video
+        // Libraries / Video Apps). The drilled-into one is centred on the arrow.
         if (s.videoNav != VideoNav.Root) {
+            // Deepest levels show their own peers: a library among the libraries, a playlist among
+            // the playlists.
+            (s.videoNav as? VideoNav.Library)?.let { nav ->
+                val libs = videoLibrarySiblings()
+                if (libs.isNotEmpty()) return libs to libs.indexOfFirst { it.id == "vlib_${nav.id}" }.coerceAtLeast(0)
+            }
+            (s.videoNav as? VideoNav.Playlist)?.let { nav ->
+                val pls = videoPlaylistSiblings()
+                if (pls.isNotEmpty()) return pls to pls.indexOfFirst { it.playlistId == nav.id }.coerceAtLeast(0)
+            }
+            // The three Collections views show the Collections sub-list (distinct icons per view).
+            if (s.videoNav.isVideoCollectionChild || s.videoNav is VideoNav.Playlist) {
+                val sibs = videoCollectionsItems()
+                val idx = sibs.indexOfFirst { sib ->
+                    when (s.videoNav) {
+                        VideoNav.RecentlyWatched -> sib.type == XMBItemType.VIDEO_RECENT
+                        VideoNav.Favorites       -> sib.type == XMBItemType.VIDEO_FAVORITES
+                        else                     -> sib.type == XMBItemType.PLAYLIST  // Playlists / a Playlist
+                    }
+                }.coerceAtLeast(0)
+                return sibs to idx
+            }
+            // Root sections: All Videos / Collections / Video Libraries / Video Apps.
             val sibs = videoRootItems().filter {
-                it.type == XMBItemType.MEMORY_CARD || it.type == XMBItemType.VIDEO_RECENT ||
-                    it.type == XMBItemType.VIDEO_FAVORITES || it.type == XMBItemType.PLAYLIST ||
+                it.type == XMBItemType.MEMORY_CARD || it.type == XMBItemType.VIDEO_COLLECTIONS ||
                     it.type == XMBItemType.VIDEO_LIBRARY || it.type == XMBItemType.VIDEO_APPS
             }
             val idx = sibs.indexOfFirst { sib ->
                 when (s.videoNav) {
-                    VideoNav.AllVideos       -> sib.type == XMBItemType.MEMORY_CARD
-                    VideoNav.RecentlyWatched -> sib.type == XMBItemType.VIDEO_RECENT
-                    VideoNav.Favorites       -> sib.type == XMBItemType.VIDEO_FAVORITES
-                    VideoNav.Playlists, is VideoNav.Playlist -> sib.type == XMBItemType.PLAYLIST
-                    VideoNav.VideoApps       -> sib.type == XMBItemType.VIDEO_APPS
-                    else                     -> sib.type == XMBItemType.VIDEO_LIBRARY  // Libraries / a Library
+                    VideoNav.AllVideos   -> sib.type == XMBItemType.MEMORY_CARD
+                    VideoNav.Collections -> sib.type == XMBItemType.VIDEO_COLLECTIONS
+                    VideoNav.VideoApps   -> sib.type == XMBItemType.VIDEO_APPS
+                    else                 -> sib.type == XMBItemType.VIDEO_LIBRARY  // Libraries (list view)
+                }
+            }.coerceAtLeast(0)
+            return sibs to idx
+        }
+        // Photo sub-navigation: the left column is the Photo root's drillable sections (the All
+        // Photos memory card and Albums), with the drilled-into one centred on the arrow. An open
+        // Album belongs to the Albums section, like a Video library under Video Libraries.
+        if (s.photoNav != PhotoNav.Root) {
+            // Inside a specific album: peers are the other albums.
+            (s.photoNav as? PhotoNav.Library)?.let { nav ->
+                val albums = photoAlbumSiblings()
+                if (albums.isNotEmpty()) return albums to albums.indexOfFirst { it.id == "plib_${nav.id}" }.coerceAtLeast(0)
+            }
+            val sibs = photoRootItems().filter {
+                it.type == XMBItemType.MEMORY_CARD || it.type == XMBItemType.PHOTO_ALBUMS
+            }
+            val idx = sibs.indexOfFirst { sib ->
+                when (s.photoNav) {
+                    PhotoNav.AllPhotos -> sib.type == XMBItemType.MEMORY_CARD
+                    else               -> sib.type == XMBItemType.PHOTO_ALBUMS  // Albums (list view)
                 }
             }.coerceAtLeast(0)
             return sibs to idx
@@ -2642,6 +3095,12 @@ class XMBViewModel @Inject constructor(
 
         // ── Overlays (innermost wins) ──────────────────────────────────────────
         when {
+            state.activePhotoViewer != null -> {
+                // Forward everything so the fullscreen photo viewer can handle its own controls
+                // (options menu, zoom/pan, wallpaper preview) before popping back to the XMB.
+                _uiState.update { it.copy(pendingPhotoViewerAction = action) }
+                return
+            }
             state.activeVideoId != null -> {
                 // Forward everything so the Video Detail page (and its player overlay) can handle
                 // input and close its own layers before popping back to the XMB.
@@ -2722,7 +3181,11 @@ class XMBViewModel @Inject constructor(
                     // Two-level video paths back out one level first.
                     state.videoNav is VideoNav.Library -> openVideoView(VideoNav.Libraries)
                     state.videoNav is VideoNav.Playlist -> openVideoView(VideoNav.Playlists)
+                    state.videoNav.isVideoCollectionChild -> openVideoView(VideoNav.Collections)
                     state.videoNav != VideoNav.Root -> closeVideoView()
+                    // Album drill-in backs out via the Albums list first.
+                    state.photoNav is PhotoNav.Library -> openPhotoView(PhotoNav.Albums)
+                    state.photoNav != PhotoNav.Root -> closePhotoView()
                     state.selectedPlatformId != null || state.selectedCollectionId != null -> closePlatformFolder()
                     else -> onOpenAppDrawer()
                 }
@@ -2734,6 +3197,7 @@ class XMBViewModel @Inject constructor(
                 when {
                     item != null && openMusicContextMenu(item) -> Unit
                     item != null && openVideoContextMenu(item) -> Unit
+                    item != null && openPhotoContextMenu(item) -> Unit
                     item?.gameId != null -> openGameContextMenu(item)
                     item?.collectionId != null && item.type == XMBItemType.COLLECTION -> openCollectionRowContextMenu(item.collectionId)
                     item?.platformId != null -> openPlatformContextMenu(item.platformId)
@@ -3079,6 +3543,14 @@ class XMBViewModel @Inject constructor(
         }
         if (menu.videoLibraryId != null) {
             handleVideoLibraryAction(menu.videoLibraryId, itemId)
+            return
+        }
+        if (menu.photoFileId != null) {
+            handlePhotoFileAction(menu.photoFileId, itemId)
+            return
+        }
+        if (menu.photoLibraryId != null) {
+            handlePhotoLibraryAction(menu.photoLibraryId, itemId)
             return
         }
         if (menu.videoPlaylistId != null) {
@@ -3639,7 +4111,7 @@ class XMBViewModel @Inject constructor(
         prev.categories.getOrNull(prev.selectedCategoryIndex)?.id?.let { categoryCursor[it] = prev.selectedItemIndex }
         val category = prev.categories.getOrNull(index)
         val restore = category?.id?.let { categoryCursor[it] } ?: 0
-        _uiState.update { it.copy(selectedCategoryIndex = index, selectedItemIndex = restore, selectedPlatformId = null, selectedCollectionId = null, musicNav = MusicNav.Root, videoNav = VideoNav.Root) }
+        _uiState.update { it.copy(selectedCategoryIndex = index, selectedItemIndex = restore, selectedPlatformId = null, selectedCollectionId = null, musicNav = MusicNav.Root, videoNav = VideoNav.Root, photoNav = PhotoNav.Root) }
         tintWaveForCategory(category)
         loadItemsForCategory(category)
     }
@@ -3666,7 +4138,10 @@ class XMBViewModel @Inject constructor(
             s.musicNav != MusicNav.Root -> closeMusicView()
             s.videoNav is VideoNav.Library -> openVideoView(VideoNav.Libraries)
             s.videoNav is VideoNav.Playlist -> openVideoView(VideoNav.Playlists)
+            s.videoNav.isVideoCollectionChild -> openVideoView(VideoNav.Collections)
             s.videoNav != VideoNav.Root -> closeVideoView()
+            s.photoNav is PhotoNav.Library -> openPhotoView(PhotoNav.Albums)
+            s.photoNav != PhotoNav.Root -> closePhotoView()
             s.selectedPlatformId != null || s.selectedCollectionId != null -> closePlatformFolder()
             else -> onOpenAppDrawer()
         }
@@ -3675,6 +4150,10 @@ class XMBViewModel @Inject constructor(
     // ── Item selection ────────────────────────────────────────────────────────
 
     fun onItemSelected(index: Int) {
+        // Touch guard: XMB rows must never activate while any overlay is up (the gamepad path is
+        // guarded in the dispatcher; this closes the same hole for taps that slip through an
+        // overlay's non-interactive areas).
+        if (_uiState.value.hasBlockingOverlay) return
         _uiState.update { it.copy(selectedItemIndex = index) }
         val category = _uiState.value.categories.getOrNull(_uiState.value.selectedCategoryIndex)
         val item     = _uiState.value.currentItems.getOrNull(index)
@@ -3685,6 +4164,9 @@ class XMBViewModel @Inject constructor(
 
         // Video rows (static items, library cards, video files, app rows) are handled together.
         if (category?.id == BuiltInCategory.VIDEO && item != null && handleVideoSelection(item)) return
+
+        // Photo rows (the All Photos card, Camera, Add Photo Library, Album cards, photo files).
+        if (category?.id == BuiltInCategory.PHOTO && item != null && handlePhotoSelection(item)) return
 
         // Sound: launch for items that boot something immediately; select for opening a folder,
         // detail, picker, or settings; silent for non-selectable placeholder rows.
@@ -3783,10 +4265,12 @@ class XMBViewModel @Inject constructor(
     }
 
     fun onItemLongPress(index: Int) {
+        if (_uiState.value.hasBlockingOverlay) return
         val item = _uiState.value.currentItems.getOrNull(index)
         when {
             item != null && openMusicContextMenu(item) -> Unit
             item != null && openVideoContextMenu(item) -> Unit
+            item != null && openPhotoContextMenu(item) -> Unit
             item?.gameId != null -> openGameContextMenu(item)
             item?.collectionId != null && item.type == XMBItemType.COLLECTION -> openCollectionRowContextMenu(item.collectionId)
             item?.platformId != null -> openPlatformContextMenu(item.platformId)
@@ -3796,40 +4280,34 @@ class XMBViewModel @Inject constructor(
 
     private fun openPlatformFolder(platformId: String) {
         val gamesCategoryIndex = _uiState.value.categories.indexOfFirst { it.id == BuiltInCategory.GAMES }
-        _uiState.update {
+        navigateRememberingCursor {
             it.copy(
                 selectedCategoryIndex = gamesCategoryIndex.takeIf { index -> index >= 0 } ?: it.selectedCategoryIndex,
                 selectedPlatformId = platformId,
-                selectedItemIndex = 0,
             )
         }
-        loadItemsForCategory(_uiState.value.categories.getOrNull(_uiState.value.selectedCategoryIndex))
     }
 
     private fun openAllGamesFolder() {
         val gamesCategoryIndex = _uiState.value.categories.indexOfFirst { it.id == BuiltInCategory.GAMES }
-        _uiState.update {
+        navigateRememberingCursor {
             it.copy(
                 selectedCategoryIndex = gamesCategoryIndex.takeIf { index -> index >= 0 } ?: it.selectedCategoryIndex,
                 selectedPlatformId = ALL_GAMES_PLATFORM_ID,
                 selectedCollectionId = null,
-                selectedItemIndex = 0,
             )
         }
-        loadItemsForCategory(_uiState.value.categories.getOrNull(_uiState.value.selectedCategoryIndex))
     }
 
     private fun openFavoritesFolder() {
         val gamesCategoryIndex = _uiState.value.categories.indexOfFirst { it.id == BuiltInCategory.GAMES }
-        _uiState.update {
+        navigateRememberingCursor {
             it.copy(
                 selectedCategoryIndex = gamesCategoryIndex.takeIf { index -> index >= 0 } ?: it.selectedCategoryIndex,
                 selectedPlatformId = FAVORITES_PLATFORM_ID,
                 selectedCollectionId = null,
-                selectedItemIndex = 0,
             )
         }
-        loadItemsForCategory(_uiState.value.categories.getOrNull(_uiState.value.selectedCategoryIndex))
     }
 
     private fun openCollectionFolder(collectionId: Long) {
@@ -3838,21 +4316,18 @@ class XMBViewModel @Inject constructor(
         val targetCategoryId = _uiState.value.collections
             .firstOrNull { it.id == collectionId }?.categoryId ?: BuiltInCategory.GAMES
         val categoryIndex = _uiState.value.categories.indexOfFirst { it.id == targetCategoryId }
-        _uiState.update {
+        navigateRememberingCursor {
             it.copy(
                 selectedCategoryIndex = categoryIndex.takeIf { index -> index >= 0 } ?: it.selectedCategoryIndex,
                 selectedPlatformId = null,
                 selectedCollectionId = collectionId,
-                selectedItemIndex = 0,
             )
         }
-        loadItemsForCategory(_uiState.value.categories.getOrNull(_uiState.value.selectedCategoryIndex))
     }
 
     // Closes any open Games-root drill-down (platform card, All Games, or a collection).
-    private fun closePlatformFolder() {
-        _uiState.update { it.copy(selectedPlatformId = null, selectedCollectionId = null, selectedItemIndex = 0) }
-        loadItemsForCategory(_uiState.value.categories.getOrNull(_uiState.value.selectedCategoryIndex))
+    private fun closePlatformFolder() = navigateRememberingCursor {
+        it.copy(selectedPlatformId = null, selectedCollectionId = null)
     }
 
     // ── Game detail overlay ───────────────────────────────────────────────────
@@ -4229,6 +4704,7 @@ class XMBViewModel @Inject constructor(
         // Video root item ids and the pseudo-category that stores user-added video apps (kept out of
         // the built-in "videos" category so they never mix with scanned video files / All Videos).
         private const val ALL_VIDEOS_ITEM_ID = "all_videos"
+        private const val VIDEO_COLLECTIONS_ITEM_ID = "video_collections"
         private const val RECENTLY_WATCHED_ITEM_ID = "recently_watched"
         private const val FAVORITE_VIDEOS_ITEM_ID = "favorite_videos"
         private const val VIDEO_PLAYLISTS_ITEM_ID = "video_playlists"
@@ -4238,6 +4714,12 @@ class XMBViewModel @Inject constructor(
         private const val ADD_VIDEOS_ITEM_ID = "add_videos"
         private const val ADD_VIDEO_APPS_ITEM_ID = "add_video_apps"
         private const val VIDEO_APPS_CATEGORY_ID = "video_apps"
+        // Photo root item ids. The Photo category is deliberately minimal (no apps row, no
+        // recents/slideshow) — see the Photo section spec.
+        private const val ALL_PHOTOS_ITEM_ID = "all_photos"
+        private const val CAMERA_ITEM_ID = "photo_camera"
+        private const val ADD_PHOTO_LIBRARY_ITEM_ID = "add_photo_library"
+        private const val PHOTO_ALBUMS_ITEM_ID = "photo_albums"
         // Generic memory-card art for the "Music" (All Music) item — the physical-media default
         // PNG, loaded from assets via Coil (same convention as PhysicalMediaIcon).
         private const val MEMORY_CARD_ASSET_URI =
@@ -4268,6 +4750,7 @@ class XMBViewModel @Inject constructor(
             XMBItem(id = "settings_library",    title = "Library",          subtitle = "ROM sources & scanning"),
             XMBItem(id = "settings_music",      title = "Music",            subtitle = "Music folders & default player"),
             XMBItem(id = "settings_video",      title = "Video",            subtitle = "Video libraries, scanning & playback"),
+            XMBItem(id = "settings_photo",      title = "Photo",            subtitle = "Photo libraries & scanning"),
             XMBItem(id = "settings_categories", title = "Categories",       subtitle = "Manage XMB categories"),
             XMBItem(id = "settings_collections", title = "Collections",     subtitle = "Create & manage game collections"),
             XMBItem(id = "settings_artwork",    title = "Artwork",          subtitle = "Scraping sources & cache"),

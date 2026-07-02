@@ -115,7 +115,7 @@ The name **PFP** is a deliberate double entendre: *Play Field Portal* as the pro
 - **Asset layout inside ZIP:** `background.jpg`, `boot_animation.mp4`, `sounds/{navigate_h,navigate_v,select,back,category_change,boot}.ogg`.
 - **Install path (internal):** `filesDir/themes/{id}/` — assets copied on install, not read from external storage at runtime.
 - **External discovery folder:** `/storage/emulated/0/PlayFieldPortal/themes/` — requires `MANAGE_EXTERNAL_STORAGE`. Users drop `.xmbtheme` files here and pick them from Themes Settings.
-- **Color propagation:** Active `ThemeEntity` observed by `XMBViewModel` → converted to `PFPColors` → passed to `PFPTheme {}` wrapper in `XMBShell` → `LocalPFPColors` CompositionLocal available to `XMBWave` and all child composables.
+- **Color propagation:** Active `ThemeEntity` observed by `XMBViewModel` → converted to `PFPColors` → passed to `PFPTheme {}` wrapper in `XMBShell` → `LocalPFPColors` CompositionLocal available to `XmbBackground` and all child composables.
 - **Built-in themes:** "Classic PSP Blue" seeded by `DatabaseInitializer` on first launch (guarded by `themes_seeded_v1` DataStore flag). Cannot be deleted.
 - **Sound events (deferred):** `NAVIGATE_HORIZONTAL`, `NAVIGATE_VERTICAL`, `SELECT`, `BACK`, `CATEGORY_CHANGE`, `BOOT` — sound pack assets extracted but playback engine not yet wired.
 - **Boot animation override (deferred):** `bootAnimationUri` stored in DB; `BootSequenceOverlay` still uses default hardcoded animation.
@@ -211,8 +211,8 @@ app/
 core/
   core-common/       — Shared utilities, extensions
   core-domain/       — Models (Game, Platform, Category, EmulatorProfile, PFPTheme, PlaySession)
-  core-data/         — Room DB v3, DAOs, repositories, DataStore, seeding
-  core-ui/           — PFPTheme, XMBWave, GameIconStyle enum, shared Composables, PreviewData
+  core-data/         — Room DB v20, DAOs, repositories, DataStore, seeding
+  core-ui/           — PFPTheme, WaveStyle, GameIconStyle enum, shared Composables, PreviewData
 
 feature/
   feature-xmb/       — XMBShell, XMBViewModel, category bar, item list, game icons, overlays, gamepad

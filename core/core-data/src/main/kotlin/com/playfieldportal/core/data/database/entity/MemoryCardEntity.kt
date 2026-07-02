@@ -24,6 +24,10 @@ data class MemoryCardEntity(
     @ColumnInfo(name = "sort_order")
     val sortOrder: Int = 0,
 
+    // Persisted SAF tree URI; null for legacy raw-path cards.
+    @ColumnInfo(name = "tree_uri")
+    val treeUri: String? = null,
+
     @ColumnInfo(name = "rom_directory")
     val romDirectory: String? = null,
 
@@ -50,6 +54,7 @@ fun MemoryCardEntity.toDomain() = MemoryCard(
     enabled             = enabled,
     pinned              = pinned,
     sortOrder           = sortOrder,
+    treeUri             = treeUri,
     romDirectory        = romDirectory,
     supportedExtensions = supportedExtensions.split(",").map { it.trim() }.filter { it.isNotBlank() },
     emulatorId          = emulatorId,
@@ -64,6 +69,7 @@ fun MemoryCard.toEntity() = MemoryCardEntity(
     enabled             = enabled,
     pinned              = pinned,
     sortOrder           = sortOrder,
+    treeUri             = treeUri,
     romDirectory        = romDirectory,
     supportedExtensions = supportedExtensions.joinToString(","),
     emulatorId          = emulatorId,

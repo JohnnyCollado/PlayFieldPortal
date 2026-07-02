@@ -30,11 +30,16 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Bookmarks
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Photo
+import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.VideoLibrary
@@ -245,9 +250,12 @@ private fun SiblingIcon(item: XMBItem, selected: Boolean) {
     val videoGlyph = when (item.type) {
         XMBItemType.VIDEO_FOLDER    -> Icons.Filled.Folder
         XMBItemType.VIDEO_LIBRARY   -> Icons.Filled.VideoLibrary
-        XMBItemType.VIDEO_APPS      -> Icons.Filled.Movie
-        XMBItemType.VIDEO_RECENT    -> Icons.Filled.History
-        XMBItemType.VIDEO_FAVORITES -> Icons.Filled.Star
+        XMBItemType.VIDEO_APPS        -> Icons.Filled.Movie
+        XMBItemType.VIDEO_RECENT      -> Icons.Filled.History
+        XMBItemType.VIDEO_FAVORITES   -> Icons.Filled.Star
+        XMBItemType.VIDEO_COLLECTIONS -> Icons.Filled.Bookmarks
+        XMBItemType.PHOTO_FOLDER    -> Icons.Filled.Folder
+        XMBItemType.PHOTO_ALBUMS    -> Icons.Filled.PhotoLibrary
         // The video "Playlists" section row (PLAYLIST type with no playlistId) uses a playlist glyph.
         XMBItemType.PLAYLIST        -> Icons.Filled.QueueMusic
         else                        -> null
@@ -685,9 +693,71 @@ private fun XmbItemLeadingIcon(
                 Icon(Icons.Filled.Star, contentDescription = null, tint = InactiveText, modifier = Modifier.size(48.dp))
             }
         }
+        // "Collections" root row — umbrella for Recently Watched / Favorites / Playlists.
+        item.type == XMBItemType.VIDEO_COLLECTIONS -> {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
+                Icon(Icons.Filled.Bookmarks, contentDescription = null, tint = InactiveText, modifier = Modifier.size(46.dp))
+            }
+        }
         item.type == XMBItemType.VIDEO_APPS -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
                 Icon(Icons.Filled.Movie, contentDescription = null, tint = InactiveText, modifier = Modifier.size(48.dp))
+            }
+        }
+        // Photos show their cached thumbnail, falling back to a photo glyph for files whose
+        // thumbnail couldn't be generated (corrupt/exotic formats).
+        item.type == XMBItemType.PHOTO_FILE -> {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.width(LEADING_ICON_SLOT),
+            ) {
+                if (item.coverUri != null) {
+                    AsyncImage(
+                        model = item.coverUri,
+                        contentDescription = null,
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                        modifier = Modifier.size(width = 60.dp, height = 40.dp).clip(RoundedCornerShape(6.dp)),
+                    )
+                } else {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(width = 60.dp, height = 40.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(Color(0xFF1B1B27)),
+                    ) {
+                        Icon(
+                            Icons.Filled.Photo,
+                            contentDescription = null,
+                            tint = SecondaryText,
+                            modifier = Modifier.size(28.dp),
+                        )
+                    }
+                }
+            }
+        }
+        // An Album folder card in the Albums list — folder glyph, matching the Video libraries.
+        item.type == XMBItemType.PHOTO_FOLDER -> {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
+                Icon(Icons.Filled.Folder, contentDescription = null, tint = InactiveText, modifier = Modifier.size(48.dp))
+            }
+        }
+        // The "Albums" section row at the Photo root.
+        item.type == XMBItemType.PHOTO_ALBUMS -> {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
+                Icon(Icons.Filled.PhotoLibrary, contentDescription = null, tint = InactiveText, modifier = Modifier.size(48.dp))
+            }
+        }
+        // The Camera row (only present when a camera app exists).
+        item.type == XMBItemType.CAMERA -> {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
+                Icon(Icons.Filled.PhotoCamera, contentDescription = null, tint = InactiveText, modifier = Modifier.size(48.dp))
+            }
+        }
+        // "Add …" / "Create …" rows across Photo / Music / Video sections.
+        item.type == XMBItemType.ADD_ACTION -> {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
+                Icon(Icons.Filled.Add, contentDescription = null, tint = InactiveText, modifier = Modifier.size(44.dp))
             }
         }
         item.type == XMBItemType.ALL_GAMES ||

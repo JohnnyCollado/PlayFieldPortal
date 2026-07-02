@@ -25,6 +25,7 @@ fun SettingsNavHost(
             "settings_library"    -> LibraryManagerScreen(onBack = onBack, onAddAndroidApps = onAddAndroidApps, modifier = modifier)
             "settings_music"      -> MusicSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_video"      -> VideoSettingsScreen(onBack = onBack, modifier = modifier)
+            "settings_photo"      -> PhotoSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_categories" -> CategoryManagerScreen(onBack = onBack, modifier = modifier)
             "settings_artwork"    -> ArtworkSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_emulators"  -> EmulatorsSettingsScreen(onBack = onBack, modifier = modifier)

@@ -258,6 +258,57 @@ class XmbThemeLoaderTest {
         assertTrue("Should be a directory", themeDir.isDirectory)
     }
 
+    // ── Security: zip-slip, id traversal, and size caps ───────────────────────
+
+    @Test
+    fun `sound entry with path traversal is not written outside the theme dir`() = runTest {
+        val manifest = XmbThemeManifest(id = "slip", name = "Slip", hasSoundPack = true)
+        val stream = buildZip {
+            writeManifest(manifest)
+            // Escapes themes/slip/ up into filesDir — must be rejected, not written.
+            putNextEntry(ZipEntry("sounds/../../pwned.txt"))
+            write("owned".toByteArray())
+            closeEntry()
+        }
+
+        val result = loader.loadFromStream(stream)
+
+        // The install still succeeds; the hostile entry is silently dropped.
+        assertTrue("Expected Success, got $result", result is ThemeLoadResult.Success)
+        assertFalse(
+            "Traversal entry must not escape the theme dir",
+            java.io.File(tempFolder.root, "pwned.txt").exists(),
+        )
+    }
+
+    @Test
+    fun `manifest id with path traversal returns InvalidFormat`() = runTest {
+        val stream = buildZip { writeManifest(XmbThemeManifest(id = "../../evil", name = "Evil")) }
+
+        val result = loader.loadFromStream(stream)
+
+        assertTrue("Expected InvalidFormat, got $result", result is ThemeLoadResult.InvalidFormat)
+        assertTrue((result as ThemeLoadResult.InvalidFormat).reason.contains("id"))
+        coVerify(exactly = 0) { themeDao.upsert(any()) }
+    }
+
+    @Test
+    fun `archive with too many entries is rejected as IoError`() = runTest {
+        val stream = buildZip {
+            writeManifest(XmbThemeManifest(id = "many", name = "Many"))
+            repeat(600) { i ->
+                putNextEntry(ZipEntry("sounds/s$i.ogg"))
+                write(byteArrayOf(0x01))
+                closeEntry()
+            }
+        }
+
+        val result = loader.loadFromStream(stream)
+
+        assertTrue("Expected IoError for entry-count overflow, got $result", result is ThemeLoadResult.IoError)
+        coVerify(exactly = 0) { themeDao.upsert(any()) }
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private fun buildZip(block: ZipOutputStream.() -> Unit): ByteArrayInputStream {

@@ -5,6 +5,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -45,6 +47,7 @@ import androidx.media3.common.util.UnstableApi
 import coil.compose.AsyncImage
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.Video
+import com.playfieldportal.core.ui.theme.menuCursor
 import com.playfieldportal.feature.xmb.video.VideoPlayerScreen
 
 private val PageBg = Color(0xFF06060C)
@@ -135,6 +138,7 @@ fun VideoDetailScreen(
 
         Column(
             modifier = Modifier.fillMaxSize().widthIn(max = 920.dp).align(Alignment.Center)
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 28.dp, vertical = 22.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -151,12 +155,15 @@ fun VideoDetailScreen(
 
             val primaries = state.primaryActions
             primaries.forEachIndexed { i, action ->
+                // The lead action (Play when unwatched, Resume when watched) gets the prominent
+                // green fill; Start from Beginning sits below it in the neutral style.
+                val isLead = action == VideoDetailAction.PLAY || action == VideoDetailAction.RESUME
                 DetailButton(
                     label = action.label,
                     symbol = if (action == VideoDetailAction.RESUME) "↺" else "▶",
                     focused = state.mainFocus == i,
-                    fill = if (action == VideoDetailAction.PLAY) PlayGreen else ActionFill,
-                    textColor = if (action == VideoDetailAction.PLAY) Color(0xFF06140A) else TextPrimary,
+                    fill = if (isLead) PlayGreen else ActionFill,
+                    textColor = if (isLead) Color(0xFF06140A) else TextPrimary,
                     onClick = { viewModel.activate(action) },
                 )
             }
@@ -307,7 +314,7 @@ private fun DetailButton(
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .background(if (focused) fill else fill.copy(alpha = 0.55f))
-            .then(if (focused) Modifier.border(2.dp, Color(0xFF8F7CFF), RoundedCornerShape(12.dp)) else Modifier)
+            .then(if (focused) Modifier.border(2.dp, com.playfieldportal.core.ui.theme.menuCursorEdge(), RoundedCornerShape(12.dp)) else Modifier)
             .padding(vertical = 14.dp, horizontal = 18.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
@@ -337,7 +344,7 @@ private fun OptionsList(
                     fontSize = 15.sp,
                     modifier = Modifier.fillMaxWidth()
                         .clickable { onClick(action) }
-                        .background(if (i == selectedIndex) Color(0x334A90D9) else Color.Transparent)
+                        .menuCursor(i == selectedIndex)
                         .padding(horizontal = 20.dp, vertical = 11.dp),
                 )
             }
@@ -365,7 +372,7 @@ private fun PlaylistPicker(
                     fontSize = 15.sp,
                     modifier = Modifier.fillMaxWidth()
                         .clickable { onRowClick(i) }
-                        .background(if (i == selectedIndex) Color(0x334A90D9) else Color.Transparent)
+                        .menuCursor(i == selectedIndex)
                         .padding(horizontal = 20.dp, vertical = 11.dp),
                 )
             }
@@ -376,7 +383,7 @@ private fun PlaylistPicker(
                 fontSize = 15.sp,
                 modifier = Modifier.fillMaxWidth()
                     .clickable { onRowClick(createIndex) }
-                    .background(if (createIndex == selectedIndex) Color(0x334A90D9) else Color.Transparent)
+                    .menuCursor(createIndex == selectedIndex)
                     .padding(horizontal = 20.dp, vertical = 11.dp),
             )
         }

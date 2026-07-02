@@ -19,6 +19,8 @@ import com.playfieldportal.core.data.database.dao.PlatformDao
 import com.playfieldportal.core.data.database.dao.ThemeDao
 import com.playfieldportal.core.data.database.dao.UnmatchedRomDao
 import com.playfieldportal.core.data.database.dao.HiddenPlacementDao
+import com.playfieldportal.core.data.database.dao.PhotoDao
+import com.playfieldportal.core.data.database.dao.PhotoLibraryDao
 import com.playfieldportal.core.data.database.dao.VideoDao
 import com.playfieldportal.core.data.database.dao.VideoLibraryDao
 import com.playfieldportal.core.data.database.dao.VideoPlaylistDao
@@ -39,6 +41,8 @@ import com.playfieldportal.core.data.database.entity.PlatformEntity
 import com.playfieldportal.core.data.database.entity.ThemeEntity
 import com.playfieldportal.core.data.database.entity.UnmatchedRomEntity
 import com.playfieldportal.core.data.database.entity.HiddenPlacementEntity
+import com.playfieldportal.core.data.database.entity.PhotoEntity
+import com.playfieldportal.core.data.database.entity.PhotoLibraryEntity
 import com.playfieldportal.core.data.database.entity.VideoEntity
 import com.playfieldportal.core.data.database.entity.VideoLibraryEntity
 import com.playfieldportal.core.data.database.entity.VideoPlaylistEntity
@@ -67,8 +71,10 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         VideoPlaylistEntity::class,
         VideoPlaylistItemEntity::class,
         HiddenPlacementEntity::class,
+        PhotoLibraryEntity::class,
+        PhotoEntity::class,
     ],
-    version = 18,
+    version = 20,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -91,6 +97,8 @@ abstract class PFPDatabase : RoomDatabase() {
     abstract fun videoDao(): VideoDao
     abstract fun videoPlaylistDao(): VideoPlaylistDao
     abstract fun hiddenPlacementDao(): HiddenPlacementDao
+    abstract fun photoLibraryDao(): PhotoLibraryDao
+    abstract fun photoDao(): PhotoDao
 
     companion object {
         const val DATABASE_NAME = "pfp_database"
@@ -465,6 +473,62 @@ abstract class PFPDatabase : RoomDatabase() {
                     """.trimIndent()
                 )
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_hidden_placements_item_key ON hidden_placements (item_key)")
+            }
+        }
+
+        // v19 — Photo section. Adds photo_libraries (SAF photo sources / Albums, mirroring
+        // video_libraries) and photos (scanned files with resolution, EXIF date and a cached
+        // thumbnail). Additive only; no existing data is touched.
+        val MIGRATION_18_19 = object : Migration(18, 19) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS photo_libraries (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        display_name TEXT NOT NULL,
+                        tree_uri TEXT NOT NULL,
+                        enabled INTEGER NOT NULL DEFAULT 1,
+                        scan_recursively INTEGER NOT NULL DEFAULT 1,
+                        photo_count INTEGER NOT NULL DEFAULT 0,
+                        last_scanned_at INTEGER,
+                        created_at INTEGER NOT NULL,
+                        updated_at INTEGER NOT NULL
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS photos (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        library_id TEXT NOT NULL,
+                        uri TEXT NOT NULL,
+                        display_name TEXT NOT NULL,
+                        width INTEGER,
+                        height INTEGER,
+                        date_taken INTEGER,
+                        last_modified INTEGER,
+                        size_bytes INTEGER,
+                        mime_type TEXT,
+                        relative_path TEXT,
+                        thumbnail_uri TEXT,
+                        date_added INTEGER,
+                        FOREIGN KEY(library_id) REFERENCES photo_libraries(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_photos_library_id ON photos (library_id)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_photos_uri ON photos (uri)")
+            }
+        }
+
+        // v20 — SAF ROM libraries. Adds memory_cards.tree_uri (the persisted SAF document-tree URI
+        // a card scans, when the user picked it via the folder picker) and games.rom_uri (the SAF
+        // content:// URI for a scanned ROM). Both nullable and additive: existing raw-path cards and
+        // games are untouched (tree_uri / rom_uri stay NULL and the legacy raw-path launch path runs).
+        val MIGRATION_19_20 = object : Migration(19, 20) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE memory_cards ADD COLUMN tree_uri TEXT")
+                db.execSQL("ALTER TABLE games ADD COLUMN rom_uri TEXT")
             }
         }
     }

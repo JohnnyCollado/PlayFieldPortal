@@ -6,22 +6,19 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
 import androidx.annotation.DrawableRes
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
+import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,8 +31,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -60,8 +60,6 @@ private val StripSep     = Color(0x55FFFFFF)
 
 object XmbStatusIcons {
     @DrawableRes val bluetooth: Int = R.drawable.ic_status_bluetooth
-    @DrawableRes val wifi:      Int = R.drawable.ic_status_wifi
-    @DrawableRes val cellular:  Int = R.drawable.ic_status_cellular
 
     @DrawableRes fun battery(level: Int, charging: Boolean): Int = when {
         charging       -> R.drawable.ic_status_battery_charging
@@ -133,14 +131,32 @@ fun XmbPspStatusStrip(
             }
         }
 
-        // ── Right: BT  WiFi  Signal  Battery ──────────────────────────────
+        // ── Right: [controller] [BT] [WiFi] [Signal] [Battery] ─────────────
+        // Every status icon except battery is conditional: shown only when that hardware is
+        // present/active (controller connected, Bluetooth on, Wi-Fi connected, cellular service),
+        // and Wi-Fi/Signal reflect live strength. Battery is always shown.
+        val sys = rememberSystemStatus()
         Row(
             verticalAlignment     = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(7.dp),
         ) {
-            StatusIcon(XmbStatusIcons.bluetooth, "Bluetooth",     Modifier.size(width = 9.dp,  height = 13.dp))
-            StatusIcon(XmbStatusIcons.wifi,      "Wi-Fi",         Modifier.size(width = 15.dp, height = 13.dp))
-            StatusIcon(XmbStatusIcons.cellular,  "Signal",        Modifier.size(width = 12.dp, height = 14.dp))
+            if (sys.controllerConnected) {
+                Icon(
+                    imageVector        = Icons.Filled.SportsEsports,
+                    contentDescription = "Controller connected",
+                    tint               = StripMuted,
+                    modifier           = Modifier.size(15.dp),
+                )
+            }
+            if (sys.bluetoothOn) {
+                StatusIcon(XmbStatusIcons.bluetooth, "Bluetooth", Modifier.size(width = 9.dp, height = 13.dp))
+            }
+            sys.wifiLevel?.let { level ->
+                WifiMeter(level, Modifier.size(width = 16.dp, height = 13.dp))
+            }
+            sys.cellularLevel?.let { level ->
+                SignalBars(level, Modifier.size(width = 14.dp, height = 13.dp))
+            }
             StatusIcon(
                 res         = XmbStatusIcons.battery(batteryLevel, isCharging),
                 description = "Battery",
@@ -152,6 +168,65 @@ fun XmbPspStatusStrip(
                 color      = if (batteryLevel <= 20 && !isCharging) LowBatteryTint else StripPrimary,
                 fontSize   = StripFontSize,
                 fontWeight = FontWeight.Medium,
+            )
+        }
+    }
+}
+
+// ── Signal-strength meters (theme-neutral white, level-aware) ──────────────────
+//
+// Both draw [level] (0..4) as filled vs dimmed segments so the strength reads at a glance. Drawn on
+// Canvas rather than shipping five drawables each, and tinted from the strip palette so they sit
+// with the rest of the bar.
+
+private val MeterActive   = StripPrimary
+private val MeterInactive = Color(0x40EEEEEE)
+
+// Four ascending vertical bars — the classic cellular meter.
+@Composable
+private fun SignalBars(level: Int, modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier) {
+        val bars = 4
+        val gap = size.width * 0.14f
+        val barWidth = (size.width - gap * (bars - 1)) / bars
+        for (i in 0 until bars) {
+            val barHeight = size.height * (0.35f + 0.65f * (i + 1) / bars)
+            val x = i * (barWidth + gap)
+            val top = size.height - barHeight
+            drawRect(
+                color = if (i < level) MeterActive else MeterInactive,
+                topLeft = Offset(x, top),
+                size = Size(barWidth, barHeight),
+            )
+        }
+    }
+}
+
+// Wi-Fi "fan": a base dot plus three nested arcs; segments above [level] are dimmed. Level maps as
+// dot = 1, +arc = 2, ++arc = 3, +++arc = 4 (0 = all dimmed).
+@Composable
+private fun WifiMeter(level: Int, modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier) {
+        val cx = size.width / 2f
+        val cy = size.height * 0.92f
+        val maxR = size.height * 0.9f
+        val stroke = size.height * 0.11f
+
+        fun color(threshold: Int) = if (level >= threshold) MeterActive else MeterInactive
+
+        // Base dot (level ≥ 1).
+        drawCircle(color = color(1), radius = stroke * 1.1f, center = Offset(cx, cy))
+        // Three arcs sweeping upward, growing outward (levels 2, 3, 4).
+        for (i in 1..3) {
+            val r = maxR * i / 3f
+            drawArc(
+                color = color(i + 1),
+                startAngle = 225f,
+                sweepAngle = 90f,
+                useCenter = false,
+                topLeft = Offset(cx - r, cy - r),
+                size = Size(r * 2, r * 2),
+                style = Stroke(width = stroke),
             )
         }
     }
@@ -185,80 +260,6 @@ private fun StripSeparator() {
 private val StripHeight   = 28.dp
 private val StripFontSize = 12.sp
 private val LowBatteryTint = Color(0xFFFF6B6B)
-
-// ── Legacy standalone composables (preserved for any existing call-sites) ─────
-
-@Composable
-fun XMBClock(modifier: Modifier = Modifier) {
-    var timeString by remember { mutableStateOf(currentTimeString()) }
-    LaunchedEffect(Unit) {
-        while (true) {
-            timeString = currentTimeString()
-            delay(30_000L)
-        }
-    }
-    Text(
-        text       = timeString,
-        color      = Color.White,
-        fontSize   = 16.sp,
-        fontWeight = FontWeight.Medium,
-        modifier   = modifier,
-    )
-}
-
-@Composable
-fun XMBStatusBar(
-    backgroundTaskCount: Int,
-    onTaskBadgeTapped: () -> Unit = {},
-    modifier: Modifier = Modifier,
-) {
-    val context = LocalContext.current
-    var batteryLevel by remember { mutableIntStateOf(0) }
-    var isCharging   by remember { mutableStateOf(false) }
-
-    DisposableEffect(Unit) {
-        val receiver = object : BroadcastReceiver() {
-            override fun onReceive(ctx: Context, intent: Intent) {
-                val level  = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
-                val scale  = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
-                val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
-                batteryLevel = if (level >= 0 && scale > 0) (level * 100 / scale) else 0
-                isCharging   = status == BatteryManager.BATTERY_STATUS_CHARGING ||
-                               status == BatteryManager.BATTERY_STATUS_FULL
-            }
-        }
-        context.registerReceiver(receiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-        onDispose { context.unregisterReceiver(receiver) }
-    }
-
-    Row(
-        modifier              = modifier,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment     = Alignment.CenterVertically,
-    ) {
-        if (backgroundTaskCount > 0) {
-            BadgedBox(
-                badge    = { Badge { Text(backgroundTaskCount.toString(), fontSize = 9.sp) } },
-                modifier = Modifier.clickable(onClick = onTaskBadgeTapped),
-            ) {
-                Icon(
-                    imageVector        = Icons.Default.Refresh,
-                    contentDescription = "Background tasks",
-                    tint               = Color.White,
-                    modifier           = Modifier.size(16.dp),
-                )
-            }
-        }
-        StatusIcon(XmbStatusIcons.bluetooth, "Bluetooth", Modifier.size(width = 11.dp, height = 16.dp))
-        StatusIcon(XmbStatusIcons.wifi,      "Wi-Fi",     Modifier.size(16.dp))
-        StatusIcon(
-            res         = XmbStatusIcons.battery(batteryLevel, isCharging),
-            description = "Battery",
-            modifier    = Modifier.size(width = 28.dp, height = 13.dp),
-        )
-        Text(text = "$batteryLevel%", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-    }
-}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

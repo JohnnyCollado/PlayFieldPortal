@@ -41,6 +41,7 @@ data class LibraryCardRow(
     val displayName: String,
     val enabled: Boolean,
     val pinned: Boolean,
+    val treeUri: String?,
     val romDirectory: String?,
     val emulatorName: String?,
     val extensions: List<String>,
@@ -62,6 +63,8 @@ data class LibraryManagerUiState(
     val pendingPlatformId: String? = null,
     val pendingPlatformName: String? = null,
     val pendingDirectory: String? = null,
+    // Persisted SAF tree URI for the folder being added (source of truth for scan/launch).
+    val pendingTreeUri: String? = null,
     val pendingEmulatorId: String? = null,
 
     // Card detail (edit) target
@@ -106,6 +109,7 @@ class LibraryManagerViewModel @Inject constructor(
                     displayName  = card.displayName,
                     enabled      = card.enabled,
                     pinned       = card.pinned,
+                    treeUri      = card.treeUri,
                     romDirectory = card.romDirectory,
                     emulatorName = card.emulatorId?.let { emulatorNames[it] },
                     extensions   = card.supportedExtensions,
@@ -216,8 +220,10 @@ class LibraryManagerViewModel @Inject constructor(
                 romDirectory = s.pendingDirectory,
                 emulatorId   = s.pendingEmulatorId,
             )
+            // Attach the SAF grant so the card scans/launches via content URIs (no permission).
+            s.pendingTreeUri?.let { memoryCardRepository.setSafFolder(platformId, it, s.pendingDirectory) }
             resetToList()
-            if (scanNow && s.pendingDirectory != null) scanConsole(platformId)
+            if (scanNow && (s.pendingTreeUri != null || s.pendingDirectory != null)) scanConsole(platformId)
         }
     }
 
@@ -227,12 +233,11 @@ class LibraryManagerViewModel @Inject constructor(
 
     fun onDirectoryPicked(uri: Uri) {
         val purpose = _scratch.value.awaitingDirectoryPick
-        val path = uri.toRealPath()
-        if (path == null) {
-            _scratch.update { it.copy(awaitingDirectoryPick = null, message = "Could not read that folder. Try another location.") }
-            return
-        }
+        // Keep the SAF grant: the tree URI is the scan/launch source of truth (no storage
+        // permission needed). The derived raw path is display + a {rom_path} fallback only.
         persistReadPermission(uri)
+        val treeUri = uri.toString()
+        val path = uri.toRealPath()
 
         when (purpose) {
             DirectoryPickPurpose.ADD -> viewModelScope.launch {
@@ -241,6 +246,7 @@ class LibraryManagerViewModel @Inject constructor(
                 _scratch.update {
                     it.copy(
                         pendingDirectory      = path,
+                        pendingTreeUri        = treeUri,
                         emulatorOptions       = options,
                         awaitingDirectoryPick = null,
                         step                  = LibraryStep.PICK_EMULATOR,
@@ -249,7 +255,7 @@ class LibraryManagerViewModel @Inject constructor(
             }
             DirectoryPickPurpose.CHANGE -> viewModelScope.launch {
                 val platformId = _scratch.value.detailPlatformId ?: return@launch
-                memoryCardRepository.setRomDirectory(platformId, path)
+                memoryCardRepository.setSafFolder(platformId, treeUri, path)
                 _scratch.update { it.copy(awaitingDirectoryPick = null) }
             }
             null -> _scratch.update { it.copy(awaitingDirectoryPick = null) }
@@ -358,8 +364,9 @@ class LibraryManagerViewModel @Inject constructor(
         if (platformId in _scratch.value.scanningPlatformIds) return
         viewModelScope.launch {
             val card = memoryCardRepository.getById(platformId) ?: return@launch
-            val dir = card.romDirectory
-            if (dir.isNullOrBlank()) {
+            // Prefer the SAF tree URI (no permission needed); fall back to the legacy raw directory.
+            val hasSaf = !card.treeUri.isNullOrBlank()
+            if (!hasSaf && card.romDirectory.isNullOrBlank()) {
                 _scratch.update { it.copy(message = "${card.displayName}: ROM directory not configured.") }
                 return@launch
             }
@@ -370,7 +377,12 @@ class LibraryManagerViewModel @Inject constructor(
             }.getOrDefault(emptySet())
 
             var added = 0
-            romScanner.scanDirectory(dir, card.supportedExtensions, platformId, card.scanRecursively, existing)
+            val flow = if (hasSaf) {
+                romScanner.scanTree(card.treeUri!!, card.supportedExtensions, platformId, card.scanRecursively, existing)
+            } else {
+                romScanner.scanDirectory(card.romDirectory!!, card.supportedExtensions, platformId, card.scanRecursively, existing)
+            }
+            flow
                 .collect { result ->
                     when (result) {
                         is ScanResult.Complete -> {
@@ -396,7 +408,7 @@ class LibraryManagerViewModel @Inject constructor(
     fun scanAllConsoles() {
         viewModelScope.launch {
             memoryCardRepository.getAll()
-                .filter { it.enabled && !it.romDirectory.isNullOrBlank() }
+                .filter { it.enabled && (!it.treeUri.isNullOrBlank() || !it.romDirectory.isNullOrBlank()) }
                 .forEach { scanConsole(it.platformId) }
         }
     }

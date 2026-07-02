@@ -71,7 +71,6 @@ private val DrawerAccent  = Color(0xFF4A90D9)
 private val DrawerText    = Color.White
 private val DrawerSubtext = Color(0xFFAAAAAA)
 private val DrawerChip    = Color(0xFF1A1A2E)
-private val DrawerSelected = Color(0xFF4A90D9).copy(alpha = 0.25f)
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -276,7 +275,7 @@ private fun AppMiniMenu(
                     fontSize = 15.sp,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(if (i == selectedIndex) DrawerSelected else Color.Transparent)
+                        .background(if (i == selectedIndex) com.playfieldportal.core.ui.theme.menuCursorFill() else Color.Transparent)
                         .clickable { onAction(action) }
                         .padding(horizontal = 18.dp, vertical = 12.dp),
                 )
@@ -452,8 +451,9 @@ private fun AppGrid(
             AppGridItem(
                 app        = app,
                 isSelected = index == selectedIndex,
-                onClick    = { onAppSelected(index) },
-                onLaunch   = { onAppLaunched(app.packageName) },
+                // Single tap launches (moving focus there first so the highlight matches). Matches
+                // the controller SELECT behaviour and standard launcher expectations.
+                onClick    = { onAppSelected(index); onAppLaunched(app.packageName) },
                 onMenu     = { onAppSelected(index); onAppMenu(app) },
             )
         }
@@ -466,23 +466,22 @@ private fun AppGridItem(
     app: InstalledApp,
     isSelected: Boolean,
     onClick: () -> Unit,
-    onLaunch: () -> Unit,
     onMenu: () -> Unit,
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(if (isSelected) DrawerSelected else Color.Transparent)
+            .background(if (isSelected) com.playfieldportal.core.ui.theme.menuCursorFill() else Color.Transparent)
             .border(
                 width = if (isSelected) 1.dp else 0.dp,
-                color = if (isSelected) DrawerAccent.copy(alpha = 0.5f) else Color.Transparent,
+                color = if (isSelected) com.playfieldportal.core.ui.theme.menuCursorEdge() else Color.Transparent,
                 shape = RoundedCornerShape(12.dp),
             )
+            // Single tap launches; long-press opens the app's mini menu.
             .combinedClickable(
-                onClick    = onClick,
-                onDoubleClick = onLaunch,
-                onLongClick   = onMenu,
+                onClick     = onClick,
+                onLongClick = onMenu,
             )
             .padding(vertical = 10.dp, horizontal = 8.dp),
     ) {

@@ -19,7 +19,7 @@ private val KEY_THEMES_SEEDED = booleanPreferencesKey("themes_seeded_v1")
 /** Built-in theme seeded separately from the main DB seed so it can be added to existing installs. */
 private val BUILTIN_CLASSIC_BLUE = ThemeEntity(
     id               = "builtin_classic_blue",
-    name             = "Classic PSP Blue",
+    name             = "Classic Blue",
     author           = "Play Field Portal",
     version          = "1.0",
     waveColor        = 0xFF0055AAL,

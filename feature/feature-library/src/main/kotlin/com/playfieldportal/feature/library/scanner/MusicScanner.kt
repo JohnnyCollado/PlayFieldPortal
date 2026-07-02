@@ -3,6 +3,7 @@ package com.playfieldportal.feature.library.scanner
 import android.content.Context
 import android.media.MediaMetadataRetriever
 import android.net.Uri
+import android.provider.DocumentsContract
 import androidx.documentfile.provider.DocumentFile
 import com.playfieldportal.core.data.music.AudioFileFilter
 import com.playfieldportal.core.domain.model.MusicFolder
@@ -40,12 +41,13 @@ class MusicScanner @Inject constructor(
     fun scan(folder: MusicFolder): Flow<MusicScanResult> = flow {
         val treeUri = runCatching { Uri.parse(folder.treeUri) }.getOrNull()
         val root = treeUri?.let { DocumentFile.fromTreeUri(context, it) }
-        if (root == null || !root.canRead()) {
+        if (treeUri == null || root == null || !root.canRead()) {
             // SAF permission revoked or the volume is gone — surface a recoverable message.
             emit(MusicScanResult.Error(folder.id, "Permission lost, re-select folder."))
             return@flow
         }
 
+        val startMs = System.currentTimeMillis()
         Timber.i("Music scan started: \"${folder.displayName}\" (${folder.treeUri})")
         val tracks = mutableListOf<MusicTrack>()
         // Album art is deduped within a scan: the first track of an album writes the cached file,
@@ -53,21 +55,18 @@ class MusicScanner @Inject constructor(
         val artByAlbum = HashMap<String, String?>()
         var filesSeen = 0
 
-        // Iterative DFS so deeply nested trees don't blow the stack.
-        val stack = ArrayDeque<Pair<DocumentFile, String>>()
-        stack.addLast(root to "")
+        // Iterative DFS over document IDs so deeply nested trees don't blow the stack. Directory
+        // listing goes through one DocumentsContract child query per directory (see SafChildren)
+        // instead of DocumentFile's per-property IPC round-trips.
+        val stack = ArrayDeque<Pair<String, String>>()   // documentId to relative path
+        stack.addLast(DocumentsContract.getTreeDocumentId(treeUri) to "")
         while (stack.isNotEmpty()) {
             coroutineContext.ensureActive()
-            val (dir, relPath) = stack.removeLast()
-            val children = runCatching { dir.listFiles() }.getOrElse {
-                Timber.w(it, "Could not list ${dir.uri}")
-                emptyArray()
-            }
-            for (child in children) {
+            val (dirDocId, relPath) = stack.removeLast()
+            for (child in context.contentResolver.querySafChildren(treeUri, dirDocId)) {
                 coroutineContext.ensureActive()
                 if (child.isDirectory) {
-                    val name = child.name ?: continue
-                    stack.addLast(child to if (relPath.isEmpty()) name else "$relPath/$name")
+                    stack.addLast(child.documentId to if (relPath.isEmpty()) child.name else "$relPath/${child.name}")
                     continue
                 }
                 filesSeen++
@@ -81,17 +80,16 @@ class MusicScanner @Inject constructor(
             }
         }
 
-        Timber.i("Music scan complete: \"${folder.displayName}\" — ${tracks.size} tracks from $filesSeen files")
+        val took = System.currentTimeMillis() - startMs
+        Timber.i("Music scan complete: \"${folder.displayName}\" — ${tracks.size} tracks from $filesSeen files in ${took}ms")
         emit(MusicScanResult.Complete(folder.id, tracks))
     }.flowOn(Dispatchers.IO)
 
-    private fun DocumentFile.toTrackOrNull(
+    private fun SafChild.toTrackOrNull(
         folderId: String,
         relPath: String,
         artByAlbum: MutableMap<String, String?>,
     ): MusicTrack? {
-        val name = name ?: return null
-        val mime = type
         if (!AudioFileFilter.isAudio(name, mime)) return null
 
         val trackId = UUID.randomUUID().toString()
@@ -117,8 +115,8 @@ class MusicScanner @Inject constructor(
             album = meta?.album,
             durationMs = meta?.durationMs,
             mimeType = mime ?: meta?.mimeType,
-            sizeBytes = length().takeIf { it > 0 },
-            lastModified = lastModified().takeIf { it > 0 },
+            sizeBytes = sizeBytes,
+            lastModified = lastModified,
             trackNumber = meta?.trackNumber,
             relativePath = relPath.takeIf { it.isNotEmpty() },
             artUri = artUri,

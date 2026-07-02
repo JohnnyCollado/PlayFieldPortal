@@ -26,8 +26,8 @@ android {
         applicationId = "com.playfieldportal.launcher"
         minSdk = 29           // Android 10 — Winlator minimum
         targetSdk = 35
-        versionCode = 2
-        versionName = "1.0.0-alpha.2"
+        versionCode = 3
+        versionName = "1.0.0-alpha.3"
     }
 
     signingConfigs {

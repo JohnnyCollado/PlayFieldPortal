@@ -1,9 +1,12 @@
 package com.playfieldportal.feature.library.scanner
 
 import android.content.Context
+import android.net.Uri
+import android.provider.DocumentsContract
 import com.playfieldportal.core.domain.model.Game
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
@@ -11,6 +14,7 @@ import timber.log.Timber
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.coroutines.coroutineContext
 
 data class ScanProgress(
     val currentFolder: String,
@@ -271,10 +275,112 @@ class RomScanner @Inject constructor(
 
     }.flowOn(Dispatchers.IO)
 
+    // ── Per-Memory-Card SAF scan ──────────────────────────────────────────────
+    //
+    // The SAF counterpart of [scanDirectory]: walks the granted document tree via a single
+    // DocumentsContract child query per directory (see [querySafChildren]) — no MANAGE_EXTERNAL_
+    // STORAGE, works on SD/USB volumes. Each match carries both its SAF content:// [Game.romUri]
+    // (the preferred launch handle) and a derived raw [Game.romPath] (display + {rom_path} fallback
+    // for emulators that read files themselves). Dedupe stays on romPath, keeping parity with the
+    // raw-path scan. Mirrors [VideoScanner]/[PhotoScanner]: iterative DFS over document IDs,
+    // cancellable via [ensureActive], per-file failures logged and skipped.
+    fun scanTree(
+        treeUri: String,
+        extensions: List<String>,
+        platformId: String,
+        recursive: Boolean,
+        existingRomPaths: Set<String>,
+    ): Flow<ScanResult> = flow {
+        Timber.i("Memory Card SAF scan — platform=$platformId tree=$treeUri exts=$extensions recursive=$recursive")
+
+        val tree = runCatching { Uri.parse(treeUri) }.getOrNull()
+        if (tree == null) {
+            emit(ScanResult.Error("This library's folder link is invalid. Re-add the folder."))
+            return@flow
+        }
+        val allowed = extensions.map { it.removePrefix(".").lowercase() }.toSet()
+        if (allowed.isEmpty()) {
+            emit(ScanResult.Complete(emptyList(), 0, emptyList(), emptyList()))
+            return@flow
+        }
+
+        val newGames         = mutableListOf<Game>()
+        val seenPaths        = HashSet<String>()
+        var alreadyInLibrary = 0
+        var filesScanned     = 0
+
+        // Iterative DFS over document IDs; visited-set guards a cyclic/hostile provider.
+        val visited = HashSet<String>()
+        val rootDocId = DocumentsContract.getTreeDocumentId(tree)
+        visited.add(rootDocId)
+        val stack = ArrayDeque<String>()
+        stack.addLast(rootDocId)
+        while (stack.isNotEmpty()) {
+            coroutineContext.ensureActive()
+            val dirDocId = stack.removeLast()
+            for (child in context.contentResolver.querySafChildren(tree, dirDocId)) {
+                coroutineContext.ensureActive()
+                if (child.isDirectory) {
+                    if (recursive && visited.add(child.documentId)) stack.addLast(child.documentId)
+                    continue
+                }
+                if (child.name.startsWith(".")) continue
+                val ext = child.name.substringAfterLast('.', "").lowercase()
+                if (ext !in allowed) continue
+
+                filesScanned++
+                // Derive the raw path from the document id (pure string math, no file access) so it
+                // stays the stable dedupe key and the {rom_path} value.
+                val rawPath = safDocumentIdToRawPath(child.documentId) ?: child.uri.toString()
+                if (rawPath in existingRomPaths || !seenPaths.add(rawPath)) {
+                    alreadyInLibrary++
+                    continue
+                }
+
+                emit(ScanResult.Progress(
+                    ScanProgress(
+                        currentFolder  = child.name,
+                        filesScanned   = filesScanned,
+                        filesFound     = newGames.size,
+                        totalEstimated = filesScanned,
+                    )
+                ))
+
+                newGames.add(
+                    Game(
+                        title      = cleanRomTitle(child.name.substringBeforeLast('.', child.name)),
+                        platformId = platformId,
+                        romPath    = rawPath,
+                        romUri     = child.uri.toString(),
+                    )
+                )
+            }
+        }
+
+        Timber.i("Memory Card SAF scan complete — platform=$platformId new=${newGames.size} existing=$alreadyInLibrary")
+        emit(ScanResult.Complete(newGames, alreadyInLibrary, emptyList(), emptyList()))
+
+    }.flowOn(Dispatchers.IO)
+
     suspend fun findMissingRoms(knownPaths: List<String>): List<String> =
         knownPaths.filter { path -> !File(path).exists() }
 
     private fun String.sanitizeRomName(): String = cleanRomTitle(this)
+}
+
+// Converts a SAF externalstorage document id ("primary:ROMs/game.iso", "1A2B-3C4D:Games/game.iso")
+// to its raw filesystem path. Pure string math — needs no storage access and is safe to derive even
+// without MANAGE_EXTERNAL_STORAGE. Returns null for non-volume document ids (kept as a fallback by
+// the caller). Mirrors the derivation used when a card's folder is first picked.
+fun safDocumentIdToRawPath(documentId: String): String? {
+    val parts = documentId.split(":", limit = 2)
+    if (parts.size != 2 || parts[1].isBlank()) return null
+    val (volume, relative) = parts
+    return if (volume.equals("primary", ignoreCase = true)) {
+        "/storage/emulated/0/$relative"
+    } else {
+        "/storage/$volume/$relative"
+    }
 }
 
 // ── ROM title cleaning ──────────────────────────────────────────────────────────

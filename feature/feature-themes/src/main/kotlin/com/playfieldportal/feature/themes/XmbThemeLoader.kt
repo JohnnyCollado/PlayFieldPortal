@@ -9,12 +9,24 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import timber.log.Timber
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.util.zip.ZipInputStream
 import javax.inject.Inject
 import javax.inject.Singleton
+
+// Theme ids become a folder name (filesDir/themes/{id}) and the DB primary key, so they must be a
+// short, filesystem-safe token — this both prevents path traversal via the id and keeps ids sane.
+private val SAFE_THEME_ID = Regex("[A-Za-z0-9._-]{1,64}")
+
+// Decompression limits — a .xmbtheme is a background image, a short boot clip and a handful of
+// small sounds. These caps stop a hostile/corrupt archive from exhausting memory or disk (zip bomb)
+// while staying well clear of any legitimate pack.
+private const val MAX_ENTRY_BYTES = 64L * 1024 * 1024   // 64 MB per file (generous for a boot mp4)
+private const val MAX_TOTAL_BYTES = 128L * 1024 * 1024  // 128 MB across the whole archive
+private const val MAX_ENTRY_COUNT = 512
 
 sealed class ThemeLoadResult {
     data class Success(val themeId: String) : ThemeLoadResult()
@@ -67,6 +79,14 @@ class XmbThemeLoader @Inject constructor(
                 return@withContext ThemeLoadResult.UnsupportedVersion(
                     found     = manifest.formatVersion,
                     supported = THEME_FORMAT_VERSION,
+                )
+            }
+
+            // The id becomes a folder name and DB key — reject anything that isn't a safe token so
+            // a crafted id (e.g. "../../databases/pfp_database") can't escape filesDir.
+            if (!SAFE_THEME_ID.matches(manifest.id)) {
+                return@withContext ThemeLoadResult.InvalidFormat(
+                    "Invalid theme id '${manifest.id}' — use letters, numbers, '.', '_' or '-' (max 64)"
                 )
             }
 
@@ -130,7 +150,7 @@ class XmbThemeLoader @Inject constructor(
     ): String? {
         if (!shouldExtract) return null
         val bytes = entries[fileName] ?: return null
-        val dest = File(themeDir, fileName)
+        val dest = safeChild(themeDir, fileName) ?: return null
         dest.writeBytes(bytes)
         return dest.absolutePath
     }
@@ -149,25 +169,67 @@ class XmbThemeLoader @Inject constructor(
         val soundsDir = File(themeDir, "sounds")
         soundsDir.mkdirs()
         soundEntries.forEach { (name, bytes) ->
-            File(themeDir, name).also { it.parentFile?.mkdirs() }.writeBytes(bytes)
+            // Zip-slip guard: a crafted entry name (e.g. "sounds/../../db") is dropped, not written.
+            val dest = safeChild(themeDir, name) ?: return@forEach
+            dest.parentFile?.mkdirs()
+            dest.writeBytes(bytes)
         }
         return soundsDir.absolutePath
     }
 
-    // Reads all ZIP entries as raw ByteArrays so both text (JSON) and binary
-    // (images, audio) can be handled uniformly without a second pass.
+    // Resolves [relativePath] under [baseDir] and returns the destination only if it stays inside
+    // baseDir. Entry names that traverse out (../, absolute paths, symlink-style tricks) resolve to
+    // a canonical path outside the base and are rejected — the core zip-slip defense.
+    private fun safeChild(baseDir: File, relativePath: String): File? {
+        val base = baseDir.canonicalFile
+        val target = File(base, relativePath).canonicalFile
+        val basePrefix = base.path + File.separator
+        return if (target.path == base.path || target.path.startsWith(basePrefix)) {
+            target
+        } else {
+            Timber.w("Rejected unsafe theme entry path: $relativePath")
+            null
+        }
+    }
+
+    // Reads all ZIP entries as raw ByteArrays so both text (JSON) and binary (images, audio) can be
+    // handled uniformly. Per-entry, total, and count caps bound memory/disk so a zip bomb or corrupt
+    // archive can't exhaust the device.
     private fun readZipEntries(stream: InputStream): Map<String, ByteArray> {
         val map = mutableMapOf<String, ByteArray>()
+        var totalBytes = 0L
+        var count = 0
         ZipInputStream(stream.buffered()).use { zip ->
             var entry = zip.nextEntry
             while (entry != null) {
                 if (!entry.isDirectory) {
-                    map[entry.name] = zip.readBytes()
+                    if (++count > MAX_ENTRY_COUNT) throw IOException("Theme archive has too many entries")
+                    val bytes = zip.readBounded(MAX_ENTRY_BYTES)
+                    totalBytes += bytes.size
+                    if (totalBytes > MAX_TOTAL_BYTES) throw IOException("Theme archive is too large")
+                    map[entry.name] = bytes
                 }
                 zip.closeEntry()
                 entry = zip.nextEntry
             }
         }
         return map
+    }
+
+    // Reads the current entry, aborting if it exceeds [limit]. ZipInputStream reports an unreliable
+    // getSize() for streamed archives, so we bound the actual decompressed bytes rather than trust
+    // the header.
+    private fun InputStream.readBounded(limit: Long): ByteArray {
+        val out = ByteArrayOutputStream()
+        val chunk = ByteArray(8192)
+        var total = 0L
+        while (true) {
+            val n = read(chunk)
+            if (n < 0) break
+            total += n
+            if (total > limit) throw IOException("Theme entry exceeds the ${limit / (1024 * 1024)}MB size limit")
+            out.write(chunk, 0, n)
+        }
+        return out.toByteArray()
     }
 }

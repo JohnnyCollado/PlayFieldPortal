@@ -48,7 +48,6 @@ import com.playfieldportal.feature.xmb.viewmodel.MusicBrowserState
 import com.playfieldportal.feature.xmb.viewmodel.XMBItem
 import com.playfieldportal.feature.xmb.viewmodel.XMBItemType
 
-private val Selected = Color(0xFF574DDB)
 private val Border = Color(0xFF8F7CFF)
 private val PrimaryText = Color.White
 private val SecondaryText = Color(0xFFC9C7E8)
@@ -172,9 +171,9 @@ private fun BrowserRow(
             .fillMaxWidth()
             .padding(vertical = 3.dp)
             .clip(RoundedCornerShape(8.dp))
-            .background(if (selected) Selected.copy(alpha = 0.32f) else Color.Transparent)
+            .background(if (selected) com.playfieldportal.core.ui.theme.menuCursorFill() else Color.Transparent)
             .then(
-                if (selected) Modifier.border(1.dp, Border.copy(alpha = 0.8f), RoundedCornerShape(8.dp))
+                if (selected) Modifier.border(1.dp, com.playfieldportal.core.ui.theme.menuCursorEdge(), RoundedCornerShape(8.dp))
                 else Modifier
             )
             .then(if (clickable) Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick) else Modifier)

@@ -3,6 +3,74 @@
 All notable changes to Play Field Portal are documented here. This project follows
 [Keep a Changelog](https://keepachangelog.com/) and [Semantic Versioning](https://semver.org/).
 
+## [1.0.0-alpha.3] — 2026-07-02
+
+Third alpha. Adds a full **Photo** section and **Video** section polish, moves ROM libraries
+onto the Storage Access Framework so SD-card storage no longer needs the all-files
+permission, makes the status bar live, and lands another round of security hardening.
+(`versionName 1.0.0-alpha.3` / `versionCode 3`.)
+
+### Added
+- **Photo section.** A PSP-style memory-card experience: **All Photos**, **Camera** (only
+  when a camera app exists), **Add Photo Library**, and a single **Albums** entry that drills
+  into your scanned folders. Add albums via the folder picker (SAF — no storage permission),
+  browse `[thumbnail] name / resolution · date` rows, and open photos in a minimal
+  full-screen viewer (hidden controls, zoom/pan, rotate, L1/R1 paging).
+- **Set as Launcher Wallpaper.** From the photo viewer's options *or* a photo row's context
+  menu — preview first, then apply. The image is EXIF-stripped and copied into app storage;
+  GPS/location metadata is never read or stored.
+- **SAF ROM libraries (Memory Cards).** Add a console's ROM folder through the folder picker
+  and it scans/launches with **no storage permission** — including folders on SD cards and
+  USB drives. `MANAGE_EXTERNAL_STORAGE` is now optional (only requested for older raw-path
+  libraries).
+- **Live status bar.** Wi-Fi and cellular now show real signal strength and hide entirely
+  when there's no connection/service; Bluetooth shows only when enabled; a controller icon
+  appears when a gamepad is connected. No new permissions.
+- **Video "Collections."** Recently Watched, Favorites, and Playlists are grouped under a
+  single **Collections** entry, trimming the Video root.
+- **Level-aware drill flyout.** The two-pane flyout's left column now shows the *current
+  level's* siblings — a library among your libraries, an album among your albums, a playlist
+  among your playlists — matching how Games shows the console cross.
+- **App drawer: single-press launch.** A single tap now launches an app (long-press opens
+  its menu), matching the controller's single-select-to-launch.
+- **Video detail: resume-aware actions.** A watched video leads with **Resume** plus **Start
+  from Beginning**; unwatched videos show **Play**. The action list scrolls.
+
+### Changed
+- **Faster library scans.** Photo/Video/Music scanners now list each folder with one
+  DocumentsContract query instead of several IPC round-trips per file; photo deep-scans also
+  probe files with bounded parallelism. Recursive scanning is on by default with a per-album
+  *Include Subfolders* toggle.
+- **Theme-adaptive menu cursor.** Every menu's focus highlight (Settings, context menus,
+  pickers, detail/player option lists, app drawer) now derives from the active color scheme
+  with a bright edge, so the cursor stays clearly visible on any theme.
+- **"Add …" rows** across Photo/Music/Video sit at the bottom of their section with a **＋**
+  glyph, and cursor position is remembered per view across every category (and future custom
+  categories).
+- Built-in theme renamed **Classic PSP Blue → Classic Blue** (trademark hygiene; the theme
+  id and look are unchanged).
+- State collection is lifecycle-aware, so the XMB stops recomposing while backgrounded behind
+  a game or emulator.
+
+### Fixed
+- App drawer no longer lets a tap fall through to the XMB behind it (which could open the
+  Music library "for no reason"); the XMB isn't composed while the drawer is up.
+- Removing a photo/album/video/video-library now also deletes its cached thumbnails, so
+  removed content is fully forgotten.
+- Reopening a video no longer needs two taps; the two-pane flyout and back navigation are
+  consistent across all drill levels.
+
+### Security
+- **Theme loader hardened (Zip Slip / zip-bomb).** `.xmbtheme` extraction now rejects any
+  entry that escapes the theme directory, sanitizes the theme id, and caps per-entry, total,
+  and entry-count sizes — a malicious pack can no longer overwrite app files or exhaust
+  storage. Covered by regression tests.
+- **Privacy-first Photo/ROM SAF model.** Only user-picked folders are read (tree-scoped
+  content URIs, no `MANAGE_EXTERNAL_STORAGE` for new libraries), nothing is uploaded, and
+  scanners are hardened against cyclic/duplicate provider entries.
+- Redundant per-file `DocumentFile` permission lookups replaced with tree-scoped
+  `DocumentsContract` queries, keeping every scan within the granted folder.
+
 ## [1.0.0-alpha.2] — 2026-07-01
 
 Second alpha. Adds a full Music section, a PSP-authentic XMB redesign (cross layout,

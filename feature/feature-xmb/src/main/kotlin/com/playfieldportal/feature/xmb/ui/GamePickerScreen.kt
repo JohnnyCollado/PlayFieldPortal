@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.ui.theme.menuCursor
 
 @Composable
 fun GamePickerScreen(
@@ -226,12 +227,7 @@ private fun PlatformGroupHeader(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
-            .background(
-                if (isSelected)
-                    Color(0xFF574DDB).copy(alpha = 0.2f)
-                else
-                    Color.Transparent
-            ),
+            .menuCursor(isSelected),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Checkbox(
@@ -274,12 +270,7 @@ private fun GamePickerRow(
         modifier = modifier
             .fillMaxWidth()
             .padding(end = 16.dp, top = 4.dp, bottom = 4.dp)
-            .background(
-                if (isSelected)
-                    Color(0xFF574DDB).copy(alpha = 0.2f)
-                else
-                    Color.Transparent
-            ),
+            .menuCursor(isSelected),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Checkbox(

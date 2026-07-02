@@ -95,6 +95,11 @@ class MemoryCardRepository @Inject constructor(
     suspend fun setRomDirectory(platformId: String, dir: String?) =
         memoryCardDao.setRomDirectory(platformId, dir)
 
+    // Points a card at a SAF-granted folder: stores the persisted tree URI (scan/launch source of
+    // truth) plus the derived raw path (display / {rom_path} fallback). No storage permission needed.
+    suspend fun setSafFolder(platformId: String, treeUri: String, derivedPath: String?) =
+        memoryCardDao.setSafFolder(platformId, treeUri, derivedPath)
+
     suspend fun setEmulator(platformId: String, emulatorId: String?) =
         memoryCardDao.setEmulator(platformId, emulatorId)
 

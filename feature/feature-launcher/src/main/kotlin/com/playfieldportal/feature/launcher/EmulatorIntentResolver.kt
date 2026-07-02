@@ -87,9 +87,16 @@ class EmulatorIntentResolver @Inject constructor(
             }
         }
 
-        val romPath = game.romPath ?: error("ROM path is required to launch ${game.title}")
-        val romFile = File(romPath)
-        if (!romFile.exists()) error("ROM file not found: $romPath")
+        // A SAF game launches from its granted content:// URI — PFP holds no raw path to stat, so
+        // just require the URI is present/parseable; the OS grant + emulator report any lost access.
+        // A legacy raw-path game keeps the on-disk existence check.
+        if (!game.romUri.isNullOrBlank()) {
+            runCatching { Uri.parse(game.romUri) }.getOrNull()
+                ?: error("This game's ROM link is invalid. Re-scan its library.")
+        } else {
+            val romPath = game.romPath ?: error("ROM path is required to launch ${game.title}")
+            if (!File(romPath).exists()) error("ROM file not found: $romPath")
+        }
 
         if (profile.intentType == IntentType.COMPONENT && profile.coreMap.isNotEmpty()) {
             val corePath = profile.corePathFor(game.platformId)
@@ -102,9 +109,7 @@ class EmulatorIntentResolver @Inject constructor(
     }
 
     private fun buildViewIntent(game: Game, profile: EmulatorProfile): Intent {
-        val romPath = game.romPath ?: error("ROM path is required to launch ${game.title}")
-        val romFile = File(romPath)
-        val uri = resolveRomUri(romFile, profile)
+        val uri = romLaunchUri(game, profile)
         val activityClass = profile.activityClass
         val mime = profile.mimeType ?: "application/octet-stream"
 
@@ -152,10 +157,12 @@ class EmulatorIntentResolver @Inject constructor(
 
         val needsRomUri = profile.intentExtras.values.any { it.contains(LaunchTemplate.ROM_URI) }
         val romUri: Uri? = if (needsRomUri) {
-            val romFile = File(game.romPath ?: error("ROM path required for ${profile.name}"))
-            runCatching {
-                FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", romFile)
-            }.getOrNull()
+            // SAF game → the granted content URI; legacy game → a FileProvider URI from its raw path.
+            game.romUri?.takeIf { it.isNotBlank() }?.let { runCatching { Uri.parse(it) }.getOrNull() }
+                ?: runCatching {
+                    val romFile = File(game.romPath ?: error("ROM path required for ${profile.name}"))
+                    FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", romFile)
+                }.getOrNull()
         } else null
 
         val action = profile.intentAction ?: Intent.ACTION_MAIN
@@ -195,22 +202,22 @@ class EmulatorIntentResolver @Inject constructor(
         return parseAmCommand(resolved, profile.packageName)
     }
 
-    private fun resolveRomUri(romFile: File, profile: EmulatorProfile): Uri {
+    // The URI handed to an ACTION_VIEW emulator. A SAF game uses its granted content:// document URI
+    // directly (no FileProvider, no raw-file access by PFP). A legacy raw-path game keeps the prior
+    // behaviour: file:// on very old APIs when explicitly requested, else a FileProvider content URI.
+    private fun romLaunchUri(game: Game, profile: EmulatorProfile): Uri {
+        game.romUri?.takeIf { it.isNotBlank() }?.let { return Uri.parse(it) }
+
+        val romFile = File(game.romPath ?: error("ROM path is required to launch ${game.title}"))
         if (profile.useFileUri && !profile.useSafUri && Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
             return Uri.fromFile(romFile)
         }
-
         if (profile.useFileUri && !profile.useSafUri) {
             Timber.d(
                 "Profile ${profile.id} requests file:// ROM launch; using granted content:// URI on API ${Build.VERSION.SDK_INT}"
             )
         }
-
-        return FileProvider.getUriForFile(
-            context,
-            "${context.packageName}.fileprovider",
-            romFile,
-        )
+        return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", romFile)
     }
 
     private fun Intent.grantReadPermissionIfNeeded(uri: Uri, title: String, packageName: String) {

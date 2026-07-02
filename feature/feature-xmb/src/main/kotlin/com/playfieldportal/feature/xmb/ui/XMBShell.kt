@@ -32,8 +32,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -63,6 +63,7 @@ import androidx.media3.common.util.UnstableApi
 import com.playfieldportal.feature.xmb.ui.app.AppDetailScreen
 import com.playfieldportal.feature.xmb.ui.detail.GameDetailScreen
 import com.playfieldportal.feature.xmb.ui.detail.VideoDetailScreen
+import com.playfieldportal.feature.xmb.ui.photo.PhotoViewerScreen
 import com.playfieldportal.feature.xmb.viewmodel.XMBUiState
 import com.playfieldportal.feature.xmb.viewmodel.XMBViewModel
 
@@ -75,7 +76,9 @@ fun XMBShellContainer(
     viewModel: XMBViewModel = hiltViewModel(),
     onSettingsLongPress: () -> Unit = {},
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    // Lifecycle-aware collection: state observation stops while PFP is STOPPED (backgrounded behind
+    // a game/emulator), so the shell isn't recomposing off-screen — less CPU/battery under load.
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     XMBShell(
         uiState = uiState,
@@ -97,6 +100,8 @@ fun XMBShellContainer(
         onGameDetailActionConsumed = viewModel::consumeGameDetailAction,
         onCloseVideoDetail = viewModel::onCloseVideoDetail,
         onVideoDetailActionConsumed = viewModel::consumeVideoDetailAction,
+        onClosePhotoViewer = viewModel::onClosePhotoViewer,
+        onPhotoViewerActionConsumed = viewModel::consumePhotoViewerAction,
         onCloseAppDetail = viewModel::onCloseAppDetail,
         onAppDetailActionConsumed = viewModel::consumeAppDetailAction,
         onContextMenuItemActivated = viewModel::onContextMenuItemActivatedAt,
@@ -156,6 +161,8 @@ fun XMBShell(
     onGameDetailActionConsumed: () -> Unit = {},
     onCloseVideoDetail: () -> Unit = {},
     onVideoDetailActionConsumed: () -> Unit = {},
+    onClosePhotoViewer: () -> Unit = {},
+    onPhotoViewerActionConsumed: () -> Unit = {},
     onCloseAppDetail: () -> Unit = {},
     onAppDetailActionConsumed: () -> Unit = {},
     onContextMenuItemActivated: (Int) -> Unit = {},
@@ -199,6 +206,7 @@ fun XMBShell(
             // video player. Settings/dialogs use a see-through scrim, so the wave keeps animating there.
             val waveCovered = uiState.showBootSequence ||
                 uiState.activeVideoId != null || uiState.activeGameId != null ||
+                uiState.activePhotoViewer != null ||
                 uiState.activeAppId != null || uiState.activeAppDrawerFilter != null ||
                 uiState.musicPlayerVisible
             val effectiveWaveStyle = if (waveCovered) {
@@ -240,9 +248,15 @@ fun XMBShell(
             }
 
             // Hide the XMB foreground (status strip + category bar + item list) while a fullscreen
-            // menu (the music browser or a Settings screen) is open — only the wallpaper/wave
-            // background shows behind it. Restored automatically when the menu closes.
-            if (uiState.musicBrowser == null && uiState.activeSettingsScreen == null) {
+            // menu (the app drawer, the music browser, or a Settings screen) is open — only the
+            // wallpaper/wave background shows behind it. Restored automatically when the menu
+            // closes. Besides the visual, this REMOVES the XMB's clickable rows from composition,
+            // so a tap on the overlay's empty space can never fall through and activate an XMB
+            // item behind it.
+            if (uiState.activeAppDrawerFilter == null &&
+                uiState.musicBrowser == null &&
+                uiState.activeSettingsScreen == null
+            ) {
             XmbPspStatusStrip(
                 sortLabel = uiState.sortLabel,
                 modifier = Modifier.align(Alignment.TopCenter),
@@ -546,6 +560,18 @@ fun XMBShell(
                     onBack = onCloseVideoDetail,
                     pendingGamepadAction = uiState.pendingVideoDetailAction,
                     onGamepadActionConsumed = onVideoDetailActionConsumed,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+
+            uiState.activePhotoViewer?.let { request ->
+                PhotoViewerScreen(
+                    photoId = request.photoId,
+                    libraryId = request.libraryId,
+                    openWallpaperPreview = request.openWallpaperPreview,
+                    onBack = onClosePhotoViewer,
+                    pendingGamepadAction = uiState.pendingPhotoViewerAction,
+                    onGamepadActionConsumed = onPhotoViewerActionConsumed,
                     modifier = Modifier.fillMaxSize(),
                 )
             }

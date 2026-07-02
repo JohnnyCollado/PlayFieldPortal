@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.media.MediaMetadataRetriever
 import android.net.Uri
+import android.provider.DocumentsContract
 import androidx.documentfile.provider.DocumentFile
 import com.playfieldportal.core.data.video.VideoFileFilter
 import com.playfieldportal.core.domain.model.Video
@@ -58,32 +59,30 @@ class VideoScanner @Inject constructor(
     ): Flow<VideoScanResult> = flow {
         val treeUri = runCatching { Uri.parse(library.treeUri) }.getOrNull()
         val root = treeUri?.let { DocumentFile.fromTreeUri(context, it) }
-        if (root == null || !root.canRead()) {
+        if (treeUri == null || root == null || !root.canRead()) {
             emit(VideoScanResult.Error(library.id, "Permission lost, re-select folder."))
             return@flow
         }
 
+        val startMs = System.currentTimeMillis()
         Timber.i("Video scan started (${if (deep) "deep" else "quick"}): \"${library.displayName}\"")
         val byUri = existing.associateBy { it.uri }
         val videos = mutableListOf<Video>()
         var filesSeen = 0
 
-        // Iterative DFS so deeply nested trees don't blow the stack.
-        val stack = ArrayDeque<Pair<DocumentFile, String>>()
-        stack.addLast(root to "")
+        // Iterative DFS over document IDs so deeply nested trees don't blow the stack. Directory
+        // listing goes through one DocumentsContract child query per directory (see SafChildren)
+        // instead of DocumentFile's per-property IPC round-trips.
+        val stack = ArrayDeque<Pair<String, String>>()   // documentId to relative path
+        stack.addLast(DocumentsContract.getTreeDocumentId(treeUri) to "")
         while (stack.isNotEmpty()) {
             coroutineContext.ensureActive()
-            val (dir, relPath) = stack.removeLast()
-            val children = runCatching { dir.listFiles() }.getOrElse {
-                Timber.w(it, "Could not list ${dir.uri}")
-                emptyArray()
-            }
-            for (child in children) {
+            val (dirDocId, relPath) = stack.removeLast()
+            for (child in context.contentResolver.querySafChildren(treeUri, dirDocId)) {
                 coroutineContext.ensureActive()
                 if (child.isDirectory) {
                     if (!library.scanRecursively) continue
-                    val name = child.name ?: continue
-                    stack.addLast(child to if (relPath.isEmpty()) name else "$relPath/$name")
+                    stack.addLast(child.documentId to if (relPath.isEmpty()) child.name else "$relPath/${child.name}")
                     continue
                 }
                 filesSeen++
@@ -97,26 +96,24 @@ class VideoScanner @Inject constructor(
             }
         }
 
-        Timber.i("Video scan complete: \"${library.displayName}\" — ${videos.size} videos from $filesSeen files")
+        val took = System.currentTimeMillis() - startMs
+        Timber.i("Video scan complete: \"${library.displayName}\" — ${videos.size} videos from $filesSeen files in ${took}ms")
         emit(VideoScanResult.Complete(library.id, videos))
     }.flowOn(Dispatchers.IO)
 
-    private fun DocumentFile.toVideoOrNull(
+    private fun SafChild.toVideoOrNull(
         libraryId: String,
         relPath: String,
         deep: Boolean,
         existingByUri: Map<String, Video>,
     ): Video? {
-        val name = name ?: return null
-        val mime = type
         if (!VideoFileFilter.isVideo(name, mime)) return null
 
         val uriStr = uri.toString()
-        val lastMod = lastModified().takeIf { it > 0 }
         val prior = existingByUri[uriStr]
 
         // Quick scan: reuse an unchanged file's row wholesale.
-        if (!deep && prior != null && prior.lastModified == lastMod) {
+        if (!deep && prior != null && prior.lastModified == lastModified) {
             return prior.copy(libraryId = libraryId, relativePath = relPath.takeIf { it.isNotEmpty() })
         }
 
@@ -139,9 +136,9 @@ class VideoScanner @Inject constructor(
             frameRate = meta?.frameRate,
             codec = meta?.codec,
             mimeType = mime ?: meta?.mimeType,
-            sizeBytes = length().takeIf { it > 0 },
+            sizeBytes = sizeBytes,
             dateAdded = prior?.dateAdded ?: System.currentTimeMillis(),
-            lastModified = lastMod,
+            lastModified = lastModified,
             relativePath = relPath.takeIf { it.isNotEmpty() },
             thumbnailUri = thumb,
             customThumbnailUri = prior?.customThumbnailUri,

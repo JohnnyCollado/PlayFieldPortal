@@ -76,10 +76,14 @@ class VideoRepositoryImpl @Inject constructor(
         libraryDao.setArtwork(id, artworkUri, System.currentTimeMillis())
 
     override suspend fun removeLibrary(id: String) {
+        // Capture thumbnail uris (generated + custom) before the rows go, so their cached files
+        // can be forgotten too.
+        val thumbs = videoDao.getForLibrary(id).flatMap { listOfNotNull(it.thumbnailUri, it.customThumbnailUri) }
         // Videos cascade-delete via the foreign key, but delete explicitly too so behaviour is
         // identical whether or not foreign keys are enforced on the connection.
         videoDao.deleteForLibrary(id)
         libraryDao.delete(id)
+        deleteOrphanedThumbnails(thumbs) { videoDao.countReferencingThumbnail(it) > 0 }
         Timber.i("Video library removed: $id")
     }
 
@@ -117,8 +121,11 @@ class VideoRepositoryImpl @Inject constructor(
     override suspend fun setCustomThumbnail(id: String, uri: String?) =
         videoDao.setCustomThumbnail(id, uri?.takeIf { it.isNotBlank() })
 
-    override suspend fun removeVideo(id: String) =
+    override suspend fun removeVideo(id: String) {
+        val thumbs = videoDao.getById(id)?.let { listOfNotNull(it.thumbnailUri, it.customThumbnailUri) }.orEmpty()
         videoDao.deleteById(id)
+        deleteOrphanedThumbnails(thumbs) { videoDao.countReferencingThumbnail(it) > 0 }
+    }
 
     // ── Favorites & recently watched ────────────────────────────────────────────
 

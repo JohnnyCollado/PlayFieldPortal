@@ -10,7 +10,12 @@ data class MemoryCard(
     val enabled: Boolean = true,            // shown inside Games when true
     val pinned: Boolean = false,            // sorts above non-pinned cards
     val sortOrder: Int = 0,                 // manual ordering within its pinned group
-    val romDirectory: String? = null,       // the single directory this card scans
+    // Persisted SAF document-tree URI (the folder the user granted). When present the card scans
+    // via SAF and needs no storage permission; [romDirectory] holds the derived raw path for
+    // display and for emulators that take a raw {rom_path}. Legacy cards have treeUri == null and
+    // scan romDirectory directly (requires MANAGE_EXTERNAL_STORAGE).
+    val treeUri: String? = null,
+    val romDirectory: String? = null,       // the single directory this card scans (raw path)
     val supportedExtensions: List<String> = emptyList(), // lowercase, no dots
     val emulatorId: String? = null,         // EmulatorProfile.id assigned to launches
     val scanRecursively: Boolean = true,

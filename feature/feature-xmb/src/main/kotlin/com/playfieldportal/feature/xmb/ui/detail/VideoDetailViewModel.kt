@@ -26,7 +26,7 @@ import javax.inject.Inject
 enum class VideoDetailAction(val label: String) {
     PLAY("Play"),
     RESUME("Resume"),
-    RESTART("Restart"),
+    RESTART("Start from Beginning"),
     FAVORITE("Favorite"),
     PLAYLIST("Add to Playlist"),
     RENAME("Rename Title"),
@@ -72,12 +72,22 @@ data class VideoDetailUiState(
     val closed: Boolean = false,
 ) {
     val hasResume: Boolean get() = (video?.resumePositionMs ?: 0) > 0
-    // The primary (non-Options) buttons in order.
+    // Primary buttons: a watched video leads with Resume + Start from Beginning; an unwatched one
+    // just shows Play. (Options is appended by the screen.)
     val primaryActions: List<VideoDetailAction>
-        get() = buildList { add(VideoDetailAction.PLAY); if (hasResume) add(VideoDetailAction.RESUME) }
-    // Full options list, omitting RESUME when there's nothing to resume.
+        get() = if (hasResume) listOf(VideoDetailAction.RESUME, VideoDetailAction.RESTART)
+                else listOf(VideoDetailAction.PLAY)
+    // Options list, kept free of redundancy: Play only when there's no resume point; Resume + Start
+    // from Beginning only when there is.
     val optionsActions: List<VideoDetailAction>
-        get() = VideoDetailAction.entries.filter { it != VideoDetailAction.RESUME || hasResume }
+        get() = VideoDetailAction.entries.filter {
+            when (it) {
+                VideoDetailAction.PLAY    -> !hasResume
+                VideoDetailAction.RESUME  -> hasResume
+                VideoDetailAction.RESTART -> hasResume
+                else                      -> true
+            }
+        }
 }
 
 // Treat playback as "finished" when it ends within this window of the duration — clears resume so

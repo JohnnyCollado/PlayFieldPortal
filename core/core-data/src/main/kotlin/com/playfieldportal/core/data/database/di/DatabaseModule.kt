@@ -17,15 +17,19 @@ import com.playfieldportal.core.data.database.dao.PlatformDao
 import com.playfieldportal.core.data.database.dao.ThemeDao
 import com.playfieldportal.core.data.database.dao.UnmatchedRomDao
 import com.playfieldportal.core.data.database.dao.HiddenPlacementDao
+import com.playfieldportal.core.data.database.dao.PhotoDao
+import com.playfieldportal.core.data.database.dao.PhotoLibraryDao
 import com.playfieldportal.core.data.database.dao.VideoDao
 import com.playfieldportal.core.data.database.dao.VideoLibraryDao
 import com.playfieldportal.core.data.database.dao.VideoPlaylistDao
 import com.playfieldportal.core.data.repository.CategoryRepositoryImpl
 import com.playfieldportal.core.data.repository.GameRepositoryImpl
 import com.playfieldportal.core.data.repository.MusicRepositoryImpl
+import com.playfieldportal.core.data.repository.PhotoRepositoryImpl
 import com.playfieldportal.core.data.repository.VideoRepositoryImpl
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.core.domain.repository.MusicRepository
+import com.playfieldportal.core.domain.repository.PhotoRepository
 import com.playfieldportal.core.domain.repository.VideoRepository
 import dagger.Binds
 import dagger.Module
@@ -66,6 +70,8 @@ object DatabaseModule {
             PFPDatabase.MIGRATION_15_16,
             PFPDatabase.MIGRATION_16_17,
             PFPDatabase.MIGRATION_17_18,
+            PFPDatabase.MIGRATION_18_19,
+            PFPDatabase.MIGRATION_19_20,
         )
         .build()
 
@@ -86,6 +92,8 @@ object DatabaseModule {
     @Provides fun provideVideoDao(db: PFPDatabase): VideoDao = db.videoDao()
     @Provides fun provideVideoPlaylistDao(db: PFPDatabase): VideoPlaylistDao = db.videoPlaylistDao()
     @Provides fun provideHiddenPlacementDao(db: PFPDatabase): HiddenPlacementDao = db.hiddenPlacementDao()
+    @Provides fun providePhotoLibraryDao(db: PFPDatabase): PhotoLibraryDao = db.photoLibraryDao()
+    @Provides fun providePhotoDao(db: PFPDatabase): PhotoDao = db.photoDao()
 }
 
 @Module
@@ -103,4 +111,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindVideoRepository(impl: VideoRepositoryImpl): VideoRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindPhotoRepository(impl: PhotoRepositoryImpl): PhotoRepository
 }

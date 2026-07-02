@@ -371,7 +371,11 @@ fun SettingsRow(
                     Timber.d("Settings focus: row=\"$label\" clickable=${onClick != null}")
                 }
             }
-            .background(if (isFocused && onClick != null) SettingsSelectedBg else Color.Transparent)
+            // Theme-adaptive cursor fill (noticeably stronger than the old fixed 14% blue).
+            .background(
+                if (isFocused && onClick != null) com.playfieldportal.core.ui.theme.menuCursorFill()
+                else Color.Transparent
+            )
             .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
             .padding(horizontal = 48.dp, vertical = 14.dp),
         verticalAlignment     = Alignment.CenterVertically,

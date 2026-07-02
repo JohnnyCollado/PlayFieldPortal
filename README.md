@@ -50,6 +50,7 @@ For a developer-oriented overview of the codebase, see **[ARCHITECTURE.md](ARCHI
 | Branding — PFP app icon + boot logo | ✅ Done |
 | Manual Memory Card library — per-console ROM folders, manual scanning | ✅ Done |
 | ROM scanning — SAF folder picker, disc-image resolution, SD/USB volume support | ✅ Done |
+| SAF ROM libraries — SD-card/USB ROMs with **no all-files permission** (content-URI launch) | ✅ Done |
 | Game detail screen — hero banner, metadata, custom artwork, notes | ✅ Done |
 | Game icon styles — PSP rectangle, cartridge, Android squircle | ✅ Done |
 | Emulator compatibility layer — auto-detected catalog + per-core RetroArch | ✅ Done |
@@ -61,13 +62,17 @@ For a developer-oriented overview of the codebase, see **[ARCHITECTURE.md](ARCHI
 | Android apps in categories — artwork tiles, Find Games, app shortcuts | ✅ Done |
 | Launcher-shortcut harvesting (GameHub/Moonlight, BannerHub, Winlator) | ✅ Done |
 | App drawer — All Apps / Games / Emulators / Tools / Recently Used | ✅ Done |
+| Music section — SAF folders, scanning, playlists, in-app player + background service | ✅ Done |
+| Video section — SAF libraries, scanning, thumbnails, built-in + external player | ✅ Done |
+| Photo section — SAF albums, scanning, fullscreen viewer, set-as-wallpaper | ✅ Done |
 | Category manager — create/rename/reorder/hide, image-based icon picker | ✅ Done |
 | Controller mapping — full XMB navigation, remappable | ✅ Done |
 | Backup & restore — `.pfpbackup` ZIP including settings | ✅ Done |
 | XMB color schemes — PSP-style presets with live preview | ✅ Done |
+| Live status bar — Wi-Fi/cellular strength, Bluetooth, controller (auto-hide when absent) | ✅ Done |
 | Idle wave degradation (FULL → REDUCED → STATIC) + thermal awareness | ✅ Done |
 | Background tasks surfaced to the Android notification bar | ✅ Done |
-| Theme engine — `.xmbtheme` loader + built-in *Classic PSP Blue* | ✅ Loader done |
+| Theme engine — `.xmbtheme` loader (Zip-Slip hardened) + built-in *Classic Blue* | ✅ Loader done |
 | **Custom theme install (in-app)** | 🔜 Next stage (gated "Coming Soon") |
 | Theme sound packs & boot-animation override | 🔜 Next stage |
 | Smart / manual category builder | 🧭 Backlog |
@@ -383,7 +388,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - **Language:** Kotlin
 - **UI:** Jetpack Compose (MVVM + state hoisting)
 - **DI:** Hilt
-- **Database:** Room — **schema v13**, hand-written migrations only (never destructive)
+- **Database:** Room — **schema v20**, hand-written migrations only (never destructive)
 - **Settings:** DataStore Preferences
 - **Networking:** Ktor (SteamGridDB)
 - **Image loading:** Coil
@@ -403,15 +408,15 @@ app/                      — MainActivity (HOME launcher), PFPApplication, Hilt
 core/
   core-common/            — Shared utilities and extensions
   core-domain/            — Domain models, repository interfaces
-  core-data/              — Room DB (v13), DAOs, DataStore, repository impls, seeders, migrations
-  core-ui/                — PFPTheme/PFPColors, XMBWave, category-icon catalog (catbar_*/sysicon_*)
+  core-data/              — Room DB (v20), DAOs, DataStore, repository impls, seeders, migrations
+  core-ui/                — PFPTheme/PFPColors, WaveStyle, category-icon catalog (catbar_*/sysicon_*)
 feature/
-  feature-xmb/            — XMB shell, XMBViewModel, game/app detail, gamepad, boot sequence
+  feature-xmb/            — XMB shell, XMBViewModel, game/app detail, photo viewer, gamepad, boot sequence
   feature-library/        — ROM scanner, disc-image resolver, platform extension map
   feature-launcher/       — Emulator detection + intent resolution
   feature-artwork/        — SteamGridDB client, artwork repository
   feature-themes/         — .xmbtheme loader, ThemeRepository, built-in themes
-  feature-settings/       — 14 settings screens + ViewModels
+  feature-settings/       — 15 settings screens + ViewModels
   feature-appbar/         — App drawer, app→category classification, filters
   feature-backup/         — BackupManager, backup/restore workers
 ```

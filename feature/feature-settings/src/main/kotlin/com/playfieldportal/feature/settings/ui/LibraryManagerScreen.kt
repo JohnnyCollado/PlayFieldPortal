@@ -88,13 +88,14 @@ private fun LibraryListContent(
     modifier: Modifier,
 ) {
     val context = LocalContext.current
-    // Point-of-need All-Files-Access: only file-based ROM scanning needs it, so we only prompt
-    // here (where ROM folders are managed) and only while it's actually missing. SAF music + the
-    // app-picker Android library never trigger this. Re-checked when returning from settings.
+    // All-Files-Access is now OPTIONAL: SAF cards (a tree_uri) scan/launch via content URIs and
+    // need no permission. We only surface the prompt when a legacy raw-path card (romDirectory set,
+    // no tree_uri) actually requires raw file access. Fresh SAF-added cards never trigger it.
     var storageGranted by remember { mutableStateOf(StorageAccess.isManagerGranted()) }
     val storageAccessLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { storageGranted = StorageAccess.isManagerGranted() }
+    val hasLegacyRawCard = state.cards.any { it.romDirectory != null && it.treeUri == null }
 
     SettingsScaffold(
         title = "Settings",
@@ -105,12 +106,13 @@ private fun LibraryListContent(
     ) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
 
-            if (!storageGranted) {
+            if (!storageGranted && hasLegacyRawCard) {
                 SettingsGroup("Storage Access")
                 SettingsRow(
                     label    = "Grant All-Files Access",
-                    sublabel = "Only needed to scan file-based ROM folders. The app-picker Android " +
-                        "library and music folders don't require it.",
+                    sublabel = "Needed only for older raw-path libraries added before folder access. " +
+                        "New consoles use the folder picker and need no permission — re-add a console " +
+                        "via the picker to drop this.",
                     onClick  = { runCatching { storageAccessLauncher.launch(StorageAccess.manageAccessIntent(context)) } },
                 )
             }
@@ -143,10 +145,10 @@ private fun LibraryListContent(
                 label    = "Scan All Consoles",
                 sublabel = when {
                     state.scanningPlatformIds.isNotEmpty() -> "Scanning ${state.scanningPlatformIds.size}…"
-                    state.cards.none { it.romDirectory != null } -> "Configure a ROM directory first"
-                    else -> "Scan every enabled console's directory"
+                    state.cards.none { it.treeUri != null || it.romDirectory != null } -> "Configure a ROM folder first"
+                    else -> "Scan every enabled console's folder"
                 },
-                onClick  = if (state.cards.any { it.enabled && it.romDirectory != null }) ({ vm.scanAllConsoles() }) else null,
+                onClick  = if (state.cards.any { it.enabled && (it.treeUri != null || it.romDirectory != null) }) ({ vm.scanAllConsoles() }) else null,
             )
 
             state.message?.let { MessageRow(it) { vm.dismissMessage() } }

@@ -53,8 +53,6 @@ data class CollectionPickerUi(
 private val TextPrimary = Color(0xFFEEEEEE)
 private val TextMuted = Color(0xAAEEEEEE)
 private val RowFill = Color(0xFF1B1B26)
-private val RowFocused = Color(0xFF574DDB)
-private val RowBorder = Color(0xFF8F7CFF)
 private val CheckGreen = Color(0xFF45C46A)
 
 @Composable
@@ -150,8 +148,8 @@ private fun PickerRow(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
-            .background(if (isFocused) RowFocused.copy(alpha = 0.5f) else RowFill)
-            .then(if (isFocused) Modifier.border(1.5.dp, RowBorder, RoundedCornerShape(8.dp)) else Modifier)
+            .background(if (isFocused) com.playfieldportal.core.ui.theme.menuCursorFill() else RowFill)
+            .then(if (isFocused) Modifier.border(1.5.dp, com.playfieldportal.core.ui.theme.menuCursorEdge(), RoundedCornerShape(8.dp)) else Modifier)
             .clickable(onClick = onClick)
             .padding(vertical = 12.dp, horizontal = 12.dp),
     ) {

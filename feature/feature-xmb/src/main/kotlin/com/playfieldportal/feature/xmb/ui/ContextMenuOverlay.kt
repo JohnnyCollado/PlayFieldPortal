@@ -129,16 +129,19 @@ private fun ContextMenuRow(
     isSelected: Boolean,
     onClick: () -> Unit,
 ) {
+    // Accent-tinted glow so the cursor follows the chosen color scheme; blended toward white in
+    // menuCursorEdge so a dark theme accent still reads clearly on the scrim.
+    val glow = com.playfieldportal.core.ui.theme.menuCursorEdge()
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            // Soft horizontal glow band for the active item — brighter toward the
+            // Horizontal glow band for the active item — brighter toward the
             // screen edge, fading out to the left. No border or rounded box.
             .background(
                 if (isSelected) {
                     Brush.horizontalGradient(
                         0f to Color.Transparent,
-                        1f to Color.White.copy(alpha = 0.22f),
+                        1f to glow.copy(alpha = 0.40f),
                     )
                 } else {
                     Brush.horizontalGradient(0f to Color.Transparent, 1f to Color.Transparent)

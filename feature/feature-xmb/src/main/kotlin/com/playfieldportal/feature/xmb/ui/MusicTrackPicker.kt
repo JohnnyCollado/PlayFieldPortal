@@ -36,8 +36,6 @@ import coil.compose.AsyncImage
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.feature.xmb.viewmodel.MusicTrackPickerState
 
-private val PickerSelected = Color(0xFF574DDB)
-private val PickerBorder = Color(0xFF8F7CFF)
 private val PickerText = Color.White
 private val PickerSubtext = Color(0xFFC9C7E8)
 private val PickerCheck = Color(0xFF7CE5A2)
@@ -175,9 +173,9 @@ private fun PickerRow(
             .fillMaxWidth()
             .padding(vertical = 3.dp)
             .clip(RoundedCornerShape(7.dp))
-            .background(if (selected) PickerSelected.copy(alpha = 0.32f) else Color.Transparent)
+            .background(if (selected) com.playfieldportal.core.ui.theme.menuCursorFill() else Color.Transparent)
             .then(
-                if (selected) Modifier.border(1.dp, PickerBorder.copy(alpha = 0.8f), RoundedCornerShape(7.dp))
+                if (selected) Modifier.border(1.dp, com.playfieldportal.core.ui.theme.menuCursorEdge(), RoundedCornerShape(7.dp))
                 else Modifier
             )
             .padding(horizontal = 16.dp, vertical = 12.dp),

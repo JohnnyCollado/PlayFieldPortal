@@ -44,6 +44,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.ui.theme.menuCursor
 import com.playfieldportal.core.domain.model.Video
 import kotlinx.coroutines.delay
 import timber.log.Timber
@@ -347,7 +348,7 @@ private fun OptionsOverlay(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(if (i == selectedRow) Color(0x334A90D9) else Color.Transparent)
+                        .menuCursor(i == selectedRow)
                         .padding(horizontal = 20.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
