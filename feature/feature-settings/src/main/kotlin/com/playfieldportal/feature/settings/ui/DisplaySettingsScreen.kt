@@ -141,6 +141,16 @@ fun DisplaySettingsScreen(
                 onClick  = { viewModel.cycleIconStyle() },
             )
 
+            SettingsGroup("Interface")
+
+            SettingsValueRow(
+                label    = "Touch Navigation Button",
+                sublabel = "On-screen App Drawer / Back button.  Auto — show only while using touch  |  " +
+                    "Always Show  |  Always Hide (controller-only)",
+                value    = viewModel.touchNavButtonLabel(),
+                onClick  = { viewModel.cycleTouchNavButtonMode() },
+            )
+
             SettingsGroup("Performance")
 
             SettingsToggleRow(

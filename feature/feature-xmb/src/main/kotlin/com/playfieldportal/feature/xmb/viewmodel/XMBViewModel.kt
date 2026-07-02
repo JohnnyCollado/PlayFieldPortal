@@ -350,6 +350,13 @@ data class XMBUiState(
     // keep the viewport anchored to the old top item).
     val scrollToTopToken: Int = 0,
 
+    // ── Input source (drives the on-screen touch-navigation button) ────────
+    // True when touch was the most recent input, false when a controller/key was. Flips only on a
+    // real input event, so the contextual button doesn't flicker.
+    val lastInputWasTouch: Boolean = false,
+    val touchNavButtonMode: com.playfieldportal.core.domain.model.TouchNavButtonMode =
+        com.playfieldportal.core.domain.model.TouchNavButtonMode.AUTO,
+
     // ── Background + rendering ────────────────────────────────────────────
     // A custom wallpaper, when set, automatically replaces the wave.
     val waveStyle: WaveStyle = WaveStyle.ANIMATED,
@@ -424,6 +431,15 @@ data class XMBUiState(
             photoNav != PhotoNav.Root ||
             selectedPlatformId != null ||
             selectedCollectionId != null
+
+    // Whether the bottom-right contextual button (App Drawer / Back) should be shown, per the
+    // user's Touch Navigation Button setting. AUTO follows the last input source.
+    val resolvedShowTouchButton: Boolean
+        get() = when (touchNavButtonMode) {
+            com.playfieldportal.core.domain.model.TouchNavButtonMode.AUTO -> lastInputWasTouch
+            com.playfieldportal.core.domain.model.TouchNavButtonMode.ALWAYS_SHOW -> true
+            com.playfieldportal.core.domain.model.TouchNavButtonMode.ALWAYS_HIDE -> false
+        }
 
     // True whenever something is layered over the main XMB. The gamepad dispatcher uses this
     // as a final guard so D-Pad/A never drives the category bar or item list behind an overlay.
@@ -635,6 +651,7 @@ class XMBViewModel @Inject constructor(
         gamepadInputHandler.scope = viewModelScope
         observeIconStyle()
         observeBackgroundSettings()
+        observeTouchNavButtonMode()
         observeWallpaper()
         observeLibrarySetupState()
         observeColorScheme()
@@ -2963,6 +2980,7 @@ class XMBViewModel @Inject constructor(
     }
 
     private fun dispatchGamepadAction(action: GamepadAction) {
+        markControllerInput()
         val state = _uiState.value
 
         // ── Installed-app picker captures ALL input when open ──────────────────
@@ -3147,17 +3165,10 @@ class XMBViewModel @Inject constructor(
         if (state.hasBlockingOverlay) return
 
         when (action) {
-            GamepadAction.NAVIGATE_UP -> {
-                val next = (state.selectedItemIndex - 1).coerceAtLeast(0)
-                if (next != state.selectedItemIndex) { _uiState.update { it.copy(selectedItemIndex = next) }; menuSound.play(MenuSound.SCROLL) }
-                else gamepadInputHandler.cancelRepeat()
-            }
-            GamepadAction.NAVIGATE_DOWN -> {
-                val max  = (state.currentItems.size - 1).coerceAtLeast(0)
-                val next = (state.selectedItemIndex + 1).coerceAtMost(max)
-                if (next != state.selectedItemIndex) { _uiState.update { it.copy(selectedItemIndex = next) }; menuSound.play(MenuSound.SCROLL) }
-                else gamepadInputHandler.cancelRepeat()
-            }
+            // Item cursor moves through the shared moveItemCursor() so touch swipes and the D-pad
+            // drive identical logic; cancel auto-repeat when we hit a list boundary.
+            GamepadAction.NAVIGATE_UP   -> if (!moveItemCursor(-1)) gamepadInputHandler.cancelRepeat()
+            GamepadAction.NAVIGATE_DOWN -> if (!moveItemCursor(+1)) gamepadInputHandler.cancelRepeat()
             GamepadAction.NAVIGATE_LEFT -> {
                 // While drilled into a sub-item, Left/Right no longer escape to other categories —
                 // the user must Back out first.
@@ -4119,6 +4130,7 @@ class XMBViewModel @Inject constructor(
     /** Touch: step the category selection by [direction] (-1 / +1) from the current one — the swipe
      *  equivalent of D-pad ◀ ▶. */
     fun stepCategory(direction: Int) {
+        markTouchInput()
         val s = _uiState.value
         if (s.hasBlockingOverlay) return
         // Locked while drilled into a sub-item — the user must Back out before changing category.
@@ -4128,9 +4140,70 @@ class XMBViewModel @Inject constructor(
         if (next != s.selectedCategoryIndex) onCategorySelected(next)
     }
 
+    // ── Shared item-cursor movement (D-pad + touch swipe) ─────────────────────────
+
+    /**
+     * Moves the item cursor by [delta] rows in one clamped, batched update, playing a single scroll
+     * sound if it moved. Returns whether the cursor actually moved (the D-pad path uses this to
+     * cancel auto-repeat at a list boundary). Shared by [dispatchGamepadAction]'s NAVIGATE_UP/DOWN
+     * and the touch [stepItem], so both drive identical logic — no parallel navigation.
+     */
+    private fun moveItemCursor(delta: Int): Boolean {
+        val s = _uiState.value
+        if (s.hasBlockingOverlay || delta == 0) return false
+        val max = (s.currentItems.size - 1).coerceAtLeast(0)
+        val next = (s.selectedItemIndex + delta).coerceIn(0, max)
+        if (next == s.selectedItemIndex) return false
+        _uiState.update { it.copy(selectedItemIndex = next) }
+        menuSound.play(MenuSound.SCROLL)
+        return true
+    }
+
+    /** Touch: step the item cursor by [steps] rows (a swipe = repeated D-pad ▲▼), batched into one
+     *  update so a multi-row swipe is a single recomposition. */
+    fun stepItem(steps: Int) {
+        markTouchInput()
+        moveItemCursor(steps)
+    }
+
+    /** Touch tap on row [index]: move the cursor there, or — if it's already the selected row —
+     *  activate it. Keeps touch faithful to the XMB cursor model (tap to point, tap again to open).
+     *  The controller SELECT path still activates in one press via [activateSelected]. */
+    fun onItemTap(index: Int) {
+        markTouchInput()
+        val s = _uiState.value
+        if (s.hasBlockingOverlay) return
+        if (index == s.selectedItemIndex) {
+            activateSelected()
+        } else {
+            val clamped = index.coerceIn(0, (s.currentItems.size - 1).coerceAtLeast(0))
+            if (clamped != s.selectedItemIndex) {
+                _uiState.update { it.copy(selectedItemIndex = clamped) }
+                menuSound.play(MenuSound.SCROLL)
+            }
+        }
+    }
+
+    /** Activates the currently selected item (launch / drill / open) — the shared body of the
+     *  controller SELECT and a second tap on the focused row. */
+    private fun activateSelected() {
+        onItemSelected(_uiState.value.selectedItemIndex)
+    }
+
+    // ── Input-source tracking (drives the touch-navigation button) ────────────────
+
+    private fun markTouchInput() {
+        if (!_uiState.value.lastInputWasTouch) _uiState.update { it.copy(lastInputWasTouch = true) }
+    }
+
+    private fun markControllerInput() {
+        if (_uiState.value.lastInputWasTouch) _uiState.update { it.copy(lastInputWasTouch = false) }
+    }
+
     /** Touch: the left-edge-swipe Back — exit an open folder, or open the app drawer at the root
      *  (mirrors the gamepad BACK behaviour on the home screen). No-op while an overlay is up. */
     fun onHomeBack() {
+        markTouchInput()
         val s = _uiState.value
         if (s.hasBlockingOverlay) return
         menuSound.play(MenuSound.BACK)
@@ -4633,6 +4706,18 @@ class XMBViewModel @Inject constructor(
         }
     }
 
+    // ── Touch-navigation button preference ────────────────────────────────────────
+
+    private fun observeTouchNavButtonMode() {
+        viewModelScope.launch {
+            context.pfpDataStore.data.collect { prefs ->
+                val mode = com.playfieldportal.core.domain.model.TouchNavButtonMode
+                    .fromName(prefs[KEY_TOUCH_NAV_BUTTON])
+                _uiState.update { it.copy(touchNavButtonMode = mode) }
+            }
+        }
+    }
+
     // ── Wave style ──────────────────────────────────────────────────────────────
 
     private fun observeBackgroundSettings() {
@@ -4668,6 +4753,8 @@ class XMBViewModel @Inject constructor(
         private val KEY_SETUP_COMPLETE    = booleanPreferencesKey("library_setup_complete")
         private val KEY_CUSTOM_WALLPAPER  = stringPreferencesKey("display_custom_wallpaper")
         private val KEY_MENU_SOUND_ENABLED = booleanPreferencesKey("sound_menu_enabled")
+        // Must match DisplaySettingsViewModel.KEY_TOUCH_NAV_BUTTON — both read/write this pref.
+        private val KEY_TOUCH_NAV_BUTTON  = stringPreferencesKey("interface_touch_nav_button")
         private const val SETUP_ITEM_ID = "library_setup"
         private const val NO_CONSOLES_ITEM_ID = "no_consoles"
         private const val NO_GAMES_ITEM_ID    = "no_games"

@@ -3,6 +3,7 @@ package com.playfieldportal.feature.xmb.ui
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -17,7 +18,6 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
@@ -47,7 +47,6 @@ import androidx.compose.ui.text.TextStyle
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.wave.WaveStyle
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -84,9 +83,10 @@ fun XMBShellContainer(
         uiState = uiState,
         onCategorySelected = viewModel::onCategorySelected,
         onStepCategory = viewModel::stepCategory,
+        onStepItem = viewModel::stepItem,
         onTouchBack = viewModel::onHomeBack,
         onOpenAppDrawer = viewModel::onOpenAppDrawer,
-        onItemSelected = viewModel::onItemSelected,
+        onItemTap = viewModel::onItemTap,
         onItemLongPress = viewModel::onItemLongPress,
         onPlatformLongPress = viewModel::onPlatformLongPress,
         onUserInteraction = viewModel::onUserInteraction,
@@ -145,9 +145,11 @@ fun XMBShell(
     uiState: XMBUiState,
     onCategorySelected: (Int) -> Unit = {},
     onStepCategory: (Int) -> Unit = {},
+    onStepItem: (Int) -> Unit = {},
     onTouchBack: () -> Unit = {},
     onOpenAppDrawer: () -> Unit = {},
-    onItemSelected: (Int) -> Unit = {},
+    // Row tap: move the cursor there, or activate if it's already selected (see XMBViewModel.onItemTap).
+    onItemTap: (Int) -> Unit = {},
     onItemLongPress: (Int) -> Unit = {},
     onPlatformLongPress: (Int) -> Unit = {},
     onUserInteraction: () -> Unit = {},
@@ -266,27 +268,14 @@ fun XMBShell(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(top = 44.dp)
-                    // Touch gestures on the home screen: a horizontal swipe steps the category
-                    // selection (D-pad ◀ ▶ equivalent); a swipe that starts at the left edge goes
-                    // Back (exit a folder, or open the app drawer at the root). Taps still pass
-                    // through to the category/item rows; vertical list scrolling is unaffected.
-                    .pointerInput(Unit) {
-                        val edgePx      = 32.dp.toPx()
-                        val thresholdPx = 64.dp.toPx()
-                        var startX = 0f
-                        var totalDx = 0f
-                        detectHorizontalDragGestures(
-                            onDragStart = { offset -> startX = offset.x; totalDx = 0f },
-                            onHorizontalDrag = { _, delta -> totalDx += delta },
-                            onDragEnd = {
-                                when {
-                                    startX <= edgePx && totalDx > thresholdPx -> onTouchBack()
-                                    totalDx <= -thresholdPx -> onStepCategory(1)   // swipe left → next
-                                    totalDx >= thresholdPx  -> onStepCategory(-1)  // swipe right → previous
-                                }
-                            },
-                        )
-                    },
+                    // Touch gestures on the home screen, each mapped to a discrete D-pad action (see
+                    // xmbNavGestures): horizontal swipe steps the category (left-edge → Back); vertical
+                    // swipe steps the item list/flyout. Taps still pass through to the rows.
+                    .xmbNavGestures(
+                        onStepCategory = onStepCategory,
+                        onStepItem = onStepItem,
+                        onEdgeBack = onTouchBack,
+                    ),
             ) {
                 BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
                     // The XMB cross: the crossbar sits toward the vertical centre so first-level items
@@ -314,7 +303,7 @@ fun XMBShell(
                             siblingIndex = uiState.drillSiblingIndex,
                             items = uiState.currentItems,
                             selectedIndex = uiState.selectedItemIndex,
-                            onItemSelected = onItemSelected,
+                            onItemSelected = onItemTap,
                             onItemLongPress = onItemLongPress,
                             iconStyle = uiState.iconStyle,
                             barTopY = barTop,
@@ -347,7 +336,7 @@ fun XMBShell(
                             XMBItemList(
                                 items = uiState.currentItems,
                                 selectedIndex = itemSelectedIndex,
-                                onItemSelected = onItemSelected,
+                                onItemSelected = onItemTap,
                                 onItemLongPress = onItemLongPress,
                                 iconStyle = uiState.iconStyle,
                                 scrollToTopToken = uiState.scrollToTopToken,
@@ -381,11 +370,16 @@ fun XMBShell(
 
             // Bottom-right floating affordance. While drilled into a sub-item it becomes a Back
             // button (exits the sub-item); at the root it opens the app drawer. Hidden whenever an
-            // overlay/dialog is up so it never floats over them.
-            if (!uiState.hasBlockingOverlay) {
-                val floatModifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(bottom = 24.dp, end = 20.dp)
+            // overlay/dialog is up so it never floats over them. Visibility follows the last input
+            // source (Auto) or the user's override, and fades in/out so picking up a controller
+            // cleanly hides the touch-only affordance. What the button DOES is unchanged.
+            AnimatedVisibility(
+                visible = uiState.resolvedShowTouchButton && !uiState.hasBlockingOverlay,
+                enter = fadeIn(tween(180)),
+                exit = fadeOut(tween(220)),
+                modifier = Modifier.align(Alignment.BottomEnd),
+            ) {
+                val floatModifier = Modifier.padding(bottom = 24.dp, end = 20.dp)
                 if (uiState.isInSubItem) {
                     BackFloatingButton(onClick = onTouchBack, modifier = floatModifier)
                 } else {
