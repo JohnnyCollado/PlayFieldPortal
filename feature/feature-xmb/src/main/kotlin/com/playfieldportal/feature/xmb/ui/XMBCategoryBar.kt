@@ -6,6 +6,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -22,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -134,7 +136,14 @@ private fun XMBCategoryItem(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
             .height(112.dp)
-            .combinedClickable(onClick = onClick, onLongClick = onLongPress)
+            // No ripple — the XMB shows focus with its own caticon scale/alpha, and the Android
+            // highlight rectangle broke the PSP look (see the matching change in XMBItemList).
+            .combinedClickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick,
+                onLongClick = onLongPress,
+            )
             .padding(top = 4.dp),
     ) {
         Box(

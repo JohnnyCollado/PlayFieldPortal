@@ -3,41 +3,59 @@ package com.playfieldportal.feature.xmb.ui
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-/** Unit coverage for the pure swipe → discrete-step math (see [verticalSteps]). */
+/** Unit coverage for the pure scrub/fling step math (see [consumeWholeSteps] / [flingBonusSteps]). */
 class XmbNavGesturesTest {
 
-    private val stepPx = 72f
+    private val stepPx = 64f
     private val flingPx = 420f
-    private fun steps(distance: Float, velocity: Float) = verticalSteps(distance, velocity, stepPx, flingPx)
 
-    @Test fun `tiny slow drag does not commit`() {
-        // Below 0.6*step (=43.2) and below fling → no navigation.
-        assertEquals(0, steps(distance = 10f, velocity = 0f))
-        assertEquals(0, steps(distance = -12f, velocity = 100f))
+    // ── Live scrubbing: whole steps per accumulated travel ─────────────────────
+
+    @Test fun `travel below one step yields nothing`() {
+        assertEquals(0, consumeWholeSteps(30f, stepPx))
+        assertEquals(0, consumeWholeSteps(-63f, stepPx))
     }
 
-    @Test fun `one-row up swipe steps one down the list`() {
-        // Up-swipe (negative distance) → positive step (move DOWN the list).
-        assertEquals(1, steps(distance = -80f, velocity = 0f))
+    @Test fun `each step distance crossed yields one step, remainder carries`() {
+        assertEquals(1, consumeWholeSteps(64f, stepPx))
+        assertEquals(1, consumeWholeSteps(120f, stepPx))   // 1 step + 56px remainder
+        assertEquals(-2, consumeWholeSteps(-130f, stepPx)) // opposite direction
     }
 
-    @Test fun `one-row down swipe steps one up the list`() {
-        assertEquals(-1, steps(distance = 80f, velocity = 0f))
+    @Test fun `long continuous slide yields many steps`() {
+        // A 5-row drag scrubs 5 steps — the "smooth slide" behaviour (no per-gesture cap).
+        assertEquals(5, consumeWholeSteps(5 * stepPx, stepPx))
     }
 
-    @Test fun `short but fast swipe still commits with a velocity bonus`() {
-        // 30px < commit, but velocity above fling → base 1 + bonus 1 = 2 (up → +2).
-        assertEquals(2, steps(distance = -30f, velocity = -1000f))
+    @Test fun `remainder pattern ticks continuously across events`() {
+        // Simulate incremental drag deltas the way the detector consumes them.
+        var acc = 0f
+        var steps = 0
+        listOf(40f, 40f, 40f, 40f).forEach { d ->   // 160px total = 2 steps + 32 remainder
+            acc += d
+            val whole = consumeWholeSteps(acc, stepPx)
+            steps += whole
+            acc -= whole * stepPx
+        }
+        assertEquals(2, steps)
+        assertEquals(32f, acc)
     }
 
-    @Test fun `very fast swipe earns the larger bonus`() {
-        // velocity > 3*fling (1260) → bonus 2; base 1 → 3.
-        assertEquals(3, steps(distance = -80f, velocity = -1500f))
+    // ── Release fling bonus ─────────────────────────────────────────────────────
+
+    @Test fun `slow release grants no bonus`() {
+        assertEquals(0, flingBonusSteps(200f, flingPx))
+        assertEquals(0, flingBonusSteps(-300f, flingPx))
     }
 
-    @Test fun `large swipe is capped at MAX_ITEM_SKIP`() {
-        // 400/72 ≈ 6 rows, capped to 4.
-        assertEquals(MAX_ITEM_SKIP, steps(distance = -400f, velocity = 0f))
-        assertEquals(-MAX_ITEM_SKIP, steps(distance = 400f, velocity = 0f))
+    @Test fun `fast up-flick grants downward bonus, capped at two`() {
+        assertEquals(1, flingBonusSteps(-800f, flingPx))    // > fling
+        assertEquals(2, flingBonusSteps(-1500f, flingPx))   // > 3×fling
+        assertEquals(2, flingBonusSteps(-9999f, flingPx))   // still capped
+    }
+
+    @Test fun `fast down-flick grants upward bonus`() {
+        assertEquals(-1, flingBonusSteps(800f, flingPx))
+        assertEquals(-2, flingBonusSteps(1500f, flingPx))
     }
 }

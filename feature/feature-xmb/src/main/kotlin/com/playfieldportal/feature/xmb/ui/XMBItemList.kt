@@ -10,6 +10,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -512,7 +513,15 @@ private fun XmbVerticalListRow(
                 // truncate instead of overflowing.
                 .weight(1f, fill = false)
                 .height(TAP_TARGET_HEIGHT)
-                .combinedClickable(onClick = onClick, onLongClick = onLongPress)
+                // indication = null suppresses the Android ripple/highlight on tap & long-press —
+                // the XMB communicates focus through its own cursor (scale + white label), and the
+                // grey ripple rectangle broke the PSP look.
+                .combinedClickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onClick,
+                    onLongClick = onLongPress,
+                )
                 .padding(horizontal = ROW_HORIZONTAL_PADDING),
         ) {
             if (showIcon) {
