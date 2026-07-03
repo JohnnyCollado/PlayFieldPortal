@@ -90,6 +90,9 @@ interface CollectionDao {
     @Query("UPDATE collections SET is_pinned = :pinned, updated_at = :updatedAt WHERE id = :id")
     suspend fun setPinned(id: Long, pinned: Boolean, updatedAt: Long)
 
+    @Query("UPDATE collections SET icon_key = :iconKey, updated_at = :updatedAt WHERE id = :id")
+    suspend fun setIcon(id: Long, iconKey: String?, updatedAt: Long)
+
     @Query("DELETE FROM collections WHERE id = :id")
     suspend fun delete(id: Long)
 

@@ -195,4 +195,8 @@ private class FakeCollectionDao : CollectionDao {
     override suspend fun setPinned(id: Long, pinned: Boolean, updatedAt: Long) {
         collections[id]?.let { collections[id] = it.copy(isPinned = pinned, updatedAt = updatedAt) }
     }
+
+    override suspend fun setIcon(id: Long, iconKey: String?, updatedAt: Long) {
+        collections[id]?.let { collections[id] = it.copy(iconKey = iconKey, updatedAt = updatedAt) }
+    }
 }

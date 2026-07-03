@@ -33,6 +33,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bookmarks
+import androidx.compose.material.icons.filled.Collections
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.LibraryMusic
@@ -76,6 +77,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.playfieldportal.core.ui.icons.GameIconStyle
+import com.playfieldportal.core.ui.icons.categoryIconFor
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.feature.xmb.viewmodel.XMBItem
 import com.playfieldportal.feature.xmb.viewmodel.XMBItemType
@@ -260,6 +262,7 @@ private fun SiblingIcon(item: XMBItem, selected: Boolean) {
         XMBItemType.VIDEO_COLLECTIONS -> Icons.Filled.Bookmarks
         XMBItemType.PHOTO_FOLDER    -> Icons.Filled.Folder
         XMBItemType.PHOTO_ALBUMS    -> Icons.Filled.PhotoLibrary
+        XMBItemType.PHOTO_APPS      -> Icons.Filled.Collections
         // The video "Playlists" section row (PLAYLIST type with no playlistId) uses a playlist glyph.
         XMBItemType.PLAYLIST        -> Icons.Filled.QueueMusic
         else                        -> null
@@ -760,6 +763,12 @@ private fun XmbItemLeadingIcon(
                 Icon(Icons.Filled.PhotoLibrary, contentDescription = null, tint = InactiveText, modifier = Modifier.size(48.dp))
             }
         }
+        // The "Photo Apps" section row at the Photo root (distinct glyph from Albums and Camera).
+        item.type == XMBItemType.PHOTO_APPS -> {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
+                Icon(Icons.Filled.Collections, contentDescription = null, tint = InactiveText, modifier = Modifier.size(48.dp))
+            }
+        }
         // The Camera row (only present when a camera app exists).
         item.type == XMBItemType.CAMERA -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
@@ -784,12 +793,20 @@ private fun XmbItemLeadingIcon(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier.size(LEADING_ICON_SIZE).selectedIconBloom(isSelected),
               ) {
-                // Explicit art (the "Music" card) loads directly; collections have no console icon of
-                // their own, so they use the physical-media memory-card art (_default.png) and read as
-                // a memory card instead of falling back to the blank sysicon_default.
+                // A collection with a user-picked icon renders that catalog glyph; otherwise it uses
+                // the physical-media memory-card art (_default.png) and reads as a memory card.
+                val collectionIconKey = item.iconKey?.takeIf { item.type == XMBItemType.COLLECTION }
+                // Explicit art (the "Music" card) loads directly; collections without a picked icon
+                // fall back to the memory-card art instead of the blank sysicon_default.
                 val memoryCardArt = item.coverUri
-                    ?: MEMORY_CARD_DEFAULT_ART.takeIf { item.type == XMBItemType.COLLECTION }
-                if (memoryCardArt != null) {
+                    ?: MEMORY_CARD_DEFAULT_ART.takeIf { item.type == XMBItemType.COLLECTION && collectionIconKey == null }
+                if (collectionIconKey != null) {
+                    Image(
+                        painter = painterResource(categoryIconFor(collectionIconKey).resId),
+                        contentDescription = null,
+                        modifier = Modifier.size(LEADING_ICON_SIZE),
+                    )
+                } else if (memoryCardArt != null) {
                     AsyncImage(
                         model = memoryCardArt,
                         contentDescription = null,

@@ -4,6 +4,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
+import kotlinx.serialization.Serializable
 
 /**
  * Join table for the many-to-many between collections and games. A composite primary key
@@ -11,6 +12,7 @@ import androidx.room.Index
  * deletes keep the table tidy when a collection or game is removed; game records are never
  * touched, only their membership rows.
  */
+@Serializable
 @Entity(
     tableName = "collection_games",
     primaryKeys = ["collection_id", "game_id"],

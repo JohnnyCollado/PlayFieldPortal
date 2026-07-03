@@ -17,4 +17,6 @@ data class GameCollection(
     val sortOrder: Int = 0,
     // Number of games currently in the collection (derived; 0 when unknown).
     val gameCount: Int = 0,
+    // User-picked icon key from the shared category icon catalog. Null = default memory-card art.
+    val iconKey: String? = null,
 )

@@ -5,10 +5,12 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 import com.playfieldportal.core.domain.model.Photo
 
 // One row per scanned photo file. uri is a SAF document uri string. Cascade-deletes with its
 // library so removing an album removes its photos; indexed by library_id for per-album queries.
+@Serializable
 @Entity(
     tableName = "photos",
     foreignKeys = [

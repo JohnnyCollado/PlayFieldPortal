@@ -3,8 +3,10 @@ package com.playfieldportal.core.data.database.entity
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 import com.playfieldportal.core.domain.model.Platform
 
+@Serializable
 @Entity(tableName = "platforms")
 data class PlatformEntity(
     @PrimaryKey

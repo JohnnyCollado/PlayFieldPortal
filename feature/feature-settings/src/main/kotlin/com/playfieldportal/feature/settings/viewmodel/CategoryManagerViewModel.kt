@@ -3,6 +3,7 @@ package com.playfieldportal.feature.settings.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.repository.CategoryRepositoryImpl
+import com.playfieldportal.core.domain.model.BuiltInCategory
 import com.playfieldportal.core.domain.model.CategoryType
 import com.playfieldportal.core.ui.icons.CATEGORY_ICON_CATALOG
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -17,6 +18,11 @@ import javax.inject.Inject
 
 enum class CategoryStep { LIST, PICK_ICON, PICK_TYPE, DETAIL }
 
+// Hidden holder categories some older builds created to store Music/Video/Photo "Apps" picks. The
+// app sections now use the real built-in media categories, but a legacy row may still exist; it must
+// never be shown as an editable category.
+private val LEGACY_APP_PSEUDO_CATEGORY_IDS = setOf("music_apps", "video_apps", "photo_apps")
+
 data class CategoryRow(
     val id: String,
     val name: String,
@@ -24,6 +30,9 @@ data class CategoryRow(
     val visible: Boolean,
     val protected: Boolean,
     val isGamingCategory: Boolean = false,
+    // Settings is the only route back into category management, so it can never be hidden from the
+    // XMB bar — the "Show On Bar" toggle is suppressed for it.
+    val canHide: Boolean = true,
 )
 
 data class IconOption(val key: String, val label: String)
@@ -66,7 +75,9 @@ class CategoryManagerViewModel @Inject constructor(
         _scratch,
     ) { categories, scratch ->
         scratch.copy(
-            categories = categories.map {
+            // Legacy hidden "*_apps" pseudo-categories (from older builds) are never user-editable —
+            // keep them out of the manager so they can't be renamed/deleted/toggled.
+            categories = categories.filterNot { it.id in LEGACY_APP_PSEUDO_CATEGORY_IDS }.map {
                 CategoryRow(
                     id                 = it.id,
                     name               = it.name,
@@ -74,6 +85,7 @@ class CategoryManagerViewModel @Inject constructor(
                     visible            = it.isVisible,
                     protected          = categoryRepository.isProtected(it.id),
                     isGamingCategory   = it.isGamingCategory,
+                    canHide            = it.id != BuiltInCategory.SETTINGS,
                 )
             },
         )

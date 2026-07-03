@@ -5,10 +5,12 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 import com.playfieldportal.core.domain.model.Video
 
 // One row per scanned video file. uri is a SAF document uri string. Cascade-deletes with its
 // library so removing a library removes its videos; indexed by library_id for per-library queries.
+@Serializable
 @Entity(
     tableName = "videos",
     foreignKeys = [

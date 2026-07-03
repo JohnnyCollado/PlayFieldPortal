@@ -5,10 +5,12 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 import com.playfieldportal.core.domain.model.MusicTrack
 
 // One row per scanned audio file. uri is a SAF document uri string. Cascade-deletes with its
 // folder so removing a folder removes its tracks; indexed by folder_id for per-folder queries.
+@Serializable
 @Entity(
     tableName = "music_tracks",
     foreignKeys = [

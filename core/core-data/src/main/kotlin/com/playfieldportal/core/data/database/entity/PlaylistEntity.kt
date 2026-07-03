@@ -5,9 +5,11 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 import com.playfieldportal.core.domain.model.Playlist
 
 // A user-created music playlist. Ordered among siblings by sort_order then created_at.
+@Serializable
 @Entity(tableName = "playlists")
 data class PlaylistEntity(
     @PrimaryKey(autoGenerate = true)
@@ -29,6 +31,7 @@ data class PlaylistEntity(
 // appear in many playlists. Rows cascade-delete with their playlist. Tracks are referenced by id
 // (TEXT) — there is no FK to music_tracks so a track removed by a re-scan simply drops out of any
 // join (the orphan row is cleaned up opportunistically by the repository).
+@Serializable
 @Entity(
     tableName = "playlist_tracks",
     primaryKeys = ["playlist_id", "track_id"],

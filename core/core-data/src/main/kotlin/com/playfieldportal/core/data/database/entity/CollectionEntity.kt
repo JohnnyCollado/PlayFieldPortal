@@ -3,8 +3,10 @@ package com.playfieldportal.core.data.database.entity
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 import com.playfieldportal.core.domain.model.GameCollection
 
+@Serializable
 @Entity(tableName = "collections")
 data class CollectionEntity(
     @PrimaryKey(autoGenerate = true)
@@ -26,6 +28,10 @@ data class CollectionEntity(
 
     @ColumnInfo(name = "sort_order")
     val sortOrder: Int = 0,
+
+    // User-picked icon key (from the shared category icon catalog). Null = the default memory-card art.
+    @ColumnInfo(name = "icon_key")
+    val iconKey: String? = null,
 )
 
 fun CollectionEntity.toDomain(gameCount: Int = 0) = GameCollection(
@@ -37,6 +43,7 @@ fun CollectionEntity.toDomain(gameCount: Int = 0) = GameCollection(
     updatedAt = updatedAt,
     sortOrder = sortOrder,
     gameCount = gameCount,
+    iconKey   = iconKey,
 )
 
 fun GameCollection.toEntity() = CollectionEntity(
@@ -47,4 +54,5 @@ fun GameCollection.toEntity() = CollectionEntity(
     createdAt = createdAt,
     updatedAt = updatedAt,
     sortOrder = sortOrder,
+    iconKey   = iconKey,
 )

@@ -3,6 +3,7 @@ package com.playfieldportal.core.data.database.entity
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 
 // Per-app user overrides that must survive scans, launcher updates and package updates.
 //   - customized: the user has taken manual control of this app's category placement, so
@@ -10,6 +11,7 @@ import androidx.room.PrimaryKey
 //     even if that set is empty).
 //   - isHidden: the app is hidden from all XMB categories.
 //   - customLabel: a renamed shortcut label (null = use the real app label).
+@Serializable
 @Entity(tableName = "app_overrides")
 data class AppOverrideEntity(
     @PrimaryKey

@@ -70,6 +70,13 @@ class CollectionRepository @Inject constructor(
         Timber.i("Collection $id pinned=$pinned")
     }
 
+    /** Sets the collection's icon key (from the category icon catalog). Null clears it back to the
+     *  default memory-card art. */
+    suspend fun setIcon(id: Long, iconKey: String?) {
+        collectionDao.setIcon(id, iconKey, System.currentTimeMillis())
+        Timber.i("Collection $id icon=$iconKey")
+    }
+
     suspend fun delete(id: Long) {
         collectionDao.delete(id) // cascades membership rows; game records are untouched
         Timber.i("Collection deleted: id=$id")

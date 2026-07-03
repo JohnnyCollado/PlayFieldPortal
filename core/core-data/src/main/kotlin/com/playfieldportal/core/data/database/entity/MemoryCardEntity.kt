@@ -3,11 +3,13 @@ package com.playfieldportal.core.data.database.entity
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 import com.playfieldportal.core.domain.model.MemoryCard
 
 // One row per user-configured console. platformId is the primary key — a platform can
 // have at most one Memory Card, which keeps Game.platform_id as the join with no schema
 // change to the games table.
+@Serializable
 @Entity(tableName = "memory_cards")
 data class MemoryCardEntity(
     @PrimaryKey

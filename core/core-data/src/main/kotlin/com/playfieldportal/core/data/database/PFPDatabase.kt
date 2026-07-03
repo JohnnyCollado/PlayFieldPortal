@@ -6,6 +6,7 @@ import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.playfieldportal.core.data.database.dao.AppOverrideDao
+import com.playfieldportal.core.data.database.dao.BackupDao
 import com.playfieldportal.core.data.database.dao.CategoryDao
 import com.playfieldportal.core.data.database.dao.CollectionDao
 import com.playfieldportal.core.data.database.dao.GameDao
@@ -74,7 +75,7 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         PhotoLibraryEntity::class,
         PhotoEntity::class,
     ],
-    version = 20,
+    version = 21,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -99,6 +100,7 @@ abstract class PFPDatabase : RoomDatabase() {
     abstract fun hiddenPlacementDao(): HiddenPlacementDao
     abstract fun photoLibraryDao(): PhotoLibraryDao
     abstract fun photoDao(): PhotoDao
+    abstract fun backupDao(): BackupDao
 
     companion object {
         const val DATABASE_NAME = "pfp_database"
@@ -529,6 +531,14 @@ abstract class PFPDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE memory_cards ADD COLUMN tree_uri TEXT")
                 db.execSQL("ALTER TABLE games ADD COLUMN rom_uri TEXT")
+            }
+        }
+
+        // v21 — per-collection icon. Adds collections.icon_key: a user-picked key from the shared
+        // category icon catalog. Nullable; NULL keeps the default memory-card art. Additive only.
+        val MIGRATION_20_21 = object : Migration(20, 21) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE collections ADD COLUMN icon_key TEXT")
             }
         }
     }

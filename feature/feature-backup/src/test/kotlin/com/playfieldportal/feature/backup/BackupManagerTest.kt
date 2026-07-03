@@ -3,6 +3,7 @@ package com.playfieldportal.feature.backup
 import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
+import com.playfieldportal.core.data.database.dao.BackupDao
 import com.playfieldportal.core.data.database.dao.CategoryDao
 import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.data.database.dao.PlaySessionDao
@@ -14,8 +15,12 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.slot
+import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -35,6 +40,7 @@ class BackupManagerTest {
     private lateinit var gameDao: GameDao
     private lateinit var categoryDao: CategoryDao
     private lateinit var playSessionDao: PlaySessionDao
+    private lateinit var backupDao: BackupDao
     private lateinit var manager: BackupManager
 
     @Before
@@ -43,11 +49,24 @@ class BackupManagerTest {
         gameDao        = mockk(relaxed = true)
         categoryDao    = mockk(relaxed = true)
         playSessionDao = mockk(relaxed = true)
+        backupDao      = mockk(relaxed = true)
+
+        // android.net.Uri isn't available in plain JVM unit tests — mock its factory so the
+        // restore tests (which take a Uri) can run.
+        mockkStatic(Uri::class)
+        every { Uri.fromFile(any()) } returns mockk(relaxed = true)
 
         // Point backup dir to the temp folder so files can actually be created
         every { context.getExternalFilesDir(any()) } returns tempFolder.root
+        // filesDir backs the v2 asset bundling / restore staging; a real dir keeps those paths sane.
+        every { context.filesDir } returns tempFolder.newFolder("filesDir_default")
 
-        manager = BackupManager(context, gameDao, categoryDao, playSessionDao)
+        manager = BackupManager(context, gameDao, categoryDao, playSessionDao, backupDao)
+    }
+
+    @After
+    fun tearDown() {
+        unmockkAll()
     }
 
     // ── createBackup ────────────────────────────────────────────────────
@@ -61,7 +80,7 @@ class BackupManagerTest {
 
         // Override backupDir to use temp folder
         val backupDir = tempFolder.newFolder("backups")
-        val mgr = object : BackupManager(context, gameDao, categoryDao, playSessionDao) {
+        val mgr = object : BackupManager(context, gameDao, categoryDao, playSessionDao, backupDao) {
             override fun backupDir(): File = backupDir
 
             override suspend fun readSettingsSnapshot(): SettingsSnapshot = SettingsSnapshot()
@@ -89,7 +108,7 @@ class BackupManagerTest {
         coEvery { playSessionDao.getAll() }  returns listOf(fakeSession())
 
         val backupDir = tempFolder.newFolder("backups2")
-        val mgr = object : BackupManager(context, gameDao, categoryDao, playSessionDao) {
+        val mgr = object : BackupManager(context, gameDao, categoryDao, playSessionDao, backupDao) {
             override fun backupDir(): File = backupDir
 
             override suspend fun readSettingsSnapshot(): SettingsSnapshot = SettingsSnapshot()
@@ -113,7 +132,7 @@ class BackupManagerTest {
         coEvery { playSessionDao.getAll() }  returns emptyList()
 
         val backupDir = tempFolder.newFolder("settings_backup")
-        val mgr = object : BackupManager(context, gameDao, categoryDao, playSessionDao) {
+        val mgr = object : BackupManager(context, gameDao, categoryDao, playSessionDao, backupDao) {
             override fun backupDir(): File = backupDir
 
             override suspend fun readSettingsSnapshot(): SettingsSnapshot =
@@ -144,7 +163,7 @@ class BackupManagerTest {
         every { context.contentResolver } returns contentResolver
         every { contentResolver.openInputStream(any()) } returns null
 
-        val result = manager.restoreBackup(Uri.EMPTY)
+        val result = manager.restoreBackup(mockk(relaxed = true))
 
         assertTrue(result is RestoreResult.Failure)
         assertTrue((result as RestoreResult.Failure).reason.contains("open"))
@@ -154,7 +173,7 @@ class BackupManagerTest {
     fun `restoreBackup returns Failure when format version is too new`() = runTest {
         // Build a valid ZIP with a manifest that has a future format version
         val backupDir = tempFolder.newFolder("restore_test")
-        val mgr = object : BackupManager(context, gameDao, categoryDao, playSessionDao) {
+        val mgr = object : BackupManager(context, gameDao, categoryDao, playSessionDao, backupDao) {
             override fun backupDir(): File = backupDir
 
             override suspend fun readSettingsSnapshot(): SettingsSnapshot = SettingsSnapshot()
@@ -190,7 +209,7 @@ class BackupManagerTest {
     @Test
     fun `restoreBackup calls deleteAll and insertAllReplace for a valid backup`() = runTest {
         val backupDir = tempFolder.newFolder("restore_valid")
-        val mgr = object : BackupManager(context, gameDao, categoryDao, playSessionDao) {
+        val mgr = object : BackupManager(context, gameDao, categoryDao, playSessionDao, backupDao) {
             override fun backupDir(): File = backupDir
 
             override suspend fun readSettingsSnapshot(): SettingsSnapshot = SettingsSnapshot()
@@ -235,7 +254,7 @@ class BackupManagerTest {
         buildSettingsZip(backupFile, expected)
 
         var restored: SettingsSnapshot? = null
-        val mgr = object : BackupManager(context, gameDao, categoryDao, playSessionDao) {
+        val mgr = object : BackupManager(context, gameDao, categoryDao, playSessionDao, backupDao) {
             override suspend fun restoreSettingsSnapshot(snapshot: SettingsSnapshot) {
                 restored = snapshot
             }
@@ -254,12 +273,43 @@ class BackupManagerTest {
         assertEquals(expected, restored)
     }
 
+    @Test
+    fun `restoreBackup re-homes bundled artwork onto this filesDir`() = runTest {
+        // A v2 backup whose game art was written under a DIFFERENT package's filesDir, plus the
+        // bundled art file itself.
+        val filesDir = tempFolder.newFolder("filesDir")
+        every { context.filesDir } returns filesDir
+
+        val oldPath = "/data/user/0/com.other.pkg/files/artwork/7/hero.jpg"
+        val backupFile = File(tempFolder.newFolder("v2"), "v2$BACKUP_FILE_EXTENSION")
+        buildV2ArtworkZip(backupFile, gameId = 7L, heroPath = oldPath)
+
+        val contentResolver = mockk<ContentResolver>()
+        every { context.contentResolver } returns contentResolver
+        every { contentResolver.openInputStream(any()) } returns backupFile.inputStream()
+
+        val inserted = slot<List<GameEntity>>()
+        coEvery { gameDao.deleteAll() }                       returns Unit
+        coEvery { playSessionDao.deleteAll() }               returns Unit
+        coEvery { gameDao.insertAllReplace(capture(inserted)) } returns Unit
+
+        val mgr = BackupManager(context, gameDao, categoryDao, playSessionDao, backupDao)
+        val result = mgr.restoreBackup(Uri.fromFile(backupFile))
+
+        assertTrue("Expected Success, got $result", result is RestoreResult.Success)
+        val hero = inserted.captured.single().heroUri!!
+        val expected = File(filesDir, "artwork/7/hero.jpg")
+        // The rewrite always emits '/' separators (correct on Android); normalise for the Windows CI.
+        assertEquals(expected.absolutePath.replace('\\', '/'), hero.replace('\\', '/'))
+        assertTrue("Bundled art should have been extracted", expected.exists())
+    }
+
     // ── listBackupFiles ──────────────────────────────────────────────────
 
     @Test
     fun `listBackupFiles returns only pfpbackup files sorted newest first`() = runTest {
         val backupDir = tempFolder.newFolder("list_test")
-        val mgr = object : BackupManager(context, gameDao, categoryDao, playSessionDao) {
+        val mgr = object : BackupManager(context, gameDao, categoryDao, playSessionDao, backupDao) {
             override fun backupDir(): File = backupDir
         }
 
@@ -330,6 +380,38 @@ class BackupManagerTest {
         ZipOutputStream(dest.outputStream()).use { zip ->
             zip.putNextEntry(ZipEntry(BackupEntry.MANIFEST))
             zip.write(json.encodeToString(BackupManifest.serializer(), manifest).toByteArray())
+            zip.closeEntry()
+        }
+    }
+
+    // A v2 backup with one game whose hero art lives under another package's filesDir, plus the
+    // bundled art file at the matching relative path.
+    private fun buildV2ArtworkZip(dest: File, gameId: Long, heroPath: String) {
+        val json = Json { prettyPrint = false }
+        val manifest = BackupManifest(
+            appVersionCode = 2,
+            appVersionName = "2.0",
+            createdAt = 0L,
+            gameCount = 1,
+            sessionCount = 0,
+            categoryCount = 0,
+        )
+        val game = fakeGame(gameId).copy(heroUri = heroPath)
+        ZipOutputStream(dest.outputStream()).use { zip ->
+            zip.putNextEntry(ZipEntry(BackupEntry.MANIFEST))
+            zip.write(json.encodeToString(BackupManifest.serializer(), manifest).toByteArray())
+            zip.closeEntry()
+            zip.putNextEntry(ZipEntry(BackupEntry.GAMES))
+            zip.write(
+                json.encodeToString(
+                    kotlinx.serialization.builtins.ListSerializer(GameEntity.serializer()),
+                    listOf(game),
+                ).toByteArray()
+            )
+            zip.closeEntry()
+            // The bundled art file, keyed by its path relative to filesDir.
+            zip.putNextEntry(ZipEntry("${BACKUP_FILES_PREFIX}artwork/$gameId/hero.jpg"))
+            zip.write(byteArrayOf(1, 2, 3, 4))
             zip.closeEntry()
         }
     }

@@ -48,6 +48,12 @@ class CollectionsSettingsViewModel @Inject constructor(
         viewModelScope.launch { collectionRepository.delete(id) }
     }
 
+    /** Sets the collection's icon (a key from the shared category icon catalog). Null resets it to
+     *  the default memory-card art. */
+    fun setIcon(id: Long, iconKey: String?) {
+        viewModelScope.launch { collectionRepository.setIcon(id, iconKey) }
+    }
+
     fun moveUp(id: Long) {
         viewModelScope.launch { collectionRepository.move(id, up = true) }
     }

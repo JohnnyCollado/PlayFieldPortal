@@ -5,10 +5,12 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 import com.playfieldportal.core.domain.model.VideoPlaylist
 
 // A user-created video playlist. Ordered among siblings by sort_order then created_at.
 // Mirrors PlaylistEntity (music).
+@Serializable
 @Entity(tableName = "video_playlists")
 data class VideoPlaylistEntity(
     @PrimaryKey(autoGenerate = true)
@@ -29,6 +31,7 @@ data class VideoPlaylistEntity(
 // Membership of a video in a playlist. position keeps the user's manual ordering; a video may
 // appear in many playlists. Rows cascade-delete with their playlist. Videos are referenced by id
 // (TEXT) — a video removed by a re-scan simply drops out of any join.
+@Serializable
 @Entity(
     tableName = "video_playlist_items",
     primaryKeys = ["playlist_id", "video_id"],

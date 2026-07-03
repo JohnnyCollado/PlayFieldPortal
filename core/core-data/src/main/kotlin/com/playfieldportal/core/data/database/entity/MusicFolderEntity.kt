@@ -3,11 +3,13 @@ package com.playfieldportal.core.data.database.entity
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 import com.playfieldportal.core.domain.model.MusicFolder
 
 // One row per user-added SAF music folder. id is a generated UUID; treeUri is the persisted
 // ACTION_OPEN_DOCUMENT_TREE uri. track_count / last_scanned_at mirror the Memory Card pattern so
 // the folder list stays reactive with counts without an extra join.
+@Serializable
 @Entity(tableName = "music_folders")
 data class MusicFolderEntity(
     @PrimaryKey

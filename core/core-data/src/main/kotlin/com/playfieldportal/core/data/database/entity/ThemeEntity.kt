@@ -3,10 +3,12 @@ package com.playfieldportal.core.data.database.entity
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 import com.playfieldportal.core.domain.model.PFPTheme
 
 // Installed theme metadata — the actual assets live in
 // /storage/emulated/0/PlayFieldPortal/themes/{id}/
+@Serializable
 @Entity(tableName = "themes")
 data class ThemeEntity(
     @PrimaryKey

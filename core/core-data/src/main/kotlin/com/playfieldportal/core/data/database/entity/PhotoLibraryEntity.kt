@@ -3,11 +3,13 @@ package com.playfieldportal.core.data.database.entity
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 import com.playfieldportal.core.domain.model.PhotoLibrary
 
 // One row per user-added SAF photo library (Album). id is a generated UUID; tree_uri is the
 // persisted ACTION_OPEN_DOCUMENT_TREE uri. photo_count / last_scanned_at mirror the video-library
 // pattern so the album list stays reactive with counts without an extra join.
+@Serializable
 @Entity(tableName = "photo_libraries")
 data class PhotoLibraryEntity(
     @PrimaryKey

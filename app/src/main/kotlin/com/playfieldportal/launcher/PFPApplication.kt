@@ -3,6 +3,7 @@ package com.playfieldportal.launcher
 import android.app.Application
 import androidx.work.Configuration
 import com.playfieldportal.core.data.database.seeder.DatabaseInitializer
+import com.playfieldportal.core.data.database.seeder.StartupDataPrep
 import com.playfieldportal.feature.launcher.EmulatorAutoConfigService
 import com.playfieldportal.feature.launcher.EmulatorProfileRepository
 import dagger.hilt.android.HiltAndroidApp
@@ -18,6 +19,7 @@ class PFPApplication : Application(), Configuration.Provider {
 
     @Inject lateinit var workerFactory: androidx.hilt.work.HiltWorkerFactory
     @Inject lateinit var databaseInitializer: DatabaseInitializer
+    @Inject lateinit var startupDataPrep: StartupDataPrep
     @Inject lateinit var emulatorProfileRepository: EmulatorProfileRepository
     @Inject lateinit var emulatorAutoConfigService: EmulatorAutoConfigService
 
@@ -32,10 +34,18 @@ class PFPApplication : Application(), Configuration.Provider {
 
     private fun initDatabase() {
         appScope.launch {
-            runCatching { databaseInitializer.initialize() }
-                .onFailure { Timber.e(it, "Database initialization failed") }
+            runCatching {
+                databaseInitializer.initialize()
+                // Repair file-path drift from upgrades / restores before the UI reads the library.
+                startupDataPrep.run(appVersionCode())
+            }.onFailure { Timber.e(it, "Database initialization failed") }
         }
     }
+
+    private fun appVersionCode(): Int = runCatching {
+        // longVersionCode is available from API 28; minSdk is 29.
+        packageManager.getPackageInfo(packageName, 0).longVersionCode.toInt()
+    }.getOrDefault(0)
 
     private fun initEmulators() {
         appScope.launch {

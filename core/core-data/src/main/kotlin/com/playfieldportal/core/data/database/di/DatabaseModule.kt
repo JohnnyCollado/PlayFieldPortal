@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.playfieldportal.core.data.database.PFPDatabase
 import com.playfieldportal.core.data.database.dao.AppOverrideDao
+import com.playfieldportal.core.data.database.dao.BackupDao
 import com.playfieldportal.core.data.database.dao.CategoryDao
 import com.playfieldportal.core.data.database.dao.CollectionDao
 import com.playfieldportal.core.data.database.dao.GameDao
@@ -72,6 +73,7 @@ object DatabaseModule {
             PFPDatabase.MIGRATION_17_18,
             PFPDatabase.MIGRATION_18_19,
             PFPDatabase.MIGRATION_19_20,
+            PFPDatabase.MIGRATION_20_21,
         )
         .build()
 
@@ -94,6 +96,7 @@ object DatabaseModule {
     @Provides fun provideHiddenPlacementDao(db: PFPDatabase): HiddenPlacementDao = db.hiddenPlacementDao()
     @Provides fun providePhotoLibraryDao(db: PFPDatabase): PhotoLibraryDao = db.photoLibraryDao()
     @Provides fun providePhotoDao(db: PFPDatabase): PhotoDao = db.photoDao()
+    @Provides fun provideBackupDao(db: PFPDatabase): BackupDao = db.backupDao()
 }
 
 @Module

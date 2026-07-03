@@ -3,11 +3,13 @@ package com.playfieldportal.core.data.database.entity
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
+import kotlinx.serialization.Serializable
 import com.playfieldportal.core.domain.model.HiddenPlacement
 import com.playfieldportal.core.domain.model.HideLocationType
 
 // One "item hidden from location" record. Composite PK so re-hiding the same spot is idempotent.
 // Indexed by item_key so the manager can group an item's placements cheaply.
+@Serializable
 @Entity(
     tableName = "hidden_placements",
     primaryKeys = ["item_key", "location_type", "location_id"],
