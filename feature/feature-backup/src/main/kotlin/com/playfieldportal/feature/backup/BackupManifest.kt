@@ -9,7 +9,6 @@ import kotlinx.serialization.Serializable
 // v1 backups (games/categories/settings only) still restore — missing entries are simply skipped.
 const val BACKUP_FORMAT_VERSION = 2
 const val BACKUP_FILE_EXTENSION = ".pfpbackup"
-const val BACKUP_FOLDER = "PlayFieldPortal/backups"
 
 // Bundled internal-storage files are stored under this prefix, preserving their path relative to
 // the app's filesDir (e.g. "files/artwork/12/hero.jpg"). Everything else in the ZIP is JSON.

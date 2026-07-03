@@ -10,6 +10,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.io.File
 import javax.inject.Inject
@@ -41,6 +42,9 @@ data class UnmatchedRom(
 )
 
 enum class ScanType { NEW_FILES_ONLY, FULL_RESCAN }
+
+// Outcome of creating the ES-DE folder structure under a picked root.
+data class FolderSetupResult(val created: Int, val existing: Int, val total: Int)
 
 @Singleton
 class RomScanner @Inject constructor(
@@ -290,8 +294,12 @@ class RomScanner @Inject constructor(
         platformId: String,
         recursive: Boolean,
         existingRomPaths: Set<String>,
+        // When set, the DFS starts at this document id instead of the tree's own root document.
+        // Used for the single ROM-root model: [treeUri] is the granted root and [startDocId] is a
+        // subfolder under it (a descendant of the grant, so no separate permission is needed).
+        startDocId: String? = null,
     ): Flow<ScanResult> = flow {
-        Timber.i("Memory Card SAF scan — platform=$platformId tree=$treeUri exts=$extensions recursive=$recursive")
+        Timber.i("Memory Card SAF scan — platform=$platformId tree=$treeUri exts=$extensions recursive=$recursive start=${startDocId ?: "(root)"}")
 
         val tree = runCatching { Uri.parse(treeUri) }.getOrNull()
         if (tree == null) {
@@ -309,9 +317,10 @@ class RomScanner @Inject constructor(
         var alreadyInLibrary = 0
         var filesScanned     = 0
 
-        // Iterative DFS over document IDs; visited-set guards a cyclic/hostile provider.
+        // Iterative DFS over document IDs; visited-set guards a cyclic/hostile provider. The start
+        // is the requested subfolder (single-root model) or the tree's own root document.
         val visited = HashSet<String>()
-        val rootDocId = DocumentsContract.getTreeDocumentId(tree)
+        val rootDocId = startDocId ?: DocumentsContract.getTreeDocumentId(tree)
         visited.add(rootDocId)
         val stack = ArrayDeque<String>()
         stack.addLast(rootDocId)
@@ -361,6 +370,52 @@ class RomScanner @Inject constructor(
         emit(ScanResult.Complete(newGames, alreadyInLibrary, emptyList(), emptyList()))
 
     }.flowOn(Dispatchers.IO)
+
+    // Immediate child directory names of a granted tree — the ES-DE system folders directly under
+    // the ROM root (e.g. "gba", "snes", "psx"). One ContentResolver query; files are ignored.
+    // Drives the single-scan autoload: each name is mapped to a platform by PlatformFolderHintResolver.
+    suspend fun listSubfolderNames(treeUri: String): List<String> = withContext(Dispatchers.IO) {
+        val tree = runCatching { Uri.parse(treeUri) }.getOrNull() ?: return@withContext emptyList()
+        val rootDocId = runCatching { DocumentsContract.getTreeDocumentId(tree) }.getOrNull()
+            ?: return@withContext emptyList()
+        context.contentResolver.querySafChildren(tree, rootDocId)
+            .filter { it.isDirectory }
+            .map { it.name }
+    }
+
+    // Creates any missing subfolders (by name) directly under a granted tree via SAF — the ES-DE
+    // "set up my ROM structure for me" action. Requires a WRITE grant on [treeUri]. Existing
+    // folders (case-insensitive) are left untouched, so it's safe to re-run.
+    suspend fun createSubfolders(treeUri: String, names: List<String>): FolderSetupResult =
+        withContext(Dispatchers.IO) {
+            val tree = runCatching { Uri.parse(treeUri) }.getOrNull()
+                ?: return@withContext FolderSetupResult(0, 0, names.size)
+            val rootDocId = runCatching { DocumentsContract.getTreeDocumentId(tree) }.getOrNull()
+                ?: return@withContext FolderSetupResult(0, 0, names.size)
+            val parentDocUri = DocumentsContract.buildDocumentUriUsingTree(tree, rootDocId)
+
+            val existingDirs = context.contentResolver.querySafChildren(tree, rootDocId)
+                .filter { it.isDirectory }
+                .map { it.name.lowercase() }
+                .toSet()
+
+            var created = 0
+            var existing = 0
+            for (name in names) {
+                if (name.lowercase() in existingDirs) { existing++; continue }
+                val ok = runCatching {
+                    DocumentsContract.createDocument(
+                        context.contentResolver,
+                        parentDocUri,
+                        DocumentsContract.Document.MIME_TYPE_DIR,
+                        name,
+                    )
+                }.getOrNull() != null
+                if (ok) created++ else Timber.w("Could not create ROM subfolder '$name'")
+            }
+            Timber.i("ES-DE folder setup — created=$created existing=$existing total=${names.size}")
+            FolderSetupResult(created, existing, names.size)
+        }
 
     suspend fun findMissingRoms(knownPaths: List<String>): List<String> =
         knownPaths.filter { path -> !File(path).exists() }

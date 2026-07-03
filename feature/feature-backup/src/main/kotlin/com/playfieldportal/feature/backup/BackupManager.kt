@@ -2,7 +2,7 @@ package com.playfieldportal.feature.backup
 
 import android.content.Context
 import android.net.Uri
-import android.os.Environment
+import android.provider.DocumentsContract
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -32,9 +32,11 @@ import com.playfieldportal.core.data.database.entity.VideoLibraryEntity
 import com.playfieldportal.core.data.database.entity.VideoPlaylistEntity
 import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
 import com.playfieldportal.core.data.datastore.pfpDataStore
+import com.playfieldportal.core.data.repository.BackupFolderRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.Json
+import timber.log.Timber
 import java.io.File
 import java.io.InputStream
 import java.util.zip.ZipEntry
@@ -44,9 +46,12 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 sealed class BackupResult {
-    data class Success(val file: File) : BackupResult()
+    data class Success(val displayName: String) : BackupResult()
     data class Failure(val reason: String, val cause: Throwable? = null) : BackupResult()
 }
+
+// One backup file found in the SAF backup folder.
+data class BackupInfo(val name: String, val uri: Uri, val lastModified: Long)
 
 sealed class RestoreResult {
     object Success : RestoreResult()
@@ -60,6 +65,7 @@ open class BackupManager @Inject constructor(
     private val categoryDao: CategoryDao,
     private val playSessionDao: PlaySessionDao,
     private val backupDao: BackupDao,
+    private val backupFolderRepository: BackupFolderRepository,
 ) {
     private val json = Json { prettyPrint = false; ignoreUnknownKeys = true }
 
@@ -69,7 +75,14 @@ open class BackupManager @Inject constructor(
         appVersionCode: Int,
         appVersionName: String,
         createdAt: Long,
-    ): BackupResult = runCatching {
+    ): BackupResult {
+        val backupFolder = backupFolderRepository.get()
+        if (backupFolder.isNullOrBlank()) {
+            return BackupResult.Failure(
+                "No backup folder set. Choose one under Settings → Backup & Restore → Backup Folder."
+            )
+        }
+        return runCatching {
         val games        = gameDao.getAll()
         val categories   = categoryDao.getAll()
         val items        = categoryDao.getAllItems()
@@ -85,13 +98,13 @@ open class BackupManager @Inject constructor(
             categoryCount = categories.size,
         )
 
-        val outDir = backupDir()
-        outDir.mkdirs()
-
+        // Build the ZIP into app cache (no permission needed), then stream it into the SAF backup
+        // folder. This keeps the ZIP-building code identical while removing the raw public-folder
+        // write that used to require MANAGE_EXTERNAL_STORAGE.
         val fileName = "pfp_backup_${createdAt}${BACKUP_FILE_EXTENSION}"
-        val outFile  = File(outDir, fileName)
+        val tempFile = File(context.cacheDir, fileName)
 
-        ZipOutputStream(outFile.outputStream().buffered()).use { zip ->
+        ZipOutputStream(tempFile.outputStream().buffered()).use { zip ->
             zip.writeJson(BackupEntry.MANIFEST,       json.encodeToString(BackupManifest.serializer(), manifest))
             zip.writeJson(BackupEntry.GAMES,          json.encodeToString(listSerializer<GameEntity>(), games))
             zip.writeJson(BackupEntry.CATEGORIES,     json.encodeToString(listSerializer<CategoryEntity>(), categories))
@@ -125,11 +138,17 @@ open class BackupManager @Inject constructor(
             BUNDLED_FILE_ROOTS.forEach { root -> zip.bundleTree(filesDir, root) }
         }
 
-        outFile
+        val exported = exportToBackupFolder(backupFolder, tempFile, fileName)
+        tempFile.delete()
+        if (exported == null) {
+            error("Could not write to the backup folder. Re-link it under Settings → Folder Access.")
+        }
+        fileName
     }.fold(
         onSuccess = { BackupResult.Success(it) },
         onFailure = { BackupResult.Failure(it.message ?: "Unknown error", it) },
     )
+    }
 
     // ── Import ──────────────────────────────────────────────────────────
 
@@ -267,15 +286,53 @@ open class BackupManager @Inject constructor(
 
     // ── Helpers ─────────────────────────────────────────────────────────
 
-    open fun backupDir(): File = File(
-        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
-        BACKUP_FOLDER,
-    )
+    // Streams the built ZIP into the SAF backup folder, returning the new document URI (or null if
+    // the folder can't be written — e.g. the grant was lost). Open for test substitution.
+    protected open suspend fun exportToBackupFolder(treeUri: String, source: File, name: String): Uri? {
+        val tree = runCatching { Uri.parse(treeUri) }.getOrNull() ?: return null
+        val rootDocId = runCatching { DocumentsContract.getTreeDocumentId(tree) }.getOrNull() ?: return null
+        val parentDoc = DocumentsContract.buildDocumentUriUsingTree(tree, rootDocId)
+        val doc = runCatching {
+            DocumentsContract.createDocument(context.contentResolver, parentDoc, MIME_BACKUP, name)
+        }.getOrNull() ?: return null
+        val ok = runCatching {
+            context.contentResolver.openOutputStream(doc)?.use { out ->
+                source.inputStream().use { it.copyTo(out) }
+            } != null
+        }.getOrDefault(false)
+        return if (ok) doc else null
+    }
 
-    fun listBackupFiles(): List<File> =
-        backupDir().listFiles { f -> f.name.endsWith(BACKUP_FILE_EXTENSION) }
-            ?.sortedByDescending { it.lastModified() }
-            ?: emptyList()
+    // Lists backup files in the SAF backup folder, newest first. Empty when no folder is set / the
+    // grant is gone. Open for test substitution.
+    open suspend fun listBackups(): List<BackupInfo> {
+        val treeUri = backupFolderRepository.get()?.let { runCatching { Uri.parse(it) }.getOrNull() }
+            ?: return emptyList()
+        val rootDocId = runCatching { DocumentsContract.getTreeDocumentId(treeUri) }.getOrNull()
+            ?: return emptyList()
+        val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, rootDocId)
+        val out = mutableListOf<BackupInfo>()
+        runCatching {
+            context.contentResolver.query(
+                childrenUri,
+                arrayOf(
+                    DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+                    DocumentsContract.Document.COLUMN_DISPLAY_NAME,
+                    DocumentsContract.Document.COLUMN_LAST_MODIFIED,
+                ),
+                null, null, null,
+            )?.use { c ->
+                while (c.moveToNext()) {
+                    val docId = c.getString(0) ?: continue
+                    val name  = c.getString(1) ?: continue
+                    if (!name.endsWith(BACKUP_FILE_EXTENSION)) continue
+                    val lastModified = if (c.isNull(2)) 0L else c.getLong(2)
+                    out.add(BackupInfo(name, DocumentsContract.buildDocumentUriUsingTree(treeUri, docId), lastModified))
+                }
+            }
+        }.onFailure { Timber.w(it, "Could not list backups in SAF folder") }
+        return out.sortedByDescending { it.lastModified }
+    }
 
     // Reads the ZIP once: JSON entries are returned as a name→text map; entries under
     // BACKUP_FILES_PREFIX are streamed into [staging], preserving their relative path.
@@ -394,6 +451,8 @@ open class BackupManager @Inject constructor(
 
     companion object {
         private const val RESTORE_STAGING_DIR = ".pfp_restore_tmp"
+        // Generic binary so the SAF provider keeps our ".pfpbackup" name verbatim (no appended ext).
+        private const val MIME_BACKUP = "application/octet-stream"
         private const val FILES_MARKER = "/files/"
         private const val KEY_CUSTOM_WALLPAPER = "display_custom_wallpaper"
 
@@ -424,6 +483,15 @@ open class BackupManager @Inject constructor(
             stringPreferencesKey("video_default_player"),
             // Library
             stringPreferencesKey("library_root_path"),
+            // SAF ROM root grants (newline-joined list; singular key kept for older backups).
+            // Inert without a live OS grant, so re-linked via the Folder Access screen after a
+            // restore — but carrying them lets that screen pre-point the picker at each exact
+            // folder (one-tap recovery).
+            stringPreferencesKey("library_rom_root_tree_uris"),
+            stringPreferencesKey("library_rom_root_tree_uri"),
+            // Where backups are saved (SAF folder). Inert without a live grant; carried so a
+            // restore can pre-point the Folder Access picker at it.
+            stringPreferencesKey("backup_folder_tree_uri"),
             // Scraper credentials
             stringPreferencesKey("sgdb_api_key"),
             stringPreferencesKey("igdb_client_id"),

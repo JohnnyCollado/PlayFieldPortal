@@ -69,6 +69,9 @@ class VideoRepositoryImpl @Inject constructor(
     override suspend fun renameLibrary(id: String, displayName: String) =
         libraryDao.setDisplayName(id, displayName, System.currentTimeMillis())
 
+    override suspend fun setLibraryTreeUri(id: String, treeUri: String) =
+        libraryDao.setTreeUri(id, treeUri, System.currentTimeMillis())
+
     override suspend fun setLibraryEnabled(id: String, enabled: Boolean) =
         libraryDao.setEnabled(id, enabled, System.currentTimeMillis())
 

@@ -212,7 +212,6 @@ class PlatformFolderHintResolver @Inject constructor() {
         "neogeo"                    to "neogeo",  // ES-DE canonical
         "neo geo"                   to "neogeo",
         "neo-geo"                   to "neogeo",
-        "fba"                       to "neogeo",  // Final Burn Alpha arcade
 
         "ngp"                       to "ngp",     // ES-DE canonical (Neo Geo Pocket)
         "ngpc"                      to "ngp",
@@ -246,6 +245,16 @@ class PlatformFolderHintResolver @Inject constructor() {
 
         // ── PC / Other ─────────────────────────────────────────────────────
 
+        // ── Microsoft ──────────────────────────────────────────────────────
+        "xbox360"                   to "x360",    // ES-DE canonical
+        "x360"                      to "x360",
+        "xbox 360"                  to "x360",
+
+        // ── PC ─────────────────────────────────────────────────────────────
+        "windows"                   to "windows", // ES-DE canonical
+        "winlator"                  to "windows",
+        "pc"                        to "windows",
+
         "dos"                       to "dos",
         "dosbox"                    to "dos",
         "ports"                     to "ports",
@@ -267,5 +276,20 @@ class PlatformFolderHintResolver @Inject constructor() {
             hints[segment]?.let { return it }
         }
         return null
+    }
+
+    // Direct lookup for a single folder name (e.g. a ROM-root subfolder). Drives the ES-DE
+    // single-scan autoload: each root subfolder name is resolved to a platform id here.
+    // Returns null when the name isn't a recognised ES-DE system folder.
+    fun detectFromFolderName(name: String): String? =
+        hints[name.trim().lowercase()]
+
+    // The ES-DE canonical directory name to CREATE for a platform when setting up a fresh ROM
+    // structure (the inverse of the hint map). Our platform ids already follow ES-DE names, so
+    // this is identity except where ES-DE diverges. Using ES-DE names keeps libraries portable
+    // to/from an actual ES-DE install.
+    fun esDeFolderName(platformId: String): String = when (platformId) {
+        "x360" -> "xbox360"   // ES-DE canonical Xbox 360 folder
+        else   -> platformId
     }
 }

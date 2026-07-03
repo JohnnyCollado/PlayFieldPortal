@@ -19,11 +19,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.playfieldportal.core.common.security.StorageAccess
 import com.playfieldportal.feature.settings.viewmodel.ADD_CONSOLE_FOCUS_KEY
 import com.playfieldportal.feature.settings.viewmodel.EmulatorOption
 import com.playfieldportal.feature.settings.viewmodel.LibraryCardRow
@@ -49,6 +47,16 @@ fun LibraryManagerScreen(
 
     LaunchedEffect(state.awaitingDirectoryPick) {
         if (state.awaitingDirectoryPick != null) dirPicker.launch(null)
+    }
+
+    // Separate picker for ES-DE folder setup: creates the system-folder structure under the
+    // chosen folder (which also becomes the ROM Root).
+    val setupPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri -> viewModel.onRomFolderSetupPicked(uri) }
+
+    LaunchedEffect(state.awaitingRomRootSetup) {
+        if (state.awaitingRomRootSetup) setupPicker.launch(null)
     }
 
     // Hierarchical back: collapse a sub-screen first, otherwise close the overlay.
@@ -87,16 +95,6 @@ private fun LibraryListContent(
     onBack: () -> Unit,
     modifier: Modifier,
 ) {
-    val context = LocalContext.current
-    // All-Files-Access is now OPTIONAL: SAF cards (a tree_uri) scan/launch via content URIs and
-    // need no permission. We only surface the prompt when a legacy raw-path card (romDirectory set,
-    // no tree_uri) actually requires raw file access. Fresh SAF-added cards never trigger it.
-    var storageGranted by remember { mutableStateOf(StorageAccess.isManagerGranted()) }
-    val storageAccessLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { storageGranted = StorageAccess.isManagerGranted() }
-    val hasLegacyRawCard = state.cards.any { it.romDirectory != null && it.treeUri == null }
-
     SettingsScaffold(
         title = "Settings",
         subtitle = "Library Manager",
@@ -105,17 +103,6 @@ private fun LibraryListContent(
         restoreFocusKey = state.returnFocusKey,
     ) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-
-            if (!storageGranted && hasLegacyRawCard) {
-                SettingsGroup("Storage Access")
-                SettingsRow(
-                    label    = "Grant All-Files Access",
-                    sublabel = "Needed only for older raw-path libraries added before folder access. " +
-                        "New consoles use the folder picker and need no permission — re-add a console " +
-                        "via the picker to drop this.",
-                    onClick  = { runCatching { storageAccessLauncher.launch(StorageAccess.manageAccessIntent(context)) } },
-                )
-            }
 
             SettingsGroup("Consoles")
 
@@ -140,6 +127,18 @@ private fun LibraryListContent(
                 sublabel = "Pick a platform, choose its ROM folder, assign an emulator",
                 focusKey = ADD_CONSOLE_FOCUS_KEY,
                 onClick  = { vm.startAddConsole() },
+            )
+            SettingsRow(
+                label    = "Set Up ROM Folders (ES-DE)",
+                sublabel = "Pick an empty folder — PFP creates the standard ES-DE system folders " +
+                    "(gba, snes, psx…) for you to copy games into. No guessing folder names",
+                onClick  = { vm.requestRomFolderSetup() },
+            )
+            SettingsRow(
+                label    = "Auto-Detect from ROM Root",
+                sublabel = "One scan of your ROM Root: creates a console for every ES-DE system " +
+                    "folder (gba, snes, psx…) and loads its games",
+                onClick  = { vm.scanRomRoot() },
             )
             SettingsRow(
                 label    = "Scan All Consoles",

@@ -5,10 +5,26 @@ All notable changes to Play Field Portal are documented here. This project follo
 
 ## [Unreleased]
 
-Touch-first navigation and a consistent, theme-matched UI across every full-screen menu.
+Touch-first navigation and a consistent, theme-matched UI across every full-screen menu, plus a
+move to permission-free storage: ROM libraries, media and backups now all go through the Storage
+Access Framework, so the app no longer needs all-files access.
 (Still `versionName 1.0.0-alpha.3` / `versionCode 3` — not yet cut as a release.)
 
 ### Added
+- **ES-DE ROM roots with one-scan autoload.** Grant a ROM root folder (internal storage **or** an
+  SD card — multiple roots supported) and **Auto-Detect from ROM Root** walks its ES-DE system
+  folders (`gba`, `snes`, `psx`…), creates a Memory Card for every folder that actually contains
+  games, and loads them in a single scan. Empty folders are skipped; a system split across roots is
+  merged into one console. ROMs load via `content://` URIs, so no storage permission is needed.
+- **Set Up ROM Folders (ES-DE).** Pick an empty folder and PFP creates the standard ES-DE
+  system-folder structure for you (no guessing folder names), so libraries transfer cleanly to and
+  from a real ES-DE install.
+- **Folder Access** screen (Settings). Lists every granted folder — ROM roots, music/video/photo
+  libraries and the backup folder — as **Linked** or **Access lost**, with one-tap re-link (the
+  picker opens pre-pointed at the saved folder). Recovers all folder access after a restore or
+  reinstall; re-linking a ROM root restores every console under it at once.
+- **Backups saved to a folder you choose.** *Back Up Now* writes the `.pfpbackup` into a
+  SAF-granted folder — no storage permission, survives an uninstall, and stays user-accessible.
 - **Full XMB touch navigation.** Swipe to step categories/items (discrete, D-pad-equivalent
   stepping with a small fling bonus), tap-to-point / tap-again-to-open, and a left-edge
   swipe for Back. A bottom-right contextual **App Drawer** button appears while using touch.
@@ -41,8 +57,13 @@ Touch-first navigation and a consistent, theme-matched UI across every full-scre
 - **App Drawer:** white labels with a theme-accent filter highlight; a touch-aware grid cursor
   that hides during touch scrolling and resumes near the last touch position on the d-pad.
 - Android Settings uses the wrench icon, matching the other Settings rows.
+- **ROM libraries and backups now use the Storage Access Framework** end-to-end (`content://`),
+  so they need no storage permission and work on SD/USB volumes. Older single-root grants and
+  backups migrate transparently; restoring a backup re-links folders via Folder Access.
 
 ### Removed
+- **All-files access.** `MANAGE_EXTERNAL_STORAGE` is no longer declared, and the *Grant All-Files
+  Access* option is removed from the Library Manager — ROMs, media and backups all use SAF.
 - The dedicated **Photo Apps** section (the Photo category no longer lists installed photo apps).
 - The floating **Back** button that replaced the App Drawer button while drilled in — going back
   is now the left-edge swipe or tapping the active memory-card icon under the caticon.

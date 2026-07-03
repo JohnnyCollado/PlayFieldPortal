@@ -7,12 +7,15 @@ import android.provider.DocumentsContract
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.repository.MemoryCardRepository
+import com.playfieldportal.core.data.repository.RomRootRepository
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.feature.launcher.EmulatorProfileRepository
+import com.playfieldportal.feature.library.scanner.PlatformFolderHintResolver
 import com.playfieldportal.feature.library.scanner.RomScanner
 import com.playfieldportal.feature.library.scanner.ScanResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -74,6 +77,8 @@ data class LibraryManagerUiState(
 
     // UI signals
     val awaitingDirectoryPick: DirectoryPickPurpose? = null,
+    // Set when the screen should launch the folder picker to set up the ES-DE ROM structure.
+    val awaitingRomRootSetup: Boolean = false,
     val renameTargetPlatformId: String? = null,
     val scanningPlatformIds: Set<String> = emptySet(),
     val message: String? = null,
@@ -90,6 +95,8 @@ class LibraryManagerViewModel @Inject constructor(
     private val romScanner: RomScanner,
     private val gameRepository: GameRepository,
     private val emulatorProfileRepository: EmulatorProfileRepository,
+    private val romRootRepository: RomRootRepository,
+    private val folderHintResolver: PlatformFolderHintResolver,
 ) : ViewModel() {
 
     private val _scratch = MutableStateFlow(LibraryManagerUiState())
@@ -364,36 +371,39 @@ class LibraryManagerViewModel @Inject constructor(
         if (platformId in _scratch.value.scanningPlatformIds) return
         viewModelScope.launch {
             val card = memoryCardRepository.getById(platformId) ?: return@launch
-            // Prefer the SAF tree URI (no permission needed); fall back to the legacy raw directory.
-            val hasSaf = !card.treeUri.isNullOrBlank()
-            if (!hasSaf && card.romDirectory.isNullOrBlank()) {
-                _scratch.update { it.copy(message = "${card.displayName}: ROM directory not configured.") }
+
+            // A card's ROMs come from (in priority): its own SAF grant; else every ROM root's
+            // subfolder that maps to this platform (aggregated, so an SD card adds to the same
+            // console); else its legacy raw directory.
+            val sources = buildScanSources(card)
+            if (sources.isEmpty()) {
+                _scratch.update { it.copy(message = "${card.displayName}: ROM folder not configured.") }
                 return@launch
             }
             _scratch.update { it.copy(scanningPlatformIds = it.scanningPlatformIds + platformId) }
 
+            // Live, growing set so a ROM already added from one root isn't re-added from another.
             val existing = runCatching {
-                gameRepository.observeByPlatform(platformId).first().mapNotNull { it.romPath }.toSet()
-            }.getOrDefault(emptySet())
+                gameRepository.observeByPlatform(platformId).first().mapNotNull { it.romPath }.toMutableSet()
+            }.getOrDefault(mutableSetOf())
 
             var added = 0
-            val flow = if (hasSaf) {
-                romScanner.scanTree(card.treeUri!!, card.supportedExtensions, platformId, card.scanRecursively, existing)
-            } else {
-                romScanner.scanDirectory(card.romDirectory!!, card.supportedExtensions, platformId, card.scanRecursively, existing)
-            }
-            flow
-                .collect { result ->
+            for (source in sources) {
+                source(existing).collect { result ->
                     when (result) {
                         is ScanResult.Complete -> {
-                            result.newGames.forEach { gameRepository.upsert(it) }
-                            memoryCardRepository.recordScan(platformId, System.currentTimeMillis())
-                            added = result.newGames.size
+                            result.newGames.forEach {
+                                gameRepository.upsert(it)
+                                it.romPath?.let(existing::add)
+                            }
+                            added += result.newGames.size
                         }
                         is ScanResult.Error -> _scratch.update { it.copy(message = "${card.displayName}: ${result.message}") }
                         else -> Unit
                     }
                 }
+            }
+            if (added > 0) memoryCardRepository.recordScan(platformId, System.currentTimeMillis())
 
             _scratch.update {
                 it.copy(
@@ -411,6 +421,168 @@ class LibraryManagerViewModel @Inject constructor(
                 .filter { it.enabled && (!it.treeUri.isNullOrBlank() || !it.romDirectory.isNullOrBlank()) }
                 .forEach { scanConsole(it.platformId) }
         }
+    }
+
+    // ── ES-DE folder setup (create the directory structure) ──────────────────────
+    //
+    // Lets the user point at any (empty) folder and have PFP create the full ES-DE system-folder
+    // set inside it (gba/, snes/, psx/, …). The picked folder also becomes the ROM Root, so after
+    // copying games in the user just taps Auto-Detect. Requires a write grant on the folder.
+    fun requestRomFolderSetup() {
+        _scratch.update { it.copy(awaitingRomRootSetup = true) }
+    }
+
+    fun onRomFolderSetupPicked(uri: Uri?) {
+        _scratch.update { it.copy(awaitingRomRootSetup = false) }
+        if (uri == null) return
+        viewModelScope.launch {
+            // Read+write: we must create folders now and read them when scanning later.
+            romRootRepository.persist(uri, writable = true)
+            romRootRepository.add(uri.toString())
+
+            // One ES-DE folder per supported platform (skip the app-based Android library).
+            val names = memoryCardRepository.availablePlatformCatalog()
+                .map { folderHintResolver.esDeFolderName(it.id) }
+                .filter { it.isNotBlank() && it != "android" }
+                .distinct()
+
+            val result = romScanner.createSubfolders(uri.toString(), names)
+            Timber.i("ES-DE setup — root=$uri created=${result.created} existing=${result.existing}")
+            _scratch.update {
+                it.copy(
+                    message = "ROM Root ready: ${result.created} folder(s) created" +
+                        (if (result.existing > 0) ", ${result.existing} already there" else "") +
+                        ". Copy your games into the matching folders, then Auto-Detect.",
+                )
+            }
+        }
+    }
+
+    // ── Single-scan autoload from the ES-DE ROM root ─────────────────────────────
+    //
+    // Walks the granted ROM root's top-level subfolders, maps each to a platform by its ES-DE
+    // folder name (PlatformFolderHintResolver), auto-creates a Memory Card for any system that
+    // doesn't have one yet (pointed at its subfolder under the root), then scans every detected
+    // console — the whole library set up from one action. Folders that don't map to a supported
+    // platform are skipped.
+    fun scanRomRoot() {
+        viewModelScope.launch {
+            val roots = romRootRepository.getAll()
+            if (roots.isEmpty()) {
+                _scratch.update { it.copy(message = "Add a ROM Root first in Settings → Folder Access.") }
+                return@launch
+            }
+
+            val catalog  = memoryCardRepository.availablePlatformCatalog().associateBy { it.id }
+            val haveCard = memoryCardRepository.getAll().map { it.platformId }.toMutableSet()
+
+            var scannedFolders = 0
+            val platformsWithGames = mutableSetOf<String>()
+            var newCards = 0
+            var totalAdded = 0
+
+            // Scan every root's subfolders. A folder only becomes a console if it actually contains
+            // ROMs — empty ES-DE folders (e.g. the ones "Set Up ROM Folders" created) are skipped.
+            for (rootUri in roots) {
+                val rootRaw = RomRootRepository.rawPathOfTree(rootUri)
+                for (name in romScanner.listSubfolderNames(rootUri)) {
+                    scannedFolders++
+                    val platformId = folderHintResolver.detectFromFolderName(name) ?: continue
+                    val platform   = catalog[platformId] ?: continue
+                    val childDocId = RomRootRepository.childDocIdOf(rootUri, name) ?: continue
+
+                    val exts = memoryCardRepository.getById(platformId)?.supportedExtensions
+                        ?.takeIf { it.isNotEmpty() } ?: platform.romExtensions
+                    if (exts.isEmpty()) continue   // nothing scannable for this platform
+
+                    val existing = runCatching {
+                        gameRepository.observeByPlatform(platformId).first().mapNotNull { it.romPath }.toSet()
+                    }.getOrDefault(emptySet())
+
+                    val found = firstComplete(
+                        romScanner.scanTree(rootUri, exts, platformId, true, existing, startDocId = childDocId)
+                    )?.newGames.orEmpty()
+
+                    if (found.isEmpty()) continue   // empty (or fully-known) folder → no card, no change
+
+                    if (platformId !in haveCard) {
+                        memoryCardRepository.addCard(
+                            platformId   = platformId,
+                            displayName  = "${platform.name} Memory Card",
+                            romDirectory = rootRaw?.let { "${it.trimEnd('/')}/$name" },
+                            emulatorId   = null,
+                        )
+                        haveCard.add(platformId)
+                        newCards++
+                    }
+                    found.forEach { gameRepository.upsert(it) }
+                    memoryCardRepository.recordScan(platformId, System.currentTimeMillis())
+                    platformsWithGames.add(platformId)
+                    totalAdded += found.size
+                }
+            }
+
+            val rootLabel = "${roots.size} root${if (roots.size == 1) "" else "s"}"
+            val message = if (platformsWithGames.isEmpty()) {
+                "Scanned $scannedFolders folder(s) across $rootLabel; no new ROMs found. " +
+                    "Copy games into the matching system folders and try again."
+            } else {
+                "Loaded ${platformsWithGames.size} system(s)" +
+                    (if (newCards > 0) " ($newCards new console(s))" else "") +
+                    ", $totalAdded ROM(s) from $rootLabel."
+            }
+            _scratch.update { it.copy(message = message) }
+            Timber.i("ROM root autoload — folders=$scannedFolders systems=${platformsWithGames.size} new=$newCards roms=$totalAdded roots=${roots.size}")
+        }
+    }
+
+    // ── Scan-source resolution shared by scanConsole / autoload ──────────────────
+
+    // Lazy scan-flow factories for a card, evaluated with the live "already-known paths" set so
+    // multi-root aggregation de-dupes across sources.
+    private suspend fun buildScanSources(
+        card: com.playfieldportal.core.domain.model.MemoryCard,
+    ): List<(Set<String>) -> Flow<ScanResult>> {
+        val exts = card.supportedExtensions
+        val rec  = card.scanRecursively
+        // 1. Own explicit SAF folder.
+        if (!card.treeUri.isNullOrBlank()) {
+            return listOf({ existing -> romScanner.scanTree(card.treeUri!!, exts, card.platformId, rec, existing) })
+        }
+        // 2. Root-managed: every ROM root subfolder that maps to this platform (internal + SD).
+        val targets = rootScanTargets(card.platformId)
+        if (targets.isNotEmpty()) {
+            return targets.map { (rootUri, childDocId) ->
+                { existing: Set<String> ->
+                    romScanner.scanTree(rootUri, exts, card.platformId, rec, existing, startDocId = childDocId)
+                }
+            }
+        }
+        // 3. Legacy raw path.
+        if (!card.romDirectory.isNullOrBlank()) {
+            return listOf({ existing -> romScanner.scanDirectory(card.romDirectory!!, exts, card.platformId, rec, existing) })
+        }
+        return emptyList()
+    }
+
+    // (rootUri, childDocId) for every ROM root that has a subfolder mapping to [platformId]. Uses
+    // the real (case-correct) folder name from the provider, so it works regardless of casing.
+    private suspend fun rootScanTargets(platformId: String): List<Pair<String, String>> {
+        val out = mutableListOf<Pair<String, String>>()
+        for (rootUri in romRootRepository.getAll()) {
+            for (name in romScanner.listSubfolderNames(rootUri)) {
+                if (folderHintResolver.detectFromFolderName(name) == platformId) {
+                    RomRootRepository.childDocIdOf(rootUri, name)?.let { out.add(rootUri to it) }
+                }
+            }
+        }
+        return out
+    }
+
+    private suspend fun firstComplete(flow: Flow<ScanResult>): ScanResult.Complete? {
+        var complete: ScanResult.Complete? = null
+        flow.collect { if (it is ScanResult.Complete) complete = it }
+        return complete
     }
 
     // ── SAF helpers ────────────────────────────────────────────────────────────────

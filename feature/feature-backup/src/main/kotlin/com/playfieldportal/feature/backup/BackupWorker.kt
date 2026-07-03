@@ -28,7 +28,7 @@ class BackupWorker @AssistedInject constructor(
             )
         ) {
             is BackupResult.Success -> Result.success(
-                workDataOf(KEY_OUTPUT_PATH to result.file.absolutePath)
+                workDataOf(KEY_OUTPUT_PATH to result.displayName)
             )
             is BackupResult.Failure -> Result.failure(
                 workDataOf(KEY_ERROR to result.reason)

@@ -18,6 +18,8 @@ interface MusicRepository {
     suspend fun getFolder(id: String): MusicFolder?
     suspend fun addFolder(displayName: String, treeUri: String): MusicFolder
     suspend fun renameFolder(id: String, displayName: String)
+    /** Re-points the folder at a (re-granted) SAF tree; the next scan reads from it. */
+    suspend fun setFolderTreeUri(id: String, treeUri: String)
     suspend fun setFolderEnabled(id: String, enabled: Boolean)
     /** Removes the folder and all of its tracks. */
     suspend fun removeFolder(id: String)

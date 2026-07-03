@@ -28,6 +28,10 @@ fun BackupSettingsScreen(
         uri?.let { viewModel.restoreFromUri(it) }
     }
 
+    val folderPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri: Uri? -> uri?.let { viewModel.setBackupFolder(it) } }
+
     SettingsScaffold(
         title    = "Settings",
         subtitle = "Backup & Restore",
@@ -47,14 +51,17 @@ fun BackupSettingsScreen(
             )
 
             SettingsRow(
-                label    = "Back Up Now",
-                sublabel = "Saves library, settings, and play history",
-                onClick  = if (state.isWorking) null else ({ viewModel.backupNow() }),
+                label    = "Backup Folder",
+                sublabel = state.backupFolder?.let { "Saving to: $it  (tap to change)" }
+                    ?: "Not set — tap to choose where backups are saved",
+                onClick  = if (state.isWorking) null else ({ folderPicker.launch(null) }),
             )
 
             SettingsRow(
-                label    = "Backup Folder",
-                sublabel = state.backupFolder,
+                label    = "Back Up Now",
+                sublabel = if (state.backupFolderSet) "Saves library, settings, and play history"
+                    else "Choose a backup folder first",
+                onClick  = if (state.isWorking || !state.backupFolderSet) null else ({ viewModel.backupNow() }),
             )
 
             if (state.backupFiles.isNotEmpty()) {
@@ -81,6 +88,13 @@ fun BackupSettingsScreen(
                 onClick  = if (state.isWorking) null else ({
                     restorePicker.launch(arrayOf("*/*"))
                 }),
+            )
+
+            SettingsRow(
+                label    = "After Restoring",
+                sublabel = "Your folders come back, but Android's access to them does not. Open " +
+                    "Settings → Folder Access to re-link them (one tap each; the ROM Root re-links " +
+                    "every console at once).",
             )
 
             if (state.isWorking) {

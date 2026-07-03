@@ -13,10 +13,9 @@
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
-    <!-- OPTIONAL / legacy. ROM libraries now use SAF (folder picker) and need no storage
-         permission; this is only requested at point-of-need for older raw-path console libraries
-         and the PlayFieldPortal/ theme-pack + backup folder. New installs never require it. -->
-    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+    <!-- ROM libraries, media libraries and backups all use SAF (folder picker) and need no
+         storage permission, so MANAGE_EXTERNAL_STORAGE (all-files access) is no longer declared. -->
+
 
     <!-- Launcher role — see all installed apps -->
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />

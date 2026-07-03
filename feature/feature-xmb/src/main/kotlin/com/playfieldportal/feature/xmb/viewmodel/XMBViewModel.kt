@@ -5028,6 +5028,7 @@ class XMBViewModel @Inject constructor(
             XMBItem(id = "settings_themes",     title = "Themes",           subtitle = "XMB appearance & color scheme"),
             XMBItem(id = "settings_display",    title = "Display",          subtitle = "Wave, wallpaper, boot & icons"),
             XMBItem(id = "settings_controller", title = "Controller",       subtitle = "Button mapping"),
+            XMBItem(id = "settings_folder_access", title = "Folder Access",  subtitle = "Re-link ROM & media folders"),
             XMBItem(id = "settings_backup",     title = "Backup & Restore", subtitle = "Export & import"),
             XMBItem(id = "settings_logs",       title = "Logs",             subtitle = "Debug & error log viewer"),
             XMBItem(id = "settings_about",      title = "About",            subtitle = "Play Field Portal"),
