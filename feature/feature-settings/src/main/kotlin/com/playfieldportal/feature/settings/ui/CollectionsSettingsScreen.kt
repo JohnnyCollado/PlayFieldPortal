@@ -70,36 +70,30 @@ fun CollectionsSettingsScreen(
         }
     }
 
-    SettingsScaffold(
-        title    = "Settings",
-        subtitle = if (openCollection != null) openCollection.name else "Collections",
-        onBack   = handleBack,
-        modifier = modifier,
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
-        ) {
-            if (openCollection == null) {
-                CollectionListStep(
-                    collections = collections,
-                    onCreate    = { dialog = CollectionDialog(title = "New Collection") },
-                    onOpen      = { openCollectionId = it.id },
-                )
-            } else {
-                CollectionDetailStep(
-                    collection  = openCollection,
-                    gamesFlow   = { viewModel.gamesIn(openCollection.id) },
-                    onRename    = { dialog = CollectionDialog(title = "Rename Collection", renameId = openCollection.id, initial = openCollection.name) },
-                    onChangeIcon = { iconPickerFor = openCollection.id },
-                    onMoveUp    = { viewModel.moveUp(openCollection.id) },
-                    onMoveDown  = { viewModel.moveDown(openCollection.id) },
-                    onDelete    = { viewModel.delete(openCollection.id); openCollectionId = null },
-                    onRemoveGame = { game -> viewModel.removeGame(openCollection.id, game.id) },
-                )
-            }
-        }
+    // Each step owns its own SettingsScaffold so opening/closing a collection re-mounts it and
+    // re-assigns controller focus (a single shared scaffold never re-runs its focus pass, which is
+    // what broke the cursor after clicking into a collection).
+    if (openCollection == null) {
+        CollectionListStep(
+            collections = collections,
+            onCreate    = { dialog = CollectionDialog(title = "New Collection") },
+            onOpen      = { openCollectionId = it.id },
+            onBack      = handleBack,
+            modifier    = modifier,
+        )
+    } else {
+        CollectionDetailStep(
+            collection  = openCollection,
+            gamesFlow   = { viewModel.gamesIn(openCollection.id) },
+            onRename    = { dialog = CollectionDialog(title = "Rename Collection", renameId = openCollection.id, initial = openCollection.name) },
+            onChangeIcon = { iconPickerFor = openCollection.id },
+            onMoveUp    = { viewModel.moveUp(openCollection.id) },
+            onMoveDown  = { viewModel.moveDown(openCollection.id) },
+            onDelete    = { viewModel.delete(openCollection.id); openCollectionId = null },
+            onRemoveGame = { game -> viewModel.removeGame(openCollection.id, game.id) },
+            onBack      = handleBack,
+            modifier    = modifier,
+        )
     }
 
     // Show text dialog for name entry (new or rename)
@@ -163,27 +157,33 @@ private fun CollectionListStep(
     collections: List<GameCollection>,
     onCreate: () -> Unit,
     onOpen: (GameCollection) -> Unit,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    SettingsGroup("Manage")
-    SettingsRow(
-        label    = "Create New Collection",
-        sublabel = "e.g. RPGs, Currently Playing, Best PSP Games",
-        onClick  = onCreate,
-    )
-
-    SettingsGroup("Your Collections")
-    if (collections.isEmpty()) {
-        SettingsRow(
-            label    = "No collections yet",
-            sublabel = "Create one above, or add a game from its options (△) menu.",
-        )
-    } else {
-        collections.forEach { collection ->
+    SettingsScaffold(title = "Settings", subtitle = "Collections", onBack = onBack, modifier = modifier) {
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+            SettingsGroup("Manage")
             SettingsRow(
-                label    = collection.name,
-                sublabel = "${collection.gameCount} ${if (collection.gameCount == 1) "game" else "games"}",
-                onClick  = { onOpen(collection) },
+                label    = "Create New Collection",
+                sublabel = "e.g. RPGs, Currently Playing, Best PSP Games",
+                onClick  = onCreate,
             )
+
+            SettingsGroup("Your Collections")
+            if (collections.isEmpty()) {
+                SettingsRow(
+                    label    = "No collections yet",
+                    sublabel = "Create one above, or add a game from its options (△) menu.",
+                )
+            } else {
+                collections.forEach { collection ->
+                    SettingsRow(
+                        label    = collection.name,
+                        sublabel = "${collection.gameCount} ${if (collection.gameCount == 1) "game" else "games"}",
+                        onClick  = { onOpen(collection) },
+                    )
+                }
+            }
         }
     }
 }
@@ -198,33 +198,39 @@ private fun CollectionDetailStep(
     onMoveDown: () -> Unit,
     onDelete: () -> Unit,
     onRemoveGame: (Game) -> Unit,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val games by remember(collection.id) { gamesFlow() }.collectAsState(initial = emptyList())
 
-    SettingsGroup("Collection")
-    SettingsRow(label = "Rename", onClick = onRename)
-    SettingsRow(
-        label    = "Change Icon",
-        sublabel = collection.iconKey?.let { categoryIconFor(it).label } ?: "Default (Memory Card)",
-        onClick  = onChangeIcon,
-    )
-    SettingsRow(label = "Move Up", onClick = onMoveUp)
-    SettingsRow(label = "Move Down", onClick = onMoveDown)
-    SettingsRow(label = "Delete Collection", sublabel = "Removes the collection; games are kept", onClick = onDelete)
-
-    SettingsGroup("Games (${games.size})")
-    if (games.isEmpty()) {
-        SettingsRow(
-            label    = "No games in this collection",
-            sublabel = "Add games from their options (△) menu.",
-        )
-    } else {
-        games.forEach { game ->
+    SettingsScaffold(title = "Settings", subtitle = collection.name, onBack = onBack, modifier = modifier) {
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+            SettingsGroup("Collection")
+            SettingsRow(label = "Rename", onClick = onRename)
             SettingsRow(
-                label    = game.displayTitle,
-                sublabel = "${game.platformId.uppercase()}  ·  tap to remove from collection",
-                onClick  = { onRemoveGame(game) },
+                label    = "Change Icon",
+                sublabel = collection.iconKey?.let { categoryIconFor(it).label } ?: "Default (Memory Card)",
+                onClick  = onChangeIcon,
             )
+            SettingsRow(label = "Move Up", onClick = onMoveUp)
+            SettingsRow(label = "Move Down", onClick = onMoveDown)
+            SettingsRow(label = "Delete Collection", sublabel = "Removes the collection; games are kept", onClick = onDelete)
+
+            SettingsGroup("Games (${games.size})")
+            if (games.isEmpty()) {
+                SettingsRow(
+                    label    = "No games in this collection",
+                    sublabel = "Add games from their options (△) menu.",
+                )
+            } else {
+                games.forEach { game ->
+                    SettingsRow(
+                        label    = game.displayTitle,
+                        sublabel = "${game.platformId.uppercase()}  ·  tap to remove from collection",
+                        onClick  = { onRemoveGame(game) },
+                    )
+                }
+            }
         }
     }
 }

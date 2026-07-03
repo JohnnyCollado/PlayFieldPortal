@@ -98,6 +98,8 @@ data class XMBContextMenu(
     val selectedIndex: Int = 0,
     // Identifies the source of the menu (platform card, game, or app)
     val platformId: String? = null,
+    // Set on the "All Games" card's menu (which is not a real Memory Card).
+    val isAllGames: Boolean = false,
     val gameId: Long? = null,
     val packageName: String? = null,
     // The category the app is being acted on from (for remove/pin)
@@ -3376,6 +3378,7 @@ class XMBViewModel @Inject constructor(
                     item != null && openPhotoContextMenu(item) -> Unit
                     item?.gameId != null -> openGameContextMenu(item)
                     item?.collectionId != null && item.type == XMBItemType.COLLECTION -> openCollectionRowContextMenu(item.collectionId)
+                    item?.type == XMBItemType.ALL_GAMES -> openAllGamesContextMenu()
                     item?.platformId != null -> openPlatformContextMenu(item.platformId)
                     item?.packageName != null -> openAppContextMenu(item)
                 }
@@ -3429,6 +3432,17 @@ class XMBViewModel @Inject constructor(
                 title      = card.displayName,
                 items      = items,
                 platformId = platformId,
+            )
+        )}
+    }
+
+    // The "All Games" card isn't a real Memory Card, so it gets its own single-option menu.
+    private fun openAllGamesContextMenu() {
+        _uiState.update { it.copy(
+            activeContextMenu = XMBContextMenu(
+                title      = "All Games",
+                items      = listOf(XMBContextMenuItem("import_pc_games", "Import PC Games")),
+                isAllGames = true,
             )
         )}
     }
@@ -3786,6 +3800,9 @@ class XMBViewModel @Inject constructor(
             }
             menu.musicTrackId != null -> handleMusicTrackAction(menu.musicTrackId, itemId, menu.playlistId)
             menu.musicFolderId != null -> handleMusicFolderAction(menu.musicFolderId, itemId)
+            menu.isAllGames -> when (itemId) {
+                "import_pc_games" -> _uiState.update { it.copy(activeSettingsScreen = "settings_import_pc") }
+            }
             menu.platformId != null -> when (itemId) {
                 "find_games"       -> openAppPicker(AppPickerTarget.AndroidGames(menu.platformId), "Find Games")
                 "scan_roms"        -> scanCard(menu.platformId)
@@ -4511,6 +4528,7 @@ class XMBViewModel @Inject constructor(
             item != null && openPhotoContextMenu(item) -> Unit
             item?.gameId != null -> openGameContextMenu(item)
             item?.collectionId != null && item.type == XMBItemType.COLLECTION -> openCollectionRowContextMenu(item.collectionId)
+            item?.type == XMBItemType.ALL_GAMES -> openAllGamesContextMenu()
             item?.platformId != null -> openPlatformContextMenu(item.platformId)
             item?.packageName != null -> openAppContextMenu(item)
         }

@@ -6,10 +6,18 @@ import android.net.Uri
 import android.provider.DocumentsContract
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.playfieldportal.core.data.repository.CollectionRepository
 import com.playfieldportal.core.data.repository.MemoryCardRepository
 import com.playfieldportal.core.data.repository.RomRootRepository
 import com.playfieldportal.core.domain.repository.GameRepository
+import com.playfieldportal.core.domain.model.Game
+import com.playfieldportal.core.domain.model.GameContentType
+import com.playfieldportal.feature.appbar.LauncherShortcutRepository
+import com.playfieldportal.feature.appbar.ShortcutHarvestResult
 import com.playfieldportal.feature.launcher.EmulatorProfileRepository
+import com.playfieldportal.feature.launcher.PcLauncherAdapters
+import com.playfieldportal.feature.launcher.PcLauncherCatalog
+import com.playfieldportal.feature.launcher.PcLauncherType
 import com.playfieldportal.feature.library.scanner.PlatformFolderHintResolver
 import com.playfieldportal.feature.library.scanner.RomScanner
 import com.playfieldportal.feature.library.scanner.ScanResult
@@ -34,8 +42,30 @@ const val ADD_CONSOLE_FOCUS_KEY = "add_console"
 
 // Platform whose library is built from installed apps (picker) rather than a ROM folder.
 private const val ANDROID_PLATFORM_ID = "android"
+private const val WINDOWS_PLATFORM_ID = "windows"
 
-enum class LibraryStep { LIST, PICK_PLATFORM, PICK_EMULATOR, SCAN_PROMPT, CARD_DETAIL }
+// Category-icon catalog key for the Desktop-PC icon used on launcher collections.
+private const val PC_COLLECTION_ICON = "ic_desktop"
+
+enum class LibraryStep { LIST, PICK_PLATFORM, PICK_EMULATOR, SCAN_PROMPT, CARD_DETAIL, IMPORT_PC }
+
+// Focus key for the "Import PC Games" row so focus returns to it from the import section.
+const val IMPORT_PC_FOCUS_KEY = "import_pc_games"
+
+// One supported PC launcher with its install state, for the Import PC Games section.
+// packageName is the actually-installed package (a launcher may have several); canAddById is true
+// when PFP knows this launcher's launch-intent contract.
+data class PcLauncherRow(
+    val type: PcLauncherType,
+    val name: String,
+    val installed: Boolean,
+    val packageName: String?,
+    val canAddById: Boolean,
+)
+
+// One PC game already captured from a launcher (via pin/INSTALL_SHORTCUT), importable into a
+// collection. gameId references the existing games row.
+data class PcGameRow(val gameId: Long, val title: String, val launcherName: String)
 
 enum class DirectoryPickPurpose { ADD, CHANGE }
 
@@ -75,6 +105,12 @@ data class LibraryManagerUiState(
     // Apps in the Android library (managed from its detail screen, not scanned).
     val androidApps: List<LibraryAppRow> = emptyList(),
 
+    // Import PC Games section
+    val pcLaunchers: List<PcLauncherRow> = emptyList(),
+    val pcGames: List<PcGameRow> = emptyList(),
+    // True when PFP is the active Home app (unlocks auto-import of published game shortcuts).
+    val isHomeLauncher: Boolean = false,
+
     // UI signals
     val awaitingDirectoryPick: DirectoryPickPurpose? = null,
     // Set when the screen should launch the folder picker to set up the ES-DE ROM structure.
@@ -97,6 +133,8 @@ class LibraryManagerViewModel @Inject constructor(
     private val emulatorProfileRepository: EmulatorProfileRepository,
     private val romRootRepository: RomRootRepository,
     private val folderHintResolver: PlatformFolderHintResolver,
+    private val collectionRepository: CollectionRepository,
+    private val launcherShortcutRepository: LauncherShortcutRepository,
 ) : ViewModel() {
 
     private val _scratch = MutableStateFlow(LibraryManagerUiState())
@@ -126,6 +164,13 @@ class LibraryManagerViewModel @Inject constructor(
             androidApps = games.filter { it.platformId == ANDROID_PLATFORM_ID }
                 .map { LibraryAppRow(it.id, it.displayTitle) }
                 .sortedBy { it.label.lowercase() },
+            // PC games captured from a supported launcher (pin / INSTALL_SHORTCUT) — they carry a
+            // launchable reference (shortcut id or stored intent) back into the source app.
+            pcGames = games.mapNotNull { g ->
+                val launcher = PcLauncherCatalog.forPackage(g.packageName) ?: return@mapNotNull null
+                if (g.shortcutId == null && g.launchIntentUri == null) return@mapNotNull null
+                PcGameRow(g.id, g.displayTitle, launcher.displayName)
+            }.sortedBy { it.title.lowercase() },
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LibraryManagerUiState())
 
@@ -420,6 +465,174 @@ class LibraryManagerViewModel @Inject constructor(
             memoryCardRepository.getAll()
                 .filter { it.enabled && (!it.treeUri.isNullOrBlank() || !it.romDirectory.isNullOrBlank()) }
                 .forEach { scanConsole(it.platformId) }
+        }
+    }
+
+    // ── Import PC Games ───────────────────────────────────────────────────────────
+    //
+    // PFP is a frontend for PC launchers (Winlator, BannerHub, GameHub Lite, GameNative), never
+    // the PC runtime. This section shows which supported launchers are installed and lets the
+    // user pull already-captured games (arrived via pin / INSTALL_SHORTCUT) into a collection
+    // named after the launcher. Direct per-launcher scanning is layered on via adapters.
+    fun openImportPcGames() {
+        val pm = context.packageManager
+        val launchers = PcLauncherCatalog.entries.map { def ->
+            val installedPkg = def.packageNames.firstOrNull { pkg ->
+                runCatching { pm.getApplicationInfo(pkg, 0) }.isSuccess
+            }
+            PcLauncherRow(
+                type        = def.type,
+                name        = def.displayName,
+                installed   = installedPkg != null,
+                packageName = installedPkg,
+                canAddById  = PcLauncherAdapters.forType(def.type) != null,
+            )
+        }
+        _scratch.update {
+            it.copy(
+                step           = LibraryStep.IMPORT_PC,
+                pcLaunchers    = launchers,
+                isHomeLauncher = launcherShortcutRepository.isDefaultLauncher(),
+                returnFocusKey = IMPORT_PC_FOCUS_KEY,
+            )
+        }
+    }
+
+    /** Re-reads the Home-app status (after returning from the role/settings request). */
+    fun refreshHomeStatus() {
+        _scratch.update { it.copy(isHomeLauncher = launcherShortcutRepository.isDefaultLauncher()) }
+    }
+
+    /** Intent that lets the user make PFP the Home app (role request on Q+, else Home settings). */
+    fun homeRoleIntent(): Intent = launcherShortcutRepository.homeRoleRequestIntent()
+
+    /** Builds and starts a launcher's game intent immediately, to verify the id before saving. */
+    fun testLaunchPcGame(row: PcLauncherRow, id: String, source: String?) {
+        val pkg = row.packageName ?: return
+        val intent = PcLauncherAdapters.forType(row.type)?.buildLaunchIntent(pkg, id, source)
+        if (intent == null) {
+            _scratch.update { it.copy(message = "Enter a valid game ID (a positive number).") }
+            return
+        }
+        runCatching { context.startActivity(intent) }.onFailure { e ->
+            Timber.e(e, "PC test launch failed for ${row.name}")
+            _scratch.update {
+                it.copy(message = "Test launch failed: ${e.message}. The launcher may block external starts.")
+            }
+        }
+    }
+
+    /** Adds a PC game by id: builds the launch intent, stores it, and files it in the PC collection. */
+    fun addPcGameById(row: PcLauncherRow, id: String, title: String?, source: String?) {
+        val pkg = row.packageName ?: return
+        val intent = PcLauncherAdapters.forType(row.type)?.buildLaunchIntent(pkg, id, source)
+        if (intent == null) {
+            _scratch.update { it.copy(message = "Enter a valid game ID (a positive number).") }
+            return
+        }
+        val intentUri = intent.toUri(Intent.URI_INTENT_SCHEME)
+        val displayName = title?.trim()?.takeIf { it.isNotBlank() } ?: "${row.name} game $id"
+        viewModelScope.launch {
+            runCatching {
+                val gameId = gameRepository.getByIntentUri(intentUri)?.id
+                    ?: gameRepository.upsert(
+                        Game(
+                            title           = displayName,
+                            platformId      = WINDOWS_PLATFORM_ID,
+                            packageName     = pkg,
+                            isManualEntry   = true,
+                            contentType     = GameContentType.SHORTCUT,
+                            launchIntentUri = intentUri,
+                        )
+                    )
+                collectionRepository.addGame(pcLauncherCollectionId(row.name), gameId)
+            }.fold(
+                onSuccess = { _scratch.update { it.copy(message = "\"$displayName\" added to \"${row.name}\".") } },
+                onFailure = { e ->
+                    Timber.e(e, "Add PC game by id failed for ${row.name}")
+                    _scratch.update { it.copy(message = "Couldn't add game: ${e.message}") }
+                },
+            )
+        }
+    }
+
+    /** Home-mode auto-import: pulls a launcher's published game shortcuts into its PC collection. */
+    fun harvestLauncher(row: PcLauncherRow) {
+        val pkg = row.packageName ?: return
+        viewModelScope.launch {
+            when (val result = launcherShortcutRepository.harvest(pkg)) {
+                is ShortcutHarvestResult.NotDefaultLauncher ->
+                    _scratch.update { it.copy(message = "Set Play Field Portal as your Home app first, then try again.") }
+                is ShortcutHarvestResult.Error ->
+                    _scratch.update { it.copy(message = "${row.name}: ${result.message}") }
+                is ShortcutHarvestResult.Success -> {
+                    if (result.shortcuts.isEmpty()) {
+                        _scratch.update { it.copy(message = "${row.name}: no game shortcuts published.") }
+                        return@launch
+                    }
+                    runCatching {
+                        val collectionId = pcLauncherCollectionId(row.name)
+                        result.shortcuts.forEach { sc ->
+                            val gameId = gameRepository.getLauncherShortcut(sc.hostPackage, sc.shortcutId)?.id
+                                ?: gameRepository.upsert(
+                                    Game(
+                                        title         = sc.label,
+                                        platformId    = WINDOWS_PLATFORM_ID,
+                                        packageName   = sc.hostPackage,
+                                        isManualEntry = true,
+                                        contentType   = GameContentType.SHORTCUT,
+                                        shortcutId    = sc.shortcutId,
+                                    )
+                                )
+                            collectionRepository.addGame(collectionId, gameId)
+                        }
+                        result.shortcuts.size
+                    }.fold(
+                        onSuccess = { _scratch.update { it.copy(message = "Imported $it game(s) from ${row.name}.") } },
+                        onFailure = { e -> _scratch.update { it.copy(message = "${row.name}: import failed: ${e.message}") } },
+                    )
+                }
+            }
+        }
+    }
+
+    // Returns the id of the collection named after a PC launcher, creating it with the PC icon if
+    // absent. Existing collections that predate the icon get it applied too.
+    private suspend fun pcLauncherCollectionId(launcherName: String): Long {
+        val existing = collectionRepository.getAll().firstOrNull { it.name == launcherName }
+        val id = existing?.id ?: collectionRepository.create(launcherName)
+        if (existing?.iconKey != PC_COLLECTION_ICON) collectionRepository.setIcon(id, PC_COLLECTION_ICON)
+        return id
+    }
+
+    /** Adds one captured PC game to a PC-icon collection named after its launcher. */
+    fun importPcGame(row: PcGameRow) {
+        viewModelScope.launch {
+            runCatching {
+                collectionRepository.addGame(pcLauncherCollectionId(row.launcherName), row.gameId)
+            }.fold(
+                onSuccess = { _scratch.update { it.copy(message = "\"${row.title}\" added to collection \"${row.launcherName}\".") } },
+                onFailure = { e ->
+                    Timber.e(e, "PC game import failed for ${row.gameId}")
+                    _scratch.update { it.copy(message = "Couldn't import \"${row.title}\": ${e.message}") }
+                },
+            )
+        }
+    }
+
+    /** Imports every captured PC game into its launcher's PC-icon collection. */
+    fun importAllPcGames() {
+        val rows = uiState.value.pcGames
+        if (rows.isEmpty()) return
+        viewModelScope.launch {
+            var added = 0
+            rows.forEach { row ->
+                runCatching {
+                    collectionRepository.addGame(pcLauncherCollectionId(row.launcherName), row.gameId)
+                    added++
+                }.onFailure { Timber.e(it, "PC game import failed for ${row.gameId}") }
+            }
+            _scratch.update { it.copy(message = "Imported $added PC game(s) into launcher collections.") }
         }
     }
 

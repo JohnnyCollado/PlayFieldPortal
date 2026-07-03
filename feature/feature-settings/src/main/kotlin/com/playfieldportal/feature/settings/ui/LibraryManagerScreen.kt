@@ -2,7 +2,9 @@ package com.playfieldportal.feature.settings.ui
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -21,9 +23,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.playfieldportal.feature.launcher.PcLauncherAdapters
 import com.playfieldportal.feature.settings.viewmodel.ADD_CONSOLE_FOCUS_KEY
 import com.playfieldportal.feature.settings.viewmodel.EmulatorOption
+import com.playfieldportal.feature.settings.viewmodel.IMPORT_PC_FOCUS_KEY
+import com.playfieldportal.feature.settings.viewmodel.PcLauncherRow
 import com.playfieldportal.feature.settings.viewmodel.LibraryCardRow
 import com.playfieldportal.feature.settings.viewmodel.LibraryManagerUiState
 import com.playfieldportal.feature.settings.viewmodel.LibraryManagerViewModel
@@ -34,9 +40,15 @@ fun LibraryManagerScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     onAddAndroidApps: () -> Unit = {},
+    // Open directly into the Import PC Games section (the games context-menu entry point).
+    startInImportPc: Boolean = false,
     viewModel: LibraryManagerViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(startInImportPc) {
+        if (startInImportPc) viewModel.openImportPcGames()
+    }
 
     // Folder picker — drives both Add Console and Change Directory.
     val dirPicker = rememberLauncherForActivityResult(
@@ -68,6 +80,7 @@ fun LibraryManagerScreen(
         LibraryStep.PICK_EMULATOR -> PickEmulatorContent(state, viewModel, handleBack, modifier)
         LibraryStep.SCAN_PROMPT   -> ScanPromptContent(state, viewModel, handleBack, modifier)
         LibraryStep.CARD_DETAIL   -> CardDetailContent(state, viewModel, handleBack, onAddAndroidApps, modifier)
+        LibraryStep.IMPORT_PC     -> ImportPcGamesContent(state, viewModel, handleBack, modifier)
     }
 
     // ── Rename dialog ─────────────────────────────────────────────────────────
@@ -139,6 +152,13 @@ private fun LibraryListContent(
                 sublabel = "One scan of your ROM Root: creates a console for every ES-DE system " +
                     "folder (gba, snes, psx…) and loads its games",
                 onClick  = { vm.scanRomRoot() },
+            )
+            SettingsRow(
+                label    = "Import PC Games",
+                sublabel = "Bring games from Winlator, BannerHub, GameHub Lite & GameNative into " +
+                    "your collections",
+                focusKey = IMPORT_PC_FOCUS_KEY,
+                onClick  = { vm.openImportPcGames() },
             )
             SettingsRow(
                 label    = "Scan All Consoles",
@@ -391,6 +411,150 @@ private fun EmulatorPickerDialog(
             }
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
+    )
+}
+
+// ── IMPORT PC GAMES ─────────────────────────────────────────────────────────────
+//
+// PFP as a PC-game frontend: shows which supported launchers are installed and imports games
+// already captured from them (via their shortcut/export flows) into launcher-named collections.
+// The Play button always launches back into the source app — PFP is never the PC runtime.
+@Composable
+private fun ImportPcGamesContent(
+    state: LibraryManagerUiState,
+    vm: LibraryManagerViewModel,
+    onBack: () -> Unit,
+    modifier: Modifier,
+) {
+    // Row whose Add-game-by-ID dialog is open (null = closed).
+    var addTarget by remember { mutableStateOf<PcLauncherRow?>(null) }
+
+    // Home-app role / settings request; refresh the Home status when the user returns.
+    val homeLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { vm.refreshHomeStatus() }
+
+    SettingsScaffold(title = "Library", subtitle = "Import PC Games", onBack = onBack, modifier = modifier) {
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+
+            state.message?.let { MessageRow(it) { vm.dismissMessage() } }
+
+            // ── Optional Home mode ────────────────────────────────────────────
+            SettingsGroup("Home App (optional)")
+            SettingsValueRow(
+                label    = "Play Field Portal as Home",
+                value    = if (state.isHomeLauncher) "Active" else "Set…",
+                sublabel = if (state.isHomeLauncher)
+                    "Auto-import of games a launcher publishes is available below"
+                else
+                    "Optional. Set PFP as your Home app to auto-import every game a launcher publishes",
+                onClick  = { runCatching { homeLauncher.launch(vm.homeRoleIntent()) } },
+            )
+
+            // ── Launchers ─────────────────────────────────────────────────────
+            SettingsGroup("PC Launchers")
+            state.pcLaunchers.forEach { launcher ->
+                when {
+                    !launcher.installed -> SettingsValueRow(label = launcher.name, value = "Not installed")
+                    launcher.canAddById -> SettingsValueRow(
+                        label    = launcher.name,
+                        value    = "Add by ID…",
+                        sublabel = "Add a game by its ID and launch it from PFP",
+                        onClick  = { addTarget = launcher },
+                    )
+                    else -> SettingsValueRow(
+                        label    = launcher.name,
+                        value    = "Installed",
+                        sublabel = "No add-by-ID support — use its export-to-launcher, or Home auto-import",
+                    )
+                }
+                if (state.isHomeLauncher && launcher.installed) {
+                    SettingsRow(
+                        label    = "Auto-import all from ${launcher.name}",
+                        sublabel = "Pull every game shortcut this launcher publishes",
+                        onClick  = { vm.harvestLauncher(launcher) },
+                    )
+                }
+            }
+
+            // ── Captured games ────────────────────────────────────────────────
+            SettingsGroup("Found Games (${state.pcGames.size})")
+            if (state.pcGames.isEmpty()) {
+                Hint(
+                    "No PC games captured yet. Add one by ID above, or in your launcher use its " +
+                    "\"add shortcut\" / \"export to launcher\" action — captured games appear here."
+                )
+            } else {
+                state.pcGames.forEach { row ->
+                    SettingsValueRow(
+                        label    = row.title,
+                        sublabel = row.launcherName,
+                        value    = "Import",
+                        onClick  = { vm.importPcGame(row) },
+                    )
+                }
+                SettingsRow(
+                    label    = "Import All",
+                    sublabel = "Add every found game to a collection named after its launcher",
+                    onClick  = { vm.importAllPcGames() },
+                )
+            }
+        }
+    }
+
+    addTarget?.let { launcher ->
+        AddPcGameDialog(
+            launcher = launcher,
+            onTest   = { id, source -> vm.testLaunchPcGame(launcher, id, source) },
+            onAdd    = { id, title, source -> vm.addPcGameById(launcher, id, title, source); addTarget = null },
+            onDismiss = { addTarget = null },
+        )
+    }
+}
+
+@Composable
+private fun AddPcGameDialog(
+    launcher: PcLauncherRow,
+    onTest: (id: String, source: String?) -> Unit,
+    onAdd: (id: String, title: String, source: String?) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val adapter = PcLauncherAdapters.forType(launcher.type)
+    var id by remember { mutableStateOf("") }
+    var title by remember { mutableStateOf("") }
+    var source by remember { mutableStateOf(adapter?.sources?.firstOrNull()) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add ${launcher.name} game") },
+        text = {
+            Column {
+                adapter?.idPrompt?.let { Text(it, color = SettingsSubtext, fontSize = 12.sp) }
+                OutlinedTextField(value = id, onValueChange = { id = it }, label = { Text("Game ID") }, singleLine = true)
+                OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Title (optional)") }, singleLine = true)
+                if (adapter != null && adapter.sources.isNotEmpty()) {
+                    Text("Source", color = SettingsSubtext, fontSize = 12.sp)
+                    Row {
+                        adapter.sources.forEach { s ->
+                            Text(
+                                text = s,
+                                color = if (s == source) SettingsAccent else SettingsSubtext,
+                                modifier = Modifier
+                                    .clickable { source = s }
+                                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = { onAdd(id, title, source) }) { Text("Add") } },
+        dismissButton = {
+            Row {
+                TextButton(onClick = { onTest(id, source) }) { Text("Test Launch") }
+                TextButton(onClick = onDismiss) { Text("Cancel") }
+            }
+        },
     )
 }
 

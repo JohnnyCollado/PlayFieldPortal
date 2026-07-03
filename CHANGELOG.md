@@ -11,6 +11,12 @@ Access Framework, so the app no longer needs all-files access.
 (Still `versionName 1.0.0-alpha.3` / `versionCode 3` — not yet cut as a release.)
 
 ### Added
+- **Import PC Games.** New section under Library, and an option on the **All Games** card's Options
+  menu. Detects installed PC launchers (BannerHub, GameHub Lite, GameNative, Winlator); **Add game
+  by ID** builds each launcher's documented launch intent — with a **Test Launch** to verify — so
+  the game launches straight back into the launcher (PFP is a frontend, never the PC runtime).
+  Imported games land in a collection named after the launcher with the **Desktop PC** icon. Optional
+  **Home mode**: set PFP as your Home app to auto-import every game a launcher publishes.
 - **ES-DE ROM roots with one-scan autoload.** Grant a ROM root folder (internal storage **or** an
   SD card — multiple roots supported) and **Auto-Detect from ROM Root** walks its ES-DE system
   folders (`gba`, `snes`, `psx`…), creates a Memory Card for every folder that actually contains
@@ -69,6 +75,9 @@ Access Framework, so the app no longer needs all-files access.
   is now the left-edge swipe or tapping the active memory-card icon under the caticon.
 
 ### Fixed
+- **Controller cursor no longer dies after opening a collection** in Settings ▸ Collections. Each
+  step (list / detail) now owns its focus scaffold, so drilling into a collection re-assigns D-pad
+  focus instead of leaving the cursor stranded (touch was unaffected).
 - **Seamless full-screen-menu back-out.** The category bar no longer animates back into place
   when the XMB reappears after closing the Music browser / app drawer / Settings (the visible
   "snap"); the selected slot is now seated instantly.

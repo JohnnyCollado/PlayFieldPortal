@@ -23,6 +23,8 @@ fun SettingsNavHost(
     ) {
         when (screenId) {
             "settings_library"    -> LibraryManagerScreen(onBack = onBack, onAddAndroidApps = onAddAndroidApps, modifier = modifier)
+            // Library Manager opened straight into its Import PC Games section (games context menu).
+            "settings_import_pc"  -> LibraryManagerScreen(onBack = onBack, onAddAndroidApps = onAddAndroidApps, startInImportPc = true, modifier = modifier)
             "settings_music"      -> MusicSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_video"      -> VideoSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_photo"      -> PhotoSettingsScreen(onBack = onBack, modifier = modifier)
