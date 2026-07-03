@@ -32,6 +32,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableStateOf
@@ -40,6 +41,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Shadow
@@ -66,6 +69,13 @@ import com.playfieldportal.feature.xmb.ui.detail.VideoDetailScreen
 import com.playfieldportal.feature.xmb.ui.photo.PhotoViewerScreen
 import com.playfieldportal.feature.xmb.viewmodel.XMBUiState
 import com.playfieldportal.feature.xmb.viewmodel.XMBViewModel
+
+// Uniform canvas-scale baseline. Set just above the handheld reference (the AYN Thor's landscape
+// height ≈ 468dp @ 1080×1920 / 369dpi) so handhelds resolve to exactly scale 1 (coerced) and stay
+// pixel-identical. Taller canvases (tablets) scale up proportionally, capped so huge screens don't
+// balloon. Governed by the shorter side (height in this landscape-locked app).
+private const val XMB_BASELINE_HEIGHT_DP = 480f
+private const val XMB_MAX_SCALE = 1.6f
 
 /**
  * Stateful entry point for the XMB home screen: collects [XMBViewModel.uiState] and wires the
@@ -217,6 +227,19 @@ fun XMBShell(
     onDismissInfoDialog: () -> Unit = {},
 ) {
     PFPTheme(colors = uiState.themeColors) {
+        // Uniform "canvas scale" for the whole app. On screens taller than the handheld baseline
+        // (tablets), override LocalDensity for the entire shell so every dp/sp grows together — the
+        // XMB cross, Settings, detail screens, drawer and dialogs all magnify uniformly, preserving
+        // the tuned proportions and alignment instead of over-packing a big canvas with tiny,
+        // mis-anchored elements. Clamped so the handheld is untouched (scale = 1) and huge screens
+        // don't balloon. Safe because no layout reads LocalConfiguration — everything measures via
+        // BoxWithConstraints/LocalDensity, which this override feeds.
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            val baseDensity = LocalDensity.current
+            val uiScale = (maxHeight.value / XMB_BASELINE_HEIGHT_DP).coerceIn(1f, XMB_MAX_SCALE)
+            CompositionLocalProvider(
+                LocalDensity provides Density(baseDensity.density * uiScale, baseDensity.fontScale),
+            ) {
         Box(modifier = Modifier.fillMaxSize()) {
             // Freeze the wave's per-frame animation whenever an opaque fullscreen layer fully covers
             // it (boot, a detail/player overlay, the app drawer, the music player). Those hide the
@@ -608,6 +631,8 @@ fun XMBShell(
                 )
             }
         }
+            } // end: CompositionLocalProvider (uniform canvas scale)
+        } // end: BoxWithConstraints (uniform canvas scale)
     }
 
 }

@@ -11,13 +11,16 @@ import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
@@ -32,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -212,6 +216,23 @@ fun PhotoViewerScreen(
                     onClick = viewModel::openOptions,
                     modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
                 )
+                // Touch prev/next — the counterparts of L1/R1, centred on each side. Dimmed and
+                // inert at the ends. Part of the controls layer, so a tap on the photo hides them
+                // with everything else. Only meaningful with more than one photo.
+                if (state.photos.size > 1) {
+                    PagerArrow(
+                        glyph = "‹",
+                        alignment = Alignment.CenterStart,
+                        enabled = state.index > 0,
+                        onClick = { onTouchInput(); viewModel.step(-1) },
+                    )
+                    PagerArrow(
+                        glyph = "›",
+                        alignment = Alignment.CenterEnd,
+                        enabled = state.index < state.photos.size - 1,
+                        onClick = { onTouchInput(); viewModel.step(+1) },
+                    )
+                }
             }
         }
 
@@ -283,6 +304,33 @@ fun PhotoViewerScreen(
             )
             LaunchedEffect(msg) { kotlinx.coroutines.delay(2500); viewModel.dismissMessage() }
         }
+    }
+}
+
+// Large translucent circular chevron for touch paging (left/right edge). Inert + dimmed at an end.
+@Composable
+private fun BoxScope.PagerArrow(
+    glyph: String,
+    alignment: Alignment,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .align(alignment)
+            .padding(horizontal = 10.dp)
+            .size(52.dp)
+            .alpha(if (enabled) 1f else 0.28f)
+            .background(Color(0x66000000), CircleShape)
+            .clickable(
+                enabled = enabled,
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick,
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(glyph, color = TextPrimary, fontSize = 34.sp, fontWeight = FontWeight.Bold)
     }
 }
 

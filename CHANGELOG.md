@@ -52,6 +52,14 @@ Access Framework, so the app no longer needs all-files access.
   step distance.
 - **Auto-fading photo title.** The photo viewer shows a centred title on each image, then
   fades it out after a short delay.
+- **Touch prev/next in the photo viewer.** Left/right chevron buttons (the touch counterparts of
+  L1/R1) page through photos; they dim at the first/last image and hide with the rest of the
+  controls when you tap the photo.
+- **Tablet display scaling.** On screens larger than a handheld, the whole UI (XMB cross, Settings,
+  detail screens, drawer and dialogs) magnifies uniformly instead of leaving tiny, mis-aligned
+  elements floating on a big canvas. One canvas-scale factor keyed to the screen size preserves the
+  PSP proportions and alignment; the handheld is untouched (scale = 1) and very large screens are
+  capped so nothing balloons.
 - **Status-bar sort chip.** On touch, the XMB status bar's sort label becomes a tappable chip
   that cycles the sort order; on controller it stays a plain label (X / Square cycles it).
 - Icons on all detail-screen action buttons; plus (＋) glyph on "Add Apps / Add Games" rows.
