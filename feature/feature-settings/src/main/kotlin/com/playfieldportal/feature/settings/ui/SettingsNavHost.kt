@@ -39,7 +39,6 @@ fun SettingsNavHost(
             "settings_collections" -> CollectionsSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_display"    -> DisplaySettingsScreen(onBack = onBack, modifier = modifier)
             "settings_controller" -> ControllerSettingsScreen(onBack = onBack, modifier = modifier)
-            "settings_folder_access" -> FolderAccessScreen(onBack = onBack, modifier = modifier)
             "settings_backup"     -> BackupSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_logs"       -> LogsSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_about"      -> AboutSettingsScreen(onBack = onBack, modifier = modifier)

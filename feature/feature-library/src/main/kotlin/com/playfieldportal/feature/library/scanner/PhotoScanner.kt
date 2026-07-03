@@ -96,16 +96,20 @@ class PhotoScanner @Inject constructor(
         // Dedupe files by uri too: a provider surfacing one document under two parents would
         // otherwise produce duplicate rows and two concurrent writers on one thumbnail file.
         val seenFiles = HashSet<String>()
-        val rootDocId = DocumentsContract.getTreeDocumentId(treeUri)
+        val rootDocId = safScanStartDocId(context, treeUri)
         visitedDirs.add(rootDocId)
         val stack = ArrayDeque<Pair<String, String>>()   // documentId to relative path
         stack.addLast(rootDocId to "")
         while (stack.isNotEmpty()) {
             coroutineContext.ensureActive()
             val (dirDocId, relPath) = stack.removeLast()
-            for (child in context.contentResolver.querySafChildren(treeUri, dirDocId)) {
+            val children = context.contentResolver.querySafChildren(treeUri, dirDocId)
+            // Respect a .nomedia marker: skip this folder's files and its whole subtree.
+            if (children.hasNoMediaMarker()) continue
+            for (child in children) {
                 if (child.isDirectory) {
                     if (!library.scanRecursively) continue
+                    if (child.isIgnoredDir()) continue   // hidden / thumbnail-cache / Android cache dirs
                     if (!visitedDirs.add(child.documentId)) continue
                     stack.addLast(child.documentId to if (relPath.isEmpty()) child.name else "$relPath/${child.name}")
                 } else {
@@ -158,8 +162,13 @@ class PhotoScanner @Inject constructor(
         val uriStr = uri.toString()
         val prior = existingByUri[uriStr]
 
-        // Quick scan: reuse an unchanged file's row wholesale — no decode, no extra queries.
-        if (!deep && prior != null && prior.lastModified == lastModified) {
+        // Quick scan: reuse an unchanged file's row wholesale — no decode, no extra queries — but
+        // only while its thumbnail file is still present. If the thumbnail is gone (e.g. after
+        // Clear Thumbnail Cache), fall through so a Rescan actually regenerates it.
+        val priorThumb = prior?.thumbnailUri
+        if (!deep && prior != null && prior.lastModified == lastModified &&
+            !priorThumb.isNullOrBlank() && fileExistsForUri(priorThumb)
+        ) {
             return prior.copy(libraryId = libraryId, relativePath = relPath.takeIf { it.isNotEmpty() })
         }
 
@@ -246,17 +255,36 @@ class PhotoScanner @Inject constructor(
         }.getOrNull()
     }
 
-    // Thumbnail cache lives in app-internal storage (no extra permission, never uploaded). Files
-    // are named by a hash of the photo uri so re-scans reuse existing thumbs. The source is decoded
-    // subsampled — the full-resolution bitmap is never loaded for a list thumbnail.
-    private val thumbCacheDir: File by lazy {
-        File(context.filesDir, "photo_thumbs").apply { mkdirs() }
+    // Thumbnail cache lives in app external-files (Android/data/<pkg>/files/cache/thumbnails), so it
+    // sits outside the user's SAF media trees and never gets re-indexed. A .nomedia marker keeps it
+    // out of the device gallery too. Files are named by a hash of the photo uri so re-scans reuse
+    // existing thumbs. The source is decoded subsampled — the full-res bitmap is never loaded here.
+    val thumbnailCacheDir: File by lazy {
+        val base = context.getExternalFilesDir(null) ?: context.filesDir
+        File(base, "cache/thumbnails").apply {
+            mkdirs()
+            ensureNoMedia(this)
+        }
+    }
+
+    private fun ensureNoMedia(dir: File) {
+        runCatching { File(dir, ".nomedia").takeIf { !it.exists() }?.createNewFile() }
+    }
+
+    /** Deletes every generated thumbnail, preserving (recreating) the .nomedia marker. */
+    fun clearThumbnailCache(): Int {
+        val dir = thumbnailCacheDir
+        val removed = runCatching {
+            dir.listFiles()?.count { it.name != ".nomedia" && it.delete() } ?: 0
+        }.getOrDefault(0)
+        ensureNoMedia(dir)
+        return removed
     }
 
     // [knownWidth]/[knownHeight] come from the metadata pass so the file isn't probed twice; when
     // unknown (metadata failed) a bounds decode fills them in.
     private fun generateThumbnail(uri: Uri, knownWidth: Int, knownHeight: Int): String? {
-        val file = File(thumbCacheDir, "${sha1(uri.toString())}.jpg")
+        val file = File(thumbnailCacheDir, "${sha1(uri.toString())}.jpg")
         if (file.exists() && file.length() > 0) return Uri.fromFile(file).toString()
         return runCatching {
             var w = knownWidth

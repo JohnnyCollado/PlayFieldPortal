@@ -25,10 +25,17 @@ Access Framework, so the app no longer needs all-files access.
 - **Set Up ROM Folders (ES-DE).** Pick an empty folder and PFP creates the standard ES-DE
   system-folder structure for you (no guessing folder names), so libraries transfer cleanly to and
   from a real ES-DE install.
-- **Folder Access** screen (Settings). Lists every granted folder — ROM roots, music/video/photo
-  libraries and the backup folder — as **Linked** or **Access lost**, with one-tap re-link (the
-  picker opens pre-pointed at the saved folder). Recovers all folder access after a restore or
-  reinstall; re-linking a ROM root restores every console under it at once.
+- **Root Access** in the Library section. Lists granted ROM root folders as **Linked** or **Access
+  lost**, with one-tap re-link (the picker opens pre-pointed at the saved folder). Recovers folder
+  access after a restore or reinstall; re-linking a ROM root restores every console under it at once.
+- **Single root folder for Music, Photos and Videos.** Each media section is driven by one folder,
+  set in **Settings ▸ Music / Photo / Video**: *Root Folder* (shown), *Add / Replace Root Folder*
+  (one SAF grant; replacing overwrites it — the picker opens pre-pointed at the saved folder so
+  re-granting after a restore is one tap), and *Rescan* (fast incremental — new files in, deleted
+  files out). Photo settings also has *Clear Thumbnail Cache*; Music/Video have a **Default Player**
+  choice (Play Field Portal / System Default / a chosen app). Libraries update automatically after a
+  scan. The XMB media sections show a single "＋ Add" getting-started row that opens the matching
+  Settings section and disappears once a root has been added and scanned (even if it finds nothing).
 - **Backups saved to a folder you choose.** *Back Up Now* writes the `.pfpbackup` into a
   SAF-granted folder — no storage permission, survives an uninstall, and stays user-accessible.
 - **Full XMB touch navigation.** Swipe to step categories/items (discrete, D-pad-equivalent
@@ -65,11 +72,19 @@ Access Framework, so the app no longer needs all-files access.
 - Android Settings uses the wrench icon, matching the other Settings rows.
 - **ROM libraries and backups now use the Storage Access Framework** end-to-end (`content://`),
   so they need no storage permission and work on SD/USB volumes. Older single-root grants and
-  backups migrate transparently; restoring a backup re-links folders via Folder Access.
+  backups migrate transparently; restoring a backup re-links folders via Library ▸ Root Access.
+- **Media scans skip folders they shouldn't index** — any directory with a `.nomedia` file, hidden
+  `.`-prefixed folders, and the app's own thumbnail cache are pruned before descending. This keeps
+  gallery/thumbnail caches and hidden data out of the library and speeds up rescans. Photo
+  thumbnails now live in the app's external cache (`…/files/cache/thumbnails`, with a `.nomedia`)
+  and *Clear Thumbnail Cache* empties it while preserving the marker.
 
 ### Removed
 - **All-files access.** `MANAGE_EXTERNAL_STORAGE` is no longer declared, and the *Grant All-Files
   Access* option is removed from the Library Manager — ROMs, media and backups all use SAF.
+- **Per-folder media library management** and the standalone Folder Access screen — Music, Photos
+  and Videos are now managed as a single root folder each in their own Settings section (existing
+  grants and roots carry over on upgrade).
 - The dedicated **Photo Apps** section (the Photo category no longer lists installed photo apps).
 - The floating **Back** button that replaced the App Drawer button while drilled in — going back
   is now the left-edge swipe or tapping the active memory-card icon under the caticon.

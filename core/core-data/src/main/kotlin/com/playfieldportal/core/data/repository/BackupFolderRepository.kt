@@ -15,7 +15,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 // Persisted SAF folder where backups are written. Backed up (inert without a live grant) so a
-// restore can pre-point the Folder Access picker at the same location.
+// restore can pre-point the Backup & Restore folder picker at the same location.
 private val KEY_BACKUP_FOLDER_TREE_URI = stringPreferencesKey("backup_folder_tree_uri")
 
 /**

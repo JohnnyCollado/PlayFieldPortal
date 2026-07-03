@@ -36,8 +36,11 @@ class MusicIntentResolver @Inject constructor(
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             // Pin to the user's chosen player when set. If that player can't actually handle the
-            // track, launch() catches the failure and retries with the system chooser.
-            if (!defaultPlayerPackage.isNullOrBlank()) setPackage(defaultPlayerPackage)
+            // track, launch() catches the failure and retries with the system chooser. The
+            // BUILTIN sentinel ("Play Field Portal") is not a real package, so it stays unpinned.
+            if (!defaultPlayerPackage.isNullOrBlank() && defaultPlayerPackage != BUILTIN) {
+                setPackage(defaultPlayerPackage)
+            }
         }
     }
 
@@ -79,5 +82,10 @@ class MusicIntentResolver @Inject constructor(
             }
             .sortedBy { it.label.lowercase() }
             .toList()
+    }
+
+    companion object {
+        /** Sentinel default meaning "Play Field Portal" (in-app player) rather than a real package. */
+        const val BUILTIN = "builtin"
     }
 }

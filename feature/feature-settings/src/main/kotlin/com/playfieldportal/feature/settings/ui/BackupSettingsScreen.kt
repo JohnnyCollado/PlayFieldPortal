@@ -92,9 +92,9 @@ fun BackupSettingsScreen(
 
             SettingsRow(
                 label    = "After Restoring",
-                sublabel = "Your folders come back, but Android's access to them does not. Open " +
-                    "Settings → Folder Access to re-link them (one tap each; the ROM Root re-links " +
-                    "every console at once).",
+                sublabel = "Your folders come back, but Android's access to them does not. Re-link " +
+                    "each root under its section's Root Access (Library, Music, Video, Photo) — one " +
+                    "tap each; re-linking a root restores everything under it at once.",
             )
 
             if (state.isWorking) {

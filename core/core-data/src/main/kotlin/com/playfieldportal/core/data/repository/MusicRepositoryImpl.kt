@@ -64,9 +64,6 @@ class MusicRepositoryImpl @Inject constructor(
     override suspend fun renameFolder(id: String, displayName: String) =
         folderDao.setDisplayName(id, displayName, System.currentTimeMillis())
 
-    override suspend fun setFolderTreeUri(id: String, treeUri: String) =
-        folderDao.setTreeUri(id, treeUri, System.currentTimeMillis())
-
     override suspend fun setFolderEnabled(id: String, enabled: Boolean) =
         folderDao.setEnabled(id, enabled, System.currentTimeMillis())
 

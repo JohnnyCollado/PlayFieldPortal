@@ -19,8 +19,6 @@ interface VideoRepository {
     suspend fun getLibrary(id: String): VideoLibrary?
     suspend fun addLibrary(displayName: String, treeUri: String, scanRecursively: Boolean = true): VideoLibrary
     suspend fun renameLibrary(id: String, displayName: String)
-    /** Re-points the library at a (re-granted) SAF tree; the next scan reads from it. */
-    suspend fun setLibraryTreeUri(id: String, treeUri: String)
     suspend fun setLibraryEnabled(id: String, enabled: Boolean)
     suspend fun setLibraryArtwork(id: String, artworkUri: String?)
     /** Removes the library and all of its videos. */

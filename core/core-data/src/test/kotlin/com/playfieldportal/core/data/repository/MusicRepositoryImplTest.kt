@@ -118,9 +118,6 @@ private class FakeMusicFolderDao : MusicFolderDao {
     override suspend fun setDisplayName(id: String, name: String, now: Long) {
         map[id]?.let { map[id] = it.copy(displayName = name, updatedAt = now) }
     }
-    override suspend fun setTreeUri(id: String, treeUri: String, now: Long) {
-        map[id]?.let { map[id] = it.copy(treeUri = treeUri, updatedAt = now) }
-    }
     override suspend fun updateScanResult(id: String, count: Int, scannedAt: Long) {
         map[id]?.let { map[id] = it.copy(trackCount = count, lastScannedAt = scannedAt, updatedAt = scannedAt) }
     }

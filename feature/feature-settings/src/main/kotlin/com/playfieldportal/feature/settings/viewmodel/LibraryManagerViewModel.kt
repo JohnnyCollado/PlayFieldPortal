@@ -7,8 +7,10 @@ import android.provider.DocumentsContract
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.repository.CollectionRepository
+import com.playfieldportal.core.data.repository.FolderLinkStatus
 import com.playfieldportal.core.data.repository.MemoryCardRepository
 import com.playfieldportal.core.data.repository.RomRootRepository
+import com.playfieldportal.core.data.repository.SafGrants
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GameContentType
@@ -105,6 +107,9 @@ data class LibraryManagerUiState(
     // Apps in the Android library (managed from its detail screen, not scanned).
     val androidApps: List<LibraryAppRow> = emptyList(),
 
+    // ROM Root Access: managed root folders (one SAF grant each; consoles scan subfolders).
+    val romRoots: List<RootFolderRow> = emptyList(),
+
     // Import PC Games section
     val pcLaunchers: List<PcLauncherRow> = emptyList(),
     val pcGames: List<PcGameRow> = emptyList(),
@@ -138,6 +143,8 @@ class LibraryManagerViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _scratch = MutableStateFlow(LibraryManagerUiState())
+
+    init { refreshRomRoots() }
 
     val uiState: StateFlow<LibraryManagerUiState> = combine(
         memoryCardRepository.observeAll(),
@@ -468,6 +475,54 @@ class LibraryManagerViewModel @Inject constructor(
         }
     }
 
+    // ── ROM Root Access (managed root folders) ────────────────────────────────────
+    //
+    // The ROM roots live here now (moved in from the old Folder Access screen): add / remove /
+    // re-link, with live grant status. Re-linking a root restores every console under it at once.
+
+    fun refreshRomRoots() {
+        viewModelScope.launch {
+            val persisted = SafGrants.persistedReadUris(context.contentResolver)
+            val rows = romRootRepository.getAll().map { uri ->
+                RootFolderRow(uri, rootDisplayName(uri), SafGrants.linkStatus(uri, persisted) == FolderLinkStatus.LINKED)
+            }
+            _scratch.update { it.copy(romRoots = rows) }
+        }
+    }
+
+    fun addRomRoot(uri: Uri) {
+        viewModelScope.launch {
+            romRootRepository.persist(uri)
+            romRootRepository.add(uri.toString())
+            refreshRomRoots()
+        }
+    }
+
+    fun removeRomRoot(treeUri: String) {
+        viewModelScope.launch {
+            romRootRepository.remove(treeUri)
+            refreshRomRoots()
+        }
+    }
+
+    private var pendingRelinkRomRoot: String? = null
+
+    fun beginRelinkRomRoot(treeUri: String): Uri? {
+        pendingRelinkRomRoot = treeUri
+        return runCatching { Uri.parse(treeUri) }.getOrNull()
+    }
+
+    fun onRomRootRelinkPicked(uri: Uri?) {
+        val old = pendingRelinkRomRoot ?: return
+        pendingRelinkRomRoot = null
+        if (uri == null) return
+        viewModelScope.launch {
+            romRootRepository.persist(uri)
+            romRootRepository.replace(old, uri.toString())
+            refreshRomRoots()
+        }
+    }
+
     // ── Import PC Games ───────────────────────────────────────────────────────────
     //
     // PFP is a frontend for PC launchers (Winlator, BannerHub, GameHub Lite, GameNative), never
@@ -554,6 +609,103 @@ class LibraryManagerViewModel @Inject constructor(
                 },
             )
         }
+    }
+
+    /**
+     * Scans the "Windows" folder(s) under the ROM roots for frontend-export files and imports each
+     * as a launchable PC game. GameNative store exports (.steam/.epic/.gog/.amazon/.pcgame) carry an
+     * app id (launched via GameNative, or GameHub for a .steam title when GameNative isn't
+     * installed); Winlator .desktop shortcuts launch by path. Games land in the launcher's PC-icon
+     * collection. Turns an exported PC library into a one-tap import.
+     */
+    fun scanPcGamesFolder() {
+        viewModelScope.launch {
+            val roots = romRootRepository.getAll()
+            if (roots.isEmpty()) {
+                _scratch.update { it.copy(message = "Add a ROM Root that contains your Windows folder first.") }
+                return@launch
+            }
+            val pm = context.packageManager
+            fun installed(vararg pkgs: String) = pkgs.firstOrNull { runCatching { pm.getApplicationInfo(it, 0) }.isSuccess }
+            val gameNativePkg = installed("app.gamenative")
+            val gameHubPkg    = installed("com.xiaoji.egggame", "banner.hub", "gamehub.lite")
+            val winlatorPkg   = installed("com.winlator", "com.winlator.cmod")
+
+            var added = 0
+            var skipped = 0
+            var windowsFolders = 0
+            for (rootUri in roots) {
+                for (name in romScanner.listSubfolderNames(rootUri)) {
+                    if (folderHintResolver.detectFromFolderName(name) != WINDOWS_PLATFORM_ID) continue
+                    windowsFolders++
+                    val childDocId = RomRootRepository.childDocIdOf(rootUri, name) ?: continue
+                    romScanner.scanPcFolder(rootUri, childDocId).forEach { file ->
+                        val launch = buildPcLaunch(file, pm, gameNativePkg, gameHubPkg, winlatorPkg)
+                        if (launch == null) { skipped++; return@forEach }
+                        val (intent, launcherName, launcherPkg) = launch
+                        val intentUri = intent.toUri(Intent.URI_INTENT_SCHEME)
+                        val gameId = gameRepository.getByIntentUri(intentUri)?.id
+                            ?: gameRepository.upsert(
+                                Game(
+                                    title           = file.title,
+                                    platformId      = WINDOWS_PLATFORM_ID,
+                                    packageName     = launcherPkg,
+                                    isManualEntry   = true,
+                                    contentType     = GameContentType.SHORTCUT,
+                                    launchIntentUri = intentUri,
+                                )
+                            )
+                        collectionRepository.addGame(pcLauncherCollectionId(launcherName), gameId)
+                        added++
+                    }
+                }
+            }
+
+            val message = when {
+                windowsFolders == 0 -> "No \"Windows\" folder found under your ROM roots. Point GameNative's export folder at <root>/Windows."
+                added == 0 && skipped == 0 -> "No exported PC games found in the Windows folder."
+                else -> "Imported $added PC game(s)" + (if (skipped > 0) ", skipped $skipped (no matching launcher installed)" else "") + "."
+            }
+            _scratch.update { it.copy(message = message) }
+            Timber.i("PC scan — windowsFolders=$windowsFolders added=$added skipped=$skipped")
+        }
+    }
+
+    // Chooses the launcher + builds the launch intent for one export file. Prefers GameNative (it
+    // handles every store); a .steam file falls back to a GameHub-family launcher; a .desktop file
+    // uses Winlator's package launch + a shortcut_path extra. Returns (intent, launcherName, pkg).
+    private fun buildPcLaunch(
+        file: com.playfieldportal.feature.library.scanner.PcExportFile,
+        pm: android.content.pm.PackageManager,
+        gameNativePkg: String?,
+        gameHubPkg: String?,
+        winlatorPkg: String?,
+    ): Triple<Intent, String, String>? {
+        if (file.extension == "desktop") {
+            val path = file.rawPath ?: return null
+            val pkg  = winlatorPkg ?: return null
+            val intent = pm.getLaunchIntentForPackage(pkg)?.apply {
+                putExtra("shortcut_path", path)
+                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            } ?: return null
+            return Triple(intent, "Winlator", pkg)
+        }
+
+        val id = file.idContent?.trim()?.takeIf { it.toIntOrNull()?.let { n -> n > 0 } == true } ?: return null
+        val source = PcLauncherAdapters.gameSourceForExtension(file.extension) ?: return null
+
+        gameNativePkg?.let { pkg ->
+            val intent = PcLauncherAdapters.forType(PcLauncherType.GAMENATIVE)?.buildLaunchIntent(pkg, id, source) ?: return null
+            return Triple(intent, "GameNative", pkg)
+        }
+        // Only Steam titles are launchable by the GameHub family; other stores need GameNative.
+        if (file.extension == "steam" && gameHubPkg != null) {
+            val type = if (gameHubPkg == "gamehub.lite") PcLauncherType.GAMEHUB_LITE else PcLauncherType.BANNERHUB_V6
+            val name = if (gameHubPkg == "gamehub.lite") "GameHub Lite" else "BannerHub"
+            val intent = PcLauncherAdapters.forType(type)?.buildLaunchIntent(gameHubPkg, id, "STEAM") ?: return null
+            return Triple(intent, name, gameHubPkg)
+        }
+        return null
     }
 
     /** Home-mode auto-import: pulls a launcher's published game shortcuts into its PC collection. */

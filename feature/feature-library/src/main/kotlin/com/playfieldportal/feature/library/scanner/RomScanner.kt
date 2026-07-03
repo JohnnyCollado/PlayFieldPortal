@@ -46,6 +46,19 @@ enum class ScanType { NEW_FILES_ONLY, FULL_RESCAN }
 // Outcome of creating the ES-DE folder structure under a picked root.
 data class FolderSetupResult(val created: Int, val existing: Int, val total: Int)
 
+// A frontend-export file found in a Windows/PC folder: GameNative's per-store exports
+// (.steam/.epic/.gog/.amazon/.pcgame — content is the store app id) or a Winlator .desktop shortcut
+// (launched by path, no content id).
+data class PcExportFile(
+    val title: String,
+    val extension: String,   // lowercase, no dot
+    val idContent: String?,  // trimmed file contents (the app id); null for .desktop
+    val rawPath: String?,    // derived filesystem path (used for a Winlator .desktop shortcut_path)
+    val uri: String,
+)
+
+private val PC_EXPORT_EXTENSIONS = setOf("steam", "epic", "gog", "amazon", "pcgame", "desktop")
+
 @Singleton
 class RomScanner @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -415,6 +428,49 @@ class RomScanner @Inject constructor(
             }
             Timber.i("ES-DE folder setup — created=$created existing=$existing total=${names.size}")
             FolderSetupResult(created, existing, names.size)
+        }
+
+    // Scans a granted Windows/PC folder (ES-DE "windows" system) for frontend-export files. For the
+    // GameNative store exports it reads the tiny file's contents (the app id); for a Winlator
+    // .desktop shortcut it derives the raw path. One iterative DFS, mirroring [scanTree].
+    suspend fun scanPcFolder(treeUri: String, startDocId: String? = null): List<PcExportFile> =
+        withContext(Dispatchers.IO) {
+            val tree = runCatching { Uri.parse(treeUri) }.getOrNull() ?: return@withContext emptyList()
+            val rootDocId = startDocId ?: runCatching { DocumentsContract.getTreeDocumentId(tree) }.getOrNull()
+                ?: return@withContext emptyList()
+
+            val out = mutableListOf<PcExportFile>()
+            val visited = HashSet<String>().apply { add(rootDocId) }
+            val stack = ArrayDeque<String>().apply { addLast(rootDocId) }
+            while (stack.isNotEmpty()) {
+                coroutineContext.ensureActive()
+                val dirDocId = stack.removeLast()
+                for (child in context.contentResolver.querySafChildren(tree, dirDocId)) {
+                    coroutineContext.ensureActive()
+                    if (child.isDirectory) {
+                        if (visited.add(child.documentId)) stack.addLast(child.documentId)
+                        continue
+                    }
+                    val ext = child.name.substringAfterLast('.', "").lowercase()
+                    if (ext !in PC_EXPORT_EXTENSIONS) continue
+                    val title = child.name.substringBeforeLast('.', child.name)
+                    val idContent = if (ext == "desktop") null else runCatching {
+                        context.contentResolver.openInputStream(child.uri)
+                            ?.use { it.readBytes().toString(Charsets.UTF_8).trim() }
+                    }.getOrNull()
+                    out.add(
+                        PcExportFile(
+                            title      = title,
+                            extension  = ext,
+                            idContent  = idContent,
+                            rawPath    = safDocumentIdToRawPath(child.documentId),
+                            uri        = child.uri.toString(),
+                        )
+                    )
+                }
+            }
+            Timber.i("PC folder scan — found ${out.size} export file(s)")
+            out
         }
 
     suspend fun findMissingRoms(knownPaths: List<String>): List<String> =

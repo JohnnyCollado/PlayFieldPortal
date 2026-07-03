@@ -27,7 +27,7 @@ private val KEY_LEGACY_ROM_ROOT    = stringPreferencesKey("library_rom_root_tree
  * The user's ROM root folders. Each is a persisted `ACTION_OPEN_DOCUMENT_TREE` grant; because SAF
  * tree grants are recursive, every console's subfolder under a root is readable without a separate
  * grant. Multiple roots let a library span internal storage and an SD card. Re-linking a root after
- * a wipe re-enables every console it contains in one tap (see [FolderAccessManager]).
+ * a wipe re-enables every console it contains in one tap (managed under Library ▸ ROM Root Access).
  */
 @Singleton
 class RomRootRepository @Inject constructor(

@@ -10,15 +10,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import android.net.Uri
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -32,9 +29,13 @@ fun VideoSettingsScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
 
-    val folderPicker = rememberLauncherForActivityResult(
+    val rootPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
-    ) { uri -> uri?.let { viewModel.addLibrary(it) } }
+    ) { uri -> uri?.let { viewModel.setRoot(it) } }
+
+    // Open the picker pre-pointed at the saved root (if any) so re-granting after a
+    // restore/reinstall lands on the exact same folder in one tap.
+    val initialRootUri = state.rootUri?.let { runCatching { Uri.parse(it) }.getOrNull() }
 
     SettingsScaffold(
         title    = "Settings",
@@ -47,49 +48,31 @@ fun VideoSettingsScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState()),
         ) {
-            // ── Playback ────────────────────────────────────────────────────────
-            SettingsGroup("Playback")
+            SettingsGroup("Root Folder")
 
             SettingsValueRow(
-                label    = "Default Player",
-                sublabel = "Built-in plays in-app. Or pick an external app, or be asked each time.",
-                value    = state.defaultPlayerLabel,
-                focusKey = "video_default_player",
-                onClick  = { viewModel.openPlayerPicker() },
+                label    = "Root Folder",
+                sublabel = "The folder PFP scans for videos, including its subfolders",
+                value    = state.rootName ?: "Not set",
+                focusKey = "video_root",
+                onClick  = { rootPicker.launch(initialRootUri) },
             )
-
-            // ── Libraries ───────────────────────────────────────────────────────
-            SettingsGroup("Video Libraries")
-
             SettingsRow(
-                label    = "Add Video Library",
-                sublabel = "Pick a folder of videos. PFP keeps read access and scans it on demand.",
-                focusKey = "add_video_library",
-                onClick  = { folderPicker.launch(null) },
+                label    = if (state.hasRoot) "Replace Root Folder" else "Add Root Folder",
+                sublabel = if (state.hasRoot) "Choose a different folder — replaces the current root"
+                           else "Grant one folder; PFP keeps read access and scans it",
+                focusKey = "video_root_pick",
+                onClick  = { rootPicker.launch(initialRootUri) },
             )
-
-            if (state.libraries.isEmpty()) {
-                Text(
-                    text     = "No video libraries yet. Add one above to get started.",
-                    color    = SettingsSubtext,
-                    modifier = Modifier.padding(horizontal = 48.dp, vertical = 12.dp),
-                )
-            } else {
-                SettingsRow(
-                    label    = "Quick Scan All",
-                    sublabel = when {
-                        state.scanning            -> "Scanning…"
-                        state.scanMessage != null -> state.scanMessage
-                        else                      -> "Find new/removed files in every enabled library"
-                    },
-                    onClick  = if (state.scanning) null else ({ viewModel.quickScanAll() }),
-                )
-                SettingsRow(
-                    label    = "Deep Scan All",
-                    sublabel = "Full rebuild: refresh metadata and regenerate missing thumbnails",
-                    onClick  = if (state.scanning) null else ({ viewModel.deepScanAll() }),
-                )
-            }
+            SettingsRow(
+                label    = "Rescan Video Library",
+                sublabel = when {
+                    state.scanning            -> "Scanning…"
+                    state.scanMessage != null -> state.scanMessage
+                    else                      -> "Update the library from the root folder"
+                },
+                onClick  = if (state.scanning || !state.hasRoot) null else ({ viewModel.rescan() }),
+            )
 
             if (state.scanning) {
                 LinearProgressIndicator(
@@ -99,80 +82,32 @@ fun VideoSettingsScreen(
                 )
             }
 
-            // ── Per-library management ──────────────────────────────────────────
-            state.libraries.forEach { library ->
-                SettingsGroup(library.displayName)
+            SettingsGroup("Playback")
 
-                SettingsValueRow(
-                    label    = "${library.videoCount} ${if (library.videoCount == 1) "video" else "videos"}",
-                    sublabel = library.lastScannedAt?.let { "Scanned" } ?: "Not scanned yet",
-                    value    = if (library.enabled) "On" else "Off",
-                    focusKey = "video_enabled_${library.id}",
-                    onClick  = { viewModel.scanLibrary(library.id, deep = false) },
-                )
-                SettingsRow(
-                    label   = "Quick Scan",
-                    onClick = if (state.scanning) null else ({ viewModel.scanLibrary(library.id, deep = false) }),
-                )
-                SettingsRow(
-                    label   = "Deep Scan",
-                    onClick = if (state.scanning) null else ({ viewModel.scanLibrary(library.id, deep = true) }),
-                )
-                SettingsRow(
-                    label   = "Rename",
-                    onClick = { viewModel.beginRename(library) },
-                )
-                SettingsRow(
-                    label    = "Remove",
-                    sublabel = "Removes the library and its entries from PFP. Files on disk are kept.",
-                    onClick  = { viewModel.removeLibrary(library.id) },
-                )
-            }
-
-            // ── Maintenance ─────────────────────────────────────────────────────
-            SettingsGroup("Thumbnails")
-
-            SettingsRow(
-                label    = "Clear Thumbnail Cache",
-                sublabel = "Delete generated thumbnails. Deep scan regenerates them.",
-                onClick  = { viewModel.clearThumbnailCache() },
+            SettingsValueRow(
+                label    = "Default Video Player",
+                sublabel = "Play Field Portal plays in-app; or pick an app / be asked each time.",
+                value    = state.defaultPlayerLabel,
+                focusKey = "video_default_player",
+                onClick  = { viewModel.openPlayerPicker() },
             )
         }
     }
 
-    // ── Rename dialog ───────────────────────────────────────────────────────────
-    state.renameTarget?.let { target ->
-        var text by remember(target.id) { mutableStateOf(target.displayName) }
-        AlertDialog(
-            onDismissRequest = { viewModel.cancelRename() },
-            title   = { Text("Rename Library") },
-            text    = {
-                OutlinedTextField(
-                    value = text,
-                    onValueChange = { text = it },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            },
-            confirmButton = { TextButton(onClick = { viewModel.confirmRename(text) }) { Text("Rename") } },
-            dismissButton = { TextButton(onClick = { viewModel.cancelRename() }) { Text("Cancel") } },
-        )
-    }
-
-    // ── Default player picker ─────────────────────────────────────────────────────
+    // ── Default player picker: Play Field Portal / System Default / an installed app ──
     if (state.showPlayerPicker) {
         AlertDialog(
             onDismissRequest = { viewModel.dismissPlayerPicker() },
-            title = { Text("Default Player") },
+            title = { Text("Default Video Player") },
             text = {
                 Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                     PlayerChoiceRow(
-                        label = "Built-in Player (Recommended)",
+                        label = "Play Field Portal",
                         selected = state.defaultPlayer == null || state.defaultPlayer == "builtin",
-                        onClick = { viewModel.chooseDefaultPlayer(null) },
+                        onClick = { viewModel.chooseDefaultPlayer("builtin") },
                     )
                     PlayerChoiceRow(
-                        label = "Ask Every Time",
+                        label = "System Default",
                         selected = state.defaultPlayer == "ask",
                         onClick = { viewModel.chooseDefaultPlayer("ask") },
                     )

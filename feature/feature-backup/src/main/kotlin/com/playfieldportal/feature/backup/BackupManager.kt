@@ -484,11 +484,14 @@ open class BackupManager @Inject constructor(
             // Library
             stringPreferencesKey("library_root_path"),
             // SAF ROM root grants (newline-joined list; singular key kept for older backups).
-            // Inert without a live OS grant, so re-linked via the Folder Access screen after a
-            // restore — but carrying them lets that screen pre-point the picker at each exact
-            // folder (one-tap recovery).
+            // Inert without a live OS grant, so re-linked under Library ▸ ROM Root Access after a
+            // restore — carrying them lets that section pre-point the picker at each exact folder.
             stringPreferencesKey("library_rom_root_tree_uris"),
             stringPreferencesKey("library_rom_root_tree_uri"),
+            // Media root folders (Music/Video/Photo Root Access), same inert-URI semantics.
+            stringPreferencesKey("music_root_tree_uris"),
+            stringPreferencesKey("video_root_tree_uris"),
+            stringPreferencesKey("photo_root_tree_uris"),
             // Where backups are saved (SAF folder). Inert without a live grant; carried so a
             // restore can pre-point the Folder Access picker at it.
             stringPreferencesKey("backup_folder_tree_uri"),

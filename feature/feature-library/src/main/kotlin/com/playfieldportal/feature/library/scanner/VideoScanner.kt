@@ -74,14 +74,17 @@ class VideoScanner @Inject constructor(
         // listing goes through one DocumentsContract child query per directory (see SafChildren)
         // instead of DocumentFile's per-property IPC round-trips.
         val stack = ArrayDeque<Pair<String, String>>()   // documentId to relative path
-        stack.addLast(DocumentsContract.getTreeDocumentId(treeUri) to "")
+        stack.addLast(safScanStartDocId(context, treeUri) to "")
         while (stack.isNotEmpty()) {
             coroutineContext.ensureActive()
             val (dirDocId, relPath) = stack.removeLast()
-            for (child in context.contentResolver.querySafChildren(treeUri, dirDocId)) {
+            val children = context.contentResolver.querySafChildren(treeUri, dirDocId)
+            if (children.hasNoMediaMarker()) continue
+            for (child in children) {
                 coroutineContext.ensureActive()
                 if (child.isDirectory) {
                     if (!library.scanRecursively) continue
+                    if (child.isIgnoredDir()) continue
                     stack.addLast(child.documentId to if (relPath.isEmpty()) child.name else "$relPath/${child.name}")
                     continue
                 }

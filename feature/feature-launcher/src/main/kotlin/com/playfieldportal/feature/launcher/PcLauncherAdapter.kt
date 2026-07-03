@@ -36,7 +36,10 @@ private class GameHubFamilyAdapter(override val type: PcLauncherType) : PcLaunch
         return Intent().apply {
             component = ComponentName(packageName, DEEP_LINK_ACTIVITY)
             action = "$packageName.LAUNCH_GAME"
-            putExtra("localGameId", id.toString())
+            // A Steam title (from a .steam export) launches by steamAppId; a BannerHub Local Game ID
+            // (add-by-ID, no source) launches by localGameId.
+            if (source == "STEAM") putExtra("steamAppId", id.toString())
+            else putExtra("localGameId", id.toString())
             putExtra("autoStartGame", true)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
@@ -73,8 +76,18 @@ object PcLauncherAdapters {
         PcLauncherType.BANNERHUB_V6,
         PcLauncherType.GAMEHUB_LITE -> GameHubFamilyAdapter(type)
         PcLauncherType.GAMENATIVE   -> GameNativeAdapter()
-        // Winlator exposes no game-launch intent (only MainActivity is exported); open-app / manual.
+        // Winlator launches by shortcut path (.desktop), handled outside the id-based adapter.
         PcLauncherType.WINLATOR,
         PcLauncherType.MANUAL       -> null
+    }
+
+    // GameNative's per-store export extension → its `game_source` value (see FrontendSyncManager).
+    fun gameSourceForExtension(extension: String): String? = when (extension.lowercase()) {
+        "steam"  -> "STEAM"
+        "epic"   -> "EPIC"
+        "gog"    -> "GOG"
+        "amazon" -> "AMAZON"
+        "pcgame" -> "CUSTOM_GAME"
+        else     -> null
     }
 }

@@ -33,12 +33,21 @@ sealed interface MusicScanResult {
  * user-initiated (never background/observer-driven). Skips unreadable or non-audio files with a
  * log rather than crashing, and runs on [Dispatchers.IO]. The caller persists the result via
  * MusicRepository.replaceTracksForFolder and drives progress notifications.
+ *
+ * Two modes (both prune tracks whose files are gone):
+ *  - **Missing** ([deep] = false): a file whose `lastModified` is unchanged reuses its existing row
+ *    verbatim — no MediaMetadataRetriever/art cost. Only new/changed files are probed.
+ *  - **Deep** ([deep] = true): every file's metadata and album art is re-read.
  */
 @Singleton
 class MusicScanner @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
-    fun scan(folder: MusicFolder): Flow<MusicScanResult> = flow {
+    fun scan(
+        folder: MusicFolder,
+        deep: Boolean = true,
+        existing: List<MusicTrack> = emptyList(),
+    ): Flow<MusicScanResult> = flow {
         val treeUri = runCatching { Uri.parse(folder.treeUri) }.getOrNull()
         val root = treeUri?.let { DocumentFile.fromTreeUri(context, it) }
         if (treeUri == null || root == null || !root.canRead()) {
@@ -50,6 +59,7 @@ class MusicScanner @Inject constructor(
         val startMs = System.currentTimeMillis()
         Timber.i("Music scan started: \"${folder.displayName}\" (${folder.treeUri})")
         val tracks = mutableListOf<MusicTrack>()
+        val byUri = existing.associateBy { it.uri }
         // Album art is deduped within a scan: the first track of an album writes the cached file,
         // every other track of that album reuses the same uri. Keyed by "artist|album".
         val artByAlbum = HashMap<String, String?>()
@@ -59,18 +69,21 @@ class MusicScanner @Inject constructor(
         // listing goes through one DocumentsContract child query per directory (see SafChildren)
         // instead of DocumentFile's per-property IPC round-trips.
         val stack = ArrayDeque<Pair<String, String>>()   // documentId to relative path
-        stack.addLast(DocumentsContract.getTreeDocumentId(treeUri) to "")
+        stack.addLast(safScanStartDocId(context, treeUri) to "")
         while (stack.isNotEmpty()) {
             coroutineContext.ensureActive()
             val (dirDocId, relPath) = stack.removeLast()
-            for (child in context.contentResolver.querySafChildren(treeUri, dirDocId)) {
+            val children = context.contentResolver.querySafChildren(treeUri, dirDocId)
+            if (children.hasNoMediaMarker()) continue
+            for (child in children) {
                 coroutineContext.ensureActive()
                 if (child.isDirectory) {
+                    if (child.isIgnoredDir()) continue
                     stack.addLast(child.documentId to if (relPath.isEmpty()) child.name else "$relPath/${child.name}")
                     continue
                 }
                 filesSeen++
-                val track = runCatching { child.toTrackOrNull(folder.id, relPath, artByAlbum) }
+                val track = runCatching { child.toTrackOrNull(folder.id, relPath, artByAlbum, deep, byUri) }
                     .getOrElse { Timber.w(it, "Skipping unreadable file ${child.uri}"); null }
                 if (track != null) tracks.add(track)
 
@@ -89,10 +102,18 @@ class MusicScanner @Inject constructor(
         folderId: String,
         relPath: String,
         artByAlbum: MutableMap<String, String?>,
+        deep: Boolean,
+        existingByUri: Map<String, MusicTrack>,
     ): MusicTrack? {
         if (!AudioFileFilter.isAudio(name, mime)) return null
 
-        val trackId = UUID.randomUUID().toString()
+        val prior = existingByUri[uri.toString()]
+        // Missing scan: reuse an unchanged file's row wholesale — no metadata or art extraction.
+        if (!deep && prior != null && prior.lastModified == lastModified) {
+            return prior.copy(folderId = folderId, relativePath = relPath.takeIf { it.isNotEmpty() })
+        }
+
+        val trackId = prior?.id ?: UUID.randomUUID().toString()
         val meta = readMetadata(uri)
         // Resolve album art, reusing one cached file per album so a 20-track album writes once.
         val albumKey = "${meta?.artist.orEmpty()}|${meta?.album.orEmpty()}"

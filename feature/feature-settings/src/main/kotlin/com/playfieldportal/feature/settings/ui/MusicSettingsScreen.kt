@@ -10,18 +10,16 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import android.net.Uri
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.playfieldportal.core.data.music.MusicIntentResolver
 import com.playfieldportal.feature.settings.viewmodel.MusicSettingsViewModel
 
 @Composable
@@ -32,9 +30,13 @@ fun MusicSettingsScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
 
-    val folderPicker = rememberLauncherForActivityResult(
+    val rootPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
-    ) { uri -> uri?.let { viewModel.addFolder(it) } }
+    ) { uri -> uri?.let { viewModel.setRoot(it) } }
+
+    // Open the picker pre-pointed at the saved root (if any) so re-granting after a
+    // restore/reinstall lands on the exact same folder in one tap.
+    val initialRootUri = state.rootUri?.let { runCatching { Uri.parse(it) }.getOrNull() }
 
     SettingsScaffold(
         title    = "Settings",
@@ -47,33 +49,31 @@ fun MusicSettingsScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState()),
         ) {
-            // ── Folders ───────────────────────────────────────────────────────
-            SettingsGroup("Music Folders")
+            SettingsGroup("Root Folder")
 
-            SettingsRow(
-                label    = "Add Music Folder",
-                sublabel = "Pick a folder of audio files. PFP keeps read access and scans it on demand.",
-                focusKey = "add_music_folder",
-                onClick  = { folderPicker.launch(null) },
+            SettingsValueRow(
+                label    = "Root Folder",
+                sublabel = "The folder PFP scans for music, including its subfolders",
+                value    = state.rootName ?: "Not set",
+                focusKey = "music_root",
+                onClick  = { rootPicker.launch(initialRootUri) },
             )
-
-            if (state.folders.isEmpty()) {
-                Text(
-                    text     = "No music folders yet. Add one above to get started.",
-                    color    = SettingsSubtext,
-                    modifier = Modifier.padding(horizontal = 48.dp, vertical = 12.dp),
-                )
-            } else {
-                SettingsRow(
-                    label    = "Scan All",
-                    sublabel = when {
-                        state.scanning           -> "Scanning…"
-                        state.scanMessage != null -> state.scanMessage
-                        else                      -> "Re-scan every enabled folder for music"
-                    },
-                    onClick  = if (state.scanning) null else ({ viewModel.scanAll() }),
-                )
-            }
+            SettingsRow(
+                label    = if (state.hasRoot) "Replace Root Folder" else "Add Root Folder",
+                sublabel = if (state.hasRoot) "Choose a different folder — replaces the current root"
+                           else "Grant one folder; PFP keeps read access and scans it",
+                focusKey = "music_root_pick",
+                onClick  = { rootPicker.launch(initialRootUri) },
+            )
+            SettingsRow(
+                label    = "Rescan Music Library",
+                sublabel = when {
+                    state.scanning            -> "Scanning…"
+                    state.scanMessage != null -> state.scanMessage
+                    else                      -> "Update the library from the root folder"
+                },
+                onClick  = if (state.scanning || !state.hasRoot) null else ({ viewModel.rescan() }),
+            )
 
             if (state.scanning) {
                 LinearProgressIndicator(
@@ -83,39 +83,11 @@ fun MusicSettingsScreen(
                 )
             }
 
-            // ── Per-folder management ───────────────────────────────────────────
-            state.folders.forEach { folder ->
-                SettingsGroup(folder.displayName)
-
-                SettingsValueRow(
-                    label    = if (folder.enabled) "Enabled" else "Disabled",
-                    sublabel = "${folder.trackCount} ${if (folder.trackCount == 1) "track" else "tracks"}" +
-                        (folder.lastScannedAt?.let { "  ·  scanned" } ?: "  ·  not scanned yet"),
-                    value    = if (folder.enabled) "On" else "Off",
-                    focusKey = "music_enabled_${folder.id}",
-                    onClick  = { viewModel.setEnabled(folder.id, !folder.enabled) },
-                )
-                SettingsRow(
-                    label   = "Scan This Folder",
-                    onClick = if (state.scanning) null else ({ viewModel.scanFolder(folder.id) }),
-                )
-                SettingsRow(
-                    label   = "Rename",
-                    onClick = { viewModel.beginRename(folder) },
-                )
-                SettingsRow(
-                    label    = "Remove",
-                    sublabel = "Removes the folder and its tracks from PFP. Files on disk are kept.",
-                    onClick  = { viewModel.removeFolder(folder.id) },
-                )
-            }
-
-            // ── Playback ────────────────────────────────────────────────────────
             SettingsGroup("Playback")
 
             SettingsValueRow(
                 label    = "Default Music Player",
-                sublabel = "Tracks open in this app so playback continues in the background.",
+                sublabel = "App that opens music tracks",
                 value    = state.defaultPlayerLabel,
                 focusKey = "music_default_player",
                 onClick  = { viewModel.openPlayerPicker() },
@@ -123,26 +95,7 @@ fun MusicSettingsScreen(
         }
     }
 
-    // ── Rename dialog ───────────────────────────────────────────────────────────
-    state.renameTarget?.let { target ->
-        var text by remember(target.id) { mutableStateOf(target.displayName) }
-        AlertDialog(
-            onDismissRequest = { viewModel.cancelRename() },
-            title   = { Text("Rename Folder") },
-            text    = {
-                OutlinedTextField(
-                    value = text,
-                    onValueChange = { text = it },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            },
-            confirmButton = { TextButton(onClick = { viewModel.confirmRename(text) }) { Text("Rename") } },
-            dismissButton = { TextButton(onClick = { viewModel.cancelRename() }) { Text("Cancel") } },
-        )
-    }
-
-    // ── Default player picker ────────────────────────────────────────────────────
+    // ── Default player picker: Play Field Portal / System Default / an installed app ──
     if (state.showPlayerPicker) {
         AlertDialog(
             onDismissRequest = { viewModel.dismissPlayerPicker() },
@@ -150,20 +103,25 @@ fun MusicSettingsScreen(
             text    = {
                 Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                     PlayerChoiceRow(
-                        label = "System default",
-                        selected = state.defaultPlayerPackage == null,
+                        label = "Play Field Portal",
+                        selected = state.defaultPlayer == MusicIntentResolver.BUILTIN,
+                        onClick = { viewModel.chooseDefaultPlayer(MusicIntentResolver.BUILTIN) },
+                    )
+                    PlayerChoiceRow(
+                        label = "System Default",
+                        selected = state.defaultPlayer == null,
                         onClick = { viewModel.chooseDefaultPlayer(null) },
                     )
                     state.availablePlayers.forEach { player ->
                         PlayerChoiceRow(
                             label = player.label,
-                            selected = state.defaultPlayerPackage == player.packageName,
+                            selected = state.defaultPlayer == player.packageName,
                             onClick = { viewModel.chooseDefaultPlayer(player.packageName) },
                         )
                     }
                     if (state.availablePlayers.isEmpty()) {
                         Text(
-                            "No music players found on this device.",
+                            "No other music players found on this device.",
                             color = SettingsSubtext,
                             modifier = Modifier.padding(vertical = 8.dp),
                         )

@@ -108,6 +108,13 @@ private fun LibraryListContent(
     onBack: () -> Unit,
     modifier: Modifier,
 ) {
+    val addRootPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri -> uri?.let { vm.addRomRoot(it) } }
+    val relinkRootPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri -> vm.onRomRootRelinkPicked(uri) }
+
     SettingsScaffold(
         title = "Settings",
         subtitle = "Library Manager",
@@ -116,6 +123,21 @@ private fun LibraryListContent(
         restoreFocusKey = state.returnFocusKey,
     ) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+
+            // ── ROM Root Access ─────────────────────────────────────────────────
+            RootAccessSection(
+                groupTitle  = "ROM Root Access",
+                roots       = state.romRoots,
+                addLabel    = "Add ROM Root",
+                addSublabel = "Grant a root folder (e.g. /Roms) — or a second location like an SD card",
+                onAddRoot    = { addRootPicker.launch(null) },
+                onRelinkRoot = { relinkRootPicker.launch(vm.beginRelinkRomRoot(it.treeUri)) },
+                onRemoveRoot = { vm.removeRomRoot(it.treeUri) },
+                autoDetectLabel    = "Auto-Detect Consoles",
+                autoDetectSublabel = "One pass over your ROM roots: a console per ES-DE system folder " +
+                    "(gba, snes, psx…) that contains games",
+                onAutoDetect       = { vm.scanRomRoot() },
+            )
 
             SettingsGroup("Consoles")
 
@@ -146,12 +168,6 @@ private fun LibraryListContent(
                 sublabel = "Pick an empty folder — PFP creates the standard ES-DE system folders " +
                     "(gba, snes, psx…) for you to copy games into. No guessing folder names",
                 onClick  = { vm.requestRomFolderSetup() },
-            )
-            SettingsRow(
-                label    = "Auto-Detect from ROM Root",
-                sublabel = "One scan of your ROM Root: creates a console for every ES-DE system " +
-                    "folder (gba, snes, psx…) and loads its games",
-                onClick  = { vm.scanRomRoot() },
             )
             SettingsRow(
                 label    = "Import PC Games",
@@ -449,6 +465,15 @@ private fun ImportPcGamesContent(
                 else
                     "Optional. Set PFP as your Home app to auto-import every game a launcher publishes",
                 onClick  = { runCatching { homeLauncher.launch(vm.homeRoleIntent()) } },
+            )
+
+            // ── Scan exported games ───────────────────────────────────────────
+            SettingsGroup("Exported Games")
+            SettingsRow(
+                label    = "Scan for Exported PC Games",
+                sublabel = "Reads GameNative / Winlator exports (.steam · .epic · .gog · .amazon · " +
+                    ".pcgame · .desktop) from the Windows folder in your ROM roots",
+                onClick  = { vm.scanPcGamesFolder() },
             )
 
             // ── Launchers ─────────────────────────────────────────────────────

@@ -1159,8 +1159,9 @@ class XMBViewModel @Inject constructor(
     }
 
     // Music root: the static items (Now Playing, when something is playing; Playlist; Music Apps)
-    // followed by the single "All Music" memory-card item. Folder management lives in Settings →
-    // Music; an "Add Music Folder" row only appears here while no folders are configured yet.
+    // followed by the single "All Music" memory-card item. The root folder is managed in Settings →
+    // Music; a getting-started "Add Music Folder" row shows until a root has been added and scanned
+    // (keyed off the scan completing, not the track count), then drops away.
     private fun musicRootItems(): List<XMBItem> {
         val folders = _uiState.value.musicFolders
         val totalTracks = folders.sumOf { it.trackCount }
@@ -1205,20 +1206,18 @@ class XMBViewModel @Inject constructor(
                     type     = XMBItemType.MEMORY_CARD,
                 )
             )
-            // Mirrors Photo/Video: the "Add Music Folder" row drops away once a folder has been
-            // scanned — further folders are added from Settings → Music.
-            if (!hasScannedFolder) {
-                add(
-                    XMBItem(
-                        id       = ADD_MUSIC_FOLDER_ITEM_ID,
-                        title    = "Add Music Folder",
-                        subtitle = "Pick a folder of music to get started",
-                        type     = XMBItemType.ADD_ACTION,
-                    )
-                )
-            }
+            // Getting-started prompt: opens Settings → Music. Drops away once a root has been
+            // scanned (even if it found no tracks), since the root is then managed in Settings.
+            if (!hasScannedFolder) add(addMusicFolderItem())
         }
     }
+
+    private fun addMusicFolderItem(): XMBItem = XMBItem(
+        id       = ADD_MUSIC_FOLDER_ITEM_ID,
+        title    = "Add Music Folder",
+        subtitle = "Set your Music root folder in Settings to get started",
+        type     = XMBItemType.ADD_ACTION,
+    )
 
     // Playlist list: one row per playlist + a "Create Playlist" row.
     private fun playlistRootItems(playlists: List<com.playfieldportal.core.domain.model.Playlist>): List<XMBItem> {
@@ -1391,7 +1390,9 @@ class XMBViewModel @Inject constructor(
     }
 
     // Video root: browse rows first (Collections, Video Libraries), then the Video Apps counterpart
-    // directly above the "Videos" memory card (second-to-bottom), with "Add Videos" last when shown.
+    // directly above the "Videos" memory card (second-to-bottom). The root folder is managed in
+    // Settings → Video; a getting-started "Add Videos" row shows until a root has been added and
+    // scanned (keyed off the scan completing, not the video count), then drops away.
     private fun videoRootItems(): List<XMBItem> {
         val libraries = _uiState.value.videoLibraries
         val totalVideos = libraries.sumOf { it.videoCount }
@@ -1433,11 +1434,18 @@ class XMBViewModel @Inject constructor(
                     type     = XMBItemType.MEMORY_CARD,
                 )
             )
-            // The "Add Videos" row disappears once a library has been scanned — more are added in
-            // Settings → Video.
+            // Getting-started prompt: opens Settings → Video. Drops away once a root has been
+            // scanned (even if it found no videos), since the root is then managed in Settings.
             if (!hasScannedLibrary) add(addVideosItem())
         }
     }
+
+    private fun addVideosItem(): XMBItem = XMBItem(
+        id       = ADD_VIDEOS_ITEM_ID,
+        title    = "Add Videos",
+        subtitle = "Set your Video root folder in Settings to get started",
+        type     = XMBItemType.ADD_ACTION,
+    )
 
     // The "Collections" drill-in: the three curated views, one level below the Video root.
     private fun videoCollectionsItems(): List<XMBItem> = listOf(
@@ -1461,7 +1469,8 @@ class XMBViewModel @Inject constructor(
         ),
     )
 
-    // One card per video library, drillable into its videos, plus an "Add Videos" row.
+    // One card per video library, drillable into its videos. The root folder is managed in
+    // Settings → Video, so there is no add row here.
     private fun videoLibraryItems(libraries: List<com.playfieldportal.core.domain.model.VideoLibrary>): List<XMBItem> {
         val rows = libraries.map { lib ->
             XMBItem(
@@ -1472,19 +1481,15 @@ class XMBViewModel @Inject constructor(
                 type     = XMBItemType.VIDEO_FOLDER,
             )
         }
-        return if (rows.isEmpty()) {
+        return rows.ifEmpty {
             listOf(
                 XMBItem(
                     id = EMPTY_CATEGORY_ITEM_ID,
                     title = "No video libraries yet",
-                    subtitle = "Add one below or in Settings → Video",
+                    subtitle = "Set a root folder in Settings → Video",
                     type = XMBItemType.EMPTY,
                 ),
-                addVideosItem(),
             )
-        } else {
-            // Once a library has been scanned the "Add" row drops away — more are added in Settings.
-            if (libraries.any { it.lastScannedAt != null }) rows else rows + addVideosItem()
         }
     }
 
@@ -1499,13 +1504,6 @@ class XMBViewModel @Inject constructor(
             type     = XMBItemType.ADD_ACTION,
         )
     }
-
-    private fun addVideosItem(): XMBItem = XMBItem(
-        id       = ADD_VIDEOS_ITEM_ID,
-        title    = "Add Videos",
-        subtitle = "Create a video library from a folder",
-        type     = XMBItemType.ADD_ACTION,
-    )
 
     private fun List<com.playfieldportal.core.domain.model.Video>.toVideoItems(): List<XMBItem> =
         map { video ->
@@ -1918,6 +1916,8 @@ class XMBViewModel @Inject constructor(
                     type     = XMBItemType.MEMORY_CARD,
                 )
             )
+            // Getting-started prompt: opens Settings → Photo. Drops away once a root has been
+            // scanned (even if it found no photos), since the root is then managed in Settings.
             if (!hasScannedLibrary) add(addPhotoLibraryItem())
         }
     }
@@ -1925,7 +1925,7 @@ class XMBViewModel @Inject constructor(
     private fun addPhotoLibraryItem(): XMBItem = XMBItem(
         id       = ADD_PHOTO_LIBRARY_ITEM_ID,
         title    = "Add Photo Library",
-        subtitle = "Create an album from a folder of photos",
+        subtitle = "Set your Photo root folder in Settings to get started",
         type     = XMBItemType.ADD_ACTION,
     )
 
@@ -1943,7 +1943,8 @@ class XMBViewModel @Inject constructor(
         )
     }
 
-    // One folder card per Album, drillable into its photos, plus an "Add Photo Library" row.
+    // One folder card per Album, drillable into its photos. The root folder is managed in
+    // Settings → Photo, so there is no add row here.
     private fun photoAlbumItems(libraries: List<com.playfieldportal.core.domain.model.PhotoLibrary>): List<XMBItem> {
         val rows = libraries.map { lib ->
             XMBItem(
@@ -1953,19 +1954,15 @@ class XMBViewModel @Inject constructor(
                 type     = XMBItemType.PHOTO_FOLDER,
             )
         }
-        return if (rows.isEmpty()) {
+        return rows.ifEmpty {
             listOf(
                 XMBItem(
                     id = EMPTY_CATEGORY_ITEM_ID,
                     title = "No albums yet",
-                    subtitle = "Add one below or in Settings → Photo",
+                    subtitle = "Set a root folder in Settings → Photo",
                     type = XMBItemType.EMPTY,
                 ),
-                addPhotoLibraryItem(),
             )
-        } else {
-            // Once a library has been scanned the "Add" row drops away — more are added in Settings.
-            if (libraries.any { it.lastScannedAt != null }) rows else rows + addPhotoLibraryItem()
         }
     }
 
@@ -5046,7 +5043,6 @@ class XMBViewModel @Inject constructor(
             XMBItem(id = "settings_themes",     title = "Themes",           subtitle = "XMB appearance & color scheme"),
             XMBItem(id = "settings_display",    title = "Display",          subtitle = "Wave, wallpaper, boot & icons"),
             XMBItem(id = "settings_controller", title = "Controller",       subtitle = "Button mapping"),
-            XMBItem(id = "settings_folder_access", title = "Folder Access",  subtitle = "Re-link ROM & media folders"),
             XMBItem(id = "settings_backup",     title = "Backup & Restore", subtitle = "Export & import"),
             XMBItem(id = "settings_logs",       title = "Logs",             subtitle = "Debug & error log viewer"),
             XMBItem(id = "settings_about",      title = "About",            subtitle = "Play Field Portal"),
