@@ -47,8 +47,11 @@ import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Headset
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.QrCode2
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -795,7 +798,7 @@ private fun XmbItemLeadingIcon(
                 Icon(Icons.Filled.QrCode2, contentDescription = null, tint = InactiveText, modifier = Modifier.size(44.dp))
             }
         }
-        item.type == XMBItemType.SOCIAL_ACCOUNT -> {
+        item.type == XMBItemType.SOCIAL_ACCOUNT || item.type == XMBItemType.SOCIAL_FRIEND -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
                 if (item.coverUri != null) {
                     AsyncImage(
@@ -806,6 +809,21 @@ private fun XmbItemLeadingIcon(
                 } else {
                     Icon(Icons.Filled.AccountCircle, contentDescription = null, tint = InactiveText, modifier = Modifier.size(48.dp))
                 }
+            }
+        }
+        item.type == XMBItemType.SOCIAL_VOICE -> {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
+                Icon(Icons.Filled.Headset, contentDescription = null, tint = InactiveText, modifier = Modifier.size(46.dp))
+            }
+        }
+        item.type == XMBItemType.SOCIAL_ACTIVITY_SETTINGS -> {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
+                Icon(Icons.Filled.SportsEsports, contentDescription = null, tint = InactiveText, modifier = Modifier.size(46.dp))
+            }
+        }
+        item.type == XMBItemType.SOCIAL_DISCORD_SETTINGS -> {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
+                Icon(Icons.Filled.Settings, contentDescription = null, tint = InactiveText, modifier = Modifier.size(44.dp))
             }
         }
         item.type == XMBItemType.SOCIAL_FRIENDS -> {

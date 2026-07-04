@@ -1,8 +1,26 @@
 # Discord Social Integration — Technical Plan
 
-**Status:** Design (no code yet)
-**SDK:** Discord Social SDK 1.9.17379
-**Target features (v1):** Activity Status (presence), Voice chat, Friends list — real Discord OAuth (PKCE). Text chat deferred.
+**SDK:** Discord Social SDK 1.9.17379 · Branch: `discord-integration`
+**Target features (v1):** Activity Status (presence), Voice chat, Friends list — real Discord OAuth (device grant / QR). Text chat, Servers, DMs deferred.
+
+---
+
+## 0. Status & how to resume (read this first)
+
+**Done & verified on-device (AYN Thor, Android 13). Commits on `discord-integration`, not pushed:**
+- **M0** — `:discord:discord-native` NDK module; SDK aars vendored via **Git LFS**; prefab/CMake; JNI bridge links the SDK (arm64-v8a + armeabi-v7a).
+- **M1** — QR login (OAuth2 **device grant**, endpoint `/oauth2/device/authorize`); **Keystore AES-256-GCM** encrypted token store; native session lifecycle (`UpdateToken`→`Connect`, `RunCallbacks` pump); session restore on launch. Client ID `1522836772847878216` in `DiscordConfig` (public; **"Public Client" must be ON** in the portal OAuth2 tab).
+- **M2** — **Social XMB column** (Groups glyph `catbar_social`); **in-XMB sibling drill** (`SocialNav` Root→Account→Friends, mirrors Music/Video/Photo two-pane flyout + `computeDrillTitle`/`computeDrillSiblings`/`isInSubItem`/back-pop); account row shows real **avatar + username**; **Friends** list with presence + **PFP-scoped activity** (`GameActivity`); **offline resilience** (`NetworkMonitor`).
+
+**Remaining (M2/M3):** Voice (SDK lobbies/calls — mic + foreground service); **Activity Settings** = the `UpdateRichPresence` broadcast (makes friend-activity real; needs a 2nd PFP user to demo); a real **Discord Settings** screen (Sign Out moves there from the hub); presence colored dots + right-aligned status in friend rows; refresh-token exchange; retire the debug-menu test entry; security-review pass (plan §12). Friend "activity" is SDK-scoped to **this app only** — not general Discord presence.
+
+### Resuming on a new machine
+1. `git clone` + `git lfs pull` (the SDK aars live in Git LFS under `discord/discord-native/libs/`; the **debug aar / source zip are NOT committed** — get them from the original SDK zip if needed).
+2. Install NDK + CMake: `sdkmanager "ndk;27.0.12077973" "cmake;3.22.1"` (pinned in `discord/discord-native/build.gradle.kts`).
+   - **If `sdkmanager`/Gradle downloads fail on SSL** (e.g. antivirus HTTPS interception), export `JAVA_TOOL_OPTIONS=-Djavax.net.ssl.trustStoreType=Windows-ROOT` — mirrors `gradle.properties`.
+3. In the Discord Developer Portal → your app → **OAuth2 → enable "Public Client"** (device grant fails otherwise).
+4. Build/install debug: `./gradlew :app:installDebug`. On-device test entry also lives in the **debug menu** (long-press Settings → "DISCORD (TEST)") as a fallback.
+5. Architecture map + design details: the rest of this doc, esp. §4 (modules) and §10 (Social section).
 
 ---
 

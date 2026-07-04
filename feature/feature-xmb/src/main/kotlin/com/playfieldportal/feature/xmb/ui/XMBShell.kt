@@ -66,7 +66,6 @@ import android.content.ContextWrapper
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import com.playfieldportal.discord.DiscordNativeBridge
-import com.playfieldportal.feature.social.ui.FriendsScreen
 import com.playfieldportal.feature.social.ui.QrLoginScreen
 import com.playfieldportal.feature.xmb.preview.PreviewData
 import androidx.media3.common.util.UnstableApi
@@ -131,7 +130,6 @@ fun XMBShellContainer(
         onSettingsLongPress = onSettingsLongPress,
         onCloseSettingsScreen = viewModel::onCloseSettingsScreen,
         onDiscordLoginClosed = viewModel::onDiscordLoginClosed,
-        onDiscordFriendsClosed = viewModel::onDiscordFriendsClosed,
         onSettingsActionConsumed = viewModel::consumeSettingsAction,
         onCloseAppDrawer = viewModel::onCloseAppDrawer,
         onDrawerActionConsumed = viewModel::consumeDrawerAction,
@@ -200,7 +198,6 @@ fun XMBShell(
     onSettingsLongPress: () -> Unit = {},
     onCloseSettingsScreen: () -> Unit = {},
     onDiscordLoginClosed: () -> Unit = {},
-    onDiscordFriendsClosed: () -> Unit = {},
     onSettingsActionConsumed: () -> Unit = {},
     onCloseAppDrawer: () -> Unit = {},
     onDrawerActionConsumed: () -> Unit = {},
@@ -492,13 +489,6 @@ fun XMBShell(
                         onConnected = onDiscordLoginClosed,
                         onCancel = onDiscordLoginClosed,
                     )
-                }
-            }
-
-            // Discord Friends list overlay.
-            if (uiState.activeDiscordFriends) {
-                Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.97f))) {
-                    FriendsScreen(onBack = onDiscordFriendsClosed)
                 }
             }
 

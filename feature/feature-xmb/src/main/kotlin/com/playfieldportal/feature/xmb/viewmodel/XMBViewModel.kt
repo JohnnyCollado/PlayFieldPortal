@@ -24,6 +24,8 @@ import com.playfieldportal.feature.appbar.CategorizedApp
 import com.playfieldportal.feature.appbar.LauncherShortcutRepository
 import com.playfieldportal.feature.appbar.ShortcutHarvestResult
 import com.playfieldportal.core.data.datastore.pfpDataStore
+import com.playfieldportal.core.domain.discord.DiscordFriend
+import com.playfieldportal.core.domain.discord.DiscordPresence
 import com.playfieldportal.core.domain.model.BuiltInCategory
 import com.playfieldportal.core.domain.model.Category
 import com.playfieldportal.core.domain.model.CategoryType
@@ -239,6 +241,13 @@ sealed interface PhotoNav {
     data class Library(val id: String, val name: String) : PhotoNav
 }
 
+// Discord Social sub-navigation: Root (the account) → Account (its hub) → Friends (the list).
+sealed interface SocialNav {
+    data object Root : SocialNav
+    data object Account : SocialNav
+    data object Friends : SocialNav
+}
+
 // A request to open the fullscreen photo viewer. [libraryId] scopes L1/R1 next/previous to the
 // list the photo was opened from (null = All Photos). [openWallpaperPreview] opens straight into
 // the wallpaper preview (the row's "Set as Launcher Wallpaper" context action) — still
@@ -404,8 +413,9 @@ data class XMBUiState(
 
     // ── Discord QR login overlay ──────────────────────────────────────────
     val activeDiscordLogin: Boolean = false,
-    // ── Discord Friends list overlay ──────────────────────────────────────
-    val activeDiscordFriends: Boolean = false,
+    // ── Discord Social drill: Root (account) → Account (hub) → Friends ─────
+    val socialNav: SocialNav = SocialNav.Root,
+    val socialAccountAvatarUrl: String? = null,   // cached so the drill sibling column can render it
 
     // ── Color-scheme picker (Settings ▸ Themes ▸ Color Scheme) ─────────────
     val colorSchemePicker: ColorSchemePickerState? = null,
@@ -448,6 +458,7 @@ data class XMBUiState(
         get() = musicNav != MusicNav.Root ||
             videoNav != VideoNav.Root ||
             photoNav != PhotoNav.Root ||
+            socialNav != SocialNav.Root ||
             selectedPlatformId != null ||
             selectedCollectionId != null
 
@@ -472,7 +483,6 @@ data class XMBUiState(
             activePhotoViewer != null ||
             activeContextMenu != null ||
             activeDiscordLogin ||
-            activeDiscordFriends ||
             colorSchemePicker != null ||
             appPicker != null ||
             gamePickerCategoryId != null ||
@@ -510,10 +520,14 @@ enum class XMBItemType {
     // "Add …" / "Create …" rows (add library/folder/apps/tracks, create playlist) — plus glyph.
     ADD_ACTION,
     // Discord Social section rows.
-    SOCIAL_ADD,       // "Sign in with Discord" — opens the QR login overlay
-    SOCIAL_ACCOUNT,   // a connected Discord account
-    SOCIAL_FRIENDS,   // "Friends" — opens the friends list overlay
-    SOCIAL_SIGNOUT,   // "Sign out"
+    SOCIAL_ADD,               // "Sign in with Discord" — opens the QR login overlay
+    SOCIAL_ACCOUNT,           // a connected Discord account (L1) — drills into the hub
+    SOCIAL_FRIENDS,           // hub row → drills into the Friends list
+    SOCIAL_VOICE,             // hub row (placeholder)
+    SOCIAL_ACTIVITY_SETTINGS, // hub row (placeholder)
+    SOCIAL_DISCORD_SETTINGS,  // hub row (placeholder)
+    SOCIAL_FRIEND,            // a single friend (L3)
+    SOCIAL_SIGNOUT,           // "Sign Out"
     EMPTY,
 }
 
@@ -935,15 +949,20 @@ class XMBViewModel @Inject constructor(
                 BuiltInCategory.SETTINGS -> {
                     _uiState.update { it.copy(currentItems = SETTINGS_ITEMS) }
                 }
-                BuiltInCategory.SOCIAL -> {
-                    val items = socialRootItems()
-                    _uiState.update { it.copy(currentItems = items) }
-                    // Fill in the avatar/name once the gateway is Ready (skip while offline).
-                    if (discordAuthRepository.isOnline() &&
-                        items.any { it.type == XMBItemType.SOCIAL_ACCOUNT && it.coverUri == null }
-                    ) {
-                        scheduleSocialAccountRefresh()
+                BuiltInCategory.SOCIAL -> when (_uiState.value.socialNav) {
+                    SocialNav.Root -> {
+                        val items = socialRootItems()
+                        val avatar = items.firstOrNull { it.type == XMBItemType.SOCIAL_ACCOUNT }?.coverUri
+                        _uiState.update { it.copy(currentItems = items, socialAccountAvatarUrl = avatar) }
+                        // Fill in the avatar/name once the gateway is Ready (skip while offline).
+                        if (discordAuthRepository.isOnline() &&
+                            items.any { it.type == XMBItemType.SOCIAL_ACCOUNT && it.coverUri == null }
+                        ) {
+                            scheduleSocialAccountRefresh()
+                        }
                     }
+                    SocialNav.Account -> _uiState.update { it.copy(currentItems = socialHubItems()) }
+                    SocialNav.Friends -> _uiState.update { it.copy(currentItems = socialFriendItems()) }
                 }
                 BuiltInCategory.GAMES -> {
                     val platformId = _uiState.value.selectedPlatformId
@@ -2845,6 +2864,13 @@ class XMBViewModel @Inject constructor(
             PhotoNav.Root       -> null
         }
         if (photoTitle != null) return photoTitle
+        // Discord Social sub-navigation.
+        val socialTitle = when (s.socialNav) {
+            SocialNav.Account -> "Account"
+            SocialNav.Friends -> "Friends"
+            SocialNav.Root    -> null
+        }
+        if (socialTitle != null) return socialTitle
         return when {
             s.selectedCollectionId != null ->
                 s.collections.firstOrNull { it.id == s.selectedCollectionId }?.name ?: "Collection"
@@ -2963,6 +2989,20 @@ class XMBViewModel @Inject constructor(
                 }
             }.coerceAtLeast(0)
             return sibs to idx
+        }
+        // Discord Social: drilled into the account → the account is the sibling; drilled deeper →
+        // the hub's drillable rows are the siblings.
+        if (s.socialNav != SocialNav.Root) {
+            return when (s.socialNav) {
+                SocialNav.Account -> listOf(
+                    XMBItem(id = "social_account", title = "", coverUri = s.socialAccountAvatarUrl, type = XMBItemType.SOCIAL_ACCOUNT),
+                ) to 0
+                SocialNav.Friends -> {
+                    val hub = socialHubSiblings()
+                    hub to hub.indexOfFirst { it.type == XMBItemType.SOCIAL_FRIENDS }.coerceAtLeast(0)
+                }
+                SocialNav.Root -> emptyList<XMBItem>() to 0
+            }
         }
         if (category?.id == BuiltInCategory.GAMES) {
             val sibs = memoryCardItems().filter {
@@ -3354,10 +3394,6 @@ class XMBViewModel @Inject constructor(
                 if (action == GamepadAction.BACK) onDiscordLoginClosed()
                 return
             }
-            state.activeDiscordFriends -> {
-                if (action == GamepadAction.BACK) onDiscordFriendsClosed()
-                return
-            }
         }
 
         // Defensive net: the main XMB navigation below must NEVER run while any overlay,
@@ -3398,6 +3434,7 @@ class XMBViewModel @Inject constructor(
                     // Album drill-in backs out via the Albums list first.
                     state.photoNav is PhotoNav.Library -> openPhotoView(PhotoNav.Albums)
                     state.photoNav != PhotoNav.Root -> closePhotoView()
+                    state.socialNav != SocialNav.Root -> socialBack()
                     state.selectedPlatformId != null || state.selectedCollectionId != null -> closePlatformFolder()
                     else -> onOpenAppDrawer()
                 }
@@ -4314,7 +4351,7 @@ class XMBViewModel @Inject constructor(
         // activeAppDrawerFilter is cleared as an invariant: landing on a category always shows the
         // plain XMB (the drawer can't normally be open here, but this keeps the contextual button
         // state correct no matter which path selected the category).
-        _uiState.update { it.copy(selectedCategoryIndex = index, selectedItemIndex = restore, selectedPlatformId = null, selectedCollectionId = null, musicNav = MusicNav.Root, videoNav = VideoNav.Root, photoNav = PhotoNav.Root, activeAppDrawerFilter = null) }
+        _uiState.update { it.copy(selectedCategoryIndex = index, selectedItemIndex = restore, selectedPlatformId = null, selectedCollectionId = null, musicNav = MusicNav.Root, videoNav = VideoNav.Root, photoNav = PhotoNav.Root, socialNav = SocialNav.Root, activeAppDrawerFilter = null) }
         tintWaveForCategory(category)
         loadItemsForCategory(category)
     }
@@ -4421,6 +4458,7 @@ class XMBViewModel @Inject constructor(
             s.videoNav != VideoNav.Root -> closeVideoView()
             s.photoNav is PhotoNav.Library -> openPhotoView(PhotoNav.Albums)
             s.photoNav != PhotoNav.Root -> closePhotoView()
+            s.socialNav != SocialNav.Root -> socialBack()
             s.selectedPlatformId != null || s.selectedCollectionId != null -> closePlatformFolder()
             else -> onOpenAppDrawer()
         }
@@ -4442,22 +4480,76 @@ class XMBViewModel @Inject constructor(
         }
         val online = discordAuthRepository.isOnline()
         val user = if (online) discordAuthRepository.currentUser() else null
-        val account = XMBItem(
-            id = "social_account",
-            title = user?.label ?: "Connected to Discord",
-            subtitle = when {
-                !online -> "Offline"
-                user != null -> "Online"
-                else -> "Connecting…"
-            },
-            coverUri = user?.avatarUrl?.takeIf { it.isNotBlank() },
-            type = XMBItemType.SOCIAL_ACCOUNT,
-        )
+        // L1 is the account itself; Friends / Voice / Settings / Sign Out live in its hub (L2).
         return listOf(
-            account,
-            XMBItem(id = "social_friends", title = "Friends", subtitle = "See who's online", type = XMBItemType.SOCIAL_FRIENDS),
-            XMBItem(id = "social_signout", title = "Sign out", type = XMBItemType.SOCIAL_SIGNOUT),
+            XMBItem(
+                id = "social_account",
+                title = user?.label ?: "Connected to Discord",
+                subtitle = when {
+                    !online -> "Offline"
+                    user != null -> "Online"
+                    else -> "Connecting…"
+                },
+                coverUri = user?.avatarUrl?.takeIf { it.isNotBlank() },
+                type = XMBItemType.SOCIAL_ACCOUNT,
+            ),
         )
+    }
+
+    // L2 (Account hub): the account's sections. Sign Out lives here for now.
+    private fun socialHubItems(): List<XMBItem> = listOf(
+        XMBItem(id = "social_friends", title = "Friends", subtitle = "See who's online", type = XMBItemType.SOCIAL_FRIENDS),
+        XMBItem(id = "social_voice", title = "Voice", subtitle = "Coming soon", type = XMBItemType.SOCIAL_VOICE),
+        XMBItem(id = "social_activity", title = "Activity Settings", subtitle = "Coming soon", type = XMBItemType.SOCIAL_ACTIVITY_SETTINGS),
+        XMBItem(id = "social_settings", title = "Discord Settings", subtitle = "Coming soon", type = XMBItemType.SOCIAL_DISCORD_SETTINGS),
+        XMBItem(id = "social_signout", title = "Sign Out", type = XMBItemType.SOCIAL_SIGNOUT),
+    )
+
+    // The hub's drillable sections — the sibling column shown when drilled deeper than the hub.
+    private fun socialHubSiblings(): List<XMBItem> =
+        socialHubItems().filter { it.type != XMBItemType.SOCIAL_SIGNOUT }
+
+    // L3 (Friends): friends online-first, with offline / empty placeholders.
+    private suspend fun socialFriendItems(): List<XMBItem> {
+        if (!discordAuthRepository.isOnline()) {
+            return listOf(XMBItem(id = "social_offline", title = "You're offline", subtitle = "Reconnect to see your friends", type = XMBItemType.EMPTY))
+        }
+        val friends = discordAuthRepository.friends().sortedWith(
+            compareByDescending<DiscordFriend> { it.presence.isOnline }.thenBy { it.label.lowercase() },
+        )
+        if (friends.isEmpty()) {
+            return listOf(XMBItem(id = "social_nofriends", title = "No friends to show", type = XMBItemType.EMPTY))
+        }
+        return friends.map { f ->
+            XMBItem(
+                id = "friend_${f.id}",
+                title = f.label,
+                subtitle = f.activity?.let { "Playing $it" } ?: socialPresenceLabel(f.presence),
+                coverUri = f.avatarUrl.takeIf { it.isNotBlank() },
+                type = XMBItemType.SOCIAL_FRIEND,
+            )
+        }
+    }
+
+    private fun socialPresenceLabel(p: DiscordPresence): String = when (p) {
+        DiscordPresence.ONLINE -> "Online"
+        DiscordPresence.IDLE -> "Idle"
+        DiscordPresence.DND -> "Do Not Disturb"
+        DiscordPresence.STREAMING -> "Streaming"
+        DiscordPresence.OFFLINE -> "Offline"
+        DiscordPresence.UNKNOWN -> ""
+    }
+
+    private fun openSocialView(nav: SocialNav) = navigateRememberingCursor { it.copy(socialNav = nav) }
+
+    // One level up: Friends → Account → Root.
+    private fun socialBack() {
+        val parent = when (_uiState.value.socialNav) {
+            SocialNav.Friends -> SocialNav.Account
+            SocialNav.Account -> SocialNav.Root
+            SocialNav.Root -> SocialNav.Root
+        }
+        openSocialView(parent)
     }
 
     // When connected but the profile hasn't loaded yet (gateway still connecting), poll briefly and
@@ -4468,7 +4560,9 @@ class XMBViewModel @Inject constructor(
         socialRefreshJob = viewModelScope.launch {
             repeat(8) {
                 kotlinx.coroutines.delay(1000)
-                if (currentCategory()?.id != BuiltInCategory.SOCIAL) return@launch
+                if (currentCategory()?.id != BuiltInCategory.SOCIAL ||
+                    _uiState.value.socialNav != SocialNav.Root
+                ) return@launch
                 if (discordAuthRepository.currentUser() != null) {
                     loadItemsForCategory(currentCategory())
                     return@launch
@@ -4491,11 +4585,16 @@ class XMBViewModel @Inject constructor(
                     loadItemsForCategory(currentCategory())
                 }
             }
-            XMBItemType.SOCIAL_FRIENDS -> {
+            XMBItemType.SOCIAL_ACCOUNT -> { menuSound.play(MenuSound.SELECT); openSocialView(SocialNav.Account) }
+            XMBItemType.SOCIAL_FRIENDS -> { menuSound.play(MenuSound.SELECT); openSocialView(SocialNav.Friends) }
+            XMBItemType.SOCIAL_SIGNOUT -> {
                 menuSound.play(MenuSound.SELECT)
-                _uiState.update { it.copy(activeDiscordFriends = true) }
+                viewModelScope.launch { discordAuthRepository.logout(); openSocialView(SocialNav.Root) }
             }
-            XMBItemType.SOCIAL_ACCOUNT -> menuSound.play(MenuSound.SELECT)
+            XMBItemType.SOCIAL_VOICE,
+            XMBItemType.SOCIAL_ACTIVITY_SETTINGS,
+            XMBItemType.SOCIAL_DISCORD_SETTINGS,
+            XMBItemType.SOCIAL_FRIEND -> menuSound.play(MenuSound.SELECT)  // placeholders / friend profile later
             else -> return false
         }
         return true
@@ -4505,11 +4604,6 @@ class XMBViewModel @Inject constructor(
     fun onDiscordLoginClosed() {
         _uiState.update { it.copy(activeDiscordLogin = false) }
         loadItemsForCategory(currentCategory())
-    }
-
-    /** Called by the shell when the Friends overlay closes. */
-    fun onDiscordFriendsClosed() {
-        _uiState.update { it.copy(activeDiscordFriends = false) }
     }
 
     fun onItemSelected(index: Int) {
