@@ -70,12 +70,15 @@ import com.playfieldportal.feature.xmb.ui.photo.PhotoViewerScreen
 import com.playfieldportal.feature.xmb.viewmodel.XMBUiState
 import com.playfieldportal.feature.xmb.viewmodel.XMBViewModel
 
-// Uniform canvas-scale baseline. Set just above the handheld reference (the AYN Thor's landscape
-// height ≈ 468dp @ 1080×1920 / 369dpi) so handhelds resolve to exactly scale 1 (coerced) and stay
-// pixel-identical. Taller canvases (tablets) scale up proportionally, capped so huge screens don't
-// balloon. Governed by the shorter side (height in this landscape-locked app).
-private const val XMB_BASELINE_HEIGHT_DP = 480f
-private const val XMB_MAX_SCALE = 1.6f
+// Uniform canvas-scale baseline = the handheld reference height in dp (AYN Thor landscape,
+// 1080×1920 / 369dpi ⇒ 1080 / (369/160) ≈ 468dp). The scale resolves so the post-scale layout
+// height in dp always equals this baseline (scaledHeightDp = realHeightDp / (realHeightDp/baseline)
+// = baseline), i.e. every screen lays the XMB cross out in a Thor-sized vertical space and just
+// magnifies to fill — so the item windowing (1 row above / 2 below) is IDENTICAL everywhere and no
+// extra row clips in on a taller tablet. The cap only guards absurd configs; real tablets must NOT
+// be clamped or their layout height would exceed the baseline and reveal a clipped extra row.
+private const val XMB_BASELINE_HEIGHT_DP = 468f
+private const val XMB_MAX_SCALE = 2.5f
 
 /**
  * Stateful entry point for the XMB home screen: collects [XMBViewModel.uiState] and wires the

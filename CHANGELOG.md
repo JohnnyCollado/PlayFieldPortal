@@ -52,9 +52,9 @@ Access Framework, so the app no longer needs all-files access.
   step distance.
 - **Auto-fading photo title.** The photo viewer shows a centred title on each image, then
   fades it out after a short delay.
-- **Touch prev/next in the photo viewer.** Left/right chevron buttons (the touch counterparts of
-  L1/R1) page through photos; they dim at the first/last image and hide with the rest of the
-  controls when you tap the photo.
+- **Touch prev/next in the photo viewer.** Left/right pill buttons (the touch counterparts of
+  L1/R1, styled to match the Back / Options pills) page through photos; they dim at the first/last
+  image and hide with the rest of the controls when you tap the photo.
 - **Tablet display scaling.** On screens larger than a handheld, the whole UI (XMB cross, Settings,
   detail screens, drawer and dialogs) magnifies uniformly instead of leaving tiny, mis-aligned
   elements floating on a big canvas. One canvas-scale factor keyed to the screen size preserves the
@@ -98,6 +98,9 @@ Access Framework, so the app no longer needs all-files access.
   is now the left-edge swipe or tapping the active memory-card icon under the caticon.
 
 ### Fixed
+- **No more clipped half-row at the bottom of the XMB.** The home item column now renders only
+  rows that fully fit below the active item, so a partial "peek" row is never cut off at the screen
+  edge — on the handheld and (via the uniform canvas scale) on tablets alike.
 - **Controller cursor no longer dies after opening a collection** in Settings ▸ Collections. Each
   step (list / detail) now owns its focus scaffold, so drilling into a collection re-assigns D-pad
   focus instead of leaving the cursor stranded (touch was unaffected).

@@ -397,7 +397,10 @@ fun XMBItemList(
     // bar) and the next becomes selected (below it). The bar is taller than a row, so the column is
     // rendered in two pieces — one item above, selected + following below — rather than one list.
     BoxWithConstraints(modifier = modifier.fillMaxWidth().fillMaxHeight().clipToBounds()) {
-        val rowsBelow = (((maxHeight.value - belowTopY.value) / ROW_HEIGHT.value).toInt() + 1)
+        // Render only rows that FULLY fit below the anchor — the active row plus however many whole
+        // rows remain in the space beneath it. No trailing partial row is composed, so nothing gets
+        // clipped to a half-height sliver at the bottom edge (on any screen size).
+        val rowsBelow = ((maxHeight.value - belowTopY.value) / ROW_HEIGHT.value).toInt()
             .coerceAtLeast(1)
         val sel = selectedIndex.coerceIn(0, (items.size - 1).coerceAtLeast(0))
 
