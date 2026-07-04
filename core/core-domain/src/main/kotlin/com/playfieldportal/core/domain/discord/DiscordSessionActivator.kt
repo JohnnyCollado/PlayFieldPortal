@@ -22,4 +22,10 @@ interface DiscordSessionActivator {
 
     /** Native connection status ordinal (mirrors discordpp Client::Status; 0 = Disconnected, 3 = Ready). */
     fun connectionStatus(): Int
+
+    /** Broadcast this app-scoped rich presence — what friends see as "Playing …" under our app. */
+    suspend fun setActivity(name: String, details: String?)
+
+    /** Clear any broadcast presence (sharing turned off / signed out). */
+    suspend fun clearActivity()
 }

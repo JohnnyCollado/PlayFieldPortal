@@ -33,6 +33,9 @@ class DiscordAuthRepositoryTest {
         override suspend fun currentUser(): DiscordUser? = null
         override suspend fun friends(): List<DiscordFriend> = emptyList()
         override fun connectionStatus(): Int = 3
+        var activity: Pair<String, String?>? = null
+        override suspend fun setActivity(name: String, details: String?) { activity = name to details }
+        override suspend fun clearActivity() { activity = null }
     }
 
     private fun onlineMonitor(online: Boolean = true) =

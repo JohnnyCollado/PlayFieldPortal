@@ -64,6 +64,14 @@ class DiscordNativeSessionActivator @Inject constructor() : DiscordSessionActiva
 
     override fun connectionStatus(): Int = DiscordNativeBridge.status()
 
+    override suspend fun setActivity(name: String, details: String?) = withContext(Dispatchers.IO) {
+        DiscordNativeBridge.setActivity(name, details.orEmpty())
+    }
+
+    override suspend fun clearActivity() = withContext(Dispatchers.IO) {
+        DiscordNativeBridge.clearActivity()
+    }
+
     // "Details · State" is richest; fall back to details, then the app name. Null when not in-app.
     private fun composeActivity(name: String, details: String, state: String): String? = when {
         details.isNotBlank() && state.isNotBlank() -> "$details · $state"

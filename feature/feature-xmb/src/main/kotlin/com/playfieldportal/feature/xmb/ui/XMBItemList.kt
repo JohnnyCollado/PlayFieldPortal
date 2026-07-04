@@ -831,7 +831,8 @@ private fun XmbItemLeadingIcon(
                 Icon(Icons.Filled.Headset, contentDescription = null, tint = InactiveText, modifier = Modifier.size(46.dp))
             }
         }
-        item.type == XMBItemType.SOCIAL_ACTIVITY_SETTINGS -> {
+        item.type == XMBItemType.SOCIAL_ACTIVITY_SETTINGS ||
+            item.type == XMBItemType.SOCIAL_TOGGLE -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
                 Icon(Icons.Filled.SportsEsports, contentDescription = null, tint = InactiveText, modifier = Modifier.size(46.dp))
             }

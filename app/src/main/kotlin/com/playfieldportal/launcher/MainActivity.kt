@@ -32,6 +32,7 @@ class MainActivity : ComponentActivity() {
 
     @Inject lateinit var gamepadInputHandler: GamepadInputHandler
     @Inject lateinit var discordAuthRepository: DiscordAuthRepository
+    @Inject lateinit var discordPresence: com.playfieldportal.core.data.discord.DiscordPresenceController
 
     // Runtime-registered so it actually fires on Android 8+ (manifest receivers are blocked for
     // this implicit broadcast). Lives for the activity's lifetime.
@@ -60,6 +61,9 @@ class MainActivity : ComponentActivity() {
             if (discordAuthRepository.hasSession()) {
                 DiscordNativeBridge.attachActivity(this@MainActivity)
                 discordAuthRepository.restoreSession()
+                // Re-broadcast the opt-in activity presence once the session is back (no-op if the
+                // user hasn't enabled sharing).
+                discordPresence.refresh()
             }
         }
 

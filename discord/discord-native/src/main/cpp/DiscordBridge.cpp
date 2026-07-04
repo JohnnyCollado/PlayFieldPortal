@@ -226,6 +226,40 @@ Java_com_playfieldportal_discord_DiscordNativeBridge_nativeGetFriendsJson(
     return env->NewStringUTF(result.c_str());
 }
 
+// Broadcast this app-scoped rich presence — what friends see as "Playing …" under our application
+// (the SDK scopes activity to our app id). Fire-and-forget on the pump thread; presence updates are
+// best-effort and non-blocking. [details] is optional (empty = omitted).
+JNIEXPORT void JNICALL
+Java_com_playfieldportal_discord_DiscordNativeBridge_nativeSetActivity(
+    JNIEnv* env, jobject /*thiz*/, jstring jName, jstring jDetails) {
+    if (!gClient) return;
+    auto readStr = [env](jstring s) -> std::string {
+        if (!s) return "";
+        const char* c = env->GetStringUTFChars(s, nullptr);
+        std::string out(c ? c : "");
+        env->ReleaseStringUTFChars(s, c);
+        return out;
+    };
+    const std::string name = readStr(jName);
+    const std::string details = readStr(jDetails);
+    post([name, details]() {
+        discordpp::Activity activity{};
+        activity.SetType(discordpp::ActivityTypes::Playing);
+        activity.SetName(name);
+        if (!details.empty()) activity.SetDetails(details);
+        gClient->UpdateRichPresence(std::move(activity),
+                                    [](discordpp::ClientResult /*result*/) {});
+    });
+}
+
+// Clear any broadcast presence (sharing turned off / signed out). Fire-and-forget on the pump.
+JNIEXPORT void JNICALL
+Java_com_playfieldportal_discord_DiscordNativeBridge_nativeClearActivity(
+    JNIEnv* /*env*/, jobject /*thiz*/) {
+    if (!gClient) return;
+    post([]() { gClient->ClearRichPresence(); });
+}
+
 // Tear down the live session (logout), on the pump thread.
 JNIEXPORT void JNICALL
 Java_com_playfieldportal_discord_DiscordNativeBridge_nativeDisconnect(

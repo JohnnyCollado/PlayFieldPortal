@@ -55,6 +55,16 @@ object DiscordNativeBridge {
     /** Friends as a JSON array string, or "[]" until Ready. Call off the main thread. */
     fun friendsJson(): String = if (clientStarted.get()) nativeGetFriendsJson() else "[]"
 
+    /** Broadcast app-scoped rich presence (what friends see as "Playing …"). Call off the main thread. */
+    fun setActivity(name: String, details: String) {
+        if (clientStarted.get()) nativeSetActivity(name, details)
+    }
+
+    /** Clear any broadcast presence. Call off the main thread. */
+    fun clearActivity() {
+        if (clientStarted.get()) nativeClearActivity()
+    }
+
     fun shutdown() {
         if (clientStarted.compareAndSet(true, false)) nativeShutdown()
     }
@@ -65,5 +75,7 @@ object DiscordNativeBridge {
     private external fun nativeGetStatus(): Int
     private external fun nativeGetCurrentUserJson(): String
     private external fun nativeGetFriendsJson(): String
+    private external fun nativeSetActivity(name: String, details: String)
+    private external fun nativeClearActivity()
     private external fun nativeShutdown()
 }

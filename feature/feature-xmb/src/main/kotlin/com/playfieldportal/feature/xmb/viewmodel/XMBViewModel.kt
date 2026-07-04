@@ -249,6 +249,7 @@ sealed interface SocialNav {
     data object Root : SocialNav
     data object Account : SocialNav
     data object Friends : SocialNav
+    data object ActivitySettings : SocialNav
     data object DiscordSettings : SocialNav
 }
 
@@ -528,9 +529,10 @@ enum class XMBItemType {
     SOCIAL_ACCOUNT,           // a connected Discord account (L1) — drills into the hub
     SOCIAL_FRIENDS,           // hub row → drills into the Friends list
     SOCIAL_VOICE,             // hub row (placeholder)
-    SOCIAL_ACTIVITY_SETTINGS, // hub row (placeholder)
-    SOCIAL_DISCORD_SETTINGS,  // hub row (placeholder)
+    SOCIAL_ACTIVITY_SETTINGS, // hub row → drills into Activity Settings
+    SOCIAL_DISCORD_SETTINGS,  // hub row → drills into Discord Settings
     SOCIAL_FRIEND,            // a single friend (L3)
+    SOCIAL_TOGGLE,            // an on/off preference row (Activity Settings), toggled on select
     SOCIAL_SIGNOUT,           // "Sign Out"
     EMPTY,
 }
@@ -662,6 +664,7 @@ class XMBViewModel @Inject constructor(
     private val photoScanner: com.playfieldportal.feature.library.scanner.PhotoScanner,
     private val hiddenPlacementDao: com.playfieldportal.core.data.database.dao.HiddenPlacementDao,
     private val discordAuthRepository: com.playfieldportal.core.data.discord.DiscordAuthRepository,
+    private val discordPresence: com.playfieldportal.core.data.discord.DiscordPresenceController,
 ) : ViewModel() {
 
     // The track list currently on screen (in display/sort order), used as the in-app player's queue
@@ -977,6 +980,7 @@ class XMBViewModel @Inject constructor(
                         _uiState.update { it.copy(currentItems = socialHubItems(online)) }
                     }
                     SocialNav.Friends -> _uiState.update { it.copy(currentItems = socialFriendItems()) }
+                    SocialNav.ActivitySettings -> _uiState.update { it.copy(currentItems = socialActivitySettingsItems()) }
                     SocialNav.DiscordSettings -> _uiState.update { it.copy(currentItems = socialDiscordSettingsItems()) }
                 }
                 BuiltInCategory.GAMES -> {
@@ -2881,10 +2885,11 @@ class XMBViewModel @Inject constructor(
         if (photoTitle != null) return photoTitle
         // Discord Social sub-navigation.
         val socialTitle = when (s.socialNav) {
-            SocialNav.Account         -> "Account"
-            SocialNav.Friends         -> "Friends"
-            SocialNav.DiscordSettings -> "Discord Settings"
-            SocialNav.Root            -> null
+            SocialNav.Account          -> "Account"
+            SocialNav.Friends          -> "Friends"
+            SocialNav.ActivitySettings -> "Activity Settings"
+            SocialNav.DiscordSettings  -> "Discord Settings"
+            SocialNav.Root             -> null
         }
         if (socialTitle != null) return socialTitle
         return when {
@@ -3016,6 +3021,10 @@ class XMBViewModel @Inject constructor(
                 SocialNav.Friends -> {
                     val hub = socialHubSiblings()
                     hub to hub.indexOfFirst { it.type == XMBItemType.SOCIAL_FRIENDS }.coerceAtLeast(0)
+                }
+                SocialNav.ActivitySettings -> {
+                    val hub = socialHubSiblings()
+                    hub to hub.indexOfFirst { it.type == XMBItemType.SOCIAL_ACTIVITY_SETTINGS }.coerceAtLeast(0)
                 }
                 SocialNav.DiscordSettings -> {
                     val hub = socialHubSiblings()
@@ -4537,12 +4546,45 @@ class XMBViewModel @Inject constructor(
             type = XMBItemType.SOCIAL_FRIENDS,
         ),
         XMBItem(id = "social_voice", title = "Voice", subtitle = "Coming soon", type = XMBItemType.SOCIAL_VOICE),
-        XMBItem(id = "social_activity", title = "Activity Settings", subtitle = "Coming soon", type = XMBItemType.SOCIAL_ACTIVITY_SETTINGS),
+        XMBItem(id = "social_activity", title = "Activity Settings", subtitle = "Share what you're playing", type = XMBItemType.SOCIAL_ACTIVITY_SETTINGS),
         XMBItem(id = "social_settings", title = "Discord Settings", subtitle = "Account & sign out", type = XMBItemType.SOCIAL_DISCORD_SETTINGS),
     )
 
     // The hub's drillable sections — the sibling column shown when drilled deeper than the hub.
     private fun socialHubSiblings(): List<XMBItem> = socialHubItems()
+
+    // L3 (Activity Settings): opt-in presence sharing + generic mode, each an on/off toggle row.
+    private suspend fun socialActivitySettingsItems(): List<XMBItem> {
+        val sharing = discordPresence.isShareEnabled()
+        val generic = discordPresence.isGenericMode()
+        return listOf(
+            XMBItem(
+                id = "activity_share",
+                title = "Share Activity",
+                subtitle = if (sharing) "On · friends can see you're in Playfield Portal"
+                           else "Off · nothing is shared with friends",
+                type = XMBItemType.SOCIAL_TOGGLE,
+            ),
+            XMBItem(
+                id = "activity_generic",
+                title = "Generic Mode",
+                subtitle = if (generic) "On · shows \"a game\" instead of the app name"
+                           else "Off · shows the app name",
+                type = XMBItemType.SOCIAL_TOGGLE,
+            ),
+        )
+    }
+
+    private fun toggleActivitySetting(id: String) {
+        viewModelScope.launch {
+            when (id) {
+                "activity_share"   -> discordPresence.setShareEnabled(!discordPresence.isShareEnabled())
+                "activity_generic" -> discordPresence.setGenericMode(!discordPresence.isGenericMode())
+            }
+            // Re-render the toggle rows with their new on/off state (setters broadcast internally).
+            loadItemsForCategory(currentCategory())
+        }
+    }
 
     // L3 (Discord Settings): account options. Sign Out for now; notifications & more land here later.
     private suspend fun socialDiscordSettingsItems(): List<XMBItem> {
@@ -4606,10 +4648,11 @@ class XMBViewModel @Inject constructor(
     // One level up: Friends / Discord Settings → Account → Root.
     private fun socialBack() {
         val parent = when (_uiState.value.socialNav) {
-            SocialNav.Friends         -> SocialNav.Account
-            SocialNav.DiscordSettings -> SocialNav.Account
-            SocialNav.Account         -> SocialNav.Root
-            SocialNav.Root            -> SocialNav.Root
+            SocialNav.Friends          -> SocialNav.Account
+            SocialNav.ActivitySettings -> SocialNav.Account
+            SocialNav.DiscordSettings  -> SocialNav.Account
+            SocialNav.Account          -> SocialNav.Root
+            SocialNav.Root             -> SocialNav.Root
         }
         openSocialView(parent)
     }
@@ -4652,6 +4695,7 @@ class XMBViewModel @Inject constructor(
         when (itemId) {
             "social_reconnect" -> viewModelScope.launch {
                 discordAuthRepository.restoreSession()
+                discordPresence.refresh()   // re-broadcast presence once reconnected (if sharing is on)
                 // Re-render the account row (Offline → Connecting…/Online) and poll until the gateway
                 // reaches Ready so the avatar/name and Online state fill back in.
                 loadItemsForCategory(currentCategory())
@@ -4678,10 +4722,11 @@ class XMBViewModel @Inject constructor(
             }
             XMBItemType.SOCIAL_ACCOUNT -> { menuSound.play(MenuSound.SELECT); openSocialView(SocialNav.Account) }
             XMBItemType.SOCIAL_FRIENDS -> { menuSound.play(MenuSound.SELECT); openSocialView(SocialNav.Friends) }
+            XMBItemType.SOCIAL_ACTIVITY_SETTINGS -> { menuSound.play(MenuSound.SELECT); openSocialView(SocialNav.ActivitySettings) }
             XMBItemType.SOCIAL_DISCORD_SETTINGS -> { menuSound.play(MenuSound.SELECT); openSocialView(SocialNav.DiscordSettings) }
+            XMBItemType.SOCIAL_TOGGLE -> { menuSound.play(MenuSound.SELECT); toggleActivitySetting(item.id) }
             XMBItemType.SOCIAL_VOICE,
-            XMBItemType.SOCIAL_ACTIVITY_SETTINGS,
-            XMBItemType.SOCIAL_FRIEND -> menuSound.play(MenuSound.SELECT)  // placeholders / friend profile later
+            XMBItemType.SOCIAL_FRIEND -> menuSound.play(MenuSound.SELECT)  // placeholder / friend profile later
             else -> return false
         }
         return true
@@ -4690,6 +4735,8 @@ class XMBViewModel @Inject constructor(
     /** Called by the shell when the QR login overlay closes (connected or cancelled). */
     fun onDiscordLoginClosed() {
         _uiState.update { it.copy(activeDiscordLogin = false) }
+        // Broadcast the opt-in presence if the user just connected and has sharing on (no-op otherwise).
+        viewModelScope.launch { discordPresence.refresh() }
         loadItemsForCategory(currentCategory())
     }
 
