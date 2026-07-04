@@ -32,15 +32,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.foundation.layout.Box
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
-import android.app.Activity
-import android.content.Context
-import android.content.ContextWrapper
-import com.playfieldportal.discord.DiscordNativeBridge
-import com.playfieldportal.feature.social.ui.QrLoginScreen
 import kotlinx.coroutines.launch
 
 // Accessed by long-pressing the Settings category icon in debug builds.
@@ -52,8 +43,6 @@ fun DebugMenuScreen(
 ) {
     val state by viewModel.debugState.collectAsState()
     val scope = rememberCoroutineScope()
-    val context = LocalContext.current
-    var showDiscordLogin by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
     Row(
@@ -140,20 +129,6 @@ fun DebugMenuScreen(
 
             HorizontalDivider(color = Color.White.copy(alpha = 0.15f))
 
-            // ── Discord (test) ────────────────────────────────────────────
-            DebugSection("DISCORD (TEST)")
-            Button(
-                onClick = {
-                    context.findActivity()?.let { DiscordNativeBridge.attachActivity(it) }
-                    showDiscordLogin = true
-                },
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text("Sign in with Discord (QR)")
-            }
-
-            HorizontalDivider(color = Color.White.copy(alpha = 0.15f))
-
             // ── Reset ─────────────────────────────────────────────────────
             Button(
                 onClick = { viewModel.reset() },
@@ -189,27 +164,7 @@ fun DebugMenuScreen(
         }
     }
 
-    // Full-screen QR login overlay (debug test entry).
-    if (showDiscordLogin) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.97f)),
-        ) {
-            QrLoginScreen(
-                onConnected = { showDiscordLogin = false },
-                onCancel = { showDiscordLogin = false },
-            )
-        }
     }
-    }
-}
-
-// Unwraps the Compose LocalContext to the hosting Activity (needed for the SDK engine attach).
-private tailrec fun Context.findActivity(): Activity? = when (this) {
-    is Activity -> this
-    is ContextWrapper -> baseContext.findActivity()
-    else -> null
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
