@@ -109,6 +109,9 @@ dependencies {
     implementation(project(":feature:feature-settings"))
     implementation(project(":feature:feature-appbar"))
     implementation(project(":feature:feature-backup"))
+    implementation(project(":feature:feature-social"))
+    // Native Discord SDK bridge — provides the DiscordSessionActivator Hilt binding + the .so.
+    implementation(project(":discord:discord-native"))
 
     debugImplementation(libs.compose.ui.tooling)
 }
