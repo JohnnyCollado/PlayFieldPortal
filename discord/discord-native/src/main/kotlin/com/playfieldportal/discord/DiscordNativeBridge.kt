@@ -52,6 +52,9 @@ object DiscordNativeBridge {
     /** Current user as a JSON string, or "" until the session is Ready. Call off the main thread. */
     fun currentUserJson(): String = if (clientStarted.get()) nativeGetCurrentUserJson() else ""
 
+    /** Friends as a JSON array string, or "[]" until Ready. Call off the main thread. */
+    fun friendsJson(): String = if (clientStarted.get()) nativeGetFriendsJson() else "[]"
+
     fun shutdown() {
         if (clientStarted.compareAndSet(true, false)) nativeShutdown()
     }
@@ -61,5 +64,6 @@ object DiscordNativeBridge {
     private external fun nativeDisconnect()
     private external fun nativeGetStatus(): Int
     private external fun nativeGetCurrentUserJson(): String
+    private external fun nativeGetFriendsJson(): String
     private external fun nativeShutdown()
 }

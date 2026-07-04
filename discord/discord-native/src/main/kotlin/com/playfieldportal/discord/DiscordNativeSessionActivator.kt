@@ -1,9 +1,12 @@
 package com.playfieldportal.discord
 
+import com.playfieldportal.core.domain.discord.DiscordFriend
+import com.playfieldportal.core.domain.discord.DiscordPresence
 import com.playfieldportal.core.domain.discord.DiscordSessionActivator
 import com.playfieldportal.core.domain.discord.DiscordUser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
 import org.json.JSONObject
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -35,6 +38,23 @@ class DiscordNativeSessionActivator @Inject constructor() : DiscordSessionActiva
                 avatarUrl = obj.optString("avatarUrl"),
             )
         }.getOrNull()
+    }
+
+    override suspend fun friends(): List<DiscordFriend> = withContext(Dispatchers.IO) {
+        val json = DiscordNativeBridge.friendsJson()
+        runCatching {
+            val array = JSONArray(json)
+            (0 until array.length()).map { i ->
+                val obj = array.getJSONObject(i)
+                DiscordFriend(
+                    id = obj.optString("id"),
+                    username = obj.optString("username"),
+                    displayName = obj.optString("displayName"),
+                    avatarUrl = obj.optString("avatarUrl"),
+                    presence = DiscordPresence.fromStatusOrdinal(obj.optInt("status", 7)),
+                )
+            }
+        }.getOrDefault(emptyList())
     }
 
     override fun connectionStatus(): Int = DiscordNativeBridge.status()

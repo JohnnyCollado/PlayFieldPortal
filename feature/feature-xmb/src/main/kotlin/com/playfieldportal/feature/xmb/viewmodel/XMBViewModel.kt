@@ -404,6 +404,8 @@ data class XMBUiState(
 
     // ── Discord QR login overlay ──────────────────────────────────────────
     val activeDiscordLogin: Boolean = false,
+    // ── Discord Friends list overlay ──────────────────────────────────────
+    val activeDiscordFriends: Boolean = false,
 
     // ── Color-scheme picker (Settings ▸ Themes ▸ Color Scheme) ─────────────
     val colorSchemePicker: ColorSchemePickerState? = null,
@@ -470,6 +472,7 @@ data class XMBUiState(
             activePhotoViewer != null ||
             activeContextMenu != null ||
             activeDiscordLogin ||
+            activeDiscordFriends ||
             colorSchemePicker != null ||
             appPicker != null ||
             gamePickerCategoryId != null ||
@@ -509,6 +512,7 @@ enum class XMBItemType {
     // Discord Social section rows.
     SOCIAL_ADD,       // "Sign in with Discord" — opens the QR login overlay
     SOCIAL_ACCOUNT,   // a connected Discord account
+    SOCIAL_FRIENDS,   // "Friends" — opens the friends list overlay
     SOCIAL_SIGNOUT,   // "Sign out"
     EMPTY,
 }
@@ -3348,6 +3352,10 @@ class XMBViewModel @Inject constructor(
                 if (action == GamepadAction.BACK) onDiscordLoginClosed()
                 return
             }
+            state.activeDiscordFriends -> {
+                if (action == GamepadAction.BACK) onDiscordFriendsClosed()
+                return
+            }
         }
 
         // Defensive net: the main XMB navigation below must NEVER run while any overlay,
@@ -4440,6 +4448,7 @@ class XMBViewModel @Inject constructor(
         )
         return listOf(
             account,
+            XMBItem(id = "social_friends", title = "Friends", subtitle = "See who's online", type = XMBItemType.SOCIAL_FRIENDS),
             XMBItem(id = "social_signout", title = "Sign out", type = XMBItemType.SOCIAL_SIGNOUT),
         )
     }
@@ -4475,6 +4484,10 @@ class XMBViewModel @Inject constructor(
                     loadItemsForCategory(currentCategory())
                 }
             }
+            XMBItemType.SOCIAL_FRIENDS -> {
+                menuSound.play(MenuSound.SELECT)
+                _uiState.update { it.copy(activeDiscordFriends = true) }
+            }
             XMBItemType.SOCIAL_ACCOUNT -> menuSound.play(MenuSound.SELECT)
             else -> return false
         }
@@ -4485,6 +4498,11 @@ class XMBViewModel @Inject constructor(
     fun onDiscordLoginClosed() {
         _uiState.update { it.copy(activeDiscordLogin = false) }
         loadItemsForCategory(currentCategory())
+    }
+
+    /** Called by the shell when the Friends overlay closes. */
+    fun onDiscordFriendsClosed() {
+        _uiState.update { it.copy(activeDiscordFriends = false) }
     }
 
     fun onItemSelected(index: Int) {

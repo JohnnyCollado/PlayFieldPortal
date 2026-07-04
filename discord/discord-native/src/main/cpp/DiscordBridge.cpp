@@ -172,6 +172,48 @@ Java_com_playfieldportal_discord_DiscordNativeBridge_nativeGetCurrentUserJson(
     return env->NewStringUTF(result.c_str());
 }
 
+// Returns the current user's friends as a JSON array (id/username/displayName/avatarUrl/status),
+// or "[]" if not ready. Read on the pump thread.
+JNIEXPORT jstring JNICALL
+Java_com_playfieldportal_discord_DiscordNativeBridge_nativeGetFriendsJson(
+    JNIEnv* env, jobject /*thiz*/) {
+    if (!gClient) return env->NewStringUTF("[]");
+    auto promise = std::make_shared<std::promise<std::string>>();
+    auto future = promise->get_future();
+    post([promise]() {
+        auto relationships = gClient->GetRelationships();
+        std::string json = "[";
+        bool first = true;
+        for (auto& rel : relationships) {
+            if (rel.DiscordRelationshipType() != discordpp::RelationshipType::Friend &&
+                rel.GameRelationshipType() != discordpp::RelationshipType::Friend) {
+                continue;
+            }
+            auto user = rel.User();
+            if (!user.has_value()) continue;
+            auto& u = user.value();
+            const std::string avatarUrl = u.AvatarUrl(
+                discordpp::UserHandle::AvatarType::Png, discordpp::UserHandle::AvatarType::Png);
+            if (!first) json += ",";
+            first = false;
+            json += "{";
+            json += "\"id\":\"" + std::to_string(u.Id()) + "\",";
+            json += "\"username\":\"" + jsonEscape(u.Username()) + "\",";
+            json += "\"displayName\":\"" + jsonEscape(u.DisplayName()) + "\",";
+            json += "\"avatarUrl\":\"" + jsonEscape(avatarUrl) + "\",";
+            json += "\"status\":" + std::to_string(static_cast<int>(u.Status()));
+            json += "}";
+        }
+        json += "]";
+        promise->set_value(json);
+    });
+    if (future.wait_for(std::chrono::seconds(5)) != std::future_status::ready) {
+        return env->NewStringUTF("[]");
+    }
+    const std::string result = future.get();
+    return env->NewStringUTF(result.c_str());
+}
+
 // Tear down the live session (logout), on the pump thread.
 JNIEXPORT void JNICALL
 Java_com_playfieldportal_discord_DiscordNativeBridge_nativeDisconnect(

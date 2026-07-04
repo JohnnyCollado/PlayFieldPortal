@@ -47,6 +47,7 @@ import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material3.Icon
@@ -805,6 +806,11 @@ private fun XmbItemLeadingIcon(
                 } else {
                     Icon(Icons.Filled.AccountCircle, contentDescription = null, tint = InactiveText, modifier = Modifier.size(48.dp))
                 }
+            }
+        }
+        item.type == XMBItemType.SOCIAL_FRIENDS -> {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
+                Icon(Icons.Filled.People, contentDescription = null, tint = InactiveText, modifier = Modifier.size(46.dp))
             }
         }
         item.type == XMBItemType.SOCIAL_SIGNOUT -> {

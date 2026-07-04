@@ -92,6 +92,9 @@ class DiscordAuthRepository @Inject constructor(
     /** The connected user's profile, or null until the gateway is Ready. */
     suspend fun currentUser() = sessionActivator.currentUser()
 
+    /** The connected user's friends (empty until the gateway is Ready). */
+    suspend fun friends() = sessionActivator.friends()
+
     /** Native connection status ordinal (0 = Disconnected … 3 = Ready). */
     fun connectionStatus(): Int = sessionActivator.connectionStatus()
 

@@ -17,6 +17,9 @@ interface DiscordSessionActivator {
     /** The connected user, or null if the gateway hasn't reached Ready yet. */
     suspend fun currentUser(): DiscordUser?
 
+    /** The connected user's friends (empty until the gateway is Ready). */
+    suspend fun friends(): List<DiscordFriend>
+
     /** Native connection status ordinal (mirrors discordpp Client::Status; 0 = Disconnected, 3 = Ready). */
     fun connectionStatus(): Int
 }
