@@ -241,11 +241,13 @@ sealed interface PhotoNav {
     data class Library(val id: String, val name: String) : PhotoNav
 }
 
-// Discord Social sub-navigation: Root (the account) → Account (its hub) → Friends (the list).
+// Discord Social sub-navigation: Root (the account) → Account (its hub) → Friends (the list) /
+// DiscordSettings (account options: Sign Out, and more later).
 sealed interface SocialNav {
     data object Root : SocialNav
     data object Account : SocialNav
     data object Friends : SocialNav
+    data object DiscordSettings : SocialNav
 }
 
 // A request to open the fullscreen photo viewer. [libraryId] scopes L1/R1 next/previous to the
@@ -963,6 +965,7 @@ class XMBViewModel @Inject constructor(
                     }
                     SocialNav.Account -> _uiState.update { it.copy(currentItems = socialHubItems()) }
                     SocialNav.Friends -> _uiState.update { it.copy(currentItems = socialFriendItems()) }
+                    SocialNav.DiscordSettings -> _uiState.update { it.copy(currentItems = socialDiscordSettingsItems()) }
                 }
                 BuiltInCategory.GAMES -> {
                     val platformId = _uiState.value.selectedPlatformId
@@ -2866,9 +2869,10 @@ class XMBViewModel @Inject constructor(
         if (photoTitle != null) return photoTitle
         // Discord Social sub-navigation.
         val socialTitle = when (s.socialNav) {
-            SocialNav.Account -> "Account"
-            SocialNav.Friends -> "Friends"
-            SocialNav.Root    -> null
+            SocialNav.Account         -> "Account"
+            SocialNav.Friends         -> "Friends"
+            SocialNav.DiscordSettings -> "Discord Settings"
+            SocialNav.Root            -> null
         }
         if (socialTitle != null) return socialTitle
         return when {
@@ -3000,6 +3004,10 @@ class XMBViewModel @Inject constructor(
                 SocialNav.Friends -> {
                     val hub = socialHubSiblings()
                     hub to hub.indexOfFirst { it.type == XMBItemType.SOCIAL_FRIENDS }.coerceAtLeast(0)
+                }
+                SocialNav.DiscordSettings -> {
+                    val hub = socialHubSiblings()
+                    hub to hub.indexOfFirst { it.type == XMBItemType.SOCIAL_DISCORD_SETTINGS }.coerceAtLeast(0)
                 }
                 SocialNav.Root -> emptyList<XMBItem>() to 0
             }
@@ -4496,18 +4504,29 @@ class XMBViewModel @Inject constructor(
         )
     }
 
-    // L2 (Account hub): the account's sections. Sign Out lives here for now.
+    // L2 (Account hub): the account's sections. Sign Out now lives under Discord Settings.
     private fun socialHubItems(): List<XMBItem> = listOf(
         XMBItem(id = "social_friends", title = "Friends", subtitle = "See who's online", type = XMBItemType.SOCIAL_FRIENDS),
         XMBItem(id = "social_voice", title = "Voice", subtitle = "Coming soon", type = XMBItemType.SOCIAL_VOICE),
         XMBItem(id = "social_activity", title = "Activity Settings", subtitle = "Coming soon", type = XMBItemType.SOCIAL_ACTIVITY_SETTINGS),
-        XMBItem(id = "social_settings", title = "Discord Settings", subtitle = "Coming soon", type = XMBItemType.SOCIAL_DISCORD_SETTINGS),
-        XMBItem(id = "social_signout", title = "Sign Out", type = XMBItemType.SOCIAL_SIGNOUT),
+        XMBItem(id = "social_settings", title = "Discord Settings", subtitle = "Account & sign out", type = XMBItemType.SOCIAL_DISCORD_SETTINGS),
     )
 
     // The hub's drillable sections — the sibling column shown when drilled deeper than the hub.
-    private fun socialHubSiblings(): List<XMBItem> =
-        socialHubItems().filter { it.type != XMBItemType.SOCIAL_SIGNOUT }
+    private fun socialHubSiblings(): List<XMBItem> = socialHubItems()
+
+    // L3 (Discord Settings): account options. Sign Out for now; notifications & more land here later.
+    private suspend fun socialDiscordSettingsItems(): List<XMBItem> {
+        val user = discordAuthRepository.currentUser()
+        return listOf(
+            XMBItem(
+                id = "social_signout",
+                title = "Sign Out",
+                subtitle = user?.label?.let { "Disconnect $it" } ?: "Disconnect this Discord account",
+                type = XMBItemType.SOCIAL_SIGNOUT,
+            ),
+        )
+    }
 
     // L3 (Friends): friends online-first, with offline / empty placeholders.
     private suspend fun socialFriendItems(): List<XMBItem> {
@@ -4542,12 +4561,13 @@ class XMBViewModel @Inject constructor(
 
     private fun openSocialView(nav: SocialNav) = navigateRememberingCursor { it.copy(socialNav = nav) }
 
-    // One level up: Friends → Account → Root.
+    // One level up: Friends / Discord Settings → Account → Root.
     private fun socialBack() {
         val parent = when (_uiState.value.socialNav) {
-            SocialNav.Friends -> SocialNav.Account
-            SocialNav.Account -> SocialNav.Root
-            SocialNav.Root -> SocialNav.Root
+            SocialNav.Friends         -> SocialNav.Account
+            SocialNav.DiscordSettings -> SocialNav.Account
+            SocialNav.Account         -> SocialNav.Root
+            SocialNav.Root            -> SocialNav.Root
         }
         openSocialView(parent)
     }
@@ -4580,20 +4600,18 @@ class XMBViewModel @Inject constructor(
             }
             XMBItemType.SOCIAL_SIGNOUT -> {
                 menuSound.play(MenuSound.SELECT)
+                // Logging out invalidates the drill (no account), so return to the Social root, which
+                // re-renders to the "Sign in with Discord" row.
                 viewModelScope.launch {
                     discordAuthRepository.logout()
-                    loadItemsForCategory(currentCategory())
+                    openSocialView(SocialNav.Root)
                 }
             }
             XMBItemType.SOCIAL_ACCOUNT -> { menuSound.play(MenuSound.SELECT); openSocialView(SocialNav.Account) }
             XMBItemType.SOCIAL_FRIENDS -> { menuSound.play(MenuSound.SELECT); openSocialView(SocialNav.Friends) }
-            XMBItemType.SOCIAL_SIGNOUT -> {
-                menuSound.play(MenuSound.SELECT)
-                viewModelScope.launch { discordAuthRepository.logout(); openSocialView(SocialNav.Root) }
-            }
+            XMBItemType.SOCIAL_DISCORD_SETTINGS -> { menuSound.play(MenuSound.SELECT); openSocialView(SocialNav.DiscordSettings) }
             XMBItemType.SOCIAL_VOICE,
             XMBItemType.SOCIAL_ACTIVITY_SETTINGS,
-            XMBItemType.SOCIAL_DISCORD_SETTINGS,
             XMBItemType.SOCIAL_FRIEND -> menuSound.play(MenuSound.SELECT)  // placeholders / friend profile later
             else -> return false
         }
