@@ -5,12 +5,22 @@ All notable changes to Play Field Portal are documented here. This project follo
 
 ## [Unreleased]
 
-Touch-first navigation and a consistent, theme-matched UI across every full-screen menu, plus a
-move to permission-free storage: ROM libraries, media and backups now all go through the Storage
-Access Framework, so the app no longer needs all-files access.
+Touch-first navigation and a consistent, theme-matched UI across every full-screen menu; a move to
+permission-free storage (ROM libraries, media and backups all go through the Storage Access
+Framework, so the app no longer needs all-files access); and a new **opt-in Discord Social section**
+(QR sign-in, friends, presence sharing).
 (Still `versionName 1.0.0-alpha.3` / `versionCode 3` — not yet cut as a release.)
 
 ### Added
+- **Discord Social section (opt-in).** A new **Social** column on the XMB. Sign in by scanning a
+  **QR code** with your phone (OAuth2 device grant — no password typed on the handheld); tokens are
+  stored **encrypted** in the Android Keystore and renewed automatically so you stay signed in.
+  Drill into your account for **Friends** (avatars + a colored presence dot and what they're playing
+  in PFP), **Activity Settings** (opt-in — default **off** — sharing that you're in Playfield Portal,
+  with a **Generic Mode** that shows just "a game"), and **Discord Settings** (Sign Out). The account
+  row's Options (Y/△) offers **Reconnect** for when the network drops and comes back. Everything is
+  inert until you connect, and presence is limited by Discord to this app only — nothing outside PFP
+  is ever shared.
 - **Import PC Games.** New section under Library, and an option on the **All Games** card's Options
   menu. Detects installed PC launchers (BannerHub, GameHub Lite, GameNative, Winlator); **Add game
   by ID** builds each launcher's documented launch intent — with a **Test Launch** to verify — so
