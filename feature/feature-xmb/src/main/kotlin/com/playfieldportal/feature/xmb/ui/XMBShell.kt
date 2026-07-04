@@ -48,7 +48,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.text.TextStyle
 import com.playfieldportal.core.ui.theme.LocalPFPColors
-import com.playfieldportal.core.ui.wave.WaveStyle
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -253,11 +252,14 @@ fun XMBShell(
                 uiState.activePhotoViewer != null ||
                 uiState.activeAppId != null || uiState.activeAppDrawerFilter != null ||
                 uiState.musicPlayerVisible
-            val effectiveWaveStyle = if (waveCovered) {
-                when (uiState.waveStyle) {
-                    WaveStyle.ANIMATED, WaveStyle.STATIC -> WaveStyle.STATIC
-                    WaveStyle.REDUCED, WaveStyle.REDUCED_STATIC -> WaveStyle.REDUCED_STATIC
-                }
+            // Freeze the wave when it's hidden anyway, or when the device is conserving power
+            // (battery saver / thermal throttle) and the user hasn't opted out of that.
+            val powerThrottled = rememberWavePowerThrottle(
+                respectBatterySaver  = uiState.respectBatterySaver,
+                thermalThrottleAware = uiState.thermalThrottleAware,
+            )
+            val effectiveWaveStyle = if (waveCovered || powerThrottled) {
+                uiState.waveStyle.frozen
             } else uiState.waveStyle
             XmbBackground(
                 waveStyle           = effectiveWaveStyle,

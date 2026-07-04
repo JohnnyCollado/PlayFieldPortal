@@ -38,6 +38,36 @@ object KeystoreSecretCipher {
         }
     }
 
+    /**
+     * Whether [stored] can actually be used on this device. A secret is encrypted with a
+     * device-bound, non-exportable Keystore key, so a value carried in a backup and restored onto a
+     * different device (or after this app's Keystore key was lost on reinstall) can no longer be
+     * decrypted — keeping it would silently feed garbage to the API. This returns false only in that
+     * case, so the restore path can drop the value and let the user re-enter it.
+     *
+     * A value that clearly isn't our ciphertext (a legacy plaintext key) returns true — it's usable
+     * as-is. Note a legacy plaintext key that happens to be valid Base64 may be conservatively
+     * reported unusable; the only consequence is a harmless re-prompt.
+     */
+    fun isUsableOnThisDevice(stored: String): Boolean {
+        val data = try {
+            Base64.decode(stored, Base64.NO_WRAP)
+        } catch (_: IllegalArgumentException) {
+            return true // not Base64 → legacy plaintext, usable verbatim
+        }
+        if (data.size <= IV_LENGTH) return true // too short to be our iv‖ciphertext → legacy plaintext
+        return try {
+            val iv = data.copyOfRange(0, IV_LENGTH)
+            val ct = data.copyOfRange(IV_LENGTH, data.size)
+            Cipher.getInstance(TRANSFORMATION)
+                .apply { init(Cipher.DECRYPT_MODE, key(), GCMParameterSpec(TAG_BITS, iv)) }
+                .doFinal(ct)
+            true
+        } catch (_: Exception) {
+            false // our-format ciphertext that won't decrypt here → not usable on this device
+        }
+    }
+
     /** Decrypts a value produced by [encrypt]; returns [stored] unchanged if it isn't ours. */
     fun decryptOrLegacy(stored: String): String {
         return try {

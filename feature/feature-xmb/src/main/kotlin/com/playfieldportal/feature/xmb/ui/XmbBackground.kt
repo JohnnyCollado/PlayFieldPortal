@@ -1,7 +1,12 @@
 package com.playfieldportal.feature.xmb.ui
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.RuntimeShader
 import android.os.Build
+import android.os.PowerManager
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.withInfiniteAnimationFrameMillis
 import androidx.compose.foundation.Canvas
@@ -9,10 +14,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -53,6 +62,61 @@ fun XmbBackground(
     } else {
         WaveBackground(waveStyle, modifier)
     }
+}
+
+/**
+ * Whether the XMB wave animation should be frozen to relieve the device, honoring the two
+ * Settings ▸ Display toggles. The wave is a non-essential flourish, so it shouldn't burn power when
+ * the system is already conserving it:
+ *
+ *  - [respectBatterySaver]: true while the OS is in battery-saver mode (live via
+ *    `ACTION_POWER_SAVE_MODE_CHANGED`).
+ *  - [thermalThrottleAware]: true while the OS reports at least moderate thermal throttling (live via
+ *    a thermal-status listener; API 29+ only).
+ *
+ * Returns false whenever the matching setting is off or the platform can't report the state.
+ */
+@Composable
+fun rememberWavePowerThrottle(
+    respectBatterySaver: Boolean,
+    thermalThrottleAware: Boolean,
+): Boolean {
+    val context = LocalContext.current
+    val powerManager = remember(context) { context.getSystemService(PowerManager::class.java) }
+
+    // Battery-saver: seed from the current value, then track ACTION_POWER_SAVE_MODE_CHANGED.
+    var powerSave by remember { mutableStateOf(false) }
+    DisposableEffect(powerManager, respectBatterySaver) {
+        if (powerManager == null || !respectBatterySaver) {
+            powerSave = false
+            return@DisposableEffect onDispose {}
+        }
+        powerSave = powerManager.isPowerSaveMode
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(ctx: Context, intent: Intent) {
+                powerSave = powerManager.isPowerSaveMode
+            }
+        }
+        context.registerReceiver(receiver, IntentFilter(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED))
+        onDispose { runCatching { context.unregisterReceiver(receiver) } }
+    }
+
+    // Thermal throttling: status listener (available since API 29 == minSdk); freeze at MODERATE+.
+    var thermalThrottling by remember { mutableStateOf(false) }
+    DisposableEffect(powerManager, thermalThrottleAware) {
+        if (powerManager == null || !thermalThrottleAware) {
+            thermalThrottling = false
+            return@DisposableEffect onDispose {}
+        }
+        thermalThrottling = powerManager.currentThermalStatus >= PowerManager.THERMAL_STATUS_MODERATE
+        val listener = PowerManager.OnThermalStatusChangedListener { status ->
+            thermalThrottling = status >= PowerManager.THERMAL_STATUS_MODERATE
+        }
+        powerManager.addThermalStatusListener(listener)
+        onDispose { powerManager.removeThermalStatusListener(listener) }
+    }
+
+    return powerSave || thermalThrottling
 }
 
 @Composable

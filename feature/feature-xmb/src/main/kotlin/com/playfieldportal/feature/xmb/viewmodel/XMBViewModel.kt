@@ -366,6 +366,11 @@ data class XMBUiState(
     // ── Background + rendering ────────────────────────────────────────────
     // A custom wallpaper, when set, automatically replaces the wave.
     val waveStyle: WaveStyle = WaveStyle.ANIMATED,
+    // When set (Settings ▸ Display, both default-on), the wave animation freezes while the system is
+    // in battery-saver mode / thermally throttling — the wave is a non-essential flourish, so it
+    // shouldn't compete for power when the device is trying to conserve it.
+    val respectBatterySaver: Boolean = true,
+    val thermalThrottleAware: Boolean = true,
     val customWallpaperPath: String? = null,
 
     val showBootSequence: Boolean = true,
@@ -4915,7 +4920,13 @@ class XMBViewModel @Inject constructor(
                 val style = runCatching {
                     WaveStyle.valueOf(prefs[KEY_WAVE_STYLE] ?: WaveStyle.ANIMATED.name)
                 }.getOrDefault(WaveStyle.ANIMATED)
-                _uiState.update { it.copy(waveStyle = style) }
+                _uiState.update {
+                    it.copy(
+                        waveStyle            = style,
+                        respectBatterySaver  = prefs[KEY_RESPECT_BATTERY] ?: true,
+                        thermalThrottleAware = prefs[KEY_THERMAL_AWARE] ?: true,
+                    )
+                }
             }
         }
     }
@@ -4938,6 +4949,9 @@ class XMBViewModel @Inject constructor(
     companion object {
         private val KEY_ICON_STYLE        = stringPreferencesKey("display_icon_style")
         private val KEY_WAVE_STYLE        = stringPreferencesKey("display_wave_style")
+        // Must match DisplaySettingsViewModel — both read/write these wave power-throttle prefs.
+        private val KEY_RESPECT_BATTERY   = booleanPreferencesKey("display_battery_saver")
+        private val KEY_THERMAL_AWARE     = booleanPreferencesKey("display_thermal_aware")
         private val KEY_COLOR_SCHEME      = stringPreferencesKey("display_color_scheme")
         private val KEY_SETUP_COMPLETE    = booleanPreferencesKey("library_setup_complete")
         private val KEY_CUSTOM_WALLPAPER  = stringPreferencesKey("display_custom_wallpaper")

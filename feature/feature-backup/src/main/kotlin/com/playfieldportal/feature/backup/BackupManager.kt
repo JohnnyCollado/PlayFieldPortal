@@ -31,6 +31,7 @@ import com.playfieldportal.core.data.database.entity.VideoEntity
 import com.playfieldportal.core.data.database.entity.VideoLibraryEntity
 import com.playfieldportal.core.data.database.entity.VideoPlaylistEntity
 import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
+import com.playfieldportal.core.common.security.KeystoreSecretCipher
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.data.repository.BackupFolderRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -435,7 +436,19 @@ open class BackupManager @Inject constructor(
             prefs.clear()
 
             BACKED_UP_STRING_KEYS.forEach { key ->
-                snapshot.entries[key.name]?.let { prefs[key] = it }
+                snapshot.entries[key.name]?.let { value ->
+                    // Encrypted scraper credentials are bound to the source device's Keystore. If this
+                    // backup was restored onto a different device (or after a reinstall lost the key),
+                    // the ciphertext can't be decrypted here — drop it so the user re-enters the key
+                    // rather than silently feeding garbage to the API.
+                    if (key.name in ENCRYPTED_CREDENTIAL_KEYS &&
+                        !KeystoreSecretCipher.isUsableOnThisDevice(value)
+                    ) {
+                        Timber.i("Dropped un-decryptable credential on restore: ${key.name} (re-prompt)")
+                        return@let
+                    }
+                    prefs[key] = value
+                }
             }
             BACKED_UP_BOOLEAN_KEYS.forEach { key ->
                 snapshot.entries[key.name]?.toBooleanStrictOrNull()?.let { prefs[key] = it }
@@ -500,6 +513,15 @@ open class BackupManager @Inject constructor(
             stringPreferencesKey("igdb_client_id"),
             stringPreferencesKey("igdb_client_secret"),
             stringPreferencesKey("tgdb_api_key"),
+        )
+
+        // Keystore-encrypted, device-bound credentials — dropped on restore if they can't be
+        // decrypted on this device (see restoreSettingsSnapshot). igdb_client_id is a public
+        // identifier stored in plaintext, so it restores normally and is intentionally absent here.
+        private val ENCRYPTED_CREDENTIAL_KEYS = setOf(
+            "sgdb_api_key",
+            "igdb_client_secret",
+            "tgdb_api_key",
         )
 
         private val BACKED_UP_BOOLEAN_KEYS = listOf(

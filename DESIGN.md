@@ -105,8 +105,10 @@ The name **PFP** is a deliberate double entendre: *Play Field Portal* as the pro
 - **Implementation:** `InstalledAppRepository`, `AppDrawerViewModel`, fullscreen Compose overlay via `activeAppDrawerFilter` state field in `XMBViewModel`.
 
 ### 3.8 XMB Wave
-- **Decision:** Tiered render modes — performance is never sacrificed for the wave.
-- **Modes:** `FULL` (60fps, default), `REDUCED` (15fps, after 3s idle), `STATIC` (no animation, after 10s idle/thermal/battery saver).
+- **Decision:** User-selectable render style — the wave never blocks the UI thread.
+- **Modes (`WaveStyle`, stored in DataStore `KEY_WAVE_STYLE`):** `ANIMATED` (full framerate, default), `REDUCED` (half speed, dimmer/lower-amplitude), `STATIC` (no animation, frozen frame), `REDUCED_STATIC`. The style is the user's manual choice (Settings ▸ Display).
+- **Automatic power throttle:** `rememberWavePowerThrottle` (in `XmbBackground.kt`) freezes the animation to its `WaveStyle.frozen` counterpart while the OS is in **battery-saver** mode or reporting **moderate+ thermal throttling**, gated by the `display_battery_saver` / `display_thermal_aware` toggles (both default-on). `XMBShell` also freezes the wave whenever an opaque layer covers it (boot, detail/player overlays, app drawer, music player) — nothing visible to animate.
+- **Frame loop:** Driven by Compose's `withInfiniteAnimationFrameMillis`, so it advances only while the background is on screen and pauses automatically when PFP is backgrounded (e.g. while an emulator runs). No frame loop is created for the static styles.
 - **RuntimeShader:** Used on API 33+ for GPU-accelerated wave. Canvas fallback below API 33.
 
 ### 3.9 Themes
@@ -114,7 +116,7 @@ The name **PFP** is a deliberate double entendre: *Play Field Portal* as the pro
 - **theme.json fields:** `format_version`, `id`, `name`, `author`, `version`, `wave_color` (#RRGGBB or #AARRGGBB), `wave_opacity`, `wave_speed`, `wave_amplitude`, `accent_color`, `text_color`, `has_background`, `has_boot_animation`, `has_sound_pack`, `font_key`.
 - **Asset layout inside ZIP:** `background.jpg`, `boot_animation.mp4`, `sounds/{navigate_h,navigate_v,select,back,category_change,boot}.ogg`.
 - **Install path (internal):** `filesDir/themes/{id}/` — assets copied on install, not read from external storage at runtime.
-- **External discovery folder:** `/storage/emulated/0/PlayFieldPortal/themes/` — requires `MANAGE_EXTERNAL_STORAGE`. Users drop `.xmbtheme` files here and pick them from Themes Settings.
+- **Install source:** Users pick a `.xmbtheme` file through the Storage Access Framework file picker in Themes Settings (`ThemeRepository.installTheme(uri)` → `XmbThemeLoader.loadFromUri`); no storage permission and no external discovery folder are needed. Extraction is hardened with per-entry size/count limits (zip-bomb) and a canonical-path guard (zip-slip).
 - **Color propagation:** Active `ThemeEntity` observed by `XMBViewModel` → converted to `PFPColors` → passed to `PFPTheme {}` wrapper in `XMBShell` → `LocalPFPColors` CompositionLocal available to `XmbBackground` and all child composables.
 - **Built-in themes:** "Classic PSP Blue" seeded by `DatabaseInitializer` on first launch (guarded by `themes_seeded_v1` DataStore flag). Cannot be deleted.
 - **Sound events (deferred):** `NAVIGATE_HORIZONTAL`, `NAVIGATE_VERTICAL`, `SELECT`, `BACK`, `CATEGORY_CHANGE`, `BOOT` — sound pack assets extracted but playback engine not yet wired.
@@ -260,7 +262,7 @@ feature/
 | `display_icon_style` | String | DisplaySettingsVM / XMBViewModel | GameIconStyle enum name |
 | `library_root_path` | String | LibrarySettingsVM | Real FS path of ROM root folder |
 | `library_setup_complete` | Boolean | LibrarySettingsVM / XMBViewModel | First-run setup guard |
-| `sgdb_api_key` | String | ArtworkSettingsVM | SteamGridDB API key |
+| `sgdb_api_key` | String | ArtworkSettingsVM | SteamGridDB API key — encrypted at rest via `KeystoreSecretCipher` (AES-256/GCM, Android Keystore) |
 | `db_seeded` | Boolean | DatabaseInitializer | One-time platform seed guard |
 
 ### 4.5 Circular Dependency Note
@@ -269,7 +271,9 @@ feature/
 ### 4.6 Permission Rationale
 | Permission | Justification |
 |---|---|
-| `MANAGE_EXTERNAL_STORAGE` | Required to read theme packs from `/PlayFieldPortal/themes/` |
+| `READ_MEDIA_IMAGES` / `READ_MEDIA_VIDEO` / `READ_MEDIA_AUDIO` | Scoped media access on API 33+ (photo/video/music libraries) |
+| `READ_EXTERNAL_STORAGE` / `WRITE_EXTERNAL_STORAGE` (`maxSdkVersion=32`) | Legacy raw-path ROM scanning on API ≤32 only |
+| *(SAF — no permission)* | ROM libraries, media libraries, theme packs and backups all use the Storage Access Framework folder/file picker; `MANAGE_EXTERNAL_STORAGE` is no longer declared |
 | `QUERY_ALL_PACKAGES` | Required to build app drawer and detect installed emulators |
 | `PACKAGE_USAGE_STATS` | Required for "Recently Used" app drawer filter |
 | `RECEIVE_BOOT_COMPLETED` | Restore launcher role after device restart |

@@ -20,4 +20,14 @@ enum class WaveStyle {
 
     /** Whether the wave should be drawn at reduced opacity / amplitude. */
     val reduced: Boolean get() = this == REDUCED || this == REDUCED_STATIC
+
+    /**
+     * The non-animating counterpart of this style, preserving the reduced/full opacity choice. Used
+     * when the wave is hidden behind an opaque layer, or throttled for battery saver / thermal load.
+     */
+    val frozen: WaveStyle
+        get() = when (this) {
+            ANIMATED, STATIC -> STATIC
+            REDUCED, REDUCED_STATIC -> REDUCED_STATIC
+        }
 }
