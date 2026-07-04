@@ -561,15 +561,30 @@ private fun XmbVerticalListRow(
                         overflow = TextOverflow.Ellipsis,
                     )
                     if (!item.subtitle.isNullOrBlank()) {
-                        Text(
-                            text = item.subtitle,
-                            color = SecondaryText,
-                            fontSize = if (isSelected) 12.sp else 11.sp,
-                            fontWeight = FontWeight.Normal,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
+                        // Discord friend rows prefix the subtitle with a colored presence dot; every
+                        // other row keeps the plain subtitle.
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.padding(top = 1.dp),
-                        )
+                        ) {
+                            item.socialStatusArgb?.let { argb ->
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(argb).copy(alpha = if (isSelected) 1f else 0.85f)),
+                                )
+                                Spacer(Modifier.width(6.dp))
+                            }
+                            Text(
+                                text = item.subtitle,
+                                color = SecondaryText,
+                                fontSize = if (isSelected) 12.sp else 11.sp,
+                                fontWeight = FontWeight.Normal,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
                     }
                 }
             }

@@ -603,6 +603,9 @@ data class XMBItem(
     val coverUri: String? = null,
     // Playlist id on PLAYLIST rows.
     val playlistId: Long? = null,
+    // Discord friend rows: a colored presence dot (ARGB) shown before the subtitle; null = no dot.
+    // Only set on SOCIAL_FRIEND rows.
+    val socialStatusArgb: Long? = null,
     val type: XMBItemType = XMBItemType.STANDARD,
 )
 
@@ -4543,8 +4546,11 @@ class XMBViewModel @Inject constructor(
             XMBItem(
                 id = "friend_${f.id}",
                 title = f.label,
-                subtitle = f.activity?.let { "Playing $it" } ?: socialPresenceLabel(f.presence),
+                // Subtext under the name: what they're playing, else the presence word — prefixed by
+                // the colored presence dot in the row renderer.
+                subtitle = f.activity?.let { "Playing $it" } ?: socialPresenceLabel(f.presence).takeIf { it.isNotBlank() },
                 coverUri = f.avatarUrl.takeIf { it.isNotBlank() },
+                socialStatusArgb = socialPresenceArgb(f.presence),
                 type = XMBItemType.SOCIAL_FRIEND,
             )
         }
@@ -4557,6 +4563,16 @@ class XMBViewModel @Inject constructor(
         DiscordPresence.STREAMING -> "Streaming"
         DiscordPresence.OFFLINE -> "Offline"
         DiscordPresence.UNKNOWN -> ""
+    }
+
+    // Discord-style presence colors for the friend-row status dot; null = no dot (unknown).
+    private fun socialPresenceArgb(p: DiscordPresence): Long? = when (p) {
+        DiscordPresence.ONLINE    -> 0xFF43B581   // green
+        DiscordPresence.IDLE      -> 0xFFFAA61A   // amber
+        DiscordPresence.DND       -> 0xFFF04747   // red
+        DiscordPresence.STREAMING -> 0xFF593695   // purple
+        DiscordPresence.OFFLINE   -> 0xFF747F8D   // gray
+        DiscordPresence.UNKNOWN   -> null
     }
 
     private fun openSocialView(nav: SocialNav) = navigateRememberingCursor { it.copy(socialNav = nav) }
