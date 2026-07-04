@@ -966,7 +966,14 @@ class XMBViewModel @Inject constructor(
                             scheduleSocialAccountRefresh()
                         }
                     }
-                    SocialNav.Account -> _uiState.update { it.copy(currentItems = socialHubItems()) }
+                    SocialNav.Account -> {
+                        val online = if (discordAuthRepository.isOnline()) {
+                            discordAuthRepository.friends().count { it.presence.isOnline }
+                        } else {
+                            null
+                        }
+                        _uiState.update { it.copy(currentItems = socialHubItems(online)) }
+                    }
                     SocialNav.Friends -> _uiState.update { it.copy(currentItems = socialFriendItems()) }
                     SocialNav.DiscordSettings -> _uiState.update { it.copy(currentItems = socialDiscordSettingsItems()) }
                 }
@@ -4508,8 +4515,20 @@ class XMBViewModel @Inject constructor(
     }
 
     // L2 (Account hub): the account's sections. Sign Out now lives under Discord Settings.
-    private fun socialHubItems(): List<XMBItem> = listOf(
-        XMBItem(id = "social_friends", title = "Friends", subtitle = "See who's online", type = XMBItemType.SOCIAL_FRIENDS),
+    // [friendsOnline] fills the Friends row's live count when known (null keeps the generic hint,
+    // e.g. for the drill sibling column that renders without a network read).
+    private fun socialHubItems(friendsOnline: Int? = null): List<XMBItem> = listOf(
+        XMBItem(
+            id = "social_friends",
+            title = "Friends",
+            subtitle = when {
+                friendsOnline == null -> "See who's online"
+                friendsOnline == 0    -> "No friends online"
+                friendsOnline == 1    -> "1 online"
+                else                  -> "$friendsOnline online"
+            },
+            type = XMBItemType.SOCIAL_FRIENDS,
+        ),
         XMBItem(id = "social_voice", title = "Voice", subtitle = "Coming soon", type = XMBItemType.SOCIAL_VOICE),
         XMBItem(id = "social_activity", title = "Activity Settings", subtitle = "Coming soon", type = XMBItemType.SOCIAL_ACTIVITY_SETTINGS),
         XMBItem(id = "social_settings", title = "Discord Settings", subtitle = "Account & sign out", type = XMBItemType.SOCIAL_DISCORD_SETTINGS),
