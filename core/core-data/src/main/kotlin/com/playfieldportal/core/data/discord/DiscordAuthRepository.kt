@@ -89,6 +89,12 @@ class DiscordAuthRepository @Inject constructor(
         return sessionActivator.activate(session.accessToken)
     }
 
+    /** The connected user's profile, or null until the gateway is Ready. */
+    suspend fun currentUser() = sessionActivator.currentUser()
+
+    /** Native connection status ordinal (0 = Disconnected … 3 = Ready). */
+    fun connectionStatus(): Int = sessionActivator.connectionStatus()
+
     /** Secure logout: tear down the SDK session and wipe the encrypted tokens + Keystore key. */
     suspend fun logout() {
         runCatching { sessionActivator.deactivate() }

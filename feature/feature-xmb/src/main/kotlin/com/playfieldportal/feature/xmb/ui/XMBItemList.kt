@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -795,7 +796,15 @@ private fun XmbItemLeadingIcon(
         }
         item.type == XMBItemType.SOCIAL_ACCOUNT -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.AccountCircle, contentDescription = null, tint = InactiveText, modifier = Modifier.size(48.dp))
+                if (item.coverUri != null) {
+                    AsyncImage(
+                        model = item.coverUri,
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp).clip(CircleShape),
+                    )
+                } else {
+                    Icon(Icons.Filled.AccountCircle, contentDescription = null, tint = InactiveText, modifier = Modifier.size(48.dp))
+                }
             }
         }
         item.type == XMBItemType.SOCIAL_SIGNOUT -> {

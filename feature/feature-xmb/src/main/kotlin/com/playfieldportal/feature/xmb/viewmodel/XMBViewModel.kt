@@ -932,7 +932,12 @@ class XMBViewModel @Inject constructor(
                     _uiState.update { it.copy(currentItems = SETTINGS_ITEMS) }
                 }
                 BuiltInCategory.SOCIAL -> {
-                    _uiState.update { it.copy(currentItems = socialRootItems()) }
+                    val items = socialRootItems()
+                    _uiState.update { it.copy(currentItems = items) }
+                    // Fill in the avatar/name once the gateway is Ready.
+                    if (items.any { it.type == XMBItemType.SOCIAL_ACCOUNT && it.coverUri == null }) {
+                        scheduleSocialAccountRefresh()
+                    }
                 }
                 BuiltInCategory.GAMES -> {
                     val platformId = _uiState.value.selectedPlatformId
@@ -4414,14 +4419,9 @@ class XMBViewModel @Inject constructor(
     // ── Item selection ────────────────────────────────────────────────────────
 
     // ── Discord Social section ────────────────────────────────────────────────
-    private suspend fun socialRootItems(): List<XMBItem> =
-        if (discordAuthRepository.hasSession()) {
-            listOf(
-                XMBItem(id = "social_account", title = "Connected to Discord", subtitle = "Signed in", type = XMBItemType.SOCIAL_ACCOUNT),
-                XMBItem(id = "social_signout", title = "Sign out", type = XMBItemType.SOCIAL_SIGNOUT),
-            )
-        } else {
-            listOf(
+    private suspend fun socialRootItems(): List<XMBItem> {
+        if (!discordAuthRepository.hasSession()) {
+            return listOf(
                 XMBItem(
                     id = "social_add",
                     title = "Sign in with Discord",
@@ -4430,6 +4430,36 @@ class XMBViewModel @Inject constructor(
                 ),
             )
         }
+        val user = discordAuthRepository.currentUser()
+        val account = XMBItem(
+            id = "social_account",
+            title = user?.label ?: "Connected to Discord",
+            subtitle = if (user != null) "Online" else "Connecting…",
+            coverUri = user?.avatarUrl?.takeIf { it.isNotBlank() },
+            type = XMBItemType.SOCIAL_ACCOUNT,
+        )
+        return listOf(
+            account,
+            XMBItem(id = "social_signout", title = "Sign out", type = XMBItemType.SOCIAL_SIGNOUT),
+        )
+    }
+
+    // When connected but the profile hasn't loaded yet (gateway still connecting), poll briefly and
+    // reload the Social list once the user resolves so the avatar + name fill in.
+    private var socialRefreshJob: Job? = null
+    private fun scheduleSocialAccountRefresh() {
+        socialRefreshJob?.cancel()
+        socialRefreshJob = viewModelScope.launch {
+            repeat(8) {
+                kotlinx.coroutines.delay(1000)
+                if (currentCategory()?.id != BuiltInCategory.SOCIAL) return@launch
+                if (discordAuthRepository.currentUser() != null) {
+                    loadItemsForCategory(currentCategory())
+                    return@launch
+                }
+            }
+        }
+    }
 
     // Each Social row owns its sound and returns early (mirrors handleMusicSelection).
     private fun handleSocialSelection(item: XMBItem): Boolean {

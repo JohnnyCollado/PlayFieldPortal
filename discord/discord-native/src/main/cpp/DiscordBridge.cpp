@@ -14,6 +14,7 @@
 #include <jni.h>
 #include <atomic>
 #include <chrono>
+#include <cstdio>
 #include <functional>
 #include <future>
 #include <memory>
@@ -48,6 +49,30 @@ void drainTasks() {
         local.front()();
         local.pop();
     }
+}
+
+// Minimal JSON string escaping for user-provided fields (display names can contain anything).
+std::string jsonEscape(const std::string& s) {
+    std::string out;
+    out.reserve(s.size() + 8);
+    for (char c : s) {
+        switch (c) {
+            case '"': out += "\\\""; break;
+            case '\\': out += "\\\\"; break;
+            case '\n': out += "\\n"; break;
+            case '\r': out += "\\r"; break;
+            case '\t': out += "\\t"; break;
+            default:
+                if (static_cast<unsigned char>(c) < 0x20) {
+                    char buf[8];
+                    std::snprintf(buf, sizeof(buf), "\\u%04x", static_cast<unsigned char>(c));
+                    out += buf;
+                } else {
+                    out += c;
+                }
+        }
+    }
+    return out;
 }
 
 // The single thread on which the client lives: run queued SDK calls, then pump SDK callbacks.
@@ -113,6 +138,38 @@ JNIEXPORT jint JNICALL
 Java_com_playfieldportal_discord_DiscordNativeBridge_nativeGetStatus(
     JNIEnv* /*env*/, jobject /*thiz*/) {
     return gStatus.load();
+}
+
+// Returns the current user as a JSON string, or "" if the session isn't Ready yet
+// (GetCurrentUserV2 returns nullopt until the gateway connects). Read on the pump thread.
+JNIEXPORT jstring JNICALL
+Java_com_playfieldportal_discord_DiscordNativeBridge_nativeGetCurrentUserJson(
+    JNIEnv* env, jobject /*thiz*/) {
+    if (!gClient) return env->NewStringUTF("");
+    auto promise = std::make_shared<std::promise<std::string>>();
+    auto future = promise->get_future();
+    post([promise]() {
+        auto user = gClient->GetCurrentUserV2();
+        if (!user.has_value()) {
+            promise->set_value("");
+            return;
+        }
+        auto& u = user.value();
+        const std::string avatarUrl = u.AvatarUrl(
+            discordpp::UserHandle::AvatarType::Png, discordpp::UserHandle::AvatarType::Png);
+        std::string json = "{";
+        json += "\"id\":\"" + std::to_string(u.Id()) + "\",";
+        json += "\"username\":\"" + jsonEscape(u.Username()) + "\",";
+        json += "\"displayName\":\"" + jsonEscape(u.DisplayName()) + "\",";
+        json += "\"avatarUrl\":\"" + jsonEscape(avatarUrl) + "\"";
+        json += "}";
+        promise->set_value(json);
+    });
+    if (future.wait_for(std::chrono::seconds(5)) != std::future_status::ready) {
+        return env->NewStringUTF("");
+    }
+    const std::string result = future.get();
+    return env->NewStringUTF(result.c_str());
 }
 
 // Tear down the live session (logout), on the pump thread.

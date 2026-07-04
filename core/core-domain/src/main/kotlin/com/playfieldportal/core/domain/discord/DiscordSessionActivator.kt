@@ -13,4 +13,10 @@ interface DiscordSessionActivator {
 
     /** Tear down the live SDK session (logout). */
     suspend fun deactivate()
+
+    /** The connected user, or null if the gateway hasn't reached Ready yet. */
+    suspend fun currentUser(): DiscordUser?
+
+    /** Native connection status ordinal (mirrors discordpp Client::Status; 0 = Disconnected, 3 = Ready). */
+    fun connectionStatus(): Int
 }

@@ -49,6 +49,9 @@ object DiscordNativeBridge {
     /** Current status ordinal (mirrors `discordpp::Client::Status`; 0 = Disconnected). */
     fun status(): Int = if (clientStarted.get()) nativeGetStatus() else 0
 
+    /** Current user as a JSON string, or "" until the session is Ready. Call off the main thread. */
+    fun currentUserJson(): String = if (clientStarted.get()) nativeGetCurrentUserJson() else ""
+
     fun shutdown() {
         if (clientStarted.compareAndSet(true, false)) nativeShutdown()
     }
@@ -57,5 +60,6 @@ object DiscordNativeBridge {
     private external fun nativeUpdateToken(token: String): Boolean
     private external fun nativeDisconnect()
     private external fun nativeGetStatus(): Int
+    private external fun nativeGetCurrentUserJson(): String
     private external fun nativeShutdown()
 }
