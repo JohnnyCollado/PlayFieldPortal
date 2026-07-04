@@ -43,7 +43,11 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.timber)
 
+    // Ktor — Discord OAuth2 device-authorization grant (QR login) over HTTPS.
+    implementation(libs.bundles.ktor)
+
     testImplementation(libs.bundles.test.unit)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
+    testImplementation(libs.ktor.client.mock)
 }
