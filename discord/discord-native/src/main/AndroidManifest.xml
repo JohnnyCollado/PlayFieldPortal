@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Namespace is set in build.gradle.kts. Runtime permissions the SDK needs (RECORD_AUDIO,
+     FOREGROUND_SERVICE*, etc.) are declared by the consuming app module alongside their
+     rationale, so they surface intentionally in the Play Data Safety review. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" />

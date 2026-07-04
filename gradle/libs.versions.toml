@@ -26,6 +26,8 @@ activity-compose        = "1.9.0"
 splashscreen            = "1.0.1"
 accompanist             = "0.34.0"
 media3                  = "1.4.1"
+zxing                   = "3.5.3"
+browser                 = "1.8.0"
 
 [libraries]
 # AndroidX Core
@@ -74,6 +76,10 @@ hilt-work-compiler              = { group = "androidx.hilt",          name = "hi
 
 # Coil (image loading)
 coil-compose                    = { group = "io.coil-kt",             name = "coil-compose",                version.ref = "coil" }
+
+# Discord Social integration
+zxing-core                      = { group = "com.google.zxing",       name = "core",                        version.ref = "zxing" }
+androidx-browser                = { group = "androidx.browser",       name = "browser",                     version.ref = "browser" }
 
 # Ktor (networking)
 ktor-client-android             = { group = "io.ktor",                name = "ktor-client-android",         version.ref = "ktor" }

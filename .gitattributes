@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Discord Social SDK vendored binaries — tracked via Git LFS (large, not our IP)
+discord/discord-native/libs/*.aar filter=lfs diff=lfs merge=lfs -text

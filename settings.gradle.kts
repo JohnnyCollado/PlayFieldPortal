@@ -18,6 +18,10 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        // Vendored Discord Social SDK aars (Git LFS). A flatDir repo lets the library module
+        // resolve them as real transitive dependencies — direct files("*.aar") deps are rejected
+        // in library modules and wouldn't propagate the SDK's classes/.so to the app.
+        flatDir { dirs(rootDir.resolve("discord/discord-native/libs")) }
     }
 }
 
@@ -30,6 +34,9 @@ include(":core:core-common")
 include(":core:core-domain")
 include(":core:core-data")
 include(":core:core-ui")
+
+// Discord Social integration
+include(":discord:discord-native")
 
 // Feature modules
 include(":feature:feature-xmb")
