@@ -72,6 +72,23 @@ class DiscordAuthRepository @Inject constructor(
         emit(DeviceLoginState.Expired)
     }
 
+    /** True if an encrypted session is stored (the user previously connected Discord). */
+    suspend fun hasSession(): Boolean = tokenStore.load() != null
+
+    /**
+     * Restore a persisted session on launch: decrypt the token and hand it to the SDK. Returns
+     * whether the session is now live. If the access token has expired, we currently require a
+     * re-login (refresh-token exchange is a follow-up); the stale token is left in place so the UI
+     * can prompt to reconnect.
+     */
+    suspend fun restoreSession(): Boolean {
+        val session = tokenStore.load() ?: return false
+        // TODO(refresh): when expired, exchange session.refreshToken for a new access token instead
+        // of forcing re-login (refresh tokens don't expire).
+        if (session.expiresAtEpochMs <= System.currentTimeMillis()) return false
+        return sessionActivator.activate(session.accessToken)
+    }
+
     /** Secure logout: tear down the SDK session and wipe the encrypted tokens + Keystore key. */
     suspend fun logout() {
         runCatching { sessionActivator.deactivate() }

@@ -16,17 +16,22 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.lifecycleScope
+import com.playfieldportal.core.data.discord.DiscordAuthRepository
 import com.playfieldportal.core.ui.theme.PFPTheme
+import com.playfieldportal.discord.DiscordNativeBridge
 import com.playfieldportal.feature.xmb.gamepad.GamepadInputHandler
 import com.playfieldportal.feature.xmb.ui.XMBShellContainer
 import com.playfieldportal.launcher.receiver.InstallShortcutReceiver
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     @Inject lateinit var gamepadInputHandler: GamepadInputHandler
+    @Inject lateinit var discordAuthRepository: DiscordAuthRepository
 
     // Runtime-registered so it actually fires on Android 8+ (manifest receivers are blocked for
     // this implicit broadcast). Lives for the activity's lifetime.
@@ -48,6 +53,15 @@ class MainActivity : ComponentActivity() {
             IntentFilter(InstallShortcutReceiver.ACTION_INSTALL_SHORTCUT),
             ContextCompat.RECEIVER_EXPORTED,
         )
+
+        // Restore a previously-connected Discord session on launch — only when one exists, so the
+        // SDK stays inert (native lib unloaded, no network) for users who never signed in.
+        lifecycleScope.launch {
+            if (discordAuthRepository.hasSession()) {
+                DiscordNativeBridge.attachActivity(this@MainActivity)
+                discordAuthRepository.restoreSession()
+            }
+        }
 
         setContent {
             PFPTheme {
