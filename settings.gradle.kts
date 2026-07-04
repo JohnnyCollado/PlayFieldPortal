@@ -39,6 +39,7 @@ include(":core:core-ui")
 include(":discord:discord-native")
 
 // Feature modules
+include(":feature:feature-social")
 include(":feature:feature-xmb")
 include(":feature:feature-library")
 include(":feature:feature-launcher")

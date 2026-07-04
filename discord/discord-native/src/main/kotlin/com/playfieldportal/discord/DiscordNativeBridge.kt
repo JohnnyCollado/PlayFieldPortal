@@ -1,20 +1,61 @@
 package com.playfieldportal.discord
 
+import android.app.Activity
+import com.discord.socialsdk.DiscordSocialSdkInit
+import com.playfieldportal.core.domain.discord.DiscordConfig
+import java.util.concurrent.atomic.AtomicBoolean
+
 /**
- * Thin Kotlin entry point to the native Discord Social SDK bridge (`libdiscord_bridge.so`).
+ * Kotlin entry point to the native Discord Social SDK bridge (`libdiscord_bridge.so`).
  *
- * M0 scope: only proves the native library loads and links against the vendored SDK. The real
- * client lifecycle, auth, presence, relationships, and voice APIs are added in later milestones
- * as this bridge grows a purpose-built surface backed by `DiscordBridge.cpp`.
+ * All calls are forwarded to a single pump thread inside native code; these wrappers only guard
+ * one-time library load / client init. No tokens are logged here or natively.
  */
 object DiscordNativeBridge {
-    init {
-        System.loadLibrary("discord_bridge")
+    private val libraryLoaded = AtomicBoolean(false)
+    private val clientStarted = AtomicBoolean(false)
+
+    private fun ensureLibraryLoaded() {
+        if (libraryLoaded.compareAndSet(false, true)) System.loadLibrary("discord_bridge")
     }
 
     /**
-     * Liveness check: returns a static string from native code proving the `.so` loaded and the
-     * Discord SDK symbols linked. Not part of the eventual public API.
+     * Must be called from the main Activity's `onCreate`, before any session use: the SDK needs the
+     * Android activity/context for networking, the auth Custom Tab, and audio routing.
      */
-    external fun nativeSdkVersion(): String
+    fun attachActivity(activity: Activity) {
+        ensureLibraryLoaded()
+        DiscordSocialSdkInit.setEngineActivity(activity)
+    }
+
+    /** Create the client and start the callback pump exactly once. */
+    fun ensureInitialized() {
+        ensureLibraryLoaded()
+        if (clientStarted.compareAndSet(false, true)) {
+            nativeInit(DiscordConfig.APPLICATION_ID.toLong())
+        }
+    }
+
+    /** Push a bearer token into the SDK and connect. Blocking; call off the main thread. */
+    fun updateToken(accessToken: String): Boolean {
+        ensureInitialized()
+        return nativeUpdateToken(accessToken)
+    }
+
+    fun disconnect() {
+        if (clientStarted.get()) nativeDisconnect()
+    }
+
+    /** Current status ordinal (mirrors `discordpp::Client::Status`; 0 = Disconnected). */
+    fun status(): Int = if (clientStarted.get()) nativeGetStatus() else 0
+
+    fun shutdown() {
+        if (clientStarted.compareAndSet(true, false)) nativeShutdown()
+    }
+
+    private external fun nativeInit(applicationId: Long)
+    private external fun nativeUpdateToken(token: String): Boolean
+    private external fun nativeDisconnect()
+    private external fun nativeGetStatus(): Int
+    private external fun nativeShutdown()
 }

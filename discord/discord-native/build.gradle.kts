@@ -1,6 +1,8 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.hilt)
 }
 
 android {
@@ -48,4 +50,10 @@ dependencies {
     // Custom Tabs — required by the SDK's AuthenticationActivity (browser OAuth path).
     implementation(libs.androidx.browser)
     implementation(libs.timber)
+
+    // Domain interface (DiscordSessionActivator) + DiscordConfig; Hilt binding; coroutines.
+    implementation(project(":core:core-domain"))
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
 }
