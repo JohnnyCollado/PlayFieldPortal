@@ -80,6 +80,9 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         hideSystemBars()
+        // Foreground again = out of any game, so drop the per-game Discord presence back to idle.
+        // Cheap no-op unless a game was actually being played with sharing on.
+        lifecycleScope.launch { discordPresence.clearCurrentGame() }
     }
 
     override fun onDestroy() {

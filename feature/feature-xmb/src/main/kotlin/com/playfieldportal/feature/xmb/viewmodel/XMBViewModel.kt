@@ -4824,6 +4824,9 @@ class XMBViewModel @Inject constructor(
         // Android app — A/Cross launches it
         if (item?.packageName != null) {
             appCategoryRepository.launch(item.packageName)
+            // Mirror the ROM path: reflect the launch in the opt-in Discord presence (no-op unless
+            // Discord is connected and sharing is on). Cleared on return via MainActivity.onResume.
+            viewModelScope.launch { discordPresence.setCurrentGame(item.title) }
             return
         }
 

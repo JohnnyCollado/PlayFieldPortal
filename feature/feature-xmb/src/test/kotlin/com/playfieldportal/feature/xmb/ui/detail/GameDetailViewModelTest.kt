@@ -122,6 +122,7 @@ class GameDetailViewModelTest {
             theGamesDb        = theGamesDb,
             cardProcessor     = cardProcessor,
             menuSound         = mockk(relaxed = true),
+            discordPresence   = mockk(relaxed = true),
         )
     }
 

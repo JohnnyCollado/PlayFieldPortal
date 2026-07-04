@@ -32,7 +32,7 @@ class AppDrawerViewModelTest {
         repository = mockk(relaxed = true)
         coEvery { repository.getInstalledApps() } returns fakeApps()
         every { repository.hasUsageAccess() } returns true
-        viewModel = AppDrawerViewModel(repository, mockk(relaxed = true))
+        viewModel = AppDrawerViewModel(repository, mockk(relaxed = true), mockk(relaxed = true))
     }
 
     @After

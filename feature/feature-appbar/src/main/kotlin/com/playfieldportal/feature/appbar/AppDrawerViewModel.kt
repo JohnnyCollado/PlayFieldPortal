@@ -58,6 +58,7 @@ data class AppDrawerUiState(
 class AppDrawerViewModel @Inject constructor(
     private val appRepository: InstalledAppRepository,
     private val menuSound: MenuSoundPlayer,
+    private val discordPresence: com.playfieldportal.core.data.discord.DiscordPresenceController,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AppDrawerUiState())
@@ -115,6 +116,11 @@ class AppDrawerViewModel @Inject constructor(
         // Fires for both controller SELECT and a touch tap on an app tile.
         menuSound.play(MenuSound.LAUNCH)
         appRepository.launchApp(packageName)
+        // Reflect the launch in the opt-in Discord presence (no-op unless Discord is connected and
+        // sharing is on). Cleared on return via MainActivity.onResume.
+        val label = _uiState.value.allApps.firstOrNull { it.packageName == packageName }?.label
+            ?: packageName
+        viewModelScope.launch { discordPresence.setCurrentGame(label) }
     }
 
     fun refresh() {

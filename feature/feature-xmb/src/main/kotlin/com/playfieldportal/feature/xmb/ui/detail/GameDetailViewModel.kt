@@ -162,6 +162,7 @@ class GameDetailViewModel @Inject constructor(
     private val theGamesDb: TheGamesDbApi,
     private val cardProcessor: CardArtworkProcessor,
     private val menuSound: com.playfieldportal.core.ui.sound.MenuSoundPlayer,
+    private val discordPresence: com.playfieldportal.core.data.discord.DiscordPresenceController,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GameDetailUiState())
@@ -798,7 +799,7 @@ class GameDetailViewModel @Inject constructor(
                 Timber.i(
                     "Launching native gameId=${game.id}, title=${game.title}, package=${game.packageName}, intent=${nativeIntent.toUri(Intent.URI_INTENT_SCHEME)}"
                 )
-                sendLaunchIntent(nativeIntent)
+                sendLaunchIntent(nativeIntent, game.title)
                 return@launch
             }
 
@@ -834,14 +835,17 @@ class GameDetailViewModel @Inject constructor(
             Timber.i(
                 "Launching gameId=${game.id}, title=${game.title}, platform=${game.platformId}, emulatorId=${profile.id}, emulator=${profile.name}, source=$source, core=${profile.corePathFor(game.platformId).orEmpty()}, rom=${game.romPath.orEmpty()}, intent=${intent.toUri(Intent.URI_INTENT_SCHEME)}"
             )
-            sendLaunchIntent(intent)
+            sendLaunchIntent(intent, game.title)
         }
     }
 
-    private fun sendLaunchIntent(intent: Intent) {
+    private fun sendLaunchIntent(intent: Intent, gameTitle: String) {
         val result = _launchEffect.trySend(intent)
         if (result.isSuccess) {
             Timber.d("Launch intent queued for UI collector")
+            // We're about to background PFP for a game — reflect it in the opt-in Discord presence
+            // (no-op unless the user connected Discord and enabled sharing).
+            viewModelScope.launch { discordPresence.setCurrentGame(gameTitle) }
         } else {
             val cause = result.exceptionOrNull()
             Timber.w(cause, "Could not queue launch intent for UI collector")

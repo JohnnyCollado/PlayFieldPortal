@@ -74,6 +74,7 @@ class AppDetailViewModel @Inject constructor(
     private val steamGridDb: SteamGridDbApi,
     private val sgdbKeyProvider: SgdbApiKeyProvider,
     private val cardProcessor: CardArtworkProcessor,
+    private val discordPresence: com.playfieldportal.core.data.discord.DiscordPresenceController,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AppDetailUiState())
@@ -100,7 +101,8 @@ class AppDetailViewModel @Inject constructor(
     }
 
     fun launchApp() {
-        val pkg = _uiState.value.game?.packageName ?: return
+        val game = _uiState.value.game ?: return
+        val pkg = game.packageName ?: return
         try {
             val intent = context.packageManager.getLaunchIntentForPackage(pkg)
                 ?: Intent(Intent.ACTION_MAIN).apply {
@@ -109,6 +111,9 @@ class AppDetailViewModel @Inject constructor(
                 }
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(intent)
+            // Mirror the ROM path: reflect the launch in the opt-in Discord presence (no-op unless
+            // Discord is connected and sharing is on). Cleared on return via MainActivity.onResume.
+            viewModelScope.launch { discordPresence.setCurrentGame(game.title) }
         } catch (e: Exception) {
             Timber.w(e, "Could not launch app: $pkg")
             _uiState.update { it.copy(artworkMessage = "Could not launch app") }
