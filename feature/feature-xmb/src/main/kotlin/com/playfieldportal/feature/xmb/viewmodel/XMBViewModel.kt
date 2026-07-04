@@ -136,6 +136,8 @@ data class XMBContextMenu(
     val photoFileId: String? = null,
     // Set on a photo library (Album) card's options menu.
     val photoLibraryId: String? = null,
+    // Set on the Discord account row's options menu (Reconnect).
+    val socialAccountMenu: Boolean = false,
 )
 
 data class XMBContextMenuItem(
@@ -3468,6 +3470,7 @@ class XMBViewModel @Inject constructor(
                     item?.gameId != null -> openGameContextMenu(item)
                     item?.collectionId != null && item.type == XMBItemType.COLLECTION -> openCollectionRowContextMenu(item.collectionId)
                     item?.type == XMBItemType.ALL_GAMES -> openAllGamesContextMenu()
+                    item?.type == XMBItemType.SOCIAL_ACCOUNT -> openSocialAccountContextMenu()
                     item?.platformId != null -> openPlatformContextMenu(item.platformId)
                     item?.packageName != null -> openAppContextMenu(item)
                 }
@@ -3841,6 +3844,10 @@ class XMBViewModel @Inject constructor(
         }
         if (menu.photoLibraryId != null) {
             handlePhotoLibraryAction(menu.photoLibraryId, itemId)
+            return
+        }
+        if (menu.socialAccountMenu) {
+            handleSocialAccountAction(itemId)
             return
         }
         if (menu.videoPlaylistId != null) {
@@ -4626,6 +4633,33 @@ class XMBViewModel @Inject constructor(
         }
     }
 
+    // Options (△ / long-press) on the connected account row. "Reconnect" re-hands the stored token
+    // to the SDK — the recovery path when the network dropped and came back (the account row shows
+    // "Offline" until then).
+    private fun openSocialAccountContextMenu() {
+        _uiState.update {
+            it.copy(
+                activeContextMenu = XMBContextMenu(
+                    title = "Account",
+                    items = listOf(XMBContextMenuItem("social_reconnect", "Reconnect")),
+                    socialAccountMenu = true,
+                ),
+            )
+        }
+    }
+
+    private fun handleSocialAccountAction(itemId: String) {
+        when (itemId) {
+            "social_reconnect" -> viewModelScope.launch {
+                discordAuthRepository.restoreSession()
+                // Re-render the account row (Offline → Connecting…/Online) and poll until the gateway
+                // reaches Ready so the avatar/name and Online state fill back in.
+                loadItemsForCategory(currentCategory())
+                scheduleSocialAccountRefresh()
+            }
+        }
+    }
+
     // Each Social row owns its sound and returns early (mirrors handleMusicSelection).
     private fun handleSocialSelection(item: XMBItem): Boolean {
         when (item.type) {
@@ -4797,6 +4831,7 @@ class XMBViewModel @Inject constructor(
             item?.gameId != null -> openGameContextMenu(item)
             item?.collectionId != null && item.type == XMBItemType.COLLECTION -> openCollectionRowContextMenu(item.collectionId)
             item?.type == XMBItemType.ALL_GAMES -> openAllGamesContextMenu()
+            item?.type == XMBItemType.SOCIAL_ACCOUNT -> openSocialAccountContextMenu()
             item?.platformId != null -> openPlatformContextMenu(item.platformId)
             item?.packageName != null -> openAppContextMenu(item)
         }
