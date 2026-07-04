@@ -1709,6 +1709,7 @@ class XMBViewModel @Inject constructor(
             catId == BuiltInCategory.MUSIC -> "music_${musicNavKey(s.musicNav)}"
             catId == BuiltInCategory.VIDEO -> "video_${videoNavKey(s.videoNav)}"
             catId == BuiltInCategory.PHOTO -> "photo_${photoNavKey(s.photoNav)}"
+            catId == BuiltInCategory.SOCIAL -> "social_${socialNavKey(s.socialNav)}"
             s.selectedCollectionId != null -> "col_${s.selectedCollectionId}"
             s.selectedPlatformId != null   -> "plat_${s.selectedPlatformId}"
             else                           -> "root"
@@ -1748,6 +1749,17 @@ class XMBViewModel @Inject constructor(
         VideoNav.Libraries       -> "libraries"
         is VideoNav.Library      -> "library_${nav.id}"
         VideoNav.VideoApps       -> "apps"
+    }
+
+    // Each Social drill level needs its own cursor key — without this every level collides on the
+    // category's fallback "root" key, so drilling into a shorter list restores an out-of-range index
+    // and the selection highlight lands on nothing.
+    private fun socialNavKey(nav: SocialNav): String = when (nav) {
+        SocialNav.Root             -> "root"
+        SocialNav.Account          -> "account"
+        SocialNav.Friends          -> "friends"
+        SocialNav.ActivitySettings -> "activity"
+        SocialNav.DiscordSettings  -> "discord"
     }
 
     private fun openVideoView(nav: VideoNav) = navigateRememberingCursor { it.copy(videoNav = nav) }
