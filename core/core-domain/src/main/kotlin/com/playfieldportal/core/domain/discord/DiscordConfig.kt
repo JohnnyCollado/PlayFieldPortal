@@ -28,4 +28,7 @@ object DiscordConfig {
 
     /** RFC 8628 device-code grant type used when polling the token endpoint. */
     const val DEVICE_CODE_GRANT_TYPE: String = "urn:ietf:params:oauth:grant-type:device_code"
+
+    /** OAuth2 refresh-token grant type, used to renew an expired access token without re-login. */
+    const val REFRESH_TOKEN_GRANT_TYPE: String = "refresh_token"
 }

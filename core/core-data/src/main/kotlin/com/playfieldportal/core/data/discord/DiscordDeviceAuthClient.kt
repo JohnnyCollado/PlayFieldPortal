@@ -83,6 +83,37 @@ class DiscordDeviceAuthClient @Inject constructor(
             else -> TokenPollResult.Error(dto.error ?: "unknown_error (${response.status.value})")
         }
     }
+
+    /**
+     * Exchange a refresh token for a fresh access token (OAuth2 refresh grant). Discord may rotate
+     * the refresh token or omit it in the response; when omitted, the caller's existing refresh
+     * token is reused. Returns [TokenPollResult.Approved] on success, else [TokenPollResult.Error].
+     */
+    suspend fun refreshTokens(refreshToken: String): TokenPollResult {
+        val response = http.submitForm(
+            url = DiscordConfig.TOKEN_ENDPOINT,
+            formParameters = parameters {
+                append("client_id", DiscordConfig.APPLICATION_ID)
+                append("grant_type", DiscordConfig.REFRESH_TOKEN_GRANT_TYPE)
+                append("refresh_token", refreshToken)
+            },
+        )
+        val dto = runCatching { response.body<TokenResponse>() }.getOrNull()
+            ?: return TokenPollResult.Error("Malformed refresh response (${response.status.value})")
+
+        return if (response.status.isSuccess() && dto.accessToken != null) {
+            TokenPollResult.Approved(
+                DeviceTokens(
+                    accessToken = dto.accessToken,
+                    refreshToken = dto.refreshToken ?: refreshToken,
+                    expiresInSeconds = dto.expiresIn ?: 0,
+                    scopes = dto.scope.orEmpty(),
+                ),
+            )
+        } else {
+            TokenPollResult.Error(dto.error ?: "refresh_failed (${response.status.value})")
+        }
+    }
 }
 
 /** Result of a single token poll (RFC 8628 semantics). Maps 1:1 onto the login-state transitions. */

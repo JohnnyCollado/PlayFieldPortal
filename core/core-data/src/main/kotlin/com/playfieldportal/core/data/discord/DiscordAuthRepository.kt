@@ -87,17 +87,22 @@ class DiscordAuthRepository @Inject constructor(
     suspend fun hasSession(): Boolean = tokenStore.load() != null
 
     /**
-     * Restore a persisted session on launch: decrypt the token and hand it to the SDK. Returns
-     * whether the session is now live. If the access token has expired, we currently require a
-     * re-login (refresh-token exchange is a follow-up); the stale token is left in place so the UI
-     * can prompt to reconnect.
+     * Restore a persisted session on launch (or on Reconnect): decrypt the token and hand it to the
+     * SDK. If the access token has expired, exchange the refresh token (refresh tokens don't expire)
+     * for a fresh one first. Returns whether the session is now live. On any refresh failure the
+     * stored session is left in place so the UI can still prompt to reconnect.
      */
     suspend fun restoreSession(): Boolean {
         val session = tokenStore.load() ?: return false
-        // TODO(refresh): when expired, exchange session.refreshToken for a new access token instead
-        // of forcing re-login (refresh tokens don't expire).
-        if (session.expiresAtEpochMs <= System.currentTimeMillis()) return false
-        return sessionActivator.activate(session.accessToken)
+        if (session.expiresAtEpochMs > System.currentTimeMillis()) {
+            return sessionActivator.activate(session.accessToken)
+        }
+        // Expired — renew via refresh grant rather than forcing a fresh QR sign-in.
+        if (!networkMonitor.isOnline()) return false
+        val refreshed = runCatching { deviceAuth.refreshTokens(session.refreshToken) }.getOrNull()
+        val tokens = (refreshed as? TokenPollResult.Approved)?.tokens ?: return false
+        tokenStore.save(tokens)
+        return sessionActivator.activate(tokens.accessToken)
     }
 
     /** The connected user's profile, or null until the gateway is Ready. */
