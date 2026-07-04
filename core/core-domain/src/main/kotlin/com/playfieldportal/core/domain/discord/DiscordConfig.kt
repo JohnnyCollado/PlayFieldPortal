@@ -12,7 +12,7 @@ object DiscordConfig {
     const val APPLICATION_ID: String = "1522836772847878216"
 
     /** OAuth2 device-authorization endpoints (Discord API v10), used by QR login. */
-    const val DEVICE_AUTHORIZATION_ENDPOINT: String = "https://discord.com/api/v10/oauth2/token/device"
+    const val DEVICE_AUTHORIZATION_ENDPOINT: String = "https://discord.com/api/v10/oauth2/device/authorize"
     const val TOKEN_ENDPOINT: String = "https://discord.com/api/v10/oauth2/token"
 
     /** The only host auth traffic may target — used to reject any non-Discord URL/redirect. */
