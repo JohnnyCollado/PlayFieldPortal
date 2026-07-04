@@ -11,25 +11,36 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+sealed interface FriendsUiState {
+    data object Loading : FriendsUiState
+    /** No connectivity — prompt the user to reconnect and retry. */
+    data object Offline : FriendsUiState
+    data class Loaded(val friends: List<DiscordFriend>) : FriendsUiState
+}
+
 @HiltViewModel
 class FriendsViewModel @Inject constructor(
     private val authRepository: DiscordAuthRepository,
 ) : ViewModel() {
 
-    // null = still loading; empty list = no friends.
-    private val _friends = MutableStateFlow<List<DiscordFriend>?>(null)
-    val friends: StateFlow<List<DiscordFriend>?> = _friends.asStateFlow()
+    private val _state = MutableStateFlow<FriendsUiState>(FriendsUiState.Loading)
+    val state: StateFlow<FriendsUiState> = _state.asStateFlow()
 
     init { refresh() }
 
     fun refresh() {
-        _friends.value = null
+        _state.value = FriendsUiState.Loading
         viewModelScope.launch {
-            _friends.value = authRepository.friends()
-                .sortedWith(
-                    compareByDescending<DiscordFriend> { it.presence.isOnline }
-                        .thenBy { it.label.lowercase() },
+            _state.value = if (!authRepository.isOnline()) {
+                FriendsUiState.Offline
+            } else {
+                FriendsUiState.Loaded(
+                    authRepository.friends().sortedWith(
+                        compareByDescending<DiscordFriend> { it.presence.isOnline }
+                            .thenBy { it.label.lowercase() },
+                    ),
                 )
+            }
         }
     }
 }

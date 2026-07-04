@@ -39,7 +39,7 @@ fun FriendsScreen(
     modifier: Modifier = Modifier,
     viewModel: FriendsViewModel = hiltViewModel(),
 ) {
-    val friends by viewModel.friends.collectAsStateWithLifecycle()
+    val state by viewModel.state.collectAsStateWithLifecycle()
 
     Column(modifier = modifier.fillMaxSize().padding(horizontal = 48.dp, vertical = 32.dp)) {
         Row(
@@ -47,9 +47,9 @@ fun FriendsScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            val count = friends?.count { it.presence.isOnline } ?: 0
+            val onlineCount = (state as? FriendsUiState.Loaded)?.friends?.count { it.presence.isOnline } ?: 0
             Text(
-                if (friends.isNullOrEmpty()) "Friends" else "Friends · $count online",
+                if (onlineCount == 0) "Friends" else "Friends · $onlineCount online",
                 color = Color.White,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -57,13 +57,30 @@ fun FriendsScreen(
             Button(onClick = onBack) { Text("Back") }
         }
 
-        val list = friends
-        when {
-            list == null -> Center { CircularProgressIndicator(color = Color.White) }
-            list.isEmpty() -> Center { Text("No friends to show", color = Color(0xCCFFFFFF), fontSize = 16.sp) }
-            else -> LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                items(list, key = { it.id }) { FriendRow(it) }
+        when (val s = state) {
+            FriendsUiState.Loading -> Center { CircularProgressIndicator(color = Color.White) }
+            FriendsUiState.Offline -> Center {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Text("You're offline", color = Color.White, fontSize = 18.sp)
+                    Text(
+                        "Reconnect to the internet to see your friends.",
+                        color = Color(0xCCFFFFFF),
+                        fontSize = 14.sp,
+                    )
+                    Button(onClick = viewModel::refresh) { Text("Retry") }
+                }
             }
+            is FriendsUiState.Loaded ->
+                if (s.friends.isEmpty()) {
+                    Center { Text("No friends to show", color = Color(0xCCFFFFFF), fontSize = 16.sp) }
+                } else {
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        items(s.friends, key = { it.id }) { FriendRow(it) }
+                    }
+                }
         }
     }
 }
@@ -85,7 +102,13 @@ private fun FriendRow(friend: DiscordFriend) {
         Spacer(Modifier.width(14.dp))
         Column {
             Text(friend.label, color = Color.White, fontSize = 16.sp)
-            Text(presenceLabel(friend.presence), color = Color(0xAAC8DAF2), fontSize = 12.sp)
+            val activity = friend.activity
+            if (activity != null) {
+                // Only ever their activity WITHIN Playfield Portal (SDK-scoped).
+                Text("Playing $activity", color = Color(0xFF7FE0A0), fontSize = 12.sp, maxLines = 1)
+            } else {
+                Text(presenceLabel(friend.presence), color = Color(0xAAC8DAF2), fontSize = 12.sp)
+            }
         }
     }
 }

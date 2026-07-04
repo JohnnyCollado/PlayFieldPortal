@@ -938,8 +938,10 @@ class XMBViewModel @Inject constructor(
                 BuiltInCategory.SOCIAL -> {
                     val items = socialRootItems()
                     _uiState.update { it.copy(currentItems = items) }
-                    // Fill in the avatar/name once the gateway is Ready.
-                    if (items.any { it.type == XMBItemType.SOCIAL_ACCOUNT && it.coverUri == null }) {
+                    // Fill in the avatar/name once the gateway is Ready (skip while offline).
+                    if (discordAuthRepository.isOnline() &&
+                        items.any { it.type == XMBItemType.SOCIAL_ACCOUNT && it.coverUri == null }
+                    ) {
                         scheduleSocialAccountRefresh()
                     }
                 }
@@ -4438,11 +4440,16 @@ class XMBViewModel @Inject constructor(
                 ),
             )
         }
-        val user = discordAuthRepository.currentUser()
+        val online = discordAuthRepository.isOnline()
+        val user = if (online) discordAuthRepository.currentUser() else null
         val account = XMBItem(
             id = "social_account",
             title = user?.label ?: "Connected to Discord",
-            subtitle = if (user != null) "Online" else "Connecting…",
+            subtitle = when {
+                !online -> "Offline"
+                user != null -> "Online"
+                else -> "Connecting…"
+            },
             coverUri = user?.avatarUrl?.takeIf { it.isNotBlank() },
             type = XMBItemType.SOCIAL_ACCOUNT,
         )

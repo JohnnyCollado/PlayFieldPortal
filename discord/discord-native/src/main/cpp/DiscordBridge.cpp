@@ -201,6 +201,18 @@ Java_com_playfieldportal_discord_DiscordNativeBridge_nativeGetFriendsJson(
             json += "\"username\":\"" + jsonEscape(u.Username()) + "\",";
             json += "\"displayName\":\"" + jsonEscape(u.DisplayName()) + "\",";
             json += "\"avatarUrl\":\"" + jsonEscape(avatarUrl) + "\",";
+            // GameActivity() is the friend's rich presence FOR THIS APP only (SDK scopes it to our
+            // application) — i.e. what they're doing inside Playfield Portal, if anything.
+            auto activity = u.GameActivity();
+            std::string actName, actDetails, actState;
+            if (activity.has_value()) {
+                actName = activity->Name();
+                if (activity->Details().has_value()) actDetails = activity->Details().value();
+                if (activity->State().has_value()) actState = activity->State().value();
+            }
+            json += "\"activityName\":\"" + jsonEscape(actName) + "\",";
+            json += "\"activityDetails\":\"" + jsonEscape(actDetails) + "\",";
+            json += "\"activityState\":\"" + jsonEscape(actState) + "\",";
             json += "\"status\":" + std::to_string(static_cast<int>(u.Status()));
             json += "}";
         }

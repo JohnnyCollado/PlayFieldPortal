@@ -1,5 +1,6 @@
 package com.playfieldportal.core.data.discord
 
+import com.playfieldportal.core.data.network.NetworkMonitor
 import com.playfieldportal.core.domain.discord.DeviceLoginState
 import com.playfieldportal.core.domain.discord.DiscordConfig
 import com.playfieldportal.core.domain.discord.DiscordSessionActivator
@@ -23,9 +24,19 @@ class DiscordAuthRepository @Inject constructor(
     private val deviceAuth: DiscordDeviceAuthClient,
     private val tokenStore: DiscordTokenStore,
     private val sessionActivator: DiscordSessionActivator,
+    private val networkMonitor: NetworkMonitor,
 ) {
+    /** True when the device currently has internet connectivity. */
+    fun isOnline(): Boolean = networkMonitor.isOnline()
+
     fun loginWithDeviceQr(scopes: String = DiscordConfig.DEFAULT_SCOPES): Flow<DeviceLoginState> = flow {
         emit(DeviceLoginState.Requesting)
+
+        // Fail fast and clearly when offline rather than timing out on the device-code request.
+        if (!networkMonitor.isOnline()) {
+            emit(DeviceLoginState.Error("You're offline. Reconnect to the internet and try again."))
+            return@flow
+        }
 
         val challenge = try {
             deviceAuth.requestDeviceCode(scopes)

@@ -52,10 +52,23 @@ class DiscordNativeSessionActivator @Inject constructor() : DiscordSessionActiva
                     displayName = obj.optString("displayName"),
                     avatarUrl = obj.optString("avatarUrl"),
                     presence = DiscordPresence.fromStatusOrdinal(obj.optInt("status", 7)),
+                    activity = composeActivity(
+                        name = obj.optString("activityName"),
+                        details = obj.optString("activityDetails"),
+                        state = obj.optString("activityState"),
+                    ),
                 )
             }
         }.getOrDefault(emptyList())
     }
 
     override fun connectionStatus(): Int = DiscordNativeBridge.status()
+
+    // "Details · State" is richest; fall back to details, then the app name. Null when not in-app.
+    private fun composeActivity(name: String, details: String, state: String): String? = when {
+        details.isNotBlank() && state.isNotBlank() -> "$details · $state"
+        details.isNotBlank() -> details
+        name.isNotBlank() -> name
+        else -> null
+    }
 }

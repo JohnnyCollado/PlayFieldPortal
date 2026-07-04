@@ -7,6 +7,9 @@ data class DiscordFriend(
     val displayName: String,
     val avatarUrl: String,
     val presence: DiscordPresence,
+    // What the friend is doing IN Playfield Portal, if anything (the SDK only exposes this app's
+    // activity, not their general Discord presence). Null when they aren't active in PFP.
+    val activity: String? = null,
 ) {
     val label: String get() = displayName.ifBlank { username }
 }
