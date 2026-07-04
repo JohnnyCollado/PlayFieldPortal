@@ -47,6 +47,9 @@ dependencies {
     implementation(project(":feature:feature-launcher"))
     implementation(project(":feature:feature-artwork"))
     implementation(project(":feature:feature-library"))
+    // Discord Social section — QR login screen + native session bridge.
+    implementation(project(":feature:feature-social"))
+    implementation(project(":discord:discord-native"))
 
     testImplementation(libs.bundles.test.unit)
     testImplementation(libs.hilt.android.testing)

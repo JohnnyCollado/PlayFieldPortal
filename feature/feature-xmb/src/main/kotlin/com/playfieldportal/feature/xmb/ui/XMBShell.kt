@@ -60,6 +60,13 @@ import com.playfieldportal.core.ui.theme.PFPTheme
 import com.playfieldportal.feature.appbar.AppDrawerScreen
 import com.playfieldportal.feature.appbar.AppFilter
 import com.playfieldportal.feature.settings.ui.SettingsNavHost
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
+import com.playfieldportal.discord.DiscordNativeBridge
+import com.playfieldportal.feature.social.ui.QrLoginScreen
 import com.playfieldportal.feature.xmb.preview.PreviewData
 import androidx.media3.common.util.UnstableApi
 import com.playfieldportal.feature.xmb.ui.app.AppDetailScreen
@@ -83,6 +90,13 @@ private const val XMB_MAX_SCALE = 2.5f
  * Stateful entry point for the XMB home screen: collects [XMBViewModel.uiState] and wires the
  * ViewModel's callbacks into the stateless [XMBShell]. This is what the host activity renders.
  */
+// Unwraps the Compose LocalContext to the hosting Activity (needed for the Discord SDK engine attach).
+private tailrec fun Context.findActivityOrNull(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivityOrNull()
+    else -> null
+}
+
 @Composable
 fun XMBShellContainer(
     viewModel: XMBViewModel = hiltViewModel(),
@@ -115,6 +129,7 @@ fun XMBShellContainer(
         onBootComplete = viewModel::onBootSequenceComplete,
         onSettingsLongPress = onSettingsLongPress,
         onCloseSettingsScreen = viewModel::onCloseSettingsScreen,
+        onDiscordLoginClosed = viewModel::onDiscordLoginClosed,
         onSettingsActionConsumed = viewModel::consumeSettingsAction,
         onCloseAppDrawer = viewModel::onCloseAppDrawer,
         onDrawerActionConsumed = viewModel::consumeDrawerAction,
@@ -182,6 +197,7 @@ fun XMBShell(
     onBootComplete: () -> Unit = {},
     onSettingsLongPress: () -> Unit = {},
     onCloseSettingsScreen: () -> Unit = {},
+    onDiscordLoginClosed: () -> Unit = {},
     onSettingsActionConsumed: () -> Unit = {},
     onCloseAppDrawer: () -> Unit = {},
     onDrawerActionConsumed: () -> Unit = {},
@@ -457,6 +473,21 @@ fun XMBShell(
                         onOpenColorSchemePicker = onOpenColorSchemePicker,
                         onAddAndroidApps = onOpenAndroidLibraryPicker,
                         modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            }
+
+            // Discord QR login overlay. Attaching the activity here (only when the overlay opens)
+            // keeps the SDK inert until the user chooses to sign in.
+            if (uiState.activeDiscordLogin) {
+                val loginContext = LocalContext.current
+                LaunchedEffect(Unit) {
+                    loginContext.findActivityOrNull()?.let { DiscordNativeBridge.attachActivity(it) }
+                }
+                Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.97f))) {
+                    QrLoginScreen(
+                        onConnected = onDiscordLoginClosed,
+                        onCancel = onDiscordLoginClosed,
                     )
                 }
             }

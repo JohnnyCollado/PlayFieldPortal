@@ -119,6 +119,9 @@ class CategoryRepositoryImpl @Inject constructor(
     // gaming flag is reconciled; user-editable fields (name, position, visibility, icon)
     // are deliberately left alone.
     suspend fun reconcileBuiltInCategories() {
+        // INSERT OR IGNORE adds built-ins introduced after this DB was first seeded (e.g. Social)
+        // without disturbing existing rows or user edits.
+        categoryDao.insertAll(BUILT_IN_CATEGORIES.map { it.toEntity() })
         for (category in BUILT_IN_CATEGORIES) {
             categoryDao.setGamingFlag(category.id, category.isGamingCategory)
         }
@@ -136,6 +139,7 @@ class CategoryRepositoryImpl @Inject constructor(
             Category(BuiltInCategory.GAMES,    "Game",      "ic_games",    type = CategoryType.BUILT_IN, position = 4, isGamingCategory = true),
             Category("network",                "Network",   "ic_network",  type = CategoryType.BUILT_IN, position = 5),
             Category("app_store",              "App Store", "ic_appstore", type = CategoryType.BUILT_IN, position = 6),
+            Category(BuiltInCategory.SOCIAL,   "Social",    "ic_social",   type = CategoryType.BUILT_IN, position = 7),
         )
 
         // Built-in categories the user may hide/reorder but never delete.
@@ -146,7 +150,7 @@ class CategoryRepositoryImpl @Inject constructor(
             BuiltInCategory.ANDROID,
             BuiltInCategory.APP_DRAWER,
             BuiltInCategory.SETTINGS,
-            "photos", "music", "videos", "network", "app_store",
+            "photos", "music", "videos", "network", "app_store", BuiltInCategory.SOCIAL,
         )
     }
 }

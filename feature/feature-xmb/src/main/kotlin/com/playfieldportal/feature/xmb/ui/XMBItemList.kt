@@ -45,6 +45,9 @@ import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.VideoLibrary
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.QrCode2
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -782,6 +785,22 @@ private fun XmbItemLeadingIcon(
         item.type == XMBItemType.ADD_ACTION -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
                 Icon(Icons.Filled.Add, contentDescription = null, tint = InactiveText, modifier = Modifier.size(44.dp))
+            }
+        }
+        // Discord Social rows.
+        item.type == XMBItemType.SOCIAL_ADD -> {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
+                Icon(Icons.Filled.QrCode2, contentDescription = null, tint = InactiveText, modifier = Modifier.size(44.dp))
+            }
+        }
+        item.type == XMBItemType.SOCIAL_ACCOUNT -> {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
+                Icon(Icons.Filled.AccountCircle, contentDescription = null, tint = InactiveText, modifier = Modifier.size(48.dp))
+            }
+        }
+        item.type == XMBItemType.SOCIAL_SIGNOUT -> {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
+                Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, tint = InactiveText, modifier = Modifier.size(44.dp))
             }
         }
         item.type == XMBItemType.ALL_GAMES ||

@@ -402,6 +402,9 @@ data class XMBUiState(
     // ── Context menu (Y/Triangle) ─────────────────────────────────────────
     val activeContextMenu: XMBContextMenu? = null,
 
+    // ── Discord QR login overlay ──────────────────────────────────────────
+    val activeDiscordLogin: Boolean = false,
+
     // ── Color-scheme picker (Settings ▸ Themes ▸ Color Scheme) ─────────────
     val colorSchemePicker: ColorSchemePickerState? = null,
 
@@ -466,6 +469,7 @@ data class XMBUiState(
             activeVideoId != null ||
             activePhotoViewer != null ||
             activeContextMenu != null ||
+            activeDiscordLogin ||
             colorSchemePicker != null ||
             appPicker != null ||
             gamePickerCategoryId != null ||
@@ -502,6 +506,10 @@ enum class XMBItemType {
     CAMERA,
     // "Add …" / "Create …" rows (add library/folder/apps/tracks, create playlist) — plus glyph.
     ADD_ACTION,
+    // Discord Social section rows.
+    SOCIAL_ADD,       // "Sign in with Discord" — opens the QR login overlay
+    SOCIAL_ACCOUNT,   // a connected Discord account
+    SOCIAL_SIGNOUT,   // "Sign out"
     EMPTY,
 }
 
@@ -628,6 +636,7 @@ class XMBViewModel @Inject constructor(
     private val photoRepository: com.playfieldportal.core.domain.repository.PhotoRepository,
     private val photoScanner: com.playfieldportal.feature.library.scanner.PhotoScanner,
     private val hiddenPlacementDao: com.playfieldportal.core.data.database.dao.HiddenPlacementDao,
+    private val discordAuthRepository: com.playfieldportal.core.data.discord.DiscordAuthRepository,
 ) : ViewModel() {
 
     // The track list currently on screen (in display/sort order), used as the in-app player's queue
@@ -921,6 +930,9 @@ class XMBViewModel @Inject constructor(
                 }
                 BuiltInCategory.SETTINGS -> {
                     _uiState.update { it.copy(currentItems = SETTINGS_ITEMS) }
+                }
+                BuiltInCategory.SOCIAL -> {
+                    _uiState.update { it.copy(currentItems = socialRootItems()) }
                 }
                 BuiltInCategory.GAMES -> {
                     val platformId = _uiState.value.selectedPlatformId
@@ -3326,6 +3338,11 @@ class XMBViewModel @Inject constructor(
                 else _uiState.update { it.copy(pendingDrawerAction = action) }
                 return
             }
+            state.activeDiscordLogin -> {
+                // Back cancels the QR overlay; its own Compose UI handles taps/buttons.
+                if (action == GamepadAction.BACK) onDiscordLoginClosed()
+                return
+            }
         }
 
         // Defensive net: the main XMB navigation below must NEVER run while any overlay,
@@ -4396,6 +4413,50 @@ class XMBViewModel @Inject constructor(
 
     // ── Item selection ────────────────────────────────────────────────────────
 
+    // ── Discord Social section ────────────────────────────────────────────────
+    private suspend fun socialRootItems(): List<XMBItem> =
+        if (discordAuthRepository.hasSession()) {
+            listOf(
+                XMBItem(id = "social_account", title = "Connected to Discord", subtitle = "Signed in", type = XMBItemType.SOCIAL_ACCOUNT),
+                XMBItem(id = "social_signout", title = "Sign out", type = XMBItemType.SOCIAL_SIGNOUT),
+            )
+        } else {
+            listOf(
+                XMBItem(
+                    id = "social_add",
+                    title = "Sign in with Discord",
+                    subtitle = "Scan a QR code with your phone",
+                    type = XMBItemType.SOCIAL_ADD,
+                ),
+            )
+        }
+
+    // Each Social row owns its sound and returns early (mirrors handleMusicSelection).
+    private fun handleSocialSelection(item: XMBItem): Boolean {
+        when (item.type) {
+            XMBItemType.SOCIAL_ADD -> {
+                menuSound.play(MenuSound.SELECT)
+                _uiState.update { it.copy(activeDiscordLogin = true) }
+            }
+            XMBItemType.SOCIAL_SIGNOUT -> {
+                menuSound.play(MenuSound.SELECT)
+                viewModelScope.launch {
+                    discordAuthRepository.logout()
+                    loadItemsForCategory(currentCategory())
+                }
+            }
+            XMBItemType.SOCIAL_ACCOUNT -> menuSound.play(MenuSound.SELECT)
+            else -> return false
+        }
+        return true
+    }
+
+    /** Called by the shell when the QR login overlay closes (connected or cancelled). */
+    fun onDiscordLoginClosed() {
+        _uiState.update { it.copy(activeDiscordLogin = false) }
+        loadItemsForCategory(currentCategory())
+    }
+
     fun onItemSelected(index: Int) {
         // Touch guard: XMB rows must never activate while any overlay is up (the gamepad path is
         // guarded in the dispatcher; this closes the same hole for taps that slip through an
@@ -4414,6 +4475,9 @@ class XMBViewModel @Inject constructor(
 
         // Photo rows (the All Photos card, Camera, Add Photo Library, Album cards, photo files).
         if (category?.id == BuiltInCategory.PHOTO && item != null && handlePhotoSelection(item)) return
+
+        // Social rows (Sign in / connected account / Sign out).
+        if (category?.id == BuiltInCategory.SOCIAL && item != null && handleSocialSelection(item)) return
 
         // Sound: launch for items that boot something immediately; select for opening a folder,
         // detail, picker, or settings; silent for non-selectable placeholder rows.

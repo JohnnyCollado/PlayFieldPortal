@@ -42,4 +42,5 @@ object BuiltInCategory {
     const val ANDROID          = "android"
     const val APP_DRAWER       = "app_drawer"
     const val SETTINGS         = "settings"
+    const val SOCIAL           = "social"
 }
