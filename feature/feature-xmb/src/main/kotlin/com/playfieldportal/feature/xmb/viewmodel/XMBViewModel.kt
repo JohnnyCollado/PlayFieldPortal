@@ -5697,6 +5697,9 @@ class XMBViewModel @Inject constructor(
     // restores whatever scheme was active when the picker opened; SELECT commits.
 
     private var colorSchemeOriginal: XmbColorScheme? = null
+    // A custom-theme accent active when the picker opened — restored on cancel (previews
+    // temporarily clear it so presets are actually visible).
+    private var accentOverrideOriginal: Long? = null
 
     fun openColorSchemePicker() {
         viewModelScope.launch {
@@ -5705,6 +5708,7 @@ class XMBViewModel @Inject constructor(
                 XmbColorScheme.valueOf(prefs[KEY_COLOR_SCHEME] ?: XmbColorScheme.CLASSIC_BLUE.name)
             }.getOrDefault(XmbColorScheme.CLASSIC_BLUE)
             colorSchemeOriginal = current
+            accentOverrideOriginal = prefs[KEY_ACCENT_OVERRIDE]
 
             val month = java.time.LocalDate.now().monthValue
             val options = XmbColorScheme.values().map { scheme ->
@@ -5737,24 +5741,47 @@ class XMBViewModel @Inject constructor(
     }
 
     private fun previewColorScheme(scheme: XmbColorScheme) {
-        viewModelScope.launch { context.pfpDataStore.edit { it[KEY_COLOR_SCHEME] = scheme.name } }
+        viewModelScope.launch {
+            context.pfpDataStore.edit {
+                it[KEY_COLOR_SCHEME] = scheme.name
+                // Suspend a custom-theme accent while previewing, or the preset preview would
+                // be invisibly masked by the override. Cancel restores it (see below).
+                it.remove(KEY_ACCENT_OVERRIDE)
+            }
+        }
     }
 
     fun confirmColorSchemePicker() {
         val picker = _uiState.value.colorSchemePicker ?: return
         val chosen = picker.options.getOrNull(picker.selectedIndex)?.scheme
         viewModelScope.launch {
-            if (chosen != null) context.pfpDataStore.edit { it[KEY_COLOR_SCHEME] = chosen.name }
+            if (chosen != null) {
+                context.pfpDataStore.edit {
+                    it[KEY_COLOR_SCHEME] = chosen.name
+                    // Explicitly choosing a preset exits custom-theme mode — otherwise the
+                    // imported-theme accent would keep overriding the pick invisibly.
+                    it.remove(KEY_ACCENT_OVERRIDE)
+                }
+            }
             colorSchemeOriginal = null
+            accentOverrideOriginal = null
             _uiState.update { it.copy(colorSchemePicker = null) }
         }
     }
 
     fun cancelColorSchemePicker() {
         val original = colorSchemeOriginal
+        val accentOriginal = accentOverrideOriginal
         viewModelScope.launch {
-            if (original != null) context.pfpDataStore.edit { it[KEY_COLOR_SCHEME] = original.name }
+            if (original != null) {
+                context.pfpDataStore.edit {
+                    it[KEY_COLOR_SCHEME] = original.name
+                    // Restore the custom-theme accent that previews temporarily cleared.
+                    if (accentOriginal != null) it[KEY_ACCENT_OVERRIDE] = accentOriginal
+                }
+            }
             colorSchemeOriginal = null
+            accentOverrideOriginal = null
             _uiState.update { it.copy(colorSchemePicker = null) }
         }
     }

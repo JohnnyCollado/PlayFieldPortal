@@ -15,6 +15,11 @@ enum class XmbColorScheme {
     ROYAL_PURPLE,
     CRIMSON_RED,
     SILVER_MONO,
+    SAKURA_PINK,
+    GOLDEN_AMBER,
+    AQUA_TEAL,
+    MIDNIGHT_NAVY,
+    CHARCOAL,
 }
 
 /** A fully-resolved color palette for the XMB. Colors are ARGB longs (0xAARRGGBB). */
@@ -34,6 +39,11 @@ fun XmbColorScheme.displayLabel(): String = when (this) {
     XmbColorScheme.ROYAL_PURPLE  -> "Royal Purple"
     XmbColorScheme.CRIMSON_RED   -> "Crimson Red"
     XmbColorScheme.SILVER_MONO   -> "Silver"
+    XmbColorScheme.SAKURA_PINK   -> "Sakura Pink"
+    XmbColorScheme.GOLDEN_AMBER  -> "Golden Amber"
+    XmbColorScheme.AQUA_TEAL     -> "Aqua Teal"
+    XmbColorScheme.MIDNIGHT_NAVY -> "Midnight Navy"
+    XmbColorScheme.CHARCOAL      -> "Charcoal"
 }
 
 /**
@@ -49,6 +59,11 @@ fun XmbColorScheme.resolve(month: Int): XmbPalette {
         XmbColorScheme.ROYAL_PURPLE  -> 0xFF7A4DD6L
         XmbColorScheme.CRIMSON_RED   -> 0xFFE03B4FL
         XmbColorScheme.SILVER_MONO   -> 0xFFB8C4D0L
+        XmbColorScheme.SAKURA_PINK   -> 0xFFE87FB0L
+        XmbColorScheme.GOLDEN_AMBER  -> 0xFFE0A32EL
+        XmbColorScheme.AQUA_TEAL     -> 0xFF2EC4B6L
+        XmbColorScheme.MIDNIGHT_NAVY -> 0xFF23477EL
+        XmbColorScheme.CHARCOAL      -> 0xFF4A505AL
     }
     return XmbPalette(
         waveColor        = wave,

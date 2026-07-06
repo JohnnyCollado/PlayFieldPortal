@@ -2,20 +2,32 @@ package com.playfieldportal.feature.settings.ui
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.playfieldportal.feature.settings.viewmodel.ThemeListItem
 import com.playfieldportal.feature.settings.viewmodel.ThemesSettingsViewModel
@@ -33,6 +45,12 @@ fun ThemesSettingsScreen(
     val themePicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri -> uri?.let { viewModel.installTheme(it) } }
+
+    // SAF picker for official PSP .ptf themes (no registered MIME type, so accept any file;
+    // the importer validates the magic and rejects non-PTF with a clear message).
+    val ptfPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri -> uri?.let { viewModel.importPtfTheme(it) } }
 
     SettingsScaffold(
         title    = "Settings",
@@ -53,8 +71,26 @@ fun ThemesSettingsScreen(
             // the background color scheme.
             SettingsRow(
                 label    = "Color Scheme",
-                sublabel = "PSP-style background colors — preview live",
+                sublabel = if (state.accentOverrideArgb != null) {
+                    "Custom theme color active — picking a preset replaces it"
+                } else "PSP-style background colors — preview live",
                 onClick  = onOpenColorSchemePicker,
+            )
+
+            state.accentOverrideArgb?.let { accent ->
+                SettingsRow(
+                    label    = "Custom Theme Color",
+                    sublabel = "From an imported theme — tap to remove and return to the color scheme",
+                    onClick  = { viewModel.clearAccentOverride() },
+                    trailing = { ColorDot(argb = accent) },
+                )
+            }
+
+            // Unified icon color: one tint across the XMB's icon set (docs/icon-system-plan.md).
+            SettingsGroup("Icon Color")
+            IconColorSwatchRow(
+                selectedArgb = state.iconColorArgb,
+                onSelect     = { viewModel.setIconColor(it) },
             )
 
             // ── Active theme ──────────────────────────────────────────────
@@ -87,6 +123,14 @@ fun ThemesSettingsScreen(
 
             // ── Install ───────────────────────────────────────────────────
             SettingsGroup("Install")
+
+            // Convert an official PSP theme the user owns: wallpaper + derived color,
+            // rendered with our icons (docs/ptf-import-plan.md).
+            SettingsRow(
+                label    = "Import PSP Theme (.ptf)",
+                sublabel = "Uses the theme's wallpaper and color — icons stay ours",
+                onClick  = if (state.isInstalling) null else ({ ptfPicker.launch(arrayOf("*/*")) }),
+            )
 
             if (state.isInstalling) {
                 LinearProgressIndicator(
@@ -121,6 +165,70 @@ fun ThemesSettingsScreen(
             )
         }
     }
+}
+
+// Preset icon tints. "Default" (null) = white — the icon art's native color. Kept to a small
+// curated set; per Sony's own guidance a flat icon color must stay legible over any wallpaper,
+// and the wallpaper scrim covers these (docs/icon-system-plan.md).
+private val IconColorChoices: List<Pair<String, Long?>> = listOf(
+    "Default"  to null,
+    "Pink"     to 0xFFFFD6E8L,
+    "Gold"     to 0xFFE8C64AL,
+    "Aqua"     to 0xFF7FD8D8L,
+    "Sky Blue" to 0xFF9DBEF5L,
+    "Green"    to 0xFF9FDB9FL,
+    "Coral"    to 0xFFE88A8AL,
+    "Slate"    to 0xFFAAB2BFL,
+)
+
+@Composable
+private fun IconColorSwatchRow(
+    selectedArgb: Long?,
+    onSelect: (Long?) -> Unit,
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 48.dp, vertical = 10.dp),
+    ) {
+        IconColorChoices.forEach { (label, argb) ->
+            val selected = selectedArgb == argb
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(CircleShape)
+                        .background(Color(argb ?: 0xFFFFFFFFL))
+                        .border(
+                            width = if (selected) 3.dp else 1.dp,
+                            color = if (selected) SettingsAccent else Color(0x66FFFFFF),
+                            shape = CircleShape,
+                        )
+                        .clickable { onSelect(argb) },
+                )
+                Text(
+                    text = label,
+                    color = if (selected) SettingsAccent else SettingsSubtext,
+                    fontSize = 11.sp,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+        }
+    }
+}
+
+/** Small round preview of an ARGB color, used as a row trailing element. */
+@Composable
+private fun ColorDot(argb: Long) {
+    Box(
+        modifier = Modifier
+            .size(22.dp)
+            .clip(CircleShape)
+            .background(Color(argb and 0xFFFFFFFFL))
+            .border(1.dp, Color(0x66FFFFFF), CircleShape),
+    )
 }
 
 @Composable
