@@ -5,6 +5,7 @@ import android.content.Intent
 import android.provider.MediaStore
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -470,6 +471,9 @@ data class XMBUiState(
     val iconStyle: GameIconStyle = GameIconStyle.PSP_RECTANGLE,
     val librarySetupComplete: Boolean = false,
     val themeColors: PFPColors = DefaultPFPColors,
+    // Per-theme XMB geometry (crossbar line, headroom, previous-item rise). DEFAULT holds the
+    // pixel-tuned authentic-PSP values; imported themes may override (theme-kit XmbLayoutSpec).
+    val layoutSpec: com.playfieldportal.themekit.XmbLayoutSpec = com.playfieldportal.themekit.XmbLayoutSpec.DEFAULT,
 ) {
     // True when the user has drilled into a sub-item on the home screen (a Games platform/collection/
     // All Games/Favorites, or a Music sub-view). Drives the floating Back button and locks Left/Right
@@ -825,16 +829,36 @@ class XMBViewModel @Inject constructor(
     // The active XMB color scheme (PSP-style presets + the month-based "Original" theme)
     // is the source of truth for the palette. ORIGINAL re-resolves to the current month each
     // time the scheme is (re)observed — i.e. on app start and whenever the user changes it.
+    // A custom-theme accent override (imported/created themes — the one-color cascade) takes
+    // precedence over the preset; the unified icon tint rides along either way.
     private fun observeColorScheme() {
         viewModelScope.launch {
             context.pfpDataStore.data
-                .map { it[KEY_COLOR_SCHEME] ?: XmbColorScheme.CLASSIC_BLUE.name }
+                .map { prefs ->
+                    Triple(
+                        prefs[KEY_COLOR_SCHEME] ?: XmbColorScheme.CLASSIC_BLUE.name,
+                        prefs[KEY_ACCENT_OVERRIDE],
+                        prefs[KEY_ICON_COLOR],
+                    )
+                }
                 .distinctUntilChanged()
-                .collect { name ->
-                    val scheme = runCatching { XmbColorScheme.valueOf(name) }
-                        .getOrDefault(XmbColorScheme.CLASSIC_BLUE)
-                    val month = java.time.LocalDate.now().monthValue
-                    baseThemeColors = scheme.resolve(month).toPFPColors()
+                .collect { (name, accentOverride, iconColorArgb) ->
+                    val base = if (accentOverride != null) {
+                        // One accent drives everything: wave color + re-derived gradient.
+                        DefaultPFPColors.withWaveTint(
+                            androidx.compose.ui.graphics.Color(accentOverride and 0xFFFFFFFFL),
+                        )
+                    } else {
+                        val scheme = runCatching { XmbColorScheme.valueOf(name) }
+                            .getOrDefault(XmbColorScheme.CLASSIC_BLUE)
+                        val month = java.time.LocalDate.now().monthValue
+                        scheme.resolve(month).toPFPColors()
+                    }
+                    baseThemeColors = base.copy(
+                        iconColor = iconColorArgb
+                            ?.let { androidx.compose.ui.graphics.Color(it and 0xFFFFFFFFL) }
+                            ?: androidx.compose.ui.graphics.Color.White,
+                    )
                     // One theme color across the whole XMB (PSP-authentic) — no per-category tint.
                     _uiState.update { it.copy(themeColors = baseThemeColors) }
                 }
@@ -5828,6 +5852,11 @@ class XMBViewModel @Inject constructor(
         private val KEY_RESPECT_BATTERY   = booleanPreferencesKey("display_battery_saver")
         private val KEY_THERMAL_AWARE     = booleanPreferencesKey("display_thermal_aware")
         private val KEY_COLOR_SCHEME      = stringPreferencesKey("display_color_scheme")
+        // Custom-theme cascade (docs/xmb-theme-creator-plan.md): when set, this ARGB accent
+        // overrides the preset scheme — wave, gradient, and cursor all derive from it.
+        private val KEY_ACCENT_OVERRIDE   = longPreferencesKey("theme_accent_override")
+        // Unified icon tint (ARGB); unset = white = the icon art's native color.
+        private val KEY_ICON_COLOR        = longPreferencesKey("theme_icon_color")
         private val KEY_SETUP_COMPLETE    = booleanPreferencesKey("library_setup_complete")
         private val KEY_CUSTOM_WALLPAPER  = stringPreferencesKey("display_custom_wallpaper")
         private val KEY_MENU_SOUND_ENABLED = booleanPreferencesKey("sound_menu_enabled")

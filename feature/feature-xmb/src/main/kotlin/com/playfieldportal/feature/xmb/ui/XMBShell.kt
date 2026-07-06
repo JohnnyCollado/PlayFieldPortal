@@ -353,9 +353,9 @@ fun XMBShell(
                 modifier = Modifier
                     .fillMaxSize()
                     // Slimmer than the status strip so the dissolving previous item can rise clear
-                    // of the caticon hexagon before it's clipped (barTop is rebalanced to keep the
-                    // crossbar itself on the same screen line).
-                    .padding(top = 20.dp)
+                    // of the caticon hexagon before it's clipped (barTopFraction is balanced against
+                    // this to keep the crossbar on the same screen line). From the theme layout spec.
+                    .padding(top = uiState.layoutSpec.contentTopPaddingDp.dp)
                     // Touch gestures on the home screen, each mapped to a discrete D-pad action (see
                     // xmbNavGestures): horizontal swipe steps the category (left-edge → Back); vertical
                     // swipe steps the item list/flyout. Taps still pass through to the rows.
@@ -374,10 +374,11 @@ fun XMBShell(
                     // bar band to dissolve. The column's leading icon is shifted right so it lands on
                     // the same vertical line as the caticon (centred in its slot).
                     val catBarHeight = 112.dp
-                    // Crossbar vertical position. Raised to align the caticon row with the upper
-                    // "cross" band that PSP-style theme wallpapers place near the top quarter,
-                    // matching the authentic PSP layout (caticon row ~25% of height).
-                    val barTop = maxHeight * 0.11f
+                    // Crossbar vertical position from the theme's layout spec — DEFAULT holds the
+                    // pixel-tuned authentic-PSP geometry (caticon row ~25% of height); imported
+                    // themes whose wallpaper draws its own cross band may override it.
+                    val layoutSpec = uiState.layoutSpec
+                    val barTop = maxHeight * layoutSpec.barTopFraction
                     // Active first-level item anchors just below the caticon bar, landing the selected
                     // item ~50% of height — matching the real PSP XMB (verified against the theme).
                     val anchorTop = barTop + catBarHeight
@@ -438,6 +439,7 @@ fun XMBShell(
                                 scrollToTopToken = uiState.scrollToTopToken,
                                 barTopY = barTop,
                                 belowTopY = anchorTop,
+                                previousRiseRows = layoutSpec.previousItemRiseRows,
                                 modifier = Modifier.fillMaxSize(),
                             )
                         }

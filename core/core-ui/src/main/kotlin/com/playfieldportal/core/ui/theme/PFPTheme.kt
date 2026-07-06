@@ -16,6 +16,10 @@ data class PFPColors(
     // Background gradient anchors behind the wave (top → bottom).
     val backgroundTop: Color = Color(0xFF26106C),
     val backgroundBottom: Color = Color(0xFF3B148C),
+    // Unified tint for the XMB's silhouette icon art (catbar_*/sysicon_*), applied via
+    // PortalIcon. White = the icons' native color, i.e. visually a no-op default.
+    // See docs/icon-system-plan.md.
+    val iconColor: Color = Color.White,
 )
 
 val LocalPFPColors = staticCompositionLocalOf {

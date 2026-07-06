@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.domain.model.Category
 import com.playfieldportal.core.ui.icons.CategoryIconGlyph
+import com.playfieldportal.themekit.XmbLayoutSpec
 
 // Classic PSP blue theme: selected label crisp white with a dark glow; unselected labels recede
 // into a dimmer blue-white so they read against the saturated blue gradient.
@@ -61,7 +62,7 @@ private val ItemSlotWidth = CategorySlotWidth
 // no partial "poke", and the category before that lands fully off-screen. At the last category
 // you therefore see exactly the previous + selected — the last two, and only them — with no
 // clipping. XMBShell reads this so the crossbar and its subitems stay on the same vertical line.
-internal val XmbLeftAnchor = CategorySlotWidth + 6.dp
+internal val XmbLeftAnchor = CategorySlotWidth + XmbLayoutSpec.DEFAULT.leftAnchorExtraDp.dp
 
 @Composable
 fun XMBCategoryBar(
@@ -132,7 +133,8 @@ private fun XMBCategoryItem(
     modifier: Modifier = Modifier,
 ) {
     val iconSize by animateDpAsState(
-        targetValue = if (isSelected) 72.dp else 56.dp,
+        targetValue = if (isSelected) XmbLayoutSpec.DEFAULT.categoryIconSelectedDp.dp
+        else XmbLayoutSpec.DEFAULT.categoryIconDp.dp,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "xmbCategoryIconSize",
     )

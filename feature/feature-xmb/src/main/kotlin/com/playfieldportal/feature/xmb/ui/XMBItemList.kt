@@ -89,8 +89,10 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.playfieldportal.core.ui.icons.GameIconStyle
+import com.playfieldportal.core.ui.icons.PortalIcon
 import com.playfieldportal.core.ui.icons.categoryIconFor
 import com.playfieldportal.core.ui.theme.LocalPFPColors
+import com.playfieldportal.themekit.XmbLayoutSpec
 import com.playfieldportal.feature.xmb.viewmodel.XMBItem
 import com.playfieldportal.feature.xmb.viewmodel.XMBItemType
 
@@ -112,10 +114,11 @@ private val ARTWORK_TEXT_GAP = 16.dp
 private val TAP_TARGET_HEIGHT = 72.dp
 
 // Fixed-width slot every leading icon is centred in, so an icon's horizontal centre is independent
-// of its own size — icons can grow without breaking the caticon alignment.
-internal val LEADING_ICON_SLOT = 74.dp
+// of its own size — icons can grow without breaking the caticon alignment. Sized from the shared
+// theme-kit layout spec (single source of truth for the tuned XMB geometry).
+internal val LEADING_ICON_SLOT = XmbLayoutSpec.DEFAULT.itemIconSlotDp.dp
 // Default size of the glyph/art inside that slot (selected rows additionally scale up via the row).
-private val LEADING_ICON_SIZE = 62.dp
+private val LEADING_ICON_SIZE = XmbLayoutSpec.DEFAULT.itemIconDp.dp
 // Horizontal centre of a row's leading icon from the row's left edge: 18.dp row padding + half the
 // slot. The grow/shrink scale pivots here, and the column is shifted so this lands on the caticon's
 // vertical line. Shared with XMBShell's column offset so the two never drift apart.
@@ -291,7 +294,7 @@ private fun SiblingIcon(item: XMBItem, selected: Boolean) {
                 modifier = Modifier.size(chip),
             )
         } else {
-            Image(
+            PortalIcon(
                 painter = painterResource(rememberConsoleIconId(consoleIconKeyFor(item))),
                 contentDescription = item.title,
                 modifier = Modifier.size(chip).alpha(if (selected) 1f else 0.5f),
@@ -395,6 +398,8 @@ fun XMBItemList(
     forceShowText: Boolean = false,
     // When true, the selected row gets a ◀ drill cursor pinned directly to its right.
     drillCursorOnSelected: Boolean = false,
+    // How far the dissolving previous item rises above the bar, in row heights (theme layout spec).
+    previousRiseRows: Float = XmbLayoutSpec.DEFAULT.previousItemRiseRows,
     modifier: Modifier = Modifier,
 ) {
     // The XMB cross, exactly as the hardware does it:
@@ -448,9 +453,9 @@ fun XMBItemList(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(ROW_HEIGHT / 2)
-                    // Sit the dissolving previous item lower so its icon lands on the black cross
-                    // band (not floating in the red above it).
-                    .offset(y = barTopY - ROW_HEIGHT / 2)
+                    // Rise distance is theme-tunable: PSP-style wallpapers want the previous item
+                    // fully clear of the caticon hexagon before it dissolves.
+                    .offset(y = barTopY - ROW_HEIGHT * previousRiseRows)
                     .clipToBounds(),
                 // Bottom-align a full-height row inside a half-height window: its top half is clipped.
                 // requiredHeight keeps the row its full ROW_HEIGHT (the window would otherwise coerce
@@ -558,11 +563,16 @@ private fun XmbVerticalListRow(
             if (showText) {
                 // start padding pushes the label clear of the wallpaper's vertical cross bar, so the
                 // text doesn't butt against the black band (a small gap, PSP-style).
-                Column(modifier = Modifier.weight(1f, fill = false).padding(start = 14.dp)) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f, fill = false)
+                        .padding(start = XmbLayoutSpec.DEFAULT.itemTextStartGapDp.dp),
+                ) {
                     Text(
                         text = item.title,
                         color = if (isSelected) PrimaryText else InactiveText,
-                        fontSize = if (isSelected) 22.sp else 18.sp,
+                        fontSize = if (isSelected) XmbLayoutSpec.DEFAULT.itemTextSelectedSp.sp
+                        else XmbLayoutSpec.DEFAULT.itemTextSp.sp,
                         fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                         style = if (isSelected) TextStyle(shadow = SelectedTextShadow) else TextStyle.Default,
                         maxLines = 1,
@@ -914,12 +924,13 @@ private fun XmbItemLeadingIcon(
                 val memoryCardArt = item.coverUri
                     ?: MEMORY_CARD_DEFAULT_ART.takeIf { item.type == XMBItemType.COLLECTION && collectionIconKey == null }
                 if (collectionIconKey != null) {
-                    Image(
+                    PortalIcon(
                         painter = painterResource(categoryIconFor(collectionIconKey).resId),
                         contentDescription = null,
                         modifier = Modifier.size(LEADING_ICON_SIZE),
                     )
                 } else if (memoryCardArt != null) {
+                    // User/content artwork — never tinted.
                     AsyncImage(
                         model = memoryCardArt,
                         contentDescription = null,
@@ -935,7 +946,7 @@ private fun XmbItemLeadingIcon(
                         XMBItemType.FAVORITES   -> "favorites"
                         else                    -> null
                     }
-                    Image(
+                    PortalIcon(
                         painter = painterResource(rememberConsoleIconId(iconKey)),
                         contentDescription = null,
                         modifier = Modifier.size(LEADING_ICON_SIZE),
@@ -984,7 +995,7 @@ private fun XmbItemLeadingIcon(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier.width(LEADING_ICON_SLOT),
             ) {
-                Image(
+                PortalIcon(
                     painter = painterResource(rememberConsoleIconId("settings")),
                     contentDescription = null,
                     modifier = Modifier.size(LEADING_ICON_SIZE),

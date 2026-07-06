@@ -25,6 +25,7 @@ tasks.withType<Test>().configureEach {
 }
 
 dependencies {
+    implementation(project(":core:theme-kit"))
     implementation(project(":core:core-domain"))
     implementation(project(":core:core-common"))
 
