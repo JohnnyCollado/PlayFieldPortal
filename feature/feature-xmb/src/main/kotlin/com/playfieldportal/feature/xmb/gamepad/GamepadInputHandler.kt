@@ -48,6 +48,12 @@ class GamepadInputHandler @Inject constructor(
     private var repeatJob: Job? = null
     private var lastStickAction: GamepadAction? = null
 
+    // Push-to-talk (Discord voice): set by XMBViewModel while a call is active with PTT on and a
+    // button mapped. When set, the matching keycode holds the mic open (down) / closes it (up)
+    // instead of translating to a navigation action. Only reaches us while PFP is foreground.
+    var pttKeyCode: Int? = null
+    var onPttHold: ((Boolean) -> Unit)? = null
+
     // Called by MainActivity.dispatchKeyEvent
     fun onKeyEvent(event: KeyEvent): Boolean {
         // During button remapping: capture the raw keyCode before any action translation.
@@ -59,6 +65,19 @@ class GamepadInputHandler @Inject constructor(
                 capture(event.keyCode)
             }
             return true
+        }
+
+        // Push-to-talk takes priority over navigation for its mapped button during a call: hold to
+        // open the mic, release to close. Consume both edges (and held repeats) so it never doubles
+        // as a nav press.
+        pttKeyCode?.let { code ->
+            if (event.keyCode == code) {
+                when (event.action) {
+                    KeyEvent.ACTION_DOWN -> if (event.repeatCount == 0) onPttHold?.invoke(true)
+                    KeyEvent.ACTION_UP -> onPttHold?.invoke(false)
+                }
+                return true
+            }
         }
 
         // Accept any keycode we have a binding for — don't filter by source because

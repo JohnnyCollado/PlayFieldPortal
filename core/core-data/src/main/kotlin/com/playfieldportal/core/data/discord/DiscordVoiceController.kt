@@ -45,6 +45,11 @@ data class VoiceSettings(
     val pushToTalk: Boolean,
     /** Show the floating hold-to-talk overlay button (only relevant while [pushToTalk] is on). */
     val pttOverlay: Boolean,
+    /**
+     * Gamepad keycode that acts as hold-to-talk while PFP is the foreground app (null = unmapped).
+     * Only usable in-app: while a game is foreground the controller talks to the game, not us.
+     */
+    val pttKeyCode: Int?,
 )
 
 /**
@@ -75,6 +80,7 @@ class DiscordVoiceController @Inject constructor(
     private val balanceKey = intPreferencesKey("discord_voice_audio_balance")
     private val pttKey = booleanPreferencesKey("discord_voice_push_to_talk")
     private val pttOverlayKey = booleanPreferencesKey("discord_voice_ptt_overlay")
+    private val pttKeyCodeKey = intPreferencesKey("discord_voice_ptt_keycode")
 
     private val audioManager by lazy { context.getSystemService(Context.AUDIO_SERVICE) as AudioManager }
     // The user's media (game) volume at join time, so ducking is relative and reversible. Null = not
@@ -129,6 +135,13 @@ class DiscordVoiceController @Inject constructor(
     /** Show/hide the floating hold-to-talk overlay button. */
     suspend fun setPttOverlay(on: Boolean) {
         context.pfpDataStore.edit { it[pttOverlayKey] = on }
+    }
+
+    /** Map (or clear, with null) the gamepad button that holds the mic open while PFP is foreground. */
+    suspend fun setPttKeyCode(code: Int?) {
+        context.pfpDataStore.edit {
+            if (code == null) it.remove(pttKeyCodeKey) else it[pttKeyCodeKey] = code
+        }
     }
 
     /** In PTT mode, open (held) / close (released) the mic. Called by the overlay + controller button. */
@@ -247,6 +260,7 @@ class DiscordVoiceController @Inject constructor(
         audioBalance = p[balanceKey] ?: 50,
         pushToTalk = p[pttKey] ?: false,
         pttOverlay = p[pttOverlayKey] ?: true,
+        pttKeyCode = p[pttKeyCodeKey],
     )
 
     // Voice output %: 30 at all-game → 100 centred → 200 at all-voice (Discord's 0..200 range).

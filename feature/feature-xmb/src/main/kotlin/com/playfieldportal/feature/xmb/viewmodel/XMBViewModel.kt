@@ -434,6 +434,8 @@ data class XMBUiState(
     val requestMicPermission: Boolean = false,
     // One-shot: ask the shell to open the "Draw over other apps" settings for the PTT overlay.
     val requestOverlayPermission: Boolean = false,
+    // True while the Voice Settings "PTT Button" row is waiting to capture the next controller press.
+    val capturingPttKey: Boolean = false,
 
     // ── Color-scheme picker (Settings ▸ Themes ▸ Color Scheme) ─────────────
     val colorSchemePicker: ColorSchemePickerState? = null,
@@ -675,6 +677,7 @@ class XMBViewModel @Inject constructor(
     private val artworkRepository: ArtworkRepository,
     @ApplicationContext private val context: Context,
     private val gamepadInputHandler: GamepadInputHandler,
+    private val remapCoordinator: com.playfieldportal.core.data.repository.RemapCoordinator,
     private val mappingRepository: ControllerMappingRepository,
     private val menuSound: com.playfieldportal.core.ui.sound.MenuSoundPlayer,
     private val musicRepository: com.playfieldportal.core.domain.repository.MusicRepository,
@@ -4836,8 +4839,39 @@ class XMBViewModel @Inject constructor(
                     },
                     type = XMBItemType.SOCIAL_VOICE_TOGGLE,
                 ))
+                // Controller hold-to-talk while PFP is the foreground app (a game in front routes the
+                // button to the game, so the overlay covers that case).
+                add(XMBItem(
+                    id = "vs_ptt_button",
+                    title = "PTT Button",
+                    subtitle = when {
+                        _uiState.value.capturingPttKey -> "Press a controller button…  ·  B to cancel"
+                        s.pttKeyCode != null -> "${pttButtonLabel(s.pttKeyCode)}  ·  hold to talk while in Playfield Portal"
+                        else -> "Not set · select to map a controller button"
+                    },
+                    type = XMBItemType.SOCIAL_VOICE_CYCLE,
+                ))
             }
         }
+    }
+
+    // Friendly name for a mapped gamepad keycode (falls back to a trimmed KEYCODE_ name).
+    private fun pttButtonLabel(code: Int?): String = when (code) {
+        null -> "Not set"
+        android.view.KeyEvent.KEYCODE_BUTTON_A -> "A"
+        android.view.KeyEvent.KEYCODE_BUTTON_B -> "B"
+        android.view.KeyEvent.KEYCODE_BUTTON_X -> "X"
+        android.view.KeyEvent.KEYCODE_BUTTON_Y -> "Y"
+        android.view.KeyEvent.KEYCODE_BUTTON_L1 -> "L1"
+        android.view.KeyEvent.KEYCODE_BUTTON_R1 -> "R1"
+        android.view.KeyEvent.KEYCODE_BUTTON_L2 -> "L2"
+        android.view.KeyEvent.KEYCODE_BUTTON_R2 -> "R2"
+        android.view.KeyEvent.KEYCODE_BUTTON_THUMBL -> "L3 (left stick click)"
+        android.view.KeyEvent.KEYCODE_BUTTON_THUMBR -> "R3 (right stick click)"
+        android.view.KeyEvent.KEYCODE_BUTTON_SELECT -> "Select"
+        android.view.KeyEvent.KEYCODE_BUTTON_START -> "Start"
+        else -> android.view.KeyEvent.keyCodeToString(code)
+            .removePrefix("KEYCODE_BUTTON_").removePrefix("KEYCODE_")
     }
 
     // A controller-friendly "slider": Game ◀ ──●── ▶ Voice with the marker at the current mix.
@@ -4855,14 +4889,14 @@ class XMBViewModel @Inject constructor(
                 "vs_noise" -> discordVoice.setNoiseCancellation(!s.noiseCancellation)
                 "vs_echo"  -> discordVoice.setEchoCancellation(!s.echoCancellation)
                 "vs_agc"   -> discordVoice.setAutomaticGainControl(!s.automaticGainControl)
-                "vs_ptt"   -> { discordVoice.setPushToTalk(!s.pushToTalk); syncPttOverlay() }
+                "vs_ptt"   -> { discordVoice.setPushToTalk(!s.pushToTalk); syncPttControls() }
                 "vs_ptt_overlay" -> {
                     if (!s.pttOverlay && !pttOverlay.canDraw()) {
                         // Enabling it but no permission yet → send the user to grant it.
                         _uiState.update { it.copy(requestOverlayPermission = true) }
                     } else {
                         discordVoice.setPttOverlay(!s.pttOverlay)
-                        syncPttOverlay()
+                        syncPttControls()
                     }
                 }
             }
@@ -4870,13 +4904,49 @@ class XMBViewModel @Inject constructor(
         }
     }
 
-    // Show the floating talk button only while in a lobby with PTT + overlay on and permission granted.
-    private fun syncPttOverlay() {
+    // Keep both PTT controls in sync with the call + settings: the floating overlay (works over a
+    // running game) and the controller hold-to-talk button (PFP-foreground only).
+    private fun syncPttControls() {
         viewModelScope.launch {
             val s = discordVoice.settings()
-            val wantOverlay = _uiState.value.voiceState.inRoom && s.pushToTalk && s.pttOverlay && pttOverlay.canDraw()
+            val inCall = _uiState.value.voiceState.inRoom
+            val wantOverlay = inCall && s.pushToTalk && s.pttOverlay && pttOverlay.canDraw()
             if (wantOverlay) pttOverlay.show() else pttOverlay.hide()
+
+            if (inCall && s.pushToTalk && s.pttKeyCode != null) {
+                gamepadInputHandler.pttKeyCode = s.pttKeyCode
+                gamepadInputHandler.onPttHold = { active ->
+                    viewModelScope.launch { discordVoice.setPttActive(active) }
+                }
+            } else {
+                gamepadInputHandler.pttKeyCode = null
+                gamepadInputHandler.onPttHold = null
+            }
         }
+    }
+
+    // Arm the shared remap capture: the next controller button becomes the PTT button (B / Back
+    // cancels). Reuses RemapCoordinator, so it can't collide with normal navigation while armed.
+    private fun beginPttCapture() {
+        remapCoordinator.captureNextKey = { keyCode ->
+            val cancel = keyCode == android.view.KeyEvent.KEYCODE_BUTTON_B ||
+                keyCode == android.view.KeyEvent.KEYCODE_BACK
+            viewModelScope.launch {
+                if (!cancel) discordVoice.setPttKeyCode(keyCode)
+                _uiState.update { it.copy(capturingPttKey = false) }
+                syncPttControls()
+                if (_uiState.value.socialNav == SocialNav.VoiceSettings) loadItemsForCategory(currentCategory())
+            }
+        }
+        _uiState.update { it.copy(capturingPttKey = true) }
+        viewModelScope.launch {
+            if (_uiState.value.socialNav == SocialNav.VoiceSettings) loadItemsForCategory(currentCategory())
+        }
+    }
+
+    private fun cancelPttCapture() {
+        remapCoordinator.captureNextKey = null
+        _uiState.update { it.copy(capturingPttKey = false) }
     }
 
     /** Shell has launched the overlay-permission settings — clear the one-shot flag. */
@@ -5006,6 +5076,9 @@ class XMBViewModel @Inject constructor(
     private fun leaveVoiceRoom() {
         stopVoicePolling()
         pttOverlay.hide()
+        // Stop intercepting the controller PTT button once the call ends.
+        gamepadInputHandler.pttKeyCode = null
+        gamepadInputHandler.onPttHold = null
         voiceWasInRoom = false
         viewModelScope.launch {
             discordVoice.leave()
@@ -5023,7 +5096,7 @@ class XMBViewModel @Inject constructor(
         // Discord-app joins, which enter the lobby natively without going through create/join.
         if (vs.inRoom && !voiceWasInRoom) {
             discordVoice.applyAudioSettings()
-            syncPttOverlay()   // raise the floating talk button if PTT + overlay are on
+            syncPttControls()   // raise the floating talk button if PTT + overlay are on
         }
         voiceWasInRoom = vs.inRoom
         _uiState.update { it.copy(voiceState = vs) }
@@ -5060,6 +5133,8 @@ class XMBViewModel @Inject constructor(
 
     private fun openSocialView(nav: SocialNav) {
         if (nav != SocialNav.Voice && nav != SocialNav.VoiceInvites) stopVoicePolling()
+        // Leaving Voice Settings mid-capture cancels the PTT mapping (so a stray press can't bind).
+        if (nav != SocialNav.VoiceSettings && _uiState.value.capturingPttKey) cancelPttCapture()
         navigateRememberingCursor { it.copy(socialNav = nav) }
     }
 
@@ -5158,7 +5233,10 @@ class XMBViewModel @Inject constructor(
             XMBItemType.SOCIAL_VOICE_MUTE -> { menuSound.play(MenuSound.SELECT); toggleSelfMute() }
             XMBItemType.SOCIAL_VOICE_SETTINGS -> { menuSound.play(MenuSound.SELECT); openSocialView(SocialNav.VoiceSettings) }
             XMBItemType.SOCIAL_VOICE_TOGGLE -> { menuSound.play(MenuSound.SELECT); toggleVoiceSetting(item.id) }
-            XMBItemType.SOCIAL_VOICE_CYCLE -> { menuSound.play(MenuSound.SELECT); cycleVoiceSetting(item.id) }
+            XMBItemType.SOCIAL_VOICE_CYCLE -> {
+                menuSound.play(MenuSound.SELECT)
+                if (item.id == "vs_ptt_button") beginPttCapture() else cycleVoiceSetting(item.id)
+            }
             XMBItemType.SOCIAL_VOICE_LEAVE -> { menuSound.play(MenuSound.SELECT); leaveVoiceRoom() }
             XMBItemType.SOCIAL_FRIEND -> {
                 menuSound.play(MenuSound.SELECT)
