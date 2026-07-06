@@ -4,6 +4,7 @@ import com.playfieldportal.core.domain.discord.DiscordFriend
 import com.playfieldportal.core.domain.discord.DiscordPresence
 import com.playfieldportal.core.domain.discord.DiscordSessionActivator
 import com.playfieldportal.core.domain.discord.DiscordUser
+import com.playfieldportal.core.domain.discord.DiscordVoiceInvite
 import com.playfieldportal.core.domain.discord.DiscordVoiceParticipant
 import com.playfieldportal.core.domain.discord.DiscordVoiceState
 import kotlinx.coroutines.Dispatchers
@@ -59,6 +60,7 @@ class DiscordNativeSessionActivator @Inject constructor() : DiscordSessionActiva
                         details = obj.optString("activityDetails"),
                         state = obj.optString("activityState"),
                     ),
+                    inLobby = obj.optBoolean("inLobby"),
                 )
             }
         }.getOrDefault(emptyList())
@@ -108,6 +110,57 @@ class DiscordNativeSessionActivator @Inject constructor() : DiscordSessionActiva
 
     override suspend fun setOutputVolume(percent: Float) = withContext(Dispatchers.IO) {
         DiscordNativeBridge.setOutputVolume(percent)
+    }
+
+    override suspend fun inviteFriend(userId: String, content: String) = withContext(Dispatchers.IO) {
+        userId.toLongOrNull()?.let { DiscordNativeBridge.inviteFriend(it, content) } ?: Unit
+    }
+
+    override suspend fun sendJoinRequest(userId: String) = withContext(Dispatchers.IO) {
+        userId.toLongOrNull()?.let { DiscordNativeBridge.sendJoinRequest(it) } ?: Unit
+    }
+
+    override suspend fun pendingInvites(): List<DiscordVoiceInvite> = withContext(Dispatchers.IO) {
+        runCatching {
+            val array = JSONArray(DiscordNativeBridge.invitesJson())
+            (0 until array.length()).map { i ->
+                val obj = array.getJSONObject(i)
+                DiscordVoiceInvite(
+                    index = obj.optInt("index"),
+                    senderId = obj.optString("senderId"),
+                    senderName = obj.optString("senderName"),
+                    isJoinRequest = obj.optInt("type") == DiscordVoiceInvite.TYPE_JOIN_REQUEST,
+                )
+            }
+        }.getOrDefault(emptyList())
+    }
+
+    override suspend fun acceptInvite(index: Int) = withContext(Dispatchers.IO) {
+        DiscordNativeBridge.acceptInvite(index)
+    }
+
+    override suspend fun approveJoinRequest(index: Int) = withContext(Dispatchers.IO) {
+        DiscordNativeBridge.approveJoinRequest(index)
+    }
+
+    override suspend fun dismissInvite(index: Int) = withContext(Dispatchers.IO) {
+        DiscordNativeBridge.dismissInvite(index)
+    }
+
+    override suspend fun consumePendingJoin(): String? = withContext(Dispatchers.IO) {
+        DiscordNativeBridge.consumePendingJoin().ifBlank { null }
+    }
+
+    override suspend fun setAudioMode(mode: Int) = withContext(Dispatchers.IO) {
+        DiscordNativeBridge.setAudioMode(mode)
+    }
+
+    override suspend fun setPttActive(active: Boolean) = withContext(Dispatchers.IO) {
+        DiscordNativeBridge.setPttActive(active)
+    }
+
+    override suspend fun setPttReleaseDelay(ms: Int) = withContext(Dispatchers.IO) {
+        DiscordNativeBridge.setPttReleaseDelay(ms)
     }
 
     override suspend fun voiceState(): DiscordVoiceState = withContext(Dispatchers.IO) {

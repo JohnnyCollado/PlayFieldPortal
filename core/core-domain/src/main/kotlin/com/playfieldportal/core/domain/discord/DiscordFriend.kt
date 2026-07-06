@@ -10,6 +10,9 @@ data class DiscordFriend(
     // What the friend is doing IN Playfield Portal, if anything (the SDK only exposes this app's
     // activity, not their general Discord presence). Null when they aren't active in PFP.
     val activity: String? = null,
+    // True when the friend is in a PFP voice lobby (their activity carries a party) — so we can offer
+    // to Ask to Join.
+    val inLobby: Boolean = false,
 ) {
     val label: String get() = displayName.ifBlank { username }
 }

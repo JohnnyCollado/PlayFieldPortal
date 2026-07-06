@@ -59,6 +59,36 @@ interface DiscordSessionActivator {
     /** Speaker (output) volume, percentage 0..200. */
     suspend fun setOutputVolume(percent: Float)
 
+    /** Invite a friend to the current lobby ([content] = short message shown with the invite). */
+    suspend fun inviteFriend(userId: String, content: String)
+
+    /** Ask to join a friend's lobby (they approve). */
+    suspend fun sendJoinRequest(userId: String)
+
+    /** Pending invites (friends inviting you) + join requests (people asking into your lobby). */
+    suspend fun pendingInvites(): List<DiscordVoiceInvite>
+
+    /** Accept the invite at [index] → join that friend's lobby. */
+    suspend fun acceptInvite(index: Int)
+
+    /** Approve the join request at [index] → the requester may join your lobby. */
+    suspend fun approveJoinRequest(index: Int)
+
+    /** Dismiss the invite / decline the join request at [index]. */
+    suspend fun dismissInvite(index: Int)
+
+    /** Join secret from a Discord-app "Join" tap (or null), consuming it. */
+    suspend fun consumePendingJoin(): String?
+
+    /** Voice input mode: 1 = VAD (open mic), 2 = push-to-talk. */
+    suspend fun setAudioMode(mode: Int)
+
+    /** In push-to-talk mode, open (true) / close (false) the mic. */
+    suspend fun setPttActive(active: Boolean)
+
+    /** PTT release grace period in ms (mic stays open briefly after release). */
+    suspend fun setPttReleaseDelay(ms: Int)
+
     /** Current voice-call snapshot ([DiscordVoiceState.Idle] when not in a room). */
     suspend fun voiceState(): DiscordVoiceState
 }

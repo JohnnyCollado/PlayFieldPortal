@@ -24,6 +24,7 @@
 #include <set>
 #include <string>
 #include <thread>
+#include <vector>
 
 namespace {
 
@@ -46,6 +47,21 @@ std::atomic<int> gCallStatus{0};
 // User ids currently producing sound. Written by the SDK speaking callback and read by the
 // participants query — both run on the pump thread, so no lock is needed.
 std::set<uint64_t> gSpeaking;
+
+// ── Presence + lobby state (pump thread only) ─────────────────────────────────────
+// Rich presence is a single Activity, so the game name (from the opt-in presence controller) and
+// the voice-lobby party/join-secret must be merged into one — updatePresence() below does that.
+std::string gActivityName;      // game/app name to show; empty = no game presence
+std::string gActivityDetails;   // optional second line
+bool gInLobby = false;
+std::string gLobbySecret;       // the SDK join secret for our lobby (== the secret we joined with)
+std::string gLobbyPartyId;      // party id broadcast in presence (the lobby id as a string)
+
+// Pending activity invites + join requests received from other users (Join=invite to their lobby,
+// JoinRequest=someone asking to join ours). Kept so Kotlin can list them and accept/reply by index.
+std::vector<discordpp::ActivityInvite> gInvites;
+// Join secret captured when the user accepts a "Join" from the Discord UI — consumed by Kotlin.
+std::string gPendingJoinSecret;
 
 void post(std::function<void()> task) {
     std::lock_guard<std::mutex> lock(gTaskMutex);
@@ -88,6 +104,76 @@ std::string jsonEscape(const std::string& s) {
     return out;
 }
 
+// Rebuild the one rich-presence Activity from the current game name + lobby party. Called on the
+// pump whenever either changes. When there's nothing to show (no game, not in a lobby), clears it.
+// While in a lobby we always broadcast the party + join secret (required for invites/joining), even
+// if the game name is hidden — the party privacy is Private, so it's only joinable via invite/request.
+void updatePresence() {
+    if (!gClient) return;
+    if (gActivityName.empty() && !gInLobby) {
+        gClient->ClearRichPresence();
+        return;
+    }
+    discordpp::Activity activity{};
+    activity.SetType(discordpp::ActivityTypes::Playing);
+    activity.SetName(gActivityName.empty() ? "Playfield Portal" : gActivityName);
+    if (!gActivityDetails.empty()) activity.SetDetails(gActivityDetails);
+    if (gInLobby) {
+        discordpp::ActivityParty party{};
+        party.SetId(gLobbyPartyId);
+        party.SetCurrentSize(gCall ? static_cast<int32_t>(gCall->GetParticipants().size()) : 1);
+        party.SetMaxSize(8);
+        party.SetPrivacy(discordpp::ActivityPartyPrivacy::Private);
+        activity.SetParty(party);
+        discordpp::ActivitySecrets secrets{};
+        secrets.SetJoin(gLobbySecret);
+        activity.SetSecrets(secrets);
+    }
+    gClient->UpdateRichPresence(std::move(activity), [](discordpp::ClientResult /*r*/) {});
+}
+
+// Create or join the lobby for [secret], start the call, and broadcast the joinable party presence.
+// Runs on the pump. [onDone] receives the lobby id (0 on failure) — used by the blocking join path;
+// pass nullptr for fire-and-forget (invite/join-request accept). Shared so every entry point behaves
+// identically.
+void enterLobby(const std::string& secret, std::function<void(uint64_t)> onDone) {
+    if (!gClient) { if (onDone) onDone(0); return; }
+    gClient->CreateOrJoinLobby(secret, [secret, onDone](discordpp::ClientResult result, uint64_t lobbyId) {
+        if (!result.Successful()) { if (onDone) onDone(0); return; }
+        gLobbyId.store(lobbyId);
+        gSpeaking.clear();
+        // Broadcast a joinable party (Private → invite/request only) so friends can be invited to
+        // or request to join this lobby. The join secret is the secret we joined with.
+        gInLobby = true;
+        gLobbySecret = secret;
+        gLobbyPartyId = std::to_string(lobbyId);
+        updatePresence();
+        // Audio processing (Krisp/echo/AGC/volumes/VAD) is default-off in the SDK; the Kotlin
+        // controller applies the saved Voice Settings right after entry.
+        discordpp::Call call = gClient->StartCall(lobbyId);
+        call.SetStatusChangedCallback(
+            [](discordpp::Call::Status status, discordpp::Call::Error /*e*/, int32_t /*d*/) {
+                gCallStatus.store(static_cast<int>(status));
+            });
+        call.SetSpeakingStatusChangedCallback([](uint64_t userId, bool isPlayingSound) {
+            if (isPlayingSound) gSpeaking.insert(userId);
+            else gSpeaking.erase(userId);
+        });
+        gCall = std::move(call);
+        gCallStatus.store(static_cast<int>(gCall->GetStatus()));
+        if (onDone) onDone(lobbyId);
+    });
+}
+
+// Read a (possibly null) jstring into a std::string.
+std::string jstr(JNIEnv* env, jstring s) {
+    if (!s) return "";
+    const char* c = env->GetStringUTFChars(s, nullptr);
+    std::string out(c ? c : "");
+    env->ReleaseStringUTFChars(s, c);
+    return out;
+}
+
 // The single thread on which the client lives: run queued SDK calls, then pump SDK callbacks.
 void pumpLoop() {
     while (gRunning.load()) {
@@ -112,6 +198,15 @@ Java_com_playfieldportal_discord_DiscordNativeBridge_nativeInit(
         [](discordpp::Client::Status status, discordpp::Client::Error /*error*/, int32_t /*detail*/) {
             gStatus.store(static_cast<int>(status));
         });
+    // Incoming activity invites (a friend invited us to their lobby = Join) and join requests
+    // (someone asking to join ours = JoinRequest) both arrive here; we queue them for Kotlin.
+    gClient->SetActivityInviteCreatedCallback([](discordpp::ActivityInvite invite) {
+        gInvites.push_back(std::move(invite));
+    });
+    // Fired when the user accepts a "Join" from the Discord app UI — we get the join secret to join.
+    gClient->SetActivityJoinCallback([](std::string joinSecret) {
+        gPendingJoinSecret = joinSecret;
+    });
     gRunning.store(true);
     gPumpThread = std::thread(pumpLoop);
 }
@@ -218,14 +313,18 @@ Java_com_playfieldportal_discord_DiscordNativeBridge_nativeGetFriendsJson(
             // application) — i.e. what they're doing inside Playfield Portal, if anything.
             auto activity = u.GameActivity();
             std::string actName, actDetails, actState;
+            bool inLobby = false;
             if (activity.has_value()) {
                 actName = activity->Name();
                 if (activity->Details().has_value()) actDetails = activity->Details().value();
                 if (activity->State().has_value()) actState = activity->State().value();
+                // In a PFP voice lobby → their activity carries a party we can ask to join.
+                inLobby = activity->Party().has_value();
             }
             json += "\"activityName\":\"" + jsonEscape(actName) + "\",";
             json += "\"activityDetails\":\"" + jsonEscape(actDetails) + "\",";
             json += "\"activityState\":\"" + jsonEscape(actState) + "\",";
+            json += "\"inLobby\":" + std::string(inLobby ? "true" : "false") + ",";
             json += "\"status\":" + std::to_string(static_cast<int>(u.Status()));
             json += "}";
         }
@@ -256,21 +355,23 @@ Java_com_playfieldportal_discord_DiscordNativeBridge_nativeSetActivity(
     const std::string name = readStr(jName);
     const std::string details = readStr(jDetails);
     post([name, details]() {
-        discordpp::Activity activity{};
-        activity.SetType(discordpp::ActivityTypes::Playing);
-        activity.SetName(name);
-        if (!details.empty()) activity.SetDetails(details);
-        gClient->UpdateRichPresence(std::move(activity),
-                                    [](discordpp::ClientResult /*result*/) {});
+        gActivityName = name;
+        gActivityDetails = details;
+        updatePresence();  // merges with the lobby party if we're in one
     });
 }
 
-// Clear any broadcast presence (sharing turned off / signed out). Fire-and-forget on the pump.
+// Clear the game presence (sharing turned off / signed out). If still in a lobby, the party presence
+// stays so it remains joinable. Fire-and-forget on the pump.
 JNIEXPORT void JNICALL
 Java_com_playfieldportal_discord_DiscordNativeBridge_nativeClearActivity(
     JNIEnv* /*env*/, jobject /*thiz*/) {
     if (!gClient) return;
-    post([]() { gClient->ClearRichPresence(); });
+    post([]() {
+        gActivityName.clear();
+        gActivityDetails.clear();
+        updatePresence();
+    });
 }
 
 // ── Voice ─────────────────────────────────────────────────────────────────────────
@@ -289,29 +390,7 @@ Java_com_playfieldportal_discord_DiscordNativeBridge_nativeJoinVoice(
     auto promise = std::make_shared<std::promise<uint64_t>>();
     auto future = promise->get_future();
     post([secret, promise]() {
-        gClient->CreateOrJoinLobby(secret, [promise](discordpp::ClientResult result, uint64_t lobbyId) {
-            if (!result.Successful()) {
-                promise->set_value(0);
-                return;
-            }
-            gLobbyId.store(lobbyId);
-            gSpeaking.clear();
-            // Audio processing (Krisp noise cancellation, echo cancellation, AGC, volumes, VAD) is
-            // all default-OFF/neutral in the SDK. It's driven from Kotlin (DiscordVoiceController)
-            // which applies the user's saved Voice Settings right after this join returns.
-            discordpp::Call call = gClient->StartCall(lobbyId);
-            call.SetStatusChangedCallback(
-                [](discordpp::Call::Status status, discordpp::Call::Error /*e*/, int32_t /*d*/) {
-                    gCallStatus.store(static_cast<int>(status));
-                });
-            call.SetSpeakingStatusChangedCallback([](uint64_t userId, bool isPlayingSound) {
-                if (isPlayingSound) gSpeaking.insert(userId);
-                else gSpeaking.erase(userId);
-            });
-            gCall = std::move(call);
-            gCallStatus.store(static_cast<int>(gCall->GetStatus()));
-            promise->set_value(lobbyId);
-        });
+        enterLobby(secret, [promise](uint64_t lobbyId) { promise->set_value(lobbyId); });
     });
 
     if (future.wait_for(std::chrono::seconds(30)) != std::future_status::ready) return 0;
@@ -333,6 +412,11 @@ Java_com_playfieldportal_discord_DiscordNativeBridge_nativeLeaveVoice(
         gLobbyId.store(0);
         gCallStatus.store(0);
         gSpeaking.clear();
+        // Drop the party from presence (keeps any game activity).
+        gInLobby = false;
+        gLobbySecret.clear();
+        gLobbyPartyId.clear();
+        updatePresence();
     });
 }
 
@@ -404,6 +488,34 @@ Java_com_playfieldportal_discord_DiscordNativeBridge_nativeSetOutputVolume(
     post([v]() { gClient->SetOutputVolume(v); });
 }
 
+// Voice input mode: 1 = MODE_VAD (open mic / voice activity), 2 = MODE_PTT (push-to-talk — mic is
+// closed until SetPTTActive(true)). Fire-and-forget on the pump.
+JNIEXPORT void JNICALL
+Java_com_playfieldportal_discord_DiscordNativeBridge_nativeSetAudioMode(
+    JNIEnv* /*env*/, jobject /*thiz*/, jint mode) {
+    if (!gClient) return;
+    const int m = mode;
+    post([m]() { if (gCall) gCall->SetAudioMode(static_cast<discordpp::AudioModeType>(m)); });
+}
+
+// Open/close the mic in push-to-talk mode (hold = true, release = false). Fire-and-forget.
+JNIEXPORT void JNICALL
+Java_com_playfieldportal_discord_DiscordNativeBridge_nativeSetPttActive(
+    JNIEnv* /*env*/, jobject /*thiz*/, jboolean active) {
+    if (!gClient) return;
+    const bool a = (active == JNI_TRUE);
+    post([a]() { if (gCall) gCall->SetPTTActive(a); });
+}
+
+// Grace period (ms) the mic stays open after release, so word-endings aren't clipped. Fire-and-forget.
+JNIEXPORT void JNICALL
+Java_com_playfieldportal_discord_DiscordNativeBridge_nativeSetPttReleaseDelay(
+    JNIEnv* /*env*/, jobject /*thiz*/, jint ms) {
+    if (!gClient) return;
+    const uint32_t d = static_cast<uint32_t>(ms < 0 ? 0 : ms);
+    post([d]() { if (gCall) gCall->SetPTTReleaseDelay(d); });
+}
+
 // Current call status ordinal (mirrors discordpp::Call::Status; 0 = Disconnected).
 JNIEXPORT jint JNICALL
 Java_com_playfieldportal_discord_DiscordNativeBridge_nativeGetCallStatus(
@@ -458,6 +570,114 @@ Java_com_playfieldportal_discord_DiscordNativeBridge_nativeGetVoiceJson(
     return env->NewStringUTF(result.c_str());
 }
 
+// ── Lobby invites & join requests ──────────────────────────────────────────────────
+// Invite a friend to our lobby. [content] is a short message shown with the invite.
+JNIEXPORT void JNICALL
+Java_com_playfieldportal_discord_DiscordNativeBridge_nativeInviteFriend(
+    JNIEnv* env, jobject /*thiz*/, jlong userId, jstring jContent) {
+    if (!gClient) return;
+    const uint64_t uid = static_cast<uint64_t>(userId);
+    const std::string content = jstr(env, jContent);
+    post([uid, content]() { gClient->SendActivityInvite(uid, content, [](discordpp::ClientResult /*r*/) {}); });
+}
+
+// Ask to join a friend's lobby (they must approve). The friend must be in a joinable PFP party.
+JNIEXPORT void JNICALL
+Java_com_playfieldportal_discord_DiscordNativeBridge_nativeSendJoinRequest(
+    JNIEnv* /*env*/, jobject /*thiz*/, jlong userId) {
+    if (!gClient) return;
+    const uint64_t uid = static_cast<uint64_t>(userId);
+    post([uid]() { gClient->SendActivityJoinRequest(uid, [](discordpp::ClientResult /*r*/) {}); });
+}
+
+// Pending invites + join requests as JSON: [{index, type(1=invite,5=joinRequest), senderId, senderName}].
+JNIEXPORT jstring JNICALL
+Java_com_playfieldportal_discord_DiscordNativeBridge_nativeGetInvitesJson(
+    JNIEnv* env, jobject /*thiz*/) {
+    if (!gClient) return env->NewStringUTF("[]");
+    auto promise = std::make_shared<std::promise<std::string>>();
+    auto future = promise->get_future();
+    post([promise]() {
+        std::string json = "[";
+        for (size_t i = 0; i < gInvites.size(); ++i) {
+            const uint64_t sid = gInvites[i].SenderId();
+            const int type = static_cast<int>(gInvites[i].Type());
+            std::string name;
+            auto user = gClient->GetUser(sid);
+            if (user.has_value()) name = user->DisplayName();
+            if (i) json += ",";
+            json += "{\"index\":" + std::to_string(i) + ",\"type\":" + std::to_string(type) +
+                    ",\"senderId\":\"" + std::to_string(sid) + "\",\"senderName\":\"" + jsonEscape(name) + "\"}";
+        }
+        json += "]";
+        promise->set_value(json);
+    });
+    if (future.wait_for(std::chrono::seconds(5)) != std::future_status::ready) {
+        return env->NewStringUTF("[]");
+    }
+    return env->NewStringUTF(future.get().c_str());
+}
+
+// Accept an invite (type Join) → join that friend's lobby via the returned join secret.
+JNIEXPORT void JNICALL
+Java_com_playfieldportal_discord_DiscordNativeBridge_nativeAcceptInvite(
+    JNIEnv* /*env*/, jobject /*thiz*/, jint index) {
+    if (!gClient) return;
+    post([index]() {
+        if (index < 0 || static_cast<size_t>(index) >= gInvites.size()) return;
+        discordpp::ActivityInvite invite = std::move(gInvites[static_cast<size_t>(index)]);
+        gInvites.erase(gInvites.begin() + index);
+        gClient->AcceptActivityInvite(std::move(invite),
+            [](discordpp::ClientResult result, std::string joinSecret) {
+                if (result.Successful() && !joinSecret.empty()) enterLobby(joinSecret, nullptr);
+            });
+    });
+}
+
+// Approve a join request (type JoinRequest) → the requester may now join our lobby.
+JNIEXPORT void JNICALL
+Java_com_playfieldportal_discord_DiscordNativeBridge_nativeApproveJoinRequest(
+    JNIEnv* /*env*/, jobject /*thiz*/, jint index) {
+    if (!gClient) return;
+    post([index]() {
+        if (index < 0 || static_cast<size_t>(index) >= gInvites.size()) return;
+        discordpp::ActivityInvite invite = std::move(gInvites[static_cast<size_t>(index)]);
+        gInvites.erase(gInvites.begin() + index);
+        gClient->SendActivityJoinRequestReply(std::move(invite), [](discordpp::ClientResult /*r*/) {});
+    });
+}
+
+// Dismiss an invite / decline a join request without acting on it.
+JNIEXPORT void JNICALL
+Java_com_playfieldportal_discord_DiscordNativeBridge_nativeDismissInvite(
+    JNIEnv* /*env*/, jobject /*thiz*/, jint index) {
+    if (!gClient) return;
+    post([index]() {
+        if (index >= 0 && static_cast<size_t>(index) < gInvites.size()) {
+            gInvites.erase(gInvites.begin() + index);
+        }
+    });
+}
+
+// The join secret captured when the user accepted a "Join" from the Discord app UI (or ""), and
+// clears it. The caller joins with it so the Kotlin path applies the saved audio settings.
+JNIEXPORT jstring JNICALL
+Java_com_playfieldportal_discord_DiscordNativeBridge_nativeConsumePendingJoin(
+    JNIEnv* env, jobject /*thiz*/) {
+    if (!gClient) return env->NewStringUTF("");
+    auto promise = std::make_shared<std::promise<std::string>>();
+    auto future = promise->get_future();
+    post([promise]() {
+        std::string s = gPendingJoinSecret;
+        gPendingJoinSecret.clear();
+        promise->set_value(s);
+    });
+    if (future.wait_for(std::chrono::seconds(2)) != std::future_status::ready) {
+        return env->NewStringUTF("");
+    }
+    return env->NewStringUTF(future.get().c_str());
+}
+
 // Tear down the live session (logout), on the pump thread.
 JNIEXPORT void JNICALL
 Java_com_playfieldportal_discord_DiscordNativeBridge_nativeDisconnect(
@@ -482,6 +702,13 @@ Java_com_playfieldportal_discord_DiscordNativeBridge_nativeShutdown(
     gLobbyId.store(0);
     gCallStatus.store(0);
     gSpeaking.clear();
+    gInLobby = false;
+    gLobbySecret.clear();
+    gLobbyPartyId.clear();
+    gActivityName.clear();
+    gActivityDetails.clear();
+    gInvites.clear();
+    gPendingJoinSecret.clear();
     gClient.reset();
     gStatus.store(0);
 }

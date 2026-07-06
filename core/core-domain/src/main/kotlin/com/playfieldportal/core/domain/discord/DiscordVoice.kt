@@ -32,3 +32,16 @@ data class DiscordVoiceState(
         const val STATUS_CONNECTED = 4
     }
 }
+
+/** A pending lobby invite (a friend invited you) or join request (someone wants into your lobby). */
+data class DiscordVoiceInvite(
+    val index: Int,          // position in the native invite queue; used to accept/approve/dismiss
+    val senderId: String,
+    val senderName: String,
+    val isJoinRequest: Boolean,   // false = invite to their lobby · true = request to join yours
+) {
+    companion object {
+        // discordpp::ActivityActionTypes: Join = 1 (an invite), JoinRequest = 5.
+        const val TYPE_JOIN_REQUEST = 5
+    }
+}

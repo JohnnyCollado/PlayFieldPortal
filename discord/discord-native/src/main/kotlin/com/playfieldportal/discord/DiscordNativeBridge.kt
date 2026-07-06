@@ -116,6 +116,52 @@ object DiscordNativeBridge {
         if (clientStarted.get()) nativeSetOutputVolume(percent)
     }
 
+    /** Invite a friend to the current lobby ([content] = short message). Off the main thread. */
+    fun inviteFriend(userId: Long, content: String) {
+        if (clientStarted.get()) nativeInviteFriend(userId, content)
+    }
+
+    /** Ask to join a friend's lobby (they approve). Off the main thread. */
+    fun sendJoinRequest(userId: Long) {
+        if (clientStarted.get()) nativeSendJoinRequest(userId)
+    }
+
+    /** Pending invites + join requests as a JSON array. Off the main thread. */
+    fun invitesJson(): String = if (clientStarted.get()) nativeGetInvitesJson() else "[]"
+
+    /** Accept invite at [index] → join that lobby. Off the main thread. */
+    fun acceptInvite(index: Int) {
+        if (clientStarted.get()) nativeAcceptInvite(index)
+    }
+
+    /** Approve the join request at [index] → the requester may join. Off the main thread. */
+    fun approveJoinRequest(index: Int) {
+        if (clientStarted.get()) nativeApproveJoinRequest(index)
+    }
+
+    /** Dismiss the invite / decline the join request at [index]. Off the main thread. */
+    fun dismissInvite(index: Int) {
+        if (clientStarted.get()) nativeDismissInvite(index)
+    }
+
+    /** Join secret from a Discord-UI "Join" (or ""), consuming it. Off the main thread. */
+    fun consumePendingJoin(): String = if (clientStarted.get()) nativeConsumePendingJoin() else ""
+
+    /** Voice input mode: 1 = VAD (open mic), 2 = push-to-talk. Off the main thread. */
+    fun setAudioMode(mode: Int) {
+        if (clientStarted.get()) nativeSetAudioMode(mode)
+    }
+
+    /** In PTT mode, open (true) / close (false) the mic. Off the main thread. */
+    fun setPttActive(active: Boolean) {
+        if (clientStarted.get()) nativeSetPttActive(active)
+    }
+
+    /** PTT release grace period in ms. Off the main thread. */
+    fun setPttReleaseDelay(ms: Int) {
+        if (clientStarted.get()) nativeSetPttReleaseDelay(ms)
+    }
+
     /** Current call status ordinal (mirrors `discordpp::Call::Status`; 0 = Disconnected). */
     fun callStatus(): Int = if (clientStarted.get()) nativeGetCallStatus() else 0
 
@@ -143,6 +189,16 @@ object DiscordNativeBridge {
     private external fun nativeSetAutomaticGainControl(on: Boolean)
     private external fun nativeSetInputVolume(percent: Float)
     private external fun nativeSetOutputVolume(percent: Float)
+    private external fun nativeInviteFriend(userId: Long, content: String)
+    private external fun nativeSendJoinRequest(userId: Long)
+    private external fun nativeGetInvitesJson(): String
+    private external fun nativeAcceptInvite(index: Int)
+    private external fun nativeApproveJoinRequest(index: Int)
+    private external fun nativeDismissInvite(index: Int)
+    private external fun nativeConsumePendingJoin(): String
+    private external fun nativeSetAudioMode(mode: Int)
+    private external fun nativeSetPttActive(active: Boolean)
+    private external fun nativeSetPttReleaseDelay(ms: Int)
     private external fun nativeGetCallStatus(): Int
     private external fun nativeGetVoiceJson(): String
     private external fun nativeShutdown()
