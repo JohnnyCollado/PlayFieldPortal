@@ -20,7 +20,13 @@ import javax.inject.Inject
  */
 class CategoryRepositoryImpl @Inject constructor(
     private val categoryDao: CategoryDao,
+    private val discordSessionActivator: com.playfieldportal.core.domain.discord.DiscordSessionActivator,
 ) {
+    // Built-ins to seed/reconcile — the Social column is dropped in the "lite" build (no Discord SDK),
+    // so it never appears in the XMB, the Category Manager, or backups there.
+    private fun builtInCategories(): List<Category> =
+        BUILT_IN_CATEGORIES.filter { it.id != BuiltInCategory.SOCIAL || discordSessionActivator.sdkAvailable }
+
     fun observeVisible(): Flow<List<Category>> =
         categoryDao.observeVisible().map { categoryEntities ->
             categoryEntities.map { it.toDomain() }
@@ -109,7 +115,7 @@ class CategoryRepositoryImpl @Inject constructor(
 
     // Seeds built-in categories on first launch — idempotent (INSERT OR IGNORE).
     suspend fun seedBuiltInCategories() {
-        categoryDao.insertAll(BUILT_IN_CATEGORIES.map { it.toEntity() })
+        categoryDao.insertAll(builtInCategories().map { it.toEntity() })
         Timber.i("Built-in categories seeded")
     }
 
@@ -121,8 +127,8 @@ class CategoryRepositoryImpl @Inject constructor(
     suspend fun reconcileBuiltInCategories() {
         // INSERT OR IGNORE adds built-ins introduced after this DB was first seeded (e.g. Social)
         // without disturbing existing rows or user edits.
-        categoryDao.insertAll(BUILT_IN_CATEGORIES.map { it.toEntity() })
-        for (category in BUILT_IN_CATEGORIES) {
+        categoryDao.insertAll(builtInCategories().map { it.toEntity() })
+        for (category in builtInCategories()) {
             categoryDao.setGamingFlag(category.id, category.isGamingCategory)
         }
         Timber.i("Built-in category flags reconciled")
