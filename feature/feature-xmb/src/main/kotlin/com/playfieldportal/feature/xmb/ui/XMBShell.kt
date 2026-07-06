@@ -352,7 +352,10 @@ fun XMBShell(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(top = 44.dp)
+                    // Slimmer than the status strip so the dissolving previous item can rise clear
+                    // of the caticon hexagon before it's clipped (barTop is rebalanced to keep the
+                    // crossbar itself on the same screen line).
+                    .padding(top = 20.dp)
                     // Touch gestures on the home screen, each mapped to a discrete D-pad action (see
                     // xmbNavGestures): horizontal swipe steps the category (left-edge → Back); vertical
                     // swipe steps the item list/flyout. Taps still pass through to the rows.
@@ -371,8 +374,12 @@ fun XMBShell(
                     // bar band to dissolve. The column's leading icon is shifted right so it lands on
                     // the same vertical line as the caticon (centred in its slot).
                     val catBarHeight = 112.dp
-                    // Push the crossbar down so there is room for a full previous item ABOVE it.
-                    val barTop = maxHeight * 0.26f
+                    // Crossbar vertical position. Raised to align the caticon row with the upper
+                    // "cross" band that PSP-style theme wallpapers place near the top quarter,
+                    // matching the authentic PSP layout (caticon row ~25% of height).
+                    val barTop = maxHeight * 0.11f
+                    // Active first-level item anchors just below the caticon bar, landing the selected
+                    // item ~50% of height — matching the real PSP XMB (verified against the theme).
                     val anchorTop = barTop + catBarHeight
                     // Caticon centre minus the leading-icon inset ⇒ column shift that lands every
                     // item's icon centre on the caticon's vertical line (shared constant keeps the

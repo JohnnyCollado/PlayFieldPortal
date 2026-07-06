@@ -113,9 +113,9 @@ private val TAP_TARGET_HEIGHT = 72.dp
 
 // Fixed-width slot every leading icon is centred in, so an icon's horizontal centre is independent
 // of its own size — icons can grow without breaking the caticon alignment.
-internal val LEADING_ICON_SLOT = 64.dp
+internal val LEADING_ICON_SLOT = 74.dp
 // Default size of the glyph/art inside that slot (selected rows additionally scale up via the row).
-private val LEADING_ICON_SIZE = 52.dp
+private val LEADING_ICON_SIZE = 62.dp
 // Horizontal centre of a row's leading icon from the row's left edge: 18.dp row padding + half the
 // slot. The grow/shrink scale pivots here, and the column is shifted so this lands on the caticon's
 // vertical line. Shared with XMBShell's column offset so the two never drift apart.
@@ -424,10 +424,10 @@ fun XMBItemList(
                     XmbVerticalListRow(
                         item = items[i],
                         isSelected = i == selectedIndex,
-                        // Force-show names every row; force-hide none; else the classic XMB shows the
-                        // selected row and the next one (and all rows when icons are hidden).
-                        showText = forceShowText ||
-                            (!forceHideText && (!showIcons || i == selectedIndex || i == selectedIndex + 1)),
+                        // The real PSP XMB labels EVERY first-level item (selected bright, the rest
+                        // dimmed) — not just the selected row and its successor. Show text on all
+                        // rows unless the caller force-hides it (the flyout's icon-only card column).
+                        showText = forceShowText || !forceHideText,
                         iconStyle = iconStyle,
                         onClick = { onItemSelected(i) },
                         onLongPress = { onItemLongPress(i) },
@@ -448,6 +448,8 @@ fun XMBItemList(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(ROW_HEIGHT / 2)
+                    // Sit the dissolving previous item lower so its icon lands on the black cross
+                    // band (not floating in the red above it).
                     .offset(y = barTopY - ROW_HEIGHT / 2)
                     .clipToBounds(),
                 // Bottom-align a full-height row inside a half-height window: its top half is clipped.
@@ -554,11 +556,13 @@ private fun XmbVerticalListRow(
             }
 
             if (showText) {
-                Column(modifier = Modifier.weight(1f, fill = false)) {
+                // start padding pushes the label clear of the wallpaper's vertical cross bar, so the
+                // text doesn't butt against the black band (a small gap, PSP-style).
+                Column(modifier = Modifier.weight(1f, fill = false).padding(start = 14.dp)) {
                     Text(
                         text = item.title,
                         color = if (isSelected) PrimaryText else InactiveText,
-                        fontSize = if (isSelected) 19.sp else 16.sp,
+                        fontSize = if (isSelected) 22.sp else 18.sp,
                         fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                         style = if (isSelected) TextStyle(shadow = SelectedTextShadow) else TextStyle.Default,
                         maxLines = 1,

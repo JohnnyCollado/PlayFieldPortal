@@ -61,7 +61,7 @@ private val ItemSlotWidth = CategorySlotWidth
 // no partial "poke", and the category before that lands fully off-screen. At the last category
 // you therefore see exactly the previous + selected — the last two, and only them — with no
 // clipping. XMBShell reads this so the crossbar and its subitems stay on the same vertical line.
-internal val XmbLeftAnchor = CategorySlotWidth
+internal val XmbLeftAnchor = CategorySlotWidth + 6.dp
 
 @Composable
 fun XMBCategoryBar(
@@ -132,7 +132,7 @@ private fun XMBCategoryItem(
     modifier: Modifier = Modifier,
 ) {
     val iconSize by animateDpAsState(
-        targetValue = if (isSelected) 60.dp else 48.dp,
+        targetValue = if (isSelected) 72.dp else 56.dp,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "xmbCategoryIconSize",
     )
