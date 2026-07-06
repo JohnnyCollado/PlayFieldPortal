@@ -1,0 +1,49 @@
+name: Unit tests
+
+# Guards against the recurring "stale test fake" drift: assembleDebug skips unit tests, so a broken
+# fake (e.g. a test double that stops implementing an interface that grew) can land unnoticed. This
+# runs the core JVM unit tests — including the Discord auth/presence/sanitize suites — on every push
+# and PR. It deliberately targets :core:core-data (and its deps core-domain/core-common), which do
+# NOT depend on :discord:discord-native, so the job needs no NDK, no Git LFS aar, and no device.
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  core-unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (LFS off — the SDK aar isn't needed for these tests)
+        uses: actions/checkout@v4
+        with:
+          lfs: false
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle (with caching)
+        uses: gradle/actions/setup-gradle@v4
+
+      # gradle.properties pins a Windows JDK path + the Windows-ROOT truststore (a local
+      # SSL-interception workaround). Both are invalid on a Linux runner, so strip them here — the
+      # runner's own JDK 17 (JAVA_HOME) and default truststore take over.
+      - name: Neutralize Windows-only Gradle properties
+        run: sed -i '/org\.gradle\.java\.home/d; /trustStoreType=Windows-ROOT/d' gradle.properties
+
+      - name: Run core unit tests
+        run: ./gradlew :core:core-data:testDebugUnitTest --no-daemon --stacktrace
+
+      - name: Upload test report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: core-data-test-report
+          path: core/core-data/build/reports/tests/
+          if-no-files-found: ignore
