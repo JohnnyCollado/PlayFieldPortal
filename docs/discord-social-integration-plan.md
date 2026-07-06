@@ -12,7 +12,7 @@
 - **M1** — QR login (OAuth2 **device grant**, endpoint `/oauth2/device/authorize`); **Keystore AES-256-GCM** encrypted token store; native session lifecycle (`UpdateToken`→`Connect`, `RunCallbacks` pump); session restore on launch. Client ID `1522836772847878216` in `DiscordConfig` (public; **"Public Client" must be ON** in the portal OAuth2 tab).
 - **M2** — **Social XMB column** (Groups glyph `catbar_social`); **in-XMB sibling drill** (`SocialNav` Root→Account→Friends/ActivitySettings/DiscordSettings, mirrors Music/Video/Photo two-pane flyout + `computeDrillTitle`/`computeDrillSiblings`/`isInSubItem`/back-pop); account row shows real **avatar + username** + **Reconnect** options menu (Y/△); **Friends** list with presence **colored dot in the subtext** + live "N online" hub count + **PFP-scoped activity** (`GameActivity`); **offline resilience** (`NetworkMonitor`); **refresh-token exchange** on session restore; **Discord Settings** drill (Sign Out lives here); **Activity Settings** = opt-in `UpdateRichPresence` broadcast (`DiscordPresenceController`, default OFF + generic mode, native `setActivity`/`clearActivity`); debug-menu test entry retired. **Per-game presence title** — while a game runs the presence shows *that game's* title ("Playing <title>"); back in the launcher it reverts to the app name; generic mode still collapses everything to "a game". Current game is held in-memory only and cleared on `MainActivity.onResume`; it's set at every launch path — ROM/native-game via `GameDetailViewModel.sendLaunchIntent`, direct XMB app-row launch (`appCategoryRepository.launch` call site), the `AppDetailViewModel.launchApp` button, and the **App Drawer** (`AppDrawerViewModel.launchApp`) — so apps broadcast the same as ROMs. Titles are sanitized (control/RTL-override strip + 128-char clamp) in `DiscordPresenceController` before the wire (unit-tested, 8 tests).
 
-**Remaining (M3/M4):** Voice (SDK lobbies/calls — mic + foreground service); security-review pass (plan §12). Seeing your broadcast presence needs a **2nd Discord account**; friend "activity" is SDK-scoped to **this app only** — not general Discord presence.
+**Remaining:** a final **on-device verification pass** with a 2nd Discord account (voice call audio, invites, presence visibility) — the voice foreground service is provided by the SDK aar (`com.discord.socialsdk.ForegroundService`, `microphone` type). The §12 security checklist is code-reviewed complete. Seeing your broadcast presence needs a **2nd Discord account**; friend "activity" is SDK-scoped to **this app only** — not general Discord presence.
 
 ### Resuming on a new machine
 1. `git clone` + `git lfs pull` (the SDK aars live in Git LFS under `discord/discord-native/libs/`; the **debug aar / source zip are NOT committed** — get them from the original SDK zip if needed).
@@ -195,16 +195,18 @@ from the https Discord-CDN allowlist (see §8) before Coil renders them.
 
 ## 12. Security checklist (acceptance gate)
 
-- [ ] Tokens encrypted at rest (Keystore AES-256-GCM)
-- [ ] No secret in the APK (PKCE only)
-- [ ] `cleartextTrafficPermitted=false`
-- [ ] Redirect URI validated
-- [ ] Inbound content sanitized (length, control/RTL chars, avatar host allowlist)
-- [ ] Outbound presence sanitized/clamped, generic mode honored
-- [ ] No PII/token logging; release no-op logger
-- [ ] SDK init / mic / network gated behind explicit consent
-- [ ] Minimal OAuth scopes
-- [ ] Secure wipe on logout (blob + Keystore key)
+Code-reviewed complete; a final on-device pass (voice + a 2nd account) still recommended.
+
+- [x] Tokens encrypted at rest (Keystore AES-256-GCM) — `DiscordTokenStore`
+- [x] No secret in the APK (PKCE / device grant, public client)
+- [x] `cleartextTrafficPermitted=false` — `res/xml/network_security_config.xml` (release trusts system CAs only)
+- [x] Redirect URI validated — N/A for the device grant (no redirect); auth traffic scoped to `discord.com`
+- [x] Inbound content sanitized (length, control/RTL chars, avatar host allowlist) — `DiscordSanitize`, applied at the native activator boundary to friend/user/participant names, activity, and avatar URLs
+- [x] Outbound presence sanitized/clamped, generic mode honored — `DiscordPresenceController` (shared `DiscordSanitize`)
+- [x] No PII/token logging; release no-op logger — Timber tree planted only in debug (release = silent)
+- [x] SDK init / mic / network gated behind explicit consent — opt-in throughout; voice mic requested at first join
+- [x] Minimal OAuth scopes — `openid sdk.social_layer`
+- [x] Secure wipe on logout (blob + Keystore key) — `DiscordTokenStore.clear()`
 
 ## 13. Open items / risks
 

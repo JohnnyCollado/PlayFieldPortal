@@ -2,6 +2,7 @@ package com.playfieldportal.discord
 
 import com.playfieldportal.core.domain.discord.DiscordFriend
 import com.playfieldportal.core.domain.discord.DiscordPresence
+import com.playfieldportal.core.domain.discord.DiscordSanitize
 import com.playfieldportal.core.domain.discord.DiscordSessionActivator
 import com.playfieldportal.core.domain.discord.DiscordUser
 import com.playfieldportal.core.domain.discord.DiscordVoiceInvite
@@ -36,9 +37,9 @@ class DiscordNativeSessionActivator @Inject constructor() : DiscordSessionActiva
             val obj = JSONObject(json)
             DiscordUser(
                 id = obj.optString("id"),
-                username = obj.optString("username"),
-                displayName = obj.optString("displayName"),
-                avatarUrl = obj.optString("avatarUrl"),
+                username = DiscordSanitize.text(obj.optString("username"), DiscordSanitize.NAME_MAX),
+                displayName = DiscordSanitize.text(obj.optString("displayName"), DiscordSanitize.NAME_MAX),
+                avatarUrl = DiscordSanitize.avatarUrl(obj.optString("avatarUrl")).orEmpty(),
             )
         }.getOrNull()
     }
@@ -51,15 +52,15 @@ class DiscordNativeSessionActivator @Inject constructor() : DiscordSessionActiva
                 val obj = array.getJSONObject(i)
                 DiscordFriend(
                     id = obj.optString("id"),
-                    username = obj.optString("username"),
-                    displayName = obj.optString("displayName"),
-                    avatarUrl = obj.optString("avatarUrl"),
+                    username = DiscordSanitize.text(obj.optString("username"), DiscordSanitize.NAME_MAX),
+                    displayName = DiscordSanitize.text(obj.optString("displayName"), DiscordSanitize.NAME_MAX),
+                    avatarUrl = DiscordSanitize.avatarUrl(obj.optString("avatarUrl")).orEmpty(),
                     presence = DiscordPresence.fromStatusOrdinal(obj.optInt("status", 7)),
                     activity = composeActivity(
                         name = obj.optString("activityName"),
                         details = obj.optString("activityDetails"),
                         state = obj.optString("activityState"),
-                    ),
+                    )?.let { DiscordSanitize.text(it, DiscordSanitize.ACTIVITY_MAX) }?.takeIf { it.isNotBlank() },
                     inLobby = obj.optBoolean("inLobby"),
                 )
             }
@@ -128,7 +129,7 @@ class DiscordNativeSessionActivator @Inject constructor() : DiscordSessionActiva
                 DiscordVoiceInvite(
                     index = obj.optInt("index"),
                     senderId = obj.optString("senderId"),
-                    senderName = obj.optString("senderName"),
+                    senderName = DiscordSanitize.text(obj.optString("senderName"), DiscordSanitize.NAME_MAX),
                     isJoinRequest = obj.optInt("type") == DiscordVoiceInvite.TYPE_JOIN_REQUEST,
                 )
             }
@@ -173,7 +174,7 @@ class DiscordNativeSessionActivator @Inject constructor() : DiscordSessionActiva
                 val p = array.getJSONObject(i)
                 DiscordVoiceParticipant(
                     id = p.optString("id"),
-                    displayName = p.optString("displayName"),
+                    displayName = DiscordSanitize.text(p.optString("displayName"), DiscordSanitize.NAME_MAX),
                     muted = p.optBoolean("mute"),
                     deaf = p.optBoolean("deaf"),
                     speaking = p.optBoolean("speaking"),

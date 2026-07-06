@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.data.network.NetworkMonitor
+import com.playfieldportal.core.domain.discord.DiscordSanitize
 import com.playfieldportal.core.domain.discord.DiscordSessionActivator
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -89,32 +90,12 @@ class DiscordPresenceController @Inject constructor(
         }
     }
 
-    /**
-     * Make an untrusted game title safe to broadcast: drop control and bidirectional-override
-     * characters (anti-spoofing), collapse whitespace, and clamp to Discord's activity-name limit.
-     */
-    private fun sanitizeTitle(raw: String): String {
-        val stripped = buildString(raw.length) {
-            for (c in raw) {
-                if (c.isISOControl() || c in BIDI_OVERRIDES) continue
-                append(c)
-            }
-        }
-        return stripped.replace(WHITESPACE, " ").trim().take(MAX_ACTIVITY_LEN)
-    }
+    // Make an untrusted game title safe to broadcast (\u00A78): the shared sanitizer drops control and
+    // bidirectional-override characters, collapses whitespace, and clamps to Discord's activity limit.
+    private fun sanitizeTitle(raw: String): String = DiscordSanitize.text(raw, DiscordSanitize.ACTIVITY_MAX)
 
     private companion object {
         const val APP_NAME = "Playfield Portal"
         const val GENERIC_NAME = "a game"
-        // Discord clamps activity name/details to 128 characters.
-        const val MAX_ACTIVITY_LEN = 128
-        val WHITESPACE = Regex("\\s+")
-        // LRM/RLM/ALM + the LRE..PDI embedding/override/isolate format characters (category Cf,
-        // so isISOControl() misses them). Written as \uXXXX escapes so they stay visible in source.
-        val BIDI_OVERRIDES = setOf(
-            '\u200E', '\u200F', '\u061C',
-            '\u202A', '\u202B', '\u202C', '\u202D', '\u202E',
-            '\u2066', '\u2067', '\u2068', '\u2069',
-        )
     }
 }

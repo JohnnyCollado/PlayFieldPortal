@@ -4,10 +4,8 @@ import com.playfieldportal.core.data.network.NetworkMonitor
 import com.playfieldportal.core.domain.discord.DeviceAuthChallenge
 import com.playfieldportal.core.domain.discord.DeviceLoginState
 import com.playfieldportal.core.domain.discord.DeviceTokens
-import com.playfieldportal.core.domain.discord.DiscordFriend
 import com.playfieldportal.core.domain.discord.DiscordSession
 import com.playfieldportal.core.domain.discord.DiscordSessionActivator
-import com.playfieldportal.core.domain.discord.DiscordUser
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -22,20 +20,10 @@ import kotlin.test.assertTrue
 
 class DiscordAuthRepositoryTest {
 
-    private class FakeActivator : DiscordSessionActivator {
-        var activatedToken: String? = null
-        var deactivated = false
-        override suspend fun activate(accessToken: String): Boolean {
-            activatedToken = accessToken
-            return true
-        }
-        override suspend fun deactivate() { deactivated = true }
-        override suspend fun currentUser(): DiscordUser? = null
-        override suspend fun friends(): List<DiscordFriend> = emptyList()
-        override fun connectionStatus(): Int = 3
-        var activity: Pair<String, String?>? = null
-        override suspend fun setActivity(name: String, details: String?) { activity = name to details }
-        override suspend fun clearActivity() { activity = null }
+    // Relaxed mock so the (large, voice-heavy) DiscordSessionActivator interface can grow without
+    // this fake going stale; activate() returns success by default.
+    private fun activator(): DiscordSessionActivator = mockk(relaxed = true) {
+        coEvery { activate(any()) } returns true
     }
 
     private fun onlineMonitor(online: Boolean = true) =
@@ -44,7 +32,7 @@ class DiscordAuthRepositoryTest {
     private fun repo(
         client: DiscordDeviceAuthClient,
         store: DiscordTokenStore = mockk(relaxed = true),
-        activator: DiscordSessionActivator = FakeActivator(),
+        activator: DiscordSessionActivator = activator(),
         monitor: NetworkMonitor = onlineMonitor(),
     ) = DiscordAuthRepository(client, store, activator, monitor)
 
@@ -64,7 +52,7 @@ class DiscordAuthRepositoryTest {
     fun `approval after pending emits Success, persists tokens and activates the session`() = runTest {
         val client = mockk<DiscordDeviceAuthClient>()
         val store = mockk<DiscordTokenStore>(relaxed = true)
-        val activator = FakeActivator()
+        val activator = activator()
         coEvery { client.requestDeviceCode(any()) } returns challenge
         coEvery { client.pollForToken("DEV123") } returnsMany
             listOf(TokenPollResult.Pending, TokenPollResult.Approved(tokens))
@@ -74,7 +62,7 @@ class DiscordAuthRepositoryTest {
         assertEquals(DeviceLoginState.Requesting, states.first())
         assertIs<DeviceLoginState.AwaitingApproval>(states[1])
         assertIs<DeviceLoginState.Success>(states.last())
-        assertEquals("AT-abc", activator.activatedToken)
+        coVerify { activator.activate("AT-abc") }
         coVerify { store.save(tokens, any()) }
     }
 
@@ -141,12 +129,12 @@ class DiscordAuthRepositoryTest {
     fun `restoreSession activates a still-valid token without refreshing`() = runTest {
         val client = mockk<DiscordDeviceAuthClient>()
         val store = mockk<DiscordTokenStore>(relaxed = true)
-        val activator = FakeActivator()
+        val activator = activator()
         coEvery { store.load() } returns
             DiscordSession("AT-live", "RT", System.currentTimeMillis() + 60_000, "openid")
 
         assertTrue(repo(client, store, activator).restoreSession())
-        assertEquals("AT-live", activator.activatedToken)
+        coVerify { activator.activate("AT-live") }
         coVerify(exactly = 0) { client.refreshTokens(any()) }
     }
 
@@ -154,13 +142,13 @@ class DiscordAuthRepositoryTest {
     fun `restoreSession refreshes an expired token, persists and activates the new one`() = runTest {
         val client = mockk<DiscordDeviceAuthClient>()
         val store = mockk<DiscordTokenStore>(relaxed = true)
-        val activator = FakeActivator()
+        val activator = activator()
         coEvery { store.load() } returns DiscordSession("AT-old", "RT-xyz", 0L, "openid")
         val fresh = DeviceTokens("AT-new", "RT-new", 604800, "openid")
         coEvery { client.refreshTokens("RT-xyz") } returns TokenPollResult.Approved(fresh)
 
         assertTrue(repo(client, store, activator).restoreSession())
-        assertEquals("AT-new", activator.activatedToken)
+        coVerify { activator.activate("AT-new") }
         coVerify { store.save(fresh, any()) }
     }
 
