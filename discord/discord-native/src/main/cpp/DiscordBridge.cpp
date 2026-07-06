@@ -19,7 +19,9 @@
 #include <future>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <queue>
+#include <set>
 #include <string>
 #include <thread>
 
@@ -33,6 +35,17 @@ std::atomic<int> gStatus{0};
 
 std::mutex gTaskMutex;
 std::queue<std::function<void()>> gTasks;
+
+// ── Voice state (all touched only on the pump thread, except the atomics) ──────────
+// The active call is kept alive here so its registered callbacks keep firing. StartCall returns a
+// Call by value; we move it in. Reset on leave.
+std::optional<discordpp::Call> gCall;
+std::atomic<uint64_t> gLobbyId{0};
+// Mirrors discordpp::Call::Status (0 = Disconnected). Read by nativeGetVoice* without locking.
+std::atomic<int> gCallStatus{0};
+// User ids currently producing sound. Written by the SDK speaking callback and read by the
+// participants query — both run on the pump thread, so no lock is needed.
+std::set<uint64_t> gSpeaking;
 
 void post(std::function<void()> task) {
     std::lock_guard<std::mutex> lock(gTaskMutex);
@@ -260,6 +273,191 @@ Java_com_playfieldportal_discord_DiscordNativeBridge_nativeClearActivity(
     post([]() { gClient->ClearRichPresence(); });
 }
 
+// ── Voice ─────────────────────────────────────────────────────────────────────────
+// Join (or create) the voice lobby identified by [secret] and start the call. Two users passing the
+// same secret land in the same room. Blocks off the pump until the lobby callback fires (or 30s).
+// Returns the lobby id, or 0 on failure.
+JNIEXPORT jlong JNICALL
+Java_com_playfieldportal_discord_DiscordNativeBridge_nativeJoinVoice(
+    JNIEnv* env, jobject /*thiz*/, jstring jSecret) {
+    if (!gClient) return 0;
+
+    const char* chars = env->GetStringUTFChars(jSecret, nullptr);
+    std::string secret(chars ? chars : "");
+    env->ReleaseStringUTFChars(jSecret, chars);
+
+    auto promise = std::make_shared<std::promise<uint64_t>>();
+    auto future = promise->get_future();
+    post([secret, promise]() {
+        gClient->CreateOrJoinLobby(secret, [promise](discordpp::ClientResult result, uint64_t lobbyId) {
+            if (!result.Successful()) {
+                promise->set_value(0);
+                return;
+            }
+            gLobbyId.store(lobbyId);
+            gSpeaking.clear();
+            // Audio processing (Krisp noise cancellation, echo cancellation, AGC, volumes, VAD) is
+            // all default-OFF/neutral in the SDK. It's driven from Kotlin (DiscordVoiceController)
+            // which applies the user's saved Voice Settings right after this join returns.
+            discordpp::Call call = gClient->StartCall(lobbyId);
+            call.SetStatusChangedCallback(
+                [](discordpp::Call::Status status, discordpp::Call::Error /*e*/, int32_t /*d*/) {
+                    gCallStatus.store(static_cast<int>(status));
+                });
+            call.SetSpeakingStatusChangedCallback([](uint64_t userId, bool isPlayingSound) {
+                if (isPlayingSound) gSpeaking.insert(userId);
+                else gSpeaking.erase(userId);
+            });
+            gCall = std::move(call);
+            gCallStatus.store(static_cast<int>(gCall->GetStatus()));
+            promise->set_value(lobbyId);
+        });
+    });
+
+    if (future.wait_for(std::chrono::seconds(30)) != std::future_status::ready) return 0;
+    return static_cast<jlong>(future.get());
+}
+
+// Leave the active call + lobby. Fire-and-forget on the pump; safe to call when not in a call.
+JNIEXPORT void JNICALL
+Java_com_playfieldportal_discord_DiscordNativeBridge_nativeLeaveVoice(
+    JNIEnv* /*env*/, jobject /*thiz*/) {
+    if (!gClient) return;
+    post([]() {
+        if (gCall) {
+            gClient->EndCall(gCall->GetChannelId(), []() {});
+            gCall.reset();
+        }
+        const uint64_t lobby = gLobbyId.load();
+        if (lobby) gClient->LeaveLobby(lobby, [](discordpp::ClientResult /*r*/) {});
+        gLobbyId.store(0);
+        gCallStatus.store(0);
+        gSpeaking.clear();
+    });
+}
+
+// Mute/unmute the local mic for the whole call. Fire-and-forget on the pump.
+JNIEXPORT void JNICALL
+Java_com_playfieldportal_discord_DiscordNativeBridge_nativeSetSelfMute(
+    JNIEnv* /*env*/, jobject /*thiz*/, jboolean mute) {
+    if (!gClient) return;
+    const bool m = (mute == JNI_TRUE);
+    post([m]() { if (gCall) gCall->SetSelfMute(m); });
+}
+
+// Voice-activity gate: automatic lets the SDK pick the threshold; otherwise [threshold] (dB, range
+// -100..0, default -60) is used. Raising it toward 0 makes the mic less sensitive, so quiet noises
+// like handheld button clicks no longer open the gate. Fire-and-forget on the pump.
+JNIEXPORT void JNICALL
+Java_com_playfieldportal_discord_DiscordNativeBridge_nativeSetVadThreshold(
+    JNIEnv* /*env*/, jobject /*thiz*/, jboolean automatic, jfloat threshold) {
+    if (!gClient) return;
+    const bool a = (automatic == JNI_TRUE);
+    const float t = threshold;
+    post([a, t]() { if (gCall) gCall->SetVADThreshold(a, t); });
+}
+
+// ── Voice audio settings (Client-level; persist across calls, applied by the controller) ──────────
+// Krisp AI noise cancellation — strips button clicks + background noise. Enabling it auto-disables
+// the SDK's weaker basic noise suppression.
+JNIEXPORT void JNICALL
+Java_com_playfieldportal_discord_DiscordNativeBridge_nativeSetNoiseCancellation(
+    JNIEnv* /*env*/, jobject /*thiz*/, jboolean on) {
+    if (!gClient) return;
+    const bool o = (on == JNI_TRUE);
+    post([o]() { gClient->SetNoiseCancellation(o); });
+}
+
+// Acoustic echo cancellation — stops the speaker output feeding back into the mic.
+JNIEXPORT void JNICALL
+Java_com_playfieldportal_discord_DiscordNativeBridge_nativeSetEchoCancellation(
+    JNIEnv* /*env*/, jobject /*thiz*/, jboolean on) {
+    if (!gClient) return;
+    const bool o = (on == JNI_TRUE);
+    post([o]() { gClient->SetEchoCancellation(o); });
+}
+
+// Automatic gain control — normalizes mic input level.
+JNIEXPORT void JNICALL
+Java_com_playfieldportal_discord_DiscordNativeBridge_nativeSetAutomaticGainControl(
+    JNIEnv* /*env*/, jobject /*thiz*/, jboolean on) {
+    if (!gClient) return;
+    const bool o = (on == JNI_TRUE);
+    post([o]() { gClient->SetAutomaticGainControl(o); });
+}
+
+// Mic (input) volume, percentage 0..100.
+JNIEXPORT void JNICALL
+Java_com_playfieldportal_discord_DiscordNativeBridge_nativeSetInputVolume(
+    JNIEnv* /*env*/, jobject /*thiz*/, jfloat percent) {
+    if (!gClient) return;
+    const float v = percent;
+    post([v]() { gClient->SetInputVolume(v); });
+}
+
+// Speaker (output) volume, percentage 0..200.
+JNIEXPORT void JNICALL
+Java_com_playfieldportal_discord_DiscordNativeBridge_nativeSetOutputVolume(
+    JNIEnv* /*env*/, jobject /*thiz*/, jfloat percent) {
+    if (!gClient) return;
+    const float v = percent;
+    post([v]() { gClient->SetOutputVolume(v); });
+}
+
+// Current call status ordinal (mirrors discordpp::Call::Status; 0 = Disconnected).
+JNIEXPORT jint JNICALL
+Java_com_playfieldportal_discord_DiscordNativeBridge_nativeGetCallStatus(
+    JNIEnv* /*env*/, jobject /*thiz*/) {
+    return gCallStatus.load();
+}
+
+// Snapshot of the active call as JSON: { lobbyId, status, selfMute, participants:[{id, displayName,
+// mute, deaf, speaking}] }, or "{}" when not in a call. Read on the pump thread.
+JNIEXPORT jstring JNICALL
+Java_com_playfieldportal_discord_DiscordNativeBridge_nativeGetVoiceJson(
+    JNIEnv* env, jobject /*thiz*/) {
+    if (!gClient) return env->NewStringUTF("{}");
+    auto promise = std::make_shared<std::promise<std::string>>();
+    auto future = promise->get_future();
+    post([promise]() {
+        if (!gCall) {
+            promise->set_value("{}");
+            return;
+        }
+        std::string json = "{";
+        json += "\"lobbyId\":\"" + std::to_string(gLobbyId.load()) + "\",";
+        json += "\"status\":" + std::to_string(static_cast<int>(gCall->GetStatus())) + ",";
+        json += std::string("\"selfMute\":") + (gCall->GetSelfMute() ? "true" : "false") + ",";
+        json += "\"participants\":[";
+        bool first = true;
+        for (uint64_t uid : gCall->GetParticipants()) {
+            auto voice = gCall->GetVoiceStateHandle(uid);
+            const bool muted = voice.has_value() && voice->SelfMute();
+            const bool deaf = voice.has_value() && voice->SelfDeaf();
+            const bool speaking = gSpeaking.count(uid) > 0;
+            std::string name;
+            auto user = gClient->GetUser(uid);
+            if (user.has_value()) name = user->DisplayName();
+            if (!first) json += ",";
+            first = false;
+            json += "{";
+            json += "\"id\":\"" + std::to_string(uid) + "\",";
+            json += "\"displayName\":\"" + jsonEscape(name) + "\",";
+            json += std::string("\"mute\":") + (muted ? "true" : "false") + ",";
+            json += std::string("\"deaf\":") + (deaf ? "true" : "false") + ",";
+            json += std::string("\"speaking\":") + (speaking ? "true" : "false");
+            json += "}";
+        }
+        json += "]}";
+        promise->set_value(json);
+    });
+    if (future.wait_for(std::chrono::seconds(5)) != std::future_status::ready) {
+        return env->NewStringUTF("{}");
+    }
+    const std::string result = future.get();
+    return env->NewStringUTF(result.c_str());
+}
+
 // Tear down the live session (logout), on the pump thread.
 JNIEXPORT void JNICALL
 Java_com_playfieldportal_discord_DiscordNativeBridge_nativeDisconnect(
@@ -280,6 +478,10 @@ Java_com_playfieldportal_discord_DiscordNativeBridge_nativeShutdown(
     JNIEnv* /*env*/, jobject /*thiz*/) {
     gRunning.store(false);
     if (gPumpThread.joinable()) gPumpThread.join();
+    gCall.reset();
+    gLobbyId.store(0);
+    gCallStatus.store(0);
+    gSpeaking.clear();
     gClient.reset();
     gStatus.store(0);
 }

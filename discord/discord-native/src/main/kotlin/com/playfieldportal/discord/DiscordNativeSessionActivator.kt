@@ -4,6 +4,8 @@ import com.playfieldportal.core.domain.discord.DiscordFriend
 import com.playfieldportal.core.domain.discord.DiscordPresence
 import com.playfieldportal.core.domain.discord.DiscordSessionActivator
 import com.playfieldportal.core.domain.discord.DiscordUser
+import com.playfieldportal.core.domain.discord.DiscordVoiceParticipant
+import com.playfieldportal.core.domain.discord.DiscordVoiceState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -70,6 +72,67 @@ class DiscordNativeSessionActivator @Inject constructor() : DiscordSessionActiva
 
     override suspend fun clearActivity() = withContext(Dispatchers.IO) {
         DiscordNativeBridge.clearActivity()
+    }
+
+    override suspend fun joinVoice(secret: String): Boolean = withContext(Dispatchers.IO) {
+        DiscordNativeBridge.joinVoice(secret) != 0L
+    }
+
+    override suspend fun leaveVoice() = withContext(Dispatchers.IO) {
+        DiscordNativeBridge.leaveVoice()
+    }
+
+    override suspend fun setSelfMute(mute: Boolean) = withContext(Dispatchers.IO) {
+        DiscordNativeBridge.setSelfMute(mute)
+    }
+
+    override suspend fun setVadThreshold(automatic: Boolean, threshold: Float) = withContext(Dispatchers.IO) {
+        DiscordNativeBridge.setVadThreshold(automatic, threshold)
+    }
+
+    override suspend fun setNoiseCancellation(on: Boolean) = withContext(Dispatchers.IO) {
+        DiscordNativeBridge.setNoiseCancellation(on)
+    }
+
+    override suspend fun setEchoCancellation(on: Boolean) = withContext(Dispatchers.IO) {
+        DiscordNativeBridge.setEchoCancellation(on)
+    }
+
+    override suspend fun setAutomaticGainControl(on: Boolean) = withContext(Dispatchers.IO) {
+        DiscordNativeBridge.setAutomaticGainControl(on)
+    }
+
+    override suspend fun setInputVolume(percent: Float) = withContext(Dispatchers.IO) {
+        DiscordNativeBridge.setInputVolume(percent)
+    }
+
+    override suspend fun setOutputVolume(percent: Float) = withContext(Dispatchers.IO) {
+        DiscordNativeBridge.setOutputVolume(percent)
+    }
+
+    override suspend fun voiceState(): DiscordVoiceState = withContext(Dispatchers.IO) {
+        val json = DiscordNativeBridge.voiceJson()
+        runCatching {
+            val obj = JSONObject(json)
+            if (!obj.has("participants")) return@runCatching DiscordVoiceState.Idle
+            val array = obj.getJSONArray("participants")
+            val participants = (0 until array.length()).map { i ->
+                val p = array.getJSONObject(i)
+                DiscordVoiceParticipant(
+                    id = p.optString("id"),
+                    displayName = p.optString("displayName"),
+                    muted = p.optBoolean("mute"),
+                    deaf = p.optBoolean("deaf"),
+                    speaking = p.optBoolean("speaking"),
+                )
+            }
+            DiscordVoiceState(
+                inRoom = true,
+                connecting = obj.optInt("status") < DiscordVoiceState.STATUS_CONNECTED,
+                selfMuted = obj.optBoolean("selfMute"),
+                participants = participants,
+            )
+        }.getOrDefault(DiscordVoiceState.Idle)
     }
 
     // "Details · State" is richest; fall back to details, then the app name. Null when not in-app.

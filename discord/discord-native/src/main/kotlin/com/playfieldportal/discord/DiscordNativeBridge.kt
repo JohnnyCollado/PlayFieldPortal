@@ -65,6 +65,63 @@ object DiscordNativeBridge {
         if (clientStarted.get()) nativeClearActivity()
     }
 
+    /**
+     * Join (or create) the voice room identified by [secret] and start the call. Two users passing
+     * the same secret share a room. Blocking; call off the main thread. Returns the lobby id, or 0
+     * on failure / when the session isn't started.
+     */
+    fun joinVoice(secret: String): Long =
+        if (clientStarted.get()) nativeJoinVoice(secret) else 0L
+
+    /** Leave the active call + room. Safe to call when not in a call. Call off the main thread. */
+    fun leaveVoice() {
+        if (clientStarted.get()) nativeLeaveVoice()
+    }
+
+    /** Mute/unmute the local mic for the whole call. Call off the main thread. */
+    fun setSelfMute(mute: Boolean) {
+        if (clientStarted.get()) nativeSetSelfMute(mute)
+    }
+
+    /**
+     * Set the voice-activity gate. [automatic] lets the SDK pick; otherwise [threshold] (dB, -100..0,
+     * default -60) is used — raising it toward 0 filters quiet button-click noise. Off the main thread.
+     */
+    fun setVadThreshold(automatic: Boolean, threshold: Float) {
+        if (clientStarted.get()) nativeSetVadThreshold(automatic, threshold)
+    }
+
+    /** Krisp AI noise cancellation on/off (strips button clicks + background). Off the main thread. */
+    fun setNoiseCancellation(on: Boolean) {
+        if (clientStarted.get()) nativeSetNoiseCancellation(on)
+    }
+
+    /** Acoustic echo cancellation on/off. Off the main thread. */
+    fun setEchoCancellation(on: Boolean) {
+        if (clientStarted.get()) nativeSetEchoCancellation(on)
+    }
+
+    /** Automatic gain control on/off. Off the main thread. */
+    fun setAutomaticGainControl(on: Boolean) {
+        if (clientStarted.get()) nativeSetAutomaticGainControl(on)
+    }
+
+    /** Mic (input) volume, percentage 0..100. Off the main thread. */
+    fun setInputVolume(percent: Float) {
+        if (clientStarted.get()) nativeSetInputVolume(percent)
+    }
+
+    /** Speaker (output) volume, percentage 0..200. Off the main thread. */
+    fun setOutputVolume(percent: Float) {
+        if (clientStarted.get()) nativeSetOutputVolume(percent)
+    }
+
+    /** Current call status ordinal (mirrors `discordpp::Call::Status`; 0 = Disconnected). */
+    fun callStatus(): Int = if (clientStarted.get()) nativeGetCallStatus() else 0
+
+    /** Active call as a JSON object (lobbyId/status/selfMute/participants), or "{}". Off the main thread. */
+    fun voiceJson(): String = if (clientStarted.get()) nativeGetVoiceJson() else "{}"
+
     fun shutdown() {
         if (clientStarted.compareAndSet(true, false)) nativeShutdown()
     }
@@ -77,5 +134,16 @@ object DiscordNativeBridge {
     private external fun nativeGetFriendsJson(): String
     private external fun nativeSetActivity(name: String, details: String)
     private external fun nativeClearActivity()
+    private external fun nativeJoinVoice(secret: String): Long
+    private external fun nativeLeaveVoice()
+    private external fun nativeSetSelfMute(mute: Boolean)
+    private external fun nativeSetVadThreshold(automatic: Boolean, threshold: Float)
+    private external fun nativeSetNoiseCancellation(on: Boolean)
+    private external fun nativeSetEchoCancellation(on: Boolean)
+    private external fun nativeSetAutomaticGainControl(on: Boolean)
+    private external fun nativeSetInputVolume(percent: Float)
+    private external fun nativeSetOutputVolume(percent: Float)
+    private external fun nativeGetCallStatus(): Int
+    private external fun nativeGetVoiceJson(): String
     private external fun nativeShutdown()
 }
