@@ -47,9 +47,9 @@ dependencies {
     implementation(project(":feature:feature-launcher"))
     implementation(project(":feature:feature-artwork"))
     implementation(project(":feature:feature-library"))
-    // Discord Social section — QR login screen + native session bridge.
+    // Discord Social section — QR login screen. The native SDK bridge is not referenced here; the
+    // app module owns it (full flavor only), so feature-xmb stays flavor-agnostic.
     implementation(project(":feature:feature-social"))
-    implementation(project(":discord:discord-native"))
 
     testImplementation(libs.bundles.test.unit)
     testImplementation(libs.hilt.android.testing)

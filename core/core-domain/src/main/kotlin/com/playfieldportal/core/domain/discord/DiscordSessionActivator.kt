@@ -8,6 +8,12 @@ package com.playfieldportal.core.domain.discord
  * the NDK and free of a dependency on the native module.
  */
 interface DiscordSessionActivator {
+    /**
+     * Whether the Discord SDK is actually present in this build. False in the "lite" flavor (the
+     * native SDK is excluded to shrink the download), which the UI uses to hide the Social section.
+     */
+    val sdkAvailable: Boolean
+
     /** @return true once the SDK reports the token accepted and the session is live. */
     suspend fun activate(accessToken: String): Boolean
 

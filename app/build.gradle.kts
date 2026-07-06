@@ -63,6 +63,21 @@ android {
         }
     }
 
+    // "full" ships the Discord Social SDK; "lite" excludes it (see the flavor-scoped dependency
+    // below) for a much smaller download. The lite flavor hides the Social section at runtime via
+    // DiscordSessionActivator.sdkAvailable and binds no-op Discord components.
+    flavorDimensions += "distribution"
+    productFlavors {
+        create("full") {
+            dimension = "distribution"
+        }
+        create("lite") {
+            dimension = "distribution"
+            applicationIdSuffix = ".lite"
+            versionNameSuffix = "-lite"
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -111,7 +126,9 @@ dependencies {
     implementation(project(":feature:feature-backup"))
     implementation(project(":feature:feature-social"))
     // Native Discord SDK bridge — provides the DiscordSessionActivator Hilt binding + the .so.
-    implementation(project(":discord:discord-native"))
+    // Discord SDK only in the "full" flavor — the native libs (WebRTC + Krisp) are the largest part
+    // of the download, so "lite" omits them entirely.
+    "fullImplementation"(project(":discord:discord-native"))
 
     debugImplementation(libs.compose.ui.tooling)
 }

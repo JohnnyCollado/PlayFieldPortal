@@ -14,6 +14,8 @@
 
 - **M4** — **Voice**: SDK lobbies/calls joined by room code (namespaced secret), friend **invites + join-requests**, mic `RECORD_AUDIO` requested at first join, Krisp noise / echo / AGC + mic-sensitivity + mic-volume + **Game↔Voice audio balance** (ducks `STREAM_MUSIC`), and **push-to-talk** with two hold controls: a **floating overlay** (works over a running game) and a **mappable controller button** (`DiscordVoiceController.pttKeyCode`, captured via `RemapCoordinator`, intercepted in `GamepadInputHandler`) that works while PFP is foreground. The voice foreground service (mic type) is provided by the SDK aar (`com.discord.socialsdk.ForegroundService`).
 
+- **Distribution** — two product flavors: **`full`** (Discord SDK included) and **`lite`** (SDK excluded, ~44 MB smaller — drops the WebRTC + Krisp native libs). Only the `app` module depends on `:discord:discord-native`, via `"fullImplementation"`; `lite` binds a no-op `DiscordBootstrap` + `DiscordSessionActivator`, and the XMB hides the Social column when `DiscordSessionActivator.sdkAvailable` is false. `MainActivity`/`feature-xmb` carry no native dependency (the engine attach was lifted into `DiscordBootstrap`).
+
 **Remaining:** a final **on-device verification pass** with a 2nd Discord account (voice call audio, invites, presence visibility). The §12 security checklist is code-reviewed complete. Seeing your broadcast presence needs a **2nd Discord account**; friend "activity" is SDK-scoped to **this app only** — not general Discord presence.
 
 ### Resuming on a new machine

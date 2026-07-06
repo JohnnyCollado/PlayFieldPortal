@@ -22,7 +22,9 @@ Framework, so the app no longer needs all-files access); and a new **opt-in Disc
   inert until you connect, and presence is limited by Discord to this app only — nothing outside PFP
   is ever shared. **Voice chat** rooms (join by code, invite friends) with Krisp noise cancellation,
   a Game↔Voice audio balance, and **push-to-talk** — either a floating hold-to-talk button that
-  works over a running game, or a controller button you map yourself (held while in PFP).
+  works over a running game, or a controller button you map yourself (held while in PFP). Discord is
+  **optional at build time**: a **lite** build ships without the SDK for a ~44 MB smaller download
+  (its native voice libraries are the bulk of the size) and simply omits the Social section.
 - **Import PC Games.** New section under Library, and an option on the **All Games** card's Options
   menu. Detects installed PC launchers (BannerHub, GameHub Lite, GameNative, Winlator); **Add game
   by ID** builds each launcher's documented launch intent — with a **Test Launch** to verify — so

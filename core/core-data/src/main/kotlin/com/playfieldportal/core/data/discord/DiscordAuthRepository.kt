@@ -29,6 +29,9 @@ class DiscordAuthRepository @Inject constructor(
     /** True when the device currently has internet connectivity. */
     fun isOnline(): Boolean = networkMonitor.isOnline()
 
+    /** False in the "lite" build (SDK excluded); the XMB hides the Social section when false. */
+    fun isDiscordAvailable(): Boolean = sessionActivator.sdkAvailable
+
     fun loginWithDeviceQr(scopes: String = DiscordConfig.DEFAULT_SCOPES): Flow<DeviceLoginState> = flow {
         emit(DeviceLoginState.Requesting)
 

@@ -22,6 +22,8 @@ import javax.inject.Singleton
 @Singleton
 class DiscordNativeSessionActivator @Inject constructor() : DiscordSessionActivator {
 
+    override val sdkAvailable: Boolean = true
+
     override suspend fun activate(accessToken: String): Boolean = withContext(Dispatchers.IO) {
         DiscordNativeBridge.updateToken(accessToken)
     }

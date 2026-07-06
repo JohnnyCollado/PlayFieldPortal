@@ -849,6 +849,11 @@ class XMBViewModel @Inject constructor(
         viewModelScope.launch {
             categoryRepository.observeVisible().collect { categories ->
                 val allCategories = canonicalXmbCategories(categories.ifEmpty { FALLBACK_CATEGORIES })
+                    // The "lite" build ships without the Discord SDK — drop the Social column there.
+                    .let { cats ->
+                        if (discordAuthRepository.isDiscordAvailable()) cats
+                        else cats.filterNot { it.id == BuiltInCategory.SOCIAL }
+                    }
                 val prevId   = _uiState.value.categories.getOrNull(_uiState.value.selectedCategoryIndex)?.id
                 val isInitialSelection = _uiState.value.categories.isEmpty()
                 // Keep the same category selected across reorders/hides when possible.
