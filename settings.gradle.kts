@@ -30,6 +30,7 @@ rootProject.name = "PlayFieldPortal"
 include(":app")
 
 // Core modules
+include(":core:theme-kit")   // pure JVM: theme parsing/conversion shared with the desktop companion
 include(":core:core-common")
 include(":core:core-domain")
 include(":core:core-data")
