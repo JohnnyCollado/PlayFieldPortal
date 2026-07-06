@@ -54,8 +54,10 @@ import com.playfieldportal.core.domain.model.MusicTrack
 import androidx.compose.ui.graphics.toArgb
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlin.math.roundToInt
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -249,6 +251,8 @@ sealed interface SocialNav {
     data object Root : SocialNav
     data object Account : SocialNav
     data object Friends : SocialNav
+    data object Voice : SocialNav
+    data object VoiceSettings : SocialNav
     data object ActivitySettings : SocialNav
     data object DiscordSettings : SocialNav
 }
@@ -421,6 +425,11 @@ data class XMBUiState(
     // ── Discord Social drill: Root (account) → Account (hub) → Friends ─────
     val socialNav: SocialNav = SocialNav.Root,
     val socialAccountAvatarUrl: String? = null,   // cached so the drill sibling column can render it
+    // Voice room (M4): the polled call snapshot, plus a one-shot flag the shell watches to request
+    // the RECORD_AUDIO grant before the first join.
+    val voiceState: com.playfieldportal.core.domain.discord.DiscordVoiceState =
+        com.playfieldportal.core.domain.discord.DiscordVoiceState.Idle,
+    val requestMicPermission: Boolean = false,
 
     // ── Color-scheme picker (Settings ▸ Themes ▸ Color Scheme) ─────────────
     val colorSchemePicker: ColorSchemePickerState? = null,
@@ -528,10 +537,16 @@ enum class XMBItemType {
     SOCIAL_ADD,               // "Sign in with Discord" — opens the QR login overlay
     SOCIAL_ACCOUNT,           // a connected Discord account (L1) — drills into the hub
     SOCIAL_FRIENDS,           // hub row → drills into the Friends list
-    SOCIAL_VOICE,             // hub row (placeholder)
+    SOCIAL_VOICE,             // hub row → drills into the Voice room
+    SOCIAL_VOICE_JOIN,        // "Join Party" — requests mic + joins the shared room
+    SOCIAL_VOICE_MUTE,        // mute/unmute toggle (in a room)
+    SOCIAL_VOICE_SETTINGS,    // entry row → drills into Voice Settings
+    SOCIAL_VOICE_TOGGLE,      // a boolean voice setting (noise/echo/agc), flipped on select
+    SOCIAL_VOICE_CYCLE,       // a multi-value voice setting (sensitivity, volumes), cycled on select
+    SOCIAL_VOICE_LEAVE,       // leave the room + call
     SOCIAL_ACTIVITY_SETTINGS, // hub row → drills into Activity Settings
     SOCIAL_DISCORD_SETTINGS,  // hub row → drills into Discord Settings
-    SOCIAL_FRIEND,            // a single friend (L3)
+    SOCIAL_FRIEND,            // a single friend (L3) — also a voice participant row
     SOCIAL_TOGGLE,            // an on/off preference row (Activity Settings), toggled on select
     SOCIAL_SIGNOUT,           // "Sign Out"
     EMPTY,
@@ -665,6 +680,7 @@ class XMBViewModel @Inject constructor(
     private val hiddenPlacementDao: com.playfieldportal.core.data.database.dao.HiddenPlacementDao,
     private val discordAuthRepository: com.playfieldportal.core.data.discord.DiscordAuthRepository,
     private val discordPresence: com.playfieldportal.core.data.discord.DiscordPresenceController,
+    private val discordVoice: com.playfieldportal.core.data.discord.DiscordVoiceController,
 ) : ViewModel() {
 
     // The track list currently on screen (in display/sort order), used as the in-app player's queue
@@ -980,6 +996,8 @@ class XMBViewModel @Inject constructor(
                         _uiState.update { it.copy(currentItems = socialHubItems(online)) }
                     }
                     SocialNav.Friends -> _uiState.update { it.copy(currentItems = socialFriendItems()) }
+                    SocialNav.Voice -> _uiState.update { it.copy(currentItems = socialVoiceItems()) }
+                    SocialNav.VoiceSettings -> _uiState.update { it.copy(currentItems = socialVoiceSettingsItems()) }
                     SocialNav.ActivitySettings -> _uiState.update { it.copy(currentItems = socialActivitySettingsItems()) }
                     SocialNav.DiscordSettings -> _uiState.update { it.copy(currentItems = socialDiscordSettingsItems()) }
                 }
@@ -1758,6 +1776,8 @@ class XMBViewModel @Inject constructor(
         SocialNav.Root             -> "root"
         SocialNav.Account          -> "account"
         SocialNav.Friends          -> "friends"
+        SocialNav.Voice            -> "voice"
+        SocialNav.VoiceSettings    -> "voicesettings"
         SocialNav.ActivitySettings -> "activity"
         SocialNav.DiscordSettings  -> "discord"
     }
@@ -2899,6 +2919,8 @@ class XMBViewModel @Inject constructor(
         val socialTitle = when (s.socialNav) {
             SocialNav.Account          -> "Account"
             SocialNav.Friends          -> "Friends"
+            SocialNav.Voice            -> "Voice"
+            SocialNav.VoiceSettings    -> "Voice Settings"
             SocialNav.ActivitySettings -> "Activity Settings"
             SocialNav.DiscordSettings  -> "Discord Settings"
             SocialNav.Root             -> null
@@ -3033,6 +3055,10 @@ class XMBViewModel @Inject constructor(
                 SocialNav.Friends -> {
                     val hub = socialHubSiblings()
                     hub to hub.indexOfFirst { it.type == XMBItemType.SOCIAL_FRIENDS }.coerceAtLeast(0)
+                }
+                SocialNav.Voice, SocialNav.VoiceSettings -> {
+                    val hub = socialHubSiblings()
+                    hub to hub.indexOfFirst { it.type == XMBItemType.SOCIAL_VOICE }.coerceAtLeast(0)
                 }
                 SocialNav.ActivitySettings -> {
                     val hub = socialHubSiblings()
@@ -4557,7 +4583,7 @@ class XMBViewModel @Inject constructor(
             },
             type = XMBItemType.SOCIAL_FRIENDS,
         ),
-        XMBItem(id = "social_voice", title = "Voice", subtitle = "Coming soon", type = XMBItemType.SOCIAL_VOICE),
+        XMBItem(id = "social_voice", title = "Voice", subtitle = "Talk in a shared room", type = XMBItemType.SOCIAL_VOICE),
         XMBItem(id = "social_activity", title = "Activity Settings", subtitle = "Share what you're playing", type = XMBItemType.SOCIAL_ACTIVITY_SETTINGS),
         XMBItem(id = "social_settings", title = "Discord Settings", subtitle = "Account & sign out", type = XMBItemType.SOCIAL_DISCORD_SETTINGS),
     )
@@ -4655,18 +4681,217 @@ class XMBViewModel @Inject constructor(
         DiscordPresence.UNKNOWN   -> null
     }
 
-    private fun openSocialView(nav: SocialNav) = navigateRememberingCursor { it.copy(socialNav = nav) }
+    // ── Voice room (M4) ───────────────────────────────────────────────────────────
+    // v1 = a shared room by code (defaults to the "party" room). Polls the SDK call snapshot while
+    // the Voice screen is open; the call itself keeps running if the user browses elsewhere.
+    private var voicePollJob: kotlinx.coroutines.Job? = null
+    private var voiceSelfId: String? = null
+
+    // L3 (Voice): the shared-room UI. Idle → a Join row; in a room → participants + Mute/Leave.
+    private suspend fun socialVoiceItems(): List<XMBItem> {
+        if (!discordAuthRepository.isOnline()) {
+            return listOf(XMBItem(id = "voice_offline", title = "You're offline", subtitle = "Reconnect to use voice", type = XMBItemType.EMPTY))
+        }
+        val vs = _uiState.value.voiceState
+        if (!vs.inRoom) {
+            return listOf(
+                XMBItem(id = "voice_join", title = "Join Party", subtitle = "Talk with anyone in the same room", type = XMBItemType.SOCIAL_VOICE_JOIN),
+                voiceSettingsEntry(),
+            )
+        }
+        val participants = vs.participants.map { p ->
+            val you = p.id == voiceSelfId
+            XMBItem(
+                id = "voice_p_${p.id}",
+                title = p.displayName.ifBlank { "Someone" } + if (you) " (You)" else "",
+                subtitle = when { p.muted -> "Muted"; p.speaking -> "Speaking"; else -> null },
+                socialStatusArgb = if (p.speaking) 0xFF43B581 else null,   // green while talking
+                type = XMBItemType.SOCIAL_FRIEND,   // reuses the avatar + status-dot row renderer
+            )
+        }
+        val body = participants.ifEmpty {
+            val note = if (vs.connecting) "Connecting…" else "Waiting for others to join"
+            listOf(XMBItem(id = "voice_status", title = note, type = XMBItemType.EMPTY))
+        }
+        val controls = listOf(
+            XMBItem(
+                id = "voice_mute",
+                title = if (vs.selfMuted) "Unmute" else "Mute",
+                subtitle = if (vs.selfMuted) "Your mic is off" else "Your mic is on",
+                type = XMBItemType.SOCIAL_VOICE_MUTE,
+            ),
+            voiceSettingsEntry(),
+            XMBItem(id = "voice_leave", title = "Leave Voice", subtitle = "Disconnect from the room", type = XMBItemType.SOCIAL_VOICE_LEAVE),
+        )
+        return body + controls
+    }
+
+    private fun voiceSettingsEntry() = XMBItem(
+        id = "voice_settings",
+        title = "Voice Settings",
+        subtitle = "Mic sensitivity, noise filter, volume",
+        type = XMBItemType.SOCIAL_VOICE_SETTINGS,
+    )
+
+    // L4 (Voice Settings): every audio knob the SDK exposes — booleans toggle, multi-value rows cycle.
+    private suspend fun socialVoiceSettingsItems(): List<XMBItem> {
+        val s = discordVoice.settings()
+        fun toggle(id: String, title: String, on: Boolean, onText: String) = XMBItem(
+            id = id, title = title,
+            subtitle = if (on) "On · $onText" else "Off",
+            type = XMBItemType.SOCIAL_VOICE_TOGGLE,
+        )
+        fun cycle(id: String, title: String, value: String) = XMBItem(
+            id = id, title = title, subtitle = value, type = XMBItemType.SOCIAL_VOICE_CYCLE,
+        )
+        return listOf(
+            cycle("vs_sensitivity", "Mic Sensitivity", "${s.micSensitivity.label} · lower filters clicks"),
+            toggle("vs_noise", "Noise Cancellation", s.noiseCancellation, "Krisp removes background + button clicks"),
+            toggle("vs_echo", "Echo Cancellation", s.echoCancellation, "stops speaker feedback"),
+            toggle("vs_agc", "Auto Gain Control", s.automaticGainControl, "levels your mic volume"),
+            cycle("vs_input", "Mic Volume", "${s.inputVolumePercent}%"),
+            cycle("vs_balance", "Audio Balance", audioBalanceLabel(s.audioBalance)),
+        )
+    }
+
+    // A controller-friendly "slider": Game ◀ ──●── ▶ Voice with the marker at the current mix.
+    private fun audioBalanceLabel(balance: Int): String {
+        val slots = 9
+        val pos = (balance / 100f * (slots - 1)).roundToInt().coerceIn(0, slots - 1)
+        val bar = "─".repeat(pos) + "●" + "─".repeat(slots - 1 - pos)
+        return "Game ◀$bar▶ Voice"
+    }
+
+    private fun toggleVoiceSetting(id: String) {
+        viewModelScope.launch {
+            val s = discordVoice.settings()
+            when (id) {
+                "vs_noise" -> discordVoice.setNoiseCancellation(!s.noiseCancellation)
+                "vs_echo"  -> discordVoice.setEchoCancellation(!s.echoCancellation)
+                "vs_agc"   -> discordVoice.setAutomaticGainControl(!s.automaticGainControl)
+            }
+            if (_uiState.value.socialNav == SocialNav.VoiceSettings) loadItemsForCategory(currentCategory())
+        }
+    }
+
+    private fun cycleVoiceSetting(id: String) {
+        viewModelScope.launch {
+            when (id) {
+                "vs_sensitivity" -> discordVoice.setMicSensitivity(discordVoice.micSensitivity().next())
+                "vs_input"       -> discordVoice.cycleInputVolume()
+                "vs_balance"     -> discordVoice.cycleAudioBalance()
+            }
+            if (_uiState.value.socialNav == SocialNav.VoiceSettings) loadItemsForCategory(currentCategory())
+        }
+    }
+
+    // Hub "Voice" row → drill in; resume polling if a call is already live.
+    private fun onVoiceHubSelected() {
+        menuSound.play(MenuSound.SELECT)
+        openSocialView(SocialNav.Voice)
+        if (_uiState.value.voiceState.inRoom) startVoicePolling()
+    }
+
+    // Join needs the mic. Check the runtime grant; if missing, signal the shell to request it.
+    private fun requestJoinVoice() {
+        menuSound.play(MenuSound.SELECT)
+        val granted = androidx.core.content.ContextCompat.checkSelfPermission(
+            context, android.Manifest.permission.RECORD_AUDIO,
+        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (granted) joinVoiceRoom() else _uiState.update { it.copy(requestMicPermission = true) }
+    }
+
+    /** Shell has launched the permission dialog — clear the one-shot request flag. */
+    fun onMicPermissionRequested() = _uiState.update { it.copy(requestMicPermission = false) }
+
+    /** Shell delivered the RECORD_AUDIO result. Join only if the user granted it. */
+    fun onMicPermissionResult(granted: Boolean) {
+        if (granted) joinVoiceRoom()
+        else Timber.i("Voice: RECORD_AUDIO denied; not joining")
+    }
+
+    private fun joinVoiceRoom() {
+        viewModelScope.launch {
+            voiceSelfId = discordAuthRepository.currentUser()?.id
+            val joined = discordVoice.join(com.playfieldportal.core.data.discord.DiscordVoiceController.DEFAULT_ROOM)
+            if (joined) {
+                refreshVoiceState()
+                startVoicePolling()
+            } else {
+                Timber.w("Voice: join failed (offline or SDK rejected)")
+                if (_uiState.value.socialNav == SocialNav.Voice) loadItemsForCategory(currentCategory())
+            }
+        }
+    }
+
+    private fun toggleSelfMute() {
+        viewModelScope.launch {
+            discordVoice.setMuted(!_uiState.value.voiceState.selfMuted)
+            refreshVoiceState()
+        }
+    }
+
+    private fun leaveVoiceRoom() {
+        stopVoicePolling()
+        viewModelScope.launch {
+            discordVoice.leave()
+            _uiState.update { it.copy(voiceState = com.playfieldportal.core.domain.discord.DiscordVoiceState.Idle) }
+            if (_uiState.value.socialNav == SocialNav.Voice) loadItemsForCategory(currentCategory())
+        }
+    }
+
+    private suspend fun refreshVoiceState() {
+        val vs = discordVoice.state()
+        _uiState.update { it.copy(voiceState = vs) }
+        if (_uiState.value.socialNav == SocialNav.Voice) {
+            loadItemsForCategory(currentCategory())
+            // A participant leaving shrinks the list; keep the cursor in range so a poll can't strand
+            // the highlight past the end.
+            _uiState.update { st ->
+                val max = (st.currentItems.size - 1).coerceAtLeast(0)
+                if (st.selectedItemIndex > max) st.copy(selectedItemIndex = max) else st
+            }
+        }
+    }
+
+    // Poll the call snapshot while the Voice screen is open. Self-terminates when the user navigates
+    // away or the call ends, so the call can keep running in the background without a live poll.
+    private fun startVoicePolling() {
+        if (voicePollJob?.isActive == true) return
+        voicePollJob = viewModelScope.launch {
+            while (isActive) {
+                if (_uiState.value.socialNav != SocialNav.Voice) break
+                refreshVoiceState()
+                if (!_uiState.value.voiceState.inRoom) break
+                delay(1500)
+            }
+        }
+    }
+
+    private fun stopVoicePolling() {
+        voicePollJob?.cancel()
+        voicePollJob = null
+    }
+
+    private fun openSocialView(nav: SocialNav) {
+        if (nav != SocialNav.Voice) stopVoicePolling()
+        navigateRememberingCursor { it.copy(socialNav = nav) }
+    }
 
     // One level up: Friends / Discord Settings → Account → Root.
     private fun socialBack() {
         val parent = when (_uiState.value.socialNav) {
             SocialNav.Friends          -> SocialNav.Account
+            SocialNav.Voice            -> SocialNav.Account
+            SocialNav.VoiceSettings    -> SocialNav.Voice
             SocialNav.ActivitySettings -> SocialNav.Account
             SocialNav.DiscordSettings  -> SocialNav.Account
             SocialNav.Account          -> SocialNav.Root
             SocialNav.Root             -> SocialNav.Root
         }
         openSocialView(parent)
+        // Returning to the Voice room screen from its settings resumes the participant poll.
+        if (parent == SocialNav.Voice && _uiState.value.voiceState.inRoom) startVoicePolling()
     }
 
     // When connected but the profile hasn't loaded yet (gateway still connecting), poll briefly and
@@ -4737,8 +4962,14 @@ class XMBViewModel @Inject constructor(
             XMBItemType.SOCIAL_ACTIVITY_SETTINGS -> { menuSound.play(MenuSound.SELECT); openSocialView(SocialNav.ActivitySettings) }
             XMBItemType.SOCIAL_DISCORD_SETTINGS -> { menuSound.play(MenuSound.SELECT); openSocialView(SocialNav.DiscordSettings) }
             XMBItemType.SOCIAL_TOGGLE -> { menuSound.play(MenuSound.SELECT); toggleActivitySetting(item.id) }
-            XMBItemType.SOCIAL_VOICE,
-            XMBItemType.SOCIAL_FRIEND -> menuSound.play(MenuSound.SELECT)  // placeholder / friend profile later
+            XMBItemType.SOCIAL_VOICE -> onVoiceHubSelected()
+            XMBItemType.SOCIAL_VOICE_JOIN -> requestJoinVoice()
+            XMBItemType.SOCIAL_VOICE_MUTE -> { menuSound.play(MenuSound.SELECT); toggleSelfMute() }
+            XMBItemType.SOCIAL_VOICE_SETTINGS -> { menuSound.play(MenuSound.SELECT); openSocialView(SocialNav.VoiceSettings) }
+            XMBItemType.SOCIAL_VOICE_TOGGLE -> { menuSound.play(MenuSound.SELECT); toggleVoiceSetting(item.id) }
+            XMBItemType.SOCIAL_VOICE_CYCLE -> { menuSound.play(MenuSound.SELECT); cycleVoiceSetting(item.id) }
+            XMBItemType.SOCIAL_VOICE_LEAVE -> { menuSound.play(MenuSound.SELECT); leaveVoiceRoom() }
+            XMBItemType.SOCIAL_FRIEND -> menuSound.play(MenuSound.SELECT)  // friend profile / voice participant (no-op)
             else -> return false
         }
         return true

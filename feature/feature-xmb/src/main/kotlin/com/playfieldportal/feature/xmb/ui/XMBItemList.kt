@@ -47,8 +47,11 @@ import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.CallEnd
 import androidx.compose.material.icons.filled.Headset
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SportsEsports
@@ -826,9 +829,27 @@ private fun XmbItemLeadingIcon(
                 }
             }
         }
-        item.type == XMBItemType.SOCIAL_VOICE -> {
+        item.type == XMBItemType.SOCIAL_VOICE ||
+            item.type == XMBItemType.SOCIAL_VOICE_JOIN -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
                 Icon(Icons.Filled.Headset, contentDescription = null, tint = InactiveText, modifier = Modifier.size(46.dp))
+            }
+        }
+        item.type == XMBItemType.SOCIAL_VOICE_MUTE -> {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
+                Icon(Icons.Filled.Mic, contentDescription = null, tint = InactiveText, modifier = Modifier.size(46.dp))
+            }
+        }
+        item.type == XMBItemType.SOCIAL_VOICE_SETTINGS ||
+            item.type == XMBItemType.SOCIAL_VOICE_TOGGLE ||
+            item.type == XMBItemType.SOCIAL_VOICE_CYCLE -> {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
+                Icon(Icons.Filled.Tune, contentDescription = null, tint = InactiveText, modifier = Modifier.size(44.dp))
+            }
+        }
+        item.type == XMBItemType.SOCIAL_VOICE_LEAVE -> {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
+                Icon(Icons.Filled.CallEnd, contentDescription = null, tint = InactiveText, modifier = Modifier.size(44.dp))
             }
         }
         item.type == XMBItemType.SOCIAL_ACTIVITY_SETTINGS ||

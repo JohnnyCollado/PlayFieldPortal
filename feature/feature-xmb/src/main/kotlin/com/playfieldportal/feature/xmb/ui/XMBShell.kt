@@ -113,6 +113,19 @@ fun XMBShellContainer(
         lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current,
     )
 
+    // Voice needs RECORD_AUDIO. The ViewModel can check the grant but not request it (that needs an
+    // Activity), so it raises requestMicPermission and we launch the system dialog here, then hand
+    // the result back so it can join only on a grant.
+    val micPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+    ) { granted -> viewModel.onMicPermissionResult(granted) }
+    androidx.compose.runtime.LaunchedEffect(uiState.requestMicPermission) {
+        if (uiState.requestMicPermission) {
+            viewModel.onMicPermissionRequested()
+            micPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
+        }
+    }
+
     XMBShell(
         uiState = uiState,
         onCategorySelected = viewModel::onCategoryTapped,
