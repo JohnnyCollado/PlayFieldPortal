@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.datastore.pfpDataStore
+import com.playfieldportal.core.data.repository.PfpThemeStore
 import com.playfieldportal.core.data.repository.PtfThemeImporter
 import com.playfieldportal.feature.themes.ThemeLoadResult
 import com.playfieldportal.feature.themes.ThemeRepository
@@ -38,6 +39,8 @@ data class ThemesSettingsUiState(
     // that supersedes the preset scheme, and the unified icon tint (null = default white).
     val accentOverrideArgb: Long? = null,
     val iconColorArgb: Long? = null,
+    // The user's saved .pfptheme library (imports + Quick Create).
+    val savedThemes: List<PfpThemeStore.SavedTheme> = emptyList(),
 )
 
 @HiltViewModel
@@ -45,6 +48,7 @@ class ThemesSettingsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val themeRepository: ThemeRepository,
     private val ptfImporter: PtfThemeImporter,
+    private val themeStore: PfpThemeStore,
 ) : ViewModel() {
 
     private val _extra = MutableStateFlow(ThemesSettingsUiState())
@@ -52,8 +56,9 @@ class ThemesSettingsViewModel @Inject constructor(
     val uiState: StateFlow<ThemesSettingsUiState> = combine(
         themeRepository.observeAll(),
         context.pfpDataStore.data,
+        themeStore.themes,
         _extra,
-    ) { themes, prefs, extra ->
+    ) { themes, prefs, saved, extra ->
         val active = themes.firstOrNull { it.id == extra.activeThemeId }
             ?: themes.firstOrNull()
         extra.copy(
@@ -62,6 +67,7 @@ class ThemesSettingsViewModel @Inject constructor(
             activeThemeName    = active?.name ?: extra.activeThemeName,
             accentOverrideArgb = prefs[KEY_ACCENT_OVERRIDE],
             iconColorArgb      = prefs[KEY_ICON_COLOR],
+            savedThemes        = saved,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ThemesSettingsUiState())
 
@@ -154,6 +160,33 @@ class ThemesSettingsViewModel @Inject constructor(
     /** Clears an imported/custom accent so the preset color scheme applies again. */
     fun clearAccentOverride() {
         viewModelScope.launch { context.pfpDataStore.edit { it.remove(KEY_ACCENT_OVERRIDE) } }
+    }
+
+    // ── Saved-theme library (Quick Create + imports) ─────────────────────────
+
+    /** Quick Create: a picked photo becomes a saved+applied theme, accent auto-derived. */
+    fun createThemeFromPhoto(uri: Uri) {
+        viewModelScope.launch {
+            _extra.update { it.copy(isInstalling = true, installMessage = null) }
+            val saved = themeStore.createFromImage(uri)
+            val message = if (saved != null) {
+                themeStore.apply(saved.id)
+                "Created \"${saved.name}\"" +
+                    if (saved.accentArgb != null) " — color derived from the photo" else ""
+            } else "Could not read that image"
+            _extra.update { it.copy(isInstalling = false, installMessage = message) }
+        }
+    }
+
+    fun applySavedTheme(id: String) {
+        viewModelScope.launch {
+            val ok = themeStore.apply(id)
+            if (!ok) _extra.update { it.copy(installMessage = "Could not apply the theme") }
+        }
+    }
+
+    fun deleteSavedTheme(id: String) {
+        viewModelScope.launch { themeStore.delete(id) }
     }
 
     private companion object {

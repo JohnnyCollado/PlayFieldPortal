@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
@@ -26,9 +27,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
+import com.playfieldportal.core.data.repository.PfpThemeStore
 import com.playfieldportal.feature.settings.viewmodel.ThemeListItem
 import com.playfieldportal.feature.settings.viewmodel.ThemesSettingsViewModel
 
@@ -51,6 +55,11 @@ fun ThemesSettingsScreen(
     val ptfPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri -> uri?.let { viewModel.importPtfTheme(it) } }
+
+    // Quick Create: pick any photo — it becomes a saved theme with its color auto-derived.
+    val photoPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri -> uri?.let { viewModel.createThemeFromPhoto(it) } }
 
     SettingsScaffold(
         title    = "Settings",
@@ -92,6 +101,23 @@ fun ThemesSettingsScreen(
                 selectedArgb = state.iconColorArgb,
                 onSelect     = { viewModel.setIconColor(it) },
             )
+
+            // ── Saved themes (Quick Create + PSP imports) ────────────────────
+            SettingsGroup("My Themes")
+
+            SettingsRow(
+                label    = "New Theme from Photo",
+                sublabel = "Pick a picture — wallpaper and color are set from it",
+                onClick  = if (state.isInstalling) null else ({ photoPicker.launch(arrayOf("image/*")) }),
+            )
+
+            if (state.savedThemes.isNotEmpty()) {
+                SavedThemeCardRow(
+                    themes   = state.savedThemes,
+                    onApply  = { viewModel.applySavedTheme(it) },
+                    onDelete = { viewModel.deleteSavedTheme(it) },
+                )
+            }
 
             // ── Active theme ──────────────────────────────────────────────
             SettingsGroup("Active Theme")
@@ -213,6 +239,71 @@ private fun IconColorSwatchRow(
                     color = if (selected) SettingsAccent else SettingsSubtext,
                     fontSize = 11.sp,
                     modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+        }
+    }
+}
+
+/** Horizontally-scrolling cards for the saved .pfptheme library: thumbnail, name, actions. */
+@Composable
+private fun SavedThemeCardRow(
+    themes: List<PfpThemeStore.SavedTheme>,
+    onApply: (String) -> Unit,
+    onDelete: (String) -> Unit,
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(18.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 48.dp, vertical = 10.dp),
+    ) {
+        themes.forEach { theme ->
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(
+                    modifier = Modifier
+                        .size(width = 168.dp, height = 96.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color(theme.accentArgb?.let { it and 0xFFFFFFFFL } ?: 0xFF20304AL))
+                        .border(1.dp, Color(0x55FFFFFF), RoundedCornerShape(10.dp))
+                        .clickable { onApply(theme.id) },
+                ) {
+                    theme.previewPath?.let { path ->
+                        AsyncImage(
+                            model = path,
+                            contentDescription = theme.name,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
+                    // Accent chip in the corner, over the thumbnail.
+                    theme.accentArgb?.let { accent ->
+                        Box(
+                            modifier = Modifier
+                                .padding(6.dp)
+                                .size(14.dp)
+                                .clip(CircleShape)
+                                .background(Color(accent and 0xFFFFFFFFL))
+                                .border(1.dp, Color(0x88FFFFFF), CircleShape)
+                                .align(Alignment.TopEnd),
+                        )
+                    }
+                }
+                Text(
+                    text = theme.name,
+                    color = SettingsSubtext,
+                    fontSize = 12.sp,
+                    maxLines = 1,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+                Text(
+                    text = "Remove",
+                    color = SettingsAccent,
+                    fontSize = 11.sp,
+                    modifier = Modifier
+                        .padding(top = 2.dp)
+                        .clickable { onDelete(theme.id) },
                 )
             }
         }
