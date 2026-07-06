@@ -41,6 +41,10 @@ data class VoiceSettings(
     val inputVolumePercent: Int,   // mic, 0..100
     /** Game↔Voice mix, 0 = all game / 50 = even / 100 = all voice. Owns voice loudness + game ducking. */
     val audioBalance: Int,
+    /** Push-to-talk: when on, the mic is closed until held (via the overlay or a controller button). */
+    val pushToTalk: Boolean,
+    /** Show the floating hold-to-talk overlay button (only relevant while [pushToTalk] is on). */
+    val pttOverlay: Boolean,
 )
 
 /**
@@ -69,6 +73,8 @@ class DiscordVoiceController @Inject constructor(
     private val agcKey = booleanPreferencesKey("discord_voice_agc")
     private val inputVolKey = intPreferencesKey("discord_voice_input_volume")
     private val balanceKey = intPreferencesKey("discord_voice_audio_balance")
+    private val pttKey = booleanPreferencesKey("discord_voice_push_to_talk")
+    private val pttOverlayKey = booleanPreferencesKey("discord_voice_ptt_overlay")
 
     private val audioManager by lazy { context.getSystemService(Context.AUDIO_SERVICE) as AudioManager }
     // The user's media (game) volume at join time, so ducking is relative and reversible. Null = not
@@ -114,21 +120,43 @@ class DiscordVoiceController @Inject constructor(
         applyBalance(b)
     }
 
+    /** Enable/disable push-to-talk. When on the mic is closed until [setPttActive] is held. */
+    suspend fun setPushToTalk(on: Boolean) {
+        context.pfpDataStore.edit { it[pttKey] = on }
+        applyAudioMode(on)
+    }
+
+    /** Show/hide the floating hold-to-talk overlay button. */
+    suspend fun setPttOverlay(on: Boolean) {
+        context.pfpDataStore.edit { it[pttOverlayKey] = on }
+    }
+
+    /** In PTT mode, open (held) / close (released) the mic. Called by the overlay + controller button. */
+    suspend fun setPttActive(active: Boolean) = sessionActivator.setPttActive(active)
+
+    private suspend fun applyAudioMode(pushToTalk: Boolean) {
+        sessionActivator.setAudioMode(if (pushToTalk) MODE_PTT else MODE_VAD)
+        if (pushToTalk) sessionActivator.setPttReleaseDelay(PTT_RELEASE_MS)
+    }
+
     /** Step the mic volume through preset levels, wrapping (controller-friendly cycle row). */
     suspend fun cycleInputVolume() = setInputVolume(nextStep(settings().inputVolumePercent, INPUT_VOLUME_STEPS))
 
     /** Step the Game↔Voice balance through preset levels, wrapping. */
     suspend fun cycleAudioBalance() = setAudioBalance(nextStep(settings().audioBalance, BALANCE_STEPS))
 
-    // ── Room ────────────────────────────────────────────────────────────────────────
-    /** Join the shared room for [code]. @return false when offline or the join fails (never blocks forever). */
-    suspend fun join(code: String): Boolean {
+    // ── Lobbies ───────────────────────────────────────────────────────────────────
+    /** Create a fresh private lobby (unique secret) and host it. @return false when offline / failed. */
+    suspend fun createLobby(): Boolean = joinRaw(SECRET_PREFIX + java.util.UUID.randomUUID())
+
+    /** Join a lobby by an explicit code (namespaced). @return false when offline / failed. */
+    suspend fun join(code: String): Boolean = joinRaw(roomSecret(code))
+
+    // Enter a lobby by its full SDK secret, capturing the media baseline + applying audio settings.
+    private suspend fun joinRaw(secret: String): Boolean {
         if (!networkMonitor.isOnline()) return false
-        val joined = sessionActivator.joinVoice(roomSecret(code))
-        if (joined) {
-            mediaBaseline = runCatching { audioManager.getStreamVolume(AudioManager.STREAM_MUSIC) }.getOrNull()
-            applyAll(settings())   // push the saved audio settings onto the fresh call
-        }
+        val joined = sessionActivator.joinVoice(secret)
+        if (joined) applyAudioSettings()
         return joined
     }
 
@@ -136,6 +164,39 @@ class DiscordVoiceController @Inject constructor(
     suspend fun leave() {
         restoreMediaVolume()
         sessionActivator.leaveVoice()
+    }
+
+    /**
+     * Push the saved audio settings onto the current call and capture the media baseline. Call this
+     * on entering a lobby by ANY path — join, invite-accept, or a Discord-app Join — since those last
+     * two enter the lobby natively and would otherwise start with the SDK's default-off processing.
+     */
+    suspend fun applyAudioSettings() {
+        if (mediaBaseline == null) {
+            mediaBaseline = runCatching { audioManager.getStreamVolume(AudioManager.STREAM_MUSIC) }.getOrNull()
+        }
+        applyAll(settings())
+    }
+
+    // ── Invites & join requests ───────────────────────────────────────────────────
+    /** Invite a friend (by Discord user id) to the current lobby. */
+    suspend fun inviteFriend(userId: String) =
+        sessionActivator.inviteFriend(userId, INVITE_MESSAGE)
+
+    /** Ask to join a friend's lobby (they approve). */
+    suspend fun askToJoin(userId: String) = sessionActivator.sendJoinRequest(userId)
+
+    /** Pending invites (friends inviting you) + join requests (people asking into your lobby). */
+    suspend fun invites() = sessionActivator.pendingInvites()
+
+    suspend fun acceptInvite(index: Int) = sessionActivator.acceptInvite(index)
+    suspend fun approveJoinRequest(index: Int) = sessionActivator.approveJoinRequest(index)
+    suspend fun dismissInvite(index: Int) = sessionActivator.dismissInvite(index)
+
+    /** If the user accepted a Join from the Discord app, enter that lobby. @return true if we joined. */
+    suspend fun checkPendingJoin(): Boolean {
+        val secret = sessionActivator.consumePendingJoin() ?: return false
+        return joinRaw(secret)
     }
 
     /** Mute or unmute the local mic for the whole call. */
@@ -152,6 +213,7 @@ class DiscordVoiceController @Inject constructor(
         sessionActivator.setInputVolume(s.inputVolumePercent.toFloat())
         sessionActivator.setVadThreshold(s.micSensitivity.automatic, s.micSensitivity.threshold)
         applyBalance(s.audioBalance)
+        applyAudioMode(s.pushToTalk)
     }
 
     // Voice side: set Discord's output volume from the balance (per-app, always safe).
@@ -183,6 +245,8 @@ class DiscordVoiceController @Inject constructor(
         automaticGainControl = p[agcKey] ?: true,
         inputVolumePercent = p[inputVolKey] ?: 100,
         audioBalance = p[balanceKey] ?: 50,
+        pushToTalk = p[pttKey] ?: false,
+        pttOverlay = p[pttOverlayKey] ?: true,
     )
 
     // Voice output %: 30 at all-game → 100 centred → 200 at all-voice (Discord's 0..200 range).
@@ -201,7 +265,12 @@ class DiscordVoiceController @Inject constructor(
     companion object {
         const val DEFAULT_ROOM = "party"
         private const val SECRET_PREFIX = "pfp-voice-"
+        private const val INVITE_MESSAGE = "Join my Playfield Portal voice room"
         private val INPUT_VOLUME_STEPS = listOf(0, 25, 50, 75, 100)
         private val BALANCE_STEPS = listOf(0, 25, 50, 75, 100)
+        // discordpp::AudioModeType: MODE_VAD = 1 (open mic), MODE_PTT = 2 (push-to-talk).
+        private const val MODE_VAD = 1
+        private const val MODE_PTT = 2
+        private const val PTT_RELEASE_MS = 250
     }
 }
