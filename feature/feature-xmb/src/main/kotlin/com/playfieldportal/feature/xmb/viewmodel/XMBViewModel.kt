@@ -4432,6 +4432,9 @@ class XMBViewModel @Inject constructor(
 
     fun onCategorySelected(index: Int) {
         if (index != _uiState.value.selectedCategoryIndex) menuSound.play(MenuSound.SYSTEM_BROWSE)
+        // Leaving the Social section (any path) must disarm a pending PTT-button capture, or a later
+        // button press elsewhere would be bound as the PTT button.
+        if (_uiState.value.capturingPttKey) cancelPttCapture()
         val prev = _uiState.value
         // Remember each category's cursor so moving away and back restores your spot instead of
         // snapping to the first item. Left/Right is locked while drilled in, so the saved index is
