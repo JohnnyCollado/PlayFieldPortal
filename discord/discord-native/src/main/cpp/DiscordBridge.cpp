@@ -138,6 +138,13 @@ void updatePresence() {
 // identically.
 void enterLobby(const std::string& secret, std::function<void(uint64_t)> onDone) {
     if (!gClient) { if (onDone) onDone(0); return; }
+    // Idempotent: if we're already in this exact lobby with a live call, don't re-enter. Accepting an
+    // invite can trigger enterLobby twice (the UI accept + the SDK's ActivityJoin callback the poll
+    // consumes); a second entry would hit the null-Call path below.
+    if (gInLobby && gLobbySecret == secret && gCall) {
+        if (onDone) onDone(gLobbyId.load());
+        return;
+    }
     gClient->CreateOrJoinLobby(secret, [secret, onDone](discordpp::ClientResult result, uint64_t lobbyId) {
         if (!result.Successful()) { if (onDone) onDone(0); return; }
         gLobbyId.store(lobbyId);
@@ -150,17 +157,22 @@ void enterLobby(const std::string& secret, std::function<void(uint64_t)> onDone)
         updatePresence();
         // Audio processing (Krisp/echo/AGC/volumes/VAD) is default-off in the SDK; the Kotlin
         // controller applies the saved Voice Settings right after entry.
+        // StartCall returns a null Call when we're already in this voice channel — calling methods on
+        // it asserts (state_ != Owned) and aborts. Fall back to the live Call and skip if still invalid.
         discordpp::Call call = gClient->StartCall(lobbyId);
-        call.SetStatusChangedCallback(
-            [](discordpp::Call::Status status, discordpp::Call::Error /*e*/, int32_t /*d*/) {
-                gCallStatus.store(static_cast<int>(status));
+        if (!call) call = gClient->GetCall(lobbyId);
+        if (call) {
+            call.SetStatusChangedCallback(
+                [](discordpp::Call::Status status, discordpp::Call::Error /*e*/, int32_t /*d*/) {
+                    gCallStatus.store(static_cast<int>(status));
+                });
+            call.SetSpeakingStatusChangedCallback([](uint64_t userId, bool isPlayingSound) {
+                if (isPlayingSound) gSpeaking.insert(userId);
+                else gSpeaking.erase(userId);
             });
-        call.SetSpeakingStatusChangedCallback([](uint64_t userId, bool isPlayingSound) {
-            if (isPlayingSound) gSpeaking.insert(userId);
-            else gSpeaking.erase(userId);
-        });
-        gCall = std::move(call);
-        gCallStatus.store(static_cast<int>(gCall->GetStatus()));
+            gCall = std::move(call);
+            gCallStatus.store(static_cast<int>(gCall->GetStatus()));
+        }
         if (onDone) onDone(lobbyId);
     });
 }

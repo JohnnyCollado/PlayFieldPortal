@@ -5015,8 +5015,9 @@ class XMBViewModel @Inject constructor(
     }
 
     private suspend fun refreshVoiceState() {
-        // Pick up a "Join" the user tapped in the Discord app, and enter that lobby.
-        if (discordVoice.checkPendingJoin()) enterLobbyUi()
+        // Pick up a "Join" the user tapped in the Discord app — but only when we're not already in a
+        // lobby, so accepting an invite can't re-enter the same call (which the SDK aborts on).
+        if (!voiceWasInRoom && discordVoice.checkPendingJoin()) enterLobbyUi()
         val vs = discordVoice.state()
         // Apply the saved audio settings the first tick we're in a lobby — covers invite-accept and
         // Discord-app joins, which enter the lobby natively without going through create/join.
