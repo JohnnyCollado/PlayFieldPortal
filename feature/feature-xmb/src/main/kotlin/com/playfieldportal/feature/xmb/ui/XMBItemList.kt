@@ -51,6 +51,7 @@ import androidx.compose.material.icons.filled.CallEnd
 import androidx.compose.material.icons.filled.Headset
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Settings
@@ -830,9 +831,25 @@ private fun XmbItemLeadingIcon(
             }
         }
         item.type == XMBItemType.SOCIAL_VOICE ||
-            item.type == XMBItemType.SOCIAL_VOICE_JOIN -> {
+            item.type == XMBItemType.SOCIAL_VOICE_CREATE -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
                 Icon(Icons.Filled.Headset, contentDescription = null, tint = InactiveText, modifier = Modifier.size(46.dp))
+            }
+        }
+        item.type == XMBItemType.SOCIAL_VOICE_INVITE ||
+            item.type == XMBItemType.SOCIAL_VOICE_INVITES ||
+            item.type == XMBItemType.SOCIAL_VOICE_INVITE_ROW ||
+            item.type == XMBItemType.SOCIAL_VOICE_FRIEND_PICK -> {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
+                if (item.coverUri != null) {
+                    AsyncImage(
+                        model = item.coverUri,
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp).clip(CircleShape),
+                    )
+                } else {
+                    Icon(Icons.Filled.PersonAdd, contentDescription = null, tint = InactiveText, modifier = Modifier.size(44.dp))
+                }
             }
         }
         item.type == XMBItemType.SOCIAL_VOICE_MUTE -> {

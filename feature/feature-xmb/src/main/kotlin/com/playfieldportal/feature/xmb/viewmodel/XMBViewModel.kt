@@ -253,6 +253,8 @@ sealed interface SocialNav {
     data object Friends : SocialNav
     data object Voice : SocialNav
     data object VoiceSettings : SocialNav
+    data object VoiceInvites : SocialNav        // pending invites + join requests
+    data object VoiceInviteFriends : SocialNav  // pick friends to invite to your lobby
     data object ActivitySettings : SocialNav
     data object DiscordSettings : SocialNav
 }
@@ -430,6 +432,8 @@ data class XMBUiState(
     val voiceState: com.playfieldportal.core.domain.discord.DiscordVoiceState =
         com.playfieldportal.core.domain.discord.DiscordVoiceState.Idle,
     val requestMicPermission: Boolean = false,
+    // One-shot: ask the shell to open the "Draw over other apps" settings for the PTT overlay.
+    val requestOverlayPermission: Boolean = false,
 
     // ── Color-scheme picker (Settings ▸ Themes ▸ Color Scheme) ─────────────
     val colorSchemePicker: ColorSchemePickerState? = null,
@@ -538,7 +542,11 @@ enum class XMBItemType {
     SOCIAL_ACCOUNT,           // a connected Discord account (L1) — drills into the hub
     SOCIAL_FRIENDS,           // hub row → drills into the Friends list
     SOCIAL_VOICE,             // hub row → drills into the Voice room
-    SOCIAL_VOICE_JOIN,        // "Join Party" — requests mic + joins the shared room
+    SOCIAL_VOICE_CREATE,      // "Create Lobby" — requests mic + hosts a fresh private lobby
+    SOCIAL_VOICE_INVITE,      // "Invite Friends" (in a lobby) → drills into the friend picker
+    SOCIAL_VOICE_INVITES,     // "Invites (N)" → drills into pending invites + join requests
+    SOCIAL_VOICE_INVITE_ROW,  // a pending invite / join request (id = "vinv_<index>_<0|1 request>")
+    SOCIAL_VOICE_FRIEND_PICK, // a friend row in the invite picker (id = "vpick_<userId>")
     SOCIAL_VOICE_MUTE,        // mute/unmute toggle (in a room)
     SOCIAL_VOICE_SETTINGS,    // entry row → drills into Voice Settings
     SOCIAL_VOICE_TOGGLE,      // a boolean voice setting (noise/echo/agc), flipped on select
@@ -681,6 +689,7 @@ class XMBViewModel @Inject constructor(
     private val discordAuthRepository: com.playfieldportal.core.data.discord.DiscordAuthRepository,
     private val discordPresence: com.playfieldportal.core.data.discord.DiscordPresenceController,
     private val discordVoice: com.playfieldportal.core.data.discord.DiscordVoiceController,
+    private val pttOverlay: com.playfieldportal.feature.xmb.voice.PttOverlayManager,
 ) : ViewModel() {
 
     // The track list currently on screen (in display/sort order), used as the in-app player's queue
@@ -998,6 +1007,8 @@ class XMBViewModel @Inject constructor(
                     SocialNav.Friends -> _uiState.update { it.copy(currentItems = socialFriendItems()) }
                     SocialNav.Voice -> _uiState.update { it.copy(currentItems = socialVoiceItems()) }
                     SocialNav.VoiceSettings -> _uiState.update { it.copy(currentItems = socialVoiceSettingsItems()) }
+                    SocialNav.VoiceInvites -> _uiState.update { it.copy(currentItems = socialVoiceInvitesItems()) }
+                    SocialNav.VoiceInviteFriends -> _uiState.update { it.copy(currentItems = socialVoiceInviteFriendsItems()) }
                     SocialNav.ActivitySettings -> _uiState.update { it.copy(currentItems = socialActivitySettingsItems()) }
                     SocialNav.DiscordSettings -> _uiState.update { it.copy(currentItems = socialDiscordSettingsItems()) }
                 }
@@ -1778,6 +1789,8 @@ class XMBViewModel @Inject constructor(
         SocialNav.Friends          -> "friends"
         SocialNav.Voice            -> "voice"
         SocialNav.VoiceSettings    -> "voicesettings"
+        SocialNav.VoiceInvites     -> "voiceinvites"
+        SocialNav.VoiceInviteFriends -> "voiceinvitefriends"
         SocialNav.ActivitySettings -> "activity"
         SocialNav.DiscordSettings  -> "discord"
     }
@@ -2921,6 +2934,8 @@ class XMBViewModel @Inject constructor(
             SocialNav.Friends          -> "Friends"
             SocialNav.Voice            -> "Voice"
             SocialNav.VoiceSettings    -> "Voice Settings"
+            SocialNav.VoiceInvites     -> "Invites"
+            SocialNav.VoiceInviteFriends -> "Invite Friends"
             SocialNav.ActivitySettings -> "Activity Settings"
             SocialNav.DiscordSettings  -> "Discord Settings"
             SocialNav.Root             -> null
@@ -3056,7 +3071,8 @@ class XMBViewModel @Inject constructor(
                     val hub = socialHubSiblings()
                     hub to hub.indexOfFirst { it.type == XMBItemType.SOCIAL_FRIENDS }.coerceAtLeast(0)
                 }
-                SocialNav.Voice, SocialNav.VoiceSettings -> {
+                SocialNav.Voice, SocialNav.VoiceSettings,
+                SocialNav.VoiceInvites, SocialNav.VoiceInviteFriends -> {
                     val hub = socialHubSiblings()
                     hub to hub.indexOfFirst { it.type == XMBItemType.SOCIAL_VOICE }.coerceAtLeast(0)
                 }
@@ -4650,11 +4666,16 @@ class XMBViewModel @Inject constructor(
         }
         return friends.map { f ->
             XMBItem(
-                id = "friend_${f.id}",
+                // Friends in a PFP lobby get a "friendjoin_" id so selecting them asks to join.
+                id = if (f.inLobby) "friendjoin_${f.id}" else "friend_${f.id}",
                 title = f.label,
-                // Subtext under the name: what they're playing, else the presence word — prefixed by
-                // the colored presence dot in the row renderer.
-                subtitle = f.activity?.let { "Playing $it" } ?: socialPresenceLabel(f.presence).takeIf { it.isNotBlank() },
+                // Subtext under the name: in-lobby → Ask to Join prompt; else what they're playing,
+                // else the presence word — prefixed by the colored presence dot in the row renderer.
+                subtitle = when {
+                    f.inLobby -> "In a voice lobby · Ask to Join"
+                    f.activity != null -> "Playing ${f.activity}"
+                    else -> socialPresenceLabel(f.presence).takeIf { it.isNotBlank() }
+                },
                 coverUri = f.avatarUrl.takeIf { it.isNotBlank() },
                 socialStatusArgb = socialPresenceArgb(f.presence),
                 type = XMBItemType.SOCIAL_FRIEND,
@@ -4686,16 +4707,27 @@ class XMBViewModel @Inject constructor(
     // the Voice screen is open; the call itself keeps running if the user browses elsewhere.
     private var voicePollJob: kotlinx.coroutines.Job? = null
     private var voiceSelfId: String? = null
+    private var voiceWasInRoom: Boolean = false      // to apply audio settings on the entry transition
+    private var voiceInvitedIds: Set<String> = emptySet()  // friends invited this picker session
 
-    // L3 (Voice): the shared-room UI. Idle → a Join row; in a room → participants + Mute/Leave.
+    // L3 (Voice): the lobby UI. Idle → Create Lobby / Invites / Settings; in a lobby → participants,
+    // Invite Friends, Invites, Mute, Settings, Leave.
     private suspend fun socialVoiceItems(): List<XMBItem> {
         if (!discordAuthRepository.isOnline()) {
             return listOf(XMBItem(id = "voice_offline", title = "You're offline", subtitle = "Reconnect to use voice", type = XMBItemType.EMPTY))
         }
         val vs = _uiState.value.voiceState
+        val pending = discordVoice.invites().size
+        val invitesRow = XMBItem(
+            id = "voice_invites",
+            title = "Invites",
+            subtitle = if (pending == 0) "No pending invites" else "$pending waiting",
+            type = XMBItemType.SOCIAL_VOICE_INVITES,
+        )
         if (!vs.inRoom) {
             return listOf(
-                XMBItem(id = "voice_join", title = "Join Party", subtitle = "Talk with anyone in the same room", type = XMBItemType.SOCIAL_VOICE_JOIN),
+                XMBItem(id = "voice_create", title = "Create Lobby", subtitle = "Start a private room and invite friends", type = XMBItemType.SOCIAL_VOICE_CREATE),
+                invitesRow,
                 voiceSettingsEntry(),
             )
         }
@@ -4714,6 +4746,8 @@ class XMBViewModel @Inject constructor(
             listOf(XMBItem(id = "voice_status", title = note, type = XMBItemType.EMPTY))
         }
         val controls = listOf(
+            XMBItem(id = "voice_invite", title = "Invite Friends", subtitle = "Bring friends into this lobby", type = XMBItemType.SOCIAL_VOICE_INVITE),
+            invitesRow,
             XMBItem(
                 id = "voice_mute",
                 title = if (vs.selfMuted) "Unmute" else "Mute",
@@ -4724,6 +4758,44 @@ class XMBViewModel @Inject constructor(
             XMBItem(id = "voice_leave", title = "Leave Voice", subtitle = "Disconnect from the room", type = XMBItemType.SOCIAL_VOICE_LEAVE),
         )
         return body + controls
+    }
+
+    // L4 (Voice ▸ Invites): pending invites (join a friend's lobby) + join requests (approve someone).
+    private suspend fun socialVoiceInvitesItems(): List<XMBItem> {
+        val invites = discordVoice.invites()
+        if (invites.isEmpty()) {
+            return listOf(XMBItem(id = "voice_noinvites", title = "No invites", subtitle = "Invites and join requests appear here", type = XMBItemType.EMPTY))
+        }
+        return invites.map { inv ->
+            XMBItem(
+                id = "vinv_${inv.index}_${if (inv.isJoinRequest) 1 else 0}",
+                title = if (inv.isJoinRequest) "${inv.senderName} wants to join" else "Join ${inv.senderName}'s lobby",
+                subtitle = if (inv.isJoinRequest) "Select to approve" else "Select to join",
+                type = XMBItemType.SOCIAL_VOICE_INVITE_ROW,
+            )
+        }
+    }
+
+    // L4 (Voice ▸ Invite Friends): online friends to invite to your lobby.
+    private suspend fun socialVoiceInviteFriendsItems(): List<XMBItem> {
+        if (!discordAuthRepository.isOnline()) {
+            return listOf(XMBItem(id = "voice_pick_offline", title = "You're offline", subtitle = "Reconnect to invite friends", type = XMBItemType.EMPTY))
+        }
+        val online = discordAuthRepository.friends().filter { it.presence.isOnline }
+            .sortedBy { it.label.lowercase() }
+        if (online.isEmpty()) {
+            return listOf(XMBItem(id = "voice_pick_none", title = "No friends online", type = XMBItemType.EMPTY))
+        }
+        return online.map { f ->
+            val invited = f.id in voiceInvitedIds
+            XMBItem(
+                id = "vpick_${f.id}",
+                title = f.label,
+                subtitle = when { invited -> "Invited ✓"; f.inLobby -> "Already in a lobby"; else -> "Select to invite" },
+                coverUri = f.avatarUrl.takeIf { it.isNotBlank() },
+                type = XMBItemType.SOCIAL_VOICE_FRIEND_PICK,
+            )
+        }
     }
 
     private fun voiceSettingsEntry() = XMBItem(
@@ -4744,14 +4816,28 @@ class XMBViewModel @Inject constructor(
         fun cycle(id: String, title: String, value: String) = XMBItem(
             id = id, title = title, subtitle = value, type = XMBItemType.SOCIAL_VOICE_CYCLE,
         )
-        return listOf(
-            cycle("vs_sensitivity", "Mic Sensitivity", "${s.micSensitivity.label} · lower filters clicks"),
-            toggle("vs_noise", "Noise Cancellation", s.noiseCancellation, "Krisp removes background + button clicks"),
-            toggle("vs_echo", "Echo Cancellation", s.echoCancellation, "stops speaker feedback"),
-            toggle("vs_agc", "Auto Gain Control", s.automaticGainControl, "levels your mic volume"),
-            cycle("vs_input", "Mic Volume", "${s.inputVolumePercent}%"),
-            cycle("vs_balance", "Audio Balance", audioBalanceLabel(s.audioBalance)),
-        )
+        return buildList {
+            add(cycle("vs_sensitivity", "Mic Sensitivity", "${s.micSensitivity.label} · lower filters clicks"))
+            add(toggle("vs_noise", "Noise Cancellation", s.noiseCancellation, "Krisp removes background + button clicks"))
+            add(toggle("vs_echo", "Echo Cancellation", s.echoCancellation, "stops speaker feedback"))
+            add(toggle("vs_agc", "Auto Gain Control", s.automaticGainControl, "levels your mic volume"))
+            add(cycle("vs_input", "Mic Volume", "${s.inputVolumePercent}%"))
+            add(cycle("vs_balance", "Audio Balance", audioBalanceLabel(s.audioBalance)))
+            add(toggle("vs_ptt", "Push-to-Talk", s.pushToTalk, "hold to talk — mic stays closed otherwise"))
+            // Only meaningful with PTT on: the floating talk button that works over a running game.
+            if (s.pushToTalk) {
+                add(XMBItem(
+                    id = "vs_ptt_overlay",
+                    title = "Talk Button Overlay",
+                    subtitle = when {
+                        !pttOverlay.canDraw() -> "Off · needs \"Draw over other apps\""
+                        s.pttOverlay -> "On · floating hold-to-talk button"
+                        else -> "Off · hidden (use a controller button)"
+                    },
+                    type = XMBItemType.SOCIAL_VOICE_TOGGLE,
+                ))
+            }
+        }
     }
 
     // A controller-friendly "slider": Game ◀ ──●── ▶ Voice with the marker at the current mix.
@@ -4769,10 +4855,32 @@ class XMBViewModel @Inject constructor(
                 "vs_noise" -> discordVoice.setNoiseCancellation(!s.noiseCancellation)
                 "vs_echo"  -> discordVoice.setEchoCancellation(!s.echoCancellation)
                 "vs_agc"   -> discordVoice.setAutomaticGainControl(!s.automaticGainControl)
+                "vs_ptt"   -> { discordVoice.setPushToTalk(!s.pushToTalk); syncPttOverlay() }
+                "vs_ptt_overlay" -> {
+                    if (!s.pttOverlay && !pttOverlay.canDraw()) {
+                        // Enabling it but no permission yet → send the user to grant it.
+                        _uiState.update { it.copy(requestOverlayPermission = true) }
+                    } else {
+                        discordVoice.setPttOverlay(!s.pttOverlay)
+                        syncPttOverlay()
+                    }
+                }
             }
             if (_uiState.value.socialNav == SocialNav.VoiceSettings) loadItemsForCategory(currentCategory())
         }
     }
+
+    // Show the floating talk button only while in a lobby with PTT + overlay on and permission granted.
+    private fun syncPttOverlay() {
+        viewModelScope.launch {
+            val s = discordVoice.settings()
+            val wantOverlay = _uiState.value.voiceState.inRoom && s.pushToTalk && s.pttOverlay && pttOverlay.canDraw()
+            if (wantOverlay) pttOverlay.show() else pttOverlay.hide()
+        }
+    }
+
+    /** Shell has launched the overlay-permission settings — clear the one-shot flag. */
+    fun onOverlayPermissionRequested() = _uiState.update { it.copy(requestOverlayPermission = false) }
 
     private fun cycleVoiceSetting(id: String) {
         viewModelScope.launch {
@@ -4792,36 +4900,100 @@ class XMBViewModel @Inject constructor(
         if (_uiState.value.voiceState.inRoom) startVoicePolling()
     }
 
-    // Join needs the mic. Check the runtime grant; if missing, signal the shell to request it.
-    private fun requestJoinVoice() {
-        menuSound.play(MenuSound.SELECT)
+    // Entering a lobby opens the mic, so create/accept run behind the RECORD_AUDIO grant. We stash the
+    // pending action and let the shell prompt, then run it on grant.
+    private var pendingMicAction: (() -> Unit)? = null
+
+    private fun withMic(action: () -> Unit) {
         val granted = androidx.core.content.ContextCompat.checkSelfPermission(
             context, android.Manifest.permission.RECORD_AUDIO,
         ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-        if (granted) joinVoiceRoom() else _uiState.update { it.copy(requestMicPermission = true) }
+        if (granted) action() else {
+            pendingMicAction = action
+            _uiState.update { it.copy(requestMicPermission = true) }
+        }
     }
 
     /** Shell has launched the permission dialog — clear the one-shot request flag. */
     fun onMicPermissionRequested() = _uiState.update { it.copy(requestMicPermission = false) }
 
-    /** Shell delivered the RECORD_AUDIO result. Join only if the user granted it. */
+    /** Shell delivered the RECORD_AUDIO result. Run the pending action only on grant. */
     fun onMicPermissionResult(granted: Boolean) {
-        if (granted) joinVoiceRoom()
-        else Timber.i("Voice: RECORD_AUDIO denied; not joining")
+        val action = pendingMicAction
+        pendingMicAction = null
+        if (granted) action?.invoke() else Timber.i("Voice: RECORD_AUDIO denied")
     }
 
-    private fun joinVoiceRoom() {
+    private fun requestCreateLobby() {
+        menuSound.play(MenuSound.SELECT)
+        withMic { createLobbyRoom() }
+    }
+
+    private fun createLobbyRoom() {
         viewModelScope.launch {
             voiceSelfId = discordAuthRepository.currentUser()?.id
-            val joined = discordVoice.join(com.playfieldportal.core.data.discord.DiscordVoiceController.DEFAULT_ROOM)
-            if (joined) {
-                refreshVoiceState()
-                startVoicePolling()
-            } else {
-                Timber.w("Voice: join failed (offline or SDK rejected)")
+            if (discordVoice.createLobby()) enterLobbyUi()
+            else {
+                Timber.w("Voice: create lobby failed (offline or SDK rejected)")
                 if (_uiState.value.socialNav == SocialNav.Voice) loadItemsForCategory(currentCategory())
             }
         }
+    }
+
+    // After entering a lobby by any path (create/accept/Discord-join): show the room + start polling.
+    private suspend fun enterLobbyUi() {
+        if (_uiState.value.socialNav != SocialNav.Voice) openSocialView(SocialNav.Voice)
+        refreshVoiceState()
+        startVoicePolling()
+    }
+
+    private fun openVoiceInvites() {
+        menuSound.play(MenuSound.SELECT)
+        openSocialView(SocialNav.VoiceInvites)
+        startVoicePolling()   // keep the list live as invites/requests arrive
+    }
+
+    private fun openVoiceInviteFriends() {
+        menuSound.play(MenuSound.SELECT)
+        voiceInvitedIds = emptySet()
+        openSocialView(SocialNav.VoiceInviteFriends)
+    }
+
+    // A pending-invite / join-request row: accept (join their lobby) or approve (let them into ours).
+    private fun onVoiceInviteRowSelected(rowId: String) {
+        val parts = rowId.removePrefix("vinv_").split("_")
+        val index = parts.getOrNull(0)?.toIntOrNull() ?: return
+        val isRequest = parts.getOrNull(1) == "1"
+        menuSound.play(MenuSound.SELECT)
+        if (isRequest) {
+            viewModelScope.launch {
+                discordVoice.approveJoinRequest(index)
+                loadItemsForCategory(currentCategory())
+            }
+        } else {
+            withMic {
+                viewModelScope.launch {
+                    voiceSelfId = discordAuthRepository.currentUser()?.id
+                    discordVoice.acceptInvite(index)   // native enters the lobby; the poll reflects it
+                    enterLobbyUi()
+                }
+            }
+        }
+    }
+
+    private fun onVoiceFriendPick(rowId: String) {
+        val userId = rowId.removePrefix("vpick_")
+        menuSound.play(MenuSound.SELECT)
+        viewModelScope.launch {
+            discordVoice.inviteFriend(userId)
+            voiceInvitedIds = voiceInvitedIds + userId
+            if (_uiState.value.socialNav == SocialNav.VoiceInviteFriends) loadItemsForCategory(currentCategory())
+        }
+    }
+
+    private fun askToJoinFriend(friendId: String) {
+        menuSound.play(MenuSound.SELECT)
+        viewModelScope.launch { discordVoice.askToJoin(friendId) }
     }
 
     private fun toggleSelfMute() {
@@ -4833,6 +5005,8 @@ class XMBViewModel @Inject constructor(
 
     private fun leaveVoiceRoom() {
         stopVoicePolling()
+        pttOverlay.hide()
+        voiceWasInRoom = false
         viewModelScope.launch {
             discordVoice.leave()
             _uiState.update { it.copy(voiceState = com.playfieldportal.core.domain.discord.DiscordVoiceState.Idle) }
@@ -4841,12 +5015,22 @@ class XMBViewModel @Inject constructor(
     }
 
     private suspend fun refreshVoiceState() {
+        // Pick up a "Join" the user tapped in the Discord app, and enter that lobby.
+        if (discordVoice.checkPendingJoin()) enterLobbyUi()
         val vs = discordVoice.state()
+        // Apply the saved audio settings the first tick we're in a lobby — covers invite-accept and
+        // Discord-app joins, which enter the lobby natively without going through create/join.
+        if (vs.inRoom && !voiceWasInRoom) {
+            discordVoice.applyAudioSettings()
+            syncPttOverlay()   // raise the floating talk button if PTT + overlay are on
+        }
+        voiceWasInRoom = vs.inRoom
         _uiState.update { it.copy(voiceState = vs) }
-        if (_uiState.value.socialNav == SocialNav.Voice) {
+        val nav = _uiState.value.socialNav
+        if (nav == SocialNav.Voice || nav == SocialNav.VoiceInvites) {
             loadItemsForCategory(currentCategory())
-            // A participant leaving shrinks the list; keep the cursor in range so a poll can't strand
-            // the highlight past the end.
+            // A participant/invite leaving shrinks the list; keep the cursor in range so a poll can't
+            // strand the highlight past the end.
             _uiState.update { st ->
                 val max = (st.currentItems.size - 1).coerceAtLeast(0)
                 if (st.selectedItemIndex > max) st.copy(selectedItemIndex = max) else st
@@ -4854,15 +5038,15 @@ class XMBViewModel @Inject constructor(
         }
     }
 
-    // Poll the call snapshot while the Voice screen is open. Self-terminates when the user navigates
-    // away or the call ends, so the call can keep running in the background without a live poll.
+    // Poll the call + invites while the Voice or Invites screen is open. Self-terminates when the user
+    // navigates away or the call ends, so the call keeps running in the background without a live poll.
     private fun startVoicePolling() {
         if (voicePollJob?.isActive == true) return
         voicePollJob = viewModelScope.launch {
             while (isActive) {
-                if (_uiState.value.socialNav != SocialNav.Voice) break
+                val nav = _uiState.value.socialNav
+                if (nav != SocialNav.Voice && nav != SocialNav.VoiceInvites) break
                 refreshVoiceState()
-                if (!_uiState.value.voiceState.inRoom) break
                 delay(1500)
             }
         }
@@ -4874,7 +5058,7 @@ class XMBViewModel @Inject constructor(
     }
 
     private fun openSocialView(nav: SocialNav) {
-        if (nav != SocialNav.Voice) stopVoicePolling()
+        if (nav != SocialNav.Voice && nav != SocialNav.VoiceInvites) stopVoicePolling()
         navigateRememberingCursor { it.copy(socialNav = nav) }
     }
 
@@ -4884,6 +5068,8 @@ class XMBViewModel @Inject constructor(
             SocialNav.Friends          -> SocialNav.Account
             SocialNav.Voice            -> SocialNav.Account
             SocialNav.VoiceSettings    -> SocialNav.Voice
+            SocialNav.VoiceInvites     -> SocialNav.Voice
+            SocialNav.VoiceInviteFriends -> SocialNav.Voice
             SocialNav.ActivitySettings -> SocialNav.Account
             SocialNav.DiscordSettings  -> SocialNav.Account
             SocialNav.Account          -> SocialNav.Root
@@ -4963,13 +5149,21 @@ class XMBViewModel @Inject constructor(
             XMBItemType.SOCIAL_DISCORD_SETTINGS -> { menuSound.play(MenuSound.SELECT); openSocialView(SocialNav.DiscordSettings) }
             XMBItemType.SOCIAL_TOGGLE -> { menuSound.play(MenuSound.SELECT); toggleActivitySetting(item.id) }
             XMBItemType.SOCIAL_VOICE -> onVoiceHubSelected()
-            XMBItemType.SOCIAL_VOICE_JOIN -> requestJoinVoice()
+            XMBItemType.SOCIAL_VOICE_CREATE -> requestCreateLobby()
+            XMBItemType.SOCIAL_VOICE_INVITE -> openVoiceInviteFriends()
+            XMBItemType.SOCIAL_VOICE_INVITES -> openVoiceInvites()
+            XMBItemType.SOCIAL_VOICE_INVITE_ROW -> onVoiceInviteRowSelected(item.id)
+            XMBItemType.SOCIAL_VOICE_FRIEND_PICK -> onVoiceFriendPick(item.id)
             XMBItemType.SOCIAL_VOICE_MUTE -> { menuSound.play(MenuSound.SELECT); toggleSelfMute() }
             XMBItemType.SOCIAL_VOICE_SETTINGS -> { menuSound.play(MenuSound.SELECT); openSocialView(SocialNav.VoiceSettings) }
             XMBItemType.SOCIAL_VOICE_TOGGLE -> { menuSound.play(MenuSound.SELECT); toggleVoiceSetting(item.id) }
             XMBItemType.SOCIAL_VOICE_CYCLE -> { menuSound.play(MenuSound.SELECT); cycleVoiceSetting(item.id) }
             XMBItemType.SOCIAL_VOICE_LEAVE -> { menuSound.play(MenuSound.SELECT); leaveVoiceRoom() }
-            XMBItemType.SOCIAL_FRIEND -> menuSound.play(MenuSound.SELECT)  // friend profile / voice participant (no-op)
+            XMBItemType.SOCIAL_FRIEND -> {
+                menuSound.play(MenuSound.SELECT)
+                // A friend shown as "in a lobby" → tapping asks to join them; participants are no-op.
+                if (item.id.startsWith("friendjoin_")) askToJoinFriend(item.id.removePrefix("friendjoin_"))
+            }
             else -> return false
         }
         return true

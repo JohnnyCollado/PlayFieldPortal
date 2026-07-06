@@ -126,6 +126,22 @@ fun XMBShellContainer(
         }
     }
 
+    // PTT overlay needs "Draw over other apps" — open that settings screen when asked.
+    val overlayPermissionContext = androidx.compose.ui.platform.LocalContext.current
+    androidx.compose.runtime.LaunchedEffect(uiState.requestOverlayPermission) {
+        if (uiState.requestOverlayPermission) {
+            viewModel.onOverlayPermissionRequested()
+            runCatching {
+                overlayPermissionContext.startActivity(
+                    android.content.Intent(
+                        android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        android.net.Uri.parse("package:${overlayPermissionContext.packageName}"),
+                    ).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
+                )
+            }
+        }
+    }
+
     XMBShell(
         uiState = uiState,
         onCategorySelected = viewModel::onCategoryTapped,
