@@ -1,6 +1,5 @@
 package com.playfieldportal.feature.settings.viewmodel
 
-import app.cash.turbine.test
 import com.playfieldportal.feature.artwork.MetadataApiKeyProvider
 import com.playfieldportal.feature.artwork.api.ArtworkRepository
 import com.playfieldportal.feature.artwork.api.ArtworkScrapePreferences
@@ -13,10 +12,14 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -70,42 +73,51 @@ class ArtworkSettingsViewModelTest {
         igdbApi             = igdbApi,
     )
 
+    // uiState is a WhileSubscribed StateFlow, so it only reflects upstream (the credential flows +
+    // _extra) while something is collecting it. Build the VM with a background collector active so
+    // reads of uiState.value observe real updates, matching how the UI subscribes at runtime.
+    private fun TestScope.activeViewModel(): ArtworkSettingsViewModel {
+        val vm = buildViewModel()
+        backgroundScope.launch { vm.uiState.collect { } }
+        return vm
+    }
+
     // ── Credential state ──────────────────────────────────────────────────────
 
     @Test
-    fun `hasApiKey is false when sgdb key flow emits null`() = runTest {
-        viewModel = buildViewModel()
-        testDispatcher.scheduler.advanceUntilIdle()
+    fun `hasApiKey is false when sgdb key flow emits null`() = runTest(testDispatcher) {
+        viewModel = activeViewModel()
+        advanceUntilIdle()
         assertFalse(viewModel.uiState.value.hasApiKey)
     }
 
     @Test
-    fun `hasApiKey is true when sgdb key flow emits a key`() = runTest {
+    fun `hasApiKey is true when sgdb key flow emits a key`() = runTest(testDispatcher) {
         every { sgdbKeyProvider.apiKeyFlow } returns flowOf("abc123")
-        viewModel = buildViewModel()
-        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel = activeViewModel()
+        advanceUntilIdle()
         assertTrue(viewModel.uiState.value.hasApiKey)
     }
 
     @Test
-    fun `hasIgdbCredentials is true when igdb client id flow is non-blank`() = runTest {
+    fun `hasIgdbCredentials is true when igdb client id flow is non-blank`() = runTest(testDispatcher) {
         every { metadataKeyProvider.igdbClientIdFlow } returns flowOf("my-client")
-        viewModel = buildViewModel()
-        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel = activeViewModel()
+        advanceUntilIdle()
         assertTrue(viewModel.uiState.value.hasIgdbCredentials)
     }
 
     // ── Scrape modes ──────────────────────────────────────────────────────────
 
     @Test
-    fun `scrapeMissingOnly delegates to artworkRepository and shows summary`() = runTest {
+    fun `scrapeMissingOnly delegates to artworkRepository and shows summary`() = runTest(testDispatcher) {
         val finalProgress = ScrapeProgress(5, 5, 4, 1, "")
         coEvery { artworkRepository.scrapeMissingOnly(any()) } returns finalProgress
-        viewModel = buildViewModel()
-        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel = activeViewModel()
+        advanceUntilIdle()
 
         viewModel.scrapeMissingOnly()
-        testDispatcher.scheduler.advanceUntilIdle()
+        advanceUntilIdle()
 
         val state = viewModel.uiState.value
         assertFalse(state.isScraping)
@@ -114,17 +126,18 @@ class ArtworkSettingsViewModelTest {
     }
 
     @Test
-    fun `confirmRescrapeAll delegates to artworkRepository reScrapeAllGames`() = runTest {
+    fun `confirmRescrapeAll delegates to artworkRepository reScrapeAllGames`() = runTest(testDispatcher) {
         val finalProgress = ScrapeProgress(3, 3, 3, 0, "")
         coEvery { artworkRepository.reScrapeAllGames(any()) } returns finalProgress
-        viewModel = buildViewModel()
-        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel = activeViewModel()
+        advanceUntilIdle()
 
         viewModel.requestRescrapeAll()
+        advanceUntilIdle()
         assertTrue(viewModel.uiState.value.confirmRescrapeAll)
 
         viewModel.confirmRescrapeAll()
-        testDispatcher.scheduler.advanceUntilIdle()
+        advanceUntilIdle()
 
         assertFalse(viewModel.uiState.value.confirmRescrapeAll)
         assertFalse(viewModel.uiState.value.isScraping)
@@ -132,34 +145,39 @@ class ArtworkSettingsViewModelTest {
     }
 
     @Test
-    fun `cancelRescrapeAll dismisses confirmation dialog`() = runTest {
-        viewModel = buildViewModel()
+    fun `cancelRescrapeAll dismisses confirmation dialog`() = runTest(testDispatcher) {
+        viewModel = activeViewModel()
+        advanceUntilIdle()
+
         viewModel.requestRescrapeAll()
+        advanceUntilIdle()
         assertTrue(viewModel.uiState.value.confirmRescrapeAll)
+
         viewModel.cancelRescrapeAll()
+        advanceUntilIdle()
         assertFalse(viewModel.uiState.value.confirmRescrapeAll)
     }
 
     // ── Scrape preference toggles ─────────────────────────────────────────────
 
     @Test
-    fun `setPreferSteamGridDbHeroes persists to scrapePreferences`() = runTest {
-        viewModel = buildViewModel()
-        testDispatcher.scheduler.advanceUntilIdle()
+    fun `setPreferSteamGridDbHeroes persists to scrapePreferences`() = runTest(testDispatcher) {
+        viewModel = activeViewModel()
+        advanceUntilIdle()
 
         viewModel.setPreferSteamGridDbHeroes(true)
-        testDispatcher.scheduler.advanceUntilIdle()
+        advanceUntilIdle()
 
         coVerify { scrapePreferences.setPreferSteamGridDbHeroes(true) }
     }
 
     @Test
-    fun `setDownloadLogos updates state and persists as clear logos`() = runTest {
-        viewModel = buildViewModel()
-        testDispatcher.scheduler.advanceUntilIdle()
+    fun `setDownloadLogos updates state and persists as clear logos`() = runTest(testDispatcher) {
+        viewModel = activeViewModel()
+        advanceUntilIdle()
 
         viewModel.setDownloadLogos(false)
-        testDispatcher.scheduler.advanceUntilIdle()
+        advanceUntilIdle()
 
         assertFalse(viewModel.uiState.value.downloadLogos)
         coVerify { scrapePreferences.setDownloadClearLogos(false) }
@@ -168,25 +186,25 @@ class ArtworkSettingsViewModelTest {
     // ── IGDB credential test ───────────────────────────────────────────────────
 
     @Test
-    fun `testIgdbCredentials shows Valid on success`() = runTest {
+    fun `testIgdbCredentials shows Valid on success`() = runTest(testDispatcher) {
         coEvery { igdbApi.testCredentials("id", "secret") } returns true
-        viewModel = buildViewModel()
-        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel = activeViewModel()
+        advanceUntilIdle()
 
         viewModel.testIgdbCredentials("id", "secret")
-        testDispatcher.scheduler.advanceUntilIdle()
+        advanceUntilIdle()
 
         assertEquals("Valid", viewModel.uiState.value.igdbCredentialStatus)
     }
 
     @Test
-    fun `testIgdbCredentials shows failure message on invalid credentials`() = runTest {
+    fun `testIgdbCredentials shows failure message on invalid credentials`() = runTest(testDispatcher) {
         coEvery { igdbApi.testCredentials("bad", "creds") } returns false
-        viewModel = buildViewModel()
-        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel = activeViewModel()
+        advanceUntilIdle()
 
         viewModel.testIgdbCredentials("bad", "creds")
-        testDispatcher.scheduler.advanceUntilIdle()
+        advanceUntilIdle()
 
         assertTrue(viewModel.uiState.value.igdbCredentialStatus?.contains("Invalid") == true)
     }
@@ -194,60 +212,63 @@ class ArtworkSettingsViewModelTest {
     // ── Scrape progress source/asset display ──────────────────────────────────
 
     @Test
-    fun `scrape progress exposes source and asset from ScrapeProgress`() = runTest {
+    fun `scrape progress exposes source and asset from ScrapeProgress`() = runTest(testDispatcher) {
+        // Hold the scrape at the in-progress point so the reported source/asset are the current state.
+        // (A real scrape suspends on network I/O between a progress callback and completion; the mock
+        // otherwise reports and completes in one synchronous step, which the conflated uiState would
+        // collapse before any collector could observe the intermediate values.)
+        val release = CompletableDeferred<Unit>()
         coEvery { artworkRepository.scrapeMissingOnly(any()) } coAnswers {
             val callback = firstArg<(ScrapeProgress) -> Unit>()
             callback(ScrapeProgress(1, 5, 0, 0, "Doom", scrapeSource = "TheGamesDB", scrapeAsset = "Box Art"))
+            release.await()
             ScrapeProgress(5, 5, 4, 1, "")
         }
-        viewModel = buildViewModel()
-        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel = activeViewModel()
+        advanceUntilIdle()
 
-        viewModel.uiState.test {
-            viewModel.scrapeMissingOnly()
-            var found = false
-            repeat(20) {
-                val s = awaitItem()
-                if (s.scrapeSource == "TheGamesDB" && s.scrapeAsset == "Box Art") {
-                    found = true
-                    cancelAndIgnoreRemainingEvents()
-                    return@test
-                }
-                testDispatcher.scheduler.advanceTimeBy(50)
-            }
-            cancelAndIgnoreRemainingEvents()
-            assertTrue("Expected scrapeSource/scrapeAsset to propagate", found)
-        }
+        viewModel.scrapeMissingOnly()
+        advanceUntilIdle()
+
+        val inProgress = viewModel.uiState.value
+        assertTrue(inProgress.isScraping)
+        assertEquals("TheGamesDB", inProgress.scrapeSource)
+        assertEquals("Box Art", inProgress.scrapeAsset)
+
+        release.complete(Unit)
+        advanceUntilIdle()
     }
 
     // ── Dismiss helpers ───────────────────────────────────────────────────────
 
     @Test
-    fun `dismissSummary clears summary`() = runTest {
+    fun `dismissSummary clears summary`() = runTest(testDispatcher) {
         val finalProgress = ScrapeProgress(1, 1, 1, 0, "")
         coEvery { artworkRepository.scrapeMissingOnly(any()) } returns finalProgress
-        viewModel = buildViewModel()
-        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel = activeViewModel()
+        advanceUntilIdle()
 
         viewModel.scrapeMissingOnly()
-        testDispatcher.scheduler.advanceUntilIdle()
+        advanceUntilIdle()
 
         assertFalse(viewModel.uiState.value.summary.isNullOrBlank())
         viewModel.dismissSummary()
+        advanceUntilIdle()
         assertNull(viewModel.uiState.value.summary)
     }
 
     @Test
-    fun `dismissCredentialStatus clears igdb status`() = runTest {
+    fun `dismissCredentialStatus clears igdb status`() = runTest(testDispatcher) {
         coEvery { igdbApi.testCredentials(any(), any()) } returns true
-        viewModel = buildViewModel()
-        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel = activeViewModel()
+        advanceUntilIdle()
 
         viewModel.testIgdbCredentials("id", "secret")
-        testDispatcher.scheduler.advanceUntilIdle()
+        advanceUntilIdle()
         assertFalse(viewModel.uiState.value.igdbCredentialStatus.isNullOrBlank())
 
         viewModel.dismissCredentialStatus()
+        advanceUntilIdle()
         assertNull(viewModel.uiState.value.igdbCredentialStatus)
     }
 }

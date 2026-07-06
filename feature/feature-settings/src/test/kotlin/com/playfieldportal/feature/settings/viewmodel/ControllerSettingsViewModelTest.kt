@@ -1,6 +1,5 @@
 package com.playfieldportal.feature.settings.viewmodel
 
-import app.cash.turbine.test
 import com.playfieldportal.core.data.repository.ControllerLayoutRepository
 import com.playfieldportal.core.data.repository.ControllerMappingRepository
 import com.playfieldportal.core.domain.model.ConfirmBackLayout
@@ -13,7 +12,10 @@ import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -36,7 +38,6 @@ class ControllerSettingsViewModelTest {
         mappingRepository = mockk(relaxed = true)
         layoutRepository = mockk(relaxed = true)
         coEvery { layoutRepository.prefs } returns flowOf(ControllerLayoutPrefs())
-        viewModel = ControllerSettingsViewModel(mappingRepository, layoutRepository)
     }
 
     @After
@@ -44,72 +45,78 @@ class ControllerSettingsViewModelTest {
         Dispatchers.resetMain()
     }
 
+    // uiState is a WhileSubscribed StateFlow and the cycle* methods read uiState.value, so it must be
+    // collected before it reflects the repository prefs — mirror the UI by keeping a live collector.
+    private fun TestScope.buildActive(): ControllerSettingsViewModel {
+        val vm = ControllerSettingsViewModel(mappingRepository, layoutRepository)
+        backgroundScope.launch { vm.uiState.collect { } }
+        return vm
+    }
+
     @Test
-    fun `layout prefs are exposed in uiState`() = runTest {
+    fun `layout prefs are exposed in uiState`() = runTest(testDispatcher) {
         val prefs = ControllerLayoutPrefs(
             confirmBackLayout = ConfirmBackLayout.REVERSED,
             xyLayout = XYLayout.SWAPPED,
             displayType = ControllerDisplayType.PLAYSTATION,
         )
         coEvery { layoutRepository.prefs } returns flowOf(prefs)
-        viewModel = ControllerSettingsViewModel(mappingRepository, layoutRepository)
-        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel = buildActive()
+        advanceUntilIdle()
 
-        viewModel.uiState.test {
-            val state = awaitItem()
-            assertEquals(prefs, state.layoutPrefs)
-            cancelAndIgnoreRemainingEvents()
-        }
+        assertEquals(prefs, viewModel.uiState.value.layoutPrefs)
     }
 
     @Test
-    fun `cycleConfirmBackLayout switches standard to reversed`() = runTest {
-        testDispatcher.scheduler.advanceUntilIdle()
+    fun `cycleConfirmBackLayout switches standard to reversed`() = runTest(testDispatcher) {
+        viewModel = buildActive()
+        advanceUntilIdle()
         viewModel.cycleConfirmBackLayout()
-        testDispatcher.scheduler.advanceUntilIdle()
+        advanceUntilIdle()
 
         coVerify { layoutRepository.setConfirmBackLayout(ConfirmBackLayout.REVERSED) }
     }
 
     @Test
-    fun `cycleConfirmBackLayout switches reversed to standard`() = runTest {
+    fun `cycleConfirmBackLayout switches reversed to standard`() = runTest(testDispatcher) {
         coEvery { layoutRepository.prefs } returns flowOf(
             ControllerLayoutPrefs(confirmBackLayout = ConfirmBackLayout.REVERSED)
         )
-        viewModel = ControllerSettingsViewModel(mappingRepository, layoutRepository)
-        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel = buildActive()
+        advanceUntilIdle()
 
         viewModel.cycleConfirmBackLayout()
-        testDispatcher.scheduler.advanceUntilIdle()
+        advanceUntilIdle()
 
         coVerify { layoutRepository.setConfirmBackLayout(ConfirmBackLayout.STANDARD) }
     }
 
     @Test
-    fun `cycleXYLayout switches standard to swapped`() = runTest {
-        testDispatcher.scheduler.advanceUntilIdle()
+    fun `cycleXYLayout switches standard to swapped`() = runTest(testDispatcher) {
+        viewModel = buildActive()
+        advanceUntilIdle()
         viewModel.cycleXYLayout()
-        testDispatcher.scheduler.advanceUntilIdle()
+        advanceUntilIdle()
 
         coVerify { layoutRepository.setXYLayout(XYLayout.SWAPPED) }
     }
 
     @Test
-    fun `cycleXYLayout switches swapped to standard`() = runTest {
+    fun `cycleXYLayout switches swapped to standard`() = runTest(testDispatcher) {
         coEvery { layoutRepository.prefs } returns flowOf(
             ControllerLayoutPrefs(xyLayout = XYLayout.SWAPPED)
         )
-        viewModel = ControllerSettingsViewModel(mappingRepository, layoutRepository)
-        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel = buildActive()
+        advanceUntilIdle()
 
         viewModel.cycleXYLayout()
-        testDispatcher.scheduler.advanceUntilIdle()
+        advanceUntilIdle()
 
         coVerify { layoutRepository.setXYLayout(XYLayout.STANDARD) }
     }
 
     @Test
-    fun `cycleDisplayType advances through the three branded types`() = runTest {
+    fun `cycleDisplayType advances through the three branded types`() = runTest(testDispatcher) {
         val types = listOf(
             ControllerDisplayType.XBOX,
             ControllerDisplayType.NINTENDO,
@@ -120,35 +127,36 @@ class ControllerSettingsViewModelTest {
             coEvery { layoutRepository.prefs } returns flowOf(
                 ControllerLayoutPrefs(displayType = type)
             )
-            viewModel = ControllerSettingsViewModel(mappingRepository, layoutRepository)
-            testDispatcher.scheduler.advanceUntilIdle()
+            viewModel = buildActive()
+            advanceUntilIdle()
 
             viewModel.cycleDisplayType()
-            testDispatcher.scheduler.advanceUntilIdle()
+            advanceUntilIdle()
 
             coVerify { layoutRepository.setDisplayType(types[(index + 1) % types.size]) }
         }
     }
 
     @Test
-    fun `cycleDisplayType treats generic as xbox for next branded option`() = runTest {
+    fun `cycleDisplayType treats generic as xbox for next branded option`() = runTest(testDispatcher) {
         coEvery { layoutRepository.prefs } returns flowOf(
             ControllerLayoutPrefs(displayType = ControllerDisplayType.GENERIC)
         )
-        viewModel = ControllerSettingsViewModel(mappingRepository, layoutRepository)
-        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel = buildActive()
+        advanceUntilIdle()
 
         viewModel.cycleDisplayType()
-        testDispatcher.scheduler.advanceUntilIdle()
+        advanceUntilIdle()
 
         coVerify { layoutRepository.setDisplayType(ControllerDisplayType.NINTENDO) }
     }
 
     @Test
-    fun `resetToDefaults resets mappings and layout prefs`() = runTest {
-        testDispatcher.scheduler.advanceUntilIdle()
+    fun `resetToDefaults resets mappings and layout prefs`() = runTest(testDispatcher) {
+        viewModel = buildActive()
+        advanceUntilIdle()
         viewModel.resetToDefaults()
-        testDispatcher.scheduler.advanceUntilIdle()
+        advanceUntilIdle()
 
         coVerify { mappingRepository.resetToDefaults() }
         coVerify { layoutRepository.resetAllPrefs() }
