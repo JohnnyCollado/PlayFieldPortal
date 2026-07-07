@@ -7,11 +7,34 @@ All notable changes to Play Field Portal are documented here. This project follo
 
 Touch-first navigation and a consistent, theme-matched UI across every full-screen menu; a move to
 permission-free storage (ROM libraries, media and backups all go through the Storage Access
-Framework, so the app no longer needs all-files access); and a new **opt-in Discord Social section**
-(QR sign-in, friends, presence sharing).
+Framework, so the app no longer needs all-files access); a new **opt-in Discord Social section**
+(QR sign-in, friends, presence sharing); and the **custom theme system** — `.pfptheme` bundles with
+custom icons and per-theme layout, PSP `.ptf` import, and the cross-platform **Theme Studio**
+desktop companion.
 (Still `versionName 1.0.0-alpha.3` / `versionCode 3` — not yet cut as a release.)
 
 ### Added
+- **Custom themes (`.pfptheme`).** The theme system, built on a one-color cascade — pick a
+  background and one color and the wave, gradient, cursor, and icon tint all follow. Settings ▸
+  Themes now offers 12 PSP-style preset schemes (including the month-cycling *Original*), a unified
+  **icon color** for every XMB glyph, **Quick Create** (any photo becomes a theme, accent
+  auto-derived from its dominant hue), a **saved-theme library** with apply/share/delete, import of
+  real PSP **`.ptf`** themes (CXMB files are rejected with an explanation), and `.pfptheme`
+  bundle share/import. Applying a theme drives wallpaper, accent, icon color, **custom icons**, and
+  **per-theme XMB layout** in one step; choosing a preset scheme cleanly exits custom-theme mode.
+- **Custom icon slots.** Themes can replace 42 XMB glyphs — the 9 category-bar icons, the item-row
+  glyphs (folders, playlists, social rows…), and the status-strip battery/Bluetooth icons. Custom
+  icons render exactly as the author drew them; untouched slots keep the built-in art and follow
+  the theme's icon color. Platform/console icons stay uniform by design.
+- **Theme Studio (desktop companion).** A new `:studio` Compose Desktop app (Windows/Linux/macOS,
+  `gradlew :studio:run` / `run-theme-studio.bat`) for making and converting themes: a live
+  pixel-parity XMB preview with **Home / Context-menu / Fullscreen-menu** states, preset swatches +
+  hex fields + **HSV color pickers**, an **icon editor** over every themeable slot with an editable
+  template-pack export, wallpaper import with **crop presets** (PSP 480×272 / 720p / 1080p) and
+  soft-wallpaper/dark-icon legibility hints, a **crossbar alignment assist** that auto-detects the
+  dark band PSP wallpapers bake in (plus a manual position slider the launcher honors), export with
+  an embedded rendered preview, and **batch `.ptf` → `.pfptheme`** folder conversion.
+
 - **Discord Social section (opt-in).** A new **Social** column on the XMB. Sign in by scanning a
   **QR code** with your phone (OAuth2 device grant — no password typed on the handheld); tokens are
   stored **encrypted** in the Android Keystore and renewed automatically so you stay signed in.
@@ -77,6 +100,13 @@ Framework, so the app no longer needs all-files access); and a new **opt-in Disc
 - **Status-bar sort chip.** On touch, the XMB status bar's sort label becomes a tappable chip
   that cycles the sort order; on controller it stays a plain label (X / Square cycles it).
 - Icons on all detail-screen action buttons; plus (＋) glyph on "Add Apps / Add Games" rows.
+
+### Security
+- **Hostile theme files can't hurt the app.** Every external-file path (PSP `.ptf`, `.pfptheme`,
+  wallpaper/icon images — on both the launcher and Theme Studio) is bounded: 64 MB read caps at
+  every entry point, zip-bomb and zlib-inflation caps, image-dimension pre-checks before any pixel
+  allocation, icon names whitelisted against the slot registry (no path smuggling), and per-theme
+  layout values clamped so a mangled manifest can never push the XMB offscreen.
 
 ### Changed
 - **Detail screens reskinned to match the Music browser** — Game/App/Video/Photo now use the
