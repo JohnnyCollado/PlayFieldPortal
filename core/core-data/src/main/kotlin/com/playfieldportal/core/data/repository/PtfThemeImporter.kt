@@ -41,9 +41,10 @@ class PtfThemeImporter @Inject constructor(
     }
 
     suspend fun import(uri: Uri): Result = withContext(Dispatchers.IO) {
+        // Capped read: a mispicked multi-GB file fails fast instead of OOMing the app.
         val bytes = runCatching {
-            context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
-        }.getOrNull() ?: return@withContext Result.Failed("Could not read the file")
+            context.contentResolver.openInputStream(uri)?.use { with(SafeMedia) { it.readCapped() } }
+        }.getOrNull() ?: return@withContext Result.Failed("Could not read the file (or it is too large)")
 
         when (PtfParser.detect(bytes)) {
             PtfParser.Kind.NOT_PTF -> return@withContext Result.Failed("Not a PSP theme (.ptf) file")

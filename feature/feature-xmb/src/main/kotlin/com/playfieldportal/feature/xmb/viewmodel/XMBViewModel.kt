@@ -840,6 +840,7 @@ class XMBViewModel @Inject constructor(
         val accentOverride: Long?,
         val iconColor: Long?,
         val iconsStamp: Long?,
+        val layoutJson: String?,
     )
 
     private fun observeColorScheme() {
@@ -851,10 +852,11 @@ class XMBViewModel @Inject constructor(
                         accentOverride = prefs[KEY_ACCENT_OVERRIDE],
                         iconColor = prefs[KEY_ICON_COLOR],
                         iconsStamp = prefs[com.playfieldportal.core.data.repository.PfpThemeStore.KEY_THEME_ICONS_STAMP],
+                        layoutJson = prefs[com.playfieldportal.core.data.repository.PfpThemeStore.KEY_THEME_LAYOUT],
                     )
                 }
                 .distinctUntilChanged()
-                .collect { (name, accentOverride, iconColorArgb, iconsStamp) ->
+                .collect { (name, accentOverride, iconColorArgb, iconsStamp, layoutJson) ->
                     val base = if (accentOverride != null) {
                         // One accent drives everything: wave color + re-derived gradient.
                         DefaultPFPColors.withWaveTint(
@@ -874,8 +876,14 @@ class XMBViewModel @Inject constructor(
                     // Custom icon slots of the applied theme (stamp present = extracted dir
                     // has icons; the stamp value only bumps to trigger reloads).
                     val iconOverrides = if (iconsStamp != null) loadThemeIconOverrides() else emptyMap()
+                    // Per-theme XMB geometry — lenient + sanitized, so a mangled pref can
+                    // never wedge the crossbar offscreen.
+                    val layoutSpec = com.playfieldportal.themekit.XmbLayoutSpecCodec.decode(layoutJson)
+                        ?: com.playfieldportal.themekit.XmbLayoutSpec.DEFAULT
                     // One theme color across the whole XMB (PSP-authentic) — no per-category tint.
-                    _uiState.update { it.copy(themeColors = baseThemeColors, iconOverrides = iconOverrides) }
+                    _uiState.update {
+                        it.copy(themeColors = baseThemeColors, iconOverrides = iconOverrides, layoutSpec = layoutSpec)
+                    }
                 }
         }
     }
@@ -890,8 +898,10 @@ class XMBViewModel @Inject constructor(
             iconsDir.listFiles { f -> f.isFile && f.extension == "png" }.orEmpty().mapNotNull { file ->
                 val key = file.nameWithoutExtension
                 if (!com.playfieldportal.themekit.IconSlots.isValidKey(key)) return@mapNotNull null
-                runCatching { android.graphics.BitmapFactory.decodeFile(file.absolutePath) }
-                    .getOrNull()
+                // Bounds-checked decode: the extraction dir is ours, but the bundle author
+                // isn't — a 20k×20k "icon" must never reach a pixel allocation.
+                com.playfieldportal.core.data.repository.SafeMedia
+                    .decodeFileCapped(file.absolutePath, maxDimension = 2048)
                     ?.let { key to it.asImageBitmap() }
             }.toMap()
         }
@@ -5791,9 +5801,11 @@ class XMBViewModel @Inject constructor(
                     it[KEY_COLOR_SCHEME] = chosen.name
                     // Explicitly choosing a preset exits custom-theme mode — otherwise the
                     // imported-theme accent would keep overriding the pick invisibly. The
-                    // theme's custom icons leave with it (presets use the built-in glyphs).
+                    // theme's custom icons and layout leave with it (presets use the
+                    // built-in glyphs and the default geometry).
                     it.remove(KEY_ACCENT_OVERRIDE)
                     it.remove(com.playfieldportal.core.data.repository.PfpThemeStore.KEY_THEME_ICONS_STAMP)
+                    it.remove(com.playfieldportal.core.data.repository.PfpThemeStore.KEY_THEME_LAYOUT)
                 }
             }
             colorSchemeOriginal = null

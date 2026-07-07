@@ -58,8 +58,12 @@ class PfpThemeStore @Inject constructor(
 
     /** Quick Create: a photo becomes a theme — accent auto-derived from its dominant hue. */
     suspend fun createFromImage(uri: Uri, name: String? = null): SavedTheme? = withContext(Dispatchers.IO) {
+        // Capped read + bounds-checked decode: crafted headers with absurd dimensions
+        // never reach a pixel allocation.
         val bitmap = runCatching {
-            context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it) }
+            context.contentResolver.openInputStream(uri)
+                ?.use { with(SafeMedia) { it.readCapped() } }
+                ?.let { SafeMedia.decodeBitmapCapped(it) }
         }.getOrNull() ?: return@withContext null
 
         val scaled = downscale(bitmap, maxEdge = 1920)
@@ -115,10 +119,17 @@ class PfpThemeStore @Inject constructor(
         val iconColor = bundle.manifest.iconColor
             .takeIf { it != PfpThemeManifest.ICON_COLOR_AUTO }
             ?.toAccentArgbOrNull()
+        // Per-theme XMB geometry (Theme Studio alignment assist). Sanitized here AND on
+        // read so a hostile manifest can never wedge the crossbar offscreen.
+        val layoutJson = bundle.manifest.layout
+            ?.let(com.playfieldportal.themekit.XmbLayoutSpecCodec::sanitize)
+            ?.takeUnless { it == com.playfieldportal.themekit.XmbLayoutSpec.DEFAULT }
+            ?.let(com.playfieldportal.themekit.XmbLayoutSpecCodec::encode)
         context.pfpDataStore.edit { prefs ->
             if (wallpaperOk) prefs[KEY_CUSTOM_WALLPAPER] = dest.absolutePath
             if (accent != null) prefs[KEY_ACCENT_OVERRIDE] = accent else prefs.remove(KEY_ACCENT_OVERRIDE)
             if (iconColor != null) prefs[KEY_ICON_COLOR] = iconColor else prefs.remove(KEY_ICON_COLOR)
+            if (layoutJson != null) prefs[KEY_THEME_LAYOUT] = layoutJson else prefs.remove(KEY_THEME_LAYOUT)
             if (bundle.icons.isNotEmpty()) {
                 prefs[KEY_THEME_ICONS_STAMP] = System.currentTimeMillis()
             } else {
@@ -153,12 +164,12 @@ class PfpThemeStore @Inject constructor(
     /** Imports a `.pfptheme` bundle picked via SAF into the library. Null = not a valid bundle. */
     suspend fun importBundle(uri: Uri): SavedTheme? = withContext(Dispatchers.IO) {
         val bytes = runCatching {
-            context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+            context.contentResolver.openInputStream(uri)?.use { with(SafeMedia) { it.readCapped() } }
         }.getOrNull() ?: return@withContext null
         val bundle = PfpThemeCodec.read(bytes) ?: return@withContext null
         // v1 themes are wallpaper-carrying; the sidecars (and preview) regenerate from it.
         val wallpaper = bundle.wallpaper
-            ?.let { BitmapFactory.decodeByteArray(it, 0, it.size) }
+            ?.let { SafeMedia.decodeBitmapCapped(it) }
             ?: return@withContext null
         // Store the bundle VERBATIM (not re-encoded through save()) so fields this build
         // doesn't materialize — custom icons, wave style, layout spec — survive the
@@ -169,7 +180,7 @@ class PfpThemeStore @Inject constructor(
             val name = bundle.manifest.name.ifBlank { nextDefaultName() }
             File(dir, "$id.pfptheme").writeBytes(bytes)
             FileOutputStream(File(dir, "$id.wallpaper.jpg")).use { wallpaper.compress(Bitmap.CompressFormat.JPEG, 92, it) }
-            val preview = bundle.preview?.let { BitmapFactory.decodeByteArray(it, 0, it.size) }
+            val preview = bundle.preview?.let { SafeMedia.decodeBitmapCapped(it) }
                 ?: downscale(wallpaper, maxEdge = 480)
             FileOutputStream(File(dir, "$id.preview.jpg")).use { preview.compress(Bitmap.CompressFormat.JPEG, 88, it) }
             if (preview !== wallpaper) preview.recycle()
@@ -265,5 +276,11 @@ class PfpThemeStore @Inject constructor(
          * only bumps so observers reload. Removed when a theme/preset without icons applies.
          */
         val KEY_THEME_ICONS_STAMP = longPreferencesKey("theme_icons_stamp")
+
+        /**
+         * The applied theme's XmbLayoutSpec override as XmbLayoutSpecCodec JSON.
+         * Absent ⇒ the app's default geometry.
+         */
+        val KEY_THEME_LAYOUT = stringPreferencesKey("theme_layout_spec")
     }
 }
