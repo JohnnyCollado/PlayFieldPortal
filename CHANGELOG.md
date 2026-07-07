@@ -340,5 +340,8 @@ security hardening. (`versionName 1.0.0-alpha.2` / `versionCode 2`.)
 - Initial alpha: XMB launcher shell, ROM library scanning, artwork scraping, emulator launch,
   gaming categories/collections, controller mapping, and touch controls.
 
-[1.0.0-alpha.2]: https://github.com/JohnnyCollado/PlayFieldPortal/compare/v1.0.0-alpha.1...HEAD
+[Unreleased]: https://github.com/JohnnyCollado/PlayFieldPortal/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/JohnnyCollado/PlayFieldPortal/compare/v1.0.0-alpha.3...v1.0.0
+[1.0.0-alpha.3]: https://github.com/JohnnyCollado/PlayFieldPortal/compare/v1.0.0-alpha.2...v1.0.0-alpha.3
+[1.0.0-alpha.2]: https://github.com/JohnnyCollado/PlayFieldPortal/compare/v1.0.0-alpha.1...v1.0.0-alpha.2
 [1.0.0-alpha.1]: https://github.com/JohnnyCollado/PlayFieldPortal/releases/tag/v1.0.0-alpha.1
