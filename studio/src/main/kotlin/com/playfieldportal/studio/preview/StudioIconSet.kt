@@ -52,6 +52,14 @@ object StudioIconSet {
         "catbar_appstore" to "xmb/catbar_appstore.png",
         "catbar_social" to "xmb/catbar_social.xml",
         "catbar_favorites" to "xmb/catbar_favorites.png",
+        // Default memory-card art (launcher: systems/physical-media/_default.png) — one
+        // asset, four semantic slots so themes can diverge per category.
+        "item_memcard_games" to "xmb/item_memcard.png",
+        "item_memcard_music" to "xmb/item_memcard.png",
+        "item_memcard_video" to "xmb/item_memcard.png",
+        "item_memcard_photos" to "xmb/item_memcard.png",
+        // Settings rows' wrench badge (launcher: sysicon_settings).
+        "item_settings" to "xmb/item_settings.png",
         "status_battery_full" to "xmb/ic_status_battery_full.xml",
         "status_battery_high" to "xmb/ic_status_battery_high.xml",
         "status_battery_medium" to "xmb/ic_status_battery_medium.xml",

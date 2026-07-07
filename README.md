@@ -101,7 +101,7 @@ The custom-theme pipeline, built around the lightweight **`.pfptheme`** bundle f
 (one-color cascade — pick a background and a color, everything else derives):
 - **In-app theming** — 12 PSP-style presets, Quick Create from any photo (accent auto-derived
   from its dominant hue), a saved-theme library with share/import, and PSP **`.ptf` import**.
-- **Custom icon slots** — themes may replace 42 XMB glyphs (category bar, item rows, status
+- **Custom icon slots** — themes may replace 47 XMB glyphs (category bar, item rows, status
   strip); platform/console art stays uniform by design.
 - **Theme Studio** — a Compose Desktop companion app (`:studio`, Windows/Linux/macOS) with a
   live pixel-parity XMB preview (Home / Context-menu / Fullscreen-menu states), HSV color

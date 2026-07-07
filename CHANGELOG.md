@@ -24,7 +24,7 @@ desktop companion.
   explanation — and `.pfptheme`
   bundle share/import. Applying a theme drives wallpaper, accent, icon color, **custom icons**, and
   **per-theme XMB layout** in one step; choosing a preset scheme cleanly exits custom-theme mode.
-- **Custom icon slots.** Themes can replace 42 XMB glyphs — the 9 category-bar icons, the item-row
+- **Custom icon slots.** Themes can replace 47 XMB glyphs — the 9 category-bar icons, the item-row
   glyphs (folders, playlists, social rows…), and the status-strip battery/Bluetooth icons. Custom
   icons render exactly as the author drew them; untouched slots keep the built-in art and follow
   the theme's icon color. Platform/console icons stay uniform by design.

@@ -89,6 +89,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.playfieldportal.core.ui.icons.GameIconStyle
+import com.playfieldportal.core.ui.icons.LocalXmbIconOverrides
 import com.playfieldportal.core.ui.icons.PortalIcon
 import com.playfieldportal.core.ui.icons.ThemedGlyph
 import com.playfieldportal.core.ui.icons.categoryIconFor
@@ -309,6 +310,20 @@ private fun SiblingIcon(item: XMBItem, selected: Boolean) {
 // Themeable icon slot (theme-kit IconSlots key) for item types whose leading glyph is a
 // Material vector. Null = the type's glyph is not a themeable slot (console art, covers).
 // Kept in lockstep with the Theme Studio's StudioIconSet.ITEM_VECTORS defaults.
+/**
+ * Theme slot for rows that show the default memory-card art — the Music/Videos/Photos
+ * library cards and Games-side collections. Null for per-console cards (console identity
+ * stays uniform across themes) and anything with real user artwork.
+ */
+internal fun memoryCardSlotKeyFor(item: XMBItem): String? = when {
+    item.type == XMBItemType.COLLECTION -> "item_memcard_games"
+    item.type != XMBItemType.MEMORY_CARD -> null
+    item.id == "all_music" -> "item_memcard_music"
+    item.id == "all_videos" -> "item_memcard_video"
+    item.id == "all_photos" -> "item_memcard_photos"
+    else -> null
+}
+
 internal fun itemSlotKeyFor(type: XMBItemType): String? = when (type) {
     XMBItemType.ADD_ACTION -> "item_add"
     XMBItemType.VIDEO_FOLDER -> "item_video_folder"
@@ -970,7 +985,24 @@ private fun XmbItemLeadingIcon(
                 // fall back to the memory-card art instead of the blank sysicon_default.
                 val memoryCardArt = item.coverUri
                     ?: MEMORY_CARD_DEFAULT_ART.takeIf { item.type == XMBItemType.COLLECTION && collectionIconKey == null }
-                if (collectionIconKey != null) {
+                // Themes can replace the DEFAULT memory-card art per category — never a
+                // user-picked collection glyph or real cover artwork.
+                val memcardOverride = if (
+                    collectionIconKey == null &&
+                    (memoryCardArt == null || memoryCardArt.startsWith("file:///android_asset/systems/physical-media/"))
+                ) {
+                    memoryCardSlotKeyFor(item)?.let { LocalXmbIconOverrides.current[it] }
+                } else {
+                    null
+                }
+                if (memcardOverride != null) {
+                    // Custom theme icons render as authored (untinted), like every slot.
+                    Image(
+                        bitmap = memcardOverride,
+                        contentDescription = null,
+                        modifier = Modifier.size(LEADING_ICON_SIZE),
+                    )
+                } else if (collectionIconKey != null) {
                     PortalIcon(
                         painter = painterResource(categoryIconFor(collectionIconKey).resId),
                         contentDescription = null,
@@ -1052,11 +1084,20 @@ private fun XmbItemLeadingIcon(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier.width(LEADING_ICON_SLOT),
             ) {
-                PortalIcon(
-                    painter = painterResource(rememberConsoleIconId("settings")),
-                    contentDescription = null,
-                    modifier = Modifier.size(LEADING_ICON_SIZE),
-                )
+                val settingsOverride = LocalXmbIconOverrides.current["item_settings"]
+                if (settingsOverride != null) {
+                    Image(
+                        bitmap = settingsOverride,
+                        contentDescription = null,
+                        modifier = Modifier.size(LEADING_ICON_SIZE),
+                    )
+                } else {
+                    PortalIcon(
+                        painter = painterResource(rememberConsoleIconId("settings")),
+                        contentDescription = null,
+                        modifier = Modifier.size(LEADING_ICON_SIZE),
+                    )
+                }
             }
         }
         else -> Spacer(modifier = Modifier.width(12.dp))

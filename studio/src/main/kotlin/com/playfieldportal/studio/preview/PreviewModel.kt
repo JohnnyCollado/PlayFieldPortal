@@ -84,7 +84,8 @@ object SampleContent {
 
     val rows: List<Row> = listOf(
         Row("item_video_apps", "Video Apps"),
-        Row("item_video_library", "All Videos", "132 videos"),
+        // The launcher's "Videos" library row is a memory-card slot, not the library glyph.
+        Row("item_memcard_video", "Videos", "132 videos"),
         Row("item_video_recent", "Recently Watched"),
         Row("item_video_favorites", "Favorites"),
         Row("item_video_collections", "Collections"),
