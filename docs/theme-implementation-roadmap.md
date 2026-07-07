@@ -1,11 +1,20 @@
 # Theme System — Implementation Roadmap (In-App + Companion App)
 
-> **Status (2026-07-06):** Steps 1–4 SHIPPED on branch `pfp-themes-convertion`
-> (`f6078e3`..`cc7af6a`): theme-kit core (+ hostile-input hardening), one-color cascade,
-> PortalIcon unified icon tint across all XMB glyphs, 12 presets, Themes settings UI,
-> PTF import, Quick Create from photo, saved-theme library, `.pfptheme` share/import.
-> Remaining: rendered-XMB preview gate, per-theme `XmbLayoutSpec` applied from manifests,
-> Theme Studio (step 5–6).
+> **Status (2026-07-07):** Steps 1–5 SHIPPED on branch `pfp-themes-convertion`.
+> Steps 1–4 (`f6078e3`..`cc7af6a`): theme-kit core (+ hostile-input hardening), one-color
+> cascade, PortalIcon unified icon tint across all XMB glyphs, 12 presets, Themes settings
+> UI, PTF import, Quick Create from photo, saved-theme library, `.pfptheme` share/import.
+> Step 5: **Theme Studio v1** — `:studio` Compose Desktop module (Win/Linux/macOS; CMP
+> 1.6.11 on Kotlin 2.0.0): open `.ptf`/`.pfptheme`, live XMB preview canvas (shared
+> `XmbLayoutSpec` + `ColorCascade` from theme-kit), accent/icon-color/wave editing,
+> wallpaper import, batch PTF→pfptheme, export with embedded rendered preview — PLUS the
+> **custom icon-slot system** end-to-end: theme-kit `IconSlots` registry (42 slots:
+> catbar/items/status; platforms + physical media excluded), `.pfptheme` schema v2
+> `icons/<key>.png` entries, Studio icon editor + template-pack export, launcher renders
+> overrides via `LocalXmbIconOverrides`/`ThemedGlyph` (applied themes extract to
+> filesDir/theme-icons, stamp pref `theme_icons_stamp`).
+> Remaining: in-app rendered-XMB preview gate, per-theme `XmbLayoutSpec` applied from
+> manifests, Studio v2 (step 6: templates gallery, real-PSP `.ptf` export, alignment assist).
 
 Consolidated build plan from the theme research and on-device experiments. Companion docs:
 [official-ptf-template.md](official-ptf-template.md) (PTF format, verified),

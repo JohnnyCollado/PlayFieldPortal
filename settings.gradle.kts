@@ -29,6 +29,9 @@ rootProject.name = "PlayFieldPortal"
 
 include(":app")
 
+// Desktop companion (Compose Multiplatform Desktop — Windows/Linux/macOS)
+include(":studio")
+
 // Core modules
 include(":core:theme-kit")   // pure JVM: theme parsing/conversion shared with the desktop companion
 include(":core:core-common")

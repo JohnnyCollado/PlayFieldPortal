@@ -28,6 +28,9 @@ accompanist             = "0.34.0"
 media3                  = "1.4.1"
 zxing                   = "3.5.3"
 browser                 = "1.8.0"
+# Compose Multiplatform for the desktop Theme Studio. 1.6.11 is the newest release that
+# supports Kotlin 2.0.0 (via the org.jetbrains.kotlin.plugin.compose compiler plugin).
+compose-multiplatform   = "1.6.11"
 
 [libraries]
 # AndroidX Core
@@ -90,6 +93,7 @@ ktor-client-mock                = { group = "io.ktor",                name = "kt
 
 # Kotlinx
 kotlinx-coroutines-android      = { group = "org.jetbrains.kotlinx",  name = "kotlinx-coroutines-android",  version.ref = "coroutines" }
+kotlinx-coroutines-swing        = { group = "org.jetbrains.kotlinx",  name = "kotlinx-coroutines-swing",    version.ref = "coroutines" }
 kotlinx-serialization-json      = { group = "org.jetbrains.kotlinx",  name = "kotlinx-serialization-json",  version.ref = "serialization" }
 
 # Timber logging
@@ -127,3 +131,4 @@ kotlin-compose          = { id = "org.jetbrains.kotlin.plugin.compose",     vers
 kotlin-serialization    = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp                     = { id = "com.google.devtools.ksp",                  version.ref = "ksp" }
 hilt                    = { id = "com.google.dagger.hilt.android",           version.ref = "hilt" }
+jetbrains-compose       = { id = "org.jetbrains.compose",                    version.ref = "compose-multiplatform" }
