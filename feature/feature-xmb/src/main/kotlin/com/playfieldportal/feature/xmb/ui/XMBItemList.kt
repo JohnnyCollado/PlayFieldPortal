@@ -933,10 +933,20 @@ private fun XmbItemLeadingIcon(
                         modifier = Modifier.size(LEADING_ICON_SIZE),
                     )
                 } else if (memoryCardArt != null) {
-                    // User/content artwork — never tinted.
+                    // The bundled physical-media memory-card art is a white silhouette — it
+                    // follows the unified icon color like every other glyph. Real user/content
+                    // artwork (custom collection covers) stays untinted.
+                    val isBundledSilhouette =
+                        memoryCardArt.startsWith("file:///android_asset/systems/physical-media/")
                     AsyncImage(
                         model = memoryCardArt,
                         contentDescription = null,
+                        colorFilter = if (isBundledSilhouette) {
+                            androidx.compose.ui.graphics.ColorFilter.tint(
+                                LocalPFPColors.current.iconColor,
+                                androidx.compose.ui.graphics.BlendMode.SrcIn,
+                            )
+                        } else null,
                         modifier = Modifier.size(LEADING_ICON_SIZE),
                     )
                 } else {
