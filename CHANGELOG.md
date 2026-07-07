@@ -5,13 +5,35 @@ All notable changes to Play Field Portal are documented here. This project follo
 
 ## [Unreleased]
 
-Touch-first navigation and a consistent, theme-matched UI across every full-screen menu; a move to
-permission-free storage (ROM libraries, media and backups all go through the Storage Access
-Framework, so the app no longer needs all-files access); and a new **opt-in Discord Social section**
-(QR sign-in, friends, presence sharing).
+A full **user theme system** (create a theme from any photo, import real PSP `.ptf` themes, recolor
+every icon, share themes as `.pfptheme` files); touch-first navigation and a consistent,
+theme-matched UI across every full-screen menu; a move to permission-free storage (ROM libraries,
+media and backups all go through the Storage Access Framework, so the app no longer needs all-files
+access); and a new **opt-in Discord Social section** (QR sign-in, friends, presence sharing).
 (Still `versionName 1.0.0-alpha.3` / `versionCode 3` — not yet cut as a release.)
 
 ### Added
+- **Theme system.** Make the XMB yours from **Settings ▸ Themes**, built on a one-color cascade —
+  pick a background and one accent, and the wave, background gradient, cursor and icons all follow:
+  - **New Theme from Photo** — pick any picture; it becomes the wallpaper and the theme color is
+    derived from the photo's dominant hue automatically. Saved to **My Themes** and applied.
+  - **Import PSP Theme (`.ptf`)** — convert an official PSP theme you own: its wallpaper and a
+    color derived from it are applied, rendered with PFP's own icons. CXMB (`.ctf`) files are
+    detected and declined with a clear message. (Built from a byte-level study of Sony's format —
+    see `docs/official-ptf-template.md`.)
+  - **My Themes library** — saved themes as cards (thumbnail + accent chip): tap to apply,
+    **Share** (exports a `.pfptheme` file via the system share sheet) or Remove. **Import Theme
+    (`.pfptheme`)** installs a theme someone shared with you.
+  - **Icon Color** — one unified tint across every XMB icon (category bar, item glyphs, console
+    silhouettes, memory-card art), with 8 curated swatches; content imagery (game art, covers,
+    app icons) is never tinted. Changes apply live.
+  - **Color schemes: 7 → 12 presets** (PSP theme-color parity): adds Sakura Pink, Golden Amber,
+    Aqua Teal, Midnight Navy and Charcoal. Choosing a preset cleanly replaces an imported theme
+    color (previews restore it on cancel).
+- **`:core:theme-kit` module** — a pure-JVM theme parsing/conversion core (official PSP `.ptf`
+  container parser, BMP decoder, wallpaper accent derivation, `.pfptheme` codec, XMB layout spec)
+  shared with the planned desktop Theme Studio companion, with a hermetic test suite plus golden
+  tests against Sony's own example themes.
 - **Discord Social section (opt-in).** A new **Social** column on the XMB. Sign in by scanning a
   **QR code** with your phone (OAuth2 device grant — no password typed on the handheld); tokens are
   stored **encrypted** in the Android Keystore and renewed automatically so you stay signed in.
@@ -79,6 +101,13 @@ Framework, so the app no longer needs all-files access); and a new **opt-in Disc
 - Icons on all detail-screen action buttons; plus (＋) glyph on "Add Apps / Add Games" rows.
 
 ### Changed
+- **XMB geometry retuned to the authentic PSP layout**, pixel-measured against a real-PSP theme
+  capture: the category bar sits higher (icon row ≈ 25% of screen height) with the selected item
+  ≈ 50%, category icons and item glyphs are larger, item labels are bigger with a clear gap from
+  the icon column, **every** first-level item is labeled (not just the selected one and the next),
+  and the previous item rises fully clear of the category icon before dissolving. The geometry now
+  lives in a per-theme layout spec (`theme-kit`), so imported themes can eventually carry their own
+  alignment.
 - **Detail screens reskinned to match the Music browser** — Game/App/Video/Photo now use the
   translucent theme-gradient backdrop (the XMB wave shows through) with header pills, and the
   XMB foreground is hidden behind them.
@@ -130,6 +159,13 @@ Framework, so the app no longer needs all-files access); and a new **opt-in Disc
   crashed at composition).
 - Repaired 8 pre-existing unit tests that used improper Android mocks (stick `MotionEvent`
   action, launch `Intent`).
+
+### Security
+- **Theme parsers hardened against hostile files.** `.ptf` and `.pfptheme` files arrive from
+  arbitrary sources via the file picker; crafted inputs could previously crash the app: the PTF
+  wallpaper inflater now caps decompressed output (zlib bombs), the BMP decoder caps image
+  dimensions (fixing an integer-overflow that bypassed its bounds checks), and the `.pfptheme`
+  reader caps each zip entry (zip bombs). All three guards are pinned by tests.
 
 ## [1.0.0-alpha.3] — 2026-07-02
 
