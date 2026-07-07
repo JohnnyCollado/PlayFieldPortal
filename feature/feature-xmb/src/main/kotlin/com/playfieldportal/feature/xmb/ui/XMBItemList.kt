@@ -290,7 +290,7 @@ private fun SiblingIcon(item: XMBItem, selected: Boolean) {
             Icon(
                 videoGlyph,
                 contentDescription = item.title,
-                tint = Color.White.copy(alpha = if (selected) 1f else 0.5f),
+                tint = LocalPFPColors.current.iconColor.copy(alpha = if (selected) 1f else 0.5f),
                 modifier = Modifier.size(chip),
             )
         } else {
@@ -630,6 +630,9 @@ private fun XmbItemLeadingIcon(
     iconStyle: GameIconStyle,
     isSelected: Boolean,
 ) {
+    // Material glyph rows follow the theme's unified icon color, matching the tinted
+    // silhouette art (PortalIcon) — row alpha handles the unselected dimming.
+    val iconTint = LocalPFPColors.current.iconColor
     when {
         // Music tracks (and the "Now Playing" row) show a square album cover, falling back to a
         // framed music-note glyph when the track had no embedded art. The 58dp box keeps every
@@ -656,7 +659,7 @@ private fun XmbItemLeadingIcon(
                         Icon(
                             Icons.Filled.MusicNote,
                             contentDescription = null,
-                            tint = SecondaryText,
+                            tint = iconTint,
                             modifier = Modifier.size(32.dp),
                         )
                     }
@@ -672,7 +675,7 @@ private fun XmbItemLeadingIcon(
                 Icon(
                     Icons.Filled.QueueMusic,
                     contentDescription = null,
-                    tint = InactiveText,
+                    tint = iconTint,
                     modifier = Modifier.size(48.dp),
                 )
             }
@@ -686,7 +689,7 @@ private fun XmbItemLeadingIcon(
                 Icon(
                     Icons.Filled.LibraryMusic,
                     contentDescription = null,
-                    tint = InactiveText,
+                    tint = iconTint,
                     modifier = Modifier.size(48.dp),
                 )
             }
@@ -715,7 +718,7 @@ private fun XmbItemLeadingIcon(
                         Icon(
                             Icons.Filled.Movie,
                             contentDescription = null,
-                            tint = SecondaryText,
+                            tint = iconTint,
                             modifier = Modifier.size(28.dp),
                         )
                     }
@@ -732,35 +735,35 @@ private fun XmbItemLeadingIcon(
                         modifier = Modifier.size(LEADING_ICON_SIZE).clip(RoundedCornerShape(8.dp)),
                     )
                 } else {
-                    Icon(Icons.Filled.Folder, contentDescription = null, tint = InactiveText, modifier = Modifier.size(48.dp))
+                    Icon(Icons.Filled.Folder, contentDescription = null, tint = iconTint, modifier = Modifier.size(48.dp))
                 }
             }
         }
         // The static "Video Libraries" and "Android Video Apps" rows use glyphs.
         item.type == XMBItemType.VIDEO_LIBRARY -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.VideoLibrary, contentDescription = null, tint = InactiveText, modifier = Modifier.size(48.dp))
+                Icon(Icons.Filled.VideoLibrary, contentDescription = null, tint = iconTint, modifier = Modifier.size(48.dp))
             }
         }
         item.type == XMBItemType.VIDEO_RECENT -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.History, contentDescription = null, tint = InactiveText, modifier = Modifier.size(48.dp))
+                Icon(Icons.Filled.History, contentDescription = null, tint = iconTint, modifier = Modifier.size(48.dp))
             }
         }
         item.type == XMBItemType.VIDEO_FAVORITES -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.Star, contentDescription = null, tint = InactiveText, modifier = Modifier.size(48.dp))
+                Icon(Icons.Filled.Star, contentDescription = null, tint = iconTint, modifier = Modifier.size(48.dp))
             }
         }
         // "Collections" root row — umbrella for Recently Watched / Favorites / Playlists.
         item.type == XMBItemType.VIDEO_COLLECTIONS -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.Bookmarks, contentDescription = null, tint = InactiveText, modifier = Modifier.size(46.dp))
+                Icon(Icons.Filled.Bookmarks, contentDescription = null, tint = iconTint, modifier = Modifier.size(46.dp))
             }
         }
         item.type == XMBItemType.VIDEO_APPS -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.Movie, contentDescription = null, tint = InactiveText, modifier = Modifier.size(48.dp))
+                Icon(Icons.Filled.Movie, contentDescription = null, tint = iconTint, modifier = Modifier.size(48.dp))
             }
         }
         // Photos show their cached thumbnail, falling back to a photo glyph for files whose
@@ -788,7 +791,7 @@ private fun XmbItemLeadingIcon(
                         Icon(
                             Icons.Filled.Photo,
                             contentDescription = null,
-                            tint = SecondaryText,
+                            tint = iconTint,
                             modifier = Modifier.size(28.dp),
                         )
                     }
@@ -798,37 +801,37 @@ private fun XmbItemLeadingIcon(
         // An Album folder card in the Albums list — folder glyph, matching the Video libraries.
         item.type == XMBItemType.PHOTO_FOLDER -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.Folder, contentDescription = null, tint = InactiveText, modifier = Modifier.size(48.dp))
+                Icon(Icons.Filled.Folder, contentDescription = null, tint = iconTint, modifier = Modifier.size(48.dp))
             }
         }
         // The "Albums" section row at the Photo root.
         item.type == XMBItemType.PHOTO_ALBUMS -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.PhotoLibrary, contentDescription = null, tint = InactiveText, modifier = Modifier.size(48.dp))
+                Icon(Icons.Filled.PhotoLibrary, contentDescription = null, tint = iconTint, modifier = Modifier.size(48.dp))
             }
         }
         // The "Photo Apps" section row at the Photo root (distinct glyph from Albums and Camera).
         item.type == XMBItemType.PHOTO_APPS -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.Collections, contentDescription = null, tint = InactiveText, modifier = Modifier.size(48.dp))
+                Icon(Icons.Filled.Collections, contentDescription = null, tint = iconTint, modifier = Modifier.size(48.dp))
             }
         }
         // The Camera row (only present when a camera app exists).
         item.type == XMBItemType.CAMERA -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.PhotoCamera, contentDescription = null, tint = InactiveText, modifier = Modifier.size(48.dp))
+                Icon(Icons.Filled.PhotoCamera, contentDescription = null, tint = iconTint, modifier = Modifier.size(48.dp))
             }
         }
         // "Add …" / "Create …" rows across Photo / Music / Video sections.
         item.type == XMBItemType.ADD_ACTION -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.Add, contentDescription = null, tint = InactiveText, modifier = Modifier.size(44.dp))
+                Icon(Icons.Filled.Add, contentDescription = null, tint = iconTint, modifier = Modifier.size(44.dp))
             }
         }
         // Discord Social rows.
         item.type == XMBItemType.SOCIAL_ADD -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.QrCode2, contentDescription = null, tint = InactiveText, modifier = Modifier.size(44.dp))
+                Icon(Icons.Filled.QrCode2, contentDescription = null, tint = iconTint, modifier = Modifier.size(44.dp))
             }
         }
         item.type == XMBItemType.SOCIAL_ACCOUNT || item.type == XMBItemType.SOCIAL_FRIEND -> {
@@ -840,14 +843,14 @@ private fun XmbItemLeadingIcon(
                         modifier = Modifier.size(48.dp).clip(CircleShape),
                     )
                 } else {
-                    Icon(Icons.Filled.AccountCircle, contentDescription = null, tint = InactiveText, modifier = Modifier.size(48.dp))
+                    Icon(Icons.Filled.AccountCircle, contentDescription = null, tint = iconTint, modifier = Modifier.size(48.dp))
                 }
             }
         }
         item.type == XMBItemType.SOCIAL_VOICE ||
             item.type == XMBItemType.SOCIAL_VOICE_CREATE -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.Headset, contentDescription = null, tint = InactiveText, modifier = Modifier.size(46.dp))
+                Icon(Icons.Filled.Headset, contentDescription = null, tint = iconTint, modifier = Modifier.size(46.dp))
             }
         }
         item.type == XMBItemType.SOCIAL_VOICE_INVITE ||
@@ -862,46 +865,46 @@ private fun XmbItemLeadingIcon(
                         modifier = Modifier.size(48.dp).clip(CircleShape),
                     )
                 } else {
-                    Icon(Icons.Filled.PersonAdd, contentDescription = null, tint = InactiveText, modifier = Modifier.size(44.dp))
+                    Icon(Icons.Filled.PersonAdd, contentDescription = null, tint = iconTint, modifier = Modifier.size(44.dp))
                 }
             }
         }
         item.type == XMBItemType.SOCIAL_VOICE_MUTE -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.Mic, contentDescription = null, tint = InactiveText, modifier = Modifier.size(46.dp))
+                Icon(Icons.Filled.Mic, contentDescription = null, tint = iconTint, modifier = Modifier.size(46.dp))
             }
         }
         item.type == XMBItemType.SOCIAL_VOICE_SETTINGS ||
             item.type == XMBItemType.SOCIAL_VOICE_TOGGLE ||
             item.type == XMBItemType.SOCIAL_VOICE_CYCLE -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.Tune, contentDescription = null, tint = InactiveText, modifier = Modifier.size(44.dp))
+                Icon(Icons.Filled.Tune, contentDescription = null, tint = iconTint, modifier = Modifier.size(44.dp))
             }
         }
         item.type == XMBItemType.SOCIAL_VOICE_LEAVE -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.CallEnd, contentDescription = null, tint = InactiveText, modifier = Modifier.size(44.dp))
+                Icon(Icons.Filled.CallEnd, contentDescription = null, tint = iconTint, modifier = Modifier.size(44.dp))
             }
         }
         item.type == XMBItemType.SOCIAL_ACTIVITY_SETTINGS ||
             item.type == XMBItemType.SOCIAL_TOGGLE -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.SportsEsports, contentDescription = null, tint = InactiveText, modifier = Modifier.size(46.dp))
+                Icon(Icons.Filled.SportsEsports, contentDescription = null, tint = iconTint, modifier = Modifier.size(46.dp))
             }
         }
         item.type == XMBItemType.SOCIAL_DISCORD_SETTINGS -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.Settings, contentDescription = null, tint = InactiveText, modifier = Modifier.size(44.dp))
+                Icon(Icons.Filled.Settings, contentDescription = null, tint = iconTint, modifier = Modifier.size(44.dp))
             }
         }
         item.type == XMBItemType.SOCIAL_FRIENDS -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.People, contentDescription = null, tint = InactiveText, modifier = Modifier.size(46.dp))
+                Icon(Icons.Filled.People, contentDescription = null, tint = iconTint, modifier = Modifier.size(46.dp))
             }
         }
         item.type == XMBItemType.SOCIAL_SIGNOUT -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, tint = InactiveText, modifier = Modifier.size(44.dp))
+                Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, tint = iconTint, modifier = Modifier.size(44.dp))
             }
         }
         item.type == XMBItemType.ALL_GAMES ||
