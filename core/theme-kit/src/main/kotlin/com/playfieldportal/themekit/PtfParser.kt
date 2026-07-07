@@ -113,6 +113,10 @@ object PtfParser {
         return null
     }
 
+    // Real PTF wallpapers inflate to ~390KB (480x272 24-bit BMP); this cap only exists to
+    // stop decompression bombs in attacker-crafted files from OOMing the process.
+    private const val MAX_INFLATED_BYTES = 32 * 1024 * 1024
+
     private fun inflate(bytes: ByteArray, offset: Int, length: Int): ByteArray? {
         val inflater = Inflater()
         inflater.setInput(bytes, offset, length)
@@ -123,6 +127,7 @@ object PtfParser {
                 val n = inflater.inflate(buffer)
                 if (n > 0) {
                     out.write(buffer, 0, n)
+                    if (out.size() > MAX_INFLATED_BYTES) return null // decompression bomb
                 } else if (inflater.needsInput() || inflater.needsDictionary()) {
                     return null // truncated or preset-dictionary stream — not a theme wallpaper
                 }

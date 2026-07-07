@@ -28,6 +28,10 @@ object PfpThemeCodec {
     private const val ENTRY_WALLPAPER = "wallpaper.png"
     private const val ENTRY_PREVIEW = "preview.png"
 
+    // Bundles are read from untrusted SAF picks; cap each entry so a zip bomb can't OOM us.
+    // Real entries are a few hundred KB to a few MB (a 1080p PNG wallpaper).
+    private const val MAX_ENTRY_BYTES = 32 * 1024 * 1024
+
     // Lenient on unknown keys so newer bundles (higher schemaVersion additions) still open.
     private val json = Json {
         ignoreUnknownKeys = true
@@ -62,10 +66,13 @@ object PfpThemeCodec {
                 val entry = zip.nextEntry ?: break
                 when (entry.name) {
                     ENTRY_MANIFEST -> manifest = runCatching {
-                        json.decodeFromString(PfpThemeManifest.serializer(), zip.readBytes().decodeToString())
+                        json.decodeFromString(
+                            PfpThemeManifest.serializer(),
+                            (zip.readCapped() ?: return null).decodeToString(),
+                        )
                     }.getOrNull()
-                    ENTRY_WALLPAPER -> wallpaper = zip.readBytes()
-                    ENTRY_PREVIEW -> preview = zip.readBytes()
+                    ENTRY_WALLPAPER -> wallpaper = zip.readCapped() ?: return null
+                    ENTRY_PREVIEW -> preview = zip.readCapped() ?: return null
                     // Unknown entries are ignored for forward compatibility.
                 }
                 zip.closeEntry()
@@ -83,5 +90,18 @@ object PfpThemeCodec {
         putNextEntry(ZipEntry(name))
         write(data)
         closeEntry()
+    }
+
+    /** Reads the current entry, bailing (null) if it exceeds [MAX_ENTRY_BYTES] — zip-bomb guard. */
+    private fun ZipInputStream.readCapped(): ByteArray? {
+        val out = ByteArrayOutputStream()
+        val buffer = ByteArray(64 * 1024)
+        while (true) {
+            val n = read(buffer)
+            if (n < 0) break
+            out.write(buffer, 0, n)
+            if (out.size() > MAX_ENTRY_BYTES) return null
+        }
+        return out.toByteArray()
     }
 }

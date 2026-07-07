@@ -24,6 +24,11 @@ object Bmp {
     private const val FILE_HEADER_SIZE = 14
     private const val MIN_INFO_HEADER_SIZE = 40
 
+    // Sanity cap on dimensions from untrusted files. Beyond OOM protection, this keeps the
+    // Int arithmetic below (width * 3, width * height) safely inside 32 bits — absurd widths
+    // would otherwise overflow the row stride BEFORE the bounds checks run.
+    private const val MAX_DIMENSION = 8192
+
     /** Returns null when [bytes] is not an uncompressed 24-bit BMP. */
     fun decode(bytes: ByteArray): BmpImage? {
         if (bytes.size < FILE_HEADER_SIZE + MIN_INFO_HEADER_SIZE) return null
@@ -36,6 +41,7 @@ object Bmp {
         val compression = bytes.u32(30)
 
         if (width <= 0 || rawHeight == 0) return null
+        if (width > MAX_DIMENSION || rawHeight > MAX_DIMENSION || rawHeight < -MAX_DIMENSION) return null
         if (bpp != 24 || compression != 0) return null
 
         val bottomUp = rawHeight > 0
