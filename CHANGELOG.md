@@ -16,14 +16,20 @@ desktop companion.
 ### Added
 - **Custom themes (`.pfptheme`).** The theme system, built on a one-color cascade — pick a
   background and one color and the wave, gradient, cursor, and icon tint all follow. Settings ▸
-  Themes now offers 12 PSP-style preset schemes (including the month-cycling *Original*), a unified
-  **icon color** for every XMB glyph, **Quick Create** (any photo becomes a theme, accent
-  auto-derived from its dominant hue), a **saved-theme library** with apply/share/delete, import of
-  real PSP **`.ptf`** themes — wallpapers in both zlib (firmware 3.80+) and LZR compression
-  (firmware 3.70 era), via an independent LZR decompressor; CXMB files are rejected with an
-  explanation — and `.pfptheme`
+  Themes now offers 12 PSP-style preset schemes (7 → 12: adds Sakura Pink, Golden Amber, Aqua
+  Teal, Midnight Navy and Charcoal, plus the month-cycling *Original*), a unified **icon color**
+  for every XMB glyph (8 curated swatches; content imagery — game art, covers, app icons — is
+  never tinted), **Quick Create** (any photo becomes a theme, accent auto-derived from its
+  dominant hue), a **saved-theme library** with apply/share/delete, import of real PSP **`.ptf`**
+  themes — wallpapers in both zlib (firmware 3.80+) and LZR compression (firmware 3.70 era), via
+  an independent LZR decompressor; CXMB files are rejected with an explanation — and `.pfptheme`
   bundle share/import. Applying a theme drives wallpaper, accent, icon color, **custom icons**, and
   **per-theme XMB layout** in one step; choosing a preset scheme cleanly exits custom-theme mode.
+- **`:core:theme-kit` module.** A pure-JVM theme parsing/conversion core shared by the launcher
+  and the Theme Studio: official PSP `.ptf` container parser (built from a byte-level study of
+  Sony's format — see `docs/official-ptf-template.md`), BMP/GIM decoders, the LZR decompressor,
+  wallpaper accent derivation, `.pfptheme` codec, icon-slot registry, and the XMB layout spec —
+  with a hermetic test suite plus golden tests against Sony's own example themes.
 - **Custom icon slots.** Themes can replace 47 XMB glyphs — the 9 category-bar icons, the item-row
   glyphs (folders, playlists, social rows…), and the status-strip battery/Bluetooth icons. Custom
   icons render exactly as the author drew them; untouched slots keep the built-in art and follow
@@ -117,6 +123,13 @@ desktop companion.
   record chain can't expand into a decompression bomb.
 
 ### Changed
+- **XMB geometry retuned to the authentic PSP layout**, pixel-measured against a real-PSP theme
+  capture: the category bar sits higher (icon row ≈ 25% of screen height) with the selected item
+  ≈ 50%, category icons and item glyphs are larger, item labels are bigger with a clear gap from
+  the icon column, **every** first-level item is labeled (not just the selected one and the next),
+  and the previous item rises fully clear of the category icon before dissolving. The geometry now
+  lives in a per-theme layout spec (`theme-kit`), so imported themes can eventually carry their own
+  alignment.
 - **Detail screens reskinned to match the Music browser** — Game/App/Video/Photo now use the
   translucent theme-gradient backdrop (the XMB wave shows through) with header pills, and the
   XMB foreground is hidden behind them.
@@ -168,6 +181,13 @@ desktop companion.
   crashed at composition).
 - Repaired 8 pre-existing unit tests that used improper Android mocks (stick `MotionEvent`
   action, launch `Intent`).
+
+### Security
+- **Theme parsers hardened against hostile files.** `.ptf` and `.pfptheme` files arrive from
+  arbitrary sources via the file picker; crafted inputs could previously crash the app: the PTF
+  wallpaper inflater now caps decompressed output (zlib bombs), the BMP decoder caps image
+  dimensions (fixing an integer-overflow that bypassed its bounds checks), and the `.pfptheme`
+  reader caps each zip entry (zip bombs). All three guards are pinned by tests.
 
 ## [1.0.0-alpha.3] — 2026-07-02
 

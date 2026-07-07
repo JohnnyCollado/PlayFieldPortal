@@ -33,6 +33,7 @@ For a developer-oriented overview of the codebase, see **[ARCHITECTURE.md](ARCHI
   - [Artwork](#artwork)
   - [Game & app options (△)](#game--app-options-)
   - [Categories](#categories)
+  - [Themes & personalization](#themes--personalization)
   - [Settings](#settings-reference)
 - [Build & install](#build--install)
 - [Tech stack](#tech-stack)
@@ -70,7 +71,11 @@ For a developer-oriented overview of the codebase, see **[ARCHITECTURE.md](ARCHI
 | Category manager — create/rename/reorder/hide, image-based icon picker | ✅ Done |
 | Controller mapping — full XMB navigation, remappable | ✅ Done |
 | Backup & restore — `.pfpbackup` ZIP including settings | ✅ Done |
-| XMB color schemes — PSP-style presets with live preview | ✅ Done |
+| XMB color schemes — 12 PSP-style presets with live preview | ✅ Done |
+| **Theme creator** — New Theme from Photo (wallpaper + auto-derived color) + My Themes library | ✅ Done |
+| **PSP theme import** — convert official `.ptf` themes you own (wallpaper + derived color) | ✅ Done |
+| **Theme sharing** — export/import `.pfptheme` files (share sheet + in-app install) | ✅ Done |
+| **Unified icon color** — one live tint across every XMB icon, 8 swatches | ✅ Done |
 | Live status bar — Wi-Fi/cellular strength, Bluetooth, controller (auto-hide when absent) | ✅ Done |
 | Idle wave degradation (FULL → REDUCED → STATIC) + thermal awareness | ✅ Done |
 | Background tasks surfaced to the Android notification bar | ✅ Done |
@@ -80,6 +85,7 @@ For a developer-oriented overview of the codebase, see **[ARCHITECTURE.md](ARCHI
 | **Theme Studio** — desktop companion (Win/Linux/macOS): live XMB preview, icon editor, alignment assist, batch PTF conversion | ✅ Done |
 | Theme engine — `.xmbtheme` loader (Zip-Slip hardened) + built-in *Classic Blue* | ✅ Loader done |
 | Theme sound packs & boot-animation override | 🔜 Next stage |
+| Rendered-XMB theme previews (export preview gate) | 🔜 Next stage |
 | Smart / manual category builder | 🧭 Backlog |
 | Unmatched-ROM assignment UI | 🧭 Backlog |
 | Second metadata source (IGDB / TheGamesDB) | 🧭 Backlog |
@@ -110,7 +116,8 @@ The custom-theme pipeline, built around the lightweight **`.pfptheme`** bundle f
   hints, crossbar **alignment assist** (auto-detects the band PSP wallpapers bake in),
   batch `.ptf` → `.pfptheme` folder conversion, and a **PTF unpacker** that extracts every
   resource of an official theme (wallpaper, preview, GIM icons) as reference PNGs.
-- Remaining in this stage: theme **sound packs**, **boot-animation override**, and the
+- Remaining in this stage: theme **sound packs** and **boot-animation override** (shipping with
+  the re-enabled `.xmbtheme` *Install from File* — loader already implemented), and the
   in-app rendered-preview gate for exports.
 
 ### 🎯 Stage 3 — 1.0 Launch
@@ -339,6 +346,25 @@ Categories are the horizontal bar. Manage them in *Settings → Categories*:
 - **Rename**, **reorder** (move left/right), **hide/show**, or **delete** custom categories. Built-in
   categories are protected from deletion.
 
+### Themes & personalization
+
+Everything lives in **Settings → Themes**, built around one idea: *pick a background and one
+color — the whole XMB follows* (wave, background gradient, cursor and icons all derive from it).
+
+- **Color Scheme** — 12 PSP-style presets, previewed live on the real XMB behind the picker
+  (including the month-cycling *Original*).
+- **Icon Color** — one tint applied to every XMB icon (category bar, item glyphs, console
+  silhouettes, memory-card art) with 8 curated swatches; *Default* is the icons' native white.
+  Game artwork, covers and app icons are never tinted.
+- **New Theme from Photo** — pick any picture: it becomes the wallpaper and the theme color is
+  derived from the photo's dominant hue automatically. The theme is saved and applied.
+- **Import PSP Theme (`.ptf`)** — convert an official PSP theme you own: PFP extracts its
+  wallpaper and derives its color, rendered with PFP's own icons. CXMB (`.ctf`) files are
+  politely declined (they're full firmware replacements, not themes).
+- **My Themes** — your saved themes as cards (thumbnail + accent chip): tap to apply, **Share**
+  to export a `.pfptheme` via the system share sheet, or Remove. **Import Theme (`.pfptheme`)**
+  installs a theme someone shared with you.
+
 ### Settings reference
 
 The **Settings** (gear) category covers:
@@ -350,7 +376,7 @@ The **Settings** (gear) category covers:
 | Collections | Create, rename, reorder, delete collections |
 | Artwork | SteamGridDB key, re-scrape (all / missing), clear cache |
 | Emulators | Detected emulators, Custom Emulator Wizard, profile editor |
-| Themes | Color Scheme picker (live preview), unified icon color, Quick Create from photo, saved-theme library (apply/share/delete), PSP `.ptf` import, `.pfptheme` import |
+| Themes | Color schemes (12, live preview), unified icon color, Quick Create from photo, saved-theme library (apply/share/delete), PSP `.ptf` import, `.pfptheme` import |
 | Display | Icon style, wave style, custom wallpaper, landscape note |
 | Controller | View / remap gamepad bindings, help-bar toggle |
 | Backup & Restore | Export / import a `.pfpbackup` (library, settings, play history) |
@@ -420,12 +446,12 @@ Strict dependency direction: **features → core**, and `app` wires everything v
 app/                      — MainActivity (HOME launcher), PFPApplication, Hilt app module
 studio/                   — Theme Studio: Compose Desktop companion (Win/Linux/macOS theme editor)
 core/
-  theme-kit/              — Pure-JVM theme core shared with Theme Studio: PTF/BMP parsers,
+  theme-kit/              — Pure-JVM theme core shared with Theme Studio: PTF/BMP/GIM/LZR parsers,
                             .pfptheme codec, color cascade, icon-slot registry, layout spec + analyzers
   core-common/            — Shared utilities and extensions
   core-domain/            — Domain models, repository interfaces
   core-data/              — Room DB (v20), DAOs, DataStore, repository impls, seeders, migrations
-  core-ui/                — PFPTheme/PFPColors, WaveStyle, category-icon catalog (catbar_*/sysicon_*)
+  core-ui/                — PFPTheme/PFPColors, WaveStyle, PortalIcon, category-icon catalog
 feature/
   feature-xmb/            — XMB shell, XMBViewModel, game/app detail, photo viewer, gamepad, boot sequence
   feature-library/        — ROM scanner, disc-image resolver, platform extension map
