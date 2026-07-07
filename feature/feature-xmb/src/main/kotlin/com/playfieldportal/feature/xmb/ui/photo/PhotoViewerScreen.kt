@@ -59,6 +59,10 @@ private val TextPrimary = Color(0xFFEEEEEE)
 private val TextMuted = Color(0xAAEEEEEE)
 private val PanelBg = Color(0xF0101018)
 
+// Header pills float over the photo itself, so they need a real scrim: the default 12% white
+// pill fill disappears on bright images (Prev/Next were unreadable on light photos).
+private val MediaPillBg = Color(0x99000000)
+
 /**
  * PSP-style fullscreen photo viewer: just the image on black, all UI hidden until toggled.
  * A = toggle controls · B = back · Y = options · L1/R1 = previous/next · D-pad/stick pans when
@@ -206,11 +210,13 @@ fun PhotoViewerScreen(
                     label = "Back",
                     leadingGlyph = "◀",
                     onClick = { viewModel.handleGamepadAction(GamepadAction.BACK) },
+                    background = MediaPillBg,
                     modifier = Modifier.align(Alignment.TopStart).padding(16.dp),
                 )
                 XmbHeaderPill(
                     label = "Options",
                     onClick = viewModel::openOptions,
+                    background = MediaPillBg,
                     modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
                 )
                 // Touch prev/next — the counterparts of L1/R1, as header pills matching Back /
@@ -223,6 +229,7 @@ fun PhotoViewerScreen(
                         label = "Prev",
                         leadingGlyph = "‹",
                         onClick = { if (hasPrev) { onTouchInput(); viewModel.step(-1) } },
+                        background = MediaPillBg,
                         modifier = Modifier
                             .align(Alignment.CenterStart)
                             .padding(start = 16.dp)
@@ -231,6 +238,7 @@ fun PhotoViewerScreen(
                     XmbHeaderPill(
                         label = "Next  ›",
                         onClick = { if (hasNext) { onTouchInput(); viewModel.step(+1) } },
+                        background = MediaPillBg,
                         modifier = Modifier
                             .align(Alignment.CenterEnd)
                             .padding(end = 16.dp)

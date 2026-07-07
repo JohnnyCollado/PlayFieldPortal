@@ -107,13 +107,19 @@ fun XmbHeaderPill(
     modifier: Modifier = Modifier,
     leadingGlyph: String? = null,
     focused: Boolean = false,
+    /**
+     * The default faint white wash suits the themed gradient backdrops. Screens that float
+     * pills over arbitrary imagery (photo viewer) pass a dark scrim instead — a 12% white
+     * fill vanishes over bright content.
+     */
+    background: Color = Color(0x1FFFFFFF),
 ) {
     val accent = LocalPFPColors.current.accentColor
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
             .clip(RoundedCornerShape(8.dp))
-            .background(Color(0x1FFFFFFF))
+            .background(background)
             .then(
                 if (focused) Modifier.border(1.5.dp, accent.copy(alpha = 0.9f), RoundedCornerShape(8.dp))
                 else Modifier
