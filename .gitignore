@@ -22,6 +22,7 @@ keystore.properties
 *.apk
 *.aab
 /app/release/
+/dist/
 
 # Google Services (Firebase)
 google-services.json
@@ -32,6 +33,19 @@ google-services.json
 # Kotlin build cache
 .kotlin/
 
-# macOS metadata
+# OS metadata
 .DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs, temp files, and patch/merge leftovers
 *.log
+*.tmp
+*.bak
+*.rej
+replay_pid*
+
+# AI-assistant local state (the shared configs in .claude/ ARE committed;
+# per-machine permission grants are not)
+.claude/settings.local.json
+.claude/launch.json
