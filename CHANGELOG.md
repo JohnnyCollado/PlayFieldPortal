@@ -111,8 +111,10 @@ desktop companion.
 - **Hostile theme files can't hurt the app.** Every external-file path (PSP `.ptf`, `.pfptheme`,
   wallpaper/icon images — on both the launcher and Theme Studio) is bounded: 64 MB read caps at
   every entry point, zip-bomb and zlib-inflation caps, image-dimension pre-checks before any pixel
-  allocation, icon names whitelisted against the slot registry (no path smuggling), and per-theme
-  layout values clamped so a mangled manifest can never push the XMB offscreen.
+  allocation, icon names whitelisted against the slot registry (no path smuggling), per-theme
+  layout values clamped so a mangled manifest can never push the XMB offscreen, and the PTF
+  unpacker's LZR/GIM decoders bounded per record (32 MB) and in total (256 MB) so a crafted
+  record chain can't expand into a decompression bomb.
 
 ### Changed
 - **Detail screens reskinned to match the Music browser** — Game/App/Video/Photo now use the

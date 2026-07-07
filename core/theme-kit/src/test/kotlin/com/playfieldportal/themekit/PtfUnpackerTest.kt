@@ -83,6 +83,35 @@ class PtfUnpackerTest {
     }
 
     @Test
+    fun `a chain of max-size records stops at the total output budget`() {
+        // 16 records each CLAIMING the per-record 32 MB maximum (the streams are junk, so
+        // decoding fails, but the budget must count the claims): the walk has to stop once
+        // the 256 MB total is hit instead of grinding through gigabytes of expansion.
+        fun record(seq: Int): ByteArray {
+            val r = ByteArray(32 + 64)
+            r.putU32(0, seq); r.putU16(4, 5); r.putU16(6, 1)
+            r.putU32(8, 64); r.putU32(12, 32 * 1024 * 1024)
+            return r
+        }
+
+        var chain = ByteArray(0)
+        repeat(16) { chain += record(it) }
+        val descriptorOffset = 0x120
+        val dataOffset = 0x140
+        val file = ByteArray(dataOffset + chain.size)
+        file[1] = 'P'.code.toByte(); file[2] = 'T'.code.toByte(); file[3] = 'F'.code.toByte()
+        file.putU32(0x100, descriptorOffset)
+        file.putU16(descriptorOffset, 0)
+        file.putU16(descriptorOffset + 2, 3)
+        file.putU32(descriptorOffset + 4, chain.size)
+        file.putU32(descriptorOffset + 8, dataOffset)
+        chain.copyInto(file, dataOffset)
+
+        val dump = assertNotNull(PtfUnpacker.unpack(file))
+        assertEquals(8, dump.resources.size, "walk must stop at 8 x 32 MB = the 256 MB budget")
+    }
+
+    @Test
     fun `garbage and cxmb are rejected like the parser`() {
         assertNull(PtfUnpacker.unpack(ByteArray(0x200)))
         assertNull(PtfUnpacker.unpack(chainedPtf() + "/vsh/resource/x".toByteArray()))

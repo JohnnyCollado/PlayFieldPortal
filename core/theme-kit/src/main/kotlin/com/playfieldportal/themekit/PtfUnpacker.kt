@@ -34,10 +34,18 @@ object PtfUnpacker {
     private const val METHOD_LZR = 1
     private const val METHOD_ZLIB = 2
 
+    /**
+     * Total decompressed budget across ALL records. Real themes unpack to ~1 MB; each
+     * record is individually capped at 32 MB, but a crafted file could chain thousands of
+     * high-ratio records and expand a 64 MB input into gigabytes without this ceiling.
+     */
+    private const val MAX_TOTAL_OUTPUT_BYTES = 256L * 1024 * 1024
+
     /** Null when [bytes] is not an official PTF ([PtfParser.detect] semantics). */
     fun unpack(bytes: ByteArray): Dump? {
         val theme = PtfParser.parse(bytes) ?: return null
         val resources = mutableListOf<Resource>()
+        var totalOutput = 0L
 
         for (slot in theme.slots) {
             val end = (slot.dataOffset.toLong() + slot.size).coerceAtMost(bytes.size.toLong()).toInt()
@@ -52,6 +60,11 @@ object PtfUnpacker {
                 // A record that doesn't look like one ends the chain (trailing padding).
                 if (type !in 4..5 || compressed <= 0 || compressed > end - cursor - RECORD_HEADER) break
                 if (uncompressed !in 1..PtfParser.MAX_INFLATED_BYTES) break
+                totalOutput += uncompressed
+                if (totalOutput > MAX_TOTAL_OUTPUT_BYTES) {
+                    // Decompression-bomb chain: stop cleanly with what we have.
+                    return Dump(name = theme.name, firmware = theme.firmware, resources = resources)
+                }
 
                 val dataAt = cursor + RECORD_HEADER
                 val payload = when {

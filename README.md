@@ -100,14 +100,16 @@ boot logo).
 The custom-theme pipeline, built around the lightweight **`.pfptheme`** bundle format
 (one-color cascade — pick a background and a color, everything else derives):
 - **In-app theming** — 12 PSP-style presets, Quick Create from any photo (accent auto-derived
-  from its dominant hue), a saved-theme library with share/import, and PSP **`.ptf` import**.
+  from its dominant hue), a saved-theme library with share/import, and PSP **`.ptf` import**
+  (both zlib and firmware 3.70-era **LZR** wallpaper compression).
 - **Custom icon slots** — themes may replace 47 XMB glyphs (category bar, item rows, status
   strip); platform/console art stays uniform by design.
 - **Theme Studio** — a Compose Desktop companion app (`:studio`, Windows/Linux/macOS) with a
   live pixel-parity XMB preview (Home / Context-menu / Fullscreen-menu states), HSV color
   pickers, an icon editor with editable template export, wallpaper crop presets + legibility
-  hints, crossbar **alignment assist** (auto-detects the band PSP wallpapers bake in), and
-  batch `.ptf` → `.pfptheme` folder conversion.
+  hints, crossbar **alignment assist** (auto-detects the band PSP wallpapers bake in),
+  batch `.ptf` → `.pfptheme` folder conversion, and a **PTF unpacker** that extracts every
+  resource of an official theme (wallpaper, preview, GIM icons) as reference PNGs.
 - Remaining in this stage: theme **sound packs**, **boot-animation override**, and the
   in-app rendered-preview gate for exports.
 
