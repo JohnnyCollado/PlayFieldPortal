@@ -25,3 +25,15 @@
     public static **[] values();
     public static ** valueOf(java.lang.String);
 }
+
+# lifecycle-compose 2.8.x resolves its LocalLifecycleOwner by REFLECTING into
+# compose-ui's AndroidCompositionLocals_androidKt.getLocalLifecycleOwner() (backward
+# compatibility with compose-ui 1.6). The library's own consumer rule has a typo
+# (matches a ProvidableCompositionLocal[] array return type), so it never fires, R8
+# renames the method, the reflection fails, and ANY read of the lifecycle-compose
+# local crashes release builds with "CompositionLocal LocalLifecycleOwner not
+# present" (debug is unaffected — nothing is renamed there). Seen on the Discord QR
+# login screen. Keep the real signature so the bridge works.
+-keep public class androidx.compose.ui.platform.AndroidCompositionLocals_androidKt {
+    public static androidx.compose.runtime.ProvidableCompositionLocal getLocalLifecycleOwner();
+}
