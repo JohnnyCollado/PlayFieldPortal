@@ -5,6 +5,7 @@ import com.playfieldportal.studio.io.ConvertOutcome
 import com.playfieldportal.studio.io.ImageCodecs
 import com.playfieldportal.studio.io.PtfConversion
 import com.playfieldportal.themekit.IconSlots
+import com.playfieldportal.themekit.XmbLayoutSpecCodec
 import com.playfieldportal.themekit.PfpThemeBundle
 import com.playfieldportal.themekit.PfpThemeCodec
 import com.playfieldportal.themekit.PfpThemeManifest
@@ -26,6 +27,28 @@ sealed interface IconColorChoice {
     data class Custom(val argb: Int) : IconColorChoice
 }
 
+/** Which XMB surface the preview canvas renders. */
+enum class PreviewMode(val label: String) {
+    HOME("Home"),
+    CONTEXT_MENU("Menu"),
+    FULLSCREEN_MENU("Fullscreen"),
+}
+
+/** Wallpaper crop/scale presets offered at import time. */
+enum class WallpaperPreset(val label: String, val width: Int, val height: Int) {
+    PSP("PSP (480×272)", 480, 272),
+    HD("HD (1280×720)", 1280, 720),
+    FULL_HD("Full HD (1920×1080)", 1920, 1080),
+    ORIGINAL("Keep original", 0, 0),
+}
+
+/** A chosen wallpaper waiting for the user to pick a crop preset. */
+data class PendingWallpaper(
+    val source: java.awt.image.BufferedImage,
+    val fileName: String,
+    val thumbnail: androidx.compose.ui.graphics.ImageBitmap?,
+)
+
 /** Modal feedback the shell renders as dialogs. */
 sealed interface StudioDialog {
     /** `.ctf`/CXMB rejection with the "why" — these replace PSP firmware files, not themes. */
@@ -42,6 +65,17 @@ data class StudioState(
     val wallpaperPng: ByteArray? = null,
     val wallpaperBitmap: ImageBitmap? = null,
     val wallpaperFileName: String? = null,
+    /** True when the wallpaper's label band is busy enough to threaten legibility. */
+    val wallpaperBusy: Boolean = false,
+    /** Wallpaper chosen but not yet cropped — drives the crop-preset dialog. */
+    val pendingWallpaper: PendingWallpaper? = null,
+    /**
+     * Per-theme XMB geometry. The full spec is carried (not just the fields the UI edits)
+     * so opened manifests round-trip hand-authored fields untouched.
+     */
+    val layout: com.playfieldportal.themekit.XmbLayoutSpec = com.playfieldportal.themekit.XmbLayoutSpec.DEFAULT,
+    /** Which surface the preview shows — accent changes tint menus too. */
+    val previewMode: PreviewMode = PreviewMode.HOME,
     /** Custom icon slots: IconSlots key → PNG bytes (what exports) ... */
     val iconOverrides: Map<String, ByteArray> = emptyMap(),
     /** ... and the decoded bitmaps the preview/editor draw. Kept in lockstep with [iconOverrides]. */
@@ -74,8 +108,44 @@ class StudioViewModel(private val scope: CoroutineScope) {
     fun setAccent(argb: Int) = _state.update { it.copy(accentArgb = argb) }
     fun setIconColor(choice: IconColorChoice) = _state.update { it.copy(iconColor = choice) }
     fun setWaveStyle(style: String) = _state.update { it.copy(waveStyle = style) }
+    fun setPreviewMode(mode: PreviewMode) = _state.update { it.copy(previewMode = mode) }
     fun dismissDialog() = _state.update { it.copy(dialog = null) }
     fun clearStatus() = _state.update { it.copy(statusMessage = null) }
+
+    // ── Layout (fit the crossbar to the wallpaper) ───────────────────────────
+
+    fun setBarTopFraction(fraction: Float) = _state.update {
+        it.copy(
+            layout = it.layout.copy(
+                barTopFraction = fraction.coerceIn(
+                    XmbLayoutSpecCodec.BAR_TOP_MIN,
+                    XmbLayoutSpecCodec.BAR_TOP_MAX,
+                ),
+            ),
+        )
+    }
+
+    fun resetLayout() = _state.update { it.copy(layout = com.playfieldportal.themekit.XmbLayoutSpec.DEFAULT) }
+
+    /** Alignment assist: find the wallpaper's baked-in cross-band and prefill the slider. */
+    fun detectBarTop() = runBusy {
+        val png = _state.value.wallpaperPng ?: return@runBusy
+        val image = ImageCodecs.decodeImage(png) ?: return@runBusy
+        // Fractions are scale-invariant, so the bounded accent-sampling copy is plenty.
+        val detected = com.playfieldportal.themekit.CrossBandDetector.detectBarTopFraction(
+            ImageCodecs.toBmpImage(image),
+        )
+        if (detected != null) {
+            _state.update {
+                it.copy(
+                    layout = it.layout.copy(barTopFraction = detected),
+                    statusMessage = "Crossbar detected at ${(detected * 100).toInt()}% of the wallpaper",
+                )
+            }
+        } else {
+            _state.update { it.copy(statusMessage = "No crossbar band found in this wallpaper") }
+        }
+    }
 
     // ── Open / import ────────────────────────────────────────────────────────
 
@@ -89,7 +159,12 @@ class StudioViewModel(private val scope: CoroutineScope) {
     }
 
     private fun openPtf(file: File) = runBusy {
-        when (val outcome = PtfConversion.convert(file.readBytes(), file.name)) {
+        val bytes = com.playfieldportal.studio.io.SafeIo.readBytesCapped(file)
+        if (bytes == null) {
+            _state.update { it.copy(dialog = StudioDialog.Error("${file.name} is too large to be a theme file")) }
+            return@runBusy
+        }
+        when (val outcome = PtfConversion.convert(bytes, file.name)) {
             is ConvertOutcome.Converted -> hydrate(outcome.bundle, "Imported ${file.name}")
             ConvertOutcome.Cxmb -> _state.update { it.copy(dialog = StudioDialog.CxmbRejected) }
             is ConvertOutcome.Failed -> _state.update {
@@ -99,7 +174,12 @@ class StudioViewModel(private val scope: CoroutineScope) {
     }
 
     private fun openPfpTheme(file: File) = runBusy {
-        val bundle = PfpThemeCodec.read(file.readBytes())
+        val bytes = com.playfieldportal.studio.io.SafeIo.readBytesCapped(file)
+        if (bytes == null) {
+            _state.update { it.copy(dialog = StudioDialog.Error("${file.name} is too large to be a theme bundle")) }
+            return@runBusy
+        }
+        val bundle = PfpThemeCodec.read(bytes)
         if (bundle == null) {
             _state.update { it.copy(dialog = StudioDialog.Error("${file.name} is not a valid .pfptheme bundle")) }
         } else {
@@ -112,6 +192,10 @@ class StudioViewModel(private val scope: CoroutineScope) {
         val iconBitmaps = bundle.icons.mapNotNull { (key, png) ->
             ImageCodecs.toImageBitmap(png)?.let { key to it }
         }.toMap()
+        val wallpaperBusy = bundle.wallpaper
+            ?.let(ImageCodecs::decodeImage)
+            ?.let { com.playfieldportal.themekit.WallpaperMetrics.isBusy(ImageCodecs.toBmpImage(it)) }
+            ?: false
         _state.update {
             StudioState(
                 name = manifest.name,
@@ -129,36 +213,72 @@ class StudioViewModel(private val scope: CoroutineScope) {
                 // must not silently strip the icon from the theme on re-export.
                 iconOverrides = bundle.icons,
                 iconBitmaps = iconBitmaps,
+                wallpaperBusy = wallpaperBusy,
+                layout = manifest.layout?.let(XmbLayoutSpecCodec::sanitize)
+                    ?: com.playfieldportal.themekit.XmbLayoutSpec.DEFAULT,
                 source = manifest.source,
                 statusMessage = status,
             )
         }
     }
 
-    fun importWallpaper(file: File) = runBusy {
+    /** Step 1 of wallpaper import: load the file and open the crop-preset dialog. */
+    fun stageWallpaper(file: File) = runBusy {
         val image = ImageCodecs.loadImage(file)
         if (image == null) {
             _state.update { it.copy(dialog = StudioDialog.Error("${file.name} is not a readable image")) }
             return@runBusy
         }
-        val png = ImageCodecs.toPngBytes(image)
-        val bitmap = ImageCodecs.toImageBitmap(png)
-        // A fresh wallpaper usually wants a matching accent — pre-fill from its dominant
-        // hue exactly like Quick Create, keeping the user's step optional.
-        val derived = com.playfieldportal.themekit.AccentDeriver.deriveAccent(ImageCodecs.toBmpImage(image))
+        stage(image, file.name)
+    }
+
+    /** Re-crop the wallpaper already embedded in the theme. */
+    fun restageEmbeddedWallpaper() = runBusy {
+        val current = _state.value
+        val image = current.wallpaperPng?.let(ImageCodecs::decodeImage) ?: return@runBusy
+        stage(image, current.wallpaperFileName ?: "wallpaper")
+    }
+
+    private fun stage(image: java.awt.image.BufferedImage, name: String) {
         _state.update {
             it.copy(
+                pendingWallpaper = PendingWallpaper(
+                    source = image,
+                    fileName = name,
+                    thumbnail = ImageCodecs.toImageBitmap(ImageCodecs.toPngBytes(ImageCodecs.thumbnail(image, 320))),
+                ),
+            )
+        }
+    }
+
+    fun cancelWallpaperImport() = _state.update { it.copy(pendingWallpaper = null) }
+
+    /** Step 2: crop/scale to the chosen preset, then derive accent + legibility hint. */
+    fun confirmWallpaper(preset: WallpaperPreset) = runBusy {
+        val pending = _state.value.pendingWallpaper ?: return@runBusy
+        val image = if (preset == WallpaperPreset.ORIGINAL) pending.source
+        else ImageCodecs.centerCropScale(pending.source, preset.width, preset.height)
+        val png = ImageCodecs.toPngBytes(image)
+        val bitmap = ImageCodecs.toImageBitmap(png)
+        val bmp = ImageCodecs.toBmpImage(image)
+        // A fresh wallpaper usually wants a matching accent — pre-fill from its dominant
+        // hue exactly like Quick Create, keeping the user's step optional.
+        val derived = com.playfieldportal.themekit.AccentDeriver.deriveAccent(bmp)
+        _state.update {
+            it.copy(
+                pendingWallpaper = null,
                 wallpaperPng = png,
                 wallpaperBitmap = bitmap,
-                wallpaperFileName = file.name,
+                wallpaperFileName = pending.fileName,
+                wallpaperBusy = com.playfieldportal.themekit.WallpaperMetrics.isBusy(bmp),
                 accentArgb = derived ?: it.accentArgb,
-                statusMessage = "Wallpaper: ${file.name}",
+                statusMessage = "Wallpaper: ${pending.fileName} (${image.width}×${image.height})",
             )
         }
     }
 
     fun clearWallpaper() = _state.update {
-        it.copy(wallpaperPng = null, wallpaperBitmap = null, wallpaperFileName = null)
+        it.copy(wallpaperPng = null, wallpaperBitmap = null, wallpaperFileName = null, wallpaperBusy = false)
     }
 
     // ── Icon slots ───────────────────────────────────────────────────────────
@@ -199,6 +319,8 @@ class StudioViewModel(private val scope: CoroutineScope) {
                 is IconColorChoice.Custom -> PtfConversion.toHexRgb(c.argb)
             },
             waveStyle = state.waveStyle,
+            // Only carry a layout when the user actually moved something off the default.
+            layout = state.layout.takeUnless { it == com.playfieldportal.themekit.XmbLayoutSpec.DEFAULT },
             source = state.source ?: PfpThemeSource(type = PfpThemeSource.TYPE_USER_CREATED),
             created = today.toString(),
         )

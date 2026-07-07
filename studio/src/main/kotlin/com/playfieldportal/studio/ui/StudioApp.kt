@@ -59,7 +59,7 @@ fun StudioApp(viewModel: StudioViewModel, window: Frame) {
                     }) { Text("Open…") }
                     OutlinedButton(onClick = {
                         FileDialogs.openFile(window, "Import wallpaper", setOf("png", "jpg", "jpeg", "bmp", "webp"))
-                            ?.let(viewModel::importWallpaper)
+                            ?.let(viewModel::stageWallpaper)
                     }) { Text("Wallpaper…") }
                     OutlinedButton(onClick = {
                         FileDialogs.saveFile(
@@ -87,11 +87,28 @@ fun StudioApp(viewModel: StudioViewModel, window: Frame) {
 
                 // ── Preview + inspector ──
                 Row(Modifier.weight(1f)) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.weight(1f).fillMaxHeight().background(Color(0xFF141414)).padding(16.dp),
-                    ) {
-                        XmbPreviewCanvas(state.toPreviewModel(), Modifier.fillMaxSize())
+                    Column(Modifier.weight(1f).fillMaxHeight().background(Color(0xFF141414))) {
+                        // Preview surface switcher — the accent tints menus too, so all
+                        // three states are authorable-by-eye.
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.padding(start = 16.dp, top = 10.dp),
+                        ) {
+                            com.playfieldportal.studio.PreviewMode.entries.forEach { mode ->
+                                val selected = state.previewMode == mode
+                                if (selected) {
+                                    androidx.compose.material3.Button(onClick = {}) { Text(mode.label, fontSize = 12.sp) }
+                                } else {
+                                    OutlinedButton(onClick = { viewModel.setPreviewMode(mode) }) { Text(mode.label, fontSize = 12.sp) }
+                                }
+                            }
+                        }
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.weight(1f).fillMaxWidth().padding(16.dp),
+                        ) {
+                            XmbPreviewCanvas(state.toPreviewModel(), Modifier.fillMaxSize())
+                        }
                     }
                     VerticalDivider()
                     Column(Modifier.width(360.dp).fillMaxHeight()) {
@@ -109,7 +126,7 @@ fun StudioApp(viewModel: StudioViewModel, window: Frame) {
                                 viewModel = viewModel,
                                 onChooseWallpaper = {
                                     FileDialogs.openFile(window, "Import wallpaper", setOf("png", "jpg", "jpeg", "bmp", "webp"))
-                                        ?.let(viewModel::importWallpaper)
+                                        ?.let(viewModel::stageWallpaper)
                                 },
                             )
                             1 -> IconEditorPanel(
@@ -143,6 +160,13 @@ fun StudioApp(viewModel: StudioViewModel, window: Frame) {
             }
 
             StudioDialogs(viewModel)
+            state.pendingWallpaper?.let { pending ->
+                WallpaperImportDialog(
+                    pending = pending,
+                    onConfirm = viewModel::confirmWallpaper,
+                    onCancel = viewModel::cancelWallpaperImport,
+                )
+            }
         }
     }
 }

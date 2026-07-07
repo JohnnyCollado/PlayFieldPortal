@@ -2,13 +2,17 @@ package com.playfieldportal.studio.preview
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.lerp
 import com.playfieldportal.studio.IconColorChoice
+import com.playfieldportal.studio.PreviewMode
 import com.playfieldportal.studio.StudioState
 import com.playfieldportal.themekit.ColorCascade
 import com.playfieldportal.themekit.PfpThemeManifest
+import com.playfieldportal.themekit.XmbLayoutSpec
 
 /** Everything the preview canvas needs, resolved from [StudioState]. */
 data class XmbPreviewModel(
+    /** The one theme color: drives the wave / menu backdrops (launcher: PFPColors.waveColor). */
     val accent: Color,
     val iconTint: Color,
     val backgroundTop: Color,
@@ -17,7 +21,21 @@ data class XmbPreviewModel(
     val reducedWave: Boolean,
     /** IconSlots key → custom bitmap; slots not present draw the built-in glyph. */
     val iconOverrides: Map<String, ImageBitmap>,
-)
+    /** Per-theme XMB geometry — the canvas positions everything from this, never DEFAULT. */
+    val layout: XmbLayoutSpec = XmbLayoutSpec.DEFAULT,
+    val mode: PreviewMode = PreviewMode.HOME,
+) {
+    // Launcher parity: PFPColors.accentColor stays WHITE for presets and imports alike
+    // (XMBViewModel.toPFPColors / withWaveTint only retint waveColor + gradient), so the
+    // menu cursor formulas below lerp from white — matching MenuCursor.kt on device.
+    private val pfpAccentColor = Color.White
+
+    /** MenuCursor.menuCursorEdge(): lerp(accent, White, 0.55).copy(alpha = 0.95). */
+    val menuCursorEdge: Color get() = lerp(pfpAccentColor, Color.White, 0.55f).copy(alpha = 0.95f)
+
+    /** ContextMenuOverlay panel backdrop: waveColor at 75% alpha. */
+    val menuPanelBackdrop: Color get() = accent.copy(alpha = 0.75f)
+}
 
 fun StudioState.toPreviewModel(): XmbPreviewModel {
     val accentLong = 0xFF000000L or (accentArgb.toLong() and 0xFFFFFF)
@@ -35,6 +53,8 @@ fun StudioState.toPreviewModel(): XmbPreviewModel {
         wallpaper = wallpaperBitmap,
         reducedWave = waveStyle == PfpThemeManifest.WAVE_REDUCED,
         iconOverrides = iconBitmaps,
+        layout = layout,
+        mode = previewMode,
     )
 }
 

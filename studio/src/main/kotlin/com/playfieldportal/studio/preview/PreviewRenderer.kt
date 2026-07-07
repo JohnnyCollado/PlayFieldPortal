@@ -45,7 +45,8 @@ object PreviewRenderer {
             height = heightPx,
             density = Density(widthPx / DESIGN_WIDTH_DP),
         ).use { scene ->
-            val model = state.toPreviewModel()
+            // The embedded preview is always the Home frame, whatever the editor is showing.
+            val model = state.copy(previewMode = com.playfieldportal.studio.PreviewMode.HOME).toPreviewModel()
             scene.setContent { XmbFrame(model) }
             scene.render(nanoTime = 0L).encodeToData(EncodedImageFormat.PNG)!!.bytes
         }
@@ -60,6 +61,9 @@ object PreviewRenderer {
             wallpaperPng = bundle.wallpaper,
             wallpaperBitmap = bundle.wallpaper?.let(ImageCodecs::toImageBitmap),
             waveStyle = bundle.manifest.waveStyle,
+            layout = bundle.manifest.layout
+                ?.let(com.playfieldportal.themekit.XmbLayoutSpecCodec::sanitize)
+                ?: com.playfieldportal.themekit.XmbLayoutSpec.DEFAULT,
         )
         return renderPreviewPng(state)
     }

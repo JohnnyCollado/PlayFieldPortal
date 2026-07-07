@@ -18,6 +18,9 @@ data class BatchSummary(
  */
 object BatchConverter {
 
+    /** Sanity ceiling per run — a folder with thousands of PTFs is a mistake, not a batch. */
+    private const val MAX_BATCH_FILES = 500
+
     fun convertFolder(
         input: File,
         output: File,
@@ -27,6 +30,7 @@ object BatchConverter {
         val ptfs = input.listFiles { f -> f.isFile && f.extension.lowercase() == "ptf" }
             ?.sortedBy { it.name.lowercase() }
             .orEmpty()
+            .take(MAX_BATCH_FILES)
         output.mkdirs()
 
         val converted = mutableListOf<String>()
@@ -35,8 +39,11 @@ object BatchConverter {
 
         ptfs.forEachIndexed { index, file ->
             onProgress(BatchProgress(done = index, total = ptfs.size, current = file.name))
-            when (val outcome = runCatching { PtfConversion.convert(file.readBytes(), file.name) }
-                .getOrElse { ConvertOutcome.Failed(it.message ?: "read error") }
+            when (val outcome = runCatching {
+                val bytes = SafeIo.readBytesCapped(file)
+                if (bytes == null) ConvertOutcome.Failed("file too large")
+                else PtfConversion.convert(bytes, file.name)
+            }.getOrElse { ConvertOutcome.Failed(it.message ?: "read error") }
             ) {
                 is ConvertOutcome.Converted -> {
                     val bundle = outcome.bundle.copy(preview = renderPreview(outcome.bundle))

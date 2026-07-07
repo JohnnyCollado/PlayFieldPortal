@@ -49,6 +49,36 @@ class RoundTripTest {
     }
 
     @Test
+    fun `layout overrides survive export and untouched fields round-trip`() {
+        val vm = StudioViewModel(TestScope())
+        val layout = com.playfieldportal.themekit.XmbLayoutSpec(barTopFraction = 0.22f, itemTextSp = 16f)
+        val manifest = vm.buildManifest(
+            StudioState(name = "Aligned", layout = layout),
+            today = LocalDate.of(2026, 7, 7),
+        )
+        val decoded = assertNotNull(
+            PfpThemeCodec.read(PfpThemeCodec.write(PfpThemeBundle(manifest, null, null))),
+        )
+        assertEquals(layout, decoded.manifest.layout)
+    }
+
+    @Test
+    fun `default layout exports as null`() {
+        val manifest = StudioViewModel(TestScope())
+            .buildManifest(StudioState(name = "Plain"), today = LocalDate.of(2026, 7, 7))
+        assertEquals(null, manifest.layout)
+    }
+
+    @Test
+    fun `setBarTopFraction clamps into the safe range`() {
+        val vm = StudioViewModel(TestScope())
+        vm.setBarTopFraction(0.9f)
+        assertEquals(0.45f, vm.state.value.layout.barTopFraction)
+        vm.setBarTopFraction(-1f)
+        assertEquals(0.05f, vm.state.value.layout.barTopFraction)
+    }
+
+    @Test
     fun `auto icon color exports as the auto sentinel`() {
         val manifest = StudioViewModel(TestScope())
             .buildManifest(StudioState(name = "Auto Icons"), today = LocalDate.of(2026, 7, 7))

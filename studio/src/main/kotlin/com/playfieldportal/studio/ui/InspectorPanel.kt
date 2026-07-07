@@ -64,6 +64,7 @@ fun InspectorPanel(
             argb = state.accentArgb,
             onValid = viewModel::setAccent,
         )
+        ExpandablePicker(argb = state.accentArgb, onChange = viewModel::setAccent)
 
         HorizontalDivider()
 
@@ -83,11 +84,18 @@ fun InspectorPanel(
             Text("Custom", fontSize = 13.sp)
         }
         if (state.iconColor is IconColorChoice.Custom) {
+            val customArgb = (state.iconColor as IconColorChoice.Custom).argb
             HexField(
                 label = "Icon color",
-                argb = (state.iconColor as IconColorChoice.Custom).argb,
+                argb = customArgb,
                 onValid = { viewModel.setIconColor(IconColorChoice.Custom(it)) },
             )
+            ExpandablePicker(argb = customArgb, onChange = { viewModel.setIconColor(IconColorChoice.Custom(it)) })
+            if (com.playfieldportal.themekit.WallpaperMetrics.luminance(customArgb) <
+                com.playfieldportal.themekit.WallpaperMetrics.DARK_ICON_LUMINANCE
+            ) {
+                HintText("Dark icon color — icons may be hard to see over the wallpaper scrim.")
+            }
         }
 
         HorizontalDivider()
@@ -122,6 +130,7 @@ fun InspectorPanel(
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             OutlinedButton(onClick = onChooseWallpaper) { Text("Choose…") }
             if (state.wallpaperPng != null) {
+                OutlinedButton(onClick = viewModel::restageEmbeddedWallpaper) { Text("Re-crop…") }
                 OutlinedButton(onClick = viewModel::clearWallpaper) { Text("Clear") }
             }
         }
@@ -130,6 +139,34 @@ fun InspectorPanel(
             fontSize = 12.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        if (state.wallpaperBusy) {
+            HintText("Busy wallpaper — labels may be hard to read. Softer, low-contrast images work best.")
+        }
+
+        HorizontalDivider()
+
+        SectionLabel("Layout")
+        Text(
+            "Crossbar position — ${(state.layout.barTopFraction * 100).toInt()}%",
+            fontSize = 13.sp,
+        )
+        androidx.compose.material3.Slider(
+            value = state.layout.barTopFraction,
+            onValueChange = viewModel::setBarTopFraction,
+            valueRange = com.playfieldportal.themekit.XmbLayoutSpecCodec.BAR_TOP_MIN..
+                com.playfieldportal.themekit.XmbLayoutSpecCodec.BAR_TOP_MAX,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(
+                onClick = viewModel::detectBarTop,
+                enabled = state.wallpaperPng != null && !state.busy,
+            ) { Text("Detect from wallpaper") }
+            if (state.layout != com.playfieldportal.themekit.XmbLayoutSpec.DEFAULT) {
+                OutlinedButton(onClick = viewModel::resetLayout) { Text("Reset") }
+            }
+        }
+        HintText("Detect finds the dark band PSP wallpapers bake in and seats the crossbar on it.")
 
         val source = state.source
         if (source != null && source.type == PfpThemeSource.TYPE_PTF_IMPORT) {
@@ -151,6 +188,24 @@ fun InspectorPanel(
 @Composable
 fun SectionLabel(text: String) {
     Text(text, style = MaterialTheme.typography.titleSmall)
+}
+
+/** Non-blocking legibility hint — advice, never a gate. */
+@Composable
+private fun HintText(text: String) {
+    Text(text, fontSize = 11.sp, color = MaterialTheme.colorScheme.tertiary)
+}
+
+/** "Pick…" toggle that expands the HSV picker under a hex field. */
+@Composable
+private fun ExpandablePicker(argb: Int, onChange: (Int) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    androidx.compose.material3.TextButton(onClick = { open = !open }) {
+        Text(if (open) "Hide color picker" else "Color picker…", fontSize = 12.sp)
+    }
+    if (open) {
+        HsvColorPicker(argb = argb, onChange = onChange)
+    }
 }
 
 @Composable

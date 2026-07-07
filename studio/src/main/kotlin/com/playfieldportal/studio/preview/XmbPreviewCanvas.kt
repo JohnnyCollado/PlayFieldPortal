@@ -3,6 +3,8 @@ package com.playfieldportal.studio.preview
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -58,17 +60,14 @@ import kotlin.math.sin
 private val DESIGN_WIDTH = 960.dp
 private val DESIGN_HEIGHT = 540.dp
 
-// XMBCategoryBar.kt
+// XMBCategoryBar.kt (constants that are NOT part of the per-theme spec)
 private val CategorySlotWidth = 124.dp
-private val XmbLeftAnchor = CategorySlotWidth + XmbLayoutSpec.DEFAULT.leftAnchorExtraDp.dp
 private val CatBarHeight = 112.dp
 private val LabelInactive = Color(0xCCD8E6FF)
 private val SelectedLabelShadow = Shadow(color = Color(0x73001627), offset = Offset.Zero, blurRadius = 12f)
 
 // XMBItemList.kt
 private val RowHeight = 88.dp
-private val LeadingIconSlot = XmbLayoutSpec.DEFAULT.itemIconSlotDp.dp
-private val LeadingIconCenter = 18.dp + LeadingIconSlot / 2
 
 // XmbBackground.kt
 private const val STATIC_TIME = 2.0f
@@ -106,8 +105,20 @@ fun XmbFrame(model: XmbPreviewModel) {
         } else {
             WaveBackground(model)
         }
-        XmbCross(model)
-        StatusStrip(model)
+        when (model.mode) {
+            com.playfieldportal.studio.PreviewMode.HOME -> {
+                XmbCross(model)
+                StatusStrip(model)
+            }
+            com.playfieldportal.studio.PreviewMode.CONTEXT_MENU -> {
+                XmbCross(model)
+                StatusStrip(model)
+                ContextMenuFrame(model)
+            }
+            com.playfieldportal.studio.PreviewMode.FULLSCREEN_MENU -> {
+                FullscreenMenuFrame(model)
+            }
+        }
     }
 }
 
@@ -168,7 +179,9 @@ private fun DrawScope.drawFold(
 
 @Composable
 private fun XmbCross(model: XmbPreviewModel) {
-    val spec = XmbLayoutSpec.DEFAULT
+    val spec = model.layout
+    val xmbLeftAnchor = CategorySlotWidth + spec.leftAnchorExtraDp.dp
+    val leadingIconCenter = 18.dp + spec.itemIconSlotDp.dp / 2
     Box(Modifier.fillMaxSize().padding(top = spec.contentTopPaddingDp.dp)) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val barTop = maxHeight * spec.barTopFraction
@@ -176,7 +189,7 @@ private fun XmbCross(model: XmbPreviewModel) {
 
             // ── Category bar: the selected slot seats at the left anchor; earlier
             //    categories tile leftward (mostly off-screen), later ones rightward. ──
-            val barStart = XmbLeftAnchor - CategorySlotWidth * SampleContent.SELECTED_CATEGORY
+            val barStart = xmbLeftAnchor - CategorySlotWidth * SampleContent.SELECTED_CATEGORY
             Row(Modifier.offset(x = barStart, y = barTop).height(CatBarHeight)) {
                 SampleContent.categories.forEachIndexed { index, category ->
                     CategoryCell(model, category, selected = index == SampleContent.SELECTED_CATEGORY)
@@ -184,7 +197,7 @@ private fun XmbCross(model: XmbPreviewModel) {
             }
 
             // ── Item column under the caticon (XMBShell startPad math). ──
-            val startPad = XmbLeftAnchor + (CategorySlotWidth / 2) - LeadingIconCenter
+            val startPad = xmbLeftAnchor + (CategorySlotWidth / 2) - leadingIconCenter
             Column(Modifier.offset(x = startPad, y = anchorTop)) {
                 SampleContent.rows.forEachIndexed { index, row ->
                     ItemRow(model, row, selected = index == SampleContent.SELECTED_ROW)
@@ -196,7 +209,7 @@ private fun XmbCross(model: XmbPreviewModel) {
 
 @Composable
 private fun CategoryCell(model: XmbPreviewModel, category: SampleContent.Category, selected: Boolean) {
-    val spec = XmbLayoutSpec.DEFAULT
+    val spec = model.layout
     val iconSize = if (selected) spec.categoryIconSelectedDp.dp else spec.categoryIconDp.dp
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -223,7 +236,7 @@ private fun CategoryCell(model: XmbPreviewModel, category: SampleContent.Categor
 
 @Composable
 private fun ItemRow(model: XmbPreviewModel, row: SampleContent.Row, selected: Boolean) {
-    val spec = XmbLayoutSpec.DEFAULT
+    val spec = model.layout
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -237,7 +250,7 @@ private fun ItemRow(model: XmbPreviewModel, row: SampleContent.Row, selected: Bo
             )
             .padding(horizontal = 18.dp),
     ) {
-        Box(Modifier.size(LeadingIconSlot), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(spec.itemIconSlotDp.dp), contentAlignment = Alignment.Center) {
             SlotIcon(model, row.slotKey, Modifier.size(spec.itemIconDp.dp * 0.75f))
         }
         Spacer(Modifier.width(spec.itemTextStartGapDp.dp))
@@ -267,6 +280,123 @@ private fun androidx.compose.foundation.layout.BoxScope.StatusStrip(model: XmbPr
         SlotIcon(model, "status_bluetooth", Modifier.size(14.dp))
         Spacer(Modifier.width(6.dp))
         SlotIcon(model, "status_battery_full", Modifier.width(24.dp).height(11.dp))
+    }
+}
+
+/**
+ * Context-menu preview — replicates ContextMenuOverlay.kt: right-edge 300dp column over a
+ * light scrim; panel backdrop = waveColor@75%; selected row carries the accent cursor glow
+ * (transparent → menuCursorEdge@40% left-to-right); destructive rows stay red.
+ */
+@Composable
+private fun androidx.compose.foundation.layout.BoxScope.ContextMenuFrame(model: XmbPreviewModel) {
+    Box(Modifier.fillMaxSize().background(Color(0x40000000)))
+    Column(
+        Modifier
+            .align(Alignment.CenterEnd)
+            .width(300.dp)
+            .fillMaxSize()
+            .background(model.menuPanelBackdrop)
+            .padding(horizontal = 20.dp, vertical = 24.dp),
+    ) {
+        Text(
+            "All Videos",
+            color = Color.White,
+            fontSize = 17.sp,
+            fontWeight = FontWeight.SemiBold,
+            style = TextStyle(shadow = SelectedLabelShadow),
+        )
+        Box(Modifier.fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.3f)).padding(top = 8.dp))
+        Spacer(Modifier.height(12.dp))
+        val items = listOf("Play", "Add to Playlist", "View Details", "Remove from Library")
+        items.forEachIndexed { index, label ->
+            val selected = index == 0
+            val destructive = index == items.lastIndex
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .background(
+                        if (selected) {
+                            Brush.horizontalGradient(
+                                colors = listOf(Color.Transparent, model.menuCursorEdge.copy(alpha = 0.4f)),
+                            )
+                        } else {
+                            Brush.horizontalGradient(listOf(Color.Transparent, Color.Transparent))
+                        },
+                    )
+                    .padding(vertical = 12.dp),
+            ) {
+                Text(
+                    label,
+                    color = when {
+                        destructive && selected -> Color(0xFFFF7070)
+                        destructive -> Color(0xAAFF7070)
+                        selected -> Color.White
+                        else -> Color(0xCCFFFFFF)
+                    },
+                    fontSize = if (selected) 16.sp else 15.sp,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Fullscreen-menu preview — replicates MusicBrowserScreen.kt's frame: full gradient
+ * backdrop (backgroundTop@72% → backgroundBottom@90%) over the wave, header with a 24sp
+ * Light title, accent-bordered search field, sample rows.
+ */
+@Composable
+private fun FullscreenMenuFrame(model: XmbPreviewModel) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        model.backgroundTop.copy(alpha = 0.72f),
+                        model.backgroundBottom.copy(alpha = 0.90f),
+                    ),
+                ),
+            )
+            .padding(horizontal = 28.dp, vertical = 20.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("‹", color = Color.White, fontSize = 26.sp)
+            Spacer(Modifier.width(14.dp))
+            Text("Music", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Light)
+        }
+        Spacer(Modifier.height(14.dp))
+        // Search field: white@14% fill, menuCursorEdge focused border.
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(38.dp)
+                .background(Color.White.copy(alpha = 0.14f), RoundedCornerShape(19.dp))
+                .border(1.dp, model.menuCursorEdge, RoundedCornerShape(19.dp))
+                .padding(horizontal = 16.dp),
+            contentAlignment = Alignment.CenterStart,
+        ) {
+            Text("Search", color = Color(0xFFC9C7E8), fontSize = 13.sp)
+        }
+        Spacer(Modifier.height(16.dp))
+        listOf(
+            "Journey of Dreams" to "Crossbar Kids",
+            "Midnight Wave" to "Portal Sound Team",
+            "Memory Card Blues" to "Save Point",
+        ).forEach { (title, artist) ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().padding(vertical = 7.dp),
+            ) {
+                Box(Modifier.size(40.dp).background(Color(0xFF1B1B27), RoundedCornerShape(6.dp)))
+                Spacer(Modifier.width(12.dp))
+                Column {
+                    Text(title, color = Color.White, fontSize = 14.sp, maxLines = 1)
+                    Text(artist, color = Color(0xFFC9C7E8), fontSize = 11.sp, maxLines = 1)
+                }
+            }
+        }
     }
 }
 
