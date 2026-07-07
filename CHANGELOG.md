@@ -5,13 +5,16 @@ All notable changes to Play Field Portal are documented here. This project follo
 
 ## [Unreleased]
 
-Touch-first navigation and a consistent, theme-matched UI across every full-screen menu; a move to
-permission-free storage (ROM libraries, media and backups all go through the Storage Access
-Framework, so the app no longer needs all-files access); a new **opt-in Discord Social section**
-(QR sign-in, friends, presence sharing); and the **custom theme system** — `.pfptheme` bundles with
-custom icons and per-theme layout, PSP `.ptf` import, and the cross-platform **Theme Studio**
-desktop companion.
-(Still `versionName 1.0.0-alpha.3` / `versionCode 3` — not yet cut as a release.)
+Nothing yet.
+
+## [1.0.0] — 2026-07-07
+
+The 1.0 release. Touch-first navigation and a consistent, theme-matched UI across every
+full-screen menu; a move to permission-free storage (ROM libraries, media and backups all go
+through the Storage Access Framework, so the app no longer needs all-files access); a new
+**opt-in Discord Social section** (QR sign-in, friends, presence sharing); and the **custom
+theme system** — `.pfptheme` bundles with custom icons and per-theme layout, PSP `.ptf` import
+(zlib + LZR), and the cross-platform **Theme Studio** desktop companion with its PTF unpacker.
 
 ### Added
 - **Custom themes (`.pfptheme`).** The theme system, built on a one-color cascade — pick a

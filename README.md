@@ -8,9 +8,10 @@ games, PC-layer titles (Winlator), and native apps — all navigated with a cont
   <img src="docs/preview.png" alt="Play Field Portal — XMB home screen" width="720">
 </p>
 
-> **Status:** Active development — **`1.0.0-alpha`**, pre-release. Not yet on the Play Store.
-> The custom-theme system (`.pfptheme` + the desktop **Theme Studio**) has landed; sound packs,
-> boot animations, and a polish pass remain before 1.0 (see [Roadmap](#roadmap)).
+> **Status:** **`1.0.0`** — first release. Distributed as a side-loaded APK (not on the Play
+> Store); **Full** (with Discord Social) and **Lite** (~44 MB smaller, no Discord SDK) builds,
+> plus the desktop **Theme Studio** companion. Sound packs and boot animations are the next
+> post-1.0 additions (see [Roadmap](#roadmap)).
 
 For a developer-oriented overview of the codebase, see **[ARCHITECTURE.md](ARCHITECTURE.md)**.
 
@@ -94,9 +95,9 @@ For a developer-oriented overview of the codebase, see **[ARCHITECTURE.md](ARCHI
 
 ## Roadmap
 
-PFP is feature-complete for day-to-day use; the remaining work is the theme system, then launch.
+All three launch stages have shipped; what remains is post-1.0 work.
 
-### ✅ Stage 1 — Alpha (current)
+### ✅ Stage 1 — Alpha
 The full launcher: XMB shell, manual Memory Card library, ROM scanning, emulator detection and
 launching, artwork scraping, All Games / Favorites / Collections, Android-app integration, the app
 drawer, category management, controller mapping, backup & restore, and PFP branding (app icon +
@@ -120,8 +121,10 @@ The custom-theme pipeline, built around the lightweight **`.pfptheme`** bundle f
   the re-enabled `.xmbtheme` *Install from File* — loader already implemented), and the
   in-app rendered-preview gate for exports.
 
-### 🎯 Stage 3 — 1.0 Launch
-Stability, performance, and polish pass on top of the theme system; release candidate.
+### ✅ Stage 3 — 1.0 Launch *(released 2026-07-07)*
+Stability, performance, and polish pass on top of the theme system: release-build hardening
+(R8 keep rules, bounded theme decompression), touch-UI legibility fixes, repo/docs cleanup,
+and the **1.0.0** version cut — shipped as Full + Lite APKs and the Theme Studio desktop app.
 
 ### 🧭 Post-launch / backlog
 Smart & manual category builders, an unmatched-ROM assignment UI, a missing-ROM indicator, a second
@@ -412,6 +415,22 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 ./gradlew test
 ```
 
+### Release builds (Full / Lite / Theme Studio)
+
+The app builds in two flavors — **full** (with the Discord Social SDK) and **lite** (~44 MB
+smaller, no Discord) — and the Theme Studio packages as a desktop app:
+
+```bash
+# Both release APKs (signing config read from keystore.properties)
+./gradlew assembleRelease
+#   → app/build/outputs/apk/full/release/app-full-release.apk
+#   → app/build/outputs/apk/lite/release/app-lite-release.apk
+
+# Theme Studio — native installer for the current OS (MSI / DMG / DEB)
+./gradlew :studio:packageDistributionForCurrentOS
+#   → studio/build/compose/binaries/main/<format>/
+```
+
 If `adb install` reports `INSTALL_FAILED_UPDATE_INCOMPATIBLE` (debug-signature mismatch), uninstall
 first — **note this clears local app data** (library, settings):
 
@@ -427,7 +446,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - **Language:** Kotlin
 - **UI:** Jetpack Compose (MVVM + state hoisting)
 - **DI:** Hilt
-- **Database:** Room — **schema v20**, hand-written migrations only (never destructive)
+- **Database:** Room — **schema v21**, hand-written migrations only (never destructive)
 - **Settings:** DataStore Preferences
 - **Networking:** Ktor (SteamGridDB)
 - **Image loading:** Coil
@@ -450,7 +469,7 @@ core/
                             .pfptheme codec, color cascade, icon-slot registry, layout spec + analyzers
   core-common/            — Shared utilities and extensions
   core-domain/            — Domain models, repository interfaces
-  core-data/              — Room DB (v20), DAOs, DataStore, repository impls, seeders, migrations
+  core-data/              — Room DB (v21), DAOs, DataStore, repository impls, seeders, migrations
   core-ui/                — PFPTheme/PFPColors, WaveStyle, PortalIcon, category-icon catalog
 feature/
   feature-xmb/            — XMB shell, XMBViewModel, game/app detail, photo viewer, gamepad, boot sequence
