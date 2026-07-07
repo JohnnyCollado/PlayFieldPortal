@@ -35,6 +35,23 @@ object TestFixtures {
         return out
     }
 
+    /**
+     * Stored-mode LZR stream (negative type byte): 5-byte header + raw data + 1 pad byte.
+     * Sony's LZR range-coder has no public compressor, but the stored mode exercises the
+     * same entry point and header handling, keeping method-1 PTF tests hermetic; real
+     * compressed streams are covered by the golden-file tests.
+     */
+    fun lzrStored(data: ByteArray): ByteArray {
+        val out = ByteArray(5 + data.size + 1)
+        out[0] = (-1).toByte()
+        out[1] = (data.size ushr 24).toByte()
+        out[2] = (data.size ushr 16).toByte()
+        out[3] = (data.size ushr 8).toByte()
+        out[4] = data.size.toByte()
+        data.copyInto(out, 5)
+        return out
+    }
+
     /** zlib-compress (default settings produce the 0x78 0x9C header real PTFs carry). */
     fun zlib(data: ByteArray): ByteArray {
         val deflater = Deflater()
@@ -50,9 +67,8 @@ object TestFixtures {
     /**
      * Minimal structurally-valid official PTF: header, one wallpaper slot (ID 1) whose
      * payload is the real 32-byte payload header (resource type 4, [compressionMethod],
-     * compressed/uncompressed sizes) followed by the zlib'd [wallpaperBmp] — mirroring
-     * real files. With [compressionMethod] = 1 (LZR) the "compressed" bytes are still
-     * zlib data, but the parser must refuse to touch them based on the header alone.
+     * compressed/uncompressed sizes) followed by the compressed [wallpaperBmp] —
+     * zlib for method 2 (fw 3.80+), a stored-mode LZR stream for method 1 (fw 3.70).
      */
     fun buildPtf(
         name: String,
@@ -60,7 +76,7 @@ object TestFixtures {
         wallpaperBmp: ByteArray,
         compressionMethod: Int = 2,
     ): ByteArray {
-        val compressed = zlib(wallpaperBmp)
+        val compressed = if (compressionMethod == 1) lzrStored(wallpaperBmp) else zlib(wallpaperBmp)
         val descriptorOffset = 0x120
         val dataOffset = 0x140
         val headerSize = 32

@@ -48,9 +48,8 @@ object PtfConversion {
             PtfParser.WallpaperStatus.DECODED -> null
             PtfParser.WallpaperStatus.MISSING -> "This theme contains no wallpaper image."
             PtfParser.WallpaperStatus.UNSUPPORTED_COMPRESSION ->
-                "The wallpaper could not be extracted: this theme was built for older PSP " +
-                    "firmware (3.70 era) and uses LZR compression, which isn't supported yet. " +
-                    "The theme was imported without its wallpaper."
+                "The wallpaper could not be extracted: this theme uses a compression method " +
+                    "this importer doesn't recognize. The theme was imported without its wallpaper."
             PtfParser.WallpaperStatus.CORRUPT ->
                 "The wallpaper data in this theme is damaged and could not be decoded. " +
                     "The theme was imported without its wallpaper."

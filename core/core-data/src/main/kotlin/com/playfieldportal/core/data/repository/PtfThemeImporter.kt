@@ -58,8 +58,7 @@ class PtfThemeImporter @Inject constructor(
             when (theme.wallpaperStatus) {
                 PtfParser.WallpaperStatus.MISSING -> "The theme has no wallpaper image"
                 PtfParser.WallpaperStatus.UNSUPPORTED_COMPRESSION ->
-                    "This theme was made for older PSP firmware (3.70 era) and uses LZR " +
-                        "compression, which isn't supported yet"
+                    "This theme compresses its wallpaper with a method that isn't supported"
                 else -> "The theme's wallpaper is damaged and could not be decoded"
             },
         )

@@ -36,8 +36,8 @@ import java.util.zip.Inflater
  * +32  compressed data
  * ```
  *
- * Firmware 3.70-era themes compress with LZR (method 1), 3.80+ with zlib (method 2).
- * LZR decompression is not implemented, so those themes parse with a null wallpaper and
+ * Firmware 3.70-era themes compress with LZR (method 1, decoded by [Lzr]), 3.80+ with
+ * zlib (method 2). Any other method reports
  * [PtfTheme.wallpaperStatus] = [WallpaperStatus.UNSUPPORTED_COMPRESSION].
  */
 object PtfParser {
@@ -61,7 +61,7 @@ object PtfParser {
         /** The theme has no wallpaper slot at all (some themes only restyle icons). */
         MISSING,
 
-        /** Firmware 3.70-era LZR compression (payload method 1) — no decoder yet. */
+        /** The payload header declares a compression method we don't know (not LZR/zlib). */
         UNSUPPORTED_COMPRESSION,
 
         /** A wallpaper slot exists but its data would not decompress/decode. */
@@ -154,13 +154,24 @@ object PtfParser {
                 uncompressedSize in 1..MAX_INFLATED_BYTES
             if (headerPlausible) {
                 when (method) {
-                    COMPRESSION_LZR -> return null to WallpaperStatus.UNSUPPORTED_COMPRESSION
+                    COMPRESSION_LZR -> {
+                        val decompressed = Lzr.decompress(
+                            input = bytes,
+                            offset = start + PAYLOAD_HEADER_SIZE,
+                            length = compressedSize,
+                            maxOutput = uncompressedSize,
+                        )
+                        val bmp = decompressed?.let(Bmp::decode)
+                        return if (bmp != null) bmp to WallpaperStatus.DECODED
+                        else null to WallpaperStatus.CORRUPT
+                    }
                     COMPRESSION_ZLIB -> {
                         val inflated = inflate(bytes, start + PAYLOAD_HEADER_SIZE, compressedSize)
                         val bmp = inflated?.let(Bmp::decode)
                         if (bmp != null) return bmp to WallpaperStatus.DECODED
                         // Header lied or stream is damaged — fall through to the scan.
                     }
+                    else -> return null to WallpaperStatus.UNSUPPORTED_COMPRESSION
                 }
             }
         }

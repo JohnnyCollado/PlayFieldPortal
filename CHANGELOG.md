@@ -19,7 +19,9 @@ desktop companion.
   Themes now offers 12 PSP-style preset schemes (including the month-cycling *Original*), a unified
   **icon color** for every XMB glyph, **Quick Create** (any photo becomes a theme, accent
   auto-derived from its dominant hue), a **saved-theme library** with apply/share/delete, import of
-  real PSP **`.ptf`** themes (CXMB files are rejected with an explanation), and `.pfptheme`
+  real PSP **`.ptf`** themes — wallpapers in both zlib (firmware 3.80+) and LZR compression
+  (firmware 3.70 era), via an independent LZR decompressor; CXMB files are rejected with an
+  explanation — and `.pfptheme`
   bundle share/import. Applying a theme drives wallpaper, accent, icon color, **custom icons**, and
   **per-theme XMB layout** in one step; choosing a preset scheme cleanly exits custom-theme mode.
 - **Custom icon slots.** Themes can replace 42 XMB glyphs — the 9 category-bar icons, the item-row

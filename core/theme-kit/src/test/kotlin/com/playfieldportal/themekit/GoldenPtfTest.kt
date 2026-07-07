@@ -85,6 +85,28 @@ class GoldenPtfTest {
     }
 
     @Test
+    fun `crisis core - official fw 3_70 theme, LZR-compressed wallpaper`() {
+        val theme = assertNotNull(PtfParser.parse(golden("CrisisCoreFF7.ptf")))
+        assertEquals("3.70", theme.firmware)
+        assertEquals(PtfParser.WallpaperStatus.DECODED, theme.wallpaperStatus)
+
+        val wallpaper = assertNotNull(theme.wallpaper)
+        assertEquals(480, wallpaper.width)
+        assertEquals(272, wallpaper.height)
+    }
+
+    @Test
+    fun `serial experiments lain - fw 3_70 theme, LZR-compressed wallpaper`() {
+        val theme = assertNotNull(PtfParser.parse(golden("SerialExperimentsLain.ptf")))
+        assertEquals("3.70", theme.firmware)
+        assertEquals(PtfParser.WallpaperStatus.DECODED, theme.wallpaperStatus)
+
+        val wallpaper = assertNotNull(theme.wallpaper)
+        assertEquals(480, wallpaper.width)
+        assertEquals(272, wallpaper.height)
+    }
+
+    @Test
     fun `detect flags a CXMB ctf when present`() {
         val file = File(goldenDir, "PSP-Themes-master/Blue Flame.ctf")
         assumeTrue("no CXMB sample present — skipping", file.isFile)

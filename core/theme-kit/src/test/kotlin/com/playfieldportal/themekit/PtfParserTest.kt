@@ -80,11 +80,31 @@ class PtfParserTest {
     }
 
     @Test
-    fun `LZR-compressed wallpaper (fw 3_70 era) is reported, not scanned into garbage`() {
-        val bmp = TestFixtures.buildBmp(8, 4) { _, _ -> pink }
-        // Method 1 = LZR: the payload bytes happen to be zlib in the fixture, but the
-        // parser must trust the header and refuse rather than inflate them anyway.
+    fun `LZR wallpaper (fw 3_70 era) decodes through the LZR path`() {
+        val bmp = TestFixtures.buildBmp(8, 4) { x, y -> if ((x + y) % 2 == 0) pink else 0xFF102030.toInt() }
         val ptf = TestFixtures.buildPtf("Old Theme", "3.70", bmp, compressionMethod = 1)
+        val theme = assertNotNull(PtfParser.parse(ptf))
+        val wallpaper = assertNotNull(theme.wallpaper)
+        assertEquals(PtfParser.WallpaperStatus.DECODED, theme.wallpaperStatus)
+        assertEquals(pink, wallpaper[0, 0])
+        assertEquals(0xFF102030.toInt(), wallpaper[1, 0])
+    }
+
+    @Test
+    fun `damaged LZR wallpaper reports CORRUPT`() {
+        val bmp = TestFixtures.buildBmp(8, 4) { _, _ -> pink }
+        val ptf = TestFixtures.buildPtf("Old Theme", "3.70", bmp, compressionMethod = 1)
+        // Trash the LZR stream body (past the 32-byte payload header + 5-byte LZR header).
+        for (i in 0x140 + 37 until ptf.size) ptf[i] = 0x5A
+        val theme = assertNotNull(PtfParser.parse(ptf))
+        assertNull(theme.wallpaper)
+        assertEquals(PtfParser.WallpaperStatus.CORRUPT, theme.wallpaperStatus)
+    }
+
+    @Test
+    fun `unknown compression method reports UNSUPPORTED_COMPRESSION`() {
+        val bmp = TestFixtures.buildBmp(8, 4) { _, _ -> pink }
+        val ptf = TestFixtures.buildPtf("Weird", "9.99", bmp, compressionMethod = 3)
         val theme = assertNotNull(PtfParser.parse(ptf))
         assertNull(theme.wallpaper)
         assertEquals(PtfParser.WallpaperStatus.UNSUPPORTED_COMPRESSION, theme.wallpaperStatus)

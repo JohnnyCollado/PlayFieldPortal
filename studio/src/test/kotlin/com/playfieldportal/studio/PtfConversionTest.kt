@@ -50,7 +50,7 @@ class PtfConversionTest {
     }
 
     @Test
-    fun `LZR-compressed ptf converts without wallpaper and carries a warning`() {
+    fun `LZR ptf (fw 3_70) converts with its wallpaper and no warning`() {
         val ptf = TestFixtures.buildPtf(
             name = "Old Theme",
             firmware = "3.70",
@@ -58,8 +58,22 @@ class PtfConversionTest {
             compressionMethod = 1, // LZR
         )
         val outcome = assertIs<ConvertOutcome.Converted>(PtfConversion.convert(ptf, "old.ptf"))
+        assertNotNull(outcome.bundle.wallpaper)
+        assertEquals(null, outcome.warning)
+    }
+
+    @Test
+    fun `damaged wallpaper converts without it and carries a warning`() {
+        val ptf = TestFixtures.buildPtf(
+            name = "Old Theme",
+            firmware = "3.70",
+            wallpaperBmp = TestFixtures.buildBmp(8, 4) { _, _ -> 0xFF3050E0.toInt() },
+            compressionMethod = 1,
+        )
+        for (i in 0x140 + 37 until ptf.size) ptf[i] = 0x5A // trash the LZR stream body
+        val outcome = assertIs<ConvertOutcome.Converted>(PtfConversion.convert(ptf, "old.ptf"))
         assertEquals(null, outcome.bundle.wallpaper)
-        assertTrue(assertNotNull(outcome.warning).contains("LZR"), "warning was: ${outcome.warning}")
+        assertTrue(assertNotNull(outcome.warning).contains("damaged"), "warning was: ${outcome.warning}")
         // Accent falls back to the default when there is no wallpaper to derive from.
         assertEquals(PtfConversion.toHexRgb(PtfConversion.DEFAULT_ACCENT), outcome.bundle.manifest.accentColor)
     }
