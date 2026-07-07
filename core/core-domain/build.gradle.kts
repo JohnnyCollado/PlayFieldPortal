@@ -16,6 +16,8 @@ android {
 }
 
 dependencies {
+    // Shared color-cascade math (ColorCascade) — exposed through lightBackgroundAnchors.
+    api(project(":core:theme-kit"))
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
 }

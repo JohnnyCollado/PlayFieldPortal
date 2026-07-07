@@ -28,7 +28,9 @@ data class PfpThemeManifest(
 ) {
     companion object {
         const val MANIFEST_TYPE = "pfptheme"
-        const val SCHEMA_VERSION = 1
+        // v2: optional icons/<key>.png entries (custom icon slots). Readers never gate on the
+        // version — older apps simply ignore the icon entries and apply wallpaper + colors.
+        const val SCHEMA_VERSION = 2
         const val ICON_COLOR_AUTO = "auto"
         const val WAVE_ANIMATED = "animated"
         const val WAVE_STATIC = "static"
@@ -59,13 +61,23 @@ data class PfpThemeBundle(
     val wallpaper: ByteArray?,
     /** Encoded preview render; always written by the app's preview gate, but optional on read. */
     val preview: ByteArray?,
+    /**
+     * Custom icon overrides: [IconSlots] key → encoded PNG. Slots not present render the
+     * built-in glyph. Stored as `icons/<key>.png` entries (schema v2).
+     */
+    val icons: Map<String, ByteArray> = emptyMap(),
 ) {
     override fun equals(other: Any?): Boolean =
         other is PfpThemeBundle &&
             manifest == other.manifest &&
             wallpaper.contentEquals(other.wallpaper) &&
-            preview.contentEquals(other.preview)
+            preview.contentEquals(other.preview) &&
+            icons.keys == other.icons.keys &&
+            icons.all { (key, bytes) -> bytes.contentEquals(other.icons[key]) }
 
-    override fun hashCode(): Int =
-        31 * (31 * manifest.hashCode() + wallpaper.contentHashCode()) + preview.contentHashCode()
+    override fun hashCode(): Int {
+        var h = 31 * (31 * manifest.hashCode() + wallpaper.contentHashCode()) + preview.contentHashCode()
+        for ((key, bytes) in icons) h = 31 * h + (key.hashCode() xor bytes.contentHashCode())
+        return h
+    }
 }

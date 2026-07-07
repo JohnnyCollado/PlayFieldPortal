@@ -72,6 +72,54 @@ class PfpThemeCodecTest {
     }
 
     @Test
+    fun `round-trips custom icon slots`() {
+        val bundle = PfpThemeBundle(
+            manifest = manifest,
+            wallpaper = null,
+            preview = null,
+            icons = mapOf(
+                "catbar_games" to ByteArray(128) { it.toByte() },
+                "item_playlist" to ByteArray(96) { (it * 7).toByte() },
+                "status_bluetooth" to ByteArray(32),
+            ),
+        )
+        val decoded = assertNotNull(PfpThemeCodec.read(PfpThemeCodec.write(bundle)))
+        assertEquals(bundle, decoded)
+        assertEquals(setOf("catbar_games", "item_playlist", "status_bluetooth"), decoded.icons.keys)
+    }
+
+    @Test
+    fun `drops icon entries with unregistered keys on read and write`() {
+        // Write path: unknown keys in the map are silently skipped.
+        val written = PfpThemeCodec.write(
+            PfpThemeBundle(manifest, null, null, icons = mapOf("not_a_slot" to ByteArray(8))),
+        )
+        assertEquals(emptyMap(), assertNotNull(PfpThemeCodec.read(written)).icons)
+
+        // Read path: a hostile bundle can't smuggle traversal or unexpected names.
+        val hostile = ByteArrayOutputStream().also { baos ->
+            ZipOutputStream(baos).use { z ->
+                java.util.zip.ZipInputStream(PfpThemeCodec.write(PfpThemeBundle(manifest, null, null)).inputStream()).use { src ->
+                    while (true) {
+                        val e = src.nextEntry ?: break
+                        z.putNextEntry(ZipEntry(e.name)); z.write(src.readBytes()); z.closeEntry()
+                    }
+                }
+                z.putNextEntry(ZipEntry("icons/../../evil.png")); z.write(ByteArray(4)); z.closeEntry()
+                z.putNextEntry(ZipEntry("icons/mystery.png")); z.write(ByteArray(4)); z.closeEntry()
+            }
+        }.toByteArray()
+        assertEquals(emptyMap(), assertNotNull(PfpThemeCodec.read(hostile)).icons)
+    }
+
+    @Test
+    fun `every registry key survives an icon round-trip`() {
+        val icons = IconSlots.ALL.associate { it.key to byteArrayOf(1, 2, 3) }
+        val decoded = assertNotNull(PfpThemeCodec.read(PfpThemeCodec.write(PfpThemeBundle(manifest, null, null, icons))))
+        assertEquals(icons.keys, decoded.icons.keys)
+    }
+
+    @Test
     fun `ignores unknown zip entries for forward compatibility`() {
         val base = PfpThemeCodec.write(PfpThemeBundle(manifest, null, null))
         // Re-zip with an extra entry a future schema might add.
