@@ -111,6 +111,40 @@ class PfpThemeStore @Inject constructor(
         _themes.value = scan()
     }
 
+    /**
+     * Copies a saved bundle into the shareable cache (covered by the app's FileProvider
+     * cache-path root) named after the theme, ready for ACTION_SEND.
+     */
+    suspend fun exportForShare(id: String): File? = withContext(Dispatchers.IO) {
+        val src = File(dir, "$id.pfptheme")
+        if (!src.isFile) return@withContext null
+        val name = _themes.value.firstOrNull { it.id == id }?.name ?: id
+        val safe = name.replace(Regex("[^A-Za-z0-9 _-]"), "").trim().ifBlank { id }.replace(' ', '_')
+        runCatching {
+            val out = File(File(context.cacheDir, "shared_themes").apply { mkdirs() }, "$safe.pfptheme")
+            src.copyTo(out, overwrite = true)
+            out
+        }.onFailure { Timber.w(it, "PfpThemeStore: export failed") }.getOrNull()
+    }
+
+    /** Imports a `.pfptheme` bundle picked via SAF into the library. Null = not a valid bundle. */
+    suspend fun importBundle(uri: Uri): SavedTheme? = withContext(Dispatchers.IO) {
+        val bytes = runCatching {
+            context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+        }.getOrNull() ?: return@withContext null
+        val bundle = PfpThemeCodec.read(bytes) ?: return@withContext null
+        // v1 themes are wallpaper-carrying; the sidecars (and preview) regenerate from it.
+        val wallpaper = bundle.wallpaper
+            ?.let { BitmapFactory.decodeByteArray(it, 0, it.size) }
+            ?: return@withContext null
+        save(
+            name = bundle.manifest.name.ifBlank { nextDefaultName() },
+            wallpaper = wallpaper,
+            accentArgb = bundle.manifest.accentColor.toAccentArgbOrNull(),
+            source = bundle.manifest.source ?: PfpThemeSource(type = PfpThemeSource.TYPE_USER_CREATED),
+        )
+    }
+
     // ── internals ────────────────────────────────────────────────────────────
 
     private fun save(name: String, wallpaper: Bitmap, accentArgb: Long?, source: PfpThemeSource): SavedTheme? {

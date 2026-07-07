@@ -1,7 +1,9 @@
 package com.playfieldportal.feature.settings.viewmodel
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
+import androidx.core.content.FileProvider
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.lifecycle.ViewModel
@@ -187,6 +189,39 @@ class ThemesSettingsViewModel @Inject constructor(
 
     fun deleteSavedTheme(id: String) {
         viewModelScope.launch { themeStore.delete(id) }
+    }
+
+    /** Exports the bundle to shareable cache and opens the system share sheet. */
+    fun shareSavedTheme(id: String) {
+        viewModelScope.launch {
+            val file = themeStore.exportForShare(id)
+            if (file == null) {
+                _extra.update { it.copy(installMessage = "Could not export the theme") }
+                return@launch
+            }
+            val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+            val send = Intent(Intent.ACTION_SEND).apply {
+                type = "application/zip"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            context.startActivity(
+                Intent.createChooser(send, "Share theme").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            )
+        }
+    }
+
+    /** Imports a shared `.pfptheme` bundle into the library and applies it. */
+    fun importPfpTheme(uri: Uri) {
+        viewModelScope.launch {
+            _extra.update { it.copy(isInstalling = true, installMessage = null) }
+            val saved = themeStore.importBundle(uri)
+            val message = if (saved != null) {
+                themeStore.apply(saved.id)
+                "Imported \"${saved.name}\""
+            } else "Not a valid .pfptheme file"
+            _extra.update { it.copy(isInstalling = false, installMessage = message) }
+        }
     }
 
     private companion object {

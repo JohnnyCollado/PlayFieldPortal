@@ -61,6 +61,11 @@ fun ThemesSettingsScreen(
         ActivityResultContracts.OpenDocument()
     ) { uri -> uri?.let { viewModel.createThemeFromPhoto(it) } }
 
+    // Shared .pfptheme bundles (no registered MIME; the codec validates the contents).
+    val pfpPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri -> uri?.let { viewModel.importPfpTheme(it) } }
+
     SettingsScaffold(
         title    = "Settings",
         subtitle = "Themes",
@@ -116,6 +121,7 @@ fun ThemesSettingsScreen(
                     themes   = state.savedThemes,
                     onApply  = { viewModel.applySavedTheme(it) },
                     onDelete = { viewModel.deleteSavedTheme(it) },
+                    onShare  = { viewModel.shareSavedTheme(it) },
                 )
             }
 
@@ -156,6 +162,13 @@ fun ThemesSettingsScreen(
                 label    = "Import PSP Theme (.ptf)",
                 sublabel = "Uses the theme's wallpaper and color — icons stay ours",
                 onClick  = if (state.isInstalling) null else ({ ptfPicker.launch(arrayOf("*/*")) }),
+            )
+
+            // A theme shared from another PlayFieldPortal (the Share action on a card).
+            SettingsRow(
+                label    = "Import Theme (.pfptheme)",
+                sublabel = "A theme shared from PlayFieldPortal",
+                onClick  = if (state.isInstalling) null else ({ pfpPicker.launch(arrayOf("*/*")) }),
             )
 
             if (state.isInstalling) {
@@ -251,6 +264,7 @@ private fun SavedThemeCardRow(
     themes: List<PfpThemeStore.SavedTheme>,
     onApply: (String) -> Unit,
     onDelete: (String) -> Unit,
+    onShare: (String) -> Unit,
 ) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(18.dp),
@@ -297,14 +311,26 @@ private fun SavedThemeCardRow(
                     maxLines = 1,
                     modifier = Modifier.padding(top = 4.dp),
                 )
-                Text(
-                    text = "Remove",
-                    color = SettingsAccent,
-                    fontSize = 11.sp,
-                    modifier = Modifier
-                        .padding(top = 2.dp)
-                        .clickable { onDelete(theme.id) },
-                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // Padding INSIDE the clickable enlarges the tap target beyond the small text —
+                    // these are finger targets on a handheld, not mouse targets.
+                    Text(
+                        text = "Share",
+                        color = SettingsAccent,
+                        fontSize = 12.sp,
+                        modifier = Modifier
+                            .clickable { onShare(theme.id) }
+                            .padding(horizontal = 10.dp, vertical = 8.dp),
+                    )
+                    Text(
+                        text = "Remove",
+                        color = SettingsAccent,
+                        fontSize = 12.sp,
+                        modifier = Modifier
+                            .clickable { onDelete(theme.id) }
+                            .padding(horizontal = 10.dp, vertical = 8.dp),
+                    )
+                }
             }
         }
     }
