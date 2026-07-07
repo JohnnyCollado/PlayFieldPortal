@@ -70,5 +70,45 @@ class PtfParserTest {
         val truncated = full.copyOf(full.size - 16) // cut into the zlib stream
         val theme = assertNotNull(PtfParser.parse(truncated))
         assertNull(theme.wallpaper)
+        assertEquals(PtfParser.WallpaperStatus.CORRUPT, theme.wallpaperStatus)
+    }
+
+    @Test
+    fun `zlib wallpaper reports DECODED status`() {
+        val theme = assertNotNull(PtfParser.parse(syntheticPtf()))
+        assertEquals(PtfParser.WallpaperStatus.DECODED, theme.wallpaperStatus)
+    }
+
+    @Test
+    fun `LZR-compressed wallpaper (fw 3_70 era) is reported, not scanned into garbage`() {
+        val bmp = TestFixtures.buildBmp(8, 4) { _, _ -> pink }
+        // Method 1 = LZR: the payload bytes happen to be zlib in the fixture, but the
+        // parser must trust the header and refuse rather than inflate them anyway.
+        val ptf = TestFixtures.buildPtf("Old Theme", "3.70", bmp, compressionMethod = 1)
+        val theme = assertNotNull(PtfParser.parse(ptf))
+        assertNull(theme.wallpaper)
+        assertEquals(PtfParser.WallpaperStatus.UNSUPPORTED_COMPRESSION, theme.wallpaperStatus)
+    }
+
+    @Test
+    fun `theme without a wallpaper slot reports MISSING`() {
+        val full = syntheticPtf()
+        full[0x120] = 9 // rewrite the slot descriptor's id (u16 at 0x120) to a non-wallpaper id
+        val theme = assertNotNull(PtfParser.parse(full))
+        assertNull(theme.wallpaper)
+        assertEquals(PtfParser.WallpaperStatus.MISSING, theme.wallpaperStatus)
+    }
+
+    @Test
+    fun `payload header with a lying compressed size still decodes via the scan fallback`() {
+        val full = syntheticPtf()
+        val dataOffset = 0x140
+        // Claim a compressed size far past the slot: header is implausible, scan takes over.
+        full[dataOffset + 8] = 0xFF.toByte()
+        full[dataOffset + 9] = 0xFF.toByte()
+        full[dataOffset + 10] = 0x7F.toByte()
+        val theme = assertNotNull(PtfParser.parse(full))
+        assertNotNull(theme.wallpaper)
+        assertEquals(PtfParser.WallpaperStatus.DECODED, theme.wallpaperStatus)
     }
 }

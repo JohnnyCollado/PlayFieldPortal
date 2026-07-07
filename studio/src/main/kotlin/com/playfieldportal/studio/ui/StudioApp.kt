@@ -205,6 +205,12 @@ private fun StudioDialogs(viewModel: StudioViewModel) {
             title = { Text("Something went wrong") },
             text = { Text(dialog.message) },
         )
+        is StudioDialog.Notice -> AlertDialog(
+            onDismissRequest = viewModel::dismissDialog,
+            confirmButton = { Button(onClick = viewModel::dismissDialog) { Text("OK") } },
+            title = { Text(dialog.title) },
+            text = { Text(dialog.message) },
+        )
         is StudioDialog.BatchDone -> AlertDialog(
             onDismissRequest = viewModel::dismissDialog,
             confirmButton = { Button(onClick = viewModel::dismissDialog) { Text("OK") } },
@@ -213,6 +219,10 @@ private fun StudioDialogs(viewModel: StudioViewModel) {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     val s = dialog.summary
                     Text("Converted: ${s.converted.size}")
+                    if (s.warnings.isNotEmpty()) {
+                        Text("Converted with caveats: ${s.warnings.size}")
+                        s.warnings.forEach { (name, reason) -> Text("  • $name — $reason", fontSize = 12.sp) }
+                    }
                     if (s.skippedCxmb.isNotEmpty()) {
                         Text("Skipped (CXMB): ${s.skippedCxmb.size} — ${s.skippedCxmb.joinToString()}")
                     }

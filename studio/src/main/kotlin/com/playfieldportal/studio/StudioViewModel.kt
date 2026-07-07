@@ -54,6 +54,9 @@ sealed interface StudioDialog {
     /** `.ctf`/CXMB rejection with the "why" — these replace PSP firmware files, not themes. */
     data object CxmbRejected : StudioDialog
     data class Error(val message: String) : StudioDialog
+
+    /** Non-fatal heads-up (e.g. a PTF imported but its wallpaper couldn't be extracted). */
+    data class Notice(val title: String, val message: String) : StudioDialog
     data class BatchDone(val summary: com.playfieldportal.studio.io.BatchSummary) : StudioDialog
 }
 
@@ -165,7 +168,12 @@ class StudioViewModel(private val scope: CoroutineScope) {
             return@runBusy
         }
         when (val outcome = PtfConversion.convert(bytes, file.name)) {
-            is ConvertOutcome.Converted -> hydrate(outcome.bundle, "Imported ${file.name}")
+            is ConvertOutcome.Converted -> {
+                hydrate(outcome.bundle, "Imported ${file.name}")
+                outcome.warning?.let { warning ->
+                    _state.update { it.copy(dialog = StudioDialog.Notice("Imported with a caveat", warning)) }
+                }
+            }
             ConvertOutcome.Cxmb -> _state.update { it.copy(dialog = StudioDialog.CxmbRejected) }
             is ConvertOutcome.Failed -> _state.update {
                 it.copy(dialog = StudioDialog.Error("${file.name}: ${outcome.reason}"))

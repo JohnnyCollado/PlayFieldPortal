@@ -9,7 +9,8 @@ import java.time.LocalDate
 
 /** Result of converting one `.ptf` file. */
 sealed interface ConvertOutcome {
-    data class Converted(val bundle: PfpThemeBundle) : ConvertOutcome
+    /** [warning] is set when the theme converted but lost something (e.g. its wallpaper). */
+    data class Converted(val bundle: PfpThemeBundle, val warning: String? = null) : ConvertOutcome
 
     /** CXMB flash0 replacement — same magic, different beast; rejected with an explanation. */
     data object Cxmb : ConvertOutcome
@@ -43,6 +44,17 @@ object PtfConversion {
 
         val wallpaperPng = ptf.wallpaper?.let { ImageCodecs.toPngBytes(ImageCodecs.bmpToBufferedImage(it)) }
         val accent = ptf.wallpaper?.let { AccentDeriver.deriveAccent(it) } ?: DEFAULT_ACCENT
+        val warning = when (ptf.wallpaperStatus) {
+            PtfParser.WallpaperStatus.DECODED -> null
+            PtfParser.WallpaperStatus.MISSING -> "This theme contains no wallpaper image."
+            PtfParser.WallpaperStatus.UNSUPPORTED_COMPRESSION ->
+                "The wallpaper could not be extracted: this theme was built for older PSP " +
+                    "firmware (3.70 era) and uses LZR compression, which isn't supported yet. " +
+                    "The theme was imported without its wallpaper."
+            PtfParser.WallpaperStatus.CORRUPT ->
+                "The wallpaper data in this theme is damaged and could not be decoded. " +
+                    "The theme was imported without its wallpaper."
+        }
 
         val manifest = PfpThemeManifest(
             name = ptf.name.ifBlank { sourceFileName.substringBeforeLast('.') },
@@ -56,6 +68,7 @@ object PtfConversion {
         )
         return ConvertOutcome.Converted(
             PfpThemeBundle(manifest = manifest, wallpaper = wallpaperPng, preview = previewPng),
+            warning = warning,
         )
     }
 

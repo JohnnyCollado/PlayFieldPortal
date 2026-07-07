@@ -9,6 +9,8 @@ data class BatchSummary(
     val converted: List<String>,
     val skippedCxmb: List<String>,
     val failed: List<Pair<String, String>>,
+    /** Converted, but with a caveat (e.g. wallpaper lost to unsupported LZR compression). */
+    val warnings: List<Pair<String, String>> = emptyList(),
 )
 
 /**
@@ -36,6 +38,7 @@ object BatchConverter {
         val converted = mutableListOf<String>()
         val skipped = mutableListOf<String>()
         val failed = mutableListOf<Pair<String, String>>()
+        val warnings = mutableListOf<Pair<String, String>>()
 
         ptfs.forEachIndexed { index, file ->
             onProgress(BatchProgress(done = index, total = ptfs.size, current = file.name))
@@ -49,7 +52,10 @@ object BatchConverter {
                     val bundle = outcome.bundle.copy(preview = renderPreview(outcome.bundle))
                     val target = uniqueTarget(output, file.nameWithoutExtension)
                     runCatching { target.outputStream().use { PfpThemeCodec.write(bundle, it) } }
-                        .onSuccess { converted += target.name }
+                        .onSuccess {
+                            converted += target.name
+                            outcome.warning?.let { w -> warnings += file.name to w }
+                        }
                         .onFailure { failed += file.name to (it.message ?: "write error") }
                 }
                 ConvertOutcome.Cxmb -> skipped += file.name
@@ -57,7 +63,7 @@ object BatchConverter {
             }
         }
         onProgress(BatchProgress(done = ptfs.size, total = ptfs.size, current = ""))
-        return BatchSummary(converted, skipped, failed)
+        return BatchSummary(converted, skipped, failed, warnings)
     }
 
     /** `name.pfptheme`, `name (2).pfptheme`, ... — never silently overwrite. */

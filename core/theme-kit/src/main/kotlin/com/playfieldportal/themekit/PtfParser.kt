@@ -18,10 +18,27 @@ import java.util.zip.Inflater
  *        each pointer -> descriptor [ id:u16 | subtype:u16 | size:u32 | dataOffset:u32 ]
  * ```
  *
- * Slot IDs: 0 = icon atlas + preview, 1 = wallpaper (zlib -> 24-bit BMP), 2/3 = wave
- * graphics (zlib -> GIM), 4 = color/config. Only the wallpaper is extracted here — the
+ * Slot IDs: 0 = icon atlas + preview, 1 = wallpaper (-> 24-bit BMP), 2/3 = wave
+ * graphics (-> GIM), 4 = color/config. Only the wallpaper is extracted here — the
  * import pipeline needs wallpaper + name + firmware; GIM icon decoding is out of scope
  * (we render our own icons; see docs/ptf-import-plan.md).
+ *
+ * Every slot payload starts with a 32-byte header (verified across official themes
+ * spanning firmware 3.70–5.00):
+ *
+ * ```
+ * +0   u32  sequence/index
+ * +4   u16  resource type        (4 = wallpaper, 5 = other resources)
+ * +6   u16  compression method   (1 = LZR, 2 = zlib)
+ * +8   u32  compressed size
+ * +12  u32  uncompressed size    (wallpaper: 480x272 24-bit BMP, ~391734 bytes)
+ * +16  16 zero bytes
+ * +32  compressed data
+ * ```
+ *
+ * Firmware 3.70-era themes compress with LZR (method 1), 3.80+ with zlib (method 2).
+ * LZR decompression is not implemented, so those themes parse with a null wallpaper and
+ * [PtfTheme.wallpaperStatus] = [WallpaperStatus.UNSUPPORTED_COMPRESSION].
  */
 object PtfParser {
 
@@ -37,14 +54,29 @@ object PtfParser {
     /** What a `\0PTF`-magic file actually is. CXMB `.ctf` files reuse the same magic. */
     enum class Kind { OFFICIAL_PTF, CXMB, NOT_PTF }
 
+    /** Why [PtfTheme.wallpaper] is (or isn't) populated — lets callers explain failures. */
+    enum class WallpaperStatus {
+        DECODED,
+
+        /** The theme has no wallpaper slot at all (some themes only restyle icons). */
+        MISSING,
+
+        /** Firmware 3.70-era LZR compression (payload method 1) — no decoder yet. */
+        UNSUPPORTED_COMPRESSION,
+
+        /** A wallpaper slot exists but its data would not decompress/decode. */
+        CORRUPT,
+    }
+
     data class Slot(val id: Int, val subtype: Int, val size: Int, val dataOffset: Int)
 
     data class PtfTheme(
         val name: String,
         val firmware: String,
         val slots: List<Slot>,
-        /** Decoded wallpaper, when slot 1 held a valid zlib-compressed 24-bit BMP. */
+        /** Decoded wallpaper, when slot 1 held a decompressible 24-bit BMP. */
         val wallpaper: BmpImage?,
+        val wallpaperStatus: WallpaperStatus,
     )
 
     /**
@@ -84,21 +116,62 @@ object PtfParser {
             }
         }
 
-        val wallpaper = slots.firstOrNull { it.id == WALLPAPER_SLOT_ID }
-            ?.let { extractWallpaper(bytes, it) }
+        val wallpaperSlot = slots.firstOrNull { it.id == WALLPAPER_SLOT_ID }
+        val (wallpaper, status) = when {
+            wallpaperSlot == null -> null to WallpaperStatus.MISSING
+            else -> extractWallpaper(bytes, wallpaperSlot)
+        }
 
-        return PtfTheme(name = name, firmware = firmware, slots = slots, wallpaper = wallpaper)
+        return PtfTheme(
+            name = name,
+            firmware = firmware,
+            slots = slots,
+            wallpaper = wallpaper,
+            wallpaperStatus = status,
+        )
     }
 
-    /** Slot 1 payload = header bytes + a zlib stream that inflates to a 24-bit BMP. */
-    private fun extractWallpaper(bytes: ByteArray, slot: Slot): BmpImage? {
+    // Payload header layout (see class KDoc).
+    private const val PAYLOAD_HEADER_SIZE = 32
+    private const val RESOURCE_TYPE_WALLPAPER = 4
+    private const val COMPRESSION_LZR = 1
+    private const val COMPRESSION_ZLIB = 2
+
+    private fun extractWallpaper(bytes: ByteArray, slot: Slot): Pair<BmpImage?, WallpaperStatus> {
         val start = slot.dataOffset
         val end = (slot.dataOffset.toLong() + slot.size).coerceAtMost(bytes.size.toLong()).toInt()
-        if (start !in 0 until end) return null
+        if (start !in 0 until end) return null to WallpaperStatus.CORRUPT
 
-        val zlibStart = findZlibHeader(bytes, start, end) ?: return null
-        val inflated = inflate(bytes, zlibStart, end - zlibStart) ?: return null
-        return Bmp.decode(inflated)
+        // Preferred path: the 32-byte payload header tells us the compression method and
+        // exactly where/how much to inflate — no scanning, and sizes double as sanity checks.
+        if (end - start >= PAYLOAD_HEADER_SIZE) {
+            val type = bytes.u16(start + 4)
+            val method = bytes.u16(start + 6)
+            val compressedSize = bytes.u32(start + 8)
+            val uncompressedSize = bytes.u32(start + 12)
+            val headerPlausible = type == RESOURCE_TYPE_WALLPAPER &&
+                compressedSize in 1..(end - start - PAYLOAD_HEADER_SIZE) &&
+                uncompressedSize in 1..MAX_INFLATED_BYTES
+            if (headerPlausible) {
+                when (method) {
+                    COMPRESSION_LZR -> return null to WallpaperStatus.UNSUPPORTED_COMPRESSION
+                    COMPRESSION_ZLIB -> {
+                        val inflated = inflate(bytes, start + PAYLOAD_HEADER_SIZE, compressedSize)
+                        val bmp = inflated?.let(Bmp::decode)
+                        if (bmp != null) return bmp to WallpaperStatus.DECODED
+                        // Header lied or stream is damaged — fall through to the scan.
+                    }
+                }
+            }
+        }
+
+        // Fallback for payloads without a recognizable header: scan for a zlib stream.
+        val zlibStart = findZlibHeader(bytes, start, end)
+            ?: return null to WallpaperStatus.CORRUPT
+        val inflated = inflate(bytes, zlibStart, end - zlibStart)
+            ?: return null to WallpaperStatus.CORRUPT
+        val bmp = Bmp.decode(inflated) ?: return null to WallpaperStatus.CORRUPT
+        return bmp to WallpaperStatus.DECODED
     }
 
     /** First plausible zlib header (0x78 followed by a valid FCHECK byte) in [from, until). */

@@ -50,6 +50,27 @@ class PtfConversionTest {
     }
 
     @Test
+    fun `LZR-compressed ptf converts without wallpaper and carries a warning`() {
+        val ptf = TestFixtures.buildPtf(
+            name = "Old Theme",
+            firmware = "3.70",
+            wallpaperBmp = TestFixtures.buildBmp(8, 4) { _, _ -> 0xFF3050E0.toInt() },
+            compressionMethod = 1, // LZR
+        )
+        val outcome = assertIs<ConvertOutcome.Converted>(PtfConversion.convert(ptf, "old.ptf"))
+        assertEquals(null, outcome.bundle.wallpaper)
+        assertTrue(assertNotNull(outcome.warning).contains("LZR"), "warning was: ${outcome.warning}")
+        // Accent falls back to the default when there is no wallpaper to derive from.
+        assertEquals(PtfConversion.toHexRgb(PtfConversion.DEFAULT_ACCENT), outcome.bundle.manifest.accentColor)
+    }
+
+    @Test
+    fun `clean conversion carries no warning`() {
+        val outcome = assertIs<ConvertOutcome.Converted>(PtfConversion.convert(buildPtf(), "neon.ptf"))
+        assertEquals(null, outcome.warning)
+    }
+
+    @Test
     fun `rejects cxmb files with the dedicated outcome`() {
         val cxmb = buildPtf() + "/vsh/resource/custom".toByteArray(Charsets.US_ASCII)
         assertIs<ConvertOutcome.Cxmb>(PtfConversion.convert(cxmb, "cfw.ctf"))

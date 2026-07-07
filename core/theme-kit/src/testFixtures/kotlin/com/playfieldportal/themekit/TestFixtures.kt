@@ -49,19 +49,22 @@ object TestFixtures {
 
     /**
      * Minimal structurally-valid official PTF: header, one wallpaper slot (ID 1) whose
-     * payload is [wallpaperLeadIn] junk bytes followed by the zlib'd [wallpaperBmp] —
-     * mirroring real files, where the zlib stream starts partway into the slot.
+     * payload is the real 32-byte payload header (resource type 4, [compressionMethod],
+     * compressed/uncompressed sizes) followed by the zlib'd [wallpaperBmp] — mirroring
+     * real files. With [compressionMethod] = 1 (LZR) the "compressed" bytes are still
+     * zlib data, but the parser must refuse to touch them based on the header alone.
      */
     fun buildPtf(
         name: String,
         firmware: String,
         wallpaperBmp: ByteArray,
-        wallpaperLeadIn: Int = 32,
+        compressionMethod: Int = 2,
     ): ByteArray {
         val compressed = zlib(wallpaperBmp)
         val descriptorOffset = 0x120
         val dataOffset = 0x140
-        val slotSize = wallpaperLeadIn + compressed.size
+        val headerSize = 32
+        val slotSize = headerSize + compressed.size
         val file = ByteArray(dataOffset + slotSize)
 
         // magic "\0PTF"
@@ -75,7 +78,13 @@ object TestFixtures {
         file.putU32(descriptorOffset + 4, slotSize)
         file.putU32(descriptorOffset + 8, dataOffset)
 
-        compressed.copyInto(file, dataOffset + wallpaperLeadIn)
+        // 32-byte payload header, as in real slot payloads.
+        file.putU16(dataOffset + 4, 4)                    // resource type 4 = wallpaper
+        file.putU16(dataOffset + 6, compressionMethod)    // 1 = LZR, 2 = zlib
+        file.putU32(dataOffset + 8, compressed.size)
+        file.putU32(dataOffset + 12, wallpaperBmp.size)
+
+        compressed.copyInto(file, dataOffset + headerSize)
         return file
     }
 

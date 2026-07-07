@@ -54,8 +54,15 @@ class PtfThemeImporter @Inject constructor(
 
         val theme = PtfParser.parse(bytes)
             ?: return@withContext Result.Failed("The theme file could not be parsed")
-        val wallpaper = theme.wallpaper
-            ?: return@withContext Result.Failed("The theme has no wallpaper image")
+        val wallpaper = theme.wallpaper ?: return@withContext Result.Failed(
+            when (theme.wallpaperStatus) {
+                PtfParser.WallpaperStatus.MISSING -> "The theme has no wallpaper image"
+                PtfParser.WallpaperStatus.UNSUPPORTED_COMPRESSION ->
+                    "This theme was made for older PSP firmware (3.70 era) and uses LZR " +
+                        "compression, which isn't supported yet"
+                else -> "The theme's wallpaper is damaged and could not be decoded"
+            },
+        )
 
         val accent = AccentDeriver.deriveAccent(wallpaper)?.toUInt()?.toLong()
         val name = theme.name.ifBlank { "Imported PSP theme" }
