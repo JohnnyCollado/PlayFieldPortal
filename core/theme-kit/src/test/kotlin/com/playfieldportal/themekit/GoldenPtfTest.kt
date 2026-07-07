@@ -107,6 +107,26 @@ class GoldenPtfTest {
     }
 
     @Test
+    fun `crisis core - full unpack recovers every resource`() {
+        val dump = assertNotNull(PtfUnpacker.unpack(golden("CrisisCoreFF7.ptf")))
+        assertEquals("CCFFVII", dump.name)
+
+        val failed = dump.resources.filter { it.kind == PtfUnpacker.Resource.Kind.FAILED }
+        assertTrue(failed.isEmpty(), "failed resources: ${failed.map { "${it.slotId}/${it.sequence}" }}")
+
+        val images = dump.resources.mapNotNull { it.image }
+        assertTrue(images.size >= 55, "expected the full icon set, got ${images.size} images")
+        // The embedded 300x170 preview and the 480x272 wallpaper both decode.
+        assertTrue(images.any { it.width == 300 && it.height == 170 }, "preview missing")
+        assertTrue(images.any { it.width == 480 && it.height == 272 }, "wallpaper missing")
+        // Focused icon variants carry transparency.
+        assertTrue(
+            images.any { img -> img.argb.any { p -> (p ushr 24) == 0 } },
+            "no transparent pixels anywhere — alpha lost?",
+        )
+    }
+
+    @Test
     fun `detect flags a CXMB ctf when present`() {
         val file = File(goldenDir, "PSP-Themes-master/Blue Flame.ctf")
         assumeTrue("no CXMB sample present — skipping", file.isFile)

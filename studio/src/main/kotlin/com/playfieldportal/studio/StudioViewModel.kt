@@ -350,6 +350,46 @@ class StudioViewModel(private val scope: CoroutineScope) {
             .onFailure { e -> _state.update { it.copy(dialog = StudioDialog.Error("Export failed: ${e.message}")) } }
     }
 
+    /**
+     * Unpacks every resource of a `.ptf` (wallpaper, preview, icon GIMs) into [outDir]
+     * as reference PNGs — so authors can rebuild an old theme with original assets.
+     */
+    fun unpackPtf(file: File, outDir: File) = runBusy {
+        val bytes = com.playfieldportal.studio.io.SafeIo.readBytesCapped(file)
+        if (bytes == null) {
+            _state.update { it.copy(dialog = StudioDialog.Error("${file.name} is too large to be a theme file")) }
+            return@runBusy
+        }
+        if (com.playfieldportal.themekit.PtfParser.detect(bytes) == com.playfieldportal.themekit.PtfParser.Kind.CXMB) {
+            _state.update { it.copy(dialog = StudioDialog.CxmbRejected) }
+            return@runBusy
+        }
+        val dump = com.playfieldportal.themekit.PtfUnpacker.unpack(bytes)
+        if (dump == null) {
+            _state.update { it.copy(dialog = StudioDialog.Error("${file.name} is not a PSP theme file")) }
+            return@runBusy
+        }
+        val summary = runCatching { com.playfieldportal.studio.io.PtfUnpackWriter.write(dump, outDir) }
+            .getOrElse { e ->
+                _state.update { it.copy(dialog = StudioDialog.Error("Unpack failed: ${e.message}")) }
+                return@runBusy
+            }
+        _state.update {
+            it.copy(
+                dialog = StudioDialog.Notice(
+                    "Theme unpacked",
+                    buildString {
+                        append("${summary.images} images")
+                        if (summary.other > 0) append(" and ${summary.other} data files")
+                        append(" written to ${outDir.name} (see report.txt).")
+                        if (summary.failed > 0) append(" ${summary.failed} resources could not be decompressed.")
+                    },
+                ),
+                statusMessage = "Unpacked ${file.name}: ${summary.images} images",
+            )
+        }
+    }
+
     /** Folder of `.ptf` → folder of `.pfptheme`, with live progress and a summary dialog. */
     fun batchConvert(
         inputDir: File,

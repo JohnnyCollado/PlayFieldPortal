@@ -75,6 +75,12 @@ fun StudioApp(viewModel: StudioViewModel, window: Frame) {
                             runCatching { PreviewRenderer.renderPreviewPng(bundle) }.getOrNull()
                         }
                     }) { Text("Batch convert…") }
+                    OutlinedButton(onClick = {
+                        val ptf = FileDialogs.openFile(window, "PSP theme to unpack", setOf("ptf", "ctf"))
+                            ?: return@OutlinedButton
+                        val output = FileDialogs.pickDirectory("Folder for unpacked assets") ?: return@OutlinedButton
+                        viewModel.unpackPtf(ptf, output)
+                    }) { Text("Unpack PTF…") }
 
                     Box(Modifier.weight(1f))
                     if (state.busy) {

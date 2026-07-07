@@ -36,6 +36,86 @@ object TestFixtures {
     }
 
     /**
+     * Minimal GIM container: root/picture chunks, an optional RGBA8888 palette, and one
+     * image block. [argbAt] supplies pixels; [indexed] stores them as index8 through a
+     * palette built from the distinct colors, otherwise as direct RGBA8888. [swizzle]
+     * stores pixel data in the PSP's 16-byte x 8-row block order.
+     */
+    fun buildGim(
+        width: Int,
+        height: Int,
+        indexed: Boolean = true,
+        swizzle: Boolean = false,
+        argbAt: (x: Int, y: Int) -> Int,
+    ): ByteArray {
+        val pixels = IntArray(width * height) { argbAt(it % width, it / width) }
+        val bpp = if (indexed) 8 else 32
+        val pitch = ((width * bpp + 7) / 8 + 15) / 16 * 16
+        val storedHeight = if (swizzle) (height + 7) / 8 * 8 else height
+
+        val palette = if (indexed) pixels.distinct().also { check(it.size <= 256) } else emptyList()
+        var data = ByteArray(pitch * storedHeight)
+        for (y in 0 until height) for (x in 0 until width) {
+            if (indexed) {
+                data[y * pitch + x] = palette.indexOf(pixels[y * width + x]).toByte()
+            } else {
+                val p = pixels[y * width + x]
+                data[y * pitch + x * 4] = (p shr 16).toByte()      // R
+                data[y * pitch + x * 4 + 1] = (p shr 8).toByte()   // G
+                data[y * pitch + x * 4 + 2] = p.toByte()           // B
+                data[y * pitch + x * 4 + 3] = (p shr 24).toByte()  // A
+            }
+        }
+        if (swizzle) data = swizzle(data, pitch)
+
+        fun block(id: Int, format: Int, w: Int, h: Int, blockBpp: Int, payload: ByteArray): ByteArray {
+            val chunk = ByteArray(16 + 64 + payload.size)
+            chunk.putU16(0, id)
+            chunk.putU32(4, chunk.size)
+            chunk.putU32(8, chunk.size)
+            chunk.putU16(16, 48)              // data-header size
+            chunk.putU16(20, format)
+            chunk.putU16(22, if (id == 0x04 && swizzle) 1 else 0)
+            chunk.putU16(24, w)
+            chunk.putU16(26, h)
+            chunk.putU16(28, blockBpp)
+            chunk.putU16(44, 64)              // pixel-data offset from chunk+16
+            payload.copyInto(chunk, 16 + 64)
+            return chunk
+        }
+
+        val paletteChunk = if (indexed) {
+            val bytes = ByteArray(palette.size * 4)
+            palette.forEachIndexed { i, p ->
+                bytes[i * 4] = (p shr 16).toByte(); bytes[i * 4 + 1] = (p shr 8).toByte()
+                bytes[i * 4 + 2] = p.toByte(); bytes[i * 4 + 3] = (p shr 24).toByte()
+            }
+            block(0x05, 3, palette.size, 1, 32, bytes)
+        } else ByteArray(0)
+        val imageChunk = block(0x04, if (indexed) 5 else 3, width, height, bpp, data)
+
+        val total = 16 + 16 + 16 + paletteChunk.size + imageChunk.size
+        val out = ByteArray(total)
+        "MIG.00.1PSP".toByteArray(Charsets.US_ASCII).copyInto(out)
+        out.putU16(16, 0x02); out.putU32(20, total - 16)          // root
+        out.putU16(32, 0x03); out.putU32(36, total - 32)          // picture
+        paletteChunk.copyInto(out, 48)
+        imageChunk.copyInto(out, 48 + paletteChunk.size)
+        return out
+    }
+
+    /** PSP texture swizzle (inverse of the decoder's unswizzle). */
+    private fun swizzle(data: ByteArray, pitch: Int): ByteArray {
+        val height = data.size / pitch
+        val out = ByteArray(data.size)
+        val rowBlocks = pitch / 16
+        for (y in 0 until height) for (x in 0 until pitch) {
+            out[((x / 16) + (y / 8) * rowBlocks) * 128 + (y % 8) * 16 + (x % 16)] = data[y * pitch + x]
+        }
+        return out
+    }
+
+    /**
      * Stored-mode LZR stream (negative type byte): 5-byte header + raw data + 1 pad byte.
      * Sony's LZR range-coder has no public compressor, but the stored mode exercises the
      * same entry point and header handling, keeping method-1 PTF tests hermetic; real

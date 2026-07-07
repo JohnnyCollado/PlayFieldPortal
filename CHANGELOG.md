@@ -35,7 +35,11 @@ desktop companion.
   template-pack export, wallpaper import with **crop presets** (PSP 480×272 / 720p / 1080p) and
   soft-wallpaper/dark-icon legibility hints, a **crossbar alignment assist** that auto-detects the
   dark band PSP wallpapers bake in (plus a manual position slider the launcher honors), export with
-  an embedded rendered preview, and **batch `.ptf` → `.pfptheme`** folder conversion.
+  an embedded rendered preview, **batch `.ptf` → `.pfptheme`** folder conversion, and a
+  **PTF unpacker** ("Unpack PTF…") that extracts every resource of an official PSP theme —
+  wallpaper, embedded preview, category ribbons, and item icons with their focused variants
+  (GIM textures: indexed + direct-color formats, PSP swizzle, transparency preserved) — as
+  reference PNGs for rebuilding the theme with original assets.
 
 - **Discord Social section (opt-in).** A new **Social** column on the XMB. Sign in by scanning a
   **QR code** with your phone (OAuth2 device grant — no password typed on the handheld); tokens are

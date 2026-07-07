@@ -2,8 +2,8 @@ package com.playfieldportal.themekit
 
 /**
  * Decoded bitmap pixels, row-major top-down, one packed ARGB int per pixel (alpha always 0xFF
- * for BMP sources). Kept platform-neutral so both Android and desktop frontends can wrap it
- * in their own image types.
+ * for BMP sources; [Gim] sources carry real transparency). Kept platform-neutral so both
+ * Android and desktop frontends can wrap it in their own image types.
  */
 class BmpImage(val width: Int, val height: Int, val argb: IntArray) {
     init {
