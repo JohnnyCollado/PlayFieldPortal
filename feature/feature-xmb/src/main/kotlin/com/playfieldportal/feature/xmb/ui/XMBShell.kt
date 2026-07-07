@@ -263,6 +263,11 @@ fun XMBShell(
     onDismissInfoDialog: () -> Unit = {},
 ) {
     PFPTheme(colors = uiState.themeColors) {
+      // The applied theme's custom icon slots ride alongside the palette: every themeable
+      // glyph (crossbar, item rows, status strip) checks this map before its built-in art.
+      CompositionLocalProvider(
+          com.playfieldportal.core.ui.icons.LocalXmbIconOverrides provides uiState.iconOverrides,
+      ) {
         // Uniform "canvas scale" for the whole app. On screens taller than the handheld baseline
         // (tablets), override LocalDensity for the entire shell so every dp/sp grows together — the
         // XMB cross, Settings, detail screens, drawer and dialogs all magnify uniformly, preserving
@@ -692,6 +697,7 @@ fun XMBShell(
         }
             } // end: CompositionLocalProvider (uniform canvas scale)
         } // end: BoxWithConstraints (uniform canvas scale)
+      } // end: CompositionLocalProvider (LocalXmbIconOverrides)
     }
 
 }

@@ -71,6 +71,15 @@ object XmbStatusIcons {
         level >= 26    -> R.drawable.ic_status_battery_medium
         else           -> R.drawable.ic_status_battery_low
     }
+
+    /** Themeable icon slot (theme-kit IconSlots key) matching [battery]'s tiers. */
+    fun batterySlotKey(level: Int, charging: Boolean): String = when {
+        charging       -> "status_battery_charging"
+        level >= 76    -> "status_battery_full"
+        level >= 51    -> "status_battery_high"
+        level >= 26    -> "status_battery_medium"
+        else           -> "status_battery_low"
+    }
 }
 
 // ── PSP-style full-width status strip ────────────────────────────────────────
@@ -172,7 +181,10 @@ fun XmbPspStatusStrip(
                 )
             }
             if (sys.bluetoothOn) {
-                StatusIcon(XmbStatusIcons.bluetooth, "Bluetooth", Modifier.size(width = 9.dp, height = 13.dp))
+                StatusIcon(
+                    XmbStatusIcons.bluetooth, "Bluetooth", Modifier.size(width = 9.dp, height = 13.dp),
+                    slotKey = "status_bluetooth",
+                )
             }
             sys.wifiLevel?.let { level ->
                 WifiMeter(level, Modifier.size(width = 16.dp, height = 13.dp))
@@ -185,6 +197,7 @@ fun XmbPspStatusStrip(
                 description = "Battery",
                 modifier    = Modifier.size(width = 24.dp, height = 11.dp),
                 tint        = if (batteryLevel <= 20 && !isCharging) LowBatteryTint else StripMuted,
+                slotKey     = XmbStatusIcons.batterySlotKey(batteryLevel, isCharging),
             )
             Text(
                 text       = "$batteryLevel%",
@@ -261,7 +274,15 @@ private fun StatusIcon(
     description: String,
     modifier: Modifier = Modifier,
     tint: Color = StripMuted,
+    // Themeable slot: a theme's custom status icon renders as-authored (untinted), like
+    // every other icon slot. Null = not themeable (meters drawn on Canvas have no slot).
+    slotKey: String? = null,
 ) {
+    val override = slotKey?.let { com.playfieldportal.core.ui.icons.LocalXmbIconOverrides.current[it] }
+    if (override != null) {
+        Image(bitmap = override, contentDescription = description, modifier = modifier)
+        return
+    }
     Image(
         painter            = painterResource(res),
         contentDescription = description,

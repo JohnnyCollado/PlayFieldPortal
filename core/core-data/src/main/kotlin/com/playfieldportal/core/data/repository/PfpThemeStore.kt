@@ -86,7 +86,7 @@ class PfpThemeStore @Inject constructor(
             )
         }
 
-    /** Applies a saved theme: wallpaper + accent through the standard cascade prefs. */
+    /** Applies a saved theme: wallpaper + accent + custom icons through the standard cascade prefs. */
     suspend fun apply(id: String): Boolean = withContext(Dispatchers.IO) {
         val wallpaperSidecar = File(dir, "$id.wallpaper.jpg")
         val bundle = runCatching { PfpThemeCodec.read(File(dir, "$id.pfptheme").readBytes()) }.getOrNull()
@@ -97,10 +97,33 @@ class PfpThemeStore @Inject constructor(
         val dest = File(destDir, "wallpaper_theme_${System.currentTimeMillis()}.jpg")
         val wallpaperOk = wallpaperSidecar.isFile && runCatching { wallpaperSidecar.copyTo(dest, overwrite = true) }.isSuccess
 
+        // Extract custom icon slots (schema v2) — wipe first so the previous theme's icons
+        // never bleed into this one. The stamp pref tells the live XMB to (re)load the dir;
+        // its absence means "no custom icons".
+        val iconsDir = File(context.filesDir, THEME_ICONS_DIR)
+        iconsDir.deleteRecursively()
+        if (bundle.icons.isNotEmpty()) {
+            iconsDir.mkdirs()
+            // Keys were validated against IconSlots by the codec — safe as file names.
+            for ((key, png) in bundle.icons) File(iconsDir, "$key.png").writeBytes(png)
+        }
+
         val accent = bundle.manifest.accentColor.toAccentArgbOrNull()
+        // The theme owns the unified icon tint too: an explicit hex applies, "auto" (or
+        // malformed) clears back to the default derivation — same wholesale-look contract
+        // as the accent override.
+        val iconColor = bundle.manifest.iconColor
+            .takeIf { it != PfpThemeManifest.ICON_COLOR_AUTO }
+            ?.toAccentArgbOrNull()
         context.pfpDataStore.edit { prefs ->
             if (wallpaperOk) prefs[KEY_CUSTOM_WALLPAPER] = dest.absolutePath
             if (accent != null) prefs[KEY_ACCENT_OVERRIDE] = accent else prefs.remove(KEY_ACCENT_OVERRIDE)
+            if (iconColor != null) prefs[KEY_ICON_COLOR] = iconColor else prefs.remove(KEY_ICON_COLOR)
+            if (bundle.icons.isNotEmpty()) {
+                prefs[KEY_THEME_ICONS_STAMP] = System.currentTimeMillis()
+            } else {
+                prefs.remove(KEY_THEME_ICONS_STAMP)
+            }
         }
         true
     }
@@ -137,12 +160,22 @@ class PfpThemeStore @Inject constructor(
         val wallpaper = bundle.wallpaper
             ?.let { BitmapFactory.decodeByteArray(it, 0, it.size) }
             ?: return@withContext null
-        save(
-            name = bundle.manifest.name.ifBlank { nextDefaultName() },
-            wallpaper = wallpaper,
-            accentArgb = bundle.manifest.accentColor.toAccentArgbOrNull(),
-            source = bundle.manifest.source ?: PfpThemeSource(type = PfpThemeSource.TYPE_USER_CREATED),
-        )
+        // Store the bundle VERBATIM (not re-encoded through save()) so fields this build
+        // doesn't materialize — custom icons, wave style, layout spec — survive the
+        // import → library → apply round-trip.
+        runCatching {
+            dir.mkdirs()
+            val id = "pfp_${System.currentTimeMillis()}"
+            val name = bundle.manifest.name.ifBlank { nextDefaultName() }
+            File(dir, "$id.pfptheme").writeBytes(bytes)
+            FileOutputStream(File(dir, "$id.wallpaper.jpg")).use { wallpaper.compress(Bitmap.CompressFormat.JPEG, 92, it) }
+            val preview = bundle.preview?.let { BitmapFactory.decodeByteArray(it, 0, it.size) }
+                ?: downscale(wallpaper, maxEdge = 480)
+            FileOutputStream(File(dir, "$id.preview.jpg")).use { preview.compress(Bitmap.CompressFormat.JPEG, 88, it) }
+            if (preview !== wallpaper) preview.recycle()
+            _themes.value = scan()
+            SavedTheme(id, name, bundle.manifest.accentColor.toAccentArgbOrNull(), File(dir, "$id.preview.jpg").absolutePath)
+        }.onFailure { Timber.w(it, "PfpThemeStore: import failed") }.getOrNull()
     }
 
     // ── internals ────────────────────────────────────────────────────────────
@@ -218,9 +251,19 @@ class PfpThemeStore @Inject constructor(
         return hex.toLongOrNull(16)?.let { 0xFF000000L or it }
     }
 
-    private companion object {
-        // Must match XMBViewModel / DisplaySettingsViewModel — shared cascade prefs contract.
-        val KEY_CUSTOM_WALLPAPER = stringPreferencesKey("display_custom_wallpaper")
-        val KEY_ACCENT_OVERRIDE = longPreferencesKey("theme_accent_override")
+    companion object {
+        // Must match XMBViewModel / ThemesSettingsViewModel — shared cascade prefs contract.
+        private val KEY_CUSTOM_WALLPAPER = stringPreferencesKey("display_custom_wallpaper")
+        private val KEY_ACCENT_OVERRIDE = longPreferencesKey("theme_accent_override")
+        private val KEY_ICON_COLOR = longPreferencesKey("theme_icon_color")
+
+        /** Extracted custom icons of the applied theme, under filesDir. */
+        const val THEME_ICONS_DIR = "theme-icons"
+
+        /**
+         * Present ⇒ the applied theme carries custom icons in [THEME_ICONS_DIR]; the value
+         * only bumps so observers reload. Removed when a theme/preset without icons applies.
+         */
+        val KEY_THEME_ICONS_STAMP = longPreferencesKey("theme_icons_stamp")
     }
 }

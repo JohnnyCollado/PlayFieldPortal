@@ -90,6 +90,7 @@ import coil.compose.AsyncImage
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.playfieldportal.core.ui.icons.GameIconStyle
 import com.playfieldportal.core.ui.icons.PortalIcon
+import com.playfieldportal.core.ui.icons.ThemedGlyph
 import com.playfieldportal.core.ui.icons.categoryIconFor
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.themekit.XmbLayoutSpec
@@ -287,11 +288,13 @@ private fun SiblingIcon(item: XMBItem, selected: Boolean) {
         contentAlignment = Alignment.CenterEnd,
     ) {
         if (videoGlyph != null) {
-            Icon(
-                videoGlyph,
+            ThemedGlyph(
+                slotKey = itemSlotKeyFor(item.type) ?: "",
+                defaultVector = videoGlyph,
                 contentDescription = item.title,
-                tint = LocalPFPColors.current.iconColor.copy(alpha = if (selected) 1f else 0.5f),
-                modifier = Modifier.size(chip),
+                tint = LocalPFPColors.current.iconColor,
+                // Layer alpha (not tint alpha) so custom untinted icons dim identically.
+                modifier = Modifier.size(chip).alpha(if (selected) 1f else 0.5f),
             )
         } else {
             PortalIcon(
@@ -301,6 +304,42 @@ private fun SiblingIcon(item: XMBItem, selected: Boolean) {
             )
         }
     }
+}
+
+// Themeable icon slot (theme-kit IconSlots key) for item types whose leading glyph is a
+// Material vector. Null = the type's glyph is not a themeable slot (console art, covers).
+// Kept in lockstep with the Theme Studio's StudioIconSet.ITEM_VECTORS defaults.
+internal fun itemSlotKeyFor(type: XMBItemType): String? = when (type) {
+    XMBItemType.ADD_ACTION -> "item_add"
+    XMBItemType.VIDEO_FOLDER -> "item_video_folder"
+    XMBItemType.VIDEO_LIBRARY -> "item_video_library"
+    XMBItemType.VIDEO_RECENT -> "item_video_recent"
+    XMBItemType.VIDEO_FAVORITES -> "item_video_favorites"
+    XMBItemType.VIDEO_COLLECTIONS -> "item_video_collections"
+    XMBItemType.VIDEO_APPS -> "item_video_apps"
+    XMBItemType.VIDEO_FILE -> "item_video_file"
+    XMBItemType.PHOTO_FOLDER -> "item_photo_folder"
+    XMBItemType.PHOTO_FILE -> "item_photo_file"
+    XMBItemType.PHOTO_ALBUMS -> "item_photo_albums"
+    XMBItemType.PHOTO_APPS -> "item_photo_apps"
+    XMBItemType.CAMERA -> "item_camera"
+    XMBItemType.MUSIC_TRACK -> "item_music_track"
+    XMBItemType.PLAYLIST -> "item_playlist"
+    XMBItemType.MUSIC_APPS -> "item_music_apps"
+    XMBItemType.SOCIAL_ADD -> "item_social_add"
+    XMBItemType.SOCIAL_ACCOUNT, XMBItemType.SOCIAL_FRIEND -> "item_social_account"
+    XMBItemType.SOCIAL_FRIENDS -> "item_social_friends"
+    XMBItemType.SOCIAL_VOICE, XMBItemType.SOCIAL_VOICE_CREATE -> "item_social_voice"
+    XMBItemType.SOCIAL_VOICE_INVITE, XMBItemType.SOCIAL_VOICE_INVITES,
+    XMBItemType.SOCIAL_VOICE_INVITE_ROW, XMBItemType.SOCIAL_VOICE_FRIEND_PICK -> "item_social_voice_invite"
+    XMBItemType.SOCIAL_VOICE_MUTE -> "item_social_voice_mute"
+    XMBItemType.SOCIAL_VOICE_SETTINGS, XMBItemType.SOCIAL_VOICE_TOGGLE,
+    XMBItemType.SOCIAL_VOICE_CYCLE -> "item_social_voice_settings"
+    XMBItemType.SOCIAL_VOICE_LEAVE -> "item_social_voice_leave"
+    XMBItemType.SOCIAL_ACTIVITY_SETTINGS, XMBItemType.SOCIAL_TOGGLE -> "item_social_activity"
+    XMBItemType.SOCIAL_DISCORD_SETTINGS -> "item_social_discord_settings"
+    XMBItemType.SOCIAL_SIGNOUT -> "item_social_signout"
+    else -> null
 }
 
 // Maps a memory-card-style item to its sysicon key (mirrors XmbItemLeadingIcon's mapping).
@@ -656,8 +695,9 @@ private fun XmbItemLeadingIcon(
                             .clip(RoundedCornerShape(6.dp))
                             .background(Color(0xFF1B1B27)),
                     ) {
-                        Icon(
-                            Icons.Filled.MusicNote,
+                        ThemedGlyph(
+                            slotKey = itemSlotKeyFor(item.type) ?: "",
+                            defaultVector = Icons.Filled.MusicNote,
                             contentDescription = null,
                             tint = iconTint,
                             modifier = Modifier.size(32.dp),
@@ -672,8 +712,9 @@ private fun XmbItemLeadingIcon(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier.width(LEADING_ICON_SLOT),
             ) {
-                Icon(
-                    Icons.Filled.QueueMusic,
+                ThemedGlyph(
+                    slotKey = itemSlotKeyFor(item.type) ?: "",
+                    defaultVector = Icons.Filled.QueueMusic,
                     contentDescription = null,
                     tint = iconTint,
                     modifier = Modifier.size(48.dp),
@@ -686,8 +727,9 @@ private fun XmbItemLeadingIcon(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier.width(LEADING_ICON_SLOT),
             ) {
-                Icon(
-                    Icons.Filled.LibraryMusic,
+                ThemedGlyph(
+                    slotKey = itemSlotKeyFor(item.type) ?: "",
+                    defaultVector = Icons.Filled.LibraryMusic,
                     contentDescription = null,
                     tint = iconTint,
                     modifier = Modifier.size(48.dp),
@@ -715,8 +757,9 @@ private fun XmbItemLeadingIcon(
                             .clip(RoundedCornerShape(6.dp))
                             .background(Color(0xFF1B1B27)),
                     ) {
-                        Icon(
-                            Icons.Filled.Movie,
+                        ThemedGlyph(
+                            slotKey = itemSlotKeyFor(item.type) ?: "",
+                            defaultVector = Icons.Filled.Movie,
                             contentDescription = null,
                             tint = iconTint,
                             modifier = Modifier.size(28.dp),
@@ -735,35 +778,35 @@ private fun XmbItemLeadingIcon(
                         modifier = Modifier.size(LEADING_ICON_SIZE).clip(RoundedCornerShape(8.dp)),
                     )
                 } else {
-                    Icon(Icons.Filled.Folder, contentDescription = null, tint = iconTint, modifier = Modifier.size(48.dp))
+                    ThemedGlyph(itemSlotKeyFor(item.type) ?: "", Icons.Filled.Folder, null, iconTint, Modifier.size(48.dp))
                 }
             }
         }
         // The static "Video Libraries" and "Android Video Apps" rows use glyphs.
         item.type == XMBItemType.VIDEO_LIBRARY -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.VideoLibrary, contentDescription = null, tint = iconTint, modifier = Modifier.size(48.dp))
+                ThemedGlyph(itemSlotKeyFor(item.type) ?: "", Icons.Filled.VideoLibrary, null, iconTint, Modifier.size(48.dp))
             }
         }
         item.type == XMBItemType.VIDEO_RECENT -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.History, contentDescription = null, tint = iconTint, modifier = Modifier.size(48.dp))
+                ThemedGlyph(itemSlotKeyFor(item.type) ?: "", Icons.Filled.History, null, iconTint, Modifier.size(48.dp))
             }
         }
         item.type == XMBItemType.VIDEO_FAVORITES -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.Star, contentDescription = null, tint = iconTint, modifier = Modifier.size(48.dp))
+                ThemedGlyph(itemSlotKeyFor(item.type) ?: "", Icons.Filled.Star, null, iconTint, Modifier.size(48.dp))
             }
         }
         // "Collections" root row — umbrella for Recently Watched / Favorites / Playlists.
         item.type == XMBItemType.VIDEO_COLLECTIONS -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.Bookmarks, contentDescription = null, tint = iconTint, modifier = Modifier.size(46.dp))
+                ThemedGlyph(itemSlotKeyFor(item.type) ?: "", Icons.Filled.Bookmarks, null, iconTint, Modifier.size(46.dp))
             }
         }
         item.type == XMBItemType.VIDEO_APPS -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.Movie, contentDescription = null, tint = iconTint, modifier = Modifier.size(48.dp))
+                ThemedGlyph(itemSlotKeyFor(item.type) ?: "", Icons.Filled.Movie, null, iconTint, Modifier.size(48.dp))
             }
         }
         // Photos show their cached thumbnail, falling back to a photo glyph for files whose
@@ -788,8 +831,9 @@ private fun XmbItemLeadingIcon(
                             .clip(RoundedCornerShape(6.dp))
                             .background(Color(0xFF1B1B27)),
                     ) {
-                        Icon(
-                            Icons.Filled.Photo,
+                        ThemedGlyph(
+                            slotKey = itemSlotKeyFor(item.type) ?: "",
+                            defaultVector = Icons.Filled.Photo,
                             contentDescription = null,
                             tint = iconTint,
                             modifier = Modifier.size(28.dp),
@@ -801,37 +845,37 @@ private fun XmbItemLeadingIcon(
         // An Album folder card in the Albums list — folder glyph, matching the Video libraries.
         item.type == XMBItemType.PHOTO_FOLDER -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.Folder, contentDescription = null, tint = iconTint, modifier = Modifier.size(48.dp))
+                ThemedGlyph(itemSlotKeyFor(item.type) ?: "", Icons.Filled.Folder, null, iconTint, Modifier.size(48.dp))
             }
         }
         // The "Albums" section row at the Photo root.
         item.type == XMBItemType.PHOTO_ALBUMS -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.PhotoLibrary, contentDescription = null, tint = iconTint, modifier = Modifier.size(48.dp))
+                ThemedGlyph(itemSlotKeyFor(item.type) ?: "", Icons.Filled.PhotoLibrary, null, iconTint, Modifier.size(48.dp))
             }
         }
         // The "Photo Apps" section row at the Photo root (distinct glyph from Albums and Camera).
         item.type == XMBItemType.PHOTO_APPS -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.Collections, contentDescription = null, tint = iconTint, modifier = Modifier.size(48.dp))
+                ThemedGlyph(itemSlotKeyFor(item.type) ?: "", Icons.Filled.Collections, null, iconTint, Modifier.size(48.dp))
             }
         }
         // The Camera row (only present when a camera app exists).
         item.type == XMBItemType.CAMERA -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.PhotoCamera, contentDescription = null, tint = iconTint, modifier = Modifier.size(48.dp))
+                ThemedGlyph(itemSlotKeyFor(item.type) ?: "", Icons.Filled.PhotoCamera, null, iconTint, Modifier.size(48.dp))
             }
         }
         // "Add …" / "Create …" rows across Photo / Music / Video sections.
         item.type == XMBItemType.ADD_ACTION -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.Add, contentDescription = null, tint = iconTint, modifier = Modifier.size(44.dp))
+                ThemedGlyph(itemSlotKeyFor(item.type) ?: "", Icons.Filled.Add, null, iconTint, Modifier.size(44.dp))
             }
         }
         // Discord Social rows.
         item.type == XMBItemType.SOCIAL_ADD -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.QrCode2, contentDescription = null, tint = iconTint, modifier = Modifier.size(44.dp))
+                ThemedGlyph(itemSlotKeyFor(item.type) ?: "", Icons.Filled.QrCode2, null, iconTint, Modifier.size(44.dp))
             }
         }
         item.type == XMBItemType.SOCIAL_ACCOUNT || item.type == XMBItemType.SOCIAL_FRIEND -> {
@@ -843,14 +887,14 @@ private fun XmbItemLeadingIcon(
                         modifier = Modifier.size(48.dp).clip(CircleShape),
                     )
                 } else {
-                    Icon(Icons.Filled.AccountCircle, contentDescription = null, tint = iconTint, modifier = Modifier.size(48.dp))
+                    ThemedGlyph(itemSlotKeyFor(item.type) ?: "", Icons.Filled.AccountCircle, null, iconTint, Modifier.size(48.dp))
                 }
             }
         }
         item.type == XMBItemType.SOCIAL_VOICE ||
             item.type == XMBItemType.SOCIAL_VOICE_CREATE -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.Headset, contentDescription = null, tint = iconTint, modifier = Modifier.size(46.dp))
+                ThemedGlyph(itemSlotKeyFor(item.type) ?: "", Icons.Filled.Headset, null, iconTint, Modifier.size(46.dp))
             }
         }
         item.type == XMBItemType.SOCIAL_VOICE_INVITE ||
@@ -865,46 +909,46 @@ private fun XmbItemLeadingIcon(
                         modifier = Modifier.size(48.dp).clip(CircleShape),
                     )
                 } else {
-                    Icon(Icons.Filled.PersonAdd, contentDescription = null, tint = iconTint, modifier = Modifier.size(44.dp))
+                    ThemedGlyph(itemSlotKeyFor(item.type) ?: "", Icons.Filled.PersonAdd, null, iconTint, Modifier.size(44.dp))
                 }
             }
         }
         item.type == XMBItemType.SOCIAL_VOICE_MUTE -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.Mic, contentDescription = null, tint = iconTint, modifier = Modifier.size(46.dp))
+                ThemedGlyph(itemSlotKeyFor(item.type) ?: "", Icons.Filled.Mic, null, iconTint, Modifier.size(46.dp))
             }
         }
         item.type == XMBItemType.SOCIAL_VOICE_SETTINGS ||
             item.type == XMBItemType.SOCIAL_VOICE_TOGGLE ||
             item.type == XMBItemType.SOCIAL_VOICE_CYCLE -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.Tune, contentDescription = null, tint = iconTint, modifier = Modifier.size(44.dp))
+                ThemedGlyph(itemSlotKeyFor(item.type) ?: "", Icons.Filled.Tune, null, iconTint, Modifier.size(44.dp))
             }
         }
         item.type == XMBItemType.SOCIAL_VOICE_LEAVE -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.CallEnd, contentDescription = null, tint = iconTint, modifier = Modifier.size(44.dp))
+                ThemedGlyph(itemSlotKeyFor(item.type) ?: "", Icons.Filled.CallEnd, null, iconTint, Modifier.size(44.dp))
             }
         }
         item.type == XMBItemType.SOCIAL_ACTIVITY_SETTINGS ||
             item.type == XMBItemType.SOCIAL_TOGGLE -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.SportsEsports, contentDescription = null, tint = iconTint, modifier = Modifier.size(46.dp))
+                ThemedGlyph(itemSlotKeyFor(item.type) ?: "", Icons.Filled.SportsEsports, null, iconTint, Modifier.size(46.dp))
             }
         }
         item.type == XMBItemType.SOCIAL_DISCORD_SETTINGS -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.Settings, contentDescription = null, tint = iconTint, modifier = Modifier.size(44.dp))
+                ThemedGlyph(itemSlotKeyFor(item.type) ?: "", Icons.Filled.Settings, null, iconTint, Modifier.size(44.dp))
             }
         }
         item.type == XMBItemType.SOCIAL_FRIENDS -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.Filled.People, contentDescription = null, tint = iconTint, modifier = Modifier.size(46.dp))
+                ThemedGlyph(itemSlotKeyFor(item.type) ?: "", Icons.Filled.People, null, iconTint, Modifier.size(46.dp))
             }
         }
         item.type == XMBItemType.SOCIAL_SIGNOUT -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, tint = iconTint, modifier = Modifier.size(44.dp))
+                ThemedGlyph(itemSlotKeyFor(item.type) ?: "", Icons.AutoMirrored.Filled.Logout, null, iconTint, Modifier.size(44.dp))
             }
         }
         item.type == XMBItemType.ALL_GAMES ||
