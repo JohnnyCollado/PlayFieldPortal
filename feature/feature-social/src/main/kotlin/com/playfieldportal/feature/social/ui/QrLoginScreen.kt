@@ -54,7 +54,12 @@ fun QrLoginScreen(
     modifier: Modifier = Modifier,
     viewModel: QrLoginViewModel = hiltViewModel(),
 ) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
+    // This BOM's compose-ui doesn't provide androidx.lifecycle.compose.LocalLifecycleOwner
+    // (the default source), so the default argument crashes at composition with
+    // "CompositionLocal LocalLifecycleOwner not present" — pass the platform one, like XMBShell.
+    val state by viewModel.state.collectAsStateWithLifecycle(
+        lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current,
+    )
 
     LaunchedEffect(state) {
         if (state is DeviceLoginState.Success) onConnected()
