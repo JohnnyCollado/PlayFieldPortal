@@ -36,6 +36,18 @@ compose.desktop {
             packageName = "PlayField Theme Studio"
             packageVersion = "1.0.0"
             description = "Create, convert, and share PlayFieldPortal XMB themes"
+
+            windows {
+                // Desktop + Start Menu shortcuts, and let the user pick the install dir.
+                shortcut = true
+                menu = true
+                menuGroup = "PlayField Theme Studio"
+                dirChooser = true
+                // Stable MSI UpgradeCode: MUST NEVER CHANGE. It ties every future installer to
+                // this product in Add/Remove Programs, so upgrades replace the existing install
+                // (and its uninstaller entry) instead of stacking duplicates.
+                upgradeUuid = "AD54E734-C014-49C8-821F-4003D0B61439"
+            }
         }
     }
 }
