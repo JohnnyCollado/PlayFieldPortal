@@ -6,7 +6,7 @@ It replaces the Android home screen and acts as a unified front end for ROM emul
 games, PC-layer titles (Winlator), and native apps — all navigated with a controller.
 
 <p align="center">
-  <img src="docs/preview.png" alt="Play Field Portal — a custom theme with the memory-card options menu open" width="720">
+  <img src="docs/preview.png" alt="Play Field Portal — boot logo over the wave background" width="720">
 </p>
 
 > **Status:** **`1.0.0`** — first release. Distributed as a side-loaded APK (not on the Play
