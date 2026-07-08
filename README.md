@@ -6,7 +6,7 @@ It replaces the Android home screen and acts as a unified front end for ROM emul
 games, PC-layer titles (Winlator), and native apps — all navigated with a controller.
 
 <p align="center">
-  <img src="docs/preview.png" alt="Play Field Portal — crossbar home screen" width="720">
+  <img src="docs/preview.png" alt="Play Field Portal — a custom theme with the memory-card options menu open" width="720">
 </p>
 
 > **Status:** **`1.0.0`** — first release. Distributed as a side-loaded APK (not on the Play
@@ -18,8 +18,48 @@ For a developer-oriented overview of the codebase, see **[ARCHITECTURE.md](ARCHI
 
 ---
 
+## Screenshots
+
+*Captured on an AYN Thor. Game artwork and app icons shown belong to their respective owners.*
+
+### Themes
+
+| | |
+|:---:|:---:|
+| <img src="docs/screenshots/theme-vaporwave-home.jpg" width="420"> | <img src="docs/screenshots/theme-color-scheme-picker.jpg" width="420"> |
+| A custom `.pfptheme` — wallpaper + one derived color, icons follow | Color Scheme picker, previewing live on the real crossbar |
+| <img src="docs/screenshots/theme-my-themes.jpg" width="420"> | <img src="docs/screenshots/theme-settings.jpg" width="420"> |
+| My Themes library — apply, Share, Remove | Theme install (`.ptf` / `.pfptheme`) and one-tap Reset to Default |
+
+### Game library
+
+| | |
+|:---:|:---:|
+| <img src="docs/screenshots/game-drill-covers.jpg" width="420"> | <img src="docs/screenshots/game-detail.jpg" width="420"> |
+| Drilling into a Memory Card — covers, platform subtitles | Game detail — hero art and one-tap Play |
+| <img src="docs/screenshots/custom-category.jpg" width="420"> | <img src="docs/screenshots/memory-card-menu.jpg" width="420"> |
+| A custom gaming category with its own icon and wallpaper | Memory Card options (△) — scan, refresh, pin, hide |
+| <img src="docs/screenshots/library-manager.jpg" width="420"> | <img src="docs/screenshots/winlator-pc-games.jpg" width="420"> |
+| Library Manager — ROM roots, auto-detect, per-console cards | PC-layer titles (Winlator) live next to console games |
+| <img src="docs/screenshots/artwork-manager.jpg" width="420"> | <img src="docs/screenshots/social-discord.jpg" width="420"> |
+| Artwork Manager — SteamGridDB / TheGamesDB / IGDB / local | Social — Discord friends, voice, and activity |
+
+### Media & more
+
+| | |
+|:---:|:---:|
+| <img src="docs/screenshots/music-now-playing.jpg" width="420"> | <img src="docs/screenshots/music-player.jpg" width="420"> |
+| Music section — Now Playing surfaces on the crossbar | The in-app player (background service keeps it going) |
+| <img src="docs/screenshots/video-library.jpg" width="420"> | <img src="docs/screenshots/video-apps.jpg" width="420"> |
+| Video library — scanned files with thumbnails | Video Apps — your installed players, one row away |
+| <img src="docs/screenshots/photo-section.jpg" width="420"> | <img src="docs/screenshots/social-voice-ptt.jpg" width="420"> |
+| Photo section — albums and a fullscreen viewer | Push-to-talk with the floating Talk button overlay |
+
+---
+
 ## Table of contents
 
+- [Screenshots](#screenshots)
 - [Feature status](#feature-status)
 - [Roadmap](#roadmap)
 - [Setup & first run](#setup--first-run)
