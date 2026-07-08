@@ -11,7 +11,6 @@ import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.data.repository.PfpThemeStore
 import com.playfieldportal.core.data.repository.PtfThemeImporter
-import com.playfieldportal.feature.themes.ThemeLoadResult
 import com.playfieldportal.feature.themes.ThemeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -91,37 +90,6 @@ class ThemesSettingsViewModel @Inject constructor(
         }
     }
 
-    fun installTheme(uri: Uri) {
-        viewModelScope.launch {
-            _extra.update { it.copy(isInstalling = true, installMessage = null) }
-            when (val result = themeRepository.installTheme(uri)) {
-                is ThemeLoadResult.Success -> {
-                    Timber.i("Theme installed: ${result.themeId}")
-                    _extra.update {
-                        it.copy(isInstalling = false, installMessage = "Theme installed successfully")
-                    }
-                }
-                is ThemeLoadResult.InvalidFormat -> {
-                    Timber.w("Invalid theme format: ${result.reason}")
-                    _extra.update {
-                        it.copy(isInstalling = false, installMessage = "Invalid theme: ${result.reason}")
-                    }
-                }
-                is ThemeLoadResult.UnsupportedVersion -> {
-                    val msg = "Theme requires format v${result.found} (app supports v${result.supported})"
-                    Timber.w(msg)
-                    _extra.update { it.copy(isInstalling = false, installMessage = msg) }
-                }
-                is ThemeLoadResult.IoError -> {
-                    Timber.w(result.cause, "Theme install IO error")
-                    _extra.update {
-                        it.copy(isInstalling = false, installMessage = "Could not read file: ${result.cause.message}")
-                    }
-                }
-            }
-        }
-    }
-
     fun uninstallTheme(themeId: String) {
         viewModelScope.launch {
             themeRepository.uninstallTheme(themeId)
@@ -162,6 +130,15 @@ class ThemesSettingsViewModel @Inject constructor(
     /** Clears an imported/custom accent so the preset color scheme applies again. */
     fun clearAccentOverride() {
         viewModelScope.launch { context.pfpDataStore.edit { it.remove(KEY_ACCENT_OVERRIDE) } }
+    }
+
+    /** Full reset of the applied theme: wallpaper, colors, icons, and layout back to stock. */
+    fun resetTheme() {
+        viewModelScope.launch {
+            themeStore.resetApplied()
+            Timber.i("Theme reset to default")
+            _extra.update { it.copy(installMessage = "Theme reset — back to the default look") }
+        }
     }
 
     // ── Saved-theme library (Quick Create + imports) ─────────────────────────

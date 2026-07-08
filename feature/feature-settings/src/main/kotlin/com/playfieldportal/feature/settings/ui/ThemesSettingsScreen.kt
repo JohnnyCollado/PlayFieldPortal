@@ -45,11 +45,6 @@ fun ThemesSettingsScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
 
-    // SAF picker — any file type; user must pick a .xmbtheme ZIP
-    val themePicker = rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenDocument()
-    ) { uri -> uri?.let { viewModel.installTheme(it) } }
-
     // SAF picker for official PSP .ptf themes (no registered MIME type, so accept any file;
     // the importer validates the magic and rejects non-PTF with a clear message).
     val ptfPicker = rememberLauncherForActivityResult(
@@ -133,6 +128,12 @@ fun ThemesSettingsScreen(
                 value = state.activeThemeName,
             )
 
+            SettingsRow(
+                label    = "Reset to Default",
+                sublabel = "Remove the applied wallpaper, theme colors, and custom icons",
+                onClick  = { viewModel.resetTheme() },
+            )
+
             // ── Installed themes list ─────────────────────────────────────
             SettingsGroup("Installed Themes")
 
@@ -187,21 +188,6 @@ fun ThemesSettingsScreen(
                 )
             }
 
-            // Custom theme installation (.xmbtheme packages) is the next development stage.
-            // The loader/repository is wired (see feature-themes); only this entry point is
-            // gated off until that work ships. Re-enable by restoring the picker launch:
-            //   onClick = if (state.isInstalling) null else { themePicker.launch(arrayOf("*/*")) }
-            SettingsRow(
-                label    = "Install from File",
-                sublabel = "Coming soon — custom theme packs arrive in a future update",
-                onClick  = null,
-                trailing = { Text("Coming Soon", color = SettingsAccent) },
-            )
-
-            SettingsRow(
-                label    = "Theme Folder",
-                sublabel = "/storage/emulated/0/PlayFieldPortal/themes/",
-            )
         }
     }
 }

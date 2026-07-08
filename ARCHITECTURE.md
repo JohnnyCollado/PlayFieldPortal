@@ -35,7 +35,7 @@ app  ──▶ feature:*  ──▶ core:core-ui ──▶ core:core-data ──
 | `feature:feature-library` | ROM scanning into the Memory Card library |
 | `feature:feature-launcher` | Emulator detection + intent resolution (launching a ROM in the right emulator) |
 | `feature:feature-artwork` | SteamGridDB client + artwork management |
-| `feature:feature-themes` | `.xmbtheme` package loader (theme install is gated "coming soon" pre-launch) |
+| `feature:feature-themes` | `.xmbtheme` package loader (no in-app install entry point yet — loader is ready to wire up) |
 | `feature:feature-settings` | All settings screens |
 | `feature:feature-appbar` | App drawer, app→category classification, filtering |
 | `feature:feature-backup` | Backup & restore (`.pfpbak`) |

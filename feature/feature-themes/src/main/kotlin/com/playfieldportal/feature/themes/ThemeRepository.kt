@@ -15,8 +15,8 @@ import javax.inject.Singleton
 
 /**
  * Manages installed themes and the active theme. Themes are `.xmbtheme` ZIP packages extracted into
- * internal storage. Note: the in-app entry point for [installTheme] is gated "coming soon" pre-launch
- * (see `ThemesSettingsScreen`); the loader/repository below is complete and ready to re-enable.
+ * internal storage. Note: [installTheme] currently has no in-app entry point (the settings row was
+ * removed pre-launch); the loader/repository below is complete and ready to wire back up.
  */
 interface ThemeRepository {
     /** Emits the currently active theme, or null if none is set. */

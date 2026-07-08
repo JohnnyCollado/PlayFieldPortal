@@ -139,6 +139,25 @@ class PfpThemeStore @Inject constructor(
         true
     }
 
+    /**
+     * Resets the applied theme back to the stock look: clears every cascade pref this store
+     * (and the PTF/photo importers) can set, and removes the extracted icon slots and copied
+     * wallpaper files they left behind. The saved-theme library and the user's color-scheme
+     * preset are untouched.
+     */
+    suspend fun resetApplied(): Unit = withContext(Dispatchers.IO) {
+        context.pfpDataStore.edit { prefs ->
+            prefs.remove(KEY_CUSTOM_WALLPAPER)
+            prefs.remove(KEY_ACCENT_OVERRIDE)
+            prefs.remove(KEY_ICON_COLOR)
+            prefs.remove(KEY_THEME_LAYOUT)
+            prefs.remove(KEY_THEME_ICONS_STAMP)
+        }
+        // Prefs are gone first, so nothing references these files when they're deleted.
+        File(context.filesDir, THEME_ICONS_DIR).deleteRecursively()
+        File(context.filesDir, "wallpaper").listFiles()?.forEach { it.delete() }
+    }
+
     suspend fun delete(id: String): Unit = withContext(Dispatchers.IO) {
         listOf("$id.pfptheme", "$id.preview.jpg", "$id.wallpaper.jpg")
             .forEach { File(dir, it).delete() }
