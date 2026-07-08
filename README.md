@@ -1,11 +1,12 @@
 # Play Field Portal (PFP)
 
-An Android game launcher styled after the PlayStation Portable's **XMB (Cross Media Bar)**.
+An Android game launcher built around a classic **cross-media "crossbar" interface** — a
+horizontal category bar crossing a vertical item list.
 It replaces the Android home screen and acts as a unified front end for ROM emulation, Android
 games, PC-layer titles (Winlator), and native apps — all navigated with a controller.
 
 <p align="center">
-  <img src="docs/preview.png" alt="Play Field Portal — XMB home screen" width="720">
+  <img src="docs/preview.png" alt="Play Field Portal — crossbar home screen" width="720">
 </p>
 
 > **Status:** **`1.0.0`** — first release. Distributed as a side-loaded APK (not on the Play
@@ -50,13 +51,13 @@ For a developer-oriented overview of the codebase, see **[ARCHITECTURE.md](ARCHI
 
 | Feature | Status |
 |---|---|
-| XMB shell — wave background, category bar, item list, status bar, boot sequence (PFP logo) | ✅ Done |
+| Crossbar shell — wave background, category bar, item list, status bar, boot sequence (PFP logo) | ✅ Done |
 | Branding — PFP app icon + boot logo | ✅ Done |
 | Manual Memory Card library — per-console ROM folders, manual scanning | ✅ Done |
 | ROM scanning — SAF folder picker, disc-image resolution, SD/USB volume support | ✅ Done |
 | SAF ROM libraries — SD-card/USB ROMs with **no all-files permission** (content-URI launch) | ✅ Done |
 | Game detail screen — hero banner, metadata, custom artwork, notes | ✅ Done |
-| Game icon styles — PSP rectangle, cartridge, Android squircle | ✅ Done |
+| Game icon styles — classic rectangle, cartridge, Android squircle | ✅ Done |
 | Emulator compatibility layer — auto-detected catalog + per-core RetroArch | ✅ Done |
 | Custom Emulator Wizard — pick an app, auto-detect launch settings, test-launch, save | ✅ Done |
 | SteamGridDB artwork scraping (grids, heroes, logos, icons) | ✅ Done |
@@ -70,23 +71,23 @@ For a developer-oriented overview of the codebase, see **[ARCHITECTURE.md](ARCHI
 | Video section — SAF libraries, scanning, thumbnails, built-in + external player | ✅ Done |
 | Photo section — SAF albums, scanning, fullscreen viewer, set-as-wallpaper | ✅ Done |
 | Category manager — create/rename/reorder/hide, image-based icon picker | ✅ Done |
-| Controller mapping — full XMB navigation, remappable | ✅ Done |
+| Controller mapping — full crossbar navigation, remappable | ✅ Done |
 | Backup & restore — `.pfpbackup` ZIP including settings | ✅ Done |
-| XMB color schemes — 12 PSP-style presets with live preview | ✅ Done |
+| Color schemes — 12 classic-handheld-style presets with live preview | ✅ Done |
 | **Theme creator** — New Theme from Photo (wallpaper + auto-derived color) + My Themes library | ✅ Done |
-| **PSP theme import** — convert official `.ptf` themes you own (wallpaper + derived color) | ✅ Done |
+| **`.ptf` theme import** — convert official handheld themes you own (wallpaper + derived color) | ✅ Done |
 | **Theme sharing** — export/import `.pfptheme` files (share sheet + in-app install) | ✅ Done |
-| **Unified icon color** — one live tint across every XMB icon, 8 swatches | ✅ Done |
+| **Unified icon color** — one live tint across every crossbar icon, 8 swatches | ✅ Done |
 | Live status bar — Wi-Fi/cellular strength, Bluetooth, controller (auto-hide when absent) | ✅ Done |
 | Idle wave degradation (FULL → REDUCED → STATIC) + thermal awareness | ✅ Done |
 | Background tasks surfaced to the Android notification bar | ✅ Done |
-| Theme engine — one-color cascade, unified icon tint, 12 PSP presets | ✅ Done |
+| Theme engine — one-color cascade, unified icon tint, 12 classic presets | ✅ Done |
 | **`.pfptheme` themes** — Quick Create from photo, saved library, share/import, custom icon slots, per-theme layout | ✅ Done |
-| **PSP `.ptf` import** — wallpaper + auto-derived accent from real PSP themes (CXMB rejected safely) | ✅ Done |
-| **Theme Studio** — desktop companion (Win/Linux/macOS): live XMB preview, icon editor, alignment assist, batch PTF conversion | ✅ Done |
+| **`.ptf` import** — wallpaper + auto-derived accent from original handheld themes (CXMB rejected safely) | ✅ Done |
+| **Theme Studio** — desktop companion (Win/Linux/macOS): live crossbar preview, icon editor, alignment assist, batch PTF conversion | ✅ Done |
 | Theme engine — `.xmbtheme` loader (Zip-Slip hardened) + built-in *Classic Blue* | ✅ Loader done |
 | Theme sound packs & boot-animation override | 🔜 Next stage |
-| Rendered-XMB theme previews (export preview gate) | 🔜 Next stage |
+| Rendered-crossbar theme previews (export preview gate) | 🔜 Next stage |
 | Smart / manual category builder | 🧭 Backlog |
 | Unmatched-ROM assignment UI | 🧭 Backlog |
 | Second metadata source (IGDB / TheGamesDB) | 🧭 Backlog |
@@ -98,7 +99,7 @@ For a developer-oriented overview of the codebase, see **[ARCHITECTURE.md](ARCHI
 All three launch stages have shipped; what remains is post-1.0 work.
 
 ### ✅ Stage 1 — Alpha
-The full launcher: XMB shell, manual Memory Card library, ROM scanning, emulator detection and
+The full launcher: crossbar shell, manual Memory Card library, ROM scanning, emulator detection and
 launching, artwork scraping, All Games / Favorites / Collections, Android-app integration, the app
 drawer, category management, controller mapping, backup & restore, and PFP branding (app icon +
 boot logo).
@@ -106,15 +107,15 @@ boot logo).
 ### ✅ Stage 2 — Theme system *(shipped: `.pfptheme` + Theme Studio)*
 The custom-theme pipeline, built around the lightweight **`.pfptheme`** bundle format
 (one-color cascade — pick a background and a color, everything else derives):
-- **In-app theming** — 12 PSP-style presets, Quick Create from any photo (accent auto-derived
-  from its dominant hue), a saved-theme library with share/import, and PSP **`.ptf` import**
-  (both zlib and firmware 3.70-era **LZR** wallpaper compression).
-- **Custom icon slots** — themes may replace 47 XMB glyphs (category bar, item rows, status
+- **In-app theming** — 12 classic-handheld-style presets, Quick Create from any photo (accent
+  auto-derived from its dominant hue), a saved-theme library with share/import, and official
+  **`.ptf` theme import** (both zlib and firmware 3.70-era **LZR** wallpaper compression).
+- **Custom icon slots** — themes may replace 47 crossbar glyphs (category bar, item rows, status
   strip); platform/console art stays uniform by design.
 - **Theme Studio** — a Compose Desktop companion app (`:studio`, Windows/Linux/macOS) with a
-  live pixel-parity XMB preview (Home / Context-menu / Fullscreen-menu states), HSV color
+  live pixel-parity crossbar preview (Home / Context-menu / Fullscreen-menu states), HSV color
   pickers, an icon editor with editable template export, wallpaper crop presets + legibility
-  hints, crossbar **alignment assist** (auto-detects the band PSP wallpapers bake in),
+  hints, crossbar **alignment assist** (auto-detects the band official `.ptf` wallpapers bake in),
   batch `.ptf` → `.pfptheme` folder conversion, and a **PTF unpacker** that extracts every
   resource of an official theme (wallpaper, preview, GIM icons) as reference PNGs.
 - Remaining in this stage: theme **sound packs** and **boot-animation override** (shipping with
@@ -157,7 +158,7 @@ change this later in *Android Settings → Apps → Default apps → Home app*.
 See [Permissions & privacy](#permissions--privacy) for the full breakdown.
 
 ### 4. Boot sequence
-On launch you'll see the **PFP logo** fade in over the XMB wave, then the home screen. (Boot is
+On launch you'll see the **PFP logo** fade in over the wave background, then the home screen. (Boot is
 shorter on repeat launches.)
 
 ### 5. Point PFP at your ROMs
@@ -206,15 +207,15 @@ PFP is built for a controller but works with touch too.
 |---|---|---|
 | Move between items | D-Pad / Left Stick | Tap an item |
 | Switch category (left/right) | D-Pad ◀ ▶ | Tap the category |
-| Select / launch / open | **A / Cross** | Tap |
-| Back / close / exit a folder | **B / Circle** | On-screen Back |
-| Options (context) menu | **Y / Triangle** (or long-press) | Long-press |
+| Select / launch / open | **A / ✕** | Tap |
+| Back / close / exit a folder | **B / ◯** | On-screen Back |
+| Options (context) menu | **Y / △** (or long-press) | Long-press |
 | Switch app-drawer tabs | **L1 / R1** | Tap a tab |
 | Confirm in pickers | **Start** | Confirm button |
 
 The **horizontal bar** is your categories — by default **Settings, Photo, Music, Video, Game,
 Network, App Store**, plus any custom ones. The **vertical list** under the selected category shows
-its items. While any menu, settings screen, picker, or dialog is open, the main XMB is locked —
+its items. While any menu, settings screen, picker, or dialog is open, the main crossbar is locked —
 input only drives the overlay on top. Bindings are remappable in *Settings → Controller*.
 
 ### The Game category
@@ -229,14 +230,14 @@ Selecting **Game** shows, in order:
 4. **Memory Cards** — one row per console you've configured. Open a card to see its games; press **△**
    on a card for *Scan This Console / Refresh / Pin / Hide / Remove*.
 
-Open All Games, Favorites, a collection, or a console to drill in; press **B / Circle** to go back.
+Open All Games, Favorites, a collection, or a console to drill in; press **B / ◯** to go back.
 
 ### Setting up a console (Memory Card)
 
 Consoles are added manually as **Memory Cards** — a deliberate choice; PFP never auto-scans.
 
 1. **Settings → Library → Library Manager → Add Console.**
-2. **Choose Platform** — pick the system (NES, SNES, PSP, PS2, Dreamcast, **Xbox 360**, … ).
+2. **Choose Platform** — pick the system (NES, SNES, Dreamcast, **Xbox 360**, … ).
 3. **Choose its ROM folder** with the folder picker.
 4. **Assign Emulator** — pick from the emulators PFP detected for that platform (this becomes the
    console's default).
@@ -257,9 +258,9 @@ Supported out of the box (install the app, PFP finds it) — a selection:
 
 | System | Emulators |
 |---|---|
-| PSP | PPSSPP / PPSSPP Gold |
-| PS1 | DuckStation |
-| PS2 | NetherSX2 / AetherSX2 |
+| Classic portable handheld | PPSSPP / PPSSPP Gold |
+| 32-bit disc console | DuckStation |
+| 6th-gen disc console | NetherSX2 / AetherSX2 |
 | GameCube / Wii | Dolphin |
 | Nintendo DS | melonDS, DraStic |
 | Nintendo 3DS | Azahar, Citra, Lime3DS |
@@ -299,7 +300,7 @@ entry is created.)
 
 ### Collections
 
-Collections are custom folders of games (e.g. "RPGs", "Currently Playing", "Best PSP Games"). They
+Collections are custom folders of games (e.g. "RPGs", "Currently Playing", "Best Handheld Games"). They
 behave like Favorites but are user-defined, and a game can live in several at once.
 
 - **Create:** *Settings → Collections → Create New Collection*, or from a game's **△** options →
@@ -344,7 +345,7 @@ The same actions are reachable from the full **Game Detail** / **App Detail** sc
 
 Categories are the horizontal bar. Manage them in *Settings → Categories*:
 - **Create** a category, choose a **content type** (Gaming = games & collections, Non-gaming = apps),
-  and pick an **icon** from the image-based picker (XMB column glyphs, Favorites, and the full
+  and pick an **icon** from the image-based picker (crossbar column glyphs, Favorites, and the full
   console set — all individual images, no sprite sheet).
 - **Rename**, **reorder** (move left/right), **hide/show**, or **delete** custom categories. Built-in
   categories are protected from deletion.
@@ -352,16 +353,16 @@ Categories are the horizontal bar. Manage them in *Settings → Categories*:
 ### Themes & personalization
 
 Everything lives in **Settings → Themes**, built around one idea: *pick a background and one
-color — the whole XMB follows* (wave, background gradient, cursor and icons all derive from it).
+color — the whole crossbar follows* (wave, background gradient, cursor and icons all derive from it).
 
-- **Color Scheme** — 12 PSP-style presets, previewed live on the real XMB behind the picker
-  (including the month-cycling *Original*).
-- **Icon Color** — one tint applied to every XMB icon (category bar, item glyphs, console
+- **Color Scheme** — 12 classic-handheld-style presets, previewed live on the real crossbar
+  behind the picker (including the month-cycling *Original*).
+- **Icon Color** — one tint applied to every crossbar icon (category bar, item glyphs, console
   silhouettes, memory-card art) with 8 curated swatches; *Default* is the icons' native white.
   Game artwork, covers and app icons are never tinted.
 - **New Theme from Photo** — pick any picture: it becomes the wallpaper and the theme color is
   derived from the photo's dominant hue automatically. The theme is saved and applied.
-- **Import PSP Theme (`.ptf`)** — convert an official PSP theme you own: PFP extracts its
+- **Import Theme (`.ptf`)** — convert an official handheld theme you own: PFP extracts its
   wallpaper and derives its color, rendered with PFP's own icons. CXMB (`.ctf`) files are
   politely declined (they're full firmware replacements, not themes).
 - **My Themes** — your saved themes as cards (thumbnail + accent chip): tap to apply, **Share**
@@ -379,7 +380,7 @@ The **Settings** (gear) category covers:
 | Collections | Create, rename, reorder, delete collections |
 | Artwork | SteamGridDB key, re-scrape (all / missing), clear cache |
 | Emulators | Detected emulators, Custom Emulator Wizard, profile editor |
-| Themes | Color schemes (12, live preview), unified icon color, Quick Create from photo, saved-theme library (apply/share/delete), PSP `.ptf` import, `.pfptheme` import |
+| Themes | Color schemes (12, live preview), unified icon color, Quick Create from photo, saved-theme library (apply/share/delete), `.ptf` import, `.pfptheme` import |
 | Display | Icon style, wave style, custom wallpaper, landscape note |
 | Controller | View / remap gamepad bindings, help-bar toggle |
 | Backup & Restore | Export / import a `.pfpbackup` (library, settings, play history) |
@@ -403,7 +404,7 @@ notification bar** with live progress — pull down the shade to watch them.
 
 ```bash
 git clone <repo-url>
-cd xmbdroid
+cd playfieldportal
 
 # Build the debug APK
 ./gradlew :app:assembleDebug
@@ -472,7 +473,7 @@ core/
   core-data/              — Room DB (v21), DAOs, DataStore, repository impls, seeders, migrations
   core-ui/                — PFPTheme/PFPColors, WaveStyle, PortalIcon, category-icon catalog
 feature/
-  feature-xmb/            — XMB shell, XMBViewModel, game/app detail, photo viewer, gamepad, boot sequence
+  feature-xmb/            — crossbar shell, XMBViewModel, game/app detail, photo viewer, gamepad, boot sequence
   feature-library/        — ROM scanner, disc-image resolver, platform extension map
   feature-launcher/       — Emulator detection + intent resolution
   feature-artwork/        — SteamGridDB client, artwork repository
@@ -495,11 +496,11 @@ The primary theme format is **`.pfptheme`** — a small zip built on the one-col
 mytheme.pfptheme
 ├── manifest.json     — name, accentColor, iconColor, waveStyle, optional layout override
 ├── wallpaper.png     — optional (absent → live wave background)
-├── preview.png       — rendered XMB thumbnail (shown before applying, like the PSP)
+├── preview.png       — rendered crossbar thumbnail (shown before applying)
 └── icons/<key>.png   — optional custom icon slots (category bar / item rows / status strip)
 ```
 
-Make themes on the device (Settings ▸ Themes ▸ Quick Create / PSP `.ptf` import) or in the
+Make themes on the device (Settings ▸ Themes ▸ Quick Create / `.ptf` import) or in the
 **Theme Studio** desktop app (`gradlew :studio:run`, or `run-theme-studio.bat` on Windows),
 which adds the live preview, icon editor, alignment assist, and batch PTF conversion. All
 parsers are hardened against hostile files (size caps, dimension caps, zip-bomb and
@@ -553,7 +554,7 @@ supported for sound packs / boot animations in the next stage.)
 
 | Path in ZIP | Condition | Notes |
 |---|---|---|
-| `background.jpg` | `has_background: true` | Displayed behind the XMB wave. |
+| `background.jpg` | `has_background: true` | Displayed behind the wave background. |
 | `boot_animation.mp4` | `has_boot_animation: true` | Replaces the default boot sequence. |
 | `sounds/navigate_h.ogg` | `has_sound_pack: true` | Horizontal navigation. |
 | `sounds/navigate_v.ogg` | `has_sound_pack: true` | Vertical navigation. |
@@ -568,15 +569,15 @@ Assets not declared by a manifest flag are ignored even if present.
 
 ## Credits
 
-### XMB design — Sony
-The look and feel is inspired by the **XMB (XrossMediaBar)**, the interface Sony created for the
-PlayStation Portable, PlayStation 3 and other devices. The cross-bar layout, flowing wave
-background, navigation model and options-menu behaviour are homages to Sony's original design.
+### Interface design
+The look and feel is an homage to the classic **cross-media "crossbar"** style of console
+interface: the crossing category bar and item list, flowing wave background, navigation model
+and options-menu behaviour all follow that tradition.
 
-**"XrossMediaBar", "XMB", "PSP", "PlayStation" and related marks are trademarks of Sony Interactive
-Entertainment Inc.** Play Field Portal is an independent, non-commercial fan project. It is **not
-affiliated with, endorsed by, or sponsored by Sony**, and ships none of Sony's code, firmware or
-fonts. The bundled UI artwork and menu sounds come from the community *XMB Menu for ES-DE* theme
+Play Field Portal is an independent, non-commercial fan project. It is **not affiliated with,
+endorsed by, or sponsored by any console manufacturer**, and ships none of their code, firmware
+or fonts; all referenced product names and marks remain the property of their respective owners.
+The bundled UI artwork and menu sounds come from the community *XMB Menu for ES-DE* theme
 (see below) and remain the property of their respective authors.
 
 ### App icon & logo
@@ -587,7 +588,7 @@ their time to make them. The work is amazing — please go check out their work.
 ### System & console artwork
 The system, console and category icons come from the
 **[XMB Menu for ES-DE](https://github.com/anthonycaccese/xmb-menu-es-de)** theme — a community
-recreation of the PSP XMB for ES-DE.
+recreation of the classic crossbar interface for ES-DE.
 
 **All rights to this artwork belong to its creators — [Anthony Caccese](https://github.com/anthonycaccese),
 building on the original work by InitialDin.** Used here with gratitude; it remains the property of
@@ -604,7 +605,7 @@ property of their respective authors. Used here with gratitude.
 
 - Project: XMB Menu for ES-DE
 - Source: https://github.com/anthonycaccese/xmb-menu-es-de
-- Used for: the XMB menu sound effects (scroll, select, back, launch, favorite, system browse)
+- Used for: the crossbar menu sound effects (scroll, select, back, launch, favorite, system browse)
 
 ### Game artwork & metadata
 Fetched at the user's request from third-party providers and remaining the property of their owners:
