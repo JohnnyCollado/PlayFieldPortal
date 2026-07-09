@@ -1,7 +1,11 @@
 package com.playfieldportal.core.domain.model
 
-/** Where an item can be hidden from. GLOBAL keeps the legacy "hide everywhere" behaviour. */
-enum class HideLocationType { GLOBAL, CATEGORY, COLLECTION, ANDROID_PLATFORM, FAVORITES }
+/**
+ * Where an item can be hidden from. GLOBAL keeps the legacy "hide everywhere" behaviour.
+ * PLATFORM hides a game from one Memory Card ([HiddenPlacement.locationId] = the platform id);
+ * ANDROID_PLATFORM predates it and remains the location for the Android card's hides.
+ */
+enum class HideLocationType { GLOBAL, CATEGORY, COLLECTION, ANDROID_PLATFORM, PLATFORM, FAVORITES }
 
 /**
  * A single "this item is hidden from this location" record. An item (an Android app or a

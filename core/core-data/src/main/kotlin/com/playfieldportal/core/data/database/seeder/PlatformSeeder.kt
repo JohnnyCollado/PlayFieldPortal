@@ -341,7 +341,7 @@ class PlatformSeeder @Inject constructor(
             // ── Windows / Android ──────────────────────────────────────────
             PlatformEntity(
                 id            = "windows",
-                name          = "Windows (Winlator)",
+                name          = "Windows Games",
                 shortName     = "PC",
                 iconRes       = "ic_platform_windows",
                 accentColor   = 0xFF0078D4L,

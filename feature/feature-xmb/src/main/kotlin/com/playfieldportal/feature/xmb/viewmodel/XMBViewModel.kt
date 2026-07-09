@@ -152,14 +152,18 @@ data class XMBContextMenuItem(
     val checked: Boolean = false,
 )
 
-// Drives the "Create New Collection" text dialog. When [forGameId] is set, the freshly
-// created collection immediately receives that game.
+// Drives the shared text-input dialog. Creating a collection is the default; the optional
+// targets repurpose it for renames and the game Edit Title / Edit Note actions.
 data class CollectionNameDialogState(
     val title: String,
     val initialText: String = "",
     val forGameId: Long? = null,
     // When set, confirming renames this collection instead of creating a new one.
     val renameCollectionId: Long? = null,
+    // When set, confirming saves a display-title override for this game (blank resets it).
+    val editTitleGameId: Long? = null,
+    // When set, confirming saves this game's note (blank clears it).
+    val editNoteGameId: Long? = null,
 )
 
 // A simple read-only message dialog (e.g. "View File Location"). Dismissed with A/B or tap.
@@ -627,6 +631,9 @@ data class XMBItem(
     val accentColor: Long? = null,
     val isFavorite: Boolean = false,
     val isAndroidApp: Boolean = false,
+    // True for contentType GAME rows — real games open the Game Detail page on select, even when
+    // package/shortcut-backed (Android/Windows gaming apps). Standard apps launch directly.
+    val isRealGame: Boolean = false,
     val packageName: String? = null,
     // Host app's launcher-shortcut id for harvested per-game entries; launched via LauncherApps.
     val shortcutId: String? = null,
@@ -698,6 +705,7 @@ class XMBViewModel @Inject constructor(
     private val photoRepository: com.playfieldportal.core.domain.repository.PhotoRepository,
     private val photoScanner: com.playfieldportal.feature.library.scanner.PhotoScanner,
     private val hiddenPlacementDao: com.playfieldportal.core.data.database.dao.HiddenPlacementDao,
+    private val scanTombstoneDao: com.playfieldportal.core.data.database.dao.ScanTombstoneDao,
     private val discordAuthRepository: com.playfieldportal.core.data.discord.DiscordAuthRepository,
     private val discordPresence: com.playfieldportal.core.data.discord.DiscordPresenceController,
     private val discordVoice: com.playfieldportal.core.data.discord.DiscordVoiceController,
@@ -955,7 +963,10 @@ class XMBViewModel @Inject constructor(
                 .collect { (cards, games, platforms, collections) ->
                     platformCache = platforms.associateBy { it.id }
                     enabledCards  = cards
-                    val counts = games.groupBy { it.platformId }.mapValues { it.value.size }
+                    // Card subtitles count what the card actually shows: real games only. Standard
+                    // (unmarked) apps stay rows in the table but are invisible to Memory Cards.
+                    val counts = games.filter { it.contentType == GameContentType.GAME }
+                        .groupBy { it.platformId }.mapValues { it.value.size }
                     val gamesOnlyTotal = games.count { it.contentType == GameContentType.GAME }
                     val favoritesTotal = games.count { it.isFavorite }
 
@@ -1114,10 +1125,16 @@ class XMBViewModel @Inject constructor(
                             _uiState.update { it.copy(currentItems = items) }
                         }
                     } else if (platformId != null) {
-                        gameRepository.observeByPlatform(platformId).collect { games ->
-                            // Only the Android platform supports per-location hiding (ROM platforms don't).
+                        gameRepository.observeByPlatform(platformId).collect { all ->
+                            // Memory Cards show real games only — a standard (unmarked) app row on
+                            // this platform stays in the table for art/collections but not here.
+                            val games = all.filter { it.contentType == GameContentType.GAME }
+                            // Per-card hiding: Android keeps its legacy location type; every other
+                            // card hides via PLATFORM keyed by its platform id.
                             val visible = if (platformId == ANDROID_PLATFORM_ID)
-                                games.notHiddenAt(HideLocationType.ANDROID_PLATFORM) else games
+                                games.notHiddenAt(HideLocationType.ANDROID_PLATFORM)
+                            else
+                                games.notHiddenAt(HideLocationType.PLATFORM, platformId)
                             val items = if (visible.isEmpty()) listOf(emptyFolderItem(platformId))
                                         else visible.gameSorted(_uiState.value.gameSortMode).toXmbItems()
                             _uiState.update { it.copy(currentItems = items) }
@@ -1523,7 +1540,7 @@ class XMBViewModel @Inject constructor(
     }
 
     // The location a GAME row is currently being shown in (for "Hide from here"), or null when the
-    // current view doesn't support per-location hiding (All Games, a ROM platform, the Games root).
+    // current view doesn't support per-location hiding (All Games, the Games root).
     private fun currentHideLocation(): Triple<HideLocationType, String, String>? {
         val s = _uiState.value
         val cat = currentCategory()
@@ -1535,6 +1552,13 @@ class XMBViewModel @Inject constructor(
             s.selectedPlatformId == FAVORITES_PLATFORM_ID || cat?.id == BuiltInCategory.FAVORITES ->
                 Triple(HideLocationType.FAVORITES, "", "Favorites")
             s.selectedPlatformId == ANDROID_PLATFORM_ID -> Triple(HideLocationType.ANDROID_PLATFORM, "", "Android")
+            // Any other Memory Card (ROM platforms, Windows Games) — hides from THIS card only;
+            // the game stays in All Games, collections, and categories.
+            s.selectedPlatformId != null && s.selectedPlatformId != ALL_GAMES_PLATFORM_ID -> {
+                val name = enabledCards.firstOrNull { it.platformId == s.selectedPlatformId }?.displayName
+                    ?: s.selectedPlatformId
+                Triple(HideLocationType.PLATFORM, s.selectedPlatformId, name)
+            }
             cat != null && cat.isGamingCategory && cat.id != BuiltInCategory.GAMES &&
                 s.selectedPlatformId == null && s.selectedCollectionId == null ->
                 Triple(HideLocationType.CATEGORY, cat.id, cat.name)
@@ -3338,6 +3362,7 @@ class XMBViewModel @Inject constructor(
             accentColor  = platformCache[g.platformId]?.accentColor,
             isFavorite   = g.isFavorite,
             isAndroidApp = g.packageName != null,
+            isRealGame   = g.contentType == GameContentType.GAME,
             packageName  = g.packageName,
             shortcutId   = g.shortcutId,
             launchIntentUri = g.launchIntentUri,
@@ -3541,6 +3566,12 @@ class XMBViewModel @Inject constructor(
                     GamepadAction.BACK,
                     GamepadAction.NAVIGATE_UP,
                     GamepadAction.NAVIGATE_DOWN,
+                    // Left/Right and the options button (△/Y) are ignored by the scaffold's
+                    // default nav but reachable via onInterceptAction — screens with horizontal
+                    // strips or per-row context menus (Themes) consume them there.
+                    GamepadAction.NAVIGATE_LEFT,
+                    GamepadAction.NAVIGATE_RIGHT,
+                    GamepadAction.LONG_PRESS,
                     GamepadAction.SELECT -> _uiState.update { it.copy(pendingSettingsAction = action) }
                     else -> Unit
                 }
@@ -3719,14 +3750,26 @@ class XMBViewModel @Inject constructor(
                 }
             }
 
+            // Game Detail parity — everything but the artwork manager is reachable here too.
+            add(XMBContextMenuItem("edit_title", "Edit Title"))
+            add(XMBContextMenuItem("edit_note",  "Edit Note"))
+            // Emulator choice only applies to ROM-backed games; package-backed gaming apps
+            // launch via their package/shortcut handle.
+            if (!item.isAndroidApp) add(XMBContextMenuItem("change_emulator", "Change Emulator"))
             add(XMBContextMenuItem("refresh_metadata", "Refresh Metadata"))
             add(XMBContextMenuItem("refresh_artwork",  "Refresh Artwork"))
             add(XMBContextMenuItem("file_location",    "View File Location"))
             // Per-location hide for the spot this game is shown in (recoverable in Hidden Items).
             currentHideLocation()?.let { (_, _, label) -> add(XMBContextMenuItem("hide_here", "Hide from $label")) }
-            // Android-library apps are user-curated, so let the user remove one like any game.
+            // Android-library apps are user-curated, so let the user remove one like any game,
+            // or demote it to a standard app without losing its art/collections.
             if (item.platformId == ANDROID_PLATFORM_ID && item.packageName != null && !inCollection) {
+                add(XMBContextMenuItem("unmark_game", "Unmark as Game"))
                 add(XMBContextMenuItem("remove_app", "Remove from Library", isDestructive = true))
+            } else if (!inCollection) {
+                // Every other game gets full delete too (confirmed first). Deleting a scanned ROM
+                // entry tombstones its path so a re-scan won't resurrect it; the file is untouched.
+                add(XMBContextMenuItem("remove_game", "Remove from Library", isDestructive = true))
             }
         }
 
@@ -3781,6 +3824,8 @@ class XMBViewModel @Inject constructor(
         val items = buildList {
             add(XMBContextMenuItem("launch",   "Launch"))
             add(XMBContextMenuItem("edit_app", "Edit App Details"))
+            // Promotes the app into the Android Memory Card as a real game.
+            add(XMBContextMenuItem("mark_game", "Mark as Game"))
             // Shortcut actions — these materialize a launch shortcut (a games-table row that
             // references the app by package) so it can live in Favorites / Collections without
             // duplicating the app's metadata. Works for every Android app, GameHub included.
@@ -4052,7 +4097,14 @@ class XMBViewModel @Inject constructor(
                 "hide"             -> hideCard(menu.platformId)
                 "remove"           -> removeCard(menu.platformId)
             }
-            menu.gameId != null -> when (itemId) {
+            menu.gameId != null -> if (itemId.startsWith("emu_pick_")) {
+                // Emulator chosen from the Change Emulator submenu ("default" clears the override).
+                val gid = menu.gameId
+                val choice = itemId.removePrefix("emu_pick_")
+                appAction {
+                    gameRepository.setPreferredEmulator(gid, choice.takeIf { it != "default" })
+                }
+            } else when (itemId) {
                 "launch"                 -> when {
                     menu.launchIntentUri != null -> launchStoredIntent(menu.launchIntentUri, menu.title)
                     menu.shortcutId != null -> launchHarvestedShortcut(menu.packageName, menu.shortcutId)
@@ -4095,6 +4147,39 @@ class XMBViewModel @Inject constructor(
                 "refresh_artwork"        -> refreshGameArtwork(menu.gameId)
                 "refresh_metadata"       -> refreshGameArtwork(menu.gameId)
                 "file_location"          -> showGameFileLocation(menu.gameId)
+                "edit_title"             -> {
+                    val gid = menu.gameId
+                    appAction {
+                        val g = gameRepository.getById(gid) ?: return@appAction
+                        _uiState.update { it.copy(collectionNameDialog = CollectionNameDialogState(
+                            title = "Edit Title", initialText = g.displayTitle, editTitleGameId = g.id,
+                        ))}
+                    }
+                }
+                "edit_note"              -> {
+                    val gid = menu.gameId
+                    appAction {
+                        val g = gameRepository.getById(gid) ?: return@appAction
+                        _uiState.update { it.copy(collectionNameDialog = CollectionNameDialogState(
+                            title = "Edit Note", initialText = g.userNote.orEmpty(), editNoteGameId = g.id,
+                        ))}
+                    }
+                }
+                "change_emulator"        -> openEmulatorPickerMenu(menu.gameId)
+                // Two-step delete: a confirm menu first, matching the Game Detail page's guard.
+                "remove_game"            -> _uiState.update { it.copy(activeContextMenu = XMBContextMenu(
+                    title  = "Remove \"${menu.title}\" from Library?",
+                    items  = listOf(
+                        XMBContextMenuItem("confirm_remove_game", "Remove", isDestructive = true),
+                        XMBContextMenuItem("cancel_remove_game",  "Cancel"),
+                    ),
+                    gameId = menu.gameId,
+                ))}
+                "confirm_remove_game"    -> {
+                    val gid = menu.gameId
+                    appAction { removeGameFromLibrary(gid) }
+                }
+                "cancel_remove_game"     -> Unit   // menu already closed
                 "hide_here"              -> currentHideLocation()?.let { (type, id, label) ->
                     persistHide(HiddenPlacement.gameKey(menu.gameId), menu.title, type, id, label)
                 }
@@ -4103,6 +4188,21 @@ class XMBViewModel @Inject constructor(
                     appAction {
                         gameRepository.delete(gid)
                         memoryCardRepository.recountGames(ANDROID_PLATFORM_ID)
+                    }
+                }
+                // Demote an Android-card game to a standard app: the row survives as a decoration
+                // shortcut (art/favorites/collections intact) but leaves the card and All Games.
+                "unmark_game"            -> {
+                    val gid = menu.gameId
+                    appAction {
+                        gameRepository.getById(gid)?.let { g ->
+                            gameRepository.upsert(g.copy(
+                                platformId  = APP_SHORTCUT_PLATFORM_ID,
+                                contentType = GameContentType.ANDROID_APP,
+                            ))
+                        }
+                        memoryCardRepository.recountGames(ANDROID_PLATFORM_ID)
+                        loadItemsForCategory(currentCategory())
                     }
                 }
             }
@@ -4117,6 +4217,26 @@ class XMBViewModel @Inject constructor(
                 } else when (itemId) {
                     "launch"    -> appCategoryRepository.launch(pkg)
                     "edit_app"  -> openAppDetail(menu.gameId, pkg)
+                    // Promote a standard app to the Android card as a real game (reuses any
+                    // existing decoration row so art/favorites/collections carry over).
+                    "mark_game" -> appAction {
+                        val existing = gameRepository.getAppEntry(pkg)
+                        if (existing == null) {
+                            gameRepository.upsert(Game(
+                                title         = menu.title,
+                                platformId    = ANDROID_PLATFORM_ID,
+                                packageName   = pkg,
+                                isManualEntry = true,
+                                contentType   = GameContentType.GAME,
+                            ))
+                        } else {
+                            gameRepository.upsert(existing.copy(
+                                platformId  = ANDROID_PLATFORM_ID,
+                                contentType = GameContentType.GAME,
+                            ))
+                        }
+                        memoryCardRepository.recountGames(ANDROID_PLATFORM_ID)
+                    }
                     "favorite"          -> addAppToFavorites(pkg, menu.title)
                     "add_to_collection" -> addAppToCollection(pkg, menu.title)
                     "import_shortcuts"  -> importGameShortcuts(pkg, menu.title)
@@ -4136,6 +4256,40 @@ class XMBViewModel @Inject constructor(
 
     private fun appAction(block: suspend () -> Unit) {
         viewModelScope.launch { block() }
+    }
+
+    // Submenu listing every installed emulator that supports the game's platform. Selecting a row
+    // dispatches "emu_pick_<profileId>" (or "emu_pick_default" to clear the per-game override).
+    private fun openEmulatorPickerMenu(gameId: Long) {
+        viewModelScope.launch {
+            val game = gameRepository.getById(gameId) ?: return@launch
+            val profiles = emulatorProfileRepository.getProfilesForPlatform(game.platformId)
+            val items = buildList {
+                add(XMBContextMenuItem("emu_pick_default", "Use Platform Default"))
+                profiles.forEach { add(XMBContextMenuItem("emu_pick_${it.id}", it.name)) }
+            }
+            _uiState.update { it.copy(activeContextMenu = XMBContextMenu(
+                title  = "Choose Emulator",
+                items  = items,
+                gameId = gameId,
+            ))}
+        }
+    }
+
+    // Deletes a game row (never the file). Scanned ROM entries leave a tombstone so the next
+    // folder scan doesn't just re-import the file the user removed.
+    private suspend fun removeGameFromLibrary(gameId: Long) {
+        val game = gameRepository.getById(gameId) ?: return
+        game.romPath?.let { path ->
+            scanTombstoneDao.insert(
+                com.playfieldportal.core.data.database.entity.ScanTombstoneEntity(
+                    romPath = path, platformId = game.platformId,
+                )
+            )
+        }
+        gameRepository.delete(gameId)
+        memoryCardRepository.recountGames(game.platformId)
+        loadItemsForCategory(currentCategory())
     }
 
     // ── App rename dialog ─────────────────────────────────────────────────────
@@ -4175,6 +4329,20 @@ class XMBViewModel @Inject constructor(
     fun onConfirmCollectionName(name: String) {
         val dialog = _uiState.value.collectionNameDialog ?: return
         _uiState.update { it.copy(collectionNameDialog = null) }
+        // Game Edit Title / Edit Note targets: blank input clears the override/note.
+        if (dialog.editTitleGameId != null) {
+            viewModelScope.launch {
+                gameRepository.updateUserTitleOverride(dialog.editTitleGameId, name.trim().ifBlank { null })
+                loadItemsForCategory(currentCategory())
+            }
+            return
+        }
+        if (dialog.editNoteGameId != null) {
+            viewModelScope.launch {
+                gameRepository.updateNote(dialog.editNoteGameId, name.trim().ifBlank { null })
+            }
+            return
+        }
         if (name.isBlank()) return
         viewModelScope.launch {
             val renameId = dialog.renameCollectionId
@@ -4363,12 +4531,19 @@ class XMBViewModel @Inject constructor(
                         platformId    = platformId,
                         packageName   = pkg,
                         isManualEntry = true,
-                        // Package-based entry — classified as an app so it stays out of All Games.
-                        contentType   = com.playfieldportal.core.domain.model.GameContentType.ANDROID_APP,
+                        // Adding to the Android library is the user saying "this app is a game" —
+                        // it counts in All Games and can join gaming categories/collections.
+                        contentType   = com.playfieldportal.core.domain.model.GameContentType.GAME,
                     )
                 )
-                existing.platformId != platformId ->
-                    gameRepository.upsert(existing.copy(platformId = platformId))
+                // A shortcut/decoration row exists — promote it into the library as a game,
+                // keeping its artwork, favorites and collection memberships.
+                existing.platformId != platformId ||
+                    existing.contentType != com.playfieldportal.core.domain.model.GameContentType.GAME ->
+                    gameRepository.upsert(existing.copy(
+                        platformId  = platformId,
+                        contentType = com.playfieldportal.core.domain.model.GameContentType.GAME,
+                    ))
                 // else: already in the library — nothing to do.
             }
         }
@@ -4396,7 +4571,9 @@ class XMBViewModel @Inject constructor(
             }
 
             val existingPaths = runCatching {
-                gameRepository.observeByPlatform(platformId).first().mapNotNull { it.romPath }.toSet()
+                // Tombstoned paths (user-removed games) count as "existing" so scans skip them.
+                gameRepository.observeByPlatform(platformId).first().mapNotNull { it.romPath }.toSet() +
+                    scanTombstoneDao.getPathsForPlatform(platformId)
             }.getOrDefault(emptySet())
 
             addBackgroundTask(BackgroundTaskInfo(id = taskId, label = "Scanning ${card.displayName}…", progress = null))
@@ -5404,6 +5581,13 @@ class XMBViewModel @Inject constructor(
             return
         }
 
+        // Real games — including package/shortcut-backed gaming apps (Android/Windows cards) —
+        // open the Game Detail page; its Play button routes to the right launch handle.
+        if (item?.gameId != null && item.isRealGame) {
+            _uiState.update { it.copy(activeGameId = item.gameId) }
+            return
+        }
+
         // Legacy captured shortcut (BannerHub / old Winlator) — launch its stored intent.
         if (item?.launchIntentUri != null) {
             launchStoredIntent(item.launchIntentUri, item.title)
@@ -5416,7 +5600,7 @@ class XMBViewModel @Inject constructor(
             return
         }
 
-        // Android app — A/Cross launches it
+        // Standard (non-game) app — A/Cross launches it directly, no detail page.
         if (item?.packageName != null) {
             appCategoryRepository.launch(item.packageName)
             // Mirror the ROM path: reflect the launch in the opt-in Discord presence (no-op unless
@@ -5620,8 +5804,10 @@ class XMBViewModel @Inject constructor(
     // ── Launcher-shortcut harvesting (GameHub PCs, Lime3DS games, …) ────────────
     //
     // Pulls the host app's published launcher shortcuts and imports each as a launchable PFP
-    // entry (a games-table row carrying the host package + shortcut id), grouped into a
-    // collection named after the app. Requires PFP to be the active default launcher.
+    // entry (a games-table row carrying the host package + shortcut id). PC-launcher shortcuts
+    // are real games and land in the Windows Games card; shortcuts from any other host (e.g. a
+    // Chrome web app) stay app-style entries in a collection named after the host app.
+    // Requires PFP to be the active default launcher.
     private fun importGameShortcuts(hostPackage: String, hostLabel: String) {
         val taskId = "harvest_$hostPackage"
         viewModelScope.launch {
@@ -5637,35 +5823,86 @@ class XMBViewModel @Inject constructor(
                         taskNotifier.complete(taskId, hostLabel, "No game shortcuts published by this app.")
                         return@launch
                     }
+                    val isPcLauncher =
+                        com.playfieldportal.feature.launcher.PcLauncherCatalog.forPackage(hostPackage) != null &&
+                            (!com.playfieldportal.feature.launcher.PcLauncherCatalog.isGameHubFamilyPackage(hostPackage) ||
+                                hostLabel.contains("gamehub", ignoreCase = true) ||
+                                hostLabel.contains("game hub", ignoreCase = true) ||
+                                hostLabel.contains("banner", ignoreCase = true))
                     runCatching {
-                        val collectionId = collectionRepository.getAll().firstOrNull { it.name == hostLabel }?.id
-                            ?: collectionRepository.create(hostLabel)
-                        shortcuts.forEach { sc ->
-                            val gameId = gameRepository.getLauncherShortcut(sc.hostPackage, sc.shortcutId)?.id
-                                ?: gameRepository.upsert(
-                                    Game(
-                                        title         = sc.label,
-                                        // Harvested shortcuts live in a collection, not the Android library.
-                                        platformId    = APP_SHORTCUT_PLATFORM_ID,
-                                        packageName   = sc.hostPackage,
-                                        isManualEntry = true,
-                                        contentType   = GameContentType.ANDROID_APP,
-                                        shortcutId    = sc.shortcutId,
-                                    )
-                                )
-                            collectionRepository.addGame(collectionId, gameId)
-                        }
+                        if (isPcLauncher) importPcShortcuts(shortcuts)
+                        else importAppShortcuts(hostLabel, shortcuts)
                         shortcuts.size
                     }.onSuccess { count ->
                         Timber.i("Imported $count launcher shortcut(s) from $hostPackage")
+                        val destination = if (isPcLauncher) "Windows Games" else "collection \"$hostLabel\""
                         taskNotifier.complete(taskId, hostLabel,
-                            "Imported $count shortcut${if (count == 1) "" else "s"} into collection \"$hostLabel\"")
+                            "Imported $count shortcut${if (count == 1) "" else "s"} into $destination")
                     }.onFailure { e ->
                         Timber.e(e, "Failed to import shortcuts from $hostPackage")
                         taskNotifier.failed(taskId, hostLabel, "Import failed: ${e.message}")
                     }
                 }
             }
+        }
+    }
+
+    // PC-launcher shortcuts become Windows Games card entries (real games). Dedupe by shortcut id
+    // first, then by normalized title within the card (the same game may exist via an intent-URI
+    // import from the folder scan).
+    private suspend fun importPcShortcuts(shortcuts: List<com.playfieldportal.feature.appbar.HarvestedShortcut>) {
+        fun normalize(t: String) = t.lowercase().filter { it.isLetterOrDigit() }
+        val existing = gameRepository.getByPlatform(WINDOWS_PLATFORM_ID)
+        for (sc in shortcuts) {
+            val dupe = gameRepository.getLauncherShortcut(sc.hostPackage, sc.shortcutId) != null ||
+                existing.any { it.packageName == sc.hostPackage && normalize(it.displayTitle) == normalize(sc.label) }
+            if (dupe) continue
+            gameRepository.upsert(
+                Game(
+                    title         = sc.label,
+                    platformId    = WINDOWS_PLATFORM_ID,
+                    packageName   = sc.hostPackage,
+                    isManualEntry = true,
+                    contentType   = GameContentType.GAME,
+                    shortcutId    = sc.shortcutId,
+                )
+            )
+        }
+        if (memoryCardRepository.getById(WINDOWS_PLATFORM_ID) == null) {
+            memoryCardRepository.addCard(
+                platformId   = WINDOWS_PLATFORM_ID,
+                displayName  = "Windows Games",
+                romDirectory = null,
+                emulatorId   = null,
+                extensions   = emptyList(),
+                scanRecursively = false,
+            )
+        }
+        memoryCardRepository.recountGames(WINDOWS_PLATFORM_ID)
+    }
+
+    // Non-PC hosts (Chrome web apps, Lime3DS, …): app-style entries grouped into a collection
+    // named after the host app — the pre-v22 behaviour, still right for things that aren't games.
+    private suspend fun importAppShortcuts(
+        hostLabel: String,
+        shortcuts: List<com.playfieldportal.feature.appbar.HarvestedShortcut>,
+    ) {
+        val collectionId = collectionRepository.getAll().firstOrNull { it.name == hostLabel }?.id
+            ?: collectionRepository.create(hostLabel)
+        shortcuts.forEach { sc ->
+            val gameId = gameRepository.getLauncherShortcut(sc.hostPackage, sc.shortcutId)?.id
+                ?: gameRepository.upsert(
+                    Game(
+                        title         = sc.label,
+                        // Harvested app shortcuts live in a collection, not the Android library.
+                        platformId    = APP_SHORTCUT_PLATFORM_ID,
+                        packageName   = sc.hostPackage,
+                        isManualEntry = true,
+                        contentType   = GameContentType.ANDROID_APP,
+                        shortcutId    = sc.shortcutId,
+                    )
+                )
+            collectionRepository.addGame(collectionId, gameId)
         }
     }
 
@@ -5961,6 +6198,8 @@ class XMBViewModel @Inject constructor(
         // collection membership. They reference an app by package but are NOT in the Android
         // library, so they use this id instead of "android" to stay out of observeByPlatform.
         private const val APP_SHORTCUT_PLATFORM_ID = "app_shortcut"
+        // Virtual card holding PC-launcher game imports (harvest / folder scan / add-by-ID).
+        private const val WINDOWS_PLATFORM_ID = "windows"
 
         // Music category synthetic rows / drill ids.
         private const val ADD_MUSIC_FOLDER_ITEM_ID = "add_music_folder"

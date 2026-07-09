@@ -15,6 +15,11 @@ import javax.inject.Inject
 
 const val GRID_COLUMNS = 5
 
+// The Android Memory Card's platform id, and the sentinel platform for rows that only back an
+// app's artwork/favorites/collections without placing it in the library (mirrors XMBViewModel).
+private const val ANDROID_PLATFORM_ID = "android"
+private const val APP_SHORTCUT_PLATFORM_ID = "app_shortcut"
+
 enum class AppFilter(val label: String) {
     ALL("All Apps"),
     GAMES("Games"),
@@ -25,6 +30,8 @@ enum class AppFilter(val label: String) {
 // One row in an app's long-press mini menu.
 enum class AppMenuAction(val label: String) {
     APP_INFO("App Info"),
+    MARK_GAME("Mark as Game"),
+    UNMARK_GAME("Unmark as Game"),
     UNINSTALL("Uninstall"),
 }
 
@@ -45,11 +52,15 @@ data class AppDrawerUiState(
     val menuIndex: Int = 0,
     // Uninstall guard rail: the app awaiting the in-app confirmation (null = no dialog).
     val confirmUninstall: InstalledApp? = null,
+    // True when the menu app is marked as a game (an android-platform GAME row exists for it).
+    val menuAppIsGame: Boolean = false,
 ) {
-    // App Info for every app; Uninstall only for non-system apps (guard rail).
+    // App Info for every app; Mark/Unmark as Game toggles library membership; Uninstall only
+    // for non-system apps (guard rail).
     val menuActions: List<AppMenuAction>
         get() = buildList {
             add(AppMenuAction.APP_INFO)
+            add(if (menuAppIsGame) AppMenuAction.UNMARK_GAME else AppMenuAction.MARK_GAME)
             if (menuApp?.isSystemApp == false) add(AppMenuAction.UNINSTALL)
         }
 }
@@ -59,6 +70,8 @@ class AppDrawerViewModel @Inject constructor(
     private val appRepository: InstalledAppRepository,
     private val menuSound: MenuSoundPlayer,
     private val discordPresence: com.playfieldportal.core.data.discord.DiscordPresenceController,
+    private val gameRepository: com.playfieldportal.core.domain.repository.GameRepository,
+    private val memoryCardRepository: com.playfieldportal.core.data.repository.MemoryCardRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AppDrawerUiState())
@@ -131,7 +144,17 @@ class AppDrawerViewModel @Inject constructor(
 
     fun openAppMenu(app: InstalledApp) {
         menuSound.play(MenuSound.SELECT)
-        _uiState.update { it.copy(menuApp = app, menuIndex = 0) }
+        _uiState.update { it.copy(menuApp = app, menuIndex = 0, menuAppIsGame = false) }
+        // Resolve the Mark/Unmark row async; the menu is already visible.
+        viewModelScope.launch {
+            val entry = gameRepository.getAppEntry(app.packageName)
+            val isGame = entry != null &&
+                entry.platformId == ANDROID_PLATFORM_ID &&
+                entry.contentType == com.playfieldportal.core.domain.model.GameContentType.GAME
+            _uiState.update {
+                if (it.menuApp?.packageName == app.packageName) it.copy(menuAppIsGame = isGame) else it
+            }
+        }
     }
 
     /** Opens the menu for the currently-focused grid app (controller hold). */
@@ -149,8 +172,43 @@ class AppDrawerViewModel @Inject constructor(
                 appRepository.openAppInfo(app.packageName)
                 _uiState.update { it.copy(menuApp = null) }
             }
+            AppMenuAction.MARK_GAME   -> { setMarkedAsGame(app, marked = true);  _uiState.update { it.copy(menuApp = null) } }
+            AppMenuAction.UNMARK_GAME -> { setMarkedAsGame(app, marked = false); _uiState.update { it.copy(menuApp = null) } }
             // Guard rail: show an in-app confirmation before the system uninstall flow.
             AppMenuAction.UNINSTALL -> _uiState.update { it.copy(menuApp = null, confirmUninstall = app) }
+        }
+    }
+
+    // Marking puts the app in the Android Memory Card as a real game (counts in All Games, joins
+    // gaming categories); unmarking demotes it to a decoration row (app_shortcut sentinel) so its
+    // artwork, favorites and collection memberships survive a later re-mark.
+    private fun setMarkedAsGame(app: InstalledApp, marked: Boolean) {
+        viewModelScope.launch {
+            val existing = gameRepository.getAppEntry(app.packageName)
+            if (marked) {
+                if (existing == null) {
+                    gameRepository.upsert(
+                        com.playfieldportal.core.domain.model.Game(
+                            title         = app.label,
+                            platformId    = ANDROID_PLATFORM_ID,
+                            packageName   = app.packageName,
+                            isManualEntry = true,
+                            contentType   = com.playfieldportal.core.domain.model.GameContentType.GAME,
+                        )
+                    )
+                } else {
+                    gameRepository.upsert(existing.copy(
+                        platformId  = ANDROID_PLATFORM_ID,
+                        contentType = com.playfieldportal.core.domain.model.GameContentType.GAME,
+                    ))
+                }
+            } else if (existing != null) {
+                gameRepository.upsert(existing.copy(
+                    platformId  = APP_SHORTCUT_PLATFORM_ID,
+                    contentType = com.playfieldportal.core.domain.model.GameContentType.ANDROID_APP,
+                ))
+            }
+            memoryCardRepository.recountGames(ANDROID_PLATFORM_ID)
         }
     }
 

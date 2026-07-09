@@ -20,6 +20,8 @@ interface GameRepository {
     fun observeGamesOnly(): Flow<List<Game>>
     fun observeFavorites(): Flow<List<Game>>
     fun observeByPlatform(platformId: String): Flow<List<Game>>
+    // One-shot snapshot of a platform's games — for import-time dedupe checks.
+    suspend fun getByPlatform(platformId: String): List<Game>
     fun observeRecentPlatforms(limit: Int): Flow<List<RecentPlatform>>
     suspend fun getById(id: Long): Game?
     suspend fun getByPackageName(packageName: String): Game?

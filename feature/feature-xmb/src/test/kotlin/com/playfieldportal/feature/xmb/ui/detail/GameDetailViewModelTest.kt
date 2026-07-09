@@ -123,6 +123,7 @@ class GameDetailViewModelTest {
             cardProcessor     = cardProcessor,
             menuSound         = mockk(relaxed = true),
             discordPresence   = mockk(relaxed = true),
+            launcherShortcutRepository = mockk(relaxed = true),
         )
     }
 

@@ -22,6 +22,7 @@ import com.playfieldportal.core.data.database.dao.UnmatchedRomDao
 import com.playfieldportal.core.data.database.dao.HiddenPlacementDao
 import com.playfieldportal.core.data.database.dao.PhotoDao
 import com.playfieldportal.core.data.database.dao.PhotoLibraryDao
+import com.playfieldportal.core.data.database.dao.ScanTombstoneDao
 import com.playfieldportal.core.data.database.dao.VideoDao
 import com.playfieldportal.core.data.database.dao.VideoLibraryDao
 import com.playfieldportal.core.data.database.dao.VideoPlaylistDao
@@ -44,6 +45,7 @@ import com.playfieldportal.core.data.database.entity.UnmatchedRomEntity
 import com.playfieldportal.core.data.database.entity.HiddenPlacementEntity
 import com.playfieldportal.core.data.database.entity.PhotoEntity
 import com.playfieldportal.core.data.database.entity.PhotoLibraryEntity
+import com.playfieldportal.core.data.database.entity.ScanTombstoneEntity
 import com.playfieldportal.core.data.database.entity.VideoEntity
 import com.playfieldportal.core.data.database.entity.VideoLibraryEntity
 import com.playfieldportal.core.data.database.entity.VideoPlaylistEntity
@@ -74,8 +76,9 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         HiddenPlacementEntity::class,
         PhotoLibraryEntity::class,
         PhotoEntity::class,
+        ScanTombstoneEntity::class,
     ],
-    version = 21,
+    version = 22,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -100,6 +103,7 @@ abstract class PFPDatabase : RoomDatabase() {
     abstract fun hiddenPlacementDao(): HiddenPlacementDao
     abstract fun photoLibraryDao(): PhotoLibraryDao
     abstract fun photoDao(): PhotoDao
+    abstract fun scanTombstoneDao(): ScanTombstoneDao
     abstract fun backupDao(): BackupDao
 
     companion object {
@@ -539,6 +543,56 @@ abstract class PFPDatabase : RoomDatabase() {
         val MIGRATION_20_21 = object : Migration(20, 21) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE collections ADD COLUMN icon_key TEXT")
+            }
+        }
+
+        // v22 — library restructure: Windows Games card + gaming/standard app split.
+        //  • scan_tombstones records user-removed scanned games so re-scans don't resurrect them.
+        //  • PC-launcher entries (harvested shortcuts / exported PC games) consolidate under the
+        //    "windows" platform as real games. Only the unambiguous launcher packages are re-homed
+        //    here; spoof-named variants (AnTuTu/PUBG/Genshin/CrossFire package names shared with
+        //    genuine apps) are resolved by LibraryConsolidation with an app-label check.
+        //  • Android-library entries become contentType GAME (they now count in All Games); the
+        //    app_shortcut sentinel rows (per-app decoration/favorites shortcuts) stay ANDROID_APP.
+        //  No rows are deleted. Dedupe, Windows card creation, and launcher-collection cleanup run
+        //  in LibraryConsolidation (Kotlin one-shot) — they need logic SQL can't express safely.
+        val MIGRATION_21_22 = object : Migration(21, 22) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS scan_tombstones (
+                        rom_path TEXT NOT NULL,
+                        platform_id TEXT NOT NULL,
+                        created_at INTEGER NOT NULL,
+                        PRIMARY KEY(rom_path)
+                    )
+                    """.trimIndent()
+                )
+
+                // Rename only if the user hasn't customized the platform name.
+                db.execSQL(
+                    "UPDATE platforms SET name = 'Windows Games' WHERE id = 'windows' AND name = 'Windows (Winlator)'"
+                )
+
+                // Re-home PC-launcher game entries to the Windows platform as real games. The
+                // launch-handle requirement keeps a decorated launcher app itself (a plain
+                // package shortcut row with no shortcut id / intent) out of the Windows card.
+                db.execSQL(
+                    """
+                    UPDATE games SET platform_id = 'windows', content_type = 'GAME'
+                    WHERE platform_id IN ('app_shortcut', 'windows')
+                      AND package_name IN ('com.winlator', 'com.winlator.cmod', 'app.gamenative',
+                                           'gamehub.lite', 'banner.hub', 'com.xiaoji.egggame')
+                      AND (launch_shortcut_id IS NOT NULL OR launch_intent_uri IS NOT NULL)
+                    """.trimIndent()
+                )
+
+                // Android-library entries are user-curated games — promote them so they aggregate
+                // into All Games and become eligible for gaming categories. The user can demote
+                // individual apps via "Unmark as Game".
+                db.execSQL(
+                    "UPDATE games SET content_type = 'GAME' WHERE platform_id = 'android' AND content_type = 'ANDROID_APP'"
+                )
             }
         }
     }

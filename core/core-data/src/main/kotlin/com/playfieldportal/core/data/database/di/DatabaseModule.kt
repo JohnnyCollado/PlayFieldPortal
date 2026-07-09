@@ -20,6 +20,7 @@ import com.playfieldportal.core.data.database.dao.UnmatchedRomDao
 import com.playfieldportal.core.data.database.dao.HiddenPlacementDao
 import com.playfieldportal.core.data.database.dao.PhotoDao
 import com.playfieldportal.core.data.database.dao.PhotoLibraryDao
+import com.playfieldportal.core.data.database.dao.ScanTombstoneDao
 import com.playfieldportal.core.data.database.dao.VideoDao
 import com.playfieldportal.core.data.database.dao.VideoLibraryDao
 import com.playfieldportal.core.data.database.dao.VideoPlaylistDao
@@ -74,6 +75,7 @@ object DatabaseModule {
             PFPDatabase.MIGRATION_18_19,
             PFPDatabase.MIGRATION_19_20,
             PFPDatabase.MIGRATION_20_21,
+            PFPDatabase.MIGRATION_21_22,
         )
         .build()
 
@@ -96,6 +98,7 @@ object DatabaseModule {
     @Provides fun provideHiddenPlacementDao(db: PFPDatabase): HiddenPlacementDao = db.hiddenPlacementDao()
     @Provides fun providePhotoLibraryDao(db: PFPDatabase): PhotoLibraryDao = db.photoLibraryDao()
     @Provides fun providePhotoDao(db: PFPDatabase): PhotoDao = db.photoDao()
+    @Provides fun provideScanTombstoneDao(db: PFPDatabase): ScanTombstoneDao = db.scanTombstoneDao()
     @Provides fun provideBackupDao(db: PFPDatabase): BackupDao = db.backupDao()
 }
 

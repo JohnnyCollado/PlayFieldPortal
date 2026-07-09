@@ -74,9 +74,13 @@ class GamePickerViewModel @Inject constructor(
                             emptyList()
                         }
 
-                        // Group games by platform, excluding empty platforms
+                        // Group games by platform, excluding empty platforms. Real games only —
+                        // standard (unmarked) apps can't join gaming categories/collections.
                         val platformGroups = cards.mapNotNull { card ->
-                            val platformGames = allGames.filter { it.platformId == card.platformId }
+                            val platformGames = allGames.filter {
+                                it.platformId == card.platformId &&
+                                    it.contentType == com.playfieldportal.core.domain.model.GameContentType.GAME
+                            }
                             if (platformGames.isNotEmpty()) {
                                 PlatformGameGroup(
                                     platform = card,

@@ -6,7 +6,6 @@ import android.net.Uri
 import android.provider.DocumentsContract
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.playfieldportal.core.data.repository.CollectionRepository
 import com.playfieldportal.core.data.repository.FolderLinkStatus
 import com.playfieldportal.core.data.repository.MemoryCardRepository
 import com.playfieldportal.core.data.repository.RomRootRepository
@@ -46,9 +45,6 @@ const val ADD_CONSOLE_FOCUS_KEY = "add_console"
 private const val ANDROID_PLATFORM_ID = "android"
 private const val WINDOWS_PLATFORM_ID = "windows"
 
-// Category-icon catalog key for the Desktop-PC icon used on launcher collections.
-private const val PC_COLLECTION_ICON = "ic_desktop"
-
 enum class LibraryStep { LIST, PICK_PLATFORM, PICK_EMULATOR, SCAN_PROMPT, CARD_DETAIL, IMPORT_PC }
 
 // Focus key for the "Import PC Games" row so focus returns to it from the import section.
@@ -65,8 +61,8 @@ data class PcLauncherRow(
     val canAddById: Boolean,
 )
 
-// One PC game already captured from a launcher (via pin/INSTALL_SHORTCUT), importable into a
-// collection. gameId references the existing games row.
+// One PC game already captured from a launcher (via pin/INSTALL_SHORTCUT), importable into the
+// Windows Games card. gameId references the existing games row.
 data class PcGameRow(val gameId: Long, val title: String, val launcherName: String)
 
 enum class DirectoryPickPurpose { ADD, CHANGE }
@@ -138,8 +134,8 @@ class LibraryManagerViewModel @Inject constructor(
     private val emulatorProfileRepository: EmulatorProfileRepository,
     private val romRootRepository: RomRootRepository,
     private val folderHintResolver: PlatformFolderHintResolver,
-    private val collectionRepository: CollectionRepository,
     private val launcherShortcutRepository: LauncherShortcutRepository,
+    private val scanTombstoneDao: com.playfieldportal.core.data.database.dao.ScanTombstoneDao,
 ) : ViewModel() {
 
     private val _scratch = MutableStateFlow(LibraryManagerUiState())
@@ -173,9 +169,11 @@ class LibraryManagerViewModel @Inject constructor(
                 .sortedBy { it.label.lowercase() },
             // PC games captured from a supported launcher (pin / INSTALL_SHORTCUT) — they carry a
             // launchable reference (shortcut id or stored intent) back into the source app.
+            // Entries already living in the Windows Games card are done; only strays show here.
             pcGames = games.mapNotNull { g ->
                 val launcher = PcLauncherCatalog.forPackage(g.packageName) ?: return@mapNotNull null
                 if (g.shortcutId == null && g.launchIntentUri == null) return@mapNotNull null
+                if (g.platformId == WINDOWS_PLATFORM_ID) return@mapNotNull null
                 PcGameRow(g.id, g.displayTitle, launcher.displayName)
             }.sortedBy { it.title.lowercase() },
         )
@@ -435,8 +433,10 @@ class LibraryManagerViewModel @Inject constructor(
             _scratch.update { it.copy(scanningPlatformIds = it.scanningPlatformIds + platformId) }
 
             // Live, growing set so a ROM already added from one root isn't re-added from another.
+            // Tombstoned paths (user-removed games) count as existing so scans skip them.
             val existing = runCatching {
-                gameRepository.observeByPlatform(platformId).first().mapNotNull { it.romPath }.toMutableSet()
+                (gameRepository.observeByPlatform(platformId).first().mapNotNull { it.romPath } +
+                    scanTombstoneDao.getPathsForPlatform(platformId)).toMutableSet()
             }.getOrDefault(mutableSetOf())
 
             var added = 0
@@ -532,9 +532,9 @@ class LibraryManagerViewModel @Inject constructor(
     fun openImportPcGames() {
         val pm = context.packageManager
         val launchers = PcLauncherCatalog.entries.map { def ->
-            val installedPkg = def.packageNames.firstOrNull { pkg ->
-                runCatching { pm.getApplicationInfo(pkg, 0) }.isSuccess
-            }
+            // Label-verified: GameHub-family variants ship under genuine AnTuTu/PUBG/Genshin
+            // package names, so a package match alone would flag the real apps as launchers.
+            val installedPkg = PcLauncherCatalog.verifiedInstalledPackage(def, pm)
             PcLauncherRow(
                 type        = def.type,
                 name        = def.displayName,
@@ -577,7 +577,7 @@ class LibraryManagerViewModel @Inject constructor(
         }
     }
 
-    /** Adds a PC game by id: builds the launch intent, stores it, and files it in the PC collection. */
+    /** Adds a PC game by id: builds the launch intent, stores it, and files it in the Windows card. */
     fun addPcGameById(row: PcLauncherRow, id: String, title: String?, source: String?) {
         val pkg = row.packageName ?: return
         val intent = PcLauncherAdapters.forType(row.type)?.buildLaunchIntent(pkg, id, source)
@@ -589,20 +589,23 @@ class LibraryManagerViewModel @Inject constructor(
         val displayName = title?.trim()?.takeIf { it.isNotBlank() } ?: "${row.name} game $id"
         viewModelScope.launch {
             runCatching {
-                val gameId = gameRepository.getByIntentUri(intentUri)?.id
-                    ?: gameRepository.upsert(
+                if (gameRepository.getByIntentUri(intentUri) == null &&
+                    findWindowsGame(pkg, displayName) == null
+                ) {
+                    gameRepository.upsert(
                         Game(
                             title           = displayName,
                             platformId      = WINDOWS_PLATFORM_ID,
                             packageName     = pkg,
                             isManualEntry   = true,
-                            contentType     = GameContentType.SHORTCUT,
+                            contentType     = GameContentType.GAME,
                             launchIntentUri = intentUri,
                         )
                     )
-                collectionRepository.addGame(pcLauncherCollectionId(row.name), gameId)
+                }
+                ensureWindowsCard()
             }.fold(
-                onSuccess = { _scratch.update { it.copy(message = "\"$displayName\" added to \"${row.name}\".") } },
+                onSuccess = { _scratch.update { it.copy(message = "\"$displayName\" added to Windows Games.") } },
                 onFailure = { e ->
                     Timber.e(e, "Add PC game by id failed for ${row.name}")
                     _scratch.update { it.copy(message = "Couldn't add game: ${e.message}") }
@@ -628,7 +631,9 @@ class LibraryManagerViewModel @Inject constructor(
             val pm = context.packageManager
             fun installed(vararg pkgs: String) = pkgs.firstOrNull { runCatching { pm.getApplicationInfo(it, 0) }.isSuccess }
             val gameNativePkg = installed("app.gamenative")
-            val gameHubPkg    = installed("com.xiaoji.egggame", "banner.hub", "gamehub.lite")
+            // Label-verified family lookup — covers every side-by-side spoof variant without
+            // mistaking the genuine AnTuTu/PUBG/Genshin apps for a launcher.
+            val gameHubPkg    = PcLauncherCatalog.installedGameHubFamilyPackages(pm).firstOrNull()
             val winlatorPkg   = installed("com.winlator", "com.winlator.cmod")
 
             var added = 0
@@ -642,24 +647,27 @@ class LibraryManagerViewModel @Inject constructor(
                     romScanner.scanPcFolder(rootUri, childDocId).forEach { file ->
                         val launch = buildPcLaunch(file, pm, gameNativePkg, gameHubPkg, winlatorPkg)
                         if (launch == null) { skipped++; return@forEach }
-                        val (intent, launcherName, launcherPkg) = launch
+                        val (intent, _, launcherPkg) = launch
                         val intentUri = intent.toUri(Intent.URI_INTENT_SCHEME)
-                        val gameId = gameRepository.getByIntentUri(intentUri)?.id
-                            ?: gameRepository.upsert(
+                        if (gameRepository.getByIntentUri(intentUri) == null &&
+                            findWindowsGame(launcherPkg, file.title) == null
+                        ) {
+                            gameRepository.upsert(
                                 Game(
                                     title           = file.title,
                                     platformId      = WINDOWS_PLATFORM_ID,
                                     packageName     = launcherPkg,
                                     isManualEntry   = true,
-                                    contentType     = GameContentType.SHORTCUT,
+                                    contentType     = GameContentType.GAME,
                                     launchIntentUri = intentUri,
                                 )
                             )
-                        collectionRepository.addGame(pcLauncherCollectionId(launcherName), gameId)
+                        }
                         added++
                     }
                 }
             }
+            if (added > 0) ensureWindowsCard()
 
             val message = when {
                 windowsFolders == 0 -> "No \"Windows\" folder found under your ROM roots. Point GameNative's export folder at <root>/Windows."
@@ -723,21 +731,23 @@ class LibraryManagerViewModel @Inject constructor(
                         return@launch
                     }
                     runCatching {
-                        val collectionId = pcLauncherCollectionId(row.name)
                         result.shortcuts.forEach { sc ->
-                            val gameId = gameRepository.getLauncherShortcut(sc.hostPackage, sc.shortcutId)?.id
-                                ?: gameRepository.upsert(
+                            if (gameRepository.getLauncherShortcut(sc.hostPackage, sc.shortcutId) == null &&
+                                findWindowsGame(sc.hostPackage, sc.label) == null
+                            ) {
+                                gameRepository.upsert(
                                     Game(
                                         title         = sc.label,
                                         platformId    = WINDOWS_PLATFORM_ID,
                                         packageName   = sc.hostPackage,
                                         isManualEntry = true,
-                                        contentType   = GameContentType.SHORTCUT,
+                                        contentType   = GameContentType.GAME,
                                         shortcutId    = sc.shortcutId,
                                     )
                                 )
-                            collectionRepository.addGame(collectionId, gameId)
+                            }
                         }
+                        ensureWindowsCard()
                         result.shortcuts.size
                     }.fold(
                         onSuccess = { _scratch.update { it.copy(message = "Imported $it game(s) from ${row.name}.") } },
@@ -748,22 +758,49 @@ class LibraryManagerViewModel @Inject constructor(
         }
     }
 
-    // Returns the id of the collection named after a PC launcher, creating it with the PC icon if
-    // absent. Existing collections that predate the icon get it applied too.
-    private suspend fun pcLauncherCollectionId(launcherName: String): Long {
-        val existing = collectionRepository.getAll().firstOrNull { it.name == launcherName }
-        val id = existing?.id ?: collectionRepository.create(launcherName)
-        if (existing?.iconKey != PC_COLLECTION_ICON) collectionRepository.setIcon(id, PC_COLLECTION_ICON)
-        return id
+    // ── Windows Games card helpers ────────────────────────────────────────────
+    //
+    // Every PC import lands directly in the Windows Games Memory Card — a virtual card (no ROM
+    // directory) created on first import. Per-launcher collections are no longer created.
+
+    private suspend fun ensureWindowsCard() {
+        if (memoryCardRepository.getById(WINDOWS_PLATFORM_ID) == null) {
+            memoryCardRepository.addCard(
+                platformId   = WINDOWS_PLATFORM_ID,
+                displayName  = "Windows Games",
+                romDirectory = null,
+                emulatorId   = null,
+                extensions   = emptyList(),
+                scanRecursively = false,
+            )
+        }
+        memoryCardRepository.recountGames(WINDOWS_PLATFORM_ID)
     }
 
-    /** Adds one captured PC game to a PC-icon collection named after its launcher. */
+    // Title-level dedupe within the Windows card: the same game can arrive with different launch
+    // handles (shortcut id via harvest, intent URI via folder scan), so handle-keyed lookups alone
+    // can't converge re-imports.
+    private suspend fun findWindowsGame(packageName: String, title: String): Game? {
+        val key = normalizePcTitle(title)
+        return gameRepository.getByPlatform(WINDOWS_PLATFORM_ID).firstOrNull {
+            it.packageName == packageName && normalizePcTitle(it.displayTitle) == key
+        }
+    }
+
+    private fun normalizePcTitle(title: String): String =
+        title.lowercase().filter { it.isLetterOrDigit() }
+
+    /** Moves one captured PC game (pin / INSTALL_SHORTCUT stray) into the Windows Games card. */
     fun importPcGame(row: PcGameRow) {
         viewModelScope.launch {
             runCatching {
-                collectionRepository.addGame(pcLauncherCollectionId(row.launcherName), row.gameId)
+                val game = gameRepository.getById(row.gameId) ?: error("Game not found")
+                gameRepository.upsert(
+                    game.copy(platformId = WINDOWS_PLATFORM_ID, contentType = GameContentType.GAME)
+                )
+                ensureWindowsCard()
             }.fold(
-                onSuccess = { _scratch.update { it.copy(message = "\"${row.title}\" added to collection \"${row.launcherName}\".") } },
+                onSuccess = { _scratch.update { it.copy(message = "\"${row.title}\" added to Windows Games.") } },
                 onFailure = { e ->
                     Timber.e(e, "PC game import failed for ${row.gameId}")
                     _scratch.update { it.copy(message = "Couldn't import \"${row.title}\": ${e.message}") }
@@ -772,7 +809,7 @@ class LibraryManagerViewModel @Inject constructor(
         }
     }
 
-    /** Imports every captured PC game into its launcher's PC-icon collection. */
+    /** Moves every captured PC game into the Windows Games card. */
     fun importAllPcGames() {
         val rows = uiState.value.pcGames
         if (rows.isEmpty()) return
@@ -780,11 +817,15 @@ class LibraryManagerViewModel @Inject constructor(
             var added = 0
             rows.forEach { row ->
                 runCatching {
-                    collectionRepository.addGame(pcLauncherCollectionId(row.launcherName), row.gameId)
+                    val game = gameRepository.getById(row.gameId) ?: error("Game not found")
+                    gameRepository.upsert(
+                        game.copy(platformId = WINDOWS_PLATFORM_ID, contentType = GameContentType.GAME)
+                    )
                     added++
                 }.onFailure { Timber.e(it, "PC game import failed for ${row.gameId}") }
             }
-            _scratch.update { it.copy(message = "Imported $added PC game(s) into launcher collections.") }
+            if (added > 0) ensureWindowsCard()
+            _scratch.update { it.copy(message = "Imported $added PC game(s) into Windows Games.") }
         }
     }
 
@@ -861,7 +902,8 @@ class LibraryManagerViewModel @Inject constructor(
                     if (exts.isEmpty()) continue   // nothing scannable for this platform
 
                     val existing = runCatching {
-                        gameRepository.observeByPlatform(platformId).first().mapNotNull { it.romPath }.toSet()
+                        gameRepository.observeByPlatform(platformId).first().mapNotNull { it.romPath }.toSet() +
+                            scanTombstoneDao.getPathsForPlatform(platformId)
                     }.getOrDefault(emptySet())
 
                     val found = firstComplete(

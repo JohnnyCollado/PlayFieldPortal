@@ -36,6 +36,9 @@ class GameRepositoryImpl @Inject constructor(
     override fun observeByPlatform(platformId: String): Flow<List<Game>> =
         gameDao.observeByPlatform(platformId).map { entities -> entities.map { it.toDomain() } }
 
+    override suspend fun getByPlatform(platformId: String): List<Game> =
+        gameDao.getByPlatformOnce(platformId).map { it.toDomain() }
+
     override fun observeRecentPlatforms(limit: Int): Flow<List<RecentPlatform>> {
         return combine(
             playSessionDao.observeRecentPlatformIds(),

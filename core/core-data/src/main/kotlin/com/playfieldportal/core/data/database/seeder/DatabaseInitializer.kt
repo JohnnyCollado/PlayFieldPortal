@@ -44,6 +44,7 @@ class DatabaseInitializer @Inject constructor(
     private val platformSeeder: PlatformSeeder,
     private val categoryRepository: CategoryRepositoryImpl,
     private val themeDao: ThemeDao,
+    private val libraryConsolidation: LibraryConsolidation,
 ) {
     // Called once from PFPApplication after DI is ready.
     // Safe to call multiple times — guarded by DataStore flags and INSERT OR IGNORE.
@@ -53,6 +54,9 @@ class DatabaseInitializer @Inject constructor(
         // built-in categories so definition changes reach databases seeded by older builds.
         categoryRepository.reconcileBuiltInCategories()
         seedThemes()
+        // One-shot v22 follow-up (flag-guarded): the Windows-card consolidation steps that
+        // need app logic — spoof-package label checks, duplicate merge, card creation.
+        libraryConsolidation.run()
     }
 
     private suspend fun seedMainDb() {

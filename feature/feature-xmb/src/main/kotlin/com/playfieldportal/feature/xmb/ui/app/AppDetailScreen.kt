@@ -35,10 +35,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -71,8 +68,6 @@ import com.playfieldportal.core.ui.components.XmbHeaderPill
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.core.ui.theme.menuCursorFill
-import com.playfieldportal.feature.xmb.ui.DetailContextMenu
-import com.playfieldportal.feature.xmb.ui.DetailMenuRow
 import com.playfieldportal.feature.xmb.ui.collection.CollectionPickerPanel
 import com.playfieldportal.feature.xmb.ui.detail.ArtworkType
 import com.playfieldportal.feature.xmb.ui.detail.displayLabel
@@ -82,7 +77,6 @@ import com.playfieldportal.feature.xmb.ui.detail.displayLabel
 private val TextPrimary = Color(0xFFEEEEEE)
 private val TextMuted   = Color(0xAAEEEEEE)
 private val ActionFill    = Color(0xFF1B1B26)
-private val LaunchGreen = Color(0xFF45C46A)
 private val PageBg = Color(0xFF06060C)
 private val HeroBannerHeight: Dp = 220.dp
 
@@ -215,8 +209,8 @@ fun AppDetailScreen(
                 }
             }
 
-            // A single prominent Launch button (mirrors the Game Detail page's Play button); every
-            // other action lives in the Options context menu (Options pill / Y).
+            // The editor rows ARE the page — apps launch from the XMB, not from here. Only the
+            // slim standard-app options: name, game icon, background, collections, reset.
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -224,19 +218,13 @@ fun AppDetailScreen(
                     .padding(start = 28.dp, end = 28.dp, top = 8.dp, bottom = 22.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(LaunchGreen)
-                        .then(if (state.mainFocus == 0) Modifier.border(2.dp, Color.White, RoundedCornerShape(8.dp)) else Modifier)
-                        .clickable(onClick = viewModel::launchApp)
-                        .padding(vertical = 15.dp, horizontal = 18.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(Icons.Filled.PlayArrow, contentDescription = null, tint = Color(0xFF06140A), modifier = Modifier.size(22.dp))
-                    Spacer(Modifier.width(12.dp))
-                    Text("Launch", color = Color(0xFF06140A), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                AppDetailOption.entries.forEachIndexed { index, option ->
+                    EditorRow(
+                        label       = option.label,
+                        destructive = option.isDestructive,
+                        focused     = state.optionsIndex == index,
+                        onClick     = { viewModel.activateOption(option) },
+                    )
                 }
                 state.artworkMessage?.let {
                     Text(it, color = menuCursorEdge(), fontSize = 12.sp)
@@ -244,31 +232,13 @@ fun AppDetailScreen(
             }
         }
 
-        // Options context menu — all the app's actions, matching every other context menu.
-        if (state.showOptions) {
-            DetailContextMenu(
-                title = "Options",
-                rows = AppDetailOption.entries.map { DetailMenuRow(it.label, it.isDestructive) },
-                selectedIndex = state.optionsIndex,
-                onRowClick = { viewModel.activateOption(AppDetailOption.entries[it]) },
-                onDismiss = viewModel::closeOptions,
-            )
-        }
-
-        // Header pills over the hero (touch only, per the last-input source): Back top-left,
-        // Options top-right. Options keeps controller reachability (mainFocus == 1) via Y.
+        // Back pill over the hero (touch only, per the last-input source).
         if (showTouchControls) {
             XmbHeaderPill(
                 label = "Back",
                 leadingGlyph = "◀",
                 onClick = viewModel::close,
                 modifier = Modifier.align(Alignment.TopStart).padding(16.dp),
-            )
-            XmbHeaderPill(
-                label = "Options",
-                onClick = viewModel::openOptions,
-                focused = state.mainFocus == 1,
-                modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
             )
         }
 
@@ -322,6 +292,37 @@ fun AppDetailScreen(
                 onCancelCreate      = viewModel::cancelCreateCollection,
             )
         }
+    }
+}
+
+// One inline editor action row — focus ring follows the controller cursor.
+@Composable
+private fun EditorRow(
+    label: String,
+    focused: Boolean,
+    onClick: () -> Unit,
+    destructive: Boolean = false,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(if (focused) menuCursorFill() else ActionFill)
+            .border(
+                width = if (focused) 2.dp else 1.dp,
+                color = if (focused) menuCursorEdge() else Color(0x22FFFFFF),
+                shape = RoundedCornerShape(8.dp),
+            )
+            .clickable(onClick = onClick)
+            .padding(vertical = 13.dp, horizontal = 18.dp),
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Text(
+            label,
+            color      = if (destructive) Color(0xFFFF8A8A) else TextPrimary,
+            fontSize   = 14.sp,
+            fontWeight = if (focused) FontWeight.SemiBold else FontWeight.Normal,
+        )
     }
 }
 

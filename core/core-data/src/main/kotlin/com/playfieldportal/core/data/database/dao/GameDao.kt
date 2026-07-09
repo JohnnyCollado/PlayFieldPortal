@@ -28,6 +28,12 @@ interface GameDao {
     @Query("SELECT * FROM games WHERE platform_id = :platformId ORDER BY title ASC")
     fun observeByPlatform(platformId: String): Flow<List<GameEntity>>
 
+    @Query("SELECT * FROM games WHERE platform_id = :platformId ORDER BY title ASC")
+    suspend fun getByPlatformOnce(platformId: String): List<GameEntity>
+
+    @Query("UPDATE games SET platform_id = :platformId, content_type = :contentType WHERE id = :id")
+    suspend fun setPlatformAndContentType(id: Long, platformId: String, contentType: String)
+
     @Query("SELECT * FROM games WHERE id = :id")
     suspend fun getById(id: Long): GameEntity?
 
@@ -80,6 +86,10 @@ interface GameDao {
 
     @Query("SELECT COUNT(*) FROM games WHERE platform_id = :platformId")
     suspend fun countByPlatform(platformId: String): Int
+
+    // Real games only — what a Memory Card actually displays (standard app rows are excluded).
+    @Query("SELECT COUNT(*) FROM games WHERE platform_id = :platformId AND content_type = 'GAME'")
+    suspend fun countGamesByPlatform(platformId: String): Int
 
     @Query("UPDATE games SET is_favorite = :isFavorite WHERE id = :id")
     suspend fun setFavorite(id: Long, isFavorite: Boolean)

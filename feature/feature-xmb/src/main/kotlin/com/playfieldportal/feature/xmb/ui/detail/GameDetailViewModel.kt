@@ -118,7 +118,18 @@ data class GameDetailUiState(
 
     // ── Add-to-collection picker ──────────────────────────────────────────
     val collectionPicker: CollectionPickerUi = CollectionPickerUi(),
-)
+) {
+    // Package-backed gaming apps (Android / Windows card entries) launch through their package,
+    // shortcut, or captured-intent handle — never an emulator.
+    val isPackageBacked: Boolean
+        get() = game != null && game.romPath == null && game.packageName != null
+
+    // The options rows actually shown: the emulator picker is meaningless for package-backed
+    // entries, so its row is hidden there. Index-based navigation must use THIS list.
+    val visibleActions: List<DetailAction>
+        get() = if (isPackageBacked) DetailAction.entries.filter { it != DetailAction.EMULATOR }
+                else DetailAction.entries
+}
 
 // Keep old field names as transparent aliases so existing code compiles without changes.
 val GameDetailUiState.artworkSgdbItems   get() = artworkPickerItems
@@ -163,6 +174,7 @@ class GameDetailViewModel @Inject constructor(
     private val cardProcessor: CardArtworkProcessor,
     private val menuSound: com.playfieldportal.core.ui.sound.MenuSoundPlayer,
     private val discordPresence: com.playfieldportal.core.data.discord.DiscordPresenceController,
+    private val launcherShortcutRepository: com.playfieldportal.feature.appbar.LauncherShortcutRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GameDetailUiState())
@@ -265,11 +277,12 @@ class GameDetailViewModel @Inject constructor(
         }
 
         if (s.showOptions) {
-            val count = DetailAction.entries.size
+            val actions = s.visibleActions
+            val count = actions.size
             when (action) {
                 GamepadAction.NAVIGATE_UP   -> _uiState.update { it.copy(optionsIndex = (it.optionsIndex - 1).coerceIn(0, count - 1)) }
                 GamepadAction.NAVIGATE_DOWN -> _uiState.update { it.copy(optionsIndex = (it.optionsIndex + 1).coerceIn(0, count - 1)) }
-                GamepadAction.SELECT        -> activateAction(DetailAction.entries[s.optionsIndex])
+                GamepadAction.SELECT        -> activateAction(actions[s.optionsIndex.coerceIn(0, count - 1)])
                 GamepadAction.BACK          -> closeOptions()
                 else -> Unit
             }
@@ -717,7 +730,7 @@ class GameDetailViewModel @Inject constructor(
     fun closeOptions() = _uiState.update { it.copy(showOptions = false) }
 
     fun onOptionClicked(action: DetailAction) {
-        _uiState.update { it.copy(optionsIndex = DetailAction.entries.indexOf(action)) }
+        _uiState.update { it.copy(optionsIndex = it.visibleActions.indexOf(action).coerceAtLeast(0)) }
         activateAction(action)
     }
 
@@ -782,6 +795,42 @@ class GameDetailViewModel @Inject constructor(
             Timber.d(
                 "Launch requested: gameId=${game.id}, title=${game.title}, platform=${game.platformId}, rom=${game.romPath ?: game.packageName.orEmpty()}"
             )
+
+            // Harvested launcher shortcut (Windows Games card) — startShortcut is an API call,
+            // not an intent, so it can't ride the normal launch channel.
+            if (game.shortcutId != null && game.packageName != null) {
+                launcherShortcutRepository.launch(game.packageName!!, game.shortcutId!!)
+                    .onSuccess {
+                        _uiState.update { it.copy(actionMessage = null) }
+                        discordPresence.setCurrentGame(game.title)
+                    }
+                    .onFailure { e ->
+                        Timber.e(e, "Shortcut launch failed: ${game.packageName}/${game.shortcutId}")
+                        _uiState.update {
+                            it.copy(actionMessage = null, launchError = "Couldn't launch: ${e.message}")
+                        }
+                    }
+                return@launch
+            }
+
+            // Captured launch intent (add-by-ID / folder-scan PC games, legacy INSTALL_SHORTCUT).
+            // Re-hardened at launch so a stored intent can never grant file access or redirect.
+            if (game.launchIntentUri != null) {
+                runCatching {
+                    val parsed = Intent.parseUri(game.launchIntentUri, Intent.URI_INTENT_SCHEME)
+                    com.playfieldportal.core.common.security.ShortcutIntentSanitizer
+                        .sanitize(parsed, context.packageManager)
+                        ?: error("Captured shortcut is not safe to launch")
+                }.onSuccess { intent ->
+                    sendLaunchIntent(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), game.title)
+                }.onFailure { e ->
+                    Timber.e(e, "Stored-intent launch failed for gameId=${game.id}")
+                    _uiState.update {
+                        it.copy(actionMessage = null, launchError = "Couldn't launch: ${e.message}")
+                    }
+                }
+                return@launch
+            }
 
             if (game.romPath.isNullOrBlank() && !game.packageName.isNullOrBlank()) {
                 val nativeResult = intentResolver.resolveNativeApp(game)

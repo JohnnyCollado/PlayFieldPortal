@@ -209,7 +209,8 @@ fun GameDetailScreen(
                 platform = platform?.name ?: game.platformId.uppercase(),
                 releaseYear = game.releaseYear,
                 genre = game.genre,
-                emulator = state.emulatorName,
+                // Package-backed gaming apps launch by package/shortcut — no emulator meta.
+                emulator = if (state.isPackageBacked) null else (state.emulatorName ?: "Not set"),
                 developer = game.developer,
                 publisher = game.publisher,
             )
@@ -258,14 +259,14 @@ fun GameDetailScreen(
         AnimatedVisibility(state.showOptions, enter = fadeIn(), exit = fadeOut()) {
             DetailContextMenu(
                 title = "Options",
-                rows = DetailAction.entries.map { action ->
+                rows = state.visibleActions.map { action ->
                     DetailMenuRow(
                         label = action.dynamicLabel(game.isFavorite, state.isFetchingArtwork),
                         isDestructive = action == DetailAction.REMOVE,
                     )
                 },
                 selectedIndex = state.optionsIndex,
-                onRowClick = { viewModel.onOptionClicked(DetailAction.entries[it]) },
+                onRowClick = { viewModel.onOptionClicked(state.visibleActions[it]) },
                 onDismiss = viewModel::closeOptions,
             )
         }
@@ -375,7 +376,7 @@ private fun GameSummary(
         CompactMeta(platform)
         releaseYear?.let { CompactMeta(it.toString()) }
         if (!genre.isNullOrBlank()) CompactMeta(genre)
-        CompactMeta("Emulator: ${emulator ?: "Not set"}")
+        emulator?.let { CompactMeta("Emulator: $it") }
         if (!developer.isNullOrBlank()) CompactMeta("Developer: $developer")
         if (!publisher.isNullOrBlank()) CompactMeta("Publisher: $publisher")
     }
