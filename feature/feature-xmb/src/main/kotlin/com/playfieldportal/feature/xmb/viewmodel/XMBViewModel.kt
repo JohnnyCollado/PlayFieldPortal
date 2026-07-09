@@ -3566,12 +3566,15 @@ class XMBViewModel @Inject constructor(
                     GamepadAction.BACK,
                     GamepadAction.NAVIGATE_UP,
                     GamepadAction.NAVIGATE_DOWN,
-                    // Left/Right and the options button (△/Y) are ignored by the scaffold's
-                    // default nav but reachable via onInterceptAction — screens with horizontal
-                    // strips or per-row context menus (Themes) consume them there.
+                    // Left/Right and the options button are ignored by the scaffold's default
+                    // nav but reachable via onInterceptAction — screens with horizontal strips
+                    // or per-row context menus (Themes) consume them there. The options press
+                    // arrives as LONG_PRESS or BUTTON_Y depending on the X/Y layout mapping,
+                    // so both are forwarded (they're treated identically, as everywhere else).
                     GamepadAction.NAVIGATE_LEFT,
                     GamepadAction.NAVIGATE_RIGHT,
                     GamepadAction.LONG_PRESS,
+                    GamepadAction.BUTTON_Y,
                     GamepadAction.SELECT -> _uiState.update { it.copy(pendingSettingsAction = action) }
                     else -> Unit
                 }

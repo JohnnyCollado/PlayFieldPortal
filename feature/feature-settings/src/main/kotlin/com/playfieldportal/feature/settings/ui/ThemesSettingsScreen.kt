@@ -106,7 +106,8 @@ fun ThemesSettingsScreen(
                         GamepadAction.NAVIGATE_DOWN -> menuIndex = (menuIndex + 1).coerceAtMost(m.options.size - 1)
                         GamepadAction.SELECT        -> { m.options.getOrNull(menuIndex)?.action?.invoke(); menu = null }
                         GamepadAction.BACK,
-                        GamepadAction.LONG_PRESS    -> menu = null
+                        GamepadAction.LONG_PRESS,
+                        GamepadAction.BUTTON_Y      -> menu = null
                         else -> Unit
                     }
                     true
@@ -118,8 +119,9 @@ fun ThemesSettingsScreen(
                 myThemesFocused && action == GamepadAction.NAVIGATE_RIGHT -> {
                     cardIndex = (cardIndex + 1).coerceAtMost((state.savedThemes.size - 1).coerceAtLeast(0)); true
                 }
-                // Options button on a hovered theme card opens its context menu.
-                action == GamepadAction.LONG_PRESS -> {
+                // Options button (LONG_PRESS or BUTTON_Y, mapping-dependent) on a hovered
+                // theme card opens its context menu.
+                action == GamepadAction.LONG_PRESS || action == GamepadAction.BUTTON_Y -> {
                     if (myThemesFocused) {
                         state.savedThemes.getOrNull(cardIndex)?.let { openMenuForSavedTheme(it) }
                     }
