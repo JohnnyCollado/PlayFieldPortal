@@ -125,7 +125,9 @@ class PfpThemeStore @Inject constructor(
             ?.let(com.playfieldportal.themekit.XmbLayoutSpecCodec::sanitize)
             ?.takeUnless { it == com.playfieldportal.themekit.XmbLayoutSpec.DEFAULT }
             ?.let(com.playfieldportal.themekit.XmbLayoutSpecCodec::encode)
+        val appliedName = _themes.value.firstOrNull { it.id == id }?.name ?: "Custom Theme"
         context.pfpDataStore.edit { prefs ->
+            prefs[KEY_APPLIED_THEME_NAME] = appliedName
             if (wallpaperOk) prefs[KEY_CUSTOM_WALLPAPER] = dest.absolutePath
             if (accent != null) prefs[KEY_ACCENT_OVERRIDE] = accent else prefs.remove(KEY_ACCENT_OVERRIDE)
             if (iconColor != null) prefs[KEY_ICON_COLOR] = iconColor else prefs.remove(KEY_ICON_COLOR)
@@ -152,6 +154,7 @@ class PfpThemeStore @Inject constructor(
             prefs.remove(KEY_ICON_COLOR)
             prefs.remove(KEY_THEME_LAYOUT)
             prefs.remove(KEY_THEME_ICONS_STAMP)
+            prefs.remove(KEY_APPLIED_THEME_NAME)
         }
         // Prefs are gone first, so nothing references these files when they're deleted.
         File(context.filesDir, THEME_ICONS_DIR).deleteRecursively()
@@ -301,5 +304,10 @@ class PfpThemeStore @Inject constructor(
          * Absent ⇒ the app's default geometry.
          */
         val KEY_THEME_LAYOUT = stringPreferencesKey("theme_layout_spec")
+
+        /** Display name of the theme most recently applied through this store (any source:
+         *  My Themes, Quick Create, PTF or .pfptheme import). Cleared by [resetApplied] —
+         *  absence means the stock look. Drives the "Active Theme" row in Settings. */
+        val KEY_APPLIED_THEME_NAME = stringPreferencesKey("theme_applied_name")
     }
 }

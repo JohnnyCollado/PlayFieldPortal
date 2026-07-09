@@ -1,6 +1,5 @@
 package com.playfieldportal.feature.settings.ui
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -94,7 +93,7 @@ private fun HiddenItemCard(
     onUnhideAll: () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxWidth().padding(top = 6.dp)) {
-        // Item header: icon + label + "Unhide all".
+        // Item header: icon + label (informational — the actions below are the focus targets).
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 48.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -115,43 +114,23 @@ private fun HiddenItemCard(
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.weight(1f),
             )
-            if (group.entries.size > 1) {
-                Text(
-                    text = "Unhide all",
-                    color = SettingsAccent,
-                    fontSize = 12.sp,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .clickable { onUnhideAll() }
-                        .padding(horizontal = 10.dp, vertical = 6.dp),
-                )
-            }
         }
-        // One row per location this item is hidden from.
+        // One focusable settings row per hidden location, so the controller can walk and
+        // activate them like any other settings screen (raw clickable Texts are invisible
+        // to the scaffold's focus navigation).
         group.entries.forEach { entry ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 92.dp, end = 48.dp, top = 2.dp, bottom = 2.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = entry.locationLabel,
-                    color = SettingsSubtext,
-                    fontSize = 13.sp,
-                    modifier = Modifier.weight(1f),
-                )
-                Text(
-                    text = "Unhide",
-                    color = SettingsAccent,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .clickable { onUnhide(entry) }
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                )
-            }
+            SettingsValueRow(
+                label   = entry.locationLabel,
+                value   = "Unhide",
+                onClick = { onUnhide(entry) },
+            )
+        }
+        if (group.entries.size > 1) {
+            SettingsValueRow(
+                label   = "All locations",
+                value   = "Unhide all",
+                onClick = onUnhideAll,
+            )
         }
     }
 }

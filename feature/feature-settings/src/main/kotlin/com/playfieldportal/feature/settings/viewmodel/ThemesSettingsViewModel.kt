@@ -11,7 +11,6 @@ import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.data.repository.PfpThemeStore
 import com.playfieldportal.core.data.repository.PtfThemeImporter
-import com.playfieldportal.feature.themes.ThemeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,16 +23,10 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
-data class ThemeListItem(
-    val id: String,
-    val name: String,
-    val isBuiltIn: Boolean,
-)
-
 data class ThemesSettingsUiState(
-    val themes: List<ThemeListItem> = emptyList(),
-    val activeThemeId: String = "builtin_classic_blue",
-    val activeThemeName: String = "Classic PSP Blue",
+    // Name of the theme applied through PfpThemeStore ("Default" = stock look). The legacy
+    // ThemeEntity list is gone from this screen — My Themes IS the theme library now.
+    val activeThemeName: String = "Default",
     val isInstalling: Boolean = false,
     val installMessage: String? = null,
     // Custom-theme cascade state (docs/xmb-theme-creator-plan.md): the imported/custom accent
@@ -47,7 +40,6 @@ data class ThemesSettingsUiState(
 @HiltViewModel
 class ThemesSettingsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val themeRepository: ThemeRepository,
     private val ptfImporter: PtfThemeImporter,
     private val themeStore: PfpThemeStore,
 ) : ViewModel() {
@@ -55,47 +47,17 @@ class ThemesSettingsViewModel @Inject constructor(
     private val _extra = MutableStateFlow(ThemesSettingsUiState())
 
     val uiState: StateFlow<ThemesSettingsUiState> = combine(
-        themeRepository.observeAll(),
         context.pfpDataStore.data,
         themeStore.themes,
         _extra,
-    ) { themes, prefs, saved, extra ->
-        val active = themes.firstOrNull { it.id == extra.activeThemeId }
-            ?: themes.firstOrNull()
+    ) { prefs, saved, extra ->
         extra.copy(
-            themes             = themes.map { ThemeListItem(it.id, it.name, it.isBuiltIn) },
-            activeThemeId      = active?.id   ?: extra.activeThemeId,
-            activeThemeName    = active?.name ?: extra.activeThemeName,
+            activeThemeName    = prefs[PfpThemeStore.KEY_APPLIED_THEME_NAME] ?: "Default",
             accentOverrideArgb = prefs[KEY_ACCENT_OVERRIDE],
             iconColorArgb      = prefs[KEY_ICON_COLOR],
             savedThemes        = saved,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ThemesSettingsUiState())
-
-    init {
-        // Keep activeThemeId in sync with whatever is active in the DB
-        viewModelScope.launch {
-            themeRepository.observeActiveTheme().collect { theme ->
-                if (theme != null) {
-                    _extra.update { it.copy(activeThemeId = theme.id, activeThemeName = theme.name) }
-                }
-            }
-        }
-    }
-
-    fun applyTheme(themeId: String) {
-        viewModelScope.launch {
-            themeRepository.setActiveTheme(themeId)
-            Timber.i("Theme applied: $themeId")
-        }
-    }
-
-    fun uninstallTheme(themeId: String) {
-        viewModelScope.launch {
-            themeRepository.uninstallTheme(themeId)
-            Timber.i("Theme uninstalled: $themeId")
-        }
-    }
 
     fun dismissMessage() = _extra.update { it.copy(installMessage = null) }
 

@@ -91,6 +91,25 @@ internal val LocalSettingsRowPositions =
 internal val LocalSettingsReportFocused =
     compositionLocalOf<(FocusRequester) -> Unit> { {} }
 
+// Rows report leaving composition. If the FOCUSED row is removed (a list item deleted, a
+// section re-rendered), Compose silently clears focus and the menu goes dead until the user
+// presses a direction — the scaffold uses this signal to refocus the nearest surviving row.
+internal val LocalSettingsReportRemoved =
+    compositionLocalOf<(FocusRequester) -> Unit> { {} }
+
+// Focus was lost (its row left composition): land on the row nearest the last focused Y so the
+// cursor reappears where the user was, not at the top of the screen.
+private fun reseedFocus(
+    rowPositions: Map<FocusRequester, Float>,
+    lastFocusedY: Float?,
+    firstRow: FocusRequester?,
+) {
+    val target = lastFocusedY?.let { anchor ->
+        rowPositions.entries.minByOrNull { kotlin.math.abs(it.value - anchor) }?.key
+    } ?: firstRow
+    target?.let { runCatching { it.requestFocus() } }
+}
+
 // ── Colors ────────────────────────────────────────────────────────────────────
 
 val SettingsBg         = Color(0xE6000000)
@@ -138,6 +157,10 @@ fun SettingsScaffold(
     // explicit, escape-proof Up/Down navigation.
     val rowPositions    = remember { mutableStateMapOf<FocusRequester, Float>() }
     var focusedRow      by remember { mutableStateOf<FocusRequester?>(null) }
+    // Last known Y of the focused row — the anchor for re-focusing when that row is removed
+    // from composition (imported list items, sections that re-render away).
+    var lastFocusedY    by remember { mutableStateOf<Float?>(null) }
+    var refocusTick     by remember { mutableStateOf(0) }
 
     // Set true once any row has actually received focus (the menu is no longer "dead").
     var focusRedirected by remember { mutableStateOf(false) }
@@ -173,6 +196,20 @@ fun SettingsScaffold(
         Timber.d("Settings focus: default focus assigned=$focusRedirected after $attempts frame(s) ($subtitle)")
     }
 
+    // The focused row left composition (e.g. a "Found Games" item just imported away, or a
+    // section re-rendered): refocus the nearest surviving row by last-known Y so the cursor
+    // never silently disappears. Runs a frame later so the new layout has settled.
+    LaunchedEffect(refocusTick) {
+        if (refocusTick == 0) return@LaunchedEffect
+        withFrameNanos { }
+        val anchor = lastFocusedY
+        val target = if (anchor != null) {
+            rowPositions.entries.minByOrNull { kotlin.math.abs(it.value - anchor) }?.key
+        } else null
+        (target ?: firstRowFocus.value)?.let { runCatching { it.requestFocus() } }
+        Timber.d("Settings focus: refocused after row removal (anchorY=$anchor, found=${target != null})")
+    }
+
     // Handle UP / DOWN / SELECT forwarded from XMBViewModel via pendingSettingsAction
     LaunchedEffect(pendingAction) {
         if (pendingAction == null) return@LaunchedEffect
@@ -195,7 +232,7 @@ fun SettingsScaffold(
                     rowPositions.entries.filter { it.value < curY - 0.5f }
                         .maxByOrNull { it.value }?.key
                         ?.let { runCatching { it.requestFocus() } }
-                } else firstRowFocus.value?.let { runCatching { it.requestFocus() } }
+                } else reseedFocus(rowPositions, lastFocusedY, firstRowFocus.value)
             }
             GamepadAction.NAVIGATE_DOWN -> {
                 val curY = focusedRow?.let { rowPositions[it] }
@@ -203,7 +240,7 @@ fun SettingsScaffold(
                     rowPositions.entries.filter { it.value > curY + 0.5f }
                         .minByOrNull { it.value }?.key
                         ?.let { runCatching { it.requestFocus() } }
-                } else firstRowFocus.value?.let { runCatching { it.requestFocus() } }
+                } else reseedFocus(rowPositions, lastFocusedY, firstRowFocus.value)
             }
             GamepadAction.SELECT        -> focusedRowClick.value?.invoke()
             // One-level-up navigation: invoke this screen's back handler. For multi-step
@@ -223,7 +260,16 @@ fun SettingsScaffold(
         // First clickable row to compose wins the initial-focus slot.
         LocalSettingsRegisterFirstFocusable provides { fr -> if (firstRowFocus.value == null) firstRowFocus.value = fr },
         LocalSettingsRowPositions provides rowPositions,
-        LocalSettingsReportFocused provides { fr -> focusedRow = fr },
+        LocalSettingsReportFocused provides { fr ->
+            focusedRow = fr
+            rowPositions[fr]?.let { lastFocusedY = it }
+        },
+        LocalSettingsReportRemoved provides { fr ->
+            if (focusedRow == fr) {
+                focusedRow = null
+                refocusTick++
+            }
+        },
     ) {
         Box(
             modifier = modifier
@@ -324,6 +370,9 @@ fun SettingsRow(
     focusKey: String? = null,
     leading: @Composable (() -> Unit)? = null,
     trailing: @Composable (() -> Unit)? = null,
+    // Reports controller-focus changes so a screen can track which row is hovered (e.g. to
+    // open a per-row context menu on the options button).
+    onFocusChangedExternal: ((Boolean) -> Unit)? = null,
     onClick: (() -> Unit)? = null,
 ) {
     val focusTracker  = LocalSettingsFocusTracker.current
@@ -331,6 +380,7 @@ fun SettingsRow(
     val registerFirst = LocalSettingsRegisterFirstFocusable.current
     val rowPositions  = LocalSettingsRowPositions.current
     val reportFocused = LocalSettingsReportFocused.current
+    val reportRemoved = LocalSettingsReportRemoved.current
     var isFocused by remember { mutableStateOf(false) }
 
     // Every clickable row owns a FocusRequester. Rows with a focusKey publish it so the scaffold
@@ -346,7 +396,11 @@ fun SettingsRow(
     if (focusRequester != null) {
         DisposableEffect(Unit) {
             registerFirst(focusRequester)
-            onDispose { rowPositions?.remove(focusRequester) }
+            onDispose {
+                rowPositions?.remove(focusRequester)
+                // If this row held focus, the scaffold refocuses the nearest surviving row.
+                reportRemoved(focusRequester)
+            }
         }
     }
 
@@ -365,6 +419,7 @@ fun SettingsRow(
             // Observe focus to register onclick with scaffold (for SELECT) and show highlight
             .onFocusChanged { state ->
                 isFocused = state.isFocused
+                onFocusChangedExternal?.invoke(state.isFocused)
                 if (state.isFocused) {
                     focusTracker(onClick)
                     focusRequester?.let { reportFocused(it) }
@@ -441,12 +496,14 @@ fun SettingsValueRow(
     value: String,
     sublabel: String? = null,
     focusKey: String? = null,
+    onFocusChangedExternal: ((Boolean) -> Unit)? = null,
     onClick: (() -> Unit)? = null,
 ) {
     SettingsRow(
         label    = label,
         sublabel = sublabel,
         focusKey = focusKey,
+        onFocusChangedExternal = onFocusChangedExternal,
         onClick  = onClick,
         trailing = {
             Text(
@@ -480,6 +537,7 @@ fun SettingsTextFieldRow(
     val rowPositions  = LocalSettingsRowPositions.current
     val reportFocused = LocalSettingsReportFocused.current
     val keyboard      = LocalSoftwareKeyboardController.current
+    val reportRemoved = LocalSettingsReportRemoved.current
     var editing by remember { mutableStateOf(false) }
 
     // Always own a FocusRequester so this field can be the screen's initial-focus target
@@ -493,7 +551,10 @@ fun SettingsTextFieldRow(
     }
     DisposableEffect(Unit) {
         registerFirst(fr)
-        onDispose { rowPositions?.remove(fr) }
+        onDispose {
+            rowPositions?.remove(fr)
+            reportRemoved(fr)
+        }
     }
 
     // The keyboard follows edit mode only — focus alone (navigating onto the field) never
