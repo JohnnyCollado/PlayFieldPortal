@@ -387,9 +387,16 @@ private fun CenterLockedColumn(
             .coerceAtLeast(0.dp)
         val anchorPx = with(density) { topPad.toPx() }
         val listState = rememberLazyListState()
+        // Uptime of the previous selection change — lets the glide duration follow the input
+        // cadence: rapid held-repeat steps get a tween that finishes before the next step lands,
+        // while isolated presses keep the full-length PSP glide.
+        val lastStepUptime = remember { longArrayOf(0L) }
 
         LaunchedEffect(selectedIndex, count, anchorPx) {
             if (count == 0) return@LaunchedEffect
+            val now = android.os.SystemClock.uptimeMillis()
+            val sinceLastStep = now - lastStepUptime[0]
+            lastStepUptime[0] = now
             val idx = selectedIndex.coerceIn(0, count - 1)
             // If the target is off-screen (e.g. a big jump or first composition), get it measured
             // and roughly in view instantly so the visible glide covers only the final short delta —
@@ -401,11 +408,14 @@ private fun CenterLockedColumn(
                 ?: return@LaunchedEffect
             // Glide by the exact remaining delta so the row's top settles precisely on the line.
             // A single ease-in-out tween reads as one smooth motion with no spring overshoot/bounce.
+            // Duration tracks the step cadence (clamped) so held-repeat scrolling stays 1:1 with
+            // input instead of every step interrupting a half-finished 240 ms glide.
             val delta = item.offset - anchorPx
             if (delta != 0f) {
+                val duration = sinceLastStep.coerceIn(70L, 240L).toInt()
                 listState.animateScrollBy(
                     delta,
-                    animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
+                    animationSpec = tween(durationMillis = duration, easing = FastOutSlowInEasing),
                 )
             }
         }

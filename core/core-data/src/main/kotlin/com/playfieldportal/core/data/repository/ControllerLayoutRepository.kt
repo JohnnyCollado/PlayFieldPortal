@@ -12,6 +12,7 @@ import com.playfieldportal.core.domain.model.DEFAULT_BINDINGS
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.GamepadBinding
 import com.playfieldportal.core.domain.model.GamepadMappings
+import com.playfieldportal.core.domain.model.ScrollSpeed
 import com.playfieldportal.core.domain.model.XYLayout
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -24,6 +25,7 @@ import javax.inject.Singleton
 private val KEY_CONFIRM_BACK = stringPreferencesKey("controller_confirm_back_layout")
 private val KEY_XY_LAYOUT    = stringPreferencesKey("controller_xy_layout")
 private val KEY_DISPLAY_TYPE = stringPreferencesKey("controller_display_type")
+private val KEY_SCROLL_SPEED = stringPreferencesKey("controller_scroll_speed")
 
 @Singleton
 class ControllerLayoutRepository @Inject constructor(
@@ -42,6 +44,9 @@ class ControllerLayoutRepository @Inject constructor(
             displayType = store[KEY_DISPLAY_TYPE]
                 ?.let { runCatching { ControllerDisplayType.valueOf(it) }.getOrNull() }
                 ?: ControllerDisplayType.XBOX,
+            scrollSpeed = store[KEY_SCROLL_SPEED]
+                ?.let { runCatching { ScrollSpeed.valueOf(it) }.getOrNull() }
+                ?: ScrollSpeed.STANDARD,
         )
     }
 
@@ -101,6 +106,13 @@ class ControllerLayoutRepository @Inject constructor(
         Timber.i("ControllerDisplayType set: $type")
     }
 
+    // ── Scroll speed ──────────────────────────────────────────────────────────
+
+    suspend fun setScrollSpeed(speed: ScrollSpeed) {
+        context.pfpDataStore.edit { it[KEY_SCROLL_SPEED] = speed.name }
+        Timber.i("ScrollSpeed set: $speed")
+    }
+
     // ── Reset ─────────────────────────────────────────────────────────────────
 
     suspend fun resetAllPrefs() {
@@ -108,6 +120,7 @@ class ControllerLayoutRepository @Inject constructor(
             store.remove(KEY_CONFIRM_BACK)
             store.remove(KEY_XY_LAYOUT)
             store.remove(KEY_DISPLAY_TYPE)
+            store.remove(KEY_SCROLL_SPEED)
         }
         mappingRepository.resetToDefaults()
         Timber.i("Controller layout prefs reset to defaults")

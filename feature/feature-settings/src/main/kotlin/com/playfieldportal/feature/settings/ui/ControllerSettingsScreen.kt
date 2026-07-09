@@ -92,6 +92,22 @@ fun ControllerSettingsScreen(
                 onClick  = { viewModel.cycleDisplayType() },
             )
 
+            SettingsGroup("Scroll Speed")
+            Text(
+                text     = "How fast lists scroll while a direction is held. " +
+                    "Holding longer accelerates; full stick tilt scrolls at top speed.",
+                color    = SettingsSubtext,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(horizontal = 48.dp, vertical = 4.dp),
+            )
+
+            SettingsValueRow(
+                label    = "Scroll Speed",
+                sublabel = "Applies to held D-pad and stick navigation",
+                value    = state.layoutPrefs.scrollSpeed.displayLabel(),
+                onClick  = { viewModel.cycleScrollSpeed() },
+            )
+
             SettingsGroup("Reset")
             SettingsRow(
                 label    = "Reset All Controller Settings",

@@ -7,6 +7,7 @@ import com.playfieldportal.core.data.repository.ControllerMappingRepository
 import com.playfieldportal.core.domain.model.ConfirmBackLayout
 import com.playfieldportal.core.domain.model.ControllerDisplayType
 import com.playfieldportal.core.domain.model.ControllerLayoutPrefs
+import com.playfieldportal.core.domain.model.ScrollSpeed
 import com.playfieldportal.core.domain.model.XYLayout
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -46,6 +47,15 @@ class ControllerSettingsViewModel @Inject constructor(
             XYLayout.SWAPPED  -> XYLayout.STANDARD
         }
         viewModelScope.launch { layoutRepository.setXYLayout(next) }
+    }
+
+    fun cycleScrollSpeed() {
+        val next = when (uiState.value.layoutPrefs.scrollSpeed) {
+            ScrollSpeed.RELAXED  -> ScrollSpeed.STANDARD
+            ScrollSpeed.STANDARD -> ScrollSpeed.FAST
+            ScrollSpeed.FAST     -> ScrollSpeed.RELAXED
+        }
+        viewModelScope.launch { layoutRepository.setScrollSpeed(next) }
     }
 
     fun cycleDisplayType() {

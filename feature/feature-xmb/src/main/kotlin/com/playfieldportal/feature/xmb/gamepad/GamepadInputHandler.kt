@@ -4,6 +4,7 @@ import android.view.InputDevice
 import com.playfieldportal.core.data.repository.RemapCoordinator
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.GamepadMappings
+import com.playfieldportal.core.domain.model.ScrollSpeed
 import android.view.KeyEvent
 import android.view.MotionEvent
 import kotlinx.coroutines.CoroutineScope
@@ -18,14 +19,28 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.abs
 
-// Delay before D-pad/stick navigation starts repeating when held (ms)
-private const val REPEAT_INITIAL_DELAY_MS = 400L
-
-// Interval between repeat firings while held (ms)
-private const val REPEAT_RATE_MS = 120L
-
 // Dead zone for analog stick — below this magnitude, input is ignored
 private const val STICK_DEAD_ZONE = 0.5f
+
+// Stick deflection past this magnitude skips the ramp and repeats at the fast interval
+// immediately — full tilt is an explicit "scroll fast" gesture the D-pad can't make.
+private const val STICK_FULL_TILT = 0.9f
+
+// Held-navigation repeat tuning: after [initialDelayMs] the action repeats starting at
+// [baseIntervalMs], tightening linearly to [fastIntervalMs] over [rampSteps] repeats — short
+// holds stay precise, long holds accelerate instead of plodding at one fixed rate.
+private data class RepeatTuning(
+    val initialDelayMs: Long,
+    val baseIntervalMs: Long,
+    val fastIntervalMs: Long,
+    val rampSteps: Int,
+)
+
+private fun ScrollSpeed.tuning(): RepeatTuning = when (this) {
+    ScrollSpeed.RELAXED  -> RepeatTuning(initialDelayMs = 350, baseIntervalMs = 130, fastIntervalMs = 80, rampSteps = 6)
+    ScrollSpeed.STANDARD -> RepeatTuning(initialDelayMs = 250, baseIntervalMs = 110, fastIntervalMs = 50, rampSteps = 5)
+    ScrollSpeed.FAST     -> RepeatTuning(initialDelayMs = 180, baseIntervalMs = 90,  fastIntervalMs = 35, rampSteps = 4)
+}
 
 @Singleton
 class GamepadInputHandler @Inject constructor(
@@ -37,6 +52,9 @@ class GamepadInputHandler @Inject constructor(
     // Current live mappings — updated from the repository flow by the ViewModel
     var currentMappings: GamepadMappings = GamepadMappings()
 
+    // Held-scroll speed preference — updated from ControllerLayoutRepository by the ViewModel.
+    var scrollSpeed: ScrollSpeed = ScrollSpeed.STANDARD
+
     // Scope for repeat jobs — set by XMBViewModel on init so repeats survive config changes
     var scope: CoroutineScope? = null
 
@@ -47,6 +65,10 @@ class GamepadInputHandler @Inject constructor(
     // Repeat job for held directional input
     private var repeatJob: Job? = null
     private var lastStickAction: GamepadAction? = null
+
+    // Live stick deflection while a stick direction is held — read by the repeat loop each step
+    // so pushing to full tilt speeds up mid-hold without restarting the repeat. 0 for D-pad holds.
+    @Volatile private var stickMagnitude: Float = 0f
 
     // Push-to-talk (Discord voice): set by XMBViewModel while a call is active with PTT on and a
     // button mapped. When set, the matching keycode holds the mic open (down) / closes it (up)
@@ -127,6 +149,10 @@ class GamepadInputHandler @Inject constructor(
             else                          -> null
         }
 
+        // Track deflection on every event (not just direction changes) so easing into or out of
+        // full tilt adjusts the repeat speed of the hold already in progress.
+        stickMagnitude = if (stickAction != null) maxOf(abs(x), abs(y)) else 0f
+
         if (stickAction != lastStickAction) {
             cancelRepeat()
             lastStickAction = stickAction
@@ -148,25 +174,26 @@ class GamepadInputHandler @Inject constructor(
     }
 
     private fun startRepeat(action: GamepadAction) {
-        repeatJob?.cancel()
         val s = scope ?: return
-        repeatJob = s.launch {
-            delay(REPEAT_INITIAL_DELAY_MS)
-            while (true) {
-                emit(action)
-                delay(REPEAT_RATE_MS)
-            }
-        }
+        startRepeating(action, s)
     }
 
     // Called by XMBViewModel.init with viewModelScope so repeat jobs survive config changes
     fun startRepeating(action: GamepadAction, s: CoroutineScope) {
         repeatJob?.cancel()
         repeatJob = s.launch {
-            delay(REPEAT_INITIAL_DELAY_MS)
+            val t = scrollSpeed.tuning()
+            delay(t.initialDelayMs)
+            var step = 0
             while (true) {
                 emit(action)
-                delay(REPEAT_RATE_MS)
+                step++
+                // Linear ramp from base to fast over rampSteps; a full-tilt stick jumps straight
+                // to the fast interval regardless of how far into the ramp the hold is.
+                val ramped =
+                    if (step >= t.rampSteps) t.fastIntervalMs
+                    else t.baseIntervalMs - (t.baseIntervalMs - t.fastIntervalMs) * step / t.rampSteps
+                delay(if (stickMagnitude >= STICK_FULL_TILT) t.fastIntervalMs else ramped)
             }
         }
     }
@@ -175,6 +202,7 @@ class GamepadInputHandler @Inject constructor(
         repeatJob?.cancel()
         repeatJob = null
         lastStickAction = null
+        stickMagnitude = 0f
     }
 
     private fun GamepadAction.isDirectional() = this in setOf(

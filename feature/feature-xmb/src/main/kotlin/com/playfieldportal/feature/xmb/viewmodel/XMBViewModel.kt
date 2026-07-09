@@ -687,6 +687,7 @@ class XMBViewModel @Inject constructor(
     private val gamepadInputHandler: GamepadInputHandler,
     private val remapCoordinator: com.playfieldportal.core.data.repository.RemapCoordinator,
     private val mappingRepository: ControllerMappingRepository,
+    private val controllerLayoutRepository: com.playfieldportal.core.data.repository.ControllerLayoutRepository,
     private val menuSound: com.playfieldportal.core.ui.sound.MenuSoundPlayer,
     private val musicRepository: com.playfieldportal.core.domain.repository.MusicRepository,
     private val musicScanner: com.playfieldportal.feature.library.scanner.MusicScanner,
@@ -3354,6 +3355,11 @@ class XMBViewModel @Inject constructor(
         viewModelScope.launch {
             mappingRepository.mappings.collect { mappings ->
                 gamepadInputHandler.currentMappings = mappings
+            }
+        }
+        viewModelScope.launch {
+            controllerLayoutRepository.prefs.collect { prefs ->
+                gamepadInputHandler.scrollSpeed = prefs.scrollSpeed
             }
         }
     }
