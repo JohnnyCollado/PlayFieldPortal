@@ -41,9 +41,10 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.compose.ui.text.font.FontWeight
 import coil.compose.AsyncImage
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.ui.components.PspContextMenuOverlay
+import com.playfieldportal.core.ui.components.PspMenuRow
 import com.playfieldportal.core.data.repository.PfpThemeStore
 import com.playfieldportal.feature.settings.viewmodel.ThemesSettingsViewModel
 
@@ -248,13 +249,15 @@ fun ThemesSettingsScreen(
         }
     }
 
-    // Context menu over the whole screen (controller: hover + options button; touch can tap rows).
+    // Context menu over the whole screen (controller: hover + options button; touch can tap
+    // rows). Same PSP right-edge panel as the XMB's Y/Triangle menu.
     menu?.let { m ->
-        ThemeContextMenuOverlay(
-            menu          = m,
-            selectedIndex = menuIndex,
-            onPick        = { index -> m.options.getOrNull(index)?.action?.invoke(); menu = null },
-            onDismiss     = { menu = null },
+        PspContextMenuOverlay(
+            title          = m.title,
+            rows           = m.options.map { PspMenuRow(it.label, it.destructive) },
+            selectedIndex  = menuIndex,
+            onRowActivated = { index -> m.options.getOrNull(index)?.action?.invoke(); menu = null },
+            onDismiss      = { menu = null },
         )
     }
 
@@ -274,56 +277,6 @@ private data class ThemeMenu(
     val options: List<ThemeMenuOption>,
 )
 
-@Composable
-private fun ThemeContextMenuOverlay(
-    menu: ThemeMenu,
-    selectedIndex: Int,
-    onPick: (Int) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xB3000000))
-            .clickable { onDismiss() },
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            modifier = Modifier
-                .clip(RoundedCornerShape(10.dp))
-                .background(Color(0xF20A0A14))
-                .clickable(enabled = false) {}
-                .padding(vertical = 10.dp),
-        ) {
-            Text(
-                text     = menu.title,
-                color    = SettingsSubtext,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-            )
-            menu.options.forEachIndexed { index, option ->
-                val focused = index == selectedIndex
-                Text(
-                    text     = option.label,
-                    color    = when {
-                        option.destructive -> Color(0xFFFF8A8A)
-                        focused            -> Color.White
-                        else               -> SettingsText
-                    },
-                    fontSize = 14.sp,
-                    fontWeight = if (focused) FontWeight.SemiBold else FontWeight.Normal,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(if (focused) SettingsSelectedBg else Color.Transparent)
-                        .clickable { onPick(index) }
-                        .padding(horizontal = 24.dp, vertical = 12.dp),
-                )
-            }
-        }
-    }
-}
 
 // ── Focusable wrapper for a horizontal card strip ───────────────────────────────
 //
