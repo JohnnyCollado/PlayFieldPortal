@@ -52,6 +52,16 @@ internal object KnownEmulatorCatalog {
             intentExtras  = mapOf("bootPath" to "{rom_path}"),
             intentFlags   = listOf("CLEAR_TASK", "CLEAR_TOP"),
         ),
+        KnownEmulator(
+            // NetherSX2 fork with a rewritten frontend: no EmulationActivity/bootPath.
+            // Boots via ACTION_VIEW + content:// URI into the exported MainActivity alias
+            // (scheme-only intent filter — the resolver's no-MIME fallback applies).
+            packageNames  = listOf("com.armsx2"),
+            suggestedName = "ARMSX2",
+            platformIds   = listOf("ps2"),
+            activityClass = "com.armsx2.MainActivity",
+            useSafUri     = true,
+        ),
 
         // ── Nintendo DS ───────────────────────────────────────────────────────
         KnownEmulator(

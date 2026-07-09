@@ -329,6 +329,17 @@
   },
 
   {
+    "id": "armsx2",
+    "name": "ARMSX2",
+    "packageName": "com.armsx2",
+    "activityClass": "com.armsx2.MainActivity",
+    "intentType": "ACTION_VIEW",
+    "supportedPlatformIds": ["ps2"],
+    "useSafUri": true,
+    "notes": "NetherSX2-derived fork with a rewritten frontend — no EmulationActivity/bootPath. Boots via ACTION_VIEW + content:// URI into the exported MainActivity alias (scheme-only intent filter, no MIME type); the app queues it as a pending external launch and takes a persistable URI grant."
+  },
+
+  {
     "id": "melonds",
     "name": "melonDS",
     "packageName": "me.magnum.melonds",
