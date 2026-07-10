@@ -34,7 +34,14 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Brush
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Monitor
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -70,7 +77,6 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.playfieldportal.core.domain.model.GamepadAction
-import com.playfieldportal.core.ui.components.XmbHeaderPill
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.core.ui.theme.menuCursorFill
@@ -181,79 +187,91 @@ fun GameDetailScreen(
                 )
             ),
     ) {
-        // Hero banner — edge-to-edge, no horizontal padding, no rounded corners
-        HeroArt(
-            uri = game.heroUri,
-            title = game.title,
-            accentColor = accentColor,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(HeroBannerHeight)
-                .align(Alignment.TopCenter),
-        )
-
+        // One shared layout for every entry kind (ROMs, game apps, PC shortcuts), modeled on the
+        // hero-card detail mockup: breadcrumb → hero card → icon + play/actions → info + description.
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .widthIn(max = 920.dp)
-                .align(Alignment.Center)
-                .padding(start = 28.dp, end = 28.dp, top = 0.dp, bottom = 22.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                .align(Alignment.TopCenter)
+                .verticalScroll(rememberScrollState())
+                .padding(start = 28.dp, end = 28.dp, bottom = 22.dp),
         ) {
-            // Spacer reserves the hero banner area so content begins below it
-            Spacer(Modifier.height(HeroBannerHeight))
-
-            GameSummary(
-                title = game.displayTitle,
-                platform = platform?.name ?: game.platformId.uppercase(),
-                releaseYear = game.releaseYear,
-                genre = game.genre,
-                // Package-backed gaming apps launch by package/shortcut — no emulator meta.
-                emulator = if (state.isPackageBacked) null else (state.emulatorName ?: "Not set"),
-                developer = game.developer,
-                publisher = game.publisher,
+            DetailBreadcrumb(
+                title    = platform?.name ?: game.platformId.uppercase(),
+                subtitle = game.kindLabel(),
+                onBack   = onBack,
             )
 
-            Column(
+            HeroCard(
+                uri         = game.heroUri ?: game.artworkUri,
+                title       = game.displayTitle,
+                platform    = platform?.name ?: game.platformId.uppercase(),
+                accentColor = accentColor,
+            )
+
+            Spacer(Modifier.height(18.dp))
+
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(18.dp),
             ) {
-                ConsoleButton(
-                    label = "Play",
-                    icon = Icons.Filled.PlayArrow,
-                    focused = state.mainFocus == 0,
-                    fill = PlayGreen,
-                    textColor = Color(0xFF06140A),
-                    onClick = viewModel::onPlayClicked,
+                IconTile(
+                    uri   = game.iconUri ?: game.logoUri ?: game.artworkUri,
+                    title = game.displayTitle,
                 )
-                (state.launchError ?: state.actionMessage ?: state.artworkMessage)?.let {
-                    Text(
-                        it,
-                        color = menuCursorEdge(),
-                        fontSize = 12.sp,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth(),
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    ConsoleButton(
+                        label = "Play",
+                        icon = Icons.Filled.PlayArrow,
+                        focused = state.mainFocus == 0,
+                        fill = Color(0xFFF2F2F2),
+                        textColor = Color(0xFF0A0A12),
+                        onClick = viewModel::onPlayClicked,
                     )
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        SquareActionButton(
+                            icon = Icons.Filled.Settings,
+                            contentDescription = "Options",
+                            focused = state.mainFocus == 1,
+                            onClick = viewModel::onOptionsClicked,
+                        )
+                        SquareActionButton(
+                            icon = Icons.Filled.Brush,
+                            contentDescription = "Edit Artwork",
+                            focused = state.mainFocus == 2,
+                            onClick = viewModel::openArtworkManager,
+                        )
+                    }
+                    (state.launchError ?: state.actionMessage ?: state.artworkMessage)?.let {
+                        Text(it, color = menuCursorEdge(), fontSize = 12.sp)
+                    }
                 }
             }
-        }
 
-        // Header pills over the hero (touch only, per the last-input source): Back top-left,
-        // Options top-right. Options keeps controller reachability (mainFocus == 1) via Y.
-        if (showTouchControls) {
-            XmbHeaderPill(
-                label = "Back",
-                leadingGlyph = "◀",
-                onClick = onBack,
-                modifier = Modifier.align(Alignment.TopStart).padding(16.dp),
-            )
-            XmbHeaderPill(
-                label = "Options",
-                onClick = viewModel::onOptionsClicked,
-                focused = state.mainFocus == 1,
-                modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
-            )
+            Spacer(Modifier.height(18.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(20.dp),
+            ) {
+                GameInfoList(
+                    releaseYear = game.releaseYear,
+                    developer   = game.developer,
+                    genre       = game.genre,
+                    lastPlayedAt = game.lastPlayedAt,
+                    // Package-backed gaming apps launch by package/shortcut — no emulator meta.
+                    emulator    = if (state.isPackageBacked) null else (state.emulatorName ?: "Not set"),
+                    modifier    = Modifier.weight(0.42f),
+                )
+                DescriptionPanel(
+                    description = game.description,
+                    modifier    = Modifier.weight(0.58f),
+                )
+            }
         }
 
         AnimatedVisibility(state.showOptions, enter = fadeIn(), exit = fadeOut()) {
@@ -334,57 +352,169 @@ fun GameDetailScreen(
     }
 }
 
+// What this library entry actually is — shown as the breadcrumb subtitle so all three entry
+// kinds share one screen without losing their identity.
+private fun Game.kindLabel(): String = when {
+    shortcutId != null || launchIntentUri != null -> "PC Shortcut"
+    romPath == null && packageName != null        -> "Game App"
+    else                                          -> "ROM"
+}
+
+// Breadcrumb header, same shape as the App Drawer's: ◀ + title + subtitle. Always visible —
+// it replaces the old touch-only Back/Options pills as the way back off this page.
 @Composable
-private fun HeroArt(
+private fun DetailBreadcrumb(
+    title: String,
+    subtitle: String,
+    onBack: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text     = "◀",
+            color    = TextMuted,
+            fontSize = 16.sp,
+            modifier = Modifier
+                .clickable { onBack() }
+                .padding(end = 16.dp),
+        )
+        Column {
+            Text(title, color = TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+            Text(subtitle, color = TextMuted, fontSize = 12.sp)
+        }
+    }
+}
+
+// Rounded hero card with the title + platform overlaid bottom-start, per the mockup.
+@Composable
+private fun HeroCard(
     uri: String?,
     title: String,
+    platform: String,
     accentColor: Color,
-    modifier: Modifier = Modifier,
 ) {
     Box(
-        modifier.background(accentColor.copy(alpha = 0.18f)),
-        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(HeroBannerHeight)
+            .clip(RoundedCornerShape(14.dp))
+            .background(accentColor.copy(alpha = 0.18f)),
+        contentAlignment = Alignment.BottomStart,
     ) {
         if (uri != null) {
             AsyncImage(uri, title, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xAA000000))))
-            )
-        } else {
-            Text(title, color = TextMuted, fontSize = 20.sp, textAlign = TextAlign.Center)
+        }
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xCC000000))))
+        )
+        Column(Modifier.padding(horizontal = 26.dp, vertical = 20.dp)) {
+            Text(title, color = TextPrimary, fontSize = 32.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+            Text(platform, color = TextMuted, fontSize = 15.sp, maxLines = 1)
         }
     }
 }
 
 @Composable
-private fun GameSummary(
-    title: String,
-    platform: String,
-    releaseYear: Int?,
-    genre: String?,
-    emulator: String?,
-    developer: String?,
-    publisher: String?,
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(5.dp),
+private fun IconTile(uri: String?, title: String) {
+    Box(
+        modifier = Modifier
+            .width(196.dp)
+            .height(110.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(ActionFill)
+            .border(1.dp, Color(0x22FFFFFF), RoundedCornerShape(10.dp)),
+        contentAlignment = Alignment.Center,
     ) {
-        Text(title, fontSize = 28.sp, fontWeight = FontWeight.Bold, color = TextPrimary, maxLines = 1)
-        CompactMeta(platform)
-        releaseYear?.let { CompactMeta(it.toString()) }
-        if (!genre.isNullOrBlank()) CompactMeta(genre)
-        emulator?.let { CompactMeta("Emulator: $it") }
-        if (!developer.isNullOrBlank()) CompactMeta("Developer: $developer")
-        if (!publisher.isNullOrBlank()) CompactMeta("Publisher: $publisher")
+        if (uri != null) {
+            AsyncImage(uri, title, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+        } else {
+            Text(title.take(1).uppercase(), color = TextMuted, fontSize = 34.sp, fontWeight = FontWeight.Bold)
+        }
     }
 }
 
 @Composable
-private fun CompactMeta(value: String) {
-    Text(value, color = TextMuted, fontSize = 14.sp, maxLines = 1)
+private fun SquareActionButton(
+    icon: ImageVector,
+    contentDescription: String,
+    focused: Boolean,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .size(46.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(ActionFill)
+            .then(if (focused) Modifier.border(2.dp, menuCursorEdge(), RoundedCornerShape(8.dp)) else Modifier)
+            .clickable(role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(icon, contentDescription = contentDescription, tint = TextPrimary, modifier = Modifier.size(20.dp))
+    }
+}
+
+@Composable
+private fun GameInfoList(
+    releaseYear: Int?,
+    developer: String?,
+    genre: String?,
+    lastPlayedAt: Long?,
+    emulator: String?,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(10.dp))
+            .border(1.dp, Color(0x22FFFFFF), RoundedCornerShape(10.dp)),
+    ) {
+        releaseYear?.let           { InfoRow(Icons.Filled.CalendarToday, it.toString()) }
+        if (!developer.isNullOrBlank()) InfoRow(Icons.Filled.Person, developer)
+        if (!genre.isNullOrBlank())     InfoRow(Icons.Filled.SportsEsports, genre)
+        lastPlayedAt?.let          { InfoRow(Icons.Filled.Schedule, "Last Played: ${relativeDays(it)}") }
+        emulator?.let              { InfoRow(Icons.Filled.Monitor, "Emulator: $it") }
+    }
+}
+
+@Composable
+private fun InfoRow(icon: ImageVector, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp, vertical = 11.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(icon, contentDescription = null, tint = TextMuted, modifier = Modifier.size(16.dp))
+        Spacer(Modifier.width(12.dp))
+        Text(value, color = TextPrimary, fontSize = 14.sp, maxLines = 1)
+    }
+}
+
+@Composable
+private fun DescriptionPanel(description: String?, modifier: Modifier = Modifier) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("DESCRIPTION", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+        Text(
+            description?.takeIf { it.isNotBlank() } ?: "No description available.",
+            color = TextMuted,
+            fontSize = 14.sp,
+            lineHeight = 21.sp,
+        )
+    }
+}
+
+private fun relativeDays(epochMillis: Long): String {
+    val days = ((System.currentTimeMillis() - epochMillis) / 86_400_000L).coerceAtLeast(0)
+    return when (days) {
+        0L   -> "Today"
+        1L   -> "Yesterday"
+        else -> "$days days ago"
+    }
 }
 
 @Composable
