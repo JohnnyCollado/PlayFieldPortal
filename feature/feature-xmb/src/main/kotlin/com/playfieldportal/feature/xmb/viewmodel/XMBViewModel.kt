@@ -3742,7 +3742,9 @@ class XMBViewModel @Inject constructor(
 
         val items = buildList {
             add(XMBContextMenuItem("launch", "Launch Game"))
-            if (item.packageName != null) add(XMBContextMenuItem("edit_app", "Edit App Details"))
+            // No "Edit App Details" here: package-backed GAME entries (PC shortcuts, Android
+            // gaming apps) are games — art/title/note editing lives in Game Detail and the
+            // game rows below, never the slim standard-app editor.
             add(XMBContextMenuItem(
                 id    = if (item.isFavorite) "unfavorite" else "favorite",
                 label = if (item.isFavorite) "Remove from Favorites" else "Add to Favorites",
