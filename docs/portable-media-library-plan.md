@@ -1,8 +1,10 @@
 # Portable Media Library — PFP Implementation Plan (mirrors the Feature Spec)
 
-Status: **M-A IMPLEMENTED (July 2026)** — layout v2 + `artwork_records` (DB v26) +
-`PortableNameResolver`/`ArtworkPathResolver` + in-place v1 migrator + importer/relink/manual
-rewire landed on `artwork-refactor`. Next: M-B (scraper + manual picks write portable).
+Status: **M-A + M-B IMPLEMENTED (July 2026)** — layout v2 + `artwork_records` (DB v26) +
+resolvers + in-place v1 migrator + importer/relink/manual rewire; `RoutingArtworkStore` sends
+scrapes and manual picks into the portable library when a folder is linked (internal fallback
+otherwise), with §22 priority (scrapes never overwrite valid/locked/user assets, user picks
+lock their slot) and deleteAll never touching user files. Next: M-C (Scan & recovery).
 Supersedes the folder-layout portions of `portable-artwork-plan.md`; everything else in that
 plan (ScreenScraper, storage seam, identity columns) stands.
 

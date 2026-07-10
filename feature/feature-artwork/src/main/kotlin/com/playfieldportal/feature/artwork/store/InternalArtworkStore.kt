@@ -96,29 +96,11 @@ class InternalArtworkStore @Inject constructor(
 
     // ── Internals ─────────────────────────────────────────────────────────────
 
-    private suspend fun downloadToTemp(url: String, kind: ArtworkKind): File? = runCatching {
-        val response = httpClient.get(url)
-        if (!response.status.isSuccess()) {
-            Timber.w("Artwork download failed (${response.status.value}) for $url")
-            return null
-        }
-        response.bodyAsChannel().toInputStream().use { copyToTemp(it, kind) }
-    }.onFailure { Timber.w(it, "Artwork download error for $url") }.getOrNull()
+    private suspend fun downloadToTemp(url: String, kind: ArtworkKind): File? =
+        ArtworkTempIO.downloadToTemp(httpClient, context.cacheDir, kind, url)
 
-    /** Streams [input] into a cache temp file; null if empty or the wrong payload type for [kind]. */
-    private fun copyToTemp(input: InputStream, kind: ArtworkKind): File? {
-        val tmp = File.createTempFile("artwork_", ".part", context.cacheDir)
-        val ok = runCatching {
-            tmp.outputStream().use { input.copyTo(it) }
-            tmp.length() > 0 && PayloadCheck.accepts(kind, headerOf(tmp))
-        }.getOrDefault(false)
-        if (!ok) {
-            Timber.w("Artwork payload rejected — empty or wrong type for $kind")
-            tmp.delete()
-            return null
-        }
-        return tmp
-    }
+    private fun copyToTemp(input: InputStream, kind: ArtworkKind): File? =
+        ArtworkTempIO.copyToTemp(input, context.cacheDir, kind)
 
     /** Moves a verified temp file to `artwork/{gameId}/{name}`, returning the absolute path. */
     private fun commit(tmp: File, gameId: Long, name: String): String? = runCatching {
@@ -145,13 +127,7 @@ class InternalArtworkStore @Inject constructor(
         }.onFailure { Timber.w(it, "Failed to prune old artwork for game $gameId $kind") }
     }
 
-    private fun headerOf(file: File): ByteArray = runCatching {
-        val header = ByteArray(12)
-        val read = file.inputStream().use { it.read(header) }
-        if (read <= 0) ByteArray(0) else header.copyOf(read)
-    }.getOrDefault(ByteArray(0))
-
-    private fun sniffExt(file: File): String? = ImageFormat.sniff(headerOf(file))?.ext
+    private fun sniffExt(file: File): String? = ImageFormat.sniff(ArtworkTempIO.headerOf(file))?.ext
 
     private fun extensionForUri(uri: Uri): String? {
         val mime = context.contentResolver.getType(uri)?.lowercase(Locale.US)

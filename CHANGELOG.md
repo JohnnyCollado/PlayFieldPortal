@@ -35,6 +35,13 @@ All notable changes to Play Field Portal are documented here. This project follo
   user-set values. The Game Detail screen now shows publisher and total play time, and the
   page scrolls with the D-pad (DOWN past the buttons) as well as touch.
 
+- **Scraped and hand-picked artwork now lands in the portable library too.** With a folder
+  linked, every artwork save — metadata scrapes, SteamGridDB/TGDB/IGDB grid picks, local image
+  picks — writes into `{platform}/{mediaDir}/{ROM Filename}.{ext}` alongside imports; without
+  one, internal storage works exactly as before. Auto-scrapes never overwrite an existing valid
+  library asset; hand-picked artwork is marked user-assigned + locked so nothing automatic
+  touches it. "Clear All Artwork" clears app state only — files in the user's folder are never
+  deleted (Relink restores them).
 - **Relink Library** (Artwork Folder & Import) — reconnects artwork already in the library
   folder to your games from each entry's `metadata.json`, after a reinstall or lost links.
 - Game Detail shows publisher and total play time; long descriptions are reachable by D-pad

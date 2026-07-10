@@ -9,8 +9,8 @@ import dagger.hilt.components.SingletonComponent
 @InstallIn(SingletonComponent::class)
 abstract class ArtworkStoreModule {
 
-    // Internal storage is the only backend today; the portable SAF provider (plan M3) becomes a
-    // runtime-selected delegate behind this same binding.
+    // Routes to the user's portable media library when a folder is linked; falls back to
+    // internal app storage otherwise. Callers never know the difference.
     @Binds
-    abstract fun bindArtworkStore(impl: InternalArtworkStore): ArtworkStore
+    abstract fun bindArtworkStore(impl: RoutingArtworkStore): ArtworkStore
 }

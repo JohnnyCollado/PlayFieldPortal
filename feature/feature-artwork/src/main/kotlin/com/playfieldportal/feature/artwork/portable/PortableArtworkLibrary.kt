@@ -157,6 +157,57 @@ class PortableArtworkLibrary @Inject constructor(
         movedOrCopied?.let { SavedAsset(kind, it.toString(), destName, source.sizeBytes ?: 0L) }
     }
 
+    /**
+     * Writes a validated local temp file (scraper download, user pick copied to cache) into
+     * `{platformId}/{mediaDir}/` as `{portableName}.{ext}`. Same discipline as [saveAsset]:
+     * header sniffed, same-stem predecessors pre-deleted, kernel copy, failed writes cleaned up.
+     * The temp file is always deleted.
+     */
+    suspend fun saveFromFile(
+        treeUri: Uri,
+        platformId: String,
+        kind: ArtworkKind,
+        portableName: String,
+        tempFile: java.io.File,
+    ): SavedAsset? = withContext(Dispatchers.IO) {
+        try {
+            val header = runCatching {
+                tempFile.inputStream().use { s -> ByteArray(12).let { it.copyOf(s.read(it).coerceAtLeast(0)) } }
+            }.getOrDefault(ByteArray(0))
+            if (!PayloadCheck.accepts(kind, header)) {
+                Timber.w("Portable save rejected — wrong payload for ${kind.name}")
+                return@withContext null
+            }
+            val ext = if (kind == ArtworkKind.MANUAL) "pdf" else ImageFormat.sniff(header)?.ext ?: return@withContext null
+            val destName = "$portableName.$ext"
+            val dirDocId = mediaDirDocId(treeUri, platformId, kind) ?: return@withContext null
+
+            listChildren(treeUri, dirDocId)
+                .filter { !it.isDirectory && it.name.substringBeforeLast('.').equals(portableName, ignoreCase = true) }
+                .forEach { runCatching { DocumentsContract.deleteDocument(resolver, it.uri) } }
+
+            val dirUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, dirDocId)
+            val mime = when (ext) { "png" -> "image/png"; "webp" -> "image/webp"; "pdf" -> "application/pdf"; else -> "image/jpeg" }
+            val dest = runCatching { DocumentsContract.createDocument(resolver, dirUri, mime, destName) }.getOrNull()
+                ?: return@withContext null
+            val ok = runCatching {
+                tempFile.inputStream().use { input ->
+                    resolver.openFileDescriptor(dest, "w")?.use { output ->
+                        FileUtils.copy(input.fd, output.fileDescriptor)
+                        true
+                    }
+                } ?: false
+            }.onFailure { Timber.w(it, "Portable save failed for $destName") }.getOrDefault(false)
+            if (!ok) {
+                runCatching { DocumentsContract.deleteDocument(resolver, dest) }
+                return@withContext null
+            }
+            SavedAsset(kind, dest.toString(), destName, tempFile.length())
+        } finally {
+            tempFile.delete()
+        }
+    }
+
     fun clearDirCache() = dirCache.clear()
 
     // ── v1 → v2 migration ─────────────────────────────────────────────────────
