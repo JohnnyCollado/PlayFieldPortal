@@ -56,7 +56,8 @@ data class PlannedGame(
     @SerialName("game_id") val gameId: Long,
     @SerialName("platform_id") val platformId: String,
     @SerialName("artwork_key") val artworkKey: String,
-    val slug: String,
+    // Layout-v2 filename stem the assets are stored under ("Final Fantasy X (USA)").
+    @SerialName("portable_name") val portableName: String = "",
     val title: String,
     @SerialName("rom_file_name") val romFileName: String? = null,
     val items: List<PlannedItem>,

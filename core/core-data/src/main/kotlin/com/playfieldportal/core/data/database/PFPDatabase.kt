@@ -7,7 +7,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.playfieldportal.core.data.database.dao.AppOverrideDao
 import com.playfieldportal.core.data.database.dao.ArtworkImportReportDao
-import com.playfieldportal.core.data.database.dao.ArtworkIndexDao
+import com.playfieldportal.core.data.database.dao.ArtworkRecordDao
 import com.playfieldportal.core.data.database.dao.BackupDao
 import com.playfieldportal.core.data.database.dao.CategoryDao
 import com.playfieldportal.core.data.database.dao.CollectionDao
@@ -30,7 +30,7 @@ import com.playfieldportal.core.data.database.dao.VideoLibraryDao
 import com.playfieldportal.core.data.database.dao.VideoPlaylistDao
 import com.playfieldportal.core.data.database.entity.AppOverrideEntity
 import com.playfieldportal.core.data.database.entity.ArtworkImportReportEntity
-import com.playfieldportal.core.data.database.entity.ArtworkIndexEntity
+import com.playfieldportal.core.data.database.entity.ArtworkRecordEntity
 import com.playfieldportal.core.data.database.entity.CategoryEntity
 import com.playfieldportal.core.data.database.entity.CategoryItemEntity
 import com.playfieldportal.core.data.database.entity.CollectionEntity
@@ -81,10 +81,10 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         PhotoLibraryEntity::class,
         PhotoEntity::class,
         ScanTombstoneEntity::class,
-        ArtworkIndexEntity::class,
+        ArtworkRecordEntity::class,
         ArtworkImportReportEntity::class,
     ],
-    version = 25,
+    version = 26,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -111,7 +111,7 @@ abstract class PFPDatabase : RoomDatabase() {
     abstract fun photoDao(): PhotoDao
     abstract fun scanTombstoneDao(): ScanTombstoneDao
     abstract fun backupDao(): BackupDao
-    abstract fun artworkIndexDao(): ArtworkIndexDao
+    abstract fun artworkRecordDao(): ArtworkRecordDao
     abstract fun artworkImportReportDao(): ArtworkImportReportDao
 
     companion object {
@@ -679,6 +679,58 @@ abstract class PFPDatabase : RoomDatabase() {
                     )
                     """.trimIndent()
                 )
+            }
+        }
+
+        // v26 — portable media library layout v2. artwork_records replaces artwork_index: the
+        // same fast map over the user's artwork folder, plus provenance (source, user_assigned,
+        // locked) and lazily-filled dimensions/checksum. Existing index rows migrate by joining
+        // games on artwork_key (multi-row disc games correctly fan out to one record per row);
+        // relative_path/portable_name backfill on the next Relink — the folder, not this table,
+        // is the source of truth.
+        val MIGRATION_25_26 = object : Migration(25, 26) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS artwork_records (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        game_id INTEGER NOT NULL,
+                        platform_id TEXT NOT NULL,
+                        artwork_type TEXT NOT NULL,
+                        portable_name TEXT NOT NULL,
+                        relative_path TEXT NOT NULL,
+                        document_uri TEXT NOT NULL,
+                        source TEXT NOT NULL,
+                        size_bytes INTEGER NOT NULL,
+                        width INTEGER,
+                        height INTEGER,
+                        checksum TEXT,
+                        user_assigned INTEGER NOT NULL,
+                        locked INTEGER NOT NULL,
+                        created_at INTEGER NOT NULL,
+                        updated_at INTEGER NOT NULL
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS index_artwork_records_game_id_artwork_type " +
+                        "ON artwork_records (game_id, artwork_type)"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_artwork_records_platform_id_artwork_type_portable_name " +
+                        "ON artwork_records (platform_id, artwork_type, portable_name)"
+                )
+                db.execSQL(
+                    """
+                    INSERT OR IGNORE INTO artwork_records
+                        (game_id, platform_id, artwork_type, portable_name, relative_path,
+                         document_uri, source, size_bytes, user_assigned, locked, created_at, updated_at)
+                    SELECT g.id, g.platform_id, ai.kind, '', '',
+                           ai.doc_uri_or_path, 'import-esde', ai.size_bytes, 0, 0, ai.updated_at, ai.updated_at
+                    FROM artwork_index ai JOIN games g ON g.artwork_key = ai.`key`
+                    """.trimIndent()
+                )
+                db.execSQL("DROP TABLE IF EXISTS artwork_index")
             }
         }
     }

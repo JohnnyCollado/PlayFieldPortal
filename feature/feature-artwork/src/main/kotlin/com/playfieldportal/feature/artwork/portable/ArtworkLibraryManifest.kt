@@ -23,10 +23,12 @@ data class ArtworkLibraryManifest(
     @SerialName("entry_count_hint") val entryCountHint: Int = 0,
 ) {
     companion object {
-        const val FORMAT_VERSION = 1
+        // v2 = ES-DE-shaped layout ({platform}/{mediaDir}/{PortableName}.{ext}); v1 was the
+        // per-game-folder layout (games/{platform}/{slug}/), migrated in place on first use.
+        const val FORMAT_VERSION = 2
         const val FILE_NAME = "pfp-artwork-library.json"
 
-        /** Directory names reserved at the library root. */
+        /** v1 layout root — only read by the migrator now. */
         const val DIR_GAMES = "games"
         const val DIR_IMPORT = "import"
 

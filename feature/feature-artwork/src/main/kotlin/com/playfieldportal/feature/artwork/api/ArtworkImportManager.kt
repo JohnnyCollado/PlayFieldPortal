@@ -3,10 +3,10 @@ package com.playfieldportal.feature.artwork.api
 import android.content.Context
 import android.net.Uri
 import com.playfieldportal.core.data.database.dao.ArtworkImportReportDao
-import com.playfieldportal.core.data.database.dao.ArtworkIndexDao
+import com.playfieldportal.core.data.database.dao.ArtworkRecordDao
 import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.data.database.entity.ArtworkImportReportEntity
-import com.playfieldportal.core.data.database.entity.ArtworkIndexEntity
+import com.playfieldportal.core.data.database.entity.ArtworkRecordEntity
 import com.playfieldportal.core.data.repository.ArtworkFolderRepository
 import com.playfieldportal.core.data.repository.ArtworkStorageMode
 import com.playfieldportal.feature.artwork.importer.ArtworkImportMatcher
@@ -17,6 +17,7 @@ import com.playfieldportal.feature.artwork.importer.ImportPlan
 import com.playfieldportal.feature.artwork.importer.ImportSummary
 import com.playfieldportal.feature.artwork.portable.ArtworkLibraryManifest
 import com.playfieldportal.feature.artwork.portable.ArtworkNaming
+import com.playfieldportal.feature.artwork.portable.ArtworkPathResolver
 import com.playfieldportal.feature.artwork.portable.PortableArtworkLibrary
 import com.playfieldportal.feature.artwork.store.ArtworkFileNaming
 import com.playfieldportal.feature.artwork.store.ArtworkKind
@@ -44,7 +45,7 @@ class ArtworkImportManager @Inject constructor(
     private val planner: ArtworkImportPlanner,
     private val reportDao: ArtworkImportReportDao,
     private val gameDao: GameDao,
-    private val artworkIndexDao: ArtworkIndexDao,
+    private val artworkRecordDao: ArtworkRecordDao,
     private val artworkStore: ArtworkStore,
 ) {
     data class LinkResult(
@@ -118,25 +119,41 @@ class ArtworkImportManager @Inject constructor(
     data class RelinkResult(val entriesScanned: Int, val gamesLinked: Int, val orphanEntries: Int)
 
     /**
-     * Walks `games/` and reconnects every entry to its game: metadata.json supplies the key,
-     * platform and ROM filename, so entries relink even when the DB references were wiped
-     * (e.g. by a scrape pass) or the entry sits under a misnamed platform folder. Columns are
-     * only written where the current reference is missing or dead — user/scraper values with
-     * live files are never touched.
+     * Migrates a v1 library (games/{platform}/{slug}/) to layout v2 in place — same-tree moves,
+     * no bytes copied — then relinks so records and game columns point at the new locations.
+     * Idempotent: with no games/ folder this is a no-op. Returns assets moved.
+     */
+    suspend fun migrateV1IfNeeded(): Int = withContext(Dispatchers.IO) {
+        val tree = linkedTree() ?: return@withContext 0
+        val result = library.migrateV1Library(tree)
+        val manifest = library.readManifest(tree)
+        if (manifest != null && manifest.formatVersion < ArtworkLibraryManifest.FORMAT_VERSION) {
+            library.writeManifest(tree, manifest.copy(formatVersion = ArtworkLibraryManifest.FORMAT_VERSION))
+        }
+        if (result.assets.isNotEmpty()) {
+            library.clearDirCache()
+            relinkLibrary()
+            Timber.i("Library migrated to layout v2: ${result.assets.size} assets relocated")
+        }
+        result.assets.size
+    }
+
+    /**
+     * Walks the v2 library ({platform}/{mediaDir}/) and reconnects every asset to its game —
+     * filenames are ROM stems, so this is the matcher's pass 1 by construction. Columns are
+     * only written where the current reference is missing or dead; user-assigned/locked
+     * records are respected.
      */
     suspend fun relinkLibrary(): RelinkResult? = withContext(Dispatchers.IO) {
         val tree = linkedTree() ?: return@withContext null
         val rootDocId = android.provider.DocumentsContract.getTreeDocumentId(tree)
-        val gamesDir = library.listChildren(tree, rootDocId)
-            .firstOrNull { it.isDirectory && it.name.equals(ArtworkLibraryManifest.DIR_GAMES, ignoreCase = true) }
-            ?: return@withContext RelinkResult(0, 0, 0)
 
         val games = gameDao.getAll()
-        val byKey = games.filter { it.artworkKey != null }.groupBy { it.artworkKey!! }
+        val byPlatform = games.groupBy { it.platformId }
         val indexes = HashMap<String, ArtworkImportMatcher.PlatformIndex>()
         fun indexFor(platformId: String) = indexes.getOrPut(platformId) {
             ArtworkImportMatcher.PlatformIndex(
-                games.filter { it.platformId == platformId }.map { g ->
+                byPlatform[platformId].orEmpty().map { g ->
                     ArtworkImportMatcher.GameRef(
                         id = g.id,
                         romStem = g.romPath?.replace('\\', '/')?.substringAfterLast('/')
@@ -147,68 +164,70 @@ class ArtworkImportManager @Inject constructor(
                 },
             )
         }
+        val lockedByGame = HashMap<Long, Set<String>>()
+        suspend fun lockedTypes(gameId: Long): Set<String> = lockedByGame.getOrPut(gameId) {
+            artworkRecordDao.getForGame(gameId)
+                .filter { it.locked || it.userAssigned }.map { it.artworkType }.toSet()
+        }
 
         var scanned = 0
         var linkedGames = 0
         var orphans = 0
-        for (platformDir in library.listChildren(tree, gamesDir.documentId).filter { it.isDirectory }) {
-            for (entryDir in library.listChildren(tree, platformDir.documentId).filter { it.isDirectory }) {
-                scanned++
-                val meta = library.readEntryMetadata(tree, entryDir.documentId) ?: run { orphans++; null } ?: continue
-                val targets = byKey[meta.key]
-                    ?: meta.romFileName?.let { rom ->
-                        (indexFor(meta.platformId).match(rom) as? ArtworkImportMatcher.Result.Matched)
-                            ?.gameIds?.mapNotNull { id -> games.firstOrNull { it.id == id } }
-                    }
-                if (targets.isNullOrEmpty()) { orphans++; continue }
-
-                // Entry files by kind: fixed base names, any image extension.
-                val filesByKind = mutableMapOf<ArtworkKind, Pair<String, Long>>()   // uri, size
-                for (child in library.listChildren(tree, entryDir.documentId)) {
-                    if (child.isDirectory || (child.sizeBytes ?: 0L) <= 0L) continue
-                    val base = child.name.substringBeforeLast('.').lowercase(Locale.ROOT)
-                    val kind = ArtworkKind.entries.firstOrNull {
-                        ArtworkFileNaming.baseName(it).lowercase(Locale.ROOT) == base
-                    } ?: continue
-                    filesByKind.putIfAbsent(kind, child.uri.toString() to (child.sizeBytes ?: 0L))
-                }
-                if (filesByKind.isEmpty()) continue
-
-                var linkedAny = false
-                for (game in targets) {
-                    for ((kind, file) in filesByKind) {
-                        val (uri, _) = file
-                        val current = when (kind) {
-                            ArtworkKind.ICON -> game.iconUri
-                            ArtworkKind.HERO -> game.heroUri
-                            ArtworkKind.BACKGROUND -> game.artworkUri
-                            ArtworkKind.LOGO -> game.logoUri
-                            else -> continue
+        val linkedIds = mutableSetOf<Long>()
+        for (platformDir in library.listChildren(tree, rootDocId).filter { it.isDirectory }) {
+            if (platformDir.name.equals(ArtworkLibraryManifest.DIR_IMPORT, ignoreCase = true)) continue
+            val platformId = platformDir.name
+            if (byPlatform[platformId].isNullOrEmpty()) continue
+            for (mediaDir in library.listChildren(tree, platformDir.documentId).filter { it.isDirectory }) {
+                val kind = ArtworkPathResolver.kindForMediaDir(mediaDir.name) ?: continue
+                val records = mutableListOf<ArtworkRecordEntity>()
+                for (file in library.listChildren(tree, mediaDir.documentId)) {
+                    if (file.isDirectory || (file.sizeBytes ?: 0L) <= 0L) continue
+                    scanned++
+                    val match = indexFor(platformId).match(file.name)
+                    val ids = (match as? ArtworkImportMatcher.Result.Matched)?.gameIds
+                    if (ids.isNullOrEmpty()) { orphans++; continue }
+                    for (gameId in ids) {
+                        if (kind.name in lockedTypes(gameId)) continue
+                        val game = games.firstOrNull { it.id == gameId } ?: continue
+                        val uri = file.uri.toString()
+                        // Column-backed kinds only; fill when missing or the current ref is dead.
+                        val isColumnKind = kind == ArtworkKind.ICON || kind == ArtworkKind.HERO ||
+                            kind == ArtworkKind.BACKGROUND || kind == ArtworkKind.LOGO
+                        if (isColumnKind) {
+                            val current = when (kind) {
+                                ArtworkKind.ICON -> game.iconUri
+                                ArtworkKind.HERO -> game.heroUri
+                                ArtworkKind.BACKGROUND -> game.artworkUri
+                                else -> game.logoUri
+                            }
+                            if (!artworkStore.isValidRef(current)) {
+                                when (kind) {
+                                    ArtworkKind.ICON -> gameDao.updateIconUri(gameId, uri)
+                                    ArtworkKind.HERO -> gameDao.updateHero(gameId, uri)
+                                    ArtworkKind.BACKGROUND -> gameDao.updateArtwork(gameId, uri)
+                                    else -> gameDao.updateLogo(gameId, uri)
+                                }
+                                linkedIds.add(gameId)
+                            }
                         }
-                        if (artworkStore.isValidRef(current)) continue
-                        when (kind) {
-                            ArtworkKind.ICON -> gameDao.updateIconUri(game.id, uri)
-                            ArtworkKind.HERO -> gameDao.updateHero(game.id, uri)
-                            ArtworkKind.BACKGROUND -> gameDao.updateArtwork(game.id, uri)
-                            ArtworkKind.LOGO -> gameDao.updateLogo(game.id, uri)
-                            else -> Unit
-                        }
-                        linkedAny = true
-                    }
-                    gameDao.mintArtworkKey(game.id, meta.key)
-                }
-                if (linkedAny) linkedGames += targets.size
-                artworkIndexDao.upsert(
-                    filesByKind.map { (kind, file) ->
-                        ArtworkIndexEntity(
-                            key = meta.key, kind = kind.name, location = "PORTABLE",
-                            docUriOrPath = file.first, sizeBytes = file.second,
+                        records += ArtworkRecordEntity(
+                            gameId = gameId,
+                            platformId = platformId,
+                            artworkType = kind.name,
+                            portableName = ArtworkNaming.fileStem(file.name),
+                            relativePath = ArtworkPathResolver.relativePath(platformId, kind, file.name),
+                            documentUri = uri,
+                            source = "relink",
+                            sizeBytes = file.sizeBytes ?: 0L,
                         )
-                    },
-                )
+                    }
+                }
+                if (records.isNotEmpty()) artworkRecordDao.upsert(records)
             }
         }
-        Timber.i("Relink: $scanned entries, $linkedGames games linked, $orphans orphans")
+        linkedGames = linkedIds.size
+        Timber.i("Relink v2: $scanned files, $linkedGames games linked, $orphans unmatched files")
         RelinkResult(scanned, linkedGames, orphans)
     }
 

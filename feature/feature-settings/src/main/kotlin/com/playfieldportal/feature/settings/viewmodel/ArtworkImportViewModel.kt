@@ -134,6 +134,14 @@ class ArtworkImportViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(scanning = true)
         viewModelScope.launch {
             runCatching {
+                // One-time in-place upgrade of v1 (per-game-folder) libraries to the ES-DE
+                // layout — same-tree moves, lossless, no-op once migrated.
+                val migrated = importManager.migrateV1IfNeeded()
+                if (migrated > 0) {
+                    _uiState.value = _uiState.value.copy(
+                        notice = "Artwork library upgraded to the new layout — $migrated files reorganized.",
+                    )
+                }
                 val detected = importManager.detectSources()
                 val unrecognized = importManager.unrecognizedFolders(detected)
                 _uiState.value = _uiState.value.copy(

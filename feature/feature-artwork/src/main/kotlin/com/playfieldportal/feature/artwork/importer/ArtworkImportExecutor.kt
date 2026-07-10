@@ -3,14 +3,15 @@ package com.playfieldportal.feature.artwork.importer
 import android.net.Uri
 import android.provider.DocumentsContract
 import com.playfieldportal.core.data.database.dao.ArtworkImportReportDao
-import com.playfieldportal.core.data.database.dao.ArtworkIndexDao
+import com.playfieldportal.core.data.database.dao.ArtworkRecordDao
 import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.data.database.entity.ArtworkImportReportEntity
-import com.playfieldportal.core.data.database.entity.ArtworkIndexEntity
+import com.playfieldportal.core.data.database.entity.ArtworkRecordEntity
 import com.playfieldportal.core.data.saf.SafChild
 import com.playfieldportal.feature.artwork.portable.ArtworkEntryMetadata
+import com.playfieldportal.feature.artwork.portable.ArtworkPathResolver
 import com.playfieldportal.feature.artwork.portable.PortableArtworkLibrary
-import com.playfieldportal.feature.artwork.store.ArtworkFileNaming
+import com.playfieldportal.feature.artwork.portable.PortableNameResolver
 import com.playfieldportal.feature.artwork.store.ArtworkKind
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -45,7 +46,7 @@ import javax.inject.Singleton
 class ArtworkImportExecutor @Inject constructor(
     private val library: PortableArtworkLibrary,
     private val gameDao: GameDao,
-    private val artworkIndexDao: ArtworkIndexDao,
+    private val artworkRecordDao: ArtworkRecordDao,
     private val reportDao: ArtworkImportReportDao,
 ) {
     data class Progress(val done: Int, val total: Int, val label: String)
@@ -85,6 +86,10 @@ class ArtworkImportExecutor @Inject constructor(
             }.onFailure { Timber.w(it, "Metadata update failed for game ${update.gameId}") }
         }
 
+        // Media-dir listings shared across all games in this run — one cursor per directory,
+        // used for resume detection ("is this asset already there?").
+        val dirListings = java.util.concurrent.ConcurrentHashMap<String, Map<String, SafChild>>()
+
         try {
             coroutineScope {
                 val gate = Semaphore(MAX_CONCURRENT_GAMES)
@@ -93,7 +98,7 @@ class ArtworkImportExecutor @Inject constructor(
                         gate.withPermit {
                             ensureActive()
                             runCatching {
-                                importGame(treeUri, plan, game, transfer) { item, outcome ->
+                                importGame(treeUri, plan, game, transfer, dirListings) { item, outcome ->
                                     onProgress(Progress(done.incrementAndGet(), total, "${game.title} — ${item.kind.lowercase(Locale.ROOT)}"))
                                     when (outcome) {
                                         ItemOutcome.IMPORTED -> {
@@ -164,41 +169,49 @@ class ArtworkImportExecutor @Inject constructor(
         plan: ImportPlan,
         game: PlannedGame,
         transfer: PortableArtworkLibrary.Transfer,
+        dirListings: java.util.concurrent.ConcurrentHashMap<String, Map<String, SafChild>>,
         onItem: (PlannedItem, ItemOutcome) -> Unit,
     ) {
-        val entryDirId = library.entryDirDocId(treeUri, game.platformId, game.slug)
-            ?: error("Could not create entry folder games/${game.platformId}/${game.slug}")
-        val existing: Map<String, SafChild> =
-            library.listChildren(treeUri, entryDirId).associateBy { it.name.lowercase(Locale.ROOT) }
-
-        var metadata = library.readEntryMetadata(treeUri, entryDirId) ?: ArtworkEntryMetadata(
-            key = game.artworkKey,
-            platformId = game.platformId,
-            title = game.title,
-            romFileName = game.romFileName,
-        )
-        val lockedKinds = metadata.assets.filter { it.locked }.map { it.kind }.toSet()
-
-        val indexRows = mutableListOf<ArtworkIndexEntity>()
+        // Provenance guard: user-picked or locked assets are never overwritten by an import.
+        val existingRecords = artworkRecordDao.getForGame(game.gameId).associateBy { it.artworkType }
+        val basePortableName = game.portableName.ifBlank {
+            game.romFileName?.let { PortableNameResolver.fromRomFileName(it) }
+                ?: PortableNameResolver.fromTitle(game.title)
+        }
+        val records = mutableListOf<ArtworkRecordEntity>()
 
         for (item in game.items) {
             val kind = runCatching { ArtworkKind.valueOf(item.kind) }.getOrNull() ?: continue
-            if (item.kind in lockedKinds) {
+            val prior = existingRecords[item.kind]
+            if (prior != null && (prior.locked || prior.userAssigned)) {
                 onItem(item, ItemOutcome.SKIPPED)
                 continue
             }
 
-            // Resume path: an asset of this kind already in the entry folder is reused as-is.
-            val base = ArtworkFileNaming.baseName(kind).lowercase(Locale.ROOT)
-            val already = existing.values.firstOrNull {
-                !it.isDirectory && it.name.lowercase(Locale.ROOT).substringBeforeLast('.') == base &&
-                    (it.sizeBytes ?: 0L) > 0L
+            // Case-insensitive cross-game collision (FAT volumes): keep tags, then suffix.
+            var portableName = basePortableName
+            if (artworkRecordDao.findNameCollisions(game.platformId, item.kind, portableName, game.gameId).isNotEmpty()) {
+                portableName = "$portableName (2)"
+            }
+
+            val dirId = library.mediaDirDocId(treeUri, game.platformId, kind)
+                ?: error("Could not create ${game.platformId}/${ArtworkPathResolver.mediaDirFor(kind)}")
+            val listing = dirListings[dirId] ?: library.listChildren(treeUri, dirId)
+                .associateBy { it.name.lowercase(Locale.ROOT) }
+                .also { dirListings[dirId] = it }
+
+            // Resume path: an asset already stored under this portable name is reused as-is.
+            val already = listing.values.firstOrNull {
+                !it.isDirectory && (it.sizeBytes ?: 0L) > 0L &&
+                    it.name.substringBeforeLast('.').equals(portableName, ignoreCase = true)
             }
             val saved = if (already != null) {
                 PortableArtworkLibrary.SavedAsset(kind, already.uri.toString(), already.name, already.sizeBytes ?: 0L)
             } else {
-                val sourceChild = sourceChildFor(treeUri, item)
-                library.saveIntoEntry(treeUri, entryDirId, kind, sourceChild, transfer, existing)
+                library.saveAsset(
+                    treeUri, game.platformId, kind, portableName,
+                    sourceChildFor(treeUri, item), transfer, listing,
+                )
             }
 
             if (saved == null) {
@@ -206,29 +219,21 @@ class ArtworkImportExecutor @Inject constructor(
                 continue
             }
 
-            metadata = metadata.withAsset(
-                ArtworkEntryMetadata.AssetRecord(
-                    kind = item.kind,
-                    fileName = saved.fileName,
-                    source = sourceTag(plan.sourceId),
-                    originalFileName = item.displayName,
-                    sizeBytes = saved.sizeBytes,
-                    savedAt = System.currentTimeMillis(),
-                )
-            )
-            indexRows += ArtworkIndexEntity(
-                key = game.artworkKey,
-                kind = item.kind,
-                location = "PORTABLE",
-                docUriOrPath = saved.uriString,
+            records += ArtworkRecordEntity(
+                gameId = game.gameId,
+                platformId = game.platformId,
+                artworkType = item.kind,
+                portableName = portableName,
+                relativePath = ArtworkPathResolver.relativePath(game.platformId, kind, saved.fileName),
+                documentUri = saved.uriString,
+                source = sourceTag(plan.sourceId),
                 sizeBytes = saved.sizeBytes,
             )
             updateGameColumn(game.gameId, kind, saved.uriString)
             onItem(item, if (already != null) ItemOutcome.SKIPPED else ItemOutcome.IMPORTED)
         }
 
-        library.writeEntryMetadata(treeUri, entryDirId, metadata)
-        if (indexRows.isNotEmpty()) artworkIndexDao.upsert(indexRows)
+        if (records.isNotEmpty()) artworkRecordDao.upsert(records)
         gameDao.mintArtworkKey(game.gameId, game.artworkKey)
     }
 

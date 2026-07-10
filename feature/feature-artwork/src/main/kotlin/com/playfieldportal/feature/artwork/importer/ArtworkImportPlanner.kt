@@ -6,6 +6,7 @@ import com.playfieldportal.core.data.database.entity.GameEntity
 import com.playfieldportal.feature.artwork.portable.ArtworkKeyFactory
 import com.playfieldportal.feature.artwork.portable.ArtworkNaming
 import com.playfieldportal.feature.artwork.portable.PortableArtworkLibrary
+import com.playfieldportal.feature.artwork.portable.PortableNameResolver
 import com.playfieldportal.feature.artwork.store.ArtworkKind
 import com.playfieldportal.feature.artwork.store.ArtworkStore
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -149,13 +150,15 @@ class ArtworkImportPlanner @Inject constructor(
             val game = gameById.getValue(gameId)
             val key = game.artworkKey ?: ArtworkKeyFactory.keyFor(gameEntityToDomainLite(game))
                 ?: "rom/${game.platformId}/${ArtworkNaming.slug(game.title)}"
+            val romFileName = game.romPath?.replace('\\', '/')?.substringAfterLast('/')
             PlannedGame(
                 gameId = gameId,
                 platformId = game.platformId,
                 artworkKey = key,
-                slug = key.substringAfterLast('/'),
+                portableName = romFileName?.let { PortableNameResolver.fromRomFileName(it) }
+                    ?: PortableNameResolver.fromTitle(game.displayTitleOrNull() ?: game.title),
                 title = game.displayTitleOrNull() ?: game.title,
-                romFileName = game.romPath?.replace('\\', '/')?.substringAfterLast('/'),
+                romFileName = romFileName,
                 // Kind priority: visible slots first so the XMB fills fastest.
                 items = items.sortedBy { KIND_PRIORITY.indexOf(it.kind).let { i -> if (i < 0) 99 else i } },
             )
@@ -209,13 +212,15 @@ class ArtworkImportPlanner @Inject constructor(
             } else {
                 val key = game.artworkKey ?: ArtworkKeyFactory.keyFor(gameEntityToDomainLite(game))
                     ?: "rom/${game.platformId}/${ArtworkNaming.slug(game.title)}"
+                val romFileName = game.romPath?.replace('\\', '/')?.substringAfterLast('/')
                 plan.games + PlannedGame(
                     gameId = gameId,
                     platformId = game.platformId,
                     artworkKey = key,
-                    slug = key.substringAfterLast('/'),
+                    portableName = romFileName?.let { PortableNameResolver.fromRomFileName(it) }
+                        ?: PortableNameResolver.fromTitle(game.displayTitleOrNull() ?: game.title),
                     title = game.displayTitleOrNull() ?: game.title,
-                    romFileName = game.romPath?.replace('\\', '/')?.substringAfterLast('/'),
+                    romFileName = romFileName,
                     items = listOf(item),
                 )
             }

@@ -6,10 +6,13 @@ All notable changes to Play Field Portal are documented here. This project follo
 ## [Unreleased]
 
 ### Added
-- **Portable artwork library + ES-DE artwork import.** Settings ▸ Artwork ▸ **Artwork Folder &
+- **Portable media library + ES-DE artwork import.** Settings ▸ Artwork ▸ **Artwork Folder &
   Import**: pick a folder (SAF, read+write grant — no all-files permission) where PFP keeps
-  artwork as a user-owned, reconnectable library (`pfp-artwork-library.json` manifest,
-  `games/{platform}/{slug}/` entries with per-asset `metadata.json` provenance). Drop another
+  artwork as a user-owned, reconnectable library in an **ES-DE-shaped layout** —
+  `{platform}/{covers,fanart,marquees,…}/{ROM Filename}.png` with a root
+  `pfp-media-library` manifest — so the folder is directly browsable and usable by other
+  frontends, no export step needed. Provenance (source, user-assigned, locked) lives in the
+  `artwork_records` table. Drop another
   launcher's media under `import/<Launcher>` (ES-DE `downloaded_media` in V1) and PFP detects it
   by structure, matches artwork to games in three passes (exact ROM filename → display title →
   tag-stripped title; ambiguities are reviewed, never guessed), shows a full preview (counts by
@@ -22,8 +25,10 @@ All notable changes to Play Field Portal are documented here. This project follo
   renderer, no external viewer): D-pad ◀▶ turns pages, ▲▼ scrolls, B closes; touch taps the
   screen edges to turn pages and drags to scroll. Every run is logged to a persistent
   **Import Report**.
-- **DB v25.** `games.artwork_key` (stable portable identity), `artwork_index` (rebuildable
-  lookup cache over the artwork folder), `artwork_import_reports`.
+- **DB v25/v26.** `games.artwork_key` (stable portable identity), `artwork_import_reports`,
+  and `artwork_records` — the rebuildable map over the artwork folder with per-asset
+  provenance (replaces the interim `artwork_index`). Existing per-game-folder libraries are
+  upgraded to the ES-DE layout in place (same-volume moves, lossless, automatic).
 - **Game metadata import from ES-DE `gamelist.xml`.** Drop ES-DE's `gamelists` folder alongside
   the media and the importer fills each matched game's description, developer, publisher,
   release year, genre and canonical title — fill-missing-only, never overwriting scraped or

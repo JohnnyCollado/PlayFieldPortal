@@ -5,7 +5,7 @@ import androidx.room.Room
 import com.playfieldportal.core.data.database.PFPDatabase
 import com.playfieldportal.core.data.database.dao.AppOverrideDao
 import com.playfieldportal.core.data.database.dao.ArtworkImportReportDao
-import com.playfieldportal.core.data.database.dao.ArtworkIndexDao
+import com.playfieldportal.core.data.database.dao.ArtworkRecordDao
 import com.playfieldportal.core.data.database.dao.BackupDao
 import com.playfieldportal.core.data.database.dao.CategoryDao
 import com.playfieldportal.core.data.database.dao.CollectionDao
@@ -81,6 +81,7 @@ object DatabaseModule {
             PFPDatabase.MIGRATION_22_23,
             PFPDatabase.MIGRATION_23_24,
             PFPDatabase.MIGRATION_24_25,
+            PFPDatabase.MIGRATION_25_26,
         )
         .build()
 
@@ -105,7 +106,7 @@ object DatabaseModule {
     @Provides fun providePhotoDao(db: PFPDatabase): PhotoDao = db.photoDao()
     @Provides fun provideScanTombstoneDao(db: PFPDatabase): ScanTombstoneDao = db.scanTombstoneDao()
     @Provides fun provideBackupDao(db: PFPDatabase): BackupDao = db.backupDao()
-    @Provides fun provideArtworkIndexDao(db: PFPDatabase): ArtworkIndexDao = db.artworkIndexDao()
+    @Provides fun provideArtworkRecordDao(db: PFPDatabase): ArtworkRecordDao = db.artworkRecordDao()
     @Provides fun provideArtworkImportReportDao(db: PFPDatabase): ArtworkImportReportDao = db.artworkImportReportDao()
 }
 

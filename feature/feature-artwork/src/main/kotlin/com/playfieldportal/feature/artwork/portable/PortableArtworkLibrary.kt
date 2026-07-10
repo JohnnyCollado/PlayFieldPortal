@@ -14,6 +14,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
@@ -72,20 +73,27 @@ class PortableArtworkLibrary @Inject constructor(
     suspend fun ensureLibrary(treeUri: Uri, appVersion: String): ArtworkLibraryManifest? = withContext(Dispatchers.IO) {
         readManifest(treeUri)?.let { return@withContext it }
         val rootDocId = DocumentsContract.getTreeDocumentId(treeUri)
-        ensureDir(treeUri, rootDocId, ArtworkLibraryManifest.DIR_GAMES, ArtworkLibraryManifest.DIR_GAMES)
-            ?: return@withContext null
+        // Layout v2 creates only the drop zone up front; platform/media dirs appear on demand.
         ensureDir(treeUri, rootDocId, ArtworkLibraryManifest.DIR_IMPORT, ArtworkLibraryManifest.DIR_IMPORT)
+            ?: return@withContext null
         val manifest = ArtworkLibraryManifest(
             libraryUuid = UUID.randomUUID().toString(),
             createdAt = System.currentTimeMillis(),
             appVersion = appVersion,
         )
-        val ok = writeText(
-            treeUri, rootDocId, ArtworkLibraryManifest.FILE_NAME, "application/json",
-            ArtworkLibraryManifest.encode(manifest),
-        )
+        val ok = writeManifest(treeUri, manifest)
         if (ok) manifest else null
     }
+
+    /** Rewrites the root manifest (once per operation — never per file). */
+    suspend fun writeManifest(treeUri: Uri, manifest: ArtworkLibraryManifest): Boolean =
+        withContext(Dispatchers.IO) {
+            val rootDocId = DocumentsContract.getTreeDocumentId(treeUri)
+            writeText(
+                treeUri, rootDocId, ArtworkLibraryManifest.FILE_NAME, "application/json",
+                ArtworkLibraryManifest.encode(manifest),
+            )
+        }
 
     // ── Import drop zone ──────────────────────────────────────────────────────
 
@@ -100,29 +108,29 @@ class PortableArtworkLibrary @Inject constructor(
     fun listChildren(treeUri: Uri, dirDocId: String): List<SafChild> =
         resolver.querySafChildren(treeUri, dirDocId)
 
-    // ── Entry writes ──────────────────────────────────────────────────────────
+    // ── Layout v2 writes: {platform}/{mediaDir}/{PortableName}.{ext} ─────────
 
-    /** Resolves (creating as needed) `games/{platformId}/{slug}`, cached per run. */
-    suspend fun entryDirDocId(treeUri: Uri, platformId: String, slug: String): String? =
+    /** Resolves (creating as needed) `{platformId}/{mediaDir}` for [kind], cached per run. */
+    suspend fun mediaDirDocId(treeUri: Uri, platformId: String, kind: ArtworkKind): String? =
         withContext(Dispatchers.IO) {
             val rootDocId = DocumentsContract.getTreeDocumentId(treeUri)
-            val gamesId = ensureDir(treeUri, rootDocId, ArtworkLibraryManifest.DIR_GAMES, "games")
+            val platformDirId = ensureDir(treeUri, rootDocId, platformId, platformId)
                 ?: return@withContext null
-            val platformDirId = ensureDir(treeUri, gamesId, platformId, "games/$platformId")
-                ?: return@withContext null
-            ensureDir(treeUri, platformDirId, slug, "games/$platformId/$slug")
+            val mediaDir = ArtworkPathResolver.mediaDirFor(kind)
+            ensureDir(treeUri, platformDirId, mediaDir, "$platformId/$mediaDir")
         }
 
     /**
-     * Brings [source] (a file inside this same tree's import zone) into [entryDirDocId] under
-     * [kind]'s fixed base name. Validates the payload header first; rejects non-images.
-     * [existingNames] is the entry directory's current child listing (one cursor, supplied by
-     * the caller) used to pre-delete a same-kind file so names never collide.
+     * Brings [source] (a file inside this same tree's import zone) into
+     * `{platformId}/{mediaDir}/` as `{portableName}.{ext}`. Validates the payload header first;
+     * rejects wrong types. A same-stem file already in the directory is pre-deleted so
+     * create/rename can never silently suffix the name ("Game (1).png" would be invisible).
      */
-    suspend fun saveIntoEntry(
+    suspend fun saveAsset(
         treeUri: Uri,
-        entryDirDocId: String,
+        platformId: String,
         kind: ArtworkKind,
+        portableName: String,
         source: SafChild,
         transfer: Transfer,
         existingNames: Map<String, SafChild>,
@@ -134,40 +142,110 @@ class PortableArtworkLibrary @Inject constructor(
         }
         val ext = if (kind == ArtworkKind.MANUAL) "pdf"    // header already verified as %PDF above
         else ImageFormat.sniff(header)?.ext ?: return@withContext null
-        val base = ArtworkFileNaming.baseName(kind)
-        val destName = "$base.$ext"
+        val destName = "$portableName.$ext"
 
-        // Pre-delete any existing asset of this kind (any extension) so create/rename can't
-        // silently suffix the name ("icon (1).jpg" would be invisible to the resolver).
+        val dirDocId = mediaDirDocId(treeUri, platformId, kind) ?: return@withContext null
         existingNames.values
-            .filter { !it.isDirectory && it.name.substringBeforeLast('.').equals(base, ignoreCase = true) }
+            .filter { !it.isDirectory && it.name.substringBeforeLast('.').equals(portableName, ignoreCase = true) }
             .forEach { runCatching { DocumentsContract.deleteDocument(resolver, it.uri) } }
 
-        val entryDirUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, entryDirDocId)
+        val dirUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, dirDocId)
         val movedOrCopied: Uri? = when (transfer) {
-            Transfer.MOVE -> moveInto(treeUri, source, entryDirUri, destName)
-            Transfer.COPY -> copyInto(source, entryDirUri, destName, ext)
+            Transfer.MOVE -> moveInto(treeUri, source, dirUri, destName)
+            Transfer.COPY -> copyInto(source, dirUri, destName, ext)
         }
-        movedOrCopied?.let {
-            SavedAsset(kind, it.toString(), destName, source.sizeBytes ?: 0L)
-        }
+        movedOrCopied?.let { SavedAsset(kind, it.toString(), destName, source.sizeBytes ?: 0L) }
     }
 
-    suspend fun readEntryMetadata(treeUri: Uri, entryDirDocId: String): ArtworkEntryMetadata? =
-        withContext(Dispatchers.IO) {
-            val child = findChild(treeUri, entryDirDocId, ArtworkEntryMetadata.FILE_NAME) ?: return@withContext null
-            readTextCapped(child.uri, ArtworkEntryMetadata.MAX_BYTES)?.let { ArtworkEntryMetadata.parse(it) }
-        }
-
-    suspend fun writeEntryMetadata(treeUri: Uri, entryDirDocId: String, metadata: ArtworkEntryMetadata): Boolean =
-        withContext(Dispatchers.IO) {
-            writeText(
-                treeUri, entryDirDocId, ArtworkEntryMetadata.FILE_NAME, "application/json",
-                ArtworkEntryMetadata.encode(metadata),
-            )
-        }
-
     fun clearDirCache() = dirCache.clear()
+
+    // ── v1 → v2 migration ─────────────────────────────────────────────────────
+
+    data class MigratedAsset(
+        val key: String,             // v1 artwork key from the entry's metadata.json
+        val platformId: String,
+        val kind: ArtworkKind,
+        val portableName: String,
+        val fileName: String,
+        val uriString: String,
+        val sizeBytes: Long,
+    )
+
+    data class MigrationResult(val assets: List<MigratedAsset>, val entriesSkipped: Int)
+
+    /**
+     * Relocates a v1 library (games/{platform}/{slug}/{kind}.{ext} + metadata.json) into the
+     * v2 layout. Same-tree moves — no bytes copied. Each entry's metadata.json supplies the
+     * platform and ROM filename (so entries under misnamed folders like "gba (1)" migrate
+     * correctly), then the sidecar and emptied directories are removed. Idempotent: a re-run
+     * finds no games/ folder and returns empty.
+     */
+    suspend fun migrateV1Library(treeUri: Uri): MigrationResult = withContext(Dispatchers.IO) {
+        val rootDocId = DocumentsContract.getTreeDocumentId(treeUri)
+        val gamesDir = findChild(treeUri, rootDocId, ArtworkLibraryManifest.DIR_GAMES)
+            ?.takeIf { it.isDirectory }
+            ?: return@withContext MigrationResult(emptyList(), 0)
+
+        val out = mutableListOf<MigratedAsset>()
+        var skipped = 0
+        for (platformDir in listChildren(treeUri, gamesDir.documentId).filter { it.isDirectory }) {
+            for (entryDir in listChildren(treeUri, platformDir.documentId).filter { it.isDirectory }) {
+                val meta = readV1EntryMetadata(treeUri, entryDir.documentId)
+                if (meta == null) { skipped++; continue }
+                val portableName = meta.romFileName?.let { PortableNameResolver.fromRomFileName(it) }
+                    ?: PortableNameResolver.fromTitle(meta.title.ifBlank { entryDir.name })
+
+                var movedAll = true
+                for (child in listChildren(treeUri, entryDir.documentId)) {
+                    if (child.isDirectory) { movedAll = false; continue }
+                    if (child.name.equals(ArtworkEntryMetadata.FILE_NAME, ignoreCase = true)) continue
+                    val base = child.name.substringBeforeLast('.').lowercase(Locale.US)
+                    val kind = ArtworkKind.entries.firstOrNull {
+                        ArtworkFileNaming.baseName(it).lowercase(Locale.US) == base
+                    }
+                    if (kind == null) { movedAll = false; continue }   // foreign file — leave it
+                    val ext = child.name.substringAfterLast('.', "").ifBlank { "jpg" }
+                    val destDirId = mediaDirDocId(treeUri, meta.platformId, kind)
+                    if (destDirId == null) { movedAll = false; continue }
+                    val destDirUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, destDirId)
+                    val moved = moveInto(treeUri, child, destDirUri, "$portableName.$ext")
+                    if (moved == null) { movedAll = false; continue }
+                    out += MigratedAsset(
+                        key = meta.key,
+                        platformId = meta.platformId,
+                        kind = kind,
+                        portableName = portableName,
+                        fileName = "$portableName.$ext",
+                        uriString = moved.toString(),
+                        sizeBytes = child.sizeBytes ?: 0L,
+                    )
+                }
+                if (movedAll) {
+                    findChild(treeUri, entryDir.documentId, ArtworkEntryMetadata.FILE_NAME)?.let {
+                        runCatching { DocumentsContract.deleteDocument(resolver, it.uri) }
+                    }
+                    deleteIfEmpty(treeUri, entryDir)
+                }
+            }
+            deleteIfEmpty(treeUri, platformDir)
+        }
+        deleteIfEmpty(treeUri, gamesDir)
+        Timber.i("v1→v2 migration: ${out.size} assets moved, $skipped entries skipped")
+        MigrationResult(out, skipped)
+    }
+
+    private fun readV1EntryMetadata(treeUri: Uri, entryDirDocId: String): ArtworkEntryMetadata? {
+        val child = findChild(treeUri, entryDirDocId, ArtworkEntryMetadata.FILE_NAME) ?: return null
+        return readTextCapped(child.uri, ArtworkEntryMetadata.MAX_BYTES)?.let { ArtworkEntryMetadata.parse(it) }
+    }
+
+    // Only ever deletes a directory verified empty by a fresh listing — SAF deleteDocument is
+    // recursive, so this guard is what makes cleanup safe.
+    private fun deleteIfEmpty(treeUri: Uri, dir: SafChild) {
+        if (listChildren(treeUri, dir.documentId).isEmpty()) {
+            runCatching { DocumentsContract.deleteDocument(resolver, dir.uri) }
+        }
+    }
 
     // ── Transfer internals ────────────────────────────────────────────────────
 

@@ -185,7 +185,7 @@ class GameDetailViewModel @Inject constructor(
     private val igdbApi: IgdbApi,
     private val theGamesDb: TheGamesDbApi,
     private val artworkStore: ArtworkStore,
-    private val artworkIndexDao: com.playfieldportal.core.data.database.dao.ArtworkIndexDao,
+    private val artworkRecordDao: com.playfieldportal.core.data.database.dao.ArtworkRecordDao,
     private val menuSound: com.playfieldportal.core.ui.sound.MenuSoundPlayer,
     private val discordPresence: com.playfieldportal.core.data.discord.DiscordPresenceController,
     private val launcherShortcutRepository: com.playfieldportal.feature.appbar.LauncherShortcutRepository,
@@ -803,12 +803,10 @@ class GameDetailViewModel @Inject constructor(
     private fun openManual() {
         val game = _uiState.value.game ?: return
         viewModelScope.launch {
-            // Internal store first (scraped manuals), then the portable artwork library
-            // (imported manuals live at games/{platform}/{slug}/manual.pdf, tracked by the index).
+            // Internal store first (scraped manuals), then the portable media library
+            // ({platform}/manuals/{name}.pdf, tracked by the game's artwork record).
             val path = artworkStore.find(game.id, ArtworkKind.MANUAL)
-                ?: game.artworkKey?.let { key ->
-                    artworkIndexDao.get(key, ArtworkKind.MANUAL.name)?.docUriOrPath
-                }
+                ?: artworkRecordDao.get(game.id, ArtworkKind.MANUAL.name)?.documentUri
             if (path == null) {
                 showActionMessage("No manual available for this game")
                 return@launch

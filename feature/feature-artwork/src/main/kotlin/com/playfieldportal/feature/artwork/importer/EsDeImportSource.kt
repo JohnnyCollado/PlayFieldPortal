@@ -6,6 +6,7 @@ import com.playfieldportal.core.data.platform.PlatformFolderHintResolver
 import com.playfieldportal.core.data.saf.SafChild
 import com.playfieldportal.core.data.saf.isIgnoredDir
 import com.playfieldportal.core.data.saf.querySafChildren
+import com.playfieldportal.feature.artwork.portable.ArtworkPathResolver
 import com.playfieldportal.feature.artwork.store.ArtworkKind
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -84,7 +85,8 @@ class EsDeImportSource @Inject constructor(
             for (system in source.systems) {
                 for (mediaDir in context.contentResolver.querySafChildren(treeUri, system.docId)) {
                     if (!mediaDir.isDirectory) continue
-                    val kind = MEDIA_TYPE_TO_KIND[mediaDir.name.lowercase(Locale.ROOT)] ?: continue
+                    val kind = ArtworkPathResolver.kindForMediaDir(mediaDir.name)
+                        ?.takeIf { it in ArtworkPathResolver.importedKinds } ?: continue
                     collectRecursively(treeUri, mediaDir.documentId, system.platformId, kind, candidates, depth = 0)
                 }
             }
@@ -143,7 +145,7 @@ class EsDeImportSource @Inject constructor(
         for (child in context.contentResolver.querySafChildren(treeUri, parentDocId)) {
             if (!child.isDirectory || child.isIgnoredDir()) continue
             val hasMediaDirs = context.contentResolver.querySafChildren(treeUri, child.documentId)
-                .any { it.isDirectory && it.name.lowercase(Locale.ROOT) in ALL_MEDIA_DIR_NAMES }
+                .any { it.isDirectory && ArtworkPathResolver.isMediaDirName(it.name) }
             if (!hasMediaDirs) continue
             val platformId = platformResolver.detectFromFolderName(child.name)
             if (platformId != null) {
@@ -191,21 +193,7 @@ class EsDeImportSource @Inject constructor(
 
     companion object {
         private const val MAX_DEPTH = 6
-
-        // Media types → PFP artwork slots. videos/3dboxes/backcovers are recognized as ES-DE
-        // structure (ALL_MEDIA_DIR_NAMES) but not imported yet.
-        val MEDIA_TYPE_TO_KIND: Map<String, ArtworkKind> = mapOf(
-            "covers"        to ArtworkKind.ICON,
-            "miximages"     to ArtworkKind.HERO,
-            "fanart"        to ArtworkKind.BACKGROUND,
-            "marquees"      to ArtworkKind.LOGO,
-            "screenshots"   to ArtworkKind.SCREENSHOT,
-            "titlescreens"  to ArtworkKind.TITLESCREEN,
-            "physicalmedia" to ArtworkKind.PHYSICAL_MEDIA,
-            "manuals"       to ArtworkKind.MANUAL,
-        )
-
-        private val ALL_MEDIA_DIR_NAMES: Set<String> =
-            MEDIA_TYPE_TO_KIND.keys + setOf("videos", "3dboxes", "backcovers")
+        // The media-dir ↔ kind mapping is single-sourced in ArtworkPathResolver — ES-DE's
+        // folder names ARE the library layout v2 names.
     }
 }

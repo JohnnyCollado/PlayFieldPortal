@@ -1,6 +1,8 @@
 # Portable Media Library — PFP Implementation Plan (mirrors the Feature Spec)
 
-Status: **DRAFT — awaiting approval. No code written for the pivot yet.**
+Status: **M-A IMPLEMENTED (July 2026)** — layout v2 + `artwork_records` (DB v26) +
+`PortableNameResolver`/`ArtworkPathResolver` + in-place v1 migrator + importer/relink/manual
+rewire landed on `artwork-refactor`. Next: M-B (scraper + manual picks write portable).
 Supersedes the folder-layout portions of `portable-artwork-plan.md`; everything else in that
 plan (ScreenScraper, storage seam, identity columns) stands.
 
