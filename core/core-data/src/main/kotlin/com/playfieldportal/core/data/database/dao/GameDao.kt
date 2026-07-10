@@ -152,7 +152,12 @@ interface GameDao {
             hero_uri        = COALESCE(:heroUri,      hero_uri),
             logo_uri        = COALESCE(:logoUri,      logo_uri),
             icon_uri        = COALESCE(:iconUri,      icon_uri),
-            scraped_title   = COALESCE(:scrapedTitle, scraped_title)
+            scraped_title   = COALESCE(:scrapedTitle, scraped_title),
+            ss_id           = COALESCE(:ssId,         ss_id),
+            tgdb_id         = COALESCE(:tgdbId,       tgdb_id),
+            igdb_id         = COALESCE(:igdbId,       igdb_id),
+            steam_grid_db_id = COALESCE(:steamGridDbId, steam_grid_db_id),
+            rom_crc32       = COALESCE(:romCrc32,     rom_crc32)
         WHERE id = :id
     """)
     suspend fun updateMetadata(
@@ -167,6 +172,11 @@ interface GameDao {
         logoUri: String?      = null,
         iconUri: String?      = null,
         scrapedTitle: String? = null,
+        ssId: Long?           = null,
+        tgdbId: Long?         = null,
+        igdbId: Long?         = null,
+        steamGridDbId: Long?  = null,
+        romCrc32: String?     = null,
     )
 
     @Query("UPDATE games SET scraped_title = :scrapedTitle WHERE id = :id")

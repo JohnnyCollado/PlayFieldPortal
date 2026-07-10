@@ -65,6 +65,23 @@ data class GameEntity(
     @ColumnInfo(name = "steam_grid_db_id")
     val steamGridDbId: Long?,
 
+    // Scraper database ids, persisted so re-scrapes can fetch by id (no re-matching) and so a
+    // portable artwork library can reconnect by id after a device migration.
+    @ColumnInfo(name = "ss_id")
+    val ssId: Long? = null,
+
+    @ColumnInfo(name = "tgdb_id")
+    val tgdbId: Long? = null,
+
+    @ColumnInfo(name = "igdb_id")
+    val igdbId: Long? = null,
+
+    // Streamed CRC-32 of the ROM payload (zip-inner for zipped cartridge ROMs), uppercase hex.
+    // Computed opportunistically during ScreenScraper lookups; doubles as portable-identity
+    // evidence. Null when the ROM is missing, too large to hash, or hasn't been scraped yet.
+    @ColumnInfo(name = "rom_crc32")
+    val romCrc32: String? = null,
+
     @ColumnInfo(name = "is_favorite")
     val isFavorite: Boolean = false,
 
@@ -127,6 +144,10 @@ fun GameEntity.toDomain() = Game(
     releaseYear         = releaseYear,
     genre               = genre,
     steamGridDbId       = steamGridDbId,
+    ssId                = ssId,
+    tgdbId              = tgdbId,
+    igdbId              = igdbId,
+    romCrc32            = romCrc32,
     isFavorite          = isFavorite,
     favoriteSortOrder   = favoriteSortOrder,
     totalPlayTimeMillis = totalPlayTimeMillis,
@@ -158,6 +179,10 @@ fun Game.toEntity() = GameEntity(
     releaseYear         = releaseYear,
     genre               = genre,
     steamGridDbId       = steamGridDbId,
+    ssId                = ssId,
+    tgdbId              = tgdbId,
+    igdbId              = igdbId,
+    romCrc32            = romCrc32,
     isFavorite          = isFavorite,
     favoriteSortOrder   = favoriteSortOrder,
     totalPlayTimeMillis = totalPlayTimeMillis,

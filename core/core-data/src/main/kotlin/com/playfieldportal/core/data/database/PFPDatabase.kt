@@ -78,7 +78,7 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         PhotoEntity::class,
         ScanTombstoneEntity::class,
     ],
-    version = 23,
+    version = 24,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -624,6 +624,18 @@ abstract class PFPDatabase : RoomDatabase() {
                       AND supported_extensions != '' AND supported_extensions NOT LIKE '%zip%'
                     """.trimIndent()
                 )
+            }
+        }
+
+        // Scraper identity columns: persisted database ids let re-scrapes fetch by id instead of
+        // re-matching by name, and rom_crc32 (streamed hash computed during ScreenScraper lookups)
+        // is the portable-artwork matcher's strongest reconnect evidence. All nullable/additive.
+        val MIGRATION_23_24 = object : Migration(23, 24) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE games ADD COLUMN ss_id INTEGER")
+                db.execSQL("ALTER TABLE games ADD COLUMN tgdb_id INTEGER")
+                db.execSQL("ALTER TABLE games ADD COLUMN igdb_id INTEGER")
+                db.execSQL("ALTER TABLE games ADD COLUMN rom_crc32 TEXT")
             }
         }
     }
