@@ -75,6 +75,10 @@ class ArtworkSettingsViewModelTest {
         scrapePreferences   = scrapePreferences,
         igdbApi             = igdbApi,
         screenScraperApi    = screenScraperApi,
+        // No folder configured in tests → the grant-dead banner check is a no-op.
+        artworkFolderRepository = mockk(relaxed = true) {
+            coEvery { getTreeUri() } returns null
+        },
     )
 
     // uiState is a WhileSubscribed StateFlow, so it only reflects upstream (the credential flows +

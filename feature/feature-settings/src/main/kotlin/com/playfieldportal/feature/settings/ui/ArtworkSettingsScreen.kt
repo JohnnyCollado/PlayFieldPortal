@@ -66,8 +66,10 @@ fun ArtworkSettingsScreen(
             SettingsGroup("Artwork Library")
 
             SettingsRow(
-                label    = "Artwork Folder & Import",
-                sublabel = "Choose where artwork is stored and import existing artwork from ES-DE",
+                label    = if (state.artworkFolderGrantDead) "Artwork Folder & Import  ⚠" else "Artwork Folder & Import",
+                sublabel = if (state.artworkFolderGrantDead)
+                    "Access to your artwork folder was lost — open to re-link it"
+                else "Choose where artwork is stored and import existing artwork from ES-DE",
                 onClick  = { showImport = true },
             )
 

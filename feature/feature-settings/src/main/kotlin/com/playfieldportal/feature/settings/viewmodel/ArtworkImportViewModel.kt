@@ -103,9 +103,21 @@ class ArtworkImportViewModel @Inject constructor(
                 )
                 return@launch
             }
+            // Zero-copy adoption: any ES-DE-shaped media already in the folder (a PFP library
+            // OR a plain downloaded_media tree) is linked to games right now — nothing copied.
+            val scan = runCatching { importManager.relinkLibrary() }.getOrNull()
             _uiState.value = _uiState.value.copy(
-                notice = if (result.existingLibrary) "Existing PFP artwork library reconnected."
-                else "Artwork library created — place other launchers' media under import/.",
+                notice = buildString {
+                    append(
+                        if (result.existingLibrary) "Existing PFP artwork library reconnected."
+                        else "Artwork library created.",
+                    )
+                    if (scan != null && scan.gamesLinked > 0) {
+                        append(" ${scan.gamesLinked} games linked from ${scan.entriesScanned} files already in the folder.")
+                    } else if (!result.existingLibrary) {
+                        append(" Place other launchers' media under import/.")
+                    }
+                },
                 plan = null,
             )
         }
@@ -229,6 +241,13 @@ class ArtworkImportViewModel @Inject constructor(
         viewModelScope.launch { importManager.clearReports() }
     }
 
+    fun startExport(destUri: Uri) {
+        importManager.startExport(destUri)
+        _uiState.value = _uiState.value.copy(
+            notice = "Export started — progress in the notification; the result lands under Import Report.",
+        )
+    }
+
     fun relinkLibrary() {
         if (_uiState.value.relinking) return
         _uiState.value = _uiState.value.copy(relinking = true)
@@ -237,14 +256,19 @@ class ArtworkImportViewModel @Inject constructor(
                 .onSuccess { result ->
                     _uiState.value = _uiState.value.copy(
                         relinking = false,
-                        notice = if (result == null) "No artwork folder linked."
-                        else "Relinked ${result.gamesLinked} games from ${result.entriesScanned} entries" +
-                            (if (result.orphanEntries > 0) " · ${result.orphanEntries} without a matching game" else ""),
+                        notice = if (result == null) "No artwork folder linked (or access was lost)."
+                        else buildString {
+                            append("Scan: ${result.entriesScanned} files · ${result.gamesLinked} games linked")
+                            if (result.missingFiles > 0) append(" · ${result.missingFiles} missing removed")
+                            if (result.changedFiles > 0) append(" · ${result.changedFiles} changed")
+                            if (result.duplicateNames > 0) append(" · ${result.duplicateNames} duplicate names")
+                            if (result.orphanEntries > 0) append(" · ${result.orphanEntries} unmatched")
+                        },
                     )
                 }
                 .onFailure {
-                    Timber.e(it, "Relink failed")
-                    _uiState.value = _uiState.value.copy(relinking = false, error = "Relink failed — see logs.")
+                    Timber.e(it, "Library scan failed")
+                    _uiState.value = _uiState.value.copy(relinking = false, error = "Library scan failed — see logs.")
                 }
         }
     }

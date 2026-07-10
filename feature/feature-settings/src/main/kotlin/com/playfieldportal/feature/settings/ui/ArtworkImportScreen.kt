@@ -40,6 +40,10 @@ fun ArtworkImportScreen(
         ActivityResultContracts.OpenDocumentTree()
     ) { uri: Uri? -> uri?.let { viewModel.onFolderPicked(it) } }
 
+    val exportPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri: Uri? -> uri?.let { viewModel.startExport(it) } }
+
     SettingsScaffold(
         title    = "Settings",
         subtitle = "Artwork Folder & Import",
@@ -109,10 +113,19 @@ fun ArtworkImportScreen(
                 )
 
                 SettingsRow(
-                    label    = if (state.relinking) "Relinking…" else "Relink Library",
-                    sublabel = "Reconnect artwork already in the library folder to your games — " +
-                        "use after a reinstall or if artwork went missing",
+                    label    = if (state.relinking) "Scanning Library…" else "Scan & Relink Library",
+                    sublabel = "Reconnects artwork in the folder to your games, refreshes moved or " +
+                        "changed files, and cleans up references to deleted ones",
                     onClick  = if (state.relinking || state.importRunning) null else ({ viewModel.relinkLibrary() }),
+                )
+
+                SettingsGroup("Export")
+
+                SettingsRow(
+                    label    = "Export for ES-DE",
+                    sublabel = "Copies your artwork into a folder you pick (e.g. ES-DE's " +
+                        "downloaded_media) — incremental, your library is never modified",
+                    onClick  = if (state.importRunning) null else ({ exportPicker.launch(null) }),
                 )
             }
 

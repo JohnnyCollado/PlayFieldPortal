@@ -210,6 +210,44 @@ class PortableArtworkLibrary @Inject constructor(
 
     fun clearDirCache() = dirCache.clear()
 
+    /**
+     * Resolves (creating as needed) a directory path under ANY granted tree — used by the
+     * exporter to build `{esDeName}/{mediaDir}/` in the user-picked destination. Same cached,
+     * serialized find-or-create as library writes.
+     */
+    suspend fun ensureDirPath(treeUri: Uri, segments: List<String>): String? = withContext(Dispatchers.IO) {
+        var parent = DocumentsContract.getTreeDocumentId(treeUri)
+        var path = ""
+        for (segment in segments) {
+            path = if (path.isEmpty()) segment else "$path/$segment"
+            parent = ensureDir(treeUri, parent, segment, path) ?: return@withContext null
+        }
+        parent
+    }
+
+    /** Kernel copy of one document into [destDirDocId] under [destName]; skips nothing itself. */
+    suspend fun copyDocument(
+        sourceUri: Uri,
+        destTreeUri: Uri,
+        destDirDocId: String,
+        destName: String,
+        mime: String,
+    ): Boolean = withContext(Dispatchers.IO) {
+        val destDirUri = DocumentsContract.buildDocumentUriUsingTree(destTreeUri, destDirDocId)
+        val dest = runCatching { DocumentsContract.createDocument(resolver, destDirUri, mime, destName) }
+            .getOrNull() ?: return@withContext false
+        val ok = runCatching {
+            resolver.openFileDescriptor(sourceUri, "r")?.use { input ->
+                resolver.openFileDescriptor(dest, "w")?.use { output ->
+                    FileUtils.copy(input.fileDescriptor, output.fileDescriptor)
+                    true
+                }
+            } ?: false
+        }.onFailure { Timber.w(it, "Export copy failed for $destName") }.getOrDefault(false)
+        if (!ok) runCatching { DocumentsContract.deleteDocument(resolver, dest) }
+        ok
+    }
+
     // ── v1 → v2 migration ─────────────────────────────────────────────────────
 
     data class MigratedAsset(

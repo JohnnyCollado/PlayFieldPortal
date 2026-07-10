@@ -42,8 +42,16 @@ All notable changes to Play Field Portal are documented here. This project follo
   library asset; hand-picked artwork is marked user-assigned + locked so nothing automatic
   touches it. "Clear All Artwork" clears app state only — files in the user's folder are never
   deleted (Relink restores them).
-- **Relink Library** (Artwork Folder & Import) — reconnects artwork already in the library
-  folder to your games from each entry's `metadata.json`, after a reinstall or lost links.
+- **Scan & Relink Library** (Artwork Folder & Import) — one pass that reconnects folder
+  artwork to games, refreshes moved/changed files, removes references to deleted ones
+  (only ever with live folder access — a disconnected folder never destroys state), and
+  reports duplicate names. Linking a folder that already contains ES-DE-shaped media —
+  a previous PFP library or a plain `downloaded_media` tree — **adopts it in place**, zero
+  bytes copied. A lost folder grant shows a warning on the Artwork settings row.
+- **Export for ES-DE** — copies the library's standard media folders into any folder you pick
+  (e.g. an ES-DE install's `downloaded_media`), incremental (existing files skipped), with
+  notification progress and a report entry. The live library is never modified; `pfp/`-private
+  art is never exported.
 - Game Detail shows publisher and total play time; long descriptions are reachable by D-pad
   (DOWN past the buttons scrolls the page) as well as touch.
 

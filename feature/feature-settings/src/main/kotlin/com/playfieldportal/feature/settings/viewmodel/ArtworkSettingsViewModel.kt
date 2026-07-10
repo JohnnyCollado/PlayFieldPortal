@@ -52,6 +52,9 @@ data class ArtworkSettingsUiState(
     val downloadManuals: Boolean = false,
     val downloadVideoSnaps: Boolean = false,
     val preferSteamGridDbHeroes: Boolean = false,
+    // Portable artwork folder is configured but its access grant died (SD removed, permission
+    // revoked) — surfaces a warning on the Artwork Folder & Import row.
+    val artworkFolderGrantDead: Boolean = false,
 )
 
 @HiltViewModel
@@ -62,9 +65,20 @@ class ArtworkSettingsViewModel @Inject constructor(
     private val scrapePreferences: ArtworkScrapePreferences,
     private val igdbApi: IgdbApi,
     private val screenScraperApi: ScreenScraperApi,
+    private val artworkFolderRepository: com.playfieldportal.core.data.repository.ArtworkFolderRepository,
 ) : ViewModel() {
 
     private val _extra = MutableStateFlow(ArtworkSettingsUiState())
+
+    init {
+        // Startup grant check (§17): a configured folder whose grant died gets a visible
+        // warning instead of silently broken artwork.
+        viewModelScope.launch {
+            val configured = artworkFolderRepository.getTreeUri() != null
+            val dead = configured && !artworkFolderRepository.hasLiveGrant()
+            _extra.update { it.copy(artworkFolderGrantDead = dead) }
+        }
+    }
 
     val uiState: StateFlow<ArtworkSettingsUiState> = combine(
         sgdbKeyProvider.apiKeyFlow,

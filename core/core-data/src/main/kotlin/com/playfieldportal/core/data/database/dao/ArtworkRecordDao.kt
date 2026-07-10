@@ -31,6 +31,12 @@ interface ArtworkRecordDao {
     """)
     suspend fun findNameCollisions(platformId: String, type: String, portableName: String, gameId: Long): List<ArtworkRecordEntity>
 
+    @Query("SELECT * FROM artwork_records")
+    suspend fun getAll(): List<ArtworkRecordEntity>
+
+    @Query("DELETE FROM artwork_records WHERE id = :id")
+    suspend fun deleteById(id: Long)
+
     @Query("SELECT COUNT(*) FROM artwork_records")
     suspend fun count(): Int
 
