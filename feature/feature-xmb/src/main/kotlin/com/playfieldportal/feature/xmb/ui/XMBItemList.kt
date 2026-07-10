@@ -150,7 +150,7 @@ private const val MEMORY_CARD_DEFAULT_ART = "file:///android_asset/systems/physi
 // Left inset of the game-card column, measured from the flyout's left edge (which the caller has
 // already shifted under the caticon). Clears the memory-card icon column on the left so the game
 // cards sit to its right, with room for the ◀ that trails the active memory card.
-private val DRILL_GAME_COLUMN_LEFT = 150.dp
+private val DRILL_GAME_COLUMN_LEFT = 300.dp
 
 // ── Two-pane drill flyout (PSP/XMB style) ────────────────────────────────────
 //
@@ -190,6 +190,8 @@ fun XmbDrillFlyout(
     Box(modifier = modifier.fillMaxSize()) {
         // LEFT: the memory-card cross — the main XMB list itself, icon-only, with a ◀ after the
         // active (drilled-into) card. Static while navigating games.
+        // Labels stay on (every XMB item is named); the column is width-capped so long card
+        // names ellipsize instead of running underneath the game column to the right.
         XMBItemList(
             items = siblings,
             selectedIndex = siblingIndex,
@@ -198,9 +200,8 @@ fun XmbDrillFlyout(
             iconStyle = iconStyle,
             barTopY = barTopY,
             belowTopY = belowTopY,
-            forceHideText = true,
             drillCursorOnSelected = true,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxHeight().width(DRILL_GAME_COLUMN_LEFT - 10.dp),
         )
 
         // RIGHT: the game cards — a single continuous column laid out (not scrolled) so the active
@@ -456,10 +457,6 @@ fun XMBItemList(
     belowTopY: Dp = 152.dp,
     // When false, rows render text-only (no game-icon artwork).
     showIcons: Boolean = true,
-    // When true, EVERY row is icon-only (labels suppressed) — used by the flyout's memory-card column.
-    forceHideText: Boolean = false,
-    // When true, EVERY row shows its label — used by the flyout's game column so all cards are named.
-    forceShowText: Boolean = false,
     // When true, the selected row gets a ◀ drill cursor pinned directly to its right.
     drillCursorOnSelected: Boolean = false,
     // How far the dissolving previous item rises above the bar, in row heights (theme layout spec).
@@ -493,10 +490,9 @@ fun XMBItemList(
                     XmbVerticalListRow(
                         item = items[i],
                         isSelected = i == selectedIndex,
-                        // The real PSP XMB labels EVERY first-level item (selected bright, the rest
-                        // dimmed) — not just the selected row and its successor. Show text on all
-                        // rows unless the caller force-hides it (the flyout's icon-only card column).
-                        showText = forceShowText || !forceHideText,
+                        // The real PSP XMB labels EVERY first-level item (selected bright, the
+                        // rest dimmed) — labels always show so any screen size reads at a glance.
+                        showText = true,
                         iconStyle = iconStyle,
                         onClick = { onItemSelected(i) },
                         onLongPress = { onItemLongPress(i) },
@@ -529,9 +525,9 @@ fun XMBItemList(
                 XmbVerticalListRow(
                     item = items[selectedIndex - 1],
                     isSelected = false,
-                    // Show the previous item's label too, so its name rises up through the crossbar
-                    // with the icon (unless labels are force-hidden, e.g. the flyout's card column).
-                    showText = forceShowText || !forceHideText,
+                    // Show the previous item's label too, so its name rises up through the
+                    // crossbar with the icon.
+                    showText = true,
                     iconStyle = iconStyle,
                     onClick = { onItemSelected(selectedIndex - 1) },
                     onLongPress = { onItemLongPress(selectedIndex - 1) },

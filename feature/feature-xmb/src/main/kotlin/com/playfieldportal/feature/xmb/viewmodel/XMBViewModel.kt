@@ -482,6 +482,9 @@ data class XMBUiState(
     // Per-theme XMB geometry (crossbar line, headroom, previous-item rise). DEFAULT holds the
     // pixel-tuned authentic-PSP values; imported themes may override (theme-kit XmbLayoutSpec).
     val layoutSpec: com.playfieldportal.themekit.XmbLayoutSpec = com.playfieldportal.themekit.XmbLayoutSpec.DEFAULT,
+    // Whole-launcher UI scale (Display ▸ Scale & Layout) — applied as a density multiplier at
+    // the shell root so every screen scales together to fit different devices.
+    val xmbScale: Float = 1f,
 ) {
     // True when the user has drilled into a sub-item on the home screen (a Games platform/collection/
     // All Games/Favorites, or a Music sub-view). Drives the floating Back button and locks Left/Right
@@ -850,6 +853,10 @@ class XMBViewModel @Inject constructor(
         val iconColor: Long?,
         val iconsStamp: Long?,
         val layoutJson: String?,
+        // Display ▸ Scale & Layout: whole-UI scale factor and the user's crossbar-position
+        // override (null = keep the theme's / default bar position).
+        val xmbScale: Float?,
+        val barTopOverride: Float?,
     )
 
     private fun observeColorScheme() {
@@ -862,10 +869,12 @@ class XMBViewModel @Inject constructor(
                         iconColor = prefs[KEY_ICON_COLOR],
                         iconsStamp = prefs[com.playfieldportal.core.data.repository.PfpThemeStore.KEY_THEME_ICONS_STAMP],
                         layoutJson = prefs[com.playfieldportal.core.data.repository.PfpThemeStore.KEY_THEME_LAYOUT],
+                        xmbScale = prefs[KEY_XMB_SCALE],
+                        barTopOverride = prefs[KEY_BAR_TOP_FRACTION],
                     )
                 }
                 .distinctUntilChanged()
-                .collect { (name, accentOverride, iconColorArgb, iconsStamp, layoutJson) ->
+                .collect { (name, accentOverride, iconColorArgb, iconsStamp, layoutJson, xmbScale, barTopOverride) ->
                     val base = if (accentOverride != null) {
                         // One accent drives everything: wave color + re-derived gradient.
                         DefaultPFPColors.withWaveTint(
@@ -886,12 +895,23 @@ class XMBViewModel @Inject constructor(
                     // has icons; the stamp value only bumps to trigger reloads).
                     val iconOverrides = if (iconsStamp != null) loadThemeIconOverrides() else emptyMap()
                     // Per-theme XMB geometry — lenient + sanitized, so a mangled pref can
-                    // never wedge the crossbar offscreen.
-                    val layoutSpec = com.playfieldportal.themekit.XmbLayoutSpecCodec.decode(layoutJson)
+                    // never wedge the crossbar offscreen. The user's Display ▸ bar-position
+                    // override wins over the theme's value; the codec clamp still applies.
+                    val themeSpec = com.playfieldportal.themekit.XmbLayoutSpecCodec.decode(layoutJson)
                         ?: com.playfieldportal.themekit.XmbLayoutSpec.DEFAULT
+                    val layoutSpec = if (barTopOverride != null) {
+                        com.playfieldportal.themekit.XmbLayoutSpecCodec.sanitize(
+                            themeSpec.copy(barTopFraction = barTopOverride)
+                        )
+                    } else themeSpec
                     // One theme color across the whole XMB (PSP-authentic) — no per-category tint.
                     _uiState.update {
-                        it.copy(themeColors = baseThemeColors, iconOverrides = iconOverrides, layoutSpec = layoutSpec)
+                        it.copy(
+                            themeColors = baseThemeColors,
+                            iconOverrides = iconOverrides,
+                            layoutSpec = layoutSpec,
+                            xmbScale = (xmbScale ?: 1f).coerceIn(0.75f, 1.3f),
+                        )
                     }
                 }
         }
@@ -6175,6 +6195,9 @@ class XMBViewModel @Inject constructor(
         private val KEY_ACCENT_OVERRIDE   = longPreferencesKey("theme_accent_override")
         // Unified icon tint (ARGB); unset = white = the icon art's native color.
         private val KEY_ICON_COLOR        = longPreferencesKey("theme_icon_color")
+        // Display ▸ Scale & Layout — must match DisplaySettingsViewModel (shared prefs contract).
+        private val KEY_XMB_SCALE         = androidx.datastore.preferences.core.floatPreferencesKey("display_xmb_scale")
+        private val KEY_BAR_TOP_FRACTION  = androidx.datastore.preferences.core.floatPreferencesKey("display_bar_top_fraction")
         private val KEY_SETUP_COMPLETE    = booleanPreferencesKey("library_setup_complete")
         private val KEY_CUSTOM_WALLPAPER  = stringPreferencesKey("display_custom_wallpaper")
         private val KEY_MENU_SOUND_ENABLED = booleanPreferencesKey("sound_menu_enabled")

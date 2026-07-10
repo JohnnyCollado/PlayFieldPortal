@@ -17,6 +17,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -24,9 +25,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.feature.settings.viewmodel.DisplaySettingsViewModel
+import kotlin.math.roundToInt
 
 @Composable
 fun DisplaySettingsScreen(
@@ -48,11 +52,27 @@ fun DisplaySettingsScreen(
         ActivityResultContracts.OpenDocument()
     ) { uri -> uri?.let { viewModel.onWallpaperPicked(it) } }
 
+    // Which Scale & Layout row holds controller focus — Left/Right adjust it in place.
+    var scaleRowFocused by remember { mutableStateOf(false) }
+    var barRowFocused by remember { mutableStateOf(false) }
+
     SettingsScaffold(
         title    = "Settings",
         subtitle = "Display",
         onBack   = onBack,
         modifier = modifier,
+        onInterceptAction = { action ->
+            val dir = when (action) {
+                GamepadAction.NAVIGATE_LEFT  -> -1
+                GamepadAction.NAVIGATE_RIGHT -> +1
+                else -> 0
+            }
+            when {
+                dir != 0 && scaleRowFocused -> { viewModel.adjustXmbScale(dir); true }
+                dir != 0 && barRowFocused   -> { viewModel.adjustBarTop(dir); true }
+                else -> false
+            }
+        },
     ) {
         Column(
             modifier = Modifier
@@ -107,6 +127,37 @@ fun DisplaySettingsScreen(
                     onClick  = { viewModel.cycleWaveStyle() },
                 )
             }
+
+            SettingsGroup("Scale & Layout")
+            Text(
+                text     = "Sizes the launcher to fit your device. Scale applies to the whole UI; " +
+                    "Bar Height moves the XMB crossbar up or down. ◄ ► adjust, A steps.",
+                color    = SettingsSubtext,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(horizontal = 48.dp, vertical = 4.dp),
+            )
+
+            SettingsValueRow(
+                label    = "XMB Scale",
+                sublabel = "Whole-interface size — applies immediately",
+                value    = "${(state.xmbScale * 100).roundToInt()}%",
+                onFocusChangedExternal = { scaleRowFocused = it },
+                onClick  = { viewModel.cycleXmbScale() },
+            )
+
+            SettingsValueRow(
+                label    = "Bar Height",
+                sublabel = "Vertical position of the XMB crossbar",
+                value    = "${(state.barTopFraction * 100).roundToInt()}%",
+                onFocusChangedExternal = { barRowFocused = it },
+                onClick  = { viewModel.cycleBarTop() },
+            )
+
+            SettingsRow(
+                label    = "Reset Scale & Layout",
+                sublabel = "Back to 100% scale and the default bar position",
+                onClick  = { viewModel.resetScaleAndLayout() },
+            )
 
             SettingsGroup("Boot Sequence")
 

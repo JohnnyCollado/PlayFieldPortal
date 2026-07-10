@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -37,6 +38,19 @@ private val KEY_TOUCH_SENSITIVITY  = stringPreferencesKey("interface_touch_sensi
 internal val KEY_CUSTOM_WALLPAPER  = stringPreferencesKey("display_custom_wallpaper")
 // Must match XMBViewModel.KEY_MENU_SOUND_ENABLED — both read/write this same pref.
 private val KEY_MENU_SOUND         = booleanPreferencesKey("sound_menu_enabled")
+// Scale & Layout — must match XMBViewModel (shared prefs contract). Scale multiplies the
+// launcher's density (75%–130%); bar fraction is the crossbar top as a fraction of height.
+private val KEY_XMB_SCALE          = floatPreferencesKey("display_xmb_scale")
+private val KEY_BAR_TOP_FRACTION   = floatPreferencesKey("display_bar_top_fraction")
+
+const val XMB_SCALE_MIN = 0.75f
+const val XMB_SCALE_MAX = 1.30f
+const val XMB_SCALE_STEP = 0.05f
+// Crossbar position range mirrors XmbLayoutSpecCodec's clamp (5%–45% of screen height).
+const val BAR_TOP_MIN = 0.05f
+const val BAR_TOP_MAX = 0.45f
+const val BAR_TOP_STEP = 0.02f
+const val BAR_TOP_DEFAULT = 0.11f
 
 private val ICON_STYLE_LABELS = mapOf(
     "PSP_RECTANGLE" to "PSP Rectangle",
@@ -77,6 +91,9 @@ data class DisplaySettingsUiState(
     val touchSensitivity: TouchSensitivity = TouchSensitivity.NORMAL,
     val menuSoundEnabled: Boolean = true,
     val customWallpaperPath: String? = null,
+    // Scale & Layout
+    val xmbScale: Float = 1f,
+    val barTopFraction: Float = BAR_TOP_DEFAULT,
     val wallpaperMessage: String? = null,
     val wallpaperImporting: Boolean = false,
     val wallpaperPreviewVisible: Boolean = false,
@@ -112,6 +129,8 @@ class DisplaySettingsViewModel @Inject constructor(
             touchSensitivity     = TouchSensitivity.fromName(prefs[KEY_TOUCH_SENSITIVITY]),
             menuSoundEnabled     = prefs[KEY_MENU_SOUND]      ?: true,
             customWallpaperPath  = prefs[KEY_CUSTOM_WALLPAPER],
+            xmbScale             = (prefs[KEY_XMB_SCALE] ?: 1f).coerceIn(XMB_SCALE_MIN, XMB_SCALE_MAX),
+            barTopFraction       = (prefs[KEY_BAR_TOP_FRACTION] ?: BAR_TOP_DEFAULT).coerceIn(BAR_TOP_MIN, BAR_TOP_MAX),
             wallpaperMessage     = msg,
             wallpaperImporting   = importing,
             wallpaperPreviewVisible = previewVisible,
@@ -157,6 +176,41 @@ class DisplaySettingsViewModel @Inject constructor(
 
     fun touchSensitivityLabel(): String =
         TOUCH_SENSITIVITY_LABELS[uiState.value.touchSensitivity] ?: uiState.value.touchSensitivity.name
+
+    // ── Scale & Layout ────────────────────────────────────────────────────────
+
+    /** Steps the whole-launcher scale by [direction] (±1); clamped, applied live. */
+    fun adjustXmbScale(direction: Int) {
+        val next = (uiState.value.xmbScale + direction * XMB_SCALE_STEP)
+            .coerceIn(XMB_SCALE_MIN, XMB_SCALE_MAX)
+        save { if (next == 1f) it.remove(KEY_XMB_SCALE) else it[KEY_XMB_SCALE] = next }
+    }
+
+    /** Click-to-cycle fallback for touch: wraps from max back to min. */
+    fun cycleXmbScale() {
+        val cur = uiState.value.xmbScale
+        val next = if (cur + XMB_SCALE_STEP > XMB_SCALE_MAX + 0.001f) XMB_SCALE_MIN
+                   else cur + XMB_SCALE_STEP
+        save { if (next == 1f) it.remove(KEY_XMB_SCALE) else it[KEY_XMB_SCALE] = next }
+    }
+
+    /** Steps the crossbar's vertical position by [direction] (±1); clamped, applied live. */
+    fun adjustBarTop(direction: Int) {
+        val next = (uiState.value.barTopFraction + direction * BAR_TOP_STEP)
+            .coerceIn(BAR_TOP_MIN, BAR_TOP_MAX)
+        save { if (next == BAR_TOP_DEFAULT) it.remove(KEY_BAR_TOP_FRACTION) else it[KEY_BAR_TOP_FRACTION] = next }
+    }
+
+    fun cycleBarTop() {
+        val cur = uiState.value.barTopFraction
+        val next = if (cur + BAR_TOP_STEP > BAR_TOP_MAX + 0.001f) BAR_TOP_MIN else cur + BAR_TOP_STEP
+        save { if (next == BAR_TOP_DEFAULT) it.remove(KEY_BAR_TOP_FRACTION) else it[KEY_BAR_TOP_FRACTION] = next }
+    }
+
+    fun resetScaleAndLayout() = save {
+        it.remove(KEY_XMB_SCALE)
+        it.remove(KEY_BAR_TOP_FRACTION)
+    }
 
     // ── Wallpaper ─────────────────────────────────────────────────────────────
 

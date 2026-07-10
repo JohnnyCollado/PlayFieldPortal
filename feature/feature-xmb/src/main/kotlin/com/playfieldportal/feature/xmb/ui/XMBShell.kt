@@ -131,6 +131,17 @@ fun XMBShellContainer(
         }
     }
 
+    // Display ▸ Scale: one density multiplier over the whole launcher UI (XMB, settings,
+    // overlays alike) so the interface can be sized to fit different screens. Font scale
+    // rides the same factor via density, keeping text and layout proportional.
+    val baseDensity = androidx.compose.ui.platform.LocalDensity.current
+    androidx.compose.runtime.CompositionLocalProvider(
+        androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(
+            density = baseDensity.density * uiState.xmbScale,
+            fontScale = baseDensity.fontScale,
+        ),
+    ) {
+
     XMBShell(
         uiState = uiState,
         onCategorySelected = viewModel::onCategoryTapped,
@@ -194,6 +205,8 @@ fun XMBShellContainer(
         onMusicPlayerBack = viewModel::closeMusicPlayer,
         onOpenAndroidLibraryPicker = viewModel::openAndroidLibraryPicker,
     )
+
+    }  // scale CompositionLocalProvider
 }
 
 @OptIn(UnstableApi::class)
