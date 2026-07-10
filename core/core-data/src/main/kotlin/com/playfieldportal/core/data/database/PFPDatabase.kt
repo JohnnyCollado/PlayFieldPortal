@@ -78,7 +78,7 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         PhotoEntity::class,
         ScanTombstoneEntity::class,
     ],
-    version = 22,
+    version = 23,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -592,6 +592,37 @@ abstract class PFPDatabase : RoomDatabase() {
                 // individual apps via "Unmark as Game".
                 db.execSQL(
                     "UPDATE games SET content_type = 'GAME' WHERE platform_id = 'android' AND content_type = 'ANDROID_APP'"
+                )
+            }
+        }
+
+        // v23 — zipped-ROM support for cartridge platforms. The dominant Android emulators for
+        // these systems (RetroArch cores, Snes9x EX+, M64Plus FZ, My Boy!/mGBA, DraStic, MD.emu,
+        // Stella/Handy/Beetle cores, VICE) all load .zip directly, so it joins the default
+        // extension lists. Disc-based systems are excluded — their compressed formats are
+        // CHD/RVZ/CSO and their emulators don't read zip. Existing Memory Cards get the new
+        // extension too (idempotent, additive; a card the user already gave zip is untouched).
+        val MIGRATION_22_23 = object : Migration(22, 23) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                val zipPlatforms = listOf(
+                    "nes", "snes", "n64", "gb", "gbc", "gba", "nds", "virtualboy",
+                    "megadrive", "mastersystem", "gamegear", "sega32x",
+                    "atari2600", "atari5200", "atari7800", "atarilynx",
+                    "pcengine", "ngp", "wonderswan", "wonderswancolor", "c64",
+                ).joinToString(",") { "'$it'" }
+                db.execSQL(
+                    """
+                    UPDATE platforms SET rom_extensions = rom_extensions || ',zip'
+                    WHERE id IN ($zipPlatforms)
+                      AND rom_extensions != '' AND rom_extensions NOT LIKE '%zip%'
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    UPDATE memory_cards SET supported_extensions = supported_extensions || ',zip'
+                    WHERE platform_id IN ($zipPlatforms)
+                      AND supported_extensions != '' AND supported_extensions NOT LIKE '%zip%'
+                    """.trimIndent()
                 )
             }
         }

@@ -76,6 +76,7 @@ object DatabaseModule {
             PFPDatabase.MIGRATION_19_20,
             PFPDatabase.MIGRATION_20_21,
             PFPDatabase.MIGRATION_21_22,
+            PFPDatabase.MIGRATION_22_23,
         )
         .build()
 

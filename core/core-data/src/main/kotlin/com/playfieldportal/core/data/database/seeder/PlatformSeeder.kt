@@ -70,7 +70,7 @@ class PlatformSeeder @Inject constructor(
                 shortName     = "NES",
                 iconRes       = "ic_platform_nes",
                 accentColor   = 0xFFE60012L,
-                romExtensions = "nes,fds,unf,unif",
+                romExtensions = "nes,fds,unf,unif,zip",
             ),
             PlatformEntity(
                 id            = "snes",
@@ -78,7 +78,7 @@ class PlatformSeeder @Inject constructor(
                 shortName     = "SNES",
                 iconRes       = "ic_platform_snes",
                 accentColor   = 0xFF8B1A8BL,
-                romExtensions = "smc,sfc,swc",
+                romExtensions = "smc,sfc,swc,zip",
             ),
             PlatformEntity(
                 id            = "n64",
@@ -86,7 +86,7 @@ class PlatformSeeder @Inject constructor(
                 shortName     = "N64",
                 iconRes       = "ic_platform_n64",
                 accentColor   = 0xFF009AC7L,
-                romExtensions = "n64,z64,v64",
+                romExtensions = "n64,z64,v64,zip",
             ),
             PlatformEntity(
                 id            = "gb",
@@ -94,7 +94,7 @@ class PlatformSeeder @Inject constructor(
                 shortName     = "GB",
                 iconRes       = "ic_platform_gb",
                 accentColor   = 0xFF8BBB11L,
-                romExtensions = "gb,dmg",
+                romExtensions = "gb,dmg,zip",
             ),
             PlatformEntity(
                 id            = "gbc",
@@ -102,7 +102,7 @@ class PlatformSeeder @Inject constructor(
                 shortName     = "GBC",
                 iconRes       = "ic_platform_gbc",
                 accentColor   = 0xFF8BBB11L,
-                romExtensions = "gbc",
+                romExtensions = "gbc,zip",
             ),
             PlatformEntity(
                 id            = "gba",
@@ -110,7 +110,7 @@ class PlatformSeeder @Inject constructor(
                 shortName     = "GBA",
                 iconRes       = "ic_platform_gba",
                 accentColor   = 0xFF6A0DADL,
-                romExtensions = "gba,agb",
+                romExtensions = "gba,agb,zip",
             ),
             PlatformEntity(
                 id            = "nds",
@@ -118,7 +118,7 @@ class PlatformSeeder @Inject constructor(
                 shortName     = "NDS",
                 iconRes       = "ic_platform_nds",
                 accentColor   = 0xFFCC0000L,
-                romExtensions = "nds,dsi",
+                romExtensions = "nds,dsi,zip",
             ),
             PlatformEntity(
                 id            = "n3ds",
@@ -166,7 +166,7 @@ class PlatformSeeder @Inject constructor(
                 shortName     = "VB",
                 iconRes       = "ic_platform_virtualboy",
                 accentColor   = 0xFFCC0000L,
-                romExtensions = "vb,vboy",
+                romExtensions = "vb,vboy,zip",
             ),
 
             // ── Sega ───────────────────────────────────────────────────────
@@ -176,7 +176,7 @@ class PlatformSeeder @Inject constructor(
                 shortName     = "MD",
                 iconRes       = "ic_platform_megadrive",
                 accentColor   = 0xFF1A1A8CL,
-                romExtensions = "md,gen,smd,bin,68k",
+                romExtensions = "md,gen,smd,bin,68k,zip",
             ),
             PlatformEntity(
                 id            = "mastersystem",
@@ -184,7 +184,7 @@ class PlatformSeeder @Inject constructor(
                 shortName     = "SMS",
                 iconRes       = "ic_platform_mastersystem",
                 accentColor   = 0xFF1A1A8CL,
-                romExtensions = "sms,sg",
+                romExtensions = "sms,sg,zip",
             ),
             PlatformEntity(
                 id            = "gamegear",
@@ -192,7 +192,7 @@ class PlatformSeeder @Inject constructor(
                 shortName     = "GG",
                 iconRes       = "ic_platform_gamegear",
                 accentColor   = 0xFF1A1A8CL,
-                romExtensions = "gg",
+                romExtensions = "gg,zip",
             ),
             PlatformEntity(
                 id            = "saturn",
@@ -224,7 +224,7 @@ class PlatformSeeder @Inject constructor(
                 shortName     = "32X",
                 iconRes       = "ic_platform_sega32x",
                 accentColor   = 0xFF1A1A8CL,
-                romExtensions = "32x,bin,md",
+                romExtensions = "32x,bin,md,zip",
             ),
 
             // ── Atari ──────────────────────────────────────────────────────
@@ -234,7 +234,7 @@ class PlatformSeeder @Inject constructor(
                 shortName     = "2600",
                 iconRes       = "ic_platform_atari2600",
                 accentColor   = 0xFFCC4400L,
-                romExtensions = "a26,bin",
+                romExtensions = "a26,bin,zip",
             ),
             PlatformEntity(
                 id            = "atari5200",
@@ -242,7 +242,7 @@ class PlatformSeeder @Inject constructor(
                 shortName     = "5200",
                 iconRes       = "ic_platform_atari5200",
                 accentColor   = 0xFFCC4400L,
-                romExtensions = "a52,bin,car",
+                romExtensions = "a52,bin,car,zip",
             ),
             PlatformEntity(
                 id            = "atari7800",
@@ -250,7 +250,7 @@ class PlatformSeeder @Inject constructor(
                 shortName     = "7800",
                 iconRes       = "ic_platform_atari7800",
                 accentColor   = 0xFFCC4400L,
-                romExtensions = "a78,bin",
+                romExtensions = "a78,bin,zip",
             ),
             PlatformEntity(
                 id            = "atarilynx",
@@ -258,7 +258,7 @@ class PlatformSeeder @Inject constructor(
                 shortName     = "Lynx",
                 iconRes       = "ic_platform_atarilynx",
                 accentColor   = 0xFFCC4400L,
-                romExtensions = "lnx,lyx",
+                romExtensions = "lnx,lyx,zip",
             ),
 
             // ── NEC ────────────────────────────────────────────────────────
@@ -268,7 +268,7 @@ class PlatformSeeder @Inject constructor(
                 shortName     = "PCE",
                 iconRes       = "ic_platform_pcengine",
                 accentColor   = 0xFFFFAA00L,
-                romExtensions = "pce,sgx,cue,chd,m3u",
+                romExtensions = "pce,sgx,cue,chd,m3u,zip",
             ),
 
             // ── SNK ────────────────────────────────────────────────────────
@@ -286,7 +286,7 @@ class PlatformSeeder @Inject constructor(
                 shortName     = "NGP",
                 iconRes       = "ic_platform_ngp",
                 accentColor   = 0xFFFFD700L,
-                romExtensions = "ngp,ngc,npc",
+                romExtensions = "ngp,ngc,npc,zip",
             ),
 
             // ── Bandai ─────────────────────────────────────────────────────
@@ -296,7 +296,7 @@ class PlatformSeeder @Inject constructor(
                 shortName     = "WS",
                 iconRes       = "ic_platform_wonderswan",
                 accentColor   = 0xFF888888L,
-                romExtensions = "ws,bin",
+                romExtensions = "ws,bin,zip",
             ),
             PlatformEntity(
                 id            = "wonderswancolor",
@@ -304,7 +304,7 @@ class PlatformSeeder @Inject constructor(
                 shortName     = "WSC",
                 iconRes       = "ic_platform_wonderswancolor",
                 accentColor   = 0xFF888888L,
-                romExtensions = "wsc,bin",
+                romExtensions = "wsc,bin,zip",
             ),
 
             // ── Commodore ──────────────────────────────────────────────────
@@ -314,7 +314,7 @@ class PlatformSeeder @Inject constructor(
                 shortName     = "C64",
                 iconRes       = "ic_platform_c64",
                 accentColor   = 0xFF8B4513L,
-                romExtensions = "d64,g64,t64,tap,prg,crt,d81",
+                romExtensions = "d64,g64,t64,tap,prg,crt,d81,zip",
             ),
 
             // ── Arcade ─────────────────────────────────────────────────────
