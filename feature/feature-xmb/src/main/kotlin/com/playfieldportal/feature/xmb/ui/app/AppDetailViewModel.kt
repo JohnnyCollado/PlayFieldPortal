@@ -1,6 +1,5 @@
 package com.playfieldportal.feature.xmb.ui.app
 
-import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -13,20 +12,18 @@ import com.playfieldportal.feature.xmb.ui.collection.CollectionPickerUi
 import com.playfieldportal.feature.artwork.api.SgdbArtType
 import com.playfieldportal.feature.artwork.api.SteamGridDbApi
 import com.playfieldportal.feature.artwork.api.SgdbApiKeyProvider
-import com.playfieldportal.feature.artwork.card.CardArtworkProcessor
+import com.playfieldportal.feature.artwork.store.ArtworkKind
+import com.playfieldportal.feature.artwork.store.ArtworkStore
 import com.playfieldportal.feature.xmb.ui.detail.ArtPickerItem
 import com.playfieldportal.feature.xmb.ui.detail.ArtworkType
 import com.playfieldportal.feature.xmb.ui.detail.displayLabel
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.io.File
-import java.io.InputStream
 import javax.inject.Inject
 
 // The slim App Editor for standard (non-game) apps: name, icon and background only. Apps launch
@@ -64,12 +61,11 @@ data class AppDetailUiState(
 
 @HiltViewModel
 class AppDetailViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
     private val gameRepository: GameRepository,
     private val collectionRepository: CollectionRepository,
     private val steamGridDb: SteamGridDbApi,
     private val sgdbKeyProvider: SgdbApiKeyProvider,
-    private val cardProcessor: CardArtworkProcessor,
+    private val artworkStore: ArtworkStore,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AppDetailUiState())
@@ -176,7 +172,7 @@ class AppDetailViewModel @Inject constructor(
         val type = _uiState.value.artworkPickerType
         viewModelScope.launch {
             _uiState.update { it.copy(artworkIsProcessing = true, artworkPickerItems = emptyList()) }
-            val localPath = cardProcessor.downloadRaw(game.id, url, versionedArtworkFileName(type))
+            val localPath = artworkStore.saveVersionedFromUrl(game.id, type.toKind(), url)
             if (localPath == null) {
                 _uiState.update {
                     it.copy(artworkIsProcessing = false, artworkMessage = "Could not download ${type.displayLabel}")
@@ -184,7 +180,6 @@ class AppDetailViewModel @Inject constructor(
                 return@launch
             }
             saveArtwork(game.id, type, localPath)
-            pruneOldArtworkFiles(game.id, type, localPath)
             val updated = gameRepository.getById(game.id)
             _uiState.update {
                 it.copy(
@@ -209,7 +204,7 @@ class AppDetailViewModel @Inject constructor(
         val game = _uiState.value.game ?: return
         viewModelScope.launch {
             _uiState.update { it.copy(artworkIsProcessing = true) }
-            val localPath = copyToAppStorage(uri, game.id, type)
+            val localPath = artworkStore.saveVersionedFromUri(game.id, type.toKind(), uri)
             if (localPath == null) {
                 _uiState.update {
                     it.copy(artworkIsProcessing = false, artworkMessage = "Could not import ${type.displayLabel}")
@@ -217,7 +212,6 @@ class AppDetailViewModel @Inject constructor(
                 return@launch
             }
             saveArtwork(game.id, type, localPath)
-            pruneOldArtworkFiles(game.id, type, localPath)
             val updated = gameRepository.getById(game.id)
             _uiState.update {
                 it.copy(
@@ -457,48 +451,15 @@ class AppDetailViewModel @Inject constructor(
         }
     }
 
-    // Versioned filename (matches GameDetailViewModel): a fresh path on every save is what makes
-    // the change visible immediately — the DB row, Compose keys, and Coil's cache key all follow
-    // the path string, so a stable name like "background.jpg" would never look different.
-    private fun versionedArtworkFileName(type: ArtworkType, ext: String = "jpg"): String =
-        "${type.name.lowercase()}_${System.currentTimeMillis()}.$ext"
-
-    // Legacy fixed names written by older builds — pruned alongside stale versioned files.
-    private fun legacyArtworkFileName(type: ArtworkType): String = when (type) {
-        ArtworkType.ICON       -> "icon.jpg"
-        ArtworkType.HERO       -> "hero.jpg"
-        ArtworkType.BACKGROUND -> "background.jpg"
-    }
-
-    /** Deletes older artwork files of [type] for this app, keeping only [keepPath]. Runs after a
-     *  successful save so versioned files never accumulate in filesDir/artwork/<gameId>/. */
-    private fun pruneOldArtworkFiles(gameId: Long, type: ArtworkType, keepPath: String) {
-        runCatching {
-            val dir = File(context.filesDir, "artwork/$gameId")
-            val prefix = "${type.name.lowercase()}_"
-            val legacy = legacyArtworkFileName(type)
-            dir.listFiles()?.forEach { f ->
-                val stale = (f.name.startsWith(prefix) || f.name == legacy) && f.absolutePath != keepPath
-                if (stale) f.delete()
-            }
-        }.onFailure { Timber.w(it, "Failed to prune old artwork for gameId=$gameId type=$type") }
-    }
-
     private fun ArtworkType.toSgdbArtType() = when (this) {
         ArtworkType.ICON       -> SgdbArtType.GRID
         ArtworkType.HERO       -> SgdbArtType.HERO
         ArtworkType.BACKGROUND -> SgdbArtType.HERO
     }
 
-    private fun copyToAppStorage(uri: Uri, gameId: Long, type: ArtworkType): String? = try {
-        val dest = cardProcessor.rawFile(gameId, versionedArtworkFileName(type))
-        dest.parentFile?.mkdirs()
-        context.contentResolver.openInputStream(uri)?.use { input: InputStream ->
-            dest.outputStream().use { output -> input.copyTo(output) }
-        }
-        dest.absolutePath
-    } catch (e: Exception) {
-        Timber.w(e, "Failed to copy local artwork for gameId=$gameId type=$type")
-        null
+    private fun ArtworkType.toKind() = when (this) {
+        ArtworkType.ICON       -> ArtworkKind.ICON
+        ArtworkType.HERO       -> ArtworkKind.HERO
+        ArtworkType.BACKGROUND -> ArtworkKind.BACKGROUND
     }
 }

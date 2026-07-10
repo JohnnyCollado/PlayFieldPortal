@@ -41,6 +41,7 @@ class ArtworkSettingsViewModelTest {
     private lateinit var artworkRepository: ArtworkRepository
     private lateinit var scrapePreferences: ArtworkScrapePreferences
     private lateinit var igdbApi: IgdbApi
+    private lateinit var screenScraperApi: com.playfieldportal.feature.artwork.api.ScreenScraperApi
     private lateinit var viewModel: ArtworkSettingsViewModel
 
     @Before
@@ -52,9 +53,11 @@ class ArtworkSettingsViewModelTest {
         artworkRepository   = mockk(relaxed = true)
         scrapePreferences   = mockk(relaxed = true)
         igdbApi             = mockk(relaxed = true)
+        screenScraperApi    = mockk(relaxed = true)
 
         every { sgdbKeyProvider.apiKeyFlow }             returns flowOf(null)
         every { metadataKeyProvider.igdbClientIdFlow }   returns flowOf(null)
+        every { metadataKeyProvider.ssUsernameFlow }     returns flowOf(null)
         every { scrapePreferences.preferSteamGridDbHeroesFlow } returns flowOf(false)
         coEvery { artworkRepository.computeStatus() }    returns ArtworkStatus(total = 10, complete = 8, missing = 2)
         coEvery { scrapePreferences.getOptions() }       returns ScrapeOptions()
@@ -71,6 +74,7 @@ class ArtworkSettingsViewModelTest {
         artworkRepository   = artworkRepository,
         scrapePreferences   = scrapePreferences,
         igdbApi             = igdbApi,
+        screenScraperApi    = screenScraperApi,
     )
 
     // uiState is a WhileSubscribed StateFlow, so it only reflects upstream (the credential flows +

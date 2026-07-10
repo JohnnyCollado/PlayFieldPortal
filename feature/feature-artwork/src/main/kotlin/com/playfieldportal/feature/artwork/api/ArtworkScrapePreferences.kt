@@ -24,12 +24,20 @@ class ArtworkScrapePreferences @Inject constructor(
     val downloadHeroesFlow: Flow<Boolean> =
         context.pfpDataStore.data.map { it[KEY_DOWNLOAD_HEROES] ?: true }
 
+    val downloadManualsFlow: Flow<Boolean> =
+        context.pfpDataStore.data.map { it[KEY_DOWNLOAD_MANUALS] ?: false }
+
+    val downloadVideoSnapsFlow: Flow<Boolean> =
+        context.pfpDataStore.data.map { it[KEY_DOWNLOAD_VIDEO_SNAPS] ?: false }
+
     suspend fun getOptions(): ScrapeOptions {
         val prefs = context.pfpDataStore.data.first()
         return ScrapeOptions(
             preferSteamGridDbHeroes = prefs[KEY_PREFER_SGDB_HEROES]  ?: false,
             downloadClearLogos      = prefs[KEY_DOWNLOAD_CLEAR_LOGOS] ?: true,
             downloadHeroes          = prefs[KEY_DOWNLOAD_HEROES]      ?: true,
+            downloadManuals         = prefs[KEY_DOWNLOAD_MANUALS]     ?: false,
+            downloadVideoSnaps      = prefs[KEY_DOWNLOAD_VIDEO_SNAPS] ?: false,
         )
     }
 
@@ -42,9 +50,17 @@ class ArtworkScrapePreferences @Inject constructor(
     suspend fun setDownloadHeroes(value: Boolean) =
         context.pfpDataStore.edit { it[KEY_DOWNLOAD_HEROES] = value }
 
+    suspend fun setDownloadManuals(value: Boolean) =
+        context.pfpDataStore.edit { it[KEY_DOWNLOAD_MANUALS] = value }
+
+    suspend fun setDownloadVideoSnaps(value: Boolean) =
+        context.pfpDataStore.edit { it[KEY_DOWNLOAD_VIDEO_SNAPS] = value }
+
     companion object {
         private val KEY_PREFER_SGDB_HEROES   = booleanPreferencesKey("pref_sgdb_heroes")
         private val KEY_DOWNLOAD_CLEAR_LOGOS = booleanPreferencesKey("pref_dl_clear_logos")
         private val KEY_DOWNLOAD_HEROES      = booleanPreferencesKey("pref_dl_heroes")
+        private val KEY_DOWNLOAD_MANUALS     = booleanPreferencesKey("pref_dl_manuals")
+        private val KEY_DOWNLOAD_VIDEO_SNAPS = booleanPreferencesKey("pref_dl_video_snaps")
     }
 }

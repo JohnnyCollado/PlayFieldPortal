@@ -1,4 +1,6 @@
-﻿plugins {
+﻿import java.util.Properties
+
+plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
@@ -7,10 +9,26 @@
     alias(libs.plugins.hilt)
 }
 
+// ScreenScraper developer credentials: kept out of git in local.properties (CI injects via env).
+//   screenscraper.devId=xxx
+//   screenscraper.devPassword=yyy
+// Empty values compile fine — the client treats missing dev credentials as "ScreenScraper disabled".
+val localProps = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+fun ssProp(key: String, env: String): String =
+    (localProps.getProperty(key) ?: System.getenv(env) ?: "").replace("\"", "\\\"")
+
 android {
     namespace  = "com.playfieldportal.feature.artwork"
     compileSdk = 35
-    defaultConfig { minSdk = 29 }
+    defaultConfig {
+        minSdk = 29
+        buildConfigField("String", "SS_DEV_ID",       "\"${ssProp("screenscraper.devId", "SS_DEV_ID")}\"")
+        buildConfigField("String", "SS_DEV_PASSWORD", "\"${ssProp("screenscraper.devPassword", "SS_DEV_PASSWORD")}\"")
+        buildConfigField("String", "SS_SOFT_NAME",    "\"PlayFieldPortal\"")
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -32,6 +50,7 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.datastore.preferences)
     ksp(libs.hilt.compiler)
+    testImplementation(libs.bundles.test.unit)
 
     implementation(project(":core:core-common"))
     implementation(project(":core:core-domain"))

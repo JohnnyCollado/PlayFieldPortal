@@ -14,4 +14,7 @@
 
     <!-- Internal cache — used for temporary file passing to emulators -->
     <cache-path name="cache" path="." />
+
+    <!-- Scraped game manuals (filesDir/artwork/{gameId}/manual.pdf) opened in a PDF viewer -->
+    <files-path name="artwork" path="artwork/" />
 </paths>

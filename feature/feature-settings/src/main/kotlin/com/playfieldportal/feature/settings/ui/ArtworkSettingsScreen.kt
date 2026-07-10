@@ -39,6 +39,8 @@ fun ArtworkSettingsScreen(
     var sgdbKeyDraft by remember(state.apiKeyMasked) { mutableStateOf("") }
     var igdbClientIdDraft by remember(state.igdbClientId) { mutableStateOf("") }
     var igdbClientSecretDraft by remember { mutableStateOf("") }
+    var ssUsernameDraft by remember(state.ssUsername) { mutableStateOf("") }
+    var ssPasswordDraft by remember { mutableStateOf("") }
 
     SettingsScaffold(
         title    = "Settings",
@@ -121,9 +123,16 @@ fun ArtworkSettingsScreen(
             // ── Source priority ───────────────────────────────────────────────
             SettingsGroup("Source Priority")
 
-            SettingsValueRow(label = "Primary",    value = "TheGamesDB")
-            SettingsValueRow(label = "Fallback 1", value = "IGDB")
-            SettingsValueRow(label = "Fallback 2", value = "SteamGridDB (artwork)")
+            if (state.ssEnabled) {
+                SettingsValueRow(label = "Primary",    value = "ScreenScraper (ROM hash)")
+                SettingsValueRow(label = "Fallback 1", value = "TheGamesDB")
+                SettingsValueRow(label = "Fallback 2", value = "IGDB")
+                SettingsValueRow(label = "Fallback 3", value = "SteamGridDB (artwork)")
+            } else {
+                SettingsValueRow(label = "Primary",    value = "TheGamesDB")
+                SettingsValueRow(label = "Fallback 1", value = "IGDB")
+                SettingsValueRow(label = "Fallback 2", value = "SteamGridDB (artwork)")
+            }
 
             // ── Art preferences ───────────────────────────────────────────────
             SettingsGroup("Art Preferences")
@@ -155,6 +164,21 @@ fun ArtworkSettingsScreen(
                 checked  = state.downloadLogos,
                 onToggle = { viewModel.setDownloadLogos(it) },
             )
+
+            if (state.ssEnabled) {
+                SettingsToggleRow(
+                    label    = "Download Game Manuals",
+                    sublabel = "PDF manuals from ScreenScraper — opens from the game's Options menu",
+                    checked  = state.downloadManuals,
+                    onToggle = { viewModel.setDownloadManuals(it) },
+                )
+                SettingsToggleRow(
+                    label    = "Download Video Snaps",
+                    sublabel = "Short gameplay clips from ScreenScraper — large files",
+                    checked  = state.downloadVideoSnaps,
+                    onToggle = { viewModel.setDownloadVideoSnaps(it) },
+                )
+            }
 
             // ── SteamGridDB API key ───────────────────────────────────────────
             SettingsGroup("SteamGridDB API")
@@ -228,6 +252,64 @@ fun ArtworkSettingsScreen(
                     label    = "Clear IGDB Credentials",
                     sublabel = "IGDB will be skipped as a fallback source",
                     onClick  = { viewModel.clearIgdbCredentials() },
+                )
+            }
+
+            // ── ScreenScraper account (optional) ──────────────────────────────
+            // Always visible: credentials can be entered and are stored encrypted even before the
+            // build carries dev credentials; scraping activates the moment those exist.
+            SettingsGroup("ScreenScraper Account (Optional)")
+
+            if (!state.ssEnabled) {
+                SettingsValueRow(
+                    label    = "Status",
+                    sublabel = "This build has no ScreenScraper developer credentials — hash-based scraping is disabled until they're added",
+                    value    = "Inactive",
+                )
+            }
+
+            SettingsTextFieldRow(
+                label         = if (state.hasSsCredentials) "Username (saved: ${state.ssUsername})" else "Username",
+                value         = ssUsernameDraft,
+                onValueChange = { ssUsernameDraft = it },
+                placeholder   = if (state.hasSsCredentials) "Tap to replace" else "ScreenScraper username",
+            )
+            SettingsTextFieldRow(
+                label         = "Password",
+                value         = ssPasswordDraft,
+                onValueChange = { ssPasswordDraft = it },
+                placeholder   = if (state.hasSsCredentials) "••••••••  (tap to replace)" else "ScreenScraper password",
+                isPassword    = true,
+                helper        = "Free account at screenscraper.fr — raises the scrape rate limit and daily quota. " +
+                    "Stored encrypted on this device (Android Keystore).",
+            )
+
+            state.ssCredentialStatus?.let {
+                SettingsRow(label = it, sublabel = "Tap to dismiss", onClick = { viewModel.dismissSsCredentialStatus() })
+            }
+
+            if (ssUsernameDraft.isNotBlank() && ssPasswordDraft.isNotBlank()) {
+                if (state.ssEnabled) {
+                    SettingsRow(
+                        label   = "Test Account",
+                        onClick = { viewModel.testSsCredentials(ssUsernameDraft, ssPasswordDraft) },
+                    )
+                }
+                SettingsRow(
+                    label   = "Save Account",
+                    onClick = {
+                        viewModel.saveSsCredentials(ssUsernameDraft, ssPasswordDraft)
+                        ssUsernameDraft = ""
+                        ssPasswordDraft = ""
+                    },
+                )
+            }
+
+            if (state.hasSsCredentials) {
+                SettingsRow(
+                    label    = "Clear ScreenScraper Account",
+                    sublabel = "Scraping continues at anonymous rate limits",
+                    onClick  = { viewModel.clearSsCredentials() },
                 )
             }
 

@@ -4,12 +4,12 @@ import android.content.Context
 import coil.imageLoader
 import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.feature.artwork.MetadataRepository
+import com.playfieldportal.feature.artwork.store.ArtworkStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -46,6 +46,7 @@ class ArtworkRepository @Inject constructor(
     private val gameDao: GameDao,
     private val metadataRepository: MetadataRepository,
     private val scrapePreferences: ArtworkScrapePreferences,
+    private val artworkStore: ArtworkStore,
 ) {
     // Fetch artwork + metadata for all games that don't have any artwork yet.
     suspend fun fetchMissingArtwork(
@@ -95,12 +96,8 @@ class ArtworkRepository @Inject constructor(
 
     // ── Accurate, file-aware artwork status ──────────────────────────────────────
 
-    // A reference is valid if it's a remote URL, or a local file that exists and is non-empty.
-    private fun isValidArtworkRef(uri: String?): Boolean {
-        if (uri.isNullOrBlank()) return false
-        if (uri.startsWith("http", ignoreCase = true)) return true
-        return runCatching { File(uri).let { it.exists() && it.length() > 0 } }.getOrDefault(false)
-    }
+    // A reference is valid if it's a remote URL, or a stored file that still resolves to bytes.
+    private fun isValidArtworkRef(uri: String?): Boolean = artworkStore.isValidRef(uri)
 
     suspend fun computeStatus(): ArtworkStatus = withContext(Dispatchers.IO) {
         val games = gameDao.getAll()
@@ -120,10 +117,10 @@ class ArtworkRepository @Inject constructor(
 
     // ── Clearing ─────────────────────────────────────────────────────────────────
 
-    // Clears all DB artwork references AND the on-disk artwork files so nothing stale remains.
+    // Clears all DB artwork references AND the stored artwork files so nothing stale remains.
     suspend fun clearAllArtwork() = withContext(Dispatchers.IO) {
         gameDao.clearAllArtwork()
-        runCatching { File(context.filesDir, "artwork").deleteRecursively() }
+        artworkStore.deleteAll()
         clearCache()
         Timber.i("All artwork cleared (db refs + files + cache)")
     }
@@ -152,6 +149,7 @@ class ArtworkRepository @Inject constructor(
         games: List<Pair<Long, Triple<String, String, String?>>>,
         onProgress: (ScrapeProgress) -> Unit,
     ): ScrapeProgress {
+        metadataRepository.resetSsBatchGuards()
         val options = scrapePreferences.getOptions()
         var ok = 0
         var fail = 0

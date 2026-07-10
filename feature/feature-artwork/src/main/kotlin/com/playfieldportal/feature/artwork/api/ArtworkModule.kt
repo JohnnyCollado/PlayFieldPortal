@@ -23,6 +23,13 @@ import okio.Path.Companion.toOkioPath
 import timber.log.Timber
 import javax.inject.Singleton
 
+// ScreenScraper authenticates via query parameters, so a logged request line would expose the
+// user's password (and our dev password) in debug logcat. Redact them before anything is written.
+private val SECRET_QUERY_PARAMS = Regex("(sspassword|devpassword|apikey)=[^&\\s]*", RegexOption.IGNORE_CASE)
+
+internal fun redactSecretQueryParams(message: String): String =
+    SECRET_QUERY_PARAMS.replace(message) { "${it.groupValues[1]}=REDACTED" }
+
 @Module
 @InstallIn(SingletonComponent::class)
 object ArtworkModule {
@@ -43,7 +50,7 @@ object ArtworkModule {
         install(Logging) {
             level = if (BuildConfig.DEBUG) LogLevel.HEADERS else LogLevel.NONE
             logger = object : Logger {
-                override fun log(message: String) = Timber.tag("Ktor").d(message)
+                override fun log(message: String) = Timber.tag("Ktor").d(redactSecretQueryParams(message))
             }
             sanitizeHeader { header -> header.equals(HttpHeaders.Authorization, ignoreCase = true) }
         }

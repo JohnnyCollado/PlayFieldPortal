@@ -20,12 +20,12 @@ import com.playfieldportal.core.domain.model.EmulatorProfile
 import com.playfieldportal.feature.artwork.api.IgdbApi
 import com.playfieldportal.feature.artwork.api.SgdbArtType
 import com.playfieldportal.feature.artwork.api.SteamGridDbApi
-import com.playfieldportal.feature.artwork.card.CardArtworkProcessor
+import com.playfieldportal.feature.artwork.store.ArtworkKind
+import com.playfieldportal.feature.artwork.store.ArtworkStore
 import com.playfieldportal.feature.launcher.EmulatorIntentResolver
 import com.playfieldportal.feature.launcher.EmulatorProfileRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -33,10 +33,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.io.File
-import java.util.Locale
 import javax.inject.Inject
 
 // ── Artwork type ──────────────────────────────────────────────────────────────
@@ -157,6 +154,9 @@ enum class DetailAction(val label: String) {
     REMOVE("Remove"),
 }
 
+// Last focusable index on the main page (0 = Play, 1 = Options gear, 2 = Artwork brush).
+const val MAIN_FOCUS_LAST = 2
+
 // ── ViewModel ─────────────────────────────────────────────────────────────────
 @HiltViewModel
 class GameDetailViewModel @Inject constructor(
@@ -171,7 +171,7 @@ class GameDetailViewModel @Inject constructor(
     private val steamGridDb: SteamGridDbApi,
     private val igdbApi: IgdbApi,
     private val theGamesDb: TheGamesDbApi,
-    private val cardProcessor: CardArtworkProcessor,
+    private val artworkStore: ArtworkStore,
     private val menuSound: com.playfieldportal.core.ui.sound.MenuSoundPlayer,
     private val discordPresence: com.playfieldportal.core.data.discord.DiscordPresenceController,
     private val launcherShortcutRepository: com.playfieldportal.feature.appbar.LauncherShortcutRepository,
@@ -289,14 +289,16 @@ class GameDetailViewModel @Inject constructor(
             return
         }
 
+        // Main page focus: 0 = Play, 1 = Options (gear), 2 = Artwork (brush).
         when (action) {
-            GamepadAction.NAVIGATE_UP   -> _uiState.update { it.copy(mainFocus = 0, actionMessage = null) }
-            GamepadAction.NAVIGATE_DOWN -> _uiState.update { it.copy(mainFocus = 1, actionMessage = null) }
-            GamepadAction.SELECT        -> if (s.mainFocus == 0) {
-                Timber.d("Controller SELECT activated Play")
-                launch()
-            } else {
-                openOptions()
+            GamepadAction.NAVIGATE_LEFT  -> _uiState.update { it.copy(mainFocus = (it.mainFocus - 1).coerceIn(0, MAIN_FOCUS_LAST), actionMessage = null) }
+            GamepadAction.NAVIGATE_RIGHT -> _uiState.update { it.copy(mainFocus = (it.mainFocus + 1).coerceIn(0, MAIN_FOCUS_LAST), actionMessage = null) }
+            GamepadAction.NAVIGATE_UP    -> _uiState.update { it.copy(mainFocus = 0, actionMessage = null) }
+            GamepadAction.NAVIGATE_DOWN  -> _uiState.update { it.copy(mainFocus = 1, actionMessage = null) }
+            GamepadAction.SELECT        -> when (s.mainFocus) {
+                0 -> { Timber.d("Controller SELECT activated Play"); launch() }
+                1 -> openOptions()
+                else -> openArtworkManager()
             }
             // Y / Triangle opens the Options context menu directly, from anywhere on the page.
             GamepadAction.BUTTON_Y, GamepadAction.LONG_PRESS -> openOptions()
@@ -641,7 +643,7 @@ class GameDetailViewModel @Inject constructor(
         val gameId = _uiState.value.game?.id ?: return
         viewModelScope.launch {
             _uiState.update { it.copy(artworkIsProcessing = true, artworkMessage = null) }
-            val localPath = copyToAppStorage(uri, gameId, type)
+            val localPath = artworkStore.saveVersionedFromUri(gameId, type.toKind(), uri)
             if (localPath == null) {
                 _uiState.update { it.copy(artworkIsProcessing = false, artworkMessage = "Could not copy image") }
                 return@launch
@@ -671,7 +673,7 @@ class GameDetailViewModel @Inject constructor(
                     artworkFocus         = ArtworkManagerFocus.SOURCE_ROW,
                 )
             }
-            val localPath = cardProcessor.downloadRaw(game.id, url, versionedArtworkFileName(type, "jpg"))
+            val localPath = artworkStore.saveVersionedFromUrl(game.id, type.toKind(), url)
             if (localPath == null) {
                 _uiState.update {
                     it.copy(artworkIsProcessing = false, artworkMessage = "Could not import ${type.displayLabel}")
@@ -724,6 +726,12 @@ class GameDetailViewModel @Inject constructor(
         ArtworkType.BACKGROUND -> SgdbArtType.HERO
     }
 
+    private fun ArtworkType.toKind() = when (this) {
+        ArtworkType.ICON       -> ArtworkKind.ICON
+        ArtworkType.HERO       -> ArtworkKind.HERO
+        ArtworkType.BACKGROUND -> ArtworkKind.BACKGROUND
+    }
+
     // ── Options menu ──────────────────────────────────────────────────────
 
     fun openOptions()  = _uiState.update { it.copy(showOptions = true, optionsIndex = 0, actionMessage = null) }
@@ -745,7 +753,7 @@ class GameDetailViewModel @Inject constructor(
             DetailAction.ARTWORK   -> openArtworkManager()
             DetailAction.SAVES     -> showActionMessage("Save management isn't available yet")
             DetailAction.EMULATOR  -> openEmulatorPicker()
-            DetailAction.MANUAL    -> showActionMessage("No manual available for this game")
+            DetailAction.MANUAL    -> openManual()
             DetailAction.REFRESH   -> fetchArtwork()
             DetailAction.RENAME    -> startEditTitle()
             DetailAction.EDIT      -> startEditNote()
@@ -759,6 +767,38 @@ class GameDetailViewModel @Inject constructor(
     }
 
     private fun showActionMessage(msg: String) = _uiState.update { it.copy(actionMessage = msg) }
+
+    // Opens the scraped PDF manual (ScreenScraper, stored as artwork/{gameId}/manual.pdf) in the
+    // user's PDF viewer. Goes through the existing launch-intent channel; deliberately NOT
+    // sendLaunchIntent — reading a manual is not "playing", so Discord presence stays untouched.
+    private fun openManual() {
+        val game = _uiState.value.game ?: return
+        viewModelScope.launch {
+            val path = artworkStore.find(game.id, ArtworkKind.MANUAL)
+            if (path == null) {
+                showActionMessage("No manual available for this game")
+                return@launch
+            }
+            val intent = runCatching {
+                val uri = androidx.core.content.FileProvider.getUriForFile(
+                    context, "${context.packageName}.fileprovider", java.io.File(path),
+                )
+                Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(uri, "application/pdf")
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+            }.onFailure { Timber.e(it, "Could not build manual intent for ${game.id}") }.getOrNull()
+            if (intent == null) {
+                showActionMessage("Could not open manual")
+                return@launch
+            }
+            if (intent.resolveActivity(context.packageManager) == null) {
+                showActionMessage("No PDF viewer installed")
+                return@launch
+            }
+            _launchEffect.trySend(intent)
+        }
+    }
 
     fun dismissActionMessage() = _uiState.update { it.copy(actionMessage = null) }
 
@@ -1277,43 +1317,4 @@ class GameDetailViewModel @Inject constructor(
 
     private fun mediaOf(game: Game?): List<String> =
         listOfNotNull(game?.heroUri, game?.artworkUri, game?.logoUri).distinct()
-
-    // ── File storage helpers ──────────────────────────────────────────────
-
-    private suspend fun copyToAppStorage(uri: Uri, gameId: Long, type: ArtworkType): String? =
-        withContext(Dispatchers.IO) {
-            runCatching {
-                val ext = extensionForUri(uri) ?: return@runCatching null
-                val dir  = File(context.filesDir, "artwork/$gameId").also { it.mkdirs() }
-                val dest = File(dir, versionedArtworkFileName(type, ext))
-                context.contentResolver.openInputStream(uri)?.use { inp ->
-                    dest.outputStream().use { out -> inp.copyTo(out) }
-                } ?: return@runCatching null
-                dest.absolutePath.takeIf { dest.length() > 0L }
-            }.getOrElse {
-                Timber.e(it, "Failed to copy artwork for game $gameId type $type")
-                null
-            }
-        }
-
-    private fun extensionForUri(uri: Uri): String? {
-        val mime = context.contentResolver.getType(uri)?.lowercase(Locale.US)
-        return when (mime) {
-            "image/png"  -> "png"
-            "image/jpeg", "image/jpg" -> "jpg"
-            "image/webp" -> "webp"
-            else -> {
-                val path = uri.lastPathSegment.orEmpty().lowercase(Locale.US)
-                when {
-                    path.endsWith(".png")                            -> "png"
-                    path.endsWith(".jpg") || path.endsWith(".jpeg") -> "jpg"
-                    path.endsWith(".webp")                          -> "webp"
-                    else                                            -> null
-                }
-            }
-        }
-    }
-
-    private fun versionedArtworkFileName(type: ArtworkType, ext: String) =
-        "${type.name.lowercase()}_${System.currentTimeMillis()}.$ext"
 }

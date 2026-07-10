@@ -513,6 +513,8 @@ open class BackupManager @Inject constructor(
             stringPreferencesKey("igdb_client_id"),
             stringPreferencesKey("igdb_client_secret"),
             stringPreferencesKey("tgdb_api_key"),
+            stringPreferencesKey("ss_username"),
+            stringPreferencesKey("ss_password"),
         )
 
         // Keystore-encrypted, device-bound credentials — dropped on restore if they can't be
@@ -522,6 +524,7 @@ open class BackupManager @Inject constructor(
             "sgdb_api_key",
             "igdb_client_secret",
             "tgdb_api_key",
+            "ss_password",   // ss_username is a public handle and restores normally
         )
 
         private val BACKED_UP_BOOLEAN_KEYS = listOf(

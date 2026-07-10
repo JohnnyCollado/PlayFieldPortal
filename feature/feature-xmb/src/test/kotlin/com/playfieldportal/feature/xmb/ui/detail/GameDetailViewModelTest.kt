@@ -13,7 +13,7 @@ import com.playfieldportal.feature.artwork.api.ArtworkFetchResult
 import com.playfieldportal.feature.artwork.api.ArtworkRepository
 import com.playfieldportal.feature.artwork.api.IgdbApi
 import com.playfieldportal.feature.artwork.api.SteamGridDbApi
-import com.playfieldportal.feature.artwork.card.CardArtworkProcessor
+import com.playfieldportal.feature.artwork.store.ArtworkStore
 import com.playfieldportal.feature.launcher.EmulatorIntentResolver
 import com.playfieldportal.feature.launcher.EmulatorProfileRepository
 import io.mockk.coEvery
@@ -51,7 +51,7 @@ class GameDetailViewModelTest {
     private lateinit var steamGridDb: SteamGridDbApi
     private lateinit var igdbApi: IgdbApi
     private lateinit var theGamesDb: TheGamesDbApi
-    private lateinit var cardProcessor: CardArtworkProcessor
+    private lateinit var artworkStore: ArtworkStore
     private lateinit var viewModel: GameDetailViewModel
 
     private val fakeGame = Game(
@@ -100,7 +100,7 @@ class GameDetailViewModelTest {
         steamGridDb       = mockk(relaxed = true)
         igdbApi           = mockk(relaxed = true)
         theGamesDb        = mockk(relaxed = true)
-        cardProcessor     = mockk(relaxed = true)
+        artworkStore      = mockk(relaxed = true)
 
         coEvery { gameRepository.getById(1L) }    returns fakeGame
         coEvery { platformDao.getById("psx") }    returns fakePlatform
@@ -120,7 +120,7 @@ class GameDetailViewModelTest {
             steamGridDb       = steamGridDb,
             igdbApi           = igdbApi,
             theGamesDb        = theGamesDb,
-            cardProcessor     = cardProcessor,
+            artworkStore      = artworkStore,
             menuSound         = mockk(relaxed = true),
             discordPresence   = mockk(relaxed = true),
             launcherShortcutRepository = mockk(relaxed = true),
@@ -569,7 +569,7 @@ class GameDetailViewModelTest {
 
     @Test
     fun `pickSgdbArtwork BACKGROUND failure keeps existing artwork and shows error`() = runTest {
-        coEvery { cardProcessor.downloadRaw(any(), any(), any(), any()) } returns null
+        coEvery { artworkStore.saveVersionedFromUrl(any(), any(), any()) } returns null
 
         viewModel.loadGame(1L)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -590,7 +590,7 @@ class GameDetailViewModelTest {
 
     @Test
     fun `pickSgdbArtwork HERO only updates heroUri not iconUri`() = runTest {
-        coEvery { cardProcessor.downloadRaw(any(), any(), any(), any()) } returns null
+        coEvery { artworkStore.saveVersionedFromUrl(any(), any(), any()) } returns null
 
         viewModel.loadGame(1L)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -605,11 +605,11 @@ class GameDetailViewModelTest {
     @Test
     fun `pickSgdbArtwork succeeds on second import for same URL`() = runTest {
         // Regression: second SGDB import of the same URL must not fail. Previously, recycling
-        // a Coil memory-cached bitmap caused the second downloadRaw call to return null.
+        // a Coil memory-cached bitmap caused the second download call to return null.
         val firstPath  = "/data/artwork/1/icon_111.jpg"
         val secondPath = "/data/artwork/1/icon_222.jpg"
         coEvery {
-            cardProcessor.downloadRaw(any(), eq("https://cdn.sgdb.com/icon.jpg"), any(), any())
+            artworkStore.saveVersionedFromUrl(any(), any(), eq("https://cdn.sgdb.com/icon.jpg"))
         } returnsMany listOf(firstPath, secondPath)
 
         viewModel.loadGame(1L)
