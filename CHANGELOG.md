@@ -5,7 +5,50 @@ All notable changes to Play Field Portal are documented here. This project follo
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+- **Portable artwork library + ES-DE artwork import.** Settings ▸ Artwork ▸ **Artwork Folder &
+  Import**: pick a folder (SAF, read+write grant — no all-files permission) where PFP keeps
+  artwork as a user-owned, reconnectable library (`pfp-artwork-library.json` manifest,
+  `games/{platform}/{slug}/` entries with per-asset `metadata.json` provenance). Drop another
+  launcher's media under `import/<Launcher>` (ES-DE `downloaded_media` in V1) and PFP detects it
+  by structure, matches artwork to games in three passes (exact ROM filename → display title →
+  tag-stripped title; ambiguities are reviewed, never guessed), shows a full preview (counts by
+  media type, size, needs-review, unmatched), then imports in a background worker with
+  notification progress. **Move mode** transfers same-volume files without copying bytes
+  (`moveDocument`); copy mode uses in-kernel copies. Imports are resumable, respect existing and
+  locked artwork, and land as ES-DE covers→icon, miximages→hero, fanart→background,
+  marquees→logo, plus stored-for-later screenshots/title screens/physical media, and **PDF
+  manuals** — the game's Options ▸ Manual action opens the manual **in-app** (built-in PDF
+  renderer, no external viewer): D-pad ◀▶ turns pages, ▲▼ scrolls, B closes; touch taps the
+  screen edges to turn pages and drags to scroll. Every run is logged to a persistent
+  **Import Report**.
+- **DB v25.** `games.artwork_key` (stable portable identity), `artwork_index` (rebuildable
+  lookup cache over the artwork folder), `artwork_import_reports`.
+- **Game metadata import from ES-DE `gamelist.xml`.** Drop ES-DE's `gamelists` folder alongside
+  the media and the importer fills each matched game's description, developer, publisher,
+  release year, genre and canonical title — fill-missing-only, never overwriting scraped or
+  user-set values. The Game Detail screen now shows publisher and total play time, and the
+  page scrolls with the D-pad (DOWN past the buttons) as well as touch.
+
+- **Relink Library** (Artwork Folder & Import) — reconnects artwork already in the library
+  folder to your games from each entry's `metadata.json`, after a reinstall or lost links.
+- Game Detail shows publisher and total play time; long descriptions are reachable by D-pad
+  (DOWN past the buttons scrolls the page) as well as touch.
+
+### Changed
+- `PlatformFolderHintResolver` and the SAF child-listing helpers moved from `feature-library`
+  to `core-data` so the artwork importer shares the exact ES-DE system-name mapping and
+  cursor-based directory listing the scanners use.
+
+### Fixed
+- Artwork validity checks now understand `content://` references — previously every portable
+  artwork ref was misjudged as stale, so "Scrape Missing Games Only" silently wiped imported
+  artwork links (files were never touched; Relink Library restores them).
+- Concurrent imports of two same-platform games could create a duplicate platform folder
+  ("gba (1)") in the artwork library — directory creation is now serialized.
+- Multi-row disc games (.cue + .bin scanned as two entries) no longer make their artwork
+  "ambiguous"; both rows share the same imported files. Dump-index-prefixed artwork
+  ("0556 - Game.png") matches its game at a degraded confidence.
 
 ## [1.0.0] — 2026-07-07
 

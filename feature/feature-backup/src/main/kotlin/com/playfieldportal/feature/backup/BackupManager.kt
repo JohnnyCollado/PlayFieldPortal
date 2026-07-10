@@ -508,6 +508,11 @@ open class BackupManager @Inject constructor(
             // Where backups are saved (SAF folder). Inert without a live grant; carried so a
             // restore can pre-point the Folder Access picker at it.
             stringPreferencesKey("backup_folder_tree_uri"),
+            // Portable artwork library (SAF folder + mode + library UUID). The tree URI is inert
+            // without a live grant; carrying it lets a restore pre-point the re-link picker.
+            stringPreferencesKey("artwork_folder_tree_uri"),
+            stringPreferencesKey("artwork_storage_mode"),
+            stringPreferencesKey("artwork_library_uuid"),
             // Scraper credentials
             stringPreferencesKey("sgdb_api_key"),
             stringPreferencesKey("igdb_client_id"),

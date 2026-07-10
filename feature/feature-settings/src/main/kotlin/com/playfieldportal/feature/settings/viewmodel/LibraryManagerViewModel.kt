@@ -19,7 +19,7 @@ import com.playfieldportal.feature.launcher.EmulatorProfileRepository
 import com.playfieldportal.feature.launcher.PcLauncherAdapters
 import com.playfieldportal.feature.launcher.PcLauncherCatalog
 import com.playfieldportal.feature.launcher.PcLauncherType
-import com.playfieldportal.feature.library.scanner.PlatformFolderHintResolver
+import com.playfieldportal.core.data.platform.PlatformFolderHintResolver
 import com.playfieldportal.feature.library.scanner.RomScanner
 import com.playfieldportal.feature.library.scanner.ScanResult
 import dagger.hilt.android.lifecycle.HiltViewModel

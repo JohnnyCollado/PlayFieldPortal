@@ -8,6 +8,11 @@ import android.net.Uri
 import android.provider.DocumentsContract
 import androidx.documentfile.provider.DocumentFile
 import com.playfieldportal.core.data.photo.PhotoFileFilter
+import com.playfieldportal.core.data.saf.SafChild
+import com.playfieldportal.core.data.saf.hasNoMediaMarker
+import com.playfieldportal.core.data.saf.isIgnoredDir
+import com.playfieldportal.core.data.saf.querySafChildren
+import com.playfieldportal.core.data.saf.safScanStartDocId
 import com.playfieldportal.core.domain.model.Photo
 import com.playfieldportal.core.domain.model.PhotoLibrary
 import dagger.hilt.android.qualifiers.ApplicationContext

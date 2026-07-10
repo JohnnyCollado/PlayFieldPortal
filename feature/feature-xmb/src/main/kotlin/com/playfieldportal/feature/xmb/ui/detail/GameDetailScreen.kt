@@ -189,12 +189,21 @@ fun GameDetailScreen(
     ) {
         // One shared layout for every entry kind (ROMs, game apps, PC shortcuts), modeled on the
         // hero-card detail mockup: breadcrumb → hero card → icon + play/actions → info + description.
+        // Scrollable by touch, and by D-pad: DOWN past the button row advances pageScrollSteps
+        // (see the ViewModel), which animates the same scroll state in fixed steps.
+        val pageScrollState = rememberScrollState()
+        val pageStepPx = with(LocalDensity.current) { PageScrollStep.roundToPx() }
+        LaunchedEffect(state.pageScrollSteps) {
+            pageScrollState.animateScrollTo(
+                (state.pageScrollSteps * pageStepPx).coerceAtMost(pageScrollState.maxValue),
+            )
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .widthIn(max = 920.dp)
                 .align(Alignment.TopCenter)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(pageScrollState)
                 .padding(start = 28.dp, end = 28.dp, bottom = 22.dp),
         ) {
             DetailBreadcrumb(
@@ -261,8 +270,10 @@ fun GameDetailScreen(
                 GameInfoList(
                     releaseYear = game.releaseYear,
                     developer   = game.developer,
+                    publisher   = game.publisher,
                     genre       = game.genre,
                     lastPlayedAt = game.lastPlayedAt,
+                    playTimeMillis = game.totalPlayTimeMillis,
                     // Package-backed gaming apps launch by package/shortcut — no emulator meta.
                     emulator    = if (state.isPackageBacked) null else (state.emulatorName ?: "Not set"),
                     modifier    = Modifier.weight(0.42f),
@@ -337,6 +348,20 @@ fun GameDetailScreen(
                 onActivateSourceAt = viewModel::activateSourceAt,
                 onPickArtwork = viewModel::pickSgdbArtwork,
                 onClose = viewModel::closeArtworkManager,
+            )
+        }
+
+        // Topmost overlay — the ViewModel routes all gamepad input here while it's open.
+        state.manualViewerUri?.let { source ->
+            ManualViewerOverlay(
+                source      = source,
+                title       = "${game.displayTitle} — Manual",
+                page        = state.manualPage,
+                scrollSteps = state.manualScrollSteps,
+                onPageCount = viewModel::setManualPageCount,
+                onPrevPage  = viewModel::manualPrevPage,
+                onNextPage  = viewModel::manualNextPage,
+                onClose     = viewModel::closeManualViewer,
             )
         }
 
@@ -463,8 +488,10 @@ private fun SquareActionButton(
 private fun GameInfoList(
     releaseYear: Int?,
     developer: String?,
+    publisher: String?,
     genre: String?,
     lastPlayedAt: Long?,
+    playTimeMillis: Long,
     emulator: String?,
     modifier: Modifier = Modifier,
 ) {
@@ -475,9 +502,23 @@ private fun GameInfoList(
     ) {
         releaseYear?.let           { InfoRow(Icons.Filled.CalendarToday, it.toString()) }
         if (!developer.isNullOrBlank()) InfoRow(Icons.Filled.Person, developer)
+        // Publisher shown only when it adds information (often equals the developer).
+        if (!publisher.isNullOrBlank() && !publisher.equals(developer, ignoreCase = true)) {
+            InfoRow(Icons.Filled.Person, "Published by $publisher")
+        }
         if (!genre.isNullOrBlank())     InfoRow(Icons.Filled.SportsEsports, genre)
         lastPlayedAt?.let          { InfoRow(Icons.Filled.Schedule, "Last Played: ${relativeDays(it)}") }
+        if (playTimeMillis > 0)         InfoRow(Icons.Filled.Schedule, "Play Time: ${formatPlayTime(playTimeMillis)}")
         emulator?.let              { InfoRow(Icons.Filled.Monitor, "Emulator: $it") }
+    }
+}
+
+private fun formatPlayTime(millis: Long): String {
+    val minutes = millis / 60_000
+    return when {
+        minutes < 1     -> "Under a minute"
+        minutes < 60    -> "$minutes min"
+        else            -> "${minutes / 60} h ${minutes % 60} min"
     }
 }
 
@@ -546,6 +587,7 @@ private fun ConsoleButton(
 private val HeroBannerHeight: Dp = 220.dp
 private val OptionsPanelMaxHeight: Dp = 440.dp
 private val OptionsRowScrollStep: Dp = 58.dp
+private val PageScrollStep: Dp = 120.dp
 
 private fun DetailAction.dynamicLabel(favorite: Boolean, refreshing: Boolean): String = when (this) {
     DetailAction.FAVORITE -> if (favorite) "Unfavorite" else "Favorite"

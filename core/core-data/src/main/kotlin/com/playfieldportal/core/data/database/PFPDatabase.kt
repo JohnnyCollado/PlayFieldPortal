@@ -6,6 +6,8 @@ import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.playfieldportal.core.data.database.dao.AppOverrideDao
+import com.playfieldportal.core.data.database.dao.ArtworkImportReportDao
+import com.playfieldportal.core.data.database.dao.ArtworkIndexDao
 import com.playfieldportal.core.data.database.dao.BackupDao
 import com.playfieldportal.core.data.database.dao.CategoryDao
 import com.playfieldportal.core.data.database.dao.CollectionDao
@@ -27,6 +29,8 @@ import com.playfieldportal.core.data.database.dao.VideoDao
 import com.playfieldportal.core.data.database.dao.VideoLibraryDao
 import com.playfieldportal.core.data.database.dao.VideoPlaylistDao
 import com.playfieldportal.core.data.database.entity.AppOverrideEntity
+import com.playfieldportal.core.data.database.entity.ArtworkImportReportEntity
+import com.playfieldportal.core.data.database.entity.ArtworkIndexEntity
 import com.playfieldportal.core.data.database.entity.CategoryEntity
 import com.playfieldportal.core.data.database.entity.CategoryItemEntity
 import com.playfieldportal.core.data.database.entity.CollectionEntity
@@ -77,8 +81,10 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         PhotoLibraryEntity::class,
         PhotoEntity::class,
         ScanTombstoneEntity::class,
+        ArtworkIndexEntity::class,
+        ArtworkImportReportEntity::class,
     ],
-    version = 24,
+    version = 25,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -105,6 +111,8 @@ abstract class PFPDatabase : RoomDatabase() {
     abstract fun photoDao(): PhotoDao
     abstract fun scanTombstoneDao(): ScanTombstoneDao
     abstract fun backupDao(): BackupDao
+    abstract fun artworkIndexDao(): ArtworkIndexDao
+    abstract fun artworkImportReportDao(): ArtworkImportReportDao
 
     companion object {
         const val DATABASE_NAME = "pfp_database"
@@ -636,6 +644,41 @@ abstract class PFPDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE games ADD COLUMN tgdb_id INTEGER")
                 db.execSQL("ALTER TABLE games ADD COLUMN igdb_id INTEGER")
                 db.execSQL("ALTER TABLE games ADD COLUMN rom_crc32 TEXT")
+            }
+        }
+
+        // v25 — portable artwork library + ES-DE import. games.artwork_key is the stable portable
+        // identity (rom/{platform}/{slug}, minted lazily). artwork_index is the fast lookup cache
+        // over the user's artwork folder (rebuildable — never source of truth). artwork_import_reports
+        // stores past import runs for the Import Report screen. All additive.
+        val MIGRATION_24_25 = object : Migration(24, 25) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE games ADD COLUMN artwork_key TEXT")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_games_artwork_key ON games (artwork_key)")
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS artwork_index (
+                        `key` TEXT NOT NULL,
+                        kind TEXT NOT NULL,
+                        location TEXT NOT NULL,
+                        doc_uri_or_path TEXT NOT NULL,
+                        size_bytes INTEGER NOT NULL,
+                        updated_at INTEGER NOT NULL,
+                        PRIMARY KEY(`key`, kind)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS artwork_import_reports (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        source TEXT NOT NULL,
+                        started_at INTEGER NOT NULL,
+                        duration_ms INTEGER NOT NULL,
+                        summary_json TEXT NOT NULL
+                    )
+                    """.trimIndent()
+                )
             }
         }
     }

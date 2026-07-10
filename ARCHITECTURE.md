@@ -34,7 +34,7 @@ app  ──▶ feature:*  ──▶ core:core-ui ──▶ core:core-data ──
 | `feature:feature-xmb` | The XMB shell — wave background, category bar, item list, status bar, game/app detail, context menus, the main `XMBViewModel` |
 | `feature:feature-library` | ROM scanning into the Memory Card library |
 | `feature:feature-launcher` | Emulator detection + intent resolution (launching a ROM in the right emulator) |
-| `feature:feature-artwork` | SteamGridDB client + artwork management |
+| `feature:feature-artwork` | Metadata/artwork scrapers (ScreenScraper/TGDB/IGDB/SteamGridDB), the `ArtworkStore` storage seam, the portable artwork library (`portable/` — user-owned SAF folder, manifest, per-entry metadata) and the ES-DE artwork importer (`importer/`) |
 | `feature:feature-themes` | `.xmbtheme` package loader (no in-app install entry point yet — loader is ready to wire up) |
 | `feature:feature-settings` | All settings screens |
 | `feature:feature-appbar` | App drawer, app→category classification, filtering |
@@ -43,7 +43,7 @@ app  ──▶ feature:*  ──▶ core:core-ui ──▶ core:core-data ──
 ## Data layer (`core:core-data`)
 
 - **Room** database [`PFPDatabase`](core/core-data/src/main/kotlin/com/playfieldportal/core/data/database/PFPDatabase.kt)
-  (currently **v13**). Migrations are hand-written, one `MIGRATION_n_n+1` per version, registered
+  (currently **v25**). Migrations are hand-written, one `MIGRATION_n_n+1` per version, registered
   in [`DatabaseModule`](core/core-data/src/main/kotlin/com/playfieldportal/core/data/database/di/DatabaseModule.kt).
   **Never** use destructive migration — it would wipe the user's library.
 - **Seeding** is first-run only, gated by a DataStore flag, in

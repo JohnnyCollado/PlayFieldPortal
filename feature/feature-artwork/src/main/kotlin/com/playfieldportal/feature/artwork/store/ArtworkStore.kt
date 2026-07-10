@@ -15,6 +15,13 @@ enum class ArtworkKind {
     LOGO,
     MANUAL,
     VIDEO,
+
+    // Imported-but-not-yet-displayed kinds (ES-DE screenshots/titlescreens/physicalmedia).
+    // Stored like MANUAL/VIDEO — resolved by fixed filename, never referenced from game
+    // columns — so future themes can adopt them with zero schema changes.
+    SCREENSHOT,
+    TITLESCREEN,
+    PHYSICAL_MEDIA,
 }
 
 /**

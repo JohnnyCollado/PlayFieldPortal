@@ -182,12 +182,40 @@ interface GameDao {
     @Query("UPDATE games SET scraped_title = :scrapedTitle WHERE id = :id")
     suspend fun updateScrapedTitle(id: Long, scrapedTitle: String?)
 
+    // Fill-missing-only metadata write (reversed COALESCE — the EXISTING value always wins).
+    // Used by the artwork importer's gamelist.xml pass: imported metadata never overwrites
+    // anything a scraper or the user already set.
+    @Query("""
+        UPDATE games SET
+            description   = COALESCE(description,   :description),
+            developer     = COALESCE(developer,     :developer),
+            publisher     = COALESCE(publisher,     :publisher),
+            release_year  = COALESCE(release_year,  :releaseYear),
+            genre         = COALESCE(genre,         :genre),
+            scraped_title = COALESCE(scraped_title, :scrapedTitle)
+        WHERE id = :id
+    """)
+    suspend fun updateMetadataIfMissing(
+        id: Long,
+        description: String?  = null,
+        developer: String?    = null,
+        publisher: String?    = null,
+        releaseYear: Int?     = null,
+        genre: String?        = null,
+        scrapedTitle: String? = null,
+    )
+
     // Stores the user-chosen display name. Pass null to clear and fall back to scrapedTitle/title.
     @Query("UPDATE games SET user_title_override = :override WHERE id = :id")
     suspend fun updateUserTitleOverride(id: Long, override: String?)
 
     @Query("UPDATE games SET icon_uri = :iconUri WHERE id = :id")
     suspend fun updateIconUri(id: Long, iconUri: String?)
+
+    // Mints the portable artwork key once — an already-set key is never rewritten (slug rules
+    // may evolve; the key recorded at first save is the one the folder was created under).
+    @Query("UPDATE games SET artwork_key = COALESCE(artwork_key, :artworkKey) WHERE id = :id")
+    suspend fun mintArtworkKey(id: Long, artworkKey: String)
 
     // Clears all artwork references so a re-scrape starts from a clean slate.
     @Query("UPDATE games SET artwork_uri = NULL, hero_uri = NULL, logo_uri = NULL, icon_uri = NULL")

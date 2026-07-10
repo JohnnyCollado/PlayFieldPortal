@@ -6,6 +6,11 @@ import android.net.Uri
 import android.provider.DocumentsContract
 import androidx.documentfile.provider.DocumentFile
 import com.playfieldportal.core.data.music.AudioFileFilter
+import com.playfieldportal.core.data.saf.SafChild
+import com.playfieldportal.core.data.saf.hasNoMediaMarker
+import com.playfieldportal.core.data.saf.isIgnoredDir
+import com.playfieldportal.core.data.saf.querySafChildren
+import com.playfieldportal.core.data.saf.safScanStartDocId
 import com.playfieldportal.core.domain.model.MusicFolder
 import com.playfieldportal.core.domain.model.MusicTrack
 import dagger.hilt.android.qualifiers.ApplicationContext

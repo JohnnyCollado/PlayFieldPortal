@@ -3,6 +3,8 @@ package com.playfieldportal.feature.library.scanner
 import android.content.Context
 import android.net.Uri
 import android.provider.DocumentsContract
+import com.playfieldportal.core.data.platform.PlatformFolderHintResolver
+import com.playfieldportal.core.data.saf.querySafChildren
 import com.playfieldportal.core.domain.model.Game
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers

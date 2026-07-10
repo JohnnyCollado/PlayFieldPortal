@@ -1,4 +1,4 @@
-package com.playfieldportal.feature.library.scanner
+package com.playfieldportal.core.data.saf
 
 import android.content.ContentResolver
 import android.net.Uri
@@ -8,8 +8,8 @@ import timber.log.Timber
 // One row of a SAF directory's child listing — everything a scanner needs, from a single cursor.
 // DocumentFile issues a separate ContentResolver IPC query per property per file (name, type,
 // lastModified, length, isDirectory ≈ 6 round-trips each); this fetches a whole directory in one
-// query. Shared by the photo/video/music scanners.
-internal data class SafChild(
+// query. Shared by the library scanners and the artwork importer.
+data class SafChild(
     val documentId: String,
     val uri: Uri,
     val name: String,
@@ -21,17 +21,17 @@ internal data class SafChild(
 
 // A directory carrying a `.nomedia` marker must not be indexed — its own files and its whole
 // subtree are skipped (the standard Android convention for "don't scan this folder").
-internal fun List<SafChild>.hasNoMediaMarker(): Boolean =
+fun List<SafChild>.hasNoMediaMarker(): Boolean =
     any { !it.isDirectory && it.name.equals(".nomedia", ignoreCase = true) }
 
 // Directories pruned immediately without entering: dotfiles/hidden dirs (`.thumbnails`, `.trash`,
 // the PFP thumbnail cache, Android cache dirs, etc.). Cheaper than recursing then discarding.
-internal fun SafChild.isIgnoredDir(): Boolean = isDirectory && name.startsWith(".")
+fun SafChild.isIgnoredDir(): Boolean = isDirectory && name.startsWith(".")
 
 // The DFS start for a library uri: a plain tree uri starts at its tree document; a
 // document-under-tree uri (an auto-detected subfolder of a granted media root) starts at that
 // document, so the scan covers just the subfolder while riding the root's grant.
-internal fun safScanStartDocId(context: android.content.Context, uri: Uri): String =
+fun safScanStartDocId(context: android.content.Context, uri: Uri): String =
     if (DocumentsContract.isDocumentUri(context, uri)) DocumentsContract.getDocumentId(uri)
     else DocumentsContract.getTreeDocumentId(uri)
 
@@ -39,7 +39,7 @@ internal fun safScanStartDocId(context: android.content.Context, uri: Uri): Stri
 // buildChildDocumentsUriUsingTree, so every returned uri stays scoped to the tree permission the
 // user granted — a scan can never read outside the folder they picked. Malformed provider rows
 // (null id/name) are skipped and a failing provider yields an empty list instead of a crash.
-internal fun ContentResolver.querySafChildren(treeUri: Uri, parentDocumentId: String): List<SafChild> {
+fun ContentResolver.querySafChildren(treeUri: Uri, parentDocumentId: String): List<SafChild> {
     val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, parentDocumentId)
     val projection = arrayOf(
         DocumentsContract.Document.COLUMN_DOCUMENT_ID,

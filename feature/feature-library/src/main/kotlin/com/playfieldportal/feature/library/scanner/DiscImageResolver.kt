@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.library.scanner
 
+import com.playfieldportal.core.data.platform.PlatformFolderHintResolver
 import timber.log.Timber
 import java.io.File
 import javax.inject.Inject

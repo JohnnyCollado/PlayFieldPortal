@@ -148,6 +148,9 @@ private class FakeCollectionDao : CollectionDao {
     override suspend fun getCollectionIdsForGame(gameId: Long): List<Long> =
         memberships.filter { it.gameId == gameId }.map { it.collectionId }
 
+    override suspend fun getGameIdsInCollection(collectionId: Long): List<Long> =
+        memberships.filter { it.collectionId == collectionId }.map { it.gameId }
+
     override suspend fun isGameInCollection(collectionId: Long, gameId: Long): Int =
         memberships.count { it.collectionId == collectionId && it.gameId == gameId }
 

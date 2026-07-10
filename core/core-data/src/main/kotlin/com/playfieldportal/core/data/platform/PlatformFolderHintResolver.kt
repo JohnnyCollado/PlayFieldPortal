@@ -1,4 +1,4 @@
-package com.playfieldportal.feature.library.scanner
+package com.playfieldportal.core.data.platform
 
 import javax.inject.Inject
 import javax.inject.Singleton

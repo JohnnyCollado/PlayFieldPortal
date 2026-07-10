@@ -16,6 +16,7 @@ import kotlinx.serialization.Serializable
         Index("is_favorite"),
         Index("last_played_at"),
         Index("rom_path", unique = true),
+        Index("artwork_key"),
     ]
 )
 data class GameEntity(
@@ -81,6 +82,12 @@ data class GameEntity(
     // evidence. Null when the ROM is missing, too large to hash, or hasn't been scraped yet.
     @ColumnInfo(name = "rom_crc32")
     val romCrc32: String? = null,
+
+    // Stable portable-artwork identity (rom/{platform}/{slug}, app/{pkg}, …), minted lazily by
+    // ArtworkKeyFactory on first artwork save/import. Joins the volatile Room id to the
+    // user-owned artwork folder so a fresh install can reconnect artwork by key.
+    @ColumnInfo(name = "artwork_key")
+    val artworkKey: String? = null,
 
     @ColumnInfo(name = "is_favorite")
     val isFavorite: Boolean = false,
@@ -148,6 +155,7 @@ fun GameEntity.toDomain() = Game(
     tgdbId              = tgdbId,
     igdbId              = igdbId,
     romCrc32            = romCrc32,
+    artworkKey          = artworkKey,
     isFavorite          = isFavorite,
     favoriteSortOrder   = favoriteSortOrder,
     totalPlayTimeMillis = totalPlayTimeMillis,
@@ -183,6 +191,7 @@ fun Game.toEntity() = GameEntity(
     tgdbId              = tgdbId,
     igdbId              = igdbId,
     romCrc32            = romCrc32,
+    artworkKey          = artworkKey,
     isFavorite          = isFavorite,
     favoriteSortOrder   = favoriteSortOrder,
     totalPlayTimeMillis = totalPlayTimeMillis,

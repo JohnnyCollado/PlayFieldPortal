@@ -49,7 +49,10 @@ dependencies {
     implementation(libs.bundles.ktor)
     implementation(libs.coil.compose)
     implementation(libs.datastore.preferences)
+    implementation(libs.workmanager.ktx)
+    implementation(libs.hilt.work)
     ksp(libs.hilt.compiler)
+    ksp(libs.hilt.work.compiler)
     testImplementation(libs.bundles.test.unit)
 
     implementation(project(":core:core-common"))

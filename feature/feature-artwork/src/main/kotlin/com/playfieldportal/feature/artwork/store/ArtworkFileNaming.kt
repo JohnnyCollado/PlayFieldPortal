@@ -20,7 +20,16 @@ object ArtworkFileNaming {
         ArtworkKind.LOGO       -> "logo.png"
         ArtworkKind.MANUAL     -> "manual.pdf"
         ArtworkKind.VIDEO      -> "video.mp4"
+        ArtworkKind.SCREENSHOT     -> "screenshot.jpg"
+        ArtworkKind.TITLESCREEN    -> "titlescreen.jpg"
+        ArtworkKind.PHYSICAL_MEDIA -> "physicalmedia.png"
     }
+
+    /**
+     * The extension-less base name used in the portable library, where the real extension is
+     * sniffed from the payload (`icon.png` and `icon.jpg` are both valid portable names).
+     */
+    fun baseName(kind: ArtworkKind): String = fixedName(kind).substringBeforeLast('.')
 
     /** A fresh timestamped filename for a user pick of [kind]. */
     fun versionedName(kind: ArtworkKind, ext: String, nowMillis: Long = System.currentTimeMillis()): String =

@@ -1,4 +1,4 @@
-package com.playfieldportal.feature.library.scanner
+package com.playfieldportal.core.data.platform
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull

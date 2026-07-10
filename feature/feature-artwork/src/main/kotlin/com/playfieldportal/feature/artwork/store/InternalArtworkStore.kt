@@ -70,6 +70,15 @@ class InternalArtworkStore @Inject constructor(
     override fun isValidRef(ref: String?): Boolean {
         if (ref.isNullOrBlank()) return false
         if (ref.startsWith("http", ignoreCase = true)) return true
+        // Portable-library references. A ref is valid when the document still opens under our
+        // persisted grant — File() checks would misjudge every content:// ref as stale, which
+        // made scrape-missing wipe imported artwork.
+        if (ref.startsWith("content://", ignoreCase = true)) {
+            return runCatching {
+                context.contentResolver.openAssetFileDescriptor(Uri.parse(ref), "r")
+                    ?.use { it.length != 0L } ?: false
+            }.getOrDefault(false)
+        }
         return runCatching { File(ref).let { it.exists() && it.length() > 0 } }.getOrDefault(false)
     }
 

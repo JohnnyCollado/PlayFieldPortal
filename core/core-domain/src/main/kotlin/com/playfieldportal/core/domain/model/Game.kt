@@ -35,6 +35,8 @@ data class Game(
     val igdbId: Long?             = null,   // IGDB
     // Streamed CRC-32 of the ROM payload (zip-inner for zipped cartridge ROMs), uppercase hex.
     val romCrc32: String?         = null,
+    // Stable portable-artwork identity (rom/{platform}/{slug}, …), minted lazily on first save.
+    val artworkKey: String?       = null,
     val isFavorite: Boolean = false,
     val favoriteSortOrder: Int = 0,
     val totalPlayTimeMillis: Long = 0,

@@ -36,6 +36,14 @@ fun ArtworkSettingsScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
 
+    // Artwork Folder & Import lives on its own sub-screen (same pattern as Library Manager's
+    // internal sections) — BACK returns here.
+    var showImport by remember { mutableStateOf(false) }
+    if (showImport) {
+        ArtworkImportScreen(onBack = { showImport = false }, modifier = modifier)
+        return
+    }
+
     var sgdbKeyDraft by remember(state.apiKeyMasked) { mutableStateOf("") }
     var igdbClientIdDraft by remember(state.igdbClientId) { mutableStateOf("") }
     var igdbClientSecretDraft by remember { mutableStateOf("") }
@@ -53,6 +61,15 @@ fun ArtworkSettingsScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState()),
         ) {
+
+            // ── Artwork library / import ──────────────────────────────────────
+            SettingsGroup("Artwork Library")
+
+            SettingsRow(
+                label    = "Artwork Folder & Import",
+                sublabel = "Choose where artwork is stored and import existing artwork from ES-DE",
+                onClick  = { showImport = true },
+            )
 
             // ── Artwork status ────────────────────────────────────────────────
             SettingsGroup("Library Artwork Status")

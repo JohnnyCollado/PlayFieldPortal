@@ -84,6 +84,9 @@ data class GameDetailUiState(
 
     // ── Minimal one-screen navigation ─────────────────────────────────────
     val mainFocus: Int = 0,
+    // D-pad page scrolling: DOWN past the button row scrolls the page in steps so gamepad
+    // users can read the full info/description area; UP unwinds before refocusing Play.
+    val pageScrollSteps: Int = 0,
     val showOptions: Boolean = false,
     val optionsIndex: Int = 0,
     val mediaUris: List<String> = emptyList(),
@@ -95,6 +98,12 @@ data class GameDetailUiState(
     // ── Title editing ─────────────────────────────────────────────────────
     val isEditingTitle: Boolean = false,
     val titleText: String = "",
+
+    // ── In-app manual viewer ──────────────────────────────────────────────
+    val manualViewerUri: String? = null,     // non-null = viewer open
+    val manualPage: Int = 0,
+    val manualPageCount: Int = 0,
+    val manualScrollSteps: Int = 0,
 
     // ── XMB Artwork Manager ───────────────────────────────────────────────
     val showArtworkManager: Boolean = false,
@@ -157,6 +166,10 @@ enum class DetailAction(val label: String) {
 // Last focusable index on the main page (0 = Play, 1 = Options gear, 2 = Artwork brush).
 const val MAIN_FOCUS_LAST = 2
 
+// Upper bound for D-pad page scrolling — generous enough for the longest descriptions; the
+// screen clamps to the real content height, so overshoot is harmless.
+const val MAX_PAGE_SCROLL_STEPS = 20
+
 // ── ViewModel ─────────────────────────────────────────────────────────────────
 @HiltViewModel
 class GameDetailViewModel @Inject constructor(
@@ -172,6 +185,7 @@ class GameDetailViewModel @Inject constructor(
     private val igdbApi: IgdbApi,
     private val theGamesDb: TheGamesDbApi,
     private val artworkStore: ArtworkStore,
+    private val artworkIndexDao: com.playfieldportal.core.data.database.dao.ArtworkIndexDao,
     private val menuSound: com.playfieldportal.core.ui.sound.MenuSoundPlayer,
     private val discordPresence: com.playfieldportal.core.data.discord.DiscordPresenceController,
     private val launcherShortcutRepository: com.playfieldportal.feature.appbar.LauncherShortcutRepository,
@@ -223,6 +237,8 @@ class GameDetailViewModel @Inject constructor(
                     emulatorName      = emulator,
                     isLoading          = false,
                     mainFocus          = 0,
+                    pageScrollSteps    = 0,
+                    manualViewerUri    = null,
                     showOptions        = false,
                     optionsIndex       = 0,
                     confirmRemove      = false,
@@ -241,6 +257,12 @@ class GameDetailViewModel @Inject constructor(
 
     fun handleGamepadAction(action: GamepadAction) {
         val s = _uiState.value
+
+        // The manual viewer is the topmost overlay — it owns all input while open.
+        if (s.manualViewerUri != null) {
+            handleManualViewerInput(action)
+            return
+        }
 
         if (s.confirmRemove) {
             when (action) {
@@ -293,8 +315,15 @@ class GameDetailViewModel @Inject constructor(
         when (action) {
             GamepadAction.NAVIGATE_LEFT  -> _uiState.update { it.copy(mainFocus = (it.mainFocus - 1).coerceIn(0, MAIN_FOCUS_LAST), actionMessage = null) }
             GamepadAction.NAVIGATE_RIGHT -> _uiState.update { it.copy(mainFocus = (it.mainFocus + 1).coerceIn(0, MAIN_FOCUS_LAST), actionMessage = null) }
-            GamepadAction.NAVIGATE_UP    -> _uiState.update { it.copy(mainFocus = 0, actionMessage = null) }
-            GamepadAction.NAVIGATE_DOWN  -> _uiState.update { it.copy(mainFocus = 1, actionMessage = null) }
+            GamepadAction.NAVIGATE_UP    -> _uiState.update {
+                if (it.pageScrollSteps > 0) it.copy(pageScrollSteps = it.pageScrollSteps - 1, actionMessage = null)
+                else it.copy(mainFocus = 0, actionMessage = null)
+            }
+            GamepadAction.NAVIGATE_DOWN  -> _uiState.update {
+                // First DOWN moves to the button row; further DOWNs scroll the page.
+                if (it.mainFocus == 0) it.copy(mainFocus = 1, actionMessage = null)
+                else it.copy(pageScrollSteps = (it.pageScrollSteps + 1).coerceAtMost(MAX_PAGE_SCROLL_STEPS), actionMessage = null)
+            }
             GamepadAction.SELECT        -> when (s.mainFocus) {
                 0 -> { Timber.d("Controller SELECT activated Play"); launch() }
                 1 -> openOptions()
@@ -774,29 +803,58 @@ class GameDetailViewModel @Inject constructor(
     private fun openManual() {
         val game = _uiState.value.game ?: return
         viewModelScope.launch {
+            // Internal store first (scraped manuals), then the portable artwork library
+            // (imported manuals live at games/{platform}/{slug}/manual.pdf, tracked by the index).
             val path = artworkStore.find(game.id, ArtworkKind.MANUAL)
+                ?: game.artworkKey?.let { key ->
+                    artworkIndexDao.get(key, ArtworkKind.MANUAL.name)?.docUriOrPath
+                }
             if (path == null) {
                 showActionMessage("No manual available for this game")
                 return@launch
             }
-            val intent = runCatching {
-                val uri = androidx.core.content.FileProvider.getUriForFile(
-                    context, "${context.packageName}.fileprovider", java.io.File(path),
+            // Displayed in-app via PdfRenderer (ManualViewerOverlay) — no external PDF app needed.
+            _uiState.update {
+                it.copy(
+                    showOptions = false,
+                    manualViewerUri = path,
+                    manualPage = 0,
+                    manualPageCount = 0,
+                    manualScrollSteps = 0,
                 )
-                Intent(Intent.ACTION_VIEW).apply {
-                    setDataAndType(uri, "application/pdf")
-                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-            }.onFailure { Timber.e(it, "Could not build manual intent for ${game.id}") }.getOrNull()
-            if (intent == null) {
-                showActionMessage("Could not open manual")
-                return@launch
             }
-            if (intent.resolveActivity(context.packageManager) == null) {
-                showActionMessage("No PDF viewer installed")
-                return@launch
+        }
+    }
+
+    fun closeManualViewer() = _uiState.update { it.copy(manualViewerUri = null) }
+
+    fun setManualPageCount(count: Int) = _uiState.update {
+        it.copy(manualPageCount = count, manualPage = it.manualPage.coerceIn(0, (count - 1).coerceAtLeast(0)))
+    }
+
+    fun manualPrevPage() = _uiState.update {
+        it.copy(manualPage = (it.manualPage - 1).coerceAtLeast(0), manualScrollSteps = 0)
+    }
+
+    fun manualNextPage() = _uiState.update {
+        it.copy(
+            manualPage = (it.manualPage + 1).coerceAtMost((it.manualPageCount - 1).coerceAtLeast(0)),
+            manualScrollSteps = 0,
+        )
+    }
+
+    private fun handleManualViewerInput(action: GamepadAction) {
+        when (action) {
+            GamepadAction.NAVIGATE_LEFT  -> manualPrevPage()
+            GamepadAction.NAVIGATE_RIGHT -> manualNextPage()
+            GamepadAction.NAVIGATE_DOWN  -> _uiState.update {
+                it.copy(manualScrollSteps = (it.manualScrollSteps + 1).coerceAtMost(MAX_PAGE_SCROLL_STEPS))
             }
-            _launchEffect.trySend(intent)
+            GamepadAction.NAVIGATE_UP    -> _uiState.update {
+                it.copy(manualScrollSteps = (it.manualScrollSteps - 1).coerceAtLeast(0))
+            }
+            GamepadAction.BACK           -> closeManualViewer()
+            else -> Unit
         }
     }
 

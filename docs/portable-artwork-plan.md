@@ -420,6 +420,26 @@ ScreenScraper account section (username, password, Test — calls `ssuserInfos.p
   SS account section + toggles + source-priority display in Artwork Settings. Dev credentials ride
   local.properties → BuildConfig; SS is silently disabled until they exist.
   Remaining: SOURCE_SS tab in the Game Detail Artwork Manager; live smoke test with real credentials.
+- **M2 remainder + M3 (partial) + ES-DE importer: DONE (July 2026)** — pulled forward by the
+  ES-DE artwork importer, which sits on the portable layout directly:
+  - `ArtworkNaming` (frozen normalization v1) + `ArtworkKeyFactory` + table-driven tests;
+    `games.artwork_key` minted on import (DB v25 with `artwork_index` + `artwork_import_reports`).
+  - `ArtworkFolderRepository` (persisted writable tree grant; keys ride the backup mechanism),
+    `ArtworkLibraryManifest`, `PortableArtworkLibrary` (DocumentsContract-only SAF layer: docId
+    caching, header sniffing before any write, kernel-copy via `FileUtils.copy`, same-tree
+    `moveDocument` fast path, truncating metadata writes).
+  - Importer engine (`importer/`): `ArtworkImportSource` registry with `EsDeImportSource`
+    (structural detection, tolerant of `downloaded_media` nesting, recursive media dirs),
+    3-pass `ArtworkImportMatcher` (tested), read-only `ArtworkImportPlanner` with ambiguous
+    review (assign/skip), resumable bounded-concurrency `ArtworkImportExecutor` (per-entry
+    metadata.json provenance incl. `locked`, index rows, per-game column updates, persisted
+    reports), `ArtworkImportWorker` (plan handed off as JSON file, throttled progress,
+    honest cancel reports).
+  - Settings UI: Artwork ▸ Artwork Folder & Import (folder link/re-link/forget, source
+    detection, preview with per-kind counts + Move toggle, ambiguous review, background
+    progress, Import Report list).
+  - NOT yet done from M3–M7: scraper writes still land internally (imported art is portable,
+    scraped art is not), migration worker/rollback, reconnect matcher stages 2–6, Verify/Cleanup.
 
 ## Resolved decisions (July 2026)
 
