@@ -26,15 +26,43 @@ object ArtworkTempIO {
             response.bodyAsChannel().toInputStream().use { copyToTemp(it, cacheDir, kind) }
         }.onFailure { Timber.w(it, "Artwork download error for $url") }.getOrNull()
 
-    /** Streams [input] into a cache temp file; null if empty or the wrong payload type for [kind]. */
+    // Per-kind download ceilings. No legitimate scraper asset comes close (covers are a few MB,
+    // manuals tens of MB); the cap is what stops a hostile or broken server from streaming
+    // unbounded bytes into the cache partition.
+    private const val MAX_IMAGE_BYTES = 50L * 1024 * 1024
+    private const val MAX_MEDIA_BYTES = 200L * 1024 * 1024
+
+    fun maxBytesFor(kind: ArtworkKind): Long = when (kind) {
+        ArtworkKind.MANUAL, ArtworkKind.VIDEO -> MAX_MEDIA_BYTES
+        else -> MAX_IMAGE_BYTES
+    }
+
+    /**
+     * Streams [input] into a cache temp file; null if empty, over the per-kind size cap, or the
+     * wrong payload type for [kind]. An over-cap stream is abandoned mid-copy, never fully drained.
+     */
     fun copyToTemp(input: InputStream, cacheDir: File, kind: ArtworkKind): File? {
         val tmp = File.createTempFile("artwork_", ".part", cacheDir)
+        val maxBytes = maxBytesFor(kind)
         val ok = runCatching {
-            tmp.outputStream().use { input.copyTo(it) }
-            tmp.length() > 0 && PayloadCheck.accepts(kind, headerOf(tmp))
+            var total = 0L
+            tmp.outputStream().use { out ->
+                val buf = ByteArray(64 * 1024)
+                while (true) {
+                    val n = input.read(buf)
+                    if (n == -1) break
+                    total += n
+                    if (total > maxBytes) {
+                        Timber.w("Artwork payload rejected — exceeds ${maxBytes / (1024 * 1024)} MB cap for $kind")
+                        return@runCatching false
+                    }
+                    out.write(buf, 0, n)
+                }
+            }
+            total > 0 && PayloadCheck.accepts(kind, headerOf(tmp))
         }.getOrDefault(false)
         if (!ok) {
-            Timber.w("Artwork payload rejected — empty or wrong type for $kind")
+            Timber.w("Artwork payload rejected for $kind")
             tmp.delete()
             return null
         }

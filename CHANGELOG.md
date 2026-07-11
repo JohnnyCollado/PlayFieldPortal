@@ -10,7 +10,7 @@ All notable changes to Play Field Portal are documented here. This project follo
   Import**: pick a folder (SAF, read+write grant — no all-files permission) where PFP keeps
   artwork as a user-owned, reconnectable library in an **ES-DE-shaped layout** —
   `{platform}/{covers,fanart,marquees,…}/{ROM Filename}.png` with a root
-  `pfp-media-library` manifest — so the folder is directly browsable and usable by other
+  `pfp-artwork-library.json` manifest — so the folder is directly browsable and usable by other
   frontends, no export step needed. Provenance (source, user-assigned, locked) lives in the
   `artwork_records` table. Drop another
   launcher's media under `import/<Launcher>` (ES-DE `downloaded_media` in V1) and PFP detects it

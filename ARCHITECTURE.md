@@ -43,7 +43,7 @@ app  ──▶ feature:*  ──▶ core:core-ui ──▶ core:core-data ──
 ## Data layer (`core:core-data`)
 
 - **Room** database [`PFPDatabase`](core/core-data/src/main/kotlin/com/playfieldportal/core/data/database/PFPDatabase.kt)
-  (currently **v25**). Migrations are hand-written, one `MIGRATION_n_n+1` per version, registered
+  (currently **v26**). Migrations are hand-written, one `MIGRATION_n_n+1` per version, registered
   in [`DatabaseModule`](core/core-data/src/main/kotlin/com/playfieldportal/core/data/database/di/DatabaseModule.kt).
   **Never** use destructive migration — it would wipe the user's library.
 - **Seeding** is first-run only, gated by a DataStore flag, in

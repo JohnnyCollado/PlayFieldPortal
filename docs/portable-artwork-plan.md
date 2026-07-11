@@ -1,6 +1,8 @@
 # Portable Artwork Library — Architecture & Implementation Plan
 
-Status: **DRAFT — awaiting approval. No code written.**
+Status: **IMPLEMENTED (July 2026)** — ScreenScraper re-integration, storage seam and identity
+columns shipped on `artwork-refactor`. The folder-layout portions of this plan are superseded
+by `portable-media-library-plan.md` (ES-DE-shaped layout v2, `artwork_records`, DB v26).
 Author: architecture pass, July 2026 (branch `artwork-refactor`)
 
 ---
