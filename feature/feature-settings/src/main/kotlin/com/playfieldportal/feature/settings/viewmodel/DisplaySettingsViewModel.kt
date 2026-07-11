@@ -30,11 +30,12 @@ private val KEY_SHOW_BOOT          = booleanPreferencesKey("display_show_boot")
 private val KEY_BOOT_ON_RESUME     = booleanPreferencesKey("display_boot_on_resume")
 private val KEY_THERMAL_AWARE      = booleanPreferencesKey("display_thermal_aware")
 private val KEY_RESPECT_BATTERY    = booleanPreferencesKey("display_battery_saver")
-private val KEY_ICON_STYLE         = stringPreferencesKey("display_icon_style")
 // Must match XMBViewModel.KEY_TOUCH_NAV_BUTTON — both read/write this same pref.
 private val KEY_TOUCH_NAV_BUTTON   = stringPreferencesKey("interface_touch_nav_button")
 // Must match XMBViewModel.KEY_TOUCH_SENSITIVITY — both read/write this same pref.
 private val KEY_TOUCH_SENSITIVITY  = stringPreferencesKey("interface_touch_sensitivity")
+// Must match GameLaunchPreferences.KEY_DIRECT_LAUNCH — both read/write this same pref.
+private val KEY_DIRECT_LAUNCH      = booleanPreferencesKey("pref_direct_game_launch")
 internal val KEY_CUSTOM_WALLPAPER  = stringPreferencesKey("display_custom_wallpaper")
 // Must match XMBViewModel.KEY_MENU_SOUND_ENABLED — both read/write this same pref.
 private val KEY_MENU_SOUND         = booleanPreferencesKey("sound_menu_enabled")
@@ -51,12 +52,6 @@ const val BAR_TOP_MIN = 0.05f
 const val BAR_TOP_MAX = 0.45f
 const val BAR_TOP_STEP = 0.02f
 const val BAR_TOP_DEFAULT = 0.11f
-
-private val ICON_STYLE_LABELS = mapOf(
-    "PSP_RECTANGLE" to "PSP Rectangle",
-    "CARTRIDGE"     to "Cartridge",
-)
-private val ICON_STYLE_ORDER = listOf("PSP_RECTANGLE", "CARTRIDGE")
 
 private val SUPPORTED_WALLPAPER_MIME = setOf("image/png", "image/jpeg", "image/webp")
 
@@ -85,11 +80,11 @@ data class DisplaySettingsUiState(
     val showBootOnResume: Boolean = false,
     val thermalThrottleAware: Boolean = true,
     val respectBatterySaver: Boolean = true,
-    // Raw enum name — mapped to a display label in the UI
-    val iconStyleName: String = "PSP_RECTANGLE",
     val touchNavButtonMode: TouchNavButtonMode = TouchNavButtonMode.AUTO,
     val touchSensitivity: TouchSensitivity = TouchSensitivity.NORMAL,
     val menuSoundEnabled: Boolean = true,
+    // Confirm on a game launches it directly (true) or opens Game Detail first (false).
+    val directLaunch: Boolean = false,
     val customWallpaperPath: String? = null,
     // Scale & Layout
     val xmbScale: Float = 1f,
@@ -124,10 +119,10 @@ class DisplaySettingsViewModel @Inject constructor(
             showBootOnResume     = prefs[KEY_BOOT_ON_RESUME]  ?: false,
             thermalThrottleAware = prefs[KEY_THERMAL_AWARE]   ?: true,
             respectBatterySaver  = prefs[KEY_RESPECT_BATTERY] ?: true,
-            iconStyleName        = prefs[KEY_ICON_STYLE]      ?: "PSP_RECTANGLE",
             touchNavButtonMode   = TouchNavButtonMode.fromName(prefs[KEY_TOUCH_NAV_BUTTON]),
             touchSensitivity     = TouchSensitivity.fromName(prefs[KEY_TOUCH_SENSITIVITY]),
             menuSoundEnabled     = prefs[KEY_MENU_SOUND]      ?: true,
+            directLaunch         = prefs[KEY_DIRECT_LAUNCH]   ?: false,
             customWallpaperPath  = prefs[KEY_CUSTOM_WALLPAPER],
             xmbScale             = (prefs[KEY_XMB_SCALE] ?: 1f).coerceIn(XMB_SCALE_MIN, XMB_SCALE_MAX),
             barTopFraction       = (prefs[KEY_BAR_TOP_FRACTION] ?: BAR_TOP_DEFAULT).coerceIn(BAR_TOP_MIN, BAR_TOP_MAX),
@@ -149,15 +144,7 @@ class DisplaySettingsViewModel @Inject constructor(
     fun setThermalThrottleAware(v: Boolean)  = save { it[KEY_THERMAL_AWARE]   = v }
     fun setRespectBatterySaver(v: Boolean)   = save { it[KEY_RESPECT_BATTERY] = v }
     fun setMenuSoundEnabled(v: Boolean)      = save { it[KEY_MENU_SOUND]      = v }
-
-    fun cycleIconStyle() {
-        val current = uiState.value.iconStyleName
-        val idx  = ICON_STYLE_ORDER.indexOf(current).coerceAtLeast(0)
-        val next = ICON_STYLE_ORDER[(idx + 1) % ICON_STYLE_ORDER.size]
-        save { it[KEY_ICON_STYLE] = next }
-    }
-
-    fun iconStyleLabel(): String = ICON_STYLE_LABELS[uiState.value.iconStyleName] ?: uiState.value.iconStyleName
+    fun setDirectLaunch(v: Boolean)          = save { it[KEY_DIRECT_LAUNCH]   = v }
 
     fun cycleTouchNavButtonMode() {
         val modes = TouchNavButtonMode.entries

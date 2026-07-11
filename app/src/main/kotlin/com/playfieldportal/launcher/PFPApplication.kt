@@ -60,6 +60,14 @@ class PFPApplication : Application(), Configuration.Provider {
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
         }
+        // File log (Settings ▸ Logs) on every build: INFO+ only, redacted (credentials,
+        // account names, emails never reach disk), size-capped — users can share these
+        // files to report problems from the field.
+        Timber.plant(
+            com.playfieldportal.core.common.logging.PfpFileLoggingTree(
+                java.io.File(filesDir, "logs")
+            )
+        )
     }
 
     override val workManagerConfiguration: Configuration

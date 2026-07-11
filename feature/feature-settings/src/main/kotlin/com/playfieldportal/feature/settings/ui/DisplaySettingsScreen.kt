@@ -62,6 +62,14 @@ fun DisplaySettingsScreen(
         onBack   = onBack,
         modifier = modifier,
         onInterceptAction = { action ->
+            // Fullscreen wallpaper preview swallows Confirm/Back — either dismisses it, same
+            // as tapping, and the focused row underneath can never be activated through it.
+            if (state.wallpaperPreviewVisible) {
+                if (action == GamepadAction.SELECT || action == GamepadAction.BACK) {
+                    viewModel.hideWallpaperPreview()
+                }
+                return@SettingsScaffold true
+            }
             val dir = when (action) {
                 GamepadAction.NAVIGATE_LEFT  -> -1
                 GamepadAction.NAVIGATE_RIGHT -> +1
@@ -183,14 +191,8 @@ fun DisplaySettingsScreen(
                 value    = "Landscape (fixed)",
             )
 
-            SettingsGroup("Game Icons")
-
-            SettingsValueRow(
-                label    = "Icon Style",
-                sublabel = "PSP Rectangle — horizontal 144:80 icon art   |   Cartridge — game cartridge shape   |   Android apps always use their own icon",
-                value    = viewModel.iconStyleLabel(),
-                onClick  = { viewModel.cycleIconStyle() },
-            )
+            // (The old "Icon Style" option lived here — replaced by Artwork ▸ Game Icon
+            // Display, which offers the same cartridge look via Physical Media mode.)
 
             SettingsGroup("Interface")
 
@@ -232,6 +234,15 @@ fun DisplaySettingsScreen(
                 sublabel = "Play navigation, select, and launch sound effects",
                 checked  = state.menuSoundEnabled,
                 onToggle = { viewModel.setMenuSoundEnabled(it) },
+            )
+
+            SettingsGroup("Games")
+
+            SettingsToggleRow(
+                label    = "Launch Games Directly",
+                sublabel = "Confirm starts the game immediately instead of opening Game Details — use \"View Game Details\" in a game's Options (△) menu to edit",
+                checked  = state.directLaunch,
+                onToggle = { viewModel.setDirectLaunch(it) },
             )
 
             SettingsGroup("Apps")

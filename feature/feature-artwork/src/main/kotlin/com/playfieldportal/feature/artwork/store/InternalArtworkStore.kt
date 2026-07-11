@@ -65,6 +65,16 @@ class InternalArtworkStore @Inject constructor(
                 ?.also { prune(gameId, kind, keepPath = it) }
         }
 
+    override suspend fun saveFromFile(gameId: Long, kind: ArtworkKind, tempFile: java.io.File): String? =
+        withContext(Dispatchers.IO) {
+            if (!PayloadCheck.accepts(kind, ArtworkTempIO.headerOf(tempFile))) {
+                Timber.w("Local save rejected — wrong payload for ${kind.name}")
+                tempFile.delete()
+                return@withContext null
+            }
+            commit(tempFile, gameId, ArtworkFileNaming.fixedName(kind))
+        }
+
     // ── Validation / deletion ─────────────────────────────────────────────────
 
     override fun isValidRef(ref: String?): Boolean {

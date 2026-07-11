@@ -6,6 +6,62 @@ All notable changes to Play Field Portal are documented here. This project follo
 ## [Unreleased]
 
 ### Added
+- **Icon Display Modes.** Every game tile can now be drawn four ways: **Custom Icon** (the
+  PSP-authentic 144:80 ICON0 fill), **Box Art**, **Physical Media** (cartridge/disc shot),
+  or **3D Box Art** — the last three render at their art's natural aspect inside the same
+  fixed slot, so row pitch never moves. Set the global default in Settings ▸ Artwork ▸
+  **Game Icon Display**, from any Memory Card / All Games card's △ menu (**Icon Display**),
+  or per game via its △ menu. Each mode has its own placeholder when art is missing:
+  ICON0 → 144:80 letter tile, Box Art / 3D Box → a letter tile shaped like that platform's
+  box, Physical Media → the bundled per-platform cartridge/disc icon. Storage-side, true
+  box art now owns the ES-DE `covers/` folder while 144:80 icons live in the PFP-only
+  `pfp/icon0/` namespace — existing libraries migrate automatically (same-tree moves), and
+  Scan & Relink reclaims grids a pre-split scan may have mislabeled as box art.
+- **ICON1 video snaps.** In Custom Icon mode, resting on a game for ~1.5 s plays its video
+  snap inside the icon — muted, capped at 60 s, then fading back to the still, exactly like
+  a PSP ICON1.PMF. Battery-conscious by design: one shared player, playback skipped under
+  Battery Saver / low battery unplugged / thermal pressure, plus an **Animated Icons**
+  master toggle. When ScreenScraper has no ready-made snap but does have the full video,
+  PFP downloads it and converts it locally (60 s trim, icon-sized, audio stripped) — the
+  full video is never stored.
+- **PIC0 logo choreography.** The focused game's clear logo fades in center-right over the
+  hover background on the PSP stagger (icon → PIC1 → PIC0). Game rows are icon-first: no
+  text labels except the focused row of a logo-less game, whose title + emulator label fade
+  in on the same timeline.
+- **Launch behavior.** Settings ▸ Display ▸ Games ▸ **Launch Games Directly**: confirm on a
+  game boots straight into it (Game Detail opens underneath and fires its own Play, so every
+  launch path stays in one place); the game's △ menu gains **View Game Details** for edits.
+- **Richer scrapes.** ScreenScraper now supplies box-2D, box-3D and cartridge/disc
+  (support-2D) art for the display modes, plus player count, age rating, franchise,
+  community rating and release date (persisted for the future Game Detail redesign).
+  Manuals download by default now (still size-capped); video snaps remain opt-in.
+- **Settings ▸ Logs is real now.** PFP writes INFO+ log files on every build (rotating,
+  512 KB × 4 cap) with **privacy-first redaction at write time** — credentials, tokens,
+  ScreenScraper account names and email addresses never reach disk — and the Logs screen
+  can view them (controller: ▲▼ scroll, ◄ ► pan, Ⓐ share, Ⓑ close) and share a file for
+  bug reports via the system share sheet.
+- **DB v27.** New game columns for the display-mode art (`box_art_uri`,
+  `physical_media_uri`, `box3d_uri`, `icon_display_mode`) and scrape metadata (`players`,
+  `age_rating`, `franchise`, `community_rating`, `release_date`); ES-DE-imported "icons"
+  that were really box art are reclassified in place.
+
+### Changed
+- **Artwork cache accounting is honest.** Settings ▸ Artwork shows the real stored-artwork
+  size (image cache + internal store; your artwork folder is never counted), and
+  **Clear All Artwork** now truly resets: Coil caches, internal files, records and every
+  game's art links — while never touching files in your artwork folder.
+- **A custom wallpaper freezes the wave** (Display-picked or theme-applied) to save battery
+  — the wave resumes when the wallpaper is removed. The wallpaper preview now dismisses
+  with Confirm/Back as well as tap.
+- **ES-DE export is more correct**: `covers/` now carries real box art instead of 144:80
+  grid icons.
+- About shows the real installed version (read from the package, not a stale constant) and
+  About / Credits scroll with the controller; Credits now credit **ScreenScraper** as the
+  primary scraper.
+
+### Removed
+- Display ▸ **Icon Style** (superseded by Game Icon Display — Physical Media mode is the
+  cartridge look) and Artwork ▸ **Preferred Grid Style** (was never wired to anything).
 - **Portable media library + ES-DE artwork import.** Settings ▸ Artwork ▸ **Artwork Folder &
   Import**: pick a folder (SAF, read+write grant — no all-files permission) where PFP keeps
   artwork as a user-owned, reconnectable library with a clean two-folder root —

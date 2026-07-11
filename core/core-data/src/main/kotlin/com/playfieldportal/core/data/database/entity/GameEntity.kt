@@ -54,6 +54,20 @@ data class GameEntity(
     @ColumnInfo(name = "icon_uri")
     val iconUri: String? = null,
 
+    // Icon-display-mode artwork (BOX_ART / PHYSICAL_MEDIA / BOX_3D) — alternative XMB tiles.
+    @ColumnInfo(name = "box_art_uri")
+    val boxArtUri: String? = null,
+
+    @ColumnInfo(name = "physical_media_uri")
+    val physicalMediaUri: String? = null,
+
+    @ColumnInfo(name = "box3d_uri")
+    val box3dUri: String? = null,
+
+    // Per-game IconDisplayMode override (enum name); null follows the global setting.
+    @ColumnInfo(name = "icon_display_mode")
+    val iconDisplayMode: String? = null,
+
     val description: String?,
     val developer: String?,
     val publisher: String?,
@@ -62,6 +76,22 @@ data class GameEntity(
     val releaseYear: Int?,
 
     val genre: String?,
+
+    // ScreenScraper metadata captured for Game Detail / filters — never drawn on the XMB.
+    // players is SS's free-form count ("1-2"); age_rating is "PEGI 12" / "ESRB Teen" style;
+    // community_rating normalized to 0..1 (SS note is /20); release_date is ISO yyyy-MM-dd.
+    val players: String? = null,
+
+    @ColumnInfo(name = "age_rating")
+    val ageRating: String? = null,
+
+    val franchise: String? = null,
+
+    @ColumnInfo(name = "community_rating")
+    val communityRating: Float? = null,
+
+    @ColumnInfo(name = "release_date")
+    val releaseDate: String? = null,
 
     @ColumnInfo(name = "steam_grid_db_id")
     val steamGridDbId: Long?,
@@ -145,11 +175,20 @@ fun GameEntity.toDomain() = Game(
     heroUri             = heroUri,
     logoUri             = logoUri,
     iconUri             = iconUri,
+    boxArtUri           = boxArtUri,
+    physicalMediaUri    = physicalMediaUri,
+    box3dUri            = box3dUri,
+    iconDisplayMode     = iconDisplayMode,
     description         = description,
     developer           = developer,
     publisher           = publisher,
     releaseYear         = releaseYear,
     genre               = genre,
+    players             = players,
+    ageRating           = ageRating,
+    franchise           = franchise,
+    communityRating     = communityRating,
+    releaseDate         = releaseDate,
     steamGridDbId       = steamGridDbId,
     ssId                = ssId,
     tgdbId              = tgdbId,
@@ -181,11 +220,20 @@ fun Game.toEntity() = GameEntity(
     heroUri             = heroUri,
     logoUri             = logoUri,
     iconUri             = iconUri,
+    boxArtUri           = boxArtUri,
+    physicalMediaUri    = physicalMediaUri,
+    box3dUri            = box3dUri,
+    iconDisplayMode     = iconDisplayMode,
     description         = description,
     developer           = developer,
     publisher           = publisher,
     releaseYear         = releaseYear,
     genre               = genre,
+    players             = players,
+    ageRating           = ageRating,
+    franchise           = franchise,
+    communityRating     = communityRating,
+    releaseDate         = releaseDate,
     steamGridDbId       = steamGridDbId,
     ssId                = ssId,
     tgdbId              = tgdbId,

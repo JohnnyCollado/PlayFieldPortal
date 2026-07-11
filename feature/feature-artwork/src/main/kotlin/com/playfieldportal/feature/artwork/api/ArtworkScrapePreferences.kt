@@ -24,8 +24,9 @@ class ArtworkScrapePreferences @Inject constructor(
     val downloadHeroesFlow: Flow<Boolean> =
         context.pfpDataStore.data.map { it[KEY_DOWNLOAD_HEROES] ?: true }
 
+    // Manuals default ON (small PDFs relative to the cap; surfaced on Game Detail later).
     val downloadManualsFlow: Flow<Boolean> =
-        context.pfpDataStore.data.map { it[KEY_DOWNLOAD_MANUALS] ?: false }
+        context.pfpDataStore.data.map { it[KEY_DOWNLOAD_MANUALS] ?: true }
 
     val downloadVideoSnapsFlow: Flow<Boolean> =
         context.pfpDataStore.data.map { it[KEY_DOWNLOAD_VIDEO_SNAPS] ?: false }
@@ -36,7 +37,7 @@ class ArtworkScrapePreferences @Inject constructor(
             preferSteamGridDbHeroes = prefs[KEY_PREFER_SGDB_HEROES]  ?: false,
             downloadClearLogos      = prefs[KEY_DOWNLOAD_CLEAR_LOGOS] ?: true,
             downloadHeroes          = prefs[KEY_DOWNLOAD_HEROES]      ?: true,
-            downloadManuals         = prefs[KEY_DOWNLOAD_MANUALS]     ?: false,
+            downloadManuals         = prefs[KEY_DOWNLOAD_MANUALS]     ?: true,
             downloadVideoSnaps      = prefs[KEY_DOWNLOAD_VIDEO_SNAPS] ?: false,
         )
     }

@@ -18,18 +18,9 @@ android {
     kotlinOptions { jvmTarget = "17" }
     buildFeatures {
         compose = true
-        buildConfig = true
     }
-    buildTypes {
-        debug {
-            buildConfigField("String", "VERSION_NAME", "\"0.1.0-alpha-debug\"")
-            buildConfigField("int", "VERSION_CODE", "1")
-        }
-        release {
-            buildConfigField("String", "VERSION_NAME", "\"0.1.0-alpha\"")
-            buildConfigField("int", "VERSION_CODE", "1")
-        }
-    }
+    // (No hardcoded VERSION_NAME/VERSION_CODE here anymore — the About screen reads the real
+    // installed version from PackageManager, so it can never go stale again.)
 }
 
 dependencies {

@@ -22,11 +22,24 @@ data class Game(
     val heroUri: String?          = null,   // hero/banner artwork (full-screen background)
     val logoUri: String?          = null,   // logo artwork
     val iconUri: String?          = null,   // landscape 144:80 icon art (SteamGridDB horizontal grid)
+    // Icon-display-mode artwork: the alternative XMB tiles the user can pick per game/globally.
+    val boxArtUri: String?        = null,   // 2D box front (ES-DE covers/, SS box-2D)
+    val physicalMediaUri: String? = null,   // cartridge/disc shot (SS support-2D)
+    val box3dUri: String?         = null,   // angled 3D box render (SS box-3D)
+    // Per-game IconDisplayMode override (enum name); null follows the global setting.
+    val iconDisplayMode: String?  = null,
     val description: String?      = null,
     val developer: String?        = null,
     val publisher: String?        = null,
     val releaseYear: Int?         = null,
     val genre: String?            = null,
+    // ScreenScraper metadata for Game Detail / filters (players "1-2", "PEGI 12"-style age
+    // rating, franchise, community rating normalized 0..1, ISO release date).
+    val players: String?          = null,
+    val ageRating: String?        = null,
+    val franchise: String?        = null,
+    val communityRating: Float?   = null,
+    val releaseDate: String?      = null,
     val steamGridDbId: Long?      = null,
     // Scraper database ids persisted after a successful match: re-scrapes fetch by id (never
     // re-matched), and a portable artwork library reconnects by id after a device migration.

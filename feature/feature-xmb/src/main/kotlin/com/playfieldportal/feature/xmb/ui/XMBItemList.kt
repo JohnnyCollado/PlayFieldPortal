@@ -149,8 +149,13 @@ private const val MEMORY_CARD_DEFAULT_ART = "file:///android_asset/systems/physi
 // ── Drill flyout layout ──────────────────────────────────────────────────────
 // Left inset of the game-card column, measured from the flyout's left edge (which the caller has
 // already shifted under the caticon). Clears the memory-card icon column on the left so the game
-// cards sit to its right, with room for the ◀ that trails the active memory card.
-private val DRILL_GAME_COLUMN_LEFT = 300.dp
+// cards sit to its right, with room for the ◀ that trails the active memory card. Kept tight so
+// the PIC0 logo overlay (center-right) has room to breathe next to the game cards.
+private val DRILL_GAME_COLUMN_LEFT = 260.dp
+
+// Focused-row text rides the PIC0 logo timeline — must match XMBShell's logo overlay timing.
+private const val PIC0_TEXT_DELAY_MS = 650L
+private const val PIC0_TEXT_FADE_MS = 500
 
 // ── Two-pane drill flyout (PSP/XMB style) ────────────────────────────────────
 //
@@ -620,13 +625,32 @@ private fun XmbVerticalListRow(
                 )
             }
 
-            if (showText) {
+            // Game entities are icon-first: NO text on any game row except the ACTIVE row of
+            // a logo-less game, where title + emulator fade in on the PIC0 timeline. Games
+            // with a logo never show text — the logo overlay IS the identity. Non-game rows
+            // keep their labels as always.
+            val showGameText = !item.isRealGame || (isSelected && item.logoUri == null)
+            if (showText && showGameText) {
+                val fadeWithPic0 = isSelected && item.isRealGame
+                var textVisible by remember(item.id, fadeWithPic0) { mutableStateOf(!fadeWithPic0) }
+                if (fadeWithPic0) {
+                    LaunchedEffect(item.id, fadeWithPic0) {
+                        kotlinx.coroutines.delay(PIC0_TEXT_DELAY_MS)
+                        textVisible = true
+                    }
+                }
+                val textAlpha by animateFloatAsState(
+                    targetValue = if (textVisible) 1f else 0f,
+                    animationSpec = tween(PIC0_TEXT_FADE_MS),
+                    label = "rowTextFade",
+                )
                 // start padding pushes the label clear of the wallpaper's vertical cross bar, so the
                 // text doesn't butt against the black band (a small gap, PSP-style).
                 Column(
                     modifier = Modifier
                         .weight(1f, fill = false)
-                        .padding(start = XmbLayoutSpec.DEFAULT.itemTextStartGapDp.dp),
+                        .padding(start = XmbLayoutSpec.DEFAULT.itemTextStartGapDp.dp)
+                        .alpha(textAlpha),
                 ) {
                     Text(
                         text = item.title,

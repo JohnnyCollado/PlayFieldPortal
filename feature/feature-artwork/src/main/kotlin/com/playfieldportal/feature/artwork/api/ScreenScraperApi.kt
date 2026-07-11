@@ -47,12 +47,19 @@ data class SsGame(
     @SerialName("synopsis") val synopsis: List<SsLocalizedText> = emptyList(),
     @SerialName("dates") val dates: List<SsLocalizedText> = emptyList(),
     @SerialName("genres") val genres: List<SsGenre> = emptyList(),
+    // Franchise/series ("famille") — same localized-name shape as genres.
+    @SerialName("familles") val families: List<SsGenre> = emptyList(),
+    @SerialName("classifications") val classifications: List<SsClassification> = emptyList(),
     @SerialName("developpeur") val developer: SsText? = null,
     @SerialName("editeur") val publisher: SsText? = null,
     @SerialName("joueurs") val players: SsText? = null,
     @SerialName("note") val rating: SsRating? = null,
     @SerialName("medias") val medias: List<SsMedia> = emptyList(),
 )
+
+// Age classification: type is the rating board ("ESRB", "PEGI", …), text the grade ("E10+", "12").
+@Serializable
+data class SsClassification(val type: String? = null, val text: String? = null)
 
 @Serializable
 data class SsLocalizedText(
@@ -92,11 +99,19 @@ data class SsGameInfo(
     val releaseYear: Int?,
     val genre: String?,
     val players: String?,
-    val artworkUrl: String?,   // box-2D front
+    val ageRating: String?,        // "ESRB E10+" / "PEGI 12" (ESRB preferred, PEGI fallback)
+    val franchise: String?,        // famille, English name preferred
+    val communityRating: Float?,   // note normalized /20 → 0..1
+    val releaseDate: String?,      // best region date, as served (usually ISO yyyy-MM-dd)
+    val artworkUrl: String?,   // box-2D front (box-3D fallback) — background fallback source
+    val boxArtUrl: String?,    // strict box-2D front (BOX_ART tile)
+    val box3dUrl: String?,     // angled 3D box render (BOX_3D tile)
+    val physicalMediaUrl: String?, // cartridge/disc shot, support-2D (PHYSICAL_MEDIA tile)
     val heroUrl: String?,      // fanart / wide banner
     val logoUrl: String?,      // wheel / clear logo
     val manualUrl: String?,    // PDF manual
-    val videoUrl: String?,     // video snap (normalized)
+    val videoUrl: String?,     // normalized video snap (already trimmed/scaled by SS)
+    val videoRawUrl: String?,  // full gameplay video — transcoded locally when no snap exists
 )
 
 // ── Diagnostics ────────────────────────────────────────────────────────────────
@@ -327,11 +342,28 @@ class ScreenScraperApi @Inject constructor(
             ?.firstOrNull { it.language == "en" }?.text
             ?: genres.firstOrNull()?.names?.firstOrNull()?.text
 
+        val franchise = families.firstOrNull()?.names
+            ?.firstOrNull { it.language == "en" }?.text
+            ?: families.firstOrNull()?.names?.firstOrNull()?.text
+
+        // Age rating: ESRB first (US-market app), PEGI fallback, else whatever board is present.
+        val ageRating = (
+            classifications.firstOrNull { it.type.equals("ESRB", ignoreCase = true) }
+                ?: classifications.firstOrNull { it.type.equals("PEGI", ignoreCase = true) }
+                ?: classifications.firstOrNull()
+            )?.let { c -> c.text?.takeIf { it.isNotBlank() }?.let { "${c.type.orEmpty()} $it".trim() } }
+
+        // SS note is out of 20 — normalize to 0..1 so the UI can render any scale it likes.
+        val communityRating = rating?.text?.toFloatOrNull()?.div(20f)?.coerceIn(0f, 1f)
+
         // Media: prefer region=us, fall back to wor/none/any.
         fun bestMedia(type: String): String? = medias
             .filter { it.type == type && it.url != null }
             .sortedWith(compareBy { when (it.region) { "us" -> 0; "wor" -> 1; null -> 2; else -> 3 } })
             .firstOrNull()?.url
+
+        val box2d = bestMedia("box-2D")
+        val box3d = bestMedia("box-3D")
 
         return SsGameInfo(
             ssId        = id?.toLongOrNull(),
@@ -342,11 +374,19 @@ class ScreenScraperApi @Inject constructor(
             releaseYear = yearStr?.take(4)?.toIntOrNull(),
             genre       = genre,
             players     = players?.text,
-            artworkUrl  = bestMedia("box-2D") ?: bestMedia("box-3D"),
+            ageRating   = ageRating,
+            franchise   = franchise,
+            communityRating = communityRating,
+            releaseDate = yearStr?.takeIf { it.length >= 8 },   // full dates only; bare years stay in releaseYear
+            artworkUrl  = box2d ?: box3d,
+            boxArtUrl   = box2d,
+            box3dUrl    = box3d,
+            physicalMediaUrl = bestMedia("support-2D") ?: bestMedia("support-texture"),
             heroUrl     = bestMedia("fanart") ?: bestMedia("ss"),
             logoUrl     = bestMedia("wheel") ?: bestMedia("wheel-hd"),
             manualUrl   = bestMedia("manuel"),
-            videoUrl    = bestMedia("video-normalized") ?: bestMedia("video"),
+            videoUrl    = bestMedia("video-normalized"),
+            videoRawUrl = bestMedia("video"),
         )
     }
 

@@ -124,6 +124,9 @@ class GameRepositoryImpl @Inject constructor(
     override suspend fun updateUserTitleOverride(id: Long, override: String?) =
         gameDao.updateUserTitleOverride(id, override)
 
+    override suspend fun setIconDisplayMode(id: Long, mode: String?) =
+        gameDao.updateIconDisplayMode(id, mode)
+
     override suspend fun getMissingRoms(): List<Game> {
         val romPaths = gameDao.getAllRomPaths()
         val missingIds = romPaths

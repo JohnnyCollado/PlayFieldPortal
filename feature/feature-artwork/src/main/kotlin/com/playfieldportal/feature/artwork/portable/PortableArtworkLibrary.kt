@@ -112,17 +112,24 @@ class PortableArtworkLibrary @Inject constructor(
 
     // ── Layout v3 writes: Artwork/{platform}/{mediaDir}/{PortableName}.{ext} ──
 
-    /** Resolves (creating as needed) `Artwork/{platformId}/{mediaDir}` for [kind], cached per run. */
+    /**
+     * Resolves (creating as needed) `Artwork/{platformId}/{mediaDir}` for [kind], cached per
+     * run. A kind's media dir may be nested ("pfp/icon0") — each segment is ensured in turn.
+     */
     suspend fun mediaDirDocId(treeUri: Uri, platformId: String, kind: ArtworkKind): String? =
         withContext(Dispatchers.IO) {
             val rootDocId = DocumentsContract.getTreeDocumentId(treeUri)
             val artworkDir = ArtworkLibraryManifest.DIR_ARTWORK
             val artworkDirId = ensureDir(treeUri, rootDocId, artworkDir, artworkDir)
                 ?: return@withContext null
-            val platformDirId = ensureDir(treeUri, artworkDirId, platformId, "$artworkDir/$platformId")
+            var parentId = ensureDir(treeUri, artworkDirId, platformId, "$artworkDir/$platformId")
                 ?: return@withContext null
-            val mediaDir = ArtworkPathResolver.mediaDirFor(kind)
-            ensureDir(treeUri, platformDirId, mediaDir, "$artworkDir/$platformId/$mediaDir")
+            var path = "$artworkDir/$platformId"
+            for (segment in ArtworkPathResolver.mediaDirFor(kind).split('/')) {
+                path = "$path/$segment"
+                parentId = ensureDir(treeUri, parentId, segment, path) ?: return@withContext null
+            }
+            parentId
         }
 
     /**
@@ -261,6 +268,32 @@ class PortableArtworkLibrary @Inject constructor(
         } finally {
             tempFile.delete()
         }
+    }
+
+    /**
+     * Same-tree move of one asset between two kinds' media dirs (metadata-only where the
+     * provider allows; copy+delete fallback otherwise). Any same-stem occupant of the
+     * destination is pre-deleted so the name can never silently suffix. Null when the source
+     * file doesn't exist or the destination dir can't be created.
+     */
+    suspend fun relocateAsset(
+        treeUri: Uri,
+        platformId: String,
+        fromKind: ArtworkKind,
+        toKind: ArtworkKind,
+        fileName: String,
+    ): SavedAsset? = withContext(Dispatchers.IO) {
+        val fromDirId = mediaDirDocId(treeUri, platformId, fromKind) ?: return@withContext null
+        val source = findChild(treeUri, fromDirId, fileName)?.takeIf { !it.isDirectory }
+            ?: return@withContext null
+        val destDirId = mediaDirDocId(treeUri, platformId, toKind) ?: return@withContext null
+        val stem = fileName.substringBeforeLast('.')
+        listChildren(treeUri, destDirId)
+            .filter { !it.isDirectory && it.name.substringBeforeLast('.').equals(stem, ignoreCase = true) }
+            .forEach { runCatching { DocumentsContract.deleteDocument(resolver, it.uri) } }
+        val destDirUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, destDirId)
+        moveInto(treeUri, source, destDirUri, fileName)
+            ?.let { SavedAsset(toKind, it.toString(), fileName, source.sizeBytes ?: 0L) }
     }
 
     fun clearDirCache() = dirCache.clear()

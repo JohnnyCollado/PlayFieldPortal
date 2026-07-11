@@ -15,6 +15,9 @@
     <!-- Internal cache — used for temporary file passing to emulators -->
     <cache-path name="cache" path="." />
 
+    <!-- Redacted app log files (filesDir/logs/) — shared from Settings ▸ Logs for support -->
+    <files-path name="logs" path="logs/" />
+
     <!-- Scraped artwork/manuals (filesDir/artwork/). Currently unused: manuals render in-app
          via PdfRenderer (ManualViewerOverlay), so no content URI is minted for them. Kept only
          until a share/external-viewer feature needs it — safe to remove otherwise. -->

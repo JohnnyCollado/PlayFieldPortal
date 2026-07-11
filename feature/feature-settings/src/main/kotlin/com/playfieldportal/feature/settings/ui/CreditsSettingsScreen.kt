@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.settings.ui
 
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,20 +10,42 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.playfieldportal.core.domain.model.GamepadAction
+import kotlinx.coroutines.launch
 
 @Composable
 fun CreditsSettingsScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    SettingsScaffold(title = "Settings", subtitle = "Credits", onBack = onBack, modifier = modifier) {
+    // Pure info screen — no interactive rows for the scaffold's focus navigation to walk, so
+    // Up/Down scroll the column directly instead.
+    val scrollState = rememberScrollState()
+    val scope = rememberCoroutineScope()
+    val stepPx = with(LocalDensity.current) { 120.dp.toPx() }
+
+    SettingsScaffold(
+        title = "Settings",
+        subtitle = "Credits",
+        onBack = onBack,
+        modifier = modifier,
+        onInterceptAction = { action ->
+            when (action) {
+                GamepadAction.NAVIGATE_UP   -> { scope.launch { scrollState.animateScrollBy(-stepPx) }; true }
+                GamepadAction.NAVIGATE_DOWN -> { scope.launch { scrollState.animateScrollBy(stepPx) }; true }
+                else -> false
+            }
+        },
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
                 .padding(horizontal = 48.dp),
         ) {
             SettingsGroup("XMB Design — Sony")
@@ -82,11 +105,13 @@ fun CreditsSettingsScreen(
             SettingsGroup("Game Artwork & Metadata")
 
             CreditParagraph(
-                "Box art, hero banners, logos and icons are fetched at your request from third-party " +
+                "Box art, 3D boxes, cartridge/disc shots, hero banners, logos, icons, manuals, " +
+                    "video snaps and game metadata are fetched at your request from third-party " +
                     "providers and remain the property of their respective owners."
             )
-            CreditLine("Artwork", "SteamGridDB")
-            CreditLine("Metadata", "IGDB · TheGamesDB")
+            CreditLine("Primary scraper", "ScreenScraper — screenscraper.fr, community-maintained game media database")
+            CreditLine("Artwork", "SteamGridDB — steamgriddb.com")
+            CreditLine("Metadata", "TheGamesDB · IGDB")
 
             Spacer(Modifier.height(16.dp))
             SettingsGroup("Notes")

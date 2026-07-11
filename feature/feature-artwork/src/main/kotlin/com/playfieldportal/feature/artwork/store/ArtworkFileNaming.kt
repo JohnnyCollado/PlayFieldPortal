@@ -23,6 +23,8 @@ object ArtworkFileNaming {
         ArtworkKind.SCREENSHOT     -> "screenshot.jpg"
         ArtworkKind.TITLESCREEN    -> "titlescreen.jpg"
         ArtworkKind.PHYSICAL_MEDIA -> "physicalmedia.png"
+        ArtworkKind.BOX_ART        -> "boxart.jpg"
+        ArtworkKind.BOX_3D         -> "box3d.png"
     }
 
     /**

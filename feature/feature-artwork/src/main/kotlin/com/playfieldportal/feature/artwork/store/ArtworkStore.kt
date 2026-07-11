@@ -16,12 +16,18 @@ enum class ArtworkKind {
     MANUAL,
     VIDEO,
 
-    // Imported-but-not-yet-displayed kinds (ES-DE screenshots/titlescreens/physicalmedia).
-    // Stored like MANUAL/VIDEO — resolved by fixed filename, never referenced from game
-    // columns — so future themes can adopt them with zero schema changes.
+    // Imported-but-not-yet-displayed kinds (ES-DE screenshots/titlescreens). Stored like
+    // MANUAL/VIDEO — resolved by fixed filename, never referenced from game columns — so
+    // future themes can adopt them with zero schema changes.
     SCREENSHOT,
     TITLESCREEN,
+
+    // Icon-display-mode kinds: column-backed alternatives to ICON for the XMB tile
+    // (physical_media_uri / box_art_uri / box3d_uri). PHYSICAL_MEDIA predates the other two
+    // (ES-DE import-only at first), so it keeps its original position-independent name.
     PHYSICAL_MEDIA,
+    BOX_ART,
+    BOX_3D,
 }
 
 /**
@@ -51,6 +57,12 @@ interface ArtworkStore {
 
     /** Copies a user-picked document to a fresh versioned name for [kind], pruning older versions. */
     suspend fun saveVersionedFromUri(gameId: Long, kind: ArtworkKind, uri: Uri): String?
+
+    /**
+     * Stores a locally produced file (e.g. a transcoded video snap) under [kind]'s fixed name,
+     * riding the same validation/naming path as a scrape. Consumes [tempFile] either way.
+     */
+    suspend fun saveFromFile(gameId: Long, kind: ArtworkKind, tempFile: java.io.File): String?
 
     /** True if [ref] still resolves to real bytes (remote URLs are trusted as-is). */
     fun isValidRef(ref: String?): Boolean

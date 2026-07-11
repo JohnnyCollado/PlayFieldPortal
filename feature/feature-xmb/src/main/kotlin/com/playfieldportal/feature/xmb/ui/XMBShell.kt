@@ -20,6 +20,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -40,6 +41,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
@@ -280,6 +282,10 @@ fun XMBShell(
       // glyph (crossbar, item rows, status strip) checks this map before its built-in art.
       CompositionLocalProvider(
           com.playfieldportal.core.ui.icons.LocalXmbIconOverrides provides uiState.iconOverrides,
+          // Icon display mode + the focused game's approved ICON1 snap ride the same rail so
+          // the deeply nested tile composables never need them plumbed through params.
+          LocalIconDisplayMode provides uiState.iconDisplayMode,
+          LocalFocusedGameVideo provides uiState.focusedGameVideo,
       ) {
         // Uniform "canvas scale" for the whole app. On screens taller than the handheld baseline
         // (tablets), override LocalDensity for the entire shell so every dp/sp grows together — the
@@ -304,13 +310,15 @@ fun XMBShell(
                 uiState.activePhotoViewer != null ||
                 uiState.activeAppId != null || uiState.activeAppDrawerFilter != null ||
                 uiState.musicPlayerVisible
-            // Freeze the wave when it's hidden anyway, or when the device is conserving power
-            // (battery saver / thermal throttle) and the user hasn't opted out of that.
+            // Freeze the wave when it's hidden anyway, when the device is conserving power
+            // (battery saver / thermal throttle, unless opted out), or when a wallpaper is set
+            // (Display-picked or theme-applied — both write the same pref): the wallpaper is
+            // the background, so animating the wave underneath would only burn battery.
             val powerThrottled = rememberWavePowerThrottle(
                 respectBatterySaver  = uiState.respectBatterySaver,
                 thermalThrottleAware = uiState.thermalThrottleAware,
             )
-            val effectiveWaveStyle = if (waveCovered || powerThrottled) {
+            val effectiveWaveStyle = if (waveCovered || powerThrottled || uiState.customWallpaperPath != null) {
                 uiState.waveStyle.frozen
             } else uiState.waveStyle
             XmbBackground(
@@ -360,6 +368,39 @@ fun XMBShell(
                 uiState.activeAppId == null &&
                 uiState.activePhotoViewer == null
             ) {
+
+            // PIC0-style logo overlay — the focused game's clear logo fades in center-right
+            // over the hover background, a beat AFTER the background lands (the PSP's
+            // icon → PIC1 → PIC0 stagger). Fades out instantly with any focus move.
+            val selectedLogo = uiState.currentItems.getOrNull(uiState.selectedItemIndex)
+                ?.takeIf { it.artworkUri != null }?.logoUri
+            var pic0Visible by remember(selectedLogo) { mutableStateOf(false) }
+            androidx.compose.runtime.LaunchedEffect(selectedLogo) {
+                if (selectedLogo != null) {
+                    kotlinx.coroutines.delay(650)
+                    pic0Visible = true
+                }
+            }
+            val pic0Alpha by androidx.compose.animation.core.animateFloatAsState(
+                targetValue = if (pic0Visible && selectedLogo != null) 1f else 0f,
+                animationSpec = tween(500),
+                label = "pic0Fade",
+            )
+            if (selectedLogo != null && pic0Alpha > 0f) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
+                    AsyncImage(
+                        model = selectedLogo,
+                        contentDescription = null,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier
+                            .fillMaxWidth(0.30f)
+                            .fillMaxHeight(0.38f)
+                            .padding(end = 44.dp)
+                            .alpha(pic0Alpha),
+                    )
+                }
+            }
+
             XmbPspStatusStrip(
                 sortLabel = uiState.sortLabel,
                 showSortButton = uiState.resolvedShowTouchButton,
@@ -661,6 +702,7 @@ fun XMBShell(
                 GameDetailScreen(
                     gameId = gameId,
                     onBack = onCloseGameDetail,
+                    autoLaunch = uiState.activeGameAutoLaunch,
                     pendingGamepadAction = uiState.pendingGameDetailAction,
                     onGamepadActionConsumed = onGameDetailActionConsumed,
                     showTouchControls = uiState.resolvedShowTouchButton,

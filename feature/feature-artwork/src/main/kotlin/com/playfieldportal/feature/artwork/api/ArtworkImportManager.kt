@@ -9,6 +9,7 @@ import com.playfieldportal.core.data.database.entity.ArtworkImportReportEntity
 import com.playfieldportal.core.data.database.entity.ArtworkRecordEntity
 import com.playfieldportal.core.data.repository.ArtworkFolderRepository
 import com.playfieldportal.core.data.repository.ArtworkStorageMode
+import com.playfieldportal.core.data.saf.SafChild
 import com.playfieldportal.feature.artwork.importer.ArtworkImportMatcher
 import com.playfieldportal.feature.artwork.importer.ArtworkImportPlanner
 import com.playfieldportal.feature.artwork.importer.ArtworkImportWorker
@@ -32,6 +33,9 @@ import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+
+// SGDB grids are ≈2.14 wide; the widest real box fronts (US SNES/N64) are ≈1.37.
+private const val GRID_ASPECT_THRESHOLD = 1.6f
 
 /**
  * The single entry point settings UIs use for the artwork folder + import flow — ViewModels
@@ -156,26 +160,122 @@ class ArtworkImportManager @Inject constructor(
 
     /**
      * One-shot in-place layout upgrades, oldest first: v1 (games/{platform}/{slug}/) assets move
-     * into the media-dir layout, then any v2 root-level platform dirs move under Artwork/ —
-     * all same-tree moves, no bytes copied — then a relink repoints records and game columns.
-     * Idempotent: an already-v3 library is a no-op. Returns how many items were relocated.
+     * into the media-dir layout, then any v2 root-level platform dirs move under Artwork/, then
+     * true 144:80 icons still sitting in covers/ move to pfp/icon0/ (covers/ belongs to BOX_ART
+     * since the icon-display-modes split) — all same-tree moves, no bytes copied — then a relink
+     * repoints records and game columns. Idempotent: an up-to-date library is a no-op.
+     * Returns how many items were relocated.
      */
     suspend fun migrateV1IfNeeded(): Int = withContext(Dispatchers.IO) {
         val tree = linkedTree() ?: return@withContext 0
         val v1Assets = library.migrateV1Library(tree).assets.size
         val v2Dirs = library.migrateRootPlatformsToArtwork(tree)
+        val icon0Moves = relocateIcon0Assets(tree)
         val manifest = library.readManifest(tree)
         if (manifest != null && manifest.formatVersion < ArtworkLibraryManifest.FORMAT_VERSION) {
             library.writeManifest(tree, manifest.copy(formatVersion = ArtworkLibraryManifest.FORMAT_VERSION))
         }
-        val relocated = v1Assets + v2Dirs
+        val relocated = v1Assets + v2Dirs + icon0Moves
         if (relocated > 0) {
             library.clearDirCache()
             relinkLibrary()
-            Timber.i("Library layout upgraded: $v1Assets v1 assets + $v2Dirs platform dirs relocated")
+            Timber.i(
+                "Library layout upgraded: $v1Assets v1 assets + $v2Dirs platform dirs + " +
+                    "$icon0Moves icons relocated",
+            )
         }
         relocated
     }
+
+    /**
+     * Moves ICON assets written before the covers/BOX_ART split out of covers/ into pfp/icon0/,
+     * and RECOVERS grids a pre-split scan mislabeled: such a scan matched the SGDB grids still
+     * sitting in covers/ as "box art" (and its missing sweep dropped the ICON records), leaving
+     * box_art_uri pointing at 144:80 grids. Grids are unmistakably landscape (≈2.1); real box
+     * fronts never are (US SNES tops out ≈1.37) — a bounds decode splits them cleanly.
+     * Idempotent: relocated/reclaimed records no longer match either filter.
+     */
+    private suspend fun relocateIcon0Assets(tree: Uri): Int {
+        var moved = 0
+
+        // Pass 1 — ICON records still pointing into covers/ (written before the split).
+        val stale = artworkRecordDao.getAll().filter {
+            it.artworkType == ArtworkKind.ICON.name &&
+                !it.relativePath.contains("/${ArtworkPathResolver.DIR_ICON0}/")
+        }
+        for (record in stale) {
+            val fileName = record.relativePath.substringAfterLast('/')
+            if (fileName.isBlank()) continue   // pre-v26 row without a path — relink will rebuild it
+            val saved = library.relocateAsset(
+                tree, record.platformId,
+                fromKind = ArtworkKind.BOX_ART,   // covers/ — ICON's old home
+                toKind = ArtworkKind.ICON,
+                fileName = fileName,
+            ) ?: continue
+            val oldUri = record.documentUri
+            artworkRecordDao.upsert(
+                record.copy(
+                    relativePath = ArtworkPathResolver.relativePath(record.platformId, ArtworkKind.ICON, saved.fileName),
+                    documentUri = saved.uriString,
+                    updatedAt = System.currentTimeMillis(),
+                )
+            )
+            gameDao.getById(record.gameId)?.let { game ->
+                if (game.iconUri == oldUri || !artworkStore.isValidRef(game.iconUri)) {
+                    gameDao.updateIconUri(record.gameId, saved.uriString)
+                }
+            }
+            moved++
+        }
+
+        // Pass 2 — BOX_ART records whose file is grid-shaped: reclaim as the game's icon.
+        val gridRecords = artworkRecordDao.getAll().filter {
+            it.artworkType == ArtworkKind.BOX_ART.name && isGridShaped(it.documentUri)
+        }
+        for (record in gridRecords) {
+            val game = gameDao.getById(record.gameId) ?: continue
+            if (game.boxArtUri == record.documentUri) gameDao.updateBoxArt(record.gameId, null)
+            val fileName = record.relativePath.substringAfterLast('/')
+            val hasIconRecord = artworkRecordDao.get(record.gameId, ArtworkKind.ICON.name) != null
+            if (!hasIconRecord && fileName.isNotBlank()) {
+                val saved = library.relocateAsset(
+                    tree, record.platformId,
+                    fromKind = ArtworkKind.BOX_ART,
+                    toKind = ArtworkKind.ICON,
+                    fileName = fileName,
+                )
+                if (saved != null) {
+                    artworkRecordDao.deleteById(record.id)
+                    artworkRecordDao.upsert(
+                        record.copy(
+                            id = 0,
+                            artworkType = ArtworkKind.ICON.name,
+                            relativePath = ArtworkPathResolver.relativePath(record.platformId, ArtworkKind.ICON, saved.fileName),
+                            documentUri = saved.uriString,
+                            updatedAt = System.currentTimeMillis(),
+                        )
+                    )
+                    gameDao.updateIconUri(record.gameId, saved.uriString)
+                    moved++
+                }
+            } else {
+                // The game already has a real icon — the grid record is just mislabeled; drop
+                // it (the file stays put; the scan's grid guard won't re-record it).
+                artworkRecordDao.deleteById(record.id)
+            }
+        }
+        return moved
+    }
+
+    // Bounds-only decode; true when the image is decisively landscape (SGDB grid shape).
+    private fun isGridShaped(uriString: String): Boolean = runCatching {
+        val opts = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        context.contentResolver.openInputStream(Uri.parse(uriString))?.use {
+            android.graphics.BitmapFactory.decodeStream(it, null, opts)
+        }
+        opts.outWidth > 0 && opts.outHeight > 0 &&
+            opts.outWidth.toFloat() / opts.outHeight >= GRID_ASPECT_THRESHOLD
+    }.getOrDefault(false)
 
     /**
      * Scan & relink: walks the v2 library ({platform}/{mediaDir}/) and reconciles it with the
@@ -193,6 +293,10 @@ class ArtworkImportManager @Inject constructor(
     suspend fun relinkLibrary(): RelinkResult? = withContext(Dispatchers.IO) {
         val tree = linkedTree() ?: return@withContext null
         if (!folderRepository.hasLiveGrant()) return@withContext null
+        // Icons must be out of covers/ BEFORE the walk: covers/ maps to BOX_ART now, so a
+        // stale grid left behind would be linked as box art and the missing sweep would drop
+        // its ICON record. Idempotent and cheap when there's nothing to move.
+        relocateIcon0Assets(tree)
         val rootDocId = android.provider.DocumentsContract.getTreeDocumentId(tree)
 
         val games = gameDao.getAll()
@@ -236,13 +340,33 @@ class ArtworkImportManager @Inject constructor(
         for (platformDir in library.platformDirs(tree)) {
             val platformId = platformDir.name
             if (byPlatform[platformId].isNullOrEmpty()) continue
-            for (mediaDir in library.listChildren(tree, platformDir.documentId).filter { it.isDirectory }) {
-                val kind = ArtworkPathResolver.kindForMediaDir(mediaDir.name) ?: continue
+            // Direct media dirs plus the nested PFP namespace (pfp/icon0 → ICON).
+            val mediaDirs = mutableListOf<Pair<ArtworkKind, SafChild>>()
+            for (child in library.listChildren(tree, platformDir.documentId).filter { it.isDirectory }) {
+                if (child.name.equals(ArtworkPathResolver.DIR_PFP, ignoreCase = true)) {
+                    library.listChildren(tree, child.documentId)
+                        .filter { it.isDirectory }
+                        .forEach { sub ->
+                            ArtworkPathResolver.kindForMediaDir("${ArtworkPathResolver.DIR_PFP}/${sub.name}")
+                                ?.let { mediaDirs += it to sub }
+                        }
+                } else {
+                    ArtworkPathResolver.kindForMediaDir(child.name)?.let { mediaDirs += it to child }
+                }
+            }
+            for ((kind, mediaDir) in mediaDirs) {
                 val records = mutableListOf<ArtworkRecordEntity>()
                 val stemsInDir = HashSet<String>()
                 for (file in library.listChildren(tree, mediaDir.documentId)) {
                     if (file.isDirectory || (file.sizeBytes ?: 0L) <= 0L) continue
                     scanned++
+                    // Grid guard: a decisively landscape file in covers/ is an SGDB 144:80
+                    // grid (pre-split leftover or user drop), never box art — leave it for
+                    // the icon0 recovery pass instead of linking it as BOX_ART.
+                    if (kind == ArtworkKind.BOX_ART && isGridShaped(file.uri.toString())) {
+                        orphans++
+                        continue
+                    }
                     val stemLower = ArtworkNaming.fileStem(file.name).lowercase()
                     if (!stemsInDir.add(stemLower)) duplicateNames++
                     // Own records first (exact portable-name hit), fuzzy matcher for foreign files.
@@ -255,12 +379,17 @@ class ArtworkImportManager @Inject constructor(
                         val size = file.sizeBytes ?: 0L
                         // Column-backed kinds: fill when missing or dead; locked slots untouched.
                         val isColumnKind = kind == ArtworkKind.ICON || kind == ArtworkKind.HERO ||
-                            kind == ArtworkKind.BACKGROUND || kind == ArtworkKind.LOGO
+                            kind == ArtworkKind.BACKGROUND || kind == ArtworkKind.LOGO ||
+                            kind == ArtworkKind.BOX_ART || kind == ArtworkKind.PHYSICAL_MEDIA ||
+                            kind == ArtworkKind.BOX_3D
                         if (isColumnKind && kind.name !in lockedTypes(gameId)) {
                             val current = when (kind) {
                                 ArtworkKind.ICON -> game.iconUri
                                 ArtworkKind.HERO -> game.heroUri
                                 ArtworkKind.BACKGROUND -> game.artworkUri
+                                ArtworkKind.BOX_ART -> game.boxArtUri
+                                ArtworkKind.PHYSICAL_MEDIA -> game.physicalMediaUri
+                                ArtworkKind.BOX_3D -> game.box3dUri
                                 else -> game.logoUri
                             }
                             // A library file outranks a remote URL: http refs pass isValidRef
@@ -273,6 +402,9 @@ class ArtworkImportManager @Inject constructor(
                                     ArtworkKind.ICON -> gameDao.updateIconUri(gameId, uri)
                                     ArtworkKind.HERO -> gameDao.updateHero(gameId, uri)
                                     ArtworkKind.BACKGROUND -> gameDao.updateArtwork(gameId, uri)
+                                    ArtworkKind.BOX_ART -> gameDao.updateBoxArt(gameId, uri)
+                                    ArtworkKind.PHYSICAL_MEDIA -> gameDao.updatePhysicalMedia(gameId, uri)
+                                    ArtworkKind.BOX_3D -> gameDao.updateBox3d(gameId, uri)
                                     else -> gameDao.updateLogo(gameId, uri)
                                 }
                                 linkedIds.add(gameId)
@@ -316,6 +448,9 @@ class ArtworkImportManager @Inject constructor(
                 ArtworkKind.HERO.name -> if (game.heroUri == prior.documentUri) gameDao.updateHero(game.id, null)
                 ArtworkKind.BACKGROUND.name -> if (game.artworkUri == prior.documentUri) gameDao.updateArtwork(game.id, null)
                 ArtworkKind.LOGO.name -> if (game.logoUri == prior.documentUri) gameDao.updateLogo(game.id, null)
+                ArtworkKind.BOX_ART.name -> if (game.boxArtUri == prior.documentUri) gameDao.updateBoxArt(game.id, null)
+                ArtworkKind.PHYSICAL_MEDIA.name -> if (game.physicalMediaUri == prior.documentUri) gameDao.updatePhysicalMedia(game.id, null)
+                ArtworkKind.BOX_3D.name -> if (game.box3dUri == prior.documentUri) gameDao.updateBox3d(game.id, null)
             }
         }
 

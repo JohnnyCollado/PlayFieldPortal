@@ -84,7 +84,7 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         ArtworkRecordEntity::class,
         ArtworkImportReportEntity::class,
     ],
-    version = 26,
+    version = 27,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -731,6 +731,67 @@ abstract class PFPDatabase : RoomDatabase() {
                     """.trimIndent()
                 )
                 db.execSQL("DROP TABLE IF EXISTS artwork_index")
+            }
+        }
+
+        // v27 — icon display modes + richer scrape metadata.
+        //  • box_art_uri / physical_media_uri / box3d_uri: column-backed alternative XMB tiles
+        //    (BOX_ART / PHYSICAL_MEDIA / BOX_3D kinds); icon_display_mode is the per-game
+        //    override (null = follow the global setting).
+        //  • players / age_rating / franchise / community_rating / release_date: ScreenScraper
+        //    metadata already present in scrape responses, now persisted for Game Detail.
+        //  • ICON records that actually hold ES-DE box art (source import-esde/relink) become
+        //    BOX_ART in place — the file already sits in covers/, which BOX_ART now owns; the
+        //    box_art_uri column is seeded from them and icon_uri cleared where it pointed at the
+        //    reclassified file. Scrape/user/internal-migration ICON records are true 144:80
+        //    icons; their FILES still live in covers/ and are relocated to pfp/icon0/ by the
+        //    Kotlin one-shot (SAF moves can't run in SQL) — see IconCoversReclassifyWorker.
+        val MIGRATION_26_27 = object : Migration(26, 27) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE games ADD COLUMN box_art_uri TEXT")
+                db.execSQL("ALTER TABLE games ADD COLUMN physical_media_uri TEXT")
+                db.execSQL("ALTER TABLE games ADD COLUMN box3d_uri TEXT")
+                db.execSQL("ALTER TABLE games ADD COLUMN icon_display_mode TEXT")
+                db.execSQL("ALTER TABLE games ADD COLUMN players TEXT")
+                db.execSQL("ALTER TABLE games ADD COLUMN age_rating TEXT")
+                db.execSQL("ALTER TABLE games ADD COLUMN franchise TEXT")
+                db.execSQL("ALTER TABLE games ADD COLUMN community_rating REAL")
+                db.execSQL("ALTER TABLE games ADD COLUMN release_date TEXT")
+
+                // Imported ES-DE "covers" were stored as ICON before BOX_ART existed — they are
+                // true box art. Reclassify in place (unique (game_id, artwork_type) can't clash:
+                // BOX_ART rows can't exist before this migration).
+                db.execSQL(
+                    """
+                    UPDATE artwork_records SET artwork_type = 'BOX_ART'
+                    WHERE artwork_type = 'ICON' AND source IN ('import-esde', 'relink')
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    UPDATE games SET box_art_uri = (
+                        SELECT ar.document_uri FROM artwork_records ar
+                        WHERE ar.game_id = games.id AND ar.artwork_type = 'BOX_ART'
+                    )
+                    WHERE box_art_uri IS NULL
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    UPDATE games SET icon_uri = NULL
+                    WHERE icon_uri IS NOT NULL AND icon_uri = box_art_uri
+                    """.trimIndent()
+                )
+                // Seed physical_media_uri from records imported before it was column-backed.
+                db.execSQL(
+                    """
+                    UPDATE games SET physical_media_uri = (
+                        SELECT ar.document_uri FROM artwork_records ar
+                        WHERE ar.game_id = games.id AND ar.artwork_type = 'PHYSICAL_MEDIA'
+                    )
+                    WHERE physical_media_uri IS NULL
+                    """.trimIndent()
+                )
             }
         }
     }

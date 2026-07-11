@@ -48,7 +48,8 @@ fun physicalMediaIconRes(platformId: String?): Int? = when (platformId) {
     "ps2", "ps3",
     "saturn", "segacd", "sega32x",
     "dreamcast", "dc", "naomi", "atomiswave",
-    "wii", "wiiu"                   -> R.drawable.media_disc
+    "wii", "wiiu",
+    "xbox", "x360", "xbox360"       -> R.drawable.media_disc
 
     "psp"                           -> R.drawable.media_umd
     "psvita"                        -> R.drawable.media_cartridge_vita

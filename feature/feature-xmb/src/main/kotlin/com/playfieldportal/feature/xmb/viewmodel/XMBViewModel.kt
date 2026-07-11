@@ -39,6 +39,7 @@ import com.playfieldportal.core.data.repository.ControllerMappingRepository
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GameCollection
 import com.playfieldportal.core.domain.model.GameContentType
+import com.playfieldportal.core.domain.model.IconDisplayMode
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.XmbColorScheme
 import com.playfieldportal.core.domain.model.XmbPalette
@@ -64,6 +65,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -408,6 +410,11 @@ data class XMBUiState(
     val pendingDrawerAction: GamepadAction? = null,
     val pendingGameDetailAction: GamepadAction? = null,
     val activeGameId: Long? = null,
+    // True when the Game Detail screen should fire its Play action as soon as the game loads —
+    // set by direct-launch confirms and the △ "Launch Game" entry; cleared on close.
+    val activeGameAutoLaunch: Boolean = false,
+    // Global launch behavior: confirm on a game launches directly (true) or opens Detail (false).
+    val directLaunch: Boolean = false,
     val activeAppId: Long? = null,
     // Where a collection created from the App Detail screen should live — the category the app
     // row was opened from when it renders collections, otherwise the Main Game default.
@@ -474,6 +481,11 @@ data class XMBUiState(
 
     // ── Misc ──────────────────────────────────────────────────────────────
     val iconStyle: GameIconStyle = GameIconStyle.PSP_RECTANGLE,
+    // Global icon display mode (Custom ICON0 / Box Art / Physical Media / 3D Box). Per-game
+    // overrides ride on each XMBItem; resolution happens at render via [resolveIconDisplay].
+    val iconDisplayMode: IconDisplayMode = IconDisplayMode.DEFAULT,
+    // The focused game's ICON1 video snap — set only after the linger + battery gates pass.
+    val focusedGameVideo: com.playfieldportal.feature.xmb.ui.FocusedGameVideo? = null,
     val librarySetupComplete: Boolean = false,
     val themeColors: PFPColors = DefaultPFPColors,
     // Custom icon slots of the applied theme (theme-kit IconSlots key → decoded art);
@@ -626,6 +638,13 @@ data class XMBItem(
     val artworkUri: String? = null,
     val heroUri: String? = null,        // PIC1 / hero background art
     val iconUri: String? = null,        // landscape 144:80 icon art (SGDB horizontal grid)
+    val logoUri: String? = null,        // clear logo — the PIC0-style overlay on the hover bg
+    // Icon-display-mode artwork + the game's per-mode override; resolved against the global
+    // setting at render time by [resolveIconDisplay].
+    val boxArtUri: String? = null,
+    val physicalMediaUri: String? = null,
+    val box3dUri: String? = null,
+    val iconDisplayModeOverride: String? = null,
     val subtitle: String? = null,
     val gameId: Long? = null,
     val platformId: String? = null,
@@ -655,6 +674,33 @@ data class XMBItem(
     val socialStatusArgb: Long? = null,
     val type: XMBItemType = XMBItemType.STANDARD,
 )
+
+/**
+ * The tile art [GameIcon] should draw for [item] under the given global mode.
+ * [naturalAspect] = render at the art's own aspect (fit-inside, chrome hugging the fitted
+ * bounds); false = PSP-authentic 144:80 edge-to-edge fill. [mode] is the RESOLVED mode and
+ * drives the placeholder when [uri] is null: PHYSICAL_MEDIA → the bundled per-platform
+ * cartridge/disc icon; BOX_ART / BOX_3D → a letter tile shaped like the platform's box.
+ */
+data class ResolvedIcon(val uri: String?, val naturalAspect: Boolean, val mode: IconDisplayMode)
+
+// Top-level and pure so mode/fallback behaviour is unit-testable. Each mode shows ONLY its
+// own asset, and each owns its missing-art placeholder so switching modes always visibly
+// changes the tile: ICON0 → the 144:80 letter tile, BOX_ART / BOX_3D → a letter tile in the
+// platform's box shape, PHYSICAL_MEDIA → the bundled per-platform cartridge/disc icon.
+fun resolveIconDisplay(item: XMBItem, globalMode: IconDisplayMode): ResolvedIcon {
+    val mode = IconDisplayMode.fromName(item.iconDisplayModeOverride) ?: globalMode
+    return when (mode) {
+        IconDisplayMode.ICON0 ->
+            ResolvedIcon(item.iconUri, naturalAspect = false, mode = mode)
+        IconDisplayMode.BOX_ART ->
+            ResolvedIcon(item.boxArtUri, naturalAspect = true, mode = mode)
+        IconDisplayMode.PHYSICAL_MEDIA ->
+            ResolvedIcon(item.physicalMediaUri, naturalAspect = item.physicalMediaUri != null, mode = mode)
+        IconDisplayMode.BOX_3D ->
+            ResolvedIcon(item.box3dUri, naturalAspect = true, mode = mode)
+    }
+}
 
 // A unit of background work surfaced to the notification bar. [progress] null = indeterminate.
 data class BackgroundTaskInfo(
@@ -713,6 +759,9 @@ class XMBViewModel @Inject constructor(
     private val discordPresence: com.playfieldportal.core.data.discord.DiscordPresenceController,
     private val discordVoice: com.playfieldportal.core.data.discord.DiscordVoiceController,
     private val pttOverlay: com.playfieldportal.feature.xmb.voice.PttOverlayManager,
+    private val iconDisplayPreferences: com.playfieldportal.core.data.repository.IconDisplayPreferences,
+    private val artworkStore: com.playfieldportal.feature.artwork.store.ArtworkStore,
+    private val gameLaunchPreferences: com.playfieldportal.core.data.repository.GameLaunchPreferences,
 ) : ViewModel() {
 
     // The track list currently on screen (in display/sort order), used as the in-app player's queue
@@ -750,7 +799,8 @@ class XMBViewModel @Inject constructor(
 
     init {
         gamepadInputHandler.scope = viewModelScope
-        observeIconStyle()
+        observeIconDisplayMode()
+        observeFocusedGameVideo()
         observeBackgroundSettings()
         observeTouchNavButtonMode()
         observeWallpaper()
@@ -3376,6 +3426,11 @@ class XMBViewModel @Inject constructor(
             artworkUri   = g.artworkUri,
             heroUri      = g.heroUri,
             iconUri      = g.iconUri,
+            logoUri      = g.logoUri,
+            boxArtUri    = g.boxArtUri,
+            physicalMediaUri = g.physicalMediaUri,
+            box3dUri     = g.box3dUri,
+            iconDisplayModeOverride = g.iconDisplayMode,
             subtitle     = platformEmulatorLabel(g),
             gameId       = g.id,
             platformId   = g.platformId,
@@ -3708,6 +3763,8 @@ class XMBViewModel @Inject constructor(
             else           add(XMBContextMenuItem("scan_roms",  "Scan This Console"))
             add(XMBContextMenuItem("refresh_metadata", "Refresh Metadata"))
             add(XMBContextMenuItem("refresh_artwork",  "Refresh Artwork"))
+            // Global icon display switch — same setting as Artwork Settings, affects every game.
+            add(XMBContextMenuItem("icon_display_global", "Icon Display (${_uiState.value.iconDisplayMode.label})"))
             if (card.pinned) add(XMBContextMenuItem("unpin", "Unpin"))
             else             add(XMBContextMenuItem("pin",   "Pin To Top"))
             add(XMBContextMenuItem("library_manager",  "Open in Library Manager"))
@@ -3724,13 +3781,32 @@ class XMBViewModel @Inject constructor(
         )}
     }
 
-    // The "All Games" card isn't a real Memory Card, so it gets its own single-option menu.
+    // The "All Games" card isn't a real Memory Card, so it gets its own slim menu.
     private fun openAllGamesContextMenu() {
         _uiState.update { it.copy(
             activeContextMenu = XMBContextMenu(
                 title      = "All Games",
-                items      = listOf(XMBContextMenuItem("import_pc_games", "Import PC Games")),
+                items      = listOf(
+                    XMBContextMenuItem("import_pc_games", "Import PC Games"),
+                    XMBContextMenuItem("icon_display_global", "Icon Display (${it.iconDisplayMode.label})"),
+                ),
                 isAllGames = true,
+            )
+        )}
+    }
+
+    // Second-level menu: the GLOBAL icon display mode (mirrors Artwork Settings ▸ Game Icon
+    // Display). Per-game overrides keep winning; everything else follows this choice live.
+    private fun openGlobalIconDisplayPickerMenu() {
+        val current = _uiState.value.iconDisplayMode
+        val items = IconDisplayMode.entries.map { mode ->
+            XMBContextMenuItem("gicondisp_${mode.name}", mode.label, checked = mode == current)
+        }
+        _uiState.update { it.copy(
+            activeContextMenu = XMBContextMenu(
+                title      = "Icon Display",
+                items      = items,
+                isAllGames = true,   // routes selection through the All Games handler branch
             )
         )}
     }
@@ -3742,6 +3818,9 @@ class XMBViewModel @Inject constructor(
 
         val items = buildList {
             add(XMBContextMenuItem("launch", "Launch Game"))
+            // The explicit path to the edit surface, essential when direct launch makes
+            // confirm skip straight into the game.
+            add(XMBContextMenuItem("game_details", "View Game Details"))
             // No "Edit App Details" here: package-backed GAME entries (PC shortcuts, Android
             // gaming apps) are games — art/title/note editing lives in Game Detail and the
             // game rows below, never the slim standard-app editor.
@@ -3781,6 +3860,7 @@ class XMBViewModel @Inject constructor(
             // Emulator choice only applies to ROM-backed games; package-backed gaming apps
             // launch via their package/shortcut handle.
             if (!item.isAndroidApp) add(XMBContextMenuItem("change_emulator", "Change Emulator"))
+            add(XMBContextMenuItem("icon_display", "Icon Display"))
             add(XMBContextMenuItem("refresh_metadata", "Refresh Metadata"))
             add(XMBContextMenuItem("refresh_artwork",  "Refresh Artwork"))
             add(XMBContextMenuItem("file_location",    "View File Location"))
@@ -4108,11 +4188,17 @@ class XMBViewModel @Inject constructor(
             }
             menu.musicTrackId != null -> handleMusicTrackAction(menu.musicTrackId, itemId, menu.playlistId)
             menu.musicFolderId != null -> handleMusicFolderAction(menu.musicFolderId, itemId)
-            menu.isAllGames -> when (itemId) {
+            menu.isAllGames -> if (itemId.startsWith("gicondisp_")) {
+                IconDisplayMode.fromName(itemId.removePrefix("gicondisp_"))?.let { mode ->
+                    viewModelScope.launch { iconDisplayPreferences.setMode(mode) }
+                }
+            } else when (itemId) {
                 "import_pc_games" -> _uiState.update { it.copy(activeSettingsScreen = "settings_import_pc") }
+                "icon_display_global" -> openGlobalIconDisplayPickerMenu()
             }
             menu.platformId != null -> when (itemId) {
                 "find_games"       -> openAppPicker(AppPickerTarget.AndroidGames(menu.platformId), "Find Games")
+                "icon_display_global" -> openGlobalIconDisplayPickerMenu()
                 "scan_roms"        -> scanCard(menu.platformId)
                 "refresh_artwork"  -> refreshPlatformArtwork(menu.platformId)
                 "refresh_metadata" -> refreshPlatformArtwork(menu.platformId) // same path for now
@@ -4129,11 +4215,28 @@ class XMBViewModel @Inject constructor(
                 appAction {
                     gameRepository.setPreferredEmulator(gid, choice.takeIf { it != "default" })
                 }
+            } else if (itemId.startsWith("icondisp_")) {
+                // Icon display mode picked from the Icon Display submenu ("default" clears the
+                // per-game override so the game follows the global setting again).
+                val gid = menu.gameId
+                val choice = itemId.removePrefix("icondisp_")
+                appAction {
+                    gameRepository.setIconDisplayMode(gid, IconDisplayMode.fromName(choice)?.name)
+                }
             } else when (itemId) {
                 "launch"                 -> when {
                     menu.launchIntentUri != null -> launchStoredIntent(menu.launchIntentUri, menu.title)
                     menu.shortcutId != null -> launchHarvestedShortcut(menu.packageName, menu.shortcutId)
-                    else -> _uiState.update { it.copy(activeGameId = menu.gameId) }
+                    // "Launch Game" means launch: the detail page opens underneath and fires
+                    // its Play action itself once the game loads.
+                    else -> _uiState.update {
+                        it.copy(activeGameId = menu.gameId, activeGameAutoLaunch = true)
+                    }
+                }
+                // Always opens the Game Detail screen (no auto-launch) — the edit surface for
+                // artwork, title, notes, emulator when direct launch is the confirm behavior.
+                "game_details"           -> _uiState.update {
+                    it.copy(activeGameId = menu.gameId, activeGameAutoLaunch = false)
                 }
                 "edit_app"               -> openAppDetail(menu.gameId, menu.packageName ?: return)
                 "favorite"               -> toggleGameFavorite(menu.gameId, true)
@@ -4191,6 +4294,7 @@ class XMBViewModel @Inject constructor(
                     }
                 }
                 "change_emulator"        -> openEmulatorPickerMenu(menu.gameId)
+                "icon_display"           -> openIconDisplayPickerMenu(menu.gameId)
                 // Two-step delete: a confirm menu first, matching the Game Detail page's guard.
                 "remove_game"            -> _uiState.update { it.copy(activeContextMenu = XMBContextMenu(
                     title  = "Remove \"${menu.title}\" from Library?",
@@ -4285,6 +4389,30 @@ class XMBViewModel @Inject constructor(
 
     // Submenu listing every installed emulator that supports the game's platform. Selecting a row
     // dispatches "emu_pick_<profileId>" (or "emu_pick_default" to clear the per-game override).
+    // Second-level menu: how this game's XMB tile is drawn. Checkmark shows the current choice;
+    // "Use Global Setting" clears the per-game override.
+    private fun openIconDisplayPickerMenu(gameId: Long) {
+        viewModelScope.launch {
+            val game = gameRepository.getById(gameId) ?: return@launch
+            val override = IconDisplayMode.fromName(game.iconDisplayMode)
+            val items = buildList {
+                add(XMBContextMenuItem(
+                    id      = "icondisp_default",
+                    label   = "Use Global Setting (${_uiState.value.iconDisplayMode.label})",
+                    checked = override == null,
+                ))
+                IconDisplayMode.entries.forEach { mode ->
+                    add(XMBContextMenuItem("icondisp_${mode.name}", mode.label, checked = override == mode))
+                }
+            }
+            _uiState.update { it.copy(activeContextMenu = XMBContextMenu(
+                title  = "Icon Display",
+                items  = items,
+                gameId = gameId,
+            ))}
+        }
+    }
+
     private fun openEmulatorPickerMenu(gameId: Long) {
         viewModelScope.launch {
             val game = gameRepository.getById(gameId) ?: return@launch
@@ -5607,9 +5735,13 @@ class XMBViewModel @Inject constructor(
         }
 
         // Real games — including package/shortcut-backed gaming apps (Android/Windows cards) —
-        // open the Game Detail page; its Play button routes to the right launch handle.
+        // open the Game Detail page; its Play button routes to the right launch handle. With
+        // direct launch on, the page fires that Play action itself the moment the game loads,
+        // so confirm goes straight into the game (and returning lands on the detail page).
         if (item?.gameId != null && item.isRealGame) {
-            _uiState.update { it.copy(activeGameId = item.gameId) }
+            _uiState.update {
+                it.copy(activeGameId = item.gameId, activeGameAutoLaunch = it.directLaunch)
+            }
             return
         }
 
@@ -5746,7 +5878,9 @@ class XMBViewModel @Inject constructor(
     // ── Game detail overlay ───────────────────────────────────────────────────
 
     fun onCloseGameDetail() {
-        _uiState.update { it.copy(activeGameId = null, pendingGameDetailAction = null) }
+        _uiState.update {
+            it.copy(activeGameId = null, activeGameAutoLaunch = false, pendingGameDetailAction = null)
+        }
         // Rebuild the visible list: title/artwork edits made in the detail screen must show the
         // moment the overlay closes (the item build is one-shot, not reactive to those tables).
         loadItemsForCategory(currentCategory())
@@ -6126,15 +6260,85 @@ class XMBViewModel @Inject constructor(
 
     // ── Icon style ────────────────────────────────────────────────────────────
 
-    private fun observeIconStyle() {
+    // (The legacy display_icon_style pref is no longer observed — Artwork ▸ Game Icon Display
+    // and its Physical Media mode replaced the old PSP Rectangle / Cartridge icon style.)
+
+    // Global icon display mode — tiles resolve against it at render, so a change recomposes
+    // every visible tile without rebuilding the item list.
+    private fun observeIconDisplayMode() {
         viewModelScope.launch {
-            context.pfpDataStore.data.collect { prefs ->
-                val styleName = prefs[KEY_ICON_STYLE] ?: GameIconStyle.PSP_RECTANGLE.name
-                val style = runCatching { GameIconStyle.valueOf(styleName) }
-                    .getOrDefault(GameIconStyle.PSP_RECTANGLE)
-                _uiState.update { it.copy(iconStyle = style) }
+            iconDisplayPreferences.modeFlow.collect { mode ->
+                _uiState.update { it.copy(iconDisplayMode = mode) }
             }
         }
+        viewModelScope.launch {
+            iconDisplayPreferences.animatedIconsFlow.collect { enabled ->
+                animatedIconsEnabled = enabled
+                if (!enabled) _uiState.update { it.copy(focusedGameVideo = null) }
+            }
+        }
+        viewModelScope.launch {
+            gameLaunchPreferences.directLaunchFlow.collect { direct ->
+                _uiState.update { it.copy(directLaunch = direct) }
+            }
+        }
+    }
+
+    // ── ICON1 video snaps ─────────────────────────────────────────────────────
+
+    @Volatile private var animatedIconsEnabled = true
+
+    /**
+     * PSP ICON1 choreography with a battery conscience: when the cursor RESTS on a game whose
+     * tile is in ICON0 mode, wait out the linger gate (scrolling never spins up a decoder),
+     * re-check the environment gates, then look up the game's video snap and publish it —
+     * [com.playfieldportal.feature.xmb.ui.Icon1VideoOverlay] plays it in-slot. Any focus move,
+     * overlay, or mode change clears it immediately (collectLatest cancels the pending linger).
+     */
+    private fun observeFocusedGameVideo() {
+        viewModelScope.launch {
+            _uiState
+                .map { s ->
+                    val item = s.currentItems.getOrNull(s.selectedItemIndex)
+                    val eligible = item?.gameId != null && item.isRealGame && !s.hasBlockingOverlay &&
+                        resolveIconDisplay(item, s.iconDisplayMode).mode == IconDisplayMode.ICON0
+                    if (eligible) item?.gameId else null
+                }
+                .distinctUntilChanged()
+                .collectLatest { gameId ->
+                    if (_uiState.value.focusedGameVideo?.gameId != gameId) {
+                        _uiState.update { it.copy(focusedGameVideo = null) }
+                    }
+                    if (gameId == null) return@collectLatest
+                    kotlinx.coroutines.delay(ICON1_LINGER_MS)
+                    if (!videoSnapsAllowed()) {
+                        Timber.d("ICON1: gates vetoed playback for game $gameId (toggle/battery/thermal)")
+                        return@collectLatest
+                    }
+                    val uri = artworkStore.find(gameId, com.playfieldportal.feature.artwork.store.ArtworkKind.VIDEO)
+                    if (uri == null) {
+                        Timber.d("ICON1: no video snap stored for game $gameId (enable Download Video Snaps + rescrape)")
+                        return@collectLatest
+                    }
+                    Timber.d("ICON1: playing snap for game $gameId from $uri")
+                    _uiState.update {
+                        it.copy(focusedGameVideo = com.playfieldportal.feature.xmb.ui.FocusedGameVideo(gameId, uri))
+                    }
+                }
+        }
+    }
+
+    // Environment gates, checked after the linger: global toggle, Battery Saver, thermal
+    // pressure, and low battery while unplugged all veto the decode before it starts.
+    private fun videoSnapsAllowed(): Boolean {
+        if (!animatedIconsEnabled) return false
+        val pm = context.getSystemService(android.os.PowerManager::class.java)
+        if (pm?.isPowerSaveMode == true) return false
+        if ((pm?.currentThermalStatus ?: 0) >= android.os.PowerManager.THERMAL_STATUS_MODERATE) return false
+        val bm = context.getSystemService(android.os.BatteryManager::class.java)
+        val level = bm?.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY) ?: 100
+        if (level in 1 until 20 && bm?.isCharging != true) return false
+        return true
     }
 
     // ── Touch-navigation button preference ────────────────────────────────────────
@@ -6186,7 +6390,6 @@ class XMBViewModel @Inject constructor(
     // ── Static data ───────────────────────────────────────────────────────────
 
     companion object {
-        private val KEY_ICON_STYLE        = stringPreferencesKey("display_icon_style")
         private val KEY_WAVE_STYLE        = stringPreferencesKey("display_wave_style")
         // Must match DisplaySettingsViewModel — both read/write these wave power-throttle prefs.
         private val KEY_RESPECT_BATTERY   = booleanPreferencesKey("display_battery_saver")
@@ -6207,6 +6410,9 @@ class XMBViewModel @Inject constructor(
         private val KEY_TOUCH_NAV_BUTTON  = stringPreferencesKey("interface_touch_nav_button")
         // Must match DisplaySettingsViewModel.KEY_TOUCH_SENSITIVITY — both read/write this pref.
         private val KEY_TOUCH_SENSITIVITY = stringPreferencesKey("interface_touch_sensitivity")
+        // ICON1 linger gate — matches the PSP's rest-then-animate choreography and guarantees
+        // scrolling through the row never spins up a video decoder.
+        private const val ICON1_LINGER_MS = 1_500L
         private const val SETUP_ITEM_ID = "library_setup"
         private const val NO_CONSOLES_ITEM_ID = "no_consoles"
         private const val NO_GAMES_ITEM_ID    = "no_games"

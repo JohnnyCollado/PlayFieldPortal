@@ -9,7 +9,7 @@ import com.playfieldportal.feature.artwork.store.ArtworkKind
  *     pfp-artwork-library.json
  *     Import/{Launcher}/…                              ← drop zone for other launchers' media
  *     Artwork/{platformId}/{mediaDir}/{PortableName}.{ext}
- *     Artwork/{platformId}/pfp/…                       ← PFP-only art, reserved
+ *     Artwork/{platformId}/pfp/icon0/…                 ← PFP-only 144:80 icon art (ICON)
  *
  * (Point ES-DE or another frontend at {libraryRoot}/Artwork — the tree inside is exactly a
  * downloaded_media layout.)
@@ -19,17 +19,23 @@ import com.playfieldportal.feature.artwork.store.ArtworkKind
  */
 object ArtworkPathResolver {
 
-    /** PFP-only namespace under each platform — never holds standard media types. */
+    /** PFP-only namespace under each platform — never holds standard ES-DE media types. */
     const val DIR_PFP = "pfp"
 
+    /** ICON lives at `pfp/icon0` — 144:80 grids are a PFP-ism, not an ES-DE media type, so
+     *  `covers/` keeps its ES-DE meaning (true box art = BOX_ART). */
+    const val DIR_ICON0 = "$DIR_PFP/icon0"
+
     private val KIND_TO_DIR: Map<ArtworkKind, String> = mapOf(
-        ArtworkKind.ICON           to "covers",
+        ArtworkKind.ICON           to DIR_ICON0,
+        ArtworkKind.BOX_ART        to "covers",
         ArtworkKind.HERO           to "miximages",
         ArtworkKind.BACKGROUND     to "fanart",
         ArtworkKind.LOGO           to "marquees",
         ArtworkKind.SCREENSHOT     to "screenshots",
         ArtworkKind.TITLESCREEN    to "titlescreens",
         ArtworkKind.PHYSICAL_MEDIA to "physicalmedia",
+        ArtworkKind.BOX_3D         to "3dboxes",
         ArtworkKind.MANUAL         to "manuals",
         ArtworkKind.VIDEO          to "videos",
     )
@@ -38,7 +44,7 @@ object ArtworkPathResolver {
         KIND_TO_DIR.entries.associate { (kind, dir) -> dir to kind }
 
     // ES-DE media dirs we recognize as library structure but do not import/write (yet).
-    private val RESERVED_MEDIA_DIRS = setOf("3dboxes", "backcovers")
+    private val RESERVED_MEDIA_DIRS = setOf("backcovers")
 
     fun mediaDirFor(kind: ArtworkKind): String = KIND_TO_DIR.getValue(kind)
 

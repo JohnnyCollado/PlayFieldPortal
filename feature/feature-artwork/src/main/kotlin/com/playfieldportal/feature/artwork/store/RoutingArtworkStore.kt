@@ -82,6 +82,12 @@ class RoutingArtworkStore @Inject constructor(
         return persistPortable(tree, game, kind, tmp, source = SOURCE_USER, userAssigned = true)
     }
 
+    override suspend fun saveFromFile(gameId: Long, kind: ArtworkKind, tempFile: java.io.File): String? {
+        val target = portableTarget(gameId) ?: return internal.saveFromFile(gameId, kind, tempFile)
+        val (tree, game) = target
+        return persistPortable(tree, game, kind, tempFile, source = SOURCE_SCRAPE, userAssigned = false)
+    }
+
     override fun isValidRef(ref: String?): Boolean = internal.isValidRef(ref)
 
     override suspend fun find(gameId: Long, kind: ArtworkKind): String? =

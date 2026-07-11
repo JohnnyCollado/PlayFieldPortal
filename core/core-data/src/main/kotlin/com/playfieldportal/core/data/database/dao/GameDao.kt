@@ -152,7 +152,15 @@ interface GameDao {
             hero_uri        = COALESCE(:heroUri,      hero_uri),
             logo_uri        = COALESCE(:logoUri,      logo_uri),
             icon_uri        = COALESCE(:iconUri,      icon_uri),
+            box_art_uri     = COALESCE(:boxArtUri,    box_art_uri),
+            physical_media_uri = COALESCE(:physicalMediaUri, physical_media_uri),
+            box3d_uri       = COALESCE(:box3dUri,     box3d_uri),
             scraped_title   = COALESCE(:scrapedTitle, scraped_title),
+            players         = COALESCE(:players,      players),
+            age_rating      = COALESCE(:ageRating,    age_rating),
+            franchise       = COALESCE(:franchise,    franchise),
+            community_rating = COALESCE(:communityRating, community_rating),
+            release_date    = COALESCE(:releaseDate,  release_date),
             ss_id           = COALESCE(:ssId,         ss_id),
             tgdb_id         = COALESCE(:tgdbId,       tgdb_id),
             igdb_id         = COALESCE(:igdbId,       igdb_id),
@@ -171,7 +179,15 @@ interface GameDao {
         heroUri: String?      = null,
         logoUri: String?      = null,
         iconUri: String?      = null,
+        boxArtUri: String?    = null,
+        physicalMediaUri: String? = null,
+        box3dUri: String?     = null,
         scrapedTitle: String? = null,
+        players: String?      = null,
+        ageRating: String?    = null,
+        franchise: String?    = null,
+        communityRating: Float? = null,
+        releaseDate: String?  = null,
         ssId: Long?           = null,
         tgdbId: Long?         = null,
         igdbId: Long?         = null,
@@ -211,6 +227,27 @@ interface GameDao {
 
     @Query("UPDATE games SET icon_uri = :iconUri WHERE id = :id")
     suspend fun updateIconUri(id: Long, iconUri: String?)
+
+    @Query("UPDATE games SET box_art_uri = :boxArtUri WHERE id = :id")
+    suspend fun updateBoxArt(id: Long, boxArtUri: String?)
+
+    @Query("UPDATE games SET physical_media_uri = :physicalMediaUri WHERE id = :id")
+    suspend fun updatePhysicalMedia(id: Long, physicalMediaUri: String?)
+
+    @Query("UPDATE games SET box3d_uri = :box3dUri WHERE id = :id")
+    suspend fun updateBox3d(id: Long, box3dUri: String?)
+
+    // Per-game icon display mode override (IconDisplayMode name); null follows the global setting.
+    @Query("UPDATE games SET icon_display_mode = :mode WHERE id = :id")
+    suspend fun updateIconDisplayMode(id: Long, mode: String?)
+
+    // Full artwork reset (Clear Cache): every artwork reference on every game. Titles,
+    // metadata, scraper ids and play stats are untouched — only the art pointers go.
+    @Query("""
+        UPDATE games SET artwork_uri = NULL, hero_uri = NULL, logo_uri = NULL, icon_uri = NULL,
+            box_art_uri = NULL, physical_media_uri = NULL, box3d_uri = NULL
+    """)
+    suspend fun clearAllArtworkRefs()
 
     // Mints the portable artwork key once — an already-set key is never rewritten (slug rules
     // may evolve; the key recorded at first save is the one the folder was created under).

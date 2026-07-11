@@ -70,6 +70,11 @@ class LogsSettingsViewModel @Inject constructor(
         }
     }
 
+    /** Closes the viewer (controller Back) — keeps the file list, drops the open content. */
+    fun closeViewer() {
+        _uiState.update { it.copy(selectedFile = null, logContent = "") }
+    }
+
     fun clearLogs() {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {

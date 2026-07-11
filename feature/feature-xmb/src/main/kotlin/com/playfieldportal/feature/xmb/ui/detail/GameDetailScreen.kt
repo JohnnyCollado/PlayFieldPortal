@@ -107,6 +107,10 @@ fun GameDetailScreen(
     // contextual App Drawer button; any touch on the screen reports back via [onTouchInput].
     showTouchControls: Boolean = true,
     onTouchInput: () -> Unit = {},
+    // Direct-launch mode: fire the Play action as soon as the game loads. The screen still
+    // opens underneath (all launch plumbing lives in the ViewModel) and is what the user
+    // returns to when they exit the game.
+    autoLaunch: Boolean = false,
     modifier: Modifier = Modifier,
     viewModel: GameDetailViewModel = hiltViewModel(),
 ) {
@@ -125,6 +129,14 @@ fun GameDetailScreen(
     LaunchedEffect(gameId) {
         viewModel.prepareForOpen()
         viewModel.loadGame(gameId)
+    }
+    // Launch-on-open ("Launch Game" / direct-launch tap): waits for the game row to load
+    // (launch() no-ops on unloaded state), then fires exactly once per screen open.
+    if (autoLaunch) {
+        val gameLoaded = state.game != null
+        LaunchedEffect(gameLoaded) {
+            if (gameLoaded) viewModel.launch()
+        }
     }
     LaunchedEffect(Unit) {
         viewModel.launchEffect.collect { intent ->

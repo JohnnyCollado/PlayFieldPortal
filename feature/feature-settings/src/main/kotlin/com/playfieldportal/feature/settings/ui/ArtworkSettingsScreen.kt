@@ -166,10 +166,17 @@ fun ArtworkSettingsScreen(
             SettingsGroup("Art Preferences")
 
             SettingsValueRow(
-                label    = "Preferred Grid Style",
-                sublabel = "Style used when multiple grids are available",
-                value    = state.preferredGridStyle,
-                onClick  = { viewModel.cycleGridStyle() },
+                label    = "Game Icon Display",
+                sublabel = "How game tiles are drawn on the XMB — per-game override in each game's Options (△) menu",
+                value    = state.iconDisplayMode.label,
+                onClick  = { viewModel.cycleIconDisplayMode() },
+            )
+
+            SettingsToggleRow(
+                label    = "Animated Icons",
+                sublabel = "Play a game's video snap in its icon after resting on it (Custom Icon mode; skipped on low battery)",
+                checked  = state.animatedIcons,
+                onToggle = { viewModel.setAnimatedIcons(it) },
             )
 
             SettingsToggleRow(
@@ -344,11 +351,15 @@ fun ArtworkSettingsScreen(
             // ── Cache ─────────────────────────────────────────────────────────
             SettingsGroup("Cache")
 
-            SettingsValueRow(label = "Disk Cache Size", value = state.diskCacheSizeMb)
+            SettingsValueRow(
+                label    = "Stored Artwork Size",
+                sublabel = "Image cache + artwork stored on this device (your artwork folder isn't counted)",
+                value    = state.diskCacheSizeMb,
+            )
 
             SettingsRow(
-                label    = "Clear Artwork Cache",
-                sublabel = "Cached images will be re-downloaded on next view",
+                label    = "Clear All Artwork",
+                sublabel = "Fresh start: removes cached images, stored artwork, and every game's art links. Files in your artwork folder are kept — Relink or re-scrape to restore",
                 onClick  = { viewModel.clearCache() },
             )
         }

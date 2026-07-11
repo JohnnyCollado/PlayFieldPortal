@@ -253,7 +253,10 @@ class ArtworkImportExecutor @Inject constructor(
         ArtworkKind.HERO -> gameDao.updateHero(gameId, uri)
         ArtworkKind.BACKGROUND -> gameDao.updateArtwork(gameId, uri)
         ArtworkKind.LOGO -> gameDao.updateLogo(gameId, uri)
-        else -> Unit    // extra kinds live in the entry folder + index only
+        ArtworkKind.BOX_ART -> gameDao.updateBoxArt(gameId, uri)
+        ArtworkKind.PHYSICAL_MEDIA -> gameDao.updatePhysicalMedia(gameId, uri)
+        ArtworkKind.BOX_3D -> gameDao.updateBox3d(gameId, uri)
+        else -> Unit    // record-only kinds (manuals, videos, screenshots, titlescreens)
     }
 
     private fun sourceTag(sourceId: String): String = when (sourceId) {

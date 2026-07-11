@@ -15,6 +15,9 @@ import com.playfieldportal.feature.artwork.rom.RomHasher
 import com.playfieldportal.feature.artwork.rom.RomIdentity
 import com.playfieldportal.feature.artwork.store.ArtworkKind
 import com.playfieldportal.feature.artwork.store.ArtworkStore
+import com.playfieldportal.feature.artwork.store.ArtworkTempIO
+import com.playfieldportal.feature.artwork.video.VideoSnapTranscoder
+import io.ktor.client.HttpClient
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
 import timber.log.Timber
@@ -47,6 +50,8 @@ class MetadataRepository @Inject constructor(
     private val sgdbKeyProvider: SgdbApiKeyProvider,
     private val imageLoader: ImageLoader,
     private val artworkStore: ArtworkStore,
+    private val httpClient: HttpClient,
+    private val videoSnapTranscoder: VideoSnapTranscoder,
 ) {
     // Batch guards, set from ScreenScraper's typed failures: 430 (daily quota) and credential
     // failures stop SS for the rest of the run; 431 stops only hash-less lookups (each miss digs
@@ -172,15 +177,58 @@ class MetadataRepository @Inject constructor(
         if (options.downloadClearLogos) onAssetProgress?.invoke(src, "Logo")
         val logoPath = finalLogoUrl?.let { artworkStore.saveFromUrl(gameId, ArtworkKind.LOGO, it) }
 
+        // Icon-display-mode tiles — small images, always fetched (no toggles). Box art accepts
+        // TGDB/IGDB covers as fallback; SGDB grids are stylized, not boxes, so they stay out.
+        // Physical media and 3D boxes are ScreenScraper-only.
+        val boxArtSrcUrl = ssInfo?.boxArtUrl ?: tgdbInfo?.artworkUrl ?: igdbInfo?.artworkUrl
+        if (boxArtSrcUrl != null) onAssetProgress?.invoke(src, "Box Art")
+        val boxArtPath = boxArtSrcUrl?.let { artworkStore.saveFromUrl(gameId, ArtworkKind.BOX_ART, it) }
+        val physicalMediaPath = ssInfo?.physicalMediaUrl?.let {
+            onAssetProgress?.invoke("ScreenScraper", "Physical Media")
+            artworkStore.saveFromUrl(gameId, ArtworkKind.PHYSICAL_MEDIA, it)
+        }
+        val box3dPath = ssInfo?.box3dUrl?.let {
+            onAssetProgress?.invoke("ScreenScraper", "3D Box")
+            artworkStore.saveFromUrl(gameId, ArtworkKind.BOX_3D, it)
+        }
+
         // ScreenScraper-only extras — stored under fixed names, looked up via ArtworkStore.find
         // (never referenced from game columns).
         if (options.downloadManuals) ssInfo?.manualUrl?.let {
             onAssetProgress?.invoke("ScreenScraper", "Manual")
             artworkStore.saveFromUrl(gameId, ArtworkKind.MANUAL, it)
         }
-        if (options.downloadVideoSnaps) ssInfo?.videoUrl?.let {
-            onAssetProgress?.invoke("ScreenScraper", "Video Snap")
-            artworkStore.saveFromUrl(gameId, ArtworkKind.VIDEO, it)
+        if (options.downloadVideoSnaps) {
+            val snapUrl = ssInfo?.videoUrl
+            val rawUrl = ssInfo?.videoRawUrl
+            when {
+                // SS already has a normalized snap — store it as-is.
+                snapUrl != null -> {
+                    onAssetProgress?.invoke("ScreenScraper", "Video Snap")
+                    artworkStore.saveFromUrl(gameId, ArtworkKind.VIDEO, snapUrl)
+                }
+                // Only the full video exists — download it, trim to 60 s and scale it down
+                // to ICON1 size locally, and store the small snap (never the full video).
+                rawUrl != null -> {
+                    onAssetProgress?.invoke("ScreenScraper", "Video Snap (converting)")
+                    val raw = ArtworkTempIO.downloadToTemp(httpClient, context.cacheDir, ArtworkKind.VIDEO, rawUrl)
+                    if (raw != null) {
+                        val snap = java.io.File.createTempFile("snap_", ".mp4", context.cacheDir)
+                        val ok = runCatching { videoSnapTranscoder.transcode(raw, snap) }
+                            .onFailure { Timber.w(it, "Snap transcode crashed") }
+                            .getOrDefault(false)
+                        if (ok) {
+                            raw.delete()
+                            artworkStore.saveFromFile(gameId, ArtworkKind.VIDEO, snap)
+                        } else {
+                            // Transcoder unavailable/refused: keep the capped raw download so
+                            // ICON1 still works (its player clips to 60 s at playback anyway).
+                            snap.delete()
+                            artworkStore.saveFromFile(gameId, ArtworkKind.VIDEO, raw)
+                        }
+                    }
+                }
+            }
         }
 
         // Scraped title: ScreenScraper's canonical name wins, TheGamesDB fallback — only
@@ -202,7 +250,15 @@ class MetadataRepository @Inject constructor(
             artworkUri   = backgroundPath ?: finalHeroUrl ?: finalBoxArtUrl,
             heroUri      = heroPath ?: finalHeroUrl,
             logoUri      = logoPath ?: finalLogoUrl,
+            boxArtUri    = boxArtPath,
+            physicalMediaUri = physicalMediaPath,
+            box3dUri     = box3dPath,
             scrapedTitle = if (existingOverride == null) newScrapedTitle else null,
+            players      = ssInfo?.players,
+            ageRating    = ssInfo?.ageRating,
+            franchise    = ssInfo?.franchise,
+            communityRating = ssInfo?.communityRating,
+            releaseDate  = ssInfo?.releaseDate,
             ssId         = ssInfo?.ssId,
             tgdbId       = tgdbInfo?.tgdbId,
             steamGridDbId = sgdbGameId,

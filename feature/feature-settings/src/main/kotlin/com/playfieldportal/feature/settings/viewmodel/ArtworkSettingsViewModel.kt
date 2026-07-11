@@ -46,10 +46,15 @@ data class ArtworkSettingsUiState(
     val summary: String? = null,
     val confirmRescrapeAll: Boolean = false,
     val diskCacheSizeMb: String = "0 MB",
-    val preferredGridStyle: String = "Any",
+    // Global default for how game tiles are drawn on the XMB (per-game overrides live in each
+    // game's △ Icon Display menu).
+    val iconDisplayMode: com.playfieldportal.core.domain.model.IconDisplayMode =
+        com.playfieldportal.core.domain.model.IconDisplayMode.DEFAULT,
+    // ICON1 video snaps in the focused icon slot (Custom Icon mode only).
+    val animatedIcons: Boolean = true,
     val downloadHeroes: Boolean = true,
     val downloadLogos: Boolean = true,
-    val downloadManuals: Boolean = false,
+    val downloadManuals: Boolean = true,
     val downloadVideoSnaps: Boolean = false,
     val preferSteamGridDbHeroes: Boolean = false,
     // Portable artwork folder is configured but its access grant died (SD removed, permission
@@ -67,11 +72,22 @@ class ArtworkSettingsViewModel @Inject constructor(
     private val igdbApi: IgdbApi,
     private val screenScraperApi: ScreenScraperApi,
     private val artworkFolderRepository: com.playfieldportal.core.data.repository.ArtworkFolderRepository,
+    private val iconDisplayPreferences: com.playfieldportal.core.data.repository.IconDisplayPreferences,
 ) : ViewModel() {
 
     private val _extra = MutableStateFlow(ArtworkSettingsUiState())
 
     init {
+        viewModelScope.launch {
+            iconDisplayPreferences.modeFlow.collect { mode ->
+                _extra.update { it.copy(iconDisplayMode = mode) }
+            }
+        }
+        viewModelScope.launch {
+            iconDisplayPreferences.animatedIconsFlow.collect { enabled ->
+                _extra.update { it.copy(animatedIcons = enabled) }
+            }
+        }
         // Startup grant check (§17): a configured folder whose grant died gets a visible
         // warning instead of silently broken artwork.
         viewModelScope.launch {
@@ -173,7 +189,12 @@ class ArtworkSettingsViewModel @Inject constructor(
         viewModelScope.launch {
             _extra.update { it.copy(isLoadingStatus = true) }
             val status = artworkRepository.computeStatus()
-            _extra.update { it.copy(status = status, isLoadingStatus = false) }
+            val cacheMb = artworkRepository.cacheSizeBytes() / (1024.0 * 1024.0)
+            _extra.update { it.copy(
+                status = status,
+                isLoadingStatus = false,
+                diskCacheSizeMb = String.format(java.util.Locale.US, "%.1f MB", cacheMb),
+            ) }
         }
     }
 
@@ -279,15 +300,21 @@ class ArtworkSettingsViewModel @Inject constructor(
     fun clearCache() {
         viewModelScope.launch {
             artworkRepository.clearCache()
-            _extra.update { it.copy(diskCacheSizeMb = "0 MB") }
+            _extra.update { it.copy(diskCacheSizeMb = "0.0 MB") }
+            refreshStatus()   // status counts change too — every game is "missing" again
         }
     }
 
-    fun cycleGridStyle() {
-        val styles = listOf("Any", "Alternate", "Blurred", "White Logo", "Material")
-        val current = _extra.value.preferredGridStyle
-        val next = styles[(styles.indexOf(current) + 1) % styles.size]
-        _extra.update { it.copy(preferredGridStyle = next) }
+    /** Cycles the global icon display mode (Custom Icon → Box Art → Physical Media → 3D Box). */
+    fun cycleIconDisplayMode() {
+        val entries = com.playfieldportal.core.domain.model.IconDisplayMode.entries
+        val next = entries[(entries.indexOf(_extra.value.iconDisplayMode) + 1) % entries.size]
+        viewModelScope.launch { iconDisplayPreferences.setMode(next) }
+    }
+
+    fun setAnimatedIcons(enabled: Boolean) {
+        _extra.update { it.copy(animatedIcons = enabled) }
+        viewModelScope.launch { iconDisplayPreferences.setAnimatedIcons(enabled) }
     }
 
     fun setDownloadHeroes(enabled: Boolean) {

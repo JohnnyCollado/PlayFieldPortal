@@ -47,6 +47,7 @@ class ArtworkRepository @Inject constructor(
     private val metadataRepository: MetadataRepository,
     private val scrapePreferences: ArtworkScrapePreferences,
     private val artworkStore: ArtworkStore,
+    private val internalStore: com.playfieldportal.feature.artwork.store.InternalArtworkStore,
 ) {
     // Fetch artwork + metadata for all games that don't have any artwork yet.
     suspend fun fetchMissingArtwork(
@@ -88,10 +89,26 @@ class ArtworkRepository @Inject constructor(
         return ArtworkFetchResult(gameId, title, result.success, errorMessage = result.message.takeIf { !result.success })
     }
 
-    fun clearCache() {
+    /**
+     * App-side artwork footprint in bytes: Coil's disk cache + the internal artwork store.
+     * Files in the user's portable library are the user's own and are never counted.
+     */
+    suspend fun cacheSizeBytes(): Long = withContext(Dispatchers.IO) {
+        val coilBytes = context.imageLoader.diskCache?.size ?: 0L
+        coilBytes + internalStore.footprint().second
+    }
+
+    /**
+     * Full artwork reset for a fresh start: Coil caches, every internally stored file, all
+     * artwork_records, and every game's artwork columns. Files in the user's portable
+     * library are NEVER deleted — Relink/re-scrape rebuilds from them at any time.
+     */
+    suspend fun clearCache() {
         context.imageLoader.diskCache?.clear()
         context.imageLoader.memoryCache?.clear()
-        Timber.i("Artwork cache cleared")
+        artworkStore.deleteAll()          // internal files + artwork_records (never library files)
+        gameDao.clearAllArtworkRefs()
+        Timber.i("Artwork cache + stored artwork state cleared")
     }
 
     // ── Accurate, file-aware artwork status ──────────────────────────────────────

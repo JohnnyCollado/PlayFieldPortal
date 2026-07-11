@@ -57,9 +57,19 @@ class PortableNameResolverTest {
             assertEquals(kind, ArtworkPathResolver.kindForMediaDir(dir))
             assertTrue(ArtworkPathResolver.isMediaDirName(dir))
         }
+        // covers/ belongs to BOX_ART (true ES-DE box art); ICON lives in the PFP-only
+        // pfp/icon0 namespace since the icon-display-modes split.
         assertEquals(
             "Artwork/ps2/covers/Final Fantasy X (USA).png",
+            ArtworkPathResolver.relativePath("ps2", com.playfieldportal.feature.artwork.store.ArtworkKind.BOX_ART, "Final Fantasy X (USA).png"),
+        )
+        assertEquals(
+            "Artwork/ps2/pfp/icon0/Final Fantasy X (USA).png",
             ArtworkPathResolver.relativePath("ps2", com.playfieldportal.feature.artwork.store.ArtworkKind.ICON, "Final Fantasy X (USA).png"),
+        )
+        assertEquals(
+            "Artwork/ps2/3dboxes/Final Fantasy X (USA).png",
+            ArtworkPathResolver.relativePath("ps2", com.playfieldportal.feature.artwork.store.ArtworkKind.BOX_3D, "Final Fantasy X (USA).png"),
         )
     }
 }

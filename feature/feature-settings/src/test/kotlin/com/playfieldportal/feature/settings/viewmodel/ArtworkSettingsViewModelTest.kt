@@ -82,6 +82,10 @@ class ArtworkSettingsViewModelTest {
         artworkFolderRepository = mockk(relaxed = true) {
             coEvery { getTreeUri() } returns null
         },
+        iconDisplayPreferences = mockk(relaxed = true) {
+            every { modeFlow } returns flowOf(com.playfieldportal.core.domain.model.IconDisplayMode.DEFAULT)
+            every { animatedIconsFlow } returns flowOf(true)
+        },
     )
 
     // uiState is a WhileSubscribed StateFlow, so it only reflects upstream (the credential flows +
