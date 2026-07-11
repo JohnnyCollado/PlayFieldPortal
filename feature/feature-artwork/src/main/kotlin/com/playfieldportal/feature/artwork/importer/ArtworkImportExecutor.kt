@@ -44,10 +44,12 @@ import javax.inject.Singleton
  */
 @Singleton
 class ArtworkImportExecutor @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val library: PortableArtworkLibrary,
     private val gameDao: GameDao,
     private val artworkRecordDao: ArtworkRecordDao,
     private val reportDao: ArtworkImportReportDao,
+    private val videoSnapTranscoder: com.playfieldportal.feature.artwork.video.VideoSnapTranscoder,
 ) {
     data class Progress(val done: Int, val total: Int, val label: String)
 
@@ -185,6 +187,46 @@ class ArtworkImportExecutor @Inject constructor(
             val prior = existingRecords[item.kind]
             if (prior != null && (prior.locked || prior.userAssigned)) {
                 onItem(item, ItemOutcome.SKIPPED)
+                continue
+            }
+
+            // ES-DE videos import as ICON1 snaps: the source is transcoded (60 s trim,
+            // icon-sized, audio stripped) into the library — the full video is never stored,
+            // and the source file is never moved or deleted, even in Move mode. A game that
+            // already has any snap keeps it.
+            if (kind == ArtworkKind.VIDEO) {
+                if (prior != null) {
+                    onItem(item, ItemOutcome.SKIPPED)
+                    continue
+                }
+                val portableName = basePortableName
+                val src = sourceChildFor(treeUri, item)
+                val raw = runCatching {
+                    context.contentResolver.openInputStream(src.uri)?.use {
+                        com.playfieldportal.feature.artwork.store.ArtworkTempIO
+                            .copyToTemp(it, context.cacheDir, ArtworkKind.VIDEO)
+                    }
+                }.getOrNull()
+                if (raw == null) { onItem(item, ItemOutcome.FAILED); continue }
+                val snap = java.io.File.createTempFile("snap_", ".mp4", context.cacheDir)
+                val ok = runCatching { videoSnapTranscoder.transcode(raw, snap) }
+                    .onFailure { Timber.w(it, "Import snap transcode crashed") }
+                    .getOrDefault(false)
+                raw.delete()
+                if (!ok) { snap.delete(); onItem(item, ItemOutcome.FAILED); continue }
+                val saved = library.saveFromFile(treeUri, game.platformId, kind, portableName, snap)
+                if (saved == null) { onItem(item, ItemOutcome.FAILED); continue }
+                records += ArtworkRecordEntity(
+                    gameId = game.gameId,
+                    platformId = game.platformId,
+                    artworkType = item.kind,
+                    portableName = portableName,
+                    relativePath = ArtworkPathResolver.relativePath(game.platformId, kind, saved.fileName),
+                    documentUri = saved.uriString,
+                    source = sourceTag(plan.sourceId),
+                    sizeBytes = saved.sizeBytes,
+                )
+                onItem(item, ItemOutcome.IMPORTED)
                 continue
             }
 

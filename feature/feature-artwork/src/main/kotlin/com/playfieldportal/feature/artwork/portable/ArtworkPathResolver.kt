@@ -56,8 +56,9 @@ object ArtworkPathResolver {
         return lower in DIR_TO_KIND || lower in RESERVED_MEDIA_DIRS
     }
 
-    /** Media types imported/written in V1 (video snaps stay out for now). */
-    val importedKinds: Set<ArtworkKind> = KIND_TO_DIR.keys - ArtworkKind.VIDEO
+    /** Media types the ES-DE importer accepts. Videos import too — as locally transcoded
+     *  ICON1 snaps, never as stored full-size files (see ArtworkImportExecutor). */
+    val importedKinds: Set<ArtworkKind> = KIND_TO_DIR.keys
 
     /** Relative path of an asset inside the library ("Artwork/ps2/covers/Final Fantasy X (USA).png"). */
     fun relativePath(platformId: String, kind: ArtworkKind, fileName: String): String =

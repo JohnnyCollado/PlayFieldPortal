@@ -381,9 +381,11 @@ fun XMBShell(
                     pic0Visible = true
                 }
             }
+            // Fade-in only: stepping the cursor must hide the logo INSTANTLY (snap), so the
+            // next game's logo is never glimpsed before its own linger completes.
             val pic0Alpha by androidx.compose.animation.core.animateFloatAsState(
                 targetValue = if (pic0Visible && selectedLogo != null) 1f else 0f,
-                animationSpec = tween(500),
+                animationSpec = if (pic0Visible) tween(500) else androidx.compose.animation.core.snap(),
                 label = "pic0Fade",
             )
             if (selectedLogo != null && pic0Alpha > 0f) {

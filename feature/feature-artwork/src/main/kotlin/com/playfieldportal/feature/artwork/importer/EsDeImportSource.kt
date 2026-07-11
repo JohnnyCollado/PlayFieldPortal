@@ -187,6 +187,9 @@ class EsDeImportSource @Inject constructor(
         val ext = name.substringAfterLast('.', "").lowercase(Locale.ROOT)
         return when (kind) {
             ArtworkKind.MANUAL -> ext == "pdf"
+            // Containers the snap transcoder's extractor handles (payload is sniffed again
+            // before anything is stored).
+            ArtworkKind.VIDEO -> ext == "mp4" || ext == "m4v" || ext == "webm" || ext == "mkv"
             else -> ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "webp"
         }
     }
