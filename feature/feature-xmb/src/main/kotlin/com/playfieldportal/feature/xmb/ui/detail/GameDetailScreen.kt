@@ -3,6 +3,8 @@ package com.playfieldportal.feature.xmb.ui.detail
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
@@ -85,6 +87,8 @@ import com.playfieldportal.feature.xmb.ui.DetailMenuRow
 import com.playfieldportal.feature.xmb.ui.collection.CollectionPickerPanel
 import timber.log.Timber
 
+// The shared hero-card building blocks (breadcrumb, hero card, icon tile, console button,
+// square action button) live in DetailComponents.kt — shared with the App Detail page.
 // Neutral dark surfaces stay fixed; every accent/focus color comes from the active theme via
 // menuCursorFill()/menuCursorEdge() so this screen follows the chosen color scheme.
 private val TextPrimary = Color(0xFFEEEEEE)
@@ -194,8 +198,11 @@ fun GameDetailScreen(
         val pageScrollState = rememberScrollState()
         val pageStepPx = with(LocalDensity.current) { PageScrollStep.roundToPx() }
         LaunchedEffect(state.pageScrollSteps) {
+            // Eased tween instead of the default spring — the spring settles with a hard stop,
+            // which made held-D-pad scrolling feel stiff and notchy.
             pageScrollState.animateScrollTo(
                 (state.pageScrollSteps * pageStepPx).coerceAtMost(pageScrollState.maxValue),
+                animationSpec = tween(durationMillis = 320, easing = LinearOutSlowInEasing),
             )
         }
         Column(
@@ -385,105 +392,6 @@ private fun Game.kindLabel(): String = when {
     else                                          -> "ROM"
 }
 
-// Breadcrumb header, same shape as the App Drawer's: ◀ + title + subtitle. Always visible —
-// it replaces the old touch-only Back/Options pills as the way back off this page.
-@Composable
-private fun DetailBreadcrumb(
-    title: String,
-    subtitle: String,
-    onBack: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text     = "◀",
-            color    = TextMuted,
-            fontSize = 16.sp,
-            modifier = Modifier
-                .clickable { onBack() }
-                .padding(end = 16.dp),
-        )
-        Column {
-            Text(title, color = TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
-            Text(subtitle, color = TextMuted, fontSize = 12.sp)
-        }
-    }
-}
-
-// Rounded hero card with the title + platform overlaid bottom-start, per the mockup.
-@Composable
-private fun HeroCard(
-    uri: String?,
-    title: String,
-    platform: String,
-    accentColor: Color,
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(HeroBannerHeight)
-            .clip(RoundedCornerShape(14.dp))
-            .background(accentColor.copy(alpha = 0.18f)),
-        contentAlignment = Alignment.BottomStart,
-    ) {
-        if (uri != null) {
-            AsyncImage(uri, title, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-        }
-        Box(
-            Modifier
-                .fillMaxSize()
-                .background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xCC000000))))
-        )
-        Column(Modifier.padding(horizontal = 26.dp, vertical = 20.dp)) {
-            Text(title, color = TextPrimary, fontSize = 32.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-            Text(platform, color = TextMuted, fontSize = 15.sp, maxLines = 1)
-        }
-    }
-}
-
-@Composable
-private fun IconTile(uri: String?, title: String) {
-    Box(
-        modifier = Modifier
-            .width(196.dp)
-            .height(110.dp)
-            .clip(RoundedCornerShape(10.dp))
-            .background(ActionFill)
-            .border(1.dp, Color(0x22FFFFFF), RoundedCornerShape(10.dp)),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (uri != null) {
-            AsyncImage(uri, title, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-        } else {
-            Text(title.take(1).uppercase(), color = TextMuted, fontSize = 34.sp, fontWeight = FontWeight.Bold)
-        }
-    }
-}
-
-@Composable
-private fun SquareActionButton(
-    icon: ImageVector,
-    contentDescription: String,
-    focused: Boolean,
-    onClick: () -> Unit,
-) {
-    Box(
-        modifier = Modifier
-            .size(46.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .background(ActionFill)
-            .then(if (focused) Modifier.border(2.dp, menuCursorEdge(), RoundedCornerShape(8.dp)) else Modifier)
-            .clickable(role = Role.Button, onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(icon, contentDescription = contentDescription, tint = TextPrimary, modifier = Modifier.size(20.dp))
-    }
-}
-
 @Composable
 private fun GameInfoList(
     releaseYear: Int?,
@@ -558,33 +466,6 @@ private fun relativeDays(epochMillis: Long): String {
     }
 }
 
-@Composable
-private fun ConsoleButton(
-    label: String,
-    icon: ImageVector,
-    focused: Boolean,
-    fill: Color,
-    textColor: Color,
-    onClick: () -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(fill)
-            .then(if (focused) Modifier.border(2.dp, Color.White, RoundedCornerShape(8.dp)) else Modifier)
-            .clickable(role = Role.Button, onClick = onClick)
-            .focusable()
-            .padding(vertical = 15.dp, horizontal = 18.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(icon, contentDescription = null, tint = textColor, modifier = Modifier.size(22.dp))
-        Spacer(Modifier.width(12.dp))
-        Text(label, color = textColor, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-    }
-}
-
-private val HeroBannerHeight: Dp = 220.dp
 private val OptionsPanelMaxHeight: Dp = 440.dp
 private val OptionsRowScrollStep: Dp = 58.dp
 private val PageScrollStep: Dp = 120.dp
@@ -606,7 +487,7 @@ private fun DetailAction.dynamicLabel(favorite: Boolean, refreshing: Boolean): S
 // Data sources (SGDB, TGDB, IGDB) populate the art grid.
 // Action sources (Local, Clear) fire immediately on SELECT/tap.
 
-private val ArtworkSourceLabels = listOf("SGDB", "TGDB", "IGDB", "Local", "Clear")
+private val ArtworkSourceLabels = listOf("ScreenScraper", "SGDB", "TGDB", "IGDB", "Local", "Clear")
 
 @Composable
 private fun ArtworkManagerPanel(

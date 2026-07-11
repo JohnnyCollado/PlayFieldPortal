@@ -8,7 +8,6 @@ import com.playfieldportal.core.data.saf.SafChild
 import com.playfieldportal.core.data.saf.querySafChildren
 import com.playfieldportal.feature.artwork.store.ArtworkFileNaming
 import com.playfieldportal.feature.artwork.store.ArtworkKind
-import com.playfieldportal.feature.artwork.store.ImageFormat
 import com.playfieldportal.feature.artwork.store.PayloadCheck
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -25,10 +24,10 @@ import javax.inject.Singleton
  * through here, always via `DocumentsContract` against document ids resolved *inside* the
  * granted tree (nothing outside the user's grant is ever reachable), never raw paths.
  *
- * Layout under the user-picked root:
- *   pfp-artwork-library.json                 ← manifest
- *   games/{platformId}/{slug}/{kind}.{ext}   ← one folder per entry + metadata.json
- *   import/{Launcher}/…                      ← user-managed drop zone (read, never indexed)
+ * Layout under the user-picked root (v3):
+ *   pfp-artwork-library.json                          ← manifest
+ *   Artwork/{platformId}/{mediaDir}/{Name}.{ext}      ← the portable library
+ *   Import/{Launcher}/…                               ← user-managed drop zone (read, never indexed)
  *
  * Performance discipline (large imports): directory document-ids are cached so a path is
  * resolved at most once per run; existence checks ride one child-listing cursor per directory;
@@ -73,8 +72,11 @@ class PortableArtworkLibrary @Inject constructor(
     suspend fun ensureLibrary(treeUri: Uri, appVersion: String): ArtworkLibraryManifest? = withContext(Dispatchers.IO) {
         readManifest(treeUri)?.let { return@withContext it }
         val rootDocId = DocumentsContract.getTreeDocumentId(treeUri)
-        // Layout v2 creates only the drop zone up front; platform/media dirs appear on demand.
+        // Layout v3 shows its shape up front: Import/ (drop zone) + Artwork/ (the library);
+        // platform/media dirs under Artwork/ appear on demand.
         ensureDir(treeUri, rootDocId, ArtworkLibraryManifest.DIR_IMPORT, ArtworkLibraryManifest.DIR_IMPORT)
+            ?: return@withContext null
+        ensureDir(treeUri, rootDocId, ArtworkLibraryManifest.DIR_ARTWORK, ArtworkLibraryManifest.DIR_ARTWORK)
             ?: return@withContext null
         val manifest = ArtworkLibraryManifest(
             libraryUuid = UUID.randomUUID().toString(),
@@ -108,16 +110,73 @@ class PortableArtworkLibrary @Inject constructor(
     fun listChildren(treeUri: Uri, dirDocId: String): List<SafChild> =
         resolver.querySafChildren(treeUri, dirDocId)
 
-    // ── Layout v2 writes: {platform}/{mediaDir}/{PortableName}.{ext} ─────────
+    // ── Layout v3 writes: Artwork/{platform}/{mediaDir}/{PortableName}.{ext} ──
 
-    /** Resolves (creating as needed) `{platformId}/{mediaDir}` for [kind], cached per run. */
+    /** Resolves (creating as needed) `Artwork/{platformId}/{mediaDir}` for [kind], cached per run. */
     suspend fun mediaDirDocId(treeUri: Uri, platformId: String, kind: ArtworkKind): String? =
         withContext(Dispatchers.IO) {
             val rootDocId = DocumentsContract.getTreeDocumentId(treeUri)
-            val platformDirId = ensureDir(treeUri, rootDocId, platformId, platformId)
+            val artworkDir = ArtworkLibraryManifest.DIR_ARTWORK
+            val artworkDirId = ensureDir(treeUri, rootDocId, artworkDir, artworkDir)
+                ?: return@withContext null
+            val platformDirId = ensureDir(treeUri, artworkDirId, platformId, "$artworkDir/$platformId")
                 ?: return@withContext null
             val mediaDir = ArtworkPathResolver.mediaDirFor(kind)
-            ensureDir(treeUri, platformDirId, mediaDir, "$platformId/$mediaDir")
+            ensureDir(treeUri, platformDirId, mediaDir, "$artworkDir/$platformId/$mediaDir")
+        }
+
+    /**
+     * Every platform directory of the library: the children of `Artwork/`, plus any legacy
+     * v2 platform dirs still at the root (recognized structurally — a directory holding at
+     * least one known media-type folder). The legacy pass keeps scan/export working even when
+     * a provider refused the v2→v3 migration moves.
+     */
+    suspend fun platformDirs(treeUri: Uri): List<SafChild> = withContext(Dispatchers.IO) {
+        val rootDocId = DocumentsContract.getTreeDocumentId(treeUri)
+        val out = mutableListOf<SafChild>()
+        findChild(treeUri, rootDocId, ArtworkLibraryManifest.DIR_ARTWORK)
+            ?.takeIf { it.isDirectory }
+            ?.let { out += listChildren(treeUri, it.documentId).filter { c -> c.isDirectory } }
+        out += legacyRootPlatformDirs(treeUri, rootDocId)
+        out
+    }
+
+    /**
+     * v2 → v3: moves platform dirs from the root into `Artwork/` — same-tree directory moves,
+     * zero bytes copied. Dirs a provider refuses to move stay where they are (still found via
+     * [platformDirs]). Returns how many dirs were relocated.
+     */
+    suspend fun migrateRootPlatformsToArtwork(treeUri: Uri): Int = withContext(Dispatchers.IO) {
+        val rootDocId = DocumentsContract.getTreeDocumentId(treeUri)
+        val legacy = legacyRootPlatformDirs(treeUri, rootDocId)
+        if (legacy.isEmpty()) return@withContext 0
+        val artworkDir = ArtworkLibraryManifest.DIR_ARTWORK
+        val artworkDirId = ensureDir(treeUri, rootDocId, artworkDir, artworkDir)
+            ?: return@withContext 0
+        val rootUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, rootDocId)
+        val artworkDirUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, artworkDirId)
+        var moved = 0
+        for (dir in legacy) {
+            val ok = runCatching {
+                DocumentsContract.moveDocument(resolver, dir.uri, rootUri, artworkDirUri) != null
+            }.getOrDefault(false)
+            if (ok) moved++ else Timber.w("v2→v3: could not move '${dir.name}' under $artworkDir/")
+        }
+        if (moved > 0) clearDirCache()
+        Timber.i("v2→v3 layout migration: $moved/${legacy.size} platform dirs moved under $artworkDir/")
+        moved
+    }
+
+    // A root child is a legacy platform dir when it's none of the reserved names and holds at
+    // least one known media-type folder — the same structural test the importer uses.
+    private fun legacyRootPlatformDirs(treeUri: Uri, rootDocId: String): List<SafChild> =
+        listChildren(treeUri, rootDocId).filter { child ->
+            child.isDirectory &&
+                !child.name.equals(ArtworkLibraryManifest.DIR_ARTWORK, ignoreCase = true) &&
+                !child.name.equals(ArtworkLibraryManifest.DIR_IMPORT, ignoreCase = true) &&
+                !child.name.equals(ArtworkLibraryManifest.DIR_GAMES, ignoreCase = true) &&
+                listChildren(treeUri, child.documentId)
+                    .any { it.isDirectory && ArtworkPathResolver.isMediaDirName(it.name) }
         }
 
     /**
@@ -136,12 +195,10 @@ class PortableArtworkLibrary @Inject constructor(
         existingNames: Map<String, SafChild>,
     ): SavedAsset? = withContext(Dispatchers.IO) {
         val header = readHeader(source.uri) ?: return@withContext null
-        if (!PayloadCheck.accepts(kind, header)) {
+        val ext = PayloadCheck.extFor(kind, header) ?: run {
             Timber.w("Import payload rejected — not a valid ${kind.name} file: ${source.name}")
             return@withContext null
         }
-        val ext = if (kind == ArtworkKind.MANUAL) "pdf"    // header already verified as %PDF above
-        else ImageFormat.sniff(header)?.ext ?: return@withContext null
         val destName = "$portableName.$ext"
 
         val dirDocId = mediaDirDocId(treeUri, platformId, kind) ?: return@withContext null
@@ -174,11 +231,10 @@ class PortableArtworkLibrary @Inject constructor(
             val header = runCatching {
                 tempFile.inputStream().use { s -> ByteArray(12).let { it.copyOf(s.read(it).coerceAtLeast(0)) } }
             }.getOrDefault(ByteArray(0))
-            if (!PayloadCheck.accepts(kind, header)) {
+            val ext = PayloadCheck.extFor(kind, header) ?: run {
                 Timber.w("Portable save rejected — wrong payload for ${kind.name}")
                 return@withContext null
             }
-            val ext = if (kind == ArtworkKind.MANUAL) "pdf" else ImageFormat.sniff(header)?.ext ?: return@withContext null
             val destName = "$portableName.$ext"
             val dirDocId = mediaDirDocId(treeUri, platformId, kind) ?: return@withContext null
 
@@ -187,8 +243,7 @@ class PortableArtworkLibrary @Inject constructor(
                 .forEach { runCatching { DocumentsContract.deleteDocument(resolver, it.uri) } }
 
             val dirUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, dirDocId)
-            val mime = when (ext) { "png" -> "image/png"; "webp" -> "image/webp"; "pdf" -> "application/pdf"; else -> "image/jpeg" }
-            val dest = runCatching { DocumentsContract.createDocument(resolver, dirUri, mime, destName) }.getOrNull()
+            val dest = runCatching { DocumentsContract.createDocument(resolver, dirUri, mimeForExt(ext), destName) }.getOrNull()
                 ?: return@withContext null
             val ok = runCatching {
                 tempFile.inputStream().use { input ->
@@ -362,14 +417,8 @@ class PortableArtworkLibrary @Inject constructor(
     }
 
     private fun copyInto(source: SafChild, targetParentUri: Uri, destName: String, ext: String): Uri? {
-        val mime = when (ext.lowercase()) {
-            "png" -> "image/png"
-            "webp" -> "image/webp"
-            "pdf" -> "application/pdf"
-            else -> "image/jpeg"
-        }
         val dest = runCatching {
-            DocumentsContract.createDocument(resolver, targetParentUri, mime, destName)
+            DocumentsContract.createDocument(resolver, targetParentUri, mimeForExt(ext), destName)
         }.getOrNull() ?: return null
         val ok = runCatching {
             resolver.openFileDescriptor(source.uri, "r")?.use { input ->
@@ -394,6 +443,15 @@ class PortableArtworkLibrary @Inject constructor(
         if (slash <= 0) return null
         val parentId = source.documentId.substring(0, slash)
         return DocumentsContract.buildDocumentUriUsingTree(treeUri, parentId)
+    }
+
+    private fun mimeForExt(ext: String): String = when (ext.lowercase(Locale.ROOT)) {
+        "png"  -> "image/png"
+        "webp" -> "image/webp"
+        "pdf"  -> "application/pdf"
+        "mp4"  -> "video/mp4"
+        "webm" -> "video/webm"
+        else   -> "image/jpeg"
     }
 
     // ── Document helpers ──────────────────────────────────────────────────────

@@ -117,7 +117,16 @@ fun ArtworkSettingsScreen(
                         text  = "${state.scrapeSucceeded} succeeded · ${state.scrapeFailed} failed",
                         color = SettingsSubtext,
                     )
+                    Text(
+                        text  = "Runs in the background — you can leave this screen.",
+                        color = SettingsSubtext,
+                    )
                 }
+                SettingsRow(
+                    label    = "Cancel Scrape",
+                    sublabel = "Stops after the current game — artwork fetched so far is kept",
+                    onClick  = { viewModel.cancelScrape() },
+                )
             } else {
                 SettingsRow(
                     label    = "Re-Scrape All Games",

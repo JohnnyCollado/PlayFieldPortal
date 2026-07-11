@@ -26,21 +26,34 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
-// The slim App Editor for standard (non-game) apps: name, icon and background only. Apps launch
-// directly from the XMB — this screen is reached from the context menu and never launches, and a
-// hero banner doesn't apply (standard apps never render the hero-backed game surfaces).
+// The detail page for standard (non-game) apps — the same hero-card layout as the Game Detail
+// page (breadcrumb → hero card → icon + Launch/Options/Artwork), minus game metadata and
+// description. The banner is the app's custom Background; the tile is the customized icon or
+// the package icon. Editing actions split across the two square buttons' menus.
 enum class AppDetailOption(val label: String, val isDestructive: Boolean = false) {
     CHANGE_NAME("Change Display Name"),
     CHANGE_ICON("Change Game Icon"),
     CHANGE_BACKGROUND("Change Background"),
     ADD_TO_COLLECTION("Add to Collection"),
     RESET_ARTWORK("Reset All Artwork", isDestructive = true),
+    ;
+
+    companion object {
+        /** Rows behind the gear (Options) button. */
+        val OPTIONS_MENU = listOf(CHANGE_NAME, ADD_TO_COLLECTION)
+        /** Rows behind the brush (Artwork) button. */
+        val ARTWORK_MENU = listOf(CHANGE_ICON, CHANGE_BACKGROUND, RESET_ARTWORK)
+    }
 }
 
 data class AppDetailUiState(
     val game: Game? = null,
     val isLoading: Boolean = true,
-    // Focused row in the inline editor list.
+    // Main page focus: 0 = Launch, 1 = Options (gear), 2 = Artwork (brush) — like Game Detail.
+    val mainFocus: Int = 0,
+    // Which square-button menu is open, and the focused row inside it.
+    val showOptions: Boolean = false,
+    val showArtworkMenu: Boolean = false,
     val optionsIndex: Int = 0,
     // Add-to-collection picker
     val collectionPicker: CollectionPickerUi = CollectionPickerUi(),
@@ -66,6 +79,8 @@ class AppDetailViewModel @Inject constructor(
     private val steamGridDb: SteamGridDbApi,
     private val sgdbKeyProvider: SgdbApiKeyProvider,
     private val artworkStore: ArtworkStore,
+    private val appCategoryRepository: com.playfieldportal.feature.appbar.AppCategoryRepository,
+    private val discordPresence: com.playfieldportal.core.data.discord.DiscordPresenceController,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AppDetailUiState())
@@ -289,36 +304,85 @@ class AppDetailViewModel @Inject constructor(
     // ── Gamepad ───────────────────────────────────────────────────────────────
 
     fun handleGamepadAction(action: GamepadAction) {
-        if (_uiState.value.isEditingName) {
+        val s = _uiState.value
+        if (s.isEditingName) {
             if (action == GamepadAction.BACK) cancelNameEdit()
             return
         }
-        if (_uiState.value.collectionPicker.visible) {
+        if (s.collectionPicker.visible) {
             handleCollectionPickerInput(action)
             return
         }
-        if (_uiState.value.showArtworkPicker) {
+        if (s.showArtworkPicker) {
             handlePickerGamepad(action)
+            return
+        }
+        if (s.showOptions || s.showArtworkMenu) {
+            handleMenuGamepad(action, if (s.showOptions) AppDetailOption.OPTIONS_MENU else AppDetailOption.ARTWORK_MENU)
             return
         }
         handleMainGamepad(action)
     }
 
-    // The editor rows ARE the main surface — up/down move between them, A activates, B closes.
+    // Main page focus mirrors Game Detail: 0 = Launch, 1 = Options (gear), 2 = Artwork (brush).
     private fun handleMainGamepad(action: GamepadAction) {
-        val count = AppDetailOption.entries.size
         when (action) {
-            GamepadAction.NAVIGATE_UP   -> _uiState.update { it.copy(optionsIndex = (it.optionsIndex - 1).coerceIn(0, count - 1), artworkMessage = null) }
-            GamepadAction.NAVIGATE_DOWN -> _uiState.update { it.copy(optionsIndex = (it.optionsIndex + 1).coerceIn(0, count - 1), artworkMessage = null) }
-            GamepadAction.SELECT        -> activateOption(AppDetailOption.entries[_uiState.value.optionsIndex.coerceIn(0, count - 1)])
-            GamepadAction.BACK          -> close()
+            GamepadAction.NAVIGATE_LEFT  -> _uiState.update { it.copy(mainFocus = (it.mainFocus - 1).coerceIn(0, MAIN_FOCUS_LAST), artworkMessage = null) }
+            GamepadAction.NAVIGATE_RIGHT -> _uiState.update { it.copy(mainFocus = (it.mainFocus + 1).coerceIn(0, MAIN_FOCUS_LAST), artworkMessage = null) }
+            GamepadAction.NAVIGATE_UP    -> _uiState.update { it.copy(mainFocus = 0, artworkMessage = null) }
+            GamepadAction.NAVIGATE_DOWN  -> _uiState.update { if (it.mainFocus == 0) it.copy(mainFocus = 1, artworkMessage = null) else it }
+            GamepadAction.SELECT         -> when (_uiState.value.mainFocus) {
+                0    -> launchApp()
+                1    -> openOptions()
+                else -> openArtworkMenu()
+            }
+            // Y / Triangle opens the Options menu directly, like Game Detail.
+            GamepadAction.BUTTON_Y, GamepadAction.LONG_PRESS -> openOptions()
+            GamepadAction.BACK -> close()
             else -> Unit
         }
     }
 
-    /** Activates an editor row (which may open its own overlay — the collection picker, name
+    private fun handleMenuGamepad(action: GamepadAction, rows: List<AppDetailOption>) {
+        when (action) {
+            GamepadAction.NAVIGATE_UP   -> _uiState.update { it.copy(optionsIndex = (it.optionsIndex - 1).coerceIn(0, rows.size - 1)) }
+            GamepadAction.NAVIGATE_DOWN -> _uiState.update { it.copy(optionsIndex = (it.optionsIndex + 1).coerceIn(0, rows.size - 1)) }
+            GamepadAction.SELECT        -> activateOption(rows[_uiState.value.optionsIndex.coerceIn(0, rows.size - 1)])
+            GamepadAction.BACK          -> closeMenus()
+            else -> Unit
+        }
+    }
+
+    // ── Launch / menus ────────────────────────────────────────────────────────
+
+    /** Launches the app itself — the Launch button's action (touch and controller). */
+    fun launchApp() {
+        val game = _uiState.value.game ?: return
+        val pkg = game.packageName
+        if (pkg.isNullOrBlank()) {
+            _uiState.update { it.copy(artworkMessage = "This app has no launchable package") }
+            return
+        }
+        appCategoryRepository.launch(pkg)
+        // Mirror the XMB launch path: reflect the launch in the opt-in Discord presence
+        // (no-op unless Discord is connected and sharing is on).
+        viewModelScope.launch { discordPresence.setCurrentGame(game.displayTitle) }
+    }
+
+    fun openOptions() = _uiState.update {
+        it.copy(showOptions = true, showArtworkMenu = false, optionsIndex = 0, artworkMessage = null)
+    }
+
+    fun openArtworkMenu() = _uiState.update {
+        it.copy(showArtworkMenu = true, showOptions = false, optionsIndex = 0, artworkMessage = null)
+    }
+
+    fun closeMenus() = _uiState.update { it.copy(showOptions = false, showArtworkMenu = false) }
+
+    /** Activates a menu row (which may open its own overlay — the collection picker, name
      *  editor, or artwork picker). */
     fun activateOption(option: AppDetailOption) {
+        closeMenus()
         when (option) {
             AppDetailOption.ADD_TO_COLLECTION -> openCollectionPicker()
             AppDetailOption.CHANGE_NAME       -> startEditingName()
@@ -441,6 +505,10 @@ class AppDetailViewModel @Inject constructor(
 
     fun close() {
         _uiState.update { it.copy(closed = true) }
+    }
+
+    private companion object {
+        const val MAIN_FOCUS_LAST = 2   // 0 = Launch, 1 = Options, 2 = Artwork
     }
 
     private suspend fun saveArtwork(gameId: Long, type: ArtworkType, path: String?) {

@@ -15,7 +15,6 @@ import com.playfieldportal.core.data.platform.PlatformFolderHintResolver
 import com.playfieldportal.core.data.repository.ArtworkFolderRepository
 import com.playfieldportal.core.ui.notification.BackgroundTaskNotifier
 import com.playfieldportal.feature.artwork.importer.ImportSummary
-import com.playfieldportal.feature.artwork.portable.ArtworkLibraryManifest
 import com.playfieldportal.feature.artwork.portable.ArtworkPathResolver
 import com.playfieldportal.feature.artwork.portable.PortableArtworkLibrary
 import dagger.assisted.Assisted
@@ -67,9 +66,8 @@ class ArtworkExportWorker @AssistedInject constructor(
         notifier.running(TASK_ID, LABEL, null)
 
         try {
-            val rootDocId = android.provider.DocumentsContract.getTreeDocumentId(sourceTree)
-            for (platformDir in library.listChildren(sourceTree, rootDocId).filter { it.isDirectory }) {
-                if (platformDir.name.equals(ArtworkLibraryManifest.DIR_IMPORT, ignoreCase = true)) continue
+            // Artwork/{platform} children plus any legacy root-level platform dirs (v2 layout).
+            for (platformDir in library.platformDirs(sourceTree)) {
                 val destPlatformName = platformResolver.esDeFolderName(platformDir.name)
                 for (mediaDir in library.listChildren(sourceTree, platformDir.documentId).filter { it.isDirectory }) {
                     // Standard media types only — pfp/ and unknown dirs stay private.

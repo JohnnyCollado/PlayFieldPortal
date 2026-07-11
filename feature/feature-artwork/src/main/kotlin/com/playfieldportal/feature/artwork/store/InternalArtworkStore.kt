@@ -94,6 +94,58 @@ class InternalArtworkStore @Inject constructor(
         }
     }
 
+    // ── Legacy migration (M-F2) ───────────────────────────────────────────────
+
+    data class LegacyAsset(
+        val gameId: Long,
+        val kind: ArtworkKind,
+        val file: File,
+        val userPick: Boolean,   // versioned files came from a user pick → migrate as locked
+        val sizeBytes: Long,
+    )
+
+    /**
+     * Every internal asset the migration worker should move to the portable library — at most
+     * one file per (game, kind): the newest versioned user pick wins over the scraper's fixed
+     * file (that mirrors what the game columns reference today).
+     */
+    suspend fun enumerateForMigration(): List<LegacyAsset> = withContext(Dispatchers.IO) {
+        val out = mutableListOf<LegacyAsset>()
+        root.listFiles()?.forEach { dir ->
+            val gameId = dir.name.toLongOrNull() ?: return@forEach
+            if (!dir.isDirectory) return@forEach
+            val files = dir.listFiles()?.filter { it.isFile && it.length() > 0 } ?: return@forEach
+            for (kind in ArtworkKind.entries) {
+                val prefix = "${kind.name.lowercase(Locale.US)}_"
+                val versioned = files.filter { it.name.startsWith(prefix) }.maxByOrNull { it.name }
+                val chosen = versioned ?: files.firstOrNull { it.name == ArtworkFileNaming.fixedName(kind) } ?: continue
+                out += LegacyAsset(gameId, kind, chosen, userPick = versioned != null, sizeBytes = chosen.length())
+            }
+        }
+        out
+    }
+
+    /** Deletes every internal file of [kind] for the game (fixed + versioned), then the empty dir. */
+    suspend fun deleteKind(gameId: Long, kind: ArtworkKind) = withContext(Dispatchers.IO) {
+        val dir = File(root, gameId.toString())
+        dir.listFiles()?.forEach { f ->
+            if (ArtworkFileNaming.isPruneCandidate(kind, f.name)) f.delete()
+        }
+        if (dir.listFiles()?.isEmpty() == true) dir.delete()
+    }
+
+    /** (files, bytes) currently stored internally — drives the migration offer in settings. */
+    suspend fun footprint(): Pair<Int, Long> = withContext(Dispatchers.IO) {
+        var count = 0
+        var bytes = 0L
+        root.listFiles()?.forEach { dir ->
+            dir.listFiles()?.forEach { f ->
+                if (f.isFile && f.length() > 0) { count++; bytes += f.length() }
+            }
+        }
+        count to bytes
+    }
+
     // ── Internals ─────────────────────────────────────────────────────────────
 
     private suspend fun downloadToTemp(url: String, kind: ArtworkKind): File? =

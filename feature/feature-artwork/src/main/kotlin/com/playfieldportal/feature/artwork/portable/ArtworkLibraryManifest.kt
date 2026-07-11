@@ -23,14 +23,21 @@ data class ArtworkLibraryManifest(
     @SerialName("entry_count_hint") val entryCountHint: Int = 0,
 ) {
     companion object {
-        // v2 = ES-DE-shaped layout ({platform}/{mediaDir}/{PortableName}.{ext}); v1 was the
-        // per-game-folder layout (games/{platform}/{slug}/), migrated in place on first use.
-        const val FORMAT_VERSION = 2
+        // v3 = platform folders nested under Artwork/ (root holds only Import/ + Artwork/ + this
+        // manifest); v2 had the ES-DE-shaped platform dirs directly at the root; v1 was the
+        // per-game-folder layout (games/{platform}/{slug}/). Both older layouts migrate in place
+        // on first use (same-tree moves, zero bytes copied).
+        const val FORMAT_VERSION = 3
         const val FILE_NAME = "pfp-artwork-library.json"
+
+        /** The portable library lives under this root child ({Artwork}/{platform}/{mediaDir}/). */
+        const val DIR_ARTWORK = "Artwork"
 
         /** v1 layout root — only read by the migrator now. */
         const val DIR_GAMES = "games"
-        const val DIR_IMPORT = "import"
+        // Created capitalized for new libraries; all lookups are case-insensitive, so existing
+        // lowercase "import" folders keep working untouched.
+        const val DIR_IMPORT = "Import"
 
         // Size cap when reading a manifest: a well-formed manifest is <1 KB; anything bigger is
         // not ours and must not be buffered into memory.

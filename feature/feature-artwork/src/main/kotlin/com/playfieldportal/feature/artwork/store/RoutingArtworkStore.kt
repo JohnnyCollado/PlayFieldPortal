@@ -94,6 +94,22 @@ class RoutingArtworkStore @Inject constructor(
         artworkRecordDao.clear()
     }
 
+    /**
+     * Portable write for the internal-migration worker (M-F2): same naming/record/Coil-bust
+     * discipline as a scrape, with caller-supplied provenance. Consumes [tempFile] either way.
+     * Null when no folder is linked or the grant is dead.
+     */
+    suspend fun saveTempPortable(
+        gameId: Long,
+        kind: ArtworkKind,
+        tempFile: java.io.File,
+        source: String,
+        userAssigned: Boolean,
+    ): String? {
+        val (tree, game) = portableTarget(gameId) ?: run { tempFile.delete(); return null }
+        return persistPortable(tree, game, kind, tempFile, source, userAssigned)
+    }
+
     // ── Internals ─────────────────────────────────────────────────────────────
 
     private suspend fun portableTarget(gameId: Long): Pair<Uri, GameEntity>? {

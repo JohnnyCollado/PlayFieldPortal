@@ -60,16 +60,25 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Brush
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Settings
 import androidx.core.graphics.drawable.toBitmap
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.playfieldportal.core.domain.model.GamepadAction
-import com.playfieldportal.core.ui.components.XmbHeaderPill
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.menuCursorEdge
-import com.playfieldportal.core.ui.theme.menuCursorFill
+import com.playfieldportal.feature.xmb.ui.DetailContextMenu
+import com.playfieldportal.feature.xmb.ui.DetailMenuRow
 import com.playfieldportal.feature.xmb.ui.collection.CollectionPickerPanel
 import com.playfieldportal.feature.xmb.ui.detail.ArtworkType
+import com.playfieldportal.feature.xmb.ui.detail.ConsoleButton
+import com.playfieldportal.feature.xmb.ui.detail.DetailBreadcrumb
+import com.playfieldportal.feature.xmb.ui.detail.HeroCard
+import com.playfieldportal.feature.xmb.ui.detail.IconTile
+import com.playfieldportal.feature.xmb.ui.detail.SquareActionButton
 import com.playfieldportal.feature.xmb.ui.detail.displayLabel
 
 // Neutral dark surfaces stay fixed; accent/focus colors come from the active theme via
@@ -78,7 +87,6 @@ private val TextPrimary = Color(0xFFEEEEEE)
 private val TextMuted   = Color(0xAAEEEEEE)
 private val ActionFill    = Color(0xFF1B1B26)
 private val PageBg = Color(0xFF06060C)
-private val HeroBannerHeight: Dp = 220.dp
 
 @Composable
 fun AppDetailScreen(
@@ -152,93 +160,93 @@ fun AppDetailScreen(
                 )
             ),
     ) {
-        // ── Fixed structure: hero + header stay put, only buttons scroll ──────
+        // Same hero-card structure as Game Detail: breadcrumb → hero card → icon + actions.
+        // No metadata/description — apps only Launch, edit artwork, and manage options.
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .widthIn(max = 920.dp)
-                .align(Alignment.Center),
+                .align(Alignment.TopCenter)
+                .padding(start = 28.dp, end = 28.dp, bottom = 22.dp),
         ) {
-            // Hero banner — fixed, never scrolls
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .height(HeroBannerHeight)
-                    .background(pfpColors.accentColor.copy(alpha = 0.18f)),
-                contentAlignment = Alignment.Center,
-            ) {
-                if (game.heroUri != null) {
-                    AsyncImage(
-                        model = game.heroUri,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                    Box(
-                        Modifier.fillMaxSize().background(
-                            Brush.verticalGradient(listOf(Color.Transparent, Color(0xAA000000)))
-                        )
-                    )
-                }
-            }
+            DetailBreadcrumb(
+                title    = "Apps",
+                subtitle = "Android App",
+                onBack   = viewModel::close,
+            )
 
-            // App header — fixed below hero, never scrolls
+            // The banner is the app's Background (heroes are a game-only surface).
+            HeroCard(
+                uri         = game.artworkUri ?: game.heroUri,
+                title       = game.displayTitle,
+                platform    = game.packageName.orEmpty(),
+                accentColor = pfpColors.accentColor,
+            )
+
+            Spacer(Modifier.height(18.dp))
+
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 28.dp, end = 28.dp, top = 16.dp, bottom = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(18.dp),
             ) {
-                AppIconPreview(
-                    packageName   = game.packageName ?: "",
-                    customIconUri = game.iconUri,
-                    modifier      = Modifier.size(width = 144.dp, height = 80.dp),
-                )
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        game.displayTitle,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextPrimary,
-                        maxLines = 1,
+                // Customized icon when set, the package's own icon otherwise.
+                IconTile(uri = null, title = game.displayTitle) {
+                    AppIconPreview(
+                        packageName   = game.packageName ?: "",
+                        customIconUri = game.iconUri,
+                        modifier      = Modifier.fillMaxSize(),
                     )
-                    game.packageName?.takeIf { it.isNotBlank() }?.let { pkg ->
-                        Text(pkg, fontSize = 12.sp, color = TextMuted, maxLines = 1)
+                }
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    ConsoleButton(
+                        label = "Launch",
+                        icon = Icons.Filled.PlayArrow,
+                        focused = state.mainFocus == 0,
+                        fill = Color(0xFFF2F2F2),
+                        textColor = Color(0xFF0A0A12),
+                        onClick = viewModel::launchApp,
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        SquareActionButton(
+                            icon = Icons.Filled.Settings,
+                            contentDescription = "Options",
+                            focused = state.mainFocus == 1,
+                            onClick = viewModel::openOptions,
+                        )
+                        SquareActionButton(
+                            icon = Icons.Filled.Brush,
+                            contentDescription = "Edit Artwork",
+                            focused = state.mainFocus == 2,
+                            onClick = viewModel::openArtworkMenu,
+                        )
                     }
-                }
-            }
-
-            // The editor rows ARE the page — apps launch from the XMB, not from here. Only the
-            // slim standard-app options: name, game icon, background, collections, reset.
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .padding(start = 28.dp, end = 28.dp, top = 8.dp, bottom = 22.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                AppDetailOption.entries.forEachIndexed { index, option ->
-                    EditorRow(
-                        label       = option.label,
-                        destructive = option.isDestructive,
-                        focused     = state.optionsIndex == index,
-                        onClick     = { viewModel.activateOption(option) },
-                    )
-                }
-                state.artworkMessage?.let {
-                    Text(it, color = menuCursorEdge(), fontSize = 12.sp)
+                    state.artworkMessage?.let {
+                        Text(it, color = menuCursorEdge(), fontSize = 12.sp)
+                    }
                 }
             }
         }
 
-        // Back pill over the hero (touch only, per the last-input source).
-        if (showTouchControls) {
-            XmbHeaderPill(
-                label = "Back",
-                leadingGlyph = "◀",
-                onClick = viewModel::close,
-                modifier = Modifier.align(Alignment.TopStart).padding(16.dp),
+        AnimatedVisibility(state.showOptions, enter = fadeIn(), exit = fadeOut()) {
+            DetailContextMenu(
+                title = "Options",
+                rows = AppDetailOption.OPTIONS_MENU.map { DetailMenuRow(it.label, it.isDestructive) },
+                selectedIndex = state.optionsIndex,
+                onRowClick = { viewModel.activateOption(AppDetailOption.OPTIONS_MENU[it]) },
+                onDismiss = viewModel::closeMenus,
+            )
+        }
+
+        AnimatedVisibility(state.showArtworkMenu, enter = fadeIn(), exit = fadeOut()) {
+            DetailContextMenu(
+                title = "Artwork",
+                rows = AppDetailOption.ARTWORK_MENU.map { DetailMenuRow(it.label, it.isDestructive) },
+                selectedIndex = state.optionsIndex,
+                onRowClick = { viewModel.activateOption(AppDetailOption.ARTWORK_MENU[it]) },
+                onDismiss = viewModel::closeMenus,
             )
         }
 
@@ -292,37 +300,6 @@ fun AppDetailScreen(
                 onCancelCreate      = viewModel::cancelCreateCollection,
             )
         }
-    }
-}
-
-// One inline editor action row — focus ring follows the controller cursor.
-@Composable
-private fun EditorRow(
-    label: String,
-    focused: Boolean,
-    onClick: () -> Unit,
-    destructive: Boolean = false,
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(if (focused) menuCursorFill() else ActionFill)
-            .border(
-                width = if (focused) 2.dp else 1.dp,
-                color = if (focused) menuCursorEdge() else Color(0x22FFFFFF),
-                shape = RoundedCornerShape(8.dp),
-            )
-            .clickable(onClick = onClick)
-            .padding(vertical = 13.dp, horizontal = 18.dp),
-        contentAlignment = Alignment.CenterStart,
-    ) {
-        Text(
-            label,
-            color      = if (destructive) Color(0xFFFF8A8A) else TextPrimary,
-            fontSize   = 14.sp,
-            fontWeight = if (focused) FontWeight.SemiBold else FontWeight.Normal,
-        )
     }
 }
 

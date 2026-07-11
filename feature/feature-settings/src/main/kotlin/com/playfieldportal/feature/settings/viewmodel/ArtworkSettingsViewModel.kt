@@ -7,7 +7,7 @@ import com.playfieldportal.feature.artwork.api.ArtworkRepository
 import com.playfieldportal.feature.artwork.api.ArtworkScrapePreferences
 import com.playfieldportal.feature.artwork.api.ArtworkStatus
 import com.playfieldportal.feature.artwork.api.IgdbApi
-import com.playfieldportal.feature.artwork.api.ScrapeProgress
+import com.playfieldportal.feature.artwork.api.MetadataScrapeWorker
 import com.playfieldportal.feature.artwork.api.ScreenScraperApi
 import com.playfieldportal.feature.artwork.api.SgdbApiKeyProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -59,6 +59,7 @@ data class ArtworkSettingsUiState(
 
 @HiltViewModel
 class ArtworkSettingsViewModel @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val sgdbKeyProvider: SgdbApiKeyProvider,
     private val metadataKeyProvider: MetadataApiKeyProvider,
     private val artworkRepository: ArtworkRepository,
@@ -78,6 +79,56 @@ class ArtworkSettingsViewModel @Inject constructor(
             val dead = configured && !artworkFolderRepository.hasLiveGrant()
             _extra.update { it.copy(artworkFolderGrantDead = dead) }
         }
+        // Scrapes run as WorkManager jobs (survive leaving this screen, show a notification,
+        // cancellable) — this observer is the single source of the in-app progress state, so
+        // reopening the screen mid-scrape reattaches to the live run. getInstance is guarded
+        // because plain JVM unit tests have no WorkManager initialized.
+        runCatching { androidx.work.WorkManager.getInstance(context) }.getOrNull()?.let { wm ->
+            viewModelScope.launch {
+                wm.getWorkInfosForUniqueWorkFlow(MetadataScrapeWorker.UNIQUE_NAME)
+                    .collect { infos -> onScrapeWorkInfos(infos) }
+            }
+        }
+    }
+
+    private fun onScrapeWorkInfos(infos: List<androidx.work.WorkInfo>) {
+        val active = infos.firstOrNull { !it.state.isFinished }
+        if (active != null) {
+            val p = active.progress
+            _extra.update {
+                it.copy(
+                    isScraping      = true,
+                    summary         = null,
+                    scrapeCurrent   = p.getInt(MetadataScrapeWorker.KEY_CURRENT, 0),
+                    scrapeTotal     = p.getInt(MetadataScrapeWorker.KEY_TOTAL, 0),
+                    scrapeSucceeded = p.getInt(MetadataScrapeWorker.KEY_SUCCEEDED, 0),
+                    scrapeFailed    = p.getInt(MetadataScrapeWorker.KEY_FAILED, 0),
+                    scrapeTitle     = p.getString(MetadataScrapeWorker.KEY_TITLE) ?: "Starting…",
+                    scrapeSource    = p.getString(MetadataScrapeWorker.KEY_SOURCE) ?: "",
+                    scrapeAsset     = p.getString(MetadataScrapeWorker.KEY_ASSET) ?: "",
+                )
+            }
+            return
+        }
+        if (!_extra.value.isScraping) return
+        // Just finished — derive the summary from the terminal WorkInfo.
+        val finished = infos.maxByOrNull { it.state.ordinal }
+        val summary = when (finished?.state) {
+            androidx.work.WorkInfo.State.SUCCEEDED -> {
+                val out = finished.outputData
+                val label = if (out.getString(MetadataScrapeWorker.KEY_MODE) == MetadataScrapeWorker.MODE_ALL)
+                    "Re-scraped all games" else "Scraped missing games"
+                "$label: ${out.getInt(MetadataScrapeWorker.KEY_SUCCEEDED, 0)} succeeded, " +
+                    "${out.getInt(MetadataScrapeWorker.KEY_FAILED, 0)} failed of " +
+                    "${out.getInt(MetadataScrapeWorker.KEY_TOTAL, 0)}"
+            }
+            androidx.work.WorkInfo.State.CANCELLED -> "Scrape cancelled — artwork fetched so far is kept"
+            else -> "Scrape failed: ${finished?.outputData?.getString(MetadataScrapeWorker.KEY_ERROR) ?: "unknown error"}"
+        }
+        _extra.update {
+            it.copy(isScraping = false, scrapeTitle = "", scrapeSource = "", scrapeAsset = "", summary = summary)
+        }
+        refreshStatus()
     }
 
     val uiState: StateFlow<ArtworkSettingsUiState> = combine(
@@ -203,53 +254,24 @@ class ArtworkSettingsViewModel @Inject constructor(
 
     fun confirmRescrapeAll() {
         _extra.update { it.copy(confirmRescrapeAll = false) }
-        runScrape("Re-scraped all games") { onProgress ->
-            artworkRepository.reScrapeAllGames(onProgress)
-        }
+        startScrape(MetadataScrapeWorker.MODE_ALL)
     }
 
-    fun scrapeMissingOnly() {
-        runScrape("Scraped missing games") { onProgress ->
-            artworkRepository.scrapeMissingOnly(onProgress)
-        }
-    }
+    fun scrapeMissingOnly() = startScrape(MetadataScrapeWorker.MODE_MISSING)
 
-    private fun runScrape(
-        label: String,
-        block: suspend ((ScrapeProgress) -> Unit) -> ScrapeProgress,
-    ) {
+    /** Stops the running scrape batch; everything fetched so far is kept. */
+    fun cancelScrape() = MetadataScrapeWorker.cancel(context)
+
+    private fun startScrape(mode: String) {
         if (_extra.value.isScraping) return
-        viewModelScope.launch {
-            _extra.update {
-                it.copy(
-                    isScraping = true, summary = null, scrapeCurrent = 0, scrapeTotal = 0,
-                    scrapeSucceeded = 0, scrapeFailed = 0, scrapeTitle = "Starting…",
-                    scrapeSource = "", scrapeAsset = "",
-                )
-            }
-            val result = runCatching {
-                block { p ->
-                    _extra.update {
-                        it.copy(
-                            scrapeCurrent   = p.current,
-                            scrapeTotal     = p.total,
-                            scrapeSucceeded = p.succeeded,
-                            scrapeFailed    = p.failed,
-                            scrapeTitle     = p.title,
-                            scrapeSource    = p.scrapeSource,
-                            scrapeAsset     = p.scrapeAsset,
-                        )
-                    }
-                }
-            }
-            val summary = result.getOrNull()?.let { p ->
-                "$label: ${p.succeeded} succeeded, ${p.failed} failed of ${p.total}"
-            } ?: "Scrape failed: ${result.exceptionOrNull()?.message ?: "unknown error"}"
-            _extra.update {
-                it.copy(isScraping = false, scrapeTitle = "", scrapeSource = "", scrapeAsset = "", summary = summary)
-            }
-            refreshStatus()
+        _extra.update {
+            it.copy(
+                isScraping = true, summary = null, scrapeCurrent = 0, scrapeTotal = 0,
+                scrapeSucceeded = 0, scrapeFailed = 0, scrapeTitle = "Starting…",
+                scrapeSource = "", scrapeAsset = "",
+            )
         }
+        MetadataScrapeWorker.enqueue(context, mode)
     }
 
     fun dismissSummary() = _extra.update { it.copy(summary = null) }

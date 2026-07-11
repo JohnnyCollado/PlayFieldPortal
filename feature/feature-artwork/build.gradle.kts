@@ -25,8 +25,12 @@ android {
     compileSdk = 35
     defaultConfig {
         minSdk = 29
-        buildConfigField("String", "SS_DEV_ID",       "\"${ssProp("screenscraper.devId", "SS_DEV_ID")}\"")
-        buildConfigField("String", "SS_DEV_PASSWORD", "\"${ssProp("screenscraper.devPassword", "SS_DEV_PASSWORD")}\"")
+        // String.valueOf(...) keeps these fields NON-constant: plain literals would be
+        // compile-time constants that get inlined into consuming classes, and neither
+        // incremental compilation nor the build cache reliably rebuilds consumers when only a
+        // constant's value changes — editing local.properties then silently ships stale creds.
+        buildConfigField("String", "SS_DEV_ID",       "String.valueOf(\"${ssProp("screenscraper.devId", "SS_DEV_ID")}\")")
+        buildConfigField("String", "SS_DEV_PASSWORD", "String.valueOf(\"${ssProp("screenscraper.devPassword", "SS_DEV_PASSWORD")}\")")
         buildConfigField("String", "SS_SOFT_NAME",    "\"PlayFieldPortal\"")
     }
     compileOptions {

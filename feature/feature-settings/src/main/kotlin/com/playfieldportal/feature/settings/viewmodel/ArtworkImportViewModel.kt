@@ -12,6 +12,7 @@ import com.playfieldportal.feature.artwork.importer.ArtworkImportWorker
 import com.playfieldportal.feature.artwork.importer.DetectedImportSource
 import com.playfieldportal.feature.artwork.importer.ImportPlan
 import com.playfieldportal.feature.artwork.importer.ImportSummary
+import com.playfieldportal.feature.artwork.migrate.InternalArtworkMigrationWorker
 import com.playfieldportal.feature.artwork.portable.PortableArtworkLibrary
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -48,6 +49,12 @@ data class ArtworkImportUiState(
     val importLabel: String = "",
     // Maintenance
     val relinking: Boolean = false,
+    // Internal-storage migration (M-F2)
+    val internalFiles: Int = 0,
+    val internalBytes: Long = 0L,
+    val migrationRunning: Boolean = false,
+    val migrationDone: Int = 0,
+    val migrationTotal: Int = 0,
     // Reports
     val reports: List<ReportUi> = emptyList(),
     val error: String? = null,
@@ -90,6 +97,12 @@ class ArtworkImportViewModel @Inject constructor(
                 .getWorkInfosForUniqueWorkFlow(ArtworkImportWorker.UNIQUE_NAME)
                 .collect { infos -> onWorkInfos(infos) }
         }
+        viewModelScope.launch {
+            WorkManager.getInstance(context)
+                .getWorkInfosForUniqueWorkFlow(InternalArtworkMigrationWorker.UNIQUE_NAME)
+                .collect { infos -> onMigrationWorkInfos(infos) }
+        }
+        viewModelScope.launch { refreshInternalFootprint() }
     }
 
     // ── Folder link ───────────────────────────────────────────────────────────
@@ -106,6 +119,7 @@ class ArtworkImportViewModel @Inject constructor(
             // Zero-copy adoption: any ES-DE-shaped media already in the folder (a PFP library
             // OR a plain downloaded_media tree) is linked to games right now — nothing copied.
             val scan = runCatching { importManager.relinkLibrary() }.getOrNull()
+            refreshInternalFootprint()
             _uiState.value = _uiState.value.copy(
                 notice = buildString {
                     append(
@@ -116,6 +130,9 @@ class ArtworkImportViewModel @Inject constructor(
                         append(" ${scan.gamesLinked} games linked from ${scan.entriesScanned} files already in the folder.")
                     } else if (!result.existingLibrary) {
                         append(" Place other launchers' media under import/.")
+                    }
+                    if (_uiState.value.internalFiles > 0) {
+                        append(" ${_uiState.value.internalFiles} artwork files are still in app storage — see Move Into Folder below.")
                     }
                 },
                 plan = null,
@@ -273,6 +290,20 @@ class ArtworkImportViewModel @Inject constructor(
         }
     }
 
+    // ── Internal-storage migration (M-F2) ─────────────────────────────────────
+
+    fun startInternalMigration() {
+        if (_uiState.value.migrationRunning) return
+        importManager.startInternalMigration()
+        _uiState.value = _uiState.value.copy(
+            migrationRunning = true,
+            migrationDone = 0,
+            migrationTotal = 0,
+        )
+    }
+
+    fun cancelInternalMigration() = importManager.cancelInternalMigration()
+
     fun dismissError() {
         _uiState.value = _uiState.value.copy(error = null, notice = null)
     }
@@ -294,6 +325,26 @@ class ArtworkImportViewModel @Inject constructor(
         } else if (_uiState.value.importRunning) {
             _uiState.value = _uiState.value.copy(importRunning = false, importLabel = "")
             rescan()
+        }
+    }
+
+    private fun onMigrationWorkInfos(infos: List<WorkInfo>) {
+        val active = infos.firstOrNull { !it.state.isFinished }
+        if (active != null) {
+            _uiState.value = _uiState.value.copy(
+                migrationRunning = true,
+                migrationDone = active.progress.getInt(InternalArtworkMigrationWorker.KEY_PROGRESS_DONE, 0),
+                migrationTotal = active.progress.getInt(InternalArtworkMigrationWorker.KEY_PROGRESS_TOTAL, 0),
+            )
+        } else if (_uiState.value.migrationRunning) {
+            _uiState.value = _uiState.value.copy(migrationRunning = false)
+            viewModelScope.launch { refreshInternalFootprint() }
+        }
+    }
+
+    private suspend fun refreshInternalFootprint() {
+        runCatching { importManager.internalArtworkFootprint() }.onSuccess { (files, bytes) ->
+            _uiState.value = _uiState.value.copy(internalFiles = files, internalBytes = bytes)
         }
     }
 

@@ -58,7 +58,7 @@ class PortableNameResolverTest {
             assertTrue(ArtworkPathResolver.isMediaDirName(dir))
         }
         assertEquals(
-            "ps2/covers/Final Fantasy X (USA).png",
+            "Artwork/ps2/covers/Final Fantasy X (USA).png",
             ArtworkPathResolver.relativePath("ps2", com.playfieldportal.feature.artwork.store.ArtworkKind.ICON, "Final Fantasy X (USA).png"),
         )
     }

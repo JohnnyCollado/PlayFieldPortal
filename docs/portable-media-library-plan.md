@@ -6,8 +6,14 @@ routes scrapes/manual picks portable with §22 priority (M-B); Scan & Relink rec
 folder↔DB (new/missing/changed/duplicates, provenance preserved, live-grant-gated) plus the
 grant-dead warning (M-C); linking an ES-DE-shaped folder adopts it zero-copy (M-D);
 `ArtworkExportWorker` produces an incremental ES-DE-compatible export (M-E). On-device
-validation of M-B..M-E pending (device offline at implementation time). Remaining: M-F
-(move/copy library location, legacy internal migration, orphan quarantine).
+validation of M-B..M-E pending (device offline at implementation time). M-F design approved
+(§24): **M-F2 legacy internal migration IMPLEMENTED (July 2026)** —
+`InternalArtworkMigrationWorker` + settings row; remaining: M-F1 (move/copy library
+location) and M-F3 (orphan quarantine).
+**Layout v3 (July 11 2026, user-requested):** the root now holds only `Import/` and
+`Artwork/` — platform/media dirs nest under `Artwork/` (point ES-DE at `{root}/Artwork`).
+v2 root-level platform dirs migrate in automatically (same-tree `moveDocument`, zero-copy);
+scan/export dual-walk `Artwork/` + legacy root so a refused move never breaks anything.
 Supersedes the folder-layout portions of `portable-artwork-plan.md`; everything else in that
 plan (ScreenScraper, storage seam, identity columns) stands.
 
@@ -235,7 +241,35 @@ fields they need (source, size, width/height) exist from day one.
 - **M-D — Adoption mode.** *Gate: point PFP at a pre-existing ES-DE `downloaded_media`; zero
   copies; artwork resolves.*
 - **M-E — ES-DE export.** *Gate: exported tree loads in ES-DE.*
-- **M-F — Move/copy/relink + legacy migration + orphans.**
+- **M-F — Move/copy/relink + legacy migration + orphans.** Design approved July 2026 —
+  three thin compositions over shipped machinery, built in the order F2 → F1 → F3:
+
+  - **M-F2 — Legacy internal migration** (first: unlocks stranded pre-folder scrapes).
+    `InternalArtworkMigrationWorker`: per game × `ArtworkKind`, `internal.find()` → §22
+    conflict gate (existing valid/locked/user-assigned portable record wins, internal file
+    skipped) → copy to cache temp (`ArtworkTempIO`, payload-sniffed + size-capped) →
+    `library.saveFromFile()` (naming/record/Coil-bust identical to a portable scrape,
+    `source = "internal-migration"`) → column update → delete internal file only after a
+    verified portable write. Resumable by construction (migrated slots hold valid records).
+    Triggers: post-`linkFolder` prompt + standing settings row. *Gate: scrape internally,
+    link folder, migrate, verify files in tree + internal dir emptied + a re-run no-ops.*
+  - **M-F1 — Move/copy library location.** `ArtworkRelocateWorker`, a sibling of the export
+    walk but copying ALL dirs incl. `pfp/`, writing a destination manifest with the SAME
+    `libraryUuid`. Phases per §16: copy (incremental/resumable) → verify (size compare, one
+    cursor per dir) → flip (`setTreeUri(dest)` + persist grant + `relinkLibrary()` — the
+    existing scan rewrites every record/column, so relocation needs no URI-rewrite code).
+    Copy mode stops there (old folder = backup); move mode then offers per-file deletion of
+    verified-copied sources only (never a recursive root delete). Any pre-flip failure
+    leaves the app fully on the old folder. *Gate: relocate to SD card, artwork resolves,
+    old tree intact until confirmed.*
+  - **M-F3 — Orphan quarantine.** Scan already finds orphans; persist their list (platform,
+    mediaDir, name, docId, size — capped) in the scan's report `summaryJson`. New "Review
+    Orphans (N)" section reusing the ambiguous-review UI: per file / bulk — Assign to game
+    (existing matcher + assign flow), Quarantine (same-tree `moveInto` →
+    `pfp/orphans/{platform}/{mediaDir}/`, auto-excluded from scan+export since non-standard
+    dirs are already skipped), or Leave (default — the folder may serve other frontends).
+    Quarantine browser lists `pfp/orphans/` with per-file Restore / explicit Delete.
+    *Gate: drop an unmatched file, scan, quarantine it, verify export excludes it, restore.*
 
 Each milestone leaves the app fully working; M-A is the only one that touches existing
 behavior, and its blast radius is the four files behind the storage seam.

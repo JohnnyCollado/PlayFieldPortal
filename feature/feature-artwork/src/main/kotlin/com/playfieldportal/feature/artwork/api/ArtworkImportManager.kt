@@ -47,6 +47,7 @@ class ArtworkImportManager @Inject constructor(
     private val gameDao: GameDao,
     private val artworkRecordDao: ArtworkRecordDao,
     private val artworkStore: ArtworkStore,
+    private val internalStore: com.playfieldportal.feature.artwork.store.InternalArtworkStore,
 ) {
     data class LinkResult(
         val manifest: ArtworkLibraryManifest,
@@ -132,6 +133,18 @@ class ArtworkImportManager @Inject constructor(
         return com.playfieldportal.feature.artwork.export.ArtworkExportWorker.enqueue(context, destTreeUri)
     }
 
+    // ── Internal-storage migration (M-F2) ─────────────────────────────────────
+
+    /** (files, bytes) of artwork still in internal storage — 0 means nothing to migrate. */
+    suspend fun internalArtworkFootprint(): Pair<Int, Long> = internalStore.footprint()
+
+    /** Starts moving internal artwork into the linked folder (worker; survives leaving the screen). */
+    fun startInternalMigration(): UUID =
+        com.playfieldportal.feature.artwork.migrate.InternalArtworkMigrationWorker.enqueue(context)
+
+    fun cancelInternalMigration() =
+        com.playfieldportal.feature.artwork.migrate.InternalArtworkMigrationWorker.cancel(context)
+
     data class RelinkResult(
         val entriesScanned: Int,
         val gamesLinked: Int,
@@ -142,31 +155,36 @@ class ArtworkImportManager @Inject constructor(
     )
 
     /**
-     * Migrates a v1 library (games/{platform}/{slug}/) to layout v2 in place — same-tree moves,
-     * no bytes copied — then relinks so records and game columns point at the new locations.
-     * Idempotent: with no games/ folder this is a no-op. Returns assets moved.
+     * One-shot in-place layout upgrades, oldest first: v1 (games/{platform}/{slug}/) assets move
+     * into the media-dir layout, then any v2 root-level platform dirs move under Artwork/ —
+     * all same-tree moves, no bytes copied — then a relink repoints records and game columns.
+     * Idempotent: an already-v3 library is a no-op. Returns how many items were relocated.
      */
     suspend fun migrateV1IfNeeded(): Int = withContext(Dispatchers.IO) {
         val tree = linkedTree() ?: return@withContext 0
-        val result = library.migrateV1Library(tree)
+        val v1Assets = library.migrateV1Library(tree).assets.size
+        val v2Dirs = library.migrateRootPlatformsToArtwork(tree)
         val manifest = library.readManifest(tree)
         if (manifest != null && manifest.formatVersion < ArtworkLibraryManifest.FORMAT_VERSION) {
             library.writeManifest(tree, manifest.copy(formatVersion = ArtworkLibraryManifest.FORMAT_VERSION))
         }
-        if (result.assets.isNotEmpty()) {
+        val relocated = v1Assets + v2Dirs
+        if (relocated > 0) {
             library.clearDirCache()
             relinkLibrary()
-            Timber.i("Library migrated to layout v2: ${result.assets.size} assets relocated")
+            Timber.i("Library layout upgraded: $v1Assets v1 assets + $v2Dirs platform dirs relocated")
         }
-        result.assets.size
+        relocated
     }
 
     /**
      * Scan & relink: walks the v2 library ({platform}/{mediaDir}/) and reconciles it with the
      * database in one pass —
-     *  • files are reconnected to games (filenames are ROM stems = matcher pass 1); columns are
-     *    written only where the current reference is missing or dead, and user-assigned/locked
-     *    records are respected;
+     *  • files are reconnected to games: an existing record's portable name is an exact claim
+     *    (covers scrape/pick-written files whose sanitized-title or collision-suffixed names
+     *    would defeat fuzzy matching), then the import matcher handles foreign files; columns
+     *    are written where the current reference is missing, dead, or a remote URL (a library
+     *    file always outranks an http ref), and user-assigned/locked records are respected;
      *  • records whose file no longer exists are removed and their game columns cleared (only
      *    runs with a live grant — a *disconnected* folder never destroys state, see §17);
      *  • size drift refreshes the record; duplicate portable names are counted as an advisory.
@@ -198,6 +216,14 @@ class ArtworkImportManager @Inject constructor(
         fun lockedTypes(gameId: Long): Set<String> = priorRecords.values
             .filter { it.gameId == gameId && (it.locked || it.userAssigned) }
             .map { it.artworkType }.toSet()
+        // Records-first matching: anything PFP itself wrote (scrapes, picks, imports) has a
+        // record naming its owner, so those files reconnect deterministically — sanitized-title
+        // names and collision suffixes ("Name (2)") never have to survive the fuzzy matcher.
+        val ownersByName = HashMap<Triple<String, String, String>, MutableSet<Long>>()
+        priorRecords.values.forEach { r ->
+            ownersByName.getOrPut(Triple(r.platformId, r.artworkType, r.portableName.lowercase())) { mutableSetOf() }
+                .add(r.gameId)
+        }
         val upsertedKeys = HashSet<Pair<Long, String>>()
 
         var scanned = 0
@@ -206,8 +232,8 @@ class ArtworkImportManager @Inject constructor(
         var changedFiles = 0
         var duplicateNames = 0
         val linkedIds = mutableSetOf<Long>()
-        for (platformDir in library.listChildren(tree, rootDocId).filter { it.isDirectory }) {
-            if (platformDir.name.equals(ArtworkLibraryManifest.DIR_IMPORT, ignoreCase = true)) continue
+        // Artwork/{platform} children plus any legacy root-level platform dirs (v2 layout).
+        for (platformDir in library.platformDirs(tree)) {
             val platformId = platformDir.name
             if (byPlatform[platformId].isNullOrEmpty()) continue
             for (mediaDir in library.listChildren(tree, platformDir.documentId).filter { it.isDirectory }) {
@@ -217,9 +243,11 @@ class ArtworkImportManager @Inject constructor(
                 for (file in library.listChildren(tree, mediaDir.documentId)) {
                     if (file.isDirectory || (file.sizeBytes ?: 0L) <= 0L) continue
                     scanned++
-                    if (!stemsInDir.add(ArtworkNaming.fileStem(file.name).lowercase())) duplicateNames++
-                    val match = indexFor(platformId).match(file.name)
-                    val ids = (match as? ArtworkImportMatcher.Result.Matched)?.gameIds
+                    val stemLower = ArtworkNaming.fileStem(file.name).lowercase()
+                    if (!stemsInDir.add(stemLower)) duplicateNames++
+                    // Own records first (exact portable-name hit), fuzzy matcher for foreign files.
+                    val ids = ownersByName[Triple(platformId, kind.name, stemLower)]?.toList()
+                        ?: (indexFor(platformId).match(file.name) as? ArtworkImportMatcher.Result.Matched)?.gameIds
                     if (ids.isNullOrEmpty()) { orphans++; continue }
                     for (gameId in ids) {
                         val game = games.firstOrNull { it.id == gameId } ?: continue
@@ -235,7 +263,12 @@ class ArtworkImportManager @Inject constructor(
                                 ArtworkKind.BACKGROUND -> game.artworkUri
                                 else -> game.logoUri
                             }
-                            if (!artworkStore.isValidRef(current)) {
+                            // A library file outranks a remote URL: http refs pass isValidRef
+                            // forever (never checked against the network), so a rotted CDN link
+                            // would otherwise block the repoint and the game shows no art.
+                            val replaceable = !artworkStore.isValidRef(current) ||
+                                current?.startsWith("http", ignoreCase = true) == true
+                            if (replaceable) {
                                 when (kind) {
                                     ArtworkKind.ICON -> gameDao.updateIconUri(gameId, uri)
                                     ArtworkKind.HERO -> gameDao.updateHero(gameId, uri)

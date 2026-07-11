@@ -3,16 +3,19 @@ package com.playfieldportal.feature.artwork.portable
 import com.playfieldportal.feature.artwork.store.ArtworkKind
 
 /**
- * The library layout v2 — ES-DE-shaped, so the folder is directly usable by other frontends:
+ * The library layout v3 — a clean two-folder root, ES-DE-shaped inside Artwork/:
  *
  *   {libraryRoot}/
- *     pfp-media-library.json
- *     import/…                                ← drop zone (unchanged)
- *     {platformId}/{mediaDir}/{PortableName}.{ext}
- *     {platformId}/pfp/{icons,backgrounds,overlays,banners}/   ← PFP-only art, reserved
+ *     pfp-artwork-library.json
+ *     Import/{Launcher}/…                              ← drop zone for other launchers' media
+ *     Artwork/{platformId}/{mediaDir}/{PortableName}.{ext}
+ *     Artwork/{platformId}/pfp/…                       ← PFP-only art, reserved
+ *
+ * (Point ES-DE or another frontend at {libraryRoot}/Artwork — the tree inside is exactly a
+ * downloaded_media layout.)
  *
  * This object is the single source of the ArtworkKind ↔ media-directory mapping — the ES-DE
- * importer, the write path, relink, and the future exporter all read it from here.
+ * importer, the write path, relink, and the exporter all read it from here.
  */
 object ArtworkPathResolver {
 
@@ -50,7 +53,7 @@ object ArtworkPathResolver {
     /** Media types imported/written in V1 (video snaps stay out for now). */
     val importedKinds: Set<ArtworkKind> = KIND_TO_DIR.keys - ArtworkKind.VIDEO
 
-    /** Relative path of an asset inside the library ("ps2/covers/Final Fantasy X (USA).png"). */
+    /** Relative path of an asset inside the library ("Artwork/ps2/covers/Final Fantasy X (USA).png"). */
     fun relativePath(platformId: String, kind: ArtworkKind, fileName: String): String =
-        "$platformId/${mediaDirFor(kind)}/$fileName"
+        "${ArtworkLibraryManifest.DIR_ARTWORK}/$platformId/${mediaDirFor(kind)}/$fileName"
 }

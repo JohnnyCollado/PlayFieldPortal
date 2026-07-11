@@ -8,12 +8,14 @@ All notable changes to Play Field Portal are documented here. This project follo
 ### Added
 - **Portable media library + ES-DE artwork import.** Settings ▸ Artwork ▸ **Artwork Folder &
   Import**: pick a folder (SAF, read+write grant — no all-files permission) where PFP keeps
-  artwork as a user-owned, reconnectable library in an **ES-DE-shaped layout** —
-  `{platform}/{covers,fanart,marquees,…}/{ROM Filename}.png` with a root
-  `pfp-artwork-library.json` manifest — so the folder is directly browsable and usable by other
-  frontends, no export step needed. Provenance (source, user-assigned, locked) lives in the
-  `artwork_records` table. Drop another
-  launcher's media under `import/<Launcher>` (ES-DE `downloaded_media` in V1) and PFP detects it
+  artwork as a user-owned, reconnectable library with a clean two-folder root —
+  `Artwork/{platform}/{covers,fanart,marquees,…}/{ROM Filename}.png` plus an `Import/` drop
+  zone and a root `pfp-artwork-library.json` manifest. The tree inside `Artwork/` is exactly an
+  ES-DE `downloaded_media` layout, so pointing another frontend at it works with no export
+  step. Libraries created before the `Artwork/` nesting upgrade themselves automatically
+  (same-drive folder moves, zero bytes copied). Provenance (source, user-assigned, locked)
+  lives in the `artwork_records` table. Drop another
+  launcher's media under `Import/<Launcher>` (ES-DE `downloaded_media` in V1) and PFP detects it
   by structure, matches artwork to games in three passes (exact ROM filename → display title →
   tag-stripped title; ambiguities are reviewed, never guessed), shows a full preview (counts by
   media type, size, needs-review, unmatched), then imports in a background worker with
@@ -54,6 +56,12 @@ All notable changes to Play Field Portal are documented here. This project follo
   art is never exported.
 - Game Detail shows publisher and total play time; long descriptions are reachable by D-pad
   (DOWN past the buttons scrolls the page) as well as touch.
+- **Move Into Folder** (Artwork Folder & Import ▸ App Storage) — artwork scraped or picked
+  *before* a folder was linked lives in app-private storage; one tap moves it into the
+  portable library (background worker, cancellable, resumable, report entry). Existing
+  folder artwork always wins — a valid library asset is never overwritten, and the redundant
+  internal copy is cleaned up. Hand-picked artwork migrates as locked. Game references
+  repoint to the new files; internal space is freed only after each verified write.
 
 ### Changed
 - `PlatformFolderHintResolver` and the SAF child-listing helpers moved from `feature-library`
@@ -61,6 +69,20 @@ All notable changes to Play Field Portal are documented here. This project follo
   cursor-based directory listing the scanners use.
 
 ### Fixed
+- Artwork scrapes are real background jobs now: progress shows in the notification shade, a
+  **Cancel Scrape** row stops the batch after the in-flight game (everything fetched so far is
+  kept), and the run survives leaving the settings screen — previously it ran invisibly inside
+  the screen and silently died when you navigated away. Reopening Artwork Settings mid-scrape
+  reattaches to the live progress.
+- Scan & Relink now reconnects scraped artwork, not just imported artwork: files PFP wrote
+  itself reconnect through their own records (exact claim), so sanitized-title names
+  ("Resident Evil: The Mercenaries 3D" → no colon on disk) and collision-suffixed names
+  ("Game (2).png") no longer fall through the fuzzy matcher as orphans. A library file also
+  now replaces a game reference that points at a remote URL — a rotted CDN link no longer
+  blocks the repoint and leaves the game artless.
+- Video snaps saved into the portable library no longer fail silently — extension detection
+  was image-only, so a valid MP4/WebM passed validation but never landed on disk; video files
+  now save with correct names and MIME types.
 - Artwork validity checks now understand `content://` references — previously every portable
   artwork ref was misjudged as stale, so "Scrape Missing Games Only" silently wiped imported
   artwork links (files were never touched; Relink Library restores them).

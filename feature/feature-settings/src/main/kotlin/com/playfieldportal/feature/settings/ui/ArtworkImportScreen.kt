@@ -119,6 +119,33 @@ fun ArtworkImportScreen(
                     onClick  = if (state.relinking || state.importRunning) null else ({ viewModel.relinkLibrary() }),
                 )
 
+                // ── Internal-storage migration (M-F2) ────────────────────────
+                if (state.internalFiles > 0 || state.migrationRunning) {
+                    SettingsGroup("App Storage")
+                    if (state.migrationRunning) {
+                        SettingsRow(
+                            label    = "Moving artwork into your folder…",
+                            sublabel = if (state.migrationTotal > 0)
+                                "${state.migrationDone} / ${state.migrationTotal} — runs in the background"
+                            else "Runs in the background — you can leave this screen",
+                        )
+                        SettingsRow(
+                            label    = "Cancel Move",
+                            sublabel = "Already-moved artwork stays in the folder",
+                            onClick  = { viewModel.cancelInternalMigration() },
+                        )
+                    } else {
+                        SettingsRow(
+                            label    = "Move Into Folder",
+                            sublabel = "${state.internalFiles} artwork files (${formatBytes(state.internalBytes)}) " +
+                                "were saved before this folder was linked and live in app storage. " +
+                                "Moving them makes them portable and frees app space. Locked and " +
+                                "hand-picked artwork already in the folder is never overwritten.",
+                            onClick  = if (state.importRunning) null else ({ viewModel.startInternalMigration() }),
+                        )
+                    }
+                }
+
                 SettingsGroup("Export")
 
                 SettingsRow(

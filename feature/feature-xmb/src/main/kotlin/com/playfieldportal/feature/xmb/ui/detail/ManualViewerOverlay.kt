@@ -115,7 +115,13 @@ fun ManualViewerOverlay(
     val stepPx = with(LocalDensity.current) { 140.dp.roundToPx() }
     LaunchedEffect(page) { scrollState.scrollTo(0) }
     LaunchedEffect(scrollSteps) {
-        scrollState.animateScrollTo((scrollSteps * stepPx).coerceAtMost(scrollState.maxValue))
+        scrollState.animateScrollTo(
+            (scrollSteps * stepPx).coerceAtMost(scrollState.maxValue),
+            animationSpec = androidx.compose.animation.core.tween(
+                durationMillis = 320,
+                easing = androidx.compose.animation.core.LinearOutSlowInEasing,
+            ),
+        )
     }
 
     Box(

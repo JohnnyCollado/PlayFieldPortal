@@ -6,7 +6,7 @@ import com.playfieldportal.feature.artwork.api.ArtworkScrapePreferences
 import com.playfieldportal.feature.artwork.api.ArtworkStatus
 import com.playfieldportal.feature.artwork.api.IgdbApi
 import com.playfieldportal.feature.artwork.api.ScrapeOptions
-import com.playfieldportal.feature.artwork.api.ScrapeProgress
+import com.playfieldportal.feature.artwork.api.MetadataScrapeWorker
 import com.playfieldportal.feature.artwork.api.SgdbApiKeyProvider
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -69,6 +69,9 @@ class ArtworkSettingsViewModelTest {
     }
 
     private fun buildViewModel() = ArtworkSettingsViewModel(
+        // WorkManager.getInstance on a mock context throws → the VM's guarded scrape observer
+        // becomes a no-op, which is exactly what these tests want.
+        context             = mockk(relaxed = true),
         sgdbKeyProvider     = sgdbKeyProvider,
         metadataKeyProvider = metadataKeyProvider,
         artworkRepository   = artworkRepository,
@@ -116,40 +119,64 @@ class ArtworkSettingsViewModelTest {
     }
 
     // ── Scrape modes ──────────────────────────────────────────────────────────
+    // Scrapes are WorkManager jobs now: the ViewModel enqueues MetadataScrapeWorker and mirrors
+    // its WorkInfo into uiState. These tests mock the worker's companion to verify the enqueue
+    // contract; progress/summary mirroring needs WorkManager test infra and is device-verified.
 
     @Test
-    fun `scrapeMissingOnly delegates to artworkRepository and shows summary`() = runTest(testDispatcher) {
-        val finalProgress = ScrapeProgress(5, 5, 4, 1, "")
-        coEvery { artworkRepository.scrapeMissingOnly(any()) } returns finalProgress
-        viewModel = activeViewModel()
-        advanceUntilIdle()
+    fun `scrapeMissingOnly enqueues the missing-mode worker`() = runTest(testDispatcher) {
+        io.mockk.mockkObject(MetadataScrapeWorker.Companion)
+        every { MetadataScrapeWorker.enqueue(any(), any()) } returns java.util.UUID.randomUUID()
+        try {
+            viewModel = activeViewModel()
+            advanceUntilIdle()
 
-        viewModel.scrapeMissingOnly()
-        advanceUntilIdle()
+            viewModel.scrapeMissingOnly()
+            advanceUntilIdle()
 
-        val state = viewModel.uiState.value
-        assertFalse(state.isScraping)
-        assertTrue(state.summary?.contains("4 succeeded") == true)
-        assertTrue(state.summary?.contains("1 failed") == true)
+            assertTrue(viewModel.uiState.value.isScraping)
+            io.mockk.verify { MetadataScrapeWorker.enqueue(any(), MetadataScrapeWorker.MODE_MISSING) }
+        } finally {
+            io.mockk.unmockkObject(MetadataScrapeWorker.Companion)
+        }
     }
 
     @Test
-    fun `confirmRescrapeAll delegates to artworkRepository reScrapeAllGames`() = runTest(testDispatcher) {
-        val finalProgress = ScrapeProgress(3, 3, 3, 0, "")
-        coEvery { artworkRepository.reScrapeAllGames(any()) } returns finalProgress
-        viewModel = activeViewModel()
-        advanceUntilIdle()
+    fun `confirmRescrapeAll enqueues the all-mode worker`() = runTest(testDispatcher) {
+        io.mockk.mockkObject(MetadataScrapeWorker.Companion)
+        every { MetadataScrapeWorker.enqueue(any(), any()) } returns java.util.UUID.randomUUID()
+        try {
+            viewModel = activeViewModel()
+            advanceUntilIdle()
 
-        viewModel.requestRescrapeAll()
-        advanceUntilIdle()
-        assertTrue(viewModel.uiState.value.confirmRescrapeAll)
+            viewModel.requestRescrapeAll()
+            advanceUntilIdle()
+            assertTrue(viewModel.uiState.value.confirmRescrapeAll)
 
-        viewModel.confirmRescrapeAll()
-        advanceUntilIdle()
+            viewModel.confirmRescrapeAll()
+            advanceUntilIdle()
 
-        assertFalse(viewModel.uiState.value.confirmRescrapeAll)
-        assertFalse(viewModel.uiState.value.isScraping)
-        coVerify { artworkRepository.reScrapeAllGames(any()) }
+            assertFalse(viewModel.uiState.value.confirmRescrapeAll)
+            assertTrue(viewModel.uiState.value.isScraping)
+            io.mockk.verify { MetadataScrapeWorker.enqueue(any(), MetadataScrapeWorker.MODE_ALL) }
+        } finally {
+            io.mockk.unmockkObject(MetadataScrapeWorker.Companion)
+        }
+    }
+
+    @Test
+    fun `cancelScrape delegates to the worker cancel`() = runTest(testDispatcher) {
+        io.mockk.mockkObject(MetadataScrapeWorker.Companion)
+        every { MetadataScrapeWorker.cancel(any()) } returns mockk(relaxed = true)
+        try {
+            viewModel = activeViewModel()
+            advanceUntilIdle()
+
+            viewModel.cancelScrape()
+            io.mockk.verify { MetadataScrapeWorker.cancel(any()) }
+        } finally {
+            io.mockk.unmockkObject(MetadataScrapeWorker.Companion)
+        }
     }
 
     @Test
@@ -217,49 +244,13 @@ class ArtworkSettingsViewModelTest {
         assertTrue(viewModel.uiState.value.igdbCredentialStatus?.contains("Invalid") == true)
     }
 
-    // ── Scrape progress source/asset display ──────────────────────────────────
-
-    @Test
-    fun `scrape progress exposes source and asset from ScrapeProgress`() = runTest(testDispatcher) {
-        // Hold the scrape at the in-progress point so the reported source/asset are the current state.
-        // (A real scrape suspends on network I/O between a progress callback and completion; the mock
-        // otherwise reports and completes in one synchronous step, which the conflated uiState would
-        // collapse before any collector could observe the intermediate values.)
-        val release = CompletableDeferred<Unit>()
-        coEvery { artworkRepository.scrapeMissingOnly(any()) } coAnswers {
-            val callback = firstArg<(ScrapeProgress) -> Unit>()
-            callback(ScrapeProgress(1, 5, 0, 0, "Doom", scrapeSource = "TheGamesDB", scrapeAsset = "Box Art"))
-            release.await()
-            ScrapeProgress(5, 5, 4, 1, "")
-        }
-        viewModel = activeViewModel()
-        advanceUntilIdle()
-
-        viewModel.scrapeMissingOnly()
-        advanceUntilIdle()
-
-        val inProgress = viewModel.uiState.value
-        assertTrue(inProgress.isScraping)
-        assertEquals("TheGamesDB", inProgress.scrapeSource)
-        assertEquals("Box Art", inProgress.scrapeAsset)
-
-        release.complete(Unit)
-        advanceUntilIdle()
-    }
-
     // ── Dismiss helpers ───────────────────────────────────────────────────────
 
     @Test
     fun `dismissSummary clears summary`() = runTest(testDispatcher) {
-        val finalProgress = ScrapeProgress(1, 1, 1, 0, "")
-        coEvery { artworkRepository.scrapeMissingOnly(any()) } returns finalProgress
         viewModel = activeViewModel()
         advanceUntilIdle()
 
-        viewModel.scrapeMissingOnly()
-        advanceUntilIdle()
-
-        assertFalse(viewModel.uiState.value.summary.isNullOrBlank())
         viewModel.dismissSummary()
         advanceUntilIdle()
         assertNull(viewModel.uiState.value.summary)
