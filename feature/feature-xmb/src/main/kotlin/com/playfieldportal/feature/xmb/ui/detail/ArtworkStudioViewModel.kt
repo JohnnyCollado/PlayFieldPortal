@@ -897,8 +897,8 @@ class ArtworkStudioViewModel @Inject constructor(
             // Y / Triangle jumps the cursor straight to the source row (lands on the
             // active source, since sourceIndex already tracks it).
             GamepadAction.BUTTON_Y -> _uiState.update { it.copy(zone = StudioZone.SOURCES) }
-            // Long-press opens the per-slot actions menu (crop, restore, reset, clear, info).
-            GamepadAction.LONG_PRESS -> openActions()
+            // START opens the per-slot actions menu (crop, restore, reset, clear, info).
+            GamepadAction.HOME -> openActions()
             else -> Unit
         }
     }

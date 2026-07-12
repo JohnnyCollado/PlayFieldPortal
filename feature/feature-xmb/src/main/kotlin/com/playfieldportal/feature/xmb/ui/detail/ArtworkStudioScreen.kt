@@ -220,7 +220,7 @@ fun ArtworkStudioScreen(
                     Spacer(Modifier.height(8.dp))
                     if (state.currentUri != null) {
                         Text(
-                            "Ⓐ hold  ·  ACTIONS",
+                            "START  ·  ACTIONS",
                             color = Color.White.copy(alpha = 0.7f),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
@@ -417,7 +417,7 @@ fun ArtworkStudioScreen(
 
             // Footer hints
             Text(
-                "LB / RB — artwork type   ·   D-Pad — grid   ·   A — preview / apply   ·   hold A — actions   ·   " +
+                "LB / RB — artwork type   ·   D-Pad — grid   ·   A — preview / apply   ·   START — actions   ·   " +
                     "B — back   ·   X — NSFW   ·   Y — sources   ·   past an edge — next / prev page",
                 color = Color.White.copy(alpha = 0.35f), fontSize = 10.sp,
                 modifier = Modifier.padding(top = 6.dp),
