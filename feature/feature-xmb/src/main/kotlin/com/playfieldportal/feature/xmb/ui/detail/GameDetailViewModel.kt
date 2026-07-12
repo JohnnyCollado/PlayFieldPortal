@@ -126,6 +126,8 @@ data class GameDetailUiState(
 
     // ── XMB Artwork Manager ───────────────────────────────────────────────
     val showArtworkManager: Boolean = false,
+    // Fullscreen Artwork Studio (replaces the old in-detail artwork manager UI).
+    val showArtworkStudio: Boolean = false,
     val artworkTab: ArtworkType = ArtworkType.ICON,
     val artworkFocus: ArtworkManagerFocus = ArtworkManagerFocus.TYPE_TABS,
     val artworkSourceFocus: Int = SOURCE_SS,
@@ -296,6 +298,7 @@ class GameDetailViewModel @Inject constructor(
             }
             return
         }
+        if (s.showArtworkStudio) return   // actions are forwarded to the Studio's own VM
         if (s.showVideoPlayer) {
             // Fullscreen snap player: Back (or Confirm) closes; everything else is consumed.
             if (action == GamepadAction.BACK || action == GamepadAction.SELECT) closeVideoPlayer()
@@ -494,21 +497,15 @@ class GameDetailViewModel @Inject constructor(
     // ── Artwork Manager open / close ──────────────────────────────────────
 
     fun openArtworkManager() {
-        _uiState.update {
-            it.copy(
-                showArtworkManager   = true,
-                artworkTab           = ArtworkType.ICON,
-                artworkFocus         = ArtworkManagerFocus.TYPE_TABS,
-                artworkSourceFocus   = SOURCE_SS,
-                artworkPickerItems   = emptyList(),
-                artworkPickerIndex   = 0,
-                artworkPickerLoading = false,
-                artworkPickerError   = null,
-                artworkPendingLocal  = null,
-                artworkIsProcessing  = false,
-                artworkMessage       = null,
-            )
-        }
+        // The legacy in-detail manager is retired — the fullscreen Artwork Studio replaces it.
+        _uiState.update { it.copy(showArtworkStudio = true) }
+    }
+
+    /** Called when the Studio closes: reload so applied artwork shows immediately. */
+    fun onArtworkStudioClosed() {
+        _uiState.update { it.copy(showArtworkStudio = false) }
+        val id = _uiState.value.game?.id ?: return
+        loadGame(id)
     }
 
     fun closeArtworkManager() {

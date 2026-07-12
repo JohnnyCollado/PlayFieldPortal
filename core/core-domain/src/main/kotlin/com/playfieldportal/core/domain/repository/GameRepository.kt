@@ -46,6 +46,11 @@ interface GameRepository {
     suspend fun updateScrapedTitle(id: Long, scrapedTitle: String?)
     // Pass null to clear the override and fall back to scrapedTitle / title.
     suspend fun updateUserTitleOverride(id: Long, override: String?)
+    // Display-mode tile columns (Artwork Studio apply path). updateBoxArt above is legacy
+    // naming for the BACKGROUND column; these hit the real tile columns.
+    suspend fun updateBoxArtTile(id: Long, uri: String?)
+    suspend fun updatePhysicalMediaArt(id: Long, uri: String?)
+    suspend fun updateBox3dArt(id: Long, uri: String?)
     // Per-game IconDisplayMode override (enum name). Pass null to follow the global setting.
     // (Note: updateBoxArt above is legacy naming for the BACKGROUND/artwork_uri column, not the
     // BOX_ART tile — the new tile columns are written by the scraper/importer, not through here.)

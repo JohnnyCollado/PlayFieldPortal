@@ -79,6 +79,8 @@ class SteamGridDbApi @Inject constructor(
         type: SgdbArtType,
         styles: List<String> = emptyList(),
         dimensions: List<String> = emptyList(),
+        // SGDB filters adult-tagged art out by default; true includes it (web parity toggle).
+        includeNsfw: Boolean = false,
     ): Result<List<SgdbArtItem>> = runCatching {
         val key = apiKeyProvider.getKey()
             ?: error("SteamGridDB API key not configured")
@@ -87,6 +89,7 @@ class SteamGridDbApi @Inject constructor(
             header("Authorization", "Bearer $key")
             if (styles.isNotEmpty()) parameter("styles", styles.joinToString(","))
             if (dimensions.isNotEmpty()) parameter("dimensions", dimensions.joinToString(","))
+            parameter("nsfw", if (includeNsfw) "any" else "false")
         }.body()
 
         if (!response.success) error("SGDB art fetch failed for gameId=$gameId type=$type")

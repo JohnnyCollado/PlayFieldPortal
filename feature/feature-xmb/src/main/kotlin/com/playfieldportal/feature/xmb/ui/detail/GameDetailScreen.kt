@@ -166,8 +166,9 @@ fun GameDetailScreen(
             onBack()
         }
     }
+    // While the Artwork Studio is open, its screen consumes the actions instead.
     LaunchedEffect(pendingGamepadAction) {
-        if (pendingGamepadAction != null) {
+        if (pendingGamepadAction != null && !state.showArtworkStudio) {
             viewModel.handleGamepadAction(pendingGamepadAction)
             onGamepadActionConsumed()
         }
@@ -371,6 +372,17 @@ fun GameDetailScreen(
                     }
                 }
             }
+        }
+
+        // Fullscreen Artwork Studio — replaces the legacy in-detail artwork manager.
+        if (state.showArtworkStudio) {
+            ArtworkStudioScreen(
+                gameId = gameId,
+                onClose = viewModel::onArtworkStudioClosed,
+                pendingGamepadAction = pendingGamepadAction,
+                onGamepadActionConsumed = onGamepadActionConsumed,
+                modifier = Modifier.fillMaxSize(),
+            )
         }
 
         // Fullscreen image preview (Steam-style) — Confirm/Back or tap closes.
