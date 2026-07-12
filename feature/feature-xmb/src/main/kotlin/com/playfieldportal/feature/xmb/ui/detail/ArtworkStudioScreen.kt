@@ -45,6 +45,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.ui.input.pointer.pointerInput
+import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -794,20 +795,25 @@ private fun decodeDisplayBitmap(path: String): android.graphics.Bitmap? {
 @Composable
 private fun StudioVideoTilePreview(url: String, modifier: Modifier = Modifier) {
     val context = androidx.compose.ui.platform.LocalContext.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
     var videoSize by remember(url) {
         mutableStateOf<androidx.media3.common.VideoSize?>(null)
     }
     var failed by remember(url) { mutableStateOf(false) }
-    val player = remember(url) {
+    var triedLocal by remember(url) { mutableStateOf(false) }
+    // Starts as the remote URL. ScreenScraper's mediaJeu.php serves videos with no
+    // Content-Length and no range support, so a clip whose moov atom trails the media data
+    // can't stream progressively. On the first playback error we download the clip to cache
+    // and retry from the local file, which is fully seekable.
+    var source by remember(url) { mutableStateOf(url) }
+
+    val player = remember(source) {
         androidx.media3.exoplayer.ExoPlayer.Builder(context).build().apply {
             trackSelectionParameters = trackSelectionParameters.buildUpon()
                 .setTrackTypeDisabled(androidx.media3.common.C.TRACK_TYPE_AUDIO, true)
                 .build()
             volume = 0f
-            // No clipping here: ScreenScraper streams are not reliably seekable, and a
-            // ClippingMediaSource on unseekable media fails outright. Whole clip, looped —
-            // the player only exists while the tile is focused anyway.
-            setMediaItem(androidx.media3.common.MediaItem.fromUri(url))
+            setMediaItem(androidx.media3.common.MediaItem.fromUri(source))
             repeatMode = androidx.media3.common.Player.REPEAT_MODE_ONE
             playWhenReady = true
             prepare()
@@ -817,8 +823,19 @@ private fun StudioVideoTilePreview(url: String, modifier: Modifier = Modifier) {
         val listener = object : androidx.media3.common.Player.Listener {
             override fun onVideoSizeChanged(size: androidx.media3.common.VideoSize) { videoSize = size }
             override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
-                timber.log.Timber.w(error, "Studio tile preview failed")
-                failed = true
+                if (!triedLocal) {
+                    triedLocal = true
+                    scope.launch {
+                        val local = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                            downloadTilePreviewVideo(context, url)
+                        }
+                        if (local != null) source = android.net.Uri.fromFile(local).toString()
+                        else failed = true
+                    }
+                } else {
+                    timber.log.Timber.w(error, "Studio tile preview failed after local fallback")
+                    failed = true
+                }
             }
         }
         player.addListener(listener)
@@ -843,6 +860,30 @@ private fun StudioVideoTilePreview(url: String, modifier: Modifier = Modifier) {
         modifier = modifier,
     )
 }
+
+// Downloads a tile-preview clip to cache (keyed by URL) so a non-seekable SS stream can play
+// from a local, seekable file. Capped so a full gameplay video can't fill the cache partition.
+private fun downloadTilePreviewVideo(context: android.content.Context, url: String): java.io.File? =
+    runCatching {
+        val name = "studio_vid_" + Integer.toHexString(url.hashCode()) + ".mp4"
+        val dest = java.io.File(context.cacheDir, name)
+        if (dest.exists() && dest.length() > 0) return dest
+        val conn = (java.net.URL(url).openConnection() as java.net.HttpURLConnection).apply {
+            connectTimeout = 15_000; readTimeout = 30_000; instanceFollowRedirects = true
+        }
+        conn.inputStream.use { input ->
+            dest.outputStream().use { out ->
+                val buf = ByteArray(64 * 1024); var total = 0L
+                while (true) {
+                    val n = input.read(buf); if (n == -1) break
+                    total += n
+                    if (total > 80L * 1024 * 1024) error("tile preview clip too large")
+                    out.write(buf, 0, n)
+                }
+            }
+        }
+        dest.takeIf { it.length() > 0 } ?: run { dest.delete(); null }
+    }.onFailure { timber.log.Timber.w(it, "Tile preview video download failed") }.getOrNull()
 
 // Center-crop matrix so the (usually 4:3) frame fills the tile.
 private fun studioTileCrop(view: android.view.TextureView, size: androidx.media3.common.VideoSize?) {
