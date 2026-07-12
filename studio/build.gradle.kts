@@ -34,7 +34,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "PlayField Theme Studio"
-            packageVersion = "1.0.3"
+            packageVersion = "1.0.4"
             description = "Create, convert, and share PlayFieldPortal XMB themes"
 
             windows {
