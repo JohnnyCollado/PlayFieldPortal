@@ -8,11 +8,8 @@ import com.playfieldportal.core.data.repository.MemoryCardRepository
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.MemoryCard
 import com.playfieldportal.core.domain.repository.GameRepository
-import com.playfieldportal.feature.artwork.TheGamesDbApi
 import com.playfieldportal.feature.artwork.api.ArtworkFetchResult
 import com.playfieldportal.feature.artwork.api.ArtworkRepository
-import com.playfieldportal.feature.artwork.api.IgdbApi
-import com.playfieldportal.feature.artwork.api.SteamGridDbApi
 import com.playfieldportal.feature.artwork.store.ArtworkStore
 import com.playfieldportal.feature.launcher.EmulatorIntentResolver
 import com.playfieldportal.feature.launcher.EmulatorProfileRepository
@@ -48,9 +45,6 @@ class GameDetailViewModelTest {
     private lateinit var profileRepository: EmulatorProfileRepository
     private lateinit var intentResolver: EmulatorIntentResolver
     private lateinit var artworkRepository: ArtworkRepository
-    private lateinit var steamGridDb: SteamGridDbApi
-    private lateinit var igdbApi: IgdbApi
-    private lateinit var theGamesDb: TheGamesDbApi
     private lateinit var artworkStore: ArtworkStore
     private lateinit var viewModel: GameDetailViewModel
 
@@ -97,9 +91,6 @@ class GameDetailViewModelTest {
         profileRepository = mockk(relaxed = true)
         intentResolver    = mockk(relaxed = true)
         artworkRepository = mockk(relaxed = true)
-        steamGridDb       = mockk(relaxed = true)
-        igdbApi           = mockk(relaxed = true)
-        theGamesDb        = mockk(relaxed = true)
         artworkStore      = mockk(relaxed = true)
 
         coEvery { gameRepository.getById(1L) }    returns fakeGame
@@ -117,11 +108,6 @@ class GameDetailViewModelTest {
             profileRepository = profileRepository,
             intentResolver    = intentResolver,
             artworkRepository = artworkRepository,
-            steamGridDb       = steamGridDb,
-            igdbApi           = igdbApi,
-            theGamesDb        = theGamesDb,
-            screenScraper     = mockk(relaxed = true),
-            romHasher         = mockk(relaxed = true),
             artworkStore      = artworkStore,
             artworkRecordDao  = mockk(relaxed = true),
             menuSound         = mockk(relaxed = true),
@@ -523,113 +509,6 @@ class GameDetailViewModelTest {
             val state = awaitItem()
             assertFalse(state.closed)
             assertEquals("Crash Bandicoot", state.game?.title)
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
-    // ── clearArtwork ──────────────────────────────────────────────────────
-
-    @Test
-    fun `clearArtwork BACKGROUND only clears artworkUri`() = runTest {
-        viewModel.loadGame(1L)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        viewModel.clearArtwork(ArtworkType.BACKGROUND)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        coVerify { gameRepository.updateBoxArt(1L, null) }
-        coVerify(exactly = 0) { gameRepository.updateIconArt(any(), any()) }
-        coVerify(exactly = 0) { gameRepository.updateHeroArt(any(), any()) }
-    }
-
-    @Test
-    fun `clearArtwork HERO only clears heroUri`() = runTest {
-        viewModel.loadGame(1L)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        viewModel.clearArtwork(ArtworkType.HERO)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        coVerify { gameRepository.updateHeroArt(1L, null) }
-        coVerify(exactly = 0) { gameRepository.updateIconArt(any(), any()) }
-        coVerify(exactly = 0) { gameRepository.updateBoxArt(any(), any()) }
-    }
-
-    @Test
-    fun `clearArtwork ICON only clears iconUri`() = runTest {
-        viewModel.loadGame(1L)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        viewModel.clearArtwork(ArtworkType.ICON)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        coVerify { gameRepository.updateIconArt(1L, null) }
-        coVerify(exactly = 0) { gameRepository.updateHeroArt(any(), any()) }
-        coVerify(exactly = 0) { gameRepository.updateBoxArt(any(), any()) }
-    }
-
-    // ── pickSgdbArtwork ───────────────────────────────────────────────────
-
-    @Test
-    fun `pickSgdbArtwork BACKGROUND failure keeps existing artwork and shows error`() = runTest {
-        coEvery { artworkStore.saveVersionedFromUrl(any(), any(), any()) } returns null
-
-        viewModel.loadGame(1L)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        viewModel.pickSgdbArtwork("https://cdn.steamgriddb.com/art.png", ArtworkType.BACKGROUND)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        coVerify(exactly = 0) { gameRepository.updateBoxArt(any(), any()) }
-        coVerify(exactly = 0) { gameRepository.updateIconArt(any(), any()) }
-
-        viewModel.uiState.test {
-            val state = awaitItem()
-            assertFalse(state.artworkIsProcessing)
-            assertNotNull(state.artworkMessage)
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
-    @Test
-    fun `pickSgdbArtwork HERO only updates heroUri not iconUri`() = runTest {
-        coEvery { artworkStore.saveVersionedFromUrl(any(), any(), any()) } returns null
-
-        viewModel.loadGame(1L)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        viewModel.pickSgdbArtwork("https://cdn.steamgriddb.com/hero.jpg", ArtworkType.HERO)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        // downloadRaw returned null so repo should not be called — just verify no icon update
-        coVerify(exactly = 0) { gameRepository.updateIconArt(any(), any()) }
-    }
-
-    @Test
-    fun `pickSgdbArtwork succeeds on second import for same URL`() = runTest {
-        // Regression: second SGDB import of the same URL must not fail. Previously, recycling
-        // a Coil memory-cached bitmap caused the second download call to return null.
-        val firstPath  = "/data/artwork/1/icon_111.jpg"
-        val secondPath = "/data/artwork/1/icon_222.jpg"
-        coEvery {
-            artworkStore.saveVersionedFromUrl(any(), any(), eq("https://cdn.sgdb.com/icon.jpg"))
-        } returnsMany listOf(firstPath, secondPath)
-
-        viewModel.loadGame(1L)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        viewModel.pickSgdbArtwork("https://cdn.sgdb.com/icon.jpg", ArtworkType.ICON)
-        testDispatcher.scheduler.advanceUntilIdle()
-        coVerify(exactly = 1) { gameRepository.updateIconArt(1L, firstPath) }
-
-        viewModel.pickSgdbArtwork("https://cdn.sgdb.com/icon.jpg", ArtworkType.ICON)
-        testDispatcher.scheduler.advanceUntilIdle()
-        coVerify(exactly = 1) { gameRepository.updateIconArt(1L, secondPath) }
-
-        viewModel.uiState.test {
-            val state = awaitItem()
-            assertFalse(state.artworkIsProcessing)
-            assertNull(state.artworkSgdbError)
             cancelAndIgnoreRemainingEvents()
         }
     }
