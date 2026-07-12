@@ -1,7 +1,5 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -120,15 +118,6 @@ fun GameDetailScreen(
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
-    var pendingArtworkType by remember { mutableStateOf<ArtworkType?>(null) }
-    val artworkPicker = rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        val type = pendingArtworkType
-        if (uri != null && type != null) viewModel.onArtworkLocalPicked(uri, type)
-        pendingArtworkType = null
-    }
-
     LaunchedEffect(gameId) {
         viewModel.prepareForOpen()
         viewModel.loadGame(gameId)
@@ -173,13 +162,6 @@ fun GameDetailScreen(
             onGamepadActionConsumed()
         }
     }
-    LaunchedEffect(state.artworkPendingLocal) {
-        val type = state.artworkPendingLocal ?: return@LaunchedEffect
-        pendingArtworkType = type
-        artworkPicker.launch(arrayOf("image/png", "image/jpeg", "image/webp"))
-        viewModel.consumeArtworkLocalPick()
-    }
-
     if (state.isLoading) {
         Box(modifier.fillMaxSize().background(PageBg)) {
             CircularProgressIndicator(Modifier.align(Alignment.Center), color = menuCursorEdge())
@@ -467,17 +449,6 @@ fun GameDetailScreen(
             }
         }
 
-        AnimatedVisibility(state.showArtworkManager, enter = fadeIn(), exit = fadeOut()) {
-            ArtworkManagerPanel(
-                state = state,
-                game = game,
-                onTabSelected = viewModel::setArtworkTab,
-                onActivateSourceAt = viewModel::activateSourceAt,
-                onPickArtwork = viewModel::pickSgdbArtwork,
-                onClose = viewModel::closeArtworkManager,
-            )
-        }
-
         // Topmost overlay — the ViewModel routes all gamepad input here while it's open.
         state.manualViewerUri?.let { source ->
             ManualViewerOverlay(
@@ -594,251 +565,6 @@ private fun DetailAction.dynamicLabel(favorite: Boolean, refreshing: Boolean): S
     DetailAction.FAVORITE -> if (favorite) "Unfavorite" else "Favorite"
     DetailAction.REFRESH -> if (refreshing) "Refreshing..." else "Refresh"
     else -> label
-}
-
-// ── Artwork Manager Panel ─────────────────────────────────────────────────────
-//
-// Three-zone controller-navigable UI:
-//   TYPE_TABS  — L/R cycles artwork type (Icon / Hero / Background)
-//   SOURCE_ROW — L/R scrolls through 5 sources (SGDB / TGDB / IGDB / Local / Clear)
-//   ART_GRID   — L/R moves between thumbnails; SELECT picks
-//
-// Back moves up one zone; pressing Back at TYPE_TABS closes the manager.
-// Data sources (SGDB, TGDB, IGDB) populate the art grid.
-// Action sources (Local, Clear) fire immediately on SELECT/tap.
-
-private val ArtworkSourceLabels = listOf("ScreenScraper", "SGDB", "TGDB", "IGDB", "Local", "Clear")
-
-@Composable
-private fun ArtworkManagerPanel(
-    state: GameDetailUiState,
-    game: Game,
-    onTabSelected: (ArtworkType) -> Unit,
-    onActivateSourceAt: (Int) -> Unit,
-    onPickArtwork: (String, ArtworkType) -> Unit,
-    onClose: () -> Unit,
-) {
-    Box(
-        Modifier.fillMaxSize().background(Color(0xCC000000)).clickable(onClick = onClose),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            modifier = Modifier
-                .widthIn(min = 300.dp, max = 460.dp)
-                .fillMaxWidth(0.92f)
-                .heightIn(max = 620.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(Color(0xF20A0A14))
-                .clickable(enabled = false) {}
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            // Header
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text("Artwork Manager", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                TextButton(onClick = onClose) { Text("Done", color = TextMuted, fontSize = 12.sp) }
-            }
-
-            // ── Zone 1: Type tabs ───────────────────────────────────────────
-            val tabZoneFocused = state.artworkFocus == ArtworkManagerFocus.TYPE_TABS
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                ArtworkType.entries.forEach { type ->
-                    val isActive  = state.artworkTab == type
-                    val isCursor  = tabZoneFocused && isActive
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(if (isActive) menuCursorFill() else ActionFill)
-                            .then(
-                                if (isCursor)  Modifier.border(2.dp, menuCursorEdge(), RoundedCornerShape(6.dp))
-                                else if (isActive) Modifier.border(1.dp, menuCursorEdge().copy(alpha = 0.45f), RoundedCornerShape(6.dp))
-                                else Modifier
-                            )
-                            .clickable { onTabSelected(type) }
-                            .padding(vertical = 9.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            type.displayLabel,
-                            color      = if (isActive) TextPrimary else TextMuted,
-                            fontSize   = 12.sp,
-                            fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal,
-                            maxLines   = 1,
-                        )
-                    }
-                }
-            }
-
-            // ── Artwork preview for active tab ──────────────────────────────
-            ArtworkPreview(game = game, type = state.artworkTab)
-
-            // ── Zone 2: Source row (scrollable LazyRow, 6 chips) ────────────
-            val sourceZoneFocused = state.artworkFocus == ArtworkManagerFocus.SOURCE_ROW
-            val sourceLazyState   = rememberLazyListState()
-            LaunchedEffect(state.artworkSourceFocus) {
-                sourceLazyState.animateScrollToItem(state.artworkSourceFocus)
-            }
-            LazyRow(
-                state                 = sourceLazyState,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                itemsIndexed(ArtworkSourceLabels) { index, label ->
-                    val isFocused     = sourceZoneFocused && state.artworkSourceFocus == index
-                    val isDestructive = index == SOURCE_CLEAR
-                    Box(
-                        modifier = Modifier
-                            .width(72.dp)
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(if (isFocused) menuCursorFill() else ActionFill)
-                            .then(if (isFocused) Modifier.border(1.5.dp, menuCursorEdge(), RoundedCornerShape(6.dp)) else Modifier)
-                            .clickable(enabled = !state.artworkIsProcessing) { onActivateSourceAt(index) }
-                            .padding(vertical = 9.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            label,
-                            color      = when {
-                                isDestructive -> Color(0xFFFF8A8A)
-                                isFocused     -> TextPrimary
-                                else          -> TextMuted
-                            },
-                            fontSize   = 11.sp,
-                            fontWeight = if (isFocused) FontWeight.SemiBold else FontWeight.Normal,
-                            maxLines   = 1,
-                            textAlign  = TextAlign.Center,
-                        )
-                    }
-                }
-            }
-
-            // ── Zone 3: Art grid (all data sources share this grid) ─────────
-            when {
-                state.artworkPickerLoading -> {
-                    Box(Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(Modifier.size(24.dp), color = menuCursorEdge(), strokeWidth = 2.dp)
-                    }
-                }
-                state.artworkPickerError != null -> {
-                    Text(state.artworkPickerError, color = Color(0xFFFF6B6B), fontSize = 12.sp)
-                }
-                state.artworkPickerItems.isNotEmpty() -> {
-                    val gridFocused = state.artworkFocus == ArtworkManagerFocus.ART_GRID
-                    val lazyState   = rememberLazyListState()
-                    LaunchedEffect(state.artworkPickerIndex) {
-                        if (state.artworkPickerItems.isNotEmpty())
-                            lazyState.animateScrollToItem(state.artworkPickerIndex.coerceAtLeast(0))
-                    }
-                    LazyRow(
-                        state                 = lazyState,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        itemsIndexed(state.artworkPickerItems) { index, art ->
-                            val isFocused = gridFocused && state.artworkPickerIndex == index
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(3.dp),
-                            ) {
-                                AsyncImage(
-                                    model              = art.thumbUrl ?: art.url,
-                                    contentDescription = art.label,
-                                    contentScale       = ContentScale.Crop,
-                                    modifier           = Modifier
-                                        .size(width = 88.dp, height = 60.dp)
-                                        .clip(RoundedCornerShape(4.dp))
-                                        .border(
-                                            width  = if (isFocused) 2.dp else 1.dp,
-                                            color  = if (isFocused) menuCursorEdge() else Color(0x33FFFFFF),
-                                            shape  = RoundedCornerShape(4.dp),
-                                        )
-                                        .clickable { onPickArtwork(art.url, state.artworkTab) },
-                                )
-                                if (!art.label.isNullOrBlank()) {
-                                    Text(
-                                        art.label,
-                                        color    = if (isFocused) TextPrimary else TextMuted,
-                                        fontSize = 9.sp,
-                                        maxLines = 1,
-                                        textAlign = TextAlign.Center,
-                                        modifier  = Modifier.width(88.dp),
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Processing / status
-            if (state.artworkIsProcessing) {
-                Row(
-                    verticalAlignment     = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    CircularProgressIndicator(Modifier.size(14.dp), color = menuCursorEdge(), strokeWidth = 2.dp)
-                    Text("Saving…", color = TextMuted, fontSize = 12.sp)
-                }
-            }
-            state.artworkMessage?.let {
-                Text(it, color = menuCursorEdge(), fontSize = 12.sp)
-            }
-
-            // Controller hint
-            Text(
-                "L/R  Navigate  •  Down  Enter zone  •  Up  Back  •  B  Close",
-                color    = TextMuted.copy(alpha = 0.5f),
-                fontSize = 10.sp,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-    }
-}
-
-// Displays the current artwork saved for the active tab, with a context label.
-@Composable
-private fun ArtworkPreview(game: Game, type: ArtworkType) {
-    val uri = when (type) {
-        ArtworkType.ICON       -> game.iconUri
-        ArtworkType.HERO       -> game.heroUri
-        ArtworkType.BACKGROUND -> game.artworkUri
-    }
-    val contextLabel = when (type) {
-        ArtworkType.ICON       -> "XMB game grid  •  PSP Rectangle (144 × 80)"
-        ArtworkType.HERO       -> "Game Detail screen  •  Hero banner (16:9)"
-        ArtworkType.BACKGROUND -> "XMB hover state  •  Full-bleed background"
-    }
-    val previewHeight = when (type) {
-        ArtworkType.ICON       -> 60.dp
-        ArtworkType.HERO       -> 100.dp
-        ArtworkType.BACKGROUND -> 72.dp
-    }
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(previewHeight)
-                .clip(RoundedCornerShape(6.dp))
-                .background(Color(0xFF12121C))
-                .border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(6.dp)),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (uri != null) {
-                AsyncImage(
-                    model              = uri,
-                    contentDescription = null,
-                    contentScale       = ContentScale.Crop,
-                    modifier           = Modifier.fillMaxSize(),
-                )
-            } else {
-                Text("No ${type.displayLabel} set", color = TextMuted, fontSize = 12.sp)
-            }
-        }
-        Text(contextLabel, color = TextMuted.copy(alpha = 0.65f), fontSize = 10.sp)
-    }
 }
 
 @Composable

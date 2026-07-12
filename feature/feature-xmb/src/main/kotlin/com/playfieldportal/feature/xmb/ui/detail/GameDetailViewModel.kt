@@ -14,12 +14,8 @@ import com.playfieldportal.feature.xmb.ui.collection.CollectionPickerOption
 import com.playfieldportal.feature.xmb.ui.collection.CollectionPickerUi
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.core.domain.model.GamepadAction
-import com.playfieldportal.feature.artwork.TheGamesDbApi
 import com.playfieldportal.feature.artwork.api.ArtworkRepository
 import com.playfieldportal.core.domain.model.EmulatorProfile
-import com.playfieldportal.feature.artwork.api.IgdbApi
-import com.playfieldportal.feature.artwork.api.SgdbArtType
-import com.playfieldportal.feature.artwork.api.SteamGridDbApi
 import com.playfieldportal.feature.artwork.store.ArtworkKind
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.playfieldportal.core.data.datastore.pfpDataStore
@@ -48,21 +44,6 @@ val ArtworkType.displayLabel: String
         ArtworkType.HERO       -> "Hero Banner"
         ArtworkType.BACKGROUND -> "Background"
     }
-
-// ── Artwork Manager focus zones ───────────────────────────────────────────────
-enum class ArtworkManagerFocus { TYPE_TABS, SOURCE_ROW, ART_GRID }
-
-// Source row indices — ScreenScraper first: it's the primary scrape source (hash-based).
-const val SOURCE_SS    = 0
-const val SOURCE_SGDB  = 1
-const val SOURCE_TGDB  = 2
-const val SOURCE_IGDB  = 3
-const val SOURCE_LOCAL = 4
-const val SOURCE_CLEAR = 5
-const val SOURCE_COUNT = 6
-
-// True for sources that populate the art grid; false for action-only sources.
-fun isDataSource(index: Int) = index !in listOf(SOURCE_LOCAL, SOURCE_CLEAR)
 
 // ── Unified artwork picker item ───────────────────────────────────────────────
 //
@@ -124,19 +105,8 @@ data class GameDetailUiState(
     val manualPageCount: Int = 0,
     val manualScrollSteps: Int = 0,
 
-    // ── XMB Artwork Manager ───────────────────────────────────────────────
-    val showArtworkManager: Boolean = false,
     // Fullscreen Artwork Studio (replaces the old in-detail artwork manager UI).
     val showArtworkStudio: Boolean = false,
-    val artworkTab: ArtworkType = ArtworkType.ICON,
-    val artworkFocus: ArtworkManagerFocus = ArtworkManagerFocus.TYPE_TABS,
-    val artworkSourceFocus: Int = SOURCE_SS,
-    val artworkPickerItems: List<ArtPickerItem> = emptyList(),   // shared grid for all data sources
-    val artworkPickerIndex: Int = 0,
-    val artworkPickerLoading: Boolean = false,
-    val artworkPickerError: String? = null,
-    val artworkPendingLocal: ArtworkType? = null,
-    val artworkIsProcessing: Boolean = false,
 
     // ── Emulator picker ───────────────────────────────────────────────────
     val showEmulatorPicker: Boolean = false,
@@ -157,12 +127,6 @@ data class GameDetailUiState(
         get() = if (isPackageBacked) DetailAction.entries.filter { it != DetailAction.EMULATOR }
                 else DetailAction.entries
 }
-
-// Keep old field names as transparent aliases so existing code compiles without changes.
-val GameDetailUiState.artworkSgdbItems   get() = artworkPickerItems
-val GameDetailUiState.artworkSgdbIndex   get() = artworkPickerIndex
-val GameDetailUiState.artworkSgdbLoading get() = artworkPickerLoading
-val GameDetailUiState.artworkSgdbError   get() = artworkPickerError
 
 private data class ResolvedLaunchProfile(
     val profile: EmulatorProfile,
@@ -202,11 +166,6 @@ class GameDetailViewModel @Inject constructor(
     private val profileRepository: EmulatorProfileRepository,
     private val intentResolver: EmulatorIntentResolver,
     private val artworkRepository: ArtworkRepository,
-    private val steamGridDb: SteamGridDbApi,
-    private val igdbApi: IgdbApi,
-    private val theGamesDb: TheGamesDbApi,
-    private val screenScraper: com.playfieldportal.feature.artwork.api.ScreenScraperApi,
-    private val romHasher: com.playfieldportal.feature.artwork.rom.RomHasher,
     private val artworkStore: ArtworkStore,
     private val artworkRecordDao: com.playfieldportal.core.data.database.dao.ArtworkRecordDao,
     private val menuSound: com.playfieldportal.core.ui.sound.MenuSoundPlayer,
@@ -228,7 +187,6 @@ class GameDetailViewModel @Inject constructor(
                 confirmRemove = false,
                 isEditingNote = false,
                 isEditingTitle = false,
-                showArtworkManager = false,
                 actionMessage = null,
                 launchError = null,
             )
@@ -245,7 +203,6 @@ class GameDetailViewModel @Inject constructor(
                     confirmRemove = false,
                     isEditingNote = false,
                     isEditingTitle = false,
-                    showArtworkManager = false,
                 )
             }
             val game     = gameRepository.getById(id)
@@ -282,7 +239,6 @@ class GameDetailViewModel @Inject constructor(
                     confirmRemove      = false,
                     isEditingNote      = false,
                     isEditingTitle     = false,
-                    showArtworkManager = false,
                     actionMessage      = null,
                     launchError        = null,
                     closed             = false,
@@ -343,11 +299,6 @@ class GameDetailViewModel @Inject constructor(
             return
         }
 
-        if (s.showArtworkManager) {
-            handleArtworkManagerInput(action)
-            return
-        }
-
         if (s.showOptions) {
             val actions = s.visibleActions
             val count = actions.size
@@ -405,101 +356,7 @@ class GameDetailViewModel @Inject constructor(
         }
     }
 
-    // ── Artwork Manager input routing ─────────────────────────────────────
-
-    private fun handleArtworkManagerInput(action: GamepadAction) {
-        val s = _uiState.value
-        when (s.artworkFocus) {
-            ArtworkManagerFocus.TYPE_TABS -> when (action) {
-                GamepadAction.NAVIGATE_LEFT  -> cycleArtworkTab(-1)
-                GamepadAction.NAVIGATE_RIGHT -> cycleArtworkTab(+1)
-                GamepadAction.NAVIGATE_DOWN,
-                GamepadAction.SELECT         -> artworkManagerFocusSourceRow()
-                GamepadAction.BACK           -> closeArtworkManager()
-                else -> Unit
-            }
-            ArtworkManagerFocus.SOURCE_ROW -> when (action) {
-                GamepadAction.NAVIGATE_LEFT  -> _uiState.update {
-                    it.copy(artworkSourceFocus = (it.artworkSourceFocus - 1).coerceIn(0, SOURCE_COUNT - 1))
-                }
-                GamepadAction.NAVIGATE_RIGHT -> _uiState.update {
-                    it.copy(artworkSourceFocus = (it.artworkSourceFocus + 1).coerceIn(0, SOURCE_COUNT - 1))
-                }
-                GamepadAction.NAVIGATE_UP    -> _uiState.update { it.copy(artworkFocus = ArtworkManagerFocus.TYPE_TABS) }
-                GamepadAction.NAVIGATE_DOWN  -> {
-                    if (isDataSource(s.artworkSourceFocus) && s.artworkPickerItems.isNotEmpty()) {
-                        _uiState.update { it.copy(artworkFocus = ArtworkManagerFocus.ART_GRID) }
-                    } else if (isDataSource(s.artworkSourceFocus)) {
-                        loadSourceForCurrentTab(s.artworkSourceFocus)
-                    }
-                }
-                GamepadAction.SELECT -> activateArtworkSource()
-                GamepadAction.BACK   -> _uiState.update { it.copy(artworkFocus = ArtworkManagerFocus.TYPE_TABS) }
-                else -> Unit
-            }
-            ArtworkManagerFocus.ART_GRID -> when (action) {
-                GamepadAction.NAVIGATE_LEFT  -> moveArtworkGridFocus(-1)
-                GamepadAction.NAVIGATE_RIGHT -> moveArtworkGridFocus(+1)
-                GamepadAction.NAVIGATE_UP    -> _uiState.update { it.copy(artworkFocus = ArtworkManagerFocus.SOURCE_ROW) }
-                GamepadAction.SELECT         -> pickFocusedArtwork()
-                GamepadAction.BACK           -> _uiState.update { it.copy(artworkFocus = ArtworkManagerFocus.SOURCE_ROW) }
-                else -> Unit
-            }
-        }
-    }
-
-    private fun cycleArtworkTab(delta: Int) {
-        val types = ArtworkType.entries
-        val current = _uiState.value.artworkTab
-        val next = types[(types.indexOf(current) + delta + types.size) % types.size]
-        _uiState.update {
-            it.copy(
-                artworkTab           = next,
-                artworkPickerItems   = emptyList(),
-                artworkPickerIndex   = 0,
-                artworkPickerError   = null,
-                artworkPickerLoading = false,
-                artworkFocus         = ArtworkManagerFocus.TYPE_TABS,
-            )
-        }
-    }
-
-    private fun artworkManagerFocusSourceRow() {
-        _uiState.update { it.copy(artworkFocus = ArtworkManagerFocus.SOURCE_ROW, artworkSourceFocus = SOURCE_SS) }
-    }
-
-    private fun moveArtworkGridFocus(delta: Int) {
-        val last = _uiState.value.artworkPickerItems.lastIndex
-        if (last < 0) return
-        _uiState.update { it.copy(artworkPickerIndex = (it.artworkPickerIndex + delta).coerceIn(0, last)) }
-    }
-
-    private fun activateArtworkSource() {
-        val s = _uiState.value
-        when (s.artworkSourceFocus) {
-            SOURCE_LOCAL -> _uiState.update { it.copy(artworkPendingLocal = it.artworkTab) }
-            SOURCE_CLEAR -> clearArtwork(s.artworkTab)
-            else         -> loadSourceForCurrentTab(s.artworkSourceFocus)
-        }
-    }
-
-    fun activateSourceAt(index: Int) {
-        _uiState.update { it.copy(artworkSourceFocus = index, artworkFocus = ArtworkManagerFocus.SOURCE_ROW) }
-        when (index) {
-            SOURCE_LOCAL -> _uiState.update { it.copy(artworkPendingLocal = it.artworkTab) }
-            SOURCE_CLEAR -> clearArtwork(_uiState.value.artworkTab)
-            else         -> loadSourceForCurrentTab(index)
-        }
-    }
-
-    private fun pickFocusedArtwork() {
-        val s = _uiState.value
-        if (s.artworkPickerItems.isEmpty()) return
-        val url = s.artworkPickerItems[s.artworkPickerIndex.coerceIn(0, s.artworkPickerItems.lastIndex)].url
-        pickSgdbArtwork(url, s.artworkTab)
-    }
-
-    // ── Artwork Manager open / close ──────────────────────────────────────
+    // ── Artwork Studio open / close ───────────────────────────────────────
 
     fun openArtworkManager() {
         // The legacy in-detail manager is retired — the fullscreen Artwork Studio replaces it.
@@ -511,395 +368,6 @@ class GameDetailViewModel @Inject constructor(
         _uiState.update { it.copy(showArtworkStudio = false) }
         val id = _uiState.value.game?.id ?: return
         loadGame(id)
-    }
-
-    fun closeArtworkManager() {
-        _uiState.update { it.copy(showArtworkManager = false, artworkPendingLocal = null) }
-    }
-
-    fun consumeArtworkLocalPick() {
-        _uiState.update { it.copy(artworkPendingLocal = null) }
-    }
-
-    fun setArtworkTab(type: ArtworkType) {
-        if (_uiState.value.artworkTab == type) return
-        _uiState.update {
-            it.copy(
-                artworkTab           = type,
-                artworkFocus         = ArtworkManagerFocus.TYPE_TABS,
-                artworkPickerItems   = emptyList(),
-                artworkPickerIndex   = 0,
-                artworkPickerError   = null,
-                artworkPickerLoading = false,
-            )
-        }
-    }
-
-    fun setArtworkSourceFocus(index: Int) {
-        _uiState.update { it.copy(artworkSourceFocus = index, artworkFocus = ArtworkManagerFocus.SOURCE_ROW) }
-    }
-
-    // ── Source loading ────────────────────────────────────────────────────
-
-    private fun loadSourceForCurrentTab(sourceIndex: Int) {
-        when (sourceIndex) {
-            SOURCE_SS   -> loadSsForCurrentTab()
-            SOURCE_SGDB -> loadSgdbForCurrentTab()
-            SOURCE_TGDB -> loadTgdbForCurrentTab()
-            SOURCE_IGDB -> loadIgdbForCurrentTab()
-        }
-    }
-
-    // ScreenScraper matches by hash+size+filename (or a known ssId from a previous match) —
-    // per-game, so the grid offers exactly this game's media, not a title-search guess.
-    private fun loadSsForCurrentTab() {
-        val game = _uiState.value.game ?: return
-        val type = _uiState.value.artworkTab
-        if (_uiState.value.artworkPickerLoading) return
-        viewModelScope.launch {
-            if (!screenScraper.isEnabled) {
-                _uiState.update {
-                    it.copy(
-                        artworkPickerError = "ScreenScraper: Not available in this build",
-                        artworkFocus       = ArtworkManagerFocus.SOURCE_ROW,
-                    )
-                }
-                return@launch
-            }
-
-            _uiState.update {
-                it.copy(
-                    artworkPickerLoading = true,
-                    artworkPickerItems   = emptyList(),
-                    artworkPickerError   = null,
-                    artworkFocus         = ArtworkManagerFocus.ART_GRID,
-                )
-            }
-
-            // A known ssId skips hashing entirely; otherwise identify the ROM payload.
-            val rom = if (game.ssId == null) romHasher.identify(game.romPath, game.romUri) else null
-            val result = runCatching { screenScraper.fetchGameInfo(game.platformId, rom, game.ssId) }
-                .onFailure { Timber.w(it, "ScreenScraper fetch failed for '${game.displayTitle}'") }
-                .getOrNull()
-            val info = result?.info
-
-            if (info == null) {
-                _uiState.update {
-                    it.copy(
-                        artworkPickerLoading = false,
-                        artworkPickerError   = "ScreenScraper: " +
-                            (result?.diagnostics?.failureDetail ?: "No match for \"${game.displayTitle}\""),
-                        artworkFocus         = ArtworkManagerFocus.SOURCE_ROW,
-                    )
-                }
-                return@launch
-            }
-
-            val items = buildList {
-                when (type) {
-                    ArtworkType.ICON, ArtworkType.BACKGROUND -> {
-                        info.artworkUrl?.let { add(ArtPickerItem(it, label = "Box Art")) }
-                        info.heroUrl?.let    { add(ArtPickerItem(it, label = "Fan Art")) }
-                        info.logoUrl?.let    { add(ArtPickerItem(it, label = "Wheel Logo")) }
-                    }
-                    ArtworkType.HERO -> {
-                        info.heroUrl?.let    { add(ArtPickerItem(it, label = "Fan Art")) }
-                        info.artworkUrl?.let { add(ArtPickerItem(it, label = "Box Art")) }
-                        info.logoUrl?.let    { add(ArtPickerItem(it, label = "Wheel Logo")) }
-                    }
-                }
-            }
-
-            if (items.isEmpty()) {
-                _uiState.update {
-                    it.copy(
-                        artworkPickerLoading = false,
-                        artworkPickerError   = "ScreenScraper: No artwork available for \"${game.displayTitle}\"",
-                        artworkFocus         = ArtworkManagerFocus.SOURCE_ROW,
-                    )
-                }
-                return@launch
-            }
-
-            _uiState.update {
-                it.copy(artworkPickerLoading = false, artworkPickerItems = items, artworkPickerIndex = 0)
-            }
-        }
-    }
-
-    fun loadSgdbForCurrentTab() {
-        val game = _uiState.value.game ?: return
-        val type = _uiState.value.artworkTab
-        if (_uiState.value.artworkPickerLoading) return
-        viewModelScope.launch {
-            _uiState.update {
-                it.copy(
-                    artworkPickerLoading = true,
-                    artworkPickerItems   = emptyList(),
-                    artworkPickerError   = null,
-                    artworkFocus         = ArtworkManagerFocus.ART_GRID,
-                )
-            }
-            val matches = steamGridDb.searchGame(game.displayTitle).getOrElse { e ->
-                _uiState.update {
-                    it.copy(
-                        artworkPickerLoading = false,
-                        artworkPickerError   = "SteamGridDB: Search failed: ${e.message}",
-                        artworkFocus         = ArtworkManagerFocus.SOURCE_ROW,
-                    )
-                }
-                return@launch
-            }
-            val sgdbGame = matches.firstOrNull() ?: run {
-                _uiState.update {
-                    it.copy(
-                        artworkPickerLoading = false,
-                        artworkPickerError   = "SteamGridDB: No results for \"${game.displayTitle}\"",
-                        artworkFocus         = ArtworkManagerFocus.SOURCE_ROW,
-                    )
-                }
-                return@launch
-            }
-            val arts = steamGridDb.getArt(sgdbGame.id, type.toSgdbArtType()).getOrElse { e ->
-                _uiState.update {
-                    it.copy(
-                        artworkPickerLoading = false,
-                        artworkPickerError   = "SteamGridDB: Could not load artwork: ${e.message}",
-                        artworkFocus         = ArtworkManagerFocus.SOURCE_ROW,
-                    )
-                }
-                return@launch
-            }
-            val items = arts.map { ArtPickerItem(url = it.url, thumbUrl = it.thumb) }
-            _uiState.update {
-                it.copy(artworkPickerLoading = false, artworkPickerItems = items, artworkPickerIndex = 0)
-            }
-        }
-    }
-
-    private fun loadIgdbForCurrentTab() {
-        val game = _uiState.value.game ?: return
-        val type = _uiState.value.artworkTab
-        if (_uiState.value.artworkPickerLoading) return
-        viewModelScope.launch {
-            if (!igdbApi.hasCredentials()) {
-                _uiState.update {
-                    it.copy(
-                        artworkPickerError   = "IGDB: No credentials configured — add them in Artwork Settings",
-                        artworkFocus         = ArtworkManagerFocus.SOURCE_ROW,
-                    )
-                }
-                return@launch
-            }
-
-            _uiState.update {
-                it.copy(
-                    artworkPickerLoading = true,
-                    artworkPickerItems   = emptyList(),
-                    artworkPickerError   = null,
-                    artworkFocus         = ArtworkManagerFocus.ART_GRID,
-                )
-            }
-
-            val info = runCatching {
-                igdbApi.fetchGameInfo(game.platformId, game.displayTitle)
-            }.onFailure { Timber.w(it, "IGDB fetch failed for '${game.displayTitle}'") }.getOrNull()
-
-            if (info == null) {
-                _uiState.update {
-                    it.copy(
-                        artworkPickerLoading = false,
-                        artworkPickerError   = "IGDB: No results for \"${game.displayTitle}\"",
-                        artworkFocus         = ArtworkManagerFocus.SOURCE_ROW,
-                    )
-                }
-                return@launch
-            }
-
-            val items = buildList {
-                when (type) {
-                    ArtworkType.ICON, ArtworkType.BACKGROUND -> {
-                        info.artworkUrl?.let { add(ArtPickerItem(it, label = "Cover Art")) }
-                        info.heroUrl?.let    { add(ArtPickerItem(it, label = "Screenshot")) }
-                    }
-                    ArtworkType.HERO -> {
-                        info.heroUrl?.let    { add(ArtPickerItem(it, label = "Screenshot")) }
-                        info.artworkUrl?.let { add(ArtPickerItem(it, label = "Cover Art")) }
-                    }
-                }
-            }
-
-            if (items.isEmpty()) {
-                _uiState.update {
-                    it.copy(
-                        artworkPickerLoading = false,
-                        artworkPickerError   = "IGDB: No artwork available for \"${game.displayTitle}\"",
-                        artworkFocus         = ArtworkManagerFocus.SOURCE_ROW,
-                    )
-                }
-                return@launch
-            }
-
-            _uiState.update {
-                it.copy(artworkPickerLoading = false, artworkPickerItems = items, artworkPickerIndex = 0)
-            }
-        }
-    }
-
-    private fun loadTgdbForCurrentTab() {
-        val game = _uiState.value.game ?: return
-        val type = _uiState.value.artworkTab
-        if (_uiState.value.artworkPickerLoading) return
-        viewModelScope.launch {
-            _uiState.update {
-                it.copy(
-                    artworkPickerLoading = true,
-                    artworkPickerItems   = emptyList(),
-                    artworkPickerError   = null,
-                    artworkFocus         = ArtworkManagerFocus.ART_GRID,
-                )
-            }
-
-            val info = runCatching {
-                theGamesDb.fetchGameInfo(platformId = game.platformId, title = game.displayTitle)
-            }.onFailure { Timber.w(it, "TheGamesDB fetch failed for '${game.displayTitle}'") }.getOrNull()
-
-            if (info == null) {
-                _uiState.update {
-                    it.copy(
-                        artworkPickerLoading = false,
-                        artworkPickerError   = "TheGamesDB: No results for \"${game.displayTitle}\"",
-                        artworkFocus         = ArtworkManagerFocus.SOURCE_ROW,
-                    )
-                }
-                return@launch
-            }
-
-            val items = buildList {
-                when (type) {
-                    ArtworkType.ICON, ArtworkType.BACKGROUND -> {
-                        info.artworkUrl?.let { add(ArtPickerItem(it, label = "Box Art")) }
-                        info.heroUrl?.let    { add(ArtPickerItem(it, label = "Fan Art")) }
-                        info.logoUrl?.let    { add(ArtPickerItem(it, label = "Clear Logo")) }
-                    }
-                    ArtworkType.HERO -> {
-                        info.heroUrl?.let    { add(ArtPickerItem(it, label = "Fan Art")) }
-                        info.artworkUrl?.let { add(ArtPickerItem(it, label = "Box Art")) }
-                        info.logoUrl?.let    { add(ArtPickerItem(it, label = "Clear Logo")) }
-                    }
-                }
-            }
-
-            if (items.isEmpty()) {
-                _uiState.update {
-                    it.copy(
-                        artworkPickerLoading = false,
-                        artworkPickerError   = "TheGamesDB: No artwork available for \"${game.displayTitle}\"",
-                        artworkFocus         = ArtworkManagerFocus.SOURCE_ROW,
-                    )
-                }
-                return@launch
-            }
-
-            _uiState.update {
-                it.copy(artworkPickerLoading = false, artworkPickerItems = items, artworkPickerIndex = 0)
-            }
-        }
-    }
-
-    // ── Artwork apply ─────────────────────────────────────────────────────
-
-    fun onArtworkLocalPicked(uri: Uri, type: ArtworkType) {
-        val gameId = _uiState.value.game?.id ?: return
-        viewModelScope.launch {
-            _uiState.update { it.copy(artworkIsProcessing = true, artworkMessage = null) }
-            val localPath = artworkStore.saveVersionedFromUri(gameId, type.toKind(), uri)
-            if (localPath == null) {
-                _uiState.update { it.copy(artworkIsProcessing = false, artworkMessage = "Could not copy image") }
-                return@launch
-            }
-            saveArtwork(gameId, type, localPath)
-            val updated = gameRepository.getById(gameId)
-            _uiState.update {
-                it.copy(
-                    game                = updated ?: it.game,
-                    mediaUris           = mediaOf(updated ?: it.game),
-                    artworkIsProcessing = false,
-                    artworkMessage      = "${type.displayLabel} updated",
-                )
-            }
-        }
-    }
-
-    fun onCustomArtworkPicked(uri: Uri, type: ArtworkType) = onArtworkLocalPicked(uri, type)
-
-    fun pickSgdbArtwork(url: String, type: ArtworkType) {
-        val game = _uiState.value.game ?: return
-        viewModelScope.launch {
-            _uiState.update {
-                it.copy(
-                    artworkIsProcessing  = true,
-                    artworkPickerItems   = emptyList(),
-                    artworkFocus         = ArtworkManagerFocus.SOURCE_ROW,
-                )
-            }
-            val localPath = artworkStore.saveVersionedFromUrl(game.id, type.toKind(), url)
-            if (localPath == null) {
-                _uiState.update {
-                    it.copy(artworkIsProcessing = false, artworkMessage = "Could not import ${type.displayLabel}")
-                }
-                return@launch
-            }
-            saveArtwork(game.id, type, localPath)
-            val updated = gameRepository.getById(game.id)
-            _uiState.update {
-                it.copy(
-                    game                = updated ?: it.game,
-                    mediaUris           = mediaOf(updated ?: it.game),
-                    artworkIsProcessing = false,
-                    artworkMessage      = "${type.displayLabel} updated",
-                )
-            }
-        }
-    }
-
-    fun clearArtwork(type: ArtworkType) {
-        val gameId = _uiState.value.game?.id ?: return
-        viewModelScope.launch {
-            when (type) {
-                ArtworkType.ICON       -> gameRepository.updateIconArt(gameId, null)
-                ArtworkType.HERO       -> gameRepository.updateHeroArt(gameId, null)
-                ArtworkType.BACKGROUND -> gameRepository.updateBoxArt(gameId, null)
-            }
-            val updated = gameRepository.getById(gameId)
-            _uiState.update {
-                it.copy(
-                    game          = updated ?: it.game,
-                    mediaUris     = mediaOf(updated ?: it.game),
-                    artworkMessage = "${type.displayLabel} cleared",
-                )
-            }
-        }
-    }
-
-    private suspend fun saveArtwork(gameId: Long, type: ArtworkType, path: String) {
-        when (type) {
-            ArtworkType.ICON       -> gameRepository.updateIconArt(gameId, path)
-            ArtworkType.HERO       -> gameRepository.updateHeroArt(gameId, path)
-            ArtworkType.BACKGROUND -> gameRepository.updateBoxArt(gameId, path)
-        }
-    }
-
-    private fun ArtworkType.toSgdbArtType() = when (this) {
-        ArtworkType.ICON       -> SgdbArtType.GRID
-        ArtworkType.HERO       -> SgdbArtType.HERO
-        ArtworkType.BACKGROUND -> SgdbArtType.HERO
-    }
-
-    private fun ArtworkType.toKind() = when (this) {
-        ArtworkType.ICON       -> ArtworkKind.ICON
-        ArtworkType.HERO       -> ArtworkKind.HERO
-        ArtworkType.BACKGROUND -> ArtworkKind.BACKGROUND
     }
 
     // ── Options menu ──────────────────────────────────────────────────────
