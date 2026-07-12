@@ -5,6 +5,8 @@ All notable changes to Play Field Portal are documented here. This project follo
 
 ## [Unreleased]
 
+## [1.0.4] - 2026-07-12
+
 ### Added
 - **Game Detail upgrades.** The action row is now Launch (renamed from Play) plus four
   square buttons: **Video** (plays the game's snap — external player if one is pinned in
