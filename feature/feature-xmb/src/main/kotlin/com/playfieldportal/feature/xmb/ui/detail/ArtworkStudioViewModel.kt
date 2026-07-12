@@ -80,7 +80,10 @@ data class ArtworkStudioUiState(
     val info: StudioArtworkInfo? = null,
     val showFileInfo: Boolean = false,
     // Crop editor (task: crop/position) — non-null path = editing the untouched original.
+    // For ICON1 the path is a still frame extracted for framing; the video to re-encode is
+    // held in cropVideoSourcePath.
     val cropEditorPath: String? = null,
+    val cropVideoSourcePath: String? = null,
     val cropPreparing: Boolean = false,
     val cropSrcW: Int = 0,
     val cropSrcH: Int = 0,
@@ -115,11 +118,12 @@ enum class StudioAction(val label: String) {
     FILE_INFO("View File Information"),
 }
 
-// Image kinds where a crop frame is meaningful (not PDF/video, not ICON1 snap).
+// Kinds where a crop frame is meaningful. ICON1 (icon-slot video snap) is included — its crop
+// re-encodes the video; the rest are stills. PDF manuals and full VIDEO are not croppable.
 val CROPPABLE_KINDS = setOf(
-    ArtworkKind.ICON, ArtworkKind.BOX_ART, ArtworkKind.BOX_3D, ArtworkKind.PHYSICAL_MEDIA,
-    ArtworkKind.HERO, ArtworkKind.BACKGROUND, ArtworkKind.LOGO, ArtworkKind.SCREENSHOT,
-    ArtworkKind.TITLESCREEN,
+    ArtworkKind.ICON, ArtworkKind.ICON1, ArtworkKind.BOX_ART, ArtworkKind.BOX_3D,
+    ArtworkKind.PHYSICAL_MEDIA, ArtworkKind.HERO, ArtworkKind.BACKGROUND, ArtworkKind.LOGO,
+    ArtworkKind.SCREENSHOT, ArtworkKind.TITLESCREEN,
 )
 
 typealias StudioArtworkInfo = com.playfieldportal.feature.artwork.store.StudioArtworkInfo
@@ -180,6 +184,7 @@ class ArtworkStudioViewModel @Inject constructor(
     private val sgdbKeyProvider: SgdbApiKeyProvider,
     private val theGamesDb: com.playfieldportal.feature.artwork.TheGamesDbApi,
     private val igdbApi: com.playfieldportal.feature.artwork.api.IgdbApi,
+    private val videoSnapTranscoder: com.playfieldportal.feature.artwork.video.VideoSnapTranscoder,
 ) : ViewModel() {
 
     private val appCacheDir: java.io.File get() = appContext.cacheDir
@@ -576,7 +581,9 @@ class ArtworkStudioViewModel @Inject constructor(
 
     // ── Crop / position editor (pass 2) ─────────────────────────────────────────
 
-    /** Loads the untouched original to a temp file and opens the crop editor over it. */
+    /** Loads the untouched original to a temp file and opens the crop editor over it. For
+     *  ICON1 the original is a video: a still frame is extracted for framing and the video is
+     *  kept for re-encoding on apply. */
     private fun beginCrop() {
         val kind = tab().kind
         viewModelScope.launch {
@@ -586,13 +593,26 @@ class ArtworkStudioViewModel @Inject constructor(
                 _uiState.update { it.copy(cropPreparing = false, message = "Could not open the original to crop") }
                 return@launch
             }
-            val (w, h) = withContext(kotlinx.coroutines.Dispatchers.IO) { decodeBounds(original) }
-            // Seed the frame from the previously-saved crop if there is one, else full/centered.
+            val prepared = withContext(kotlinx.coroutines.Dispatchers.IO) {
+                if (isVideoKind(kind)) {
+                    val frame = extractVideoFrame(original)
+                    if (frame == null) { original.delete(); null }
+                    else Triple(frame.first.absolutePath, original.absolutePath, frame.second to frame.third)
+                } else {
+                    val (w, h) = decodeBounds(original)
+                    Triple(original.absolutePath, null, w to h)
+                }
+            }
+            if (prepared == null) {
+                _uiState.update { it.copy(cropPreparing = false, message = "Could not open the original to crop") }
+                return@launch
+            }
+            val (displayPath, videoPath, dims) = prepared
             val seed = _uiState.value.info?.cropRect?.let { parseCropRect(it) }
             _uiState.update {
                 it.copy(
-                    cropPreparing = false, cropEditorPath = original.absolutePath,
-                    cropSrcW = w, cropSrcH = h, cropZoom = 1f,
+                    cropPreparing = false, cropEditorPath = displayPath, cropVideoSourcePath = videoPath,
+                    cropSrcW = dims.first, cropSrcH = dims.second, cropZoom = 1f,
                     cropCenterX = seed?.let { r -> (r[0] + r[2]) / 2f } ?: 0.5f,
                     cropCenterY = seed?.let { r -> (r[1] + r[3]) / 2f } ?: 0.5f,
                 )
@@ -601,12 +621,32 @@ class ArtworkStudioViewModel @Inject constructor(
         }
     }
 
+    private fun isVideoKind(kind: ArtworkKind) = kind == ArtworkKind.ICON1 || kind == ArtworkKind.VIDEO
+
     private fun cropTargetAspect(kind: ArtworkKind, srcAspect: Float): Float = when (kind) {
-        ArtworkKind.ICON       -> 144f / 80f
+        ArtworkKind.ICON,
+        ArtworkKind.ICON1      -> 144f / 80f     // XMB tile container
         ArtworkKind.HERO       -> 920f / 430f
         ArtworkKind.BACKGROUND -> 16f / 9f
         else                   -> srcAspect        // free crop: keep the source's proportions
     }
+
+    /** First video frame as a PNG temp + its (w, h), for the crop editor's framing preview. */
+    private fun extractVideoFrame(video: java.io.File): Triple<java.io.File, Int, Int>? = runCatching {
+        val retriever = android.media.MediaMetadataRetriever()
+        try {
+            retriever.setDataSource(video.absolutePath)
+            val frame = retriever.getFrameAtTime(0, android.media.MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
+                ?: return null
+            val out = java.io.File.createTempFile("studio_frame_", ".png", appCacheDir)
+            out.outputStream().use { frame.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+            val dims = Triple(out, frame.width, frame.height)
+            frame.recycle()
+            dims
+        } finally {
+            runCatching { retriever.release() }
+        }
+    }.onFailure { Timber.w(it, "Video frame extraction failed") }.getOrNull()
 
     /** Recomputes the normalized crop window from zoom/center + per-kind aspect, clamped inside. */
     private fun recomputeCropRect() = _uiState.update { s ->
@@ -635,18 +675,26 @@ class ArtworkStudioViewModel @Inject constructor(
         recomputeCropRect()
     }
 
-    /** Bakes the current crop window out of the loaded original and stores it as the new file. */
+    /** Bakes the current crop window and stores it — a PNG region for stills, a re-encoded clip
+     *  for ICON1 videos — keeping the untouched original for future re-crops. */
     fun applyCrop() {
         val kind = tab().kind
         val s = _uiState.value
-        val srcPath = s.cropEditorPath ?: return
+        val displayPath = s.cropEditorPath ?: return
+        val videoPath = s.cropVideoSourcePath
         val l = s.cropL; val t = s.cropT; val r = s.cropR; val b = s.cropB
         viewModelScope.launch {
-            _uiState.update { it.copy(applying = true, cropEditorPath = null) }
-            val baked = withContext(kotlinx.coroutines.Dispatchers.IO) {
-                bakeCrop(java.io.File(srcPath), l, t, r, b)
+            _uiState.update { it.copy(applying = true, cropEditorPath = null, cropVideoSourcePath = null) }
+            val baked = if (videoPath != null) {
+                // ICON1: re-encode the video cropped to the frame (Media3 Transformer + Crop).
+                val out = java.io.File.createTempFile("studio_crop_", ".mp4", appCacheDir)
+                val ok = videoSnapTranscoder.transcodeCropped(java.io.File(videoPath), out, l, t, r, b)
+                java.io.File(videoPath).delete()
+                if (ok) out else { out.delete(); null }
+            } else {
+                withContext(kotlinx.coroutines.Dispatchers.IO) { bakeCrop(java.io.File(displayPath), l, t, r, b) }
             }
-            java.io.File(srcPath).delete()
+            java.io.File(displayPath).delete()
             if (baked == null) {
                 _uiState.update { it.copy(applying = false, message = "Crop failed") }
                 return@launch
@@ -654,7 +702,7 @@ class ArtworkStudioViewModel @Inject constructor(
             val rect = "%.4f,%.4f,%.4f,%.4f".format(java.util.Locale.US, l, t, r, b)
             val path = routingStore.saveCropBaked(gameId, kind, baked, rect)
             if (path == null) {
-                _uiState.update { it.copy(applying = false, message = "Could not save the cropped image") }
+                _uiState.update { it.copy(applying = false, message = "Could not save the cropped artwork") }
             } else {
                 repointColumn(kind, path)
                 _uiState.update {
@@ -666,8 +714,10 @@ class ArtworkStudioViewModel @Inject constructor(
     }
 
     fun cancelCrop() {
-        _uiState.value.cropEditorPath?.let { runCatching { java.io.File(it).delete() } }
-        _uiState.update { it.copy(cropEditorPath = null) }
+        val s = _uiState.value
+        s.cropEditorPath?.let { runCatching { java.io.File(it).delete() } }
+        s.cropVideoSourcePath?.let { runCatching { java.io.File(it).delete() } }
+        _uiState.update { it.copy(cropEditorPath = null, cropVideoSourcePath = null) }
     }
 
     private fun decodeBounds(file: java.io.File): Pair<Int, Int> {

@@ -45,6 +45,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.ui.input.pointer.pointerInput
+import kotlin.math.roundToInt
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -664,6 +665,17 @@ private fun StudioCropEditor(
     onCancel: () -> Unit,
 ) {
     val accent = menuCursorEdge()
+    // The image transform behind the fixed frame is fully described by the current crop window;
+    // rememberUpdatedState keeps the gesture loop reading the LATEST values mid-drag.
+    val geom = androidx.compose.runtime.rememberUpdatedState(
+        CropGeom(srcW, srcH, cropL, cropT, cropR, cropB)
+    )
+    var bmp by remember(path) { mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
+    LaunchedEffect(path) {
+        bmp = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            decodeDisplayBitmap(path)?.asImageBitmap()
+        }
+    }
     Box(
         Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.96f)),
         contentAlignment = Alignment.Center,
@@ -671,44 +683,56 @@ private fun StudioCropEditor(
         Column(Modifier.fillMaxSize().padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Text("ADJUST CROP / POSITION", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(10.dp))
-            // The image + crop mask. Pan/pinch gestures map directly to normalized pan/zoom.
+            // Fixed centered frame; the image pans and scales behind it (avatar-crop model).
             Box(
                 Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .pointerInputCrop(onPan, onZoom),
+                    .pointerInput(Unit) {
+                        detectTransformGestures { _, pan, zoom, _ ->
+                            val g = geom.value
+                            val (fw, fh) = frameSizeFor(g, size.width.toFloat(), size.height.toFloat())
+                            val imgDispW = fw / (g.cropR - g.cropL).coerceAtLeast(0.0001f)
+                            val imgDispH = fh / (g.cropB - g.cropT).coerceAtLeast(0.0001f)
+                            // Frame is fixed: dragging the image right shifts the framed region left.
+                            if (pan.x != 0f || pan.y != 0f) onPan(-pan.x / imgDispW, -pan.y / imgDispH)
+                            if (zoom != 1f) onZoom(zoom)
+                        }
+                    },
                 contentAlignment = Alignment.Center,
             ) {
-                AsyncImage(
-                    model = coil.request.ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
-                        .data(java.io.File(path)).size(coil.size.Size.ORIGINAL).build(),
-                    contentDescription = null,
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier.fillMaxSize(),
-                )
-                // Crop window drawn inside the image's fitted (letterboxed) rect so the frame
-                // tracks the visible pixels even when image and box aspects differ.
-                androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
-                    val bw = size.width; val bh = size.height
-                    val srcAspect = if (srcW > 0 && srcH > 0) srcW.toFloat() / srcH else bw / bh
-                    // Aspect-fit the image into the box → displayed rect (fx, fy, fw, fh).
-                    val fw: Float; val fh: Float
-                    if (bw / bh > srcAspect) { fh = bh; fw = bh * srcAspect } else { fw = bw; fh = bw / srcAspect }
-                    val fx = (bw - fw) / 2f; val fy = (bh - fh) / 2f
-                    val rl = fx + cropL * fw; val rt = fy + cropT * fh
-                    val rr = fx + cropR * fw; val rb = fy + cropB * fh
-                    val dim = Color.Black.copy(alpha = 0.55f)
-                    // Dim the fitted-image area outside the crop window (letterbox stays black).
-                    drawRect(dim, topLeft = androidx.compose.ui.geometry.Offset(fx, fy), size = androidx.compose.ui.geometry.Size(fw, rt - fy))
-                    drawRect(dim, topLeft = androidx.compose.ui.geometry.Offset(fx, rb), size = androidx.compose.ui.geometry.Size(fw, fy + fh - rb))
-                    drawRect(dim, topLeft = androidx.compose.ui.geometry.Offset(fx, rt), size = androidx.compose.ui.geometry.Size(rl - fx, rb - rt))
-                    drawRect(dim, topLeft = androidx.compose.ui.geometry.Offset(rr, rt), size = androidx.compose.ui.geometry.Size(fx + fw - rr, rb - rt))
-                    drawRect(
-                        accent,
-                        topLeft = androidx.compose.ui.geometry.Offset(rl, rt),
-                        size = androidx.compose.ui.geometry.Size(rr - rl, rb - rt),
-                        style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f),
-                    )
+                val image = bmp
+                if (image == null) {
+                    CircularProgressIndicator(color = accent)
+                } else {
+                    androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+                        val g = geom.value
+                        val (fw, fh) = frameSizeFor(g, size.width, size.height)
+                        val fx = (size.width - fw) / 2f; val fy = (size.height - fh) / 2f
+                        // Scale the image so the crop window maps exactly onto the fixed frame.
+                        val imgDispW = fw / (cropR - cropL).coerceAtLeast(0.0001f)
+                        val imgDispH = fh / (cropB - cropT).coerceAtLeast(0.0001f)
+                        val imgLeft = fx - cropL * imgDispW
+                        val imgTop = fy - cropT * imgDispH
+                        drawImage(
+                            image = image,
+                            dstOffset = androidx.compose.ui.unit.IntOffset(imgLeft.roundToInt(), imgTop.roundToInt()),
+                            dstSize = androidx.compose.ui.unit.IntSize(imgDispW.roundToInt(), imgDispH.roundToInt()),
+                        )
+                        // Dim everything outside the fixed frame.
+                        val dim = Color.Black.copy(alpha = 0.62f)
+                        val W = size.width; val H = size.height
+                        drawRect(dim, size = androidx.compose.ui.geometry.Size(W, fy))
+                        drawRect(dim, topLeft = androidx.compose.ui.geometry.Offset(0f, fy + fh), size = androidx.compose.ui.geometry.Size(W, H - fy - fh))
+                        drawRect(dim, topLeft = androidx.compose.ui.geometry.Offset(0f, fy), size = androidx.compose.ui.geometry.Size(fx, fh))
+                        drawRect(dim, topLeft = androidx.compose.ui.geometry.Offset(fx + fw, fy), size = androidx.compose.ui.geometry.Size(W - fx - fw, fh))
+                        drawRect(
+                            accent,
+                            topLeft = androidx.compose.ui.geometry.Offset(fx, fy),
+                            size = androidx.compose.ui.geometry.Size(fw, fh),
+                            style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f),
+                        )
+                    }
                 }
             }
             Spacer(Modifier.height(12.dp))
@@ -730,7 +754,7 @@ private fun StudioCropEditor(
                 )
             }
             Text(
-                "D-Pad — move   ·   LB / RB — zoom   ·   drag / pinch on touch",
+                "drag to move the image   ·   pinch to zoom   ·   D-Pad move   ·   LB / RB zoom",
                 color = Color.White.copy(alpha = 0.35f), fontSize = 10.sp,
                 modifier = Modifier.padding(top = 8.dp),
             )
@@ -738,18 +762,31 @@ private fun StudioCropEditor(
     }
 }
 
-// Touch pan (drag) + pinch (zoom) mapped to normalized ViewModel deltas.
-@OptIn(ExperimentalFoundationApi::class)
-private fun Modifier.pointerInputCrop(onPan: (Float, Float) -> Unit, onZoom: (Float) -> Unit): Modifier =
-    this.pointerInput(Unit) {
-        detectTransformGestures { _, pan, zoom, _ ->
-            if (pan.x != 0f || pan.y != 0f) {
-                // Drag the frame with the finger (finger right → frame moves right).
-                onPan(pan.x / size.width, pan.y / size.height)
-            }
-            if (zoom != 1f) onZoom(zoom)
-        }
-    }
+// Current crop window + source dimensions — everything the fixed-frame render/gesture needs.
+private data class CropGeom(
+    val srcW: Int, val srcH: Int,
+    val cropL: Float, val cropT: Float, val cropR: Float, val cropB: Float,
+)
+
+// The fixed frame's on-screen size: the crop window's aspect, fit to ~82% of the editor area.
+private fun frameSizeFor(g: CropGeom, areaW: Float, areaH: Float): Pair<Float, Float> {
+    val cw = (g.cropR - g.cropL).coerceAtLeast(0.0001f)
+    val ch = (g.cropB - g.cropT).coerceAtLeast(0.0001f)
+    val frameAspect = (cw * g.srcW) / (ch * g.srcH)
+    val fw = if (frameAspect > areaW / areaH) 0.82f * areaW else 0.82f * areaH * frameAspect
+    return fw to (fw / frameAspect)
+}
+
+// Decodes [path] downscaled to a display-friendly size (bake still reads the full original).
+private fun decodeDisplayBitmap(path: String): android.graphics.Bitmap? {
+    val bounds = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    android.graphics.BitmapFactory.decodeFile(path, bounds)
+    var sample = 1
+    val maxDim = 1600
+    while (bounds.outWidth / sample > maxDim || bounds.outHeight / sample > maxDim) sample *= 2
+    val opts = android.graphics.BitmapFactory.Options().apply { inSampleSize = sample }
+    return android.graphics.BitmapFactory.decodeFile(path, opts)
+}
 
 // Small muted looping preview inside a grid tile — plays only while the tile is focused
 // (controller) or long-pressed (touch), so at most one decoder ever runs. TextureView, not
