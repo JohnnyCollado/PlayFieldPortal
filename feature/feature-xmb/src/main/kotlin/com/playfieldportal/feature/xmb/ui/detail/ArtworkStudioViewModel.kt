@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -73,10 +74,58 @@ data class ArtworkStudioUiState(
     val message: String? = null,
     // Set when the user picked "Local File" — the screen launches the SAF picker for it.
     val localPickKind: ArtworkKind? = null,
+    // Actions menu (LONG_PRESS / on-screen ACTIONS) — operates on the active tab's current slot.
+    val actionsOpen: Boolean = false,
+    val actionsIndex: Int = 0,
+    val info: StudioArtworkInfo? = null,
+    val showFileInfo: Boolean = false,
+    // Crop editor (task: crop/position) — non-null path = editing the untouched original.
+    val cropEditorPath: String? = null,
+    val cropPreparing: Boolean = false,
+    val cropSrcW: Int = 0,
+    val cropSrcH: Int = 0,
+    val cropZoom: Float = 1f,
+    val cropCenterX: Float = 0.5f,
+    val cropCenterY: Float = 0.5f,
+    // Computed normalized crop window (0..1) — the UI draws the frame from these.
+    val cropL: Float = 0f,
+    val cropT: Float = 0f,
+    val cropR: Float = 1f,
+    val cropB: Float = 1f,
     val closed: Boolean = false,
+) {
+    /** Actions that make sense for the current slot, in menu order. Empty entries are hidden. */
+    val availableActions: List<StudioAction>
+        get() = buildList {
+            val kind = STUDIO_TABS.getOrNull(tabIndex)?.kind
+            val hasCurrent = currentUri != null
+            if (hasCurrent && kind != null && kind in CROPPABLE_KINDS) add(StudioAction.CROP)
+            if (info?.hasPrevious == true) add(StudioAction.RESTORE_PREVIOUS)
+            if (info?.originUrl != null) add(StudioAction.RESET_DEFAULT)
+            if (hasCurrent) add(StudioAction.CLEAR)
+            if (hasCurrent) add(StudioAction.FILE_INFO)
+        }
+}
+
+enum class StudioAction(val label: String) {
+    CROP("Adjust Crop / Position"),
+    RESTORE_PREVIOUS("Restore Previous"),
+    RESET_DEFAULT("Reset to Scraped Default"),
+    CLEAR("Clear Artwork"),
+    FILE_INFO("View File Information"),
+}
+
+// Image kinds where a crop frame is meaningful (not PDF/video, not ICON1 snap).
+val CROPPABLE_KINDS = setOf(
+    ArtworkKind.ICON, ArtworkKind.BOX_ART, ArtworkKind.BOX_3D, ArtworkKind.PHYSICAL_MEDIA,
+    ArtworkKind.HERO, ArtworkKind.BACKGROUND, ArtworkKind.LOGO, ArtworkKind.SCREENSHOT,
+    ArtworkKind.TITLESCREEN,
 )
 
+typealias StudioArtworkInfo = com.playfieldportal.feature.artwork.store.StudioArtworkInfo
+
 private const val PAGE_SIZE = 20
+private const val CROP_PAN_STEP = 0.03f
 
 // SS media types browsable per destination (order = preference; all variants are listed).
 // ICON0 has no exact SS equivalent — the landscape "mix" composites and screen-marquee come
@@ -124,6 +173,8 @@ class ArtworkStudioViewModel @Inject constructor(
     @dagger.hilt.android.qualifiers.ApplicationContext private val appContext: android.content.Context,
     private val gameRepository: GameRepository,
     private val artworkStore: ArtworkStore,
+    // Concrete store for the pass-2 record-driven ops (provenance, restore, reset, crop, info).
+    private val routingStore: com.playfieldportal.feature.artwork.store.RoutingArtworkStore,
     private val ssMediaCatalog: com.playfieldportal.feature.artwork.api.SsMediaCatalog,
     private val steamGridDb: SteamGridDbApi,
     private val sgdbKeyProvider: SgdbApiKeyProvider,
@@ -424,7 +475,22 @@ class ArtworkStudioViewModel @Inject constructor(
         val kind = tab().kind
         viewModelScope.launch {
             _uiState.update { it.copy(applying = true) }
-            val path = artworkStore.saveVersionedFromUri(gameId, kind, uri)
+            // Copy the picked document to a temp so the store can record provenance + back up.
+            val tmp = withContext(kotlinx.coroutines.Dispatchers.IO) {
+                runCatching {
+                    val suffix = "." + (appContext.contentResolver.getType(uri)?.substringAfterLast('/') ?: "bin")
+                    java.io.File.createTempFile("studio_local_", suffix, appCacheDir).also { f ->
+                        appContext.contentResolver.openInputStream(uri)?.use { input ->
+                            f.outputStream().use { input.copyTo(it) }
+                        } ?: run { f.delete(); return@runCatching null }
+                    }
+                }.getOrNull()
+            }
+            val path = if (tmp != null) {
+                routingStore.studioApplyFromFile(gameId, kind, tmp, provider = "Local file", originUrl = null)
+            } else {
+                artworkStore.saveVersionedFromUri(gameId, kind, uri)
+            }
             finishApply(kind, path, "Local file")
         }
     }
@@ -437,12 +503,210 @@ class ArtworkStudioViewModel @Inject constructor(
             _uiState.update { it.copy(applying = true) }
             // A previewed manual is already on disk — store that file instead of re-downloading.
             val path = if (kind == ArtworkKind.MANUAL && manualFile?.exists() == true) {
-                artworkStore.saveFromFile(gameId, kind, manualFile)   // consumes the temp file
+                routingStore.studioApplyFromFile(gameId, kind, manualFile, provider = art.provider, originUrl = art.url)
             } else {
-                artworkStore.saveVersionedFromUrl(gameId, kind, art.url)
+                routingStore.studioApplyFromUrl(gameId, kind, art.url, provider = art.provider)
             }
             _uiState.update { it.copy(candidateManualPath = null) }
             finishApply(kind, path, art.provider)
+        }
+    }
+
+    // ── Actions menu (pass 2) ───────────────────────────────────────────────────
+
+    /** Opens the per-slot actions menu, loading the record so availability is accurate. */
+    fun openActions() {
+        if (_uiState.value.currentUri == null) return
+        viewModelScope.launch {
+            val info = routingStore.studioInfo(gameId, tab().kind)
+            _uiState.update { it.copy(info = info, actionsOpen = true, actionsIndex = 0, showFileInfo = false) }
+        }
+    }
+
+    fun closeActions() = _uiState.update { it.copy(actionsOpen = false, showFileInfo = false) }
+
+    private fun moveActionsCursor(delta: Int) = _uiState.update {
+        val n = it.availableActions.size
+        if (n == 0) it else it.copy(actionsIndex = (it.actionsIndex + delta).mod(n))
+    }
+
+    fun runAction(action: StudioAction) {
+        when (action) {
+            StudioAction.CROP             -> beginCrop()
+            StudioAction.RESTORE_PREVIOUS -> restorePrevious()
+            StudioAction.RESET_DEFAULT    -> resetToScrapedDefault()
+            StudioAction.CLEAR            -> { closeActions(); clearCurrent() }
+            StudioAction.FILE_INFO        -> _uiState.update { it.copy(showFileInfo = true) }
+        }
+    }
+
+    private fun restorePrevious() {
+        val kind = tab().kind
+        viewModelScope.launch {
+            _uiState.update { it.copy(applying = true, actionsOpen = false) }
+            val path = routingStore.restorePrevious(gameId, kind)
+            if (path == null) {
+                _uiState.update { it.copy(applying = false, message = "No previous version to restore") }
+            } else {
+                repointColumn(kind, path)
+                _uiState.update {
+                    it.copy(applying = false, currentUri = path, previewVersion = it.previewVersion + 1,
+                        message = "${tab().label} restored to previous")
+                }
+            }
+        }
+    }
+
+    private fun resetToScrapedDefault() {
+        val kind = tab().kind
+        viewModelScope.launch {
+            _uiState.update { it.copy(applying = true, actionsOpen = false) }
+            val path = routingStore.resetToScrapedDefault(gameId, kind)
+            if (path == null) {
+                _uiState.update { it.copy(applying = false, message = "Could not re-download the scraped default") }
+            } else {
+                repointColumn(kind, path)
+                _uiState.update {
+                    it.copy(applying = false, currentUri = path, previewVersion = it.previewVersion + 1,
+                        message = "${tab().label} reset to scraped default")
+                }
+            }
+        }
+    }
+
+    // ── Crop / position editor (pass 2) ─────────────────────────────────────────
+
+    /** Loads the untouched original to a temp file and opens the crop editor over it. */
+    private fun beginCrop() {
+        val kind = tab().kind
+        viewModelScope.launch {
+            _uiState.update { it.copy(actionsOpen = false, cropPreparing = true) }
+            val original = routingStore.originalToTemp(gameId, kind)
+            if (original == null) {
+                _uiState.update { it.copy(cropPreparing = false, message = "Could not open the original to crop") }
+                return@launch
+            }
+            val (w, h) = withContext(kotlinx.coroutines.Dispatchers.IO) { decodeBounds(original) }
+            // Seed the frame from the previously-saved crop if there is one, else full/centered.
+            val seed = _uiState.value.info?.cropRect?.let { parseCropRect(it) }
+            _uiState.update {
+                it.copy(
+                    cropPreparing = false, cropEditorPath = original.absolutePath,
+                    cropSrcW = w, cropSrcH = h, cropZoom = 1f,
+                    cropCenterX = seed?.let { r -> (r[0] + r[2]) / 2f } ?: 0.5f,
+                    cropCenterY = seed?.let { r -> (r[1] + r[3]) / 2f } ?: 0.5f,
+                )
+            }
+            recomputeCropRect()
+        }
+    }
+
+    private fun cropTargetAspect(kind: ArtworkKind, srcAspect: Float): Float = when (kind) {
+        ArtworkKind.ICON       -> 144f / 80f
+        ArtworkKind.HERO       -> 920f / 430f
+        ArtworkKind.BACKGROUND -> 16f / 9f
+        else                   -> srcAspect        // free crop: keep the source's proportions
+    }
+
+    /** Recomputes the normalized crop window from zoom/center + per-kind aspect, clamped inside. */
+    private fun recomputeCropRect() = _uiState.update { s ->
+        if (s.cropSrcW <= 0 || s.cropSrcH <= 0) return@update s
+        val srcAspect = s.cropSrcW.toFloat() / s.cropSrcH
+        val target = cropTargetAspect(tab().kind, srcAspect)
+        // Largest target-aspect window fitting the source at zoom=1, then shrunk by zoom.
+        var wN: Float; var hN: Float
+        if (target >= srcAspect) { wN = 1f; hN = srcAspect / target } else { hN = 1f; wN = target / srcAspect }
+        wN /= s.cropZoom; hN /= s.cropZoom
+        val cx = s.cropCenterX.coerceIn(wN / 2f, 1f - wN / 2f)
+        val cy = s.cropCenterY.coerceIn(hN / 2f, 1f - hN / 2f)
+        s.copy(
+            cropCenterX = cx, cropCenterY = cy,
+            cropL = cx - wN / 2f, cropT = cy - hN / 2f, cropR = cx + wN / 2f, cropB = cy + hN / 2f,
+        )
+    }
+
+    fun panCrop(dx: Float, dy: Float) {
+        _uiState.update { it.copy(cropCenterX = (it.cropCenterX + dx), cropCenterY = (it.cropCenterY + dy)) }
+        recomputeCropRect()
+    }
+
+    fun zoomCrop(factor: Float) {
+        _uiState.update { it.copy(cropZoom = (it.cropZoom * factor).coerceIn(1f, 6f)) }
+        recomputeCropRect()
+    }
+
+    /** Bakes the current crop window out of the loaded original and stores it as the new file. */
+    fun applyCrop() {
+        val kind = tab().kind
+        val s = _uiState.value
+        val srcPath = s.cropEditorPath ?: return
+        val l = s.cropL; val t = s.cropT; val r = s.cropR; val b = s.cropB
+        viewModelScope.launch {
+            _uiState.update { it.copy(applying = true, cropEditorPath = null) }
+            val baked = withContext(kotlinx.coroutines.Dispatchers.IO) {
+                bakeCrop(java.io.File(srcPath), l, t, r, b)
+            }
+            java.io.File(srcPath).delete()
+            if (baked == null) {
+                _uiState.update { it.copy(applying = false, message = "Crop failed") }
+                return@launch
+            }
+            val rect = "%.4f,%.4f,%.4f,%.4f".format(java.util.Locale.US, l, t, r, b)
+            val path = routingStore.saveCropBaked(gameId, kind, baked, rect)
+            if (path == null) {
+                _uiState.update { it.copy(applying = false, message = "Could not save the cropped image") }
+            } else {
+                repointColumn(kind, path)
+                _uiState.update {
+                    it.copy(applying = false, currentUri = path, previewVersion = it.previewVersion + 1,
+                        message = "${tab().label} cropped")
+                }
+            }
+        }
+    }
+
+    fun cancelCrop() {
+        _uiState.value.cropEditorPath?.let { runCatching { java.io.File(it).delete() } }
+        _uiState.update { it.copy(cropEditorPath = null) }
+    }
+
+    private fun decodeBounds(file: java.io.File): Pair<Int, Int> {
+        val opts = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        android.graphics.BitmapFactory.decodeFile(file.absolutePath, opts)
+        return (opts.outWidth.takeIf { it > 0 } ?: 1) to (opts.outHeight.takeIf { it > 0 } ?: 1)
+    }
+
+    private fun parseCropRect(s: String): FloatArray? =
+        s.split(',').mapNotNull { it.trim().toFloatOrNull() }.takeIf { it.size == 4 }?.toFloatArray()
+
+    /** Decodes [src], crops the normalized rect, returns a PNG temp (lossless, keeps alpha). */
+    private fun bakeCrop(src: java.io.File, left: Float, top: Float, right: Float, bottom: Float): java.io.File? =
+        runCatching {
+            val full = android.graphics.BitmapFactory.decodeFile(src.absolutePath) ?: return null
+            val w = full.width; val h = full.height
+            val x = (left * w).toInt().coerceIn(0, w - 1)
+            val y = (top * h).toInt().coerceIn(0, h - 1)
+            val cw = ((right - left) * w).toInt().coerceIn(1, w - x)
+            val ch = ((bottom - top) * h).toInt().coerceIn(1, h - y)
+            val cropped = android.graphics.Bitmap.createBitmap(full, x, y, cw, ch)
+            if (cropped != full) full.recycle()
+            val out = java.io.File.createTempFile("studio_crop_", ".png", appCacheDir)
+            out.outputStream().use { cropped.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+            cropped.recycle()
+            out.takeIf { it.length() > 0 } ?: run { out.delete(); null }
+        }.onFailure { Timber.w(it, "bakeCrop failed") }.getOrNull()
+
+    /** Repoints the column-backed game row for [kind] to [path]; record-only kinds no-op. */
+    private suspend fun repointColumn(kind: ArtworkKind, path: String?) {
+        when (kind) {
+            ArtworkKind.ICON           -> gameRepository.updateIconArt(gameId, path)
+            ArtworkKind.BOX_ART        -> gameRepository.updateBoxArtTile(gameId, path)
+            ArtworkKind.BOX_3D         -> gameRepository.updateBox3dArt(gameId, path)
+            ArtworkKind.PHYSICAL_MEDIA -> gameRepository.updatePhysicalMediaArt(gameId, path)
+            ArtworkKind.HERO           -> gameRepository.updateHeroArt(gameId, path)
+            ArtworkKind.BACKGROUND     -> gameRepository.updateBoxArt(gameId, path)
+            ArtworkKind.LOGO           -> gameRepository.updateLogoArt(gameId, path)
+            else                       -> Unit
         }
     }
 
@@ -452,16 +716,7 @@ class ArtworkStudioViewModel @Inject constructor(
             return
         }
         // Column-backed kinds repoint the game row; record-only kinds resolve by fixed name.
-        when (kind) {
-            ArtworkKind.ICON           -> gameRepository.updateIconArt(gameId, path)
-            ArtworkKind.BOX_ART        -> gameRepository.updateBoxArtTile(gameId, path)
-            ArtworkKind.BOX_3D         -> gameRepository.updateBox3dArt(gameId, path)
-            ArtworkKind.PHYSICAL_MEDIA -> gameRepository.updatePhysicalMediaArt(gameId, path)
-            ArtworkKind.HERO           -> gameRepository.updateHeroArt(gameId, path)
-            ArtworkKind.BACKGROUND     -> gameRepository.updateBoxArt(gameId, path)   // legacy name = background column
-            ArtworkKind.LOGO           -> gameRepository.updateLogoArt(gameId, path)
-            else                       -> Unit
-        }
+        repointColumn(kind, path)
         val game = gameRepository.getById(gameId)
         _uiState.update {
             it.copy(
@@ -478,18 +733,12 @@ class ArtworkStudioViewModel @Inject constructor(
     fun clearCurrent() {
         val kind = tab().kind
         viewModelScope.launch {
-            when (kind) {
-                ArtworkKind.ICON           -> gameRepository.updateIconArt(gameId, null)
-                ArtworkKind.BOX_ART        -> gameRepository.updateBoxArtTile(gameId, null)
-                ArtworkKind.BOX_3D         -> gameRepository.updateBox3dArt(gameId, null)
-                ArtworkKind.PHYSICAL_MEDIA -> gameRepository.updatePhysicalMediaArt(gameId, null)
-                ArtworkKind.HERO           -> gameRepository.updateHeroArt(gameId, null)
-                ArtworkKind.BACKGROUND     -> gameRepository.updateBoxArt(gameId, null)
-                ArtworkKind.LOGO           -> gameRepository.updateLogoArt(gameId, null)
-                else                       -> Unit
-            }
+            // Delete the stored file, its backup + original, and the record; then unwire the column.
+            routingStore.clearArtwork(gameId, kind)
+            repointColumn(kind, null)
             _uiState.update {
-                it.copy(currentUri = null, previewVersion = it.previewVersion + 1, message = "${tab().label} cleared")
+                it.copy(currentUri = null, info = null, previewVersion = it.previewVersion + 1,
+                    message = "${tab().label} cleared")
             }
         }
     }
@@ -511,6 +760,33 @@ class ArtworkStudioViewModel @Inject constructor(
 
     fun handleGamepadAction(action: GamepadAction) {
         val s = _uiState.value
+        // Crop editor: D-pad pans, LB/RB zoom out/in, A bakes, B cancels.
+        if (s.cropEditorPath != null) {
+            when (action) {
+                GamepadAction.NAVIGATE_LEFT  -> panCrop(-CROP_PAN_STEP, 0f)
+                GamepadAction.NAVIGATE_RIGHT -> panCrop(CROP_PAN_STEP, 0f)
+                GamepadAction.NAVIGATE_UP    -> panCrop(0f, -CROP_PAN_STEP)
+                GamepadAction.NAVIGATE_DOWN  -> panCrop(0f, CROP_PAN_STEP)
+                GamepadAction.NEXT_CATEGORY  -> zoomCrop(1.1f)   // RB — zoom in
+                GamepadAction.PREV_CATEGORY  -> zoomCrop(1f / 1.1f)   // LB — zoom out
+                GamepadAction.SELECT         -> applyCrop()
+                GamepadAction.BACK           -> cancelCrop()
+                else -> Unit
+            }
+            return
+        }
+        if (s.actionsOpen) {
+            val actions = s.availableActions
+            when (action) {
+                GamepadAction.NAVIGATE_UP   -> moveActionsCursor(-1)
+                GamepadAction.NAVIGATE_DOWN -> moveActionsCursor(+1)
+                GamepadAction.SELECT        -> actions.getOrNull(s.actionsIndex)?.let { runAction(it) }
+                GamepadAction.BACK          ->
+                    if (s.showFileInfo) _uiState.update { it.copy(showFileInfo = false) } else closeActions()
+                else -> Unit
+            }
+            return
+        }
         if (s.candidate != null) {
             when (action) {
                 GamepadAction.SELECT -> applyCandidate()
@@ -571,6 +847,8 @@ class ArtworkStudioViewModel @Inject constructor(
             // Y / Triangle jumps the cursor straight to the source row (lands on the
             // active source, since sourceIndex already tracks it).
             GamepadAction.BUTTON_Y -> _uiState.update { it.copy(zone = StudioZone.SOURCES) }
+            // Long-press opens the per-slot actions menu (crop, restore, reset, clear, info).
+            GamepadAction.LONG_PRESS -> openActions()
             else -> Unit
         }
     }

@@ -43,6 +43,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -215,15 +217,19 @@ fun ArtworkStudioScreen(
                         }
                     }
                     Spacer(Modifier.height(8.dp))
-                    Text(
-                        "Clear ${STUDIO_TABS[state.tabIndex].label}",
-                        color = Color(0xFFE57373),
-                        fontSize = 11.sp,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .clickable(onClick = viewModel::clearCurrent)
-                            .padding(6.dp),
-                    )
+                    if (state.currentUri != null) {
+                        Text(
+                            "Ⓐ hold  ·  ACTIONS",
+                            color = Color.White.copy(alpha = 0.7f),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(accent.copy(alpha = 0.18f))
+                                .clickable(onClick = viewModel::openActions)
+                                .padding(horizontal = 10.dp, vertical = 6.dp),
+                        )
+                    }
                     Spacer(Modifier.weight(1f))
                     state.message?.let {
                         Text(
@@ -410,8 +416,8 @@ fun ArtworkStudioScreen(
 
             // Footer hints
             Text(
-                "LB / RB — artwork type   ·   D-Pad — move through the grid   ·   A — preview / apply   ·   " +
-                    "B — back   ·   X — NSFW filter   ·   Y — jump to sources   ·   past an edge — next / previous page",
+                "LB / RB — artwork type   ·   D-Pad — grid   ·   A — preview / apply   ·   hold A — actions   ·   " +
+                    "B — back   ·   X — NSFW   ·   Y — sources   ·   past an edge — next / prev page",
                 color = Color.White.copy(alpha = 0.35f), fontSize = 10.sp,
                 modifier = Modifier.padding(top = 6.dp),
             )
@@ -502,8 +508,248 @@ fun ArtworkStudioScreen(
                 }
             }
         }
+
+        // ── Actions menu overlay (hold A / ACTIONS) ───────────────────────────
+        if (state.actionsOpen && !state.showFileInfo) {
+            val actions = state.availableActions
+            Box(
+                Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.82f))
+                    .clickable(onClick = viewModel::closeActions),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(
+                    Modifier
+                        .width(320.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0xFF14141F))
+                        .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(14.dp))
+                        .padding(vertical = 14.dp),
+                ) {
+                    Text(
+                        "${STUDIO_TABS[state.tabIndex].label}  ·  ACTIONS",
+                        color = Color.White.copy(alpha = 0.55f), fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp),
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    actions.forEachIndexed { index, act ->
+                        val focused = state.actionsIndex == index
+                        val danger = act == StudioAction.CLEAR
+                        Text(
+                            act.label,
+                            color = when {
+                                danger  -> Color(0xFFE57373)
+                                focused -> Color.White
+                                else    -> Color.White.copy(alpha = 0.75f)
+                            },
+                            fontSize = 13.sp,
+                            fontWeight = if (focused) FontWeight.SemiBold else FontWeight.Normal,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(if (focused) accent.copy(alpha = 0.22f) else Color.Transparent)
+                                .clickable { viewModel.runAction(act) }
+                                .padding(horizontal = 18.dp, vertical = 11.dp),
+                        )
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        "D-Pad — move   ·   A — select   ·   B — close",
+                        color = Color.White.copy(alpha = 0.35f), fontSize = 10.sp,
+                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp),
+                    )
+                }
+            }
+        }
+
+        // ── File information panel ────────────────────────────────────────────
+        if (state.showFileInfo) {
+            val info = state.info
+            Box(
+                Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.9f))
+                    .clickable(onClick = viewModel::closeActions),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(
+                    Modifier
+                        .width(420.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0xFF14141F))
+                        .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(14.dp))
+                        .padding(20.dp),
+                ) {
+                    Text("FILE INFORMATION", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(12.dp))
+                    if (info == null) {
+                        Text(
+                            "No stored record for this slot (available once the artwork lives in a linked library).",
+                            color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp,
+                        )
+                    } else {
+                        StudioInfoRow("Type", STUDIO_TABS[state.tabIndex].label)
+                        StudioInfoRow("Provider", info.provider ?: "—")
+                        StudioInfoRow("Source", info.source)
+                        StudioInfoRow("Pinned", if (info.userAssigned) "Yes (locked)" else "No")
+                        StudioInfoRow("Dimensions", if (info.width != null && info.height != null) "${info.width} × ${info.height}" else "—")
+                        StudioInfoRow("Size", formatBytes(info.sizeBytes))
+                        StudioInfoRow("Cropped", if (info.cropRect != null) "Yes" else "No")
+                        StudioInfoRow("Previous version", if (info.hasPrevious) "Available" else "—")
+                        StudioInfoRow("Path", info.relativePath ?: "—")
+                        info.originUrl?.let { StudioInfoRow("Origin", it) }
+                    }
+                    Spacer(Modifier.height(14.dp))
+                    Text(
+                        "Ⓑ  CLOSE", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color.White.copy(alpha = 0.08f))
+                            .clickable(onClick = viewModel::closeActions)
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                    )
+                }
+            }
+        }
+
+        // ── Crop / position editor ────────────────────────────────────────────
+        state.cropEditorPath?.let { path ->
+            StudioCropEditor(
+                path = path,
+                srcW = state.cropSrcW, srcH = state.cropSrcH,
+                cropL = state.cropL, cropT = state.cropT, cropR = state.cropR, cropB = state.cropB,
+                applying = state.applying,
+                onPan = viewModel::panCrop,
+                onZoom = viewModel::zoomCrop,
+                onApply = viewModel::applyCrop,
+                onCancel = viewModel::cancelCrop,
+            )
+        }
+
+        if (state.cropPreparing) {
+            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.6f)), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = accent)
+            }
+        }
     }
 }
+
+@Composable
+private fun StudioInfoRow(label: String, value: String) {
+    Row(Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
+        Text(label, color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp, modifier = Modifier.width(130.dp))
+        Text(value, color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+private fun formatBytes(bytes: Long): String = when {
+    bytes <= 0L        -> "—"
+    bytes < 1024       -> "$bytes B"
+    bytes < 1024 * 1024 -> "%.1f KB".format(java.util.Locale.US, bytes / 1024.0)
+    else               -> "%.1f MB".format(java.util.Locale.US, bytes / (1024.0 * 1024))
+}
+
+/**
+ * Crop/position editor: the untouched original fills the screen, a dimmed mask shows the crop
+ * window (aspect-locked per kind by the ViewModel). Controller pans with the D-pad and zooms
+ * with LB/RB; touch drags to pan and pinches to zoom.
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun StudioCropEditor(
+    path: String,
+    srcW: Int, srcH: Int,
+    cropL: Float, cropT: Float, cropR: Float, cropB: Float,
+    applying: Boolean,
+    onPan: (Float, Float) -> Unit,
+    onZoom: (Float) -> Unit,
+    onApply: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    val accent = menuCursorEdge()
+    Box(
+        Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.96f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(Modifier.fillMaxSize().padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("ADJUST CROP / POSITION", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(10.dp))
+            // The image + crop mask. Pan/pinch gestures map directly to normalized pan/zoom.
+            Box(
+                Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .pointerInputCrop(onPan, onZoom),
+                contentAlignment = Alignment.Center,
+            ) {
+                AsyncImage(
+                    model = coil.request.ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
+                        .data(java.io.File(path)).size(coil.size.Size.ORIGINAL).build(),
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.fillMaxSize(),
+                )
+                // Crop window drawn inside the image's fitted (letterboxed) rect so the frame
+                // tracks the visible pixels even when image and box aspects differ.
+                androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+                    val bw = size.width; val bh = size.height
+                    val srcAspect = if (srcW > 0 && srcH > 0) srcW.toFloat() / srcH else bw / bh
+                    // Aspect-fit the image into the box → displayed rect (fx, fy, fw, fh).
+                    val fw: Float; val fh: Float
+                    if (bw / bh > srcAspect) { fh = bh; fw = bh * srcAspect } else { fw = bw; fh = bw / srcAspect }
+                    val fx = (bw - fw) / 2f; val fy = (bh - fh) / 2f
+                    val rl = fx + cropL * fw; val rt = fy + cropT * fh
+                    val rr = fx + cropR * fw; val rb = fy + cropB * fh
+                    val dim = Color.Black.copy(alpha = 0.55f)
+                    // Dim the fitted-image area outside the crop window (letterbox stays black).
+                    drawRect(dim, topLeft = androidx.compose.ui.geometry.Offset(fx, fy), size = androidx.compose.ui.geometry.Size(fw, rt - fy))
+                    drawRect(dim, topLeft = androidx.compose.ui.geometry.Offset(fx, rb), size = androidx.compose.ui.geometry.Size(fw, fy + fh - rb))
+                    drawRect(dim, topLeft = androidx.compose.ui.geometry.Offset(fx, rt), size = androidx.compose.ui.geometry.Size(rl - fx, rb - rt))
+                    drawRect(dim, topLeft = androidx.compose.ui.geometry.Offset(rr, rt), size = androidx.compose.ui.geometry.Size(fx + fw - rr, rb - rt))
+                    drawRect(
+                        accent,
+                        topLeft = androidx.compose.ui.geometry.Offset(rl, rt),
+                        size = androidx.compose.ui.geometry.Size(rr - rl, rb - rt),
+                        style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f),
+                    )
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                Text(
+                    if (applying) "Baking…" else "Ⓐ  APPLY CROP",
+                    color = Color(0xFF45C46A), fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp)).background(Color.White.copy(alpha = 0.08f))
+                        .clickable(enabled = !applying, onClick = onApply)
+                        .padding(horizontal = 18.dp, vertical = 9.dp),
+                )
+                Text(
+                    "Ⓑ  CANCEL", color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp)).background(Color.White.copy(alpha = 0.08f))
+                        .clickable(onClick = onCancel)
+                        .padding(horizontal = 18.dp, vertical = 9.dp),
+                )
+            }
+            Text(
+                "D-Pad — move   ·   LB / RB — zoom   ·   drag / pinch on touch",
+                color = Color.White.copy(alpha = 0.35f), fontSize = 10.sp,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+        }
+    }
+}
+
+// Touch pan (drag) + pinch (zoom) mapped to normalized ViewModel deltas.
+@OptIn(ExperimentalFoundationApi::class)
+private fun Modifier.pointerInputCrop(onPan: (Float, Float) -> Unit, onZoom: (Float) -> Unit): Modifier =
+    this.pointerInput(Unit) {
+        detectTransformGestures { _, pan, zoom, _ ->
+            if (pan.x != 0f || pan.y != 0f) {
+                // Drag moves the window opposite to the finger; normalize by view size.
+                onPan(-pan.x / size.width, -pan.y / size.height)
+            }
+            if (zoom != 1f) onZoom(zoom)
+        }
+    }
 
 // Small muted looping preview inside a grid tile — plays only while the tile is focused
 // (controller) or long-pressed (touch), so at most one decoder ever runs. TextureView, not

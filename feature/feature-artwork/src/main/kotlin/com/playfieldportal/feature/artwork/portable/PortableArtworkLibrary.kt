@@ -298,6 +298,86 @@ class PortableArtworkLibrary @Inject constructor(
 
     fun clearDirCache() = dirCache.clear()
 
+    // ── PFP private namespaces (versions/, originals/) — Studio pass 2 ──────────
+
+    data class NamespaceFile(val uriString: String, val fileName: String, val sizeBytes: Long)
+
+    /**
+     * Writes [tempFile] into an arbitrary namespace dir (e.g. `pfp/versions/icon`) under
+     * [fileName], replacing any same-stem occupant so create/rename can never silently suffix.
+     * No payload sniff — these bytes are the app's own already-validated files. Consumes
+     * [tempFile] when [deleteTemp]. Returns the stored document, or null.
+     */
+    suspend fun saveTempIntoPath(
+        treeUri: Uri,
+        segments: List<String>,
+        fileName: String,
+        mime: String,
+        tempFile: java.io.File,
+        deleteTemp: Boolean,
+    ): NamespaceFile? = withContext(Dispatchers.IO) {
+        try {
+            val dirDocId = ensureDirPath(treeUri, segments) ?: return@withContext null
+            val stem = fileName.substringBeforeLast('.')
+            listChildren(treeUri, dirDocId)
+                .filter { !it.isDirectory && it.name.substringBeforeLast('.').equals(stem, ignoreCase = true) }
+                .forEach { runCatching { DocumentsContract.deleteDocument(resolver, it.uri) } }
+            val dirUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, dirDocId)
+            val dest = runCatching { DocumentsContract.createDocument(resolver, dirUri, mime, fileName) }.getOrNull()
+                ?: return@withContext null
+            val ok = runCatching {
+                tempFile.inputStream().use { input ->
+                    resolver.openFileDescriptor(dest, "w")?.use { output ->
+                        FileUtils.copy(input.fd, output.fileDescriptor)
+                        true
+                    }
+                } ?: false
+            }.onFailure { Timber.w(it, "Namespace save failed for $fileName") }.getOrDefault(false)
+            if (!ok) {
+                runCatching { DocumentsContract.deleteDocument(resolver, dest) }
+                return@withContext null
+            }
+            NamespaceFile(dest.toString(), fileName, tempFile.length())
+        } finally {
+            if (deleteTemp) tempFile.delete()
+        }
+    }
+
+    /** The `{portableName}.*` file in a namespace dir, or null if the dir/file is absent. */
+    suspend fun findInPath(treeUri: Uri, segments: List<String>, portableName: String): SafChild? =
+        withContext(Dispatchers.IO) {
+            val dirDocId = resolveExistingPath(treeUri, segments) ?: return@withContext null
+            listChildren(treeUri, dirDocId).firstOrNull {
+                !it.isDirectory && it.name.substringBeforeLast('.').equals(portableName, ignoreCase = true)
+            }
+        }
+
+    /** Copies any readable document to a fresh cache temp file (no validation). Caller deletes it. */
+    suspend fun copyUriToTemp(sourceUri: Uri, cacheDir: java.io.File, suffix: String): java.io.File? =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val tmp = java.io.File.createTempFile("pfpns_", suffix, cacheDir)
+                val ok = resolver.openInputStream(sourceUri)?.use { input ->
+                    tmp.outputStream().use { out -> FileUtils.copy(input, out) }
+                    true
+                } ?: false
+                if (ok && tmp.length() > 0) tmp else { tmp.delete(); null }
+            }.onFailure { Timber.w(it, "copyUriToTemp failed for $sourceUri") }.getOrNull()
+        }
+
+    suspend fun deleteUri(uri: Uri): Boolean = withContext(Dispatchers.IO) {
+        runCatching { DocumentsContract.deleteDocument(resolver, uri) }.getOrDefault(false)
+    }
+
+    // Resolve an existing dir path WITHOUT creating segments (read-only lookups).
+    private fun resolveExistingPath(treeUri: Uri, segments: List<String>): String? {
+        var parent = DocumentsContract.getTreeDocumentId(treeUri)
+        for (segment in segments) {
+            parent = findChild(treeUri, parent, segment)?.takeIf { it.isDirectory }?.documentId ?: return null
+        }
+        return parent
+    }
+
     /**
      * Resolves (creating as needed) a directory path under ANY granted tree — used by the
      * exporter to build `{esDeName}/{mediaDir}/` in the user-picked destination. Same cached,

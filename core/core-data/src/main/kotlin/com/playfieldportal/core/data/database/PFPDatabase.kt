@@ -87,7 +87,7 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         ArtworkImportReportEntity::class,
         SsMediaCacheEntity::class,
     ],
-    version = 28,
+    version = 29,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -814,6 +814,23 @@ abstract class PFPDatabase : RoomDatabase() {
                     )
                     """.trimIndent()
                 )
+            }
+        }
+
+        // v29 — Artwork Studio pass 2. Adds provenance + one-previous-version + baked-crop
+        // columns to artwork_records: origin_url (re-download for "Reset to Scraped Default"),
+        // provider (file-info panel), prev_* (single "Restore Previous" backup under
+        // pfp/versions/), crop_rect + has_original (lossless re-crop from pfp/originals/).
+        // All additive and nullable/defaulted — existing rows keep working untouched.
+        val MIGRATION_28_29 = object : Migration(28, 29) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE artwork_records ADD COLUMN origin_url TEXT")
+                db.execSQL("ALTER TABLE artwork_records ADD COLUMN provider TEXT")
+                db.execSQL("ALTER TABLE artwork_records ADD COLUMN prev_document_uri TEXT")
+                db.execSQL("ALTER TABLE artwork_records ADD COLUMN prev_relative_path TEXT")
+                db.execSQL("ALTER TABLE artwork_records ADD COLUMN prev_size_bytes INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE artwork_records ADD COLUMN crop_rect TEXT")
+                db.execSQL("ALTER TABLE artwork_records ADD COLUMN has_original INTEGER NOT NULL DEFAULT 0")
             }
         }
     }

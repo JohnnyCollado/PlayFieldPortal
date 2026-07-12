@@ -61,6 +61,38 @@ data class ArtworkRecordEntity(
 
     val locked: Boolean = false,
 
+    // ── Provenance (Studio pass 2) ──────────────────────────────────────────────
+    // The remote URL these bytes came from. "Reset to Scraped Default" re-downloads it, and it
+    // is the re-fetch source for browse history instead of stockpiling every past download.
+    @ColumnInfo(name = "origin_url")
+    val originUrl: String? = null,
+
+    // The provider label the Studio showed ("ScreenScraper", "SteamGridDB", …) — file-info panel.
+    @ColumnInfo(name = "provider")
+    val provider: String? = null,
+
+    // ── One-previous version retention (Studio pass 2, "Restore Previous") ──────
+    // When a save overwrites a stable portable name, the outgoing file is copied to pfp/versions/
+    // first; these point at it so a single undo is possible without stockpiling N copies.
+    @ColumnInfo(name = "prev_document_uri")
+    val prevDocumentUri: String? = null,
+
+    @ColumnInfo(name = "prev_relative_path")
+    val prevRelativePath: String? = null,
+
+    @ColumnInfo(name = "prev_size_bytes")
+    val prevSizeBytes: Long = 0,
+
+    // ── Baked crop (Studio pass 2 editor) ──────────────────────────────────────
+    // Normalized crop rect applied to the untouched original when baking the displayed file,
+    // as "left,top,right,bottom" in 0..1. Null = no crop (file is the original framing).
+    @ColumnInfo(name = "crop_rect")
+    val cropRect: String? = null,
+
+    // An untouched pre-crop copy exists under pfp/originals/ — lets the editor re-crop losslessly.
+    @ColumnInfo(name = "has_original")
+    val hasOriginal: Boolean = false,
+
     @ColumnInfo(name = "created_at")
     val createdAt: Long = System.currentTimeMillis(),
 

@@ -29,6 +29,21 @@ object ArtworkPathResolver {
     /** ICON1 (icon-slot video snap) is PFP-generated, not an ES-DE media type. */
     const val DIR_ICON1 = "$DIR_PFP/icon1"
 
+    /** One-previous backup of an overwritten slot ("Restore Previous"). Never scanned/exported —
+     *  `kindForMediaDir("pfp/versions")` is null, so import/scan skip it. */
+    const val DIR_VERSIONS = "$DIR_PFP/versions"
+
+    /** Untouched pre-crop copy so the crop editor can re-frame losslessly. Never scanned/exported. */
+    const val DIR_ORIGINALS = "$DIR_PFP/originals"
+
+    /** Segments of the versions namespace for [kind] ("pfp","versions","icon"). Kind-nested so a
+     *  game's box-art and icon backups (same portable name) never collide. */
+    fun versionsDirSegments(platformId: String, kind: ArtworkKind): List<String> =
+        listOf(ArtworkLibraryManifest.DIR_ARTWORK, platformId, DIR_PFP, "versions", kind.name.lowercase())
+
+    fun originalsDirSegments(platformId: String, kind: ArtworkKind): List<String> =
+        listOf(ArtworkLibraryManifest.DIR_ARTWORK, platformId, DIR_PFP, "originals", kind.name.lowercase())
+
     private val KIND_TO_DIR: Map<ArtworkKind, String> = mapOf(
         ArtworkKind.ICON           to DIR_ICON0,
         ArtworkKind.ICON1          to DIR_ICON1,
