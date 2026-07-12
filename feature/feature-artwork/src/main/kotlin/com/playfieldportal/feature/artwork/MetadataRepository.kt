@@ -242,36 +242,39 @@ class MetadataRepository @Inject constructor(
             savedTracked(ArtworkKind.MANUAL, it, fromSs = true)
         }
         if (options.downloadVideoSnaps) {
-            val snapUrl = ssInfo?.videoUrl
-            val rawUrl = ssInfo?.videoRawUrl
+            val snapUrl = ssInfo?.videoUrl      // video-normalized — a ready-made snap
+            val rawUrl  = ssInfo?.videoRawUrl   // video — the full gameplay video
+            // VIDEO (full, untouched) feeds the Game Detail media strip; ICON1 (60 s muted
+            // snap) feeds the XMB icon animation. They are separate assets: the full video is
+            // ALWAYS kept as-is, and ICON1 is generated from it only when SS has no normalized
+            // snap of its own.
+            val rawFile = rawUrl?.let {
+                onAssetProgress?.invoke("ScreenScraper", "Video")
+                ArtworkTempIO.downloadToTemp(httpClient, context.cacheDir, ArtworkKind.VIDEO, it)
+            }
+            // 1) Store the full video untouched as VIDEO (a copy — saveFromFile consumes it).
+            if (rawFile != null) {
+                val vCopy = java.io.File.createTempFile("vid_", ".mp4", context.cacheDir)
+                runCatching { rawFile.copyTo(vCopy, overwrite = true) }
+                    .onSuccess { artworkStore.saveFromFile(gameId, ArtworkKind.VIDEO, vCopy) }
+                    .onFailure { vCopy.delete() }
+            }
+            // 2) ICON1 snap: SS's normalized snap if it has one, else transcode from the full.
             when {
-                // SS already has a normalized snap — store it as-is.
                 snapUrl != null -> {
-                    onAssetProgress?.invoke("ScreenScraper", "Video Snap")
-                    savedTracked(ArtworkKind.VIDEO, snapUrl, fromSs = true)
+                    onAssetProgress?.invoke("ScreenScraper", "Icon Video")
+                    savedTracked(ArtworkKind.ICON1, snapUrl, fromSs = true)
                 }
-                // Only the full video exists — download it, trim to 60 s and scale it down
-                // to ICON1 size locally, and store the small snap (never the full video).
-                rawUrl != null -> {
-                    onAssetProgress?.invoke("ScreenScraper", "Video Snap (converting)")
-                    val raw = ArtworkTempIO.downloadToTemp(httpClient, context.cacheDir, ArtworkKind.VIDEO, rawUrl)
-                    if (raw != null) {
-                        val snap = java.io.File.createTempFile("snap_", ".mp4", context.cacheDir)
-                        val ok = runCatching { videoSnapTranscoder.transcode(raw, snap) }
-                            .onFailure { Timber.w(it, "Snap transcode crashed") }
-                            .getOrDefault(false)
-                        if (ok) {
-                            raw.delete()
-                            artworkStore.saveFromFile(gameId, ArtworkKind.VIDEO, snap)
-                        } else {
-                            // Transcoder unavailable/refused: keep the capped raw download so
-                            // ICON1 still works (its player clips to 60 s at playback anyway).
-                            snap.delete()
-                            artworkStore.saveFromFile(gameId, ArtworkKind.VIDEO, raw)
-                        }
-                    }
+                rawFile != null -> {
+                    onAssetProgress?.invoke("ScreenScraper", "Icon Video (converting)")
+                    val snap = java.io.File.createTempFile("snap_", ".mp4", context.cacheDir)
+                    val ok = runCatching { videoSnapTranscoder.transcode(rawFile, snap) }
+                        .onFailure { Timber.w(it, "Snap transcode crashed") }
+                        .getOrDefault(false)
+                    if (ok) artworkStore.saveFromFile(gameId, ArtworkKind.ICON1, snap) else snap.delete()
                 }
             }
+            rawFile?.delete()
         }
 
         // Scraped title: ScreenScraper's canonical name wins, TheGamesDB fallback — only
@@ -330,7 +333,7 @@ class MetadataRepository @Inject constructor(
                         ArtworkKind.BOX_3D         -> fresh.box3dUrl
                         ArtworkKind.SCREENSHOT     -> fresh.screenshotUrl
                         ArtworkKind.MANUAL         -> fresh.manualUrl
-                        ArtworkKind.VIDEO          -> fresh.videoUrl
+                        ArtworkKind.ICON1          -> fresh.videoUrl   // normalized snap
                         else                       -> null
                     } ?: continue
                     val path = artworkStore.saveFromUrl(gameId, kind, url) ?: continue

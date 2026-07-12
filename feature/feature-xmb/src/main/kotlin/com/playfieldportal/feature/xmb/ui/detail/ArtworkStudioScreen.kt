@@ -66,7 +66,12 @@ fun ArtworkStudioScreen(
     val accent = menuCursorEdge()
 
     LaunchedEffect(gameId) { viewModel.load(gameId) }
-    LaunchedEffect(state.closed) { if (state.closed) onClose() }
+    LaunchedEffect(state.closed) {
+        if (state.closed) {
+            onClose()
+            viewModel.consumeClosed()   // clear immediately so reopening doesn't self-close
+        }
+    }
     LaunchedEffect(pendingGamepadAction) {
         if (pendingGamepadAction != null) {
             viewModel.handleGamepadAction(pendingGamepadAction)
@@ -171,19 +176,26 @@ fun ArtworkStudioScreen(
                             .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(10.dp)),
                         contentAlignment = Alignment.Center,
                     ) {
+                        val curKindName = STUDIO_TABS[state.tabIndex].kind.name
                         when {
-                            state.currentUri != null && STUDIO_TABS[state.tabIndex].kind.name in
-                                setOf("MANUAL", "VIDEO") -> Text(
-                                if (STUDIO_TABS[state.tabIndex].kind == com.playfieldportal.feature.artwork.store.ArtworkKind.MANUAL)
-                                    "PDF stored" else "Video stored",
+                            state.currentUri != null && curKindName in setOf("MANUAL", "VIDEO", "ICON1") -> Text(
+                                when (curKindName) {
+                                    "MANUAL" -> "PDF stored"
+                                    "ICON1"  -> "Icon video stored"
+                                    else     -> "Video stored"
+                                },
                                 color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp,
                             )
-                            state.currentUri != null -> AsyncImage(
-                                model = state.currentUri,
-                                contentDescription = null,
-                                contentScale = ContentScale.Fit,
-                                modifier = Modifier.fillMaxSize().padding(6.dp),
-                            )
+                            // key(previewVersion) forces a fresh AsyncImage after an apply so the
+                            // preview reloads even when the portable library reused the same URI.
+                            state.currentUri != null -> androidx.compose.runtime.key(state.previewVersion) {
+                                AsyncImage(
+                                    model = state.currentUri,
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Fit,
+                                    modifier = Modifier.fillMaxSize().padding(6.dp),
+                                )
+                            }
                             else -> Text("No artwork set", color = Color.White.copy(alpha = 0.4f), fontSize = 12.sp)
                         }
                     }

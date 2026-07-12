@@ -258,9 +258,14 @@ class GameDetailViewModel @Inject constructor(
                     noteText          = game?.userNote ?: "",
                     mediaUris         = mediaOf(game),
                     emulatorName      = emulator,
-                    videoUri          = game?.let { g -> artworkStore.find(g.id, ArtworkKind.VIDEO) },
+                    // Media strip plays the full VIDEO; ICON1 (icon snap) is a fallback so a game
+                    // that only has a snap still shows a video card.
+                    videoUri          = game?.let { g ->
+                        artworkStore.find(g.id, ArtworkKind.VIDEO) ?: artworkStore.find(g.id, ArtworkKind.ICON1)
+                    },
                     detailMedia       = if (game == null) emptyList() else buildList {
-                        artworkStore.find(game.id, ArtworkKind.VIDEO)?.let { add(DetailMedia(it, isVideo = true)) }
+                        val vid = artworkStore.find(game.id, ArtworkKind.VIDEO) ?: artworkStore.find(game.id, ArtworkKind.ICON1)
+                        vid?.let { add(DetailMedia(it, isVideo = true)) }
                         artworkStore.find(game.id, ArtworkKind.SCREENSHOT)?.let { add(DetailMedia(it, isVideo = false)) }
                         artworkStore.find(game.id, ArtworkKind.TITLESCREEN)?.let { add(DetailMedia(it, isVideo = false)) }
                     },

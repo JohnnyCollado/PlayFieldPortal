@@ -190,43 +190,73 @@ class ArtworkImportExecutor @Inject constructor(
                 continue
             }
 
-            // ES-DE videos import as ICON1 snaps: the source is transcoded (60 s trim,
-            // icon-sized, audio stripped) into the library — the full video is never stored,
-            // and the source file is never moved or deleted, even in Move mode. A game that
-            // already has any snap keeps it.
+            // ES-DE videos become TWO assets: the full video is imported untouched as VIDEO
+            // (Game Detail media strip) via the normal move/copy path, and a 60 s muted snap is
+            // transcoded from a temp copy into ICON1 (XMB icon animation). The source is only
+            // moved/deleted by the VIDEO import itself (Move mode); the transcode never touches
+            // the original. Locked/user-assigned slots of either kind are preserved.
             if (kind == ArtworkKind.VIDEO) {
-                if (prior != null) {
-                    onItem(item, ItemOutcome.SKIPPED)
-                    continue
-                }
-                val portableName = basePortableName
                 val src = sourceChildFor(treeUri, item)
+                // A temp copy lets us transcode ICON1 even after Move relocates the original.
                 val raw = runCatching {
                     context.contentResolver.openInputStream(src.uri)?.use {
                         com.playfieldportal.feature.artwork.store.ArtworkTempIO
                             .copyToTemp(it, context.cacheDir, ArtworkKind.VIDEO)
                     }
                 }.getOrNull()
-                if (raw == null) { onItem(item, ItemOutcome.FAILED); continue }
-                val snap = java.io.File.createTempFile("snap_", ".mp4", context.cacheDir)
-                val ok = runCatching { videoSnapTranscoder.transcode(raw, snap) }
-                    .onFailure { Timber.w(it, "Import snap transcode crashed") }
-                    .getOrDefault(false)
-                raw.delete()
-                if (!ok) { snap.delete(); onItem(item, ItemOutcome.FAILED); continue }
-                val saved = library.saveFromFile(treeUri, game.platformId, kind, portableName, snap)
-                if (saved == null) { onItem(item, ItemOutcome.FAILED); continue }
-                records += ArtworkRecordEntity(
-                    gameId = game.gameId,
-                    platformId = game.platformId,
-                    artworkType = item.kind,
-                    portableName = portableName,
-                    relativePath = ArtworkPathResolver.relativePath(game.platformId, kind, saved.fileName),
-                    documentUri = saved.uriString,
-                    source = sourceTag(plan.sourceId),
-                    sizeBytes = saved.sizeBytes,
-                )
-                onItem(item, ItemOutcome.IMPORTED)
+                var anyImported = false
+
+                // 1) Full video → VIDEO (untouched).
+                val priorVideo = existingRecords["VIDEO"]
+                if (priorVideo == null || !(priorVideo.locked || priorVideo.userAssigned)) {
+                    var pn = basePortableName
+                    if (artworkRecordDao.findNameCollisions(game.platformId, "VIDEO", pn, game.gameId).isNotEmpty()) {
+                        pn = "$pn (2)"
+                    }
+                    val dirId = library.mediaDirDocId(treeUri, game.platformId, ArtworkKind.VIDEO)
+                    if (dirId != null) {
+                        val listing = dirListings[dirId] ?: library.listChildren(treeUri, dirId)
+                            .associateBy { it.name.lowercase(Locale.ROOT) }.also { dirListings[dirId] = it }
+                        val already = listing.values.firstOrNull {
+                            !it.isDirectory && (it.sizeBytes ?: 0L) > 0L &&
+                                it.name.substringBeforeLast('.').equals(pn, ignoreCase = true)
+                        }
+                        val saved = if (already != null)
+                            PortableArtworkLibrary.SavedAsset(ArtworkKind.VIDEO, already.uri.toString(), already.name, already.sizeBytes ?: 0L)
+                        else library.saveAsset(treeUri, game.platformId, ArtworkKind.VIDEO, pn, src, transfer, listing)
+                        if (saved != null) {
+                            records += ArtworkRecordEntity(
+                                gameId = game.gameId, platformId = game.platformId, artworkType = "VIDEO",
+                                portableName = pn,
+                                relativePath = ArtworkPathResolver.relativePath(game.platformId, ArtworkKind.VIDEO, saved.fileName),
+                                documentUri = saved.uriString, source = sourceTag(plan.sourceId), sizeBytes = saved.sizeBytes,
+                            )
+                            anyImported = true
+                        }
+                    }
+                }
+
+                // 2) ICON1 snap from the temp copy.
+                val priorIcon1 = existingRecords["ICON1"]
+                if (raw != null && (priorIcon1 == null || !(priorIcon1.locked || priorIcon1.userAssigned))) {
+                    val snap = java.io.File.createTempFile("snap_", ".mp4", context.cacheDir)
+                    val ok = runCatching { videoSnapTranscoder.transcode(raw, snap) }
+                        .onFailure { Timber.w(it, "Import snap transcode crashed") }.getOrDefault(false)
+                    if (ok) {
+                        val savedSnap = library.saveFromFile(treeUri, game.platformId, ArtworkKind.ICON1, basePortableName, snap)
+                        if (savedSnap != null) {
+                            records += ArtworkRecordEntity(
+                                gameId = game.gameId, platformId = game.platformId, artworkType = "ICON1",
+                                portableName = basePortableName,
+                                relativePath = ArtworkPathResolver.relativePath(game.platformId, ArtworkKind.ICON1, savedSnap.fileName),
+                                documentUri = savedSnap.uriString, source = sourceTag(plan.sourceId), sizeBytes = savedSnap.sizeBytes,
+                            )
+                            anyImported = true
+                        }
+                    } else snap.delete()
+                }
+                raw?.delete()
+                onItem(item, if (anyImported) ItemOutcome.IMPORTED else ItemOutcome.SKIPPED)
                 continue
             }
 

@@ -20,6 +20,7 @@ object ArtworkFileNaming {
         ArtworkKind.LOGO       -> "logo.png"
         ArtworkKind.MANUAL     -> "manual.pdf"
         ArtworkKind.VIDEO      -> "video.mp4"
+        ArtworkKind.ICON1      -> "icon1.mp4"
         ArtworkKind.SCREENSHOT     -> "screenshot.jpg"
         ArtworkKind.TITLESCREEN    -> "titlescreen.jpg"
         ArtworkKind.PHYSICAL_MEDIA -> "physicalmedia.png"

@@ -26,8 +26,12 @@ object ArtworkPathResolver {
      *  `covers/` keeps its ES-DE meaning (true box art = BOX_ART). */
     const val DIR_ICON0 = "$DIR_PFP/icon0"
 
+    /** ICON1 (icon-slot video snap) is PFP-generated, not an ES-DE media type. */
+    const val DIR_ICON1 = "$DIR_PFP/icon1"
+
     private val KIND_TO_DIR: Map<ArtworkKind, String> = mapOf(
         ArtworkKind.ICON           to DIR_ICON0,
+        ArtworkKind.ICON1          to DIR_ICON1,
         ArtworkKind.BOX_ART        to "covers",
         ArtworkKind.HERO           to "miximages",
         ArtworkKind.BACKGROUND     to "fanart",

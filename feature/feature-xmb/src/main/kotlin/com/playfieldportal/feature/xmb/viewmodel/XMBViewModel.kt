@@ -6315,9 +6315,12 @@ class XMBViewModel @Inject constructor(
                         Timber.d("ICON1: gates vetoed playback for game $gameId (toggle/battery/thermal)")
                         return@collectLatest
                     }
-                    val uri = artworkStore.find(gameId, com.playfieldportal.feature.artwork.store.ArtworkKind.VIDEO)
+                    // ICON1 (short snap) is preferred; a full VIDEO is a valid fallback since the
+                    // icon player clips to 60 s at playback anyway (covers pre-split data too).
+                    val uri = artworkStore.find(gameId, com.playfieldportal.feature.artwork.store.ArtworkKind.ICON1)
+                        ?: artworkStore.find(gameId, com.playfieldportal.feature.artwork.store.ArtworkKind.VIDEO)
                     if (uri == null) {
-                        Timber.d("ICON1: no video snap stored for game $gameId (enable Download Video Snaps + rescrape)")
+                        Timber.d("ICON1: no icon video stored for game $gameId (enable Download Video Snaps + rescrape)")
                         return@collectLatest
                     }
                     Timber.d("ICON1: playing snap for game $gameId from $uri")

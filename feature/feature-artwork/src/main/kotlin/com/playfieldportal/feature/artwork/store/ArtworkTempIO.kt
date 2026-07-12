@@ -33,7 +33,7 @@ object ArtworkTempIO {
     private const val MAX_MEDIA_BYTES = 200L * 1024 * 1024
 
     fun maxBytesFor(kind: ArtworkKind): Long = when (kind) {
-        ArtworkKind.MANUAL, ArtworkKind.VIDEO -> MAX_MEDIA_BYTES
+        ArtworkKind.MANUAL, ArtworkKind.VIDEO, ArtworkKind.ICON1 -> MAX_MEDIA_BYTES
         else -> MAX_IMAGE_BYTES
     }
 

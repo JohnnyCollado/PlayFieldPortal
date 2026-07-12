@@ -57,6 +57,9 @@ data class ArtworkStudioUiState(
     val resultsLoading: Boolean = false,
     // Current asset of the active tab (what the game uses right now).
     val currentUri: String? = null,
+    // Bumped on every apply/clear so the preview reloads even when the portable library reuses
+    // a stable content URI (same string → Coil would otherwise serve the old bytes).
+    val previewVersion: Int = 0,
     val includeNsfw: Boolean = false,
     val hasSgdbKey: Boolean = false,
     // Candidate preview overlay (A on a grid tile). Apply/Cancel from here.
@@ -71,7 +74,10 @@ data class ArtworkStudioUiState(
 private const val PAGE_SIZE = 20
 
 // SS media types browsable per destination (order = preference; all variants are listed).
+// ICON0 has no exact SS equivalent — the landscape "mix" composites and screen-marquee come
+// closest for the 144:80 tile; box art is offered as a croppable fallback.
 private val SS_TYPES_FOR_KIND: Map<ArtworkKind, List<String>> = mapOf(
+    ArtworkKind.ICON           to listOf("mixrbv2", "mixrbv1", "screenmarquee", "steamgrid", "box-2D"),
     ArtworkKind.BOX_ART        to listOf("box-2D"),
     ArtworkKind.BOX_3D         to listOf("box-3D"),
     ArtworkKind.PHYSICAL_MEDIA to listOf("support-2D", "support-texture"),
@@ -80,7 +86,8 @@ private val SS_TYPES_FOR_KIND: Map<ArtworkKind, List<String>> = mapOf(
     ArtworkKind.LOGO           to listOf("wheel", "wheel-hd"),
     ArtworkKind.SCREENSHOT     to listOf("ss", "sstitle"),
     ArtworkKind.MANUAL         to listOf("manuel"),
-    ArtworkKind.VIDEO          to listOf("video-normalized"),
+    ArtworkKind.VIDEO          to listOf("video"),              // full gameplay video
+    ArtworkKind.ICON1          to listOf("video-normalized", "video"),  // icon-slot snap
 )
 
 val STUDIO_TABS = listOf(
@@ -93,7 +100,8 @@ val STUDIO_TABS = listOf(
     StudioTab(ArtworkKind.LOGO,           "LOGO",        "PIC0 overlay · transparent PNG · fit"),
     StudioTab(ArtworkKind.SCREENSHOT,     "SCREENSHOT",  "Game Details media strip"),
     StudioTab(ArtworkKind.MANUAL,         "MANUAL",      "In-app PDF manual"),
-    StudioTab(ArtworkKind.VIDEO,          "VIDEO",       "ICON1 snap + media strip · 60 s max"),
+    StudioTab(ArtworkKind.VIDEO,          "VIDEO",       "Game Details media strip · full video"),
+    StudioTab(ArtworkKind.ICON1,          "ICON1",       "XMB icon animation · 60 s muted snap"),
 )
 
 /**
@@ -121,6 +129,9 @@ class ArtworkStudioViewModel @Inject constructor(
     private var gameId: Long = -1
 
     fun load(gameId: Long) {
+        // Always clear the closed flag: the VM survives across open/close (host-scoped), so a
+        // stale closed=true from a prior B-press would otherwise slam the screen shut on reopen.
+        _uiState.update { it.copy(closed = false) }
         if (this.gameId == gameId && _uiState.value.game != null) return
         this.gameId = gameId
         viewModelScope.launch {
@@ -201,7 +212,7 @@ class ArtworkStudioViewModel @Inject constructor(
                     thumb = null,
                     provider = "ScreenScraper",
                     label = listOfNotNull(m.type, m.region?.uppercase()).joinToString(" · "),
-                    isVideo = kind == ArtworkKind.VIDEO,
+                    isVideo = kind == ArtworkKind.VIDEO || kind == ArtworkKind.ICON1,
                 )
             }
         }
@@ -326,6 +337,7 @@ class ArtworkStudioViewModel @Inject constructor(
                 applying = false,
                 candidate = null,
                 currentUri = path,
+                previewVersion = it.previewVersion + 1,
                 message = "${tab().label} updated from $provider",
             )
         }
@@ -344,13 +356,19 @@ class ArtworkStudioViewModel @Inject constructor(
                 ArtworkKind.LOGO           -> gameRepository.updateLogoArt(gameId, null)
                 else                       -> Unit
             }
-            _uiState.update { it.copy(currentUri = null, message = "${tab().label} cleared") }
+            _uiState.update {
+                it.copy(currentUri = null, previewVersion = it.previewVersion + 1, message = "${tab().label} cleared")
+            }
         }
     }
 
     fun dismissCandidate() = _uiState.update { it.copy(candidate = null) }
     fun dismissMessage() = _uiState.update { it.copy(message = null) }
     fun close() = _uiState.update { it.copy(closed = true) }
+
+    /** The screen calls this right after acting on [ArtworkStudioUiState.closed] so a stale
+     *  closed=true never survives to instantly re-close the screen on the next open. */
+    fun consumeClosed() = _uiState.update { it.copy(closed = false) }
 
     // ── Controller ────────────────────────────────────────────────────────────
 

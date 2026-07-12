@@ -17,7 +17,7 @@ object PayloadCheck {
      */
     fun extFor(kind: ArtworkKind, header: ByteArray): String? = when (kind) {
         ArtworkKind.MANUAL -> "pdf".takeIf { header.startsWithAscii("%PDF") }
-        ArtworkKind.VIDEO  -> when {
+        ArtworkKind.VIDEO, ArtworkKind.ICON1 -> when {
             isFtyp(header) -> "mp4"
             isEbml(header) -> "webm"
             else           -> null

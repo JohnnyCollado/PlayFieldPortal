@@ -5,8 +5,13 @@ import android.net.Uri
 /**
  * The artwork asset kinds a game can have. Each maps to the well-known filename the scraper
  * writes ([ArtworkFileNaming.fixedName]) and the prefix manual picks version under.
- * MANUAL/VIDEO are ScreenScraper-only extras (PDF manual, video snap) — stored like any other
- * asset but never referenced from game columns; their paths derive from the fixed names.
+ * MANUAL/VIDEO/ICON1 are ScreenScraper-only extras (PDF manual, full video, icon snap) — stored
+ * like any other asset but never referenced from game columns; their paths derive from names.
+ *
+ * VIDEO is the full gameplay video (Game Detail media strip); ICON1 is the short muted snap
+ * played in the XMB icon slot (PSP ICON1.PMF). They are distinct: ICON1 is generated from a
+ * full video when ScreenScraper has no ready-made normalized snap — the full video is always
+ * kept untouched as VIDEO.
  */
 enum class ArtworkKind {
     ICON,
@@ -15,6 +20,7 @@ enum class ArtworkKind {
     LOGO,
     MANUAL,
     VIDEO,
+    ICON1,
 
     // Imported-but-not-yet-displayed kinds (ES-DE screenshots/titlescreens). Stored like
     // MANUAL/VIDEO — resolved by fixed filename, never referenced from game columns — so
