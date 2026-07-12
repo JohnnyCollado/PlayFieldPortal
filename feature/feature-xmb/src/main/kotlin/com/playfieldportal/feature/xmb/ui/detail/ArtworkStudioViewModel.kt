@@ -3,13 +3,11 @@ package com.playfieldportal.feature.xmb.ui.detail
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.playfieldportal.core.data.database.dao.SsMediaCacheDao
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.feature.artwork.api.SgdbApiKeyProvider
 import com.playfieldportal.feature.artwork.api.SgdbArtType
-import com.playfieldportal.feature.artwork.api.SsMediaSelection
 import com.playfieldportal.feature.artwork.api.SteamGridDbApi
 import com.playfieldportal.feature.artwork.store.ArtworkKind
 import com.playfieldportal.feature.artwork.store.ArtworkStore
@@ -126,7 +124,7 @@ class ArtworkStudioViewModel @Inject constructor(
     @dagger.hilt.android.qualifiers.ApplicationContext private val appContext: android.content.Context,
     private val gameRepository: GameRepository,
     private val artworkStore: ArtworkStore,
-    private val ssMediaCacheDao: SsMediaCacheDao,
+    private val ssMediaCatalog: com.playfieldportal.feature.artwork.api.SsMediaCatalog,
     private val steamGridDb: SteamGridDbApi,
     private val sgdbKeyProvider: SgdbApiKeyProvider,
     private val theGamesDb: com.playfieldportal.feature.artwork.TheGamesDbApi,
@@ -236,12 +234,11 @@ class ArtworkStudioViewModel @Inject constructor(
         }
     }
 
-    // Every cached SS media of the kind's types — all regions/variants, zero API calls.
+    // Every SS media of the kind's types — cached lists load free; a game never scraped
+    // gets one live scrape-as-you-go lookup (cached + ssId persisted for next time).
     private suspend fun ssResults(kind: ArtworkKind): List<StudioArt> {
-        val ssId = _uiState.value.game?.ssId ?: return emptyList()
-        val row = ssMediaCacheDao.get(ssId) ?: return emptyList()
-        val medias = SsMediaSelection.decode(row.mediasJson) ?: return emptyList()
         val types = SS_TYPES_FOR_KIND[kind] ?: return emptyList()
+        val medias = ssMediaCatalog.mediasFor(gameId) ?: return emptyList()
         return types.flatMap { type ->
             medias.filter { it.type == type && it.url != null }.map { m ->
                 StudioArt(

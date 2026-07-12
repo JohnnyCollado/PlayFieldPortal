@@ -326,7 +326,7 @@ fun ArtworkStudioScreen(
                         state.results.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             Text(
                                 if (activeSource == StudioSource.SCREENSCRAPER)
-                                    "Nothing cached for this type — scrape this game once with ScreenScraper"
+                                    "ScreenScraper has nothing of this type for this game"
                                 else "No results",
                                 color = Color.White.copy(alpha = 0.45f), fontSize = 12.sp,
                             )
