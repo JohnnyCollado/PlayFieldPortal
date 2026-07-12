@@ -66,6 +66,11 @@ data class ArtworkStudioUiState(
     val hasSgdbKey: Boolean = false,
     // Candidate preview overlay (A on a grid tile). Apply/Cancel from here.
     val candidate: StudioArt? = null,
+    // Manual candidates: the PDF is downloaded to cache and paged before Apply.
+    val candidateManualPath: String? = null,
+    val manualDownloading: Boolean = false,
+    val manualPage: Int = 0,
+    val manualPageCount: Int = 0,
     val applying: Boolean = false,
     val message: String? = null,
     // Set when the user picked "Local File" — the screen launches the SAF picker for it.
@@ -118,6 +123,7 @@ val STUDIO_TABS = listOf(
  */
 @HiltViewModel
 class ArtworkStudioViewModel @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val appContext: android.content.Context,
     private val gameRepository: GameRepository,
     private val artworkStore: ArtworkStore,
     private val ssMediaCacheDao: SsMediaCacheDao,
@@ -126,6 +132,8 @@ class ArtworkStudioViewModel @Inject constructor(
     private val theGamesDb: com.playfieldportal.feature.artwork.TheGamesDbApi,
     private val igdbApi: com.playfieldportal.feature.artwork.api.IgdbApi,
 ) : ViewModel() {
+
+    private val appCacheDir: java.io.File get() = appContext.cacheDir
 
     private val _uiState = MutableStateFlow(ArtworkStudioUiState())
     val uiState: StateFlow<ArtworkStudioUiState> = _uiState.asStateFlow()
@@ -168,9 +176,11 @@ class ArtworkStudioViewModel @Inject constructor(
         if (sgdbTypeFor(kind) != null && _uiState.value.hasSgdbKey) {
             add(StudioSource.STEAMGRIDDB)
         }
-        // Single-result title-match sources: box art / hero / background / logo only.
+        // Single-result title-match sources. ICON0 is included so the tile can be built
+        // from ANY provider's art (cropped to 144:80) — maximum customization.
         val titleMatchKinds = setOf(
-            ArtworkKind.BOX_ART, ArtworkKind.HERO, ArtworkKind.BACKGROUND, ArtworkKind.LOGO,
+            ArtworkKind.ICON, ArtworkKind.BOX_ART, ArtworkKind.HERO,
+            ArtworkKind.BACKGROUND, ArtworkKind.LOGO,
         )
         if (kind in titleMatchKinds) {
             add(StudioSource.THEGAMESDB)
@@ -279,6 +289,12 @@ class ArtworkStudioViewModel @Inject constructor(
                 .onFailure { Timber.w(it, "TGDB browse failed") }.getOrNull()
         }
         val info = tgdbInfo ?: return emptyList()
+        if (kind == ArtworkKind.ICON) {
+            return listOfNotNull(
+                info.artworkUrl?.let { StudioArt(it, null, "TheGamesDB", "box art · crop to tile") },
+                info.heroUrl?.let { StudioArt(it, null, "TheGamesDB", "hero · crop to tile") },
+            )
+        }
         val url = when (kind) {
             ArtworkKind.BOX_ART                        -> info.artworkUrl
             ArtworkKind.HERO, ArtworkKind.BACKGROUND   -> info.heroUrl
@@ -296,6 +312,12 @@ class ArtworkStudioViewModel @Inject constructor(
                 .onFailure { Timber.w(it, "IGDB browse failed") }.getOrNull()
         }
         val info = igdbInfo ?: return emptyList()
+        if (kind == ArtworkKind.ICON) {
+            return listOfNotNull(
+                info.artworkUrl?.let { StudioArt(it, null, "IGDB", "cover · crop to tile") },
+                info.heroUrl?.let { StudioArt(it, null, "IGDB", "artwork · crop to tile") },
+            )
+        }
         val url = when (kind) {
             ArtworkKind.BOX_ART                        -> info.artworkUrl
             ArtworkKind.HERO, ArtworkKind.BACKGROUND   -> info.heroUrl
@@ -348,9 +370,53 @@ class ArtworkStudioViewModel @Inject constructor(
     }
 
     fun openCandidate(index: Int) {
-        _uiState.value.results.getOrNull(index)?.let { art ->
-            _uiState.update { it.copy(candidate = art, gridIndex = index) }
+        val art = _uiState.value.results.getOrNull(index) ?: return
+        _uiState.update { it.copy(candidate = art, gridIndex = index) }
+        // Manuals preview as a paged PDF — pull the file down first (reused by Apply).
+        if (tab().kind == ArtworkKind.MANUAL) {
+            _uiState.update {
+                it.copy(manualDownloading = true, candidateManualPath = null, manualPage = 0, manualPageCount = 0)
+            }
+            viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                val tmp = downloadToCache(art.url, ".pdf")
+                _uiState.update { it.copy(manualDownloading = false, candidateManualPath = tmp?.absolutePath) }
+            }
         }
+    }
+
+    /** Plain bounded download for candidate previews (no ktor dependency in this module). */
+    private fun downloadToCache(url: String, suffix: String): java.io.File? = runCatching {
+        val tmp = java.io.File.createTempFile("studio_", suffix, appCacheDir)
+        val conn = java.net.URL(url).openConnection() as java.net.HttpURLConnection
+        conn.connectTimeout = 15_000
+        conn.readTimeout = 30_000
+        conn.instanceFollowRedirects = true
+        conn.inputStream.use { input ->
+            tmp.outputStream().use { out ->
+                val buf = ByteArray(64 * 1024)
+                var total = 0L
+                while (true) {
+                    val n = input.read(buf)
+                    if (n == -1) break
+                    total += n
+                    if (total > 60L * 1024 * 1024) error("preview download too large")
+                    out.write(buf, 0, n)
+                }
+            }
+        }
+        tmp.takeIf { it.length() > 0 } ?: run { tmp.delete(); null }
+    }.onFailure { Timber.w(it, "Candidate preview download failed") }.getOrNull()
+
+    fun onManualPageCount(count: Int) = _uiState.update {
+        it.copy(manualPageCount = count, manualPage = it.manualPage.coerceIn(0, (count - 1).coerceAtLeast(0)))
+    }
+
+    fun manualPreviousPage() = _uiState.update {
+        it.copy(manualPage = (it.manualPage - 1).coerceAtLeast(0))
+    }
+
+    fun manualNextPage() = _uiState.update {
+        it.copy(manualPage = (it.manualPage + 1).coerceAtMost((it.manualPageCount - 1).coerceAtLeast(0)))
     }
 
     fun requestLocalPick() = _uiState.update { it.copy(localPickKind = tab().kind) }
@@ -368,9 +434,16 @@ class ArtworkStudioViewModel @Inject constructor(
     fun applyCandidate() {
         val art = _uiState.value.candidate ?: return
         val kind = tab().kind
+        val manualFile = _uiState.value.candidateManualPath?.let { java.io.File(it) }
         viewModelScope.launch {
             _uiState.update { it.copy(applying = true) }
-            val path = artworkStore.saveVersionedFromUrl(gameId, kind, art.url)
+            // A previewed manual is already on disk — store that file instead of re-downloading.
+            val path = if (kind == ArtworkKind.MANUAL && manualFile?.exists() == true) {
+                artworkStore.saveFromFile(gameId, kind, manualFile)   // consumes the temp file
+            } else {
+                artworkStore.saveVersionedFromUrl(gameId, kind, art.url)
+            }
+            _uiState.update { it.copy(candidateManualPath = null) }
             finishApply(kind, path, art.provider)
         }
     }
@@ -423,7 +496,12 @@ class ArtworkStudioViewModel @Inject constructor(
         }
     }
 
-    fun dismissCandidate() = _uiState.update { it.copy(candidate = null) }
+    fun dismissCandidate() {
+        _uiState.value.candidateManualPath?.let { runCatching { java.io.File(it).delete() } }
+        _uiState.update {
+            it.copy(candidate = null, candidateManualPath = null, manualDownloading = false, manualPage = 0, manualPageCount = 0)
+        }
+    }
     fun dismissMessage() = _uiState.update { it.copy(message = null) }
     fun close() = _uiState.update { it.copy(closed = true) }
 
@@ -439,6 +517,9 @@ class ArtworkStudioViewModel @Inject constructor(
             when (action) {
                 GamepadAction.SELECT -> applyCandidate()
                 GamepadAction.BACK   -> dismissCandidate()
+                // Manual preview pages with Left/Right before applying.
+                GamepadAction.NAVIGATE_LEFT  -> if (s.candidateManualPath != null) manualPreviousPage()
+                GamepadAction.NAVIGATE_RIGHT -> if (s.candidateManualPath != null) manualNextPage()
                 else -> Unit
             }
             return

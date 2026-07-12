@@ -42,6 +42,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -379,6 +380,12 @@ fun ArtworkStudioScreen(
                                                     "▶ VIDEO",
                                                     color = Color.White.copy(alpha = 0.75f), fontSize = 12.sp,
                                                 )
+                                                STUDIO_TABS[state.tabIndex].kind ==
+                                                    com.playfieldportal.feature.artwork.store.ArtworkKind.MANUAL -> Text(
+                                                    "PDF",
+                                                    color = Color.White.copy(alpha = 0.75f),
+                                                    fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
+                                                )
                                                 else -> AsyncImage(
                                                     model = art.thumb ?: art.url,
                                                     contentDescription = null,
@@ -420,7 +427,43 @@ fun ArtworkStudioScreen(
                 contentAlignment = Alignment.Center,
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    if (art.isVideo) {
+                    if (state.manualDownloading) {
+                        CircularProgressIndicator(color = accent)
+                        Spacer(Modifier.height(10.dp))
+                        Text("Downloading manual…", color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp)
+                    } else if (state.candidateManualPath != null) {
+                        StudioPdfPage(
+                            path = state.candidateManualPath!!,
+                            page = state.manualPage,
+                            onPageCount = viewModel::onManualPageCount,
+                            modifier = Modifier.fillMaxWidth(0.62f).fillMaxHeight(0.68f),
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                "‹ Prev", color = Color.White.copy(alpha = if (state.manualPage > 0) 0.85f else 0.3f),
+                                fontSize = 12.sp,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .clickable(enabled = state.manualPage > 0, onClick = viewModel::manualPreviousPage)
+                                    .padding(horizontal = 10.dp, vertical = 5.dp),
+                            )
+                            Text(
+                                "Page ${state.manualPage + 1} / ${state.manualPageCount.coerceAtLeast(1)}",
+                                color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp,
+                                modifier = Modifier.padding(horizontal = 8.dp),
+                            )
+                            val more = state.manualPage < state.manualPageCount - 1
+                            Text(
+                                "Next ›", color = Color.White.copy(alpha = if (more) 0.85f else 0.3f),
+                                fontSize = 12.sp,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .clickable(enabled = more, onClick = viewModel::manualNextPage)
+                                    .padding(horizontal = 10.dp, vertical = 5.dp),
+                            )
+                        }
+                    } else if (art.isVideo) {
                         Text("Video snap from ${art.provider}", color = Color.White, fontSize = 14.sp)
                     } else {
                         AsyncImage(
@@ -471,22 +514,17 @@ private fun StudioVideoTilePreview(url: String, modifier: Modifier = Modifier) {
     var videoSize by remember(url) {
         mutableStateOf<androidx.media3.common.VideoSize?>(null)
     }
+    var failed by remember(url) { mutableStateOf(false) }
     val player = remember(url) {
         androidx.media3.exoplayer.ExoPlayer.Builder(context).build().apply {
             trackSelectionParameters = trackSelectionParameters.buildUpon()
                 .setTrackTypeDisabled(androidx.media3.common.C.TRACK_TYPE_AUDIO, true)
                 .build()
             volume = 0f
-            setMediaItem(
-                androidx.media3.common.MediaItem.Builder()
-                    .setUri(url)
-                    .setClippingConfiguration(
-                        androidx.media3.common.MediaItem.ClippingConfiguration.Builder()
-                            .setEndPositionMs(15_000)   // a taste, not the whole clip
-                            .build()
-                    )
-                    .build()
-            )
+            // No clipping here: ScreenScraper streams are not reliably seekable, and a
+            // ClippingMediaSource on unseekable media fails outright. Whole clip, looped —
+            // the player only exists while the tile is focused anyway.
+            setMediaItem(androidx.media3.common.MediaItem.fromUri(url))
             repeatMode = androidx.media3.common.Player.REPEAT_MODE_ONE
             playWhenReady = true
             prepare()
@@ -495,9 +533,19 @@ private fun StudioVideoTilePreview(url: String, modifier: Modifier = Modifier) {
     DisposableEffect(player) {
         val listener = object : androidx.media3.common.Player.Listener {
             override fun onVideoSizeChanged(size: androidx.media3.common.VideoSize) { videoSize = size }
+            override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+                timber.log.Timber.w(error, "Studio tile preview failed")
+                failed = true
+            }
         }
         player.addListener(listener)
         onDispose { player.removeListener(listener); player.release() }
+    }
+    if (failed) {
+        Box(modifier, contentAlignment = Alignment.Center) {
+            Text("▶ VIDEO", color = Color.White.copy(alpha = 0.75f), fontSize = 12.sp)
+        }
+        return
     }
     androidx.compose.ui.viewinterop.AndroidView(
         factory = { ctx ->
@@ -524,4 +572,57 @@ private fun studioTileCrop(view: android.view.TextureView, size: androidx.media3
     view.setTransform(android.graphics.Matrix().apply {
         setScale((vw * scale) / viewW, (vh * scale) / viewH, viewW / 2f, viewH / 2f)
     })
+}
+
+// One rendered PDF page (PdfRenderer, white backing, 2x scale) for the manual candidate
+// preview. Reports the page count once so the ViewModel can clamp navigation.
+@Composable
+private fun StudioPdfPage(
+    path: String,
+    page: Int,
+    onPageCount: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var pageBitmap by remember(path, page) { mutableStateOf<android.graphics.Bitmap?>(null) }
+    LaunchedEffect(path, page) {
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching {
+                android.os.ParcelFileDescriptor.open(
+                    java.io.File(path), android.os.ParcelFileDescriptor.MODE_READ_ONLY,
+                ).use { pfd ->
+                    android.graphics.pdf.PdfRenderer(pfd).use { renderer ->
+                        onPageCount(renderer.pageCount)
+                        val index = page.coerceIn(0, renderer.pageCount - 1)
+                        renderer.openPage(index).use { p ->
+                            val scale = 2f
+                            val bitmap = android.graphics.Bitmap.createBitmap(
+                                (p.width * scale).toInt(), (p.height * scale).toInt(),
+                                android.graphics.Bitmap.Config.ARGB_8888,
+                            )
+                            bitmap.eraseColor(android.graphics.Color.WHITE)
+                            p.render(
+                                bitmap, null,
+                                android.graphics.Matrix().apply { setScale(scale, scale) },
+                                android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY,
+                            )
+                            pageBitmap = bitmap
+                        }
+                    }
+                }
+            }.onFailure { timber.log.Timber.w(it, "Manual preview render failed") }
+        }
+    }
+    Box(modifier, contentAlignment = Alignment.Center) {
+        val bmp = pageBitmap
+        if (bmp != null) {
+            androidx.compose.foundation.Image(
+                bitmap = bmp.asImageBitmap(),
+                contentDescription = "Manual page",
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxSize(),
+            )
+        } else {
+            CircularProgressIndicator(color = Color.White.copy(alpha = 0.5f))
+        }
+    }
 }
