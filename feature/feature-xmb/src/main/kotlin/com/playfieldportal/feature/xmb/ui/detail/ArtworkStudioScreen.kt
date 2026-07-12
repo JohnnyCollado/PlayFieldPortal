@@ -744,8 +744,8 @@ private fun Modifier.pointerInputCrop(onPan: (Float, Float) -> Unit, onZoom: (Fl
     this.pointerInput(Unit) {
         detectTransformGestures { _, pan, zoom, _ ->
             if (pan.x != 0f || pan.y != 0f) {
-                // Drag moves the window opposite to the finger; normalize by view size.
-                onPan(-pan.x / size.width, -pan.y / size.height)
+                // Drag the frame with the finger (finger right → frame moves right).
+                onPan(pan.x / size.width, pan.y / size.height)
             }
             if (zoom != 1f) onZoom(zoom)
         }
