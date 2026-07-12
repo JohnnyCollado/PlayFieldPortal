@@ -6,6 +6,13 @@ All notable changes to Play Field Portal are documented here. This project follo
 ## [Unreleased]
 
 ### Added
+- **Game Detail upgrades.** The action row is now Launch (renamed from Play) plus four
+  square buttons: **Video** (plays the game's snap — external player if one is pinned in
+  Settings ▸ Video, else a built-in fullscreen player), **Options**, **Artwork**, and
+  **Manual**. A **Screenshot** panel renders under the info panels (scraped from
+  ScreenScraper or ES-DE-imported). Controller polish: Up from the button row always
+  returns to Launch, one Up rewinds the page scroll entirely, and D-pad scrolling strides
+  farther per press.
 - **Icon Display Modes.** Every game tile can now be drawn four ways: **Custom Icon** (the
   PSP-authentic 144:80 ICON0 fill), **Box Art**, **Physical Media** (cartridge/disc shot),
   or **3D Box Art** — the last three render at their art's natural aspect inside the same
@@ -62,6 +69,8 @@ All notable changes to Play Field Portal are documented here. This project follo
 ### Removed
 - Display ▸ **Icon Style** (superseded by Game Icon Display — Physical Media mode is the
   cartridge look) and Artwork ▸ **Preferred Grid Style** (was never wired to anything).
+
+### Added
 - **Portable media library + ES-DE artwork import.** Settings ▸ Artwork ▸ **Artwork Folder &
   Import**: pick a folder (SAF, read+write grant — no all-files permission) where PFP keeps
   artwork as a user-owned, reconnectable library with a clean two-folder root —

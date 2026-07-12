@@ -32,6 +32,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import com.playfieldportal.core.domain.model.Game
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -52,6 +54,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -253,7 +256,7 @@ fun GameDetailScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     ConsoleButton(
-                        label = "Play",
+                        label = "Launch",
                         icon = Icons.Filled.PlayArrow,
                         focused = state.mainFocus == 0,
                         fill = Color(0xFFF2F2F2),
@@ -262,16 +265,28 @@ fun GameDetailScreen(
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         SquareActionButton(
+                            icon = Icons.Filled.Movie,
+                            contentDescription = "Play Video",
+                            focused = state.mainFocus == 1,
+                            onClick = viewModel::onVideoClicked,
+                        )
+                        SquareActionButton(
                             icon = Icons.Filled.Settings,
                             contentDescription = "Options",
-                            focused = state.mainFocus == 1,
+                            focused = state.mainFocus == 2,
                             onClick = viewModel::onOptionsClicked,
                         )
                         SquareActionButton(
                             icon = Icons.Filled.Brush,
                             contentDescription = "Edit Artwork",
-                            focused = state.mainFocus == 2,
+                            focused = state.mainFocus == 3,
                             onClick = viewModel::openArtworkManager,
+                        )
+                        SquareActionButton(
+                            icon = Icons.AutoMirrored.Filled.MenuBook,
+                            contentDescription = "Manual",
+                            focused = state.mainFocus == 4,
+                            onClick = viewModel::onManualClicked,
                         )
                     }
                     (state.launchError ?: state.actionMessage ?: state.artworkMessage)?.let {
@@ -302,6 +317,29 @@ fun GameDetailScreen(
                     modifier    = Modifier.weight(0.58f),
                 )
             }
+
+            // Screenshot (SCREENSHOT kind — ES-DE import or scrape), below the info panels.
+            state.screenshotUri?.let { shot ->
+                Spacer(Modifier.height(18.dp))
+                Text("SCREENSHOT", color = Color.White.copy(alpha = 0.55f), fontSize = 11.sp)
+                Spacer(Modifier.height(6.dp))
+                AsyncImage(
+                    model = shot,
+                    contentDescription = "Screenshot",
+                    contentScale = ContentScale.FillWidth,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp)),
+                )
+            }
+        }
+
+        // Built-in fullscreen snap player (used when no external video player is pinned).
+        if (state.showVideoPlayer && state.videoUri != null) {
+            GameVideoOverlay(
+                videoUri = state.videoUri!!,
+                onClose  = viewModel::closeVideoPlayer,
+            )
         }
 
         AnimatedVisibility(state.showOptions, enter = fadeIn(), exit = fadeOut()) {
@@ -480,7 +518,7 @@ private fun relativeDays(epochMillis: Long): String {
 
 private val OptionsPanelMaxHeight: Dp = 440.dp
 private val OptionsRowScrollStep: Dp = 58.dp
-private val PageScrollStep: Dp = 120.dp
+private val PageScrollStep: Dp = 220.dp   // bigger stride — fewer presses to reach the bottom
 
 private fun DetailAction.dynamicLabel(favorite: Boolean, refreshing: Boolean): String = when (this) {
     DetailAction.FAVORITE -> if (favorite) "Unfavorite" else "Favorite"
@@ -906,5 +944,38 @@ private fun EmulatorPickerPanel(
                 }
             }
         }
+    }
+}
+
+// Fullscreen built-in player for the game's video snap: standard transport controls, black
+// backdrop, tap outside or Back closes. Player is released the moment the overlay leaves
+// composition.
+@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
+@Composable
+private fun GameVideoOverlay(videoUri: String, onClose: () -> Unit) {
+    val context = LocalContext.current
+    val player = remember(videoUri) {
+        androidx.media3.exoplayer.ExoPlayer.Builder(context).build().apply {
+            setMediaItem(androidx.media3.common.MediaItem.fromUri(videoUri))
+            playWhenReady = true
+            prepare()
+        }
+    }
+    DisposableEffect(player) { onDispose { player.release() } }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.96f))
+            .clickable(onClick = onClose),
+    ) {
+        androidx.compose.ui.viewinterop.AndroidView(
+            factory = { ctx ->
+                androidx.media3.ui.PlayerView(ctx).apply {
+                    useController = true
+                    this.player = player
+                }
+            },
+            modifier = Modifier.fillMaxSize().padding(vertical = 8.dp),
+        )
     }
 }

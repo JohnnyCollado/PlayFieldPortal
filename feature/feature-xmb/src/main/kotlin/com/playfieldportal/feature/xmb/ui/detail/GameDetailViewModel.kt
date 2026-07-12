@@ -21,6 +21,9 @@ import com.playfieldportal.feature.artwork.api.IgdbApi
 import com.playfieldportal.feature.artwork.api.SgdbArtType
 import com.playfieldportal.feature.artwork.api.SteamGridDbApi
 import com.playfieldportal.feature.artwork.store.ArtworkKind
+import androidx.datastore.preferences.core.stringPreferencesKey
+import com.playfieldportal.core.data.datastore.pfpDataStore
+import kotlinx.coroutines.flow.first
 import com.playfieldportal.feature.artwork.store.ArtworkStore
 import com.playfieldportal.feature.launcher.EmulatorIntentResolver
 import com.playfieldportal.feature.launcher.EmulatorProfileRepository
@@ -66,6 +69,9 @@ fun isDataSource(index: Int) = index !in listOf(SOURCE_LOCAL, SOURCE_CLEAR)
 // Used by all grid-based sources (SGDB, IGDB, TheGamesDB).
 // SGDB items carry a thumbUrl for faster thumbnail loading; other sources use
 // the full URL as thumb since no separate thumbnail endpoint is available.
+// Mirrors VideoRepositoryImpl / Settings > Video — the pinned external player package.
+private val KEY_VIDEO_DEFAULT_PLAYER = stringPreferencesKey("video_default_player")
+
 data class ArtPickerItem(
     val url: String,
     val thumbUrl: String? = null,
@@ -82,6 +88,12 @@ data class GameDetailUiState(
     val isFetchingArtwork: Boolean = false,
     val artworkMessage: String? = null,
     val launchError: String? = null,
+
+    // Stored media surfaced on the page (resolved once per load via ArtworkStore.find).
+    val videoUri: String? = null,        // ICON1 snap — playable from the Video button
+    val screenshotUri: String? = null,   // SCREENSHOT kind — shown under the info panels
+    val hasManual: Boolean = false,
+    val showVideoPlayer: Boolean = false,   // built-in fullscreen snap player overlay
 
     // ── Minimal one-screen navigation ─────────────────────────────────────
     val mainFocus: Int = 0,
@@ -165,7 +177,8 @@ enum class DetailAction(val label: String) {
 }
 
 // Last focusable index on the main page (0 = Play, 1 = Options gear, 2 = Artwork brush).
-const val MAIN_FOCUS_LAST = 2
+// 0 = Launch, then the square row: 1 = Video, 2 = Options, 3 = Artwork, 4 = Manual.
+const val MAIN_FOCUS_LAST = 4
 
 // Upper bound for D-pad page scrolling — generous enough for the longest descriptions; the
 // screen clamps to the real content height, so overshoot is harmless.
@@ -238,6 +251,10 @@ class GameDetailViewModel @Inject constructor(
                     noteText          = game?.userNote ?: "",
                     mediaUris         = mediaOf(game),
                     emulatorName      = emulator,
+                    videoUri          = game?.let { g -> artworkStore.find(g.id, ArtworkKind.VIDEO) },
+                    screenshotUri     = game?.let { g -> artworkStore.find(g.id, ArtworkKind.SCREENSHOT) },
+                    hasManual         = game?.let { g -> artworkStore.find(g.id, ArtworkKind.MANUAL) } != null,
+                    showVideoPlayer   = false,
                     isLoading          = false,
                     mainFocus          = 0,
                     pageScrollSteps    = 0,
@@ -262,6 +279,11 @@ class GameDetailViewModel @Inject constructor(
         val s = _uiState.value
 
         // The manual viewer is the topmost overlay — it owns all input while open.
+        if (s.showVideoPlayer) {
+            // Fullscreen snap player: Back (or Confirm) closes; everything else is consumed.
+            if (action == GamepadAction.BACK || action == GamepadAction.SELECT) closeVideoPlayer()
+            return
+        }
         if (s.manualViewerUri != null) {
             handleManualViewerInput(action)
             return
@@ -319,7 +341,9 @@ class GameDetailViewModel @Inject constructor(
             GamepadAction.NAVIGATE_LEFT  -> _uiState.update { it.copy(mainFocus = (it.mainFocus - 1).coerceIn(0, MAIN_FOCUS_LAST), actionMessage = null) }
             GamepadAction.NAVIGATE_RIGHT -> _uiState.update { it.copy(mainFocus = (it.mainFocus + 1).coerceIn(0, MAIN_FOCUS_LAST), actionMessage = null) }
             GamepadAction.NAVIGATE_UP    -> _uiState.update {
-                if (it.pageScrollSteps > 0) it.copy(pageScrollSteps = it.pageScrollSteps - 1, actionMessage = null)
+                // One press rewinds the whole page scroll; the next lands on Launch — no more
+                // unwinding step by step before focus comes back.
+                if (it.pageScrollSteps > 0) it.copy(pageScrollSteps = 0, actionMessage = null)
                 else it.copy(mainFocus = 0, actionMessage = null)
             }
             GamepadAction.NAVIGATE_DOWN  -> _uiState.update {
@@ -328,9 +352,11 @@ class GameDetailViewModel @Inject constructor(
                 else it.copy(pageScrollSteps = (it.pageScrollSteps + 1).coerceAtMost(MAX_PAGE_SCROLL_STEPS), actionMessage = null)
             }
             GamepadAction.SELECT        -> when (s.mainFocus) {
-                0 -> { Timber.d("Controller SELECT activated Play"); launch() }
-                1 -> openOptions()
-                else -> openArtworkManager()
+                0 -> { Timber.d("Controller SELECT activated Launch"); launch() }
+                1 -> onVideoClicked()
+                2 -> openOptions()
+                3 -> openArtworkManager()
+                else -> onManualClicked()
             }
             // Y / Triangle opens the Options context menu directly, from anywhere on the page.
             GamepadAction.BUTTON_Y, GamepadAction.LONG_PRESS -> openOptions()
@@ -881,6 +907,49 @@ class GameDetailViewModel @Inject constructor(
     // Opens the scraped PDF manual (ScreenScraper, stored as artwork/{gameId}/manual.pdf) in the
     // user's PDF viewer. Goes through the existing launch-intent channel; deliberately NOT
     // sendLaunchIntent — reading a manual is not "playing", so Discord presence stays untouched.
+    fun onManualClicked() = openManual()
+
+    /**
+     * Plays the game's video snap. Honors Settings ▸ Video's default player: a pinned external
+     * package gets an ACTION_VIEW intent (falling back to built-in on failure); otherwise the
+     * built-in fullscreen overlay plays it in place.
+     */
+    fun onVideoClicked() {
+        val uri = _uiState.value.videoUri ?: run {
+            _uiState.update { it.copy(actionMessage = "No video snap — enable Download Video Snaps and re-scrape") }
+            return
+        }
+        viewModelScope.launch {
+            val playerPackage = runCatching {
+                context.pfpDataStore.data.first()[KEY_VIDEO_DEFAULT_PLAYER]
+            }.getOrNull()?.takeIf { it.isNotBlank() }
+            if (playerPackage != null) {
+                val sent = runCatching {
+                    val content = if (uri.startsWith("content://")) android.net.Uri.parse(uri)
+                    else androidx.core.content.FileProvider.getUriForFile(
+                        context, "${context.packageName}.fileprovider", java.io.File(uri),
+                    )
+                    context.startActivity(
+                        android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                            setDataAndType(content, "video/mp4")
+                            setPackage(playerPackage)
+                            addFlags(
+                                android.content.Intent.FLAG_ACTIVITY_NEW_TASK or
+                                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                            )
+                        }
+                    )
+                    true
+                }.getOrDefault(false)
+                if (sent) return@launch
+                Timber.w("External video player '$playerPackage' failed — using built-in")
+            }
+            _uiState.update { it.copy(showVideoPlayer = true) }
+        }
+    }
+
+    fun closeVideoPlayer() = _uiState.update { it.copy(showVideoPlayer = false) }
+
     private fun openManual() {
         val game = _uiState.value.game ?: return
         viewModelScope.launch {

@@ -191,6 +191,11 @@ class MetadataRepository @Inject constructor(
             onAssetProgress?.invoke("ScreenScraper", "3D Box")
             artworkStore.saveFromUrl(gameId, ArtworkKind.BOX_3D, it)
         }
+        // In-game screenshot for Game Detail's SCREENSHOT panel (record-only kind, no column).
+        ssInfo?.screenshotUrl?.let {
+            onAssetProgress?.invoke("ScreenScraper", "Screenshot")
+            artworkStore.saveFromUrl(gameId, ArtworkKind.SCREENSHOT, it)
+        }
 
         // ScreenScraper-only extras — stored under fixed names, looked up via ArtworkStore.find
         // (never referenced from game columns).

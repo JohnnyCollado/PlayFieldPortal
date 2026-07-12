@@ -107,6 +107,7 @@ data class SsGameInfo(
     val boxArtUrl: String?,    // strict box-2D front (BOX_ART tile)
     val box3dUrl: String?,     // angled 3D box render (BOX_3D tile)
     val physicalMediaUrl: String?, // cartridge/disc shot, support-2D (PHYSICAL_MEDIA tile)
+    val screenshotUrl: String?,    // in-game screenshot ("ss") — Game Detail's SCREENSHOT panel
     val heroUrl: String?,      // fanart / wide banner
     val logoUrl: String?,      // wheel / clear logo
     val manualUrl: String?,    // PDF manual
@@ -382,6 +383,7 @@ class ScreenScraperApi @Inject constructor(
             boxArtUrl   = box2d,
             box3dUrl    = box3d,
             physicalMediaUrl = bestMedia("support-2D") ?: bestMedia("support-texture"),
+            screenshotUrl = bestMedia("ss"),
             heroUrl     = bestMedia("fanart") ?: bestMedia("ss"),
             logoUrl     = bestMedia("wheel") ?: bestMedia("wheel-hd"),
             manualUrl   = bestMedia("manuel"),
