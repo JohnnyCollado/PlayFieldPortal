@@ -188,7 +188,7 @@ class ArtworkStudioViewModel @Inject constructor(
     }
 
     private fun sgdbTypeFor(kind: ArtworkKind): SgdbArtType? = when (kind) {
-        ArtworkKind.ICON    -> SgdbArtType.GRID   // horizontal capsules, filtered by dimension
+        ArtworkKind.ICON    -> SgdbArtType.GRID   // all grid dimensions — pass-2 crop shapes the tile
         ArtworkKind.BOX_ART -> SgdbArtType.GRID   // 600×900 portrait grids
         ArtworkKind.HERO,
         ArtworkKind.BACKGROUND -> SgdbArtType.HERO
@@ -258,11 +258,12 @@ class ArtworkStudioViewModel @Inject constructor(
         val sgdbId = game.steamGridDbId
             ?: steamGridDb.searchGame(game.displayTitle).getOrNull()?.firstOrNull()?.id
             ?: return emptyList()
-        val dimensions = if (kind == ArtworkKind.ICON) listOf("920x430", "460x215") else emptyList()
+        // No dimension filter, ICON0 included: every grid shape is a valid candidate now
+        // that pass 2's crop editor will shape it to the tile.
         return steamGridDb.getArt(
             gameId = sgdbId,
             type = type,
-            dimensions = dimensions,
+            dimensions = emptyList(),
             includeNsfw = _uiState.value.includeNsfw,
         ).getOrElse {
             Timber.w(it, "SGDB browse failed")
@@ -567,6 +568,9 @@ class ArtworkStudioViewModel @Inject constructor(
             }
             // X / Square toggles the SGDB NSFW filter while browsing that source.
             GamepadAction.CHANGE_SORT, GamepadAction.OPEN_TASK_TRAY -> toggleNsfw()
+            // Y / Triangle jumps the cursor straight to the source row (lands on the
+            // active source, since sourceIndex already tracks it).
+            GamepadAction.BUTTON_Y -> _uiState.update { it.copy(zone = StudioZone.SOURCES) }
             else -> Unit
         }
     }

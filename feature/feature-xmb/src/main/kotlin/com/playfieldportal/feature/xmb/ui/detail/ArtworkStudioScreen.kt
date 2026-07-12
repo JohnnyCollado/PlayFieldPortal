@@ -411,7 +411,7 @@ fun ArtworkStudioScreen(
             // Footer hints
             Text(
                 "LB / RB — artwork type   ·   D-Pad — move through the grid   ·   A — preview / apply   ·   " +
-                    "B — back   ·   X — NSFW filter   ·   past an edge — next / previous page",
+                    "B — back   ·   X — NSFW filter   ·   Y — jump to sources   ·   past an edge — next / previous page",
                 color = Color.White.copy(alpha = 0.35f), fontSize = 10.sp,
                 modifier = Modifier.padding(top = 6.dp),
             )
