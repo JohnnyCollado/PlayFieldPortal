@@ -631,13 +631,28 @@ class ArtworkStudioViewModel @Inject constructor(
         else                   -> srcAspect        // free crop: keep the source's proportions
     }
 
-    /** First video frame as a PNG temp + its (w, h), for the crop editor's framing preview. */
+    /** A representative video frame as a PNG temp + its (w, h), for the crop editor's framing
+     *  preview. Videos usually open on a black fade-in frame, so several points through the clip
+     *  are sampled and the brightest (most visible) one is used. */
     private fun extractVideoFrame(video: java.io.File): Triple<java.io.File, Int, Int>? = runCatching {
         val retriever = android.media.MediaMetadataRetriever()
         try {
             retriever.setDataSource(video.absolutePath)
-            val frame = retriever.getFrameAtTime(0, android.media.MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
-                ?: return null
+            val durMs = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION)
+                ?.toLongOrNull() ?: 0L
+            val pointsUs = if (durMs > 0)
+                listOf(0.5, 0.33, 0.66, 0.15, 0.85).map { (durMs * it * 1000).toLong() }
+            else listOf(0L)
+            var best: android.graphics.Bitmap? = null
+            var bestLuma = -1.0
+            for (us in pointsUs) {
+                val f = retriever.getFrameAtTime(us, android.media.MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
+                    ?: continue
+                val luma = averageLuma(f)
+                if (luma > bestLuma) { best?.recycle(); best = f; bestLuma = luma } else f.recycle()
+                if (bestLuma > 0.12) break   // clearly not a black frame — good enough
+            }
+            val frame = best ?: return null
             val out = java.io.File.createTempFile("studio_frame_", ".png", appCacheDir)
             out.outputStream().use { frame.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
             val dims = Triple(out, frame.width, frame.height)
@@ -647,6 +662,24 @@ class ArtworkStudioViewModel @Inject constructor(
             runCatching { retriever.release() }
         }
     }.onFailure { Timber.w(it, "Video frame extraction failed") }.getOrNull()
+
+    /** Cheap average brightness (0..1) over a sampled grid of pixels — used to skip black frames. */
+    private fun averageLuma(bmp: android.graphics.Bitmap): Double {
+        val stepX = (bmp.width / 16).coerceAtLeast(1)
+        val stepY = (bmp.height / 16).coerceAtLeast(1)
+        var sum = 0.0; var n = 0
+        var y = 0
+        while (y < bmp.height) {
+            var x = 0
+            while (x < bmp.width) {
+                val c = bmp.getPixel(x, y)
+                sum += (0.299 * ((c shr 16) and 0xFF) + 0.587 * ((c shr 8) and 0xFF) + 0.114 * (c and 0xFF)) / 255.0
+                n++; x += stepX
+            }
+            y += stepY
+        }
+        return if (n > 0) sum / n else 0.0
+    }
 
     /** Recomputes the normalized crop window from zoom/center + per-kind aspect, clamped inside. */
     private fun recomputeCropRect() = _uiState.update { s ->
