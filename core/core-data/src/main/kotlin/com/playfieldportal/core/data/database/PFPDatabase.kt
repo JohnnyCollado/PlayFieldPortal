@@ -25,6 +25,7 @@ import com.playfieldportal.core.data.database.dao.HiddenPlacementDao
 import com.playfieldportal.core.data.database.dao.PhotoDao
 import com.playfieldportal.core.data.database.dao.PhotoLibraryDao
 import com.playfieldportal.core.data.database.dao.ScanTombstoneDao
+import com.playfieldportal.core.data.database.dao.SsMediaCacheDao
 import com.playfieldportal.core.data.database.dao.VideoDao
 import com.playfieldportal.core.data.database.dao.VideoLibraryDao
 import com.playfieldportal.core.data.database.dao.VideoPlaylistDao
@@ -50,6 +51,7 @@ import com.playfieldportal.core.data.database.entity.HiddenPlacementEntity
 import com.playfieldportal.core.data.database.entity.PhotoEntity
 import com.playfieldportal.core.data.database.entity.PhotoLibraryEntity
 import com.playfieldportal.core.data.database.entity.ScanTombstoneEntity
+import com.playfieldportal.core.data.database.entity.SsMediaCacheEntity
 import com.playfieldportal.core.data.database.entity.VideoEntity
 import com.playfieldportal.core.data.database.entity.VideoLibraryEntity
 import com.playfieldportal.core.data.database.entity.VideoPlaylistEntity
@@ -83,8 +85,9 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         ScanTombstoneEntity::class,
         ArtworkRecordEntity::class,
         ArtworkImportReportEntity::class,
+        SsMediaCacheEntity::class,
     ],
-    version = 27,
+    version = 28,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -113,6 +116,7 @@ abstract class PFPDatabase : RoomDatabase() {
     abstract fun backupDao(): BackupDao
     abstract fun artworkRecordDao(): ArtworkRecordDao
     abstract fun artworkImportReportDao(): ArtworkImportReportDao
+    abstract fun ssMediaCacheDao(): SsMediaCacheDao
 
     companion object {
         const val DATABASE_NAME = "pfp_database"
@@ -790,6 +794,24 @@ abstract class PFPDatabase : RoomDatabase() {
                         WHERE ar.game_id = games.id AND ar.artwork_type = 'PHYSICAL_MEDIA'
                     )
                     WHERE physical_media_uri IS NULL
+                    """.trimIndent()
+                )
+            }
+        }
+
+        // v28 — ScreenScraper media-URL cache. One jeuInfos response carries URLs for EVERY
+        // artwork kind; caching the list (keyed by SS game id) lets later scrapes of
+        // newly-enabled kinds and the Artwork Studio's browse grid skip the metadata call.
+        // Pure cache — rebuildable, losing it costs one API call per game, never data.
+        val MIGRATION_27_28 = object : Migration(27, 28) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS ss_media_cache (
+                        ss_id INTEGER NOT NULL PRIMARY KEY,
+                        medias_json TEXT NOT NULL,
+                        fetched_at INTEGER NOT NULL
+                    )
                     """.trimIndent()
                 )
             }

@@ -297,6 +297,14 @@ class ArtworkSettingsViewModel @Inject constructor(
 
     fun dismissSummary() = _extra.update { it.copy(summary = null) }
 
+    /** Drops the ScreenScraper media-URL cache; the next scrape refreshes it per game. */
+    fun clearSsUrlCache() {
+        viewModelScope.launch {
+            artworkRepository.clearSsMediaCache()
+            _extra.update { it.copy(summary = "ScreenScraper URL cache cleared") }
+        }
+    }
+
     fun clearCache() {
         viewModelScope.launch {
             artworkRepository.clearCache()

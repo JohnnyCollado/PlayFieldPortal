@@ -8,4 +8,7 @@ data class ScrapeOptions(
     // OFF by default — they are the largest per-game asset.
     val downloadManuals: Boolean = true,
     val downloadVideoSnaps: Boolean = false,
+    // Re-Scrape All sets this: skip the ss_media_cache read so upstream changes are picked
+    // up (responses still refresh the cache).
+    val bypassSsCache: Boolean = false,
 )

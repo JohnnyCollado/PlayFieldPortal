@@ -48,6 +48,7 @@ class ArtworkRepository @Inject constructor(
     private val scrapePreferences: ArtworkScrapePreferences,
     private val artworkStore: ArtworkStore,
     private val internalStore: com.playfieldportal.feature.artwork.store.InternalArtworkStore,
+    private val ssMediaCacheDao: com.playfieldportal.core.data.database.dao.SsMediaCacheDao,
 ) {
     // Fetch artwork + metadata for all games that don't have any artwork yet.
     suspend fun fetchMissingArtwork(
@@ -89,6 +90,9 @@ class ArtworkRepository @Inject constructor(
         return ArtworkFetchResult(gameId, title, result.success, errorMessage = result.message.takeIf { !result.success })
     }
 
+    /** Drops every cached ScreenScraper media-URL list — next scrape refreshes per game. */
+    suspend fun clearSsMediaCache() = ssMediaCacheDao.clearAll()
+
     /**
      * App-side artwork footprint in bytes: Coil's disk cache + the internal artwork store.
      * Files in the user's portable library are the user's own and are never counted.
@@ -108,6 +112,7 @@ class ArtworkRepository @Inject constructor(
         context.imageLoader.memoryCache?.clear()
         artworkStore.deleteAll()          // internal files + artwork_records (never library files)
         gameDao.clearAllArtworkRefs()
+        ssMediaCacheDao.clearAll()
         Timber.i("Artwork cache + stored artwork state cleared")
     }
 
@@ -148,7 +153,8 @@ class ArtworkRepository @Inject constructor(
     suspend fun reScrapeAllGames(onProgress: (ScrapeProgress) -> Unit): ScrapeProgress =
         withContext(Dispatchers.IO) {
             clearAllArtwork()
-            fetchForGames(gameDao.getAll().map { it.id to Triple(it.title, it.platformId, it.romPath) }, onProgress)
+            // Re-scrape-all exists to pick up upstream changes — bypass the SS URL cache.
+            fetchForGames(gameDao.getAll().map { it.id to Triple(it.title, it.platformId, it.romPath) }, onProgress, bypassSsCache = true)
         }
 
     // Scrape only games whose artwork is missing or stale (invalid local file). Valid artwork
@@ -165,9 +171,10 @@ class ArtworkRepository @Inject constructor(
     private suspend fun fetchForGames(
         games: List<Pair<Long, Triple<String, String, String?>>>,
         onProgress: (ScrapeProgress) -> Unit,
+        bypassSsCache: Boolean = false,
     ): ScrapeProgress {
         metadataRepository.resetSsBatchGuards()
-        val options = scrapePreferences.getOptions()
+        val options = scrapePreferences.getOptions().copy(bypassSsCache = bypassSsCache)
         var ok = 0
         var fail = 0
         games.forEachIndexed { index, (id, info) ->

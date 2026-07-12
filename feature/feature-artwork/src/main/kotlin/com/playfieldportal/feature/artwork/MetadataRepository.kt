@@ -4,6 +4,9 @@ import android.content.Context
 import coil.ImageLoader
 import coil.request.ImageRequest
 import com.playfieldportal.core.data.database.dao.GameDao
+import com.playfieldportal.core.data.database.dao.SsMediaCacheDao
+import com.playfieldportal.core.data.database.entity.SsMediaCacheEntity
+import com.playfieldportal.feature.artwork.api.SsMediaSelection
 import com.playfieldportal.feature.artwork.api.IgdbApi
 import com.playfieldportal.feature.artwork.api.IgdbGameInfo
 import com.playfieldportal.feature.artwork.api.ScrapeOptions
@@ -52,6 +55,7 @@ class MetadataRepository @Inject constructor(
     private val artworkStore: ArtworkStore,
     private val httpClient: HttpClient,
     private val videoSnapTranscoder: VideoSnapTranscoder,
+    private val ssMediaCacheDao: SsMediaCacheDao,
 ) {
     // Batch guards, set from ScreenScraper's typed failures: 430 (daily quota) and credential
     // failures stop SS for the rest of the run; 431 stops only hash-less lookups (each miss digs
@@ -84,7 +88,22 @@ class MetadataRepository @Inject constructor(
         // ── 1. ScreenScraper (hash-based, primary) ────────────────────────────
         var ssInfo: SsGameInfo? = null
         var romIdentity: RomIdentity? = null
+        var usedSsCache = false
+        val cachedSsId = gameEntity?.ssId
         if (screenScraper.isEnabled && !ssStopped) {
+            // Media-URL cache: a previously matched game whose text metadata is already stored
+            // needs no jeuInfos — the cached medias list serves every kind's URL (the response
+            // it came from carried URLs for ALL kinds, so coverage equals a live call).
+            if (!options.bypassSsCache && cachedSsId != null && gameEntity?.description != null) {
+                ssMediaCacheDao.get(cachedSsId)?.let { row ->
+                    SsMediaSelection.decode(row.mediasJson)?.let { medias ->
+                        ssInfo = SsMediaSelection.infoFromCache(cachedSsId, medias)
+                        usedSsCache = true
+                        Timber.i("SS media cache hit (ssId=$cachedSsId) — skipping jeuInfos for '$bestTitle'")
+                    }
+                }
+            }
+            if (!usedSsCache) {
             onAssetProgress?.invoke("ScreenScraper", "Hashing ROM…")
             romIdentity = romHasher.identify(gameEntity?.romPath ?: romPath, gameEntity?.romUri)
             val skipUnhashed = ssUnhashedStopped && romIdentity.crc32 == null && gameEntity?.ssId == null
@@ -98,6 +117,16 @@ class MetadataRepository @Inject constructor(
                 if (ssResult.isBatchStopper) ssStopped = true
                 if (ssResult.stopsUnhashedLookups) ssUnhashedStopped = true
                 ssInfo = ssResult.info
+                // Every successful live response refreshes the media-URL cache.
+                ssResult.info?.let { info ->
+                    val id = info.ssId
+                    if (id != null && info.medias.isNotEmpty()) {
+                        ssMediaCacheDao.upsert(
+                            SsMediaCacheEntity(id, SsMediaSelection.encode(info.medias), System.currentTimeMillis())
+                        )
+                    }
+                }
+            }
             }
         }
 
@@ -162,8 +191,17 @@ class MetadataRepository @Inject constructor(
         // ── Download to disk ───────────────────────────────────────────────────
         val src = primarySource(ssInfo, tgdbInfo, igdbInfo, sgdbGridUrl)
 
+        // Dead-URL fallback bookkeeping: kinds whose CACHED ScreenScraper URL failed to
+        // download. Only meaningful on cache-hit runs; live-URL failures keep old behavior.
+        val failedSsKinds = mutableSetOf<ArtworkKind>()
+        suspend fun savedTracked(kind: ArtworkKind, url: String, fromSs: Boolean): String? {
+            val path = artworkStore.saveFromUrl(gameId, kind, url)
+            if (path == null && fromSs && usedSsCache) failedSsKinds += kind
+            return path
+        }
+
         if (options.downloadHeroes) onAssetProgress?.invoke(src, "Hero")
-        val heroPath = if (options.downloadHeroes) finalHeroUrl?.let { artworkStore.saveFromUrl(gameId, ArtworkKind.HERO, it) } else null
+        val heroPath = if (options.downloadHeroes) finalHeroUrl?.let { savedTracked(ArtworkKind.HERO, it, fromSs = it == ssInfo?.heroUrl) } else null
 
         // Background (artworkUri) drives the full-screen XMB background, so it MUST be full
         // resolution. The old path composited box art into a tiny fixed-size card (≈288px) which
@@ -171,37 +209,37 @@ class MetadataRepository @Inject constructor(
         // hero (reuse the hero file if we already have it), else the box/grid art.
         onAssetProgress?.invoke(src, "Background")
         val backgroundPath = heroPath
-            ?: finalHeroUrl?.let { artworkStore.saveFromUrl(gameId, ArtworkKind.BACKGROUND, it) }
-            ?: finalBoxArtUrl?.let { artworkStore.saveFromUrl(gameId, ArtworkKind.BACKGROUND, it) }
+            ?: finalHeroUrl?.let { savedTracked(ArtworkKind.BACKGROUND, it, fromSs = it == ssInfo?.heroUrl) }
+            ?: finalBoxArtUrl?.let { savedTracked(ArtworkKind.BACKGROUND, it, fromSs = it == ssInfo?.artworkUrl) }
 
         if (options.downloadClearLogos) onAssetProgress?.invoke(src, "Logo")
-        val logoPath = finalLogoUrl?.let { artworkStore.saveFromUrl(gameId, ArtworkKind.LOGO, it) }
+        val logoPath = finalLogoUrl?.let { savedTracked(ArtworkKind.LOGO, it, fromSs = it == ssInfo?.logoUrl) }
 
         // Icon-display-mode tiles — small images, always fetched (no toggles). Box art accepts
         // TGDB/IGDB covers as fallback; SGDB grids are stylized, not boxes, so they stay out.
         // Physical media and 3D boxes are ScreenScraper-only.
         val boxArtSrcUrl = ssInfo?.boxArtUrl ?: tgdbInfo?.artworkUrl ?: igdbInfo?.artworkUrl
         if (boxArtSrcUrl != null) onAssetProgress?.invoke(src, "Box Art")
-        val boxArtPath = boxArtSrcUrl?.let { artworkStore.saveFromUrl(gameId, ArtworkKind.BOX_ART, it) }
+        val boxArtPath = boxArtSrcUrl?.let { savedTracked(ArtworkKind.BOX_ART, it, fromSs = it == ssInfo?.boxArtUrl) }
         val physicalMediaPath = ssInfo?.physicalMediaUrl?.let {
             onAssetProgress?.invoke("ScreenScraper", "Physical Media")
-            artworkStore.saveFromUrl(gameId, ArtworkKind.PHYSICAL_MEDIA, it)
+            savedTracked(ArtworkKind.PHYSICAL_MEDIA, it, fromSs = true)
         }
         val box3dPath = ssInfo?.box3dUrl?.let {
             onAssetProgress?.invoke("ScreenScraper", "3D Box")
-            artworkStore.saveFromUrl(gameId, ArtworkKind.BOX_3D, it)
+            savedTracked(ArtworkKind.BOX_3D, it, fromSs = true)
         }
         // In-game screenshot for Game Detail's SCREENSHOT panel (record-only kind, no column).
         ssInfo?.screenshotUrl?.let {
             onAssetProgress?.invoke("ScreenScraper", "Screenshot")
-            artworkStore.saveFromUrl(gameId, ArtworkKind.SCREENSHOT, it)
+            savedTracked(ArtworkKind.SCREENSHOT, it, fromSs = true)
         }
 
         // ScreenScraper-only extras — stored under fixed names, looked up via ArtworkStore.find
         // (never referenced from game columns).
         if (options.downloadManuals) ssInfo?.manualUrl?.let {
             onAssetProgress?.invoke("ScreenScraper", "Manual")
-            artworkStore.saveFromUrl(gameId, ArtworkKind.MANUAL, it)
+            savedTracked(ArtworkKind.MANUAL, it, fromSs = true)
         }
         if (options.downloadVideoSnaps) {
             val snapUrl = ssInfo?.videoUrl
@@ -210,7 +248,7 @@ class MetadataRepository @Inject constructor(
                 // SS already has a normalized snap — store it as-is.
                 snapUrl != null -> {
                     onAssetProgress?.invoke("ScreenScraper", "Video Snap")
-                    artworkStore.saveFromUrl(gameId, ArtworkKind.VIDEO, snapUrl)
+                    savedTracked(ArtworkKind.VIDEO, snapUrl, fromSs = true)
                 }
                 // Only the full video exists — download it, trim to 60 s and scale it down
                 // to ICON1 size locally, and store the small snap (never the full video).
@@ -269,6 +307,45 @@ class MetadataRepository @Inject constructor(
             steamGridDbId = sgdbGameId,
             romCrc32     = romIdentity?.crc32,
         )
+
+        // Dead cached URL(s): SS occasionally moves media. Refresh the cache once from a live
+        // jeuInfos and retry exactly the failed kinds with fresh URLs — one extra call total.
+        if (usedSsCache && failedSsKinds.isNotEmpty() && cachedSsId != null) {
+            Timber.w("SS cached URLs failed for $failedSsKinds — refreshing cache, retrying once")
+            ssMediaCacheDao.delete(cachedSsId)
+            val fresh = screenScraper.fetchGameInfo(platformId, rom = null, ssGameId = cachedSsId).info
+            if (fresh != null) {
+                if (fresh.medias.isNotEmpty()) {
+                    ssMediaCacheDao.upsert(
+                        SsMediaCacheEntity(cachedSsId, SsMediaSelection.encode(fresh.medias), System.currentTimeMillis())
+                    )
+                }
+                for (kind in failedSsKinds) {
+                    val url = when (kind) {
+                        ArtworkKind.HERO           -> fresh.heroUrl
+                        ArtworkKind.BACKGROUND     -> fresh.heroUrl ?: fresh.artworkUrl
+                        ArtworkKind.LOGO           -> fresh.logoUrl
+                        ArtworkKind.BOX_ART        -> fresh.boxArtUrl
+                        ArtworkKind.PHYSICAL_MEDIA -> fresh.physicalMediaUrl
+                        ArtworkKind.BOX_3D         -> fresh.box3dUrl
+                        ArtworkKind.SCREENSHOT     -> fresh.screenshotUrl
+                        ArtworkKind.MANUAL         -> fresh.manualUrl
+                        ArtworkKind.VIDEO          -> fresh.videoUrl
+                        else                       -> null
+                    } ?: continue
+                    val path = artworkStore.saveFromUrl(gameId, kind, url) ?: continue
+                    when (kind) {
+                        ArtworkKind.HERO           -> gameDao.updateMetadata(gameId, heroUri = path)
+                        ArtworkKind.BACKGROUND     -> gameDao.updateMetadata(gameId, artworkUri = path)
+                        ArtworkKind.LOGO           -> gameDao.updateMetadata(gameId, logoUri = path)
+                        ArtworkKind.BOX_ART        -> gameDao.updateMetadata(gameId, boxArtUri = path)
+                        ArtworkKind.PHYSICAL_MEDIA -> gameDao.updateMetadata(gameId, physicalMediaUri = path)
+                        ArtworkKind.BOX_3D         -> gameDao.updateMetadata(gameId, box3dUri = path)
+                        else                       -> Unit   // record-only kinds need no column
+                    }
+                }
+            }
+        }
 
         prewarm(backgroundPath, heroPath, logoPath)
         fetchHorizontalIcon(gameId, bestTitle, sgdbGameId)

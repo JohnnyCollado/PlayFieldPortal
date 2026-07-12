@@ -113,6 +113,9 @@ data class SsGameInfo(
     val manualUrl: String?,    // PDF manual
     val videoUrl: String?,     // normalized video snap (already trimmed/scaled by SS)
     val videoRawUrl: String?,  // full gameplay video — transcoded locally when no snap exists
+    // The full trimmed medias list as served — persisted to ss_media_cache so later scrapes
+    // and the Artwork Studio can browse every kind without re-asking jeuInfos.
+    val medias: List<SsCachedMedia> = emptyList(),
 )
 
 // ── Diagnostics ────────────────────────────────────────────────────────────────
@@ -357,14 +360,12 @@ class ScreenScraperApi @Inject constructor(
         // SS note is out of 20 — normalize to 0..1 so the UI can render any scale it likes.
         val communityRating = rating?.text?.toFloatOrNull()?.div(20f)?.coerceIn(0f, 1f)
 
-        // Media: prefer region=us, fall back to wor/none/any.
-        fun bestMedia(type: String): String? = medias
-            .filter { it.type == type && it.url != null }
-            .sortedWith(compareBy { when (it.region) { "us" -> 0; "wor" -> 1; null -> 2; else -> 3 } })
-            .firstOrNull()?.url
-
-        val box2d = bestMedia("box-2D")
-        val box3d = bestMedia("box-3D")
+        // Per-kind winners come from the shared selector so the live parse, the media-URL
+        // cache and the Artwork Studio all pick identically (SsMediaSelection).
+        val cachedMedias = medias.mapNotNull { m ->
+            m.url?.let { SsCachedMedia(type = m.type, region = m.region, url = it, format = m.format) }
+        }
+        val urls = SsMediaSelection.urls(cachedMedias)
 
         return SsGameInfo(
             ssId        = id?.toLongOrNull(),
@@ -379,16 +380,17 @@ class ScreenScraperApi @Inject constructor(
             franchise   = franchise,
             communityRating = communityRating,
             releaseDate = yearStr?.takeIf { it.length >= 8 },   // full dates only; bare years stay in releaseYear
-            artworkUrl  = box2d ?: box3d,
-            boxArtUrl   = box2d,
-            box3dUrl    = box3d,
-            physicalMediaUrl = bestMedia("support-2D") ?: bestMedia("support-texture"),
-            screenshotUrl = bestMedia("ss"),
-            heroUrl     = bestMedia("fanart") ?: bestMedia("ss"),
-            logoUrl     = bestMedia("wheel") ?: bestMedia("wheel-hd"),
-            manualUrl   = bestMedia("manuel"),
-            videoUrl    = bestMedia("video-normalized"),
-            videoRawUrl = bestMedia("video"),
+            artworkUrl  = urls.artworkUrl,
+            boxArtUrl   = urls.boxArtUrl,
+            box3dUrl    = urls.box3dUrl,
+            physicalMediaUrl = urls.physicalMediaUrl,
+            screenshotUrl = urls.screenshotUrl,
+            heroUrl     = urls.heroUrl,
+            logoUrl     = urls.logoUrl,
+            manualUrl   = urls.manualUrl,
+            videoUrl    = urls.videoUrl,
+            videoRawUrl = urls.videoRawUrl,
+            medias      = cachedMedias,
         )
     }
 

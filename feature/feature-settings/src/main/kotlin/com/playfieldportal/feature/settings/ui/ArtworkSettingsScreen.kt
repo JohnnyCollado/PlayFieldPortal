@@ -358,6 +358,12 @@ fun ArtworkSettingsScreen(
             )
 
             SettingsRow(
+                label    = "Clear ScreenScraper URL Cache",
+                sublabel = "Forget cached artwork URLs — the next scrape re-asks ScreenScraper per game. Harmless; never deletes artwork",
+                onClick  = { viewModel.clearSsUrlCache() },
+            )
+
+            SettingsRow(
                 label    = "Clear All Artwork",
                 sublabel = "Fresh start: removes cached images, stored artwork, and every game's art links. Files in your artwork folder are kept — Relink or re-scrape to restore",
                 onClick  = { viewModel.clearCache() },
