@@ -4,8 +4,11 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.data.repository.RomRootRepository
 import com.playfieldportal.feature.artwork.api.ArtworkImportManager
 import com.playfieldportal.feature.artwork.importer.ArtworkImportWorker
@@ -26,6 +29,9 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
+
+// Sticky Move/Copy choice for artwork imports — survives process restarts.
+private val KEY_MOVE_FILES = booleanPreferencesKey("artwork_import_move_files")
 
 data class ArtworkImportUiState(
     // Folder link
@@ -74,6 +80,13 @@ class ArtworkImportViewModel @Inject constructor(
     val uiState: StateFlow<ArtworkImportUiState> = _uiState.asStateFlow()
 
     init {
+        // "Move Files" is a persisted preference, not per-visit state — an ephemeral toggle
+        // silently reset to Copy on every process restart, which read as "Move doesn't work".
+        viewModelScope.launch {
+            context.pfpDataStore.data.collect { prefs ->
+                _uiState.value = _uiState.value.copy(moveFiles = prefs[KEY_MOVE_FILES] ?: false)
+            }
+        }
         viewModelScope.launch {
             // distinctUntilChanged is load-bearing: the underlying DataStore flow emits on EVERY
             // preference write, and each emission here triggers a SAF rescan of the import tree.
@@ -212,6 +225,9 @@ class ArtworkImportViewModel @Inject constructor(
 
     fun toggleMoveFiles(enabled: Boolean) {
         _uiState.value = _uiState.value.copy(moveFiles = enabled)
+        viewModelScope.launch {
+            context.pfpDataStore.edit { it[KEY_MOVE_FILES] = enabled }
+        }
     }
 
     // ── Ambiguous review ──────────────────────────────────────────────────────
@@ -248,6 +264,8 @@ class ArtworkImportViewModel @Inject constructor(
         }
         val transfer = if (state.moveFiles) PortableArtworkLibrary.Transfer.MOVE
         else PortableArtworkLibrary.Transfer.COPY
+        // File-logged so a "Move didn't move" report can be checked against what was requested.
+        Timber.i("Import starting: transfer=$transfer, ${plan.itemCount} items from '${plan.sourceLabel}'")
         importManager.startImport(plan, transfer)
         _uiState.value = state.copy(plan = null, importRunning = true, importDone = 0, importTotal = plan.itemCount)
     }
