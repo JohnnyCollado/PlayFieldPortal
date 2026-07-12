@@ -2,9 +2,11 @@ package com.playfieldportal.feature.xmb.ui.detail
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +19,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.itemsIndexed as lazyItemsIndexed
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
@@ -28,8 +33,12 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,6 +61,7 @@ import com.playfieldportal.core.ui.theme.menuCursorEdge
  * available-artwork grid, source row (L2/R2 — here Left/Right in the SOURCES zone),
  * A = candidate preview → Apply, B = back, X = SGDB NSFW filter toggle.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ArtworkStudioScreen(
     gameId: Long,
@@ -87,7 +97,8 @@ fun ArtworkStudioScreen(
         val kind = state.localPickKind ?: return@LaunchedEffect
         val mimes = when (kind) {
             com.playfieldportal.feature.artwork.store.ArtworkKind.MANUAL -> arrayOf("application/pdf")
-            com.playfieldportal.feature.artwork.store.ArtworkKind.VIDEO  -> arrayOf("video/mp4", "video/webm", "video/*")
+            com.playfieldportal.feature.artwork.store.ArtworkKind.VIDEO,
+            com.playfieldportal.feature.artwork.store.ArtworkKind.ICON1  -> arrayOf("video/mp4", "video/webm", "video/*")
             else -> arrayOf("image/png", "image/jpeg", "image/webp")
         }
         localPicker.launch(mimes)
@@ -128,12 +139,15 @@ fun ArtworkStudioScreen(
             }
             Spacer(Modifier.height(10.dp))
 
-            // ── Destination tabs (LB/RB) ──────────────────────────────────────
-            Row(
-                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            // ── Destination tabs (LB/RB) — scrollable, selected tab kept in view ──
+            val tabListState = rememberLazyListState()
+            LaunchedEffect(state.tabIndex) { tabListState.animateScrollToItem(state.tabIndex) }
+            LazyRow(
+                state = tabListState,
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                STUDIO_TABS.forEachIndexed { index, tab ->
+                lazyItemsIndexed(STUDIO_TABS) { index, tab ->
                     val selected = state.tabIndex == index
                     val focusedZone = state.zone == StudioZone.TABS && selected
                     Text(
@@ -261,10 +275,31 @@ fun ArtworkStudioScreen(
                         if (state.totalResults > 0) {
                             val first = state.page * 20 + 1
                             val last = (state.page * 20 + state.results.size)
+                            if (state.totalResults > 20) {
+                                Text(
+                                    "‹ Prev", color = Color.White.copy(alpha = if (state.page > 0) 0.8f else 0.25f),
+                                    fontSize = 11.sp,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .clickable(enabled = state.page > 0, onClick = viewModel::previousPage)
+                                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                                )
+                            }
                             Text(
                                 "$first–$last of ${state.totalResults}",
                                 color = Color.White.copy(alpha = 0.45f), fontSize = 10.sp,
                             )
+                            if (state.totalResults > 20) {
+                                val more = last < state.totalResults
+                                Text(
+                                    "Next ›", color = Color.White.copy(alpha = if (more) 0.8f else 0.25f),
+                                    fontSize = 11.sp,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .clickable(enabled = more, onClick = viewModel::nextPage)
+                                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                                )
+                            }
                         }
                     }
                     Spacer(Modifier.height(8.dp))
@@ -302,15 +337,18 @@ fun ArtworkStudioScreen(
                                     gridState.animateScrollToItem(state.gridIndex.coerceIn(0, state.results.lastIndex))
                                 }
                             }
+                            // Touch long-press toggles a tile's live video preview; controller
+                            // focus previews automatically (one player at a time, ever).
+                            var touchPreviewIndex by remember(state.results) { mutableStateOf(-1) }
                             LazyVerticalGrid(
                                 state = gridState,
-                                columns = GridCells.Fixed(4),
+                                columns = GridCells.Fixed(STUDIO_GRID_COLUMNS),
                                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                                 verticalArrangement = Arrangement.spacedBy(10.dp),
                             ) {
                                 itemsIndexed(state.results) { index, art ->
                                     val focused = state.zone == StudioZone.GRID && state.gridIndex == index
-                                    val isCurrent = false   // provenance match lands with pass 2
+                                    val previewing = art.isVideo && (focused || touchPreviewIndex == index)
                                     Column {
                                         Box(
                                             modifier = Modifier
@@ -320,20 +358,28 @@ fun ArtworkStudioScreen(
                                                 .background(Color(0xFF10101A))
                                                 .border(
                                                     if (focused) 2.dp else 1.dp,
-                                                    when {
-                                                        focused -> accent
-                                                        isCurrent -> accent.copy(alpha = 0.5f)
-                                                        else -> Color.White.copy(alpha = 0.1f)
-                                                    },
+                                                    if (focused) accent else Color.White.copy(alpha = 0.1f),
                                                     RoundedCornerShape(8.dp),
                                                 )
-                                                .clickable { viewModel.openCandidate(index) },
+                                                .combinedClickable(
+                                                    onClick = { viewModel.openCandidate(index) },
+                                                    onLongClick = {
+                                                        if (art.isVideo) touchPreviewIndex =
+                                                            if (touchPreviewIndex == index) -1 else index
+                                                    },
+                                                ),
                                             contentAlignment = Alignment.Center,
                                         ) {
-                                            if (art.isVideo) {
-                                                Text("▶ VIDEO", color = Color.White.copy(alpha = 0.75f), fontSize = 12.sp)
-                                            } else {
-                                                AsyncImage(
+                                            when {
+                                                previewing -> StudioVideoTilePreview(
+                                                    url = art.url,
+                                                    modifier = Modifier.fillMaxSize(),
+                                                )
+                                                art.isVideo -> Text(
+                                                    "▶ VIDEO",
+                                                    color = Color.White.copy(alpha = 0.75f), fontSize = 12.sp,
+                                                )
+                                                else -> AsyncImage(
                                                     model = art.thumb ?: art.url,
                                                     contentDescription = null,
                                                     contentScale = ContentScale.Crop,
@@ -357,7 +403,8 @@ fun ArtworkStudioScreen(
 
             // Footer hints
             Text(
-                "LB/RB type · ◄► browse · Ⓐ preview/apply · Ⓑ back · ▢ NSFW filter · edges page",
+                "LB / RB — artwork type   ·   D-Pad — move through the grid   ·   A — preview / apply   ·   " +
+                    "B — back   ·   X — NSFW filter   ·   past an edge — next / previous page",
                 color = Color.White.copy(alpha = 0.35f), fontSize = 10.sp,
                 modifier = Modifier.padding(top = 6.dp),
             )
@@ -413,4 +460,68 @@ fun ArtworkStudioScreen(
             }
         }
     }
+}
+
+// Small muted looping preview inside a grid tile — plays only while the tile is focused
+// (controller) or long-pressed (touch), so at most one decoder ever runs. TextureView, not
+// SurfaceView, so it composites inside the Studio like any other tile content.
+@Composable
+private fun StudioVideoTilePreview(url: String, modifier: Modifier = Modifier) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var videoSize by remember(url) {
+        mutableStateOf<androidx.media3.common.VideoSize?>(null)
+    }
+    val player = remember(url) {
+        androidx.media3.exoplayer.ExoPlayer.Builder(context).build().apply {
+            trackSelectionParameters = trackSelectionParameters.buildUpon()
+                .setTrackTypeDisabled(androidx.media3.common.C.TRACK_TYPE_AUDIO, true)
+                .build()
+            volume = 0f
+            setMediaItem(
+                androidx.media3.common.MediaItem.Builder()
+                    .setUri(url)
+                    .setClippingConfiguration(
+                        androidx.media3.common.MediaItem.ClippingConfiguration.Builder()
+                            .setEndPositionMs(15_000)   // a taste, not the whole clip
+                            .build()
+                    )
+                    .build()
+            )
+            repeatMode = androidx.media3.common.Player.REPEAT_MODE_ONE
+            playWhenReady = true
+            prepare()
+        }
+    }
+    DisposableEffect(player) {
+        val listener = object : androidx.media3.common.Player.Listener {
+            override fun onVideoSizeChanged(size: androidx.media3.common.VideoSize) { videoSize = size }
+        }
+        player.addListener(listener)
+        onDispose { player.removeListener(listener); player.release() }
+    }
+    androidx.compose.ui.viewinterop.AndroidView(
+        factory = { ctx ->
+            android.view.TextureView(ctx).also { view ->
+                player.setVideoTextureView(view)
+                view.addOnLayoutChangeListener { v, _, _, _, _, _, _, _, _ ->
+                    studioTileCrop(v as android.view.TextureView, videoSize)
+                }
+            }
+        },
+        update = { view -> studioTileCrop(view, videoSize) },
+        modifier = modifier,
+    )
+}
+
+// Center-crop matrix so the (usually 4:3) frame fills the tile.
+private fun studioTileCrop(view: android.view.TextureView, size: androidx.media3.common.VideoSize?) {
+    val vw = size?.width?.toFloat() ?: return
+    val vh = size.height.toFloat()
+    if (vw <= 0f || vh <= 0f || view.width == 0 || view.height == 0) return
+    val viewW = view.width.toFloat()
+    val viewH = view.height.toFloat()
+    val scale = maxOf(viewW / vw, viewH / vh)
+    view.setTransform(android.graphics.Matrix().apply {
+        setScale((vw * scale) / viewW, (vh * scale) / viewH, viewW / 2f, viewH / 2f)
+    })
 }

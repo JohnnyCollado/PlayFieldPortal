@@ -188,6 +188,19 @@ fun GameDetailScreen(
     }
 
     val game = state.game ?: return
+
+    // The Artwork Studio fully REPLACES the detail page while open — nothing shows or reacts
+    // behind it; closing restores the page exactly where it was (state is untouched).
+    if (state.showArtworkStudio) {
+        ArtworkStudioScreen(
+            gameId = gameId,
+            onClose = viewModel::onArtworkStudioClosed,
+            pendingGamepadAction = pendingGamepadAction,
+            onGamepadActionConsumed = onGamepadActionConsumed,
+            modifier = modifier.fillMaxSize(),
+        )
+        return
+    }
     val platform = state.platform
     val pfpColors = LocalPFPColors.current
     val accentColor = platform?.accentColor?.let { Color(it) } ?: pfpColors.accentColor
@@ -372,17 +385,6 @@ fun GameDetailScreen(
                     }
                 }
             }
-        }
-
-        // Fullscreen Artwork Studio — replaces the legacy in-detail artwork manager.
-        if (state.showArtworkStudio) {
-            ArtworkStudioScreen(
-                gameId = gameId,
-                onClose = viewModel::onArtworkStudioClosed,
-                pendingGamepadAction = pendingGamepadAction,
-                onGamepadActionConsumed = onGamepadActionConsumed,
-                modifier = Modifier.fillMaxSize(),
-            )
         }
 
         // Fullscreen image preview (Steam-style) — Confirm/Back or tap closes.

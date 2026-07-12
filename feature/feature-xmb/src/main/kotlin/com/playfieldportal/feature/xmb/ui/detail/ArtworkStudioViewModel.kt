@@ -30,6 +30,8 @@ data class StudioTab(val kind: ArtworkKind, val label: String, val contract: Str
 enum class StudioSource(val label: String) {
     SCREENSCRAPER("ScreenScraper"),
     STEAMGRIDDB("SteamGridDB"),
+    THEGAMESDB("TheGamesDB"),
+    IGDB("IGDB"),
     LOCAL("Local File"),
 }
 
@@ -90,8 +92,11 @@ private val SS_TYPES_FOR_KIND: Map<ArtworkKind, List<String>> = mapOf(
     ArtworkKind.ICON1          to listOf("video-normalized", "video"),  // icon-slot snap
 )
 
+const val STUDIO_GRID_COLUMNS = 4
+
 val STUDIO_TABS = listOf(
     StudioTab(ArtworkKind.ICON,           "ICON0",       "XMB tile · 144×80 · crop"),
+    StudioTab(ArtworkKind.ICON1,          "ICON1",       "XMB icon animation · 60 s muted snap"),
     StudioTab(ArtworkKind.BOX_ART,        "BOX ART",     "XMB tile (Box Art mode) · natural aspect"),
     StudioTab(ArtworkKind.BOX_3D,         "3D BOX",      "XMB tile (3D Box mode) · natural aspect"),
     StudioTab(ArtworkKind.PHYSICAL_MEDIA, "PHYS. MEDIA", "XMB tile (Physical Media mode) · natural aspect"),
@@ -101,7 +106,6 @@ val STUDIO_TABS = listOf(
     StudioTab(ArtworkKind.SCREENSHOT,     "SCREENSHOT",  "Game Details media strip"),
     StudioTab(ArtworkKind.MANUAL,         "MANUAL",      "In-app PDF manual"),
     StudioTab(ArtworkKind.VIDEO,          "VIDEO",       "Game Details media strip · full video"),
-    StudioTab(ArtworkKind.ICON1,          "ICON1",       "XMB icon animation · 60 s muted snap"),
 )
 
 /**
@@ -119,6 +123,8 @@ class ArtworkStudioViewModel @Inject constructor(
     private val ssMediaCacheDao: SsMediaCacheDao,
     private val steamGridDb: SteamGridDbApi,
     private val sgdbKeyProvider: SgdbApiKeyProvider,
+    private val theGamesDb: com.playfieldportal.feature.artwork.TheGamesDbApi,
+    private val igdbApi: com.playfieldportal.feature.artwork.api.IgdbApi,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ArtworkStudioUiState())
@@ -127,6 +133,13 @@ class ArtworkStudioViewModel @Inject constructor(
     // Full (unpaged) result list for the active tab+source; the state carries one page.
     private var allResults: List<StudioArt> = emptyList()
     private var gameId: Long = -1
+
+    // One-shot per-open caches for the single-result sources (null until first browse).
+    private var tgdbInfo: com.playfieldportal.feature.artwork.TgdbGameInfo? = null
+    private var tgdbFetched = false
+    private var igdbInfo: com.playfieldportal.feature.artwork.api.IgdbGameInfo? = null
+    private var igdbFetched = false
+    private var hasIgdbCreds = false
 
     fun load(gameId: Long) {
         // Always clear the closed flag: the VM survives across open/close (host-scoped), so a
@@ -137,6 +150,9 @@ class ArtworkStudioViewModel @Inject constructor(
         viewModelScope.launch {
             val game = gameRepository.getById(gameId)
             val hasSgdb = !sgdbKeyProvider.getKey().isNullOrBlank()
+            hasIgdbCreds = igdbApi.hasCredentials()
+            tgdbFetched = false; tgdbInfo = null
+            igdbFetched = false; igdbInfo = null
             _uiState.update { it.copy(game = game, isLoading = false, hasSgdbKey = hasSgdb) }
             refreshCurrent()
             loadResults()
@@ -147,9 +163,18 @@ class ArtworkStudioViewModel @Inject constructor(
 
     /** Sources that can actually serve the active tab's kind. */
     fun sourcesForTab(): List<StudioSource> = buildList {
-        if (SS_TYPES_FOR_KIND.containsKey(tab().kind)) add(StudioSource.SCREENSCRAPER)
-        if (sgdbTypeFor(tab().kind) != null && _uiState.value.hasSgdbKey) {
+        val kind = tab().kind
+        if (SS_TYPES_FOR_KIND.containsKey(kind)) add(StudioSource.SCREENSCRAPER)
+        if (sgdbTypeFor(kind) != null && _uiState.value.hasSgdbKey) {
             add(StudioSource.STEAMGRIDDB)
+        }
+        // Single-result title-match sources: box art / hero / background / logo only.
+        val titleMatchKinds = setOf(
+            ArtworkKind.BOX_ART, ArtworkKind.HERO, ArtworkKind.BACKGROUND, ArtworkKind.LOGO,
+        )
+        if (kind in titleMatchKinds) {
+            add(StudioSource.THEGAMESDB)
+            if (hasIgdbCreds) add(StudioSource.IGDB)
         }
         add(StudioSource.LOCAL)
     }
@@ -186,6 +211,8 @@ class ArtworkStudioViewModel @Inject constructor(
             allResults = when (source) {
                 StudioSource.SCREENSCRAPER -> ssResults(kind)
                 StudioSource.STEAMGRIDDB   -> sgdbResults(kind)
+                StudioSource.THEGAMESDB    -> tgdbResults(kind)
+                StudioSource.IGDB          -> igdbResults(kind)
                 StudioSource.LOCAL         -> emptyList()   // grid shows the pick action instead
             }
             _uiState.update {
@@ -242,6 +269,40 @@ class ArtworkStudioViewModel @Inject constructor(
                     .joinToString(" · "),
             )
         }
+    }
+
+    private suspend fun tgdbResults(kind: ArtworkKind): List<StudioArt> {
+        val game = _uiState.value.game ?: return emptyList()
+        if (!tgdbFetched) {
+            tgdbFetched = true
+            tgdbInfo = runCatching { theGamesDb.fetchGameInfo(game.platformId, game.displayTitle) }
+                .onFailure { Timber.w(it, "TGDB browse failed") }.getOrNull()
+        }
+        val info = tgdbInfo ?: return emptyList()
+        val url = when (kind) {
+            ArtworkKind.BOX_ART                        -> info.artworkUrl
+            ArtworkKind.HERO, ArtworkKind.BACKGROUND   -> info.heroUrl
+            ArtworkKind.LOGO                           -> info.logoUrl
+            else                                       -> null
+        } ?: return emptyList()
+        return listOf(StudioArt(url = url, thumb = null, provider = "TheGamesDB", label = "best title match"))
+    }
+
+    private suspend fun igdbResults(kind: ArtworkKind): List<StudioArt> {
+        val game = _uiState.value.game ?: return emptyList()
+        if (!igdbFetched) {
+            igdbFetched = true
+            igdbInfo = runCatching { igdbApi.fetchGameInfo(game.platformId, game.displayTitle) }
+                .onFailure { Timber.w(it, "IGDB browse failed") }.getOrNull()
+        }
+        val info = igdbInfo ?: return emptyList()
+        val url = when (kind) {
+            ArtworkKind.BOX_ART                        -> info.artworkUrl
+            ArtworkKind.HERO, ArtworkKind.BACKGROUND   -> info.heroUrl
+            ArtworkKind.LOGO                           -> info.logoUrl
+            else                                       -> null
+        } ?: return emptyList()
+        return listOf(StudioArt(url = url, thumb = null, provider = "IGDB", label = "best title match"))
     }
 
     // ── User actions ──────────────────────────────────────────────────────────
@@ -386,17 +447,22 @@ class ArtworkStudioViewModel @Inject constructor(
             GamepadAction.PREV_CATEGORY -> cycleTab(-1)   // LB / RB
             GamepadAction.NEXT_CATEGORY -> cycleTab(+1)
             GamepadAction.BACK -> close()
-            GamepadAction.NAVIGATE_UP -> _uiState.update {
-                it.copy(zone = when (it.zone) {
-                    StudioZone.GRID -> StudioZone.SOURCES
-                    else -> StudioZone.TABS
-                })
+            GamepadAction.NAVIGATE_UP -> when (s.zone) {
+                // Grid moves a whole ROW up; only the top row exits to the source row.
+                StudioZone.GRID ->
+                    if (s.gridIndex >= STUDIO_GRID_COLUMNS) {
+                        _uiState.update { it.copy(gridIndex = s.gridIndex - STUDIO_GRID_COLUMNS) }
+                    } else _uiState.update { it.copy(zone = StudioZone.SOURCES) }
+                else -> _uiState.update { it.copy(zone = StudioZone.TABS) }
             }
-            GamepadAction.NAVIGATE_DOWN -> _uiState.update {
-                it.copy(zone = when (it.zone) {
-                    StudioZone.TABS -> StudioZone.SOURCES
-                    else -> StudioZone.GRID
-                })
+            GamepadAction.NAVIGATE_DOWN -> when (s.zone) {
+                StudioZone.TABS -> _uiState.update { it.copy(zone = StudioZone.SOURCES) }
+                StudioZone.SOURCES -> _uiState.update { it.copy(zone = StudioZone.GRID) }
+                // Grid moves a whole ROW down; past the last row flips to the next page.
+                StudioZone.GRID ->
+                    if (s.gridIndex + STUDIO_GRID_COLUMNS <= s.results.lastIndex) {
+                        _uiState.update { it.copy(gridIndex = s.gridIndex + STUDIO_GRID_COLUMNS) }
+                    } else nextPage()
             }
             GamepadAction.NAVIGATE_LEFT -> when (s.zone) {
                 StudioZone.TABS    -> cycleTab(-1)
