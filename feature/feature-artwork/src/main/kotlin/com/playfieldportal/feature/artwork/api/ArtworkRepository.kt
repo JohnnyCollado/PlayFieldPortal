@@ -121,16 +121,29 @@ class ArtworkRepository @Inject constructor(
     // A reference is valid if it's a remote URL, or a stored file that still resolves to bytes.
     private fun isValidArtworkRef(uri: String?): Boolean = artworkStore.isValidRef(uri)
 
+    // The primary display artwork a matched game can reliably obtain from the scrapers: the
+    // full-screen background, the box-art tile, and the clear logo. A game counts as complete
+    // (and is skipped by Scrape Missing) only when ALL of these resolve. Physical media, 3D
+    // boxes, hero fanart, and the SGDB-grid icon are intentionally excluded — ScreenScraper
+    // lacks them for many titles, so requiring them would re-target those games forever. They
+    // are still filled opportunistically whenever a game IS scraped.
+    private fun primaryArtRefs(g: com.playfieldportal.core.data.database.entity.GameEntity) =
+        listOf(g.artworkUri, g.boxArtUri, g.logoUri)
+
+    private fun needsArtwork(g: com.playfieldportal.core.data.database.entity.GameEntity): Boolean =
+        primaryArtRefs(g).any { !isValidArtworkRef(it) }
+
     suspend fun computeStatus(): ArtworkStatus = withContext(Dispatchers.IO) {
         val games = gameDao.getAll()
         var complete = 0
         var missing = 0
         var stale = 0
         games.forEach { g ->
+            val refs = primaryArtRefs(g)
             when {
-                g.artworkUri.isNullOrBlank()      -> missing++
-                isValidArtworkRef(g.artworkUri)   -> complete++
-                else                              -> stale++   // path set but file missing/empty
+                refs.all { isValidArtworkRef(it) }                        -> complete++
+                refs.any { !it.isNullOrBlank() && !isValidArtworkRef(it) } -> stale++   // a set path broke
+                else                                                     -> missing++  // simply absent
             }
         }
         ArtworkStatus(total = games.size, complete = complete, missing = missing, stale = stale)
@@ -157,13 +170,18 @@ class ArtworkRepository @Inject constructor(
             fetchForGames(gameDao.getAll().map { it.id to Triple(it.title, it.platformId, it.romPath) }, onProgress, bypassSsCache = true)
         }
 
-    // Scrape only games whose artwork is missing or stale (invalid local file). Valid artwork
-    // is left untouched. Stale refs are cleared first so the dead path can't linger.
+    // Scrape every game still missing any primary artwork — not just those missing a background.
+    // A game with, say, a valid background but no box art or logo is now included and its gaps
+    // are filled (the store's conflict gate leaves already-valid assets untouched, so nothing
+    // that exists is re-downloaded or overwritten).
     suspend fun scrapeMissingOnly(onProgress: (ScrapeProgress) -> Unit): ScrapeProgress =
         withContext(Dispatchers.IO) {
-            val targets = gameDao.getAll().filter { !isValidArtworkRef(it.artworkUri) }
-            // Clear stale (non-null but invalid) refs so a fresh fetch isn't masked by COALESCE.
-            targets.filter { !it.artworkUri.isNullOrBlank() }.forEach { gameDao.clearArtworkForGame(it.id) }
+            val targets = gameDao.getAll().filter { needsArtwork(it) }
+            // Only games whose BACKGROUND ref is itself stale get the slate cleared before the
+            // re-fetch (clearArtworkForGame also nulls hero/logo/icon). Games pulled in only for
+            // a missing box art keep their valid background — COALESCE fills the gaps in place.
+            targets.filter { !it.artworkUri.isNullOrBlank() && !isValidArtworkRef(it.artworkUri) }
+                .forEach { gameDao.clearArtworkForGame(it.id) }
             fetchForGames(targets.map { it.id to Triple(it.title, it.platformId, it.romPath) }, onProgress)
         }
 

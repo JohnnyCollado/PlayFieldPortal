@@ -51,6 +51,34 @@ All notable changes to Play Field Portal are documented here. This project follo
   `physical_media_uri`, `box3d_uri`, `icon_display_mode`) and scrape metadata (`players`,
   `age_rating`, `franchise`, `community_rating`, `release_date`); ES-DE-imported "icons"
   that were really box art are reclassified in place.
+- **Fullscreen Artwork Studio.** Game Detail's Artwork button now opens a controller-first
+  full-screen editor (it replaces the old in-detail manager). One tab per artwork kind —
+  ICON0, ICON1, Box Art, 3D Box, Physical Media, Hero, Background, Logo, Screenshot, Manual,
+  Video — with LB/RB to switch tabs, Y to jump to the source row, and a results grid you
+  navigate as a grid (not just left/right). Each tab offers whichever sources can serve it:
+  **ScreenScraper**, **SteamGridDB** (full art with an NSFW filter you can toggle with X),
+  **TheGamesDB**, **IGDB**, and **Local File**; ICON0 offers all of them for maximum choice.
+  Results page ~20 at a time. Press A to preview a candidate before applying — video tiles
+  play a muted looping preview on focus/long-press, and manual PDFs page through with
+  Left/Right before you commit. Press **START** for the per-slot actions menu: **Adjust
+  Crop / Position**, **Restore Previous**, **Reset to Scraped Default**, **Clear Artwork**,
+  and **View File Information**.
+- **Crop / position editor.** A fixed, aspect-locked frame per kind (ICON 144:80, hero
+  920:430, background 16:9, others free) with the image panning and scaling behind it —
+  D-pad to move and LB/RB to zoom on a controller, drag and pinch on touch. Crops bake into
+  the displayed file while the untouched original is kept for lossless re-crops. ICON1 snaps
+  crop too: the clip is re-encoded to the framed region, not flattened to a still.
+- **Scrape-as-you-go ScreenScraper.** The Studio's ScreenScraper source no longer needs a
+  prior scrape — browsing a never-scraped game triggers one live match on the spot and
+  caches the result, so the next open (and the next full scrape) is a free cache hit.
+- **DB v28 / v29.** v28 adds the `ss_media_cache` table (one ScreenScraper response carries
+  every kind's URLs, so later scrapes and the Studio skip the metadata call). v29 adds
+  provenance and versioning to `artwork_records` — origin URL and provider for the file-info
+  panel, a one-previous backup for Restore Previous, and baked-crop bookkeeping. Both
+  migrations are additive; the private `pfp/versions/` and `pfp/originals/` namespaces stay
+  invisible to Scan and Export.
+- **More ScreenScraper platforms.** Xbox 360, Commodore 64, Android and Windows games now
+  resolve to their ScreenScraper systems (they were silently unmatchable before).
 
 ### Changed
 - **Artwork cache accounting is honest.** Settings ▸ Artwork shows the real stored-artwork
@@ -69,6 +97,17 @@ All notable changes to Play Field Portal are documented here. This project follo
 ### Removed
 - Display ▸ **Icon Style** (superseded by Game Icon Display — Physical Media mode is the
   cartridge look) and Artwork ▸ **Preferred Grid Style** (was never wired to anything).
+- The old in-detail artwork manager, fully replaced by the fullscreen Artwork Studio.
+
+### Fixed
+- **Scrape Missing fills partial games.** "Scrape Missing Games Only" judged a game complete
+  as soon as it had a background, so a game with a background but no box art or logo was
+  skipped. It now targets any game missing primary artwork (background, box art or logo) and
+  fills only the gaps — existing artwork is never re-downloaded or overwritten.
+- **Studio video previews are reliable.** ScreenScraper serves videos with no length and no
+  seek support, so clips whose index trails the data couldn't stream and the tile silently
+  fell back to a badge. The Studio now streams first and, on failure, plays from a cached
+  local copy.
 
 ### Added
 - **Portable media library + ES-DE artwork import.** Settings ▸ Artwork ▸ **Artwork Folder &
