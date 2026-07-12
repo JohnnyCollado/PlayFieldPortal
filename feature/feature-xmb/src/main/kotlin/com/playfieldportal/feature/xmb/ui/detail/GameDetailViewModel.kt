@@ -72,6 +72,9 @@ fun isDataSource(index: Int) = index !in listOf(SOURCE_LOCAL, SOURCE_CLEAR)
 // Mirrors VideoRepositoryImpl / Settings > Video — the pinned external player package.
 private val KEY_VIDEO_DEFAULT_PLAYER = stringPreferencesKey("video_default_player")
 
+/** One tile in the Game Detail media strip - videos lead, then screenshots/title screens. */
+data class DetailMedia(val uri: String, val isVideo: Boolean)
+
 data class ArtPickerItem(
     val url: String,
     val thumbUrl: String? = null,
@@ -90,10 +93,13 @@ data class GameDetailUiState(
     val launchError: String? = null,
 
     // Stored media surfaced on the page (resolved once per load via ArtworkStore.find).
-    val videoUri: String? = null,        // ICON1 snap — playable from the Video button
-    val screenshotUri: String? = null,   // SCREENSHOT kind — shown under the info panels
+    val videoUri: String? = null,        // the game's video — playable from the Video button/strip
     val hasManual: Boolean = false,
-    val showVideoPlayer: Boolean = false,   // built-in fullscreen snap player overlay
+    val showVideoPlayer: Boolean = false,   // built-in fullscreen video player overlay
+    // Steam-style MEDIA PREVIEW strip: videos first, then images. -1 = strip not focused.
+    val detailMedia: List<DetailMedia> = emptyList(),
+    val mediaFocus: Int = -1,
+    val imageViewerUri: String? = null,     // fullscreen image preview overlay
 
     // ── Minimal one-screen navigation ─────────────────────────────────────
     val mainFocus: Int = 0,
@@ -176,9 +182,8 @@ enum class DetailAction(val label: String) {
     REMOVE("Remove"),
 }
 
-// Last focusable index on the main page (0 = Play, 1 = Options gear, 2 = Artwork brush).
-// 0 = Launch, then the square row: 1 = Video, 2 = Options, 3 = Artwork, 4 = Manual.
-const val MAIN_FOCUS_LAST = 4
+// 0 = Launch, then the square row: 1 = Options, 2 = Artwork, 3 = Manual.
+const val MAIN_FOCUS_LAST = 3
 
 // Upper bound for D-pad page scrolling — generous enough for the longest descriptions; the
 // screen clamps to the real content height, so overshoot is harmless.
@@ -252,9 +257,15 @@ class GameDetailViewModel @Inject constructor(
                     mediaUris         = mediaOf(game),
                     emulatorName      = emulator,
                     videoUri          = game?.let { g -> artworkStore.find(g.id, ArtworkKind.VIDEO) },
-                    screenshotUri     = game?.let { g -> artworkStore.find(g.id, ArtworkKind.SCREENSHOT) },
+                    detailMedia       = if (game == null) emptyList() else buildList {
+                        artworkStore.find(game.id, ArtworkKind.VIDEO)?.let { add(DetailMedia(it, isVideo = true)) }
+                        artworkStore.find(game.id, ArtworkKind.SCREENSHOT)?.let { add(DetailMedia(it, isVideo = false)) }
+                        artworkStore.find(game.id, ArtworkKind.TITLESCREEN)?.let { add(DetailMedia(it, isVideo = false)) }
+                    },
                     hasManual         = game?.let { g -> artworkStore.find(g.id, ArtworkKind.MANUAL) } != null,
                     showVideoPlayer   = false,
+                    mediaFocus        = -1,
+                    imageViewerUri    = null,
                     isLoading          = false,
                     mainFocus          = 0,
                     pageScrollSteps    = 0,
@@ -279,6 +290,12 @@ class GameDetailViewModel @Inject constructor(
         val s = _uiState.value
 
         // The manual viewer is the topmost overlay — it owns all input while open.
+        if (s.imageViewerUri != null) {
+            if (action == GamepadAction.BACK || action == GamepadAction.SELECT) {
+                _uiState.update { it.copy(imageViewerUri = null) }
+            }
+            return
+        }
         if (s.showVideoPlayer) {
             // Fullscreen snap player: Back (or Confirm) closes; everything else is consumed.
             if (action == GamepadAction.BACK || action == GamepadAction.SELECT) closeVideoPlayer()
@@ -338,24 +355,39 @@ class GameDetailViewModel @Inject constructor(
 
         // Main page focus: 0 = Play, 1 = Options (gear), 2 = Artwork (brush).
         when (action) {
-            GamepadAction.NAVIGATE_LEFT  -> _uiState.update { it.copy(mainFocus = (it.mainFocus - 1).coerceIn(0, MAIN_FOCUS_LAST), actionMessage = null) }
-            GamepadAction.NAVIGATE_RIGHT -> _uiState.update { it.copy(mainFocus = (it.mainFocus + 1).coerceIn(0, MAIN_FOCUS_LAST), actionMessage = null) }
+            GamepadAction.NAVIGATE_LEFT  -> _uiState.update {
+                if (it.mediaFocus >= 0) it.copy(mediaFocus = (it.mediaFocus - 1).coerceAtLeast(0), actionMessage = null)
+                else it.copy(mainFocus = (it.mainFocus - 1).coerceIn(0, MAIN_FOCUS_LAST), actionMessage = null)
+            }
+            GamepadAction.NAVIGATE_RIGHT -> _uiState.update {
+                if (it.mediaFocus >= 0) it.copy(mediaFocus = (it.mediaFocus + 1).coerceAtMost(it.detailMedia.lastIndex), actionMessage = null)
+                else it.copy(mainFocus = (it.mainFocus + 1).coerceIn(0, MAIN_FOCUS_LAST), actionMessage = null)
+            }
             GamepadAction.NAVIGATE_UP    -> _uiState.update {
+                if (it.mediaFocus >= 0) return@update it.copy(mediaFocus = -1, pageScrollSteps = 0, actionMessage = null)
                 // One press rewinds the whole page scroll; the next lands on Launch — no more
                 // unwinding step by step before focus comes back.
                 if (it.pageScrollSteps > 0) it.copy(pageScrollSteps = 0, actionMessage = null)
                 else it.copy(mainFocus = 0, actionMessage = null)
             }
             GamepadAction.NAVIGATE_DOWN  -> _uiState.update {
-                // First DOWN moves to the button row; further DOWNs scroll the page.
-                if (it.mainFocus == 0) it.copy(mainFocus = 1, actionMessage = null)
-                else it.copy(pageScrollSteps = (it.pageScrollSteps + 1).coerceAtMost(MAX_PAGE_SCROLL_STEPS), actionMessage = null)
+                when {
+                    // First DOWN moves to the button row.
+                    it.mainFocus == 0 -> it.copy(mainFocus = 1, actionMessage = null)
+                    // From the button row, DOWN enters the media strip when there is one
+                    // (page scrolls to the bottom so the strip is visible)...
+                    it.mediaFocus < 0 && it.detailMedia.isNotEmpty() ->
+                        it.copy(mediaFocus = 0, pageScrollSteps = MAX_PAGE_SCROLL_STEPS, actionMessage = null)
+                    // ...otherwise (or once in the strip) further DOWNs scroll the page.
+                    else -> it.copy(pageScrollSteps = (it.pageScrollSteps + 1).coerceAtMost(MAX_PAGE_SCROLL_STEPS), actionMessage = null)
+                }
             }
-            GamepadAction.SELECT        -> when (s.mainFocus) {
+            GamepadAction.SELECT        -> if (s.mediaFocus >= 0) {
+                openMediaAt(s.mediaFocus)
+            } else when (s.mainFocus) {
                 0 -> { Timber.d("Controller SELECT activated Launch"); launch() }
-                1 -> onVideoClicked()
-                2 -> openOptions()
-                3 -> openArtworkManager()
+                1 -> openOptions()
+                2 -> openArtworkManager()
                 else -> onManualClicked()
             }
             // Y / Triangle opens the Options context menu directly, from anywhere on the page.
@@ -949,6 +981,16 @@ class GameDetailViewModel @Inject constructor(
     }
 
     fun closeVideoPlayer() = _uiState.update { it.copy(showVideoPlayer = false) }
+
+    /** Confirm/tap on a media-strip tile: videos route like the Video button, images open the
+     *  fullscreen viewer — Steam-store-style previews. */
+    fun openMediaAt(index: Int) {
+        val media = _uiState.value.detailMedia.getOrNull(index) ?: return
+        if (media.isVideo) onVideoClicked()
+        else _uiState.update { it.copy(imageViewerUri = media.uri) }
+    }
+
+    fun closeImageViewer() = _uiState.update { it.copy(imageViewerUri = null) }
 
     private fun openManual() {
         val game = _uiState.value.game ?: return

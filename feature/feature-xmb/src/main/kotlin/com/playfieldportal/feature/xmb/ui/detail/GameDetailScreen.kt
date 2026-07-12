@@ -259,33 +259,27 @@ fun GameDetailScreen(
                         label = "Launch",
                         icon = Icons.Filled.PlayArrow,
                         focused = state.mainFocus == 0,
-                        fill = Color(0xFFF2F2F2),
-                        textColor = Color(0xFF0A0A12),
+                        fill = PlayGreen,
+                        textColor = Color(0xFF06210D),
                         onClick = viewModel::onPlayClicked,
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         SquareActionButton(
-                            icon = Icons.Filled.Movie,
-                            contentDescription = "Play Video",
-                            focused = state.mainFocus == 1,
-                            onClick = viewModel::onVideoClicked,
-                        )
-                        SquareActionButton(
                             icon = Icons.Filled.Settings,
                             contentDescription = "Options",
-                            focused = state.mainFocus == 2,
+                            focused = state.mainFocus == 1,
                             onClick = viewModel::onOptionsClicked,
                         )
                         SquareActionButton(
                             icon = Icons.Filled.Brush,
                             contentDescription = "Edit Artwork",
-                            focused = state.mainFocus == 3,
+                            focused = state.mainFocus == 2,
                             onClick = viewModel::openArtworkManager,
                         )
                         SquareActionButton(
                             icon = Icons.AutoMirrored.Filled.MenuBook,
                             contentDescription = "Manual",
-                            focused = state.mainFocus == 4,
+                            focused = state.mainFocus == 3,
                             onClick = viewModel::onManualClicked,
                         )
                     }
@@ -318,18 +312,80 @@ fun GameDetailScreen(
                 )
             }
 
-            // Screenshot (SCREENSHOT kind — ES-DE import or scrape), below the info panels.
-            state.screenshotUri?.let { shot ->
+            // MEDIA PREVIEW — Steam-store-style strip: video tiles first, then screenshots.
+            // Confirm/tap a tile to preview (video plays via the user's player choice,
+            // images open the fullscreen viewer).
+            if (state.detailMedia.isNotEmpty()) {
                 Spacer(Modifier.height(18.dp))
-                Text("SCREENSHOT", color = Color.White.copy(alpha = 0.55f), fontSize = 11.sp)
-                Spacer(Modifier.height(6.dp))
+                Text("MEDIA PREVIEW", color = Color.White.copy(alpha = 0.55f), fontSize = 11.sp)
+                Spacer(Modifier.height(8.dp))
+                val mediaLazyState = rememberLazyListState()
+                LaunchedEffect(state.mediaFocus) {
+                    if (state.mediaFocus >= 0) mediaLazyState.animateScrollToItem(state.mediaFocus)
+                }
+                LazyRow(
+                    state = mediaLazyState,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    itemsIndexed(state.detailMedia) { index, media ->
+                        val focused = state.mediaFocus == index
+                        Box(
+                            modifier = Modifier
+                                .size(width = 214.dp, height = 120.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(Color(0xFF11111A))
+                                .border(
+                                    width = if (focused) 2.dp else 1.dp,
+                                    color = if (focused) menuCursorEdge() else Color.White.copy(alpha = 0.12f),
+                                    shape = RoundedCornerShape(10.dp),
+                                )
+                                .clickable { viewModel.openMediaAt(index) },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            if (media.isVideo) {
+                                // Poster: fall back to the hero/screenshot look — a dark tile
+                                // with a play glyph, like a store trailer card.
+                                AsyncImage(
+                                    model = state.detailMedia.firstOrNull { !it.isVideo }?.uri
+                                        ?: game.heroUri ?: game.artworkUri,
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize(),
+                                )
+                                Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.45f)))
+                                Icon(
+                                    Icons.Filled.PlayArrow,
+                                    contentDescription = "Play video",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(44.dp),
+                                )
+                            } else {
+                                AsyncImage(
+                                    model = media.uri,
+                                    contentDescription = "Screenshot",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize(),
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Fullscreen image preview (Steam-style) — Confirm/Back or tap closes.
+        state.imageViewerUri?.let { imageUri ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.96f))
+                    .clickable(onClick = viewModel::closeImageViewer),
+            ) {
                 AsyncImage(
-                    model = shot,
-                    contentDescription = "Screenshot",
-                    contentScale = ContentScale.FillWidth,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(10.dp)),
+                    model = imageUri,
+                    contentDescription = "Media preview",
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.fillMaxSize().padding(12.dp),
                 )
             }
         }
@@ -950,10 +1006,10 @@ private fun EmulatorPickerPanel(
 // Fullscreen built-in player for the game's video snap: standard transport controls, black
 // backdrop, tap outside or Back closes. Player is released the moment the overlay leaves
 // composition.
-@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @Composable
 private fun GameVideoOverlay(videoUri: String, onClose: () -> Unit) {
     val context = LocalContext.current
+    var videoSize by remember(videoUri) { mutableStateOf<androidx.media3.common.VideoSize?>(null) }
     val player = remember(videoUri) {
         androidx.media3.exoplayer.ExoPlayer.Builder(context).build().apply {
             setMediaItem(androidx.media3.common.MediaItem.fromUri(videoUri))
@@ -961,21 +1017,50 @@ private fun GameVideoOverlay(videoUri: String, onClose: () -> Unit) {
             prepare()
         }
     }
-    DisposableEffect(player) { onDispose { player.release() } }
+    DisposableEffect(player) {
+        val listener = object : androidx.media3.common.Player.Listener {
+            override fun onVideoSizeChanged(size: androidx.media3.common.VideoSize) { videoSize = size }
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                if (playbackState == androidx.media3.common.Player.STATE_ENDED) onClose()
+            }
+        }
+        player.addListener(listener)
+        onDispose { player.removeListener(listener); player.release() }
+    }
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black.copy(alpha = 0.96f))
             .clickable(onClick = onClose),
+        contentAlignment = Alignment.Center,
     ) {
+        // TextureView (not PlayerView/SurfaceView): composites inside this translucent overlay
+        // like any composable — a SurfaceView hole would render behind it and show black.
         androidx.compose.ui.viewinterop.AndroidView(
             factory = { ctx ->
-                androidx.media3.ui.PlayerView(ctx).apply {
-                    useController = true
-                    this.player = player
+                android.view.TextureView(ctx).also { view ->
+                    player.setVideoTextureView(view)
+                    view.addOnLayoutChangeListener { v, _, _, _, _, _, _, _, _ ->
+                        applyFit(v as android.view.TextureView, videoSize)
+                    }
                 }
             },
-            modifier = Modifier.fillMaxSize().padding(vertical = 8.dp),
+            update = { view -> applyFit(view, videoSize) },
+            modifier = Modifier.fillMaxSize(),
         )
     }
+}
+
+// Letterboxed fit: scale the frame to the largest size inside the view at its own aspect.
+private fun applyFit(view: android.view.TextureView, size: androidx.media3.common.VideoSize?) {
+    val vw = size?.width?.toFloat() ?: return
+    val vh = size.height.toFloat()
+    if (vw <= 0f || vh <= 0f || view.width == 0 || view.height == 0) return
+    val viewW = view.width.toFloat()
+    val viewH = view.height.toFloat()
+    val scale = minOf(viewW / vw, viewH / vh)
+    val matrix = android.graphics.Matrix().apply {
+        setScale((vw * scale) / viewW, (vh * scale) / viewH, viewW / 2f, viewH / 2f)
+    }
+    view.setTransform(matrix)
 }
