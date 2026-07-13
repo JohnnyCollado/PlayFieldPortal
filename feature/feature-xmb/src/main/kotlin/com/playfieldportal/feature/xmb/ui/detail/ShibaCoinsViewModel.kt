@@ -71,6 +71,9 @@ class ShibaCoinsViewModel @Inject constructor(
 
     fun load(id: Long) {
         gameId = id
+        // This ViewModel is retained across open/close, so clear the stale closed flag (otherwise
+        // the screen's close-effect fires immediately on reopen) and reset focus to the top.
+        _state.update { it.copy(closed = false, focusIndex = 0) }
         viewModelScope.launch {
             val game = gameRepository.getById(id)
             _state.update {
@@ -105,6 +108,9 @@ class ShibaCoinsViewModel @Inject constructor(
     fun setFilter(filter: CoinFilter) = _state.update { it.copy(filter = filter).withDisplayed() }
     fun dismissMessage() = _state.update { it.copy(message = null) }
     fun close() = _state.update { it.copy(closed = true) }
+
+    /** Clears the closed flag once the screen has acted on it, so the next open isn't cut short. */
+    fun onClosedHandled() = _state.update { it.copy(closed = false) }
 
     /** Controller input forwarded from the shell while this overlay is open. */
     fun handleGamepadAction(action: GamepadAction) {

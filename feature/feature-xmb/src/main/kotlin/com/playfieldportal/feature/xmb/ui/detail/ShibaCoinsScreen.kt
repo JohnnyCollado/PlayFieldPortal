@@ -81,7 +81,12 @@ fun ShibaCoinsScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     LaunchedEffect(gameId) { viewModel.load(gameId) }
-    LaunchedEffect(state.closed) { if (state.closed) onClose() }
+    LaunchedEffect(state.closed) {
+        if (state.closed) {
+            onClose()
+            viewModel.onClosedHandled()
+        }
+    }
     LaunchedEffect(pendingGamepadAction) {
         if (pendingGamepadAction != null) {
             viewModel.handleGamepadAction(pendingGamepadAction)
