@@ -4,6 +4,8 @@ import com.playfieldportal.core.data.achievement.AchievementCredentialsProvider
 import com.playfieldportal.core.data.database.dao.AchievementDao
 import com.playfieldportal.core.data.database.dao.AchievementSetDao
 import com.playfieldportal.core.data.database.dao.ProviderGameLinkDao
+import com.playfieldportal.core.data.database.dao.EarnedCoinRow
+import com.playfieldportal.core.data.database.dao.GameSetRow
 import com.playfieldportal.core.data.database.entity.AchievementEntity
 import com.playfieldportal.core.data.database.entity.AchievementSetEntity
 import com.playfieldportal.core.data.database.entity.ProviderGameLinkEntity
@@ -11,13 +13,17 @@ import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.feature.achievements.api.SteamAppListResolver
 import com.playfieldportal.core.domain.achievement.CoinCounts
 import com.playfieldportal.core.domain.achievement.CoinWallet
+import com.playfieldportal.core.domain.achievement.EarnedCoinRef
 import com.playfieldportal.core.domain.achievement.GameCoins
+import com.playfieldportal.core.domain.achievement.GameStanding
+import com.playfieldportal.core.domain.achievement.LibraryStanding
 import com.playfieldportal.core.domain.achievement.ShibaTier
 import com.playfieldportal.feature.achievements.api.ProviderSyncResult
 import com.playfieldportal.feature.achievements.api.RetroAchievementsApi
 import com.playfieldportal.feature.achievements.api.SteamAchievementsApi
 import com.playfieldportal.feature.achievements.api.SyncedCoin
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -51,6 +57,24 @@ class AchievementRepository @Inject constructor(
     /** The account-wide Shiba wallet (total coins -> level + rank), derived from every set. */
     fun observeWallet(): Flow<CoinWallet> =
         setDao.observeWalletCoins().map { CoinWallet(it) }
+
+    /**
+     * The whole-library standing for the Shiba Coins hub: the wallet, every tracked game's standing,
+     * and the [rarestLimit] rarest earned coins. Counts and the mastery lens derive from the tracked
+     * list. Reads only cached rows — no network — so the hub is offline-first.
+     */
+    fun observeLibraryStanding(rarestLimit: Int = 15): Flow<LibraryStanding> =
+        combine(
+            observeWallet(),
+            setDao.observeGameSets(),
+            coinDao.observeRarestEarned(rarestLimit),
+        ) { wallet, sets, rarest ->
+            LibraryStanding(
+                wallet = wallet,
+                tracked = sets.mapNotNull { it.toGameStanding() },
+                rarestEarned = rarest.mapNotNull { it.toEarnedCoinRef() },
+            )
+        }
 
     /**
      * Fetches [providerGameId] from [provider] and persists the result. On success the per-coin
@@ -126,6 +150,31 @@ private fun AchievementSetEntity.toGameCoins(): GameCoins? {
         provider = p,
         earned = CoinCounts(bronzeEarned, silverEarned, goldEarned),
         total = CoinCounts(bronzeTotal, silverTotal, goldTotal),
+    )
+}
+
+private fun GameSetRow.toGameStanding(): GameStanding? {
+    val p = AchievementProvider.fromName(provider) ?: return null
+    return GameStanding(
+        gameId = gameId,
+        title = title,
+        coins = GameCoins(
+            provider = p,
+            earned = CoinCounts(bronzeEarned, silverEarned, goldEarned),
+            total = CoinCounts(bronzeTotal, silverTotal, goldTotal),
+        ),
+    )
+}
+
+private fun EarnedCoinRow.toEarnedCoinRef(): EarnedCoinRef? {
+    val t = runCatching { ShibaTier.valueOf(tier) }.getOrNull() ?: return null
+    return EarnedCoinRef(
+        gameId = gameId,
+        gameTitle = gameTitle,
+        coinTitle = title,
+        tier = t,
+        globalRarity = globalRarity,
+        iconUrl = iconUrl,
     )
 }
 
