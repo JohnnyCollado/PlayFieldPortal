@@ -43,16 +43,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.playfieldportal.core.domain.achievement.ShibaTier
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.feature.xmb.viewmodel.ShibaLibraryMode
 import kotlin.math.roundToInt
 
-private val Bronze = Color(0xFFC07C46)
-private val Silver = Color(0xFFB9C0C7)
-private val Gold = Color(0xFFE1B12C)
-private val Platinum = Color(0xFF6F9BF5)
 private val Reward = Color(0xFF9B6FE0)
 private val TextPrimary = Color(0xFFEEEEEE)
 private val TextMuted = Color(0x99EEEEEE)
@@ -196,10 +193,10 @@ private fun GameListRow(row: ShibaLibraryRow, focused: Boolean, accent: Color, o
                 }
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    CoinTally(Bronze, row.bronzeEarned)
-                    CoinTally(Silver, row.silverEarned)
-                    CoinTally(Gold, row.goldEarned)
-                    CoinTally(Platinum, if (row.mastered) 1 else 0)
+                    CoinTally(ShibaTier.BRONZE, row.bronzeEarned)
+                    CoinTally(ShibaTier.SILVER, row.silverEarned)
+                    CoinTally(ShibaTier.GOLD, row.goldEarned)
+                    CoinTally(ShibaTier.PLATINUM, if (row.mastered) 1 else 0)
                 }
             } else {
                 Text(row.reason.orEmpty(), color = TextDim, fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
@@ -209,26 +206,13 @@ private fun GameListRow(row: ShibaLibraryRow, focused: Boolean, accent: Color, o
 }
 
 @Composable
-private fun CoinTally(metal: Color, count: Int) {
+private fun CoinTally(tier: ShibaTier, count: Int) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        CoinDot(metal, 16.dp)
+        ShibaCoinIcon(tier, Modifier.size(18.dp))
         Spacer(Modifier.width(5.dp))
         Text("$count", color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
     }
 }
-
-@Composable
-private fun CoinDot(metal: Color, size: androidx.compose.ui.unit.Dp) {
-    Box(
-        modifier = Modifier
-            .size(size)
-            .clip(CircleShape)
-            .background(metal)
-            .border(1.5.dp, metal.copy(alpha = 0.55f).compositeDarker(), CircleShape),
-    )
-}
-
-private fun Color.compositeDarker() = Color(red * 0.6f, green * 0.6f, blue * 0.6f, alpha)
 
 @Composable
 private fun DetailPanel(state: ShibaLibraryUiState, accent: Color, modifier: Modifier = Modifier) {
@@ -265,10 +249,10 @@ private fun DetailPanel(state: ShibaLibraryUiState, accent: Color, modifier: Mod
             Spacer(Modifier.height(24.dp))
 
             SectionLabel("SHIBA COINS")
-            CoinBreakdown("Bronze Coins", Bronze, row.bronzeEarned, row.bronzeTotal)
-            CoinBreakdown("Silver Coins", Silver, row.silverEarned, row.silverTotal)
-            CoinBreakdown("Gold Coins", Gold, row.goldEarned, row.goldTotal)
-            CoinBreakdown("Platinum Coins", Platinum, if (row.mastered) 1 else 0, if (row.bronzeTotal + row.silverTotal + row.goldTotal > 0) 1 else 0)
+            CoinBreakdown("Bronze Coins", ShibaTier.BRONZE, row.bronzeEarned, row.bronzeTotal)
+            CoinBreakdown("Silver Coins", ShibaTier.SILVER, row.silverEarned, row.silverTotal)
+            CoinBreakdown("Gold Coins", ShibaTier.GOLD, row.goldEarned, row.goldTotal)
+            CoinBreakdown("Platinum Coins", ShibaTier.PLATINUM, if (row.mastered) 1 else 0, if (row.bronzeTotal + row.silverTotal + row.goldTotal > 0) 1 else 0)
             Spacer(Modifier.height(20.dp))
 
             TotalScoreCard(state)
@@ -288,9 +272,9 @@ private fun SectionLabel(text: String) {
 }
 
 @Composable
-private fun CoinBreakdown(label: String, metal: Color, earned: Int, total: Int) {
+private fun CoinBreakdown(label: String, tier: ShibaTier, earned: Int, total: Int) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
-        CoinDot(metal, 30.dp)
+        ShibaCoinIcon(tier, Modifier.size(30.dp))
         Spacer(Modifier.width(12.dp))
         Text(label, color = TextPrimary, fontSize = 14.sp, modifier = Modifier.weight(1f))
         Text("$earned", color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)

@@ -34,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -186,7 +187,7 @@ private fun SummaryHeader(state: ShibaCoinsUiState) {
                 .background(CardFill)
                 .padding(horizontal = 12.dp, vertical = 10.dp),
         ) {
-            Box(Modifier.size(26.dp).clip(CircleShape).background(if (summary?.isMastered == true) Platinum else Platinum.copy(alpha = 0.28f)))
+            ShibaCoinIcon(ShibaTier.PLATINUM, Modifier.size(28.dp).alpha(if (summary?.isMastered == true) 1f else 0.28f))
             Spacer(Modifier.width(10.dp))
             Text(
                 if (summary?.isMastered == true) "Platinum crown earned" else "Master every coin to earn the Platinum crown",
@@ -352,7 +353,6 @@ private fun focusRing(focused: Boolean): Modifier {
 @Composable
 private fun CoinListRow(coin: CoinRow, focused: Boolean) {
     val redacted = coin.isHidden && !coin.isEarned
-    val dot = if (coin.isEarned) metalOf(coin.tier) else metalOf(coin.tier).copy(alpha = 0.28f)
     val edge = menuCursorEdge()
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -362,7 +362,7 @@ private fun CoinListRow(coin: CoinRow, focused: Boolean) {
             .then(if (focused) Modifier.border(2.dp, edge, RoundedCornerShape(10.dp)) else Modifier)
             .padding(vertical = 9.dp, horizontal = 8.dp),
     ) {
-        Box(Modifier.size(26.dp).clip(CircleShape).background(dot))
+        ShibaCoinIcon(coin.tier, Modifier.size(26.dp).alpha(if (coin.isEarned) 1f else 0.28f))
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(

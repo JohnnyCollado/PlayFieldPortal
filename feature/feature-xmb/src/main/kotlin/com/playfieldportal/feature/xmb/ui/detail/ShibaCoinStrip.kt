@@ -24,21 +24,19 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.domain.achievement.GameCoins
+import com.playfieldportal.core.domain.achievement.ShibaTier
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 import kotlin.math.roundToInt
 
-// Tier metals are fixed identity — never themed, so a gold coin always reads gold. Chrome (the
-// progress fill, header icon) follows the active theme accent via menuCursorEdge().
-private val Bronze = Color(0xFFC07C46)
-private val Silver = Color(0xFFB9C0C7)
-private val Gold = Color(0xFFE1B12C)
-private val Platinum = Color(0xFF6F9BF5)
+// Chrome (the progress fill, header icon) follows the active theme accent via menuCursorEdge();
+// the coin tallies use the bundled Shiba medallion art.
 private val StripFill = Color(0xFF1B1B26)
 private val TextPrimary = Color(0xFFEEEEEE)
 private val TextMuted = Color(0x88EEEEEE)
@@ -99,24 +97,23 @@ internal fun ShibaCoinStrip(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(18.dp),
         ) {
-            CoinTally(Bronze, coins.earned.bronze, coins.total.bronze)
-            CoinTally(Silver, coins.earned.silver, coins.total.silver)
-            CoinTally(Gold, coins.earned.gold, coins.total.gold)
+            CoinTally(ShibaTier.BRONZE, coins.earned.bronze, coins.total.bronze)
+            CoinTally(ShibaTier.SILVER, coins.earned.silver, coins.total.silver)
+            CoinTally(ShibaTier.GOLD, coins.earned.gold, coins.total.gold)
             Spacer(Modifier.weight(1f))
-            Icon(
-                Icons.Filled.EmojiEvents,
-                contentDescription = if (coins.isMastered) "Platinum earned" else "Platinum locked",
-                tint = if (coins.isMastered) Platinum else Platinum.copy(alpha = 0.30f),
-                modifier = Modifier.size(22.dp),
+            // The Platinum medallion dims until the whole set is mastered.
+            ShibaCoinIcon(
+                ShibaTier.PLATINUM,
+                Modifier.size(24.dp).alpha(if (coins.isMastered) 1f else 0.30f),
             )
         }
     }
 }
 
 @Composable
-private fun CoinTally(metal: Color, earned: Int, total: Int) {
+private fun CoinTally(tier: ShibaTier, earned: Int, total: Int) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(14.dp).clip(CircleShape).background(metal))
+        ShibaCoinIcon(tier, Modifier.size(16.dp))
         Spacer(Modifier.width(6.dp))
         Text("$earned", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
         Text("/$total", color = TextMuted, fontSize = 11.sp)
