@@ -156,7 +156,7 @@ fun List<CoinRow>.arrange(sort: CoinSort, filter: CoinFilter): List<CoinRow> {
         CoinFilter.LOCKED -> filter { !it.isEarned }
     }
     return when (sort) {
-        // Rarest tier first, then rarest within the tier.
+        // Lowest tier first (Bronze at the top, up to Gold), then rarest within the tier.
         CoinSort.TIER -> filtered.sortedWith(compareBy({ tierRank(it.tier) }, { it.globalRarity }))
         CoinSort.EARNED -> filtered.sortedWith(compareByDescending<CoinRow> { it.isEarned }.thenByDescending { it.earnedAt ?: 0L })
         CoinSort.RAREST -> filtered.sortedBy { it.globalRarity }
@@ -164,8 +164,8 @@ fun List<CoinRow>.arrange(sort: CoinSort, filter: CoinFilter): List<CoinRow> {
 }
 
 private fun tierRank(tier: ShibaTier): Int = when (tier) {
-    ShibaTier.GOLD -> 0
+    ShibaTier.BRONZE -> 0
     ShibaTier.SILVER -> 1
-    ShibaTier.BRONZE -> 2
+    ShibaTier.GOLD -> 2
     ShibaTier.PLATINUM -> 3
 }

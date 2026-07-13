@@ -22,9 +22,9 @@ class ShibaCoinsArrangeTest {
     }
 
     @Test
-    fun `tier sort puts gold before silver before bronze`() {
+    fun `tier sort puts bronze before silver before gold`() {
         val ids = coins.arrange(CoinSort.TIER, CoinFilter.ALL).map { it.id }
-        assertEquals(listOf("gold", "silver", "bronze"), ids)
+        assertEquals(listOf("bronze", "silver", "gold"), ids)
     }
 
     @Test
