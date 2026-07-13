@@ -148,10 +148,10 @@ private const val MEMORY_CARD_DEFAULT_ART = "file:///android_asset/systems/physi
 
 // ── Drill flyout layout ──────────────────────────────────────────────────────
 // Left inset of the game-card column, measured from the flyout's left edge (which the caller has
-// already shifted under the caticon). Clears the memory-card icon column on the left so the game
-// cards sit to its right, with room for the ◀ that trails the active memory card. Kept tight so
-// the PIC0 logo overlay (center-right) has room to breathe next to the game cards.
-private val DRILL_GAME_COLUMN_LEFT = 260.dp
+// already shifted under the caticon). Clears the icon-only memory-card column and the ◀ that trails
+// the active card, then seats the games just past it — kept tight so the games hug the active
+// console icon and the PIC0 logo overlay (center-right) still has room to breathe.
+private val DRILL_GAME_COLUMN_LEFT = 138.dp
 
 // Focused-row text rides the PIC0 logo timeline — must match XMBShell's logo overlay timing.
 private const val PIC0_TEXT_DELAY_MS = 650L
@@ -194,9 +194,9 @@ fun XmbDrillFlyout(
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         // LEFT: the memory-card cross — the main XMB list itself, icon-only, with a ◀ after the
-        // active (drilled-into) card. Static while navigating games.
-        // Labels stay on (every XMB item is named); the column is width-capped so long card
-        // names ellipsize instead of running underneath the game column to the right.
+        // active (drilled-into) card. Static while navigating games. Labels are hidden here so the
+        // drilled console reads as a bare icon and the ◀ sits tight against it — the games are the
+        // focus while drilled in, and the name already showed at the parent level.
         XMBItemList(
             items = siblings,
             selectedIndex = siblingIndex,
@@ -205,6 +205,7 @@ fun XmbDrillFlyout(
             iconStyle = iconStyle,
             barTopY = barTopY,
             belowTopY = belowTopY,
+            showLabels = false,
             drillCursorOnSelected = true,
             modifier = Modifier.fillMaxHeight().width(DRILL_GAME_COLUMN_LEFT - 10.dp),
         )
@@ -462,6 +463,9 @@ fun XMBItemList(
     belowTopY: Dp = 152.dp,
     // When false, rows render text-only (no game-icon artwork).
     showIcons: Boolean = true,
+    // When false, rows render icon-only (no title/subtitle label). The drill flyout's memory-card
+    // column uses this so the drilled console reads as a bare icon + ◀, tight against the games.
+    showLabels: Boolean = true,
     // When true, the selected row gets a ◀ drill cursor pinned directly to its right.
     drillCursorOnSelected: Boolean = false,
     // How far the dissolving previous item rises above the bar, in row heights (theme layout spec).
@@ -496,8 +500,9 @@ fun XMBItemList(
                         item = items[i],
                         isSelected = i == selectedIndex,
                         // The real PSP XMB labels EVERY first-level item (selected bright, the
-                        // rest dimmed) — labels always show so any screen size reads at a glance.
-                        showText = true,
+                        // rest dimmed) — labels show unless the caller asks for an icon-only column
+                        // (the drill flyout's memory-card cross).
+                        showText = showLabels,
                         iconStyle = iconStyle,
                         onClick = { onItemSelected(i) },
                         onLongPress = { onItemLongPress(i) },
@@ -531,8 +536,8 @@ fun XMBItemList(
                     item = items[selectedIndex - 1],
                     isSelected = false,
                     // Show the previous item's label too, so its name rises up through the
-                    // crossbar with the icon.
-                    showText = true,
+                    // crossbar with the icon (unless the column is icon-only).
+                    showText = showLabels,
                     iconStyle = iconStyle,
                     onClick = { onItemSelected(selectedIndex - 1) },
                     onLongPress = { onItemLongPress(selectedIndex - 1) },
