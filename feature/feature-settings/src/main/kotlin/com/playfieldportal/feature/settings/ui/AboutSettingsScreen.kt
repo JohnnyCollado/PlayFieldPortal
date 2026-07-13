@@ -28,6 +28,10 @@ fun AboutSettingsScreen(
     }
     val versionName = packageInfo?.versionName ?: "unknown"
     val versionCode = packageInfo?.longVersionCode?.toString() ?: "unknown"
+    // Flavor from the installed package id: the lite build's applicationId carries a ".lite"
+    // segment (see app/build.gradle.kts productFlavors). Full ships the Discord Social SDK; lite
+    // omits it — so the edition is a real, user-visible difference worth surfacing here.
+    val isLite = remember(context) { context.packageName.contains(".lite") }
 
     // Pure info screen — no interactive rows for the scaffold's focus navigation to walk, so
     // Up/Down scroll the column directly instead.
@@ -57,6 +61,7 @@ fun AboutSettingsScreen(
 
             SettingsValueRow(label = "Version",      value = versionName)
             SettingsValueRow(label = "Build",        value = versionCode)
+            SettingsValueRow(label = "Edition",      value = if (isLite) "Lite" else "Full")
             SettingsValueRow(label = "Min Android",  value = "Android 10 (API 29)")
             SettingsValueRow(label = "Target",       value = "Android 15 (API 35)")
 
