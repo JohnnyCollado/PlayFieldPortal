@@ -57,19 +57,34 @@ class RaRomHasherTest {
     }
 
     @Test
-    fun `disc systems are unsupported`() {
+    fun `disc systems have no rom hasher`() {
+        // RaRomHasher doesn't hash disc images; they match via the title fallback instead.
         assertNull(RaRomHasher.hash("psx", byteArrayOf(1, 2, 3)))
         assertFalse(RaRomHasher.isSupported("psx"))
+        assertFalse(RaRomHasher.isSupported("ps2"))
         assertTrue(RaRomHasher.isSupported("snes"))
     }
 
     @Test
-    fun `console ids map for supported cartridge systems`() {
+    fun `console ids map for cartridge systems`() {
         assertEquals(7, RaConsole.idFor("nes"))
         assertEquals(3, RaConsole.idFor("snes"))
         assertEquals(5, RaConsole.idFor("gba"))
         assertEquals(18, RaConsole.idFor("nds"))
-        assertNull(RaConsole.idFor("psx"))
+    }
+
+    @Test
+    fun `console ids map for disc systems so the title fallback can link them`() {
+        assertEquals(12, RaConsole.idFor("psx"))
+        assertEquals(21, RaConsole.idFor("ps2"))
+        assertEquals(41, RaConsole.idFor("psp"))
+        assertEquals(16, RaConsole.idFor("gc"))
+        assertEquals(19, RaConsole.idFor("wii"))
+        // RA has no achievements for these — they must stay unmatched.
+        assertNull(RaConsole.idFor("ps3"))
+        assertNull(RaConsole.idFor("psvita"))
+        assertNull(RaConsole.idFor("n3ds"))
+        assertNull(RaConsole.idFor("x360"))
     }
 
     private fun putU32LE(b: ByteArray, off: Int, v: Int) {

@@ -125,9 +125,15 @@ object RaRomHasher {
         MessageDigest.getInstance("MD5").digest(b).joinToString("") { "%02x".format(it.toInt() and 0xFF) }
 }
 
-/** Maps a PFP platform id to its RetroAchievements console id (for the game/hash list lookup). */
+/**
+ * Maps a PFP platform id to its RetroAchievements console id (for the game/hash list lookup). Disc
+ * systems are included so the auto-matcher's title fallback can link them even though [RaRomHasher]
+ * doesn't hash their images yet — RA coins are per-game, so a title match populates the same set.
+ * Systems RA has no achievements for (PS3, Wii U, Vita, 3DS, Xbox 360) are deliberately absent.
+ */
 object RaConsole {
     fun idFor(platformId: String): Int? = when (platformId) {
+        // Cartridge / handheld (hashed by RaRomHasher)
         "megadrive" -> 1
         "n64" -> 2
         "snes" -> 3
@@ -146,6 +152,15 @@ object RaConsole {
         "virtualboy" -> 28
         "atari7800" -> 51
         "wonderswan" -> 53
+        // Disc-based (title-fallback only for now — see RaRomHasher)
+        "segacd" -> 9
+        "psx" -> 12
+        "gc" -> 16
+        "wii" -> 19
+        "ps2" -> 21
+        "saturn" -> 39
+        "dreamcast" -> 40
+        "psp" -> 41
         else -> null
     }
 }
