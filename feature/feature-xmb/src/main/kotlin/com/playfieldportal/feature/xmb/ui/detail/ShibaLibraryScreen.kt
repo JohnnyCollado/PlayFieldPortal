@@ -259,8 +259,6 @@ private fun DetailPanel(state: ShibaLibraryUiState, accent: Color, modifier: Mod
         } else {
             SectionLabel("NOT TRACKED")
             Text(row.reason.orEmpty(), color = TextPrimary, fontSize = 15.sp)
-            Spacer(Modifier.height(24.dp))
-            TotalScoreCard(state)
         }
     }
 }
