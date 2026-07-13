@@ -5,9 +5,9 @@ PlayStation-style Bronze / Silver / Gold / Platinum tier set that players earn, 
 display across RetroAchievements (emulated titles) and Steam (PC titles), with a single XP
 economy and level. No Steam or RetroAchievements password is ever handled.
 
-Status: Phases 1-2 landed and tested; Phase 3 in progress (provider clients done and tested,
-repository + provider-id resolution next). Branch: `achievement-integration`. This document is
-the source of truth to resume from on any machine.
+Status: Phases 1-2 landed and tested; Phase 3 clients + repository done and tested, only
+provider-id resolution deferred. Branch: `achievement-integration`. This document is the source
+of truth to resume from on any machine.
 
 ---
 
@@ -284,10 +284,13 @@ New module `feature-achievements` (clients + repository; UI lands in later phase
   params, so redaction-by-omission is stronger than scrubbing; supersedes the earlier "add the
   Steam `key=` param to `LogRedaction`" note).
 - [x] MockEngine tests for both clients (parse, tier, earned, private-profile, missing-key).
-- [ ] `AchievementRepository` (fetch -> map -> upsert to the DAOs -> derive wallet; offline-first
-  Flows from Room).
+- [x] `AchievementRepository` — offline-first Flows (`observeGameCoins`, `observeCoins`,
+  `observeWallet`) straight from Room; `syncGame(gameId, provider, providerGameId)` maps a fetch
+  to the per-coin rows + summary (pruning dropped coins), leaving the DB untouched on any
+  non-success. Wallet derives reactively from the summaries. Tested with MockK doubles.
 - [ ] Provider-id resolution: Steam appid + RetroAchievements ROM-hash matching (the RA hashing
-  subsystem hooks into `RomScanner`) — its own sub-step, deferred from this slice.
+  subsystem hooks into `RomScanner`) — its own sub-step, deferred. `syncGame` takes the
+  provider-id explicitly until this lands.
 - Opt: offline-first; >=1.1s rate limit; Coil for badge art (in the UI phases).
 - Sec: HTTPS only; read-only; keys never logged (no request logging at all); "profile not public"
   and missing-key are first-class results, never exceptions carrying a key.
