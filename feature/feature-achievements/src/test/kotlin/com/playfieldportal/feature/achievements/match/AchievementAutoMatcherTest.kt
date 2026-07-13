@@ -148,4 +148,19 @@ class AchievementAutoMatcherTest {
 
         assertEquals(1, report.matched)
     }
+
+    @Test
+    fun `links a steam game by the appid embedded in its shortcut, skipping the title guess`() = runTest {
+        val g = Game(
+            id = 1, title = "The Adventures of Elliot", platformId = "windows",
+            launchIntentUri = "intent:#Intent;action=app.gamenative.LAUNCH_GAME;i.app_id=3483510;S.game_source=STEAM;end",
+        )
+        stubGames(g)
+
+        val report = matcher.matchUnlinked()
+
+        assertEquals(1, report.matched)
+        coVerify { repository.linkManually(1, AchievementProvider.STEAM, "3483510") }
+        coVerify(exactly = 0) { repository.resolveSteamLink(any(), any()) }
+    }
 }

@@ -85,11 +85,7 @@ class AchievementAutoMatcher @Inject constructor(
     }
 
     private suspend fun matchOne(game: Game): Outcome {
-        // Steam PC titles resolve by name.
-        if (game.platformId == "windows") {
-            return if (repository.resolveSteamLink(game.id, game.displayTitle) != null) Outcome.Matched
-            else Outcome.Unmatched("Not found on Steam (no app matches this title)")
-        }
+        if (game.platformId == "windows") return matchSteam(game)
         // RetroAchievements: prefer an exact ROM-content-hash match; fall back to a normalized
         // title match so a differing regional dump still links (RA coins are per-game).
         val consoleId = RaConsole.idFor(game.platformId)
@@ -102,6 +98,17 @@ class AchievementAutoMatcher @Inject constructor(
 
         repository.linkManually(game.id, AchievementProvider.RETRO_ACHIEVEMENTS, raGameId)
         return Outcome.Matched
+    }
+
+    // Steam PC games resolve down a ladder: the appid the shortcut already carries (deterministic),
+    // then the title match. (SteamGridDB platform-data lookup slots in between — next slice.)
+    private suspend fun matchSteam(game: Game): Outcome {
+        SteamShortcut.appIdFrom(game)?.let { appId ->
+            repository.linkManually(game.id, AchievementProvider.STEAM, appId)
+            return Outcome.Matched
+        }
+        return if (repository.resolveSteamLink(game.id, game.displayTitle) != null) Outcome.Matched
+        else Outcome.Unmatched("Not found on Steam (no embedded appid and no title match)")
     }
 
     // Computes the RA content hash, naming the failure mode when it can't. Cartridges hash from a
