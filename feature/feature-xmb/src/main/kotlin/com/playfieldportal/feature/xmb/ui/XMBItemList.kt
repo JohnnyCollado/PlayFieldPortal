@@ -35,7 +35,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bookmarks
-import androidx.compose.material.icons.filled.Diamond
 import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Collections
@@ -1146,7 +1145,7 @@ private fun XmbItemLeadingIcon(
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
-                        .size(LEADING_ICON_SIZE)
+                        .size(LEADING_ICON_SIZE * 0.8f)
                         .clip(CircleShape)
                         .border(2.dp, iconTint, CircleShape),
                 ) {
@@ -1188,7 +1187,6 @@ private fun XmbItemLeadingIcon(
 
 // The leading glyph for a Shiba Coins hub lens row, or null if the id isn't one of them.
 private fun achievementsGlyphFor(id: String): androidx.compose.ui.graphics.vector.ImageVector? = when (id) {
-    "ach_rarest" -> Icons.Filled.Diamond
     "ach_untracked" -> Icons.Filled.HelpOutline
     "ach_connect" -> Icons.Filled.Link
     else -> null

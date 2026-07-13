@@ -297,11 +297,10 @@ sealed interface MusicNav {
     data object MusicApps : MusicNav
 }
 
-// Which Shiba Coins hub view is open. Root shows the standing summary + lens rows; Rarest Earned
-// drills into a flat coin list. (All Tracked and Untracked open their own fullscreen overlays.)
+// The Shiba Coins hub is a single root list (All Tracked and Untracked open fullscreen overlays);
+// this stays a sealed interface so the drill/back plumbing keeps a stable type.
 sealed interface AchievementsNav {
     data object Root : AchievementsNav
-    data object RarestEarned : AchievementsNav
 }
 
 /** Which fullscreen Shiba Coins library overlay is open. */
@@ -3524,18 +3523,14 @@ class XMBViewModel @Inject constructor(
 
     private fun achievementsNavKey(nav: AchievementsNav): String = when (nav) {
         AchievementsNav.Root -> "root"
-        AchievementsNav.RarestEarned -> "rarest"
     }
 
-    // Root shows the standing summary + lens rows; Rarest Earned drills into a flat coin list. (All
-    // Tracked and Untracked are fullscreen overlays, not XMB item lists.)
+    // The hub is a single root list (All Tracked and Untracked are fullscreen overlays).
     private fun achievementsItems(
         standing: com.playfieldportal.core.domain.achievement.LibraryStanding,
         nav: AchievementsNav,
     ): List<XMBItem> = when (nav) {
         AchievementsNav.Root -> achievementsRootItems(standing)
-        AchievementsNav.RarestEarned ->
-            standing.rarestEarned.map { it.toCoinItem() }.ifEmpty { listOf(achievementsEmptyItem("No earned coins yet")) }
     }
 
     private fun achievementsRootItems(
@@ -3562,20 +3557,9 @@ class XMBViewModel @Inject constructor(
                 levelBadge = "Lv ${w.level}",
                 type = XMBItemType.STANDARD,
             ),
-            XMBItem(id = ACH_RAREST_ITEM_ID, title = "Rarest Earned", subtitle = "${standing.rarestEarned.size} coins", type = XMBItemType.STANDARD),
             XMBItem(id = ACH_ALL_ITEM_ID, title = "All Tracked Games", subtitle = "${standing.gamesTracked} games", type = XMBItemType.STANDARD),
         ) + untrackedRow
     }
-
-    private fun com.playfieldportal.core.domain.achievement.EarnedCoinRef.toCoinItem(): XMBItem = XMBItem(
-        id = "ach_coin_${gameId}_${coinTitle.hashCode()}",
-        title = coinTitle,
-        subtitle = "$gameTitle  •  ${"%.1f".format(globalRarity)}% of players",
-        artworkUri = iconUrl,
-        gameId = gameId,
-        isRealGame = true,   // select → Game Detail (its coin strip drills into the full set)
-        type = XMBItemType.STANDARD,
-    )
 
     private fun achievementsEmptyItem(text: String) =
         XMBItem(id = EMPTY_CATEGORY_ITEM_ID, title = text, type = XMBItemType.EMPTY)
@@ -3594,7 +3578,6 @@ class XMBViewModel @Inject constructor(
                 _uiState.update { it.copy(activeSettingsScreen = "settings_achievements") }
                 return true
             }
-            ACH_RAREST_ITEM_ID  -> { menuSound.play(MenuSound.SELECT); openAchievementsView(AchievementsNav.RarestEarned); return true }
             ACH_ALL_ITEM_ID     -> { menuSound.play(MenuSound.SELECT); openShibaLibrary(ShibaLibraryMode.TRACKED); return true }
             ACH_UNTRACKED_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openShibaLibrary(ShibaLibraryMode.UNTRACKED); return true }
             EMPTY_CATEGORY_ITEM_ID -> return true // placeholder, not selectable
@@ -6710,7 +6693,6 @@ class XMBViewModel @Inject constructor(
         // Shiba Coins hub root rows.
         private const val ACH_CONNECT_ITEM_ID = "ach_connect"
         private const val ACH_SUMMARY_ITEM_ID = "ach_summary"
-        private const val ACH_RAREST_ITEM_ID  = "ach_rarest"
         private const val ACH_ALL_ITEM_ID      = "ach_all"
         private const val ACH_UNTRACKED_ITEM_ID = "ach_untracked"
         private const val ALL_GAMES_ITEM_ID = "all_games"
