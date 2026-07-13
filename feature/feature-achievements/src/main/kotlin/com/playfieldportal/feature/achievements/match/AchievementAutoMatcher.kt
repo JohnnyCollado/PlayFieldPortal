@@ -37,6 +37,7 @@ class AchievementAutoMatcher @Inject constructor(
     private val retroApi: RetroAchievementsApi,
     private val repository: AchievementRepository,
     private val romReader: RomBytesReader,
+    private val discOpener: DiscImageOpener,
 ) {
     private sealed interface Outcome {
         data object Matched : Outcome
@@ -84,11 +85,16 @@ class AchievementAutoMatcher @Inject constructor(
     }
 
     // The RA game id for this ROM's content hash, or null when it can't be hashed or isn't
-    // registered — the caller then tries the title fallback.
+    // registered — the caller then tries the title fallback. Cartridges hash from a full byte read;
+    // disc images hash from a seeking reader (they're far too large to load whole).
     private suspend fun matchByHash(game: Game, consoleId: Int): String? {
-        if (!RaRomHasher.isSupported(game.platformId)) return null
-        val bytes = romReader.read(game) ?: return null
-        val hash = RaRomHasher.hash(game.platformId, bytes) ?: return null
+        val hash = when {
+            RaRomHasher.isSupported(game.platformId) ->
+                romReader.read(game)?.let { RaRomHasher.hash(game.platformId, it) }
+            RaDiscHasher.isSupported(game.platformId) ->
+                discOpener.open(game)?.use { RaDiscHasher.hash(game.platformId, it) }
+            else -> null
+        } ?: return null
         return retroApi.gameIdForHash(consoleId, hash)
     }
 }

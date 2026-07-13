@@ -6,10 +6,10 @@ display across RetroAchievements (emulated titles) and Steam (PC titles), with a
 economy and level. No Steam or RetroAchievements password is ever handled.
 
 Status: Phases 1-8 done and validated on-device (RA connected, real coins synced; Shiba Coins XMB
-column seeds on the Thor). Auto-match shipped (cartridge-first RA ROM-hash + NDS + Steam title + RA
-title fallback + unmatched report + edit). Player card + category hub + batch "sync all" live.
-Remaining: disc-system RA hashing, backup key handling, Phase 9 polish (inline card header, foil
-states). Branch: `achievement-integration`. This document is the source of truth to resume from.
+column seeds on the Thor). Auto-match shipped (cartridge RA ROM-hash + NDS + disc ISO9660 hash +
+Steam title + RA title fallback + unmatched report + edit). Player card + category hub + batch "sync
+all" live. Remaining: backup key handling, Phase 9 polish (inline card header, foil states).
+Branch: `achievement-integration`. This document is the source of truth to resume from.
 
 ---
 
@@ -300,8 +300,16 @@ New module `feature-achievements` (clients + repository; UI lands in later phase
   path / SAF / single-entry zip, 256 MB cap). `AchievementAutoMatcher` batch-links unlinked games —
   RA by hash, Steam by title — and returns a `MatchReport`. Settings ▸ Shiba Coins has an
   "Auto-match games" action with progress + an unmatched report; the coins screen has a "Change
-  match" edit. Tested (hasher, lookup, matcher). Disc/arcade systems deferred — they fall to the
-  report for manual linking.
+  match" edit. Tested (hasher, lookup, matcher).
+- [x] Disc-system RA hashing: `DiscImage` (a seeking ISO9660 reader — cooked 2048 `.iso` and raw
+  2352 `.bin` Mode 1/2, detected from the CD001 signature; never loads the multi-GB image) +
+  `RaDiscHasher` (PSX/PS2: SYSTEM.CNF `BOOT`/`BOOT2` → exe name + contents, PS1 sized from its PS-X
+  EXE header; PSP: `PARAM.SFO` + `EBOOT.BIN`), transcribed from rcheevos hash_disc.c. `DiscImageOpener`
+  opens raw paths (following `.cue` → `.bin`) or SAF fds. `RaConsole` now maps disc consoles so the
+  hash runs and the title fallback still backstops. Verified byte-for-byte against RA's live DB on the
+  real library: PS2 GTA:SA (USA v1.03) `fe8b1b6c…` and PSX Parasite Eve II (USA D1) `813cc94b…` both
+  matched exactly; PSP shares the same proven path (no RA set in this library to cross-check). GC/Wii
+  use different disc schemes — still title-fallback only.
 - [x] RA title fallback: when a ROM's exact content hash isn't a registered RA hash (a differing
   regional dump — common for the DS library, where RA often registers only the Europe dump),
   `AchievementAutoMatcher` falls back to `RetroAchievementsApi.gameIdForTitle` — a normalized

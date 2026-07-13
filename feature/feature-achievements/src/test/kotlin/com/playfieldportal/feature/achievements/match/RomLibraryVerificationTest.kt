@@ -72,6 +72,56 @@ class RomLibraryVerificationTest {
         }
     }
 
+    @Test
+    fun `disc hashes are computed for local ps2, psp and psx images`() {
+        assumeTrue("no ROM library at $root", root.exists())
+
+        // (folder, platformId, RA console id)
+        val discs = listOf(
+            Triple("ps2", "ps2", 21),
+            Triple("psp", "psp", 41),
+            Triple("psx", "psx", 12),
+        )
+        var any = false
+        for ((folder, platformId, consoleId) in discs) {
+            val dir = File(root, folder).takeIf { it.isDirectory } ?: continue
+            val images = discImagesIn(dir)
+            if (images.isEmpty()) continue
+            any = true
+            val raHashes = fetchRaHashes(consoleId)
+            for (image in images) {
+                val hash = DiscImage.open(image)?.use { RaDiscHasher.hash(platformId, it) }
+                val status = when {
+                    hash == null -> "(could not hash)"
+                    raHashes == null -> "(set RA_USER/RA_KEY to verify)"
+                    hash in raHashes -> "MATCH"
+                    else -> "no RA match"
+                }
+                println("${platformId.uppercase().padEnd(4)} $hash  ${image.name}  $status")
+            }
+        }
+        assumeTrue("no disc images found", any)
+    }
+
+    // Disc images to hash: a bare .iso/.bin, or the .bin referenced by a .cue (recursing folders).
+    private fun discImagesIn(dir: File): List<File> {
+        val out = mutableListOf<File>()
+        dir.walkTopDown().forEach { f ->
+            when (f.extension.lowercase()) {
+                "iso", "img" -> out += f
+                "cue" -> cueBin(f)?.let { out += it }
+                "bin" -> if (!File(f.parentFile, f.nameWithoutExtension + ".cue").exists()) out += f
+            }
+        }
+        return out
+    }
+
+    private fun cueBin(cue: File): File? {
+        val line = cue.useLines { it.map(String::trim).firstOrNull { l -> l.startsWith("FILE", true) } } ?: return null
+        val name = Regex("""FILE\s+"([^"]+)"""", RegexOption.IGNORE_CASE).find(line)?.groupValues?.get(1) ?: return null
+        return File(cue.parentFile, name).takeIf(File::exists)
+    }
+
     // RA's known hashes for a console, or null when credentials aren't in the environment.
     private fun fetchRaHashes(consoleId: Int): Set<String>? {
         val user = System.getenv("RA_USER")?.takeIf { it.isNotBlank() } ?: return null
