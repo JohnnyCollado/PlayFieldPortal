@@ -70,15 +70,25 @@ class AchievementAutoMatcher @Inject constructor(
             return if (repository.resolveSteamLink(game.id, game.displayTitle) != null) Outcome.Matched
             else Outcome.Unmatched("no Steam title match")
         }
-        // RetroAchievements ROMs resolve by content hash (cartridge systems only for now).
+        // RetroAchievements: prefer an exact ROM-content-hash match; fall back to a normalized
+        // title match so a differing regional dump still links (RA coins are per-game).
         val consoleId = RaConsole.idFor(game.platformId)
-        if (consoleId == null || !RaRomHasher.isSupported(game.platformId)) {
-            return Outcome.Unmatched("unsupported system")
-        }
-        val bytes = romReader.read(game) ?: return Outcome.Unmatched("couldn't read ROM")
-        val hash = RaRomHasher.hash(game.platformId, bytes) ?: return Outcome.Unmatched("unsupported system")
-        val raGameId = retroApi.gameIdForHash(consoleId, hash) ?: return Outcome.Unmatched("no RetroAchievements match")
+            ?: return Outcome.Unmatched("unsupported system")
+
+        val raGameId = matchByHash(game, consoleId)
+            ?: retroApi.gameIdForTitle(consoleId, game.displayTitle)
+            ?: return Outcome.Unmatched("no RetroAchievements match")
+
         repository.linkManually(game.id, AchievementProvider.RETRO_ACHIEVEMENTS, raGameId)
         return Outcome.Matched
+    }
+
+    // The RA game id for this ROM's content hash, or null when it can't be hashed or isn't
+    // registered — the caller then tries the title fallback.
+    private suspend fun matchByHash(game: Game, consoleId: Int): String? {
+        if (!RaRomHasher.isSupported(game.platformId)) return null
+        val bytes = romReader.read(game) ?: return null
+        val hash = RaRomHasher.hash(game.platformId, bytes) ?: return null
+        return retroApi.gameIdForHash(consoleId, hash)
     }
 }

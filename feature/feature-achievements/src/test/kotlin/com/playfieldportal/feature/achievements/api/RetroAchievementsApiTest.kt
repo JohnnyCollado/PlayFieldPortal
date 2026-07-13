@@ -68,9 +68,7 @@ class RetroAchievementsApiTest {
         assertEquals(ProviderSyncResult.MissingCredentials, api(key = null).fetch("14402"))
     }
 
-    @Test
-    fun `gameIdForHash matches a rom hash to a game id, case-insensitively`() = runTest {
-        val listJson = """[{"ID":14402,"Hashes":["ABCDEF0123","0011"]},{"ID":555,"Hashes":["deadbeef"]}]"""
+    private fun listApi(listJson: String): RetroAchievementsApi {
         val engine = MockEngine { respond(listJson, HttpStatusCode.OK, jsonHeaders) }
         val client = HttpClient(engine) {
             expectSuccess = false
@@ -80,10 +78,31 @@ class RetroAchievementsApiTest {
             coEvery { raUsername() } returns "u"
             coEvery { raApiKey() } returns "k"
         }
-        val api = RetroAchievementsApi(client, creds)
+        return RetroAchievementsApi(client, creds)
+    }
+
+    @Test
+    fun `gameIdForHash matches a rom hash to a game id, case-insensitively`() = runTest {
+        val api = listApi(
+            """[{"ID":14402,"Title":"Chrono","Hashes":["ABCDEF0123","0011"]},{"ID":555,"Title":"X","Hashes":["deadbeef"]}]""",
+        )
 
         assertEquals("14402", api.gameIdForHash(7, "abcdef0123"))
         assertEquals("555", api.gameIdForHash(7, "DEADBEEF"))
         assertNull(api.gameIdForHash(7, "nope"))
+    }
+
+    @Test
+    fun `gameIdForTitle matches a display title ignoring case and punctuation`() = runTest {
+        val api = listApi(
+            """[{"ID":4958,"Title":"Final Fantasy Tactics A2: Grimoire of the Rift","Hashes":["215d"]},
+                {"ID":18,"Title":"Chrono Trigger","Hashes":["aa"]}]""".trimIndent(),
+        )
+
+        // Colon vs dash and different casing still resolve to the same game.
+        assertEquals("4958", api.gameIdForTitle(18, "Final Fantasy Tactics A2 - Grimoire of the Rift"))
+        assertEquals("18", api.gameIdForTitle(18, "chrono trigger"))
+        assertNull(api.gameIdForTitle(18, "Some Other Game"))
+        assertNull(api.gameIdForTitle(18, "   "))
     }
 }

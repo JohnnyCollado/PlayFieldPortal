@@ -295,12 +295,20 @@ New module `feature-achievements` (clients + repository; UI lands in later phase
   end-to-end sync. Steam auto-resolves by title (`SteamAppListResolver`, cached app list).
   `ProviderSyncResult.NotLinked` added. Tested (resolver + repo link/sync).
 - [x] Auto-match (cartridge-first): `RaRomHasher` (full-MD5 + NES/SNES header strip + N64 byte-order
-  normalization so z64/v64/n64 hash the same) + `RaConsole` id map + `RetroAchievementsApi.
-  gameIdForHash` (per-console hash list, cached). `RomBytesReader` (raw path / SAF / single-entry
-  zip, 64 MB cap). `AchievementAutoMatcher` batch-links unlinked games — RA by hash, Steam by title
-  — and returns a `MatchReport`. Settings ▸ Shiba Coins has an "Auto-match games" action with
-  progress + an unmatched report; the coins screen has a "Change match" edit. Tested (hasher,
-  lookup, matcher). Disc/arcade systems deferred — they fall to the report for manual linking.
+  normalization so z64/v64/n64 hash the same; Nintendo DS header+ARM9+ARM7+icon) + `RaConsole` id
+  map + `RetroAchievementsApi.gameIdForHash` (per-console hash list, cached). `RomBytesReader` (raw
+  path / SAF / single-entry zip, 256 MB cap). `AchievementAutoMatcher` batch-links unlinked games —
+  RA by hash, Steam by title — and returns a `MatchReport`. Settings ▸ Shiba Coins has an
+  "Auto-match games" action with progress + an unmatched report; the coins screen has a "Change
+  match" edit. Tested (hasher, lookup, matcher). Disc/arcade systems deferred — they fall to the
+  report for manual linking.
+- [x] RA title fallback: when a ROM's exact content hash isn't a registered RA hash (a differing
+  regional dump — common for the DS library, where RA often registers only the Europe dump),
+  `AchievementAutoMatcher` falls back to `RetroAchievementsApi.gameIdForTitle` — a normalized
+  (case/punctuation-insensitive) match of the user-editable display title against the same
+  per-console game list. RA coins are per-game, so the title link populates the same coin set; the
+  user can correct the display title or use "Change match" if the fallback picks wrong. Verified the
+  DS hasher itself against RA's live DB first (TWEWY USA hash matched exactly).
 - Opt: offline-first; >=1.1s rate limit; Coil for badge art (in the UI phases).
 - Sec: HTTPS only; read-only; keys never logged (no request logging at all); "profile not public"
   and missing-key are first-class results, never exceptions carrying a key.

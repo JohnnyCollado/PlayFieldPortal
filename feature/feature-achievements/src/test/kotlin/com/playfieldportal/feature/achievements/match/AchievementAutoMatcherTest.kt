@@ -49,17 +49,46 @@ class AchievementAutoMatcherTest {
     }
 
     @Test
-    fun `reports a cartridge game with no hash match`() = runTest {
+    fun `reports a cartridge game with neither a hash nor a title match`() = runTest {
         val g = game(1, "gba")
         stubGames(g)
         coEvery { romReader.read(g) } returns byteArrayOf(9, 9, 9)
         coEvery { retroApi.gameIdForHash(5, any()) } returns null
+        coEvery { retroApi.gameIdForTitle(5, g.displayTitle) } returns null
 
         val report = matcher.matchUnlinked()
 
         assertEquals(0, report.matched)
         assertEquals(1, report.unmatched.size)
         assertEquals("no RetroAchievements match", report.unmatched.first().reason)
+    }
+
+    @Test
+    fun `falls back to a title match when the rom hash is not registered`() = runTest {
+        val g = game(1, "nds", title = "The World Ends With You")
+        stubGames(g)
+        coEvery { romReader.read(g) } returns byteArrayOf(1, 2, 3)
+        coEvery { retroApi.gameIdForHash(18, any()) } returns null           // wrong regional dump
+        coEvery { retroApi.gameIdForTitle(18, "The World Ends With You") } returns "4887"
+
+        val report = matcher.matchUnlinked()
+
+        assertEquals(1, report.matched)
+        assertTrue(report.unmatched.isEmpty())
+        coVerify { repository.linkManually(1, AchievementProvider.RETRO_ACHIEVEMENTS, "4887") }
+    }
+
+    @Test
+    fun `title fallback works even when the rom cannot be read`() = runTest {
+        val g = game(1, "nds", title = "Chrono Trigger")
+        stubGames(g)
+        coEvery { romReader.read(g) } returns null                          // unreadable / SAF miss
+        coEvery { retroApi.gameIdForTitle(18, "Chrono Trigger") } returns "12345"
+
+        val report = matcher.matchUnlinked()
+
+        assertEquals(1, report.matched)
+        coVerify { repository.linkManually(1, AchievementProvider.RETRO_ACHIEVEMENTS, "12345") }
     }
 
     @Test
