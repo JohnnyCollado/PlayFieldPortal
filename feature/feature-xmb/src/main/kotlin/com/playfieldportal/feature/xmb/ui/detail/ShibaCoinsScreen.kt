@@ -1,0 +1,295 @@
+package com.playfieldportal.feature.xmb.ui.detail
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.playfieldportal.core.domain.achievement.AchievementProvider
+import com.playfieldportal.core.domain.achievement.ShibaTier
+import com.playfieldportal.core.ui.theme.LocalPFPColors
+import com.playfieldportal.core.ui.theme.menuCursorEdge
+import com.playfieldportal.core.ui.theme.menuCursorFill
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import kotlin.math.roundToInt
+
+private val Bronze = Color(0xFFC07C46)
+private val Silver = Color(0xFFB9C0C7)
+private val Gold = Color(0xFFE1B12C)
+private val Platinum = Color(0xFF6F9BF5)
+private val TextPrimary = Color(0xFFEEEEEE)
+private val TextMuted = Color(0x99EEEEEE)
+private val TextDim = Color(0x66EEEEEE)
+private val CardFill = Color(0xFF1B1B26)
+private val DATE_FMT = SimpleDateFormat("MMM d, yyyy", Locale.US)
+
+private fun metalOf(tier: ShibaTier) = when (tier) {
+    ShibaTier.BRONZE -> Bronze
+    ShibaTier.SILVER -> Silver
+    ShibaTier.GOLD -> Gold
+    ShibaTier.PLATINUM -> Platinum
+}
+
+@Composable
+fun ShibaCoinsScreen(
+    gameId: Long,
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: ShibaCoinsViewModel = hiltViewModel(),
+) {
+    val state by viewModel.uiState.collectAsState()
+    LaunchedEffect(gameId) { viewModel.load(gameId) }
+    LaunchedEffect(state.closed) { if (state.closed) onClose() }
+
+    val pfp = LocalPFPColors.current
+    val displayed = remember(state.coins, state.sort, state.filter) {
+        state.coins.arrange(state.sort, state.filter)
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    0f to pfp.backgroundTop.copy(alpha = 0.72f),
+                    1f to pfp.backgroundBottom.copy(alpha = 0.90f),
+                )
+            ),
+    ) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .widthIn(max = 920.dp)
+                .align(Alignment.TopCenter)
+                .padding(horizontal = 28.dp),
+        ) {
+            item {
+                DetailBreadcrumb(title = state.title, subtitle = "Shiba Coins", onBack = viewModel::close)
+            }
+            item { SummaryHeader(state) }
+            if (!state.linked) item { LinkSection(state, viewModel) }
+            item { SyncRow(state, viewModel) }
+            item { SortFilterChips(state, viewModel) }
+            state.message?.let { msg ->
+                item {
+                    Text(
+                        "$msg  (tap to dismiss)",
+                        color = menuCursorEdge(),
+                        fontSize = 13.sp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { viewModel.dismissMessage() }
+                            .padding(vertical = 10.dp),
+                    )
+                }
+            }
+            items(displayed, key = { it.id }) { CoinListRow(it) }
+            if (state.linked && displayed.isEmpty()) {
+                item { Text("No coins to show.", color = TextMuted, modifier = Modifier.padding(vertical = 16.dp)) }
+            }
+            item { Spacer(Modifier.height(24.dp)) }
+        }
+    }
+}
+
+@Composable
+private fun SummaryHeader(state: ShibaCoinsUiState) {
+    val summary = state.summary
+    Column(Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 12.dp)) {
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text("Progress", color = TextMuted, fontSize = 12.sp, modifier = Modifier.weight(1f))
+            Text(
+                "${((summary?.progress ?: 0f) * 100).roundToInt()}%",
+                color = TextPrimary, fontSize = 26.sp, fontWeight = FontWeight.Bold,
+            )
+        }
+        Spacer(Modifier.height(6.dp))
+        LinearProgressIndicator(
+            progress = { summary?.progress ?: 0f },
+            modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
+            color = menuCursorEdge(),
+            trackColor = Color(0x33FFFFFF),
+        )
+        Spacer(Modifier.height(12.dp))
+        // Crown banner
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(10.dp))
+                .background(CardFill)
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+        ) {
+            Box(Modifier.size(26.dp).clip(CircleShape).background(if (summary?.isMastered == true) Platinum else Platinum.copy(alpha = 0.28f)))
+            Spacer(Modifier.width(10.dp))
+            Text(
+                if (summary?.isMastered == true) "Platinum crown earned" else "Master every coin to earn the Platinum crown",
+                color = if (summary?.isMastered == true) TextPrimary else TextMuted,
+                fontSize = 13.sp, fontWeight = FontWeight.Medium,
+            )
+        }
+    }
+}
+
+@Composable
+private fun LinkSection(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewModel) {
+    var draft by remember { mutableStateOf("") }
+    val label = if (state.provider == AchievementProvider.STEAM) "Steam appid" else "RetroAchievements game id"
+    Column(Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
+        Text("This game isn't linked yet", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+        Spacer(Modifier.height(8.dp))
+        OutlinedTextField(
+            value = draft,
+            onValueChange = { draft = it },
+            label = { Text(label, color = TextMuted) },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary,
+                focusedBorderColor = menuCursorEdge(), unfocusedBorderColor = Color(0x44FFFFFF),
+                cursorColor = menuCursorEdge(),
+            ),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(Modifier.height(8.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            PillButton("Link and sync", enabled = draft.isNotBlank()) { viewModel.link(draft) }
+            if (state.provider == AchievementProvider.STEAM) {
+                PillButton("Match by title", enabled = state.title.isNotBlank()) { viewModel.resolveByTitle() }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SyncRow(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewModel) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+    ) {
+        Text("Last synced from ${state.provider.name.lowercase().replace('_', ' ')}", color = TextMuted, fontSize = 12.sp, modifier = Modifier.weight(1f))
+        if (state.isSyncing) {
+            CircularProgressIndicator(color = menuCursorEdge(), modifier = Modifier.size(18.dp))
+        } else if (state.linked) {
+            PillButton("Sync now", enabled = true) { viewModel.sync() }
+        }
+    }
+}
+
+@Composable
+private fun SortFilterChips(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewModel) {
+    Column(Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("Sort", color = TextDim, fontSize = 11.sp)
+            Chip("Tier", state.sort == CoinSort.TIER) { viewModel.setSort(CoinSort.TIER) }
+            Chip("Earned", state.sort == CoinSort.EARNED) { viewModel.setSort(CoinSort.EARNED) }
+            Chip("Rarest", state.sort == CoinSort.RAREST) { viewModel.setSort(CoinSort.RAREST) }
+        }
+        Spacer(Modifier.height(6.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("Show", color = TextDim, fontSize = 11.sp)
+            Chip("All", state.filter == CoinFilter.ALL) { viewModel.setFilter(CoinFilter.ALL) }
+            Chip("Earned", state.filter == CoinFilter.EARNED) { viewModel.setFilter(CoinFilter.EARNED) }
+            Chip("Locked", state.filter == CoinFilter.LOCKED) { viewModel.setFilter(CoinFilter.LOCKED) }
+        }
+    }
+}
+
+@Composable
+private fun CoinListRow(coin: CoinRow) {
+    val redacted = coin.isHidden && !coin.isEarned
+    val dot = if (coin.isEarned) metalOf(coin.tier) else metalOf(coin.tier).copy(alpha = 0.28f)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth().padding(vertical = 9.dp),
+    ) {
+        Box(Modifier.size(26.dp).clip(CircleShape).background(dot))
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                if (redacted) "Hidden coin" else coin.title,
+                color = if (coin.isEarned) TextPrimary else TextMuted,
+                fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                if (redacted) "Keep playing to reveal" else coin.description,
+                color = TextDim, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Spacer(Modifier.width(10.dp))
+        Column(horizontalAlignment = Alignment.End) {
+            Text(String.format(Locale.US, "%.1f%%", coin.globalRarity), color = metalOf(coin.tier), fontSize = 12.sp)
+            Text(
+                if (coin.isEarned) coin.earnedAt?.let { DATE_FMT.format(Date(it)) } ?: "Earned" else "Locked",
+                color = TextDim, fontSize = 10.sp,
+            )
+        }
+    }
+}
+
+@Composable
+private fun Chip(label: String, selected: Boolean, onClick: () -> Unit) {
+    Text(
+        label,
+        color = if (selected) Color.White else TextMuted,
+        fontSize = 12.sp,
+        modifier = Modifier
+            .clip(RoundedCornerShape(999.dp))
+            .background(if (selected) menuCursorFill() else Color(0x22FFFFFF))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+    )
+}
+
+@Composable
+private fun PillButton(label: String, enabled: Boolean, onClick: () -> Unit) {
+    Text(
+        label,
+        color = if (enabled) Color.White else TextDim,
+        fontSize = 13.sp,
+        fontWeight = FontWeight.Medium,
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(if (enabled) menuCursorFill() else Color(0x18FFFFFF))
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 9.dp),
+    )
+}

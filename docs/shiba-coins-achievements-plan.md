@@ -5,11 +5,11 @@ PlayStation-style Bronze / Silver / Gold / Platinum tier set that players earn, 
 display across RetroAchievements (emulated titles) and Steam (PC titles), with a single XP
 economy and level. No Steam or RetroAchievements password is ever handled.
 
-Status: Phases 1-4 done; provider-id resolution done (RA hashing deferred); Phase 5 glance strip
-done (drill-in door + context-menu item deferred to Phase 6). Remaining: Phase 6 dedicated coins
-screen + link/sync UI (the first data-population path), Phases 7-9, RA ROM-hashing, backup key
-handling. Branch: `achievement-integration`. This document is the source of truth to resume from
-on any machine.
+Status: Phases 1-5 done (RA hashing deferred). Phase 6: the dedicated coins screen + link/sync UI
+is built and unit-tested but not yet wired into the shell (context-menu entry + `activeShibaCoins
+GameId` render is the next slice — until then nothing populates coin data). Remaining: Phase 6
+shell wiring, Phases 7-9, RA ROM-hashing, backup key handling. Branch: `achievement-integration`.
+This document is the source of truth to resume from on any machine.
 
 ---
 
@@ -326,18 +326,22 @@ New module `feature-achievements` (clients + repository; UI lands in later phase
 - Opt: renders from cached Room only, no network on paint.
 - Sec: display-only; no request on open.
 
-### Phase 6 — Dedicated Shiba Coins screen
-- [ ] Shell-level overlay `activeShibaCoinsGameId?.let { ShibaCoinsScreen(...) }` in `XMBShell`,
-  parallel to `GameDetailScreen` (see 4.5) — reachable from both the context menu and the GDS
-  strip. Reuse `DetailBreadcrumb` + the translucent theme-gradient backdrop; own
-  `ShibaCoinsViewModel` with focus + `pendingGamepadAction` plumbing. Add to the wave-freeze
-  condition (~XMBShell:354).
-- [ ] Summary header + crown banner + full coin list: Tier-list / Earned / Rarest sorts,
-  All / Earned / Locked filters, hidden-coin teases, badge art, rarity %, dates.
-- [ ] Accent-driven chrome via `menuCursorFill()/menuCursorEdge()`; fixed tier metals;
-  provider source badge.
-- Opt: precompute tier groups in the ViewModel; stable `LazyColumn` keys.
-- Sec: hidden coins keep descriptions redacted until earned.
+### Phase 6 — Dedicated Shiba Coins screen — IN PROGRESS
+- [x] `ShibaCoinsScreen` + `ShibaCoinsViewModel`: `DetailBreadcrumb`, summary header + crown
+  banner, sort (Tier/Earned/Rarest) + filter (All/Earned/Locked) chips, per-coin rows (tier metal,
+  name, description, rarity %, date), hidden-coin redaction, and the **link + sync UI** (paste RA
+  game id / Steam appid, or "Match by title" for Steam) that finally populates coin data.
+  `arrange()` sort/filter is pure and unit-tested. Accent-driven chrome (`menuCursorFill/Edge`);
+  fixed tier metals; theme-gradient backdrop.
+- [ ] Shell wiring: `activeShibaCoinsGameId` on `XMBUiState`, open/close in `XMBViewModel`, render
+  in `XMBShell` (parallel to `GameDetailScreen`), add to the wave-freeze condition (~XMBShell:354),
+  plus `pendingGamepadAction` focus plumbing.
+- [ ] `View Shiba coins` context-menu item + the GDS glance-strip "Open" door — both set
+  `activeShibaCoinsGameId`.
+- Note: the screen is built and tested but not reachable until the shell wiring lands (the two
+  largest files, `XMBViewModel` / `XMBShell` — its own focused slice).
+- Opt: sort/filter computed once via `remember`; stable `LazyColumn` keys.
+- Sec: hidden coins stay redacted until earned; sync errors are first-class messages.
 
 ### Phase 7 — Level / partial-credit engine wired
 - [ ] Bank coins into the wallet on each unlock at sync time; cascade-on-first-sync reveal.
