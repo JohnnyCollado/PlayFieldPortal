@@ -20,4 +20,6 @@ dependencies {
     api(project(":core:theme-kit"))
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
+
+    testImplementation(libs.bundles.test.unit)
 }
