@@ -146,6 +146,9 @@ class CategoryRepositoryImpl @Inject constructor(
             Category("network",                "Network",   "ic_network",  type = CategoryType.BUILT_IN, position = 5),
             Category("app_store",              "App Store", "ic_appstore", type = CategoryType.BUILT_IN, position = 6),
             Category(BuiltInCategory.SOCIAL,   "Social",    "ic_social",   type = CategoryType.BUILT_IN, position = 7),
+            // Appended after Social so it slots in without colliding with existing rows' positions
+            // on databases seeded by older builds; the user can reorder it next to Games.
+            Category(BuiltInCategory.ACHIEVEMENTS, "Shiba Coins", "ic_achievements", type = CategoryType.BUILT_IN, position = 8),
         )
 
         // Built-in categories the user may hide/reorder but never delete.
@@ -157,6 +160,7 @@ class CategoryRepositoryImpl @Inject constructor(
             BuiltInCategory.APP_DRAWER,
             BuiltInCategory.SETTINGS,
             "photos", "music", "videos", "network", "app_store", BuiltInCategory.SOCIAL,
+            BuiltInCategory.ACHIEVEMENTS,
         )
     }
 }

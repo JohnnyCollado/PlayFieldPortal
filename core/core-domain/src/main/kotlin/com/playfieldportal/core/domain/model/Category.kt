@@ -43,4 +43,5 @@ object BuiltInCategory {
     const val APP_DRAWER       = "app_drawer"
     const val SETTINGS         = "settings"
     const val SOCIAL           = "social"
+    const val ACHIEVEMENTS     = "achievements"
 }

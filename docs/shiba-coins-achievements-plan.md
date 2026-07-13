@@ -5,11 +5,11 @@ PlayStation-style Bronze / Silver / Gold / Platinum tier set that players earn, 
 display across RetroAchievements (emulated titles) and Steam (PC titles), with a single XP
 economy and level. No Steam or RetroAchievements password is ever handled.
 
-Status: Phases 1-6 done and validated on-device (RA connected, a game synced with real coins).
-Auto-match shipped (cartridge-first RA ROM-hash + Steam title + unmatched report + edit). Remaining:
-disc-system RA hashing, Phases 7-8 (player card + category hub; partial-credit already on), backup
-key handling, polish. Branch: `achievement-integration`. This document is the source of truth to
-resume from on any machine.
+Status: Phases 1-8 done and validated on-device (RA connected, real coins synced; Shiba Coins XMB
+column seeds on the Thor). Auto-match shipped (cartridge-first RA ROM-hash + NDS + Steam title + RA
+title fallback + unmatched report + edit). Player card + category hub live. Remaining: disc-system RA
+hashing, batch "sync all", backup key handling, Phase 9 polish (inline card header, foil states).
+Branch: `achievement-integration`. This document is the source of truth to resume from on any machine.
 
 ---
 
@@ -372,11 +372,24 @@ Coins → link + sync → coins persist → the dedicated screen lists them and 
 - Opt: wallet summed in SQL over summary rows (no per-coin load); card reads the derived wallet only.
 - Sec: n/a (local math).
 
-### Phase 8 — Category hub (XMB column)
-- [ ] Dedicated XMB category: cross-library aggregate, player card, library lenses (closest
-  to mastery, rarest earned). Crowned-coin category icon.
-- Opt: aggregate reads from cached wallet + counts; virtualized game list.
-- Sec: n/a beyond the above.
+### Phase 8 — Category hub (XMB column) — MOSTLY DONE
+- [x] Dedicated "Shiba Coins" built-in category (id `achievements`, `ic_achievements` trophy vector
+  glyph, seeded at position 8 via the idempotent reconcile so it reaches existing installs without a
+  migration; protected from deletion, reorderable). Present in every build (unlike Social).
+- [x] `LibraryStanding` cross-library aggregate (wallet + tracked standings + rarest earned) via
+  `AchievementRepository.observeLibraryStanding`, offline from cached rows.
+- [x] Hub navigation as an XMB item list (`AchievementsNav` Root → ClosestToMastery / RarestEarned /
+  AllTracked). Root shows a standing summary row (Lv/rank/coins/tracked/mastered) + three lens rows;
+  each lens drills into a flat list. Game rows reuse the standard game-item render and open Game
+  Detail (its coin strip drills into the full set); coin rows likewise. BACK/edge-swipe pops the
+  lens; the summary row opens Settings ▸ Shiba Coins (the full `ShibaPlayerCard`). Empty state points
+  the user to connect accounts. On-device verified: category seeds correctly on the Thor.
+- [ ] Inline player-card header (rendered as a summary row for now; the rich card lives in settings)
+  — deferred to Phase 9 polish.
+- Note: lenses reflect *synced* sets, not merely linked games — a game populates once its set is
+  synced (from its coins screen). A batch "sync all" stays deferred (see Phase 4).
+- Opt: standing derived from cached rows (wallet SUM + small joins); game rows matched from the
+  already-observed games list. Sec: display-only; no network on hub paint.
 
 ### Phase 9 — Polish
 - [ ] Ultra-rare foil treatment; locked/hidden visual states finalized against themes.

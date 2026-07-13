@@ -297,6 +297,15 @@ sealed interface MusicNav {
     data object MusicApps : MusicNav
 }
 
+// Which Shiba Coins hub view is open. Root shows the standing summary + lens rows; each lens drills
+// into a flat list (games nearest to mastery, the rarest earned coins, or every tracked game).
+sealed interface AchievementsNav {
+    data object Root : AchievementsNav
+    data object ClosestToMastery : AchievementsNav
+    data object RarestEarned : AchievementsNav
+    data object AllTracked : AchievementsNav
+}
+
 // ── Fullscreen music browser (Settings-style, searchable) ───────────────────────
 // Opened from the "Music" and "Playlist" root items as a fullscreen overlay (not the inline XMB
 // list). Rows reuse XMBItem so the same row visuals/actions apply: tracks play, playlists drill in,
@@ -450,6 +459,11 @@ data class XMBUiState(
     // ── Context menu (Y/Triangle) ─────────────────────────────────────────
     val activeContextMenu: XMBContextMenu? = null,
 
+    // ── Shiba Coins hub: Root (summary + lenses) → a drilled lens list ─────
+    val achievementsNav: AchievementsNav = AchievementsNav.Root,
+    val libraryStanding: com.playfieldportal.core.domain.achievement.LibraryStanding =
+        com.playfieldportal.core.domain.achievement.LibraryStanding(),
+
     // ── Discord QR login overlay ──────────────────────────────────────────
     val activeDiscordLogin: Boolean = false,
     // ── Discord Social drill: Root (account) → Account (hub) → Friends ─────
@@ -527,6 +541,7 @@ data class XMBUiState(
             videoNav != VideoNav.Root ||
             photoNav != PhotoNav.Root ||
             socialNav != SocialNav.Root ||
+            achievementsNav != AchievementsNav.Root ||
             selectedPlatformId != null ||
             selectedCollectionId != null
 
@@ -785,6 +800,7 @@ class XMBViewModel @Inject constructor(
     private val iconDisplayPreferences: com.playfieldportal.core.data.repository.IconDisplayPreferences,
     private val artworkStore: com.playfieldportal.feature.artwork.store.ArtworkStore,
     private val gameLaunchPreferences: com.playfieldportal.core.data.repository.GameLaunchPreferences,
+    private val achievementRepository: com.playfieldportal.feature.achievements.AchievementRepository,
 ) : ViewModel() {
 
     // The track list currently on screen (in display/sort order), used as the in-app player's queue
@@ -837,6 +853,7 @@ class XMBViewModel @Inject constructor(
         observeMusic()
         observeVideo()
         observePhoto()
+        observeLibraryStanding()
         observeHiddenPlacements()
         observeEmulatorProfiles()
         collectGamepadActions()
@@ -1130,7 +1147,7 @@ class XMBViewModel @Inject constructor(
     private val nonCollectionCategoryIds = setOf(
         BuiltInCategory.FAVORITES, BuiltInCategory.RECENTLY_PLAYED, BuiltInCategory.MUSIC,
         BuiltInCategory.VIDEO, BuiltInCategory.PHOTO, BuiltInCategory.ANDROID,
-        BuiltInCategory.APP_DRAWER, BuiltInCategory.SETTINGS,
+        BuiltInCategory.APP_DRAWER, BuiltInCategory.SETTINGS, BuiltInCategory.ACHIEVEMENTS,
     )
 
     /** True for categories that render collection rows: gaming categories, and the generic app
@@ -1166,6 +1183,13 @@ class XMBViewModel @Inject constructor(
                 }
                 BuiltInCategory.SETTINGS -> {
                     _uiState.update { it.copy(currentItems = SETTINGS_ITEMS) }
+                }
+                BuiltInCategory.ACHIEVEMENTS -> {
+                    gameRepository.observeGamesOnly().collect { games ->
+                        _uiState.update {
+                            it.copy(currentItems = achievementsItems(it.libraryStanding, it.achievementsNav, games))
+                        }
+                    }
                 }
                 BuiltInCategory.SOCIAL -> when (_uiState.value.socialNav) {
                     SocialNav.Root -> {
@@ -1935,6 +1959,7 @@ class XMBViewModel @Inject constructor(
             catId == BuiltInCategory.VIDEO -> "video_${videoNavKey(s.videoNav)}"
             catId == BuiltInCategory.PHOTO -> "photo_${photoNavKey(s.photoNav)}"
             catId == BuiltInCategory.SOCIAL -> "social_${socialNavKey(s.socialNav)}"
+            catId == BuiltInCategory.ACHIEVEMENTS -> "ach_${achievementsNavKey(s.achievementsNav)}"
             s.selectedCollectionId != null -> "col_${s.selectedCollectionId}"
             s.selectedPlatformId != null   -> "plat_${s.selectedPlatformId}"
             else                           -> "root"
@@ -3472,6 +3497,116 @@ class XMBViewModel @Inject constructor(
         )
     }
 
+    // ── Shiba Coins hub ─────────────────────────────────────────────────────────
+
+    private fun observeLibraryStanding() {
+        viewModelScope.launch {
+            achievementRepository.observeLibraryStanding().collect { standing ->
+                _uiState.update { it.copy(libraryStanding = standing) }
+                // Refresh the hub in place when it is the visible category.
+                if (currentCategory()?.id == BuiltInCategory.ACHIEVEMENTS) {
+                    loadItemsForCategory(currentCategory())
+                }
+            }
+        }
+    }
+
+    private fun achievementsNavKey(nav: AchievementsNav): String = when (nav) {
+        AchievementsNav.Root -> "root"
+        AchievementsNav.ClosestToMastery -> "closest"
+        AchievementsNav.RarestEarned -> "rarest"
+        AchievementsNav.AllTracked -> "all"
+    }
+
+    // Root shows the standing summary + lens rows; a drilled lens shows a flat list. Game rows are
+    // matched against [games] (all real games) so they carry full art and open Game Detail on select.
+    private fun achievementsItems(
+        standing: com.playfieldportal.core.domain.achievement.LibraryStanding,
+        nav: AchievementsNav,
+        games: List<com.playfieldportal.core.domain.model.Game>,
+    ): List<XMBItem> {
+        val byId = games.associateBy { it.id }
+        fun gameRows(rows: List<com.playfieldportal.core.domain.achievement.GameStanding>): List<XMBItem> =
+            rows.mapNotNull { s ->
+                byId[s.gameId]?.let { g ->
+                    listOf(g).toXmbItems().first().copy(
+                        subtitle = "${(s.progress * 100).roundToInt()}%  •  ${s.coins.earned.total}/${s.coins.total.total} coins",
+                    )
+                }
+            }
+        return when (nav) {
+            AchievementsNav.Root -> achievementsRootItems(standing)
+            AchievementsNav.ClosestToMastery ->
+                gameRows(standing.closestToMastery()).ifEmpty { listOf(achievementsEmptyItem("Nothing in progress yet")) }
+            AchievementsNav.AllTracked ->
+                gameRows(standing.allByStanding).ifEmpty { listOf(achievementsEmptyItem("No tracked games yet")) }
+            AchievementsNav.RarestEarned ->
+                standing.rarestEarned.map { it.toCoinItem() }.ifEmpty { listOf(achievementsEmptyItem("No earned coins yet")) }
+        }
+    }
+
+    private fun achievementsRootItems(
+        standing: com.playfieldportal.core.domain.achievement.LibraryStanding,
+    ): List<XMBItem> {
+        if (standing.gamesTracked == 0) {
+            return listOf(
+                XMBItem(
+                    id = ACH_CONNECT_ITEM_ID,
+                    title = "Connect accounts",
+                    subtitle = "Set up Shiba Coins and auto-match your library",
+                    type = XMBItemType.STANDARD,
+                ),
+            )
+        }
+        val w = standing.wallet
+        return listOf(
+            XMBItem(
+                id = ACH_SUMMARY_ITEM_ID,
+                title = "Lv ${w.level}  •  ${w.rank.label}",
+                subtitle = "${"%,d".format(w.totalCoins)} coins  •  ${standing.gamesTracked} tracked  •  ${standing.gamesMastered} mastered",
+                type = XMBItemType.STANDARD,
+            ),
+            XMBItem(id = ACH_CLOSEST_ITEM_ID, title = "Closest to Mastery", subtitle = "${standing.closestToMastery().size} games", type = XMBItemType.STANDARD),
+            XMBItem(id = ACH_RAREST_ITEM_ID, title = "Rarest Earned", subtitle = "${standing.rarestEarned.size} coins", type = XMBItemType.STANDARD),
+            XMBItem(id = ACH_ALL_ITEM_ID, title = "All Tracked Games", subtitle = "${standing.gamesTracked} games", type = XMBItemType.STANDARD),
+        )
+    }
+
+    private fun com.playfieldportal.core.domain.achievement.EarnedCoinRef.toCoinItem(): XMBItem = XMBItem(
+        id = "ach_coin_${gameId}_${coinTitle.hashCode()}",
+        title = coinTitle,
+        subtitle = "$gameTitle  •  ${"%.1f".format(globalRarity)}% of players",
+        artworkUri = iconUrl,
+        gameId = gameId,
+        isRealGame = true,   // select → Game Detail (its coin strip drills into the full set)
+        type = XMBItemType.STANDARD,
+    )
+
+    private fun achievementsEmptyItem(text: String) =
+        XMBItem(id = EMPTY_CATEGORY_ITEM_ID, title = text, type = XMBItemType.EMPTY)
+
+    private fun openAchievementsView(nav: AchievementsNav) =
+        navigateRememberingCursor { it.copy(achievementsNav = nav) }
+
+    private fun closeAchievementsView() = openAchievementsView(AchievementsNav.Root)
+
+    // Handles a tap/select in the Shiba Coins category. Returns true when consumed; a game/coin row
+    // inside a lens returns false so the shared game handler opens its Game Detail page.
+    private fun handleAchievementsSelection(item: XMBItem): Boolean {
+        when (item.id) {
+            ACH_CONNECT_ITEM_ID, ACH_SUMMARY_ITEM_ID -> {
+                menuSound.play(MenuSound.SELECT)
+                _uiState.update { it.copy(activeSettingsScreen = "settings_achievements") }
+                return true
+            }
+            ACH_CLOSEST_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openAchievementsView(AchievementsNav.ClosestToMastery); return true }
+            ACH_RAREST_ITEM_ID  -> { menuSound.play(MenuSound.SELECT); openAchievementsView(AchievementsNav.RarestEarned); return true }
+            ACH_ALL_ITEM_ID     -> { menuSound.play(MenuSound.SELECT); openAchievementsView(AchievementsNav.AllTracked); return true }
+            EMPTY_CATEGORY_ITEM_ID -> return true // placeholder, not selectable
+        }
+        return false
+    }
+
     private fun tintWaveForCategory(category: Category?) {
         // PSP-authentic: one theme color across the whole XMB — no per-category wave re-tint.
         _uiState.update { it.copy(themeColors = baseThemeColors) }
@@ -3757,6 +3892,7 @@ class XMBViewModel @Inject constructor(
                     state.photoNav is PhotoNav.Library -> openPhotoView(PhotoNav.Albums)
                     state.photoNav != PhotoNav.Root -> closePhotoView()
                     state.socialNav != SocialNav.Root -> socialBack()
+                    state.achievementsNav != AchievementsNav.Root -> closeAchievementsView()
                     state.selectedPlatformId != null || state.selectedCollectionId != null -> closePlatformFolder()
                     else -> onOpenAppDrawer()
                 }
@@ -4906,7 +5042,7 @@ class XMBViewModel @Inject constructor(
         // activeAppDrawerFilter is cleared as an invariant: landing on a category always shows the
         // plain XMB (the drawer can't normally be open here, but this keeps the contextual button
         // state correct no matter which path selected the category).
-        _uiState.update { it.copy(selectedCategoryIndex = index, selectedItemIndex = restore, selectedPlatformId = null, selectedCollectionId = null, musicNav = MusicNav.Root, videoNav = VideoNav.Root, photoNav = PhotoNav.Root, socialNav = SocialNav.Root, activeAppDrawerFilter = null) }
+        _uiState.update { it.copy(selectedCategoryIndex = index, selectedItemIndex = restore, selectedPlatformId = null, selectedCollectionId = null, musicNav = MusicNav.Root, videoNav = VideoNav.Root, photoNav = PhotoNav.Root, socialNav = SocialNav.Root, achievementsNav = AchievementsNav.Root, activeAppDrawerFilter = null) }
         tintWaveForCategory(category)
         loadItemsForCategory(category)
     }
@@ -5014,6 +5150,7 @@ class XMBViewModel @Inject constructor(
             s.photoNav is PhotoNav.Library -> openPhotoView(PhotoNav.Albums)
             s.photoNav != PhotoNav.Root -> closePhotoView()
             s.socialNav != SocialNav.Root -> socialBack()
+            s.achievementsNav != AchievementsNav.Root -> closeAchievementsView()
             s.selectedPlatformId != null || s.selectedCollectionId != null -> closePlatformFolder()
             else -> onOpenAppDrawer()
         }
@@ -5741,6 +5878,10 @@ class XMBViewModel @Inject constructor(
 
         // Social rows (Sign in / connected account / Sign out).
         if (category?.id == BuiltInCategory.SOCIAL && item != null && handleSocialSelection(item)) return
+
+        // Shiba Coins rows (summary → settings, lens rows → drill). Game/coin rows fall through to
+        // the shared game handler below, which opens Game Detail.
+        if (category?.id == BuiltInCategory.ACHIEVEMENTS && item != null && handleAchievementsSelection(item)) return
 
         // Sound: launch for items that boot something immediately; select for opening a folder,
         // detail, picker, or settings; silent for non-selectable placeholder rows.
@@ -6554,6 +6695,12 @@ class XMBViewModel @Inject constructor(
         private const val EMPTY_COLLECTION_ITEM_ID = "empty_collection"
         private const val EMPTY_FAVORITES_ITEM_ID = "empty_favorites"
         private const val EMPTY_CATEGORY_ITEM_ID = "empty_category"
+        // Shiba Coins hub root rows.
+        private const val ACH_CONNECT_ITEM_ID = "ach_connect"
+        private const val ACH_SUMMARY_ITEM_ID = "ach_summary"
+        private const val ACH_CLOSEST_ITEM_ID = "ach_closest"
+        private const val ACH_RAREST_ITEM_ID  = "ach_rarest"
+        private const val ACH_ALL_ITEM_ID      = "ach_all"
         private const val ALL_GAMES_ITEM_ID = "all_games"
         private const val ALL_GAMES_PLATFORM_ID = "__all_games__"
         private const val FAVORITES_ITEM_ID = "favorites_folder"
