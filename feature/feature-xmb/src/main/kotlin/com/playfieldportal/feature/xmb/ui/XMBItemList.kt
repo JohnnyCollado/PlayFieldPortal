@@ -34,6 +34,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bookmarks
+import androidx.compose.material.icons.filled.Diamond
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.HelpOutline
+import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.Collections
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.History
@@ -1135,8 +1140,27 @@ private fun XmbItemLeadingIcon(
                 }
             }
         }
+        // Shiba Coins hub menu rows (the summary + lens entries) get a per-row Material glyph, so the
+        // section reads like the rest of the XMB. Keyed by exact id, so the text-only untracked game
+        // rows and the coin rows keep their own treatment.
+        achievementsGlyphFor(item.id) != null -> {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
+                ThemedGlyph("", achievementsGlyphFor(item.id)!!, null, iconTint, Modifier.size(44.dp))
+            }
+        }
         else -> Spacer(modifier = Modifier.width(12.dp))
     }
+}
+
+// The leading glyph for a Shiba Coins hub row, or null if the id isn't one of them.
+private fun achievementsGlyphFor(id: String): androidx.compose.ui.graphics.vector.ImageVector? = when (id) {
+    "ach_summary" -> Icons.Filled.EmojiEvents
+    "ach_closest" -> Icons.Filled.TrendingUp
+    "ach_rarest" -> Icons.Filled.Diamond
+    "ach_all" -> Icons.Filled.SportsEsports
+    "ach_untracked" -> Icons.Filled.HelpOutline
+    "ach_connect" -> Icons.Filled.Link
+    else -> null
 }
 
 // Resolves a per-console icon (bundled from the xmb-menu-es-de set) by platform id,
