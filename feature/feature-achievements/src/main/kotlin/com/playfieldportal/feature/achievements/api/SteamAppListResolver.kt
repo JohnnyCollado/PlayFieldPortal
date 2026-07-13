@@ -3,82 +3,63 @@ package com.playfieldportal.feature.achievements.api
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import io.ktor.client.request.header
+import io.ktor.client.request.parameter
+import io.ktor.http.HttpHeaders
 import kotlinx.serialization.Serializable
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Serializable
-private data class AppListResponse(val applist: AppListWrap? = null)
+private data class StoreSearchResponse(val items: List<StoreItem> = emptyList())
 
 @Serializable
-private data class AppListWrap(val apps: List<SteamApp> = emptyList())
-
-@Serializable
-private data class SteamApp(val appid: Long = 0, val name: String = "")
+private data class StoreItem(val id: Long = 0, val name: String = "", val type: String = "")
 
 /** A Steam app candidate for the manual "Find on Steam" picker. */
 data class SteamCandidate(val appId: String, val name: String)
 
 /**
- * Resolves a game title to a Steam appid via the public app list (no key required). The full list
- * is large, so it is fetched once and cached for the process. [resolveAppId] is the automatic
- * best-effort link (exact normalized title); [search] backs the manual picker (ranked candidates).
+ * Resolves a game title to a Steam appid via Steam's storefront search (a small, per-query request —
+ * no key, no 20 MB full-app-list download). [resolveAppId] auto-links only on an exact normalized
+ * name match (so a fuzzy result never mislinks); [search] returns Steam's ranked matches for the
+ * manual picker.
  */
 @Singleton
 class SteamAppListResolver @Inject constructor(
     @AchievementsHttpClient private val client: HttpClient,
 ) {
-    @Volatile private var apps: List<SteamApp>? = null
-    @Volatile private var index: Map<String, String>? = null
-    private val mutex = Mutex()
+    /** The appid whose Steam name matches [title] exactly (after normalizing), or null. */
+    suspend fun resolveAppId(title: String): String? {
+        val key = normalize(title)
+        if (key.isEmpty()) return null
+        return storeSearch(title)
+            .firstOrNull { it.type == "app" && normalize(it.name) == key }
+            ?.id?.toString()
+    }
 
-    /** The appid for [title], or null if the list has no normalized-title match. */
-    suspend fun resolveAppId(title: String): String? = ensureLoaded().second[normalize(title)]
-
-    /**
-     * Up to [limit] Steam apps whose name matches [query], best matches first: exact normalized
-     * title, then names starting with the query, then names containing it (shorter names win ties).
-     */
+    /** Up to [limit] Steam apps matching [query], in Steam's own relevance order. */
     suspend fun search(query: String, limit: Int = 20): List<SteamCandidate> {
-        val q = normalize(query)
-        if (q.isEmpty()) return emptyList()
-        return ensureLoaded().first.asSequence()
-            .mapNotNull { app ->
-                val n = normalize(app.name)
-                val rank = when {
-                    n == q -> 0
-                    n.startsWith(q) -> 1
-                    n.contains(q) -> 2
-                    else -> return@mapNotNull null
-                }
-                Triple(rank, n.length, app)
-            }
-            .sortedWith(compareBy({ it.first }, { it.second }))
+        if (query.isBlank()) return emptyList()
+        return storeSearch(query)
+            .filter { it.type == "app" }
             .take(limit)
-            .map { SteamCandidate(it.third.appid.toString(), it.third.name) }
-            .toList()
+            .map { SteamCandidate(it.id.toString(), it.name) }
     }
 
-    private suspend fun ensureLoaded(): Pair<List<SteamApp>, Map<String, String>> {
-        apps?.let { a -> index?.let { i -> return a to i } }
-        return mutex.withLock {
-            apps?.let { a -> index?.let { i -> return a to i } }
-            val loaded = loadApps()
-            val idx = loaded.associate { normalize(it.name) to it.appid.toString() }
-            apps = loaded
-            index = idx
-            loaded to idx
-        }
-    }
-
-    private suspend fun loadApps(): List<SteamApp> = runCatching {
-        client.get("https://api.steampowered.com/ISteamApps/GetAppList/v2/")
-            .body<AppListResponse>()
-            .applist?.apps.orEmpty()
-            .filter { it.name.isNotBlank() }
+    private suspend fun storeSearch(term: String): List<StoreItem> = runCatching {
+        client.get(STORE_SEARCH) {
+            header(HttpHeaders.UserAgent, USER_AGENT)
+            parameter("term", term)
+            parameter("cc", "us")
+            parameter("l", "en")
+        }.body<StoreSearchResponse>().items
     }.getOrElse { emptyList() }
 
     private fun normalize(s: String): String = s.lowercase().filter { it.isLetterOrDigit() }
+
+    private companion object {
+        const val STORE_SEARCH = "https://store.steampowered.com/api/storesearch/"
+        const val USER_AGENT = "Mozilla/5.0"
+    }
 }

@@ -18,17 +18,17 @@ class SteamAppListResolverTest {
 
     private val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
 
-    private val appListJson = """
-        {"applist":{"apps":[
-          {"appid":220,"name":"Half-Life 2"},
-          {"appid":320,"name":"Half-Life 2: Deathmatch"},
-          {"appid":440,"name":"Team Fortress 2"},
-          {"appid":0,"name":""}
-        ]}}
+    // Steam storefront search shape: a real result carries the ™ in its name, plus non-app types.
+    private val storeSearchJson = """
+        {"total":3,"items":[
+          {"type":"app","name":"RESONANCE OF FATE™/END OF ETERNITY™ 4K/HD EDITION","id":645730},
+          {"type":"app","name":"Half-Life 2","id":220},
+          {"type":"dlc","name":"Half-Life 2: Extra","id":999}
+        ]}
     """.trimIndent()
 
     private fun resolver(): SteamAppListResolver {
-        val engine = MockEngine { respond(appListJson, HttpStatusCode.OK, jsonHeaders) }
+        val engine = MockEngine { respond(storeSearchJson, HttpStatusCode.OK, jsonHeaders) }
         val client = HttpClient(engine) {
             expectSuccess = false
             install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true; isLenient = true }) }
@@ -37,24 +37,24 @@ class SteamAppListResolverTest {
     }
 
     @Test
-    fun `matches titles ignoring case and punctuation`() = runTest {
+    fun `resolveAppId matches an exact name ignoring case, punctuation and trademark symbols`() = runTest {
         val r = resolver()
-        assertEquals("220", r.resolveAppId("half-life 2"))
-        assertEquals("440", r.resolveAppId("Team Fortress 2"))
+        // The ™ and slashes normalize away, so the full store title resolves exactly.
+        assertEquals("645730", r.resolveAppId("resonance of fate / end of eternity 4k hd edition"))
+        assertEquals("220", r.resolveAppId("Half-Life 2"))
     }
 
     @Test
-    fun `returns null when no title matches`() = runTest {
-        assertNull(resolver().resolveAppId("Some Unlisted Game"))
+    fun `resolveAppId returns null without an exact name match (never a fuzzy auto-link)`() = runTest {
+        // "Half-Life" alone doesn't equal any result's normalized name.
+        assertNull(resolver().resolveAppId("Half-Life"))
     }
 
     @Test
-    fun `search ranks exact then prefix then contains, shortest first`() = runTest {
-        val results = resolver().search("half life 2")
+    fun `search returns app results in Steam order, skipping non-app types`() = runTest {
+        val results = resolver().search("half life")
 
-        // Exact normalized match ranks first; the longer prefix match ("...Deathmatch") follows.
-        assertEquals(listOf("220", "320"), results.map { it.appId })
-        assertEquals("Half-Life 2", results.first().name)
+        assertEquals(listOf("645730", "220"), results.map { it.appId }) // the dlc row is dropped
     }
 
     @Test
