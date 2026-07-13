@@ -422,6 +422,8 @@ data class XMBUiState(
     val pendingDrawerAction: GamepadAction? = null,
     val pendingGameDetailAction: GamepadAction? = null,
     val activeGameId: Long? = null,
+    // The dedicated Shiba Coins screen overlay (set from the game context menu / glance strip).
+    val activeShibaCoinsGameId: Long? = null,
     // True when the Game Detail screen should fire its Play action as soon as the game loads —
     // set by direct-launch confirms and the △ "Launch Game" entry; cleared on close.
     val activeGameAutoLaunch: Boolean = false,
@@ -543,6 +545,7 @@ data class XMBUiState(
             activeSettingsScreen != null ||
             activeAppDrawerFilter != null ||
             activeGameId != null ||
+            activeShibaCoinsGameId != null ||
             activeAppId != null ||
             activeVideoId != null ||
             activePhotoViewer != null ||
@@ -3661,6 +3664,11 @@ class XMBViewModel @Inject constructor(
                 _uiState.update { it.copy(pendingVideoDetailAction = action) }
                 return
             }
+            state.activeShibaCoinsGameId != null -> {
+                // Touch-navigable overlay; from a controller only BACK matters — it closes it.
+                if (action == GamepadAction.BACK) onCloseShibaCoins()
+                return
+            }
             state.activeGameId != null -> {
                 // Forward everything (incl. BACK) so the Details page can close its own inner
                 // overlays first and only then pop back to the XMB (via onCloseGameDetail).
@@ -3863,6 +3871,7 @@ class XMBViewModel @Inject constructor(
             // The explicit path to the edit surface, essential when direct launch makes
             // confirm skip straight into the game.
             add(XMBContextMenuItem("game_details", "View Game Details"))
+            add(XMBContextMenuItem("view_shiba_coins", "View Shiba Coins"))
             // No "Edit App Details" here: package-backed GAME entries (PC shortcuts, Android
             // gaming apps) are games — art/title/note editing lives in Game Detail and the
             // game rows below, never the slim standard-app editor.
@@ -4279,6 +4288,9 @@ class XMBViewModel @Inject constructor(
                 // artwork, title, notes, emulator when direct launch is the confirm behavior.
                 "game_details"           -> _uiState.update {
                     it.copy(activeGameId = menu.gameId, activeGameAutoLaunch = false)
+                }
+                "view_shiba_coins"       -> _uiState.update {
+                    it.copy(activeShibaCoinsGameId = menu.gameId)
                 }
                 "edit_app"               -> openAppDetail(menu.gameId, menu.packageName ?: return)
                 "favorite"               -> toggleGameFavorite(menu.gameId, true)
@@ -5918,6 +5930,10 @@ class XMBViewModel @Inject constructor(
     }
 
     // ── Game detail overlay ───────────────────────────────────────────────────
+
+    fun onCloseShibaCoins() {
+        _uiState.update { it.copy(activeShibaCoinsGameId = null) }
+    }
 
     fun onCloseGameDetail() {
         _uiState.update {

@@ -69,6 +69,7 @@ import com.playfieldportal.feature.xmb.preview.PreviewData
 import androidx.media3.common.util.UnstableApi
 import com.playfieldportal.feature.xmb.ui.app.AppDetailScreen
 import com.playfieldportal.feature.xmb.ui.detail.GameDetailScreen
+import com.playfieldportal.feature.xmb.ui.detail.ShibaCoinsScreen
 import com.playfieldportal.feature.xmb.ui.detail.VideoDetailScreen
 import com.playfieldportal.feature.xmb.ui.photo.PhotoViewerScreen
 import com.playfieldportal.feature.xmb.viewmodel.XMBUiState
@@ -175,6 +176,7 @@ fun XMBShellContainer(
         onCloseAppDrawer = viewModel::onCloseAppDrawer,
         onDrawerActionConsumed = viewModel::consumeDrawerAction,
         onCloseGameDetail = viewModel::onCloseGameDetail,
+        onCloseShibaCoins = viewModel::onCloseShibaCoins,
         onGameDetailActionConsumed = viewModel::consumeGameDetailAction,
         onCloseVideoDetail = viewModel::onCloseVideoDetail,
         onVideoDetailActionConsumed = viewModel::consumeVideoDetailAction,
@@ -253,6 +255,7 @@ fun XMBShell(
     onCloseAppDrawer: () -> Unit = {},
     onDrawerActionConsumed: () -> Unit = {},
     onCloseGameDetail: () -> Unit = {},
+    onCloseShibaCoins: () -> Unit = {},
     onGameDetailActionConsumed: () -> Unit = {},
     onCloseVideoDetail: () -> Unit = {},
     onVideoDetailActionConsumed: () -> Unit = {},
@@ -352,6 +355,7 @@ fun XMBShell(
             // video player. Settings/dialogs use a see-through scrim, so the wave keeps animating there.
             val waveCovered = uiState.showBootSequence ||
                 uiState.activeVideoId != null || uiState.activeGameId != null ||
+                uiState.activeShibaCoinsGameId != null ||
                 uiState.activePhotoViewer != null ||
                 uiState.activeAppId != null || uiState.activeAppDrawerFilter != null ||
                 uiState.musicPlayerVisible
@@ -786,6 +790,14 @@ fun XMBShell(
                     onGamepadActionConsumed = onGameDetailActionConsumed,
                     showTouchControls = uiState.resolvedShowTouchButton,
                     onTouchInput = onTouchInput,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+
+            uiState.activeShibaCoinsGameId?.let { coinsGameId ->
+                ShibaCoinsScreen(
+                    gameId = coinsGameId,
+                    onClose = onCloseShibaCoins,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
