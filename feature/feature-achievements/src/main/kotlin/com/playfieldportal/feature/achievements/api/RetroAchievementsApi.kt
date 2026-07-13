@@ -8,6 +8,8 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 import java.time.LocalDateTime
@@ -36,6 +38,12 @@ private data class RaAchievement(
     @SerialName("DateEarned") val dateEarned: String? = null,
     @SerialName("DateEarnedHardcore") val dateEarnedHardcore: String? = null,
     @SerialName("BadgeName") val badgeName: String? = null,
+)
+
+@Serializable
+private data class RaGameListEntry(
+    @SerialName("ID") val id: Long = 0,
+    @SerialName("Hashes") val hashes: List<String> = emptyList(),
 )
 
 private fun JsonElement?.asDouble(): Double? = (this as? JsonPrimitive)?.content?.toDoubleOrNull()
@@ -103,6 +111,36 @@ class RetroAchievementsApi @Inject constructor(
             )
         }
         return ProviderSyncResult.Success(gameId, coins)
+    }
+
+    private val hashListMutex = Mutex()
+    private val hashCache = mutableMapOf<Int, Map<String, String>>()
+
+    /** The RA game id whose hash list contains [hash] on [consoleId], or null. Caches per console. */
+    suspend fun gameIdForHash(consoleId: Int, hash: String): String? {
+        val map = hashListMutex.withLock {
+            hashCache[consoleId] ?: loadHashMap(consoleId).also { hashCache[consoleId] = it }
+        }
+        return map[hash.lowercase()]
+    }
+
+    // API_GetGameList with h=1 returns each game's known hashes; f=1 limits to games with
+    // achievements. Built into one hash -> gameId map per console.
+    private suspend fun loadHashMap(consoleId: Int): Map<String, String> {
+        val user = credentials.raUsername()?.takeIf { it.isNotBlank() } ?: return emptyMap()
+        val key = credentials.raApiKey()?.takeIf { it.isNotBlank() } ?: return emptyMap()
+        rate.await()
+        return runCatching {
+            client.get("$BASE/API_GetGameList.php") {
+                parameter("z", user)
+                parameter("y", key)
+                parameter("i", consoleId)
+                parameter("h", 1)
+                parameter("f", 1)
+            }.body<List<RaGameListEntry>>()
+                .flatMap { g -> g.hashes.map { it.lowercase() to g.id.toString() } }
+                .toMap()
+        }.getOrElse { emptyMap() }
     }
 
     // RA timestamps are "yyyy-MM-dd HH:mm:ss" in UTC.

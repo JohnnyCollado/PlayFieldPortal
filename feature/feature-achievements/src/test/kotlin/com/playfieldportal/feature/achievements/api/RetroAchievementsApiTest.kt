@@ -67,4 +67,23 @@ class RetroAchievementsApiTest {
     fun `missing key short-circuits to MissingCredentials`() = runTest {
         assertEquals(ProviderSyncResult.MissingCredentials, api(key = null).fetch("14402"))
     }
+
+    @Test
+    fun `gameIdForHash matches a rom hash to a game id, case-insensitively`() = runTest {
+        val listJson = """[{"ID":14402,"Hashes":["ABCDEF0123","0011"]},{"ID":555,"Hashes":["deadbeef"]}]"""
+        val engine = MockEngine { respond(listJson, HttpStatusCode.OK, jsonHeaders) }
+        val client = HttpClient(engine) {
+            expectSuccess = false
+            install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true; isLenient = true }) }
+        }
+        val creds = mockk<AchievementCredentialsProvider> {
+            coEvery { raUsername() } returns "u"
+            coEvery { raApiKey() } returns "k"
+        }
+        val api = RetroAchievementsApi(client, creds)
+
+        assertEquals("14402", api.gameIdForHash(7, "abcdef0123"))
+        assertEquals("555", api.gameIdForHash(7, "DEADBEEF"))
+        assertNull(api.gameIdForHash(7, "nope"))
+    }
 }
