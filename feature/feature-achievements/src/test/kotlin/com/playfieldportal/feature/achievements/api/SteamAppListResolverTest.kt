@@ -21,6 +21,7 @@ class SteamAppListResolverTest {
     private val appListJson = """
         {"applist":{"apps":[
           {"appid":220,"name":"Half-Life 2"},
+          {"appid":320,"name":"Half-Life 2: Deathmatch"},
           {"appid":440,"name":"Team Fortress 2"},
           {"appid":0,"name":""}
         ]}}
@@ -45,5 +46,19 @@ class SteamAppListResolverTest {
     @Test
     fun `returns null when no title matches`() = runTest {
         assertNull(resolver().resolveAppId("Some Unlisted Game"))
+    }
+
+    @Test
+    fun `search ranks exact then prefix then contains, shortest first`() = runTest {
+        val results = resolver().search("half life 2")
+
+        // Exact normalized match ranks first; the longer prefix match ("...Deathmatch") follows.
+        assertEquals(listOf("220", "320"), results.map { it.appId })
+        assertEquals("Half-Life 2", results.first().name)
+    }
+
+    @Test
+    fun `search returns empty for a blank query`() = runTest {
+        assertEquals(emptyList(), resolver().search("   "))
     }
 }

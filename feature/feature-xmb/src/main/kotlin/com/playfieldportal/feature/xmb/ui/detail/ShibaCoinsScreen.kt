@@ -230,6 +230,48 @@ private fun LinkSection(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewModel
                 PillButton("Match by title", enabled = state.title.isNotBlank()) { viewModel.resolveByTitle() }
             }
         }
+
+        if (state.provider == AchievementProvider.STEAM) {
+            SteamFinder(state, viewModel)
+        }
+    }
+}
+
+// Manual "Find on Steam" picker: search the app list by name and pick the right game.
+@Composable
+private fun SteamFinder(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewModel) {
+    var query by remember(state.title) { mutableStateOf(state.title) }
+    Spacer(Modifier.height(12.dp))
+    Text("Or find it on Steam", color = TextMuted, fontSize = 12.sp)
+    Spacer(Modifier.height(6.dp))
+    OutlinedTextField(
+        value = query,
+        onValueChange = { query = it },
+        label = { Text("Search Steam by name", color = TextMuted) },
+        singleLine = true,
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary,
+            focusedBorderColor = menuCursorEdge(), unfocusedBorderColor = Color(0x44FFFFFF),
+            cursorColor = menuCursorEdge(),
+        ),
+        modifier = Modifier.fillMaxWidth(),
+    )
+    Spacer(Modifier.height(8.dp))
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        PillButton("Search", enabled = query.isNotBlank()) { viewModel.searchSteam(query) }
+        if (state.isSearchingSteam) CircularProgressIndicator(color = menuCursorEdge(), modifier = Modifier.size(16.dp))
+    }
+    state.steamResults.forEach { candidate ->
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { viewModel.linkSteamAppId(candidate.appId) }
+                .padding(vertical = 8.dp),
+        ) {
+            Text(candidate.name, color = TextPrimary, fontSize = 13.sp, modifier = Modifier.weight(1f))
+            Text("#${candidate.appId}", color = TextMuted, fontSize = 11.sp)
+        }
     }
 }
 

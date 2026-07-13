@@ -146,6 +146,10 @@ class AchievementRepository @Inject constructor(
         return appId
     }
 
+    /** Steam candidates whose name matches [query], for the manual "Find on Steam" picker. */
+    suspend fun searchSteam(query: String): List<com.playfieldportal.feature.achievements.api.SteamCandidate> =
+        steamResolver.search(query)
+
     /** Removes a game's provider link so it can be re-matched (edit a wrong auto-match). */
     suspend fun unlink(gameId: Long) = linkDao.deleteForGame(gameId)
 

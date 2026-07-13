@@ -292,8 +292,13 @@ New module `feature-achievements` (clients + repository; UI lands in later phase
   non-success. Wallet derives reactively from the summaries. Tested with MockK doubles.
 - [x] Provider-id resolution (link layer): persistent `provider_game_links` table (DB v30 -> v31)
   + repository `linkManually` / `resolveSteamLink` / `syncGameById`, so a stored link drives
-  end-to-end sync. Steam auto-resolves by title (`SteamAppListResolver`, cached app list).
-  `ProviderSyncResult.NotLinked` added. Tested (resolver + repo link/sync).
+  end-to-end sync. `ProviderSyncResult.NotLinked` added. Tested (resolver + repo link/sync).
+- [x] Steam resolution ladder (most -> least reliable): (1) the appid the shortcut already carries —
+  `SteamShortcut` parses GameNative intents (`i.app_id` + `game_source=STEAM`) and
+  `steam://rungameid/<n>` URIs; (2) `SteamGridDbApi.getSteamAppId` (SGDB `platformdata=steam`, a
+  hint, parsed tolerantly) when the game has an SGDB id; (3) `SteamAppListResolver` title match; (4)
+  a manual "Find on Steam" picker on the coins screen (`SteamAppListResolver.search` → ranked
+  candidates → link by appid). The auto-matcher walks 1→2→3; tier 4 is the manual escape hatch.
 - [x] Auto-match (cartridge-first): `RaRomHasher` (full-MD5 + NES/SNES header strip + N64 byte-order
   normalization so z64/v64/n64 hash the same; Nintendo DS header+ARM9+ARM7+icon) + `RaConsole` id
   map + `RetroAchievementsApi.gameIdForHash` (per-console hash list, cached). `RomBytesReader` (raw

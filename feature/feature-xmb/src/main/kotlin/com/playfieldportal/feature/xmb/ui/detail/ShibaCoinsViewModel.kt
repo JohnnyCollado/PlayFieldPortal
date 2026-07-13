@@ -49,6 +49,9 @@ data class ShibaCoinsUiState(
     // Controller focus: 0 = sort, 1 = filter, 2 = action (sync/link), 3+ = coin rows.
     val focusIndex: Int = 0,
     val isSyncing: Boolean = false,
+    // Manual "Find on Steam" picker (Steam games only).
+    val steamResults: List<com.playfieldportal.feature.achievements.api.SteamCandidate> = emptyList(),
+    val isSearchingSteam: Boolean = false,
     val message: String? = null,
     val closed: Boolean = false,
 )
@@ -172,6 +175,25 @@ class ShibaCoinsViewModel @Inject constructor(
             achievementRepository.linkManually(gameId, _state.value.provider, id)
             sync()
         }
+    }
+
+    /** Steam only: search the Steam app list for candidates matching [query] (the manual picker). */
+    fun searchSteam(query: String) {
+        if (query.isBlank()) {
+            _state.update { it.copy(steamResults = emptyList()) }
+            return
+        }
+        viewModelScope.launch {
+            _state.update { it.copy(isSearchingSteam = true) }
+            val results = achievementRepository.searchSteam(query)
+            _state.update { it.copy(isSearchingSteam = false, steamResults = results) }
+        }
+    }
+
+    /** Links a Steam appid the user picked from the search results, then syncs. */
+    fun linkSteamAppId(appId: String) {
+        _state.update { it.copy(steamResults = emptyList()) }
+        link(appId)
     }
 
     /** Steam only: match this game's title to an appid, link it, and sync. */
