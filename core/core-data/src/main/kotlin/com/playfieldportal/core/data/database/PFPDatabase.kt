@@ -20,6 +20,7 @@ import com.playfieldportal.core.data.database.dao.MusicFolderDao
 import com.playfieldportal.core.data.database.dao.MusicTrackDao
 import com.playfieldportal.core.data.database.dao.PlaylistDao
 import com.playfieldportal.core.data.database.dao.PlaySessionDao
+import com.playfieldportal.core.data.database.dao.ProviderGameLinkDao
 import com.playfieldportal.core.data.database.dao.PlatformDao
 import com.playfieldportal.core.data.database.dao.ThemeDao
 import com.playfieldportal.core.data.database.dao.UnmatchedRomDao
@@ -48,6 +49,7 @@ import com.playfieldportal.core.data.database.entity.MusicTrackEntity
 import com.playfieldportal.core.data.database.entity.PlaylistEntity
 import com.playfieldportal.core.data.database.entity.PlaylistTrackEntity
 import com.playfieldportal.core.data.database.entity.PlaySessionEntity
+import com.playfieldportal.core.data.database.entity.ProviderGameLinkEntity
 import com.playfieldportal.core.data.database.entity.PlatformEntity
 import com.playfieldportal.core.data.database.entity.ThemeEntity
 import com.playfieldportal.core.data.database.entity.UnmatchedRomEntity
@@ -92,8 +94,9 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         SsMediaCacheEntity::class,
         AchievementSetEntity::class,
         AchievementEntity::class,
+        ProviderGameLinkEntity::class,
     ],
-    version = 30,
+    version = 31,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -125,6 +128,7 @@ abstract class PFPDatabase : RoomDatabase() {
     abstract fun ssMediaCacheDao(): SsMediaCacheDao
     abstract fun achievementSetDao(): AchievementSetDao
     abstract fun achievementDao(): AchievementDao
+    abstract fun providerGameLinkDao(): ProviderGameLinkDao
 
     companion object {
         const val DATABASE_NAME = "pfp_database"
@@ -883,6 +887,27 @@ abstract class PFPDatabase : RoomDatabase() {
                         is_earned INTEGER NOT NULL,
                         earned_at INTEGER,
                         PRIMARY KEY(game_id, provider, provider_achievement_id),
+                        FOREIGN KEY(game_id) REFERENCES games(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+            }
+        }
+
+        // v31 — provider-game links. Maps a library game to its identifier on an achievement
+        // provider (RA game id / Steam appid) so a sync knows what to fetch, set automatically
+        // (Steam title match) or by hand. Additive; cascade-deletes with the game.
+        val MIGRATION_30_31 = object : Migration(30, 31) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS provider_game_links (
+                        game_id INTEGER NOT NULL,
+                        provider TEXT NOT NULL,
+                        provider_game_id TEXT NOT NULL,
+                        source TEXT NOT NULL,
+                        resolved_at INTEGER NOT NULL,
+                        PRIMARY KEY(game_id),
                         FOREIGN KEY(game_id) REFERENCES games(id) ON UPDATE NO ACTION ON DELETE CASCADE
                     )
                     """.trimIndent()

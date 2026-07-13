@@ -5,9 +5,10 @@ PlayStation-style Bronze / Silver / Gold / Platinum tier set that players earn, 
 display across RetroAchievements (emulated titles) and Steam (PC titles), with a single XP
 economy and level. No Steam or RetroAchievements password is ever handled.
 
-Status: Phases 1-3 landed (Phase 3 minus provider-id resolution); Phase 4 connect-accounts
-screen done and tested (backup wiring + "sync now" deferred). Branch: `achievement-integration`.
-This document is the source of truth to resume from on any machine.
+Status: Phases 1-4 substantially done. Provider-id resolution: link layer + manual linking +
+Steam auto-resolution done; only the RetroAchievements ROM-hash subsystem is deferred. Remaining:
+backup key handling, "sync now", RA hashing, and the UI phases (5-9). Branch:
+`achievement-integration`. This document is the source of truth to resume from on any machine.
 
 ---
 
@@ -288,9 +289,13 @@ New module `feature-achievements` (clients + repository; UI lands in later phase
   `observeWallet`) straight from Room; `syncGame(gameId, provider, providerGameId)` maps a fetch
   to the per-coin rows + summary (pruning dropped coins), leaving the DB untouched on any
   non-success. Wallet derives reactively from the summaries. Tested with MockK doubles.
-- [ ] Provider-id resolution: Steam appid + RetroAchievements ROM-hash matching (the RA hashing
-  subsystem hooks into `RomScanner`) — its own sub-step, deferred. `syncGame` takes the
-  provider-id explicitly until this lands.
+- [x] Provider-id resolution (link layer): persistent `provider_game_links` table (DB v30 -> v31)
+  + repository `linkManually` / `resolveSteamLink` / `syncGameById`, so a stored link drives
+  end-to-end sync. Steam auto-resolves by title (`SteamAppListResolver`, cached app list).
+  `ProviderSyncResult.NotLinked` added. Tested (resolver + repo link/sync).
+- [ ] RetroAchievements ROM-hash resolution: rcheevos-style, console-specific hashing hooked into
+  `RomScanner` (header stripping per system, disc hashing). Deferred — RA games link manually for
+  now. This is the one genuinely large remaining sub-system.
 - Opt: offline-first; >=1.1s rate limit; Coil for badge art (in the UI phases).
 - Sec: HTTPS only; read-only; keys never logged (no request logging at all); "profile not public"
   and missing-key are first-class results, never exceptions carrying a key.

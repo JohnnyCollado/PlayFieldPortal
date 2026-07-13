@@ -26,6 +26,9 @@ sealed interface ProviderSyncResult {
     /** No API key / identity configured for this provider. */
     data object MissingCredentials : ProviderSyncResult
 
+    /** The game isn't linked to a provider id yet, so there's nothing to fetch. */
+    data object NotLinked : ProviderSyncResult
+
     /** Steam only: the user's profile "Game details" are not public. */
     data object ProfileNotPublic : ProviderSyncResult
 

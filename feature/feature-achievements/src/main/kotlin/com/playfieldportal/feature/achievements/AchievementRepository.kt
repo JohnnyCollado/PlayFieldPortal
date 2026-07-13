@@ -3,9 +3,12 @@ package com.playfieldportal.feature.achievements
 import com.playfieldportal.core.data.achievement.AchievementCredentialsProvider
 import com.playfieldportal.core.data.database.dao.AchievementDao
 import com.playfieldportal.core.data.database.dao.AchievementSetDao
+import com.playfieldportal.core.data.database.dao.ProviderGameLinkDao
 import com.playfieldportal.core.data.database.entity.AchievementEntity
 import com.playfieldportal.core.data.database.entity.AchievementSetEntity
+import com.playfieldportal.core.data.database.entity.ProviderGameLinkEntity
 import com.playfieldportal.core.domain.achievement.AchievementProvider
+import com.playfieldportal.feature.achievements.api.SteamAppListResolver
 import com.playfieldportal.core.domain.achievement.CoinCounts
 import com.playfieldportal.core.domain.achievement.CoinWallet
 import com.playfieldportal.core.domain.achievement.GameCoins
@@ -32,7 +35,11 @@ class AchievementRepository @Inject constructor(
     private val credentials: AchievementCredentialsProvider,
     private val setDao: AchievementSetDao,
     private val coinDao: AchievementDao,
+    private val linkDao: ProviderGameLinkDao,
+    private val steamResolver: SteamAppListResolver,
 ) {
+    /** This game's provider link (which provider + id it syncs from), or null if unlinked. */
+    fun observeLink(gameId: Long): Flow<ProviderGameLinkEntity?> = linkDao.observeForGame(gameId)
     /** This game's coin summary (progress, tally, mastery), or null if never synced. */
     fun observeGameCoins(gameId: Long): Flow<GameCoins?> =
         setDao.observeForGame(gameId).map { it?.toGameCoins() }
@@ -67,6 +74,44 @@ class AchievementRepository @Inject constructor(
         setDao.upsert(summaryOf(gameId, provider, result.providerGameId, result.coins, now))
         credentials.setLastSyncedAt(now)
         return result
+    }
+
+    /** Links a game to a provider id by hand — the always-works path (and the only one for RA yet). */
+    suspend fun linkManually(gameId: Long, provider: AchievementProvider, providerGameId: String) {
+        linkDao.upsert(
+            ProviderGameLinkEntity(
+                gameId = gameId,
+                provider = provider.name,
+                providerGameId = providerGameId.trim(),
+                source = "MANUAL",
+                resolvedAt = System.currentTimeMillis(),
+            ),
+        )
+    }
+
+    /**
+     * Tries to auto-link a game to Steam by matching its [title] against the Steam app list. Stores
+     * and returns the resolved appid, or null when there is no match.
+     */
+    suspend fun resolveSteamLink(gameId: Long, title: String): String? {
+        val appId = steamResolver.resolveAppId(title) ?: return null
+        linkDao.upsert(
+            ProviderGameLinkEntity(
+                gameId = gameId,
+                provider = AchievementProvider.STEAM.name,
+                providerGameId = appId,
+                source = "STEAM_TITLE",
+                resolvedAt = System.currentTimeMillis(),
+            ),
+        )
+        return appId
+    }
+
+    /** Syncs a game from its stored link; [ProviderSyncResult.NotLinked] if it has none yet. */
+    suspend fun syncGameById(gameId: Long): ProviderSyncResult {
+        val link = linkDao.getForGame(gameId) ?: return ProviderSyncResult.NotLinked
+        val provider = AchievementProvider.fromName(link.provider) ?: return ProviderSyncResult.NotLinked
+        return syncGame(gameId, provider, link.providerGameId)
     }
 }
 

@@ -3,12 +3,15 @@ package com.playfieldportal.feature.achievements
 import com.playfieldportal.core.data.achievement.AchievementCredentialsProvider
 import com.playfieldportal.core.data.database.dao.AchievementDao
 import com.playfieldportal.core.data.database.dao.AchievementSetDao
+import com.playfieldportal.core.data.database.dao.ProviderGameLinkDao
 import com.playfieldportal.core.data.database.entity.AchievementSetEntity
+import com.playfieldportal.core.data.database.entity.ProviderGameLinkEntity
 import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.core.domain.achievement.ShibaTier
 import com.playfieldportal.feature.achievements.api.ProviderSyncResult
 import com.playfieldportal.feature.achievements.api.RetroAchievementsApi
 import com.playfieldportal.feature.achievements.api.SteamAchievementsApi
+import com.playfieldportal.feature.achievements.api.SteamAppListResolver
 import com.playfieldportal.feature.achievements.api.SyncedCoin
 import io.mockk.Runs
 import io.mockk.coEvery
@@ -32,8 +35,10 @@ class AchievementRepositoryTest {
     private val credentials = mockk<AchievementCredentialsProvider>(relaxed = true)
     private val setDao = mockk<AchievementSetDao>(relaxed = true)
     private val coinDao = mockk<AchievementDao>(relaxed = true)
+    private val linkDao = mockk<ProviderGameLinkDao>(relaxed = true)
+    private val steamResolver = mockk<SteamAppListResolver>(relaxed = true)
 
-    private val repo = AchievementRepository(steamApi, retroApi, credentials, setDao, coinDao)
+    private val repo = AchievementRepository(steamApi, retroApi, credentials, setDao, coinDao, linkDao, steamResolver)
 
     private fun coin(id: String, tier: ShibaTier, earned: Boolean) =
         SyncedCoin(id, id, "", tier, 0.0, null, isHidden = false, isEarned = earned, earnedAt = if (earned) 1L else null)
@@ -105,5 +110,38 @@ class AchievementRepositoryTest {
         assertEquals(ProviderSyncResult.ProfileNotPublic, result)
         coVerify(exactly = 0) { coinDao.upsertAll(any()) }
         coVerify(exactly = 0) { setDao.upsert(any()) }
+    }
+
+    @Test
+    fun `syncGameById syncs from the stored link`() = runTest {
+        coEvery { linkDao.getForGame(1L) } returns ProviderGameLinkEntity(1L, "STEAM", "440", "MANUAL", 0L)
+        coEvery { steamApi.fetch("440") } returns ProviderSyncResult.Success(
+            "440",
+            listOf(coin("b1", ShibaTier.BRONZE, earned = true)),
+        )
+
+        val result = repo.syncGameById(1L)
+
+        assertTrue(result is ProviderSyncResult.Success)
+        coVerify { steamApi.fetch("440") }
+    }
+
+    @Test
+    fun `syncGameById returns NotLinked when the game has no link`() = runTest {
+        coEvery { linkDao.getForGame(1L) } returns null
+        assertEquals(ProviderSyncResult.NotLinked, repo.syncGameById(1L))
+    }
+
+    @Test
+    fun `resolveSteamLink stores a link when the title matches`() = runTest {
+        coEvery { steamResolver.resolveAppId("Half-Life 2") } returns "220"
+        val slot = slot<ProviderGameLinkEntity>()
+        coEvery { linkDao.upsert(capture(slot)) } just Runs
+
+        val appId = repo.resolveSteamLink(1L, "Half-Life 2")
+
+        assertEquals("220", appId)
+        assertEquals("220", slot.captured.providerGameId)
+        assertEquals(AchievementProvider.STEAM.name, slot.captured.provider)
     }
 }
