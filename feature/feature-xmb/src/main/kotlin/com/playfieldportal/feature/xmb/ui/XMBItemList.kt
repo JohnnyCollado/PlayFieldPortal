@@ -38,7 +38,6 @@ import androidx.compose.material.icons.filled.Bookmarks
 import androidx.compose.material.icons.filled.Diamond
 import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Link
-import androidx.compose.material.icons.filled.Toll
 import androidx.compose.material.icons.filled.Collections
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.History
@@ -1161,7 +1160,22 @@ private fun XmbItemLeadingIcon(
                 }
             }
         }
-        // Shiba Coins hub lens rows get a per-row Material glyph at the item-icon size (no
+        // "All Tracked Games" reads as a memory card (its list is the tracked games), using the
+        // bundled physical-media card art tinted with the theme icon color.
+        item.id == "ach_all" -> {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
+                AsyncImage(
+                    model = MEMORY_CARD_DEFAULT_ART,
+                    contentDescription = null,
+                    colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(
+                        iconTint,
+                        androidx.compose.ui.graphics.BlendMode.SrcIn,
+                    ),
+                    modifier = Modifier.size(LEADING_ICON_SIZE),
+                )
+            }
+        }
+        // Other Shiba Coins hub lens rows get a per-row Material glyph at the item-icon size (no
         // background), keyed by exact id so the untracked/coin rows keep their own treatment.
         achievementsGlyphFor(item.id) != null -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
@@ -1175,7 +1189,6 @@ private fun XmbItemLeadingIcon(
 // The leading glyph for a Shiba Coins hub lens row, or null if the id isn't one of them.
 private fun achievementsGlyphFor(id: String): androidx.compose.ui.graphics.vector.ImageVector? = when (id) {
     "ach_rarest" -> Icons.Filled.Diamond
-    "ach_all" -> Icons.Filled.Toll               // stacked coins
     "ach_untracked" -> Icons.Filled.HelpOutline
     "ach_connect" -> Icons.Filled.Link
     else -> null
