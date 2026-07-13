@@ -85,11 +85,14 @@ object DatabaseModule {
             PFPDatabase.MIGRATION_26_27,
             PFPDatabase.MIGRATION_27_28,
             PFPDatabase.MIGRATION_28_29,
+            PFPDatabase.MIGRATION_29_30,
         )
         .build()
 
     @Provides fun provideGameDao(db: PFPDatabase): GameDao = db.gameDao()
     @Provides fun provideSsMediaCacheDao(db: PFPDatabase): com.playfieldportal.core.data.database.dao.SsMediaCacheDao = db.ssMediaCacheDao()
+    @Provides fun provideAchievementSetDao(db: PFPDatabase): com.playfieldportal.core.data.database.dao.AchievementSetDao = db.achievementSetDao()
+    @Provides fun provideAchievementDao(db: PFPDatabase): com.playfieldportal.core.data.database.dao.AchievementDao = db.achievementDao()
     @Provides fun providePlatformDao(db: PFPDatabase): PlatformDao = db.platformDao()
     @Provides fun provideCategoryDao(db: PFPDatabase): CategoryDao = db.categoryDao()
     @Provides fun providePlaySessionDao(db: PFPDatabase): PlaySessionDao = db.playSessionDao()

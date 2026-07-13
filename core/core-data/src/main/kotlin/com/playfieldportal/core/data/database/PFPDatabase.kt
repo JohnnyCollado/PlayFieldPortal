@@ -5,6 +5,8 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.playfieldportal.core.data.database.dao.AchievementDao
+import com.playfieldportal.core.data.database.dao.AchievementSetDao
 import com.playfieldportal.core.data.database.dao.AppOverrideDao
 import com.playfieldportal.core.data.database.dao.ArtworkImportReportDao
 import com.playfieldportal.core.data.database.dao.ArtworkRecordDao
@@ -29,6 +31,8 @@ import com.playfieldportal.core.data.database.dao.SsMediaCacheDao
 import com.playfieldportal.core.data.database.dao.VideoDao
 import com.playfieldportal.core.data.database.dao.VideoLibraryDao
 import com.playfieldportal.core.data.database.dao.VideoPlaylistDao
+import com.playfieldportal.core.data.database.entity.AchievementEntity
+import com.playfieldportal.core.data.database.entity.AchievementSetEntity
 import com.playfieldportal.core.data.database.entity.AppOverrideEntity
 import com.playfieldportal.core.data.database.entity.ArtworkImportReportEntity
 import com.playfieldportal.core.data.database.entity.ArtworkRecordEntity
@@ -86,8 +90,10 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         ArtworkRecordEntity::class,
         ArtworkImportReportEntity::class,
         SsMediaCacheEntity::class,
+        AchievementSetEntity::class,
+        AchievementEntity::class,
     ],
-    version = 29,
+    version = 30,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -117,6 +123,8 @@ abstract class PFPDatabase : RoomDatabase() {
     abstract fun artworkRecordDao(): ArtworkRecordDao
     abstract fun artworkImportReportDao(): ArtworkImportReportDao
     abstract fun ssMediaCacheDao(): SsMediaCacheDao
+    abstract fun achievementSetDao(): AchievementSetDao
+    abstract fun achievementDao(): AchievementDao
 
     companion object {
         const val DATABASE_NAME = "pfp_database"
@@ -831,6 +839,54 @@ abstract class PFPDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE artwork_records ADD COLUMN prev_size_bytes INTEGER NOT NULL DEFAULT 0")
                 db.execSQL("ALTER TABLE artwork_records ADD COLUMN crop_rect TEXT")
                 db.execSQL("ALTER TABLE artwork_records ADD COLUMN has_original INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        // v30 — Shiba Coins achievement system. Adds achievement_sets (one denormalized coin
+        // summary + sync metadata per game/provider, for O(1) glance + wallet reads) and
+        // achievements (one row per individual coin with tier, rarity and earned state). Both
+        // cascade-delete with their game. Additive only; no existing data is touched.
+        // See docs/shiba-coins-achievements-plan.md.
+        val MIGRATION_29_30 = object : Migration(29, 30) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS achievement_sets (
+                        game_id INTEGER NOT NULL,
+                        provider TEXT NOT NULL,
+                        provider_game_id TEXT NOT NULL,
+                        bronze_total INTEGER NOT NULL,
+                        silver_total INTEGER NOT NULL,
+                        gold_total INTEGER NOT NULL,
+                        bronze_earned INTEGER NOT NULL,
+                        silver_earned INTEGER NOT NULL,
+                        gold_earned INTEGER NOT NULL,
+                        mastered INTEGER NOT NULL,
+                        last_synced_at INTEGER,
+                        PRIMARY KEY(game_id, provider),
+                        FOREIGN KEY(game_id) REFERENCES games(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS achievements (
+                        game_id INTEGER NOT NULL,
+                        provider TEXT NOT NULL,
+                        provider_achievement_id TEXT NOT NULL,
+                        title TEXT NOT NULL,
+                        description TEXT NOT NULL,
+                        tier TEXT NOT NULL,
+                        global_rarity REAL NOT NULL,
+                        icon_url TEXT,
+                        is_hidden INTEGER NOT NULL,
+                        is_earned INTEGER NOT NULL,
+                        earned_at INTEGER,
+                        PRIMARY KEY(game_id, provider, provider_achievement_id),
+                        FOREIGN KEY(game_id) REFERENCES games(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
             }
         }
     }

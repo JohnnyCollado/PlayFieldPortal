@@ -5,8 +5,9 @@ PlayStation-style Bronze / Silver / Gold / Platinum tier set that players earn, 
 display across RetroAchievements (emulated titles) and Steam (PC titles), with a single XP
 economy and level. No Steam or RetroAchievements password is ever handled.
 
-Status: Phase 1 (domain core) landed and unit-tested; Phases 2-9 not started. Branch:
-`achievement-integration`. This document is the source of truth to resume from on any machine.
+Status: Phases 1-2 (domain core + persistence) landed and tested; Phases 3-9 not started.
+Branch: `achievement-integration`. This document is the source of truth to resume from on any
+machine.
 
 ---
 
@@ -256,12 +257,22 @@ standing requirement to keep both in mind at every step. Tests ship with each mo
 - Opt: pure integer math, table-driven bands, closed-form level lookup (no per-level loop growth).
 - Sec: no secrets in this layer; dependency-free and trivially testable.
 
-### Phase 2 — Persistence
-- [ ] `AchievementSetEntity`, `AchievementEntity`, optional `ShibaWalletEntity`.
-- [ ] DAOs + one explicit Room migration (`exportSchema`, no destructive fallback).
-- [ ] DataStore keys + `AchievementsCredentialProvider` (clone of `SgdbApiKeyProvider`).
-- Opt: index by (gameId, provider); Flow-based reads; cached wallet row for O(1) player card.
-- Sec: both API keys encrypted via `KeystoreSecretCipher`; add redaction test.
+### Phase 2 — Persistence — DONE
+- [x] `AchievementSetEntity` (per game/provider summary + sync metadata), `AchievementEntity`
+  (per coin). `ShibaWalletEntity` intentionally skipped — the wallet is derived via a SQL
+  aggregate (see below), matching the "start derived" open decision.
+- [x] `AchievementSetDao` / `AchievementDao` + `MIGRATION_29_30` (DB v29 -> v30), registered in
+  `DatabaseModule`. No destructive fallback; additive tables, cascade-delete with the game.
+- [x] DataStore keys (`ra_username`, `ra_api_key`, `steam_id64`, `steam_api_key`,
+  `achievements_enabled`, `achievements_sync_last`) + `AchievementCredentialsProvider`
+  (`core-data/achievement/`), mirroring `SgdbApiKeyProvider`.
+- [x] Tests: `AchievementDaoTest` (wallet aggregate, cascade, per-game reads),
+  `AchievementCredentialsProviderTest` (round-trip + clear). Passing.
+- Opt: composite PK (game_id, provider) indexes the FK; Flow reads; wallet is a single SQL
+  `SUM` over the summary rows (`observeWalletCoins`) — O(games), no per-coin scan.
+- Sec: both API keys encrypted via `KeystoreSecretCipher`; identities stored plain; keys never
+  logged. Log redaction of the Steam `key=` param moves to Phase 3, where request logging lands
+  (the RA `Authorization` header is already covered by `LogRedaction`).
 
 ### Phase 3 — Provider clients + repository
 - [ ] `RetroAchievementsApi` + ROM-hash resolution into `RomScanner`.
