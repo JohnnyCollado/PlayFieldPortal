@@ -169,10 +169,14 @@ class RetroAchievementsApi @Inject constructor(
         }.getOrElse { ConsoleIndex.EMPTY }
     }
 
-    // Case- and punctuation-insensitive title key: keep only alphanumerics. This folds "A2: Rift"
-    // and "A2 - Rift" together, matching the same relaxed scheme the Steam resolver uses.
+    // Case-, accent- and punctuation-insensitive title key: decompose accents (é -> e + combining
+    // mark, which is dropped as a non-alphanumeric) then keep only alphanumerics. Folds "A2: Rift"
+    // and "A2 - Rift", and "Pokémon" and "Pokemon", together — RA titles use accents, scraped ones
+    // often don't.
     private fun normalizeTitle(raw: String): String =
-        raw.lowercase().filter(Char::isLetterOrDigit)
+        java.text.Normalizer.normalize(raw, java.text.Normalizer.Form.NFD)
+            .lowercase()
+            .filter(Char::isLetterOrDigit)
 
     // RA timestamps are "yyyy-MM-dd HH:mm:ss" in UTC.
     private fun parseRaDate(raw: String): Long? = runCatching {

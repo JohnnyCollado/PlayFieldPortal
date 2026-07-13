@@ -17,6 +17,17 @@ data class GameStanding(
 }
 
 /**
+ * A game with no achievement link, plus the plain reason why — the row shape behind the hub's
+ * "Untracked" section. [reason] is user-facing (e.g. "System not supported by RetroAchievements").
+ */
+data class UntrackedGame(
+    val gameId: Long,
+    val title: String,
+    val platformId: String,
+    val reason: String,
+)
+
+/**
  * A single earned coin tied back to its game — the row shape behind the "Rarest Earned" lens.
  * [globalRarity] is the percent of players who own it (lower is rarer).
  */
@@ -39,6 +50,7 @@ data class LibraryStanding(
     val wallet: CoinWallet = CoinWallet.EMPTY,
     val tracked: List<GameStanding> = emptyList(),
     val rarestEarned: List<EarnedCoinRef> = emptyList(),
+    val untracked: List<UntrackedGame> = emptyList(),
 ) {
     /** Number of games with a synced set. */
     val gamesTracked: Int get() = tracked.size

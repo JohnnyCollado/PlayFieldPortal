@@ -37,8 +37,9 @@ class AchievementRepositoryTest {
     private val coinDao = mockk<AchievementDao>(relaxed = true)
     private val linkDao = mockk<ProviderGameLinkDao>(relaxed = true)
     private val steamResolver = mockk<SteamAppListResolver>(relaxed = true)
+    private val gameRepository = mockk<com.playfieldportal.core.domain.repository.GameRepository>(relaxed = true)
 
-    private val repo = AchievementRepository(steamApi, retroApi, credentials, setDao, coinDao, linkDao, steamResolver)
+    private val repo = AchievementRepository(steamApi, retroApi, credentials, setDao, coinDao, linkDao, steamResolver, gameRepository)
 
     private fun coin(id: String, tier: ShibaTier, earned: Boolean) =
         SyncedCoin(id, id, "", tier, 0.0, null, isHidden = false, isEarned = earned, earnedAt = if (earned) 1L else null)
@@ -130,6 +131,29 @@ class AchievementRepositoryTest {
     fun `syncGameById returns NotLinked when the game has no link`() = runTest {
         coEvery { linkDao.getForGame(1L) } returns null
         assertEquals(ProviderSyncResult.NotLinked, repo.syncGameById(1L))
+    }
+
+    @Test
+    fun `library standing lists unlinked games as untracked with a reason`() = runTest {
+        every { setDao.observeWalletCoins() } returns flowOf(0)
+        every { setDao.observeGameSets() } returns flowOf(emptyList())
+        every { coinDao.observeRarestEarned(any()) } returns flowOf(emptyList())
+        every { gameRepository.observeGamesOnly() } returns flowOf(
+            listOf(
+                com.playfieldportal.core.domain.model.Game(id = 1, title = "Dead or Alive 4", platformId = "x360"),
+                com.playfieldportal.core.domain.model.Game(id = 2, title = "Some PC Game", platformId = "windows"),
+                com.playfieldportal.core.domain.model.Game(id = 3, title = "Emerald Crest", platformId = "gba"),
+                com.playfieldportal.core.domain.model.Game(id = 4, title = "Linked Game", platformId = "snes"),
+            ),
+        )
+        every { linkDao.observeLinkedGameIds() } returns flowOf(listOf(4L)) // only the SNES game is linked
+
+        val untracked = repo.observeLibraryStanding().first().untracked.associateBy { it.gameId }
+
+        assertEquals(3, untracked.size)
+        assertEquals("System not supported by RetroAchievements", untracked.getValue(1L).reason) // x360
+        assertEquals("Not found on Steam", untracked.getValue(2L).reason)                          // windows
+        assertTrue(untracked.getValue(3L).reason.startsWith("No RetroAchievements match"))          // gba, no RA entry
     }
 
     @Test

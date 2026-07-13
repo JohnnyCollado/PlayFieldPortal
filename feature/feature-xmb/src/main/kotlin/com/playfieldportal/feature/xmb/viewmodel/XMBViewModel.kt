@@ -304,6 +304,7 @@ sealed interface AchievementsNav {
     data object ClosestToMastery : AchievementsNav
     data object RarestEarned : AchievementsNav
     data object AllTracked : AchievementsNav
+    data object Untracked : AchievementsNav
 }
 
 // ── Fullscreen music browser (Settings-style, searchable) ───────────────────────
@@ -3516,6 +3517,7 @@ class XMBViewModel @Inject constructor(
         AchievementsNav.ClosestToMastery -> "closest"
         AchievementsNav.RarestEarned -> "rarest"
         AchievementsNav.AllTracked -> "all"
+        AchievementsNav.Untracked -> "untracked"
     }
 
     // Root shows the standing summary + lens rows; a drilled lens shows a flat list. Game rows are
@@ -3534,6 +3536,12 @@ class XMBViewModel @Inject constructor(
                     )
                 }
             }
+        // An untracked game keeps its art but shows why it isn't tracked.
+        fun untrackedRows(rows: List<com.playfieldportal.core.domain.achievement.UntrackedGame>): List<XMBItem> =
+            rows.mapNotNull { u ->
+                byId[u.gameId]?.let { g -> listOf(g).toXmbItems().first().copy(subtitle = u.reason) }
+            }
+
         return when (nav) {
             AchievementsNav.Root -> achievementsRootItems(standing)
             AchievementsNav.ClosestToMastery ->
@@ -3542,6 +3550,8 @@ class XMBViewModel @Inject constructor(
                 gameRows(standing.allByStanding).ifEmpty { listOf(achievementsEmptyItem("No tracked games yet")) }
             AchievementsNav.RarestEarned ->
                 standing.rarestEarned.map { it.toCoinItem() }.ifEmpty { listOf(achievementsEmptyItem("No earned coins yet")) }
+            AchievementsNav.Untracked ->
+                untrackedRows(standing.untracked).ifEmpty { listOf(achievementsEmptyItem("Every game is tracked")) }
         }
     }
 
@@ -3549,14 +3559,16 @@ class XMBViewModel @Inject constructor(
         standing: com.playfieldportal.core.domain.achievement.LibraryStanding,
     ): List<XMBItem> {
         if (standing.gamesTracked == 0) {
-            return listOf(
-                XMBItem(
-                    id = ACH_CONNECT_ITEM_ID,
-                    title = "Connect accounts",
-                    subtitle = "Set up Shiba Coins and auto-match your library",
-                    type = XMBItemType.STANDARD,
-                ),
+            val connect = XMBItem(
+                id = ACH_CONNECT_ITEM_ID,
+                title = "Connect accounts",
+                subtitle = "Set up Shiba Coins and auto-match your library",
+                type = XMBItemType.STANDARD,
             )
+            val untracked = if (standing.untracked.isEmpty()) emptyList() else listOf(
+                XMBItem(id = ACH_UNTRACKED_ITEM_ID, title = "Untracked", subtitle = "${standing.untracked.size} games", type = XMBItemType.STANDARD),
+            )
+            return listOf(connect) + untracked
         }
         val w = standing.wallet
         return listOf(
@@ -3569,6 +3581,8 @@ class XMBViewModel @Inject constructor(
             XMBItem(id = ACH_CLOSEST_ITEM_ID, title = "Closest to Mastery", subtitle = "${standing.closestToMastery().size} games", type = XMBItemType.STANDARD),
             XMBItem(id = ACH_RAREST_ITEM_ID, title = "Rarest Earned", subtitle = "${standing.rarestEarned.size} coins", type = XMBItemType.STANDARD),
             XMBItem(id = ACH_ALL_ITEM_ID, title = "All Tracked Games", subtitle = "${standing.gamesTracked} games", type = XMBItemType.STANDARD),
+        ) + if (standing.untracked.isEmpty()) emptyList() else listOf(
+            XMBItem(id = ACH_UNTRACKED_ITEM_ID, title = "Untracked", subtitle = "${standing.untracked.size} games", type = XMBItemType.STANDARD),
         )
     }
 
@@ -3602,6 +3616,7 @@ class XMBViewModel @Inject constructor(
             ACH_CLOSEST_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openAchievementsView(AchievementsNav.ClosestToMastery); return true }
             ACH_RAREST_ITEM_ID  -> { menuSound.play(MenuSound.SELECT); openAchievementsView(AchievementsNav.RarestEarned); return true }
             ACH_ALL_ITEM_ID     -> { menuSound.play(MenuSound.SELECT); openAchievementsView(AchievementsNav.AllTracked); return true }
+            ACH_UNTRACKED_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openAchievementsView(AchievementsNav.Untracked); return true }
             EMPTY_CATEGORY_ITEM_ID -> return true // placeholder, not selectable
         }
         return false
@@ -6701,6 +6716,7 @@ class XMBViewModel @Inject constructor(
         private const val ACH_CLOSEST_ITEM_ID = "ach_closest"
         private const val ACH_RAREST_ITEM_ID  = "ach_rarest"
         private const val ACH_ALL_ITEM_ID      = "ach_all"
+        private const val ACH_UNTRACKED_ITEM_ID = "ach_untracked"
         private const val ALL_GAMES_ITEM_ID = "all_games"
         private const val ALL_GAMES_PLATFORM_ID = "__all_games__"
         private const val FAVORITES_ITEM_ID = "favorites_folder"

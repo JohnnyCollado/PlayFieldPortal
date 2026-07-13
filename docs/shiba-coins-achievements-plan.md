@@ -395,6 +395,13 @@ Coins → link + sync → coins persist → the dedicated screen lists them and 
   Detail (its coin strip drills into the full set); coin rows likewise. BACK/edge-swipe pops the
   lens; the summary row opens Settings ▸ Shiba Coins (the full `ShibaPlayerCard`). Empty state points
   the user to connect accounts. On-device verified: category seeds correctly on the Thor.
+- [x] "Untracked" lens: every game with no achievement link, each with a plain reason derived from
+  its platform — "Not found on Steam" (windows), "System not supported by RetroAchievements" (a
+  console RA has no achievements for: 3DS, Vita, Xbox 360, …), or "No RetroAchievements match (hack,
+  unsupported dump, or no set)". Derived live from games-minus-links (no table, self-correcting as
+  links change); `LibraryStanding.untracked`. Opening a row goes to Game Detail to link by hand.
+- [x] RA title matching folds accents (NFD + drop combining marks), so "Pokémon" and "Pokemon"
+  match — RA titles carry accents, scraped titles often don't.
 - [ ] Inline player-card header (rendered as a summary row for now; the rich card lives in settings)
   — deferred to Phase 9 polish.
 - Note: lenses reflect *synced* sets, not merely linked games — a game populates once its set is

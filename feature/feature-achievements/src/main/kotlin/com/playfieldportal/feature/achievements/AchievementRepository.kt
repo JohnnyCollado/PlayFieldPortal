@@ -18,10 +18,14 @@ import com.playfieldportal.core.domain.achievement.GameCoins
 import com.playfieldportal.core.domain.achievement.GameStanding
 import com.playfieldportal.core.domain.achievement.LibraryStanding
 import com.playfieldportal.core.domain.achievement.ShibaTier
+import com.playfieldportal.core.domain.achievement.UntrackedGame
+import com.playfieldportal.core.domain.model.Game
+import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.feature.achievements.api.ProviderSyncResult
 import com.playfieldportal.feature.achievements.api.RetroAchievementsApi
 import com.playfieldportal.feature.achievements.api.SteamAchievementsApi
 import com.playfieldportal.feature.achievements.api.SyncedCoin
+import com.playfieldportal.feature.achievements.match.RaConsole
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
@@ -43,6 +47,7 @@ class AchievementRepository @Inject constructor(
     private val coinDao: AchievementDao,
     private val linkDao: ProviderGameLinkDao,
     private val steamResolver: SteamAppListResolver,
+    private val gameRepository: GameRepository,
 ) {
     /** This game's provider link (which provider + id it syncs from), or null if unlinked. */
     fun observeLink(gameId: Long): Flow<ProviderGameLinkEntity?> = linkDao.observeForGame(gameId)
@@ -68,11 +73,15 @@ class AchievementRepository @Inject constructor(
             observeWallet(),
             setDao.observeGameSets(),
             coinDao.observeRarestEarned(rarestLimit),
-        ) { wallet, sets, rarest ->
+            gameRepository.observeGamesOnly(),
+            linkDao.observeLinkedGameIds(),
+        ) { wallet, sets, rarest, games, linkedIds ->
+            val linked = linkedIds.toHashSet()
             LibraryStanding(
                 wallet = wallet,
                 tracked = sets.mapNotNull { it.toGameStanding() },
                 rarestEarned = rarest.mapNotNull { it.toEarnedCoinRef() },
+                untracked = games.filterNot { it.id in linked }.map { it.toUntrackedGame() },
             )
         }
 
@@ -208,6 +217,20 @@ private fun GameSetRow.toGameStanding(): GameStanding? {
         ),
     )
 }
+
+// The plain reason a game has no achievement link, from its platform. Windows means Steam; a
+// platform RA doesn't know is unsupported; otherwise RA simply has no matching entry/set (a ROM
+// hack, an unregistered dump, or a game with no achievement set).
+private fun Game.toUntrackedGame() = UntrackedGame(
+    gameId = id,
+    title = displayTitle,
+    platformId = platformId,
+    reason = when {
+        platformId == "windows" -> "Not found on Steam"
+        RaConsole.idFor(platformId) == null -> "System not supported by RetroAchievements"
+        else -> "No RetroAchievements match (hack, unsupported dump, or no set)"
+    },
+)
 
 private fun EarnedCoinRow.toEarnedCoinRef(): EarnedCoinRef? {
     val t = runCatching { ShibaTier.valueOf(tier) }.getOrNull() ?: return null

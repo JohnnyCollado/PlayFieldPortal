@@ -20,6 +20,10 @@ interface ProviderGameLinkDao {
     @Query("SELECT * FROM provider_game_links")
     suspend fun getAll(): List<ProviderGameLinkEntity>
 
+    /** Ids of all linked games, for deriving the hub's untracked list. */
+    @Query("SELECT game_id FROM provider_game_links")
+    fun observeLinkedGameIds(): Flow<List<Long>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(link: ProviderGameLinkEntity)
 
