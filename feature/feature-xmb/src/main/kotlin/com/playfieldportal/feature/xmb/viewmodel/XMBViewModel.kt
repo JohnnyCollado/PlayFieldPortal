@@ -6618,6 +6618,7 @@ class XMBViewModel @Inject constructor(
             XMBItem(id = "settings_categories", title = "Categories",       subtitle = "Manage XMB categories"),
             XMBItem(id = "settings_collections", title = "Collections",     subtitle = "Create & manage game collections"),
             XMBItem(id = "settings_artwork",    title = "Artwork",          subtitle = "Scraping sources & cache"),
+            XMBItem(id = "settings_achievements", title = "Shiba Coins",    subtitle = "RetroAchievements & Steam"),
             XMBItem(id = "settings_emulators",  title = "Emulators",        subtitle = "Launch profiles"),
             XMBItem(id = "settings_themes",     title = "Themes",           subtitle = "XMB appearance & color scheme"),
             XMBItem(id = "settings_display",    title = "Display",          subtitle = "Wave, wallpaper, boot & icons"),

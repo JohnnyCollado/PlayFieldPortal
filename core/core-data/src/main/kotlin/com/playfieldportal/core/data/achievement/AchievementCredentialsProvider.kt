@@ -87,6 +87,22 @@ class AchievementCredentialsProvider @Inject constructor(
         context.pfpDataStore.edit { it[KEY_SYNC_LAST] = epochMillis }
     }
 
+    /** Disconnects RetroAchievements only, leaving Steam and the enabled flag intact. */
+    suspend fun clearRetroAchievements() {
+        context.pfpDataStore.edit {
+            it.remove(KEY_RA_USERNAME)
+            it.remove(KEY_RA_API_KEY)
+        }
+    }
+
+    /** Disconnects Steam only, leaving RetroAchievements and the enabled flag intact. */
+    suspend fun clearSteam() {
+        context.pfpDataStore.edit {
+            it.remove(KEY_STEAM_ID64)
+            it.remove(KEY_STEAM_API_KEY)
+        }
+    }
+
     /** Removes every stored credential and identity. Sync state and the enabled flag are cleared too. */
     suspend fun clear() {
         context.pfpDataStore.edit {

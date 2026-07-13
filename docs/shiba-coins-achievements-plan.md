@@ -5,9 +5,9 @@ PlayStation-style Bronze / Silver / Gold / Platinum tier set that players earn, 
 display across RetroAchievements (emulated titles) and Steam (PC titles), with a single XP
 economy and level. No Steam or RetroAchievements password is ever handled.
 
-Status: Phases 1-2 landed and tested; Phase 3 clients + repository done and tested, only
-provider-id resolution deferred. Branch: `achievement-integration`. This document is the source
-of truth to resume from on any machine.
+Status: Phases 1-3 landed (Phase 3 minus provider-id resolution); Phase 4 connect-accounts
+screen done and tested (backup wiring + "sync now" deferred). Branch: `achievement-integration`.
+This document is the source of truth to resume from on any machine.
 
 ---
 
@@ -295,13 +295,17 @@ New module `feature-achievements` (clients + repository; UI lands in later phase
 - Sec: HTTPS only; read-only; keys never logged (no request logging at all); "profile not public"
   and missing-key are first-class results, never exceptions carrying a key.
 
-### Phase 4 — Settings entry (connect accounts)
-- [ ] Achievements settings screen: RA username + key, Steam id + key, master toggle, "Sync
-  now", public-profile hint.
-- [ ] Wire into `BackupManager` (settings + entities, device-bound key handling on restore).
-- Opt: validate/resolve vanity once and cache SteamID64.
-- Sec: key fields are write-only in the UI (show masked); never echo stored keys back;
-  `isUsableOnThisDevice` on restore.
+### Phase 4 — Settings entry (connect accounts) — MOSTLY DONE
+- [x] `AchievementsSettingsScreen` + `AchievementsSettingsViewModel`: master toggle, RA username +
+  Web API key, Steam SteamID64/vanity + API key, per-provider connect/disconnect, last-synced,
+  public-profile hint. Routed via `settings_achievements` (SettingsNavHost + the XMB settings
+  menu). Keys are write-only/masked; the vanity name is resolved to a SteamID64 once and cached.
+  Added `clearRetroAchievements()` / `clearSteam()` to the credential provider. VM-tested.
+- [ ] `BackupManager` device-bound handling for the two new keys on restore (confirm the existing
+  settings.json export already carries them; drop un-decryptable keys via `isUsableOnThisDevice`).
+- [ ] "Sync now" action — deferred with provider-id resolution (needs a game + provider-id).
+- Opt: vanity resolved once, SteamID64 cached; no per-key network on screen open.
+- Sec: keys write-only, never echoed back; no request logging; per-provider disconnect.
 
 ### Phase 5 — Game Detail glance strip
 - [ ] Coin summary strip as a new section composable in the `GameDetailScreen` scroll Column
