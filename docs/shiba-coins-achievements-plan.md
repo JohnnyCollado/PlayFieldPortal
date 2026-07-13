@@ -5,10 +5,11 @@ PlayStation-style Bronze / Silver / Gold / Platinum tier set that players earn, 
 display across RetroAchievements (emulated titles) and Steam (PC titles), with a single XP
 economy and level. No Steam or RetroAchievements password is ever handled.
 
-Status: Phases 1-4 substantially done. Provider-id resolution: link layer + manual linking +
-Steam auto-resolution done; only the RetroAchievements ROM-hash subsystem is deferred. Remaining:
-backup key handling, "sync now", RA hashing, and the UI phases (5-9). Branch:
-`achievement-integration`. This document is the source of truth to resume from on any machine.
+Status: Phases 1-4 done; provider-id resolution done (RA hashing deferred); Phase 5 glance strip
+done (drill-in door + context-menu item deferred to Phase 6). Remaining: Phase 6 dedicated coins
+screen + link/sync UI (the first data-population path), Phases 7-9, RA ROM-hashing, backup key
+handling. Branch: `achievement-integration`. This document is the source of truth to resume from
+on any machine.
 
 ---
 
@@ -312,14 +313,18 @@ New module `feature-achievements` (clients + repository; UI lands in later phase
 - Opt: vanity resolved once, SteamID64 cached; no per-key network on screen open.
 - Sec: keys write-only, never echoed back; no request logging; per-provider disconnect.
 
-### Phase 5 — Game Detail glance strip
-- [ ] Coin summary strip as a new section composable in the `GameDetailScreen` scroll Column
-  (progress, tally, locked crown, "Open" door), added to the `state.mainFocus` sequence.
-- [ ] `View Shiba coins` item added to the game context menu — one `XMBContextMenuItem` in the
-  `XMBViewModel` game-menu builder (see 4.5 and DESIGN.md 3.22); activation sets
-  `activeShibaCoinsGameId`.
-- Opt: renders from cached Room only; throttled sync-on-open.
-- Sec: no network on first paint; sync is user-visible via the task tray.
+### Phase 5 — Game Detail glance strip — MOSTLY DONE
+- [x] `ShibaCoinStrip` in the `GameDetailScreen` scroll Column: coin-weighted progress, the
+  Bronze/Silver/Gold tally, and the Platinum crown (lit only on mastery); a quiet "not tracked
+  yet" state when the game has no coins. `GameDetailViewModel` streams `observeGameCoins(id)` into
+  state (offline-first). Accent-driven chrome (`menuCursorEdge`); tier metals fixed.
+- [ ] The "Open" drill-in door + `state.mainFocus` entry, and the `View Shiba coins` context-menu
+  item — deferred to Phase 6, since both need the dedicated coins screen (`activeShibaCoinsGameId`)
+  as their destination.
+- Note: until Phase 6 adds link/sync UI (or a debug seed), the strip shows the "not tracked"
+  state for every game — there is no in-app path to populate coin data yet.
+- Opt: renders from cached Room only, no network on paint.
+- Sec: display-only; no request on open.
 
 ### Phase 6 — Dedicated Shiba Coins screen
 - [ ] Shell-level overlay `activeShibaCoinsGameId?.let { ShibaCoinsScreen(...) }` in `XMBShell`,

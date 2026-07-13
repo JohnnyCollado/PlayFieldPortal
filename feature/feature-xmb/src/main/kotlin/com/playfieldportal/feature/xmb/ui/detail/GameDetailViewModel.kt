@@ -73,6 +73,9 @@ data class GameDetailUiState(
     val artworkMessage: String? = null,
     val launchError: String? = null,
 
+    // Shiba Coins summary for the glance strip; null when this game isn't tracked yet.
+    val coins: com.playfieldportal.core.domain.achievement.GameCoins? = null,
+
     // Stored media surfaced on the page (resolved once per load via ArtworkStore.find).
     val videoUri: String? = null,        // the game's video — playable from the Video button/strip
     val hasManual: Boolean = false,
@@ -171,6 +174,7 @@ class GameDetailViewModel @Inject constructor(
     private val menuSound: com.playfieldportal.core.ui.sound.MenuSoundPlayer,
     private val discordPresence: com.playfieldportal.core.data.discord.DiscordPresenceController,
     private val launcherShortcutRepository: com.playfieldportal.feature.appbar.LauncherShortcutRepository,
+    private val achievementRepository: com.playfieldportal.feature.achievements.AchievementRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GameDetailUiState())
@@ -194,6 +198,12 @@ class GameDetailViewModel @Inject constructor(
     }
 
     fun loadGame(id: Long) {
+        // Offline-first coin summary for the glance strip — streams straight from Room.
+        viewModelScope.launch {
+            achievementRepository.observeGameCoins(id).collect { coins ->
+                _uiState.update { it.copy(coins = coins) }
+            }
+        }
         viewModelScope.launch {
             _uiState.update {
                 it.copy(

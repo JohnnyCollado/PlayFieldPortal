@@ -287,6 +287,10 @@ fun GameDetailScreen(
 
             Spacer(Modifier.height(18.dp))
 
+            ShibaCoinStrip(coins = state.coins)
+
+            Spacer(Modifier.height(18.dp))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(20.dp),
