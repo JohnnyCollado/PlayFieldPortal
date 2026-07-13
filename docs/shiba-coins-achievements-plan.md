@@ -358,10 +358,18 @@ The feature now runs end to end: connect accounts (Phase 4) → game context men
 Coins → link + sync → coins persist → the dedicated screen lists them and the glance strip
 (Phase 5) lights up; the wallet derives reactively.
 
-### Phase 7 — Level / partial-credit engine wired
-- [ ] Bank coins into the wallet on each unlock at sync time; cascade-on-first-sync reveal.
-- [ ] Player card fragment (level, rank, wallet) for reuse in the hub.
-- Opt: incremental wallet update on sync deltas, not full recompute where possible.
+### Phase 7 — Level / partial-credit engine wired — MOSTLY DONE
+- [x] Banking is reactive, not a discrete step: `AchievementSetDao.observeWalletCoins()` sums each
+  set's earned coins (weighted) + the Platinum once mastered, so the wallet updates itself on every
+  sync — no recompute-on-unlock code path to maintain. `AchievementRepository.observeWallet()`
+  exposes it as a `CoinWallet` (level + rank + `LevelProgress`).
+- [x] `ShibaPlayerCard` (core-ui, reusable): level medallion, rank title (`ShibaRank.label`), a
+  level-progress bar, and the running coin total, all derived from a `CoinWallet`. Presentation-only
+  and accent-driven so the Phase 8 hub reuses it as-is. Surfaced now at the top of the connect-
+  accounts screen (`AchievementsSettingsViewModel` folds the account flows so the wallet flow fits
+  `combine`).
+- [ ] Cascade-on-first-sync reveal (the animated coin-bank flourish) — deferred to Phase 9 polish.
+- Opt: wallet summed in SQL over summary rows (no per-coin load); card reads the derived wallet only.
 - Sec: n/a (local math).
 
 ### Phase 8 — Category hub (XMB column)

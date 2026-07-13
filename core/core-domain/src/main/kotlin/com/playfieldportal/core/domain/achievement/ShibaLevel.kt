@@ -4,13 +4,13 @@ package com.playfieldportal.core.domain.achievement
  * A player's overall standing on the account-wide Shiba Level, one of six named bands. The rank
  * is cosmetic (a coin frame / title on the player card); the number is [ShibaLevel].
  */
-enum class ShibaRank(val fromLevel: Int) {
-    PUP(1),
-    SCOUT(10),
-    TRACKER(25),
-    RONIN(50),
-    ELDER(75),
-    INU_MASTER(100);
+enum class ShibaRank(val fromLevel: Int, val label: String) {
+    PUP(1, "Pup"),
+    SCOUT(10, "Scout"),
+    TRACKER(25, "Tracker"),
+    RONIN(50, "Ronin"),
+    ELDER(75, "Elder"),
+    INU_MASTER(100, "Inu Master");
 }
 
 /**

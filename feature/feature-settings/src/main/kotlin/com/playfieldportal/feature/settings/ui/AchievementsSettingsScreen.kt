@@ -2,6 +2,7 @@ package com.playfieldportal.feature.settings.ui
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -11,7 +12,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.playfieldportal.core.ui.achievement.ShibaPlayerCard
 import com.playfieldportal.feature.settings.viewmodel.AchievementsSettingsViewModel
 
 @Composable
@@ -38,6 +41,12 @@ fun AchievementsSettingsScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState()),
         ) {
+
+            // Account-wide standing: level, rank, and the running coin wallet.
+            ShibaPlayerCard(
+                wallet = state.wallet,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            )
 
             SettingsToggleRow(
                 label    = "Enable Shiba Coins",

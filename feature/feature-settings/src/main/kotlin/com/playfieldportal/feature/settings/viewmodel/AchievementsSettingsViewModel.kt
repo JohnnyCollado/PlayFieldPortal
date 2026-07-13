@@ -3,6 +3,8 @@ package com.playfieldportal.feature.settings.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.achievement.AchievementCredentialsProvider
+import com.playfieldportal.core.domain.achievement.CoinWallet
+import com.playfieldportal.feature.achievements.AchievementRepository
 import com.playfieldportal.feature.achievements.api.SteamAchievementsApi
 import com.playfieldportal.feature.achievements.match.AchievementAutoMatcher
 import com.playfieldportal.feature.achievements.match.MatchReport
@@ -21,6 +23,7 @@ import javax.inject.Inject
 
 data class AchievementsSettingsUiState(
     val enabled: Boolean = false,
+    val wallet: CoinWallet = CoinWallet.EMPTY,
     val hasRetroAchievements: Boolean = false,
     val raUsername: String = "",
     val hasSteam: Boolean = false,
@@ -31,6 +34,14 @@ data class AchievementsSettingsUiState(
     val matchDone: Int = 0,
     val matchTotal: Int = 0,
     val matchReport: MatchReport? = null,
+)
+
+// The four persisted account flows, folded together so the wallet flow fits combine's arity.
+private data class Accounts(
+    val raUsername: String?,
+    val steamId64: String?,
+    val enabled: Boolean,
+    val lastSyncedAt: Long?,
 )
 
 // Transient UI-only state (not backed by DataStore), folded into uiState.
@@ -55,24 +66,31 @@ class AchievementsSettingsViewModel @Inject constructor(
     private val credentials: AchievementCredentialsProvider,
     private val steamApi: SteamAchievementsApi,
     private val autoMatcher: AchievementAutoMatcher,
+    private val repository: AchievementRepository,
 ) : ViewModel() {
 
     private val extra = MutableStateFlow(Extra())
 
-    val uiState: StateFlow<AchievementsSettingsUiState> = combine(
+    private val accounts = combine(
         credentials.raUsernameFlow,
         credentials.steamId64Flow,
         credentials.enabledFlow,
         credentials.lastSyncedAtFlow,
+    ) { raUser, steamId, enabled, lastSynced -> Accounts(raUser, steamId, enabled, lastSynced) }
+
+    val uiState: StateFlow<AchievementsSettingsUiState> = combine(
+        accounts,
         extra,
-    ) { raUser, steamId, enabled, lastSynced, ex ->
+        repository.observeWallet(),
+    ) { acc, ex, wallet ->
         AchievementsSettingsUiState(
-            enabled = enabled,
-            hasRetroAchievements = !raUser.isNullOrBlank(),
-            raUsername = raUser.orEmpty(),
-            hasSteam = !steamId.isNullOrBlank(),
-            steamId64 = steamId.orEmpty(),
-            lastSyncedLabel = lastSynced?.let { DATE_FMT.format(Date(it)) } ?: "Never",
+            enabled = acc.enabled,
+            wallet = wallet,
+            hasRetroAchievements = !acc.raUsername.isNullOrBlank(),
+            raUsername = acc.raUsername.orEmpty(),
+            hasSteam = !acc.steamId64.isNullOrBlank(),
+            steamId64 = acc.steamId64.orEmpty(),
+            lastSyncedLabel = acc.lastSyncedAt?.let { DATE_FMT.format(Date(it)) } ?: "Never",
             message = ex.message,
             isMatching = ex.isMatching,
             matchDone = ex.matchDone,
