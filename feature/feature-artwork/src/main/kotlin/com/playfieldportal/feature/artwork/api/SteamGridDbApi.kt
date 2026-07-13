@@ -7,6 +7,10 @@ import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -60,6 +64,29 @@ class SteamGridDbApi @Inject constructor(
     private val httpClient: HttpClient,
     private val apiKeyProvider: SgdbApiKeyProvider,
 ) {
+    /**
+     * The Steam App ID SteamGridDB has on file for one of its games, or null. Uses the
+     * `platformdata=steam` option on `/games/id/{id}` and reads `external_platform_data.steam[].id`.
+     * SGDB warns this data may be stale/inaccurate, so callers treat it as a hint. Parsed
+     * tolerantly (raw JSON navigation) so a shape change degrades to null rather than throwing.
+     */
+    suspend fun getSteamAppId(gameId: Long): String? {
+        val key = apiKeyProvider.getKey() ?: return null
+        return runCatching {
+            val json: JsonElement = httpClient.get("$BASE_URL/games/id/$gameId") {
+                header("Authorization", "Bearer $key")
+                parameter("platformdata", "steam")
+            }.body()
+            val appId = json.jsonObject["data"]?.jsonObject
+                ?.get("external_platform_data")?.jsonObject
+                ?.get("steam")?.jsonArray?.firstOrNull()
+                ?.jsonObject?.get("id")?.jsonPrimitive?.content
+                ?.takeIf { it.isNotBlank() && it.all(Char::isDigit) }
+            Timber.d("SGDB steam appid for game %d → %s", gameId, appId)
+            appId
+        }.getOrNull()
+    }
+
     // Search for a game by name — returns best matches
     suspend fun searchGame(name: String): Result<List<SgdbGame>> = runCatching {
         val key = apiKeyProvider.getKey()

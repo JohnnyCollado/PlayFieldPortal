@@ -41,6 +41,7 @@ class AchievementAutoMatcher @Inject constructor(
     private val repository: AchievementRepository,
     private val romReader: RomBytesReader,
     private val discOpener: DiscImageOpener,
+    private val steamGridDb: com.playfieldportal.feature.artwork.api.SteamGridDbApi,
 ) {
     private sealed interface Outcome {
         data object Matched : Outcome
@@ -101,14 +102,20 @@ class AchievementAutoMatcher @Inject constructor(
     }
 
     // Steam PC games resolve down a ladder: the appid the shortcut already carries (deterministic),
-    // then the title match. (SteamGridDB platform-data lookup slots in between — next slice.)
+    // then SteamGridDB's platform data (if we have an SGDB id), then the title match.
     private suspend fun matchSteam(game: Game): Outcome {
         SteamShortcut.appIdFrom(game)?.let { appId ->
             repository.linkManually(game.id, AchievementProvider.STEAM, appId)
             return Outcome.Matched
         }
+        game.steamGridDbId?.let { sgdbId ->
+            steamGridDb.getSteamAppId(sgdbId)?.let { appId ->
+                repository.linkManually(game.id, AchievementProvider.STEAM, appId)
+                return Outcome.Matched
+            }
+        }
         return if (repository.resolveSteamLink(game.id, game.displayTitle) != null) Outcome.Matched
-        else Outcome.Unmatched("Not found on Steam (no embedded appid and no title match)")
+        else Outcome.Unmatched("Not found on Steam (no embedded appid, no SteamGridDB or title match)")
     }
 
     // Computes the RA content hash, naming the failure mode when it can't. Cartridges hash from a

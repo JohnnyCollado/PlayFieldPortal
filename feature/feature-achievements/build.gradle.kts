@@ -29,6 +29,7 @@ dependencies {
     implementation(project(":core:core-common"))
     implementation(project(":core:core-domain"))
     implementation(project(":core:core-data"))
+    implementation(project(":feature:feature-artwork")) // SteamGridDB client for Steam-id resolution
 
     testImplementation(libs.bundles.test.unit)
     testImplementation(libs.ktor.client.mock)

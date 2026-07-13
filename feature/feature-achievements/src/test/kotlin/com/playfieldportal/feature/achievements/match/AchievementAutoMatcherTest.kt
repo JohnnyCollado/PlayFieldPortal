@@ -25,8 +25,9 @@ class AchievementAutoMatcherTest {
     private val repository = mockk<AchievementRepository>(relaxed = true)
     private val romReader = mockk<RomBytesReader>()
     private val discOpener = mockk<DiscImageOpener>(relaxed = true)
+    private val steamGridDb = mockk<com.playfieldportal.feature.artwork.api.SteamGridDbApi>(relaxed = true)
 
-    private val matcher = AchievementAutoMatcher(gameRepository, linkDao, matchNoteDao, retroApi, repository, romReader, discOpener)
+    private val matcher = AchievementAutoMatcher(gameRepository, linkDao, matchNoteDao, retroApi, repository, romReader, discOpener, steamGridDb)
 
     private fun game(id: Long, platform: String, title: String = "Game $id") =
         Game(id = id, title = title, platformId = platform)
@@ -162,5 +163,18 @@ class AchievementAutoMatcherTest {
         assertEquals(1, report.matched)
         coVerify { repository.linkManually(1, AchievementProvider.STEAM, "3483510") }
         coVerify(exactly = 0) { repository.resolveSteamLink(any(), any()) }
+    }
+
+    @Test
+    fun `links a steam game via steamgriddb platform data when there is no embedded appid`() = runTest {
+        val g = Game(id = 1, title = "Some Game", platformId = "windows", steamGridDbId = 5247L)
+        stubGames(g)
+        coEvery { steamGridDb.getSteamAppId(5247L) } returns "220"
+
+        val report = matcher.matchUnlinked()
+
+        assertEquals(1, report.matched)
+        coVerify { repository.linkManually(1, AchievementProvider.STEAM, "220") }
+        coVerify(exactly = 0) { repository.resolveSteamLink(any(), any()) } // never reached the title guess
     }
 }
