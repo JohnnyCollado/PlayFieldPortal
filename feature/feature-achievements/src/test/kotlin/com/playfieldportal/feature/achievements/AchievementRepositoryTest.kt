@@ -38,8 +38,9 @@ class AchievementRepositoryTest {
     private val linkDao = mockk<ProviderGameLinkDao>(relaxed = true)
     private val steamResolver = mockk<SteamAppListResolver>(relaxed = true)
     private val gameRepository = mockk<com.playfieldportal.core.domain.repository.GameRepository>(relaxed = true)
+    private val matchNoteDao = mockk<com.playfieldportal.core.data.database.dao.AchievementMatchNoteDao>(relaxed = true)
 
-    private val repo = AchievementRepository(steamApi, retroApi, credentials, setDao, coinDao, linkDao, steamResolver, gameRepository)
+    private val repo = AchievementRepository(steamApi, retroApi, credentials, setDao, coinDao, linkDao, matchNoteDao, steamResolver, gameRepository)
 
     private fun coin(id: String, tier: ShibaTier, earned: Boolean) =
         SyncedCoin(id, id, "", tier, 0.0, null, isHidden = false, isEarned = earned, earnedAt = if (earned) 1L else null)
@@ -134,7 +135,7 @@ class AchievementRepositoryTest {
     }
 
     @Test
-    fun `library standing lists unlinked games as untracked with a reason`() = runTest {
+    fun `untracked reason prefers the persisted match note, else a platform fallback`() = runTest {
         every { setDao.observeWalletCoins() } returns flowOf(0)
         every { setDao.observeGameSets() } returns flowOf(emptyList())
         every { coinDao.observeRarestEarned(any()) } returns flowOf(emptyList())
@@ -147,13 +148,17 @@ class AchievementRepositoryTest {
             ),
         )
         every { linkDao.observeLinkedGameIds() } returns flowOf(listOf(4L)) // only the SNES game is linked
+        // A recorded note for the GBA hack; the others have none and fall back to a platform guess.
+        every { matchNoteDao.observeAll() } returns flowOf(
+            listOf(com.playfieldportal.core.data.database.entity.AchievementMatchNoteEntity(3L, "Couldn't read the ROM file, and no title match", 0L)),
+        )
 
         val untracked = repo.observeLibraryStanding().first().untracked.associateBy { it.gameId }
 
         assertEquals(3, untracked.size)
-        assertEquals("System not supported by RetroAchievements", untracked.getValue(1L).reason) // x360
-        assertEquals("Not found on Steam", untracked.getValue(2L).reason)                          // windows
-        assertTrue(untracked.getValue(3L).reason.startsWith("No RetroAchievements match"))          // gba, no RA entry
+        assertEquals("Couldn't read the ROM file, and no title match", untracked.getValue(3L).reason) // persisted note wins
+        assertEquals("System not supported by RetroAchievements", untracked.getValue(1L).reason)      // x360 fallback
+        assertEquals("Not found on Steam", untracked.getValue(2L).reason)                              // windows fallback
     }
 
     @Test

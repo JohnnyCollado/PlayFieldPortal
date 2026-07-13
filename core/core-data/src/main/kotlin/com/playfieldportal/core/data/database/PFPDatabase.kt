@@ -33,6 +33,7 @@ import com.playfieldportal.core.data.database.dao.VideoDao
 import com.playfieldportal.core.data.database.dao.VideoLibraryDao
 import com.playfieldportal.core.data.database.dao.VideoPlaylistDao
 import com.playfieldportal.core.data.database.entity.AchievementEntity
+import com.playfieldportal.core.data.database.entity.AchievementMatchNoteEntity
 import com.playfieldportal.core.data.database.entity.AchievementSetEntity
 import com.playfieldportal.core.data.database.entity.AppOverrideEntity
 import com.playfieldportal.core.data.database.entity.ArtworkImportReportEntity
@@ -95,8 +96,9 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         AchievementSetEntity::class,
         AchievementEntity::class,
         ProviderGameLinkEntity::class,
+        AchievementMatchNoteEntity::class,
     ],
-    version = 31,
+    version = 32,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -129,6 +131,7 @@ abstract class PFPDatabase : RoomDatabase() {
     abstract fun achievementSetDao(): AchievementSetDao
     abstract fun achievementDao(): AchievementDao
     abstract fun providerGameLinkDao(): ProviderGameLinkDao
+    abstract fun achievementMatchNoteDao(): com.playfieldportal.core.data.database.dao.AchievementMatchNoteDao
 
     companion object {
         const val DATABASE_NAME = "pfp_database"
@@ -907,6 +910,22 @@ abstract class PFPDatabase : RoomDatabase() {
                         provider_game_id TEXT NOT NULL,
                         source TEXT NOT NULL,
                         resolved_at INTEGER NOT NULL,
+                        PRIMARY KEY(game_id),
+                        FOREIGN KEY(game_id) REFERENCES games(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+            }
+        }
+
+        val MIGRATION_31_32 = object : Migration(31, 32) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS achievement_match_notes (
+                        game_id INTEGER NOT NULL,
+                        reason TEXT NOT NULL,
+                        checked_at INTEGER NOT NULL,
                         PRIMARY KEY(game_id),
                         FOREIGN KEY(game_id) REFERENCES games(id) ON UPDATE NO ACTION ON DELETE CASCADE
                     )

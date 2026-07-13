@@ -2,6 +2,7 @@ package com.playfieldportal.feature.achievements
 
 import com.playfieldportal.core.data.achievement.AchievementCredentialsProvider
 import com.playfieldportal.core.data.database.dao.AchievementDao
+import com.playfieldportal.core.data.database.dao.AchievementMatchNoteDao
 import com.playfieldportal.core.data.database.dao.AchievementSetDao
 import com.playfieldportal.core.data.database.dao.ProviderGameLinkDao
 import com.playfieldportal.core.data.database.dao.EarnedCoinRow
@@ -46,6 +47,7 @@ class AchievementRepository @Inject constructor(
     private val setDao: AchievementSetDao,
     private val coinDao: AchievementDao,
     private val linkDao: ProviderGameLinkDao,
+    private val matchNoteDao: AchievementMatchNoteDao,
     private val steamResolver: SteamAppListResolver,
     private val gameRepository: GameRepository,
 ) {
@@ -70,18 +72,20 @@ class AchievementRepository @Inject constructor(
      */
     fun observeLibraryStanding(rarestLimit: Int = 15): Flow<LibraryStanding> =
         combine(
-            observeWallet(),
-            setDao.observeGameSets(),
-            coinDao.observeRarestEarned(rarestLimit),
+            combine(observeWallet(), setDao.observeGameSets(), coinDao.observeRarestEarned(rarestLimit)) {
+                wallet, sets, rarest -> Triple(wallet, sets, rarest)
+            },
             gameRepository.observeGamesOnly(),
             linkDao.observeLinkedGameIds(),
-        ) { wallet, sets, rarest, games, linkedIds ->
+            matchNoteDao.observeAll(),
+        ) { (wallet, sets, rarest), games, linkedIds, notes ->
             val linked = linkedIds.toHashSet()
+            val noteByGame = notes.associate { it.gameId to it.reason }
             LibraryStanding(
                 wallet = wallet,
                 tracked = sets.mapNotNull { it.toGameStanding() },
                 rarestEarned = rarest.mapNotNull { it.toEarnedCoinRef() },
-                untracked = games.filterNot { it.id in linked }.map { it.toUntrackedGame() },
+                untracked = games.filterNot { it.id in linked }.map { it.toUntrackedGame(noteByGame[it.id]) },
             )
         }
 
@@ -120,6 +124,7 @@ class AchievementRepository @Inject constructor(
                 resolvedAt = System.currentTimeMillis(),
             ),
         )
+        matchNoteDao.deleteForGame(gameId) // it's linked now — drop any "untracked" note
     }
 
     /**
@@ -137,6 +142,7 @@ class AchievementRepository @Inject constructor(
                 resolvedAt = System.currentTimeMillis(),
             ),
         )
+        matchNoteDao.deleteForGame(gameId)
         return appId
     }
 
@@ -218,17 +224,17 @@ private fun GameSetRow.toGameStanding(): GameStanding? {
     )
 }
 
-// The plain reason a game has no achievement link, from its platform. Windows means Steam; a
-// platform RA doesn't know is unsupported; otherwise RA simply has no matching entry/set (a ROM
-// hack, an unregistered dump, or a game with no achievement set).
-private fun Game.toUntrackedGame() = UntrackedGame(
+// Why a game has no achievement link. Prefers the specific reason the last auto-match recorded
+// (e.g. "Couldn't find the disc's boot executable"); otherwise falls back to a platform guess for
+// games not yet auto-matched.
+private fun Game.toUntrackedGame(persistedReason: String?) = UntrackedGame(
     gameId = id,
     title = displayTitle,
     platformId = platformId,
-    reason = when {
+    reason = persistedReason ?: when {
         platformId == "windows" -> "Not found on Steam"
         RaConsole.idFor(platformId) == null -> "System not supported by RetroAchievements"
-        else -> "No RetroAchievements match (hack, unsupported dump, or no set)"
+        else -> "Not matched yet — run Auto-match for details"
     },
 )
 

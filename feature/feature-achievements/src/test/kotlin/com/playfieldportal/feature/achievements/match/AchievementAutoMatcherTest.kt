@@ -20,12 +20,13 @@ class AchievementAutoMatcherTest {
 
     private val gameRepository = mockk<GameRepository>()
     private val linkDao = mockk<ProviderGameLinkDao>(relaxed = true)
+    private val matchNoteDao = mockk<com.playfieldportal.core.data.database.dao.AchievementMatchNoteDao>(relaxed = true)
     private val retroApi = mockk<RetroAchievementsApi>()
     private val repository = mockk<AchievementRepository>(relaxed = true)
     private val romReader = mockk<RomBytesReader>()
     private val discOpener = mockk<DiscImageOpener>(relaxed = true)
 
-    private val matcher = AchievementAutoMatcher(gameRepository, linkDao, retroApi, repository, romReader, discOpener)
+    private val matcher = AchievementAutoMatcher(gameRepository, linkDao, matchNoteDao, retroApi, repository, romReader, discOpener)
 
     private fun game(id: Long, platform: String, title: String = "Game $id") =
         Game(id = id, title = title, platformId = platform)
@@ -61,7 +62,8 @@ class AchievementAutoMatcherTest {
 
         assertEquals(0, report.matched)
         assertEquals(1, report.unmatched.size)
-        assertEquals("no RetroAchievements match", report.unmatched.first().reason)
+        // Hash computed but not registered, and title also missed — the note names the hash cause.
+        assertEquals("ROM hash isn't registered on RetroAchievements, and no title match", report.unmatched.first().reason)
     }
 
     @Test
@@ -100,7 +102,7 @@ class AchievementAutoMatcherTest {
         val report = matcher.matchUnlinked()
 
         assertEquals(1, report.unmatched.size)
-        assertEquals("unsupported system", report.unmatched.first().reason)
+        assertEquals("RetroAchievements has no achievements for this system (ps3)", report.unmatched.first().reason)
         coVerify(exactly = 0) { romReader.read(any()) }
         coVerify(exactly = 0) { discOpener.open(any()) }
     }
@@ -118,6 +120,22 @@ class AchievementAutoMatcherTest {
         coVerify { discOpener.open(g) }
         coVerify(exactly = 0) { romReader.read(any()) } // never full-loads a disc image
         coVerify { repository.linkManually(1, AchievementProvider.RETRO_ACHIEVEMENTS, "2093") }
+    }
+
+    @Test
+    fun `records a persisted note naming why each unmatched game failed`() = runTest {
+        val g = game(1, "wii", title = "Wheelie Breakers") // RA console, but no disc hasher for Wii
+        stubGames(g)
+        coEvery { retroApi.gameIdForTitle(19, any()) } returns null
+
+        matcher.matchUnlinked()
+
+        coVerify { matchNoteDao.clear() } // rewritten from scratch each run
+        coVerify {
+            matchNoteDao.upsert(
+                match { it.gameId == 1L && it.reason.contains("isn't supported yet") },
+            )
+        }
     }
 
     @Test
