@@ -108,6 +108,7 @@ fun GameDetailScreen(
     // contextual App Drawer button; any touch on the screen reports back via [onTouchInput].
     showTouchControls: Boolean = true,
     onTouchInput: () -> Unit = {},
+    onOpenShibaCoins: (Long) -> Unit = {},
     // Direct-launch mode: fire the Play action as soon as the game loads. The screen still
     // opens underneath (all launch plumbing lives in the ViewModel) and is what the user
     // returns to when they exit the game.
@@ -153,6 +154,13 @@ fun GameDetailScreen(
         if (state.closed) {
             viewModel.prepareForOpen()
             onBack()
+        }
+    }
+    // Strip tap / SELECT on the coin strip opens the dedicated Shiba Coins screen over this page.
+    LaunchedEffect(state.openCoins) {
+        if (state.openCoins) {
+            onOpenShibaCoins(gameId)
+            viewModel.onOpenCoinsConsumed()
         }
     }
     // While the Artwork Studio is open, its screen consumes the actions instead.
@@ -287,7 +295,11 @@ fun GameDetailScreen(
 
             Spacer(Modifier.height(18.dp))
 
-            ShibaCoinStrip(coins = state.coins)
+            ShibaCoinStrip(
+                coins = state.coins,
+                focused = state.mainFocus == MAIN_FOCUS_COINS,
+                onClick = viewModel::requestOpenCoins,
+            )
 
             Spacer(Modifier.height(18.dp))
 

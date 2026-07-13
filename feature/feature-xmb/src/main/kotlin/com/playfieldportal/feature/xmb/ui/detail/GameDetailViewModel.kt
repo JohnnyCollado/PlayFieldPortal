@@ -75,6 +75,8 @@ data class GameDetailUiState(
 
     // Shiba Coins summary for the glance strip; null when this game isn't tracked yet.
     val coins: com.playfieldportal.core.domain.achievement.GameCoins? = null,
+    // Set true to request opening the dedicated Shiba Coins screen (strip tap / SELECT on it).
+    val openCoins: Boolean = false,
 
     // Stored media surfaced on the page (resolved once per load via ArtworkStore.find).
     val videoUri: String? = null,        // the game's video — playable from the Video button/strip
@@ -153,6 +155,8 @@ enum class DetailAction(val label: String) {
 
 // 0 = Launch, then the square row: 1 = Options, 2 = Artwork, 3 = Manual.
 const val MAIN_FOCUS_LAST = 3
+// The Shiba Coins strip sits below the button row as focus index 4.
+const val MAIN_FOCUS_COINS = 4
 
 // Upper bound for D-pad page scrolling — generous enough for the longest descriptions; the
 // screen clamps to the real content height, so overshoot is harmless.
@@ -336,14 +340,18 @@ class GameDetailViewModel @Inject constructor(
                 if (it.mediaFocus >= 0) return@update it.copy(mediaFocus = -1, pageScrollSteps = 0, actionMessage = null)
                 // One press rewinds the whole page scroll; the next lands on Launch — no more
                 // unwinding step by step before focus comes back.
-                if (it.pageScrollSteps > 0) it.copy(pageScrollSteps = 0, actionMessage = null)
-                else it.copy(mainFocus = 0, actionMessage = null)
+                if (it.pageScrollSteps > 0) return@update it.copy(pageScrollSteps = 0, actionMessage = null)
+                // From the coin strip, UP returns to the button row rather than jumping to Launch.
+                if (it.mainFocus == MAIN_FOCUS_COINS) return@update it.copy(mainFocus = 1, actionMessage = null)
+                it.copy(mainFocus = 0, actionMessage = null)
             }
             GamepadAction.NAVIGATE_DOWN  -> _uiState.update {
                 when {
                     // First DOWN moves to the button row.
                     it.mainFocus == 0 -> it.copy(mainFocus = 1, actionMessage = null)
-                    // From the button row, DOWN enters the media strip when there is one
+                    // From the button row, DOWN lands on the Shiba Coins strip.
+                    it.mainFocus in 1..MAIN_FOCUS_LAST -> it.copy(mainFocus = MAIN_FOCUS_COINS, actionMessage = null)
+                    // From the strip, DOWN enters the media strip when there is one
                     // (page scrolls to the bottom so the strip is visible)...
                     it.mediaFocus < 0 && it.detailMedia.isNotEmpty() ->
                         it.copy(mediaFocus = 0, pageScrollSteps = MAX_PAGE_SCROLL_STEPS, actionMessage = null)
@@ -357,6 +365,7 @@ class GameDetailViewModel @Inject constructor(
                 0 -> { Timber.d("Controller SELECT activated Launch"); launch() }
                 1 -> openOptions()
                 2 -> openArtworkManager()
+                MAIN_FOCUS_COINS -> requestOpenCoins()
                 else -> onManualClicked()
             }
             // Y / Triangle opens the Options context menu directly, from anywhere on the page.
@@ -365,6 +374,11 @@ class GameDetailViewModel @Inject constructor(
             else -> Unit
         }
     }
+
+    // ── Shiba Coins strip ─────────────────────────────────────────────────
+
+    fun requestOpenCoins() = _uiState.update { it.copy(openCoins = true) }
+    fun onOpenCoinsConsumed() = _uiState.update { it.copy(openCoins = false) }
 
     // ── Artwork Studio open / close ───────────────────────────────────────
 

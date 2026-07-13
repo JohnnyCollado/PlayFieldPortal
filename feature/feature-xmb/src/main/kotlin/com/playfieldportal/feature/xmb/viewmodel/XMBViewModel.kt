@@ -5931,6 +5931,10 @@ class XMBViewModel @Inject constructor(
 
     // ── Game detail overlay ───────────────────────────────────────────────────
 
+    fun openShibaCoins(gameId: Long) {
+        _uiState.update { it.copy(activeShibaCoinsGameId = gameId) }
+    }
+
     fun onCloseShibaCoins() {
         _uiState.update { it.copy(activeShibaCoinsGameId = null) }
     }

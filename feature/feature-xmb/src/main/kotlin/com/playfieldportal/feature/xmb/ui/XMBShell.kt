@@ -177,6 +177,7 @@ fun XMBShellContainer(
         onDrawerActionConsumed = viewModel::consumeDrawerAction,
         onCloseGameDetail = viewModel::onCloseGameDetail,
         onCloseShibaCoins = viewModel::onCloseShibaCoins,
+        onOpenShibaCoins = viewModel::openShibaCoins,
         onGameDetailActionConsumed = viewModel::consumeGameDetailAction,
         onCloseVideoDetail = viewModel::onCloseVideoDetail,
         onVideoDetailActionConsumed = viewModel::consumeVideoDetailAction,
@@ -256,6 +257,7 @@ fun XMBShell(
     onDrawerActionConsumed: () -> Unit = {},
     onCloseGameDetail: () -> Unit = {},
     onCloseShibaCoins: () -> Unit = {},
+    onOpenShibaCoins: (Long) -> Unit = {},
     onGameDetailActionConsumed: () -> Unit = {},
     onCloseVideoDetail: () -> Unit = {},
     onVideoDetailActionConsumed: () -> Unit = {},
@@ -781,17 +783,22 @@ fun XMBShell(
                 )
             }
 
-            uiState.activeGameId?.let { gameId ->
-                GameDetailScreen(
-                    gameId = gameId,
-                    onBack = onCloseGameDetail,
-                    autoLaunch = uiState.activeGameAutoLaunch,
-                    pendingGamepadAction = uiState.pendingGameDetailAction,
-                    onGamepadActionConsumed = onGameDetailActionConsumed,
-                    showTouchControls = uiState.resolvedShowTouchButton,
-                    onTouchInput = onTouchInput,
-                    modifier = Modifier.fillMaxSize(),
-                )
+            // Hidden while the Shiba Coins overlay is open so it fully covers the detail page;
+            // clearing activeShibaCoinsGameId brings this page straight back.
+            if (uiState.activeShibaCoinsGameId == null) {
+                uiState.activeGameId?.let { gameId ->
+                    GameDetailScreen(
+                        gameId = gameId,
+                        onBack = onCloseGameDetail,
+                        autoLaunch = uiState.activeGameAutoLaunch,
+                        pendingGamepadAction = uiState.pendingGameDetailAction,
+                        onGamepadActionConsumed = onGameDetailActionConsumed,
+                        showTouchControls = uiState.resolvedShowTouchButton,
+                        onTouchInput = onTouchInput,
+                        onOpenShibaCoins = onOpenShibaCoins,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
             }
 
             uiState.activeShibaCoinsGameId?.let { coinsGameId ->

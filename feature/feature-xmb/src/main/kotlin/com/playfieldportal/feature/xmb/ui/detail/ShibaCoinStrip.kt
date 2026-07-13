@@ -1,6 +1,8 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -46,13 +49,20 @@ private val TextMuted = Color(0x88EEEEEE)
  * no coins yet. Display-only for now; the drill-in door lands with the dedicated coins screen.
  */
 @Composable
-internal fun ShibaCoinStrip(coins: GameCoins?, modifier: Modifier = Modifier) {
+internal fun ShibaCoinStrip(
+    coins: GameCoins?,
+    modifier: Modifier = Modifier,
+    focused: Boolean = false,
+    onClick: (() -> Unit)? = null,
+) {
     val accent = menuCursorEdge()
     Column(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .background(StripFill)
+            .then(if (focused) Modifier.border(2.dp, accent, RoundedCornerShape(12.dp)) else Modifier)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(horizontal = 18.dp, vertical = 14.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -63,6 +73,8 @@ internal fun ShibaCoinStrip(coins: GameCoins?, modifier: Modifier = Modifier) {
             if (coins != null) {
                 Text("${(coins.progress * 100).roundToInt()}%", color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
+            Spacer(Modifier.width(8.dp))
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Open Shiba Coins", tint = TextMuted, modifier = Modifier.size(20.dp))
         }
 
         if (coins == null) {
