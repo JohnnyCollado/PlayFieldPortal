@@ -243,6 +243,15 @@ private fun SyncRow(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewModel, fo
         if (state.isSyncing) {
             CircularProgressIndicator(color = menuCursorEdge(), modifier = Modifier.size(18.dp))
         } else if (state.linked) {
+            Text(
+                "Change match",
+                color = TextMuted,
+                fontSize = 12.sp,
+                modifier = Modifier
+                    .clickable { viewModel.changeLink() }
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
+            )
+            Spacer(Modifier.width(8.dp))
             PillButton("Sync now", enabled = true, focused = focused) { viewModel.sync() }
         }
     }

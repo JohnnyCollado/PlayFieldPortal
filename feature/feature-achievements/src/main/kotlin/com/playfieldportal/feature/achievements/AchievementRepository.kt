@@ -107,6 +107,9 @@ class AchievementRepository @Inject constructor(
         return appId
     }
 
+    /** Removes a game's provider link so it can be re-matched (edit a wrong auto-match). */
+    suspend fun unlink(gameId: Long) = linkDao.deleteForGame(gameId)
+
     /** Syncs a game from its stored link; [ProviderSyncResult.NotLinked] if it has none yet. */
     suspend fun syncGameById(gameId: Long): ProviderSyncResult {
         val link = linkDao.getForGame(gameId) ?: return ProviderSyncResult.NotLinked

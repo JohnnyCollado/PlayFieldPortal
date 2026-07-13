@@ -127,6 +127,33 @@ fun AchievementsSettingsScreen(
             SettingsGroup("Sync")
             SettingsValueRow(label = "Last Synced", value = state.lastSyncedLabel)
 
+            // ── Auto-match ─────────────────────────────────────────────────────
+            SettingsGroup("Auto-match")
+            if (state.isMatching) {
+                SettingsValueRow(label = "Matching games…", value = "${state.matchDone} / ${state.matchTotal}")
+            } else {
+                SettingsRow(
+                    label = "Auto-match games",
+                    sublabel = "Link RetroAchievements (ROM hash) and Steam (title) automatically",
+                    onClick = { viewModel.autoMatch() },
+                )
+            }
+            state.matchReport?.let { report ->
+                SettingsValueRow(label = "Matched", value = report.matched.toString())
+                if (report.unmatched.isEmpty()) {
+                    SettingsValueRow(label = "Unmatched", value = "0")
+                } else {
+                    SettingsRow(
+                        label = "Unmatched: ${report.unmatched.size} (tap to dismiss)",
+                        sublabel = "Link these from each game's Shiba Coins screen",
+                        onClick = { viewModel.dismissReport() },
+                    )
+                    report.unmatched.forEach { u ->
+                        SettingsValueRow(label = u.title, sublabel = u.platformId, value = u.reason)
+                    }
+                }
+            }
+
             state.message?.let {
                 SettingsRow(label = it, sublabel = "Tap to dismiss", onClick = { viewModel.dismissMessage() })
             }

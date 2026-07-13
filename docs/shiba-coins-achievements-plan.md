@@ -5,12 +5,11 @@ PlayStation-style Bronze / Silver / Gold / Platinum tier set that players earn, 
 display across RetroAchievements (emulated titles) and Steam (PC titles), with a single XP
 economy and level. No Steam or RetroAchievements password is ever handled.
 
-Status: Phases 1-6 done — the feature runs end to end (connect accounts → context menu ▸ View
-Shiba Coins → link + sync → coins persist → glance strip + dedicated screen show them; wallet
-derives reactively). RA hashing deferred. Remaining: Phases 7-9 (partial-credit already on; player
-card + category hub; polish), RA ROM-hashing, backup key handling, and the GDS glance-strip "Open"
-door. Branch: `achievement-integration`. This document is the source of truth to resume from on
-any machine.
+Status: Phases 1-6 done and validated on-device (RA connected, a game synced with real coins).
+Auto-match shipped (cartridge-first RA ROM-hash + Steam title + unmatched report + edit). Remaining:
+disc-system RA hashing, Phases 7-8 (player card + category hub; partial-credit already on), backup
+key handling, polish. Branch: `achievement-integration`. This document is the source of truth to
+resume from on any machine.
 
 ---
 
@@ -295,9 +294,13 @@ New module `feature-achievements` (clients + repository; UI lands in later phase
   + repository `linkManually` / `resolveSteamLink` / `syncGameById`, so a stored link drives
   end-to-end sync. Steam auto-resolves by title (`SteamAppListResolver`, cached app list).
   `ProviderSyncResult.NotLinked` added. Tested (resolver + repo link/sync).
-- [ ] RetroAchievements ROM-hash resolution: rcheevos-style, console-specific hashing hooked into
-  `RomScanner` (header stripping per system, disc hashing). Deferred — RA games link manually for
-  now. This is the one genuinely large remaining sub-system.
+- [x] Auto-match (cartridge-first): `RaRomHasher` (full-MD5 + NES/SNES header strip + N64 byte-order
+  normalization so z64/v64/n64 hash the same) + `RaConsole` id map + `RetroAchievementsApi.
+  gameIdForHash` (per-console hash list, cached). `RomBytesReader` (raw path / SAF / single-entry
+  zip, 64 MB cap). `AchievementAutoMatcher` batch-links unlinked games — RA by hash, Steam by title
+  — and returns a `MatchReport`. Settings ▸ Shiba Coins has an "Auto-match games" action with
+  progress + an unmatched report; the coins screen has a "Change match" edit. Tested (hasher,
+  lookup, matcher). Disc/arcade systems deferred — they fall to the report for manual linking.
 - Opt: offline-first; >=1.1s rate limit; Coil for badge art (in the UI phases).
 - Sec: HTTPS only; read-only; keys never logged (no request logging at all); "profile not public"
   and missing-key are first-class results, never exceptions carrying a key.

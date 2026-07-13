@@ -183,6 +183,11 @@ class ShibaCoinsViewModel @Inject constructor(
         }
     }
 
+    /** Removes the current link so the user can re-enter it (edit a wrong match). */
+    fun changeLink() {
+        viewModelScope.launch { achievementRepository.unlink(gameId) }
+    }
+
     fun sync() {
         viewModelScope.launch {
             _state.update { it.copy(isSyncing = true) }
