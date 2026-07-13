@@ -714,6 +714,9 @@ data class XMBItem(
     // Text-only row: never draws a leading icon/tile and always shows its label, regardless of
     // selection. Used by the Shiba Coins "Untracked" list so games read as plain text + reason.
     val textOnly: Boolean = false,
+    // When set, the leading slot draws a tinted circle with this text centered (e.g. "Lv 27") —
+    // the Shiba Coins player-card summary row.
+    val levelBadge: String? = null,
     val type: XMBItemType = XMBItemType.STANDARD,
 )
 
@@ -3586,8 +3589,9 @@ class XMBViewModel @Inject constructor(
         return listOf(
             XMBItem(
                 id = ACH_SUMMARY_ITEM_ID,
-                title = "Lv ${w.level}  •  ${w.rank.label}",
+                title = w.rank.label,
                 subtitle = "${"%,d".format(w.totalCoins)} coins  •  ${standing.gamesTracked} tracked  •  ${standing.gamesMastered} mastered",
+                levelBadge = "Lv ${w.level}",
                 type = XMBItemType.STANDARD,
             ),
             XMBItem(id = ACH_CLOSEST_ITEM_ID, title = "Closest to Mastery", subtitle = "${standing.closestToMastery().size} games", type = XMBItemType.STANDARD),

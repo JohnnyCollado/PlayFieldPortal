@@ -8,6 +8,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -35,10 +36,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bookmarks
 import androidx.compose.material.icons.filled.Diamond
-import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Link
-import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.Toll
 import androidx.compose.material.icons.filled.Collections
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.History
@@ -1140,9 +1141,31 @@ private fun XmbItemLeadingIcon(
                 }
             }
         }
-        // Shiba Coins hub menu rows (the summary + lens entries) get a per-row Material glyph, so the
-        // section reads like the rest of the XMB. Keyed by exact id, so the text-only untracked game
-        // rows and the coin rows keep their own treatment.
+        // Shiba Coins player-card summary: a tinted circle with the level centered in it (e.g.
+        // "Lv 27"). Both the ring and the text follow the theme's icon color.
+        item.levelBadge != null -> {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(46.dp)
+                        .clip(CircleShape)
+                        .background(iconTint.copy(alpha = 0.12f))
+                        .border(2.dp, iconTint, CircleShape),
+                ) {
+                    Text(
+                        text = item.levelBadge,
+                        color = iconTint,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                    )
+                }
+            }
+        }
+        // Shiba Coins hub lens rows get a per-row Material glyph, so the section reads like the rest
+        // of the XMB. Keyed by exact id, so the text-only untracked game rows and the coin rows keep
+        // their own treatment.
         achievementsGlyphFor(item.id) != null -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
                 ThemedGlyph("", achievementsGlyphFor(item.id)!!, null, iconTint, Modifier.size(44.dp))
@@ -1152,12 +1175,11 @@ private fun XmbItemLeadingIcon(
     }
 }
 
-// The leading glyph for a Shiba Coins hub row, or null if the id isn't one of them.
+// The leading glyph for a Shiba Coins hub lens row, or null if the id isn't one of them.
 private fun achievementsGlyphFor(id: String): androidx.compose.ui.graphics.vector.ImageVector? = when (id) {
-    "ach_summary" -> Icons.Filled.EmojiEvents
-    "ach_closest" -> Icons.Filled.TrendingUp
+    "ach_closest" -> Icons.Filled.Timer          // quickness — nearest to done
     "ach_rarest" -> Icons.Filled.Diamond
-    "ach_all" -> Icons.Filled.SportsEsports
+    "ach_all" -> Icons.Filled.Toll               // stacked coins
     "ach_untracked" -> Icons.Filled.HelpOutline
     "ach_connect" -> Icons.Filled.Link
     else -> null
