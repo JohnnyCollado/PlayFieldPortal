@@ -622,7 +622,7 @@ private fun XmbVerticalListRow(
                 )
                 .padding(horizontal = ROW_HORIZONTAL_PADDING),
         ) {
-            if (showIcon) {
+            if (showIcon && !item.textOnly) {
                 XmbItemLeadingIcon(
                     item = item,
                     iconStyle = iconStyle,
@@ -633,10 +633,10 @@ private fun XmbVerticalListRow(
             // Game entities are icon-first: NO text on any game row except the ACTIVE row of
             // a logo-less game, where title + emulator fade in on the PIC0 timeline. Games
             // with a logo never show text — the logo overlay IS the identity. Non-game rows
-            // keep their labels as always.
-            val showGameText = !item.isRealGame || (isSelected && item.logoUri == null)
+            // keep their labels as always. A textOnly row (e.g. the Untracked list) always labels.
+            val showGameText = item.textOnly || !item.isRealGame || (isSelected && item.logoUri == null)
             if (showText && showGameText) {
-                val fadeWithPic0 = isSelected && item.isRealGame
+                val fadeWithPic0 = isSelected && item.isRealGame && !item.textOnly
                 var textVisible by remember(item.id, fadeWithPic0) { mutableStateOf(!fadeWithPic0) }
                 if (fadeWithPic0) {
                     LaunchedEffect(item.id, fadeWithPic0) {

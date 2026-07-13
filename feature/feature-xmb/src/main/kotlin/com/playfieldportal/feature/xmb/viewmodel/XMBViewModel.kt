@@ -711,6 +711,9 @@ data class XMBItem(
     // Discord friend rows: a colored presence dot (ARGB) shown before the subtitle; null = no dot.
     // Only set on SOCIAL_FRIEND rows.
     val socialStatusArgb: Long? = null,
+    // Text-only row: never draws a leading icon/tile and always shows its label, regardless of
+    // selection. Used by the Shiba Coins "Untracked" list so games read as plain text + reason.
+    val textOnly: Boolean = false,
     val type: XMBItemType = XMBItemType.STANDARD,
 )
 
@@ -3536,10 +3539,19 @@ class XMBViewModel @Inject constructor(
                     )
                 }
             }
-        // An untracked game keeps its art but shows why it isn't tracked.
+        // Untracked games render as plain text (title + reason), no logo/tile — selecting one still
+        // opens Game Detail so it can be looked at or linked.
         fun untrackedRows(rows: List<com.playfieldportal.core.domain.achievement.UntrackedGame>): List<XMBItem> =
-            rows.mapNotNull { u ->
-                byId[u.gameId]?.let { g -> listOf(g).toXmbItems().first().copy(subtitle = u.reason) }
+            rows.map { u ->
+                XMBItem(
+                    id = "ach_untracked_${u.gameId}",
+                    title = u.title,
+                    subtitle = u.reason,
+                    gameId = u.gameId,
+                    isRealGame = true,
+                    textOnly = true,
+                    type = XMBItemType.STANDARD,
+                )
             }
 
         return when (nav) {
