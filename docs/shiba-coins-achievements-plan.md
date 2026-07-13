@@ -393,12 +393,16 @@ Coins → link + sync → coins persist → the dedicated screen lists them and 
   migration; protected from deletion, reorderable). Present in every build (unlike Social).
 - [x] `LibraryStanding` cross-library aggregate (wallet + tracked standings + rarest earned) via
   `AchievementRepository.observeLibraryStanding`, offline from cached rows.
-- [x] Hub navigation as an XMB item list (`AchievementsNav` Root → ClosestToMastery / RarestEarned /
-  AllTracked). Root shows a standing summary row (Lv/rank/coins/tracked/mastered) + three lens rows;
-  each lens drills into a flat list. Game rows reuse the standard game-item render and open Game
-  Detail (its coin strip drills into the full set); coin rows likewise. BACK/edge-swipe pops the
-  lens; the summary row opens Settings ▸ Shiba Coins (the full `ShibaPlayerCard`). Empty state points
-  the user to connect accounts. On-device verified: category seeds correctly on the Thor.
+- [x] Hub root shows a summary row (a tinted level circle "Lv 27" + rank + coins/tracked/mastered)
+  plus lens rows with per-row glyphs (coin, diamond, help). Rarest Earned drills inline
+  (`AchievementsNav.RarestEarned`); the summary opens Settings ▸ Shiba Coins. Closest to Mastery was
+  removed (redundant once All Tracked shows progress).
+- [x] All Tracked & Untracked are FULLSCREEN two-pane overlays (`ShibaLibraryScreen` /
+  `ShibaLibraryViewModel`, `activeShibaLibrary` on the shell): a scrolling master list (box art,
+  title, platform, progress bar, Bronze/Silver/Gold/Platinum tally) beside a detail panel (logo,
+  progress %, Shiba Coins breakdown, Total Coin Score + next-reward bar). Untracked shows each game's
+  reason instead of coins. Wired like the coins overlay (blocking, gamepad dispatch, wave-freeze,
+  XMB-hide). Coins render as tier-colored discs (no medallion art bundled yet).
 - [x] "Untracked" lens: every game with no achievement link, each with the reason it isn't tracked.
   The auto-matcher records the *specific* failure per game (DB v32 `achievement_match_notes`,
   rewritten each run) — e.g. "Couldn't read the ROM file", "Unsupported disc image (NKit/CHD/…) —

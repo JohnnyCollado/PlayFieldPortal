@@ -297,15 +297,15 @@ sealed interface MusicNav {
     data object MusicApps : MusicNav
 }
 
-// Which Shiba Coins hub view is open. Root shows the standing summary + lens rows; each lens drills
-// into a flat list (games nearest to mastery, the rarest earned coins, or every tracked game).
+// Which Shiba Coins hub view is open. Root shows the standing summary + lens rows; Rarest Earned
+// drills into a flat coin list. (All Tracked and Untracked open their own fullscreen overlays.)
 sealed interface AchievementsNav {
     data object Root : AchievementsNav
-    data object ClosestToMastery : AchievementsNav
     data object RarestEarned : AchievementsNav
-    data object AllTracked : AchievementsNav
-    data object Untracked : AchievementsNav
 }
+
+/** Which fullscreen Shiba Coins library overlay is open. */
+enum class ShibaLibraryMode { TRACKED, UNTRACKED }
 
 // ── Fullscreen music browser (Settings-style, searchable) ───────────────────────
 // Opened from the "Music" and "Playlist" root items as a fullscreen overlay (not the inline XMB
@@ -460,10 +460,13 @@ data class XMBUiState(
     // ── Context menu (Y/Triangle) ─────────────────────────────────────────
     val activeContextMenu: XMBContextMenu? = null,
 
-    // ── Shiba Coins hub: Root (summary + lenses) → a drilled lens list ─────
+    // ── Shiba Coins hub: Root (summary + lenses) → Rarest Earned drill ─────
     val achievementsNav: AchievementsNav = AchievementsNav.Root,
     val libraryStanding: com.playfieldportal.core.domain.achievement.LibraryStanding =
         com.playfieldportal.core.domain.achievement.LibraryStanding(),
+    // Fullscreen All Tracked / Untracked overlay (null = closed).
+    val activeShibaLibrary: ShibaLibraryMode? = null,
+    val pendingShibaLibraryAction: GamepadAction? = null,
 
     // ── Discord QR login overlay ──────────────────────────────────────────
     val activeDiscordLogin: Boolean = false,
@@ -563,6 +566,7 @@ data class XMBUiState(
             activeAppDrawerFilter != null ||
             activeGameId != null ||
             activeShibaCoinsGameId != null ||
+            activeShibaLibrary != null ||
             activeAppId != null ||
             activeVideoId != null ||
             activePhotoViewer != null ||
@@ -1192,10 +1196,10 @@ class XMBViewModel @Inject constructor(
                     _uiState.update { it.copy(currentItems = SETTINGS_ITEMS) }
                 }
                 BuiltInCategory.ACHIEVEMENTS -> {
-                    gameRepository.observeGamesOnly().collect { games ->
-                        _uiState.update {
-                            it.copy(currentItems = achievementsItems(it.libraryStanding, it.achievementsNav, games))
-                        }
+                    // Rebuilt reactively by observeLibraryStanding() and on nav change; a one-shot
+                    // build from the current standing is enough here.
+                    _uiState.update {
+                        it.copy(currentItems = achievementsItems(it.libraryStanding, it.achievementsNav))
                     }
                 }
                 BuiltInCategory.SOCIAL -> when (_uiState.value.socialNav) {
@@ -3520,59 +3524,26 @@ class XMBViewModel @Inject constructor(
 
     private fun achievementsNavKey(nav: AchievementsNav): String = when (nav) {
         AchievementsNav.Root -> "root"
-        AchievementsNav.ClosestToMastery -> "closest"
         AchievementsNav.RarestEarned -> "rarest"
-        AchievementsNav.AllTracked -> "all"
-        AchievementsNav.Untracked -> "untracked"
     }
 
-    // Root shows the standing summary + lens rows; a drilled lens shows a flat list. Game rows are
-    // matched against [games] (all real games) so they carry full art and open Game Detail on select.
+    // Root shows the standing summary + lens rows; Rarest Earned drills into a flat coin list. (All
+    // Tracked and Untracked are fullscreen overlays, not XMB item lists.)
     private fun achievementsItems(
         standing: com.playfieldportal.core.domain.achievement.LibraryStanding,
         nav: AchievementsNav,
-        games: List<com.playfieldportal.core.domain.model.Game>,
-    ): List<XMBItem> {
-        val byId = games.associateBy { it.id }
-        fun gameRows(rows: List<com.playfieldportal.core.domain.achievement.GameStanding>): List<XMBItem> =
-            rows.mapNotNull { s ->
-                byId[s.gameId]?.let { g ->
-                    listOf(g).toXmbItems().first().copy(
-                        subtitle = "${(s.progress * 100).roundToInt()}%  •  ${s.coins.earned.total}/${s.coins.total.total} coins",
-                    )
-                }
-            }
-        // Untracked games render as plain text (title + reason), no logo/tile — selecting one still
-        // opens Game Detail so it can be looked at or linked.
-        fun untrackedRows(rows: List<com.playfieldportal.core.domain.achievement.UntrackedGame>): List<XMBItem> =
-            rows.map { u ->
-                XMBItem(
-                    id = "ach_untracked_${u.gameId}",
-                    title = u.title,
-                    subtitle = u.reason,
-                    gameId = u.gameId,
-                    isRealGame = true,
-                    textOnly = true,
-                    type = XMBItemType.STANDARD,
-                )
-            }
-
-        return when (nav) {
-            AchievementsNav.Root -> achievementsRootItems(standing)
-            AchievementsNav.ClosestToMastery ->
-                gameRows(standing.closestToMastery()).ifEmpty { listOf(achievementsEmptyItem("Nothing in progress yet")) }
-            AchievementsNav.AllTracked ->
-                gameRows(standing.allByStanding).ifEmpty { listOf(achievementsEmptyItem("No tracked games yet")) }
-            AchievementsNav.RarestEarned ->
-                standing.rarestEarned.map { it.toCoinItem() }.ifEmpty { listOf(achievementsEmptyItem("No earned coins yet")) }
-            AchievementsNav.Untracked ->
-                untrackedRows(standing.untracked).ifEmpty { listOf(achievementsEmptyItem("Every game is tracked")) }
-        }
+    ): List<XMBItem> = when (nav) {
+        AchievementsNav.Root -> achievementsRootItems(standing)
+        AchievementsNav.RarestEarned ->
+            standing.rarestEarned.map { it.toCoinItem() }.ifEmpty { listOf(achievementsEmptyItem("No earned coins yet")) }
     }
 
     private fun achievementsRootItems(
         standing: com.playfieldportal.core.domain.achievement.LibraryStanding,
     ): List<XMBItem> {
+        val untrackedRow = if (standing.untracked.isEmpty()) emptyList() else listOf(
+            XMBItem(id = ACH_UNTRACKED_ITEM_ID, title = "Untracked", subtitle = "${standing.untracked.size} games", type = XMBItemType.STANDARD),
+        )
         if (standing.gamesTracked == 0) {
             val connect = XMBItem(
                 id = ACH_CONNECT_ITEM_ID,
@@ -3580,10 +3551,7 @@ class XMBViewModel @Inject constructor(
                 subtitle = "Set up Shiba Coins and auto-match your library",
                 type = XMBItemType.STANDARD,
             )
-            val untracked = if (standing.untracked.isEmpty()) emptyList() else listOf(
-                XMBItem(id = ACH_UNTRACKED_ITEM_ID, title = "Untracked", subtitle = "${standing.untracked.size} games", type = XMBItemType.STANDARD),
-            )
-            return listOf(connect) + untracked
+            return listOf(connect) + untrackedRow
         }
         val w = standing.wallet
         return listOf(
@@ -3594,12 +3562,9 @@ class XMBViewModel @Inject constructor(
                 levelBadge = "Lv ${w.level}",
                 type = XMBItemType.STANDARD,
             ),
-            XMBItem(id = ACH_CLOSEST_ITEM_ID, title = "Closest to Mastery", subtitle = "${standing.closestToMastery().size} games", type = XMBItemType.STANDARD),
             XMBItem(id = ACH_RAREST_ITEM_ID, title = "Rarest Earned", subtitle = "${standing.rarestEarned.size} coins", type = XMBItemType.STANDARD),
             XMBItem(id = ACH_ALL_ITEM_ID, title = "All Tracked Games", subtitle = "${standing.gamesTracked} games", type = XMBItemType.STANDARD),
-        ) + if (standing.untracked.isEmpty()) emptyList() else listOf(
-            XMBItem(id = ACH_UNTRACKED_ITEM_ID, title = "Untracked", subtitle = "${standing.untracked.size} games", type = XMBItemType.STANDARD),
-        )
+        ) + untrackedRow
     }
 
     private fun com.playfieldportal.core.domain.achievement.EarnedCoinRef.toCoinItem(): XMBItem = XMBItem(
@@ -3629,10 +3594,9 @@ class XMBViewModel @Inject constructor(
                 _uiState.update { it.copy(activeSettingsScreen = "settings_achievements") }
                 return true
             }
-            ACH_CLOSEST_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openAchievementsView(AchievementsNav.ClosestToMastery); return true }
             ACH_RAREST_ITEM_ID  -> { menuSound.play(MenuSound.SELECT); openAchievementsView(AchievementsNav.RarestEarned); return true }
-            ACH_ALL_ITEM_ID     -> { menuSound.play(MenuSound.SELECT); openAchievementsView(AchievementsNav.AllTracked); return true }
-            ACH_UNTRACKED_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openAchievementsView(AchievementsNav.Untracked); return true }
+            ACH_ALL_ITEM_ID     -> { menuSound.play(MenuSound.SELECT); openShibaLibrary(ShibaLibraryMode.TRACKED); return true }
+            ACH_UNTRACKED_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openShibaLibrary(ShibaLibraryMode.UNTRACKED); return true }
             EMPTY_CATEGORY_ITEM_ID -> return true // placeholder, not selectable
         }
         return false
@@ -3834,6 +3798,11 @@ class XMBViewModel @Inject constructor(
             state.activeShibaCoinsGameId != null -> {
                 // Forward everything so the coins screen can move focus, sync, and close on BACK.
                 _uiState.update { it.copy(pendingShibaCoinsAction = action) }
+                return
+            }
+            state.activeShibaLibrary != null -> {
+                // Forward everything so the fullscreen library can move focus and close on BACK.
+                _uiState.update { it.copy(pendingShibaLibraryAction = action) }
                 return
             }
             state.activeGameId != null -> {
@@ -6116,6 +6085,18 @@ class XMBViewModel @Inject constructor(
         _uiState.update { it.copy(pendingShibaCoinsAction = null) }
     }
 
+    fun openShibaLibrary(mode: ShibaLibraryMode) {
+        _uiState.update { it.copy(activeShibaLibrary = mode) }
+    }
+
+    fun onCloseShibaLibrary() {
+        _uiState.update { it.copy(activeShibaLibrary = null, pendingShibaLibraryAction = null) }
+    }
+
+    fun onShibaLibraryActionConsumed() {
+        _uiState.update { it.copy(pendingShibaLibraryAction = null) }
+    }
+
     fun onCloseGameDetail() {
         _uiState.update {
             it.copy(activeGameId = null, activeGameAutoLaunch = false, pendingGameDetailAction = null)
@@ -6729,7 +6710,6 @@ class XMBViewModel @Inject constructor(
         // Shiba Coins hub root rows.
         private const val ACH_CONNECT_ITEM_ID = "ach_connect"
         private const val ACH_SUMMARY_ITEM_ID = "ach_summary"
-        private const val ACH_CLOSEST_ITEM_ID = "ach_closest"
         private const val ACH_RAREST_ITEM_ID  = "ach_rarest"
         private const val ACH_ALL_ITEM_ID      = "ach_all"
         private const val ACH_UNTRACKED_ITEM_ID = "ach_untracked"

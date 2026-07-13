@@ -70,6 +70,7 @@ import androidx.media3.common.util.UnstableApi
 import com.playfieldportal.feature.xmb.ui.app.AppDetailScreen
 import com.playfieldportal.feature.xmb.ui.detail.GameDetailScreen
 import com.playfieldportal.feature.xmb.ui.detail.ShibaCoinsScreen
+import com.playfieldportal.feature.xmb.ui.detail.ShibaLibraryScreen
 import com.playfieldportal.feature.xmb.ui.detail.VideoDetailScreen
 import com.playfieldportal.feature.xmb.ui.photo.PhotoViewerScreen
 import com.playfieldportal.feature.xmb.viewmodel.XMBUiState
@@ -179,6 +180,8 @@ fun XMBShellContainer(
         onCloseShibaCoins = viewModel::onCloseShibaCoins,
         onOpenShibaCoins = viewModel::openShibaCoins,
         onShibaCoinsActionConsumed = viewModel::onShibaCoinsActionConsumed,
+        onCloseShibaLibrary = viewModel::onCloseShibaLibrary,
+        onShibaLibraryActionConsumed = viewModel::onShibaLibraryActionConsumed,
         onGameDetailActionConsumed = viewModel::consumeGameDetailAction,
         onCloseVideoDetail = viewModel::onCloseVideoDetail,
         onVideoDetailActionConsumed = viewModel::consumeVideoDetailAction,
@@ -260,6 +263,8 @@ fun XMBShell(
     onCloseShibaCoins: () -> Unit = {},
     onOpenShibaCoins: (Long) -> Unit = {},
     onShibaCoinsActionConsumed: () -> Unit = {},
+    onCloseShibaLibrary: () -> Unit = {},
+    onShibaLibraryActionConsumed: () -> Unit = {},
     onGameDetailActionConsumed: () -> Unit = {},
     onCloseVideoDetail: () -> Unit = {},
     onVideoDetailActionConsumed: () -> Unit = {},
@@ -359,7 +364,7 @@ fun XMBShell(
             // video player. Settings/dialogs use a see-through scrim, so the wave keeps animating there.
             val waveCovered = uiState.showBootSequence ||
                 uiState.activeVideoId != null || uiState.activeGameId != null ||
-                uiState.activeShibaCoinsGameId != null ||
+                uiState.activeShibaCoinsGameId != null || uiState.activeShibaLibrary != null ||
                 uiState.activePhotoViewer != null ||
                 uiState.activeAppId != null || uiState.activeAppDrawerFilter != null ||
                 uiState.musicPlayerVisible
@@ -418,6 +423,7 @@ fun XMBShell(
                 uiState.activeSettingsScreen == null &&
                 uiState.activeGameId == null &&
                 uiState.activeShibaCoinsGameId == null &&
+                uiState.activeShibaLibrary == null &&
                 uiState.activeVideoId == null &&
                 uiState.activeAppId == null &&
                 uiState.activePhotoViewer == null
@@ -810,6 +816,16 @@ fun XMBShell(
                     onClose = onCloseShibaCoins,
                     pendingGamepadAction = uiState.pendingShibaCoinsAction,
                     onGamepadActionConsumed = onShibaCoinsActionConsumed,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+
+            uiState.activeShibaLibrary?.let { mode ->
+                ShibaLibraryScreen(
+                    mode = mode,
+                    onClose = onCloseShibaLibrary,
+                    pendingGamepadAction = uiState.pendingShibaLibraryAction,
+                    onGamepadActionConsumed = onShibaLibraryActionConsumed,
                     modifier = Modifier.fillMaxSize(),
                 )
             }

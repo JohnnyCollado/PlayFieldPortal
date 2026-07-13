@@ -38,7 +38,6 @@ import androidx.compose.material.icons.filled.Bookmarks
 import androidx.compose.material.icons.filled.Diamond
 import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Link
-import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Toll
 import androidx.compose.material.icons.filled.Collections
 import androidx.compose.material.icons.filled.Folder
@@ -1141,34 +1140,32 @@ private fun XmbItemLeadingIcon(
                 }
             }
         }
-        // Shiba Coins player-card summary: a tinted circle with the level centered in it (e.g.
-        // "Lv 27"). Both the ring and the text follow the theme's icon color.
+        // Shiba Coins player-card summary: a ring with the level centered in it (e.g. "Lv 27"),
+        // sized like the other item icons. Ring and text follow the theme's icon color; no fill.
         item.levelBadge != null -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
-                        .size(46.dp)
+                        .size(LEADING_ICON_SIZE)
                         .clip(CircleShape)
-                        .background(iconTint.copy(alpha = 0.12f))
                         .border(2.dp, iconTint, CircleShape),
                 ) {
                     Text(
                         text = item.levelBadge,
                         color = iconTint,
-                        fontSize = 12.sp,
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                     )
                 }
             }
         }
-        // Shiba Coins hub lens rows get a per-row Material glyph, so the section reads like the rest
-        // of the XMB. Keyed by exact id, so the text-only untracked game rows and the coin rows keep
-        // their own treatment.
+        // Shiba Coins hub lens rows get a per-row Material glyph at the item-icon size (no
+        // background), keyed by exact id so the untracked/coin rows keep their own treatment.
         achievementsGlyphFor(item.id) != null -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                ThemedGlyph("", achievementsGlyphFor(item.id)!!, null, iconTint, Modifier.size(44.dp))
+                ThemedGlyph("", achievementsGlyphFor(item.id)!!, null, iconTint, Modifier.size(LEADING_ICON_SIZE))
             }
         }
         else -> Spacer(modifier = Modifier.width(12.dp))
@@ -1177,7 +1174,6 @@ private fun XmbItemLeadingIcon(
 
 // The leading glyph for a Shiba Coins hub lens row, or null if the id isn't one of them.
 private fun achievementsGlyphFor(id: String): androidx.compose.ui.graphics.vector.ImageVector? = when (id) {
-    "ach_closest" -> Icons.Filled.Timer          // quickness — nearest to done
     "ach_rarest" -> Icons.Filled.Diamond
     "ach_all" -> Icons.Filled.Toll               // stacked coins
     "ach_untracked" -> Icons.Filled.HelpOutline
