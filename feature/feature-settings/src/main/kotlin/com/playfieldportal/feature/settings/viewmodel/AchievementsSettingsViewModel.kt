@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.achievement.AchievementCredentialsProvider
 import com.playfieldportal.core.domain.achievement.CoinWallet
 import com.playfieldportal.feature.achievements.AchievementRepository
+import com.playfieldportal.feature.achievements.BatchSyncResult
 import com.playfieldportal.feature.achievements.api.SteamAchievementsApi
 import com.playfieldportal.feature.achievements.match.AchievementAutoMatcher
 import com.playfieldportal.feature.achievements.match.MatchReport
@@ -34,6 +35,10 @@ data class AchievementsSettingsUiState(
     val matchDone: Int = 0,
     val matchTotal: Int = 0,
     val matchReport: MatchReport? = null,
+    val isSyncing: Boolean = false,
+    val syncDone: Int = 0,
+    val syncTotal: Int = 0,
+    val syncResult: BatchSyncResult? = null,
 )
 
 // The four persisted account flows, folded together so the wallet flow fits combine's arity.
@@ -51,6 +56,10 @@ private data class Extra(
     val matchDone: Int = 0,
     val matchTotal: Int = 0,
     val matchReport: MatchReport? = null,
+    val isSyncing: Boolean = false,
+    val syncDone: Int = 0,
+    val syncTotal: Int = 0,
+    val syncResult: BatchSyncResult? = null,
 )
 
 private val STEAM_ID64 = Regex("\\d{17}")
@@ -96,6 +105,10 @@ class AchievementsSettingsViewModel @Inject constructor(
             matchDone = ex.matchDone,
             matchTotal = ex.matchTotal,
             matchReport = ex.matchReport,
+            isSyncing = ex.isSyncing,
+            syncDone = ex.syncDone,
+            syncTotal = ex.syncTotal,
+            syncResult = ex.syncResult,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AchievementsSettingsUiState())
 
@@ -155,6 +168,19 @@ class AchievementsSettingsViewModel @Inject constructor(
         }
     }
 
+    /** Refreshes coin data for every linked game at once, with a progress + result summary. */
+    fun syncAll() {
+        if (extra.value.isSyncing) return
+        viewModelScope.launch {
+            extra.update { it.copy(isSyncing = true, syncResult = null, syncDone = 0, syncTotal = 0) }
+            val result = repository.syncAllLinked { done, total ->
+                extra.update { it.copy(syncDone = done, syncTotal = total) }
+            }
+            extra.update { it.copy(isSyncing = false, syncResult = result) }
+        }
+    }
+
     fun dismissMessage() = extra.update { it.copy(message = null) }
     fun dismissReport() = extra.update { it.copy(matchReport = null) }
+    fun dismissSyncResult() = extra.update { it.copy(syncResult = null) }
 }

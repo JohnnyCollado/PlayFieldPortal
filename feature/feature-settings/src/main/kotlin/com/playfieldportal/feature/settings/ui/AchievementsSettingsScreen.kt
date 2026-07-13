@@ -135,6 +135,28 @@ fun AchievementsSettingsScreen(
             // ── Sync ───────────────────────────────────────────────────────────
             SettingsGroup("Sync")
             SettingsValueRow(label = "Last Synced", value = state.lastSyncedLabel)
+            if (state.isSyncing) {
+                SettingsValueRow(label = "Syncing coins…", value = "${state.syncDone} / ${state.syncTotal}")
+            } else {
+                SettingsRow(
+                    label = "Sync all coins",
+                    sublabel = "Refresh earned coins for every linked game",
+                    onClick = { viewModel.syncAll() },
+                )
+            }
+            state.syncResult?.let { r ->
+                val summary = buildString {
+                    append("${r.synced} synced")
+                    if (r.noCoins > 0) append(" · ${r.noCoins} no coins")
+                    if (r.failed > 0) append(" · ${r.failed} failed")
+                }
+                SettingsRow(
+                    label = summary,
+                    sublabel = if (r.missingCredentials) "Some providers need credentials — tap to dismiss"
+                               else "Tap to dismiss",
+                    onClick = { viewModel.dismissSyncResult() },
+                )
+            }
 
             // ── Auto-match ─────────────────────────────────────────────────────
             SettingsGroup("Auto-match")

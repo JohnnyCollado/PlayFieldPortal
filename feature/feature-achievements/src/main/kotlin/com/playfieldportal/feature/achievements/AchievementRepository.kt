@@ -140,7 +140,50 @@ class AchievementRepository @Inject constructor(
         val provider = AchievementProvider.fromName(link.provider) ?: return ProviderSyncResult.NotLinked
         return syncGame(gameId, provider, link.providerGameId)
     }
+
+    /**
+     * Syncs every linked game in one pass, refreshing all coin data at once. Each provider fetch is
+     * already rate-limited in its client, so this paces itself. [onProgress] reports (done, total);
+     * per-game failures are counted, never thrown, so one bad game can't abort the run.
+     */
+    suspend fun syncAllLinked(onProgress: (done: Int, total: Int) -> Unit = { _, _ -> }): BatchSyncResult {
+        val links = linkDao.getAll()
+        var synced = 0
+        var noCoins = 0
+        var failed = 0
+        var missingCredentials = false
+        links.forEachIndexed { index, link ->
+            onProgress(index, links.size)
+            val provider = AchievementProvider.fromName(link.provider)
+            if (provider == null) { failed++; return@forEachIndexed }
+            when (syncGame(link.gameId, provider, link.providerGameId)) {
+                is ProviderSyncResult.Success -> synced++
+                ProviderSyncResult.NotFound -> noCoins++
+                ProviderSyncResult.MissingCredentials -> missingCredentials = true
+                ProviderSyncResult.ProfileNotPublic -> failed++
+                is ProviderSyncResult.Failed -> failed++
+                ProviderSyncResult.NotLinked -> Unit // impossible here (came from a link)
+            }
+        }
+        onProgress(links.size, links.size)
+        return BatchSyncResult(
+            total = links.size,
+            synced = synced,
+            noCoins = noCoins,
+            failed = failed,
+            missingCredentials = missingCredentials,
+        )
+    }
 }
+
+/** Outcome of a [AchievementRepository.syncAllLinked] pass, for the settings report. */
+data class BatchSyncResult(
+    val total: Int,
+    val synced: Int,
+    val noCoins: Int,
+    val failed: Int,
+    val missingCredentials: Boolean,
+)
 
 // ── Mappers ───────────────────────────────────────────────────────────────────
 

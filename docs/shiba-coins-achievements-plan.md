@@ -7,9 +7,9 @@ economy and level. No Steam or RetroAchievements password is ever handled.
 
 Status: Phases 1-8 done and validated on-device (RA connected, real coins synced; Shiba Coins XMB
 column seeds on the Thor). Auto-match shipped (cartridge-first RA ROM-hash + NDS + Steam title + RA
-title fallback + unmatched report + edit). Player card + category hub live. Remaining: disc-system RA
-hashing, batch "sync all", backup key handling, Phase 9 polish (inline card header, foil states).
-Branch: `achievement-integration`. This document is the source of truth to resume from on any machine.
+title fallback + unmatched report + edit). Player card + category hub + batch "sync all" live.
+Remaining: disc-system RA hashing, backup key handling, Phase 9 polish (inline card header, foil
+states). Branch: `achievement-integration`. This document is the source of truth to resume from.
 
 ---
 
@@ -321,7 +321,10 @@ New module `feature-achievements` (clients + repository; UI lands in later phase
   Added `clearRetroAchievements()` / `clearSteam()` to the credential provider. VM-tested.
 - [ ] `BackupManager` device-bound handling for the two new keys on restore (confirm the existing
   settings.json export already carries them; drop un-decryptable keys via `isUsableOnThisDevice`).
-- [ ] "Sync now" action — deferred with provider-id resolution (needs a game + provider-id).
+- [x] "Sync all coins" action — `AchievementRepository.syncAllLinked` iterates every provider link,
+  re-fetches each (clients self-rate-limit), and tallies synced / no-coins / failed with a
+  missing-credentials flag; per-game failures are counted, never thrown. Settings ▸ Shiba Coins ▸
+  Sync shows it with live progress + a dismissable result summary. Repo-tested.
 - Opt: vanity resolved once, SteamID64 cached; no per-key network on screen open.
 - Sec: keys write-only, never echoed back; no request logging; per-provider disconnect.
 

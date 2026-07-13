@@ -133,6 +133,43 @@ class AchievementRepositoryTest {
     }
 
     @Test
+    fun `syncAllLinked syncs every link and tallies the outcomes`() = runTest {
+        coEvery { linkDao.getAll() } returns listOf(
+            ProviderGameLinkEntity(1L, "STEAM", "440", "MANUAL", 0L),
+            ProviderGameLinkEntity(2L, "RETRO_ACHIEVEMENTS", "14402", "MANUAL", 0L),
+            ProviderGameLinkEntity(3L, "STEAM", "999", "MANUAL", 0L),
+        )
+        coEvery { steamApi.fetch("440") } returns ProviderSyncResult.Success("440", listOf(coin("b1", ShibaTier.BRONZE, earned = true)))
+        coEvery { retroApi.fetch("14402") } returns ProviderSyncResult.NotFound
+        coEvery { steamApi.fetch("999") } returns ProviderSyncResult.Failed("network error")
+
+        val progress = mutableListOf<Pair<Int, Int>>()
+        val result = repo.syncAllLinked { done, total -> progress += done to total }
+
+        assertEquals(3, result.total)
+        assertEquals(1, result.synced)
+        assertEquals(1, result.noCoins)
+        assertEquals(1, result.failed)
+        assertFalse(result.missingCredentials)
+        assertEquals(3 to 3, progress.last())
+        coVerify { steamApi.fetch("440") }
+        coVerify { retroApi.fetch("14402") }
+    }
+
+    @Test
+    fun `syncAllLinked flags missing credentials`() = runTest {
+        coEvery { linkDao.getAll() } returns listOf(
+            ProviderGameLinkEntity(1L, "RETRO_ACHIEVEMENTS", "14402", "MANUAL", 0L),
+        )
+        coEvery { retroApi.fetch("14402") } returns ProviderSyncResult.MissingCredentials
+
+        val result = repo.syncAllLinked()
+
+        assertTrue(result.missingCredentials)
+        assertEquals(0, result.synced)
+    }
+
+    @Test
     fun `resolveSteamLink stores a link when the title matches`() = runTest {
         coEvery { steamResolver.resolveAppId("Half-Life 2") } returns "220"
         val slot = slot<ProviderGameLinkEntity>()

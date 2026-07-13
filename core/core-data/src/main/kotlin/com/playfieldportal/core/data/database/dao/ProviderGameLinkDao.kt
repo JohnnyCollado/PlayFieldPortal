@@ -16,6 +16,10 @@ interface ProviderGameLinkDao {
     @Query("SELECT * FROM provider_game_links WHERE game_id = :gameId")
     suspend fun getForGame(gameId: Long): ProviderGameLinkEntity?
 
+    /** Every game-provider link, for the batch "sync all" pass. */
+    @Query("SELECT * FROM provider_game_links")
+    suspend fun getAll(): List<ProviderGameLinkEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(link: ProviderGameLinkEntity)
 
