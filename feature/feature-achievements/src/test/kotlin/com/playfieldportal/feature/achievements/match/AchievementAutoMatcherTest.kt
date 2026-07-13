@@ -135,6 +135,20 @@ class AchievementAutoMatcherTest {
     }
 
     @Test
+    fun `steam title match uses the full title even when the display override is shortened`() = runTest {
+        val full = "RESONANCE OF FATE™/END OF ETERNITY™ 4K/HD EDITION"
+        val g = Game(id = 1, title = full, platformId = "windows", userTitleOverride = "RESONANCE OF FATE")
+        stubGames(g)
+        coEvery { repository.resolveSteamLink(1, "RESONANCE OF FATE") } returns null // the truncated override misses
+        coEvery { repository.resolveSteamLink(1, full) } returns "645730"            // the full title hits
+
+        val report = matcher.matchUnlinked()
+
+        assertEquals(1, report.matched)
+        coVerify { repository.resolveSteamLink(1, full) }
+    }
+
+    @Test
     fun `links a steam game via steamgriddb platform data when there is no embedded appid`() = runTest {
         val g = Game(id = 1, title = "Some Game", platformId = "windows", steamGridDbId = 5247L)
         stubGames(g)

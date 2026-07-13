@@ -199,6 +199,17 @@ class AchievementRepositoryTest {
     }
 
     @Test
+    fun `resolveSteamByGame tries the full title before the shortened display override`() = runTest {
+        val full = "RESONANCE OF FATE™/END OF ETERNITY™ 4K/HD EDITION"
+        coEvery { gameRepository.getById(1L) } returns
+            com.playfieldportal.core.domain.model.Game(id = 1, title = full, platformId = "windows", userTitleOverride = "RESONANCE OF FATE")
+        coEvery { steamResolver.resolveAppId("RESONANCE OF FATE") } returns null
+        coEvery { steamResolver.resolveAppId(full) } returns "645730"
+
+        assertEquals("645730", repo.resolveSteamByGame(1L))
+    }
+
+    @Test
     fun `resolveSteamLink stores a link when the title matches`() = runTest {
         coEvery { steamResolver.resolveAppId("Half-Life 2") } returns "220"
         val slot = slot<ProviderGameLinkEntity>()

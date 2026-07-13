@@ -146,6 +146,19 @@ class AchievementRepository @Inject constructor(
         return appId
     }
 
+    /**
+     * Resolves a game to Steam by title, trying its full title, scraped title, and display override
+     * (in that order) so a shortened override doesn't hide the full store name. Links + returns the
+     * appid, or null. Used by the coins screen's "Match by title".
+     */
+    suspend fun resolveSteamByGame(gameId: Long): String? {
+        val game = gameRepository.getById(gameId) ?: return null
+        val titles = listOfNotNull(game.title, game.scrapedTitle, game.displayTitle)
+            .map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+        for (title in titles) resolveSteamLink(gameId, title)?.let { return it }
+        return null
+    }
+
     /** Steam candidates whose name matches [query], for the manual "Find on Steam" picker. */
     suspend fun searchSteam(query: String): List<com.playfieldportal.feature.achievements.api.SteamCandidate> =
         steamResolver.search(query)

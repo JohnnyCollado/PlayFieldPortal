@@ -197,10 +197,10 @@ class ShibaCoinsViewModel @Inject constructor(
         link(appId)
     }
 
-    /** Steam only: match this game's title to an appid, link it, and sync. */
+    /** Steam only: match this game to an appid by its title variants, link it, and sync. */
     fun resolveByTitle() {
         viewModelScope.launch {
-            val appId = achievementRepository.resolveSteamLink(gameId, _state.value.title)
+            val appId = achievementRepository.resolveSteamByGame(gameId)
             if (appId != null) sync()
             else _state.update { it.copy(message = "No Steam match for \"${it.title}\"") }
         }

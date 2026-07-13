@@ -113,9 +113,20 @@ class AchievementAutoMatcher @Inject constructor(
                 return Outcome.Matched
             }
         }
-        return if (repository.resolveSteamLink(game.id, game.displayTitle) != null) Outcome.Matched
-        else Outcome.Unmatched("Not found on Steam (no embedded appid, no SteamGridDB or title match)")
+        // Try each title variant — a user's shortened display override (e.g. "Resonance of Fate")
+        // must not hide the full store name ("RESONANCE OF FATE.../4K/HD EDITION") that Steam lists.
+        for (title in steamTitleCandidates(game)) {
+            if (repository.resolveSteamLink(game.id, title) != null) return Outcome.Matched
+        }
+        return Outcome.Unmatched("Not found on Steam (no embedded appid, no SteamGridDB or title match)")
     }
+
+    // Full title first (most complete), then any scraped title, then the display override.
+    private fun steamTitleCandidates(game: Game): List<String> =
+        listOfNotNull(game.title, game.scrapedTitle, game.displayTitle)
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .distinct()
 
     // Computes the RA content hash, naming the failure mode when it can't. Cartridges hash from a
     // full byte read; disc images hash from a seeking reader (they're far too large to load whole).
