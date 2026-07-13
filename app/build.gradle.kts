@@ -132,3 +132,25 @@ dependencies {
 
     debugImplementation(libs.compose.ui.tooling)
 }
+
+// ── Release artifact collection ──────────────────────────────────────────────
+// Mirror every release APK into <root>/dist so all shippable builds land in one
+// predictable, gitignored place. Each assemble{Flavor}Release finalizes into its
+// copy, so the APK is always in dist after a release build (or `./gradlew dist`).
+val distDir = rootProject.layout.projectDirectory.dir("dist")
+val appVersion = android.defaultConfig.versionName ?: "0"
+listOf("Full", "Lite").forEach { flavor ->
+    val copyApk = tasks.register<Copy>("copy${flavor}ReleaseToDist") {
+        from(layout.buildDirectory.dir("outputs/apk/${flavor.lowercase()}/release"))
+        include("*.apk")
+        // Clean, versioned name in dist (e.g. PlayFieldPortal-1.1.0-full.apk).
+        rename { "PlayFieldPortal-$appVersion-${flavor.lowercase()}.apk" }
+        into(distDir)
+        // dist is a shared, versioned drop folder — always refresh so the current build is
+        // guaranteed present even when the APK itself is up-to-date.
+        outputs.upToDateWhen { false }
+    }
+    tasks.matching { it.name == "assemble${flavor}Release" }.configureEach {
+        finalizedBy(copyApk)
+    }
+}

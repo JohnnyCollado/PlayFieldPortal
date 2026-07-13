@@ -51,3 +51,23 @@ compose.desktop {
         }
     }
 }
+
+// ── Release installer collection ─────────────────────────────────────────────
+// Drop the packaged release installer for the current OS into <root>/dist (gitignored),
+// flattened out of its format subdir, so it sits alongside the launcher APKs.
+val distDir = rootProject.layout.projectDirectory.dir("dist")
+val copyInstallerToDist = tasks.register<Copy>("copyReleaseInstallerToDist") {
+    from(layout.buildDirectory.dir("compose/binaries/main-release")) {
+        include("**/*.msi", "**/*.exe", "**/*.deb", "**/*.dmg", "**/*.pkg")
+    }
+    // Flatten out of the format subdir and normalize spaces to hyphens, matching the launcher
+    // APK naming in dist (e.g. "PlayField Theme Studio-1.1.0.msi" -> PlayField-Theme-Studio-1.1.0.msi).
+    eachFile { path = name.replace(" ", "-") }
+    includeEmptyDirs = false
+    into(distDir)
+    // Always refresh the shared dist drop folder even when the installer is up-to-date.
+    outputs.upToDateWhen { false }
+}
+tasks.matching {
+    it.name == "packageReleaseDistributionForCurrentOS" || it.name == "packageReleaseMsi"
+}.configureEach { finalizedBy(copyInstallerToDist) }
