@@ -5,6 +5,8 @@ All notable changes to Play Field Portal are documented here. This project follo
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-07-12
+
 ### Added
 - **Live "Adjust XMB Layout" editor.** Settings ▸ Display ▸ Scale & Layout ▸ **Adjust XMB
   Layout** opens a full-screen editor over the real XMB: scale the interface and shift the
