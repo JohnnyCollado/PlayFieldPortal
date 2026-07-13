@@ -14,6 +14,7 @@ fun SettingsNavHost(
     pendingGamepadAction: GamepadAction? = null,
     onGamepadActionConsumed: () -> Unit = {},
     onOpenColorSchemePicker: () -> Unit = {},
+    onOpenXmbLayoutAdjust: () -> Unit = {},
     onAddAndroidApps: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -38,7 +39,11 @@ fun SettingsNavHost(
                 modifier = modifier,
             )
             "settings_collections" -> CollectionsSettingsScreen(onBack = onBack, modifier = modifier)
-            "settings_display"    -> DisplaySettingsScreen(onBack = onBack, modifier = modifier)
+            "settings_display"    -> DisplaySettingsScreen(
+                onBack = onBack,
+                onOpenXmbLayoutAdjust = onOpenXmbLayoutAdjust,
+                modifier = modifier,
+            )
             "settings_controller" -> ControllerSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_backup"     -> BackupSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_logs"       -> LogsSettingsScreen(onBack = onBack, modifier = modifier)

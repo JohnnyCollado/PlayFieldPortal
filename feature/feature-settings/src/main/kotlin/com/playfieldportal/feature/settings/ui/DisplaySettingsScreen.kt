@@ -36,6 +36,7 @@ import kotlin.math.roundToInt
 fun DisplaySettingsScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenXmbLayoutAdjust: () -> Unit = {},
     viewModel: DisplaySettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -52,10 +53,6 @@ fun DisplaySettingsScreen(
         ActivityResultContracts.OpenDocument()
     ) { uri -> uri?.let { viewModel.onWallpaperPicked(it) } }
 
-    // Which Scale & Layout row holds controller focus — Left/Right adjust it in place.
-    var scaleRowFocused by remember { mutableStateOf(false) }
-    var barRowFocused by remember { mutableStateOf(false) }
-
     SettingsScaffold(
         title    = "Settings",
         subtitle = "Display",
@@ -70,16 +67,7 @@ fun DisplaySettingsScreen(
                 }
                 return@SettingsScaffold true
             }
-            val dir = when (action) {
-                GamepadAction.NAVIGATE_LEFT  -> -1
-                GamepadAction.NAVIGATE_RIGHT -> +1
-                else -> 0
-            }
-            when {
-                dir != 0 && scaleRowFocused -> { viewModel.adjustXmbScale(dir); true }
-                dir != 0 && barRowFocused   -> { viewModel.adjustBarTop(dir); true }
-                else -> false
-            }
+            false
         },
     ) {
         Column(
@@ -138,33 +126,18 @@ fun DisplaySettingsScreen(
 
             SettingsGroup("Scale & Layout")
             Text(
-                text     = "Sizes the launcher to fit your device. Scale applies to the whole UI; " +
-                    "Bar Height moves the XMB crossbar up or down. ◄ ► adjust, A steps.",
+                text     = "Position the XMB live for this screen — scale it, and shift the crossbar " +
+                    "up/down and left/right — over the real interface. Each screen size (handheld, " +
+                    "foldable, tablet) keeps its own tuning.",
                 color    = SettingsSubtext,
                 fontSize = 12.sp,
                 modifier = Modifier.padding(horizontal = 48.dp, vertical = 4.dp),
             )
 
-            SettingsValueRow(
-                label    = "XMB Scale",
-                sublabel = "Whole-interface size — applies immediately",
-                value    = "${(state.xmbScale * 100).roundToInt()}%",
-                onFocusChangedExternal = { scaleRowFocused = it },
-                onClick  = { viewModel.cycleXmbScale() },
-            )
-
-            SettingsValueRow(
-                label    = "Bar Height",
-                sublabel = "Vertical position of the XMB crossbar",
-                value    = "${(state.barTopFraction * 100).roundToInt()}%",
-                onFocusChangedExternal = { barRowFocused = it },
-                onClick  = { viewModel.cycleBarTop() },
-            )
-
             SettingsRow(
-                label    = "Reset Scale & Layout",
-                sublabel = "Back to 100% scale and the default bar position",
-                onClick  = { viewModel.resetScaleAndLayout() },
+                label    = "Adjust XMB Layout",
+                sublabel = "Live editor — scale + reposition the crossbar with the D-pad or sliders",
+                onClick  = onOpenXmbLayoutAdjust,
             )
 
             SettingsGroup("Boot Sequence")

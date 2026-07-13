@@ -94,9 +94,10 @@ fun XMBCategoryBar(
     }
 
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
-        // Left-anchored: the selected slot rests at XmbLeftAnchor. The trailing padding is sized
-        // so even the last category can scroll to that same left anchor.
-        val endPadding = (maxWidth - XmbLeftAnchor - ItemSlotWidth).coerceAtLeast(24.dp)
+        // Left-anchored: the selected slot rests at XmbLeftAnchor, shifted by the live layout-adjust
+        // offset so the caticon bar tracks the item column when the cross is nudged left/right.
+        val anchor = (XmbLeftAnchor + LocalXmbHorizontalShift.current).coerceAtLeast(0.dp)
+        val endPadding = (maxWidth - anchor - ItemSlotWidth).coerceAtLeast(24.dp)
         LazyRow(
             state = listState,
             // Selection-driven only: the bar auto-scrolls to the selected slot (above), and touch
@@ -104,7 +105,7 @@ fun XMBCategoryBar(
             // disabled to keep the bar from drifting out of sync with the selection.
             userScrollEnabled = false,
             modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(start = XmbLeftAnchor, end = endPadding),
+            contentPadding = PaddingValues(start = anchor, end = endPadding),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             itemsIndexed(categories, key = { _, category -> category.id }) { index, category ->

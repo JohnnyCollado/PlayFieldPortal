@@ -5,6 +5,27 @@ All notable changes to Play Field Portal are documented here. This project follo
 
 ## [Unreleased]
 
+### Added
+- **Live "Adjust XMB Layout" editor.** Settings ▸ Display ▸ Scale & Layout ▸ **Adjust XMB
+  Layout** opens a full-screen editor over the real XMB: scale the interface and shift the
+  crossbar up/down and left/right with instant feedback. Drive it with the D-pad and
+  shoulder buttons (L1/R1 scale, Y reset, A save, B cancel) or an on-screen slider panel.
+  Each screen size keeps its own tuning — a handheld, a foldable's inner display and a
+  tablet remember separate scale/offset values — so one device's layout never distorts
+  another's. Replaces the old fixed XMB Scale / Bar Height rows.
+
+### Changed
+- **Drill-in flyout tuned for wide screens.** The memory-card column is now icon-only while
+  drilled into a games list (the console reads as a bare icon + ◀), the game column sits
+  tight against the cursor, and on wide/foldable panels the whole cross pins to the left
+  edge so the game cards, title and logo take the centre-right.
+
+### Fixed
+- **XMB no longer over-scales on foldables.** The canvas scale is now bounded by screen
+  width as well as height, so a near-square inner display (e.g. the Galaxy Z Fold) is sized
+  to fit instead of ballooning ~2.3x and truncating item labels. Standard 16:9 handhelds and
+  tablets render exactly as before.
+
 ## [1.0.4] - 2026-07-12
 
 ### Added

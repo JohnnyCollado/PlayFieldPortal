@@ -43,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.geometry.CornerRadius
@@ -81,7 +82,15 @@ import com.playfieldportal.feature.xmb.viewmodel.XMBViewModel
 // extra row clips in on a taller tablet. The cap only guards absurd configs; real tablets must NOT
 // be clamped or their layout height would exceed the baseline and reveal a clipped extra row.
 private const val XMB_BASELINE_HEIGHT_DP = 468f
+// Baseline landscape WIDTH: the Thor is 1920x1080 => 832x468dp at its density (16:9). The canvas
+// scale is bounded by BOTH axes (see uiScale), so a near-square / foldable panel is limited by its
+// width instead of over-magnifying off the height ratio and overflowing horizontally.
+private const val XMB_BASELINE_WIDTH_DP = 832f
 private const val XMB_MAX_SCALE = 2.5f
+
+// Left margin the memory-card cross is pinned to WHILE DRILLED IN, so the game flyout takes the
+// centre-right of the screen. Small so the cross hugs the edge; the ◀ + game column ride along.
+private val DRILL_CROSSBAR_LEFT_MARGIN = 16.dp
 
 /**
  * Stateful entry point for the XMB home screen: collects [XMBViewModel.uiState] and wires the
@@ -160,6 +169,7 @@ fun XMBShellContainer(
         onBootComplete = viewModel::onBootSequenceComplete,
         onSettingsLongPress = onSettingsLongPress,
         onCloseSettingsScreen = viewModel::onCloseSettingsScreen,
+        onOpenXmbLayoutAdjust = viewModel::openXmbLayoutAdjust,
         onDiscordLoginClosed = viewModel::onDiscordLoginClosed,
         onSettingsActionConsumed = viewModel::consumeSettingsAction,
         onCloseAppDrawer = viewModel::onCloseAppDrawer,
@@ -178,6 +188,13 @@ fun XMBShellContainer(
         onColorSchemeHighlightedAt = viewModel::onColorSchemeHighlightedAt,
         onColorSchemeConfirm = viewModel::confirmColorSchemePicker,
         onColorSchemeCancel = viewModel::cancelColorSchemePicker,
+        onXmbLayoutScale = viewModel::setXmbLayoutScale,
+        onXmbLayoutHorizontal = viewModel::setXmbLayoutHorizontal,
+        onXmbLayoutVertical = viewModel::setXmbLayoutVertical,
+        onXmbLayoutToggleSliders = viewModel::toggleXmbLayoutSliders,
+        onXmbLayoutReset = viewModel::resetXmbLayoutAdjust,
+        onXmbLayoutSave = viewModel::saveXmbLayoutAdjust,
+        onXmbLayoutCancel = viewModel::cancelXmbLayoutAdjust,
         onConfirmAppRename = viewModel::onConfirmAppRename,
         onCancelAppRename = viewModel::onCancelAppRename,
         onConfirmCollectionName = viewModel::onConfirmCollectionName,
@@ -230,6 +247,7 @@ fun XMBShell(
     onBootComplete: () -> Unit = {},
     onSettingsLongPress: () -> Unit = {},
     onCloseSettingsScreen: () -> Unit = {},
+    onOpenXmbLayoutAdjust: () -> Unit = {},
     onDiscordLoginClosed: () -> Unit = {},
     onSettingsActionConsumed: () -> Unit = {},
     onCloseAppDrawer: () -> Unit = {},
@@ -254,6 +272,13 @@ fun XMBShell(
     onColorSchemeHighlightedAt: (Int) -> Unit = {},
     onColorSchemeConfirm: () -> Unit = {},
     onColorSchemeCancel: () -> Unit = {},
+    onXmbLayoutScale: (Float) -> Unit = {},
+    onXmbLayoutHorizontal: (Float) -> Unit = {},
+    onXmbLayoutVertical: (Float) -> Unit = {},
+    onXmbLayoutToggleSliders: () -> Unit = {},
+    onXmbLayoutReset: () -> Unit = {},
+    onXmbLayoutSave: () -> Unit = {},
+    onXmbLayoutCancel: () -> Unit = {},
     onConfirmAppRename: (String) -> Unit = {},
     onCancelAppRename: () -> Unit = {},
     onConfirmCollectionName: (String) -> Unit = {},
@@ -296,9 +321,29 @@ fun XMBShell(
         // BoxWithConstraints/LocalDensity, which this override feeds.
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val baseDensity = LocalDensity.current
-            val uiScale = (maxHeight.value / XMB_BASELINE_HEIGHT_DP).coerceIn(1f, XMB_MAX_SCALE)
+            // Fit to the SMALLER of the two axis ratios so a near-square / foldable screen (e.g. the
+            // Z Fold inner display, ~1:1) is bounded by width and doesn't balloon to the height-based
+            // scale — which would over-magnify everything and truncate the item labels. On a 16:9-ish
+            // handheld or tablet both ratios are equal, so this is identical to the height-only scale.
+            val uiScale = minOf(
+                maxHeight.value / XMB_BASELINE_HEIGHT_DP,
+                maxWidth.value / XMB_BASELINE_WIDTH_DP,
+            ).coerceIn(1f, XMB_MAX_SCALE)
+            // User layout tuning for THIS form factor (see XmbLayoutAdjust). The open editor's draft
+            // wins; otherwise the saved bucket entry; otherwise the legacy scale + theme bar line, so
+            // a device the user never tuned renders exactly as before.
+            val config = LocalConfiguration.current
+            val layoutAdjust = uiState.xmbLayoutAdjust?.draft
+                ?: uiState.xmbLayoutAdjustMap[
+                    com.playfieldportal.themekit.XmbFormFactor.forSmallestWidthDp(config.smallestScreenWidthDp).key
+                ]
+                ?: com.playfieldportal.themekit.XmbLayoutAdjust(
+                    scale = uiState.xmbScale,
+                    barLeftFraction = 0f,
+                    barTopFraction = uiState.layoutSpec.barTopFraction,
+                )
             CompositionLocalProvider(
-                LocalDensity provides Density(baseDensity.density * uiScale, baseDensity.fontScale),
+                LocalDensity provides Density(baseDensity.density * uiScale * layoutAdjust.scale, baseDensity.fontScale),
             ) {
         Box(modifier = Modifier.fillMaxSize()) {
             // Freeze the wave's per-frame animation whenever an opaque fullscreen layer fully covers
@@ -439,14 +484,27 @@ fun XMBShell(
                     // pixel-tuned authentic-PSP geometry (caticon row ~25% of height); imported
                     // themes whose wallpaper draws its own cross band may override it.
                     val layoutSpec = uiState.layoutSpec
-                    val barTop = maxHeight * layoutSpec.barTopFraction
+                    // Vertical crossbar position and horizontal shift come from the resolved layout
+                    // adjustment (which itself defaults to the theme's bar line when untuned).
+                    val barTop = maxHeight * layoutAdjust.barTopFraction
+                    // Caticon centre minus the leading-icon inset ⇒ column shift that lands every
+                    // item's icon centre on the caticon's vertical line (shared so the column offset
+                    // and the row's scale pivot stay in lock-step).
+                    val columnBaseInset = XmbLeftAnchor + (CategorySlotWidth / 2) - LEADING_ICON_CENTER
+                    // Horizontal shift of the whole cross. Normally the user's per-form-factor layout
+                    // offset; while drilled in, override it to PIN the cross to the left edge so the
+                    // game flyout (cards + title + PIC0 logo) owns the centre-right of the screen —
+                    // most useful on wide/foldable panels. The caticon bar and the flyout share this
+                    // shift, so the ◀ stays tight to its game column; the cross just hugs the edge.
+                    val hShift = if (uiState.drillTitle != null) {
+                        DRILL_CROSSBAR_LEFT_MARGIN - columnBaseInset
+                    } else {
+                        maxWidth * layoutAdjust.barLeftFraction
+                    }
                     // Active first-level item anchors just below the caticon bar, landing the selected
                     // item ~50% of height — matching the real PSP XMB (verified against the theme).
                     val anchorTop = barTop + catBarHeight
-                    // Caticon centre minus the leading-icon inset ⇒ column shift that lands every
-                    // item's icon centre on the caticon's vertical line (shared constant keeps the
-                    // column offset and the row's scale pivot in lock-step).
-                    val startPad = XmbLeftAnchor + (CategorySlotWidth / 2) - LEADING_ICON_CENTER
+                    val startPad = columnBaseInset + hShift
 
                     if (uiState.drillTitle != null) {
                         // Drilled into a Games sub-item: two-pane flyout. LEFT = the platform MEMORY
@@ -507,22 +565,25 @@ fun XMBShell(
                     }
 
                     // Category bar drawn ON TOP, pushed down to the crossbar line — the fixed pivot
-                    // the first-level column appears to scroll beneath.
-                    XMBCategoryBar(
-                        categories = uiState.categories,
-                        selectedIndex = uiState.selectedCategoryIndex,
-                        onCategorySelected = onCategorySelected,
-                        onCategoryLongPress = { index ->
-                            val id = uiState.categories.getOrNull(index)?.id
-                            if (id == BuiltInCategory.SETTINGS) onSettingsLongPress()
-                        },
-                        drilledIn = uiState.drillTitle != null,
-                        modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .offset(y = barTop)
-                            .fillMaxWidth()
-                            .height(catBarHeight),
-                    )
+                    // the first-level column appears to scroll beneath. The horizontal shift rides a
+                    // composition local so the caticon bar tracks the item column as one cross.
+                    CompositionLocalProvider(LocalXmbHorizontalShift provides hShift) {
+                        XMBCategoryBar(
+                            categories = uiState.categories,
+                            selectedIndex = uiState.selectedCategoryIndex,
+                            onCategorySelected = onCategorySelected,
+                            onCategoryLongPress = { index ->
+                                val id = uiState.categories.getOrNull(index)?.id
+                                if (id == BuiltInCategory.SETTINGS) onSettingsLongPress()
+                            },
+                            drilledIn = uiState.drillTitle != null,
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .offset(y = barTop)
+                                .fillMaxWidth()
+                                .height(catBarHeight),
+                        )
+                    }
                 }
             }
             } // end: XMB foreground hidden while music browser is open
@@ -559,6 +620,7 @@ fun XMBShell(
                         pendingGamepadAction = uiState.pendingSettingsAction,
                         onGamepadActionConsumed = onSettingsActionConsumed,
                         onOpenColorSchemePicker = onOpenColorSchemePicker,
+                        onOpenXmbLayoutAdjust = onOpenXmbLayoutAdjust,
                         onAddAndroidApps = onOpenAndroidLibraryPicker,
                         modifier = Modifier.fillMaxSize(),
                     )
@@ -632,6 +694,21 @@ fun XMBShell(
                     onHighlightedAt = onColorSchemeHighlightedAt,
                     onConfirm = onColorSchemeConfirm,
                     onDismiss = onColorSchemeCancel,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+
+            uiState.xmbLayoutAdjust?.let { session ->
+                XmbLayoutAdjustOverlay(
+                    draft = session.draft,
+                    slidersVisible = session.slidersVisible,
+                    onScale = onXmbLayoutScale,
+                    onHorizontal = onXmbLayoutHorizontal,
+                    onVertical = onXmbLayoutVertical,
+                    onToggleSliders = onXmbLayoutToggleSliders,
+                    onReset = onXmbLayoutReset,
+                    onSave = onXmbLayoutSave,
+                    onCancel = onXmbLayoutCancel,
                     modifier = Modifier.fillMaxSize(),
                 )
             }

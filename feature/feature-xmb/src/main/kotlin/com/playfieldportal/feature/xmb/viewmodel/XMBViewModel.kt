@@ -182,6 +182,18 @@ data class ColorSchemePickerState(
     val selectedIndex: Int = 0,
 )
 
+// ── Live "Adjust XMB Layout" editor ────────────────────────────────────────────
+// A full-screen editor rendered OVER the real XMB (settings closed): D-pad / shoulder buttons or
+// on-screen sliders drive the cross's scale + horizontal + vertical placement live. [draft] is the
+// value applied while editing; [original] is restored on cancel; [bucketKey] is the form-factor the
+// result is saved under so a handheld and a foldable each keep their own tuning.
+data class XmbLayoutAdjustSession(
+    val draft: com.playfieldportal.themekit.XmbLayoutAdjust,
+    val original: com.playfieldportal.themekit.XmbLayoutAdjust,
+    val bucketKey: String,
+    val slidersVisible: Boolean = false,
+)
+
 data class ColorSchemeOption(
     val scheme: XmbColorScheme,
     val label: String,
@@ -495,8 +507,14 @@ data class XMBUiState(
     // pixel-tuned authentic-PSP values; imported themes may override (theme-kit XmbLayoutSpec).
     val layoutSpec: com.playfieldportal.themekit.XmbLayoutSpec = com.playfieldportal.themekit.XmbLayoutSpec.DEFAULT,
     // Whole-launcher UI scale (Display ▸ Scale & Layout) — applied as a density multiplier at
-    // the shell root so every screen scales together to fit different devices.
+    // the shell root so every screen scales together to fit different devices. Legacy default used
+    // when the active form-factor has no saved layout adjustment.
     val xmbScale: Float = 1f,
+    // Saved "Adjust XMB Layout" tunings, keyed by form-factor bucket (XmbFormFactor.key). The shell
+    // resolves the entry for the current screen; absent = fall back to [xmbScale] + theme bar line.
+    val xmbLayoutAdjustMap: Map<String, com.playfieldportal.themekit.XmbLayoutAdjust> = emptyMap(),
+    // Non-null while the live layout editor is open (rendered over the real XMB).
+    val xmbLayoutAdjust: XmbLayoutAdjustSession? = null,
 ) {
     // True when the user has drilled into a sub-item on the home screen (a Games platform/collection/
     // All Games/Favorites, or a Music sub-view). Drives the floating Back button and locks Left/Right
@@ -531,6 +549,7 @@ data class XMBUiState(
             activeContextMenu != null ||
             activeDiscordLogin ||
             colorSchemePicker != null ||
+            xmbLayoutAdjust != null ||
             appPicker != null ||
             gamePickerCategoryId != null ||
             renameAppTarget != null ||
@@ -907,6 +926,8 @@ class XMBViewModel @Inject constructor(
         // override (null = keep the theme's / default bar position).
         val xmbScale: Float?,
         val barTopOverride: Float?,
+        // Per-form-factor "Adjust XMB Layout" tunings (JSON map, one prefs string).
+        val layoutAdjustJson: String?,
     )
 
     private fun observeColorScheme() {
@@ -921,10 +942,11 @@ class XMBViewModel @Inject constructor(
                         layoutJson = prefs[com.playfieldportal.core.data.repository.PfpThemeStore.KEY_THEME_LAYOUT],
                         xmbScale = prefs[KEY_XMB_SCALE],
                         barTopOverride = prefs[KEY_BAR_TOP_FRACTION],
+                        layoutAdjustJson = prefs[KEY_XMB_LAYOUT_ADJUST],
                     )
                 }
                 .distinctUntilChanged()
-                .collect { (name, accentOverride, iconColorArgb, iconsStamp, layoutJson, xmbScale, barTopOverride) ->
+                .collect { (name, accentOverride, iconColorArgb, iconsStamp, layoutJson, xmbScale, barTopOverride, layoutAdjustJson) ->
                     val base = if (accentOverride != null) {
                         // One accent drives everything: wave color + re-derived gradient.
                         DefaultPFPColors.withWaveTint(
@@ -955,12 +977,14 @@ class XMBViewModel @Inject constructor(
                         )
                     } else themeSpec
                     // One theme color across the whole XMB (PSP-authentic) — no per-category tint.
+                    val adjustMap = com.playfieldportal.themekit.XmbLayoutAdjustCodec.decode(layoutAdjustJson)
                     _uiState.update {
                         it.copy(
                             themeColors = baseThemeColors,
                             iconOverrides = iconOverrides,
                             layoutSpec = layoutSpec,
                             xmbScale = (xmbScale ?: 1f).coerceIn(0.75f, 1.3f),
+                            xmbLayoutAdjustMap = adjustMap,
                         )
                     }
                 }
@@ -3530,6 +3554,24 @@ class XMBViewModel @Inject constructor(
                 GamepadAction.BACK,
                 GamepadAction.LONG_PRESS,
                 GamepadAction.BUTTON_Y      -> closeContextMenu()
+                else -> Unit
+            }
+            return
+        }
+
+        // ── Live "Adjust XMB Layout" editor captures ALL input while open ──────
+        if (state.xmbLayoutAdjust != null) {
+            when (action) {
+                GamepadAction.NAVIGATE_LEFT  -> nudgeXmbLayoutHorizontal(-1)
+                GamepadAction.NAVIGATE_RIGHT -> nudgeXmbLayoutHorizontal(+1)
+                GamepadAction.NAVIGATE_UP    -> nudgeXmbLayoutVertical(-1)
+                GamepadAction.NAVIGATE_DOWN  -> nudgeXmbLayoutVertical(+1)
+                GamepadAction.PREV_CATEGORY  -> nudgeXmbLayoutScale(-1)
+                GamepadAction.NEXT_CATEGORY  -> nudgeXmbLayoutScale(+1)
+                GamepadAction.BUTTON_Y       -> resetXmbLayoutAdjust()
+                GamepadAction.LONG_PRESS     -> toggleXmbLayoutSliders()
+                GamepadAction.SELECT         -> saveXmbLayoutAdjust()
+                GamepadAction.BACK           -> cancelXmbLayoutAdjust()
                 else -> Unit
             }
             return
@@ -6233,6 +6275,69 @@ class XMBViewModel @Inject constructor(
         }
     }
 
+    // ── Live "Adjust XMB Layout" editor ────────────────────────────────────────
+    // Opens over the real XMB (settings closed, so the cross is visible and moves live). The
+    // current form-factor bucket is read from the window config; the draft seeds from a saved
+    // tuning for that bucket, else from the legacy scale + the theme's bar line.
+
+    fun openXmbLayoutAdjust() {
+        val swDp = context.resources.configuration.smallestScreenWidthDp
+        val bucket = com.playfieldportal.themekit.XmbFormFactor.forSmallestWidthDp(swDp).key
+        val s = _uiState.value
+        val seed = s.xmbLayoutAdjustMap[bucket] ?: com.playfieldportal.themekit.XmbLayoutAdjust(
+            scale = s.xmbScale,
+            barLeftFraction = 0f,
+            barTopFraction = s.layoutSpec.barTopFraction,
+        )
+        _uiState.update {
+            it.copy(
+                // Close any settings screen so the live XMB shows behind the editor.
+                activeSettingsScreen = null,
+                pendingSettingsAction = null,
+                xmbLayoutAdjust = XmbLayoutAdjustSession(draft = seed, original = seed, bucketKey = bucket),
+            )
+        }
+    }
+
+    private fun updateAdjustDraft(transform: (com.playfieldportal.themekit.XmbLayoutAdjust) -> com.playfieldportal.themekit.XmbLayoutAdjust) {
+        val session = _uiState.value.xmbLayoutAdjust ?: return
+        val next = com.playfieldportal.themekit.XmbLayoutAdjustCodec.sanitize(transform(session.draft))
+        _uiState.update { it.copy(xmbLayoutAdjust = session.copy(draft = next)) }
+    }
+
+    // Nudge steps for D-pad / shoulder-button control.
+    fun nudgeXmbLayoutHorizontal(dir: Int) = updateAdjustDraft { it.copy(barLeftFraction = it.barLeftFraction + dir * 0.01f) }
+    fun nudgeXmbLayoutVertical(dir: Int) = updateAdjustDraft { it.copy(barTopFraction = it.barTopFraction + dir * 0.01f) }
+    fun nudgeXmbLayoutScale(dir: Int) = updateAdjustDraft { it.copy(scale = it.scale + dir * 0.02f) }
+
+    // Absolute setters for the on-screen sliders.
+    fun setXmbLayoutScale(v: Float) = updateAdjustDraft { it.copy(scale = v) }
+    fun setXmbLayoutHorizontal(v: Float) = updateAdjustDraft { it.copy(barLeftFraction = v) }
+    fun setXmbLayoutVertical(v: Float) = updateAdjustDraft { it.copy(barTopFraction = v) }
+
+    fun toggleXmbLayoutSliders() {
+        val session = _uiState.value.xmbLayoutAdjust ?: return
+        _uiState.update { it.copy(xmbLayoutAdjust = session.copy(slidersVisible = !session.slidersVisible)) }
+    }
+
+    fun resetXmbLayoutAdjust() = updateAdjustDraft { com.playfieldportal.themekit.XmbLayoutAdjust() }
+
+    fun saveXmbLayoutAdjust() {
+        val session = _uiState.value.xmbLayoutAdjust ?: return
+        val map = _uiState.value.xmbLayoutAdjustMap.toMutableMap()
+        map[session.bucketKey] = session.draft
+        viewModelScope.launch {
+            context.pfpDataStore.edit {
+                it[KEY_XMB_LAYOUT_ADJUST] = com.playfieldportal.themekit.XmbLayoutAdjustCodec.encode(map)
+            }
+            _uiState.update { it.copy(xmbLayoutAdjust = null) }
+        }
+    }
+
+    fun cancelXmbLayoutAdjust() {
+        _uiState.update { it.copy(xmbLayoutAdjust = null) }
+    }
+
     // ── Boot sequence ─────────────────────────────────────────────────────────
 
     fun onBootSequenceComplete() {
@@ -6406,6 +6511,8 @@ class XMBViewModel @Inject constructor(
         // Display ▸ Scale & Layout — must match DisplaySettingsViewModel (shared prefs contract).
         private val KEY_XMB_SCALE         = androidx.datastore.preferences.core.floatPreferencesKey("display_xmb_scale")
         private val KEY_BAR_TOP_FRACTION  = androidx.datastore.preferences.core.floatPreferencesKey("display_bar_top_fraction")
+        // Per-form-factor live layout tunings (scale + horizontal + vertical), one JSON prefs string.
+        private val KEY_XMB_LAYOUT_ADJUST = stringPreferencesKey("display_xmb_layout_adjust")
         private val KEY_SETUP_COMPLETE    = booleanPreferencesKey("library_setup_complete")
         private val KEY_CUSTOM_WALLPAPER  = stringPreferencesKey("display_custom_wallpaper")
         private val KEY_MENU_SOUND_ENABLED = booleanPreferencesKey("sound_menu_enabled")
