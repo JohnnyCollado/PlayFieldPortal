@@ -178,6 +178,7 @@ fun XMBShellContainer(
         onCloseGameDetail = viewModel::onCloseGameDetail,
         onCloseShibaCoins = viewModel::onCloseShibaCoins,
         onOpenShibaCoins = viewModel::openShibaCoins,
+        onShibaCoinsActionConsumed = viewModel::onShibaCoinsActionConsumed,
         onGameDetailActionConsumed = viewModel::consumeGameDetailAction,
         onCloseVideoDetail = viewModel::onCloseVideoDetail,
         onVideoDetailActionConsumed = viewModel::consumeVideoDetailAction,
@@ -258,6 +259,7 @@ fun XMBShell(
     onCloseGameDetail: () -> Unit = {},
     onCloseShibaCoins: () -> Unit = {},
     onOpenShibaCoins: (Long) -> Unit = {},
+    onShibaCoinsActionConsumed: () -> Unit = {},
     onGameDetailActionConsumed: () -> Unit = {},
     onCloseVideoDetail: () -> Unit = {},
     onVideoDetailActionConsumed: () -> Unit = {},
@@ -415,6 +417,7 @@ fun XMBShell(
                 uiState.musicBrowser == null &&
                 uiState.activeSettingsScreen == null &&
                 uiState.activeGameId == null &&
+                uiState.activeShibaCoinsGameId == null &&
                 uiState.activeVideoId == null &&
                 uiState.activeAppId == null &&
                 uiState.activePhotoViewer == null
@@ -805,6 +808,8 @@ fun XMBShell(
                 ShibaCoinsScreen(
                     gameId = coinsGameId,
                     onClose = onCloseShibaCoins,
+                    pendingGamepadAction = uiState.pendingShibaCoinsAction,
+                    onGamepadActionConsumed = onShibaCoinsActionConsumed,
                     modifier = Modifier.fillMaxSize(),
                 )
             }

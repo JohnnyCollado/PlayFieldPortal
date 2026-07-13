@@ -6,6 +6,7 @@ import com.playfieldportal.core.data.database.entity.AchievementEntity
 import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.core.domain.achievement.GameCoins
 import com.playfieldportal.core.domain.achievement.ShibaTier
+import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.feature.achievements.AchievementRepository
 import com.playfieldportal.feature.achievements.api.ProviderSyncResult
@@ -41,12 +42,21 @@ data class ShibaCoinsUiState(
     val linked: Boolean = false,
     val summary: GameCoins? = null,
     val coins: List<CoinRow> = emptyList(),
+    // Sorted + filtered view the screen renders; kept in sync with coins/sort/filter.
+    val displayed: List<CoinRow> = emptyList(),
     val sort: CoinSort = CoinSort.TIER,
     val filter: CoinFilter = CoinFilter.ALL,
+    // Controller focus: 0 = sort, 1 = filter, 2 = action (sync/link), 3+ = coin rows.
+    val focusIndex: Int = 0,
     val isSyncing: Boolean = false,
     val message: String? = null,
     val closed: Boolean = false,
 )
+
+private const val FOCUS_SORT = 0
+private const val FOCUS_FILTER = 1
+private const val FOCUS_ACTION = 2
+private const val FOCUS_COINS_START = 3
 
 @HiltViewModel
 class ShibaCoinsViewModel @Inject constructor(
@@ -85,16 +95,68 @@ class ShibaCoinsViewModel @Inject constructor(
                         coins = coins.map { e -> e.toRow() },
                         linked = link != null,
                         provider = link?.let { l -> AchievementProvider.fromName(l.provider) } ?: it.provider,
-                    )
+                    ).withDisplayed()
                 }
             }
         }
     }
 
-    fun setSort(sort: CoinSort) = _state.update { it.copy(sort = sort) }
-    fun setFilter(filter: CoinFilter) = _state.update { it.copy(filter = filter) }
+    fun setSort(sort: CoinSort) = _state.update { it.copy(sort = sort).withDisplayed() }
+    fun setFilter(filter: CoinFilter) = _state.update { it.copy(filter = filter).withDisplayed() }
     fun dismissMessage() = _state.update { it.copy(message = null) }
     fun close() = _state.update { it.copy(closed = true) }
+
+    /** Controller input forwarded from the shell while this overlay is open. */
+    fun handleGamepadAction(action: GamepadAction) {
+        val s = _state.value
+        val lastFocus = (FOCUS_COINS_START + s.displayed.size - 1).coerceAtLeast(0)
+        when (action) {
+            GamepadAction.NAVIGATE_UP -> _state.update { it.copy(focusIndex = (it.focusIndex - 1).coerceIn(0, lastFocus)) }
+            GamepadAction.NAVIGATE_DOWN -> _state.update { it.copy(focusIndex = (it.focusIndex + 1).coerceIn(0, lastFocus)) }
+            GamepadAction.NAVIGATE_LEFT -> when (s.focusIndex) {
+                FOCUS_SORT -> cycleSort(-1)
+                FOCUS_FILTER -> cycleFilter(-1)
+                else -> Unit
+            }
+            GamepadAction.NAVIGATE_RIGHT -> when (s.focusIndex) {
+                FOCUS_SORT -> cycleSort(1)
+                FOCUS_FILTER -> cycleFilter(1)
+                else -> Unit
+            }
+            GamepadAction.SELECT -> when (s.focusIndex) {
+                FOCUS_SORT -> cycleSort(1)
+                FOCUS_FILTER -> cycleFilter(1)
+                FOCUS_ACTION -> onActionSelect()
+                else -> Unit
+            }
+            GamepadAction.BACK -> close()
+            else -> Unit
+        }
+    }
+
+    private fun onActionSelect() {
+        val s = _state.value
+        when {
+            s.linked -> sync()
+            s.provider == AchievementProvider.STEAM -> resolveByTitle()
+            else -> _state.update { it.copy(message = "Enter the RetroAchievements game id, then tap Link") }
+        }
+    }
+
+    private fun cycleSort(dir: Int) {
+        val entries = CoinSort.entries
+        setSort(entries[(_state.value.sort.ordinal + dir + entries.size) % entries.size])
+    }
+
+    private fun cycleFilter(dir: Int) {
+        val entries = CoinFilter.entries
+        setFilter(entries[(_state.value.filter.ordinal + dir + entries.size) % entries.size])
+    }
+
+    private fun ShibaCoinsUiState.withDisplayed(): ShibaCoinsUiState {
+        val d = coins.arrange(sort, filter)
+        return copy(displayed = d, focusIndex = focusIndex.coerceIn(0, (FOCUS_COINS_START + d.size - 1).coerceAtLeast(0)))
+    }
 
     /** Links the game to the pasted provider id (RA game id / Steam appid) and syncs. */
     fun link(providerGameId: String) {

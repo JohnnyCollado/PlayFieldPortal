@@ -424,6 +424,7 @@ data class XMBUiState(
     val activeGameId: Long? = null,
     // The dedicated Shiba Coins screen overlay (set from the game context menu / glance strip).
     val activeShibaCoinsGameId: Long? = null,
+    val pendingShibaCoinsAction: GamepadAction? = null,
     // True when the Game Detail screen should fire its Play action as soon as the game loads —
     // set by direct-launch confirms and the △ "Launch Game" entry; cleared on close.
     val activeGameAutoLaunch: Boolean = false,
@@ -3665,8 +3666,8 @@ class XMBViewModel @Inject constructor(
                 return
             }
             state.activeShibaCoinsGameId != null -> {
-                // Touch-navigable overlay; from a controller only BACK matters — it closes it.
-                if (action == GamepadAction.BACK) onCloseShibaCoins()
+                // Forward everything so the coins screen can move focus, sync, and close on BACK.
+                _uiState.update { it.copy(pendingShibaCoinsAction = action) }
                 return
             }
             state.activeGameId != null -> {
@@ -5936,7 +5937,11 @@ class XMBViewModel @Inject constructor(
     }
 
     fun onCloseShibaCoins() {
-        _uiState.update { it.copy(activeShibaCoinsGameId = null) }
+        _uiState.update { it.copy(activeShibaCoinsGameId = null, pendingShibaCoinsAction = null) }
+    }
+
+    fun onShibaCoinsActionConsumed() {
+        _uiState.update { it.copy(pendingShibaCoinsAction = null) }
     }
 
     fun onCloseGameDetail() {

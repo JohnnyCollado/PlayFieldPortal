@@ -1,6 +1,7 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,10 +16,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedTextField
@@ -43,6 +44,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.core.domain.achievement.ShibaTier
+import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.core.ui.theme.menuCursorFill
@@ -73,17 +75,33 @@ fun ShibaCoinsScreen(
     gameId: Long,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
+    pendingGamepadAction: GamepadAction? = null,
+    onGamepadActionConsumed: () -> Unit = {},
     viewModel: ShibaCoinsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
     LaunchedEffect(gameId) { viewModel.load(gameId) }
     LaunchedEffect(state.closed) { if (state.closed) onClose() }
-
-    val pfp = LocalPFPColors.current
-    val displayed = remember(state.coins, state.sort, state.filter) {
-        state.coins.arrange(state.sort, state.filter)
+    LaunchedEffect(pendingGamepadAction) {
+        if (pendingGamepadAction != null) {
+            viewModel.handleGamepadAction(pendingGamepadAction)
+            onGamepadActionConsumed()
+        }
     }
 
+    val listState = rememberLazyListState()
+    // Center the focused element: the header controls pin to the top, coin rows scroll to mid-view
+    // so the highlighted row is always comfortably reachable.
+    LaunchedEffect(state.focusIndex) {
+        if (state.focusIndex < 3) {
+            listState.animateScrollToItem(0)
+        } else {
+            val viewportH = listState.layoutInfo.viewportSize.height
+            listState.animateScrollToItem(1 + (state.focusIndex - 3), scrollOffset = -(viewportH / 3))
+        }
+    }
+
+    val pfp = LocalPFPColors.current
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -95,37 +113,43 @@ fun ShibaCoinsScreen(
             ),
     ) {
         LazyColumn(
+            state = listState,
             modifier = Modifier
                 .fillMaxSize()
                 .widthIn(max = 920.dp)
                 .align(Alignment.TopCenter)
                 .padding(horizontal = 28.dp),
         ) {
-            item {
-                DetailBreadcrumb(title = state.title, subtitle = "Shiba Coins", onBack = viewModel::close)
+            item(key = "header") { HeaderSection(state, viewModel) }
+            itemsIndexed(state.displayed, key = { _, c -> c.id }) { i, coin ->
+                CoinListRow(coin, focused = state.focusIndex == 3 + i)
             }
-            item { SummaryHeader(state) }
-            if (!state.linked) item { LinkSection(state, viewModel) }
-            item { SyncRow(state, viewModel) }
-            item { SortFilterChips(state, viewModel) }
-            state.message?.let { msg ->
-                item {
-                    Text(
-                        "$msg  (tap to dismiss)",
-                        color = menuCursorEdge(),
-                        fontSize = 13.sp,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { viewModel.dismissMessage() }
-                            .padding(vertical = 10.dp),
-                    )
-                }
-            }
-            items(displayed, key = { it.id }) { CoinListRow(it) }
-            if (state.linked && displayed.isEmpty()) {
+            if (state.linked && state.displayed.isEmpty()) {
                 item { Text("No coins to show.", color = TextMuted, modifier = Modifier.padding(vertical = 16.dp)) }
             }
             item { Spacer(Modifier.height(24.dp)) }
+        }
+    }
+}
+
+@Composable
+private fun HeaderSection(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewModel) {
+    Column(Modifier.fillMaxWidth()) {
+        DetailBreadcrumb(title = state.title, subtitle = "Shiba Coins", onBack = viewModel::close)
+        SummaryHeader(state)
+        if (!state.linked) LinkSection(state, viewModel, focused = state.focusIndex == 2)
+        SyncRow(state, viewModel, focused = state.focusIndex == 2 && state.linked)
+        SortFilterChips(state, viewModel)
+        state.message?.let { msg ->
+            Text(
+                "$msg  (tap to dismiss)",
+                color = menuCursorEdge(),
+                fontSize = 13.sp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { viewModel.dismissMessage() }
+                    .padding(vertical = 10.dp),
+            )
         }
     }
 }
@@ -149,7 +173,6 @@ private fun SummaryHeader(state: ShibaCoinsUiState) {
             trackColor = Color(0x33FFFFFF),
         )
         Spacer(Modifier.height(12.dp))
-        // Crown banner
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
@@ -170,10 +193,17 @@ private fun SummaryHeader(state: ShibaCoinsUiState) {
 }
 
 @Composable
-private fun LinkSection(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewModel) {
+private fun LinkSection(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewModel, focused: Boolean) {
     var draft by remember { mutableStateOf("") }
+    val edge = menuCursorEdge()
     val label = if (state.provider == AchievementProvider.STEAM) "Steam appid" else "RetroAchievements game id"
-    Column(Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .then(if (focused) Modifier.border(2.dp, edge, RoundedCornerShape(10.dp)) else Modifier)
+            .padding(vertical = 10.dp, horizontal = if (focused) 8.dp else 0.dp),
+    ) {
         Text("This game isn't linked yet", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
         Spacer(Modifier.height(8.dp))
         OutlinedTextField(
@@ -181,7 +211,6 @@ private fun LinkSection(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewModel
             onValueChange = { draft = it },
             label = { Text(label, color = TextMuted) },
             singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary,
                 focusedBorderColor = menuCursorEdge(), unfocusedBorderColor = Color(0x44FFFFFF),
@@ -200,16 +229,16 @@ private fun LinkSection(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewModel
 }
 
 @Composable
-private fun SyncRow(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewModel) {
+private fun SyncRow(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewModel, focused: Boolean) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
     ) {
-        Text("Last synced from ${state.provider.name.lowercase().replace('_', ' ')}", color = TextMuted, fontSize = 12.sp, modifier = Modifier.weight(1f))
+        Text("Synced from ${state.provider.name.lowercase().replace('_', ' ')}", color = TextMuted, fontSize = 12.sp, modifier = Modifier.weight(1f))
         if (state.isSyncing) {
             CircularProgressIndicator(color = menuCursorEdge(), modifier = Modifier.size(18.dp))
         } else if (state.linked) {
-            PillButton("Sync now", enabled = true) { viewModel.sync() }
+            PillButton("Sync now", enabled = true, focused = focused) { viewModel.sync() }
         }
     }
 }
@@ -217,14 +246,22 @@ private fun SyncRow(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewModel) {
 @Composable
 private fun SortFilterChips(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewModel) {
     Column(Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = focusRing(state.focusIndex == 0),
+        ) {
             Text("Sort", color = TextDim, fontSize = 11.sp)
             Chip("Tier", state.sort == CoinSort.TIER) { viewModel.setSort(CoinSort.TIER) }
             Chip("Earned", state.sort == CoinSort.EARNED) { viewModel.setSort(CoinSort.EARNED) }
             Chip("Rarest", state.sort == CoinSort.RAREST) { viewModel.setSort(CoinSort.RAREST) }
         }
         Spacer(Modifier.height(6.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = focusRing(state.focusIndex == 1),
+        ) {
             Text("Show", color = TextDim, fontSize = 11.sp)
             Chip("All", state.filter == CoinFilter.ALL) { viewModel.setFilter(CoinFilter.ALL) }
             Chip("Earned", state.filter == CoinFilter.EARNED) { viewModel.setFilter(CoinFilter.EARNED) }
@@ -234,12 +271,27 @@ private fun SortFilterChips(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewM
 }
 
 @Composable
-private fun CoinListRow(coin: CoinRow) {
+private fun focusRing(focused: Boolean): Modifier {
+    val edge = menuCursorEdge()
+    return if (focused) Modifier
+        .clip(RoundedCornerShape(999.dp))
+        .border(2.dp, edge, RoundedCornerShape(999.dp))
+        .padding(4.dp)
+    else Modifier
+}
+
+@Composable
+private fun CoinListRow(coin: CoinRow, focused: Boolean) {
     val redacted = coin.isHidden && !coin.isEarned
     val dot = if (coin.isEarned) metalOf(coin.tier) else metalOf(coin.tier).copy(alpha = 0.28f)
+    val edge = menuCursorEdge()
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().padding(vertical = 9.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .then(if (focused) Modifier.border(2.dp, edge, RoundedCornerShape(10.dp)) else Modifier)
+            .padding(vertical = 9.dp, horizontal = 8.dp),
     ) {
         Box(Modifier.size(26.dp).clip(CircleShape).background(dot))
         Spacer(Modifier.width(12.dp))
@@ -280,7 +332,8 @@ private fun Chip(label: String, selected: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-private fun PillButton(label: String, enabled: Boolean, onClick: () -> Unit) {
+private fun PillButton(label: String, enabled: Boolean, focused: Boolean = false, onClick: () -> Unit) {
+    val edge = menuCursorEdge()
     Text(
         label,
         color = if (enabled) Color.White else TextDim,
@@ -289,6 +342,7 @@ private fun PillButton(label: String, enabled: Boolean, onClick: () -> Unit) {
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
             .background(if (enabled) menuCursorFill() else Color(0x18FFFFFF))
+            .then(if (focused) Modifier.border(2.dp, edge, RoundedCornerShape(8.dp)) else Modifier)
             .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 9.dp),
     )
