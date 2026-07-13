@@ -42,6 +42,10 @@ data class ShibaLibraryUiState(
     val mode: ShibaLibraryMode = ShibaLibraryMode.TRACKED,
     val rows: List<ShibaLibraryRow> = emptyList(),
     val focusIndex: Int = 0,
+    val query: String = "",
+    // Counts across all sibling views, for the header tabs.
+    val trackedCount: Int = 0,
+    val untrackedCount: Int = 0,
     // Wallet footer.
     val totalCoinScore: Int = 0,
     val level: Int = 1,
@@ -51,6 +55,7 @@ data class ShibaLibraryUiState(
     val closed: Boolean = false,
 ) {
     val focused: ShibaLibraryRow? get() = rows.getOrNull(focusIndex)
+    val siblings: List<ShibaLibraryMode> get() = ShibaLibraryMode.entries
     val nextRewardCoins: Int get() = (coinsForNextLevel - coinsIntoLevel).coerceAtLeast(0)
     val levelFraction: Float
         get() = if (coinsForNextLevel <= 0) 0f else (coinsIntoLevel.toFloat() / coinsForNextLevel).coerceIn(0f, 1f)
@@ -66,10 +71,11 @@ class ShibaLibraryViewModel @Inject constructor(
     val uiState: StateFlow<ShibaLibraryUiState> = _state.asStateFlow()
 
     private var latest: Pair<com.playfieldportal.core.domain.achievement.LibraryStanding, Map<Long, Game>>? = null
+    private var currentModeRows: List<ShibaLibraryRow> = emptyList()
     private var collecting = false
 
     fun load(mode: ShibaLibraryMode) {
-        _state.update { it.copy(mode = mode, closed = false, focusIndex = 0) }
+        _state.update { it.copy(mode = mode, closed = false, focusIndex = 0, query = "") }
         rebuild()
         if (collecting) return
         collecting = true
@@ -94,16 +100,36 @@ class ShibaLibraryViewModel @Inject constructor(
         when (action) {
             GamepadAction.NAVIGATE_UP -> _state.update { it.copy(focusIndex = (it.focusIndex - 1).coerceIn(0, last)) }
             GamepadAction.NAVIGATE_DOWN -> _state.update { it.copy(focusIndex = (it.focusIndex + 1).coerceIn(0, last)) }
+            // LEFT / RIGHT move between the sibling views (All Tracked <-> Untracked), like the
+            // other XMB leveled-sibling drill-ins.
+            GamepadAction.NAVIGATE_LEFT -> switchSibling(-1)
+            GamepadAction.NAVIGATE_RIGHT -> switchSibling(1)
             GamepadAction.BACK -> close()
             else -> Unit
         }
+    }
+
+    fun switchSibling(dir: Int) {
+        val siblings = ShibaLibraryMode.entries
+        setMode(siblings[(_state.value.mode.ordinal + dir + siblings.size) % siblings.size])
+    }
+
+    fun setMode(mode: ShibaLibraryMode) {
+        if (mode == _state.value.mode) return
+        _state.update { it.copy(mode = mode, focusIndex = 0, query = "") }
+        rebuild()
+    }
+
+    fun setQuery(query: String) {
+        _state.update { it.copy(query = query) }
+        pushRows()
     }
 
     fun setFocus(index: Int) = _state.update { it.copy(focusIndex = index.coerceIn(0, (it.rows.size - 1).coerceAtLeast(0))) }
 
     private fun rebuild() {
         val (standing, byId) = latest ?: return
-        val rows = when (_state.value.mode) {
+        currentModeRows = when (_state.value.mode) {
             ShibaLibraryMode.TRACKED ->
                 standing.tracked.sortedBy { it.title.lowercase() }.map { it.toRow(byId[it.gameId]) }
             ShibaLibraryMode.UNTRACKED ->
@@ -113,14 +139,25 @@ class ShibaLibraryViewModel @Inject constructor(
         val p = w.levelProgress
         _state.update {
             it.copy(
-                rows = rows,
-                focusIndex = it.focusIndex.coerceIn(0, (rows.size - 1).coerceAtLeast(0)),
+                trackedCount = standing.gamesTracked,
+                untrackedCount = standing.untracked.size,
                 totalCoinScore = w.totalCoins,
                 level = w.level,
                 rank = w.rank.label,
                 coinsIntoLevel = p.coinsIntoLevel,
                 coinsForNextLevel = p.coinsForNextLevel,
             )
+        }
+        pushRows()
+    }
+
+    // Applies the current search query to the current mode's rows.
+    private fun pushRows() {
+        val q = _state.value.query.trim().lowercase()
+        val filtered = if (q.isEmpty()) currentModeRows
+        else currentModeRows.filter { it.title.lowercase().contains(q) }
+        _state.update {
+            it.copy(rows = filtered, focusIndex = it.focusIndex.coerceIn(0, (filtered.size - 1).coerceAtLeast(0)))
         }
     }
 

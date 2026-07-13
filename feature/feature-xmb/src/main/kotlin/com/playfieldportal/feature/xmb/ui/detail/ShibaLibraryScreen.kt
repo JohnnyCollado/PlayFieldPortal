@@ -20,7 +20,12 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -94,13 +99,26 @@ fun ShibaLibraryScreen(
             ),
     ) {
         Column(Modifier.fillMaxSize().padding(24.dp)) {
-            Text(
-                text = if (mode == ShibaLibraryMode.TRACKED) "All Tracked Games" else "Untracked",
-                color = TextPrimary,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-            )
-            Spacer(Modifier.height(16.dp))
+            // Sibling views (All Tracked <-> Untracked) — switch with LEFT/RIGHT or by tapping.
+            Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(22.dp)) {
+                state.siblings.forEach { sib ->
+                    val active = sib == state.mode
+                    val count = if (sib == ShibaLibraryMode.TRACKED) state.trackedCount else state.untrackedCount
+                    val label = if (sib == ShibaLibraryMode.TRACKED) "All Tracked" else "Untracked"
+                    Text(
+                        text = "$label  $count",
+                        color = if (active) menuCursorEdge() else TextDim,
+                        fontSize = if (active) 22.sp else 16.sp,
+                        fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
+                        modifier = Modifier.clickable { viewModel.setMode(sib) },
+                    )
+                }
+            }
+            Spacer(Modifier.height(14.dp))
+
+            SearchField(query = state.query, onQueryChange = viewModel::setQuery)
+            Spacer(Modifier.height(14.dp))
+
             Row(Modifier.fillMaxSize()) {
                 // ── Master list ─────────────────────────────────────────────────
                 LazyColumn(
@@ -110,10 +128,12 @@ fun ShibaLibraryScreen(
                 ) {
                     if (state.rows.isEmpty()) {
                         item {
-                            Text(
-                                if (mode == ShibaLibraryMode.TRACKED) "No tracked games yet" else "Every game is tracked",
-                                color = TextMuted, fontSize = 15.sp, modifier = Modifier.padding(top = 24.dp),
-                            )
+                            val message = when {
+                                state.query.isNotBlank() -> "No games match \"${state.query}\""
+                                state.mode == ShibaLibraryMode.TRACKED -> "No tracked games yet"
+                                else -> "Every game is tracked"
+                            }
+                            Text(message, color = TextMuted, fontSize = 15.sp, modifier = Modifier.padding(top = 24.dp))
                         }
                     }
                     itemsIndexed(state.rows, key = { _, r -> r.gameId }) { i, row ->
@@ -128,6 +148,23 @@ fun ShibaLibraryScreen(
             }
         }
     }
+}
+
+@Composable
+private fun SearchField(query: String, onQueryChange: (String) -> Unit) {
+    OutlinedTextField(
+        value = query,
+        onValueChange = onQueryChange,
+        singleLine = true,
+        label = { Text("Search games", color = TextMuted) },
+        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = TextMuted) },
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary,
+            focusedBorderColor = menuCursorEdge(), unfocusedBorderColor = Color(0x44FFFFFF),
+            cursorColor = menuCursorEdge(),
+        ),
+        modifier = Modifier.fillMaxWidth(0.6f),
+    )
 }
 
 @Composable
