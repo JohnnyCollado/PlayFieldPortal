@@ -1,20 +1,23 @@
 # Play Field Portal (PFP)
 
-An Android game launcher inspired by the PSP's **XMB (Cross Media Bar)** — a horizontal
-category bar crossing a vertical item list, referred to below as the **crossbar**.
-It replaces the Android home screen and acts as a unified front end for ROM emulation, Android
-games, PC-layer titles (Winlator), and native apps — all navigated with a controller.
+**A controller-first Android game launcher inspired by the PSP's XMB (Cross Media Bar).**
+A horizontal category bar crosses a vertical item list — the **crossbar** — and replaces your
+Android home screen as a single front end for ROM emulation, Android games, PC-layer titles
+(Winlator), native apps, and your music, video and photo libraries.
 
 <p align="center">
   <img src="docs/preview.png" alt="Play Field Portal — boot logo over the wave background" width="720">
 </p>
 
-> **Status:** **`1.0.0`** — first release. Distributed as a side-loaded APK (not on the Play
-> Store); **Full** (with Discord Social) and **Lite** (~44 MB smaller, no Discord SDK) builds,
-> plus the desktop **Theme Studio** companion. Sound packs and boot animations are the next
-> post-1.0 additions (see [Roadmap](#roadmap)).
+<p align="center">
+  <b>Version 1.1.0</b> &nbsp;·&nbsp; Side-loaded APK (not on the Play Store) &nbsp;·&nbsp;
+  <b>Full</b> &amp; <b>Lite</b> editions &nbsp;·&nbsp; Desktop <b>Theme Studio</b> companion
+</p>
 
-For a developer-oriented overview of the codebase, see **[ARCHITECTURE.md](ARCHITECTURE.md)**.
+> This document is the **user manual**. It walks you from install to daily use, feature by
+> feature. Building the project from source is covered last, in
+> **[For Developers](#for-developers)**. For a deep architectural tour of the codebase, see
+> **[ARCHITECTURE.md](ARCHITECTURE.md)**.
 
 ---
 
@@ -59,242 +62,198 @@ For a developer-oriented overview of the codebase, see **[ARCHITECTURE.md](ARCHI
 
 ## Table of contents
 
-- [Screenshots](#screenshots)
-- [Feature status](#feature-status)
-- [Roadmap](#roadmap)
-- [Setup & first run](#setup--first-run)
-- [Permissions & privacy](#permissions--privacy)
-- [Using the launcher](#using-the-launcher)
-  - [Navigation & controls](#navigation--controls)
-  - [The Game category](#the-game-category)
-  - [Setting up a console (Memory Card)](#setting-up-a-console-memory-card)
-  - [Emulators](#emulators)
-  - [Favorites](#favorites)
-  - [Collections](#collections)
-  - [Android apps & non-gaming categories](#android-apps--non-gaming-categories)
-  - [Artwork](#artwork)
-  - [Game & app options (△)](#game--app-options-)
-  - [Categories](#categories)
-  - [Themes & personalization](#themes--personalization)
-  - [Settings](#settings-reference)
-- [Build & install](#build--install)
-- [Tech stack](#tech-stack)
-- [Module structure](#module-structure)
-- [Themes & the .pfptheme format](#themes--the-pfptheme-format)
-- [.xmbtheme package format](#xmbtheme-package-format)
-- [Credits](#credits)
-- [License](#license)
+1. [What is Play Field Portal?](#1-what-is-play-field-portal)
+2. [Getting started](#2-getting-started)
+   - [2.1 Requirements](#21-requirements)
+   - [2.2 Choose an edition (Full vs Lite)](#22-choose-an-edition-full-vs-lite)
+   - [2.3 Install the APK](#23-install-the-apk)
+   - [2.4 Set PFP as your home screen](#24-set-pfp-as-your-home-screen)
+   - [2.5 Grant permissions](#25-grant-permissions)
+   - [2.6 Add your first console](#26-add-your-first-console)
+3. [Navigation & controls](#3-navigation--controls)
+4. [Feature guide](#4-feature-guide)
+   - [4.1 The Game library](#41-the-game-library)
+   - [4.2 Setting up a console (Memory Card)](#42-setting-up-a-console-memory-card)
+   - [4.3 Emulators](#43-emulators)
+   - [4.4 Favorites & Collections](#44-favorites--collections)
+   - [4.5 Game & app options (△)](#45-game--app-options-)
+   - [4.6 Artwork & the Artwork Studio](#46-artwork--the-artwork-studio)
+   - [4.7 Icon display modes & video snaps](#47-icon-display-modes--video-snaps)
+   - [4.8 Android apps & non-gaming categories](#48-android-apps--non-gaming-categories)
+   - [4.9 The App Drawer](#49-the-app-drawer)
+   - [4.10 Music, Video & Photo](#410-music-video--photo)
+   - [4.11 Categories](#411-categories)
+   - [4.12 Themes & personalization](#412-themes--personalization)
+   - [4.13 Discord Social (Full edition)](#413-discord-social-full-edition)
+   - [4.14 Adjusting the layout for your screen](#414-adjusting-the-layout-for-your-screen)
+   - [4.15 Backup & restore](#415-backup--restore)
+   - [4.16 Settings reference](#416-settings-reference)
+5. [Permissions & privacy](#5-permissions--privacy)
+6. [Troubleshooting](#6-troubleshooting)
+7. [For Developers](#for-developers)
+   - [7.1 Tech stack](#71-tech-stack)
+   - [7.2 Prerequisites](#72-prerequisites)
+   - [7.3 Get the code & open it in Android Studio](#73-get-the-code--open-it-in-android-studio)
+   - [7.4 Build variants & flavors](#74-build-variants--flavors)
+   - [7.5 Run & debug from Android Studio](#75-run--debug-from-android-studio)
+   - [7.6 Release signing](#76-release-signing)
+   - [7.7 Command-line builds & the `dist` task](#77-command-line-builds--the-dist-task)
+   - [7.8 The Theme Studio desktop app](#78-the-theme-studio-desktop-app)
+   - [7.9 Module structure](#79-module-structure)
+   - [7.10 Testing](#710-testing)
+8. [Credits](#8-credits)
+9. [License](#9-license)
 
 ---
 
-## Feature status
+## 1. What is Play Field Portal?
 
-| Feature | Status |
+Play Field Portal is a **home-screen replacement** for Android handhelds, tablets and phones that
+gives your whole library the look and feel of a PlayStation Portable. Everything is one crossbar
+away and fully controller-navigable:
+
+- **Games** — ROMs launched through the emulators you already have installed, Android games, and
+  PC-layer titles (Winlator and friends), unified under one **Game** category.
+- **Media** — Music, Video and Photo sections that scan folders you choose.
+- **Apps** — your installed apps, organized into categories you design.
+- **Personalization** — a deep theme system (custom wallpapers, one-color palettes, imported PSP
+  themes) plus a desktop **Theme Studio** for authoring.
+
+It is **local-first**: no account, no telemetry, and the network is only touched when *you* ask it
+to fetch artwork. See [Permissions & privacy](#5-permissions--privacy).
+
+---
+
+## 2. Getting started
+
+### 2.1 Requirements
+
+| | |
 |---|---|
-| Crossbar shell — wave background, category bar, item list, status bar, boot sequence (PFP logo) | ✅ Done |
-| Branding — PFP app icon + boot logo | ✅ Done |
-| Manual Memory Card library — per-console ROM folders, manual scanning | ✅ Done |
-| ROM scanning — SAF folder picker, disc-image resolution, SD/USB volume support | ✅ Done |
-| SAF ROM libraries — SD-card/USB ROMs with **no all-files permission** (content-URI launch) | ✅ Done |
-| Game detail screen — hero banner, metadata, custom artwork, notes | ✅ Done |
-| Game icon styles — PSP rectangle, cartridge, Android squircle | ✅ Done |
-| Emulator compatibility layer — auto-detected catalog + per-core RetroArch | ✅ Done |
-| Custom Emulator Wizard — pick an app, auto-detect launch settings, test-launch, save | ✅ Done |
-| SteamGridDB artwork scraping (grids, heroes, logos, icons) | ✅ Done |
-| **All Games** aggregate (real games only) + per-console folders | ✅ Done |
-| **Favorites** folder under the Game category | ✅ Done |
-| User **Collections** — custom many-to-many game folders | ✅ Done |
-| Android apps in categories — artwork tiles, Find Games, app shortcuts | ✅ Done |
-| Launcher-shortcut harvesting (GameHub/Moonlight, BannerHub, Winlator) | ✅ Done |
-| App drawer — All Apps / Games / Emulators / Tools / Recently Used | ✅ Done |
-| Music section — SAF folders, scanning, playlists, in-app player + background service | ✅ Done |
-| Video section — SAF libraries, scanning, thumbnails, built-in + external player | ✅ Done |
-| Photo section — SAF albums, scanning, fullscreen viewer, set-as-wallpaper | ✅ Done |
-| Category manager — create/rename/reorder/hide, image-based icon picker | ✅ Done |
-| Controller mapping — full crossbar navigation, remappable | ✅ Done |
-| Backup & restore — `.pfpbackup` ZIP including settings | ✅ Done |
-| Color schemes — 12 PSP-style presets with live preview | ✅ Done |
-| **Theme creator** — New Theme from Photo (wallpaper + auto-derived color) + My Themes library | ✅ Done |
-| **PSP theme import** — convert official `.ptf` themes you own (wallpaper + derived color) | ✅ Done |
-| **Theme sharing** — export/import `.pfptheme` files (share sheet + in-app install) | ✅ Done |
-| **Unified icon color** — one live tint across every crossbar icon, 8 swatches | ✅ Done |
-| Live status bar — Wi-Fi/cellular strength, Bluetooth, controller (auto-hide when absent) | ✅ Done |
-| Idle wave degradation (FULL → REDUCED → STATIC) + thermal awareness | ✅ Done |
-| Background tasks surfaced to the Android notification bar | ✅ Done |
-| Theme engine — one-color cascade, unified icon tint, 12 PSP-style presets | ✅ Done |
-| **`.pfptheme` themes** — Quick Create from photo, saved library, share/import, custom icon slots, per-theme layout | ✅ Done |
-| **PSP `.ptf` import** — wallpaper + auto-derived accent from real PSP themes (CXMB rejected safely) | ✅ Done |
-| **Theme Studio** — desktop companion (Win/Linux/macOS): live crossbar preview, icon editor, alignment assist, batch PTF conversion | ✅ Done |
-| Theme engine — `.xmbtheme` loader (Zip-Slip hardened) + built-in *Classic Blue* | ✅ Loader done |
-| Theme sound packs & boot-animation override | 🔜 Next stage |
-| Rendered-crossbar theme previews (export preview gate) | 🔜 Next stage |
-| Smart / manual category builder | 🧭 Backlog |
-| Unmatched-ROM assignment UI | 🧭 Backlog |
-| Second metadata source (IGDB / TheGamesDB) | 🧭 Backlog |
+| **Android version** | 10 (API 29) or newer |
+| **Form factor** | Phones, handhelds, tablets, and foldables (the layout adapts to each) |
+| **Input** | A game controller is recommended; full touch navigation is also supported |
+| **Emulators** | Installed separately — PFP launches them, it does not emulate anything itself |
 
----
+### 2.2 Choose an edition (Full vs Lite)
 
-## Roadmap
+PFP ships in two editions. You can tell which one is installed under **Settings ▸ About ▸ Edition**.
 
-All three launch stages have shipped; what remains is post-1.0 work.
+| Edition | Includes | Download size |
+|---|---|---|
+| **Full** | Everything, including the **Discord Social** section (friends, presence, voice chat) | Larger |
+| **Lite** | Everything **except** Discord Social (the Social column is hidden) | ~44 MB smaller |
 
-### ✅ Stage 1 — Alpha
-The full launcher: crossbar shell, manual Memory Card library, ROM scanning, emulator detection and
-launching, artwork scraping, All Games / Favorites / Collections, Android-app integration, the app
-drawer, category management, controller mapping, backup & restore, and PFP branding (app icon +
-boot logo).
+Choose **Lite** if you do not want Discord integration or want the smallest download.
 
-### ✅ Stage 2 — Theme system *(shipped: `.pfptheme` + Theme Studio)*
-The custom-theme pipeline, built around the lightweight **`.pfptheme`** bundle format
-(one-color cascade — pick a background and a color, everything else derives):
-- **In-app theming** — 12 PSP-style presets, Quick Create from any photo (accent auto-derived
-  from its dominant hue), a saved-theme library with share/import, and PSP **`.ptf` import**
-  (both zlib and firmware 3.70-era **LZR** wallpaper compression).
-- **Custom icon slots** — themes may replace 47 crossbar glyphs (category bar, item rows, status
-  strip); platform/console art stays uniform by design.
-- **Theme Studio** — a Compose Desktop companion app (`:studio`, Windows/Linux/macOS) with a
-  live pixel-parity crossbar preview (Home / Context-menu / Fullscreen-menu states), HSV color
-  pickers, an icon editor with editable template export, wallpaper crop presets + legibility
-  hints, crossbar **alignment assist** (auto-detects the band PSP wallpapers bake in),
-  batch `.ptf` → `.pfptheme` folder conversion, and a **PTF unpacker** that extracts every
-  resource of an official theme (wallpaper, preview, GIM icons) as reference PNGs.
-- Remaining in this stage: theme **sound packs** and **boot-animation override** (shipping with
-  the re-enabled `.xmbtheme` *Install from File* — loader already implemented), and the
-  in-app rendered-preview gate for exports.
+### 2.3 Install the APK
 
-### ✅ Stage 3 — 1.0 Launch *(released 2026-07-07)*
-Stability, performance, and polish pass on top of the theme system: release-build hardening
-(R8 keep rules, bounded theme decompression), touch-UI legibility fixes, repo/docs cleanup,
-and the **1.0.0** version cut — shipped as Full + Lite APKs and the Theme Studio desktop app.
+PFP is distributed as a **side-loaded APK** (it is not on the Google Play Store).
 
-### 🧭 Post-launch / backlog
-Smart & manual category builders, an unmatched-ROM assignment UI, a missing-ROM indicator, a second
-metadata source (IGDB / TheGamesDB), global search, and friends/social (v2).
+1. Download the APK for your chosen edition (`PlayFieldPortal-<version>-full.apk` or
+   `-lite.apk`).
+2. Open the file on your device. Android will ask you to allow installs from your browser or file
+   manager the first time — approve it.
+3. Tap **Install**.
 
----
+> Building the APK yourself instead? See [For Developers](#for-developers).
 
-## Setup & first run
+### 2.4 Set PFP as your home screen (Optional)
 
-### 1. Install
-See [Build & install](#build--install) to produce and side-load the debug APK.
+PFP registers as an Android **HOME** launcher.
 
-### 2. Make PFP your home screen
-PFP registers as an Android **HOME** launcher. The first time you press Home, Android asks which
-launcher to use — pick **Play Field Portal** and choose **Always** to make it the default. You can
-change this later in *Android Settings → Apps → Default apps → Home app*.
+1. Press the **Home** button.
+2. When Android asks which launcher to use, pick **Play Field Portal** and choose **Always**.
 
-> Some features (importing launcher shortcuts from other apps, the modern shortcut-pin capture)
+You can change this later under *Android Settings ▸ Apps ▸ Default apps ▸ Home app*.
+
+> A few features (importing game shortcuts from other launchers, capturing pinned shortcuts)
 > require PFP to be the **active default launcher**.
 
-### 3. Grant permissions
-- **Notifications** (Android 13+) — so background scans/fetches can report progress in the shade,
-  and so apps that try to add a game shortcut can ask you to confirm it first.
-- **All-files access / storage** — only needed to scan **file-based ROM folders** (disc/multi-file
-  games are read by emulators from real paths). PFP asks for it **point-of-need** — a *Grant
-  All-Files Access* prompt appears in **Settings → Library** when it's missing. If you only use
-  SAF music folders or the app-picker Android library, you never need it.
-- **Usage access** (optional) — enables the "Recently Used" app-drawer filter.
+### 2.5 Grant permissions
 
-See [Permissions & privacy](#permissions--privacy) for the full breakdown.
+PFP asks for permissions **only when a feature needs them**:
 
-### 4. Boot sequence
-On launch you'll see the **PFP logo** fade in over the wave background, then the home screen. (Boot is
-shorter on repeat launches.)
+- **Notifications** (Android 13+) — lets background scans and artwork fetches report progress, and
+  lets other apps ask you to confirm a game shortcut before it is added.
+- **Usage access** (optional) — powers the "Recently Used" filter in the App Drawer.
 
-### 5. Point PFP at your ROMs
-Open **Settings → Library**, choose your ROM **root folder**, then add consoles — see
-[Setting up a console](#setting-up-a-console-memory-card). The **Game** category shows an inline
-setup prompt on first launch if no library is configured yet.
+Full detail in [Permissions & privacy](#5-permissions--privacy).
 
----
+### 2.6 Add your first console
 
-## Permissions & privacy
+On first launch the **Game** category shows an inline setup prompt.
 
-PFP is a local-first launcher: **your data stays on your device.** There is no analytics, no
-telemetry, and no account — PFP only talks to the network when *you* trigger artwork/metadata
-scraping, and only over HTTPS.
+1. Open **Settings ▸ Library ▸ Library Manager ▸ Add Console**.
+2. **Choose Platform** (NES, SNES, PSP, PS2, Dreamcast, Xbox 360, …).
+3. **Choose its ROM folder** with the folder picker.
+4. **Assign an emulator** from the ones PFP detected for that platform.
+5. **Scan now**, or create the card and scan later.
 
-**What PFP stores, and how:**
-- **Stays on-device.** Your library, settings, and artwork live in app storage. **Backup is
-  disabled** (`allowBackup=false`), so none of it is uploaded to the cloud or transferred to a new
-  phone — re-add folders / re-enter keys after a device move.
-- **Your scraper API keys are encrypted at rest.** If you add SteamGridDB / TheGamesDB / IGDB
-  keys, they're sealed with a hardware-backed Android Keystore key, not stored in plain text.
-- **Network is HTTPS-only.** Cleartext traffic is blocked, and release builds trust only the
-  system certificate store.
-
-**Why the broad permissions exist (and how they're minimized):**
-- **All-files access** is requested **only when you add a file-based ROM folder** — disc and
-  multi-file games (`.cue`+`.bin`, multi-disc, `.m3u`) must be read by emulators from real paths,
-  which scoped storage can't provide. Use SAF music + the app-picker Android library and you never
-  grant it.
-- **Query installed apps** is required to *be* a launcher (showing/launching your apps).
-- **Usage access** is optional and only powers the "Recently Used" filter.
-
-**Other apps can't silently change your library.** Apps that broadcast a legacy "install shortcut"
-request can no longer add entries on their own — PFP sanitizes the request and asks you to **confirm
-each one** via a notification before it appears.
+Your games appear under a **Memory Card** in the Game category. Full detail in
+[Setting up a console](#42-setting-up-a-console-memory-card).
 
 ---
 
-## Using the launcher
+## 3. Navigation & controls
 
-### Navigation & controls
-
-PFP is built for a controller but works with touch too.
+PFP is built for a controller but works fully with touch.
 
 | Action | Controller | Touch |
 |---|---|---|
 | Move between items | D-Pad / Left Stick | Tap an item |
-| Switch category (left/right) | D-Pad ◀ ▶ | Tap the category |
+| Switch category (left / right) | D-Pad ◀ ▶ | Tap the category |
 | Select / launch / open | **A / ✕** | Tap |
-| Back / close / exit a folder | **B / ◯** | On-screen Back |
+| Back / close / exit a folder | **B / ◯** | On-screen Back / left-edge swipe |
 | Options (context) menu | **Y / △** (or long-press) | Long-press |
-| Switch app-drawer tabs | **L1 / R1** | Tap a tab |
+| Switch App-Drawer tabs | **L1 / R1** | Tap a tab |
 | Confirm in pickers | **Start** | Confirm button |
 
 The **horizontal bar** is your categories — by default **Settings, Photo, Music, Video, Game,
-Network, App Store**, plus any custom ones. The **vertical list** under the selected category shows
-its items. While any menu, settings screen, picker, or dialog is open, the main crossbar is locked —
-input only drives the overlay on top. Bindings are remappable in *Settings → Controller*.
+Network, App Store**, plus any custom ones. The **vertical list** under the selected category is its
+items. While any menu, settings screen, picker or dialog is open, the crossbar is locked — input
+only drives the overlay on top. Every binding is remappable in *Settings ▸ Controller*.
 
-### The Game category
+---
+
+## 4. Feature guide
+
+### 4.1 The Game library
 
 Selecting **Game** shows, in order:
 
-1. **All Games** — every real game across all consoles, aggregated (cartridge icon). Only actual
-   games appear here; Android / Video / Music apps never show up automatically.
-2. **Favorites** — appears directly under All Games **only when you've favorited at least one game**,
-   and hides again when you have none.
-3. **Your Collections** — user-made folders (see [Collections](#collections)).
-4. **Memory Cards** — one row per console you've configured. Open a card to see its games; press **△**
-   on a card for *Scan This Console / Refresh / Pin / Hide / Remove*.
+1. **All Games** — every real game across all consoles, aggregated. Only actual games appear here;
+   Android / Video / Music apps never show up automatically.
+2. **Favorites** — appears directly under All Games **only when you have favorited at least one
+   game**, and hides again when you have none.
+3. **Your Collections** — user-made folders (see [4.4](#44-favorites--collections)).
+4. **Memory Cards** — one row per console you have configured.
 
-Open All Games, Favorites, a collection, or a console to drill in; press **B / ◯** to go back.
+Open All Games, Favorites, a collection, or a console to drill in; press **B / ◯** to go back. On
+wide and foldable screens the crossbar slides to the left edge while drilled in, giving the game
+list and its artwork the center-right of the screen.
 
-### Setting up a console (Memory Card)
+### 4.2 Setting up a console (Memory Card)
 
-Consoles are added manually as **Memory Cards** — a deliberate choice; PFP never auto-scans.
+Consoles are added manually as **Memory Cards** — PFP never auto-scans your whole device.
 
-1. **Settings → Library → Library Manager → Add Console.**
-2. **Choose Platform** — pick the system (NES, SNES, PSP, PS2, Dreamcast, **Xbox 360**, … ).
+1. **Settings ▸ Library ▸ Library Manager ▸ Add Console.**
+2. **Choose Platform.**
 3. **Choose its ROM folder** with the folder picker.
-4. **Assign Emulator** — pick from the emulators PFP detected for that platform (this becomes the
-   console's default).
-5. **Scan Now?** — scan immediately, or create the card and scan later.
+4. **Assign Emulator** — this becomes the console's default.
+5. **Scan Now**, or create the card and scan later.
 
-Manage a card any time from *Library Manager*: change its display name, ROM directory, or emulator;
-enable/hide it; **Scan This Console**; or remove it (ROM files on disk are never deleted).
+Manage a card any time from *Library Manager*: rename it, change its ROM directory or emulator,
+hide/show it, **Scan This Console**, or remove it (ROM files on disk are never deleted).
 
-> **Scanning is always manual** — there's no background watcher or polling. Re-scan after adding ROMs.
+> **Scanning is always manual** — there is no background watcher. Re-scan after adding ROMs.
+> ROMs on removable SD cards / USB volumes are supported.
 
-### Emulators
+### 4.3 Emulators
 
-PFP launches games through **external emulator apps** — install the emulators you want, and PFP
-detects them automatically (no manual config for supported ones). Detection runs on startup from a
-curated catalog, plus one profile per installed **RetroArch** core.
-
-Supported out of the box (install the app, PFP finds it) — a selection:
+PFP launches games through **external emulator apps** — install the emulators you want and PFP
+detects them automatically on startup from a curated catalog, plus one profile per installed
+**RetroArch** core. A selection of what is recognized out of the box:
 
 | System | Emulators |
 |---|---|
@@ -302,312 +261,462 @@ Supported out of the box (install the app, PFP finds it) — a selection:
 | PS1 | DuckStation |
 | PS2 | NetherSX2 / AetherSX2 |
 | GameCube / Wii | Dolphin |
-| Nintendo DS | melonDS, DraStic |
-| Nintendo 3DS | Azahar, Citra, Lime3DS |
+| Nintendo DS / 3DS | melonDS, DraStic / Azahar, Citra, Lime3DS |
 | Switch | Sudachi / Yuzu / Suyu family |
 | N64 | Mupen64Plus FZ / AE |
 | GB / GBC / GBA | mGBA, My Boy!, GBA.emu, GBC.emu |
-| NES / SNES / Genesis / PC Engine / Neo Geo / WonderSwan / Lynx | the `*.emu` family (NES.emu, Snes9x EX+, MD.emu, PCE.emu, NEO.emu, Swan.emu, Lynx.emu) |
+| NES / SNES / Genesis / PC Engine / Neo Geo / WonderSwan / Lynx | the `*.emu` family |
 | Dreamcast | Flycast, Redream |
-| **Xbox 360** | **X360 Mobile** (`emu.x360.mobile`) — handles `.iso` |
-| Symbian | EKA2L1 |
-| Anything with libretro cores | **RetroArch** (one launch profile per installed core) |
+| Xbox 360 | X360 Mobile (`.iso`) |
+| Anything with libretro cores | RetroArch (one profile per installed core) |
 
 **Which emulator launches a game?** PFP resolves it in priority order:
-**per-game override → Memory Card emulator → the platform's default → first available.**
-Set a per-game emulator from a game's **△** options; set a console default in *Library Manager*.
+**per-game override → Memory Card emulator → the platform default → first available.** Set a
+per-game emulator from a game's **△** options; set a console default in *Library Manager*.
 
-**Custom Emulator Wizard** — for anything not in the catalog, *Settings → Emulators → Add Custom
-Emulator* runs an assisted setup:
-1. **Pick an installed app** from a controller-navigable list.
-2. PFP **auto-detects** launch settings (matching the catalog where possible, or inspecting the
-   app's `ACTION_VIEW` handlers).
-3. The editor opens **pre-filled** with a confidence banner. Every field is editable — intent type,
-   activity, action, MIME, URI mode, extras, flags, RetroArch core — and **recommended templates**
-   fill common launch shapes in one tap.
-4. **Test Launch** with a scanned ROM: preview the exact intent, attempt it, and get an actionable
-   error if it fails.
-5. **Save** — usable as a platform / Memory Card / per-game emulator.
+**Custom Emulator Wizard** — for anything not in the catalog, *Settings ▸ Emulators ▸ Add Custom
+Emulator* walks you through it: pick an installed app, let PFP auto-detect its launch settings,
+edit any field, **Test Launch** with a real ROM, then **Save**. The result is usable as a platform,
+Memory Card, or per-game emulator.
 
-ROMs on **removable SD cards / USB volumes** (`/storage/<uuid>/…`) launch correctly via FileProvider.
+### 4.4 Favorites & Collections
 
-### Favorites
+- **Favorites** — mark any game from its **△** options (*Add to Favorites*). A **Favorites** folder
+  appears under All Games and hides automatically when empty.
+- **Collections** — custom folders (e.g. "RPGs", "Currently Playing"). A game can live in several at
+  once. Create one from *Settings ▸ Collections* or a game's **△ ▸ Add to Collection**; toggle
+  membership with a ✓. Manage (rename, reorder, delete) from *Settings ▸ Collections*.
 
-Mark any game as a favorite from its **△** options (*Add to Favorites*). A **Favorites** folder then
-appears in the Game category, right under All Games, listing everything you've favorited; it hides
-automatically when nothing is favorited. (Android apps can also be favorited — a lightweight shortcut
-entry is created.)
+### 4.5 Game & app options (△)
 
-### Collections
+Press **Y / △** (or long-press) on any item for its context menu.
 
-Collections are custom folders of games (e.g. "RPGs", "Currently Playing", "Best PSP Games"). They
-behave like Favorites but are user-defined, and a game can live in several at once.
+- **Games** — Launch, Add/Remove Favorite, Add to Collection, Refresh Metadata/Artwork, choose
+  Emulator, Icon Display mode, View File Location, View Game Details.
+- **Android apps** — Launch, Edit App Details, Add to Favorites/Collection, Import Game Shortcuts,
+  Move/Pin/Hide/Rename.
 
-- **Create:** *Settings → Collections → Create New Collection*, or from a game's **△** options →
-  *Add to Collection → Create New Collection* (also on the Game Detail / App Detail screens).
-- **Add / remove a game:** open a game's options (**△**), choose **Add to Collection**, and toggle
-  the collections (a ✓ marks membership). Viewing a game from inside a collection shows
-  **Remove from Collection**.
-- **Manage:** *Settings → Collections* (rename, reorder, delete) or press **△** on a collection row.
-  A collection belongs to exactly one gaming category and can be pinned to the top.
+The same actions live on the full **Game Detail** and **App Detail** screens, which also show hero
+art, metadata, screenshots, publisher, and total play time.
 
-### Android apps & non-gaming categories
+### 4.6 Artwork & the Artwork Studio
 
-- **App sections** (App Store / Video / Music / Network / custom non-gaming categories): open the
-  section and choose **Add Apps** to pick installed apps.
-- **App artwork:** apps you place in non-gaming categories show their launcher icon by default. Give
-  one custom artwork via **△ → Edit App Details → Icon** (SteamGridDB or a local image) and it then
-  renders as the same landscape tile as a game. These stay tagged as apps, so they **never** appear
-  in All Games.
-- **Android games under Games:** open the Android library card and choose **Find Games**. These are
-  tagged as apps — out of All Games, but in their card and addable to any collection.
-- **Shortcut any app to Favorites / Collections:** press **△** on an app → *Add to Favorites* or
-  *Add to Collection*.
+Box art, hero banners, logos, screenshots and icons are fetched **on request**. Add a free
+**SteamGridDB** key (and optionally ScreenScraper / TheGamesDB / IGDB) in *Settings ▸ Artwork*.
 
-### Artwork
+- **Quick scrape** — *Settings ▸ Artwork* offers scrape-all, scrape-missing-only, and cache
+  clearing. "Scrape Missing" fills only the gaps and never overwrites existing art.
+- **Artwork Studio** — from a game's **Artwork** button, a full-screen, controller-first editor with
+  a tab per artwork kind (ICON0, ICON1, Box Art, 3D Box, Physical Media, Hero, Background, Logo,
+  Screenshot, Manual, Video). Each tab can pull from **ScreenScraper, SteamGridDB** (with an NSFW
+  filter), **TheGamesDB, IGDB,** and **Local File**. Preview a candidate before applying (videos
+  play a muted loop, manuals page through), then commit. Press **Start** for per-slot actions:
+  Adjust Crop, Restore Previous, Reset to Scraped Default, Clear, and File Info.
+- **Crop / position editor** — an aspect-locked frame per kind with the image panning and scaling
+  behind it. Crops bake into the displayed file while the untouched original is kept for lossless
+  re-crops.
 
-Box art, hero banners, logos and grid icons are fetched **on request** from SteamGridDB (add a free
-API key in *Settings → Artwork*). From a game's detail screen you can set the **Icon** (landscape
-tile), **Hero** (detail banner) and **Background** art — from SteamGridDB or a local file — or reset
-them. *Settings → Artwork* also offers re-scrape (all / missing-only) and cache clearing.
+**Portable artwork library** — in *Settings ▸ Artwork ▸ Artwork Folder & Import* you can point PFP
+at a folder it keeps in an **ES-DE-compatible** layout, so your art is user-owned and readable by
+other frontends with no export step. The same screen imports ES-DE `downloaded_media` (and
+`gamelist.xml` metadata), relinks moved files, and exports for ES-DE.
 
-### Game & app options (△)
+#### Folder layout
 
-Press **△** (or long-press) on an item for its options:
-- **Games:** Launch, Add/Remove Favorite, Add to Collection, Manage Collections, Refresh
-  Metadata/Artwork, choose Emulator, **View File Location** (shows the ROM path on-screen).
-- **Android apps:** Launch, Edit App Details, Add to Favorites/Collection, Import Game Shortcuts,
-  Move/Add/Remove/Pin to category, Hide, Rename.
+The library is a clean two-folder root. Everything under `Artwork/` is a standard ES-DE
+`downloaded_media` tree, so you can point ES-DE (or any frontend) straight at
+`{Artwork Folder}/Artwork` with no export step.
 
-The same actions are reachable from the full **Game Detail** / **App Detail** screens.
+```text
+{Artwork Folder}/
+├─ pfp-artwork-library.json        manifest — marks this folder as a PFP library
+├─ Import/                         drop zone for other launchers' media (see below)
+│   └─ {Launcher}/ …               an ES-DE downloaded_media tree
+└─ Artwork/                        the library — ES-DE downloaded_media shape
+    └─ {platformId}/               e.g. ps2, snes, psp
+        ├─ covers/                 box art        →  {PortableName}.{ext}
+        ├─ miximages/              hero
+        ├─ fanart/                 background
+        ├─ marquees/               logo
+        ├─ screenshots/            screenshot
+        ├─ titlescreens/           title screen
+        ├─ physicalmedia/          cartridge / disc
+        ├─ 3dboxes/                3D box
+        ├─ manuals/                PDF manual
+        ├─ videos/                 video
+        └─ pfp/                    PFP-only namespace (skipped by scan & export)
+            ├─ icon0/              144:80 ICON art
+            ├─ icon1/              icon video snap
+            ├─ originals/{kind}/   untouched pre-crop copies (lossless re-crop)
+            └─ versions/{kind}/    one-previous backup ("Restore Previous")
+```
 
-### Categories
+The `pfp/` namespace holds PFP-only assets that are not ES-DE media types; `versions/` and
+`originals/` are nested per `{kind}` so a game's box-art and icon backups (same filename) never
+collide. Incoming **videos** are transcoded locally into a 60-second `icon1/` snap — the full-size
+file is never stored.
 
-Categories are the horizontal bar. Manage them in *Settings → Categories*:
-- **Create** a category, choose a **content type** (Gaming = games & collections, Non-gaming = apps),
-  and pick an **icon** from the image-based picker (crossbar column glyphs, Favorites, and the full
-  console set — all individual images, no sprite sheet).
-- **Rename**, **reorder** (move left/right), **hide/show**, or **delete** custom categories. Built-in
+#### How import works
+
+1. **Drop** another launcher's media under `Import/{Launcher}/` in an ES-DE `downloaded_media`
+   shape.
+2. **Match** — PFP detects it by structure and links each file to a game in three passes: exact ROM
+   filename → display title → tag-stripped title. Ambiguities are reviewed, never guessed.
+3. **File** into `Artwork/{platform}/{mediaDir}/{PortableName}.{ext}`. Same-volume transfers move
+   with zero bytes copied; otherwise they copy. Existing or locked artwork is never overwritten.
+
+| ES-DE folder | Imports as (PFP kind) |
+|---|---|
+| `covers` | Box Art |
+| `miximages` | Hero |
+| `fanart` | Background |
+| `marquees` | Logo |
+| `screenshots` | Screenshot |
+| `titlescreens` | Title Screen |
+| `physicalmedia` | Physical Media |
+| `3dboxes` | 3D Box |
+| `manuals` | Manual (PDF) |
+| `videos` | Video → transcoded to an ICON1 snap |
+| `backcovers` | Recognized as library structure, not imported |
+
+### 4.7 Icon display modes & video snaps
+
+Every game tile can be drawn four ways — set a global default in *Settings ▸ Artwork ▸ Game Icon
+Display*, per Memory Card, or per game via its **△** menu:
+
+- **Custom Icon** — the PSP-authentic 144:80 ICON0 fill.
+- **Box Art** — the game's cover at its natural aspect.
+- **Physical Media** — the platform's cartridge/disc shot.
+- **3D Box Art** — a rendered 3D box.
+
+In **Custom Icon** mode, resting on a game plays its **video snap** inside the icon (muted, capped at
+60 seconds, then fading back to the still) — the PSP's ICON1.PMF revived. It is battery-conscious:
+one shared player, skipped under Battery Saver, low battery, or thermal pressure, and gated by an
+**Animated Icons** master toggle in Settings.
+
+### 4.8 Android apps & non-gaming categories
+
+- **Add apps** to a section (App Store / Video / Music / Network / custom) via its **Add Apps** row.
+- **App artwork** — apps show their launcher icon by default; give one custom art via
+  **△ ▸ Edit App Details ▸ Icon** and it renders as a landscape tile. Apps stay tagged as apps, so
+  they never appear in All Games.
+- **Android games** — open the Android library card and choose **Find Games**; these are addable to
+  collections but stay out of All Games.
+
+### 4.9 The App Drawer
+
+A bottom-right button (shown while using touch, or bound on a controller) opens the **App Drawer**:
+all your apps with quick filters — **All Apps / Games / Emulators / Tools / Recently Used** —
+switchable with **L1 / R1**.
+
+### 4.10 Music, Video & Photo
+
+Each media section is driven by **one root folder** you set in its Settings screen (SAF folder
+picker — no storage permission):
+
+- **Music** — scan folders, browse `[cover] title / artist`, and play in a full-screen player with a
+  **background service** and media-notification controls. Create and manage **playlists**.
+- **Video** — scanned libraries with thumbnails, Recently Watched / Favorites / Playlists, and a
+  built-in player or your chosen external app.
+- **Photo** — scanned albums, a fullscreen viewer (zoom, pan, rotate, L1/R1 paging), and
+  **Set as Launcher Wallpaper** (EXIF-stripped; location data is never read).
+
+Each section shows a single "＋ Add" getting-started row until a root has been added and scanned.
+
+### 4.11 Categories
+
+Categories are the horizontal bar. Manage them in *Settings ▸ Categories*:
+
+- **Create** a category, choose a **content type** (Gaming = games & collections, Non-gaming =
+  apps), and pick an **icon** from the image-based picker.
+- **Rename, reorder** (move left/right), **hide/show,** or **delete** custom categories. Built-in
   categories are protected from deletion.
 
-### Themes & personalization
+### 4.12 Themes & personalization
 
-Everything lives in **Settings → Themes**, built around one idea: *pick a background and one
-color — the whole crossbar follows* (wave, background gradient, cursor and icons all derive from it).
+Everything lives in **Settings ▸ Themes**, built around one idea: *pick a background and one
+color — the whole crossbar follows* (wave, gradient, cursor and icons all derive from it).
 
-- **Color Scheme** — 12 PSP-style presets, previewed live on the real crossbar behind the
-  picker (including the month-cycling *Original*).
-- **Icon Color** — one tint applied to every crossbar icon (category bar, item glyphs, console
-  silhouettes, memory-card art) with 8 curated swatches; *Default* is the icons' native white.
-  Game artwork, covers and app icons are never tinted.
-- **New Theme from Photo** — pick any picture: it becomes the wallpaper and the theme color is
-  derived from the photo's dominant hue automatically. The theme is saved and applied.
-- **Import PSP Theme (`.ptf`)** — convert an official PSP theme you own: PFP extracts its
-  wallpaper and derives its color, rendered with PFP's own icons. CXMB (`.ctf`) files are
-  politely declined (they're full firmware replacements, not themes).
-- **My Themes** — your saved themes as cards (thumbnail + accent chip): tap to apply, **Share**
-  to export a `.pfptheme` via the system share sheet, or Remove. **Import Theme (`.pfptheme`)**
-  installs a theme someone shared with you.
+- **Color Scheme** — 12 PSP-style presets, previewed live on the real crossbar (including the
+  month-cycling *Original*).
+- **Icon Color** — one tint across every crossbar glyph, 8 curated swatches (*Default* is the
+  native white). Game art, covers and app icons are never tinted.
+- **New Theme from Photo** — any picture becomes the wallpaper; the theme color is auto-derived from
+  its dominant hue.
+- **Import PSP Theme (`.ptf`)** — convert an official PSP theme you own (wallpaper + derived color).
+  CXMB firmware files are safely declined.
+- **My Themes** — your saved themes as cards: apply, **Share** (`.pfptheme`), or Remove.
 
-### Settings reference
+**Theme Studio** is a desktop companion (Windows / Linux / macOS) for authoring themes with a live
+crossbar preview, an icon editor, wallpaper crop presets, crossbar alignment assist, and batch
+`.ptf → .pfptheme` conversion. See [7.8](#78-the-theme-studio-desktop-app).
 
-The **Settings** (gear) category covers:
+### 4.13 Discord Social (Full edition)
 
-| Screen | What it does |
+**Full edition only.** A **Social** column adds Discord integration:
+
+- **Sign in by QR** — scan with your phone (OAuth device grant; no password typed on the handheld).
+  Tokens are stored **encrypted** in the Android Keystore and refreshed automatically.
+- **Friends** — avatars, presence, and what they are playing in PFP.
+- **Activity sharing** — opt-in (default **off**), with a Generic Mode that shows only "a game".
+- **Voice chat** — join rooms by code, invite friends, with noise cancellation, a Game↔Voice
+  balance, and **push-to-talk** (a floating hold-to-talk button or a controller button you map).
+
+Everything is inert until you connect, and presence is limited to this app.
+
+### 4.14 Adjusting the layout for your screen
+
+PFP scales itself to fit your device automatically, including near-square foldable inner displays.
+To fine-tune it, open **Settings ▸ Display ▸ Adjust XMB Layout** — a live editor over the real
+crossbar:
+
+- **Scale** the whole interface, and **shift the crossbar** up/down and left/right.
+- Drive it with the **D-Pad** (move), **L1 / R1** (scale), **Y** (reset), **A** (save), **B**
+  (cancel) — or an on-screen **slider** panel.
+- Each screen size keeps its **own** tuning, so a handheld and a foldable never share (and distort)
+  one layout.
+
+### 4.15 Backup & restore
+
+*Settings ▸ Backup & Restore* writes a `.pfpbackup` archive (library + settings) into a folder you
+pick, and restores from one. Because on-device cloud backup is disabled for privacy, this is how you
+move your setup to a new device or recover after a reinstall. Restoring re-links your ROM/media
+folders via *Library ▸ Root Access*.
+
+### 4.16 Settings reference
+
+| Section | What it covers |
 |---|---|
-| Library / Library Manager | Root folder, Add Console wizard, per-console ROM dir / emulator / scan |
-| Categories | Create, rename, reorder, hide, icon picker |
-| Collections | Create, rename, reorder, delete collections |
-| Artwork | SteamGridDB key, re-scrape (all / missing), clear cache |
-| Emulators | Detected emulators, Custom Emulator Wizard, profile editor |
-| Themes | Color schemes (12, live preview), unified icon color, Quick Create from photo, saved-theme library (apply/share/delete), PSP `.ptf` import, `.pfptheme` import |
-| Display | Icon style, wave style, custom wallpaper, landscape note |
-| Controller | View / remap gamepad bindings, help-bar toggle |
-| Backup & Restore | Export / import a `.pfpbackup` (library, settings, play history) |
-| Logs | In-app log viewer + export (7-day rolling file log) |
-| About / Credits | Version info and attributions |
-
-### Background tasks
-
-ROM scans, artwork fetches and metadata refreshes run in the background and report to the **Android
-notification bar** with live progress — pull down the shade to watch them.
+| **Library** | ROM roots, Library Manager (consoles), Import PC Games, Root Access |
+| **Emulators** | Detected emulators, Custom Emulator Wizard |
+| **Artwork** | API keys, scrape all/missing, Game Icon Display, Artwork Folder & Import |
+| **Themes** | Color scheme, icon color, wallpaper, New Theme from Photo, PSP import, My Themes |
+| **Display** | Wave style, wallpaper, boot sequence, Adjust XMB Layout, Animated Icons |
+| **Music / Video / Photo** | Root folder, rescan, default player, thumbnail cache |
+| **Controller** | Remap every binding, scroll speed, touch navigation button |
+| **Collections / Categories** | Create, rename, reorder, hide |
+| **Backup & Restore** | Export / import `.pfpbackup` |
+| **Logs** | View and share the rolling, redacted log file |
+| **About / Credits** | Version, **Edition (Full / Lite)**, attributions |
 
 ---
 
-## Build & install
+## 5. Permissions & privacy
 
-### Prerequisites
-- Android Studio (Hedgehog or newer), JDK 17
-- Android SDK 35 · min SDK 29 (Android 10)
+PFP is a **local-first** launcher: your data stays on your device. There is no analytics, no
+telemetry, and no account. PFP only reaches the network when *you* trigger artwork/metadata
+scraping, and only over HTTPS.
 
-### Build & run
+**What PFP stores, and how**
+- **On-device only.** Your library, settings and artwork live in app storage. **Backup is disabled**
+  (`allowBackup=false`), so nothing is uploaded or transferred automatically — use
+  [Backup & restore](#415-backup--restore) to move devices.
+- **Scraper API keys are encrypted at rest** with a hardware-backed Android Keystore key.
+- **Network is HTTPS-only.** Cleartext is blocked, and release builds trust only the system
+  certificate store.
+- **Logs are redacted at write time** — credentials, tokens, account names and emails never reach
+  disk.
+
+**Why the broad permissions exist (and how they are minimized)**
+- **All-files access** is requested only when you add a **file-based ROM folder** (disc/multi-file
+  games need real paths). Use SAF libraries and you never grant it.
+- **Query installed apps** is required to *be* a launcher.
+- **Usage access** is optional and only powers "Recently Used".
+
+**Other apps can't silently change your library.** Legacy "install shortcut" broadcasts are
+sanitized and require you to **confirm each one** before it appears.
+
+---
+
+## 6. Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| Home button doesn't open PFP | Set it as default: *Android Settings ▸ Apps ▸ Default apps ▸ Home app*. |
+| A console shows no games after adding ROMs | Scanning is manual — open the card's **△ ▸ Scan This Console**. |
+| A game won't launch | Confirm the emulator app is installed; check the per-game/console emulator in **△** / Library Manager. |
+| Disc/multi-file game not found | These need real-path access — grant All-Files when prompted in *Settings ▸ Library*. |
+| Artwork won't download | Add a SteamGridDB (or other) API key in *Settings ▸ Artwork* and check your connection. |
+| Interface too big/small or off-center | Tune it in *Settings ▸ Display ▸ Adjust XMB Layout*. |
+| Which edition am I on? | *Settings ▸ About ▸ Edition* shows **Full** or **Lite**. |
+
+If something looks like a bug, grab the log from *Settings ▸ Logs ▸ Share* — it is redacted and safe
+to send.
+
+---
+
+# For Developers
+
+> This section is for building PFP from source. It assumes familiarity with Android development.
+
+### 7.1 Tech stack
+
+- **Language:** Kotlin `2.0.0`
+- **UI:** Jetpack Compose (Compose BOM `2024.06.00`), MVVM + state hoisting
+- **DI:** Hilt
+- **Database:** Room — **schema v29**, hand-written migrations only (never destructive)
+- **Settings:** DataStore Preferences
+- **Networking:** Ktor (artwork / metadata scrapers)
+- **Media:** Media3 (video snaps + in-app player)
+- **Image loading:** Coil
+- **Background work:** WorkManager + Android notifications
+- **Serialization:** Kotlinx Serialization
+- **Native:** an NDK/CMake bridge to the Discord Social SDK (**full flavor only**)
+- **Desktop companion:** Compose Multiplatform Desktop (`:studio`)
+- **Testing:** JUnit 4 + MockK + Turbine
+- **Build:** Gradle `8.14.5` (Kotlin DSL), AGP `8.10.1`
+
+### 7.2 Prerequisites
+
+- **Android Studio** — a recent stable release (Ladybug or newer recommended). Use the **bundled
+  JetBrains Runtime (JBR 17/21)** as the IDE boot runtime.
+- **JDK 17** for command-line Gradle (`JAVA_HOME` pointing at a JDK 17). The desktop `:studio`
+  module targets a JVM 17 toolchain.
+- **Android SDK 35** installed, with **NDK + CMake** (required to build the full flavor's native
+  Discord bridge). Minimum supported device API is **29** (Android 10).
+
+### 7.3 Get the code & open it in Android Studio
 
 ```bash
 git clone <repo-url>
-cd playfieldportal
+cd PlayFieldPortal
+```
 
-# Build the debug APK
-./gradlew :app:assembleDebug
+1. In Android Studio choose **Open** and select the project root (the folder with
+   `settings.gradle.kts`).
+2. Let Gradle sync finish. Android Studio downloads the wrapper (`8.14.5`) and the declared
+   plugins/dependencies automatically.
+3. If prompted, install the matching **Android SDK 35**, **NDK,** and **CMake** from the SDK
+   Manager.
 
-# Install to a connected device
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+### 7.4 Build variants & flavors
 
-# Run unit tests
+The app has two dimensions:
+
+- **Flavor (`distribution`):** `full` (ships the Discord Social SDK + native libs) and `lite`
+  (omits them; smaller download, Social section hidden). `lite` uses the `.lite` application-id
+  suffix, so both editions can be installed side by side.
+- **Build type:** `debug` (`.debug` suffix) and `release` (R8 + signing).
+
+That yields `fullDebug`, `fullRelease`, `liteDebug`, `liteRelease`. Switch the active variant in the
+**Build Variants** tool window.
+
+> The native Discord bridge is built for **arm64-v8a** and **armeabi-v7a** only. The **full** flavor
+> therefore cannot run on an **x86_64 emulator** — use the **lite** flavor for emulator testing.
+
+### 7.5 Run & debug from Android Studio
+
+1. Open **Build Variants** and select **`liteDebug`** (recommended for emulators and quick
+   iteration).
+2. Pick your device/emulator and press **Run** (or **Debug**).
+
+Two shareable run configurations are checked in under `.run/`:
+
+- **`app (lite)`** — an Android App configuration (full debugger + logcat). Pair it with the
+  `liteDebug` build variant.
+- **`Install Lite (emulator)`** — a Gradle configuration that runs `:app:installLiteDebug`, which
+  always installs the lite flavor regardless of the selected variant.
+
+### 7.6 Release signing
+
+Release builds are signed from a **gitignored** `keystore.properties` at the repo root. Without it,
+release builds still assemble but stay **unsigned**.
+
+```properties
+# keystore.properties (do not commit)
+storeFile=/absolute/path/to/release.keystore
+storePassword=…
+keyAlias=…
+keyPassword=…
+```
+
+### 7.7 Command-line builds & the `dist` task
+
+```bash
+# Debug (lite) APK
+./gradlew :app:assembleLiteDebug
+
+# Both release APKs (full + lite); signed if keystore.properties is present
+./gradlew :app:assembleFullRelease :app:assembleLiteRelease
+
+# Unit tests
 ./gradlew test
 ```
 
-### Release builds (Full / Lite / Theme Studio)
-
-The app builds in two flavors — **full** (with the Discord Social SDK) and **lite** (~44 MB
-smaller, no Discord) — and the Theme Studio packages as a desktop app:
+**One command for everything shippable:**
 
 ```bash
-# Both release APKs (signing config read from keystore.properties)
-./gradlew assembleRelease
-#   → app/build/outputs/apk/full/release/app-full-release.apk
-#   → app/build/outputs/apk/lite/release/app-lite-release.apk
-
-# Theme Studio — native installer for the current OS (MSI / DMG / DEB)
-./gradlew :studio:packageDistributionForCurrentOS
-#   → studio/build/compose/binaries/main/<format>/
+./gradlew dist
 ```
 
-If `adb install` reports `INSTALL_FAILED_UPDATE_INCOMPATIBLE` (debug-signature mismatch), uninstall
-first — **note this clears local app data** (library, settings):
+`dist` builds the full + lite release APKs and the Theme Studio installer for the current OS and
+collects them, cleanly named, into the gitignored **`dist/`** folder:
+
+```
+dist/
+├── PlayFieldPortal-<version>-full.apk
+├── PlayFieldPortal-<version>-lite.apk
+└── PlayField-Theme-Studio-<version>.msi   (or .dmg / .deb per OS)
+```
+
+Every individual release build also finalizes a copy into `dist/`.
+
+### 7.8 The Theme Studio desktop app
+
+`:studio` is a Compose Multiplatform Desktop app that shares `:core:theme-kit` with the launcher
+(and must never grow an Android dependency).
 
 ```bash
-adb uninstall com.playfieldportal.launcher.debug
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+# Run it
+./gradlew :studio:run          # or run-theme-studio.bat on Windows
+
+# Package a native installer for the current OS (MSI / DMG / DEB)
+./gradlew :studio:packageReleaseDistributionForCurrentOS
 ```
 
----
+### 7.9 Module structure
 
-## Tech stack
-
-- **Language:** Kotlin
-- **UI:** Jetpack Compose (MVVM + state hoisting)
-- **DI:** Hilt
-- **Database:** Room — **schema v21**, hand-written migrations only (never destructive)
-- **Settings:** DataStore Preferences
-- **Networking:** Ktor (SteamGridDB)
-- **Image loading:** Coil
-- **Background tasks:** WorkManager + Android notifications
-- **Logging:** Timber (7-day rolling file log + in-app viewer)
-- **Serialization:** Kotlinx Serialization
-- **Testing:** JUnit 4 + MockK + Turbine
-
----
-
-## Module structure
-
-Strict dependency direction: **features → core**, and `app` wires everything via Hilt.
+Strict dependency direction: **features → core**; `app` wires everything via Hilt.
 
 ```
-app/                      — MainActivity (HOME launcher), PFPApplication, Hilt app module
-studio/                   — Theme Studio: Compose Desktop companion (Win/Linux/macOS theme editor)
+app/                      MainActivity (HOME launcher), PFPApplication, Hilt app module
+studio/                   Theme Studio — Compose Desktop companion (Win/Linux/macOS)
 core/
-  theme-kit/              — Pure-JVM theme core shared with Theme Studio: PTF/BMP/GIM/LZR parsers,
-                            .pfptheme codec, color cascade, icon-slot registry, layout spec + analyzers
-  core-common/            — Shared utilities and extensions
-  core-domain/            — Domain models, repository interfaces
-  core-data/              — Room DB (v21), DAOs, DataStore, repository impls, seeders, migrations
-  core-ui/                — PFPTheme/PFPColors, WaveStyle, PortalIcon, category-icon catalog
+  theme-kit/              Pure-JVM theme core shared with Theme Studio: PTF/BMP/GIM/LZR parsers,
+                          .pfptheme codec, color cascade, icon-slot registry, layout spec + adjust
+  core-common/            Shared utilities and extensions
+  core-domain/            Domain models, repository interfaces
+  core-data/              Room DB (v29), DAOs, DataStore, repository impls, migrations
+  core-ui/                PFPTheme/PFPColors, WaveStyle, PortalIcon, category-icon catalog
+discord/
+  discord-native/         NDK/CMake bridge to the Discord Social SDK (full flavor only)
 feature/
-  feature-xmb/            — crossbar shell, XMBViewModel, game/app detail, photo viewer, gamepad, boot sequence
-  feature-library/        — ROM scanner, disc-image resolver, platform extension map
-  feature-launcher/       — Emulator detection + intent resolution
-  feature-artwork/        — SteamGridDB client, artwork repository
-  feature-themes/         — .xmbtheme loader, ThemeRepository, built-in themes
-  feature-settings/       — 15 settings screens + ViewModels
-  feature-appbar/         — App drawer, app→category classification, filters
-  feature-backup/         — BackupManager, backup/restore workers
+  feature-xmb/            Crossbar shell, XMBViewModel, game/app detail, Artwork Studio, boot
+  feature-library/        ROM scanner, disc-image resolver, platform map
+  feature-launcher/       Emulator detection + intent resolution
+  feature-artwork/        Scraper clients, portable artwork library, ES-DE import/export
+  feature-themes/         Theme loader/repository, built-in themes
+  feature-settings/       Settings screens + ViewModels
+  feature-appbar/         App drawer, app→category classification, filters
+  feature-backup/         BackupManager, backup/restore workers
+  feature-social/         Discord Social UI (full flavor)
 ```
 
-See **[ARCHITECTURE.md](ARCHITECTURE.md)** for data-flow, launch-pipeline, and state details.
+See **[ARCHITECTURE.md](ARCHITECTURE.md)** for data-flow, launch-pipeline, and state detail.
+
+### 7.10 Testing
+
+```bash
+./gradlew test                     # all unit tests
+./gradlew :feature:feature-xmb:test  # a single module
+```
+
+Unit tests use JUnit 4 + MockK + Turbine; `:core:theme-kit` additionally ships golden tests against
+Sony's own example PSP themes.
 
 ---
 
-## Themes & the .pfptheme format
-
-The primary theme format is **`.pfptheme`** — a small zip built on the one-color cascade
-(pick a background and one color; wave, gradient, cursor, and icon tint all derive):
-
-```
-mytheme.pfptheme
-├── manifest.json     — name, accentColor, iconColor, waveStyle, optional layout override
-├── wallpaper.png     — optional (absent → live wave background)
-├── preview.png       — rendered crossbar thumbnail (shown before applying, like the PSP)
-└── icons/<key>.png   — optional custom icon slots (category bar / item rows / status strip)
-```
-
-Make themes on the device (Settings ▸ Themes ▸ Quick Create / PSP `.ptf` import) or in the
-**Theme Studio** desktop app (`gradlew :studio:run`, or `run-theme-studio.bat` on Windows),
-which adds the live preview, icon editor, alignment assist, and batch PTF conversion. All
-parsers are hardened against hostile files (size caps, dimension caps, zip-bomb and
-path-traversal guards). Full design docs live in [docs/](docs/theme-implementation-roadmap.md).
-
----
-
-## .xmbtheme package format
-
-A `.xmbtheme` file is a renamed ZIP archive. (Superseded for most theming by `.pfptheme`
-above; the loader remains implemented and Zip-Slip hardened, and the format below stays
-supported for sound packs / boot animations in the next stage.)
-
-### Required — `theme.json`
-```json
-{
-  "format_version": 1,
-  "id": "my_unique_theme_id",
-  "name": "My Theme",
-  "author": "Your Name",
-  "version": "1.0",
-  "wave_color": "#0055AA",
-  "wave_opacity": 0.7,
-  "wave_speed": 1.0,
-  "wave_amplitude": 1.0,
-  "accent_color": "#FFFFFF",
-  "text_color": "#FFFFFF",
-  "has_background": false,
-  "has_boot_animation": false,
-  "has_sound_pack": false,
-  "font_key": "system_default"
-}
-```
-
-| Field | Type | Notes |
-|---|---|---|
-| `format_version` | int | Must be `1`. |
-| `id` | string | Unique identifier / asset directory name. No spaces. |
-| `wave_color` | string | `#RRGGBB` (opaque) or `#AARRGGBB` (with alpha). |
-| `wave_opacity` | float | 0.0–1.0. Default `0.7`. |
-| `wave_speed` | float | Multiplier. `1.0` = normal. |
-| `wave_amplitude` | float | Multiplier. `1.0` = normal. |
-| `accent_color` | string | Selected items / highlighted UI. |
-| `text_color` | string | Primary text (secondary derived at 70%). |
-| `has_background` | bool | `true` if ZIP contains `background.jpg`. |
-| `has_boot_animation` | bool | `true` if ZIP contains `boot_animation.mp4`. |
-| `has_sound_pack` | bool | `true` if ZIP contains a `sounds/` directory. |
-| `font_key` | string | `"system_default"` only for now. |
-
-### Optional assets
-
-| Path in ZIP | Condition | Notes |
-|---|---|---|
-| `background.jpg` | `has_background: true` | Displayed behind the wave background. |
-| `boot_animation.mp4` | `has_boot_animation: true` | Replaces the default boot sequence. |
-| `sounds/navigate_h.ogg` | `has_sound_pack: true` | Horizontal navigation. |
-| `sounds/navigate_v.ogg` | `has_sound_pack: true` | Vertical navigation. |
-| `sounds/select.ogg` | `has_sound_pack: true` | Confirm / select. |
-| `sounds/back.ogg` | `has_sound_pack: true` | Back / cancel. |
-| `sounds/category_change.ogg` | `has_sound_pack: true` | Category switch. |
-| `sounds/boot.ogg` | `has_sound_pack: true` | Boot sequence. |
-
-Assets not declared by a manifest flag are ignored even if present.
-
----
-
-## Credits
+## 8. Credits
 
 ### Interface design — inspired by Sony's XMB
 The look and feel is inspired by the **XMB (XrossMediaBar)**, the interface Sony created for the
@@ -655,9 +764,6 @@ Fetched at the user's request from third-party providers and remaining the prope
 If you are a rights holder and would like attribution changed or an asset removed, please open an
 issue and it will be addressed promptly.
 
----
+## 9. License
 
-## License
-
-Private repository — all rights reserved. Not licensed for redistribution. Third-party artwork
-remains the property of its respective authors (see [Credits](#credits)).
+See [LICENSE](LICENSE).
