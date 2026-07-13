@@ -68,6 +68,50 @@ class RaRomHasherTest {
         assertEquals(7, RaConsole.idFor("nes"))
         assertEquals(3, RaConsole.idFor("snes"))
         assertEquals(5, RaConsole.idFor("gba"))
+        assertEquals(18, RaConsole.idFor("nds"))
         assertNull(RaConsole.idFor("psx"))
+    }
+
+    private fun putU32LE(b: ByteArray, off: Int, v: Int) {
+        b[off] = (v and 0xFF).toByte()
+        b[off + 1] = ((v shr 8) and 0xFF).toByte()
+        b[off + 2] = ((v shr 16) and 0xFF).toByte()
+        b[off + 3] = ((v shr 24) and 0xFF).toByte()
+    }
+
+    @Test
+    fun `nds hashes header, arm9, arm7 and icon in order`() {
+        val rom = ByteArray(0xE00)
+        for (i in 0 until 0x160) rom[i] = (i and 0xFF).toByte()   // header pattern
+        putU32LE(rom, 0x20, 0x200)                                // arm9 offset
+        putU32LE(rom, 0x2C, 0x40)                                 // arm9 size
+        putU32LE(rom, 0x30, 0x300)                                // arm7 offset
+        putU32LE(rom, 0x3C, 0x20)                                 // arm7 size
+        putU32LE(rom, 0x68, 0x400)                                // icon offset
+        for (i in 0x200 until 0x240) rom[i] = 0xA1.toByte()       // arm9 (64 bytes)
+        for (i in 0x300 until 0x320) rom[i] = 0xB7.toByte()       // arm7 (32 bytes)
+        for (i in 0x400 until 0xE00) rom[i] = 0xC9.toByte()       // icon (0xA00 bytes)
+
+        val expected = md5(
+            rom.copyOfRange(0, 0x160) +
+                rom.copyOfRange(0x200, 0x240) +
+                rom.copyOfRange(0x300, 0x320) +
+                rom.copyOfRange(0x400, 0xE00),
+        )
+        assertEquals(expected, RaRomHasher.hash("nds", rom))
+    }
+
+    @Test
+    fun `nds icon block is zero-padded when the rom is short`() {
+        // Icon points near EOF with fewer than 0xA00 bytes remaining; the rest is zero-filled.
+        val rom = ByteArray(0x300)
+        putU32LE(rom, 0x20, 0x160); putU32LE(rom, 0x2C, 0x10)
+        putU32LE(rom, 0x30, 0x170); putU32LE(rom, 0x3C, 0x10)
+        putU32LE(rom, 0x68, 0x200)                               // icon off; only 0x100 bytes remain
+        for (i in 0x200 until 0x300) rom[i] = 0x5A.toByte()
+
+        val icon = rom.copyOfRange(0x200, 0x300) + ByteArray(0xA00 - 0x100)
+        val expected = md5(rom.copyOfRange(0, 0x160) + rom.copyOfRange(0x160, 0x170) + rom.copyOfRange(0x170, 0x180) + icon)
+        assertEquals(expected, RaRomHasher.hash("nds", rom))
     }
 }

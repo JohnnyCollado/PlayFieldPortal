@@ -7,6 +7,7 @@ import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.feature.achievements.AchievementRepository
 import com.playfieldportal.feature.achievements.api.RetroAchievementsApi
 import kotlinx.coroutines.flow.first
+import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -49,9 +50,12 @@ class AchievementAutoMatcher @Inject constructor(
 
         var matched = 0
         val unmatched = mutableListOf<UnmatchedGame>()
+        Timber.d("auto-match: %d unlinked of %d games", unlinked.size, unlinked.size)
         unlinked.forEachIndexed { index, game ->
             onProgress(index, unlinked.size)
-            when (val outcome = matchOne(game)) {
+            val outcome = matchOne(game)
+            Timber.d("auto-match [%s] %s -> %s", game.platformId, game.displayTitle, outcome)
+            when (outcome) {
                 Outcome.Matched -> matched++
                 is Outcome.Unmatched -> unmatched += UnmatchedGame(game.id, game.displayTitle, game.platformId, outcome.reason)
             }

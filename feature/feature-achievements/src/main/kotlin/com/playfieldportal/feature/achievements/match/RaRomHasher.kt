@@ -12,12 +12,13 @@ import java.security.MessageDigest
  */
 object RaRomHasher {
 
-    private enum class Method { FULL, NES, SNES, N64, UNSUPPORTED }
+    private enum class Method { FULL, NES, SNES, N64, NDS, UNSUPPORTED }
 
     private fun methodFor(platformId: String): Method = when (platformId) {
         "nes" -> Method.NES
         "snes" -> Method.SNES
         "n64" -> Method.N64
+        "nds" -> Method.NDS
         "gb", "gbc", "gba", "megadrive", "mastersystem", "gamegear", "sega32x",
         "pcengine", "virtualboy", "ngp", "wonderswan", "wonderswancolor",
         "atari2600", "atari7800", "atarilynx" -> Method.FULL
@@ -28,15 +29,52 @@ object RaRomHasher {
     fun isSupported(platformId: String): Boolean = methodFor(platformId) != Method.UNSUPPORTED
 
     /** Lowercase-hex MD5 of the RA content hash, or null for an unsupported platform. */
-    fun hash(platformId: String, bytes: ByteArray): String? {
-        val content = when (methodFor(platformId)) {
-            Method.FULL -> bytes
-            Method.NES -> stripNesHeader(bytes)
-            Method.SNES -> stripSnesHeader(bytes)
-            Method.N64 -> normalizeN64(bytes)
-            Method.UNSUPPORTED -> return null
-        }
-        return md5Hex(content)
+    fun hash(platformId: String, bytes: ByteArray): String? = when (methodFor(platformId)) {
+        Method.FULL -> md5Hex(bytes)
+        Method.NES -> md5Hex(stripNesHeader(bytes))
+        Method.SNES -> md5Hex(stripSnesHeader(bytes))
+        Method.N64 -> md5Hex(normalizeN64(bytes))
+        Method.NDS -> hashNds(bytes)
+        Method.UNSUPPORTED -> null
+    }
+
+    // NDS: MD5 of the 0x160 header + the ARM9 and ARM7 boot code + the 0xA00-byte icon/title block.
+    // Offsets/sizes are u32 little-endian in the header. Matches rcheevos rc_hash_nintendo_ds
+    // (hashed as-is; the encrypted ARM9 secure area is included, so standard dumps match).
+    private fun hashNds(b: ByteArray): String? {
+        if (b.size < 0x160) return null
+        val arm9Off = u32le(b, 0x20)
+        val arm9Size = u32le(b, 0x2C)
+        val arm7Off = u32le(b, 0x30)
+        val arm7Size = u32le(b, 0x3C)
+        val iconOff = u32le(b, 0x68)
+        if (arm9Size < 0 || arm7Size < 0 || arm9Size.toLong() + arm7Size > 16L * 1024 * 1024) return null
+
+        val md = MessageDigest.getInstance("MD5")
+        md.update(b, 0, 0x160)
+        appendRegion(md, b, arm9Off, arm9Size)
+        appendRegion(md, b, arm7Off, arm7Size)
+        appendPadded(md, b, iconOff, 0xA00)
+        return md.digest().joinToString("") { "%02x".format(it.toInt() and 0xFF) }
+    }
+
+    private fun u32le(b: ByteArray, off: Int): Int =
+        (b[off].toInt() and 0xFF) or
+            ((b[off + 1].toInt() and 0xFF) shl 8) or
+            ((b[off + 2].toInt() and 0xFF) shl 16) or
+            ((b[off + 3].toInt() and 0xFF) shl 24)
+
+    // Hashes [size] bytes from [off], bounded to the ROM (a valid header points inside the file).
+    private fun appendRegion(md: MessageDigest, b: ByteArray, off: Int, size: Int) {
+        if (off < 0 || size <= 0 || off >= b.size) return
+        md.update(b, off, minOf(off.toLong() + size, b.size.toLong()).toInt() - off)
+    }
+
+    // Hashes exactly [size] bytes from [off], zero-padded when the ROM is shorter (icon block).
+    private fun appendPadded(md: MessageDigest, b: ByteArray, off: Int, size: Int) {
+        val chunk = ByteArray(size)
+        if (off in 0 until b.size) System.arraycopy(b, off, chunk, 0, minOf(size, b.size - off))
+        md.update(chunk)
     }
 
     // NES: the 16-byte iNES header ("NES...") is not part of the content.
@@ -93,6 +131,7 @@ object RaConsole {
         "megadrive" -> 1
         "n64" -> 2
         "snes" -> 3
+        "nds" -> 18
         "gb" -> 4
         "gba" -> 5
         "gbc" -> 6

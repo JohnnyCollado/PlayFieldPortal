@@ -31,10 +31,12 @@ class RomBytesReader @Inject constructor(
         }.getOrNull()
     }
 
-    private fun openStream(game: Game): InputStream? = when {
-        game.romPath != null -> File(game.romPath).takeIf(File::exists)?.inputStream()
-        game.romUri != null -> context.contentResolver.openInputStream(Uri.parse(game.romUri))
-        else -> null
+    // Prefer a real raw-path file, but fall back to the SAF URI: romPath is often a SAF-derived
+    // (non-filesystem) string, so a failed File check must not stop us from opening the content URI.
+    private fun openStream(game: Game): InputStream? {
+        game.romPath?.let { File(it).takeIf(File::exists) }?.let { return it.inputStream() }
+        game.romUri?.let { return context.contentResolver.openInputStream(Uri.parse(it)) }
+        return null
     }
 
     private fun readFirstZipEntry(stream: InputStream): ByteArray? {
@@ -51,6 +53,7 @@ class RomBytesReader @Inject constructor(
     private fun capped(bytes: ByteArray): ByteArray? = bytes.takeIf { it.size <= MAX_BYTES }
 
     private companion object {
-        const val MAX_BYTES = 64 * 1024 * 1024
+        // Large enough for Nintendo DS carts (up to ~256 MB); disc images stay well above this.
+        const val MAX_BYTES = 256 * 1024 * 1024
     }
 }
