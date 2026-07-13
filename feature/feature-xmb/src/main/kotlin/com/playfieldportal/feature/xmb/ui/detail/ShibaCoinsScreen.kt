@@ -199,9 +199,7 @@ private fun SummaryHeader(state: ShibaCoinsUiState) {
 
 @Composable
 private fun LinkSection(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewModel, focused: Boolean) {
-    var draft by remember { mutableStateOf("") }
     val edge = menuCursorEdge()
-    val label = if (state.provider == AchievementProvider.STEAM) "Steam appid" else "RetroAchievements game id"
     Column(
         Modifier
             .fillMaxWidth()
@@ -209,32 +207,44 @@ private fun LinkSection(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewModel
             .then(if (focused) Modifier.border(2.dp, edge, RoundedCornerShape(10.dp)) else Modifier)
             .padding(vertical = 10.dp, horizontal = if (focused) 8.dp else 0.dp),
     ) {
-        Text("This game isn't linked yet", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-        Spacer(Modifier.height(8.dp))
-        OutlinedTextField(
-            value = draft,
-            onValueChange = { draft = it },
-            label = { Text(label, color = TextMuted) },
-            singleLine = true,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary,
-                focusedBorderColor = menuCursorEdge(), unfocusedBorderColor = Color(0x44FFFFFF),
-                cursorColor = menuCursorEdge(),
-            ),
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Spacer(Modifier.height(8.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            PillButton("Link and sync", enabled = draft.isNotBlank()) { viewModel.link(draft) }
-            if (state.provider == AchievementProvider.STEAM) {
-                PillButton("Match by title", enabled = state.title.isNotBlank()) { viewModel.resolveByTitle() }
-            }
-        }
-
         if (state.provider == AchievementProvider.STEAM) {
-            SteamFinder(state, viewModel)
+            SteamLinkControls(state, viewModel)
+        } else {
+            // RetroAchievements is hash-only — no manual / user-provided linking.
+            Text("Not recognised by RetroAchievements", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "RetroAchievements games link automatically by ROM hash. If this ROM's hash isn't a registered RetroAchievements hash, it can't be tracked.",
+                color = TextMuted,
+                fontSize = 12.sp,
+            )
         }
     }
+}
+
+@Composable
+private fun SteamLinkControls(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewModel) {
+    var draft by remember { mutableStateOf("") }
+    Text("This game isn't linked yet", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+    Spacer(Modifier.height(8.dp))
+    OutlinedTextField(
+        value = draft,
+        onValueChange = { draft = it },
+        label = { Text("Steam appid", color = TextMuted) },
+        singleLine = true,
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary,
+            focusedBorderColor = menuCursorEdge(), unfocusedBorderColor = Color(0x44FFFFFF),
+            cursorColor = menuCursorEdge(),
+        ),
+        modifier = Modifier.fillMaxWidth(),
+    )
+    Spacer(Modifier.height(8.dp))
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        PillButton("Link and sync", enabled = draft.isNotBlank()) { viewModel.link(draft) }
+        PillButton("Match by title", enabled = state.title.isNotBlank()) { viewModel.resolveByTitle() }
+    }
+    SteamFinder(state, viewModel)
 }
 
 // Manual "Find on Steam" picker: search the app list by name and pick the right game.
@@ -285,15 +295,18 @@ private fun SyncRow(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewModel, fo
         if (state.isSyncing) {
             CircularProgressIndicator(color = menuCursorEdge(), modifier = Modifier.size(18.dp))
         } else if (state.linked) {
-            Text(
-                "Change match",
-                color = TextMuted,
-                fontSize = 12.sp,
-                modifier = Modifier
-                    .clickable { viewModel.changeLink() }
-                    .padding(horizontal = 8.dp, vertical = 6.dp),
-            )
-            Spacer(Modifier.width(8.dp))
+            // "Change match" is user-provided matching — Steam only; RetroAchievements is hash-only.
+            if (state.provider == AchievementProvider.STEAM) {
+                Text(
+                    "Change match",
+                    color = TextMuted,
+                    fontSize = 12.sp,
+                    modifier = Modifier
+                        .clickable { viewModel.changeLink() }
+                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                )
+                Spacer(Modifier.width(8.dp))
+            }
             PillButton("Sync now", enabled = true, focused = focused) { viewModel.sync() }
         }
     }

@@ -148,7 +148,8 @@ class ShibaCoinsViewModel @Inject constructor(
         when {
             s.linked -> sync()
             s.provider == AchievementProvider.STEAM -> resolveByTitle()
-            else -> _state.update { it.copy(message = "Enter the RetroAchievements game id, then tap Link") }
+            // RetroAchievements is hash-only — nothing for the user to enter.
+            else -> _state.update { it.copy(message = "RetroAchievements games link automatically by ROM hash") }
         }
     }
 

@@ -7,7 +7,7 @@ economy and level. No Steam or RetroAchievements password is ever handled.
 
 Status: Phases 1-8 done and validated on-device (RA connected, real coins synced; Shiba Coins XMB
 column seeds on the Thor). Auto-match shipped (cartridge RA ROM-hash + NDS + disc ISO9660 hash +
-Steam title + RA title fallback + unmatched report + edit). Player card + category hub + batch "sync
+Steam ladder + unmatched report + edit; RA is hash-only). Player card + category hub + batch "sync
 all" live. Remaining: backup key handling, Phase 9 polish (inline card header, foil states).
 Branch: `achievement-integration`. This document is the source of truth to resume from.
 
@@ -310,18 +310,17 @@ New module `feature-achievements` (clients + repository; UI lands in later phase
   2352 `.bin` Mode 1/2, detected from the CD001 signature; never loads the multi-GB image) +
   `RaDiscHasher` (PSX/PS2: SYSTEM.CNF `BOOT`/`BOOT2` → exe name + contents, PS1 sized from its PS-X
   EXE header; PSP: `PARAM.SFO` + `EBOOT.BIN`), transcribed from rcheevos hash_disc.c. `DiscImageOpener`
-  opens raw paths (following `.cue` → `.bin`) or SAF fds. `RaConsole` now maps disc consoles so the
-  hash runs and the title fallback still backstops. Verified byte-for-byte against RA's live DB on the
-  real library: PS2 GTA:SA (USA v1.03) `fe8b1b6c…` and PSX Parasite Eve II (USA D1) `813cc94b…` both
-  matched exactly; PSP shares the same proven path (no RA set in this library to cross-check). GC/Wii
-  use different disc schemes — still title-fallback only.
-- [x] RA title fallback: when a ROM's exact content hash isn't a registered RA hash (a differing
-  regional dump — common for the DS library, where RA often registers only the Europe dump),
-  `AchievementAutoMatcher` falls back to `RetroAchievementsApi.gameIdForTitle` — a normalized
-  (case/punctuation-insensitive) match of the user-editable display title against the same
-  per-console game list. RA coins are per-game, so the title link populates the same coin set; the
-  user can correct the display title or use "Change match" if the fallback picks wrong. Verified the
-  DS hasher itself against RA's live DB first (TWEWY USA hash matched exactly).
+  opens raw paths (following `.cue` → `.bin`) or SAF fds. `RaConsole` maps the disc consoles so the
+  hash runs. Verified byte-for-byte against RA's live DB on the real library: PS2 GTA:SA (USA v1.03)
+  `fe8b1b6c…` and PSX Parasite Eve II (USA D1) `813cc94b…` both matched exactly; PSP shares the same
+  proven path (no RA set in this library to cross-check). GC/Wii use a different disc scheme and
+  aren't hashed yet — those stay untracked (RA is hash-only).
+- [x] RetroAchievements is HASH-ONLY. A game links solely by its ROM/disc content hash
+  (`gameIdForHash`); there is no title fallback and no manual/user-provided RA linking. If a ROM's
+  hash isn't a registered RA hash, the game stays untracked (with a recorded reason). The coins
+  screen shows a hash-only explanation instead of a link field for RA games, and "Change match" is
+  Steam-only. (An earlier title fallback was removed at the user's direction — hash identification is
+  what actually makes RA tracking correct; a title can link the wrong region's game entry.)
 - Opt: offline-first; >=1.1s rate limit; Coil for badge art (in the UI phases).
 - Sec: HTTPS only; read-only; keys never logged (no request logging at all); "profile not public"
   and missing-key are first-class results, never exceptions carrying a key.

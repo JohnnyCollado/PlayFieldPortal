@@ -87,15 +87,14 @@ class AchievementAutoMatcher @Inject constructor(
 
     private suspend fun matchOne(game: Game): Outcome {
         if (game.platformId == "windows") return matchSteam(game)
-        // RetroAchievements: prefer an exact ROM-content-hash match; fall back to a normalized
-        // title match so a differing regional dump still links (RA coins are per-game).
+        // RetroAchievements is hash-only: a game links solely by its ROM/disc content hash, never
+        // by title. If the hash isn't a registered RA hash, the game stays untracked.
         val consoleId = RaConsole.idFor(game.platformId)
             ?: return Outcome.Unmatched("RetroAchievements has no achievements for ${platformLabel(game.platformId)}")
 
         val attempt = attemptHash(game)
-        val byHash = (attempt as? HashAttempt.Hashed)?.let { retroApi.gameIdForHash(consoleId, it.hash) }
-        val raGameId = byHash ?: retroApi.gameIdForTitle(consoleId, game.displayTitle)
-        if (raGameId == null) return Outcome.Unmatched(reasonFor(attempt))
+        val raGameId = (attempt as? HashAttempt.Hashed)?.let { retroApi.gameIdForHash(consoleId, it.hash) }
+            ?: return Outcome.Unmatched(reasonFor(attempt))
 
         repository.linkManually(game.id, AchievementProvider.RETRO_ACHIEVEMENTS, raGameId)
         return Outcome.Matched
@@ -134,14 +133,13 @@ class AchievementAutoMatcher @Inject constructor(
         return HashAttempt.NoHasher
     }
 
-    // The reason shown when neither the hash nor the title matched — leads with why the file itself
-    // didn't hash, then notes that the title fallback also came up empty.
+    // Why the ROM/disc didn't hash to a registered RetroAchievements game (RA is hash-only).
     private fun reasonFor(attempt: HashAttempt): String = when (attempt) {
-        is HashAttempt.Hashed -> "ROM hash isn't registered on RetroAchievements, and no title match"
-        HashAttempt.Unreadable -> "Couldn't read the ROM file, and no title match"
-        HashAttempt.DiscUnreadable -> "Unsupported disc image (e.g. NKit, CHD, or compressed) — can't hash, and no title match"
-        HashAttempt.DiscUnidentified -> "Couldn't find the disc's boot executable, and no title match"
-        HashAttempt.NoHasher -> "Disc hashing for this system isn't supported yet, and no title match"
+        is HashAttempt.Hashed -> "ROM hash isn't registered on RetroAchievements"
+        HashAttempt.Unreadable -> "Couldn't read the ROM file"
+        HashAttempt.DiscUnreadable -> "Unsupported disc image (e.g. NKit, CHD, or compressed) — can't hash"
+        HashAttempt.DiscUnidentified -> "Couldn't find the disc's boot executable"
+        HashAttempt.NoHasher -> "Disc hashing for this system isn't supported yet"
     }
 
     // Friendly names for the systems RetroAchievements doesn't cover, so the note reads naturally.
