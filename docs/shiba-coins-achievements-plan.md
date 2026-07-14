@@ -37,23 +37,37 @@ These came out of the design sessions and are settled unless a later step invali
   never ship a key of our own and never run a proxy. This is the maximally credential-safe
   model and mirrors how `sgdb_api_key` already works.
 
-### 2.2 Tiers (rarity-calibrated)
-Bronze / Silver / Gold are assigned from **global unlock rarity**, calibrated against real
-PlayStation trophy data (sampled 17 AAA titles, 1,472 non-platinum trophies) so the tier
-mix reproduces PlayStation's real ~71 / 23 / 6 split:
+### 2.2 Tiers (difficulty-based, per provider)
+Bronze / Silver / Gold come from a difficulty signal that differs by provider, because RA and Steam
+expose different things:
 
-| Shiba tier | Global unlock rarity | ~Share of coins |
-|---|---|---|
-| Bronze | >= 20% | ~66-71% |
-| Silver | 5-20% | ~23-27% |
-| Gold | < 5% | ~6-7% |
-| Platinum | 100% set completion (minted locally) | 1 per game |
+- **RetroAchievements — by RA point value** (`ShibaTier.forRaPoints`). RA already weights each
+  achievement by difficulty (standard values 0-5 / 10 / 25 / 50 / 100), so the points are the natural
+  tier spine there:
 
-- **Platinum = mastery.** Crown is earned only at 100% of the set (RA "Mastery" / Steam
-  100%). It is not a per-achievement tier; it is the meta-award. Locked and shown as a
-  banner until 100%.
-- **Rarity is the only signal both providers share**, so it is the tier spine. Sub-1-2%
-  coins get a foil/shine flourish rather than a fifth tier.
+  | Shiba tier | RA points |
+  |---|---|
+  | Bronze | < 10 (0-5) |
+  | Silver | 10-49 (10, 25) |
+  | Gold | >= 50 (50, 100) |
+
+- **Steam — by global unlock rarity** (`ShibaTier.forRarity`), since Steam has no points. Calibrated
+  against real PlayStation trophy data (sampled 17 AAA titles, 1,472 non-platinum trophies) to
+  reproduce PlayStation's ~71 / 23 / 6 split:
+
+  | Shiba tier | Global unlock rarity |
+  |---|---|
+  | Bronze | >= 20% |
+  | Silver | 5-20% |
+  | Gold | < 5% |
+
+- **Platinum = mastery** (both providers). Crown is earned only at 100% of the set (RA "Mastery" /
+  Steam 100%, hardcore for RA — see §9). It is not a per-achievement tier; it is the meta-award.
+  Locked and shown as a banner until 100%.
+- RA still records each coin's global unlock rarity for display on the coins screen; it just no longer
+  drives the RA tier. Sub-1-2% coins get a foil/shine flourish rather than a fifth tier.
+- Existing synced RA sets keep their old rarity-based tiers until re-synced; tiers recompute from
+  points on the next sync.
 
 ### 2.3 XP economy and level
 - **Coin weights:** Bronze 15, Silver 30, Gold 90, Platinum 300 (PSN ratio 1:2:6:20). One
@@ -313,8 +327,62 @@ New module `feature-achievements` (clients + repository; UI lands in later phase
   opens raw paths (following `.cue` → `.bin`) or SAF fds. `RaConsole` maps the disc consoles so the
   hash runs. Verified byte-for-byte against RA's live DB on the real library: PS2 GTA:SA (USA v1.03)
   `fe8b1b6c…` and PSX Parasite Eve II (USA D1) `813cc94b…` both matched exactly; PSP shares the same
-  proven path (no RA set in this library to cross-check). GC/Wii use a different disc scheme and
-  aren't hashed yet — those stay untracked (RA is hash-only).
+  proven path (no RA set in this library to cross-check).
+- [x] Remaining disc consoles hashed (Sega CD, Saturn, GameCube, Wii). `RaSegaDiscHasher` MD5s the
+  512-byte boot header of sector 0 (Sega CD / Saturn share it, differ only by magic), reading via a
+  new non-ISO9660 `DiscImage.openRawCd` that detects the sector layout from the raw sync pattern.
+  `RaNintendoDiscHasher` hashes GameCube (`rc_hash_gamecube`) and Wii (`rc_hash_wii`, incl. WiiWare
+  `.wad`) at raw byte offsets over a seekable image — no ISO9660 walk and, crucially, NO decryption:
+  RA hashes a retail Wii disc's encrypted clusters verbatim, so no console key is ever needed
+  (`DiscImageOpener.openRawSource`). Transcribed from rcheevos `hash_disc.c`; structural unit tests
+  lock the byte layout, but live-DB cross-checks against real GC/Wii/Sega images are still pending
+  (as PS2/PSX were verified on-device). Compressed containers (NKit/RVZ/CISO/WBFS/CHD) aren't
+  expanded and stay untracked.
+- [x] Dreamcast hashing (`RaDreamcastHasher`, `rc_hash_dreamcast`): MD5s IP.BIN (256 bytes) + the boot
+  executable's contents. Handles GD-ROM multi-track (GDI) addressing — `DiscImage` gained a
+  `SectorSource` seam + a `firstTrackSector` base (the single-file path is unchanged and still guarded
+  by `RaDiscHasherTest`), and `GdiTrackSource` routes absolute logical sectors to the owning track
+  file (per-track base LBA, 2048/2352 layout, byte offset). `DiscImageOpener.openGdi` parses the
+  `.gdi` index, opens each track file, and anchors the disc at the IP.BIN track (track 3, else the
+  first data track). Filesystem-only (SAF can't resolve sibling track files). Unit-tested via a
+  GDI at LBA 45000 (in-memory tracks + an end-to-end `.gdi` parse); live-DB cross-check still pending.
+  Now every RA-mapped console the app supports has a content hasher.
+- [x] CHD (`.chd`) container support — zlib + LZMA DONE (structurally tested). CHD is a *compressed
+  container*: its hunks decompress to the exact logical sectors of the uncompressed disc, so RA's hash
+  of a `.chd` equals the equivalent BIN/GDI (confirmed against Flycast, which uses libchdr + stock
+  rcheevos `rc_hash` over a custom cdreader). One CHD reader therefore lights up hashing for the CD
+  disc consoles at once (PSX/PS2/Saturn/Sega CD), via the existing `DiscImage.SectorSource` seam.
+  Transcribed from libchdr, unit-tested: `ChdBitReader` (MSB-first bitstream), `ChdHuffman` (canonical
+  Huffman decoder), `ChdReader` (v5 header + hunk map [uncompressed + Huffman-coded compressed] + the
+  hunk codecs: `cdzl`/zlib raw-inflate and `cdlz`/LZMA — the CD-frame de-interleave is shared; ECC/sync
+  regen is skipped since only the 2048-byte user data is read), `ChdSectorSource` (CHTR/CHT2 track parse
+  → LBA→FAD→frame mapping, `fad = lba + 150`, per-track 4-frame padding, per-type user-data offset),
+  and wiring (`DiscImageOpener.openChd` + a `.chd` interception in `AchievementAutoMatcher.attemptHash`
+  → `hashCdDiscImage`). LZMA is decoded via `org.tukaani:xz` as raw LZMA1 (props 0x5D, dict = the
+  output size — no `.lzma` header, no 256 MB dict). This covers the two codecs chdman actually mixes
+  for CD (`cdlz`+`cdzl`); FLAC/ZSTD-only hunks are declined cleanly.
+- [x] Dreamcast GD-ROM CHD (the format Flycast's CHD support targets). `ChdSectorSource` now parses
+  the GD-ROM track metadata (`CHGD`/`CHGT`, alongside CD `CHT2`/`CHTR`) and anchors the ISO9660 at the
+  high-density data track (track 3, StartFAD 45150 → LBA 45000) via a new `firstTrackSector` it exposes;
+  the `fad = lba + 150` mapping then resolves GD-ROM LBAs to CHD frames (chd_frame = lba). Dreamcast
+  `.chd` routes through `RaDreamcastHasher`. Verified structurally on the real library (Dino Crisis /
+  Soulcalibur / Power Stone GD-ROM CHDs all produce hashes — IP.BIN located, boot exe read via ISO9660,
+  `cdlz`/LZMA decoded); on-device RA-DB match pending a re-run of auto-match. Out of scope: Wii/GC CHD
+  (raw DVD, not CD frames). Live-DB verification via the RaHashVerification harness as for the others.
+- [ ] Live-DB verification of the new disc hashers (GC / Wii / Sega CD / Saturn / Dreamcast) against
+  real dumps — the remaining confidence gate. Tooling is in place: `RaHashVerification` (a normally
+  inert unit test in `feature-achievements`) runs the real production hashers over real files and
+  diffs the result against a known-good hash. Workflow: for each system, get one real dump, obtain its
+  true hash from rcheevos `rhasher <system> <file>` (or RetroArch's load log, or the game's "Supported
+  Game Files" list on retroachievements.org), then run:
+  ```
+  RA_HASH_MANIFEST=/path/manifest.txt ./gradlew :feature:feature-achievements:testDebugUnitTest \
+      --tests '*RaHashVerification' --rerun
+  ```
+  The manifest is one entry per line: `platformId | path/to/file | expectedHash` (expected optional).
+  With expected hashes present, a green run == verified; red == mismatch (report at
+  `build/ra-hash-verification.txt`). `-Dra.hash.*` also works (forwarded in the module's build script).
+  Point it at raw images — compressed containers (NKit/RVZ/CISO/WBFS/CHD) aren't expanded.
 - [x] RetroAchievements is HASH-ONLY. A game links solely by its ROM/disc content hash
   (`gameIdForHash`); there is no title fallback and no manual/user-provided RA linking. If a ROM's
   hash isn't a registered RA hash, the game stays untracked (with a recorded reason). The coins
@@ -436,8 +504,15 @@ Coins → link + sync → coins persist → the dedicated screen lists them and 
 ---
 
 ## 9. Open decisions
-- **Softcore vs hardcore Platinum (RA):** does softcore mastery earn the crown, or only
-  hardcore? RA draws a hard line; pick one before Phase 3.
+- **Softcore vs hardcore Platinum (RA):** DECIDED — **hardcore only, crown-scoped**. Individual
+  coins bank into the Shiba Level the instant they unlock (softcore or hardcore); the Platinum is a
+  meta-award, minted once every *other* coin in the set is earned, and it drops a 300-XP bonus into
+  the wallet on top of the individual coins. For RetroAchievements that "every other coin earned"
+  test is **hardcore** — a softcore 100% banks all its coin XP but earns neither the crown nor the
+  bonus. Steam has no softcore/hardcore split, so there mastery is just 100% of the set. Implemented
+  via `SyncedCoin.earnedHardcore` (RA = hardcore timestamp present; Steam = `isEarned`), with the
+  crown computed in `AchievementRepository.summaryOf` and carried on `GameCoins.isMastered` (stored,
+  not re-derived from counts). Existing sets correct their crown on the next sync.
 - **Wallet: derived-only vs cached aggregate row** — start derived; add `ShibaWalletEntity`
   only if the player card shows measurable read cost.
 - **Category vs XMBItem for the hub** — leaning category (its own column) as the aggregate
