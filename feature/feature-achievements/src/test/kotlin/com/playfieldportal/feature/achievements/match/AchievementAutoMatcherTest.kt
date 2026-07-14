@@ -5,7 +5,7 @@ import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.feature.achievements.AchievementRepository
-import com.playfieldportal.feature.achievements.api.RetroAchievementsApi
+import com.playfieldportal.feature.achievements.provider.retro.RaHashResolver
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -21,13 +21,13 @@ class AchievementAutoMatcherTest {
     private val gameRepository = mockk<GameRepository>()
     private val linkDao = mockk<ProviderGameLinkDao>(relaxed = true)
     private val matchNoteDao = mockk<com.playfieldportal.core.data.database.dao.AchievementMatchNoteDao>(relaxed = true)
-    private val retroApi = mockk<RetroAchievementsApi>()
+    private val raHashResolver = mockk<RaHashResolver>()
     private val repository = mockk<AchievementRepository>(relaxed = true)
     private val romReader = mockk<RomBytesReader>()
     private val discOpener = mockk<DiscImageOpener>(relaxed = true)
     private val steamGridDb = mockk<com.playfieldportal.feature.artwork.api.SteamGridDbApi>(relaxed = true)
 
-    private val matcher = AchievementAutoMatcher(gameRepository, linkDao, matchNoteDao, retroApi, repository, romReader, discOpener, steamGridDb)
+    private val matcher = AchievementAutoMatcher(gameRepository, linkDao, matchNoteDao, raHashResolver, repository, romReader, discOpener, steamGridDb)
 
     private fun game(id: Long, platform: String, title: String = "Game $id") =
         Game(id = id, title = title, platformId = platform)
@@ -42,7 +42,7 @@ class AchievementAutoMatcherTest {
         val g = game(1, "snes")
         stubGames(g)
         coEvery { romReader.read(g) } returns byteArrayOf(1, 2, 3, 4)
-        coEvery { retroApi.gameIdForHash(3, any()) } returns "999"
+        coEvery { raHashResolver.gameIdForHash(3, any()) } returns "999"
 
         val report = matcher.matchUnlinked()
 
@@ -56,7 +56,7 @@ class AchievementAutoMatcherTest {
         val g = game(1, "gba")
         stubGames(g)
         coEvery { romReader.read(g) } returns byteArrayOf(9, 9, 9)
-        coEvery { retroApi.gameIdForHash(5, any()) } returns null
+        coEvery { raHashResolver.gameIdForHash(5, any()) } returns null
 
         val report = matcher.matchUnlinked()
 

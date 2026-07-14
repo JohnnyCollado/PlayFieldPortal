@@ -7,7 +7,7 @@ import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.feature.achievements.AchievementRepository
-import com.playfieldportal.feature.achievements.api.RetroAchievementsApi
+import com.playfieldportal.feature.achievements.provider.retro.RaHashResolver
 import kotlinx.coroutines.flow.first
 import timber.log.Timber
 import javax.inject.Inject
@@ -37,7 +37,7 @@ class AchievementAutoMatcher @Inject constructor(
     private val gameRepository: GameRepository,
     private val linkDao: ProviderGameLinkDao,
     private val matchNoteDao: AchievementMatchNoteDao,
-    private val retroApi: RetroAchievementsApi,
+    private val raHashResolver: RaHashResolver,
     private val repository: AchievementRepository,
     private val romReader: RomBytesReader,
     private val discOpener: DiscImageOpener,
@@ -98,7 +98,7 @@ class AchievementAutoMatcher @Inject constructor(
         if (attempt is HashAttempt.Hashed) {
             Timber.d("auto-match hash [%s] %s = %s", game.platformId, game.displayTitle, attempt.hash)
         }
-        val raGameId = (attempt as? HashAttempt.Hashed)?.let { retroApi.gameIdForHash(consoleId, it.hash) }
+        val raGameId = (attempt as? HashAttempt.Hashed)?.let { raHashResolver.gameIdForHash(consoleId, it.hash) }
             ?: return Outcome.Unmatched(reasonFor(attempt))
 
         repository.linkManually(game.id, AchievementProvider.RETRO_ACHIEVEMENTS, raGameId)

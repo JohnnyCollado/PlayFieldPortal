@@ -9,10 +9,11 @@ import com.playfieldportal.core.data.database.entity.ProviderGameLinkEntity
 import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.core.domain.achievement.ShibaTier
 import com.playfieldportal.feature.achievements.api.ProviderSyncResult
-import com.playfieldportal.feature.achievements.api.RetroAchievementsApi
-import com.playfieldportal.feature.achievements.api.SteamAchievementsApi
 import com.playfieldportal.feature.achievements.api.SteamAppListResolver
 import com.playfieldportal.feature.achievements.api.SyncedCoin
+import com.playfieldportal.feature.achievements.provider.RemoteAchievementSources
+import com.playfieldportal.feature.achievements.provider.retro.RetroAchievementsSource
+import com.playfieldportal.feature.achievements.provider.steam.SteamAchievementsSource
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -30,8 +31,9 @@ import kotlin.test.assertTrue
 
 class AchievementRepositoryTest {
 
-    private val steamApi = mockk<SteamAchievementsApi>()
-    private val retroApi = mockk<RetroAchievementsApi>()
+    private val retroSource = mockk<RetroAchievementsSource>()
+    private val steamSource = mockk<SteamAchievementsSource>()
+    private val remoteSources = RemoteAchievementSources(retroSource, steamSource)
     private val credentials = mockk<AchievementCredentialsProvider>(relaxed = true)
     private val setDao = mockk<AchievementSetDao>(relaxed = true)
     private val coinDao = mockk<AchievementDao>(relaxed = true)
@@ -40,7 +42,7 @@ class AchievementRepositoryTest {
     private val gameRepository = mockk<com.playfieldportal.core.domain.repository.GameRepository>(relaxed = true)
     private val matchNoteDao = mockk<com.playfieldportal.core.data.database.dao.AchievementMatchNoteDao>(relaxed = true)
 
-    private val repo = AchievementRepository(steamApi, retroApi, credentials, setDao, coinDao, linkDao, matchNoteDao, steamResolver, gameRepository)
+    private val repo = AchievementRepository(remoteSources, credentials, setDao, coinDao, linkDao, matchNoteDao, steamResolver, gameRepository)
 
     private fun coin(id: String, tier: ShibaTier, earned: Boolean) =
         SyncedCoin(
@@ -67,7 +69,7 @@ class AchievementRepositoryTest {
 
     @Test
     fun `syncGame writes coins and a summary with per-tier counts`() = runTest {
-        coEvery { steamApi.fetch("440") } returns ProviderSyncResult.Success(
+        coEvery { steamSource.fetch("440") } returns ProviderSyncResult.Success(
             "440",
             listOf(
                 coin("g1", ShibaTier.GOLD, earned = true),
@@ -95,7 +97,7 @@ class AchievementRepositoryTest {
 
     @Test
     fun `syncGame marks mastered when every coin is earned`() = runTest {
-        coEvery { steamApi.fetch("440") } returns ProviderSyncResult.Success(
+        coEvery { steamSource.fetch("440") } returns ProviderSyncResult.Success(
             "440",
             listOf(coin("g1", ShibaTier.GOLD, earned = true), coin("b1", ShibaTier.BRONZE, earned = true)),
         )
@@ -109,7 +111,7 @@ class AchievementRepositoryTest {
 
     @Test
     fun `a non-success result leaves the database untouched`() = runTest {
-        coEvery { steamApi.fetch("440") } returns ProviderSyncResult.ProfileNotPublic
+        coEvery { steamSource.fetch("440") } returns ProviderSyncResult.ProfileNotPublic
 
         val result = repo.syncGame(1L, AchievementProvider.STEAM, "440")
 
@@ -121,7 +123,7 @@ class AchievementRepositoryTest {
     @Test
     fun `syncGameById syncs from the stored link`() = runTest {
         coEvery { linkDao.getForGame(1L) } returns ProviderGameLinkEntity(1L, "STEAM", "440", "MANUAL", 0L)
-        coEvery { steamApi.fetch("440") } returns ProviderSyncResult.Success(
+        coEvery { steamSource.fetch("440") } returns ProviderSyncResult.Success(
             "440",
             listOf(coin("b1", ShibaTier.BRONZE, earned = true)),
         )
@@ -129,7 +131,7 @@ class AchievementRepositoryTest {
         val result = repo.syncGameById(1L)
 
         assertTrue(result is ProviderSyncResult.Success)
-        coVerify { steamApi.fetch("440") }
+        coVerify { steamSource.fetch("440") }
     }
 
     @Test
@@ -172,9 +174,9 @@ class AchievementRepositoryTest {
             ProviderGameLinkEntity(2L, "RETRO_ACHIEVEMENTS", "14402", "MANUAL", 0L),
             ProviderGameLinkEntity(3L, "STEAM", "999", "MANUAL", 0L),
         )
-        coEvery { steamApi.fetch("440") } returns ProviderSyncResult.Success("440", listOf(coin("b1", ShibaTier.BRONZE, earned = true)))
-        coEvery { retroApi.fetch("14402") } returns ProviderSyncResult.NotFound
-        coEvery { steamApi.fetch("999") } returns ProviderSyncResult.Failed("network error")
+        coEvery { steamSource.fetch("440") } returns ProviderSyncResult.Success("440", listOf(coin("b1", ShibaTier.BRONZE, earned = true)))
+        coEvery { retroSource.fetch("14402") } returns ProviderSyncResult.NotFound
+        coEvery { steamSource.fetch("999") } returns ProviderSyncResult.Failed("network error")
 
         val progress = mutableListOf<Pair<Int, Int>>()
         val result = repo.syncAllLinked { done, total -> progress += done to total }
@@ -185,8 +187,8 @@ class AchievementRepositoryTest {
         assertEquals(1, result.failed)
         assertFalse(result.missingCredentials)
         assertEquals(3 to 3, progress.last())
-        coVerify { steamApi.fetch("440") }
-        coVerify { retroApi.fetch("14402") }
+        coVerify { steamSource.fetch("440") }
+        coVerify { retroSource.fetch("14402") }
     }
 
     @Test
@@ -194,7 +196,7 @@ class AchievementRepositoryTest {
         coEvery { linkDao.getAll() } returns listOf(
             ProviderGameLinkEntity(1L, "RETRO_ACHIEVEMENTS", "14402", "MANUAL", 0L),
         )
-        coEvery { retroApi.fetch("14402") } returns ProviderSyncResult.MissingCredentials
+        coEvery { retroSource.fetch("14402") } returns ProviderSyncResult.MissingCredentials
 
         val result = repo.syncAllLinked()
 

@@ -23,9 +23,8 @@ import com.playfieldportal.core.domain.achievement.UntrackedGame
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.feature.achievements.api.ProviderSyncResult
-import com.playfieldportal.feature.achievements.api.RetroAchievementsApi
-import com.playfieldportal.feature.achievements.api.SteamAchievementsApi
 import com.playfieldportal.feature.achievements.api.SyncedCoin
+import com.playfieldportal.feature.achievements.provider.RemoteAchievementSources
 import com.playfieldportal.feature.achievements.match.RaConsole
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -41,8 +40,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class AchievementRepository @Inject constructor(
-    private val steamApi: SteamAchievementsApi,
-    private val retroApi: RetroAchievementsApi,
+    private val remoteSources: RemoteAchievementSources,
     private val credentials: AchievementCredentialsProvider,
     private val setDao: AchievementSetDao,
     private val coinDao: AchievementDao,
@@ -99,10 +97,7 @@ class AchievementRepository @Inject constructor(
         provider: AchievementProvider,
         providerGameId: String,
     ): ProviderSyncResult {
-        val result = when (provider) {
-            AchievementProvider.STEAM -> steamApi.fetch(providerGameId)
-            AchievementProvider.RETRO_ACHIEVEMENTS -> retroApi.fetch(providerGameId)
-        }
+        val result = remoteSources.forProvider(provider).fetch(providerGameId)
         if (result !is ProviderSyncResult.Success) return result
 
         val now = System.currentTimeMillis()
