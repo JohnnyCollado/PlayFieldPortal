@@ -48,19 +48,19 @@ class AchievementRepository @Inject constructor(
     private val matchNoteDao: AchievementMatchNoteDao,
     private val steamResolver: SteamAppListResolver,
     private val gameRepository: GameRepository,
-) {
+) : AchievementController {
     /** This game's provider link (which provider + id it syncs from), or null if unlinked. */
-    fun observeLink(gameId: Long): Flow<ProviderGameLinkEntity?> = linkDao.observeForGame(gameId)
+    override fun observeLink(gameId: Long): Flow<ProviderGameLinkEntity?> = linkDao.observeForGame(gameId)
     /** This game's coin summary (progress, tally, mastery), or null if never synced. */
-    fun observeGameCoins(gameId: Long): Flow<GameCoins?> =
+    override fun observeGameCoins(gameId: Long): Flow<GameCoins?> =
         setDao.observeForGame(gameId).map { it?.toGameCoins() }
 
     /** The raw per-coin rows for a game's dedicated coins screen. */
-    fun observeCoins(gameId: Long): Flow<List<AchievementEntity>> =
+    override fun observeCoins(gameId: Long): Flow<List<AchievementEntity>> =
         coinDao.observeForGame(gameId)
 
     /** The account-wide Shiba wallet (total coins -> level + rank), derived from every set. */
-    fun observeWallet(): Flow<CoinWallet> =
+    override fun observeWallet(): Flow<CoinWallet> =
         setDao.observeWalletCoins().map { CoinWallet(it) }
 
     /**
@@ -68,7 +68,7 @@ class AchievementRepository @Inject constructor(
      * and the [rarestLimit] rarest earned coins. Counts and the mastery lens derive from the tracked
      * list. Reads only cached rows — no network — so the hub is offline-first.
      */
-    fun observeLibraryStanding(rarestLimit: Int = 15): Flow<LibraryStanding> =
+    override fun observeLibraryStanding(rarestLimit: Int): Flow<LibraryStanding> =
         combine(
             combine(observeWallet(), setDao.observeGameSets(), coinDao.observeRarestEarned(rarestLimit)) {
                 wallet, sets, rarest -> Triple(wallet, sets, rarest)
@@ -92,7 +92,7 @@ class AchievementRepository @Inject constructor(
      * rows are replaced (pruning coins the provider dropped) and the summary is rewritten; any
      * other outcome leaves the stored data untouched and is returned for the UI to surface.
      */
-    suspend fun syncGame(
+    override suspend fun syncGame(
         gameId: Long,
         provider: AchievementProvider,
         providerGameId: String,
@@ -109,7 +109,7 @@ class AchievementRepository @Inject constructor(
     }
 
     /** Links a game to a provider id by hand — the always-works path (and the only one for RA yet). */
-    suspend fun linkManually(gameId: Long, provider: AchievementProvider, providerGameId: String) {
+    override suspend fun linkManually(gameId: Long, provider: AchievementProvider, providerGameId: String) {
         linkDao.upsert(
             ProviderGameLinkEntity(
                 gameId = gameId,
@@ -126,7 +126,7 @@ class AchievementRepository @Inject constructor(
      * Tries to auto-link a game to Steam by matching its [title] against the Steam app list. Stores
      * and returns the resolved appid, or null when there is no match.
      */
-    suspend fun resolveSteamLink(gameId: Long, title: String): String? {
+    override suspend fun resolveSteamLink(gameId: Long, title: String): String? {
         val appId = steamResolver.resolveAppId(title) ?: return null
         linkDao.upsert(
             ProviderGameLinkEntity(
@@ -146,7 +146,7 @@ class AchievementRepository @Inject constructor(
      * (in that order) so a shortened override doesn't hide the full store name. Links + returns the
      * appid, or null. Used by the coins screen's "Match by title".
      */
-    suspend fun resolveSteamByGame(gameId: Long): String? {
+    override suspend fun resolveSteamByGame(gameId: Long): String? {
         val game = gameRepository.getById(gameId) ?: return null
         val titles = listOfNotNull(game.title, game.scrapedTitle, game.displayTitle)
             .map { it.trim() }.filter { it.isNotEmpty() }.distinct()
@@ -155,14 +155,14 @@ class AchievementRepository @Inject constructor(
     }
 
     /** Steam candidates whose name matches [query], for the manual "Find on Steam" picker. */
-    suspend fun searchSteam(query: String): List<com.playfieldportal.feature.achievements.api.SteamCandidate> =
+    override suspend fun searchSteam(query: String): List<com.playfieldportal.feature.achievements.api.SteamCandidate> =
         steamResolver.search(query)
 
     /** Removes a game's provider link so it can be re-matched (edit a wrong auto-match). */
-    suspend fun unlink(gameId: Long) = linkDao.deleteForGame(gameId)
+    override suspend fun unlink(gameId: Long) = linkDao.deleteForGame(gameId)
 
     /** Syncs a game from its stored link; [ProviderSyncResult.NotLinked] if it has none yet. */
-    suspend fun syncGameById(gameId: Long): ProviderSyncResult {
+    override suspend fun syncGameById(gameId: Long): ProviderSyncResult {
         val link = linkDao.getForGame(gameId) ?: return ProviderSyncResult.NotLinked
         val provider = AchievementProvider.fromName(link.provider) ?: return ProviderSyncResult.NotLinked
         return syncGame(gameId, provider, link.providerGameId)
@@ -173,7 +173,7 @@ class AchievementRepository @Inject constructor(
      * already rate-limited in its client, so this paces itself. [onProgress] reports (done, total);
      * per-game failures are counted, never thrown, so one bad game can't abort the run.
      */
-    suspend fun syncAllLinked(onProgress: (done: Int, total: Int) -> Unit = { _, _ -> }): BatchSyncResult {
+    override suspend fun syncAllLinked(onProgress: (done: Int, total: Int) -> Unit): BatchSyncResult {
         val links = linkDao.getAll()
         var synced = 0
         var noCoins = 0

@@ -8,7 +8,7 @@ import com.playfieldportal.core.domain.achievement.GameCoins
 import com.playfieldportal.core.domain.achievement.ShibaTier
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.repository.GameRepository
-import com.playfieldportal.feature.achievements.AchievementRepository
+import com.playfieldportal.feature.achievements.AchievementController
 import com.playfieldportal.feature.achievements.api.ProviderSyncResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -64,7 +64,7 @@ private const val FOCUS_COINS_START = 3
 @HiltViewModel
 class ShibaCoinsViewModel @Inject constructor(
     private val gameRepository: GameRepository,
-    private val achievementRepository: AchievementRepository,
+    private val achievementRepository: AchievementController,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ShibaCoinsUiState())

@@ -4,7 +4,7 @@ import com.playfieldportal.core.data.database.dao.ProviderGameLinkDao
 import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.repository.GameRepository
-import com.playfieldportal.feature.achievements.AchievementRepository
+import com.playfieldportal.feature.achievements.AchievementController
 import com.playfieldportal.feature.achievements.provider.retro.RaHashResolver
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -22,7 +22,7 @@ class AchievementAutoMatcherTest {
     private val linkDao = mockk<ProviderGameLinkDao>(relaxed = true)
     private val matchNoteDao = mockk<com.playfieldportal.core.data.database.dao.AchievementMatchNoteDao>(relaxed = true)
     private val raHashResolver = mockk<RaHashResolver>()
-    private val repository = mockk<AchievementRepository>(relaxed = true)
+    private val repository = mockk<AchievementController>(relaxed = true)
     private val romReader = mockk<RomBytesReader>()
     private val discOpener = mockk<DiscImageOpener>(relaxed = true)
     private val steamGridDb = mockk<com.playfieldportal.feature.artwork.api.SteamGridDbApi>(relaxed = true)

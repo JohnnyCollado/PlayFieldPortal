@@ -1,7 +1,9 @@
 package com.playfieldportal.feature.settings.viewmodel
 
 import com.playfieldportal.core.data.achievement.AchievementCredentialsProvider
+import com.playfieldportal.feature.achievements.AchievementController
 import com.playfieldportal.feature.achievements.api.SteamAchievementsApi
+import com.playfieldportal.feature.achievements.match.AchievementAutoMatcher
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -22,11 +24,13 @@ class AchievementsSettingsViewModelTest {
     private val dispatcher = StandardTestDispatcher()
     private val credentials = mockk<AchievementCredentialsProvider>(relaxed = true)
     private val steamApi = mockk<SteamAchievementsApi>()
+    private val autoMatcher = mockk<AchievementAutoMatcher>(relaxed = true)
+    private val repository = mockk<AchievementController>(relaxed = true)
     private lateinit var vm: AchievementsSettingsViewModel
 
     @Before fun setUp() {
         Dispatchers.setMain(dispatcher)
-        vm = AchievementsSettingsViewModel(credentials, steamApi)
+        vm = AchievementsSettingsViewModel(credentials, steamApi, autoMatcher, repository)
     }
 
     @After fun tearDown() = Dispatchers.resetMain()

@@ -810,7 +810,7 @@ class XMBViewModel @Inject constructor(
     private val iconDisplayPreferences: com.playfieldportal.core.data.repository.IconDisplayPreferences,
     private val artworkStore: com.playfieldportal.feature.artwork.store.ArtworkStore,
     private val gameLaunchPreferences: com.playfieldportal.core.data.repository.GameLaunchPreferences,
-    private val achievementRepository: com.playfieldportal.feature.achievements.AchievementRepository,
+    private val achievementRepository: com.playfieldportal.feature.achievements.AchievementController,
 ) : ViewModel() {
 
     // The track list currently on screen (in display/sort order), used as the in-app player's queue

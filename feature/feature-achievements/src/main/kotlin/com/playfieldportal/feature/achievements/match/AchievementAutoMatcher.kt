@@ -6,7 +6,7 @@ import com.playfieldportal.core.data.database.entity.AchievementMatchNoteEntity
 import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.repository.GameRepository
-import com.playfieldportal.feature.achievements.AchievementRepository
+import com.playfieldportal.feature.achievements.AchievementController
 import com.playfieldportal.feature.achievements.provider.retro.RaHashResolver
 import kotlinx.coroutines.flow.first
 import timber.log.Timber
@@ -38,7 +38,7 @@ class AchievementAutoMatcher @Inject constructor(
     private val linkDao: ProviderGameLinkDao,
     private val matchNoteDao: AchievementMatchNoteDao,
     private val raHashResolver: RaHashResolver,
-    private val repository: AchievementRepository,
+    private val repository: AchievementController,
     private val romReader: RomBytesReader,
     private val discOpener: DiscImageOpener,
     private val steamGridDb: com.playfieldportal.feature.artwork.api.SteamGridDbApi,

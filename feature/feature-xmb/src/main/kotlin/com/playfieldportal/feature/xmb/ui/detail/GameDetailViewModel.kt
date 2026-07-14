@@ -178,7 +178,7 @@ class GameDetailViewModel @Inject constructor(
     private val menuSound: com.playfieldportal.core.ui.sound.MenuSoundPlayer,
     private val discordPresence: com.playfieldportal.core.data.discord.DiscordPresenceController,
     private val launcherShortcutRepository: com.playfieldportal.feature.appbar.LauncherShortcutRepository,
-    private val achievementRepository: com.playfieldportal.feature.achievements.AchievementRepository,
+    private val achievementRepository: com.playfieldportal.feature.achievements.AchievementController,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GameDetailUiState())

@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.achievement.AchievementCredentialsProvider
 import com.playfieldportal.core.domain.achievement.CoinWallet
-import com.playfieldportal.feature.achievements.AchievementRepository
+import com.playfieldportal.feature.achievements.AchievementController
 import com.playfieldportal.feature.achievements.BatchSyncResult
 import com.playfieldportal.feature.achievements.api.SteamAchievementsApi
 import com.playfieldportal.feature.achievements.match.AchievementAutoMatcher
@@ -75,7 +75,7 @@ class AchievementsSettingsViewModel @Inject constructor(
     private val credentials: AchievementCredentialsProvider,
     private val steamApi: SteamAchievementsApi,
     private val autoMatcher: AchievementAutoMatcher,
-    private val repository: AchievementRepository,
+    private val repository: AchievementController,
 ) : ViewModel() {
 
     private val extra = MutableStateFlow(Extra())
