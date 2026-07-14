@@ -37,6 +37,10 @@ dependencies {
     implementation(libs.timber)
     implementation(libs.xz) // LZMA decoder for CHD cdlz hunks
 
+    // Official RetroAchievements Kotlin client. Pulls Retrofit/OkHttp/Gson transitively; kept
+    // strictly inside the provider/retro island (RaRemoteDataSource). Never used outside it.
+    implementation(libs.retroachievements.api)
+
     implementation(project(":core:core-common"))
     implementation(project(":core:core-domain"))
     implementation(project(":core:core-data"))

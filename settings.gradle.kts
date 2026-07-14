@@ -18,6 +18,16 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        // JitPack: builds the official RetroAchievements api-kotlin client from source (Maven tag
+        // 2.0.0) plus its NetworkResponseAdapter dep, which is also JitPack-only. Scoped to just
+        // those two groups so it can't shadow anything else.
+        maven {
+            url = uri("https://jitpack.io")
+            content {
+                includeGroup("com.github.RetroAchievements")
+                includeGroup("com.github.haroldadmin")
+            }
+        }
         // Vendored Discord Social SDK aars (Git LFS). A flatDir repo lets the library module
         // resolve them as real transitive dependencies — direct files("*.aar") deps are rejected
         // in library modules and wouldn't propagate the SDK's classes/.so to the app.
