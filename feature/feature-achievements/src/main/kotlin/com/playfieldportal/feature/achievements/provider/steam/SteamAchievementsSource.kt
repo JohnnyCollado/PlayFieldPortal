@@ -1,7 +1,6 @@
 package com.playfieldportal.feature.achievements.provider.steam
 
 import com.playfieldportal.feature.achievements.api.ProviderSyncResult
-import com.playfieldportal.feature.achievements.api.SteamAchievementsApi
 import com.playfieldportal.feature.achievements.provider.RemoteAchievementSource
 import javax.inject.Inject
 import javax.inject.Singleton

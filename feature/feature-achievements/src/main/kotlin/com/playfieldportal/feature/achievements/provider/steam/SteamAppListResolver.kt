@@ -1,5 +1,6 @@
-package com.playfieldportal.feature.achievements.api
+package com.playfieldportal.feature.achievements.provider.steam
 
+import com.playfieldportal.feature.achievements.api.AchievementsHttpClient
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get

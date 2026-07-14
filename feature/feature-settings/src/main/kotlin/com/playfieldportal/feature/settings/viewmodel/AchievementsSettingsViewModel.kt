@@ -6,7 +6,7 @@ import com.playfieldportal.core.data.achievement.AchievementCredentialsProvider
 import com.playfieldportal.core.domain.achievement.CoinWallet
 import com.playfieldportal.feature.achievements.AchievementController
 import com.playfieldportal.feature.achievements.BatchSyncResult
-import com.playfieldportal.feature.achievements.api.SteamAchievementsApi
+import com.playfieldportal.feature.achievements.provider.steam.SteamAchievementsApi
 import com.playfieldportal.feature.achievements.match.AchievementAutoMatcher
 import com.playfieldportal.feature.achievements.match.MatchReport
 import dagger.hilt.android.lifecycle.HiltViewModel

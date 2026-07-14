@@ -1,7 +1,8 @@
-package com.playfieldportal.feature.achievements.api
+package com.playfieldportal.feature.achievements.provider.steam
 
 import com.playfieldportal.core.data.achievement.AchievementCredentialsProvider
 import com.playfieldportal.core.domain.achievement.ShibaTier
+import com.playfieldportal.feature.achievements.api.ProviderSyncResult
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond

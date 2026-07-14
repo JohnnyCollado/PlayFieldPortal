@@ -1,7 +1,11 @@
-package com.playfieldportal.feature.achievements.api
+package com.playfieldportal.feature.achievements.provider.steam
 
 import com.playfieldportal.core.data.achievement.AchievementCredentialsProvider
 import com.playfieldportal.core.domain.achievement.ShibaTier
+import com.playfieldportal.feature.achievements.api.AchievementsHttpClient
+import com.playfieldportal.feature.achievements.api.ProviderSyncResult
+import com.playfieldportal.feature.achievements.api.RateLimiter
+import com.playfieldportal.feature.achievements.api.SyncedCoin
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get

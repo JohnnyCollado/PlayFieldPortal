@@ -50,7 +50,7 @@ data class ShibaCoinsUiState(
     val focusIndex: Int = 0,
     val isSyncing: Boolean = false,
     // Manual "Find on Steam" picker (Steam games only).
-    val steamResults: List<com.playfieldportal.feature.achievements.api.SteamCandidate> = emptyList(),
+    val steamResults: List<com.playfieldportal.feature.achievements.provider.steam.SteamCandidate> = emptyList(),
     val isSearchingSteam: Boolean = false,
     val message: String? = null,
     val closed: Boolean = false,

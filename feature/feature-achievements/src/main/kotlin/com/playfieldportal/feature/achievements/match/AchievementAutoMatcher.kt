@@ -8,6 +8,7 @@ import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.feature.achievements.AchievementController
 import com.playfieldportal.feature.achievements.provider.retro.RaHashResolver
+import com.playfieldportal.feature.achievements.provider.steam.SteamShortcut
 import kotlinx.coroutines.flow.first
 import timber.log.Timber
 import javax.inject.Inject

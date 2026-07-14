@@ -9,7 +9,7 @@ import com.playfieldportal.core.data.database.entity.ProviderGameLinkEntity
 import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.core.domain.achievement.ShibaTier
 import com.playfieldportal.feature.achievements.api.ProviderSyncResult
-import com.playfieldportal.feature.achievements.api.SteamAppListResolver
+import com.playfieldportal.feature.achievements.provider.steam.SteamAppListResolver
 import com.playfieldportal.feature.achievements.api.SyncedCoin
 import com.playfieldportal.feature.achievements.provider.RemoteAchievementSources
 import com.playfieldportal.feature.achievements.provider.retro.RetroAchievementsSource

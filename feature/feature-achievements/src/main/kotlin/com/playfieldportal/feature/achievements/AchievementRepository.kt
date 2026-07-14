@@ -11,7 +11,7 @@ import com.playfieldportal.core.data.database.entity.AchievementEntity
 import com.playfieldportal.core.data.database.entity.AchievementSetEntity
 import com.playfieldportal.core.data.database.entity.ProviderGameLinkEntity
 import com.playfieldportal.core.domain.achievement.AchievementProvider
-import com.playfieldportal.feature.achievements.api.SteamAppListResolver
+import com.playfieldportal.feature.achievements.provider.steam.SteamAppListResolver
 import com.playfieldportal.core.domain.achievement.CoinCounts
 import com.playfieldportal.core.domain.achievement.CoinWallet
 import com.playfieldportal.core.domain.achievement.EarnedCoinRef
@@ -155,7 +155,7 @@ class AchievementRepository @Inject constructor(
     }
 
     /** Steam candidates whose name matches [query], for the manual "Find on Steam" picker. */
-    override suspend fun searchSteam(query: String): List<com.playfieldportal.feature.achievements.api.SteamCandidate> =
+    override suspend fun searchSteam(query: String): List<com.playfieldportal.feature.achievements.provider.steam.SteamCandidate> =
         steamResolver.search(query)
 
     /** Removes a game's provider link so it can be re-matched (edit a wrong auto-match). */

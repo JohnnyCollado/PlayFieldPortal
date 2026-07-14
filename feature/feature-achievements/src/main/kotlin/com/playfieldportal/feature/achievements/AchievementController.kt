@@ -7,7 +7,7 @@ import com.playfieldportal.core.domain.achievement.CoinWallet
 import com.playfieldportal.core.domain.achievement.GameCoins
 import com.playfieldportal.core.domain.achievement.LibraryStanding
 import com.playfieldportal.feature.achievements.api.ProviderSyncResult
-import com.playfieldportal.feature.achievements.api.SteamCandidate
+import com.playfieldportal.feature.achievements.provider.steam.SteamCandidate
 import kotlinx.coroutines.flow.Flow
 
 /**

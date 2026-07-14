@@ -1,4 +1,4 @@
-package com.playfieldportal.feature.achievements.match
+package com.playfieldportal.feature.achievements.provider.steam
 
 import com.playfieldportal.core.domain.model.Game
 import kotlin.test.Test

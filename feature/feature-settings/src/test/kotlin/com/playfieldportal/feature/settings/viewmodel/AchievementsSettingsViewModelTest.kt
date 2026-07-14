@@ -2,7 +2,7 @@ package com.playfieldportal.feature.settings.viewmodel
 
 import com.playfieldportal.core.data.achievement.AchievementCredentialsProvider
 import com.playfieldportal.feature.achievements.AchievementController
-import com.playfieldportal.feature.achievements.api.SteamAchievementsApi
+import com.playfieldportal.feature.achievements.provider.steam.SteamAchievementsApi
 import com.playfieldportal.feature.achievements.match.AchievementAutoMatcher
 import io.mockk.coEvery
 import io.mockk.coVerify

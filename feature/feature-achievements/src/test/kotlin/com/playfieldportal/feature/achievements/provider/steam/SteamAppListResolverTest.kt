@@ -1,4 +1,4 @@
-package com.playfieldportal.feature.achievements.api
+package com.playfieldportal.feature.achievements.provider.steam
 
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
