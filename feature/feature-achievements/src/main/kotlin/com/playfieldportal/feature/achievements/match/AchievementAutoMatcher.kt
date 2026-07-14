@@ -93,6 +93,11 @@ class AchievementAutoMatcher @Inject constructor(
             ?: return Outcome.Unmatched("RetroAchievements has no achievements for ${platformLabel(game.platformId)}")
 
         val attempt = attemptHash(game)
+        // Log the computed content hash so a known-good title can be checked against RA's "Supported
+        // Game Files" list (a mismatch = wrong dump / romhack; a match that stays unlinked = not on RA).
+        if (attempt is HashAttempt.Hashed) {
+            Timber.d("auto-match hash [%s] %s = %s", game.platformId, game.displayTitle, attempt.hash)
+        }
         val raGameId = (attempt as? HashAttempt.Hashed)?.let { retroApi.gameIdForHash(consoleId, it.hash) }
             ?: return Outcome.Unmatched(reasonFor(attempt))
 
@@ -132,9 +137,40 @@ class AchievementAutoMatcher @Inject constructor(
     // full byte read; disc images hash from a seeking reader (they're far too large to load whole).
     private suspend fun attemptHash(game: Game): HashAttempt {
         if (RaRomHasher.isSupported(game.platformId)) {
+            // NDS carts run up to 256 MB; hash the header + code + icon via a seeking reader instead
+            // of loading the whole ROM into one allocation (OOM). Zipped ROMs can't be seeked, so they
+            // take the in-memory path (a zipped 256 MB cart is rare, and unzips to the same size).
+            if (game.platformId == "nds" && !game.isZippedRom()) {
+                val source = discOpener.openRawSource(game) ?: return HashAttempt.Unreadable
+                val hash = source.use { RaRomHasher.hashNds(it) } ?: return HashAttempt.Unreadable
+                return HashAttempt.Hashed(hash)
+            }
             val bytes = romReader.read(game) ?: return HashAttempt.Unreadable
             val hash = RaRomHasher.hash(game.platformId, bytes) ?: return HashAttempt.Unreadable
             return HashAttempt.Hashed(hash)
+        }
+        // CHD container: its hunks decompress to the same logical sectors as the uncompressed disc,
+        // so it feeds the normal CD hashers (PSX/PS2/Saturn/Sega CD). Intercept before the raw-image
+        // openers, which can't parse a compressed container.
+        if (game.isChdImage()) {
+            val image = discOpener.openChd(game) ?: return HashAttempt.DiscUnreadable
+            val hash = image.use { hashCdDiscImage(game.platformId, it) }
+            return if (hash == null) HashAttempt.DiscUnidentified else HashAttempt.Hashed(hash)
+        }
+        if (RaNintendoDiscHasher.isSupported(game.platformId)) {
+            val source = discOpener.openRawSource(game) ?: return HashAttempt.DiscUnreadable
+            val hash = source.use { RaNintendoDiscHasher.hash(game.platformId, it) }
+            return if (hash == null) HashAttempt.DiscUnidentified else HashAttempt.Hashed(hash)
+        }
+        if (RaSegaDiscHasher.isSupported(game.platformId)) {
+            val image = discOpener.openRawCd(game) ?: return HashAttempt.DiscUnreadable
+            val hash = image.use { RaSegaDiscHasher.hash(it) }
+            return if (hash == null) HashAttempt.DiscUnidentified else HashAttempt.Hashed(hash)
+        }
+        if (RaDreamcastHasher.isSupported(game.platformId)) {
+            val image = discOpener.openGdi(game) ?: return HashAttempt.DiscUnreadable
+            val hash = image.use { RaDreamcastHasher.hash(it) }
+            return if (hash == null) HashAttempt.DiscUnidentified else HashAttempt.Hashed(hash)
         }
         if (RaDiscHasher.isSupported(game.platformId)) {
             val image = discOpener.open(game) ?: return HashAttempt.DiscUnreadable
@@ -143,6 +179,24 @@ class AchievementAutoMatcher @Inject constructor(
         }
         return HashAttempt.NoHasher
     }
+
+    // A CHD's logical sectors feed whichever disc hasher fits the platform — including Dreamcast
+    // GD-ROM, whose ISO track the CHD reader anchors via firstTrackSector. GameCube/Wii (raw DVD, not
+    // CD frames) aren't covered by the CD reader, so they return null here.
+    private fun hashCdDiscImage(platformId: String, image: DiscImage): String? = when {
+        RaSegaDiscHasher.isSupported(platformId) -> RaSegaDiscHasher.hash(image)
+        RaDreamcastHasher.isSupported(platformId) -> RaDreamcastHasher.hash(image)
+        RaDiscHasher.isSupported(platformId) -> RaDiscHasher.hash(platformId, image)
+        else -> null
+    }
+
+    private fun Game.isChdImage(): Boolean =
+        romPath?.endsWith(".chd", ignoreCase = true) == true ||
+            romUri?.endsWith(".chd", ignoreCase = true) == true
+
+    private fun Game.isZippedRom(): Boolean =
+        romPath?.endsWith(".zip", ignoreCase = true) == true ||
+            romUri?.endsWith(".zip", ignoreCase = true) == true
 
     // Why the ROM/disc didn't hash to a registered RetroAchievements game (RA is hash-only).
     private fun reasonFor(attempt: HashAttempt): String = when (attempt) {

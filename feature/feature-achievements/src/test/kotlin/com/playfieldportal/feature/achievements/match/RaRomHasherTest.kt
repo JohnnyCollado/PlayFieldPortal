@@ -116,6 +116,38 @@ class RaRomHasherTest {
         assertEquals(expected, RaRomHasher.hash("nds", rom))
     }
 
+    private class MemSource(private val data: ByteArray) : DiscImage.SeekableSource {
+        override fun readFully(offset: Long, dest: ByteArray, len: Int): Int {
+            if (offset >= data.size) return 0
+            val n = minOf(len.toLong(), data.size - offset).toInt()
+            System.arraycopy(data, offset.toInt(), dest, 0, n)
+            return n
+        }
+        override fun close() {}
+    }
+
+    @Test
+    fun `seeking nds hash equals the in-memory nds hash`() {
+        // Full ROM (icon fully present).
+        val full = ByteArray(0xE00)
+        for (i in 0 until 0x160) full[i] = (i and 0xFF).toByte()
+        putU32LE(full, 0x20, 0x200); putU32LE(full, 0x2C, 0x40)
+        putU32LE(full, 0x30, 0x300); putU32LE(full, 0x3C, 0x20)
+        putU32LE(full, 0x68, 0x400)
+        for (i in 0x200 until 0x240) full[i] = 0xA1.toByte()
+        for (i in 0x300 until 0x320) full[i] = 0xB7.toByte()
+        for (i in 0x400 until 0xE00) full[i] = 0xC9.toByte()
+        assertEquals(RaRomHasher.hash("nds", full), RaRomHasher.hashNds(MemSource(full)))
+
+        // Short ROM (icon runs past EOF -> zero-padded on both paths).
+        val short = ByteArray(0x300)
+        putU32LE(short, 0x20, 0x160); putU32LE(short, 0x2C, 0x10)
+        putU32LE(short, 0x30, 0x170); putU32LE(short, 0x3C, 0x10)
+        putU32LE(short, 0x68, 0x200)
+        for (i in 0x200 until 0x300) short[i] = 0x5A.toByte()
+        assertEquals(RaRomHasher.hash("nds", short), RaRomHasher.hashNds(MemSource(short)))
+    }
+
     @Test
     fun `nds icon block is zero-padded when the rom is short`() {
         // Icon points near EOF with fewer than 0xA00 bytes remaining; the rest is zero-filled.

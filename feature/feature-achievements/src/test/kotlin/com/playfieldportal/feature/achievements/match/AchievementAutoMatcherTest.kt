@@ -95,15 +95,16 @@ class AchievementAutoMatcherTest {
 
     @Test
     fun `records a persisted note naming why each unmatched game failed`() = runTest {
-        val g = game(1, "wii", title = "Wheelie Breakers") // RA console, but no disc hasher for Wii
+        val g = game(1, "dreamcast", title = "Crazy Taxi")
         stubGames(g)
+        coEvery { discOpener.openGdi(g) } returns null // GDI unopenable (bad/compressed/SAF)
 
         matcher.matchUnlinked()
 
         coVerify { matchNoteDao.clear() } // rewritten from scratch each run
         coVerify {
             matchNoteDao.upsert(
-                match { it.gameId == 1L && it.reason.contains("isn't supported yet") },
+                match { it.gameId == 1L && it.reason.startsWith("Unsupported disc image") },
             )
         }
     }

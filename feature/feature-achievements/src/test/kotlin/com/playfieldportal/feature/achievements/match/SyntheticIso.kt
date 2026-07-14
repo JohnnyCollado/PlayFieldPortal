@@ -21,7 +21,13 @@ class SyntheticIso {
         if (parent.isNotEmpty()) { ensureParents(parent); dirs.add(parent) }
     }
 
-    fun build(): ByteArray {
+    /**
+     * Builds the image. Physical placement is compact (sector 16 = PVD, 17 = root, then dirs/files),
+     * but the LBA fields written into the ISO9660 records are offset by [baseLba] — modelling a GD-ROM
+     * whose filesystem sits on a track that starts deep in the disc (Dreamcast track 3 at LBA 45000),
+     * where records address sectors absolutely. Zero (the default) yields a normal single-track image.
+     */
+    fun build(baseLba: Int = 0): ByteArray {
         val lba = HashMap<String, Int>()
         val size = HashMap<String, Int>()
 
@@ -38,7 +44,7 @@ class SyntheticIso {
         "CD001".toByteArray(Charsets.US_ASCII).copyInto(image, pvd + 1)
         image[pvd + 6] = 0x01
         putLE(image, pvd + 128, SECTOR, 2)                 // logical block size
-        writeDirRecord(image, pvd + 156, lba[""]!!, SECTOR, id = byteArrayOf(0), isDir = true)
+        writeDirRecord(image, pvd + 156, lba[""]!! + baseLba, SECTOR, id = byteArrayOf(0), isDir = true)
 
         // Directory sectors: each dir's immediate children, back to back (zero byte terminates).
         for (dir in dirs) {
@@ -46,11 +52,11 @@ class SyntheticIso {
             for (child in childrenOf(dir)) {
                 val isDir = child in dirs
                 val idText = if (isDir) nameOf(child) else "${nameOf(child)};1"
-                off += writeDirRecord(image, off, lba[child]!!, size[child]!!, idText.toByteArray(Charsets.US_ASCII), isDir)
+                off += writeDirRecord(image, off, lba[child]!! + baseLba, size[child]!!, idText.toByteArray(Charsets.US_ASCII), isDir)
             }
         }
 
-        // File contents.
+        // File contents (placed at their compact physical sector).
         for ((f, bytes) in files) bytes.copyInto(image, lba[f]!! * SECTOR)
         return image
     }

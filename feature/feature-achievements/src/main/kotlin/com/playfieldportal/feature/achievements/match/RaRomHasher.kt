@@ -58,6 +58,61 @@ object RaRomHasher {
         return md.digest().joinToString("") { "%02x".format(it.toInt() and 0xFF) }
     }
 
+    /**
+     * NDS hash from a seekable source, reading only the header + arm9 + arm7 + icon regions instead
+     * of loading the whole (up to 256 MB) cart into memory — the byte-for-byte identical hash to
+     * [hashNds] (ByteArray), but without the OOM risk on large ROMs. Regions that run past EOF are
+     * clamped / zero-padded exactly as the in-memory path does.
+     */
+    fun hashNds(source: DiscImage.SeekableSource): String? {
+        val header = readAt(source, 0, 0x160)
+        if (header.size < 0x160) return null
+        val arm9Off = u32le(header, 0x20).toLong() and 0xFFFFFFFFL
+        val arm9Size = u32le(header, 0x2C)
+        val arm7Off = u32le(header, 0x30).toLong() and 0xFFFFFFFFL
+        val arm7Size = u32le(header, 0x3C)
+        val iconOff = u32le(header, 0x68).toLong() and 0xFFFFFFFFL
+        if (arm9Size < 0 || arm7Size < 0 || arm9Size.toLong() + arm7Size > 16L * 1024 * 1024) return null
+
+        val md = MessageDigest.getInstance("MD5")
+        md.update(header, 0, 0x160)
+        appendSeek(md, source, arm9Off, arm9Size)
+        appendSeek(md, source, arm7Off, arm7Size)
+        appendSeekPadded(md, source, iconOff, 0xA00)
+        return md.digest().joinToString("") { "%02x".format(it.toInt() and 0xFF) }
+    }
+
+    private fun readAt(source: DiscImage.SeekableSource, off: Long, len: Int): ByteArray {
+        val b = ByteArray(len)
+        val n = source.readFully(off, b, len)
+        return if (n == len) b else b.copyOf(maxOf(n, 0))
+    }
+
+    // Streams [size] bytes from [off] into [md] in 64 KB chunks (arm9/arm7 code blocks), stopping at
+    // EOF — matches the in-memory [appendRegion] clamp without holding the region in one allocation.
+    private fun appendSeek(md: MessageDigest, source: DiscImage.SeekableSource, off: Long, size: Int) {
+        if (off < 0 || size <= 0) return
+        val buf = ByteArray(minOf(size, 1 shl 16))
+        var remaining = size
+        var pos = off
+        while (remaining > 0) {
+            val want = minOf(remaining, buf.size)
+            val n = source.readFully(pos, buf, want)
+            if (n <= 0) break
+            md.update(buf, 0, n)
+            remaining -= n
+            pos += n
+            if (n < want) break
+        }
+    }
+
+    // Hashes exactly [size] bytes from [off], zero-padded past EOF (the 0xA00 icon block).
+    private fun appendSeekPadded(md: MessageDigest, source: DiscImage.SeekableSource, off: Long, size: Int) {
+        val chunk = ByteArray(size)
+        if (off >= 0) source.readFully(off, chunk, size) // leftover bytes stay zero
+        md.update(chunk)
+    }
+
     private fun u32le(b: ByteArray, off: Int): Int =
         (b[off].toInt() and 0xFF) or
             ((b[off + 1].toInt() and 0xFF) shl 8) or
@@ -126,10 +181,11 @@ object RaRomHasher {
 }
 
 /**
- * Maps a PFP platform id to its RetroAchievements console id (for the game/hash list lookup). Disc
- * systems are included so the auto-matcher's title fallback can link them even though [RaRomHasher]
- * doesn't hash their images yet — RA coins are per-game, so a title match populates the same set.
- * Systems RA has no achievements for (PS3, Wii U, Vita, 3DS, Xbox 360) are deliberately absent.
+ * Maps a PFP platform id to its RetroAchievements console id (for the game/hash list lookup). RA is
+ * hash-only, so a console appears here only when some hasher can produce its content hash:
+ * cartridges via [RaRomHasher]; PSX/PS2/PSP via [RaDiscHasher]; Sega CD/Saturn via [RaSegaDiscHasher];
+ * GameCube/Wii via [RaNintendoDiscHasher]; Dreamcast (GDI) via [RaDreamcastHasher]. Systems RA has no
+ * achievements for (PS3, Wii U, Vita, 3DS, Xbox 360) are deliberately absent.
  */
 object RaConsole {
     fun idFor(platformId: String): Int? = when (platformId) {
@@ -152,7 +208,7 @@ object RaConsole {
         "virtualboy" -> 28
         "atari7800" -> 51
         "wonderswan" -> 53
-        // Disc-based (title-fallback only for now — see RaRomHasher)
+        // Disc-based (hashed by RaDiscHasher / RaSegaDiscHasher / RaNintendoDiscHasher / RaDreamcastHasher)
         "segacd" -> 9
         "psx" -> 12
         "gc" -> 16

@@ -18,6 +18,7 @@ lifecycle               = "2.8.2"
 coil                    = "2.6.0"
 ktor                    = "2.3.11"
 timber                  = "5.0.1"
+xz                      = "1.10"
 workmanager             = "2.9.0"
 coroutines              = "1.8.1"
 serialization           = "1.7.0"
@@ -101,6 +102,9 @@ kotlinx-serialization-json      = { group = "org.jetbrains.kotlinx",  name = "ko
 
 # Timber logging
 timber                          = { group = "com.jakewharton.timber",  name = "timber",                      version.ref = "timber" }
+
+# XZ / LZMA (CHD cdlz hunk decompression)
+xz                              = { group = "org.tukaani",             name = "xz",                          version.ref = "xz" }
 
 # Accompanist
 accompanist-systemuicontroller  = { group = "com.google.accompanist",  name = "accompanist-systemuicontroller", version.ref = "accompanist" }

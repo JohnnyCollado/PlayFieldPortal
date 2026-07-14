@@ -15,20 +15,20 @@ import java.security.MessageDigest
  * file's content hash matches RA's. See docs/shiba-coins-achievements-plan.md.
  */
 class DiscImage private constructor(
-    private val source: SeekableSource,
-    private val sectorSize: Int,
-    private val dataOffset: Int,
+    private val sectors: SectorSource,
+    /**
+     * The first logical sector of the track the ISO9660 filesystem lives on. Zero for a single-track
+     * image (the PVD sits at sector 16); non-zero for a GD-ROM where the data track starts deep into
+     * the disc (Dreamcast track 3 at LBA 45000), so the PVD is at [firstTrackSector] + 16.
+     */
+    val firstTrackSector: Int,
 ) : Closeable {
 
     /** A located directory entry: its starting logical sector and byte length. */
     data class Entry(val lba: Int, val size: Int)
 
     /** Reads up to [count] (<= 2048) bytes of user data from logical sector [lba]. */
-    fun readSector(lba: Int, count: Int): ByteArray {
-        val out = ByteArray(count)
-        val read = source.readFully(lba.toLong() * sectorSize + dataOffset, out, count)
-        return if (read == count) out else out.copyOf(maxOf(read, 0))
-    }
+    fun readSector(lba: Int, count: Int): ByteArray = sectors.readSector(lba, count)
 
     /**
      * Finds a file (or directory) by ISO9660 path. Backslash-separated; each parent is resolved
@@ -47,7 +47,7 @@ class DiscImage private constructor(
             sector = parent.lba
             dirSectors = 1 // like rcheevos, only the first sector of a subdirectory is searched
         } else {
-            val pvd = readSector(16, 256)
+            val pvd = readSector(firstTrackSector + 16, 256)
             if (pvd.size < 170) return null
             sector = u24(pvd, 156 + 2)
             val blockSize = pvd[128].u() or (pvd[129].u() shl 8)
@@ -96,7 +96,7 @@ class DiscImage private constructor(
         }
     }
 
-    override fun close() = source.close()
+    override fun close() = sectors.close()
 
     // ── helpers ────────────────────────────────────────────────────────────────
     private fun Byte.u(): Int = toInt() and 0xFF
@@ -117,6 +117,30 @@ class DiscImage private constructor(
         fun readFully(offset: Long, dest: ByteArray, len: Int): Int
     }
 
+    /**
+     * Maps a logical sector to its user-data bytes. A single-file image is one linear track; a
+     * GD-ROM (Dreamcast GDI) spans several track files with their own base LBA and layout, so the
+     * lookup is by absolute sector (see [GdiTrackSource]).
+     */
+    interface SectorSource : Closeable {
+        /** Reads up to [count] (<= 2048) bytes of user data from logical sector [lba]. */
+        fun readSector(lba: Int, count: Int): ByteArray
+    }
+
+    // One continuous track: sector N's user data is at N * sectorSize + dataOffset.
+    private class LinearSectors(
+        private val source: SeekableSource,
+        private val sectorSize: Int,
+        private val dataOffset: Int,
+    ) : SectorSource {
+        override fun readSector(lba: Int, count: Int): ByteArray {
+            val out = ByteArray(count)
+            val read = source.readFully(lba.toLong() * sectorSize + dataOffset, out, count)
+            return if (read == count) out else out.copyOf(maxOf(read, 0))
+        }
+        override fun close() = source.close()
+    }
+
     private class FileSource(private val raf: RandomAccessFile) : SeekableSource {
         override fun readFully(offset: Long, dest: ByteArray, len: Int): Int {
             raf.seek(offset)
@@ -132,6 +156,9 @@ class DiscImage private constructor(
     }
 
     companion object {
+        /** A raw seekable reader over [file], for hashers that read absolute byte offsets (GC/Wii). */
+        fun rawSource(file: File): SeekableSource = FileSource(RandomAccessFile(file, "r"))
+
         /** Opens an image file, detecting its sector layout, or null if it isn't an ISO9660 disc. */
         fun open(file: File): DiscImage? =
             open(FileSource(RandomAccessFile(file, "r")))
@@ -140,7 +167,35 @@ class DiscImage private constructor(
         fun open(source: SeekableSource): DiscImage? {
             val layout = detectLayout(source)
             if (layout == null) { source.close(); return null }
-            return DiscImage(source, layout.first, layout.second)
+            return DiscImage(LinearSectors(source, layout.first, layout.second), firstTrackSector = 0)
+        }
+
+        /**
+         * Opens a CD image whose filesystem is NOT ISO9660 (Sega CD / Saturn / Dreamcast), detecting
+         * the physical sector layout from the raw-sector sync pattern instead of a "CD001" descriptor.
+         * The caller validates the disc's own header (e.g. the SEGA magic) after opening.
+         */
+        fun openRawCd(source: SeekableSource): DiscImage {
+            val layout = detectRawLayout(source)
+            return DiscImage(LinearSectors(source, layout.first, layout.second), firstTrackSector = 0)
+        }
+
+        /**
+         * Opens a multi-track disc (a Dreamcast GDI) whose ISO9660 filesystem lives on the track that
+         * starts at [firstTrackSector]. Sector reads route to the owning track via [sectors].
+         */
+        fun openTracks(sectors: SectorSource, firstTrackSector: Int): DiscImage =
+            DiscImage(sectors, firstTrackSector)
+
+        // A raw 2352-byte sector opens with the 12-byte sync 00 FF*10 00; the mode byte at offset 15
+        // then selects the user-data offset (16 for Mode 1, 24 for Mode 2). No sync => cooked 2048.
+        private fun detectRawLayout(source: SeekableSource): Pair<Int, Int> {
+            val head = ByteArray(16)
+            if (source.readFully(0, head, 16) < 16) return 2048 to 0
+            val isRaw = head[0].toInt() == 0 && head[11].toInt() == 0 &&
+                (1..10).all { head[it].toInt() and 0xFF == 0xFF }
+            if (!isRaw) return 2048 to 0
+            return if ((head[15].toInt() and 0xFF) == 2) 2352 to 24 else 2352 to 16
         }
 
         // The ISO9660 primary volume descriptor sits at logical sector 16 with "CD001" one byte in.
