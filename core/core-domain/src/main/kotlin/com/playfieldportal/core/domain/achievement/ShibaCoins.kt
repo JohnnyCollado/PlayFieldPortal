@@ -45,9 +45,15 @@ data class GameCoins(
     val provider: AchievementProvider,
     val earned: CoinCounts,
     val total: CoinCounts,
+    /**
+     * The Platinum crown — every individual coin earned. Stored, not re-derived from [earned] ==
+     * [total], because RetroAchievements grants mastery only for a full HARDCORE clear while
+     * [earned] deliberately banks softcore unlocks too, so a count comparison would over-award the
+     * crown. The provider sync is the single source of truth (see AchievementRepository.summaryOf);
+     * Steam has no softcore/hardcore split, so there it coincides with earned == total.
+     */
+    val isMastered: Boolean,
 ) {
-    /** True once every individual coin is earned — the game is mastered and wins the Platinum crown. */
-    val isMastered: Boolean get() = total.total > 0 && earned == total
 
     /** Weighted value of coins earned so far (individual coins only). */
     val earnedCoinValue: Int get() = earned.coinValue

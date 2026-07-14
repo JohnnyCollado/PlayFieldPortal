@@ -152,6 +152,8 @@ class SteamAchievementsApi @Inject constructor(
                 iconUrl = if (isEarned) a.icon else (a.icongray ?: a.icon),
                 isHidden = a.hidden == 1,
                 isEarned = isEarned,
+                // Steam has no hardcore/softcore split: any unlock counts toward the crown.
+                earnedHardcore = isEarned,
                 // Steam unlocktime is epoch seconds; store millis. 0 = not earned.
                 earnedAt = earned?.unlocktime?.takeIf { it > 0 }?.times(1_000),
             )

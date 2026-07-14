@@ -29,6 +29,7 @@ class ShibaCoinsTest {
             provider = AchievementProvider.RETRO_ACHIEVEMENTS,
             earned = CoinCounts(23, 15, 6),
             total = CoinCounts(24, 16, 7),
+            isMastered = false,
         )
         val earned = 23 * 15 + 15 * 30 + 6 * 90       // 1335
         val possible = 24 * 15 + 16 * 30 + 7 * 90     // 1470
@@ -37,16 +38,29 @@ class ShibaCoinsTest {
     }
 
     @Test
-    fun `mastery requires every individual coin`() {
+    fun `a mastered set reports full progress and the crown`() {
         val counts = CoinCounts(3, 2, 1)
-        val mastered = GameCoins(AchievementProvider.STEAM, earned = counts, total = counts)
+        val mastered = GameCoins(AchievementProvider.STEAM, counts, counts, isMastered = true)
         assertTrue(mastered.isMastered)
         assertEquals(1f, mastered.progress, 0.0001f)
     }
 
     @Test
+    fun `a full RA set earned only in softcore banks the coins but not the crown`() {
+        // Every coin earned (earned == total) yet no hardcore mastery: the crown and its 300-XP
+        // bonus must stay locked. The sync decides isMastered; GameCoins never re-derives it.
+        val counts = CoinCounts(24, 16, 7)
+        val softcore = GameCoins(
+            AchievementProvider.RETRO_ACHIEVEMENTS, counts, counts, isMastered = false,
+        )
+        assertFalse(softcore.isMastered)
+        assertEquals(1f, softcore.progress, 0.0001f)
+        assertEquals(counts.coinValue, softcore.walletContribution) // no +300
+    }
+
+    @Test
     fun `empty set is never mastered and reports zero progress`() {
-        val game = GameCoins(AchievementProvider.STEAM, CoinCounts.EMPTY, CoinCounts.EMPTY)
+        val game = GameCoins(AchievementProvider.STEAM, CoinCounts.EMPTY, CoinCounts.EMPTY, isMastered = false)
         assertFalse(game.isMastered)
         assertEquals(0f, game.progress, 0.0001f)
     }
@@ -57,11 +71,12 @@ class ShibaCoinsTest {
             AchievementProvider.RETRO_ACHIEVEMENTS,
             earned = CoinCounts(23, 15, 6),
             total = CoinCounts(24, 16, 7),
+            isMastered = false,
         )
         assertEquals(1_335, partial.walletContribution)
 
         val counts = CoinCounts(24, 16, 7)
-        val mastered = GameCoins(AchievementProvider.RETRO_ACHIEVEMENTS, counts, counts)
+        val mastered = GameCoins(AchievementProvider.RETRO_ACHIEVEMENTS, counts, counts, isMastered = true)
         assertEquals(counts.coinValue + 300, mastered.walletContribution)
     }
 
@@ -69,8 +84,8 @@ class ShibaCoinsTest {
     fun `wallet aggregates games and resolves a level`() {
         val counts = CoinCounts(24, 16, 7) // 1470 individual + 300 platinum = 1770 mastered
         val games = listOf(
-            GameCoins(AchievementProvider.RETRO_ACHIEVEMENTS, counts, counts),
-            GameCoins(AchievementProvider.STEAM, CoinCounts(10, 0, 0), CoinCounts(20, 0, 0)),
+            GameCoins(AchievementProvider.RETRO_ACHIEVEMENTS, counts, counts, isMastered = true),
+            GameCoins(AchievementProvider.STEAM, CoinCounts(10, 0, 0), CoinCounts(20, 0, 0), isMastered = false),
         )
         val wallet = CoinWallet.of(games)
         assertEquals(1_770 + 150, wallet.totalCoins)

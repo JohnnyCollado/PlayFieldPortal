@@ -35,6 +35,7 @@ private data class RaAchievement(
     @SerialName("Title") val title: String? = null,
     @SerialName("Description") val description: String? = null,
     @SerialName("NumAwarded") val numAwarded: JsonElement? = null,
+    @SerialName("Points") val points: JsonElement? = null,
     @SerialName("DateEarned") val dateEarned: String? = null,
     @SerialName("DateEarnedHardcore") val dateEarnedHardcore: String? = null,
     @SerialName("BadgeName") val badgeName: String? = null,
@@ -57,7 +58,7 @@ private val RA_DATE = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
 /**
  * Read-only RetroAchievements client. Authenticates with the user's own username + personal Web
  * API key (query params z / y), never a password. One call returns every coin with its award
- * counts and this user's earned state; the tier comes from the derived global unlock rarity.
+ * counts and this user's earned state; the tier comes from the achievement's RA point value.
  */
 @Singleton
 class RetroAchievementsApi @Inject constructor(
@@ -102,11 +103,15 @@ class RetroAchievementsApi @Inject constructor(
                 providerAchievementId = a.id.toString(),
                 title = a.title.orEmpty(),
                 description = a.description.orEmpty(),
-                tier = ShibaTier.forRarity(percent),
+                // RA weights achievements by difficulty via points, so the tier comes from points;
+                // the rarity percent is still stored for display on the coins screen.
+                tier = ShibaTier.forRaPoints(a.points.asDouble()?.toInt() ?: 0),
                 globalRarity = percent,
                 iconUrl = a.badgeName?.let { "$BADGE_BASE/$it.png" },
                 isHidden = false, // RA has no hidden-until-earned coins
                 isEarned = earnedAt != null,
+                // Only a hardcore unlock counts toward the Platinum crown.
+                earnedHardcore = a.dateEarnedHardcore != null,
                 earnedAt = earnedAt,
             )
         }

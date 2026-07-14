@@ -42,4 +42,24 @@ class ShibaTierTest {
         val tiers = (0..100).map { ShibaTier.forRarity(it.toDouble()) }
         assertEquals(false, tiers.contains(ShibaTier.PLATINUM))
     }
+
+    @Test
+    fun `RA points map to tiers by difficulty`() {
+        // Bronze: below 10 (RA's 0-5)
+        assertEquals(ShibaTier.BRONZE, ShibaTier.forRaPoints(0))
+        assertEquals(ShibaTier.BRONZE, ShibaTier.forRaPoints(5))
+        // Silver: 10-49 (RA's 10 / 25)
+        assertEquals(ShibaTier.SILVER, ShibaTier.forRaPoints(10))
+        assertEquals(ShibaTier.SILVER, ShibaTier.forRaPoints(25))
+        assertEquals(ShibaTier.SILVER, ShibaTier.forRaPoints(49))
+        // Gold: 50+ (RA's 50 / 100)
+        assertEquals(ShibaTier.GOLD, ShibaTier.forRaPoints(50))
+        assertEquals(ShibaTier.GOLD, ShibaTier.forRaPoints(100))
+    }
+
+    @Test
+    fun `forRaPoints never returns Platinum`() {
+        val tiers = (0..200).map { ShibaTier.forRaPoints(it) }
+        assertEquals(false, tiers.contains(ShibaTier.PLATINUM))
+    }
 }

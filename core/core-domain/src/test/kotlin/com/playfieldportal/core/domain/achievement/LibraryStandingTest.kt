@@ -13,6 +13,7 @@ class LibraryStandingTest {
                 provider = AchievementProvider.RETRO_ACHIEVEMENTS,
                 earned = CoinCounts(bronze = if (mastered) bronzeTotal else bronzeEarned),
                 total = CoinCounts(bronze = bronzeTotal),
+                isMastered = mastered,
             ),
         )
 

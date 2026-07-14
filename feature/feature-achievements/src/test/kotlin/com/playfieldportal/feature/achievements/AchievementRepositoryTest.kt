@@ -43,7 +43,11 @@ class AchievementRepositoryTest {
     private val repo = AchievementRepository(steamApi, retroApi, credentials, setDao, coinDao, linkDao, matchNoteDao, steamResolver, gameRepository)
 
     private fun coin(id: String, tier: ShibaTier, earned: Boolean) =
-        SyncedCoin(id, id, "", tier, 0.0, null, isHidden = false, isEarned = earned, earnedAt = if (earned) 1L else null)
+        SyncedCoin(
+            id, id, "", tier, 0.0, null,
+            isHidden = false, isEarned = earned, earnedHardcore = earned,
+            earnedAt = if (earned) 1L else null,
+        )
 
     @Test
     fun `observeGameCoins maps the stored summary to domain`() = runTest {

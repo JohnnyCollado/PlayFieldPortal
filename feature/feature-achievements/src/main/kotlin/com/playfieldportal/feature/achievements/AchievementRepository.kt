@@ -225,6 +225,7 @@ private fun AchievementSetEntity.toGameCoins(): GameCoins? {
         provider = p,
         earned = CoinCounts(bronzeEarned, silverEarned, goldEarned),
         total = CoinCounts(bronzeTotal, silverTotal, goldTotal),
+        isMastered = mastered,
     )
 }
 
@@ -237,6 +238,7 @@ private fun GameSetRow.toGameStanding(): GameStanding? {
             provider = p,
             earned = CoinCounts(bronzeEarned, silverEarned, goldEarned),
             total = CoinCounts(bronzeTotal, silverTotal, goldTotal),
+            isMastered = mastered,
         ),
     )
 }
@@ -300,8 +302,9 @@ private fun summaryOf(
         bronzeEarned = count(ShibaTier.BRONZE, earnedOnly = true),
         silverEarned = count(ShibaTier.SILVER, earnedOnly = true),
         goldEarned = count(ShibaTier.GOLD, earnedOnly = true),
-        // Platinum crown = every individual coin earned.
-        mastered = coins.isNotEmpty() && coins.all { it.isEarned },
+        // Platinum crown = 100% mastery. RA requires every coin in hardcore; Steam mirrors
+        // isEarned into earnedHardcore, so this stays "every coin earned" there.
+        mastered = coins.isNotEmpty() && coins.all { it.earnedHardcore },
         lastSyncedAt = now,
     )
 }

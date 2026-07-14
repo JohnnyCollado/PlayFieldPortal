@@ -27,8 +27,8 @@ class RetroAchievementsApiTest {
     // Counts as JSON strings — the older RA response shape the client must tolerate.
     private val gameJson = """
         {"ID":14402,"Title":"Chrono Trigger","NumDistinctPlayersCasual":"100","Achievements":{
-          "1":{"ID":1,"Title":"A","Description":"da","NumAwarded":"2","DateEarnedHardcore":"2024-01-02 03:04:05","BadgeName":"111"},
-          "2":{"ID":2,"Title":"B","Description":"db","NumAwarded":"40","BadgeName":"222"}
+          "1":{"ID":1,"Title":"A","Description":"da","NumAwarded":"2","Points":100,"DateEarnedHardcore":"2024-01-02 03:04:05","BadgeName":"111"},
+          "2":{"ID":2,"Title":"B","Description":"db","NumAwarded":"40","Points":5,"BadgeName":"222"}
         }}
     """.trimIndent()
 
@@ -46,19 +46,21 @@ class RetroAchievementsApiTest {
     }
 
     @Test
-    fun `derives rarity from award counts and reads earned dates`() = runTest {
+    fun `tiers by RA points, keeps rarity for display, and reads earned dates`() = runTest {
         val result = api().fetch("14402")
         assertTrue(result is ProviderSyncResult.Success)
         val coins = (result as ProviderSyncResult.Success).coins.associateBy { it.providerAchievementId }
 
         val a = coins.getValue("1")
-        assertEquals(ShibaTier.GOLD, a.tier)          // 2/100 = 2% -> Gold
+        assertEquals(ShibaTier.GOLD, a.tier)          // Points 100 -> Gold
+        assertEquals(2.0, a.globalRarity, 0.001)      // 2/100 still stored for display
         assertTrue(a.isEarned)
         assertNotNull(a.earnedAt)
         assertTrue(a.iconUrl!!.endsWith("/111.png"))
 
         val b = coins.getValue("2")
-        assertEquals(ShibaTier.BRONZE, b.tier)        // 40/100 = 40% -> Bronze
+        assertEquals(ShibaTier.BRONZE, b.tier)        // Points 5 -> Bronze
+        assertEquals(40.0, b.globalRarity, 0.001)
         assertTrue(!b.isEarned)
         assertNull(b.earnedAt)
     }

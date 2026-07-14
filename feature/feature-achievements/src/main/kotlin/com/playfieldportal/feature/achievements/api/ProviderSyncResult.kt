@@ -13,6 +13,10 @@ data class SyncedCoin(
     val iconUrl: String?,
     val isHidden: Boolean,
     val isEarned: Boolean,
+    // Counts toward the Platinum crown. RetroAchievements draws a hard line: only a hardcore
+    // unlock earns mastery (a softcore unlock still banks the coin via [isEarned], but not the
+    // crown). Steam has no hardcore/softcore split, so there it simply mirrors [isEarned].
+    val earnedHardcore: Boolean,
     val earnedAt: Long?,
 )
 
