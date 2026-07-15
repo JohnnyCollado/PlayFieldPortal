@@ -53,6 +53,9 @@ data class ShibaLibraryUiState(
     val coinsIntoLevel: Int = 0,
     val coinsForNextLevel: Int = 0,
     val closed: Boolean = false,
+    // A tracked game the user activated (second tap / controller confirm) — the screen opens its
+    // Shiba Coins overlay and calls [ShibaLibraryViewModel.onOpenHandled].
+    val openCoinsGameId: Long? = null,
 ) {
     val focused: ShibaLibraryRow? get() = rows.getOrNull(focusIndex)
     val siblings: List<ShibaLibraryMode> get() = ShibaLibraryMode.entries
@@ -75,7 +78,12 @@ class ShibaLibraryViewModel @Inject constructor(
     private var collecting = false
 
     fun load(mode: ShibaLibraryMode) {
-        _state.update { it.copy(mode = mode, closed = false, focusIndex = 0, query = "") }
+        _state.update {
+            // Re-entering the same mode (e.g. returning from a game's coins overlay) keeps the
+            // user's place; a different mode starts from the top with a clean query.
+            if (it.mode == mode && currentModeRows.isNotEmpty()) it.copy(closed = false)
+            else it.copy(mode = mode, closed = false, focusIndex = 0, query = "")
+        }
         rebuild()
         if (collecting) return
         collecting = true
@@ -104,10 +112,25 @@ class ShibaLibraryViewModel @Inject constructor(
             // other XMB leveled-sibling drill-ins.
             GamepadAction.NAVIGATE_LEFT -> switchSibling(-1)
             GamepadAction.NAVIGATE_RIGHT -> switchSibling(1)
+            GamepadAction.SELECT -> openFocused()
             GamepadAction.BACK -> close()
             else -> Unit
         }
     }
+
+    /** Opens the focused tracked game's Shiba Coins overlay (untracked rows have no coins to show). */
+    fun openFocused() {
+        val row = _state.value.focused ?: return
+        if (row.isTracked) _state.update { it.copy(openCoinsGameId = row.gameId) }
+    }
+
+    /** Touch: first tap selects a row (updating the panel); tapping the selected row opens it. */
+    fun onRowClick(index: Int) {
+        if (index == _state.value.focusIndex) openFocused() else setFocus(index)
+    }
+
+    /** Clears the open request once the screen has acted on it. */
+    fun onOpenHandled() = _state.update { it.copy(openCoinsGameId = null) }
 
     fun switchSibling(dir: Int) {
         val siblings = ShibaLibraryMode.entries

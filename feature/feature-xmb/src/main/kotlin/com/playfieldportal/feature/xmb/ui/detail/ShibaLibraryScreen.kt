@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -62,6 +64,7 @@ fun ShibaLibraryScreen(
     mode: ShibaLibraryMode,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenGame: (Long) -> Unit = {},
     pendingGamepadAction: GamepadAction? = null,
     onGamepadActionConsumed: () -> Unit = {},
     viewModel: ShibaLibraryViewModel = hiltViewModel(),
@@ -70,6 +73,12 @@ fun ShibaLibraryScreen(
     LaunchedEffect(mode) { viewModel.load(mode) }
     LaunchedEffect(state.closed) {
         if (state.closed) { onClose(); viewModel.onClosedHandled() }
+    }
+    LaunchedEffect(state.openCoinsGameId) {
+        state.openCoinsGameId?.let { gameId ->
+            onOpenGame(gameId)
+            viewModel.onOpenHandled()
+        }
     }
     LaunchedEffect(pendingGamepadAction) {
         if (pendingGamepadAction != null) {
@@ -113,28 +122,32 @@ fun ShibaLibraryScreen(
             }
             Spacer(Modifier.height(14.dp))
 
-            SearchField(query = state.query, onQueryChange = viewModel::setQuery)
-            Spacer(Modifier.height(14.dp))
-
+            // The detail panel sits beside the search field too, so its top edge aligns with the
+            // search bar and it gets the full column height.
             Row(Modifier.fillMaxSize()) {
-                // ── Master list ─────────────────────────────────────────────────
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier.weight(0.62f).fillMaxHeight(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    if (state.rows.isEmpty()) {
-                        item {
-                            val message = when {
-                                state.query.isNotBlank() -> "No games match \"${state.query}\""
-                                state.mode == ShibaLibraryMode.TRACKED -> "No tracked games yet"
-                                else -> "Every game is tracked"
+                Column(Modifier.weight(0.62f).fillMaxHeight()) {
+                    SearchField(query = state.query, onQueryChange = viewModel::setQuery)
+                    Spacer(Modifier.height(14.dp))
+
+                    // ── Master list ─────────────────────────────────────────────
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxWidth().weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        if (state.rows.isEmpty()) {
+                            item {
+                                val message = when {
+                                    state.query.isNotBlank() -> "No games match \"${state.query}\""
+                                    state.mode == ShibaLibraryMode.TRACKED -> "No tracked games yet"
+                                    else -> "Every game is tracked"
+                                }
+                                Text(message, color = TextMuted, fontSize = 15.sp, modifier = Modifier.padding(top = 24.dp))
                             }
-                            Text(message, color = TextMuted, fontSize = 15.sp, modifier = Modifier.padding(top = 24.dp))
                         }
-                    }
-                    itemsIndexed(state.rows, key = { _, r -> r.gameId }) { i, row ->
-                        GameListRow(row, focused = i == state.focusIndex, accent = menuCursorEdge()) { viewModel.setFocus(i) }
+                        itemsIndexed(state.rows, key = { _, r -> r.gameId }) { i, row ->
+                            GameListRow(row, focused = i == state.focusIndex, accent = menuCursorEdge()) { viewModel.onRowClick(i) }
+                        }
                     }
                 }
 
@@ -160,7 +173,7 @@ private fun SearchField(query: String, onQueryChange: (String) -> Unit) {
             focusedBorderColor = menuCursorEdge(), unfocusedBorderColor = Color(0x44FFFFFF),
             cursorColor = menuCursorEdge(),
         ),
-        modifier = Modifier.fillMaxWidth(0.6f),
+        modifier = Modifier.fillMaxWidth(),
     )
 }
 
@@ -221,6 +234,9 @@ private fun DetailPanel(state: ShibaLibraryUiState, accent: Color, modifier: Mod
         modifier = modifier
             .clip(RoundedCornerShape(16.dp))
             .background(PanelFill)
+            // Scrolls so every tier row and the total card stay reachable on short viewports —
+            // without this, Gold/Platinum clipped off the bottom on 1080p.
+            .verticalScroll(rememberScrollState())
             .padding(20.dp),
     ) {
         if (row == null) {
@@ -232,7 +248,7 @@ private fun DetailPanel(state: ShibaLibraryUiState, accent: Color, modifier: Mod
         if (row.logoUri != null) {
             AsyncImage(model = row.logoUri, contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxWidth().height(64.dp))
         } else {
-            Text(row.title, color = TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(row.title, color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
         Spacer(Modifier.height(4.dp))
         Text(row.platformLabel, color = accent, fontSize = 13.sp, fontWeight = FontWeight.Medium)

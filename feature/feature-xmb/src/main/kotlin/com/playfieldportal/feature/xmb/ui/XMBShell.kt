@@ -820,14 +820,19 @@ fun XMBShell(
                 )
             }
 
-            uiState.activeShibaLibrary?.let { mode ->
-                ShibaLibraryScreen(
-                    mode = mode,
-                    onClose = onCloseShibaLibrary,
-                    pendingGamepadAction = uiState.pendingShibaLibraryAction,
-                    onGamepadActionConsumed = onShibaLibraryActionConsumed,
-                    modifier = Modifier.fillMaxSize(),
-                )
+            // Hidden while a game's Shiba Coins overlay is open (opened from a tracked row);
+            // closing the coins overlay brings the library straight back, keeping its place.
+            if (uiState.activeShibaCoinsGameId == null) {
+                uiState.activeShibaLibrary?.let { mode ->
+                    ShibaLibraryScreen(
+                        mode = mode,
+                        onClose = onCloseShibaLibrary,
+                        onOpenGame = onOpenShibaCoins,
+                        pendingGamepadAction = uiState.pendingShibaLibraryAction,
+                        onGamepadActionConsumed = onShibaLibraryActionConsumed,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
             }
 
             uiState.activeAppId?.let { appId ->

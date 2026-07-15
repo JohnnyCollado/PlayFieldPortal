@@ -48,6 +48,8 @@ data class ShibaCoinsUiState(
     val filter: CoinFilter = CoinFilter.ALL,
     // Controller focus: 0 = sort, 1 = filter, 2 = action (sync/link), 3+ = coin rows.
     val focusIndex: Int = 0,
+    // Hidden coins the user chose to reveal (confirm/tap toggles). Session-only: cleared on open.
+    val revealedIds: Set<String> = emptySet(),
     val isSyncing: Boolean = false,
     // Manual "Find on Steam" picker (Steam games only).
     val steamResults: List<com.playfieldportal.feature.achievements.provider.steam.SteamCandidate> = emptyList(),
@@ -75,8 +77,9 @@ class ShibaCoinsViewModel @Inject constructor(
     fun load(id: Long) {
         gameId = id
         // This ViewModel is retained across open/close, so clear the stale closed flag (otherwise
-        // the screen's close-effect fires immediately on reopen) and reset focus to the top.
-        _state.update { it.copy(closed = false, focusIndex = 0) }
+        // the screen's close-effect fires immediately on reopen), reset focus to the top, and
+        // re-hide any revealed hidden coins (reveals are session-only).
+        _state.update { it.copy(closed = false, focusIndex = 0, revealedIds = emptySet()) }
         viewModelScope.launch {
             val game = gameRepository.getById(id)
             _state.update {
@@ -109,6 +112,14 @@ class ShibaCoinsViewModel @Inject constructor(
 
     fun setSort(sort: CoinSort) = _state.update { it.copy(sort = sort).withDisplayed() }
     fun setFilter(filter: CoinFilter) = _state.update { it.copy(filter = filter).withDisplayed() }
+
+    /** Toggles a hidden coin between redacted and revealed. No-op for coins that aren't hidden. */
+    fun toggleReveal(coin: CoinRow) {
+        if (!coin.isHidden || coin.isEarned) return
+        _state.update {
+            it.copy(revealedIds = if (coin.id in it.revealedIds) it.revealedIds - coin.id else it.revealedIds + coin.id)
+        }
+    }
     fun dismissMessage() = _state.update { it.copy(message = null) }
     fun close() = _state.update { it.copy(closed = true) }
 
@@ -136,7 +147,8 @@ class ShibaCoinsViewModel @Inject constructor(
                 FOCUS_SORT -> cycleSort(1)
                 FOCUS_FILTER -> cycleFilter(1)
                 FOCUS_ACTION -> onActionSelect()
-                else -> Unit
+                // Confirm on a hidden coin row reveals its details; confirm again re-hides.
+                else -> s.displayed.getOrNull(s.focusIndex - FOCUS_COINS_START)?.let { toggleReveal(it) }
             }
             GamepadAction.BACK -> close()
             else -> Unit
@@ -253,11 +265,15 @@ fun List<CoinRow>.arrange(sort: CoinSort, filter: CoinFilter): List<CoinRow> {
     }
     return when (sort) {
         // Lowest tier first (Bronze at the top, up to Gold), then rarest within the tier.
-        CoinSort.TIER -> filtered.sortedWith(compareBy({ tierRank(it.tier) }, { it.globalRarity }))
+        CoinSort.TIER -> filtered.sortedWith(compareBy({ tierRank(it.tier) }, { it.rarityRank }))
         CoinSort.EARNED -> filtered.sortedWith(compareByDescending<CoinRow> { it.isEarned }.thenByDescending { it.earnedAt ?: 0L })
-        CoinSort.RAREST -> filtered.sortedBy { it.globalRarity }
+        CoinSort.RAREST -> filtered.sortedBy { it.rarityRank }
     }
 }
+
+// Coins whose provider reported no rarity (stored as a negative sentinel) sort after every real
+// percentage — unknown rarity can't rank as rarest.
+private val CoinRow.rarityRank: Double get() = if (globalRarity < 0) Double.MAX_VALUE else globalRarity
 
 private fun tierRank(tier: ShibaTier): Int = when (tier) {
     ShibaTier.BRONZE -> 0

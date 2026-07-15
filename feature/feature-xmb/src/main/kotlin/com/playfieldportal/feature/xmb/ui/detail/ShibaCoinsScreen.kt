@@ -128,7 +128,12 @@ fun ShibaCoinsScreen(
         ) {
             item(key = "header") { HeaderSection(state, viewModel) }
             itemsIndexed(state.displayed, key = { _, c -> c.id }) { i, coin ->
-                CoinListRow(coin, focused = state.focusIndex == 3 + i)
+                CoinListRow(
+                    coin,
+                    focused = state.focusIndex == 3 + i,
+                    revealed = coin.id in state.revealedIds,
+                    onToggleReveal = { viewModel.toggleReveal(coin) },
+                )
             }
             if (state.linked && state.displayed.isEmpty()) {
                 item { Text("No coins to show.", color = TextMuted, modifier = Modifier.padding(vertical = 16.dp)) }
@@ -351,14 +356,23 @@ private fun focusRing(focused: Boolean): Modifier {
 }
 
 @Composable
-private fun CoinListRow(coin: CoinRow, focused: Boolean) {
-    val redacted = coin.isHidden && !coin.isEarned
+private fun CoinListRow(
+    coin: CoinRow,
+    focused: Boolean,
+    revealed: Boolean = false,
+    onToggleReveal: () -> Unit = {},
+) {
+    // A hidden coin stays redacted until earned — unless the user chose to reveal it (confirm/tap
+    // toggles; the same action hides it again).
+    val hideable = coin.isHidden && !coin.isEarned
+    val redacted = hideable && !revealed
     val edge = menuCursorEdge()
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(10.dp))
+            .then(if (hideable) Modifier.clickable(onClick = onToggleReveal) else Modifier)
             .then(if (focused) Modifier.border(2.dp, edge, RoundedCornerShape(10.dp)) else Modifier)
             .padding(vertical = 9.dp, horizontal = 8.dp),
     ) {
@@ -371,13 +385,24 @@ private fun CoinListRow(coin: CoinRow, focused: Boolean) {
                 fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
             Text(
-                if (redacted) "Keep playing to reveal" else coin.description,
+                when {
+                    redacted -> "Keep playing — or press confirm to reveal"
+                    // Steam's Web API never returns a hidden achievement's description (even once
+                    // earned) — the reveal shows the real title, but there is no how-to to show.
+                    coin.isHidden && coin.description.isBlank() -> "Steam keeps this one's description secret"
+                    else -> coin.description
+                },
                 color = TextDim, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
         }
         Spacer(Modifier.width(10.dp))
         Column(horizontalAlignment = Alignment.End) {
-            Text(String.format(Locale.US, "%.1f%%", coin.globalRarity), color = metalOf(coin.tier), fontSize = 12.sp)
+            Text(
+                // A negative rarity is the "provider reported no percentage" sentinel.
+                if (coin.globalRarity < 0) "Rarity unavailable"
+                else String.format(Locale.US, "%.1f%%", coin.globalRarity),
+                color = metalOf(coin.tier), fontSize = 12.sp,
+            )
             Text(
                 if (coin.isEarned) coin.earnedAt?.let { DATE_FMT.format(Date(it)) } ?: "Earned" else "Locked",
                 color = TextDim, fontSize = 10.sp,
