@@ -10,10 +10,12 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface ProviderGameLinkDao {
 
-    @Query("SELECT * FROM provider_game_links WHERE game_id = :gameId")
+    // A game may hold one link per provider; until the UI grows multi-set surfaces these
+    // single-link reads stay deterministic by preferring the first provider alphabetically.
+    @Query("SELECT * FROM provider_game_links WHERE game_id = :gameId ORDER BY provider LIMIT 1")
     fun observeForGame(gameId: Long): Flow<ProviderGameLinkEntity?>
 
-    @Query("SELECT * FROM provider_game_links WHERE game_id = :gameId")
+    @Query("SELECT * FROM provider_game_links WHERE game_id = :gameId ORDER BY provider LIMIT 1")
     suspend fun getForGame(gameId: Long): ProviderGameLinkEntity?
 
     /** Every game-provider link, for the batch "sync all" pass. */

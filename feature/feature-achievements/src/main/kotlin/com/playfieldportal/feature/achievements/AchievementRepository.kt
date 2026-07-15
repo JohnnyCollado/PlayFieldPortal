@@ -1,14 +1,14 @@
 package com.playfieldportal.feature.achievements
 
 import com.playfieldportal.core.data.achievement.AchievementCredentialsProvider
-import com.playfieldportal.core.data.database.dao.AchievementDao
+import com.playfieldportal.core.data.database.dao.AccountAchievementDao
+import com.playfieldportal.core.data.database.dao.AccountAchievementSetDao
 import com.playfieldportal.core.data.database.dao.AchievementMatchNoteDao
-import com.playfieldportal.core.data.database.dao.AchievementSetDao
 import com.playfieldportal.core.data.database.dao.ProviderGameLinkDao
 import com.playfieldportal.core.data.database.dao.EarnedCoinRow
 import com.playfieldportal.core.data.database.dao.GameSetRow
-import com.playfieldportal.core.data.database.entity.AchievementEntity
-import com.playfieldportal.core.data.database.entity.AchievementSetEntity
+import com.playfieldportal.core.data.database.entity.AccountAchievementEntity
+import com.playfieldportal.core.data.database.entity.AccountAchievementSetEntity
 import com.playfieldportal.core.data.database.entity.ProviderGameLinkEntity
 import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.feature.achievements.provider.steam.SteamAppListResolver
@@ -42,8 +42,8 @@ import javax.inject.Singleton
 class AchievementRepository @Inject constructor(
     private val remoteSources: RemoteAchievementSources,
     private val credentials: AchievementCredentialsProvider,
-    private val setDao: AchievementSetDao,
-    private val coinDao: AchievementDao,
+    private val setDao: AccountAchievementSetDao,
+    private val coinDao: AccountAchievementDao,
     private val linkDao: ProviderGameLinkDao,
     private val matchNoteDao: AchievementMatchNoteDao,
     private val steamResolver: SteamAppListResolver,
@@ -56,7 +56,7 @@ class AchievementRepository @Inject constructor(
         setDao.observeForGame(gameId).map { it?.toGameCoins() }
 
     /** The raw per-coin rows for a game's dedicated coins screen. */
-    override fun observeCoins(gameId: Long): Flow<List<AchievementEntity>> =
+    override fun observeCoins(gameId: Long): Flow<List<AccountAchievementEntity>> =
         coinDao.observeForGame(gameId)
 
     /** The account-wide Shiba wallet (total coins -> level + rank), derived from every set. */
@@ -101,13 +101,19 @@ class AchievementRepository @Inject constructor(
         if (result !is ProviderSyncResult.Success) return result
 
         val now = System.currentTimeMillis()
-        val coins = stabilizeTiers(gameId, provider, result.coins, now)
-        coinDao.deleteForGame(gameId)
-        coinDao.upsertAll(coins.map { it.toEntity(gameId, provider) })
-        setDao.upsert(summaryOf(gameId, provider, result.providerGameId, coins, now))
+        val resolvedId = result.providerGameId
+        val coins = stabilizeTiers(provider, resolvedId, result.coins, now)
+        coinDao.deleteForSet(provider.name, resolvedId)
+        coinDao.upsertAll(coins.map { it.toEntity(provider, resolvedId) })
+        setDao.upsert(summaryOf(provider, resolvedId, titleOf(gameId), coins, now))
         credentials.setLastSyncedAt(now)
         return result
     }
+
+    // The provider fetch carries no game title; a library sync names the account row after its
+    // game so hub rows read the same before and after an entry gains a library copy.
+    private suspend fun titleOf(gameId: Long): String =
+        gameRepository.getById(gameId)?.displayTitle.orEmpty()
 
     /**
      * Steam tiers derive from global unlock percentages, which drift as more players unlock —
@@ -118,16 +124,17 @@ class AchievementRepository @Inject constructor(
      * always taken fresh. RA tiers come from fixed point values and are never frozen.
      */
     private suspend fun stabilizeTiers(
-        gameId: Long,
         provider: AchievementProvider,
+        providerGameId: String,
         fresh: List<SyncedCoin>,
         now: Long,
     ): List<SyncedCoin> {
         if (provider != AchievementProvider.STEAM) return fresh
-        val lastSyncedAt = setDao.getForGame(gameId)?.lastSyncedAt ?: return fresh
+        val lastSyncedAt = setDao.getSet(provider.name, providerGameId)?.lastSyncedAt ?: return fresh
         if (now - lastSyncedAt >= TIER_STABILITY_WINDOW_MS) return fresh
 
-        val storedTiers = coinDao.getForGame(gameId).associate { it.providerAchievementId to it.tier }
+        val storedTiers = coinDao.getForSet(provider.name, providerGameId)
+            .associate { it.providerAchievementId to it.tier }
         return fresh.map { coin ->
             if (coin.tier == ShibaTier.PLATINUM) return@map coin
             val stored = storedTiers[coin.providerAchievementId]
@@ -246,7 +253,7 @@ data class BatchSyncResult(
 
 // ── Mappers ───────────────────────────────────────────────────────────────────
 
-private fun AchievementSetEntity.toGameCoins(): GameCoins? {
+private fun AccountAchievementSetEntity.toGameCoins(): GameCoins? {
     val p = AchievementProvider.fromName(provider) ?: return null
     return GameCoins(
         provider = p,
@@ -296,9 +303,9 @@ private fun EarnedCoinRow.toEarnedCoinRef(): EarnedCoinRef? {
     )
 }
 
-private fun SyncedCoin.toEntity(gameId: Long, provider: AchievementProvider) = AchievementEntity(
-    gameId = gameId,
+private fun SyncedCoin.toEntity(provider: AchievementProvider, providerGameId: String) = AccountAchievementEntity(
     provider = provider.name,
+    providerGameId = providerGameId,
     providerAchievementId = providerAchievementId,
     title = title,
     description = description,
@@ -311,12 +318,12 @@ private fun SyncedCoin.toEntity(gameId: Long, provider: AchievementProvider) = A
 )
 
 private fun summaryOf(
-    gameId: Long,
     provider: AchievementProvider,
     providerGameId: String,
+    title: String,
     coins: List<SyncedCoin>,
     now: Long,
-): AchievementSetEntity {
+): AccountAchievementSetEntity {
     fun count(tier: ShibaTier, earnedOnly: Boolean) =
         coins.count { it.tier == tier && (!earnedOnly || it.isEarned) }
     // A provider-declared Platinum ("unlock every achievement"-style Steam coin) IS the crown:
@@ -326,10 +333,10 @@ private fun summaryOf(
     val platinumCoins = coins.filter { it.tier == ShibaTier.PLATINUM }
     val mastered = if (platinumCoins.isNotEmpty()) platinumCoins.any { it.earnedHardcore }
                    else coins.isNotEmpty() && coins.all { it.earnedHardcore }
-    return AchievementSetEntity(
-        gameId = gameId,
+    return AccountAchievementSetEntity(
         provider = provider.name,
         providerGameId = providerGameId,
+        title = title,
         bronzeTotal = count(ShibaTier.BRONZE, earnedOnly = false),
         silverTotal = count(ShibaTier.SILVER, earnedOnly = false),
         goldTotal = count(ShibaTier.GOLD, earnedOnly = false),

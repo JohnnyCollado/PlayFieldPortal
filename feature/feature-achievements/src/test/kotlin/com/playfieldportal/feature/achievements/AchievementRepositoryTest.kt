@@ -1,10 +1,11 @@
 package com.playfieldportal.feature.achievements
 
 import com.playfieldportal.core.data.achievement.AchievementCredentialsProvider
-import com.playfieldportal.core.data.database.dao.AchievementDao
-import com.playfieldportal.core.data.database.dao.AchievementSetDao
+import com.playfieldportal.core.data.database.dao.AccountAchievementDao
+import com.playfieldportal.core.data.database.dao.AccountAchievementSetDao
 import com.playfieldportal.core.data.database.dao.ProviderGameLinkDao
-import com.playfieldportal.core.data.database.entity.AchievementSetEntity
+import com.playfieldportal.core.data.database.entity.AccountAchievementEntity
+import com.playfieldportal.core.data.database.entity.AccountAchievementSetEntity
 import com.playfieldportal.core.data.database.entity.ProviderGameLinkEntity
 import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.core.domain.achievement.ShibaTier
@@ -35,8 +36,8 @@ class AchievementRepositoryTest {
     private val steamSource = mockk<SteamAchievementsSource>()
     private val remoteSources = RemoteAchievementSources(retroSource, steamSource)
     private val credentials = mockk<AchievementCredentialsProvider>(relaxed = true)
-    private val setDao = mockk<AchievementSetDao>(relaxed = true)
-    private val coinDao = mockk<AchievementDao>(relaxed = true)
+    private val setDao = mockk<AccountAchievementSetDao>(relaxed = true)
+    private val coinDao = mockk<AccountAchievementDao>(relaxed = true)
     private val linkDao = mockk<ProviderGameLinkDao>(relaxed = true)
     private val steamResolver = mockk<SteamAppListResolver>(relaxed = true)
     private val gameRepository = mockk<com.playfieldportal.core.domain.repository.GameRepository>(relaxed = true)
@@ -46,8 +47,9 @@ class AchievementRepositoryTest {
 
     init {
         // Tier stability reads the previous summary + coin rows; default to "never synced".
-        coEvery { setDao.getForGame(any()) } returns null
-        coEvery { coinDao.getForGame(any()) } returns emptyList()
+        coEvery { setDao.getSet(any(), any()) } returns null
+        coEvery { coinDao.getForSet(any(), any()) } returns emptyList()
+        coEvery { gameRepository.getById(any()) } returns null
     }
 
     private fun coin(id: String, tier: ShibaTier, earned: Boolean) =
@@ -57,11 +59,24 @@ class AchievementRepositoryTest {
             earnedAt = if (earned) 1L else null,
         )
 
+    private fun setEntity(
+        provider: String,
+        providerGameId: String,
+        bronzeEarned: Int = 0, silverEarned: Int = 0, goldEarned: Int = 0,
+        bronzeTotal: Int = 0, silverTotal: Int = 0, goldTotal: Int = 0,
+        lastSyncedAt: Long? = null,
+    ) = AccountAchievementSetEntity(
+        provider = provider, providerGameId = providerGameId, title = "Some Game",
+        bronzeTotal = bronzeTotal, silverTotal = silverTotal, goldTotal = goldTotal,
+        bronzeEarned = bronzeEarned, silverEarned = silverEarned, goldEarned = goldEarned,
+        lastSyncedAt = lastSyncedAt,
+    )
+
     @Test
     fun `observeGameCoins maps the stored summary to domain`() = runTest {
         every { setDao.observeForGame(1L) } returns flowOf(
-            AchievementSetEntity(
-                gameId = 1L, provider = "RETRO_ACHIEVEMENTS", providerGameId = "14402",
+            setEntity(
+                provider = "RETRO_ACHIEVEMENTS", providerGameId = "14402",
                 bronzeTotal = 24, silverTotal = 16, goldTotal = 7,
                 bronzeEarned = 23, silverEarned = 15, goldEarned = 6,
             ),
@@ -83,17 +98,18 @@ class AchievementRepositoryTest {
                 coin("b2", ShibaTier.BRONZE, earned = true),
             ),
         )
-        val setSlot = slot<AchievementSetEntity>()
+        val setSlot = slot<AccountAchievementSetEntity>()
         coEvery { setDao.upsert(capture(setSlot)) } just Runs
 
         val result = repo.syncGame(1L, AchievementProvider.STEAM, "440")
 
         assertTrue(result is ProviderSyncResult.Success)
-        coVerify { coinDao.deleteForGame(1L) }
+        coVerify { coinDao.deleteForSet("STEAM", "440") }
         coVerify { coinDao.upsertAll(match { it.size == 3 }) }
         coVerify { credentials.setLastSyncedAt(any()) }
 
         val summary = setSlot.captured
+        assertEquals("440", summary.providerGameId)
         assertEquals(2, summary.bronzeTotal)
         assertEquals(1, summary.bronzeEarned)
         assertEquals(1, summary.goldTotal)
@@ -102,12 +118,28 @@ class AchievementRepositoryTest {
     }
 
     @Test
+    fun `syncGame names the account row after its library game`() = runTest {
+        coEvery { gameRepository.getById(1L) } returns
+            com.playfieldportal.core.domain.model.Game(id = 1, title = "Team Fortress 2", platformId = "windows")
+        coEvery { steamSource.fetch("440") } returns ProviderSyncResult.Success(
+            "440",
+            listOf(coin("b1", ShibaTier.BRONZE, earned = true)),
+        )
+        val setSlot = slot<AccountAchievementSetEntity>()
+        coEvery { setDao.upsert(capture(setSlot)) } just Runs
+
+        repo.syncGame(1L, AchievementProvider.STEAM, "440")
+
+        assertEquals("Team Fortress 2", setSlot.captured.title)
+    }
+
+    @Test
     fun `syncGame marks mastered when every coin is earned`() = runTest {
         coEvery { steamSource.fetch("440") } returns ProviderSyncResult.Success(
             "440",
             listOf(coin("g1", ShibaTier.GOLD, earned = true), coin("b1", ShibaTier.BRONZE, earned = true)),
         )
-        val setSlot = slot<AchievementSetEntity>()
+        val setSlot = slot<AccountAchievementSetEntity>()
         coEvery { setDao.upsert(capture(setSlot)) } just Runs
 
         repo.syncGame(1L, AchievementProvider.STEAM, "440")
@@ -124,7 +156,7 @@ class AchievementRepositoryTest {
                 coin("b1", ShibaTier.BRONZE, earned = false), // an unearned coin: crown still lights
             ),
         )
-        val setSlot = slot<AchievementSetEntity>()
+        val setSlot = slot<AccountAchievementSetEntity>()
         coEvery { setDao.upsert(capture(setSlot)) } just Runs
 
         repo.syncGame(1L, AchievementProvider.STEAM, "440")
@@ -144,7 +176,7 @@ class AchievementRepositoryTest {
                 coin("b1", ShibaTier.BRONZE, earned = true),
             ),
         )
-        val setSlot = slot<AchievementSetEntity>()
+        val setSlot = slot<AccountAchievementSetEntity>()
         coEvery { setDao.upsert(capture(setSlot)) } just Runs
 
         repo.syncGame(1L, AchievementProvider.STEAM, "440")
@@ -155,13 +187,13 @@ class AchievementRepositoryTest {
     @Test
     fun `a Steam re-sync within seven days keeps each coin's stored tier`() = runTest {
         // Rarity drifted from 9 to 11 percent (Gold -> Silver), but the last sync was recent.
-        coEvery { setDao.getForGame(1L) } returns AchievementSetEntity(
-            gameId = 1L, provider = "STEAM", providerGameId = "440",
+        coEvery { setDao.getSet("STEAM", "440") } returns setEntity(
+            provider = "STEAM", providerGameId = "440",
             lastSyncedAt = System.currentTimeMillis() - 60_000,
         )
-        coEvery { coinDao.getForGame(1L) } returns listOf(
-            com.playfieldportal.core.data.database.entity.AchievementEntity(
-                gameId = 1L, provider = "STEAM", providerAchievementId = "g1",
+        coEvery { coinDao.getForSet("STEAM", "440") } returns listOf(
+            AccountAchievementEntity(
+                provider = "STEAM", providerGameId = "440", providerAchievementId = "g1",
                 title = "g1", description = "", tier = "GOLD", globalRarity = 9.0,
             ),
         )
@@ -169,7 +201,7 @@ class AchievementRepositoryTest {
             "440",
             listOf(coin("g1", ShibaTier.SILVER, earned = false)),
         )
-        val coinsSlot = slot<List<com.playfieldportal.core.data.database.entity.AchievementEntity>>()
+        val coinsSlot = slot<List<AccountAchievementEntity>>()
         coEvery { coinDao.upsertAll(capture(coinsSlot)) } just Runs
 
         repo.syncGame(1L, AchievementProvider.STEAM, "440")

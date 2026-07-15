@@ -2,7 +2,7 @@ package com.playfieldportal.feature.xmb.ui.detail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.playfieldportal.core.data.database.entity.AchievementEntity
+import com.playfieldportal.core.data.database.entity.AccountAchievementEntity
 import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.core.domain.achievement.GameCoins
 import com.playfieldportal.core.domain.achievement.ShibaTier
@@ -244,7 +244,7 @@ class ShibaCoinsViewModel @Inject constructor(
         if (platformId == "windows") AchievementProvider.STEAM else AchievementProvider.RETRO_ACHIEVEMENTS
 }
 
-private fun AchievementEntity.toRow() = CoinRow(
+private fun AccountAchievementEntity.toRow() = CoinRow(
     id = providerAchievementId,
     tier = runCatching { ShibaTier.valueOf(tier) }.getOrDefault(ShibaTier.BRONZE),
     title = title,

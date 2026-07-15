@@ -3,16 +3,18 @@ package com.playfieldportal.core.data.database.entity
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
-import androidx.room.PrimaryKey
 
 /**
- * Maps a library game to its identifier on an achievement provider, so a sync knows what to fetch.
- * A game has at most one link (a ROM is RetroAchievements, a PC game is Steam). Set automatically
- * (Steam title match) or by hand; cascade-deleted with its game.
- * See docs/shiba-coins-achievements-plan.md.
+ * Maps a library game to its identifier on an achievement provider — the bridge through which
+ * game-keyed reads resolve to account-keyed achievement rows. Composite key (game_id, provider):
+ * a game may hold one link per provider (STEAM and LOCAL_STEAM coexist for owned games played
+ * through an emulator — July 2026 decision). Set automatically or by hand; cascade-deleted with
+ * its game, while the account rows it points to survive.
+ * See docs/local-steam-achievements-plan.md and docs/account-achievements-plan.md.
  */
 @Entity(
     tableName = "provider_game_links",
+    primaryKeys = ["game_id", "provider"],
     foreignKeys = [
         ForeignKey(
             entity = GameEntity::class,
@@ -23,7 +25,6 @@ import androidx.room.PrimaryKey
     ],
 )
 data class ProviderGameLinkEntity(
-    @PrimaryKey
     @ColumnInfo(name = "game_id")
     val gameId: Long,
 

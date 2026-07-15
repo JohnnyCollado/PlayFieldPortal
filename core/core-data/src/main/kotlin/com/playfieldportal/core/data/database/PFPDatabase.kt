@@ -5,8 +5,8 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
-import com.playfieldportal.core.data.database.dao.AchievementDao
-import com.playfieldportal.core.data.database.dao.AchievementSetDao
+import com.playfieldportal.core.data.database.dao.AccountAchievementDao
+import com.playfieldportal.core.data.database.dao.AccountAchievementSetDao
 import com.playfieldportal.core.data.database.dao.AppOverrideDao
 import com.playfieldportal.core.data.database.dao.ArtworkImportReportDao
 import com.playfieldportal.core.data.database.dao.ArtworkRecordDao
@@ -32,9 +32,9 @@ import com.playfieldportal.core.data.database.dao.SsMediaCacheDao
 import com.playfieldportal.core.data.database.dao.VideoDao
 import com.playfieldportal.core.data.database.dao.VideoLibraryDao
 import com.playfieldportal.core.data.database.dao.VideoPlaylistDao
-import com.playfieldportal.core.data.database.entity.AchievementEntity
+import com.playfieldportal.core.data.database.entity.AccountAchievementEntity
+import com.playfieldportal.core.data.database.entity.AccountAchievementSetEntity
 import com.playfieldportal.core.data.database.entity.AchievementMatchNoteEntity
-import com.playfieldportal.core.data.database.entity.AchievementSetEntity
 import com.playfieldportal.core.data.database.entity.AppOverrideEntity
 import com.playfieldportal.core.data.database.entity.ArtworkImportReportEntity
 import com.playfieldportal.core.data.database.entity.ArtworkRecordEntity
@@ -93,12 +93,12 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         ArtworkRecordEntity::class,
         ArtworkImportReportEntity::class,
         SsMediaCacheEntity::class,
-        AchievementSetEntity::class,
-        AchievementEntity::class,
+        AccountAchievementSetEntity::class,
+        AccountAchievementEntity::class,
         ProviderGameLinkEntity::class,
         AchievementMatchNoteEntity::class,
     ],
-    version = 32,
+    version = 33,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -128,8 +128,8 @@ abstract class PFPDatabase : RoomDatabase() {
     abstract fun artworkRecordDao(): ArtworkRecordDao
     abstract fun artworkImportReportDao(): ArtworkImportReportDao
     abstract fun ssMediaCacheDao(): SsMediaCacheDao
-    abstract fun achievementSetDao(): AchievementSetDao
-    abstract fun achievementDao(): AchievementDao
+    abstract fun accountAchievementSetDao(): AccountAchievementSetDao
+    abstract fun accountAchievementDao(): AccountAchievementDao
     abstract fun providerGameLinkDao(): ProviderGameLinkDao
     abstract fun achievementMatchNoteDao(): com.playfieldportal.core.data.database.dao.AchievementMatchNoteDao
 
@@ -931,6 +931,104 @@ abstract class PFPDatabase : RoomDatabase() {
                     )
                     """.trimIndent()
                 )
+            }
+        }
+
+        // v33 — account-keyed achievement storage. Library-keyed achievement_sets/achievements
+        // become account_achievement_sets/account_achievements, keyed by (provider,
+        // provider_game_id) so account-imported games without a library copy are first-class rows.
+        // Library games reach their rows through provider_game_links, whose key widens to
+        // (game_id, provider) so a STEAM and a LOCAL_STEAM link coexist on one game. Existing rows
+        // copy across (titles joined from games; duplicates on the same provider identity merge by
+        // construction). Account rows have no FK to games: they survive library deletion and
+        // provider disconnect. See docs/account-achievements-plan.md.
+        val MIGRATION_32_33 = object : Migration(32, 33) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS account_achievement_sets (
+                        provider TEXT NOT NULL,
+                        provider_game_id TEXT NOT NULL,
+                        title TEXT NOT NULL,
+                        icon_url TEXT,
+                        bronze_total INTEGER NOT NULL,
+                        silver_total INTEGER NOT NULL,
+                        gold_total INTEGER NOT NULL,
+                        bronze_earned INTEGER NOT NULL,
+                        silver_earned INTEGER NOT NULL,
+                        gold_earned INTEGER NOT NULL,
+                        mastered INTEGER NOT NULL,
+                        last_synced_at INTEGER,
+                        PRIMARY KEY(provider, provider_game_id)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS account_achievements (
+                        provider TEXT NOT NULL,
+                        provider_game_id TEXT NOT NULL,
+                        provider_achievement_id TEXT NOT NULL,
+                        title TEXT NOT NULL,
+                        description TEXT NOT NULL,
+                        tier TEXT NOT NULL,
+                        global_rarity REAL NOT NULL,
+                        icon_url TEXT,
+                        is_hidden INTEGER NOT NULL,
+                        is_earned INTEGER NOT NULL,
+                        earned_at INTEGER,
+                        PRIMARY KEY(provider, provider_game_id, provider_achievement_id)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    INSERT OR IGNORE INTO account_achievement_sets
+                        (provider, provider_game_id, title, icon_url,
+                         bronze_total, silver_total, gold_total,
+                         bronze_earned, silver_earned, gold_earned, mastered, last_synced_at)
+                    SELECT s.provider, s.provider_game_id, COALESCE(g.title, ''), NULL,
+                           s.bronze_total, s.silver_total, s.gold_total,
+                           s.bronze_earned, s.silver_earned, s.gold_earned, s.mastered, s.last_synced_at
+                    FROM achievement_sets s LEFT JOIN games g ON g.id = s.game_id
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    INSERT OR IGNORE INTO account_achievements
+                        (provider, provider_game_id, provider_achievement_id, title, description,
+                         tier, global_rarity, icon_url, is_hidden, is_earned, earned_at)
+                    SELECT a.provider, s.provider_game_id, a.provider_achievement_id, a.title,
+                           a.description, a.tier, a.global_rarity, a.icon_url, a.is_hidden,
+                           a.is_earned, a.earned_at
+                    FROM achievements a
+                    JOIN achievement_sets s ON s.game_id = a.game_id AND s.provider = a.provider
+                    """.trimIndent()
+                )
+                db.execSQL("DROP TABLE achievements")
+                db.execSQL("DROP TABLE achievement_sets")
+
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS provider_game_links_v2 (
+                        game_id INTEGER NOT NULL,
+                        provider TEXT NOT NULL,
+                        provider_game_id TEXT NOT NULL,
+                        source TEXT NOT NULL,
+                        resolved_at INTEGER NOT NULL,
+                        PRIMARY KEY(game_id, provider),
+                        FOREIGN KEY(game_id) REFERENCES games(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    INSERT INTO provider_game_links_v2 (game_id, provider, provider_game_id, source, resolved_at)
+                    SELECT game_id, provider, provider_game_id, source, resolved_at FROM provider_game_links
+                    """.trimIndent()
+                )
+                db.execSQL("DROP TABLE provider_game_links")
+                db.execSQL("ALTER TABLE provider_game_links_v2 RENAME TO provider_game_links")
             }
         }
     }

@@ -1,6 +1,6 @@
 package com.playfieldportal.feature.achievements
 
-import com.playfieldportal.core.data.database.entity.AchievementEntity
+import com.playfieldportal.core.data.database.entity.AccountAchievementEntity
 import com.playfieldportal.core.data.database.entity.ProviderGameLinkEntity
 import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.core.domain.achievement.CoinWallet
@@ -27,7 +27,7 @@ interface AchievementController {
     fun observeGameCoins(gameId: Long): Flow<GameCoins?>
 
     /** The raw per-coin rows for a game's dedicated coins screen. */
-    fun observeCoins(gameId: Long): Flow<List<AchievementEntity>>
+    fun observeCoins(gameId: Long): Flow<List<AccountAchievementEntity>>
 
     /** The account-wide Shiba wallet (total coins -> level + rank), derived from every set. */
     fun observeWallet(): Flow<CoinWallet>

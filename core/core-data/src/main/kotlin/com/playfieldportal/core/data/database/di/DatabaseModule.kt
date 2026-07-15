@@ -88,13 +88,14 @@ object DatabaseModule {
             PFPDatabase.MIGRATION_29_30,
             PFPDatabase.MIGRATION_30_31,
             PFPDatabase.MIGRATION_31_32,
+            PFPDatabase.MIGRATION_32_33,
         )
         .build()
 
     @Provides fun provideGameDao(db: PFPDatabase): GameDao = db.gameDao()
     @Provides fun provideSsMediaCacheDao(db: PFPDatabase): com.playfieldportal.core.data.database.dao.SsMediaCacheDao = db.ssMediaCacheDao()
-    @Provides fun provideAchievementSetDao(db: PFPDatabase): com.playfieldportal.core.data.database.dao.AchievementSetDao = db.achievementSetDao()
-    @Provides fun provideAchievementDao(db: PFPDatabase): com.playfieldportal.core.data.database.dao.AchievementDao = db.achievementDao()
+    @Provides fun provideAccountAchievementSetDao(db: PFPDatabase): com.playfieldportal.core.data.database.dao.AccountAchievementSetDao = db.accountAchievementSetDao()
+    @Provides fun provideAccountAchievementDao(db: PFPDatabase): com.playfieldportal.core.data.database.dao.AccountAchievementDao = db.accountAchievementDao()
     @Provides fun provideProviderGameLinkDao(db: PFPDatabase): com.playfieldportal.core.data.database.dao.ProviderGameLinkDao = db.providerGameLinkDao()
     @Provides fun provideAchievementMatchNoteDao(db: PFPDatabase): com.playfieldportal.core.data.database.dao.AchievementMatchNoteDao = db.achievementMatchNoteDao()
     @Provides fun providePlatformDao(db: PFPDatabase): PlatformDao = db.platformDao()
