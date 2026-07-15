@@ -83,7 +83,31 @@ Notes:
   Defer to a later phase; GSE is the format actually observed on-device.
 - `steam_settings/steam_appid.txt`: plain appid — the join key to the Steam Web API.
 
-## 5. Phased implementation
+## 5. Owned vs cracked — the four-state classification
+
+Two independent signals classify every Windows game folder (decided 2026-07-15):
+
+- **Emu markers** (local, free): `steam_settings/` + `steam_appid.txt`, and the renamed
+  original DLL (`steam_api64_o.dll` beside the replacement `steam_api64.dll`). Present means
+  the copy never talks to real Steam — its achievements exist only in the local emu file.
+- **Ownership** (one Steam Web API call): `IPlayerService/GetOwnedGames/v1` fetched once and
+  cached, then the discovered appid is looked up in the owned list. Shared dependency with
+  `docs/account-achievements-plan.md`, which uses the same endpoint for library import —
+  whichever plan lands first adds it to `SteamWebApi`.
+
+| Emu markers | Owned on Steam | Meaning |
+|---|---|---|
+| Yes | No | Cracked/unowned copy — LOCAL_STEAM tracking only |
+| Yes | Yes | Owned, playing an offline emu copy — both sets coexist (STEAM + LOCAL_STEAM) |
+| No | Yes | Owned build, no emu — nothing writes local files; STEAM provider only |
+| No | No | DRM-free/GOG/Epic build — no Steam achievement data; honest untracked reason |
+
+PFP stays display-only in all four states: classification changes which tracking pipeline
+applies and what the badge/untracked reason says, never whether the game launches. Ownership
+lookup requires the user's key + public Game Details (same gate as every player call); when
+unavailable, fall back to emu-markers-only with the ownership column treated as unknown.
+
+## 6. Phased implementation
 
 Every phase: tests ship with it (MockK; parser tests against verbatim sample files), lite-debug
 on-device validation, pipefail-gated build+install, atomic conventional commits.
@@ -117,6 +141,9 @@ on-device validation, pipefail-gated build+install, atomic conventional commits.
 - [ ] `AchievementAutoMatcher`: for `windows` games, discovery-before-title-ladder; record
       honest untracked reasons ("No Steam emulator data in the game folder", "DRM-free copy —
       no achievement data exists").
+- [ ] Four-state classification (section 5): `SteamWebApi.getOwnedGames` + cached owned-appid
+      lookup; owned + emu copies get both provider links; badges/untracked reasons derive from
+      the classification, never from guesses.
 - [ ] Return-from-launch sync for LOCAL_STEAM-linked games (hook the existing launch-return
       path named in the Shiba plan).
 - [ ] Review `stabilizeTiers` provider gate to include LOCAL_STEAM.
@@ -134,12 +161,21 @@ on-device validation, pipefail-gated build+install, atomic conventional commits.
 - [ ] Unlock notifications on launch-return diff (new coins since last sync) — fits the
       no-polling rule since it piggybacks on the sync.
 
-## 6. Open decisions
+## 7. Decisions (locked 2026-07-15)
 
-- Whether LOCAL_STEAM games show a distinct source badge vs the Steam badge (coins are
-  provider-neutral with a corner badge per the Shiba plan — probably a variant badge).
-- Games with BOTH a real Steam link and local emu data: which wins auto-match (proposal:
-  local file wins, it reflects what the user actually plays; manual override always available).
+- **Identity:** `provider_game_id` stays the raw Steam appid; uniqueness comes from the
+  composite key `(game_id, provider)` — no compound/prefixed ids in storage. A combined
+  identifier (`LOCAL_STEAM:12345`) may be derived at display/export edges only.
+- **Badge:** LOCAL_STEAM entries show a distinct source badge labeled "Local" everywhere the
+  provider badge appears in Shiba Coins (hub rows, coins screen header, coin corner badge).
+  Exhaustive `when` on `AchievementProvider` forces every touchpoint to choose explicitly.
+- **Coexistence:** a game MAY hold both a STEAM set and a LOCAL_STEAM set. The emu's unlock
+  state is its own achievement set, tracked separately from the official Steam set; both count
+  in the wallet as distinct sets. Dedupe rule: before inserting a new set/entry, check for an
+  existing row for that (game, provider) — update it instead of adding a duplicate.
+
+## 8. Open decisions
+
 - Whether the hidden-description community-page enrichment applies (it queries the user's own
   Steam profile — for emu games the user has no ownership, so it must be SKIPPED for
   LOCAL_STEAM; schema descriptions for hidden achievements will be blank and show the existing

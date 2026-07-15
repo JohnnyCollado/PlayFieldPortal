@@ -36,6 +36,19 @@ framework under `feature-achievements/provider/`.
 - Add `IPlayerService/GetOwnedGames/v1` (key + steamid, `include_played_free_games=1`,
   `include_appinfo=1` for names). Returns every owned game + playtime; it does NOT say which
   have achievements.
+- SHARED DEPENDENCY: `docs/local-steam-achievements-plan.md` (section 5) needs the same
+  endpoint for its owned-vs-cracked four-state model — emu markers in the game folder crossed
+  with ownership from the cached owned-games list:
+
+  | Emu markers | Owned on Steam | Meaning |
+  |---|---|---|
+  | Yes | No | Cracked/unowned copy — LOCAL_STEAM tracking only |
+  | Yes | Yes | Owned, playing an offline emu copy — both sets coexist (STEAM + LOCAL_STEAM) |
+  | No | Yes | Owned build, no emu — STEAM provider only |
+  | No | No | DRM-free/GOG/Epic build — no Steam achievement data; honest untracked reason |
+
+  Whichever plan lands first adds `getOwnedGames` to `SteamWebApi`; the owned-appid cache
+  should be one shared component, not two fetch paths.
 - Filter: one `getPlayerAchievements` call per candidate game — a game without achievements
   returns success=false and is skipped (and remembered, so it is never probed again).
 - Full detail for games that pass: existing schema + global-percentages + mapper path, reused.
