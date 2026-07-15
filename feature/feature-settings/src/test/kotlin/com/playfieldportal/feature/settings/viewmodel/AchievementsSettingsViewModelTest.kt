@@ -31,7 +31,10 @@ class AchievementsSettingsViewModelTest {
 
     @Before fun setUp() {
         Dispatchers.setMain(dispatcher)
-        vm = AchievementsSettingsViewModel(credentials, steamApi, autoMatcher, repository, raImporter)
+        vm = AchievementsSettingsViewModel(
+            credentials, steamApi, autoMatcher, repository, raImporter,
+            mockk<android.content.Context>(relaxed = true),
+        )
     }
 
     @After fun tearDown() = Dispatchers.resetMain()

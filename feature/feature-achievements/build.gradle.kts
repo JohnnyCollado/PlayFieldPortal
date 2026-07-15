@@ -31,6 +31,12 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
 
+    // Steam library import runs as a WorkManager job (survives backgrounding, notification
+    // progress, cancellable) — same pattern as feature-artwork's scrape worker.
+    implementation(libs.workmanager.ktx)
+    implementation(libs.hilt.work)
+    ksp(libs.hilt.work.compiler)
+
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.timber)
@@ -45,6 +51,7 @@ dependencies {
     implementation(libs.retroachievements.api)
 
     implementation(project(":core:core-common"))
+    implementation(project(":core:core-ui")) // BackgroundTaskNotifier for the import worker
     implementation(project(":core:core-domain"))
     implementation(project(":core:core-data"))
     implementation(project(":feature:feature-artwork")) // SteamGridDB client for Steam-id resolution

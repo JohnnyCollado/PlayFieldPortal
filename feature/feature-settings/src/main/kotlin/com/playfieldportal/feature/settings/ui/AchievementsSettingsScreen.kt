@@ -185,6 +185,29 @@ fun AchievementsSettingsScreen(
                     )
                 }
             }
+            if (state.hasSteam) {
+                if (!state.hasRetroAchievements) SettingsGroup("Account import")
+                if (state.isSteamImporting) {
+                    SettingsRow(
+                        label = "Importing Steam library…  ${state.steamImportDone} / ${state.steamImportTotal}",
+                        sublabel = "Runs in the background — safe to leave this screen. Tap to cancel.",
+                        onClick = { viewModel.cancelSteamImport() },
+                    )
+                } else {
+                    SettingsRow(
+                        label = "Import my Steam library",
+                        sublabel = "Track every owned game with achievement progress — a large library takes a while, and runs in the background",
+                        onClick = { viewModel.importSteamLibrary() },
+                    )
+                }
+                state.steamImportSummary?.let { summary ->
+                    SettingsRow(
+                        label = summary,
+                        sublabel = "Tap to dismiss",
+                        onClick = { viewModel.dismissSteamImportSummary() },
+                    )
+                }
+            }
 
             // ── Auto-match ─────────────────────────────────────────────────────
             SettingsGroup("Auto-match")

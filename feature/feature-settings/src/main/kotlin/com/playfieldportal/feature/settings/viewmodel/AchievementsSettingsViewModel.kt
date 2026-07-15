@@ -6,8 +6,11 @@ import com.playfieldportal.core.data.achievement.AchievementCredentialsProvider
 import com.playfieldportal.core.domain.achievement.CoinWallet
 import com.playfieldportal.feature.achievements.AchievementController
 import com.playfieldportal.feature.achievements.BatchSyncResult
+import android.content.Context
 import com.playfieldportal.feature.achievements.RaAccountImporter
 import com.playfieldportal.feature.achievements.RaImportResult
+import com.playfieldportal.feature.achievements.SteamImportWorker
+import dagger.hilt.android.qualifiers.ApplicationContext
 import com.playfieldportal.feature.achievements.provider.steam.SteamRemoteDataSource
 import com.playfieldportal.feature.achievements.match.AchievementAutoMatcher
 import com.playfieldportal.feature.achievements.match.MatchReport
@@ -47,6 +50,10 @@ data class AchievementsSettingsUiState(
     val importDone: Int = 0,
     val importTotal: Int = 0,
     val importResult: RaImportResult? = null,
+    val isSteamImporting: Boolean = false,
+    val steamImportDone: Int = 0,
+    val steamImportTotal: Int = 0,
+    val steamImportSummary: String? = null,
 )
 
 // The four persisted account flows, folded together so the wallet flow fits combine's arity.
@@ -72,6 +79,10 @@ private data class Extra(
     val importDone: Int = 0,
     val importTotal: Int = 0,
     val importResult: RaImportResult? = null,
+    val isSteamImporting: Boolean = false,
+    val steamImportDone: Int = 0,
+    val steamImportTotal: Int = 0,
+    val steamImportSummary: String? = null,
 )
 
 private val STEAM_ID64 = Regex("\\d{17}")
@@ -89,9 +100,63 @@ class AchievementsSettingsViewModel @Inject constructor(
     private val autoMatcher: AchievementAutoMatcher,
     private val repository: AchievementController,
     private val raImporter: RaAccountImporter,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     private val extra = MutableStateFlow(Extra())
+
+    init {
+        // The Steam import is a WorkManager job (a large library takes 10-20 minutes) — this
+        // observer is the single source of its in-app state, so reopening the screen mid-import
+        // reattaches to the live run. getInstance is guarded because plain JVM unit tests have
+        // no WorkManager initialized.
+        runCatching { androidx.work.WorkManager.getInstance(context) }.getOrNull()?.let { wm ->
+            viewModelScope.launch {
+                wm.getWorkInfosForUniqueWorkFlow(SteamImportWorker.UNIQUE_NAME)
+                    .collect { infos -> onSteamImportWorkInfos(infos) }
+            }
+        }
+    }
+
+    private fun onSteamImportWorkInfos(infos: List<androidx.work.WorkInfo>) {
+        val active = infos.firstOrNull { !it.state.isFinished }
+        if (active != null) {
+            val p = active.progress
+            extra.update {
+                it.copy(
+                    isSteamImporting = true,
+                    steamImportSummary = null,
+                    steamImportDone = p.getInt(SteamImportWorker.KEY_DONE, 0),
+                    steamImportTotal = p.getInt(SteamImportWorker.KEY_TOTAL, 0),
+                )
+            }
+            return
+        }
+        if (!extra.value.isSteamImporting) return
+        val finished = infos.maxByOrNull { it.state.ordinal }
+        val summary = when (finished?.state) {
+            androidx.work.WorkInfo.State.SUCCEEDED -> steamSummaryOf(finished.outputData)
+            androidx.work.WorkInfo.State.CANCELLED -> "Import cancelled — progress so far is kept"
+            else -> "Import failed — run again to resume"
+        }
+        extra.update { it.copy(isSteamImporting = false, steamImportSummary = summary) }
+    }
+
+    private fun steamSummaryOf(out: androidx.work.Data): String = when {
+        out.getBoolean(SteamImportWorker.KEY_MISSING_CREDENTIALS, false) ->
+            "Steam needs credentials — connect your account first"
+        out.getBoolean(SteamImportWorker.KEY_PROFILE_NOT_PUBLIC, false) ->
+            "Your Steam profile's Game Details are private"
+        else -> buildString {
+            append("${out.getInt(SteamImportWorker.KEY_IMPORTED, 0)} imported")
+            out.getInt(SteamImportWorker.KEY_NO_COINS, 0).takeIf { it > 0 }
+                ?.let { append(" · $it without achievements") }
+            out.getInt(SteamImportWorker.KEY_NO_PROGRESS, 0).takeIf { it > 0 }
+                ?.let { append(" · $it not played yet") }
+            out.getInt(SteamImportWorker.KEY_FAILED, 0).takeIf { it > 0 }
+                ?.let { append(" · $it failed") }
+        }
+    }
 
     private val accounts = combine(
         credentials.raUsernameFlow,
@@ -126,6 +191,10 @@ class AchievementsSettingsViewModel @Inject constructor(
             importDone = ex.importDone,
             importTotal = ex.importTotal,
             importResult = ex.importResult,
+            isSteamImporting = ex.isSteamImporting,
+            steamImportDone = ex.steamImportDone,
+            steamImportTotal = ex.steamImportTotal,
+            steamImportSummary = ex.steamImportSummary,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AchievementsSettingsUiState())
 
@@ -238,8 +307,18 @@ class AchievementsSettingsViewModel @Inject constructor(
         }
     }
 
+    /** Enqueues the Steam library import as background work (no-op if one is running). */
+    fun importSteamLibrary() {
+        SteamImportWorker.enqueue(context)
+    }
+
+    fun cancelSteamImport() {
+        SteamImportWorker.cancel(context)
+    }
+
     fun dismissMessage() = extra.update { it.copy(message = null) }
     fun dismissReport() = extra.update { it.copy(matchReport = null) }
     fun dismissSyncResult() = extra.update { it.copy(syncResult = null) }
     fun dismissImportResult() = extra.update { it.copy(importResult = null) }
+    fun dismissSteamImportSummary() = extra.update { it.copy(steamImportSummary = null) }
 }
