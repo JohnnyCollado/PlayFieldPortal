@@ -167,17 +167,22 @@ on-device validation, pipefail-gated build+install, atomic conventional commits.
         folders into the windows card as games or match them to existing entries by folder
         name. Decide there; Phase 1's discovery+parser are folder-keyed and don't care.
 
-### Phase 1 — Parser + provider island (read-only)
-- [ ] `EmuAchievementFile` parser (GSE JSON first) with fixture-file tests; hostile/garbage
-      input yields empty, never throws.
-- [ ] `LocalSteamDiscovery`: given a game's folder uri/path, locate `steam_settings/
-      steam_appid.txt` and the achievements file (game folder redirect location first,
-      configurable subfolder).
-- [ ] `AchievementProvider.LOCAL_STEAM` + `LocalSteamSource` + router branch. Fetch = local
-      earned state joined to `SteamWebApi.getSchemaForGame` + global percentages through
-      `SteamCoinMapper.map` (appId from the file, not from a web link).
-- [ ] Manual link path: coins screen "link" for LOCAL_STEAM games (appid is discovered, so this
-      may reduce to a confirm).
+### Phase 1 — Parser + provider island (read-only)  (CODE DONE 2026-07-15; on-device
+validation pending — needs the windows card pointed at the games root and a library entry
+for an emu game, which is Phase 2's gap)
+- [x] `EmuAchievementFile` parser (GSE JSON) + `GseUserConfig` (redirect extraction and
+      relative-path segments); tests run against the verbatim device fixture; hostile input
+      parses to empty.
+- [x] `LocalSteamDiscovery`: walks the windows card's granted tree for
+      `steam_settings/steam_appid.txt` folders, resolves the progress file through the
+      emu's own redirect semantics; grant-scoped, size-bounded, digits-validated.
+- [x] `AchievementProvider.LOCAL_STEAM` + `LocalSteamSource` + router branch, exactly as
+      designed (SteamCoinMapper reused verbatim; hidden-description enrichment skipped —
+      section 8 decision). `stabilizeTiers` covers LOCAL_STEAM.
+- [x] Manual link path — resolved as "no manual entry": the appid is discovered from the
+      folder, so the coins screen explains folder-derived linking and defers to Auto-match
+      (Phase 2). Nothing to type by hand was the plan's own suspicion ("may reduce to a
+      confirm"), and a confirm needs the auto-match wiring anyway.
 - Opt: schema fetch is once per sync as today, rate-limited; file read is trivial.
 - Sec: local file is untrusted input — bounded size, tolerant parse, no strings surfaced raw;
   appid validated as digits before any web call; no new network hosts.
@@ -221,10 +226,10 @@ on-device validation, pipefail-gated build+install, atomic conventional commits.
 
 ## 8. Open decisions
 
-- Whether the hidden-description community-page enrichment applies (it queries the user's own
-  Steam profile — for emu games the user has no ownership, so it must be SKIPPED for
-  LOCAL_STEAM; schema descriptions for hidden achievements will be blank and show the existing
-  placeholder).
+- DECIDED 2026-07-15 with Phase 1: the hidden-description community-page enrichment is
+  SKIPPED for LOCAL_STEAM (it queries the user's own Steam profile, which only has the page
+  for owned copies); schema descriptions for hidden achievements stay blank and show the
+  existing placeholder.
 
 ---
 
