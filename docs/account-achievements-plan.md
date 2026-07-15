@@ -104,22 +104,32 @@ first import; surface it as the earned import result, not a bug.
 Tests ship with each phase; pipefail-gated builds; atomic conventional commits.
 
 ### Phase 0 — Verification gates
-- [ ] Confirm api-kotlin `getUserCompletionProgress` signature + pagination and its POJO fields.
+- [x] Confirm api-kotlin `getUserCompletionProgress` signature + pagination and its POJO fields.
+      DONE 2026-07-15 against the 2.0.0 jar: `getUserCompletionProgress(username, count, offset)`
+      -> `Response(count, total, results)`; Progress carries gameId/title/imageIcon/consoleId/
+      maxPossible/numAwarded(Hardcore)/award fields. ImageIcon is a media-host path.
 - [ ] Confirm GetOwnedGames response shape (appid, name, playtime fields) and that
       `getPlayerAchievements` on a no-achievement game returns a distinguishable result.
-- [ ] Decide and validate the Option A migration on a copy of a real device DB.
+- [ ] Validate MIGRATION_32_33 on a copy of a real device DB before any install (migration
+      tests against exported schemas are in place — 2026-07-15 decision: tests now, device
+      DB pass before merge/install).
 
-### Phase 1 — Data model migration
-- [ ] Account tables + explicit migration moving existing library sets/coins into them;
-      repository read paths (`observeGameCoins`, `observeCoins`, wallet, `LibraryStanding`)
-      resolve library games through `provider_game_links`. All existing tests must pass with
-      behavior unchanged for library games. This phase ships alone — it is the risk.
+### Phase 1 — Data model migration  (DONE 2026-07-15)
+- [x] Account tables + explicit migration (v32->33) moving existing library sets/coins into
+      them; read paths resolve library games through `provider_game_links`, whose key widened
+      to (game_id, provider) for STEAM+LOCAL_STEAM coexistence. Decisions locked with it:
+      "in library" derives from the link join (no denormalized flag to maintain); provider
+      disconnect keeps achievement data cached (matches existing behavior — Phase 4's
+      "disconnect cleans account rows" is superseded); account rows survive library deletion.
 
-### Phase 2 — RA history import
-- [ ] `RaRemoteDataSource.userCompletionProgress()` (paginated walk) + import job: upsert set
-      stubs for every RA game with progress, full-detail fetch per game (rate-limited),
-      resumable cursor, progress reporting.
-- [ ] Hub shows account entries; provider-keyed coins screen.
+### Phase 2 — RA history import  (DONE 2026-07-15)
+- [x] `RaRemoteDataSource.userCompletionProgress()` paginated walk + `RaAccountImporter`:
+      insert-if-absent set stubs for every RA game with earned progress, full-detail fetch per
+      stub through the shared sync path, resumable by construction (pending = sets without
+      last_synced_at — no separate cursor state), progress + result reporting.
+- [x] Hub account-wide; provider-keyed coins screen (`ShibaCoinsTarget`); Settings ▸ Shiba
+      Coins "Import my RA history". Account entries keep a Sync action (refresh is meaningful);
+      only link/match affordances hide.
 
 ### Phase 3 — Steam library import
 - [ ] `SteamWebApi.getOwnedGames` + import job with the probe-filter-fetch pipeline, the
