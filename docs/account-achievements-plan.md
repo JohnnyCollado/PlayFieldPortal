@@ -110,9 +110,11 @@ Tests ship with each phase; pipefail-gated builds; atomic conventional commits.
       maxPossible/numAwarded(Hardcore)/award fields. ImageIcon is a media-host path.
 - [ ] Confirm GetOwnedGames response shape (appid, name, playtime fields) and that
       `getPlayerAchievements` on a no-achievement game returns a distinguishable result.
-- [ ] Validate MIGRATION_32_33 on a copy of a real device DB before any install (migration
-      tests against exported schemas are in place — 2026-07-15 decision: tests now, device
-      DB pass before merge/install).
+- [x] Validate MIGRATION_32_33 on a copy of a real device DB before any install. DONE
+      2026-07-15 against the Thor's lite-debug DB (v32: 2 games, 2 Steam sets, 90 coins):
+      integrity_check ok, no foreign_key_check rows, all sets/coins carried into the account
+      tables with correct titles, wallet SUM identical (315) before and after, every set
+      reachable through its widened link.
 
 ### Phase 1 — Data model migration  (DONE 2026-07-15)
 - [x] Account tables + explicit migration (v32->33) moving existing library sets/coins into
