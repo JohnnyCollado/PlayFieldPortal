@@ -28,6 +28,9 @@ interface AchievementSetDao {
     @Query("SELECT * FROM achievement_sets WHERE game_id = :gameId LIMIT 1")
     fun observeForGame(gameId: Long): Flow<AchievementSetEntity?>
 
+    @Query("SELECT * FROM achievement_sets WHERE game_id = :gameId LIMIT 1")
+    suspend fun getForGame(gameId: Long): AchievementSetEntity?
+
     @Query("SELECT * FROM achievement_sets")
     fun observeAll(): Flow<List<AchievementSetEntity>>
 

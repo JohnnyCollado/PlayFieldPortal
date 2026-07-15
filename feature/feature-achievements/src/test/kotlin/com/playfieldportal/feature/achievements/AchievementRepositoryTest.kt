@@ -44,6 +44,12 @@ class AchievementRepositoryTest {
 
     private val repo = AchievementRepository(remoteSources, credentials, setDao, coinDao, linkDao, matchNoteDao, steamResolver, gameRepository)
 
+    init {
+        // Tier stability reads the previous summary + coin rows; default to "never synced".
+        coEvery { setDao.getForGame(any()) } returns null
+        coEvery { coinDao.getForGame(any()) } returns emptyList()
+    }
+
     private fun coin(id: String, tier: ShibaTier, earned: Boolean) =
         SyncedCoin(
             id, id, "", tier, 0.0, null,
@@ -107,6 +113,68 @@ class AchievementRepositoryTest {
         repo.syncGame(1L, AchievementProvider.STEAM, "440")
 
         assertTrue(setSlot.captured.mastered)
+    }
+
+    @Test
+    fun `a provider Platinum coin is the crown and stays out of the tier tallies`() = runTest {
+        coEvery { steamSource.fetch("440") } returns ProviderSyncResult.Success(
+            "440",
+            listOf(
+                coin("p1", ShibaTier.PLATINUM, earned = true),
+                coin("b1", ShibaTier.BRONZE, earned = false), // an unearned coin: crown still lights
+            ),
+        )
+        val setSlot = slot<AchievementSetEntity>()
+        coEvery { setDao.upsert(capture(setSlot)) } just Runs
+
+        repo.syncGame(1L, AchievementProvider.STEAM, "440")
+
+        val summary = setSlot.captured
+        assertTrue(summary.mastered) // the platinum coin IS the crown
+        assertEquals(1, summary.bronzeTotal) // platinum never counted as B/S/G
+        assertEquals(0, summary.goldTotal)
+    }
+
+    @Test
+    fun `an unearned provider Platinum keeps the crown dark even at 100 percent of the rest`() = runTest {
+        coEvery { steamSource.fetch("440") } returns ProviderSyncResult.Success(
+            "440",
+            listOf(
+                coin("p1", ShibaTier.PLATINUM, earned = false),
+                coin("b1", ShibaTier.BRONZE, earned = true),
+            ),
+        )
+        val setSlot = slot<AchievementSetEntity>()
+        coEvery { setDao.upsert(capture(setSlot)) } just Runs
+
+        repo.syncGame(1L, AchievementProvider.STEAM, "440")
+
+        assertFalse(setSlot.captured.mastered)
+    }
+
+    @Test
+    fun `a Steam re-sync within seven days keeps each coin's stored tier`() = runTest {
+        // Rarity drifted from 9 to 11 percent (Gold -> Silver), but the last sync was recent.
+        coEvery { setDao.getForGame(1L) } returns AchievementSetEntity(
+            gameId = 1L, provider = "STEAM", providerGameId = "440",
+            lastSyncedAt = System.currentTimeMillis() - 60_000,
+        )
+        coEvery { coinDao.getForGame(1L) } returns listOf(
+            com.playfieldportal.core.data.database.entity.AchievementEntity(
+                gameId = 1L, provider = "STEAM", providerAchievementId = "g1",
+                title = "g1", description = "", tier = "GOLD", globalRarity = 9.0,
+            ),
+        )
+        coEvery { steamSource.fetch("440") } returns ProviderSyncResult.Success(
+            "440",
+            listOf(coin("g1", ShibaTier.SILVER, earned = false)),
+        )
+        val coinsSlot = slot<List<com.playfieldportal.core.data.database.entity.AchievementEntity>>()
+        coEvery { coinDao.upsertAll(capture(coinsSlot)) } just Runs
+
+        repo.syncGame(1L, AchievementProvider.STEAM, "440")
+
+        assertEquals("GOLD", coinsSlot.captured.single().tier) // stored tier survives the window
     }
 
     @Test

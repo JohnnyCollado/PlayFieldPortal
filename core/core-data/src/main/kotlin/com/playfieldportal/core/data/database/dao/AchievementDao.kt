@@ -24,6 +24,9 @@ interface AchievementDao {
     @Query("SELECT * FROM achievements WHERE game_id = :gameId")
     fun observeForGame(gameId: Long): Flow<List<AchievementEntity>>
 
+    @Query("SELECT * FROM achievements WHERE game_id = :gameId")
+    suspend fun getForGame(gameId: Long): List<AchievementEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(items: List<AchievementEntity>)
 
@@ -34,12 +37,14 @@ interface AchievementDao {
     suspend fun earnedCount(gameId: Long): Int
 
     // The rarest earned coins across the library (lowest global unlock rarity first), each with
-    // its game title, for the hub's "Rarest Earned" lens.
+    // its game title, for the hub's "Rarest Earned" lens. Coins whose provider reported no rarity
+    // are stored with a negative sentinel and excluded — unknown rarity can't rank as rarest.
     @Query(
         "SELECT a.game_id AS game_id, g.title AS game_title, a.title AS title, a.tier AS tier, " +
             "a.global_rarity AS global_rarity, a.icon_url AS icon_url " +
             "FROM achievements a JOIN games g ON g.id = a.game_id " +
-            "WHERE a.is_earned = 1 ORDER BY a.global_rarity ASC, a.title ASC LIMIT :limit"
+            "WHERE a.is_earned = 1 AND a.global_rarity >= 0 " +
+            "ORDER BY a.global_rarity ASC, a.title ASC LIMIT :limit"
     )
     fun observeRarestEarned(limit: Int): Flow<List<EarnedCoinRow>>
 }

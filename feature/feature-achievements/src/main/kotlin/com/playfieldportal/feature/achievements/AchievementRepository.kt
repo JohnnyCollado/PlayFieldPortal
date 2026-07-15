@@ -101,11 +101,40 @@ class AchievementRepository @Inject constructor(
         if (result !is ProviderSyncResult.Success) return result
 
         val now = System.currentTimeMillis()
+        val coins = stabilizeTiers(gameId, provider, result.coins, now)
         coinDao.deleteForGame(gameId)
-        coinDao.upsertAll(result.coins.map { it.toEntity(gameId, provider) })
-        setDao.upsert(summaryOf(gameId, provider, result.providerGameId, result.coins, now))
+        coinDao.upsertAll(coins.map { it.toEntity(gameId, provider) })
+        setDao.upsert(summaryOf(gameId, provider, result.providerGameId, coins, now))
         credentials.setLastSyncedAt(now)
         return result
+    }
+
+    /**
+     * Steam tiers derive from global unlock percentages, which drift as more players unlock —
+     * without a damper a coin could flip Gold -> Silver between two quick syncs. Within
+     * [TIER_STABILITY_WINDOW_MS] of the previous sync each surviving coin keeps its stored tier
+     * (earned state and the displayed rarity % still refresh every sync); after the window tiers
+     * recompute from fresh rarity. Platinum is detection-based, never rarity-based, so it is
+     * always taken fresh. RA tiers come from fixed point values and are never frozen.
+     */
+    private suspend fun stabilizeTiers(
+        gameId: Long,
+        provider: AchievementProvider,
+        fresh: List<SyncedCoin>,
+        now: Long,
+    ): List<SyncedCoin> {
+        if (provider != AchievementProvider.STEAM) return fresh
+        val lastSyncedAt = setDao.getForGame(gameId)?.lastSyncedAt ?: return fresh
+        if (now - lastSyncedAt >= TIER_STABILITY_WINDOW_MS) return fresh
+
+        val storedTiers = coinDao.getForGame(gameId).associate { it.providerAchievementId to it.tier }
+        return fresh.map { coin ->
+            if (coin.tier == ShibaTier.PLATINUM) return@map coin
+            val stored = storedTiers[coin.providerAchievementId]
+                ?.let { runCatching { ShibaTier.valueOf(it) }.getOrNull() }
+                ?.takeIf { it != ShibaTier.PLATINUM }
+            if (stored != null) coin.copy(tier = stored) else coin
+        }
     }
 
     /** Links a game to a provider id by hand — the always-works path (and the only one for RA yet). */
@@ -203,6 +232,9 @@ class AchievementRepository @Inject constructor(
     }
 }
 
+/** Re-tier Steam coins from fresh rarity only when the last sync is at least this old (7 days). */
+private const val TIER_STABILITY_WINDOW_MS = 7L * 24 * 60 * 60 * 1_000
+
 /** Outcome of a [AchievementRepository.syncAllLinked] pass, for the settings report. */
 data class BatchSyncResult(
     val total: Int,
@@ -287,6 +319,13 @@ private fun summaryOf(
 ): AchievementSetEntity {
     fun count(tier: ShibaTier, earnedOnly: Boolean) =
         coins.count { it.tier == tier && (!earnedOnly || it.isEarned) }
+    // A provider-declared Platinum ("unlock every achievement"-style Steam coin) IS the crown:
+    // earning it lights mastery, and it never appears in the Bronze/Silver/Gold tallies (its XP is
+    // the crown's 300, not a per-coin value). Without one, the crown stays 100% completion —
+    // hardcore for RA, any unlock for Steam (earnedHardcore mirrors isEarned there).
+    val platinumCoins = coins.filter { it.tier == ShibaTier.PLATINUM }
+    val mastered = if (platinumCoins.isNotEmpty()) platinumCoins.any { it.earnedHardcore }
+                   else coins.isNotEmpty() && coins.all { it.earnedHardcore }
     return AchievementSetEntity(
         gameId = gameId,
         provider = provider.name,
@@ -297,9 +336,7 @@ private fun summaryOf(
         bronzeEarned = count(ShibaTier.BRONZE, earnedOnly = true),
         silverEarned = count(ShibaTier.SILVER, earnedOnly = true),
         goldEarned = count(ShibaTier.GOLD, earnedOnly = true),
-        // Platinum crown = 100% mastery. RA requires every coin in hardcore; Steam mirrors
-        // isEarned into earnedHardcore, so this stays "every coin earned" there.
-        mastered = coins.isNotEmpty() && coins.all { it.earnedHardcore },
+        mastered = mastered,
         lastSyncedAt = now,
     )
 }

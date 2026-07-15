@@ -23,17 +23,15 @@ class ShibaCoinsTest {
     }
 
     @Test
-    fun `progress is coin-weighted and excludes the platinum`() {
-        // 23 bronze, 15 silver, 6 gold earned of 24 / 16 / 7 available.
+    fun `progress is a plain count ratio, never coin-weighted`() {
+        // 23 bronze, 15 silver, 6 gold earned of 24 / 16 / 7 available = 44 of 47 coins.
         val game = GameCoins(
             provider = AchievementProvider.RETRO_ACHIEVEMENTS,
             earned = CoinCounts(23, 15, 6),
             total = CoinCounts(24, 16, 7),
             isMastered = false,
         )
-        val earned = 23 * 15 + 15 * 30 + 6 * 90       // 1335
-        val possible = 24 * 15 + 16 * 30 + 7 * 90     // 1470
-        assertEquals(earned.toFloat() / possible, game.progress, 0.0001f)
+        assertEquals(44f / 47f, game.progress, 0.0001f)
         assertFalse(game.isMastered)
     }
 

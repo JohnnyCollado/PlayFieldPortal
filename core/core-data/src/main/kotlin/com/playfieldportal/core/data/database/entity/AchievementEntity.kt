@@ -39,10 +39,12 @@ data class AchievementEntity(
     val title: String,
     val description: String,
 
-    // ShibaTier enum name (BRONZE / SILVER / GOLD). Never PLATINUM — that is the set award.
+    // ShibaTier enum name. PLATINUM only for a provider-declared completion achievement (its coin
+    // IS the crown); the synthetic 100% crown stays on AchievementSetEntity.mastered, not a row.
     val tier: String,
 
-    // Global unlock rarity, percent of players who own it (0..100).
+    // Global unlock rarity, percent of players who own it (0..100). Negative = the provider
+    // reported no percentage (SyncedCoin.RARITY_UNAVAILABLE); excluded from rarity rankings.
     @ColumnInfo(name = "global_rarity")
     val globalRarity: Double,
 

@@ -8,8 +8,8 @@ package com.playfieldportal.core.domain.achievement
  *  - **RetroAchievements** uses the achievement's own **point value** via [forRaPoints] — RA already
  *    weights achievements by difficulty (its standard values are 0-5 / 10 / 25 / 50 / 100), so the
  *    points are the natural tier spine there.
- *  - **Steam** has no points, so it falls back to global unlock rarity via [forRarity], calibrated
- *    against real PlayStation trophy data (~71 / 23 / 6 split).
+ *  - **Steam** has no points, so it falls back to global unlock rarity via [forRarity]
+ *    (Gold under 10%, Silver 10-24.99%, Bronze at 25% and above).
  * Platinum is different: it is the 100% mastery award, minted locally when a whole set is completed,
  * and is never derived from either signal. See docs/shiba-coins-achievements-plan.md.
  */
@@ -21,10 +21,10 @@ enum class ShibaTier(val coinValue: Int) {
 
     companion object {
         /** Rarity below this (percent of players who unlocked it) earns Gold. */
-        const val GOLD_MAX_RARITY = 5.0
+        const val GOLD_MAX_RARITY = 10.0
 
         /** Rarity below this, and at or above [GOLD_MAX_RARITY], earns Silver. */
-        const val SILVER_MAX_RARITY = 20.0
+        const val SILVER_MAX_RARITY = 25.0
 
         /** RA points at or above this earn Gold (RA's hard achievements are 50 / 100). */
         const val GOLD_MIN_POINTS = 50
@@ -46,10 +46,13 @@ enum class ShibaTier(val coinValue: Int) {
         /**
          * Tier for an individual coin from its global unlock rarity (0..100, percent of players
          * who own it) — used for providers without a point signal (Steam). Never returns [PLATINUM].
-         * A rarity at or below 0 is treated as ultra-rare (Gold).
+         *
+         * A null rarity means the provider had no data for this coin: it reads as Bronze (the UI
+         * flags the rarity as unavailable) rather than inventing rarity. An exact 0% with valid
+         * data is real ultra-rarity and stays Gold.
          */
-        fun forRarity(globalUnlockPercent: Double): ShibaTier {
-            val rarity = globalUnlockPercent.coerceAtLeast(0.0)
+        fun forRarity(globalUnlockPercent: Double?): ShibaTier {
+            val rarity = globalUnlockPercent ?: return BRONZE
             return when {
                 rarity < GOLD_MAX_RARITY   -> GOLD
                 rarity < SILVER_MAX_RARITY -> SILVER

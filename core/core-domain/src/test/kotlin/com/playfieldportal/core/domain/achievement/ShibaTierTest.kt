@@ -14,27 +14,27 @@ class ShibaTierTest {
     }
 
     @Test
-    fun `rarity below 5 percent is Gold`() {
+    fun `rarity below 10 percent is Gold`() {
         assertEquals(ShibaTier.GOLD, ShibaTier.forRarity(0.5))
-        assertEquals(ShibaTier.GOLD, ShibaTier.forRarity(4.99))
+        assertEquals(ShibaTier.GOLD, ShibaTier.forRarity(9.99))
     }
 
     @Test
-    fun `rarity between 5 and 20 percent is Silver`() {
-        assertEquals(ShibaTier.SILVER, ShibaTier.forRarity(5.0))
-        assertEquals(ShibaTier.SILVER, ShibaTier.forRarity(19.99))
+    fun `rarity between 10 and 25 percent is Silver`() {
+        assertEquals(ShibaTier.SILVER, ShibaTier.forRarity(10.0))
+        assertEquals(ShibaTier.SILVER, ShibaTier.forRarity(24.99))
     }
 
     @Test
-    fun `rarity at or above 20 percent is Bronze`() {
-        assertEquals(ShibaTier.BRONZE, ShibaTier.forRarity(20.0))
+    fun `rarity at or above 25 percent is Bronze`() {
+        assertEquals(ShibaTier.BRONZE, ShibaTier.forRarity(25.0))
         assertEquals(ShibaTier.BRONZE, ShibaTier.forRarity(93.7))
     }
 
     @Test
-    fun `non-positive rarity is treated as ultra-rare Gold`() {
+    fun `zero percent with valid data is ultra-rare Gold, missing data is Bronze`() {
         assertEquals(ShibaTier.GOLD, ShibaTier.forRarity(0.0))
-        assertEquals(ShibaTier.GOLD, ShibaTier.forRarity(-1.0))
+        assertEquals(ShibaTier.BRONZE, ShibaTier.forRarity(null))
     }
 
     @Test

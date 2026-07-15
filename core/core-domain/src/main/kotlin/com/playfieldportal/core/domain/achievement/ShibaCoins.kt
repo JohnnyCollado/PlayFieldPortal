@@ -62,13 +62,15 @@ data class GameCoins(
     val totalCoinValue: Int get() = total.coinValue
 
     /**
-     * Coin-weighted completion, 0f..1f. The Platinum is the prize for finishing, so it is excluded
-     * from the denominator — progress reflects the individual coins only. Returns 0f when the game
+     * Completion as a plain count ratio (earned coins / total coins), 0f..1f. Deliberately NOT
+     * coin-weighted: weighting by tier value would make a game with a few Golds look more complete
+     * than it is. The Platinum is the prize for finishing, so it is excluded from both sides —
+     * these tallies only ever count individual Bronze/Silver/Gold coins. Returns 0f when the game
      * has no coins.
      */
     val progress: Float
-        get() = if (total.coinValue == 0) 0f
-        else (earned.coinValue.toFloat() / total.coinValue).coerceIn(0f, 1f)
+        get() = if (total.total == 0) 0f
+        else (earned.total.toFloat() / total.total).coerceIn(0f, 1f)
 
     /**
      * Coins this game banks into the wallet: its earned individual coins as they unlock (partial
