@@ -5,7 +5,8 @@ title their account has achievements in — with full locked/unlocked coin detai
 games stored in the PFP library. The Shiba Coins hub becomes the one place to see overall
 standing across both services.
 
-Status: DRAFT — not started. Written 2026-07-16 against branch `achievement-integration`
+Status: IMPLEMENTED — Phases 0-4 complete, live-verified on device 2026-07-15. Only the
+section 7 open decisions remain. Written 2026-07-16 against branch `achievement-integration`
 (HEAD cf2bbba). Prerequisite reading: `docs/shiba-coins-achievements-plan.md` (architecture),
 `docs/local-steam-achievements-plan.md` (the LOCAL_STEAM sibling plan). Builds on the provider
 framework under `feature-achievements/provider/`.
@@ -151,9 +152,17 @@ zero-earned leftovers, all bookmarks set — a re-run is incremental)
   RA import's progress-only scope); an empty GetOwnedGames response maps to
   profile-not-public, never to an empty library.
 
-### Phase 4 — Polish
-- [ ] Import result summaries; per-provider disconnect cleans account rows; "in library"
-      cross-linking when a library game later links to an already-imported entry.
+### Phase 4 — Polish  (DONE 2026-07-15)
+- [x] Import result summaries — shipped with Phases 2-3: `RaImportResult` renders in
+      Settings ▸ Shiba Coins, the Steam worker reports through its output data, the
+      shade notification, and the WorkInfo observer (reattaches mid-run).
+- [x] "In library" cross-linking — held by construction since Phase 1: the hub marker,
+      title preference, coins-screen target, and game-keyed reads all derive from the
+      `provider_game_links` join, so a link created after an import reconciles instantly
+      with no re-sync and no double counting. Pinned by a DAO reconciliation test
+      (`AchievementDaoTest`).
+- Superseded: "per-provider disconnect cleans account rows" — the Phase 1 decision keeps
+  achievement data cached across disconnects, matching pre-existing behavior.
 
 ## 6. Security / cost notes
 
