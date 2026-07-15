@@ -16,6 +16,13 @@ android {
     }
     kotlinOptions { jvmTarget = "17" }
     testOptions { unitTests { isIncludeAndroidResources = true } }
+    // Schema JSONs land in /schemas for migration tests; @Database(exportSchema = true) is
+    // meaningless without this output directory.
+    sourceSets["test"].assets.srcDir("$projectDir/schemas")
+}
+
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 // Robolectric downloads its Android image over HTTPS; the test JVM must trust the Windows cert
@@ -49,6 +56,7 @@ dependencies {
 
     testImplementation(libs.bundles.test.unit)
     testImplementation(libs.robolectric)
+    testImplementation(libs.room.testing)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.ktor.client.mock)
 }
