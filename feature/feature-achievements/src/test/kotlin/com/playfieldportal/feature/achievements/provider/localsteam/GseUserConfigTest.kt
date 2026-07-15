@@ -29,6 +29,19 @@ class GseUserConfigTest {
     }
 
     @Test
+    fun `savePathSegments walks relative redirects only`() {
+        assertEquals(listOf("GSE Saves"), GseUserConfig.savePathSegments("./GSE Saves "))
+        assertEquals(listOf("saves", "gse"), GseUserConfig.savePathSegments(".\\saves\\gse"))
+        assertEquals(listOf("saves"), GseUserConfig.savePathSegments("saves/"))
+
+        // Absolute or escaping paths point outside the granted tree: unreachable by design.
+        assertNull(GseUserConfig.savePathSegments("C:\\Users\\me\\saves"))
+        assertNull(GseUserConfig.savePathSegments("/absolute/path"))
+        assertNull(GseUserConfig.savePathSegments("../outside"))
+        assertNull(GseUserConfig.savePathSegments("."))
+    }
+
+    @Test
     fun `commented lines and lookalike keys are ignored`() {
         val ini = """
             # local_save_path=./commented-out

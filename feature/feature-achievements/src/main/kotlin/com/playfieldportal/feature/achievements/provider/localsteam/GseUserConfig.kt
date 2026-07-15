@@ -25,4 +25,20 @@ object GseUserConfig {
             ?.trim()
             ?.takeIf { it.isNotEmpty() }
     }
+
+    /**
+     * A redirect value as folder segments to walk down from the DLL folder, or null when it can't
+     * be reached through the granted tree: absolute paths (drive letters, leading slash) point
+     * into the Wine prefix, and `..` would escape the folder the user granted — SAF navigation
+     * by child name can't follow either, so both are "no reachable save folder", by design.
+     */
+    fun savePathSegments(raw: String): List<String>? {
+        val cleaned = raw.trim().replace('\\', '/')
+        if (cleaned.startsWith('/') || DRIVE_PREFIX.containsMatchIn(cleaned)) return null
+        val segments = cleaned.split('/').map { it.trim() }.filter { it.isNotEmpty() && it != "." }
+        if (segments.isEmpty() || segments.any { it == ".." }) return null
+        return segments
+    }
+
+    private val DRIVE_PREFIX = Regex("^[A-Za-z]:")
 }
