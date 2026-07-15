@@ -169,6 +169,32 @@ class AchievementDaoTest {
     }
 
     @Test
+    fun `linking a library game to an already-imported entry reconciles into one row`() = runTest {
+        // An account import landed this entry before the game existed in the library.
+        sets.upsert(
+            set("STEAM", "220", bronzeEarned = 3, bronzeTotal = 10)
+                .copy(title = "Half-Life 2", lastSyncedAt = 1L),
+        )
+        val before = sets.observeAccountSets().first().single()
+        assertNull(before.libraryGameId)
+        val walletBefore = sets.observeWalletCoins().first()
+
+        // The game arrives in the library later and links to the same provider identity.
+        val gameId = seedGame()
+        seedLink(gameId, "STEAM", "220")
+
+        // Still one row — now carrying the in-library marker and the library game's title.
+        val after = sets.observeAccountSets().first().single()
+        assertEquals(gameId, after.libraryGameId)
+        assertEquals("Chrono Trigger", after.title)
+        assertEquals(3, after.bronzeEarned)
+        // Game-keyed reads resolve to the imported coins with no re-sync, and the wallet
+        // never double-counts the entry.
+        assertEquals(3, sets.observeForGame(gameId).first()?.bronzeEarned)
+        assertEquals(walletBefore, sets.observeWalletCoins().first())
+    }
+
+    @Test
     fun `hub projection lists every account set with its optional library game`() = runTest {
         val gameId = seedGame()
         seedLink(gameId, "RETRO_ACHIEVEMENTS", "319")
