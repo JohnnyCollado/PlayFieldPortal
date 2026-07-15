@@ -1,6 +1,7 @@
 package com.playfieldportal.feature.achievements
 
 import com.playfieldportal.core.data.database.entity.AccountAchievementEntity
+import com.playfieldportal.core.data.database.entity.AccountAchievementSetEntity
 import com.playfieldportal.core.data.database.entity.ProviderGameLinkEntity
 import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.core.domain.achievement.CoinWallet
@@ -28,6 +29,18 @@ interface AchievementController {
 
     /** The raw per-coin rows for a game's dedicated coins screen. */
     fun observeCoins(gameId: Long): Flow<List<AccountAchievementEntity>>
+
+    /** An account entry's coin summary keyed by provider identity — no library game required. */
+    fun observeAccountGameCoins(provider: AchievementProvider, providerGameId: String): Flow<GameCoins?>
+
+    /** An account entry's set row (title, provider art), for the provider-keyed coins screen. */
+    fun observeAccountSet(provider: AchievementProvider, providerGameId: String): Flow<AccountAchievementSetEntity?>
+
+    /** An account entry's per-coin rows keyed by provider identity. */
+    fun observeAccountCoins(provider: AchievementProvider, providerGameId: String): Flow<List<AccountAchievementEntity>>
+
+    /** Syncs an account entry keyed by provider identity; [title] names new hub rows. */
+    suspend fun syncAccountEntry(provider: AchievementProvider, providerGameId: String, title: String): ProviderSyncResult
 
     /** The account-wide Shiba wallet (total coins -> level + rank), derived from every set. */
     fun observeWallet(): Flow<CoinWallet>

@@ -1,14 +1,20 @@
 package com.playfieldportal.core.domain.achievement
 
 /**
- * One tracked game's coin standing plus its identity — the row shape behind the "Closest to
- * Mastery" and "All Tracked Games" lenses of the Shiba Coins hub.
+ * One tracked entry's coin standing plus its identity — the row shape behind the "Closest to
+ * Mastery" and "All Tracked" lenses of the Shiba Coins hub. Tracking is account-wide: an entry
+ * is identified by its provider game id, and [libraryGameId] is set only when a library game
+ * links to it (the hub's "in library" marker; account-imported entries have none).
  */
 data class GameStanding(
-    val gameId: Long,
+    val providerGameId: String,
+    val libraryGameId: Long?,
     val title: String,
+    val iconUrl: String?,
     val coins: GameCoins,
 ) {
+    val inLibrary: Boolean get() = libraryGameId != null
+
     /** Coin-weighted completion, 0f..1f (Platinum excluded, per [GameCoins.progress]). */
     val progress: Float get() = coins.progress
 
@@ -32,7 +38,7 @@ data class UntrackedGame(
  * [globalRarity] is the percent of players who own it (lower is rarer).
  */
 data class EarnedCoinRef(
-    val gameId: Long,
+    val libraryGameId: Long?,
     val gameTitle: String,
     val coinTitle: String,
     val tier: ShibaTier,

@@ -7,8 +7,10 @@ class LibraryStandingTest {
 
     private fun standing(id: Long, bronzeEarned: Int, bronzeTotal: Int, mastered: Boolean = false) =
         GameStanding(
-            gameId = id,
+            providerGameId = id.toString(),
+            libraryGameId = id,
             title = "Game $id",
+            iconUrl = null,
             coins = GameCoins(
                 provider = AchievementProvider.RETRO_ACHIEVEMENTS,
                 earned = CoinCounts(bronze = if (mastered) bronzeTotal else bronzeEarned),
@@ -41,7 +43,7 @@ class LibraryStandingTest {
             ),
         )
         val closest = lib.closestToMastery()
-        assertEquals(listOf(3L, 2L), closest.map { it.gameId })
+        assertEquals(listOf(3L, 2L), closest.map { it.libraryGameId })
     }
 
     @Test
@@ -60,6 +62,6 @@ class LibraryStandingTest {
                 standing(2, 10, 10, mastered = true),
             ),
         )
-        assertEquals(listOf(2L, 1L), lib.allByStanding.map { it.gameId })
+        assertEquals(listOf(2L, 1L), lib.allByStanding.map { it.libraryGameId })
     }
 }

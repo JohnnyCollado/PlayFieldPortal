@@ -134,6 +134,40 @@ class AchievementRepositoryTest {
     }
 
     @Test
+    fun `syncAccountEntry stores the provider title and keeps a stub's icon`() = runTest {
+        coEvery { setDao.getSet("RETRO_ACHIEVEMENTS", "319") } returns AccountAchievementSetEntity(
+            provider = "RETRO_ACHIEVEMENTS", providerGameId = "319",
+            title = "Chrono Trigger", iconUrl = "https://media.retroachievements.org/Images/3.png",
+        )
+        coEvery { retroSource.fetch("319") } returns ProviderSyncResult.Success(
+            "319",
+            listOf(coin("b1", ShibaTier.BRONZE, earned = true)),
+        )
+        val setSlot = slot<AccountAchievementSetEntity>()
+        coEvery { setDao.upsert(capture(setSlot)) } just Runs
+
+        repo.syncAccountEntry(AchievementProvider.RETRO_ACHIEVEMENTS, "319", "Chrono Trigger")
+
+        assertEquals("Chrono Trigger", setSlot.captured.title)
+        assertEquals("https://media.retroachievements.org/Images/3.png", setSlot.captured.iconUrl)
+    }
+
+    @Test
+    fun `a blank sync title falls back to the stored set's title`() = runTest {
+        coEvery { setDao.getSet("STEAM", "440") } returns setEntity(provider = "STEAM", providerGameId = "440")
+        coEvery { steamSource.fetch("440") } returns ProviderSyncResult.Success(
+            "440",
+            listOf(coin("b1", ShibaTier.BRONZE, earned = true)),
+        )
+        val setSlot = slot<AccountAchievementSetEntity>()
+        coEvery { setDao.upsert(capture(setSlot)) } just Runs
+
+        repo.syncGame(1L, AchievementProvider.STEAM, "440") // no library game -> blank title
+
+        assertEquals("Some Game", setSlot.captured.title)
+    }
+
+    @Test
     fun `syncGame marks mastered when every coin is earned`() = runTest {
         coEvery { steamSource.fetch("440") } returns ProviderSyncResult.Success(
             "440",
@@ -243,7 +277,7 @@ class AchievementRepositoryTest {
     @Test
     fun `untracked reason prefers the persisted match note, else a platform fallback`() = runTest {
         every { setDao.observeWalletCoins() } returns flowOf(0)
-        every { setDao.observeGameSets() } returns flowOf(emptyList())
+        every { setDao.observeAccountSets() } returns flowOf(emptyList())
         every { coinDao.observeRarestEarned(any()) } returns flowOf(emptyList())
         every { gameRepository.observeGamesOnly() } returns flowOf(
             listOf(

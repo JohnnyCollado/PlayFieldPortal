@@ -5,8 +5,8 @@ import com.playfieldportal.core.data.database.dao.AccountAchievementDao
 import com.playfieldportal.core.data.database.dao.AccountAchievementSetDao
 import com.playfieldportal.core.data.database.dao.AchievementMatchNoteDao
 import com.playfieldportal.core.data.database.dao.ProviderGameLinkDao
+import com.playfieldportal.core.data.database.dao.AccountSetRow
 import com.playfieldportal.core.data.database.dao.EarnedCoinRow
-import com.playfieldportal.core.data.database.dao.GameSetRow
 import com.playfieldportal.core.data.database.entity.AccountAchievementEntity
 import com.playfieldportal.core.data.database.entity.AccountAchievementSetEntity
 import com.playfieldportal.core.data.database.entity.ProviderGameLinkEntity
@@ -59,6 +59,18 @@ class AchievementRepository @Inject constructor(
     override fun observeCoins(gameId: Long): Flow<List<AccountAchievementEntity>> =
         coinDao.observeForGame(gameId)
 
+    /** An account entry's coin summary keyed by provider identity — no library game required. */
+    override fun observeAccountGameCoins(provider: AchievementProvider, providerGameId: String): Flow<GameCoins?> =
+        setDao.observeSet(provider.name, providerGameId).map { it?.toGameCoins() }
+
+    /** An account entry's set row (title, provider art), for the provider-keyed coins screen. */
+    override fun observeAccountSet(provider: AchievementProvider, providerGameId: String): Flow<AccountAchievementSetEntity?> =
+        setDao.observeSet(provider.name, providerGameId)
+
+    /** An account entry's per-coin rows keyed by provider identity. */
+    override fun observeAccountCoins(provider: AchievementProvider, providerGameId: String): Flow<List<AccountAchievementEntity>> =
+        coinDao.observeForSet(provider.name, providerGameId)
+
     /** The account-wide Shiba wallet (total coins -> level + rank), derived from every set. */
     override fun observeWallet(): Flow<CoinWallet> =
         setDao.observeWalletCoins().map { CoinWallet(it) }
@@ -70,7 +82,7 @@ class AchievementRepository @Inject constructor(
      */
     override fun observeLibraryStanding(rarestLimit: Int): Flow<LibraryStanding> =
         combine(
-            combine(observeWallet(), setDao.observeGameSets(), coinDao.observeRarestEarned(rarestLimit)) {
+            combine(observeWallet(), setDao.observeAccountSets(), coinDao.observeRarestEarned(rarestLimit)) {
                 wallet, sets, rarest -> Triple(wallet, sets, rarest)
             },
             gameRepository.observeGamesOnly(),
@@ -96,16 +108,39 @@ class AchievementRepository @Inject constructor(
         gameId: Long,
         provider: AchievementProvider,
         providerGameId: String,
+    ): ProviderSyncResult = syncEntry(provider, providerGameId, titleOf(gameId))
+
+    /**
+     * Syncs an account entry that needs no library game — the import path and the provider-keyed
+     * coins screen's refresh. [title] is the provider's name for the game (shown on hub rows
+     * without a library copy).
+     */
+    override suspend fun syncAccountEntry(
+        provider: AchievementProvider,
+        providerGameId: String,
+        title: String,
+    ): ProviderSyncResult = syncEntry(provider, providerGameId, title)
+
+    private suspend fun syncEntry(
+        provider: AchievementProvider,
+        providerGameId: String,
+        title: String,
     ): ProviderSyncResult {
         val result = remoteSources.forProvider(provider).fetch(providerGameId)
         if (result !is ProviderSyncResult.Success) return result
 
         val now = System.currentTimeMillis()
         val resolvedId = result.providerGameId
-        val coins = stabilizeTiers(provider, resolvedId, result.coins, now)
+        val storedSet = setDao.getSet(provider.name, resolvedId)
+        val coins = stabilizeTiers(provider, resolvedId, storedSet, result.coins, now)
         coinDao.deleteForSet(provider.name, resolvedId)
         coinDao.upsertAll(coins.map { it.toEntity(provider, resolvedId) })
-        setDao.upsert(summaryOf(provider, resolvedId, titleOf(gameId), coins, now))
+        setDao.upsert(
+            summaryOf(provider, resolvedId, coins, now).copy(
+                title = title.ifBlank { storedSet?.title.orEmpty() },
+                iconUrl = storedSet?.iconUrl,
+            ),
+        )
         credentials.setLastSyncedAt(now)
         return result
     }
@@ -126,11 +161,12 @@ class AchievementRepository @Inject constructor(
     private suspend fun stabilizeTiers(
         provider: AchievementProvider,
         providerGameId: String,
+        storedSet: AccountAchievementSetEntity?,
         fresh: List<SyncedCoin>,
         now: Long,
     ): List<SyncedCoin> {
         if (provider != AchievementProvider.STEAM) return fresh
-        val lastSyncedAt = setDao.getSet(provider.name, providerGameId)?.lastSyncedAt ?: return fresh
+        val lastSyncedAt = storedSet?.lastSyncedAt ?: return fresh
         if (now - lastSyncedAt >= TIER_STABILITY_WINDOW_MS) return fresh
 
         val storedTiers = coinDao.getForSet(provider.name, providerGameId)
@@ -263,11 +299,13 @@ private fun AccountAchievementSetEntity.toGameCoins(): GameCoins? {
     )
 }
 
-private fun GameSetRow.toGameStanding(): GameStanding? {
+private fun AccountSetRow.toGameStanding(): GameStanding? {
     val p = AchievementProvider.fromName(provider) ?: return null
     return GameStanding(
-        gameId = gameId,
+        providerGameId = providerGameId,
+        libraryGameId = libraryGameId,
         title = title,
+        iconUrl = iconUrl,
         coins = GameCoins(
             provider = p,
             earned = CoinCounts(bronzeEarned, silverEarned, goldEarned),
@@ -294,7 +332,7 @@ private fun Game.toUntrackedGame(persistedReason: String?) = UntrackedGame(
 private fun EarnedCoinRow.toEarnedCoinRef(): EarnedCoinRef? {
     val t = runCatching { ShibaTier.valueOf(tier) }.getOrNull() ?: return null
     return EarnedCoinRef(
-        gameId = gameId,
+        libraryGameId = libraryGameId,
         gameTitle = gameTitle,
         coinTitle = title,
         tier = t,
@@ -317,10 +355,11 @@ private fun SyncedCoin.toEntity(provider: AchievementProvider, providerGameId: S
     earnedAt = earnedAt,
 )
 
+// Title and icon are caller-owned identity (library game name vs provider name) and are set
+// via copy() on the returned summary.
 private fun summaryOf(
     provider: AchievementProvider,
     providerGameId: String,
-    title: String,
     coins: List<SyncedCoin>,
     now: Long,
 ): AccountAchievementSetEntity {
@@ -336,7 +375,7 @@ private fun summaryOf(
     return AccountAchievementSetEntity(
         provider = provider.name,
         providerGameId = providerGameId,
-        title = title,
+        title = "",
         bronzeTotal = count(ShibaTier.BRONZE, earnedOnly = false),
         silverTotal = count(ShibaTier.SILVER, earnedOnly = false),
         goldTotal = count(ShibaTier.GOLD, earnedOnly = false),

@@ -145,18 +145,42 @@ class AchievementDaoTest {
     }
 
     @Test
-    fun `hub projections list only sets linked to library games`() = runTest {
+    fun `insertIfAbsent never clobbers a synced set and backfill only fills missing icons`() = runTest {
+        sets.upsert(
+            set("RETRO_ACHIEVEMENTS", "319", bronzeEarned = 5, bronzeTotal = 5)
+                .copy(lastSyncedAt = 111L),
+        )
+
+        sets.insertIfAbsent(set("RETRO_ACHIEVEMENTS", "319")) // an import re-walk
+        sets.insertIfAbsent(set("RETRO_ACHIEVEMENTS", "999"))
+        sets.backfillIcon("RETRO_ACHIEVEMENTS", "319", "https://icon")
+
+        val synced = sets.getSet("RETRO_ACHIEVEMENTS", "319")!!
+        assertEquals(5, synced.bronzeEarned) // survived the stub insert
+        assertEquals(111L, synced.lastSyncedAt)
+        assertEquals("https://icon", synced.iconUrl) // was NULL, so the backfill applied
+
+        sets.backfillIcon("RETRO_ACHIEVEMENTS", "319", "https://other")
+        assertEquals("https://icon", sets.getSet("RETRO_ACHIEVEMENTS", "319")!!.iconUrl)
+
+        // The re-walk's new game landed as a stub, i.e. pending detail.
+        val pending = sets.getUnsyncedSets("RETRO_ACHIEVEMENTS")
+        assertEquals(listOf("999"), pending.map { it.providerGameId })
+    }
+
+    @Test
+    fun `hub projection lists every account set with its optional library game`() = runTest {
         val gameId = seedGame()
         seedLink(gameId, "RETRO_ACHIEVEMENTS", "319")
         sets.upsert(set("RETRO_ACHIEVEMENTS", "319", bronzeEarned = 1, bronzeTotal = 2))
         sets.upsert(set("STEAM", "999", bronzeEarned = 5, bronzeTotal = 5)) // account-only entry
 
-        val rows = sets.observeGameSets().first()
+        val rows = sets.observeAccountSets().first().associateBy { it.providerGameId }
 
-        assertEquals(1, rows.size)
-        assertEquals(gameId, rows.single().gameId)
-        assertEquals("Chrono Trigger", rows.single().title)
-        // The account-only set still counts in the wallet even without a library game.
+        assertEquals(2, rows.size)
+        assertEquals(gameId, rows.getValue("319").libraryGameId)
+        assertEquals("Chrono Trigger", rows.getValue("319").title)
+        assertNull(rows.getValue("999").libraryGameId)
         assertEquals(15 + 5 * 15, sets.observeWalletCoins().first())
     }
 }
