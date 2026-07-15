@@ -108,8 +108,13 @@ Tests ship with each phase; pipefail-gated builds; atomic conventional commits.
       DONE 2026-07-15 against the 2.0.0 jar: `getUserCompletionProgress(username, count, offset)`
       -> `Response(count, total, results)`; Progress carries gameId/title/imageIcon/consoleId/
       maxPossible/numAwarded(Hardcore)/award fields. ImageIcon is a media-host path.
-- [ ] Confirm GetOwnedGames response shape (appid, name, playtime fields) and that
-      `getPlayerAchievements` on a no-achievement game returns a distinguishable result.
+- [x] Confirm GetOwnedGames response shape (appid, name, playtime fields) and that a
+      no-achievement game returns a distinguishable result. DONE 2026-07-15: response shape
+      verified against Valve's WebAPI/GetOwnedGames documentation (response.game_count +
+      games[].appid/name/playtime_forever, minutes); our schema-first fetch already returns
+      NotFound for schema-less games at the cost of ONE call, so no separate probe exists.
+      Final live verification = the user's first on-device import (tolerant parsing, typed
+      errors).
 - [x] Validate MIGRATION_32_33 on a copy of a real device DB before any install. DONE
       2026-07-15 against the Thor's lite-debug DB (v32: 2 games, 2 Steam sets, 90 coins):
       integrity_check ok, no foreign_key_check rows, all sets/coins carried into the account
@@ -133,10 +138,16 @@ Tests ship with each phase; pipefail-gated builds; atomic conventional commits.
       Coins "Import my RA history". Account entries keep a Sync action (refresh is meaningful);
       only link/match affordances hide.
 
-### Phase 3 — Steam library import
-- [ ] `SteamWebApi.getOwnedGames` + import job with the probe-filter-fetch pipeline, the
-      no-achievements memo table, WorkManager execution, resumable cursor.
-- [ ] Incremental refresh path (playtime deltas) so routine syncs stay cheap.
+### Phase 3 — Steam library import  (DONE 2026-07-15, pending live device run)
+- [x] `SteamWebApi.getOwnedGames` + `SteamAccountImporter` with the probe-filter-fetch
+      pipeline, the steam_no_achievements memo, and `SteamImportWorker` (WorkManager,
+      notification progress, cancellable). No separate cursor: candidates = owned games not
+      memo'd whose playtime differs from the per-game synced-playtime bookmark, which makes
+      first runs complete, interrupted runs resume, and re-runs incremental in one rule.
+- [x] Incremental refresh path (playtime deltas) — same bookmark rule.
+- Decisions: zero-earned sets are kept only when a library game links to them (matches the
+  RA import's progress-only scope); an empty GetOwnedGames response maps to
+  profile-not-public, never to an empty library.
 
 ### Phase 4 — Polish
 - [ ] Import result summaries; per-provider disconnect cleans account rows; "in library"
