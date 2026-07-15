@@ -559,8 +559,18 @@ fun SettingsTextFieldRow(
 
     // The keyboard follows edit mode only — focus alone (navigating onto the field) never
     // opens it, because the field stays read-only until SELECT/tap flips `editing`.
+    // The readOnly -> editable flip restarts the field's text-input session asynchronously, so
+    // show() in the same frame silently no-ops (the field looks dead on a controller). Settle a
+    // frame, re-assert focus on the now-editable field, settle again, then show the keyboard.
     LaunchedEffect(editing) {
-        if (editing) keyboard?.show() else keyboard?.hide()
+        if (editing) {
+            withFrameNanos { }
+            runCatching { fr.requestFocus() }
+            withFrameNanos { }
+            keyboard?.show()
+        } else {
+            keyboard?.hide()
+        }
     }
 
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 48.dp, vertical = 8.dp)) {
