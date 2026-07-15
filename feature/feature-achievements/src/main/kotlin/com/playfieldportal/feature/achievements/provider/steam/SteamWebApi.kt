@@ -44,6 +44,19 @@ interface SteamWebApi {
         @Query("key") key: String,
         @Query("vanityurl") vanity: String,
     ): Response<SteamVanityResponse>
+
+    /**
+     * Every game the account owns, with name and total playtime (minutes). Empty `response`
+     * object when the profile's Game Details are not public. Field names verified against
+     * Valve's WebAPI/GetOwnedGames documentation (2026-07-15).
+     */
+    @GET("IPlayerService/GetOwnedGames/v1/")
+    suspend fun getOwnedGames(
+        @Query("key") key: String,
+        @Query("steamid") steamId: String,
+        @Query("include_appinfo") includeAppInfo: Int = 1,
+        @Query("include_played_free_games") includePlayedFreeGames: Int = 1,
+    ): Response<SteamOwnedGamesResponse>
 }
 
 // ── Response models ───────────────────────────────────────────────────────────
@@ -100,3 +113,19 @@ data class SteamVanityResponse(val response: SteamVanityInner? = null)
 
 @Serializable
 data class SteamVanityInner(val steamid: String? = null, val success: Int = 0)
+
+@Serializable
+data class SteamOwnedGamesResponse(val response: SteamOwnedGamesInner? = null)
+
+@Serializable
+data class SteamOwnedGamesInner(
+    @SerialName("game_count") val gameCount: Int = 0,
+    val games: List<SteamOwnedGame> = emptyList(),
+)
+
+@Serializable
+data class SteamOwnedGame(
+    val appid: Long,
+    val name: String? = null,
+    @SerialName("playtime_forever") val playtimeForever: Long = 0,
+)

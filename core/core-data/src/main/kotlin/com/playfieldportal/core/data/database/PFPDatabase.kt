@@ -28,6 +28,7 @@ import com.playfieldportal.core.data.database.dao.HiddenPlacementDao
 import com.playfieldportal.core.data.database.dao.PhotoDao
 import com.playfieldportal.core.data.database.dao.PhotoLibraryDao
 import com.playfieldportal.core.data.database.dao.ScanTombstoneDao
+import com.playfieldportal.core.data.database.dao.SteamOwnedGamesDao
 import com.playfieldportal.core.data.database.dao.SsMediaCacheDao
 import com.playfieldportal.core.data.database.dao.VideoDao
 import com.playfieldportal.core.data.database.dao.VideoLibraryDao
@@ -59,6 +60,8 @@ import com.playfieldportal.core.data.database.entity.PhotoEntity
 import com.playfieldportal.core.data.database.entity.PhotoLibraryEntity
 import com.playfieldportal.core.data.database.entity.ScanTombstoneEntity
 import com.playfieldportal.core.data.database.entity.SsMediaCacheEntity
+import com.playfieldportal.core.data.database.entity.SteamNoAchievementsEntity
+import com.playfieldportal.core.data.database.entity.SteamOwnedGameEntity
 import com.playfieldportal.core.data.database.entity.VideoEntity
 import com.playfieldportal.core.data.database.entity.VideoLibraryEntity
 import com.playfieldportal.core.data.database.entity.VideoPlaylistEntity
@@ -97,8 +100,10 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         AccountAchievementEntity::class,
         ProviderGameLinkEntity::class,
         AchievementMatchNoteEntity::class,
+        SteamOwnedGameEntity::class,
+        SteamNoAchievementsEntity::class,
     ],
-    version = 33,
+    version = 34,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -130,6 +135,7 @@ abstract class PFPDatabase : RoomDatabase() {
     abstract fun ssMediaCacheDao(): SsMediaCacheDao
     abstract fun accountAchievementSetDao(): AccountAchievementSetDao
     abstract fun accountAchievementDao(): AccountAchievementDao
+    abstract fun steamOwnedGamesDao(): SteamOwnedGamesDao
     abstract fun providerGameLinkDao(): ProviderGameLinkDao
     abstract fun achievementMatchNoteDao(): com.playfieldportal.core.data.database.dao.AchievementMatchNoteDao
 
@@ -1029,6 +1035,35 @@ abstract class PFPDatabase : RoomDatabase() {
                 )
                 db.execSQL("DROP TABLE provider_game_links")
                 db.execSQL("ALTER TABLE provider_game_links_v2 RENAME TO provider_game_links")
+            }
+        }
+
+        // v34 — Steam library import support. steam_owned_games caches the account's GetOwnedGames
+        // list (the shared owned-appid component for the account import and the local-steam
+        // four-state model); steam_no_achievements remembers appids probed once with no achievement
+        // schema so the import never pays for them again. Additive only; no existing data touched.
+        // See docs/account-achievements-plan.md Phase 3.
+        val MIGRATION_33_34 = object : Migration(33, 34) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS steam_owned_games (
+                        appid TEXT NOT NULL PRIMARY KEY,
+                        name TEXT NOT NULL,
+                        playtime_forever_minutes INTEGER NOT NULL,
+                        synced_playtime_minutes INTEGER,
+                        fetched_at INTEGER NOT NULL
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS steam_no_achievements (
+                        appid TEXT NOT NULL PRIMARY KEY,
+                        checked_at INTEGER NOT NULL
+                    )
+                    """.trimIndent()
+                )
             }
         }
     }

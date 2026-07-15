@@ -26,6 +26,13 @@ interface ProviderGameLinkDao {
     @Query("SELECT game_id FROM provider_game_links")
     fun observeLinkedGameIds(): Flow<List<Long>>
 
+    /** True when any library game links to this provider identity. */
+    @Query(
+        "SELECT EXISTS(SELECT 1 FROM provider_game_links " +
+            "WHERE provider = :provider AND provider_game_id = :providerGameId)"
+    )
+    suspend fun linkExistsFor(provider: String, providerGameId: String): Boolean
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(link: ProviderGameLinkEntity)
 

@@ -67,6 +67,9 @@ interface AccountAchievementSetDao {
     @Query("SELECT * FROM account_achievement_sets WHERE provider = :provider AND last_synced_at IS NULL")
     suspend fun getUnsyncedSets(provider: String): List<AccountAchievementSetEntity>
 
+    @Query("DELETE FROM account_achievement_sets WHERE provider = :provider AND provider_game_id = :providerGameId")
+    suspend fun deleteSet(provider: String, providerGameId: String)
+
     // The account-wide Shiba wallet, derived in one pass over the summary rows: each set
     // contributes its earned coins (weighted) plus the Platinum's 300 once mastered. Matches
     // core-domain's CoinWallet math; kept in SQL so the player card reads without loading rows.

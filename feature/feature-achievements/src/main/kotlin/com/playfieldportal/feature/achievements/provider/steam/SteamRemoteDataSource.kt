@@ -13,6 +13,23 @@ import javax.inject.Singleton
  * handled. Error paths map to typed [ProviderSyncResult]s — raw exception messages are never
  * surfaced, since they can embed the request URL (which carries the key).
  */
+/** One owned game from the account's GetOwnedGames list. */
+data class SteamOwnedEntry(
+    val appId: String,
+    val name: String,
+    val playtimeForeverMinutes: Long,
+)
+
+/** Outcome of fetching the account's owned-games list. */
+sealed interface SteamOwnedGamesResult {
+    data class Success(val entries: List<SteamOwnedEntry>) : SteamOwnedGamesResult
+    data object MissingCredentials : SteamOwnedGamesResult
+
+    /** Steam answered but withheld the list — the profile's Game Details are not public. */
+    data object ProfileNotPublic : SteamOwnedGamesResult
+    data class Failed(val reason: String) : SteamOwnedGamesResult
+}
+
 @Singleton
 class SteamRemoteDataSource @Inject constructor(
     private val webApi: SteamWebApi,
@@ -31,6 +48,41 @@ class SteamRemoteDataSource @Inject constructor(
                 return null
             }
             .body()?.response?.takeIf { it.success == 1 }?.steamid
+    }
+
+    /**
+     * The account's whole owned-games list (played free games included), one call. A public
+     * profile with hidden Game Details answers with an EMPTY response object — mapped to
+     * [SteamOwnedGamesResult.ProfileNotPublic], never to an empty library.
+     */
+    suspend fun ownedGames(): SteamOwnedGamesResult {
+        val key = credentials.steamApiKey()?.takeIf { it.isNotBlank() }
+            ?: return SteamOwnedGamesResult.MissingCredentials
+        val steamId = credentials.steamId64()?.takeIf { it.isNotBlank() }
+            ?: return SteamOwnedGamesResult.MissingCredentials
+
+        rate.await()
+        val response = runCatching { webApi.getOwnedGames(key, steamId) }
+            .getOrElse { e ->
+                if (e is CancellationException) throw e
+                return SteamOwnedGamesResult.Failed("network error")
+            }
+        if (response.code() == 401 || response.code() == 403) {
+            return SteamOwnedGamesResult.Failed("Steam rejected the API key")
+        }
+        val inner = response.body()?.response
+            ?: return SteamOwnedGamesResult.Failed("Steam returned ${response.code()}")
+        if (inner.gameCount == 0 && inner.games.isEmpty()) return SteamOwnedGamesResult.ProfileNotPublic
+
+        return SteamOwnedGamesResult.Success(
+            inner.games.map {
+                SteamOwnedEntry(
+                    appId = it.appid.toString(),
+                    name = it.name.orEmpty(),
+                    playtimeForeverMinutes = it.playtimeForever,
+                )
+            },
+        )
     }
 
     /** Fetches a game's coins for the configured user. [appId] is the Steam appid. */
