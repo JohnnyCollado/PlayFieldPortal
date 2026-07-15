@@ -131,18 +131,24 @@ on-device validation, pipefail-gated build+install, atomic conventional commits.
       - Fallback for OLD Goldberg builds (pre-fork): a `local_save.txt` file beside the
         DLL (optionally containing a path) enables the same portable mode — check which
         mechanism the bundled emu honors during the on-device test.
-- [ ] On the Thor: apply the redirect to MARVEL Cosmic Invasion by hand, run the game in the
-      emulator, unlock or verify an achievement writes `achievements.json` into the game folder.
-      This proves the whole chain end-to-end before any Kotlin exists.
-      Recipe from the confirmed findings — in the game folder, append to (or create)
-      `steam_settings/configs.user.ini`, never clobbering existing sections:
+- [x] On the Thor: prove the redirect chain end-to-end on MARVEL Cosmic Invasion. DONE
+      2026-07-15, verified live over adb: `steam_settings/configs.user.ini` carries
+      `[user::saves]` / `local_save_path=./GSE Saves` (note the trailing space in the
+      value — the emu trims it, discovery should too), and after a play session the emu
+      wrote `<game folder>/GSE Saves/2753970/achievements.json` with 3 earned
+      achievements carrying real `earned_time` stamps, alongside `remote/GameSave.sav`,
+      per-stat files under `stats/`, and `playtime.txt`. Format exactly as researched:
+      object keyed by api name, `earned`/`earned_time`, optional `progress`/
+      `max_progress`. The live file is checked in verbatim as the Phase 1 parser fixture
+      (`feature-achievements/src/test/resources/localsteam/gse_achievements_progress.json`).
+      Recipe for other games — append to (or create) `steam_settings/configs.user.ini`,
+      never clobbering existing sections:
 
           [user::saves]
           local_save_path=./GSE Saves
 
-      Expected result after an unlock: `<game folder>/GSE Saves/<appid>/achievements.json`
-      (appid from `steam_settings/steam_appid.txt`). If the DLL sits in a subfolder (x64
-      etc.), the path resolves relative to THAT folder.
+      The path resolves relative to the folder holding the steam_api DLL; the appid
+      subfolder comes from `steam_settings/steam_appid.txt`.
 - [ ] Decide where PFP's SAF grant points (likely the games root, e.g. `/sdcard/Games`), and
       whether the existing ROM-folder grant flow can be reused.
 
