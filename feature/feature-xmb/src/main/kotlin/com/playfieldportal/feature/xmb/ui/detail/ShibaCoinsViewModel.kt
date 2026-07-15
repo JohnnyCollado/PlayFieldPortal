@@ -40,6 +40,8 @@ data class ShibaCoinsUiState(
     val platformLabel: String = "",
     val provider: AchievementProvider = AchievementProvider.RETRO_ACHIEVEMENTS,
     val linked: Boolean = false,
+    // An account entry with no library game: syncable, but nothing to link or match.
+    val accountOnly: Boolean = false,
     val summary: GameCoins? = null,
     val coins: List<CoinRow> = emptyList(),
     // Sorted + filtered view the screen renders; kept in sync with coins/sort/filter.
@@ -73,14 +75,27 @@ class ShibaCoinsViewModel @Inject constructor(
     val uiState: StateFlow<ShibaCoinsUiState> = _state.asStateFlow()
 
     private var gameId: Long = -1
+    private var target: ShibaCoinsTarget = ShibaCoinsTarget.LibraryGame(-1)
+    private var loadJobs = mutableListOf<kotlinx.coroutines.Job>()
 
-    fun load(id: Long) {
-        gameId = id
+    fun load(target: ShibaCoinsTarget) {
+        this.target = target
         // This ViewModel is retained across open/close, so clear the stale closed flag (otherwise
         // the screen's close-effect fires immediately on reopen), reset focus to the top, and
         // re-hide any revealed hidden coins (reveals are session-only).
         _state.update { it.copy(closed = false, focusIndex = 0, revealedIds = emptySet()) }
-        viewModelScope.launch {
+        loadJobs.forEach { it.cancel() }
+        loadJobs.clear()
+        when (target) {
+            is ShibaCoinsTarget.LibraryGame -> loadLibraryGame(target.gameId)
+            is ShibaCoinsTarget.AccountEntry -> loadAccountEntry(target)
+        }
+    }
+
+    private fun loadLibraryGame(id: Long) {
+        gameId = id
+        _state.update { it.copy(accountOnly = false) }
+        loadJobs += viewModelScope.launch {
             val game = gameRepository.getById(id)
             _state.update {
                 it.copy(
@@ -90,7 +105,7 @@ class ShibaCoinsViewModel @Inject constructor(
                 )
             }
         }
-        viewModelScope.launch {
+        loadJobs += viewModelScope.launch {
             combine(
                 achievementRepository.observeGameCoins(id),
                 achievementRepository.observeCoins(id),
@@ -104,6 +119,30 @@ class ShibaCoinsViewModel @Inject constructor(
                         coins = coins.map { e -> e.toRow() },
                         linked = link != null,
                         provider = link?.let { l -> AchievementProvider.fromName(l.provider) } ?: it.provider,
+                    ).withDisplayed()
+                }
+            }
+        }
+    }
+
+    private fun loadAccountEntry(entry: ShibaCoinsTarget.AccountEntry) {
+        gameId = -1
+        _state.update {
+            it.copy(accountOnly = true, linked = false, provider = entry.provider, platformLabel = providerLabel(entry.provider))
+        }
+        loadJobs += viewModelScope.launch {
+            combine(
+                achievementRepository.observeAccountSet(entry.provider, entry.providerGameId),
+                achievementRepository.observeAccountGameCoins(entry.provider, entry.providerGameId),
+                achievementRepository.observeAccountCoins(entry.provider, entry.providerGameId),
+            ) { set, summary, coins ->
+                Triple(set, summary, coins)
+            }.collect { (set, summary, coins) ->
+                _state.update {
+                    it.copy(
+                        title = set?.title ?: "",
+                        summary = summary,
+                        coins = coins.map { e -> e.toRow() },
                     ).withDisplayed()
                 }
             }
@@ -158,7 +197,7 @@ class ShibaCoinsViewModel @Inject constructor(
     private fun onActionSelect() {
         val s = _state.value
         when {
-            s.linked -> sync()
+            s.linked || s.accountOnly -> sync()
             s.provider == AchievementProvider.STEAM -> resolveByTitle()
             // RetroAchievements is hash-only — nothing for the user to enter.
             else -> _state.update { it.copy(message = "RetroAchievements games link automatically by ROM hash") }
@@ -226,7 +265,11 @@ class ShibaCoinsViewModel @Inject constructor(
     fun sync() {
         viewModelScope.launch {
             _state.update { it.copy(isSyncing = true) }
-            val result = achievementRepository.syncGameById(gameId)
+            val result = when (val t = target) {
+                is ShibaCoinsTarget.LibraryGame -> achievementRepository.syncGameById(t.gameId)
+                is ShibaCoinsTarget.AccountEntry ->
+                    achievementRepository.syncAccountEntry(t.provider, t.providerGameId, _state.value.title)
+            }
             _state.update { it.copy(isSyncing = false, message = messageFor(result)) }
         }
     }
@@ -242,6 +285,12 @@ class ShibaCoinsViewModel @Inject constructor(
 
     private fun providerForPlatform(platformId: String?): AchievementProvider =
         if (platformId == "windows") AchievementProvider.STEAM else AchievementProvider.RETRO_ACHIEVEMENTS
+}
+
+/** The provider's display name, shown where a library game would show its platform. */
+internal fun providerLabel(provider: AchievementProvider): String = when (provider) {
+    AchievementProvider.RETRO_ACHIEVEMENTS -> "RetroAchievements"
+    AchievementProvider.STEAM -> "Steam"
 }
 
 private fun AccountAchievementEntity.toRow() = CoinRow(

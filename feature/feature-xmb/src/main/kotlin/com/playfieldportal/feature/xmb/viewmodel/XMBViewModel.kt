@@ -433,8 +433,9 @@ data class XMBUiState(
     val pendingDrawerAction: GamepadAction? = null,
     val pendingGameDetailAction: GamepadAction? = null,
     val activeGameId: Long? = null,
-    // The dedicated Shiba Coins screen overlay (set from the game context menu / glance strip).
-    val activeShibaCoinsGameId: Long? = null,
+    // The dedicated Shiba Coins screen overlay (set from the game context menu / glance strip /
+    // hub rows) — a library game or an account entry with no library copy.
+    val activeShibaCoinsTarget: com.playfieldportal.feature.xmb.ui.detail.ShibaCoinsTarget? = null,
     val pendingShibaCoinsAction: GamepadAction? = null,
     // True when the Game Detail screen should fire its Play action as soon as the game loads —
     // set by direct-launch confirms and the △ "Launch Game" entry; cleared on close.
@@ -570,7 +571,7 @@ data class XMBUiState(
             activeSettingsScreen != null ||
             activeAppDrawerFilter != null ||
             activeGameId != null ||
-            activeShibaCoinsGameId != null ||
+            activeShibaCoinsTarget != null ||
             activeShibaLibrary != null ||
             activeAppId != null ||
             activeVideoId != null ||
@@ -3805,7 +3806,7 @@ class XMBViewModel @Inject constructor(
                 _uiState.update { it.copy(pendingVideoDetailAction = action) }
                 return
             }
-            state.activeShibaCoinsGameId != null -> {
+            state.activeShibaCoinsTarget != null -> {
                 // Forward everything so the coins screen can move focus, sync, and close on BACK.
                 _uiState.update { it.copy(pendingShibaCoinsAction = action) }
                 return
@@ -4485,7 +4486,7 @@ class XMBViewModel @Inject constructor(
                     it.copy(activeGameId = menu.gameId, activeGameAutoLaunch = false)
                 }
                 "view_shiba_coins"       -> _uiState.update {
-                    it.copy(activeShibaCoinsGameId = menu.gameId)
+                    it.copy(activeShibaCoinsTarget = com.playfieldportal.feature.xmb.ui.detail.ShibaCoinsTarget.LibraryGame(menu.gameId))
                 }
                 "edit_app"               -> openAppDetail(menu.gameId, menu.packageName ?: return)
                 "favorite"               -> toggleGameFavorite(menu.gameId, true)
@@ -6131,12 +6132,15 @@ class XMBViewModel @Inject constructor(
 
     // ── Game detail overlay ───────────────────────────────────────────────────
 
-    fun openShibaCoins(gameId: Long) {
-        _uiState.update { it.copy(activeShibaCoinsGameId = gameId) }
+    fun openShibaCoins(gameId: Long) =
+        openShibaCoins(com.playfieldportal.feature.xmb.ui.detail.ShibaCoinsTarget.LibraryGame(gameId))
+
+    fun openShibaCoins(target: com.playfieldportal.feature.xmb.ui.detail.ShibaCoinsTarget) {
+        _uiState.update { it.copy(activeShibaCoinsTarget = target) }
     }
 
     fun onCloseShibaCoins() {
-        _uiState.update { it.copy(activeShibaCoinsGameId = null, pendingShibaCoinsAction = null) }
+        _uiState.update { it.copy(activeShibaCoinsTarget = null, pendingShibaCoinsAction = null) }
     }
 
     fun onShibaCoinsActionConsumed() {

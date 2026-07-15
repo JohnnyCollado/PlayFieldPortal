@@ -26,11 +26,12 @@ class AchievementsSettingsViewModelTest {
     private val steamApi = mockk<SteamRemoteDataSource>()
     private val autoMatcher = mockk<AchievementAutoMatcher>(relaxed = true)
     private val repository = mockk<AchievementController>(relaxed = true)
+    private val raImporter = mockk<com.playfieldportal.feature.achievements.RaAccountImporter>(relaxed = true)
     private lateinit var vm: AchievementsSettingsViewModel
 
     @Before fun setUp() {
         Dispatchers.setMain(dispatcher)
-        vm = AchievementsSettingsViewModel(credentials, steamApi, autoMatcher, repository)
+        vm = AchievementsSettingsViewModel(credentials, steamApi, autoMatcher, repository, raImporter)
     }
 
     @After fun tearDown() = Dispatchers.resetMain()

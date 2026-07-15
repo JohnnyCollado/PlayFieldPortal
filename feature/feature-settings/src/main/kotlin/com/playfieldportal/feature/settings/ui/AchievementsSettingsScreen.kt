@@ -159,6 +159,33 @@ fun AchievementsSettingsScreen(
                 )
             }
 
+            // ── Account import ─────────────────────────────────────────────────
+            if (state.hasRetroAchievements) {
+                SettingsGroup("Account import")
+                if (state.isImporting) {
+                    SettingsValueRow(label = "Importing RA history…", value = "${state.importDone} / ${state.importTotal}")
+                } else {
+                    SettingsRow(
+                        label = "Import my RA history",
+                        sublabel = "Track every game your RetroAchievements account has progress in — even without a local copy",
+                        onClick = { viewModel.importRaHistory() },
+                    )
+                }
+                state.importResult?.let { r ->
+                    val summary = buildString {
+                        append("${r.imported} imported")
+                        if (r.noCoins > 0) append(" · ${r.noCoins} no coins")
+                        if (r.failed > 0) append(" · ${r.failed} failed")
+                    }
+                    SettingsRow(
+                        label = summary,
+                        sublabel = if (r.missingCredentials) "RetroAchievements needs credentials — tap to dismiss"
+                                   else "Tap to dismiss",
+                        onClick = { viewModel.dismissImportResult() },
+                    )
+                }
+            }
+
             // ── Auto-match ─────────────────────────────────────────────────────
             SettingsGroup("Auto-match")
             if (state.isMatching) {

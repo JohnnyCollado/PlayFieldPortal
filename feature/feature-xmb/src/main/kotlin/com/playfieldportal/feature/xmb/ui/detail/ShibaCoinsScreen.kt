@@ -73,7 +73,7 @@ private fun metalOf(tier: ShibaTier) = when (tier) {
 
 @Composable
 fun ShibaCoinsScreen(
-    gameId: Long,
+    target: ShibaCoinsTarget,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
     pendingGamepadAction: GamepadAction? = null,
@@ -81,7 +81,7 @@ fun ShibaCoinsScreen(
     viewModel: ShibaCoinsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
-    LaunchedEffect(gameId) { viewModel.load(gameId) }
+    LaunchedEffect(target) { viewModel.load(target) }
     LaunchedEffect(state.closed) {
         if (state.closed) {
             onClose()
@@ -148,8 +148,9 @@ private fun HeaderSection(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewMod
     Column(Modifier.fillMaxWidth()) {
         DetailBreadcrumb(title = state.title, subtitle = "Shiba Coins", onBack = viewModel::close)
         SummaryHeader(state)
-        if (!state.linked) LinkSection(state, viewModel, focused = state.focusIndex == 2)
-        SyncRow(state, viewModel, focused = state.focusIndex == 2 && state.linked)
+        // An account entry has nothing to link — it is already keyed to its provider identity.
+        if (!state.linked && !state.accountOnly) LinkSection(state, viewModel, focused = state.focusIndex == 2)
+        SyncRow(state, viewModel, focused = state.focusIndex == 2 && (state.linked || state.accountOnly))
         SortFilterChips(state, viewModel)
         state.message?.let { msg ->
             Text(
@@ -300,9 +301,10 @@ private fun SyncRow(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewModel, fo
         Text("Synced from ${state.provider.name.lowercase().replace('_', ' ')}", color = TextMuted, fontSize = 12.sp, modifier = Modifier.weight(1f))
         if (state.isSyncing) {
             CircularProgressIndicator(color = menuCursorEdge(), modifier = Modifier.size(18.dp))
-        } else if (state.linked) {
-            // "Change match" is user-provided matching — Steam only; RetroAchievements is hash-only.
-            if (state.provider == AchievementProvider.STEAM) {
+        } else if (state.linked || state.accountOnly) {
+            // "Change match" is user-provided matching — Steam library games only;
+            // RetroAchievements is hash-only and account entries have no link to change.
+            if (state.provider == AchievementProvider.STEAM && state.linked) {
                 Text(
                     "Change match",
                     color = TextMuted,

@@ -18,9 +18,15 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/** One game row in the fullscreen library (tracked shows coins/progress; untracked shows a reason). */
+/**
+ * One row in the fullscreen library. Tracked rows show coins/progress and open their coins
+ * overlay via [coinsTarget]; untracked rows show a [reason] instead. Account-imported entries
+ * have no library game — [inLibrary] is the hub's launchable-title marker.
+ */
 data class ShibaLibraryRow(
-    val gameId: Long,
+    val id: String,
+    val coinsTarget: ShibaCoinsTarget?,
+    val inLibrary: Boolean,
     val title: String,
     val platformLabel: String,
     val artworkUri: String?,
@@ -53,9 +59,9 @@ data class ShibaLibraryUiState(
     val coinsIntoLevel: Int = 0,
     val coinsForNextLevel: Int = 0,
     val closed: Boolean = false,
-    // A tracked game the user activated (second tap / controller confirm) — the screen opens its
+    // A tracked entry the user activated (second tap / controller confirm) — the screen opens its
     // Shiba Coins overlay and calls [ShibaLibraryViewModel.onOpenHandled].
-    val openCoinsGameId: Long? = null,
+    val openCoins: ShibaCoinsTarget? = null,
 ) {
     val focused: ShibaLibraryRow? get() = rows.getOrNull(focusIndex)
     val siblings: List<ShibaLibraryMode> get() = ShibaLibraryMode.entries
@@ -118,10 +124,10 @@ class ShibaLibraryViewModel @Inject constructor(
         }
     }
 
-    /** Opens the focused tracked game's Shiba Coins overlay (untracked rows have no coins to show). */
+    /** Opens the focused tracked entry's Shiba Coins overlay (untracked rows have no coins to show). */
     fun openFocused() {
-        val row = _state.value.focused ?: return
-        if (row.isTracked) _state.update { it.copy(openCoinsGameId = row.gameId) }
+        val target = _state.value.focused?.coinsTarget ?: return
+        _state.update { it.copy(openCoins = target) }
     }
 
     /** Touch: first tap selects a row (updating the panel); tapping the selected row opens it. */
@@ -130,7 +136,7 @@ class ShibaLibraryViewModel @Inject constructor(
     }
 
     /** Clears the open request once the screen has acted on it. */
-    fun onOpenHandled() = _state.update { it.copy(openCoinsGameId = null) }
+    fun onOpenHandled() = _state.update { it.copy(openCoins = null) }
 
     fun switchSibling(dir: Int) {
         val siblings = ShibaLibraryMode.entries
@@ -154,7 +160,7 @@ class ShibaLibraryViewModel @Inject constructor(
         val (standing, byId) = latest ?: return
         currentModeRows = when (_state.value.mode) {
             ShibaLibraryMode.TRACKED ->
-                standing.tracked.sortedBy { it.title.lowercase() }.map { it.toRow(byId[it.gameId]) }
+                standing.tracked.sortedBy { it.title.lowercase() }.map { it.toRow(it.libraryGameId?.let(byId::get)) }
             ShibaLibraryMode.UNTRACKED ->
                 standing.untracked.sortedBy { it.title.lowercase() }.map { it.toRow(byId[it.gameId]) }
         }
@@ -185,10 +191,13 @@ class ShibaLibraryViewModel @Inject constructor(
     }
 
     private fun GameStanding.toRow(game: Game?) = ShibaLibraryRow(
-        gameId = gameId,
+        id = "${coins.provider.name}:$providerGameId",
+        coinsTarget = libraryGameId?.let { ShibaCoinsTarget.LibraryGame(it) }
+            ?: ShibaCoinsTarget.AccountEntry(coins.provider, providerGameId),
+        inLibrary = inLibrary,
         title = game?.displayTitle ?: title,
-        platformLabel = game?.platformId?.let(::platformDisplay) ?: "",
-        artworkUri = game?.artworkUri,
+        platformLabel = game?.platformId?.let(::platformDisplay) ?: providerLabel(coins.provider),
+        artworkUri = game?.artworkUri ?: iconUrl,
         logoUri = game?.logoUri,
         progress = coins.progress,
         bronzeEarned = coins.earned.bronze, bronzeTotal = coins.total.bronze,
@@ -199,7 +208,9 @@ class ShibaLibraryViewModel @Inject constructor(
     )
 
     private fun UntrackedGame.toRow(game: Game?) = ShibaLibraryRow(
-        gameId = gameId,
+        id = "untracked:$gameId",
+        coinsTarget = null,
+        inLibrary = true,
         title = game?.displayTitle ?: title,
         platformLabel = platformDisplay(platformId),
         artworkUri = game?.artworkUri,

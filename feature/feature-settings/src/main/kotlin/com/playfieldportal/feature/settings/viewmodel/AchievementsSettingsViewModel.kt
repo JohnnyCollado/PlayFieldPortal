@@ -6,6 +6,8 @@ import com.playfieldportal.core.data.achievement.AchievementCredentialsProvider
 import com.playfieldportal.core.domain.achievement.CoinWallet
 import com.playfieldportal.feature.achievements.AchievementController
 import com.playfieldportal.feature.achievements.BatchSyncResult
+import com.playfieldportal.feature.achievements.RaAccountImporter
+import com.playfieldportal.feature.achievements.RaImportResult
 import com.playfieldportal.feature.achievements.provider.steam.SteamRemoteDataSource
 import com.playfieldportal.feature.achievements.match.AchievementAutoMatcher
 import com.playfieldportal.feature.achievements.match.MatchReport
@@ -41,6 +43,10 @@ data class AchievementsSettingsUiState(
     val syncDone: Int = 0,
     val syncTotal: Int = 0,
     val syncResult: BatchSyncResult? = null,
+    val isImporting: Boolean = false,
+    val importDone: Int = 0,
+    val importTotal: Int = 0,
+    val importResult: RaImportResult? = null,
 )
 
 // The four persisted account flows, folded together so the wallet flow fits combine's arity.
@@ -62,6 +68,10 @@ private data class Extra(
     val syncDone: Int = 0,
     val syncTotal: Int = 0,
     val syncResult: BatchSyncResult? = null,
+    val isImporting: Boolean = false,
+    val importDone: Int = 0,
+    val importTotal: Int = 0,
+    val importResult: RaImportResult? = null,
 )
 
 private val STEAM_ID64 = Regex("\\d{17}")
@@ -78,6 +88,7 @@ class AchievementsSettingsViewModel @Inject constructor(
     private val steamApi: SteamRemoteDataSource,
     private val autoMatcher: AchievementAutoMatcher,
     private val repository: AchievementController,
+    private val raImporter: RaAccountImporter,
 ) : ViewModel() {
 
     private val extra = MutableStateFlow(Extra())
@@ -111,6 +122,10 @@ class AchievementsSettingsViewModel @Inject constructor(
             syncDone = ex.syncDone,
             syncTotal = ex.syncTotal,
             syncResult = ex.syncResult,
+            isImporting = ex.isImporting,
+            importDone = ex.importDone,
+            importTotal = ex.importTotal,
+            importResult = ex.importResult,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AchievementsSettingsUiState())
 
@@ -204,7 +219,27 @@ class AchievementsSettingsViewModel @Inject constructor(
         return job
     }
 
+    /**
+     * Imports the account's whole RetroAchievements history as tracked entries. Resumable: an
+     * interrupted run's next attempt continues with the entries still missing coin detail.
+     */
+    fun importRaHistory() {
+        if (extra.value.isImporting || extra.value.isSyncing || extra.value.isMatching) return
+        viewModelScope.launch {
+            try {
+                extra.update { it.copy(isImporting = true, importResult = null, importDone = 0, importTotal = 0) }
+                val result = raImporter.import { done, total ->
+                    extra.update { it.copy(importDone = done, importTotal = total) }
+                }
+                extra.update { it.copy(isImporting = false, importResult = result) }
+            } finally {
+                if (extra.value.isImporting) extra.update { it.copy(isImporting = false) }
+            }
+        }
+    }
+
     fun dismissMessage() = extra.update { it.copy(message = null) }
     fun dismissReport() = extra.update { it.copy(matchReport = null) }
     fun dismissSyncResult() = extra.update { it.copy(syncResult = null) }
+    fun dismissImportResult() = extra.update { it.copy(importResult = null) }
 }

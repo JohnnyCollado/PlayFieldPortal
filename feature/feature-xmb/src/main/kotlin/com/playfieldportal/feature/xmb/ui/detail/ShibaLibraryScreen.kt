@@ -64,7 +64,7 @@ fun ShibaLibraryScreen(
     mode: ShibaLibraryMode,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
-    onOpenGame: (Long) -> Unit = {},
+    onOpenCoins: (ShibaCoinsTarget) -> Unit = {},
     pendingGamepadAction: GamepadAction? = null,
     onGamepadActionConsumed: () -> Unit = {},
     viewModel: ShibaLibraryViewModel = hiltViewModel(),
@@ -74,9 +74,9 @@ fun ShibaLibraryScreen(
     LaunchedEffect(state.closed) {
         if (state.closed) { onClose(); viewModel.onClosedHandled() }
     }
-    LaunchedEffect(state.openCoinsGameId) {
-        state.openCoinsGameId?.let { gameId ->
-            onOpenGame(gameId)
+    LaunchedEffect(state.openCoins) {
+        state.openCoins?.let { target ->
+            onOpenCoins(target)
             viewModel.onOpenHandled()
         }
     }
@@ -145,7 +145,7 @@ fun ShibaLibraryScreen(
                                 Text(message, color = TextMuted, fontSize = 15.sp, modifier = Modifier.padding(top = 24.dp))
                             }
                         }
-                        itemsIndexed(state.rows, key = { _, r -> r.gameId }) { i, row ->
+                        itemsIndexed(state.rows, key = { _, r -> r.id }) { i, row ->
                             GameListRow(row, focused = i == state.focusIndex, accent = menuCursorEdge()) { viewModel.onRowClick(i) }
                         }
                     }
