@@ -214,17 +214,28 @@ private fun LinkSection(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewModel
             .then(if (focused) Modifier.border(2.dp, edge, RoundedCornerShape(10.dp)) else Modifier)
             .padding(vertical = 10.dp, horizontal = if (focused) 8.dp else 0.dp),
     ) {
-        if (state.provider == AchievementProvider.STEAM) {
-            SteamLinkControls(state, viewModel)
-        } else {
-            // RetroAchievements is hash-only — no manual / user-provided linking.
-            Text("Not recognised by RetroAchievements", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-            Spacer(Modifier.height(6.dp))
-            Text(
-                "RetroAchievements games link automatically by ROM hash. If this ROM's hash isn't a registered RetroAchievements hash, it can't be tracked.",
-                color = TextMuted,
-                fontSize = 12.sp,
-            )
+        when (state.provider) {
+            AchievementProvider.STEAM -> SteamLinkControls(state, viewModel)
+            AchievementProvider.RETRO_ACHIEVEMENTS -> {
+                // RetroAchievements is hash-only — no manual / user-provided linking.
+                Text("Not recognised by RetroAchievements", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "RetroAchievements games link automatically by ROM hash. If this ROM's hash isn't a registered RetroAchievements hash, it can't be tracked.",
+                    color = TextMuted,
+                    fontSize = 12.sp,
+                )
+            }
+            AchievementProvider.LOCAL_STEAM -> {
+                // The appid comes from the game folder's steam_settings — nothing to enter by hand.
+                Text("Not linked yet", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "Local Steam-emu games link from the steam_appid.txt in their game folder. Run Auto-match in Settings ▸ Shiba Coins to link this game.",
+                    color = TextMuted,
+                    fontSize = 12.sp,
+                )
+            }
         }
     }
 }

@@ -34,7 +34,8 @@ class AchievementRepositoryTest {
 
     private val retroSource = mockk<RetroAchievementsSource>()
     private val steamSource = mockk<SteamAchievementsSource>()
-    private val remoteSources = RemoteAchievementSources(retroSource, steamSource)
+    private val localSteamSource = mockk<com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSource>()
+    private val remoteSources = RemoteAchievementSources(retroSource, steamSource, localSteamSource)
     private val credentials = mockk<AchievementCredentialsProvider>(relaxed = true)
     private val setDao = mockk<AccountAchievementSetDao>(relaxed = true)
     private val coinDao = mockk<AccountAchievementDao>(relaxed = true)

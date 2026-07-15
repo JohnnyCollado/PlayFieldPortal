@@ -291,6 +291,7 @@ class ShibaCoinsViewModel @Inject constructor(
 internal fun providerLabel(provider: AchievementProvider): String = when (provider) {
     AchievementProvider.RETRO_ACHIEVEMENTS -> "RetroAchievements"
     AchievementProvider.STEAM -> "Steam"
+    AchievementProvider.LOCAL_STEAM -> "Local Steam"
 }
 
 private fun AccountAchievementEntity.toRow() = CoinRow(

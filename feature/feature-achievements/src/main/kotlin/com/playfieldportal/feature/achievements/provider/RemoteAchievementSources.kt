@@ -1,6 +1,7 @@
 package com.playfieldportal.feature.achievements.provider
 
 import com.playfieldportal.core.domain.achievement.AchievementProvider
+import com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSource
 import com.playfieldportal.feature.achievements.provider.retro.RetroAchievementsSource
 import com.playfieldportal.feature.achievements.provider.steam.SteamAchievementsSource
 import javax.inject.Inject
@@ -16,9 +17,11 @@ import javax.inject.Singleton
 class RemoteAchievementSources @Inject constructor(
     private val retroAchievements: RetroAchievementsSource,
     private val steam: SteamAchievementsSource,
+    private val localSteam: LocalSteamSource,
 ) {
     fun forProvider(provider: AchievementProvider): RemoteAchievementSource = when (provider) {
         AchievementProvider.RETRO_ACHIEVEMENTS -> retroAchievements
         AchievementProvider.STEAM -> steam
+        AchievementProvider.LOCAL_STEAM -> localSteam
     }
 }

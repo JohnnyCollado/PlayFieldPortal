@@ -104,6 +104,15 @@ class LocalSteamDiscovery @Inject constructor(
         return null
     }
 
+    /** Parses the progress file at [uri]; unreadable or oversized input is simply "no unlocks". */
+    suspend fun readProgress(uri: Uri): List<EmuEarnedAchievement> = withContext(Dispatchers.IO) {
+        runCatching {
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                EmuAchievementFile.parse(input.readBounded(EmuAchievementFile.MAX_BYTES).toString(Charsets.UTF_8))
+            }
+        }.getOrNull().orEmpty()
+    }
+
     private fun List<SafChild>.textOf(name: String, maxBytes: Int): String? {
         val file = firstOrNull { !it.isDirectory && it.name.equals(name, ignoreCase = true) }
             ?: return null

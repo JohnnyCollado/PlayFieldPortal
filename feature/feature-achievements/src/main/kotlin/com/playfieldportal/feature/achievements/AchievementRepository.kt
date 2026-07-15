@@ -151,12 +151,13 @@ class AchievementRepository @Inject constructor(
         gameRepository.getById(gameId)?.displayTitle.orEmpty()
 
     /**
-     * Steam tiers derive from global unlock percentages, which drift as more players unlock —
-     * without a damper a coin could flip Gold -> Silver between two quick syncs. Within
-     * [TIER_STABILITY_WINDOW_MS] of the previous sync each surviving coin keeps its stored tier
-     * (earned state and the displayed rarity % still refresh every sync); after the window tiers
-     * recompute from fresh rarity. Platinum is detection-based, never rarity-based, so it is
-     * always taken fresh. RA tiers come from fixed point values and are never frozen.
+     * Steam tiers (STEAM and LOCAL_STEAM alike) derive from global unlock percentages, which
+     * drift as more players unlock — without a damper a coin could flip Gold -> Silver between
+     * two quick syncs. Within [TIER_STABILITY_WINDOW_MS] of the previous sync each surviving
+     * coin keeps its stored tier (earned state and the displayed rarity % still refresh every
+     * sync); after the window tiers recompute from fresh rarity. Platinum is detection-based,
+     * never rarity-based, so it is always taken fresh. RA tiers come from fixed point values
+     * and are never frozen.
      */
     private suspend fun stabilizeTiers(
         provider: AchievementProvider,
@@ -165,7 +166,10 @@ class AchievementRepository @Inject constructor(
         fresh: List<SyncedCoin>,
         now: Long,
     ): List<SyncedCoin> {
-        if (provider != AchievementProvider.STEAM) return fresh
+        when (provider) {
+            AchievementProvider.RETRO_ACHIEVEMENTS -> return fresh
+            AchievementProvider.STEAM, AchievementProvider.LOCAL_STEAM -> Unit
+        }
         val lastSyncedAt = storedSet?.lastSyncedAt ?: return fresh
         if (now - lastSyncedAt >= TIER_STABILITY_WINDOW_MS) return fresh
 
