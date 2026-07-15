@@ -1,16 +1,17 @@
 package com.playfieldportal.core.domain.achievement
 
 /**
- * A player's overall standing on the account-wide Shiba Level, one of six named bands. The rank
- * is cosmetic (a coin frame / title on the player card); the number is [ShibaLevel].
+ * A player's overall standing on the account-wide Shiba Level, one of five named bands spread
+ * evenly across the 100-level Bone cycle. The rank is cosmetic (a coin frame / title on the
+ * player card); the number is [ShibaLevel]. Ranks derive from the uncapped total level, so the
+ * top title — like a Bone — is earned once and never resets.
  */
 enum class ShibaRank(val fromLevel: Int, val label: String) {
     PUP(1, "Pup"),
-    SCOUT(10, "Scout"),
-    TRACKER(25, "Tracker"),
-    RONIN(50, "Ronin"),
-    ELDER(75, "Elder"),
-    INU_MASTER(100, "Inu Master");
+    RUFFIAN(25, "Ruffian"),
+    LONE_RON_INU(50, "Lone Ron-inu"),
+    INU_MASTER(75, "Inu Master"),
+    LEGENDARY_HACHIKO(100, "Legendary Hachiko");
 }
 
 /**
@@ -22,14 +23,14 @@ enum class ShibaRank(val fromLevel: Int, val label: String) {
  */
 object ShibaLevel {
 
-    /** Levels per prestige cycle: earning this many mints one Paw and the display rolls over. */
-    const val LEVELS_PER_PAW = 999
+    /** Levels per prestige cycle: earning this many mints one Bone and the display rolls over. */
+    const val LEVELS_PER_BONE = 100
 
-    /** Paws (prestige marks) for a total level — one per completed 999-level cycle. */
-    fun pawsForLevel(totalLevel: Int): Int = (totalLevel - 1).coerceAtLeast(0) / LEVELS_PER_PAW
+    /** Bones (prestige marks) for a total level — one per completed 100-level cycle. */
+    fun bonesForLevel(totalLevel: Int): Int = (totalLevel - 1).coerceAtLeast(0) / LEVELS_PER_BONE
 
-    /** The odometer level shown to the player, cycling 1..999 within the current Paw cycle. */
-    fun cycleLevelFor(totalLevel: Int): Int = (totalLevel - 1).coerceAtLeast(0) % LEVELS_PER_PAW + 1
+    /** The odometer level shown to the player, cycling 1..100 within the current Bone cycle. */
+    fun cycleLevelFor(totalLevel: Int): Int = (totalLevel - 1).coerceAtLeast(0) % LEVELS_PER_BONE + 1
 
     // A contiguous run of levels sharing one per-level coin cost. [toLevel] null = open-ended tail.
     private data class Band(val fromLevel: Int, val toLevel: Int?, val costPerLevel: Int)

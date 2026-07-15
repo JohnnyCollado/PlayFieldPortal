@@ -56,32 +56,32 @@ class ShibaLevelTest {
     }
 
     @Test
-    fun `paws mint once per completed 999-level cycle`() {
-        assertEquals(0, ShibaLevel.pawsForLevel(1))
-        assertEquals(0, ShibaLevel.pawsForLevel(999))    // cycle not completed until the NEXT level
-        assertEquals(1, ShibaLevel.pawsForLevel(1_000))  // 999 levels earned
-        assertEquals(1, ShibaLevel.pawsForLevel(1_998))
-        assertEquals(2, ShibaLevel.pawsForLevel(1_999))
+    fun `bones mint once per completed 100-level cycle`() {
+        assertEquals(0, ShibaLevel.bonesForLevel(1))
+        assertEquals(0, ShibaLevel.bonesForLevel(100))  // cycle not completed until the NEXT level
+        assertEquals(1, ShibaLevel.bonesForLevel(101))  // 100 levels earned
+        assertEquals(1, ShibaLevel.bonesForLevel(200))
+        assertEquals(2, ShibaLevel.bonesForLevel(201))
+        assertEquals(9, ShibaLevel.bonesForLevel(999))
     }
 
     @Test
     fun `cycle level rolls over like an odometer`() {
         assertEquals(1, ShibaLevel.cycleLevelFor(1))
-        assertEquals(999, ShibaLevel.cycleLevelFor(999))
-        assertEquals(1, ShibaLevel.cycleLevelFor(1_000))
-        assertEquals(44, ShibaLevel.cycleLevelFor(1_043)) // 999 completed + 44 into the next cycle
-        assertEquals(999, ShibaLevel.cycleLevelFor(1_998))
+        assertEquals(100, ShibaLevel.cycleLevelFor(100))
+        assertEquals(1, ShibaLevel.cycleLevelFor(101))
+        assertEquals(43, ShibaLevel.cycleLevelFor(143)) // 100 completed + 43 into the next cycle
+        assertEquals(100, ShibaLevel.cycleLevelFor(200))
     }
 
     @Test
-    fun `rankFor maps levels to named bands`() {
+    fun `rankFor maps levels to the five evenly-spread bands`() {
         assertEquals(ShibaRank.PUP, ShibaLevel.rankFor(1))
-        assertEquals(ShibaRank.PUP, ShibaLevel.rankFor(9))
-        assertEquals(ShibaRank.SCOUT, ShibaLevel.rankFor(10))
-        assertEquals(ShibaRank.TRACKER, ShibaLevel.rankFor(25))
-        assertEquals(ShibaRank.RONIN, ShibaLevel.rankFor(50))
-        assertEquals(ShibaRank.ELDER, ShibaLevel.rankFor(75))
-        assertEquals(ShibaRank.INU_MASTER, ShibaLevel.rankFor(100))
-        assertEquals(ShibaRank.INU_MASTER, ShibaLevel.rankFor(999))
+        assertEquals(ShibaRank.PUP, ShibaLevel.rankFor(24))
+        assertEquals(ShibaRank.RUFFIAN, ShibaLevel.rankFor(25))
+        assertEquals(ShibaRank.LONE_RON_INU, ShibaLevel.rankFor(50))
+        assertEquals(ShibaRank.INU_MASTER, ShibaLevel.rankFor(75))
+        assertEquals(ShibaRank.LEGENDARY_HACHIKO, ShibaLevel.rankFor(100))
+        assertEquals(ShibaRank.LEGENDARY_HACHIKO, ShibaLevel.rankFor(999)) // earned once, kept forever
     }
 }
