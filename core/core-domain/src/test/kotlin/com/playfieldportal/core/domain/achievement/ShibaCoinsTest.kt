@@ -90,4 +90,24 @@ class ShibaCoinsTest {
         assertEquals(ShibaLevel.levelForCoins(wallet.totalCoins), wallet.level)
         assertEquals(ShibaLevel.rankFor(wallet.level), wallet.rank)
     }
+
+    @Test
+    fun `a paw rolls the displayed level over and keeps the earned rank`() {
+        // Total level 1000 = one full 999-level cycle completed: coins to reach level 1000.
+        val coins = ShibaLevel.coinsForLevel(1_000)
+        val wallet = CoinWallet(coins)
+
+        assertEquals(1_000, wallet.totalLevel)
+        assertEquals(1, wallet.paws)
+        assertEquals(1, wallet.level)                    // odometer reset
+        assertEquals(ShibaRank.INU_MASTER, wallet.rank)  // earned once, never resets
+    }
+
+    @Test
+    fun `below the first paw the wallet reads exactly as before`() {
+        val wallet = CoinWallet(ShibaLevel.coinsForLevel(500))
+        assertEquals(0, wallet.paws)
+        assertEquals(500, wallet.level)
+        assertEquals(500, wallet.totalLevel)
+    }
 }

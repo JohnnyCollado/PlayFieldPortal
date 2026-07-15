@@ -56,6 +56,24 @@ class ShibaLevelTest {
     }
 
     @Test
+    fun `paws mint once per completed 999-level cycle`() {
+        assertEquals(0, ShibaLevel.pawsForLevel(1))
+        assertEquals(0, ShibaLevel.pawsForLevel(999))    // cycle not completed until the NEXT level
+        assertEquals(1, ShibaLevel.pawsForLevel(1_000))  // 999 levels earned
+        assertEquals(1, ShibaLevel.pawsForLevel(1_998))
+        assertEquals(2, ShibaLevel.pawsForLevel(1_999))
+    }
+
+    @Test
+    fun `cycle level rolls over like an odometer`() {
+        assertEquals(1, ShibaLevel.cycleLevelFor(1))
+        assertEquals(999, ShibaLevel.cycleLevelFor(999))
+        assertEquals(1, ShibaLevel.cycleLevelFor(1_000))
+        assertEquals(44, ShibaLevel.cycleLevelFor(1_043)) // 999 completed + 44 into the next cycle
+        assertEquals(999, ShibaLevel.cycleLevelFor(1_998))
+    }
+
+    @Test
     fun `rankFor maps levels to named bands`() {
         assertEquals(ShibaRank.PUP, ShibaLevel.rankFor(1))
         assertEquals(ShibaRank.PUP, ShibaLevel.rankFor(9))

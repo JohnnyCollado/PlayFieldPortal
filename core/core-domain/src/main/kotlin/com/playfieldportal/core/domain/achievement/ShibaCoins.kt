@@ -81,12 +81,24 @@ data class GameCoins(
 }
 
 /**
- * The account-wide wallet: a running coin total that resolves to a Shiba Level and rank. Built by
- * summing every game's [GameCoins.walletContribution].
+ * The account-wide wallet: a running coin total that resolves to a Shiba Level, rank, and Paws.
+ * Built by summing every game's [GameCoins.walletContribution].
+ *
+ * The level curve is uncapped internally ([totalLevel]); the DISPLAYED [level] is an odometer
+ * that rolls over every 999 levels, minting one Paw per completed cycle. Ranks derive from the
+ * total, so Inu Master — like a Paw — is earned once and never resets (July 2026 decisions).
  */
 data class CoinWallet(val totalCoins: Int) {
-    val level: Int get() = ShibaLevel.levelForCoins(totalCoins)
-    val rank: ShibaRank get() = ShibaLevel.rankFor(level)
+    /** The uncapped level the coin total resolves to — the internal source of truth. */
+    val totalLevel: Int get() = ShibaLevel.levelForCoins(totalCoins)
+
+    /** The displayed Shiba Level, cycling 1..999 within the current Paw cycle. */
+    val level: Int get() = ShibaLevel.cycleLevelFor(totalLevel)
+
+    /** Prestige marks: one Paw per 999 levels earned. */
+    val paws: Int get() = ShibaLevel.pawsForLevel(totalLevel)
+
+    val rank: ShibaRank get() = ShibaLevel.rankFor(totalLevel)
     val levelProgress: LevelProgress get() = ShibaLevel.progress(totalCoins)
 
     companion object {

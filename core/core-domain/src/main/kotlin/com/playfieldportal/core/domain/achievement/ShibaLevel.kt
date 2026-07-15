@@ -22,6 +22,15 @@ enum class ShibaRank(val fromLevel: Int, val label: String) {
  */
 object ShibaLevel {
 
+    /** Levels per prestige cycle: earning this many mints one Paw and the display rolls over. */
+    const val LEVELS_PER_PAW = 999
+
+    /** Paws (prestige marks) for a total level — one per completed 999-level cycle. */
+    fun pawsForLevel(totalLevel: Int): Int = (totalLevel - 1).coerceAtLeast(0) / LEVELS_PER_PAW
+
+    /** The odometer level shown to the player, cycling 1..999 within the current Paw cycle. */
+    fun cycleLevelFor(totalLevel: Int): Int = (totalLevel - 1).coerceAtLeast(0) % LEVELS_PER_PAW + 1
+
     // A contiguous run of levels sharing one per-level coin cost. [toLevel] null = open-ended tail.
     private data class Band(val fromLevel: Int, val toLevel: Int?, val costPerLevel: Int)
 

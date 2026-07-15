@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.domain.achievement.CoinWallet
+import com.playfieldportal.core.domain.achievement.ShibaLevel
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 
 // Shared surface tones, matching the Game Detail coin strip. Chrome (medallion ring, progress fill)
@@ -61,6 +62,10 @@ fun ShibaPlayerCard(
                 Box(Modifier.size(10.dp).clip(CircleShape).background(accent))
                 Spacer(Modifier.width(8.dp))
                 Text(wallet.rank.label, color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                if (wallet.paws > 0) {
+                    Spacer(Modifier.width(10.dp))
+                    PawBadge(paws = wallet.paws, accent = accent)
+                }
                 Spacer(Modifier.weight(1f))
                 Text("${"%,d".format(wallet.totalCoins)} coins", color = TextMuted, fontSize = 12.sp, fontWeight = FontWeight.Medium)
             }
@@ -77,13 +82,33 @@ fun ShibaPlayerCard(
             )
 
             Spacer(Modifier.height(6.dp))
+            // At the top of a cycle the next level IS the next Paw — say so instead of "level 1000".
+            val nextLabel =
+                if (wallet.level == ShibaLevel.LEVELS_PER_PAW) "your next Paw"
+                else "level ${wallet.level + 1}"
             Text(
-                text = "${"%,d".format(progress.coinsIntoLevel)} / ${"%,d".format(progress.coinsForNextLevel)} to level ${wallet.level + 1}",
+                text = "${"%,d".format(progress.coinsIntoLevel)} / ${"%,d".format(progress.coinsForNextLevel)} to $nextLabel",
                 color = TextMuted,
                 fontSize = 11.sp,
             )
         }
     }
+}
+
+/** The prestige chip: one Paw per 999 levels earned, permanent once minted. */
+@Composable
+private fun PawBadge(paws: Int, accent: Color) {
+    Text(
+        text = if (paws == 1) "1 Paw" else "$paws Paws",
+        color = accent,
+        fontSize = 12.sp,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(accent.copy(alpha = 0.16f))
+            .border(1.dp, accent.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+            .padding(horizontal = 8.dp, vertical = 3.dp),
+    )
 }
 
 @Composable
