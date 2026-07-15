@@ -188,9 +188,16 @@ for an emu game, which is Phase 2's gap)
   appid validated as digits before any web call; no new network hosts.
 
 ### Phase 2 — Auto-match + sync triggers
-- [ ] `AchievementAutoMatcher`: for `windows` games, discovery-before-title-ladder; record
-      honest untracked reasons ("No Steam emulator data in the game folder", "DRM-free copy —
-      no achievement data exists").
+- [x] Emu folders enter the library (decided + built 2026-07-15, user's call: "scan the emu
+      folders into the windows card as games"): `LocalSteamGameImporter` runs as a second
+      pass of the Library Manager's "scan PC games" action — every discovered emu folder
+      becomes a windows-card game (title = folder name, rom_path = derived raw path) and is
+      linked to LOCAL_STEAM on the spot, since the appid comes from the folder itself.
+      Re-scans converge by the shared normalized-title dedupe and refresh the link; a STEAM
+      link on the same game coexists (one link per provider).
+- [ ] `AchievementAutoMatcher`: for `windows` games, discovery-before-title-ladder is now
+      only needed for honest untracked reasons ("No Steam emulator data in the game folder",
+      "DRM-free copy — no achievement data exists") — linking itself happens at scan time.
 - [ ] Four-state classification (section 5): `SteamWebApi.getOwnedGames` + cached owned-appid
       lookup; owned + emu copies get both provider links; badges/untracked reasons derive from
       the classification, never from guesses.

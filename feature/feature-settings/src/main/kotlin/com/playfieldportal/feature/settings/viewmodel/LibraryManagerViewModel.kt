@@ -136,6 +136,7 @@ class LibraryManagerViewModel @Inject constructor(
     private val folderHintResolver: PlatformFolderHintResolver,
     private val launcherShortcutRepository: LauncherShortcutRepository,
     private val scanTombstoneDao: com.playfieldportal.core.data.database.dao.ScanTombstoneDao,
+    private val emuGameImporter: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamGameImporter,
 ) : ViewModel() {
 
     private val _scratch = MutableStateFlow(LibraryManagerUiState())
@@ -667,15 +668,29 @@ class LibraryManagerViewModel @Inject constructor(
                     }
                 }
             }
-            if (added > 0) ensureWindowsCard()
+            // Second pass: emu game installs under the Windows card's own folder become games
+            // linked to LOCAL_STEAM right here — their appid comes from the folder, no matching.
+            val emu = runCatching { emuGameImporter.import() }
+                .onFailure { Timber.e(it, "Emu game import failed") }
+                .getOrDefault(com.playfieldportal.feature.achievements.provider.localsteam.EmuGameImportResult(0, 0))
 
+            if (added > 0 || emu.added > 0) ensureWindowsCard()
+
+            val emuNote = if (emu.discovered > 0) {
+                " Found ${emu.discovered} emu game folder(s), ${emu.added} new — local achievements linked."
+            } else ""
             val message = when {
-                windowsFolders == 0 -> "No \"Windows\" folder found under your ROM roots. Point GameNative's export folder at <root>/Windows."
-                added == 0 && skipped == 0 -> "No exported PC games found in the Windows folder."
-                else -> "Imported $added PC game(s)" + (if (skipped > 0) ", skipped $skipped (no matching launcher installed)" else "") + "."
+                windowsFolders == 0 && emu.discovered == 0 ->
+                    "No \"Windows\" folder found under your ROM roots. Point GameNative's export folder at <root>/Windows."
+                added == 0 && skipped == 0 && emu.discovered == 0 ->
+                    "No exported PC games found in the Windows folder."
+                else ->
+                    "Imported $added PC game(s)" +
+                        (if (skipped > 0) ", skipped $skipped (no matching launcher installed)" else "") +
+                        "." + emuNote
             }
             _scratch.update { it.copy(message = message) }
-            Timber.i("PC scan — windowsFolders=$windowsFolders added=$added skipped=$skipped")
+            Timber.i("PC scan — windowsFolders=$windowsFolders added=$added skipped=$skipped emu=${emu.discovered}/${emu.added}")
         }
     }
 
