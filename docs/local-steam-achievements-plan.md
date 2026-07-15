@@ -75,10 +75,13 @@ Notes:
 
 ## 4. File formats (verify in Phase 0 before coding)
 
-- GSE / gbe_fork `achievements.json`: JSON object keyed by achievement api name, values carry
-  earned flag + unix earned time (exact field names to be confirmed against the gbe_fork repo —
-  believed `earned` / `earned_time`).
-- Old Goldberg `achievements.json`: same idea, possibly different field names.
+- GSE / gbe_fork `achievements.json` (progress file): CONFIRMED 2026-07-15 against the
+  gbe_fork source (`dll/steam_user_stats.cpp`): JSON object keyed by achievement api name;
+  each value carries `earned` (bool) and `earned_time` (uint32 unix seconds), plus optional
+  `progress` / `max_progress` for partial-progress achievements. Do not confuse it with
+  `steam_settings/achievements.json`, which is the schema INPUT the emu reads, not progress.
+- Old Goldberg `achievements.json`: same object-keyed shape and `earned` / `earned_time`
+  fields (gbe_fork continues the original's storage code); parser tolerance covers drift.
 - CODEX/RUNE `achievements.ini`: INI with one section per achievement (`Achieved`, `UnlockTime`).
   Defer to a later phase; GSE is the format actually observed on-device.
 - `steam_settings/steam_appid.txt`: plain appid — the join key to the Steam Web API.
@@ -90,10 +93,11 @@ Two independent signals classify every Windows game folder (decided 2026-07-15):
 - **Emu markers** (local, free): `steam_settings/` + `steam_appid.txt`, and the renamed
   original DLL (`steam_api64_o.dll` beside the replacement `steam_api64.dll`). Present means
   the copy never talks to real Steam — its achievements exist only in the local emu file.
-- **Ownership** (one Steam Web API call): `IPlayerService/GetOwnedGames/v1` fetched once and
-  cached, then the discovered appid is looked up in the owned list. Shared dependency with
-  `docs/account-achievements-plan.md`, which uses the same endpoint for library import —
-  whichever plan lands first adds it to `SteamWebApi`.
+- **Ownership** (one Steam Web API call): the discovered appid is looked up in the owned
+  list. ALREADY BUILT (2026-07-15): the account plan landed `SteamWebApi.getOwnedGames`,
+  `SteamOwnedGamesDao`'s cache, and the (game_id, provider) link key this plan's
+  coexistence rule needs — classification here reduces to a lookup against that cache,
+  refreshed by every Steam library import.
 
 | Emu markers | Owned on Steam | Meaning |
 |---|---|---|
@@ -113,12 +117,32 @@ Every phase: tests ship with it (MockK; parser tests against verbatim sample fil
 on-device validation, pipefail-gated build+install, atomic conventional commits.
 
 ### Phase 0 — Verification gates (no product code)
-- [ ] Confirm gbe_fork's exact save-redirect mechanism and config key (repo: gbe_fork /
-      Goldberg docs — `local_save_path` variant, which file it lives in, path semantics
-      relative vs absolute) and its achievements.json field names. Do NOT code from memory.
+- [x] Confirm gbe_fork's exact save-redirect mechanism and config key. DONE 2026-07-15
+      against the gbe_fork repo (Detanup01/gbe_fork, dev branch):
+      - File: `steam_settings/configs.user.ini`, section `[user::saves]`, key
+        `local_save_path`. Path may be absolute or RELATIVE TO THE DLL/SO LOCATION (the
+        folder holding `steam_api64.dll`, not steam_settings); whitespace is trimmed;
+        setting it makes the emu ignore the global save folder entirely (fully portable).
+      - Resulting layout: `<local_save_path>/<appid>/achievements.json` — the appid
+        subfolder is kept (`Local_Storage` composes save_directory + appid + file), and a
+        sibling `settings/` folder holds the portable account config.
+      - Progress-file format confirmed (section 4): object keyed by api name,
+        `earned` / `earned_time` (+ optional `progress` / `max_progress`).
+      - Fallback for OLD Goldberg builds (pre-fork): a `local_save.txt` file beside the
+        DLL (optionally containing a path) enables the same portable mode — check which
+        mechanism the bundled emu honors during the on-device test.
 - [ ] On the Thor: apply the redirect to MARVEL Cosmic Invasion by hand, run the game in the
       emulator, unlock or verify an achievement writes `achievements.json` into the game folder.
       This proves the whole chain end-to-end before any Kotlin exists.
+      Recipe from the confirmed findings — in the game folder, append to (or create)
+      `steam_settings/configs.user.ini`, never clobbering existing sections:
+
+          [user::saves]
+          local_save_path=./GSE Saves
+
+      Expected result after an unlock: `<game folder>/GSE Saves/<appid>/achievements.json`
+      (appid from `steam_settings/steam_appid.txt`). If the DLL sits in a subfolder (x64
+      etc.), the path resolves relative to THAT folder.
 - [ ] Decide where PFP's SAF grant points (likely the games root, e.g. `/sdcard/Games`), and
       whether the existing ROM-folder grant flow can be reused.
 
