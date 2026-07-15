@@ -138,7 +138,9 @@ Tests ship with each phase; pipefail-gated builds; atomic conventional commits.
       Coins "Import my RA history". Account entries keep a Sync action (refresh is meaningful);
       only link/match affordances hide.
 
-### Phase 3 — Steam library import  (DONE 2026-07-15, pending live device run)
+### Phase 3 — Steam library import  (DONE 2026-07-15; live-verified on device same day:
+251 owned games cached, 65 memo'd no-achievements, 80 progress sets imported, zero
+zero-earned leftovers, all bookmarks set — a re-run is incremental)
 - [x] `SteamWebApi.getOwnedGames` + `SteamAccountImporter` with the probe-filter-fetch
       pipeline, the steam_no_achievements memo, and `SteamImportWorker` (WorkManager,
       notification progress, cancellable). No separate cursor: candidates = owned games not
