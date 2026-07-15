@@ -149,8 +149,23 @@ on-device validation, pipefail-gated build+install, atomic conventional commits.
 
       The path resolves relative to the folder holding the steam_api DLL; the appid
       subfolder comes from `steam_settings/steam_appid.txt`.
-- [ ] Decide where PFP's SAF grant points (likely the games root, e.g. `/sdcard/Games`), and
-      whether the existing ROM-folder grant flow can be reused.
+- [x] Decide where PFP's SAF grant points and whether existing plumbing is reused. DECIDED
+      2026-07-15 after inspecting the live debug install:
+      - The windows memory card's own folder (`memory_cards.tree_uri` — the per-card field
+        every other platform already uses) points at the games root (`/sdcard/Games` on the
+        Thor) via the standard card folder picker. NO new grant flow; `SafGrants` status
+        rules and the recursive-tree behavior apply as-is. Discovery walks that tree with
+        the shared `core.data.saf.querySafChildren` helper.
+      - Discovered reality shaping scope: on the Thor the windows card has no folder yet,
+        the only ROM-root grant is `primary:Roms`, and the two library windows games are
+        GameNative STORE entries (intent-launched via app_id, `rom_path` NULL, already
+        STEAM-linked). Such games have no shared-storage folder and are out of LOCAL_STEAM
+        scope by construction — the real STEAM provider covers them.
+      - GAP FOR PHASE 2: emu-marker game folders (e.g. MARVEL Cosmic Invasion) are not
+        library games today — `scanPcFolder` only reads frontend-export files. Auto-match
+        needs library entries to attach links to, so Phase 2 must either scan emu-marker
+        folders into the windows card as games or match them to existing entries by folder
+        name. Decide there; Phase 1's discovery+parser are folder-keyed and don't care.
 
 ### Phase 1 — Parser + provider island (read-only)
 - [ ] `EmuAchievementFile` parser (GSE JSON first) with fixture-file tests; hostile/garbage
