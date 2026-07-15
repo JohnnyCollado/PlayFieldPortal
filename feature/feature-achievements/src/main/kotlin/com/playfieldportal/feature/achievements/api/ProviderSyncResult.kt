@@ -7,7 +7,10 @@ data class SyncedCoin(
     val providerAchievementId: String,
     val title: String,
     val description: String,
-    // BRONZE / SILVER / GOLD, derived from [globalRarity]. Platinum is minted locally on mastery.
+    // BRONZE / SILVER / GOLD from the provider's difficulty signal (RA points / Steam rarity), or
+    // PLATINUM when the provider declares a completionist meta-achievement ("unlock every
+    // achievement") — that coin IS the game's crown and is excluded from the B/S/G tallies.
+    // Games without one still mint the Platinum locally on mastery.
     val tier: ShibaTier,
     val globalRarity: Double,
     val iconUrl: String?,
@@ -18,7 +21,16 @@ data class SyncedCoin(
     // crown). Steam has no hardcore/softcore split, so there it simply mirrors [isEarned].
     val earnedHardcore: Boolean,
     val earnedAt: Long?,
-)
+) {
+    companion object {
+        /**
+         * Sentinel stored in [globalRarity] when the provider reported no percentage for this coin
+         * (kept non-null so the persisted column stays unchanged). Such a coin tiers as Bronze and
+         * the UI shows its rarity as unavailable; it never ranks in rarity-ordered views.
+         */
+        const val RARITY_UNAVAILABLE = -1.0
+    }
+}
 
 /**
  * Outcome of fetching a game's achievements from a provider. The non-success cases are first-class

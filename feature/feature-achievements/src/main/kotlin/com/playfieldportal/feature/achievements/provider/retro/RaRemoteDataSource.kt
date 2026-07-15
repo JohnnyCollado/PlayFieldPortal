@@ -26,8 +26,13 @@ class RaRemoteDataSource @Inject constructor(
         val id = gameId.toLongOrNull() ?: return ProviderSyncResult.Failed("invalid RetroAchievements game id")
 
         rate.await()
+        // Rethrow cancellation (runCatching would swallow it) so a cancelled batch sync stops
+        // immediately instead of reporting this game as failed and marching on.
         val resp = runCatching { session.api.getGameInfoAndUserProgress(session.username, id) }
-            .getOrElse { return ProviderSyncResult.Failed("network error") }
+            .getOrElse { e ->
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                return ProviderSyncResult.Failed("network error")
+            }
 
         return when (resp) {
             is NetworkResponse.Success -> RaCoinMapper.map(resp.body, gameId)
@@ -56,7 +61,10 @@ class RaRemoteDataSource @Inject constructor(
                 shouldOnlyRetrieveGamesWithAchievements = 1,
                 shouldRetrieveGameHashes = 1,
             )
-        }.getOrElse { return emptyMap() }
+        }.getOrElse { e ->
+            if (e is kotlinx.coroutines.CancellationException) throw e
+            return emptyMap()
+        }
 
         return when (resp) {
             is NetworkResponse.Success ->

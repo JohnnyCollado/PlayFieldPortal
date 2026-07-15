@@ -6,10 +6,12 @@ import com.playfieldportal.core.data.achievement.AchievementCredentialsProvider
 import com.playfieldportal.core.domain.achievement.CoinWallet
 import com.playfieldportal.feature.achievements.AchievementController
 import com.playfieldportal.feature.achievements.BatchSyncResult
-import com.playfieldportal.feature.achievements.provider.steam.SteamAchievementsApi
+import com.playfieldportal.feature.achievements.provider.steam.SteamRemoteDataSource
 import com.playfieldportal.feature.achievements.match.AchievementAutoMatcher
 import com.playfieldportal.feature.achievements.match.MatchReport
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -73,7 +75,7 @@ private val DATE_FMT = SimpleDateFormat("MMM d, yyyy HH:mm", Locale.US)
 @HiltViewModel
 class AchievementsSettingsViewModel @Inject constructor(
     private val credentials: AchievementCredentialsProvider,
-    private val steamApi: SteamAchievementsApi,
+    private val steamApi: SteamRemoteDataSource,
     private val autoMatcher: AchievementAutoMatcher,
     private val repository: AchievementController,
 ) : ViewModel() {
@@ -156,28 +158,50 @@ class AchievementsSettingsViewModel @Inject constructor(
         }
     }
 
-    /** Batch-links every unlinked game and surfaces a report of what couldn't be matched. */
+    private var syncJob: Job? = null
+
+    /**
+     * Batch-links every unlinked game and surfaces a report of what couldn't be matched, then
+     * immediately syncs all linked games so freshly matched games get their coin data in the same
+     * pass (a match without a sync would leave every new link at zero coins).
+     *
+     * Matching always runs first: a sync already in flight is cancelled and re-run in full after
+     * the match, so a long-running sync can never block or delay auto-matching.
+     */
     fun autoMatch() {
         if (extra.value.isMatching) return
         viewModelScope.launch {
+            syncJob?.cancelAndJoin()
             extra.update { it.copy(isMatching = true, matchReport = null, matchDone = 0, matchTotal = 0) }
             val report = autoMatcher.matchUnlinked { done, total ->
                 extra.update { it.copy(matchDone = done, matchTotal = total) }
             }
             extra.update { it.copy(isMatching = false, matchReport = report) }
+            launchSyncAll().join()
         }
     }
 
     /** Refreshes coin data for every linked game at once, with a progress + result summary. */
     fun syncAll() {
-        if (extra.value.isSyncing) return
-        viewModelScope.launch {
-            extra.update { it.copy(isSyncing = true, syncResult = null, syncDone = 0, syncTotal = 0) }
-            val result = repository.syncAllLinked { done, total ->
-                extra.update { it.copy(syncDone = done, syncTotal = total) }
+        if (extra.value.isSyncing || extra.value.isMatching) return
+        launchSyncAll()
+    }
+
+    private fun launchSyncAll(): Job {
+        val job = viewModelScope.launch {
+            try {
+                extra.update { it.copy(isSyncing = true, syncResult = null, syncDone = 0, syncTotal = 0) }
+                val result = repository.syncAllLinked { done, total ->
+                    extra.update { it.copy(syncDone = done, syncTotal = total) }
+                }
+                extra.update { it.copy(isSyncing = false, syncResult = result) }
+            } finally {
+                // A cancelled sync (auto-match taking over) must not leave the spinner stuck.
+                if (extra.value.isSyncing) extra.update { it.copy(isSyncing = false) }
             }
-            extra.update { it.copy(isSyncing = false, syncResult = result) }
         }
+        syncJob = job
+        return job
     }
 
     fun dismissMessage() = extra.update { it.copy(message = null) }

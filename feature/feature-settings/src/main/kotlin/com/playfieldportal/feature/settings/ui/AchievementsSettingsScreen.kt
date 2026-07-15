@@ -140,7 +140,8 @@ fun AchievementsSettingsScreen(
             } else {
                 SettingsRow(
                     label = "Sync all coins",
-                    sublabel = "Refresh earned coins for every linked game",
+                    sublabel = if (state.isMatching) "Runs automatically once auto-match completes"
+                               else "Refresh earned coins for every linked game",
                     onClick = { viewModel.syncAll() },
                 )
             }

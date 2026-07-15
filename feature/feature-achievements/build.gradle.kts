@@ -33,9 +33,12 @@ dependencies {
 
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
-    implementation(libs.bundles.ktor)
     implementation(libs.timber)
     implementation(libs.xz) // LZMA decoder for CHD cdlz hunks
+
+    // Retrofit — the Steam Web API client (provider/steam island). DTOs stay kotlinx-serialization.
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.kotlinx.serialization)
 
     // Official RetroAchievements Kotlin client. Pulls Retrofit/OkHttp/Gson transitively; kept
     // strictly inside the provider/retro island (RaRemoteDataSource). Never used outside it.
@@ -47,5 +50,4 @@ dependencies {
     implementation(project(":feature:feature-artwork")) // SteamGridDB client for Steam-id resolution
 
     testImplementation(libs.bundles.test.unit)
-    testImplementation(libs.ktor.client.mock)
 }

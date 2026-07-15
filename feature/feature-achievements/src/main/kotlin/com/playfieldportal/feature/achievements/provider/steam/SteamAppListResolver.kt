@@ -1,21 +1,8 @@
 package com.playfieldportal.feature.achievements.provider.steam
 
-import com.playfieldportal.feature.achievements.api.AchievementsHttpClient
-import io.ktor.client.HttpClient
-import io.ktor.client.call.body
-import io.ktor.client.request.get
-import io.ktor.client.request.header
-import io.ktor.client.request.parameter
-import io.ktor.http.HttpHeaders
-import kotlinx.serialization.Serializable
+import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
-
-@Serializable
-private data class StoreSearchResponse(val items: List<StoreItem> = emptyList())
-
-@Serializable
-private data class StoreItem(val id: Long = 0, val name: String = "", val type: String = "")
 
 /** A Steam app candidate for the manual "Find on Steam" picker. */
 data class SteamCandidate(val appId: String, val name: String)
@@ -28,7 +15,7 @@ data class SteamCandidate(val appId: String, val name: String)
  */
 @Singleton
 class SteamAppListResolver @Inject constructor(
-    @AchievementsHttpClient private val client: HttpClient,
+    private val storeApi: SteamStoreApi,
 ) {
     /** The appid whose Steam name matches [title] exactly (after normalizing), or null. */
     suspend fun resolveAppId(title: String): String? {
@@ -48,19 +35,13 @@ class SteamAppListResolver @Inject constructor(
             .map { SteamCandidate(it.id.toString(), it.name) }
     }
 
-    private suspend fun storeSearch(term: String): List<StoreItem> = runCatching {
-        client.get(STORE_SEARCH) {
-            header(HttpHeaders.UserAgent, USER_AGENT)
-            parameter("term", term)
-            parameter("cc", "us")
-            parameter("l", "en")
-        }.body<StoreSearchResponse>().items
-    }.getOrElse { emptyList() }
+    private suspend fun storeSearch(term: String): List<StoreItem> =
+        runCatching { storeApi.search(term) }
+            .getOrElse { e ->
+                if (e is CancellationException) throw e
+                return emptyList()
+            }
+            .body()?.items.orEmpty()
 
     private fun normalize(s: String): String = s.lowercase().filter { it.isLetterOrDigit() }
-
-    private companion object {
-        const val STORE_SEARCH = "https://store.steampowered.com/api/storesearch/"
-        const val USER_AGENT = "Mozilla/5.0"
-    }
 }

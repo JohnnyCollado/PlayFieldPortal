@@ -17,6 +17,7 @@ navigation              = "2.7.7"
 lifecycle               = "2.8.2"
 coil                    = "2.6.0"
 ktor                    = "2.3.11"
+retrofit                = "2.11.0"
 retroachievements-api   = "2.0.0"
 timber                  = "5.0.1"
 xz                      = "1.10"
@@ -95,6 +96,11 @@ ktor-client-content-negotiation = { group = "io.ktor",                name = "kt
 ktor-serialization-json         = { group = "io.ktor",                name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
 ktor-client-logging             = { group = "io.ktor",                name = "ktor-client-logging",         version.ref = "ktor" }
 ktor-client-mock                = { group = "io.ktor",                name = "ktor-client-mock",            version.ref = "ktor" }
+
+# Retrofit (Steam Web API client in feature-achievements' provider/steam island). The
+# kotlinx-serialization converter keeps our own DTOs on kotlinx, matching the rest of the app.
+retrofit                        = { group = "com.squareup.retrofit2",  name = "retrofit",                    version.ref = "retrofit" }
+retrofit-kotlinx-serialization  = { group = "com.squareup.retrofit2",  name = "converter-kotlinx-serialization", version.ref = "retrofit" }
 
 # RetroAchievements official Kotlin client (Retrofit/OkHttp/Gson under the hood; JitPack).
 # Quarantined to feature-achievements' provider/retro island — its Retrofit/Gson stack must not
