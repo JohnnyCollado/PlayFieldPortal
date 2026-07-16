@@ -827,6 +827,7 @@ class XMBViewModel @Inject constructor(
     private val achievementCredentials: com.playfieldportal.core.data.achievement.AchievementCredentialsProvider,
     private val windowsLibrarySetup: com.playfieldportal.core.data.repository.WindowsLibrarySetup,
     private val pcShortcutImporter: com.playfieldportal.feature.launcher.PcShortcutImporter,
+    private val pcGameScanner: com.playfieldportal.feature.settings.pc.PcGameScanner,
 ) : ViewModel() {
 
     // The track list currently on screen (in display/sort order), used as the in-app player's queue
@@ -5023,6 +5024,27 @@ class XMBViewModel @Inject constructor(
         viewModelScope.launch {
             val card = memoryCardRepository.getById(platformId) ?: return@launch
             val taskId = "scan_$platformId"
+
+            // The Windows card runs the full PC pass (pin sweep incl. pins never added, the
+            // <windows>/import exports, emu folder reconcile) — extension scanning means nothing
+            // to it, and "Scan This Console" must behave exactly like the Library Manager action.
+            if (platformId == WINDOWS_PLATFORM_ID) {
+                addBackgroundTask(BackgroundTaskInfo(id = taskId, label = "Scanning ${card.displayName}…", progress = null))
+                val report = runCatching { pcGameScanner.scan() }
+                    .onFailure { Timber.e(it, "PC scan failed") }
+                    .getOrNull()
+                if (report == null) {
+                    failBackgroundTask(taskId, "PC scan failed")
+                } else {
+                    memoryCardRepository.recordScan(platformId, System.currentTimeMillis())
+                    completeBackgroundTask(
+                        taskId,
+                        if (report.newGames == 0) "No new PC games found" else report.message,
+                    )
+                }
+                return@launch
+            }
+
             val dir = card.romDirectory
             if (dir.isNullOrBlank()) {
                 addBackgroundTask(BackgroundTaskInfo(id = taskId, label = card.displayName, progress = null))
