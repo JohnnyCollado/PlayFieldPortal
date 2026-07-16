@@ -200,7 +200,48 @@ for an emu game, which is Phase 2's gap)
       "DRM-free copy — no achievement data exists") — linking itself happens at scan time.
 - [ ] Four-state classification (section 5): `SteamWebApi.getOwnedGames` + cached owned-appid
       lookup; owned + emu copies get both provider links; badges/untracked reasons derive from
-      the classification, never from guesses.
+      the classification, never from guesses. Approach locked 2026-07-16 (user's calls):
+      - Computed AT SCAN TIME and PERSISTED: the PC scan (and each completed Steam import)
+        derives an ownership state per LOCAL_STEAM link — OWNED / NOT_IN_LIBRARY / UNKNOWN —
+        stored on the provider link row. UNKNOWN whenever the owned cache is empty, stale, or
+        credentials are missing; `isOwned == false` alone never means "unowned".
+      - Wording stays NEUTRAL: badge remains "Local"; the unowned state reads
+        "Not in your Steam library — achievements tracked locally". The signal cannot prove
+        piracy (family sharing, alternate accounts, and unplayed free games all look unowned),
+        so the UI never says "cracked".
+      - Emu marker stays `steam_settings/steam_appid.txt` alone — no DLL-pair verification
+        (legit copies never ship steam_settings; the renamed `_o.dll` check adds SAF queries
+        and some emu setups do not rename the original).
+      - Owned + emu (state 2): scan also attaches the STEAM link with the same appid —
+        appid equality beats any title ladder; both sets coexist per section 7.
+      - `.desktop` shortcuts carry no appid; they classify only when their rawPath falls
+        inside a discovered emu folder (inherit that folder's appid). Otherwise unknown.
+- [ ] Raise `LocalSteamDiscovery.SETTINGS_SEARCH_DEPTH` from 3 to 4 (found 2026-07-16 on
+      device): Unity-built games nest the emu config at
+      `<Game>/<Game>_Data/Plugins/x86_64/steam_settings` — depth 4 — so all four FF pixel
+      remasters (appids 1173780/1173790/1173810/1173820) are invisible to discovery today.
+- [ ] Shortcut-to-folder mapping (designed 2026-07-16 against live Thor data). A PC shortcut
+      carries only (host package, shortcut id, label) — the OS strips intents for launchers,
+      and the emulator's own id-to-path knowledge (private library DB, `exePath=` launch logs
+      under `Android/data`) is unreachable by construction. The only shortcut type with an
+      explicit path is a Winlator `.desktop` export (already captured as `rawPath`).
+      Mapping is therefore a two-step derived join, used as the MERGE KEY that unifies the
+      launchable shortcut entry with the trackable emu folder into one library game:
+      1. Normalized-title match — shortcut label vs game folder name, lowercase alphanumeric
+         only (the existing `LocalSteamGameImporter` dedupe rule). Matched 7 of 9 live pairs,
+         surviving `NieR:Automata™` vs `NieR - Automata` and squashed labels like
+         `MARVELCosmicInvasion`.
+      2. Steam-name bridge for renamed folders — an emu-marked folder's appid resolves to the
+         official Steam name (schema call already made), and THAT is matched against the
+         shortcut label. Works because GameHub-family labels come from Steam metadata, so both
+         strings share Steam as origin. Live proof: folder `FINAL FANTASY FFX-FFX-2 HD
+         Remaster` (appid 359870) fails step 1 but its Steam name is exactly the shortcut
+         label `FINAL FANTASY X/X-2 HD Remaster`.
+      Combined: 8 of 9 live pairs map deterministically. Known miss: `FINAL FANTASY XIV` vs
+      `FINAL FANTASY XIV - A Realm Reborn` — folder is not emu-marked (no appid to bridge)
+      and prefix/fuzzy matching is deliberately NOT used (false-positive tier); an MMO has no
+      local tracking to gain anyway. Unmapped entries simply stay separate — mapping never
+      guesses.
 - [ ] Return-from-launch sync for LOCAL_STEAM-linked games (hook the existing launch-return
       path named in the Shiba plan).
 - [ ] Review `stabilizeTiers` provider gate to include LOCAL_STEAM.
