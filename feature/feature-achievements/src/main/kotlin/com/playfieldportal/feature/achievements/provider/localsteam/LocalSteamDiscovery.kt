@@ -20,6 +20,12 @@ data class LocalSteamGame(
     val appId: String,
     /** The GSE progress file, when the save redirect makes it reachable; null otherwise. */
     val achievementsUri: Uri?,
+    /** The tree the folder was found under, so a missing schema can be written back in place. */
+    val settingsTreeUri: String = "",
+    /** The `steam_settings` folder's document id, the write target for a generated schema. */
+    val settingsDirDocId: String = "",
+    /** Whether `steam_settings/achievements.json` (the schema the emu reads) already exists. */
+    val hasSchema: Boolean = true,
 )
 
 /**
@@ -87,11 +93,20 @@ class LocalSteamDiscovery @Inject constructor(
             return null
         }
 
+        // The schema the emu reads to know its achievement list lives in steam_settings itself;
+        // its absence is what an in-app generate step (LocalSteamSchemaGenerator) can fill.
+        val hasSchema = settingsChildren.any {
+            !it.isDirectory && it.name.equals(PROGRESS_FILE, ignoreCase = true)
+        }
+
         return LocalSteamGame(
             folderName = gameFolder.name,
             folderDocId = gameFolder.documentId,
             appId = appId,
             achievementsUri = achievements,
+            settingsTreeUri = tree.toString(),
+            settingsDirDocId = settingsDir.dir.documentId,
+            hasSchema = hasSchema,
         )
     }
 

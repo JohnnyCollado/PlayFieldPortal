@@ -10,8 +10,18 @@ import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Outcome of reconciling emu game folders with the library, for the settings message. */
-data class EmuGameImportResult(val discovered: Int, val linked: Int)
+/**
+ * Outcome of reconciling emu game folders with the library, for the settings message.
+ *
+ * [missingSchema] lists discovered folders that carry no `steam_settings/achievements.json` yet —
+ * the UI offers to generate one per game so the emulator can start tracking (see
+ * [LocalSteamSchemaGenerator]). Detection only; nothing is written here.
+ */
+data class EmuGameImportResult(
+    val discovered: Int,
+    val linked: Int,
+    val missingSchema: List<LocalSteamGame> = emptyList(),
+)
 
 /**
  * Reconciles the emu game folders [LocalSteamDiscovery] finds with the LIBRARY — it never
@@ -36,6 +46,7 @@ class LocalSteamGameImporter @Inject constructor(
     suspend fun import(): EmuGameImportResult {
         val found = discovery.scan()
         if (found.isEmpty()) return EmuGameImportResult(0, 0)
+        val missingSchema = found.filterNot { it.hasSchema }
 
         // One-time hygiene for rows the pre-rework scan created: a windows GAME with no launch
         // handle at all (no package, no shortcut, no intent) is a folder import that can never
@@ -61,8 +72,15 @@ class LocalSteamGameImporter @Inject constructor(
                 achievements.linkManually(match.id, AchievementProvider.STEAM, folder.appId)
             }
         }
-        Timber.i("Emu folder reconcile — ${found.size} folder(s), $linked linked to library games")
-        return EmuGameImportResult(discovered = found.size, linked = linked)
+        Timber.i(
+            "Emu folder reconcile — ${found.size} folder(s), $linked linked to library games, " +
+                "${missingSchema.size} without a schema",
+        )
+        return EmuGameImportResult(
+            discovered = found.size,
+            linked = linked,
+            missingSchema = missingSchema,
+        )
     }
 
     // The bridge: folder appid -> official Steam name -> exact normalized match against the
