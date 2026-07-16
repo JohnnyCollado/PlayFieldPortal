@@ -1,6 +1,7 @@
 package com.playfieldportal.feature.achievements.provider.localsteam
 
 import com.playfieldportal.core.data.achievement.AchievementCredentialsProvider
+import com.playfieldportal.feature.achievements.api.RateLimiter
 import com.playfieldportal.feature.achievements.provider.steam.SteamWebApi
 import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
@@ -20,6 +21,10 @@ class LocalSteamSchemaGenerator @Inject constructor(
     private val credentials: AchievementCredentialsProvider,
     private val writer: LocalSteamSchemaWriter,
 ) {
+    // Same pacing the sync sources use — a Yes-to-All run over many games must not hammer the
+    // Steam Web API back-to-back.
+    private val rate = RateLimiter(1_100)
+
     sealed interface Result {
         /** The schema was fetched and written into steam_settings. */
         data object Written : Result
@@ -41,6 +46,7 @@ class LocalSteamSchemaGenerator @Inject constructor(
         }
         val key = credentials.steamApiKey()?.takeIf { it.isNotBlank() } ?: return Result.NoKey
 
+        rate.await()
         val response = runCatching { webApi.getSchemaForGame(key, game.appId) }
             .getOrElse { e ->
                 if (e is CancellationException) throw e
