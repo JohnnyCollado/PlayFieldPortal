@@ -44,7 +44,12 @@ class AchievementRepositoryTest {
     private val gameRepository = mockk<com.playfieldportal.core.domain.repository.GameRepository>(relaxed = true)
     private val matchNoteDao = mockk<com.playfieldportal.core.data.database.dao.AchievementMatchNoteDao>(relaxed = true)
 
-    private val repo = AchievementRepository(remoteSources, credentials, setDao, coinDao, linkDao, matchNoteDao, steamResolver, gameRepository)
+    private val localSteamDiscovery =
+        mockk<com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamDiscovery> {
+            coEvery { scan() } returns emptyList()
+        }
+
+    private val repo = AchievementRepository(remoteSources, credentials, setDao, coinDao, linkDao, matchNoteDao, steamResolver, gameRepository, localSteamDiscovery)
 
     init {
         // Tier stability reads the previous summary + coin rows; default to "never synced".

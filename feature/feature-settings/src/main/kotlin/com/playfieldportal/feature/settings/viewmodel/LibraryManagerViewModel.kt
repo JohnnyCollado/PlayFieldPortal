@@ -678,16 +678,18 @@ class LibraryManagerViewModel @Inject constructor(
                     added++
                 }
             }
-            // Second pass: emu game installs under the windows folder(s) become games linked to
-            // LOCAL_STEAM right here — their appid comes from the folder, no matching.
+            // Second pass: emu game folders reconcile with the library — mapped games link
+            // LOCAL_STEAM, unmapped folders stay tracked-only and load into Shiba Coins on sync
+            // (never game entities — user decision 2026-07-16).
             val emu = runCatching { emuGameImporter.import() }
-                .onFailure { Timber.e(it, "Emu game import failed") }
+                .onFailure { Timber.e(it, "Emu folder reconcile failed") }
                 .getOrDefault(com.playfieldportal.feature.achievements.provider.localsteam.EmuGameImportResult(0, 0))
 
-            if (added > 0 || emu.added > 0) ensureWindowsCard()
+            if (added > 0 || emu.linked > 0) ensureWindowsCard()
 
             val emuNote = if (emu.discovered > 0) {
-                " Found ${emu.discovered} emu game folder(s), ${emu.added} new — local achievements linked."
+                " Found ${emu.discovered} emu game folder(s): ${emu.linked} linked to library games; " +
+                    "the rest appear in Shiba Coins after a sync."
             } else ""
             val message = when {
                 importFolders.isEmpty() && emu.discovered == 0 ->
@@ -700,7 +702,7 @@ class LibraryManagerViewModel @Inject constructor(
                         "." + emuNote
             }
             _scratch.update { it.copy(message = message) }
-            Timber.i("PC scan — importFolders=${importFolders.size} added=$added skipped=$skipped emu=${emu.discovered}/${emu.added}")
+            Timber.i("PC scan — importFolders=${importFolders.size} added=$added skipped=$skipped emu=${emu.discovered}/${emu.linked}")
         }
     }
 

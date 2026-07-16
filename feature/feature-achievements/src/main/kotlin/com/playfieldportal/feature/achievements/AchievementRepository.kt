@@ -48,6 +48,7 @@ class AchievementRepository @Inject constructor(
     private val matchNoteDao: AchievementMatchNoteDao,
     private val steamResolver: SteamAppListResolver,
     private val gameRepository: GameRepository,
+    private val localSteamDiscovery: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamDiscovery,
 ) : AchievementController {
     /** This game's provider link (which provider + id it syncs from), or null if unlinked. */
     override fun observeLink(gameId: Long): Flow<ProviderGameLinkEntity?> = linkDao.observeForGame(gameId)
@@ -245,32 +246,50 @@ class AchievementRepository @Inject constructor(
     }
 
     /**
-     * Syncs every linked game in one pass, refreshing all coin data at once. Each provider fetch is
-     * already rate-limited in its client, so this paces itself. [onProgress] reports (done, total);
-     * per-game failures are counted, never thrown, so one bad game can't abort the run.
+     * Syncs every linked game in one pass, refreshing all coin data at once — plus every
+     * TRACKED emu game folder without a library link, stored as an account-style entry (they
+     * are deliberately never library games — user decision 2026-07-16). Each provider fetch is
+     * already rate-limited in its client, so this paces itself. [onProgress] reports
+     * (done, total); per-game failures are counted, never thrown, so one bad game can't abort
+     * the run.
      */
     override suspend fun syncAllLinked(onProgress: (done: Int, total: Int) -> Unit): BatchSyncResult {
         val links = linkDao.getAll()
+        // Library-less local copies: discovered live so a moved/removed folder self-corrects.
+        val linkedLocalAppIds = links
+            .filter { it.provider == AchievementProvider.LOCAL_STEAM.name }
+            .map { it.providerGameId }
+            .toHashSet()
+        val trackedFolders = runCatching { localSteamDiscovery.scan() }.getOrDefault(emptyList())
+            .filter { it.appId !in linkedLocalAppIds }
+            .distinctBy { it.appId }
+
+        val total = links.size + trackedFolders.size
         var synced = 0
         var noCoins = 0
         var failed = 0
         var missingCredentials = false
+        fun tally(result: ProviderSyncResult) = when (result) {
+            is ProviderSyncResult.Success -> synced++
+            ProviderSyncResult.NotFound -> noCoins++
+            ProviderSyncResult.MissingCredentials -> missingCredentials = true
+            ProviderSyncResult.ProfileNotPublic -> failed++
+            is ProviderSyncResult.Failed -> failed++
+            ProviderSyncResult.NotLinked -> Unit // impossible here (came from a link)
+        }
         links.forEachIndexed { index, link ->
-            onProgress(index, links.size)
+            onProgress(index, total)
             val provider = AchievementProvider.fromName(link.provider)
             if (provider == null) { failed++; return@forEachIndexed }
-            when (syncGame(link.gameId, provider, link.providerGameId)) {
-                is ProviderSyncResult.Success -> synced++
-                ProviderSyncResult.NotFound -> noCoins++
-                ProviderSyncResult.MissingCredentials -> missingCredentials = true
-                ProviderSyncResult.ProfileNotPublic -> failed++
-                is ProviderSyncResult.Failed -> failed++
-                ProviderSyncResult.NotLinked -> Unit // impossible here (came from a link)
-            }
+            tally(syncGame(link.gameId, provider, link.providerGameId))
         }
-        onProgress(links.size, links.size)
+        trackedFolders.forEachIndexed { index, folder ->
+            onProgress(links.size + index, total)
+            tally(syncAccountEntry(AchievementProvider.LOCAL_STEAM, folder.appId, folder.folderName))
+        }
+        onProgress(total, total)
         return BatchSyncResult(
-            total = links.size,
+            total = total,
             synced = synced,
             noCoins = noCoins,
             failed = failed,

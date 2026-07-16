@@ -188,13 +188,14 @@ for an emu game, which is Phase 2's gap)
   appid validated as digits before any web call; no new network hosts.
 
 ### Phase 2 — Auto-match + sync triggers
-- [x] Emu folders enter the library (decided + built 2026-07-15, user's call: "scan the emu
-      folders into the windows card as games"): `LocalSteamGameImporter` runs as a second
-      pass of the Library Manager's "scan PC games" action — every discovered emu folder
-      becomes a windows-card game (title = folder name, rom_path = derived raw path) and is
-      linked to LOCAL_STEAM on the spot, since the appid comes from the folder itself.
-      Re-scans converge by the shared normalized-title dedupe and refresh the link; a STEAM
-      link on the same game coexists (one link per provider).
+- [x] REVERSED 2026-07-16 (user decision after live validation; originally "scan the emu
+      folders into the windows card as games"): emu folders NEVER become game entities. The
+      scan's second pass reconciles instead — a folder mapping onto an existing library game
+      (normalized title, then the Steam-name bridge) links LOCAL_STEAM + ownership; an
+      unmapped folder stays a tracked local game that Shiba Coins syncs as an ACCOUNT-STYLE
+      entry (`syncAllLinked` discovers linkless folders live and `syncAccountEntry` stores
+      them — the same pattern as RA/Steam account imports). Pre-reversal folder entities are
+      cleaned up on the next scan (windows GAME rows with no launch handle).
 - [x] `AchievementAutoMatcher` (built 2026-07-16 with refactor-plan Phase 5): windows games
       are folder-first — an emu-marked folder links LOCAL_STEAM with its own appid and gets
       classified; the ladder's unmatched reason now names the absence of emulator data

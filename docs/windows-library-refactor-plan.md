@@ -245,6 +245,15 @@ commits. No phase starts before the user lifts the coding gate.
       Phase 1 adapter tests.
 - Sec: export files remain untrusted input (existing sanitizer path unchanged).
 
+REVISED 2026-07-16 after on-device validation (user decision): scanned emu folders NEVER
+create game entities — the Windows card holds only launchable entries (pin / export / Add by
+ID). The folder scan reconciles: a folder mapping onto an existing game links LOCAL_STEAM +
+classification; an unmapped folder stays a TRACKED local game that Shiba Coins loads as an
+account-style entry when synced (`syncAllLinked` discovers and syncs them; paths resolve live
+so moved folders self-correct). Unlaunchable folder-import rows from the pre-revision scan are
+removed on the next scan. The Player Card shows when credentials are connected OR any tracked
+sets exist — account-set-derived standing covers emu-local games automatically.
+
 ### Phase 5 — Auto-match, mapping, classification  (CODE DONE 2026-07-16)
 - [x] Shortcut-to-folder mapping join in `LocalSteamGameImporter`: normalized title, then the
       STEAM-NAME BRIDGE — the appid's official store name via the keyless storefront
