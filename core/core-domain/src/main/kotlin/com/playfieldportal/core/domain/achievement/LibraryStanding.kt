@@ -61,6 +61,12 @@ data class LibraryStanding(
     /** Number of games with a synced set. */
     val gamesTracked: Int get() = tracked.size
 
+    /** Individual coins earned across every tracked set (a count, not the weighted value). */
+    val coinsEarned: Int get() = tracked.sumOf { it.coins.earned.total }
+
+    /** Individual coins available across every tracked set. */
+    val coinsAvailable: Int get() = tracked.sumOf { it.coins.total.total }
+
     /** Number of tracked games that own their Platinum. */
     val gamesMastered: Int get() = tracked.count { it.isMastered }
 
