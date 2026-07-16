@@ -31,6 +31,7 @@ import javax.inject.Inject
 
 data class AchievementsSettingsUiState(
     val enabled: Boolean = false,
+    val localSteamTrackingEnabled: Boolean = false,
     val wallet: CoinWallet = CoinWallet.EMPTY,
     val hasRetroAchievements: Boolean = false,
     val raUsername: String = "",
@@ -61,6 +62,7 @@ private data class Accounts(
     val raUsername: String?,
     val steamId64: String?,
     val enabled: Boolean,
+    val localSteamEnabled: Boolean,
     val lastSyncedAt: Long?,
 )
 
@@ -162,8 +164,11 @@ class AchievementsSettingsViewModel @Inject constructor(
         credentials.raUsernameFlow,
         credentials.steamId64Flow,
         credentials.enabledFlow,
+        credentials.localSteamTrackingEnabledFlow,
         credentials.lastSyncedAtFlow,
-    ) { raUser, steamId, enabled, lastSynced -> Accounts(raUser, steamId, enabled, lastSynced) }
+    ) { raUser, steamId, enabled, localSteam, lastSynced ->
+        Accounts(raUser, steamId, enabled, localSteam, lastSynced)
+    }
 
     val uiState: StateFlow<AchievementsSettingsUiState> = combine(
         accounts,
@@ -172,6 +177,7 @@ class AchievementsSettingsViewModel @Inject constructor(
     ) { acc, ex, wallet ->
         AchievementsSettingsUiState(
             enabled = acc.enabled,
+            localSteamTrackingEnabled = acc.localSteamEnabled,
             wallet = wallet,
             hasRetroAchievements = !acc.raUsername.isNullOrBlank(),
             raUsername = acc.raUsername.orEmpty(),
@@ -200,6 +206,15 @@ class AchievementsSettingsViewModel @Inject constructor(
 
     fun setEnabled(enabled: Boolean) {
         viewModelScope.launch { credentials.setEnabled(enabled) }
+    }
+
+    /**
+     * Opts into (or out of) tracking emulated Local Steam games. Enabling is destructive-adjacent —
+     * it lets a later sync rewrite emu configs and swap the steam_api DLL — so the screen gates the
+     * on-transition behind a save-backup warning and only calls this once the user confirms.
+     */
+    fun setLocalSteamTracking(enabled: Boolean) {
+        viewModelScope.launch { credentials.setLocalSteamTrackingEnabled(enabled) }
     }
 
     fun connectRetroAchievements(username: String, apiKey: String) {

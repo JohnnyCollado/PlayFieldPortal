@@ -5,6 +5,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -29,6 +32,7 @@ fun AchievementsSettingsScreen(
     var raKeyDraft by remember(state.hasRetroAchievements) { mutableStateOf("") }
     var steamIdDraft by remember(state.steamId64) { mutableStateOf("") }
     var steamKeyDraft by remember(state.hasSteam) { mutableStateOf("") }
+    var showLocalSteamWarning by remember { mutableStateOf(false) }
 
     SettingsScaffold(
         title    = "Settings",
@@ -131,6 +135,18 @@ fun AchievementsSettingsScreen(
                     onClick  = { viewModel.disconnectSteam() },
                 )
             }
+
+            // ── Local Steam (emulated) ─────────────────────────────────────────
+            SettingsGroup("Local Steam (Emulated)")
+            SettingsToggleRow(
+                label    = "Track Local Steam Games (Emulated)",
+                sublabel = "Find emulator games, generate their achievement data, and sync unlocks",
+                checked  = state.localSteamTrackingEnabled,
+                onToggle = { on ->
+                    // Enabling is gated behind the save-backup warning; disabling is immediate.
+                    if (on) showLocalSteamWarning = true else viewModel.setLocalSteamTracking(false)
+                },
+            )
 
             // ── Sync ───────────────────────────────────────────────────────────
             SettingsGroup("Sync")
@@ -239,6 +255,33 @@ fun AchievementsSettingsScreen(
             state.message?.let {
                 SettingsRow(label = it, sublabel = "Tap to dismiss", onClick = { viewModel.dismissMessage() })
             }
+        }
+
+        if (showLocalSteamWarning) {
+            AlertDialog(
+                onDismissRequest = { showLocalSteamWarning = false },
+                title = { Text("Back up your save files first") },
+                text = {
+                    Text(
+                        "Before you sync, open your Windows emulator and back up the save files " +
+                            "for any Steam-emulated games you already set up.\n\n" +
+                            "Tracking these games lets a sync rewrite each game's emulator config " +
+                            "and replace its Steam files so unlocks can be recorded. A game you " +
+                            "set up and played before this feature could otherwise lose access to " +
+                            "its existing saves.\n\n" +
+                            "Back up first, then turn this on and Sync All.",
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        viewModel.setLocalSteamTracking(true)
+                        showLocalSteamWarning = false
+                    }) { Text("I've backed up — enable") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showLocalSteamWarning = false }) { Text("Cancel") }
+                },
+            )
         }
     }
 }

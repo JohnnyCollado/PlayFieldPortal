@@ -19,6 +19,7 @@ private val KEY_RA_API_KEY = stringPreferencesKey("ra_api_key")
 private val KEY_STEAM_ID64 = stringPreferencesKey("steam_id64")
 private val KEY_STEAM_API_KEY = stringPreferencesKey("steam_api_key")
 private val KEY_ENABLED = booleanPreferencesKey("achievements_enabled")
+private val KEY_LOCAL_STEAM_ENABLED = booleanPreferencesKey("local_steam_tracking_enabled")
 private val KEY_SYNC_LAST = longPreferencesKey("achievements_sync_last")
 
 /**
@@ -42,6 +43,15 @@ class AchievementCredentialsProvider @Inject constructor(
 
     val enabledFlow: Flow<Boolean> =
         context.pfpDataStore.data.map { it[KEY_ENABLED] ?: false }
+
+    /**
+     * Whether emulated ("Local Steam") games are discovered, generated for, and synced. Off by
+     * default and gated behind a save-backup warning at enable time, because bringing a game up to
+     * this system rewrites its emu config and swaps its steam_api DLL — a game set up beforehand
+     * could otherwise lose access to its existing save data.
+     */
+    val localSteamTrackingEnabledFlow: Flow<Boolean> =
+        context.pfpDataStore.data.map { it[KEY_LOCAL_STEAM_ENABLED] ?: false }
 
     val lastSyncedAtFlow: Flow<Long?> =
         context.pfpDataStore.data.map { it[KEY_SYNC_LAST] }
@@ -83,6 +93,13 @@ class AchievementCredentialsProvider @Inject constructor(
         context.pfpDataStore.edit { it[KEY_ENABLED] = enabled }
     }
 
+    suspend fun localSteamTrackingEnabled(): Boolean =
+        context.pfpDataStore.data.first()[KEY_LOCAL_STEAM_ENABLED] ?: false
+
+    suspend fun setLocalSteamTrackingEnabled(enabled: Boolean) {
+        context.pfpDataStore.edit { it[KEY_LOCAL_STEAM_ENABLED] = enabled }
+    }
+
     suspend fun setLastSyncedAt(epochMillis: Long) {
         context.pfpDataStore.edit { it[KEY_SYNC_LAST] = epochMillis }
     }
@@ -111,6 +128,7 @@ class AchievementCredentialsProvider @Inject constructor(
             it.remove(KEY_STEAM_ID64)
             it.remove(KEY_STEAM_API_KEY)
             it.remove(KEY_ENABLED)
+            it.remove(KEY_LOCAL_STEAM_ENABLED)
             it.remove(KEY_SYNC_LAST)
         }
     }

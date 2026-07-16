@@ -2,6 +2,7 @@ package com.playfieldportal.feature.achievements.provider.localsteam
 
 import android.content.Context
 import android.net.Uri
+import com.playfieldportal.core.data.achievement.AchievementCredentialsProvider
 import com.playfieldportal.core.data.repository.WindowsLibrarySetup
 import com.playfieldportal.core.data.saf.SafChild
 import com.playfieldportal.core.data.saf.isIgnoredDir
@@ -54,6 +55,7 @@ data class LocalSteamGame(
 class LocalSteamDiscovery @Inject constructor(
     @ApplicationContext private val context: Context,
     private val windowsLibrary: WindowsLibrarySetup,
+    private val credentials: AchievementCredentialsProvider,
 ) {
     // A full scan is a deep SAF tree walk (one IPC query per directory), so per-game lookups
     // during a batch pass must not each pay for one. scan() stays always-fresh and primes the
@@ -65,8 +67,15 @@ class LocalSteamDiscovery @Inject constructor(
     /** Every trackable emu game folder under the windows scan surfaces (the sync/link surface). */
     suspend fun scan(): List<LocalSteamGame> = scanAll().filter { it.trackable }
 
-    /** Every emu-marked game folder including untrackable ones awaiting schema generation. */
-    suspend fun scanAll(): List<LocalSteamGame> = scanMutex.withLock { freshScan() }
+    /**
+     * Every emu-marked game folder including untrackable ones awaiting schema generation. Empty
+     * when the user hasn't opted into Local Steam tracking — the single gate that keeps discovery,
+     * generation, the DLL swap, and syncing off until the save-backup warning has been accepted.
+     */
+    suspend fun scanAll(): List<LocalSteamGame> {
+        if (!credentials.localSteamTrackingEnabled()) return emptyList()
+        return scanMutex.withLock { freshScan() }
+    }
 
     /**
      * The game folder whose `steam_appid.txt` matches [appId], or null. Served from a scan at most
@@ -74,11 +83,14 @@ class LocalSteamDiscovery @Inject constructor(
      * resolves against that result instead of re-walking the tree. A folder moved mid-window is
      * seen one pass late — the same self-correction a mid-scan move already relies on.
      */
-    suspend fun findByAppId(appId: String): LocalSteamGame? = scanMutex.withLock {
-        val fresh = System.currentTimeMillis() - cachedAt <= SCAN_CACHE_MS
-        // Deliberately matches untrackable games too: a sync requested right after generation
-        // (inside the cache window) should read the fresh kit, not fail on the stale gate flag.
-        (if (fresh) cachedGames else freshScan()).firstOrNull { it.appId == appId }
+    suspend fun findByAppId(appId: String): LocalSteamGame? {
+        if (!credentials.localSteamTrackingEnabled()) return null
+        return scanMutex.withLock {
+            val fresh = System.currentTimeMillis() - cachedAt <= SCAN_CACHE_MS
+            // Deliberately matches untrackable games too: a sync requested right after generation
+            // (inside the cache window) should read the fresh kit, not fail on the stale gate flag.
+            (if (fresh) cachedGames else freshScan()).firstOrNull { it.appId == appId }
+        }
     }
 
     private suspend fun freshScan(): List<LocalSteamGame> = withContext(Dispatchers.IO) {

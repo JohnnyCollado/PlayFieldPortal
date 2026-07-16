@@ -492,6 +492,15 @@ files. Tracking is display-only: PFP reads what the game already wrote, joins it
 schema, and shows the result in Shiba Coins — run *Sync All Coins* from the Player Card to load
 every tracked game.
 
+> **Warning Note — back up your save files first.** This is opt-in behind
+> *Settings ▸ Shiba Coins ▸ Track Local Steam Games (Emulated)*, and enabling it shows the
+> same reminder. Turning it on lets a sync bring each emulator game up to the current setup:
+> it rewrites the game's `steam_settings` config and replaces its `steam_api` DLL so unlocks
+> can be recorded. A game you set up and played *before* this feature could lose access to its
+> existing save data once the emulator starts reading from the new save location. Open your
+> Windows emulator, back up the save files for those games, and only then enable the toggle and
+> run *Sync All*.
+
 For a game folder to be tracked it must live under your windows library and carry the Steam-emu
 config; achievement progress is read from the emu's own save redirect, or from a `saves` folder
 you keep in the game directory:
@@ -530,9 +539,14 @@ Notes:
   `saves/` folder). Before any unlocks it tracks at 0%; a game with `steam_settings` but no
   save location at all stays untracked.
 - Reading the schema needs your Steam Web API key (*Settings ▸ Shiba Coins*).
+- Tracking is off until you enable *Track Local Steam Games (Emulated)* (see the Warning Note
+  above); with it off, no discovery, generation, DLL swap, or syncing runs.
 - A game folder with `steam_settings` but no `achievements.json` can't record unlocks —
-  the emulator needs that schema file. When a PC scan finds one missing, PFP offers to
-  generate it from the Steam Web API (per game: No / Yes / Yes to All for that scan).
+  the emulator needs that schema file. When a PC scan finds one missing, PFP offers to bring
+  the game up to the current emulator setup (per game: No / Yes / Yes to All for that scan):
+  it writes the schema and stat files from the Steam Web API, sets the save redirect, and
+  installs the bundled emulator over the game's original `steam_api` DLL (backed up alongside
+  it). This is the step the Warning Note's backup protects against.
 
 ### 4.17 Settings reference
 
