@@ -31,6 +31,7 @@ class ShortcutConfirmReceiver : BroadcastReceiver() {
     interface Deps {
         fun gameRepository(): GameRepository
         fun collectionRepository(): CollectionRepository
+        fun pcShortcutImporter(): com.playfieldportal.feature.launcher.PcShortcutImporter
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -50,9 +51,23 @@ class ShortcutConfirmReceiver : BroadcastReceiver() {
         val gameRepository = deps.gameRepository()
         val collectionRepository = deps.collectionRepository()
 
+        val importer = deps.pcShortcutImporter()
+
         val pending = goAsync()
         scope.launch {
             try {
+                // A confirmed shortcut from a verified PC launcher is a Windows game
+                // (docs/windows-library-refactor-plan.md section 3); anything else keeps the
+                // app-style collection entry.
+                if (importer.isPcLauncher(hostPackage)) {
+                    val result = importer.importLegacyShortcut(hostPackage!!, name, intentUri)
+                    if (result.needsSetup) {
+                        com.playfieldportal.launcher.pin.WindowsSetupNotifications.post(context, name)
+                    }
+                    Timber.i("User confirmed PC shortcut \"$name\" → Windows Games")
+                    return@launch
+                }
+
                 val gameId = gameRepository.getByIntentUri(intentUri)?.id
                     ?: gameRepository.upsert(
                         Game(

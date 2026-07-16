@@ -3,13 +3,21 @@ package com.playfieldportal.core.data.repository
 import android.content.Context
 import android.net.Uri
 import android.provider.DocumentsContract
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.data.saf.querySafChildren
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
+
+// One-shot "finish setting up your Windows Library" prompt, raised when a PC shortcut arrives
+// before setup is complete and consumed by the next XMB open.
+private val KEY_SETUP_PROMPT_PENDING = booleanPreferencesKey("windows_library_setup_prompt")
 
 /** Outcome of [WindowsLibrarySetup.ensure]. */
 sealed interface WindowsSetupState {
@@ -123,6 +131,20 @@ class WindowsLibrarySetup @Inject constructor(
         if (ops.createChildDir(treeUri, windowsDocId, IMPORT_FOLDER) == null) {
             Timber.w("Could not create the windows/$IMPORT_FOLDER drop-folder (read-only grant?)")
         }
+    }
+
+    // ── Missing-setup prompt flag ─────────────────────────────────────────────
+
+    /** Raises the one-shot setup prompt (pin workflow, plan section 3). */
+    suspend fun flagSetupPrompt() {
+        context.pfpDataStore.edit { it[KEY_SETUP_PROMPT_PENDING] = true }
+    }
+
+    /** True exactly once per raise: reads and clears the pending prompt flag. */
+    suspend fun consumeSetupPrompt(): Boolean {
+        val pending = context.pfpDataStore.data.first()[KEY_SETUP_PROMPT_PENDING] == true
+        if (pending) context.pfpDataStore.edit { it.remove(KEY_SETUP_PROMPT_PENDING) }
+        return pending
     }
 
     private inner class SafFolderOps : FolderOps {

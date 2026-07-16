@@ -207,20 +207,27 @@ commits. No phase starts before the user lifts the coding gate.
       explicit-pick override, extension clearing, surface listing.
 - Sec: folder creation only inside the SAF-granted ROM root.
 
-### Phase 3 — Pin workflow (shortcut routing)
-- [ ] Shared `PcShortcutImporter`: one entry shape `(packageName, shortcutId)` for both pin
-      and legacy paths; GameNative ids parsed (`game_<appid>`) for an instant STEAM appid;
-      title normalization on the label.
-- [ ] `PinShortcutActivity`: verified PC-launcher hosts (Phase 1 gate) route to the Windows
-      card; entity written immediately (never lost); non-PC hosts keep collection behavior.
-      Fix the detached-scope write-after-finish risk while in there.
-- [ ] Legacy `INSTALL_SHORTCUT` confirm flow routes confirmed PC-launcher shortcuts to the
-      Windows card (keeps the user-confirmation notification — unauthenticated broadcast).
-- [ ] Missing-setup prompt: notification at pin time + one-time dialog on next XMB open
-      (section 3 workflow); setup deep-links into the card's directory assignment.
-- [ ] Tests: routing per host fixture; entity-first behavior with no card; prompt state
-      machine (fires once, clears on setup).
-- Sec: pin acceptance unchanged; no shortcut intent is ever parsed (OS strips it anyway).
+### Phase 3 — Pin workflow (shortcut routing)  (CODE DONE 2026-07-16)
+- [x] Shared `PcShortcutImporter` (feature-launcher): the one funnel behind pins, legacy
+      captures, and harvests. Entity-first writes; three-shape dedupe (launch handle, then
+      normalized title within the card — a shortcut MERGES into its folder-imported game,
+      attaching its launch handle); GameNative `game_<appid>` ids and explicit
+      `steamAppId`/`app_id` intent extras link STEAM instantly through the
+      `PcGameAchievementLinker` seam (bound by feature-achievements); GameHub `localGameId`
+      internal ids are never trusted as appids.
+- [x] `PinShortcutActivity`: verified hosts route to the Windows card; the store runs
+      synchronously (bounded) before `finish()` so the write cannot be lost to process death;
+      non-PC hosts keep the collection behavior.
+- [x] Legacy `INSTALL_SHORTCUT`: confirm-notification flow unchanged (unauthenticated
+      broadcast); on confirmation a verified PC-launcher shortcut routes to the Windows card.
+- [x] Missing-setup prompt: entity saved regardless; `WindowsSetupNotifications` fires at pin
+      time, and a one-time XMB dialog (DataStore-flagged, consumed on next open; A = Library
+      Manager, B = later) backs it up. The XMB harvest path (`importGameShortcuts`) also
+      drops its label heuristic for the shared gate + importer.
+- [x] Tests (7 new, all green): GameNative pin + appid link; dedupe by handle; title merge
+      with handle attachment; setup-flag on missing library; legacy steamAppId link;
+      localGameId never linked; intent-uri dedupe.
+- Sec: pin acceptance unchanged; only PFP-built or user-confirmed intents are parsed.
 
 ### Phase 4 — Import PC Games menu rework
 - [ ] Move the `IMPORT_PC` step under the Windows card menu; drop the Auto-Import action and

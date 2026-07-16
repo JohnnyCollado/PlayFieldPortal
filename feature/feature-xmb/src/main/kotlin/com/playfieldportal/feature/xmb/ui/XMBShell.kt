@@ -226,6 +226,8 @@ fun XMBShellContainer(
         onGamePickerDismiss = viewModel::closeGamePicker,
         onGamePickerActionConsumed = viewModel::consumeGamePickerAction,
         onDismissInfoDialog = viewModel::dismissInfoDialog,
+        onWindowsSetupConfirm = viewModel::confirmWindowsSetupPrompt,
+        onWindowsSetupDismiss = viewModel::dismissWindowsSetupPrompt,
         onMusicPlayPause = viewModel::musicPlayPause,
         onMusicPrev = viewModel::musicPrev,
         onMusicNext = viewModel::musicNext,
@@ -316,6 +318,8 @@ fun XMBShell(
     onGamePickerDismiss: () -> Unit = {},
     onGamePickerActionConsumed: () -> Unit = {},
     onDismissInfoDialog: () -> Unit = {},
+    onWindowsSetupConfirm: () -> Unit = {},
+    onWindowsSetupDismiss: () -> Unit = {},
 ) {
     PFPTheme(colors = uiState.themeColors) {
       // The applied theme's custom icon slots ride alongside the palette: every themeable
@@ -762,6 +766,24 @@ fun XMBShell(
                     title = dialog.title,
                     message = dialog.message,
                     onDismiss = onDismissInfoDialog,
+                )
+            }
+
+            // One-time follow-up to the pin workflow: a PC game was saved before the Windows
+            // Library had a directory; offer to finish setup now (A) or later (B).
+            if (uiState.showWindowsSetupPrompt) {
+                AlertDialog(
+                    onDismissRequest = onWindowsSetupDismiss,
+                    title = { Text("Finish your Windows Library") },
+                    text = {
+                        Text(
+                            "A PC game was added, but the Windows Games library has no folder " +
+                                "yet. Set it up in Library Manager so game folders and " +
+                                "achievements can be scanned.",
+                        )
+                    },
+                    confirmButton = { TextButton(onClick = onWindowsSetupConfirm) { Text("Set Up") } },
+                    dismissButton = { TextButton(onClick = onWindowsSetupDismiss) { Text("Later") } },
                 )
             }
 

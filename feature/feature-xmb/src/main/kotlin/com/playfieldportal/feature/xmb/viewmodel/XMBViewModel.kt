@@ -511,6 +511,11 @@ data class XMBUiState(
     // ── Simple read-only info dialog (e.g. file location) ──────────────────
     val infoDialog: InfoDialogState? = null,
 
+    // ── One-time "finish setting up your Windows Library" prompt ───────────
+    // Raised by the pin workflow when a PC shortcut arrived before setup was complete
+    // (docs/windows-library-refactor-plan.md section 3); consumed on first XMB open.
+    val showWindowsSetupPrompt: Boolean = false,
+
     // ── Installed-app picker (Android Library / Video / Music) ─────────────
     val appPicker: AppPickerState? = null,
 
@@ -588,7 +593,8 @@ data class XMBUiState(
             musicTrackPicker != null ||
             musicBrowser != null ||
             musicPlayerVisible ||
-            infoDialog != null
+            infoDialog != null ||
+            showWindowsSetupPrompt
 }
 
 enum class XMBItemType {
@@ -819,6 +825,8 @@ class XMBViewModel @Inject constructor(
     private val gameLaunchPreferences: com.playfieldportal.core.data.repository.GameLaunchPreferences,
     private val achievementRepository: com.playfieldportal.feature.achievements.AchievementController,
     private val achievementCredentials: com.playfieldportal.core.data.achievement.AchievementCredentialsProvider,
+    private val windowsLibrarySetup: com.playfieldportal.core.data.repository.WindowsLibrarySetup,
+    private val pcShortcutImporter: com.playfieldportal.feature.launcher.PcShortcutImporter,
 ) : ViewModel() {
 
     // The track list currently on screen (in display/sort order), used as the in-app player's queue
@@ -875,7 +883,25 @@ class XMBViewModel @Inject constructor(
         observeHiddenPlacements()
         observeEmulatorProfiles()
         collectGamepadActions()
+        consumeWindowsSetupPrompt()
     }
+
+    // One-shot: a PC shortcut arrived while the Windows Library was unconfigured, so the pin flow
+    // flagged a follow-up prompt. Consuming clears the flag — the dialog fires once, never nags.
+    private fun consumeWindowsSetupPrompt() {
+        viewModelScope.launch {
+            if (runCatching { windowsLibrarySetup.consumeSetupPrompt() }.getOrDefault(false)) {
+                _uiState.update { it.copy(showWindowsSetupPrompt = true) }
+            }
+        }
+    }
+
+    /** "Set Up" on the Windows setup prompt: straight into Library Manager. */
+    fun confirmWindowsSetupPrompt() = _uiState.update {
+        it.copy(showWindowsSetupPrompt = false, activeSettingsScreen = "settings_library")
+    }
+
+    fun dismissWindowsSetupPrompt() = _uiState.update { it.copy(showWindowsSetupPrompt = false) }
 
     // Keeps the emulator package → name map current so game subtitles can show "Platform (Emulator)".
     // Reloads the on-screen items once names arrive so already-listed games pick up their emulator.
@@ -3771,6 +3797,15 @@ class XMBViewModel @Inject constructor(
             if (action == GamepadAction.BACK || action == GamepadAction.SELECT) dismissInfoDialog()
             return
         }
+        // Windows Library setup prompt — A sets up (Library Manager), B defers.
+        if (state.showWindowsSetupPrompt) {
+            when (action) {
+                GamepadAction.SELECT -> confirmWindowsSetupPrompt()
+                GamepadAction.BACK   -> dismissWindowsSetupPrompt()
+                else                 -> Unit
+            }
+            return
+        }
 
         // ── Fullscreen music browser captures input. Below the context-menu / player / dialog
         //    branches above, so a menu (Y) or the player opened from it wins. ─────────────────
@@ -6264,12 +6299,9 @@ class XMBViewModel @Inject constructor(
                         taskNotifier.complete(taskId, hostLabel, "No game shortcuts published by this app.")
                         return@launch
                     }
-                    val isPcLauncher =
-                        com.playfieldportal.feature.launcher.PcLauncherCatalog.forPackage(hostPackage) != null &&
-                            (!com.playfieldportal.feature.launcher.PcLauncherCatalog.isGameHubFamilyPackage(hostPackage) ||
-                                hostLabel.contains("gamehub", ignoreCase = true) ||
-                                hostLabel.contains("game hub", ignoreCase = true) ||
-                                hostLabel.contains("banner", ignoreCase = true))
+                    // The single routing gate every shortcut funnel shares: catalog package +
+                    // component fingerprint (no label heuristics).
+                    val isPcLauncher = pcShortcutImporter.isPcLauncher(hostPackage)
                     runCatching {
                         if (isPcLauncher) importPcShortcuts(shortcuts)
                         else importAppShortcuts(hostLabel, shortcuts)
@@ -6288,38 +6320,12 @@ class XMBViewModel @Inject constructor(
         }
     }
 
-    // PC-launcher shortcuts become Windows Games card entries (real games). Dedupe by shortcut id
-    // first, then by normalized title within the card (the same game may exist via an intent-URI
-    // import from the folder scan).
+    // PC-launcher shortcuts become Windows Games card entries (real games) through the shared
+    // importer — same dedupe/merge/appid-link rules as the pin path, card setup included.
     private suspend fun importPcShortcuts(shortcuts: List<com.playfieldportal.feature.appbar.HarvestedShortcut>) {
-        fun normalize(t: String) = t.lowercase().filter { it.isLetterOrDigit() }
-        val existing = gameRepository.getByPlatform(WINDOWS_PLATFORM_ID)
         for (sc in shortcuts) {
-            val dupe = gameRepository.getLauncherShortcut(sc.hostPackage, sc.shortcutId) != null ||
-                existing.any { it.packageName == sc.hostPackage && normalize(it.displayTitle) == normalize(sc.label) }
-            if (dupe) continue
-            gameRepository.upsert(
-                Game(
-                    title         = sc.label,
-                    platformId    = WINDOWS_PLATFORM_ID,
-                    packageName   = sc.hostPackage,
-                    isManualEntry = true,
-                    contentType   = GameContentType.GAME,
-                    shortcutId    = sc.shortcutId,
-                )
-            )
+            pcShortcutImporter.importPinnedShortcut(sc.hostPackage, sc.shortcutId, sc.label)
         }
-        if (memoryCardRepository.getById(WINDOWS_PLATFORM_ID) == null) {
-            memoryCardRepository.addCard(
-                platformId   = WINDOWS_PLATFORM_ID,
-                displayName  = "Windows Games",
-                romDirectory = null,
-                emulatorId   = null,
-                extensions   = emptyList(),
-                scanRecursively = false,
-            )
-        }
-        memoryCardRepository.recountGames(WINDOWS_PLATFORM_ID)
     }
 
     // Non-PC hosts (Chrome web apps, Lime3DS, …): app-style entries grouped into a collection

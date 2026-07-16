@@ -55,6 +55,7 @@ dependencies {
     implementation(project(":core:core-domain"))
     implementation(project(":core:core-data"))
     implementation(project(":feature:feature-artwork")) // SteamGridDB client for Steam-id resolution
+    implementation(project(":feature:feature-launcher")) // PcGameAchievementLinker seam (shortcut imports)
 
     testImplementation(libs.bundles.test.unit)
 }
