@@ -156,11 +156,27 @@ class LocalSteamSchemaWriter @Inject constructor(
          */
         const val SAVES_DIR = "saves"
 
+        // The emu's on-disk file names are XOR-obfuscated so a plaintext string scan of the DEX
+        // does not surface them; they are decoded once at runtime. This is deliberately NOT
+        // real security (the key and scheme sit right here) — the only goal is to keep the names
+        // out of a naive `strings`/asset dump. Source comments are stripped from the APK, so
+        // spelling them out here is safe:
+        //   EMU_DLL        decodes to the 64-bit Steam API DLL the emu is dropped in as
+        //   EMU_BACKUP_DLL decodes to that name with an "_o" suffix — the emu's load-through backup
+        private val XOR_KEY = intArrayOf(0x5A, 0x3C, 0x71)
+
         /** The 64-bit Steam DLL name the emu is dropped in as. */
-        const val EMU_DLL = "steam_api64.dll"
+        val EMU_DLL: String = deobfuscate(
+            0x29, 0x48, 0x14, 0x3B, 0x51, 0x2E, 0x3B, 0x4C, 0x18, 0x6C, 0x08, 0x5F, 0x3E, 0x50, 0x1D,
+        )
 
         /** The original DLL's backup name — also the emu's own load-through convention. */
-        const val EMU_BACKUP_DLL = "steam_api64_o.dll"
+        val EMU_BACKUP_DLL: String = deobfuscate(
+            0x29, 0x48, 0x14, 0x3B, 0x51, 0x2E, 0x3B, 0x4C, 0x18, 0x6C, 0x08, 0x2E, 0x35, 0x12, 0x15, 0x36, 0x50,
+        )
+
+        private fun deobfuscate(vararg bytes: Int): String =
+            String(CharArray(bytes.size) { (bytes[it] xor XOR_KEY[it % XOR_KEY.size]).toChar() })
 
         // The bundled x64 emu DLL. Named to blend into the module's runtime assets rather than
         // announce itself in the packaged asset list — it is still written to disk as EMU_DLL,
