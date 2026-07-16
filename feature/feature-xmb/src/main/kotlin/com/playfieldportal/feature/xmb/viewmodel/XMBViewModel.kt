@@ -3620,10 +3620,13 @@ class XMBViewModel @Inject constructor(
         )
         // While nothing is tracked yet there is no All Tracked row to carry the sync progress,
         // so the Player Card itself shows it (its menu is where that first sync starts).
+        // Coins read as earned/available COUNTS (user decision 2026-07-16); the weighted value
+        // stays the level economy behind the Lv badge.
         val summarySubtitle = if (standing.gamesTracked == 0 && syncAll != null) {
             "Syncing coins…  ${syncAll.first} / ${syncAll.second}"
         } else {
-            "${"%,d".format(w.totalCoins)} coins  •  ${standing.gamesTracked} tracked  •  ${standing.gamesMastered} mastered"
+            "${"%,d".format(standing.coinsEarned)} / ${"%,d".format(standing.coinsAvailable)} coins  •  " +
+                "${standing.gamesTracked} tracked  •  ${standing.gamesMastered} mastered"
         }
         return listOf(
             XMBItem(
