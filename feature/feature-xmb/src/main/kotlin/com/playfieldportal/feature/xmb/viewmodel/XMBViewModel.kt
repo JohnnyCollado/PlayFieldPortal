@@ -828,7 +828,21 @@ class XMBViewModel @Inject constructor(
     private val windowsLibrarySetup: com.playfieldportal.core.data.repository.WindowsLibrarySetup,
     private val pcShortcutImporter: com.playfieldportal.feature.launcher.PcShortcutImporter,
     private val pcGameScanner: com.playfieldportal.feature.settings.pc.PcGameScanner,
+    private val localSteamSchemaGenerator: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSchemaGenerator,
 ) : ViewModel() {
+
+    // Drives the per-game "generate the missing achievement schema?" prompt after a Windows-card
+    // scan; the same controller and dialog serve the Library Manager (see LibraryManagerViewModel).
+    private val schemaPrompts =
+        com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSchemaPromptController(
+            localSteamSchemaGenerator, viewModelScope,
+        )
+    val schemaPrompt: StateFlow<com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSchemaPromptController.Prompt?> =
+        schemaPrompts.prompt
+
+    fun onSchemaPromptNo() = schemaPrompts.no()
+    fun onSchemaPromptYes() = schemaPrompts.yes()
+    fun onSchemaPromptYesToAll() = schemaPrompts.yesToAll()
 
     // The track list currently on screen (in display/sort order), used as the in-app player's queue
     // when a song is picked. [currentMusicTracksRaw] is the same set in DB order, kept so a sort
@@ -5044,6 +5058,20 @@ class XMBViewModel @Inject constructor(
                         taskId,
                         if (report.newGames == 0) "No new PC games found" else report.message,
                     )
+                    // Offer to fill in any emu folder missing its achievement schema; each write is
+                    // gated per game by the shared prompt (No / Yes / Yes to All for this scan).
+                    schemaPrompts.start(report.emu.missingSchema) { outcome ->
+                        if (outcome.generated > 0 || outcome.failed > 0) {
+                            val id = "schema_gen_$platformId"
+                            addBackgroundTask(BackgroundTaskInfo(id = id, label = "Achievement schemas", progress = null))
+                            completeBackgroundTask(
+                                id,
+                                "Generated ${outcome.generated} schema(s)" +
+                                    (if (outcome.failed > 0) ", ${outcome.failed} failed (check the Steam key)" else "") +
+                                    ". Play each game to start earning coins.",
+                            )
+                        }
+                    }
                 }
                 return@launch
             }

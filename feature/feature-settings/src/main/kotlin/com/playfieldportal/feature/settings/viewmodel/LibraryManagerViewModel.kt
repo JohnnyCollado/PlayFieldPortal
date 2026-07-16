@@ -139,9 +139,23 @@ class LibraryManagerViewModel @Inject constructor(
     private val windowsLibrarySetup: com.playfieldportal.core.data.repository.WindowsLibrarySetup,
     private val pcShortcutImporter: com.playfieldportal.feature.launcher.PcShortcutImporter,
     private val pcGameScanner: com.playfieldportal.feature.settings.pc.PcGameScanner,
+    private val localSteamSchemaGenerator: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSchemaGenerator,
 ) : ViewModel() {
 
     private val _scratch = MutableStateFlow(LibraryManagerUiState())
+
+    // Drives the per-game "generate the missing achievement schema?" prompt after a PC scan; the
+    // same controller and dialog serve the XMB Windows card (see XMBViewModel).
+    private val schemaPrompts =
+        com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSchemaPromptController(
+            localSteamSchemaGenerator, viewModelScope,
+        )
+    val schemaPrompt: StateFlow<com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSchemaPromptController.Prompt?> =
+        schemaPrompts.prompt
+
+    fun onSchemaPromptNo() = schemaPrompts.no()
+    fun onSchemaPromptYes() = schemaPrompts.yes()
+    fun onSchemaPromptYesToAll() = schemaPrompts.yesToAll()
 
     init { refreshRomRoots() }
 
@@ -646,7 +660,25 @@ class LibraryManagerViewModel @Inject constructor(
             }
             if (report.newGames > 0) ensureWindowsCard()
             _scratch.update { it.copy(message = report.message) }
+
+            // Offer to fill in any emu folder that has steam_settings but no achievements schema;
+            // each write is gated per game by the prompt (No / Yes / Yes to All for this scan).
+            schemaPrompts.start(report.emu.missingSchema) { outcome ->
+                if (outcome.generated > 0 || outcome.failed > 0) {
+                    _scratch.update {
+                        it.copy(message = schemaOutcomeMessage(outcome))
+                    }
+                }
+            }
         }
+    }
+
+    private fun schemaOutcomeMessage(
+        outcome: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSchemaPromptController.Outcome,
+    ): String = buildString {
+        append("Generated ${outcome.generated} achievement schema(s)")
+        if (outcome.failed > 0) append(", ${outcome.failed} failed (check the Steam key)")
+        append(". Play each game through the emulator to start earning coins.")
     }
 
     // ── Windows Games card helpers ────────────────────────────────────────────

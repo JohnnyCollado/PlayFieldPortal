@@ -83,6 +83,20 @@ fun LibraryManagerScreen(
         LibraryStep.IMPORT_PC     -> ImportPcGamesContent(state, viewModel, handleBack, modifier)
     }
 
+    // ── Missing achievement-schema prompt (after a PC scan) ───────────────────
+    val schemaPrompt by viewModel.schemaPrompt.collectAsState()
+    schemaPrompt?.let { prompt ->
+        com.playfieldportal.core.ui.achievement.LocalSteamSchemaPromptDialog(
+            folderName = prompt.folderName,
+            appId = prompt.appId,
+            index = prompt.index,
+            total = prompt.total,
+            onNo = { viewModel.onSchemaPromptNo() },
+            onYes = { viewModel.onSchemaPromptYes() },
+            onYesToAll = { viewModel.onSchemaPromptYesToAll() },
+        )
+    }
+
     // ── Rename dialog ─────────────────────────────────────────────────────────
     state.renameTargetPlatformId?.let { targetId ->
         val current = state.cards.firstOrNull { it.platformId == targetId }?.displayName ?: ""

@@ -236,6 +236,23 @@ fun XMBShellContainer(
         onOpenAndroidLibraryPicker = viewModel::openAndroidLibraryPicker,
     )
 
+    // Per-game prompt to generate a missing emu achievement schema after a Windows-card scan.
+    // Same dialog + controller the Library Manager uses.
+    val schemaPrompt by viewModel.schemaPrompt.collectAsStateWithLifecycle(
+        lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current,
+    )
+    schemaPrompt?.let { prompt ->
+        com.playfieldportal.core.ui.achievement.LocalSteamSchemaPromptDialog(
+            folderName = prompt.folderName,
+            appId = prompt.appId,
+            index = prompt.index,
+            total = prompt.total,
+            onNo = viewModel::onSchemaPromptNo,
+            onYes = viewModel::onSchemaPromptYes,
+            onYesToAll = viewModel::onSchemaPromptYesToAll,
+        )
+    }
+
     }  // scale CompositionLocalProvider
 }
 
