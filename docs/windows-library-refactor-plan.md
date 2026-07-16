@@ -189,14 +189,22 @@ commits. No phase starts before the user lifts the coding gate.
       Robolectric; id validation; GameNative shape; no-contract launchers.
 - Sec: no new permissions (QUERY_ALL_PACKAGES already held for the launcher role).
 
-### Phase 2 — Windows card + directories
-- [ ] Windows card detail screen gets its own branch: no Emulator row, no Supported Files
-      section, "Import PC Games" entry added, Games count + shared card actions kept.
-- [ ] Default directory: on card creation (or first open without one), auto-create and assign
-      `<ROM Root>/windows` when a ROM root exists; create `<ROM Root>/windows/import/`
-      alongside (section 2). Extension-free scanning for the windows platform.
-- [ ] Tests: card-branch UI state; directory auto-create/assign against a fake ROM root;
-      import-folder creation idempotence.
+### Phase 2 — Windows card + directories  (CODE DONE 2026-07-16)
+- [x] Windows card detail screen gets its own branch: Games Directory + count, "Import PC
+      Games" (returns to the card on back) and "Scan For PC Games" actions; no Emulator row,
+      no Supported Files section; shared card actions kept.
+- [x] `WindowsLibrarySetup` (core-data): one place that creates the card, finds or creates
+      `<ROM Root>/windows` (+ `import/` drop-folder), assigns the directory, and clears stray
+      extensions. The card stays ROOT-MANAGED (`treeUri` null, scanning walks the roots'
+      windows subfolders via `windowsFolders()` surfaces); an explicitly picked folder always
+      wins. Runs on card-detail open and after every PC scan (self-healing). New ROM roots now
+      persist WRITABLE so creation works; old read-only roots degrade to find-only with an
+      honest `FolderUnavailable` state.
+- [x] `LocalSteamDiscovery` reworked onto the same surfaces — fixing the live bug where the
+      card's empty `treeUri` left discovery permanently dead — and skips the `import/`
+      drop-folder.
+- [x] Tests (8, all green): find-vs-create across roots, read-only degradation, idempotence,
+      explicit-pick override, extension clearing, surface listing.
 - Sec: folder creation only inside the SAF-granted ROM root.
 
 ### Phase 3 — Pin workflow (shortcut routing)

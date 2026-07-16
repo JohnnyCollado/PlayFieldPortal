@@ -2,8 +2,7 @@ package com.playfieldportal.feature.achievements.provider.localsteam
 
 import android.content.Context
 import android.net.Uri
-import android.provider.DocumentsContract
-import com.playfieldportal.core.data.repository.MemoryCardRepository
+import com.playfieldportal.core.data.repository.WindowsLibrarySetup
 import com.playfieldportal.core.data.saf.SafChild
 import com.playfieldportal.core.data.saf.isIgnoredDir
 import com.playfieldportal.core.data.saf.querySafChildren
@@ -24,29 +23,35 @@ data class LocalSteamGame(
 )
 
 /**
- * Finds Steam-emu game installs under the windows memory card's folder (the one SAF grant this
- * feature uses — docs/local-steam-achievements-plan.md Phase 0). A game folder qualifies when it
- * carries a `steam_settings/steam_appid.txt`; its progress file is then resolved by following the
- * emu's own rules: the `local_save_path` redirect from `configs.user.ini`, relative to the folder
- * holding `steam_settings` (which sits beside the steam_api DLL), down to
- * `<redirect>/<appid>/achievements.json`.
+ * Finds Steam-emu game installs under the windows library's scan surfaces — the card's own picked
+ * folder when set, else every ROM root's `windows` subfolder (docs/windows-library-refactor-plan.md
+ * section 2). A game folder qualifies when it carries a `steam_settings/steam_appid.txt`; its
+ * progress file is then resolved by following the emu's own rules: the `local_save_path` redirect
+ * from `configs.user.ini`, relative to the folder holding `steam_settings` (which sits beside the
+ * steam_api DLL), down to `<redirect>/<appid>/achievements.json`.
  *
  * Read-only and grant-scoped by construction: every uri comes from tree-scoped child queries, so
- * discovery can never look outside the folder the user picked.
+ * discovery can never look outside the folders the user granted.
  */
 @Singleton
 class LocalSteamDiscovery @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val memoryCards: MemoryCardRepository,
+    private val windowsLibrary: WindowsLibrarySetup,
 ) {
-    /** Every emu-marked game folder under the windows card's root; empty when no folder is set. */
+    /** Every emu-marked game folder under the windows scan surfaces; empty when none is set up. */
     suspend fun scan(): List<LocalSteamGame> = withContext(Dispatchers.IO) {
-        val tree = windowsTree() ?: return@withContext emptyList()
-        val rootDocId = runCatching { DocumentsContract.getTreeDocumentId(tree) }.getOrNull()
-            ?: return@withContext emptyList()
-        context.contentResolver.querySafChildren(tree, rootDocId)
-            .filter { it.isDirectory && !it.isIgnoredDir() }
-            .mapNotNull { inspect(tree, it) }
+        windowsLibrary.windowsFolders()
+            .mapNotNull { (treeUri, startDocId) ->
+                runCatching { Uri.parse(treeUri) }.getOrNull()?.let { it to startDocId }
+            }
+            .flatMap { (tree, startDocId) ->
+                context.contentResolver.querySafChildren(tree, startDocId)
+                    .filter { child ->
+                        child.isDirectory && !child.isIgnoredDir() &&
+                            !child.name.equals(WindowsLibrarySetup.IMPORT_FOLDER, ignoreCase = true)
+                    }
+                    .mapNotNull { inspect(tree, it) }
+            }
             .also { Timber.i("LOCAL_STEAM discovery — ${it.size} emu game folder(s)") }
     }
 
@@ -124,12 +129,7 @@ class LocalSteamDiscovery @Inject constructor(
         }.getOrNull()
     }
 
-    private suspend fun windowsTree(): Uri? =
-        memoryCards.getById(WINDOWS_PLATFORM_ID)?.treeUri
-            ?.let { runCatching { Uri.parse(it) }.getOrNull() }
-
     private companion object {
-        const val WINDOWS_PLATFORM_ID = "windows"
         const val PROGRESS_FILE = "achievements.json"
         const val SETTINGS_SEARCH_DEPTH = 3
         const val SMALL_FILE_MAX_BYTES = 64

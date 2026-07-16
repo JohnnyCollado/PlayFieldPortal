@@ -287,11 +287,36 @@ private fun CardDetailContent(
     // The Android library is curated from installed apps — no ROM folder, emulator, extensions,
     // or scanning. It's managed by the app picker + a removable app list instead.
     val isAndroid = card.platformId == "android"
+    // Windows games launch through PC launcher apps (never an emulator profile) and scanning is
+    // extension-free, so the card manages only its directory and the PC import flows.
+    val isWindows = card.platformId == "windows"
 
     SettingsScaffold(title = "Library Manager", subtitle = card.displayName, onBack = onBack, modifier = modifier) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
 
-            if (isAndroid) {
+            if (isWindows) {
+                SettingsGroup("Library")
+                SettingsValueRow(
+                    label    = "Games Directory",
+                    value    = card.romDirectory?.substringAfterLast('/') ?: "Not set",
+                    sublabel = card.romDirectory
+                        ?: "Add a ROM Root — PFP creates and uses <root>/windows automatically",
+                    onClick  = { vm.requestChangeDirectory(card.platformId) },
+                )
+                SettingsValueRow(label = "Games", value = card.gameCount.toString())
+
+                SettingsGroup("Actions")
+                SettingsRow(
+                    label    = "Import PC Games",
+                    sublabel = "Exported games, Add by ID, and launcher status",
+                    onClick  = { vm.openImportPcGames() },
+                )
+                SettingsRow(
+                    label    = "Scan For PC Games",
+                    sublabel = "Reads the windows folder: game installs and exported shortcuts",
+                    onClick  = { vm.scanPcGamesFolder() },
+                )
+            } else if (isAndroid) {
                 SettingsGroup("Apps")
                 SettingsRow(
                     label    = "Add Apps",

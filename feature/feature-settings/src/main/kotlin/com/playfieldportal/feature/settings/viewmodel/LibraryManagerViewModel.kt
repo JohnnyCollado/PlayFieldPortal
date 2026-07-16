@@ -137,6 +137,7 @@ class LibraryManagerViewModel @Inject constructor(
     private val launcherShortcutRepository: LauncherShortcutRepository,
     private val scanTombstoneDao: com.playfieldportal.core.data.database.dao.ScanTombstoneDao,
     private val emuGameImporter: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamGameImporter,
+    private val windowsLibrarySetup: com.playfieldportal.core.data.repository.WindowsLibrarySetup,
 ) : ViewModel() {
 
     private val _scratch = MutableStateFlow(LibraryManagerUiState())
@@ -194,6 +195,11 @@ class LibraryManagerViewModel @Inject constructor(
     fun onBack(): Boolean {
         val step = _scratch.value.step
         if (step == LibraryStep.LIST) return false
+        // Import PC Games opened from the Windows card detail returns there, not to the list.
+        if (step == LibraryStep.IMPORT_PC && _scratch.value.detailPlatformId != null) {
+            _scratch.update { it.copy(step = LibraryStep.CARD_DETAIL) }
+            return true
+        }
         resetToList()
         return true
     }
@@ -346,6 +352,11 @@ class LibraryManagerViewModel @Inject constructor(
         _scratch.update {
             it.copy(step = LibraryStep.CARD_DETAIL, detailPlatformId = platformId, returnFocusKey = platformId)
         }
+        // Opening the Windows card self-heals its setup: assigns <ROM Root>/windows (creating it
+        // and the import/ drop-folder when the grant permits) if no directory is set yet.
+        if (platformId == WINDOWS_PLATFORM_ID) {
+            viewModelScope.launch { runCatching { windowsLibrarySetup.ensure() } }
+        }
     }
 
     fun toggleEnabled(platformId: String, enabled: Boolean) {
@@ -493,7 +504,9 @@ class LibraryManagerViewModel @Inject constructor(
 
     fun addRomRoot(uri: Uri) {
         viewModelScope.launch {
-            romRootRepository.persist(uri)
+            // Read+write: the windows library auto-creates <root>/windows and its import/
+            // drop-folder; older read-only roots degrade to find-only (WindowsLibrarySetup).
+            romRootRepository.persist(uri, writable = true)
             romRootRepository.add(uri.toString())
             refreshRomRoots()
         }
@@ -779,16 +792,8 @@ class LibraryManagerViewModel @Inject constructor(
     // directory) created on first import. Per-launcher collections are no longer created.
 
     private suspend fun ensureWindowsCard() {
-        if (memoryCardRepository.getById(WINDOWS_PLATFORM_ID) == null) {
-            memoryCardRepository.addCard(
-                platformId   = WINDOWS_PLATFORM_ID,
-                displayName  = "Windows Games",
-                romDirectory = null,
-                emulatorId   = null,
-                extensions   = emptyList(),
-                scanRecursively = false,
-            )
-        }
+        // Card + <ROM Root>/windows (+ import/) creation and directory assignment in one place.
+        windowsLibrarySetup.ensure()
         memoryCardRepository.recountGames(WINDOWS_PLATFORM_ID)
     }
 
