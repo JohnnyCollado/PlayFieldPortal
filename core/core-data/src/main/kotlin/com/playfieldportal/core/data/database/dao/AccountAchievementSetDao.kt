@@ -67,6 +67,10 @@ interface AccountAchievementSetDao {
     @Query("SELECT * FROM account_achievement_sets WHERE provider = :provider AND last_synced_at IS NULL")
     suspend fun getUnsyncedSets(provider: String): List<AccountAchievementSetEntity>
 
+    /** Every stored set, for the Sync All pass (account-only entries sync too). */
+    @Query("SELECT * FROM account_achievement_sets")
+    suspend fun getAllSets(): List<AccountAchievementSetEntity>
+
     @Query("DELETE FROM account_achievement_sets WHERE provider = :provider AND provider_game_id = :providerGameId")
     suspend fun deleteSet(provider: String, providerGameId: String)
 

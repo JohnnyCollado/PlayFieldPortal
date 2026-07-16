@@ -264,7 +264,16 @@ class AchievementRepository @Inject constructor(
             .filter { it.appId !in linkedLocalAppIds }
             .distinctBy { it.appId }
 
-        val total = links.size + trackedFolders.size
+        // Account-only entries (RA/Steam imports, earlier local syncs) have no library game but
+        // sync all the same — everything shown under All Tracked refreshes in this one pass.
+        val linkedIdentities = links.map { it.provider to it.providerGameId }.toHashSet()
+        val folderAppIds = trackedFolders.map { it.appId }.toHashSet()
+        val accountOnly = setDao.getAllSets().filter { set ->
+            (set.provider to set.providerGameId) !in linkedIdentities &&
+                !(set.provider == AchievementProvider.LOCAL_STEAM.name && set.providerGameId in folderAppIds)
+        }
+
+        val total = links.size + trackedFolders.size + accountOnly.size
         var synced = 0
         var noCoins = 0
         var failed = 0
@@ -286,6 +295,12 @@ class AchievementRepository @Inject constructor(
         trackedFolders.forEachIndexed { index, folder ->
             onProgress(links.size + index, total)
             tally(syncAccountEntry(AchievementProvider.LOCAL_STEAM, folder.appId, folder.folderName))
+        }
+        accountOnly.forEachIndexed { index, set ->
+            onProgress(links.size + trackedFolders.size + index, total)
+            val provider = AchievementProvider.fromName(set.provider)
+            if (provider == null) { failed++; return@forEachIndexed }
+            tally(syncAccountEntry(provider, set.providerGameId, set.title))
         }
         onProgress(total, total)
         return BatchSyncResult(
