@@ -884,6 +884,9 @@ class XMBViewModel @Inject constructor(
         observeEmulatorProfiles()
         collectGamepadActions()
         consumeWindowsSetupPrompt()
+        // Live pin reconcile: an emulator UPDATING an already-pinned shortcut never fires the
+        // confirm activity, so the OS callback is the only signal — import it the moment it lands.
+        pcShortcutImporter.watchPinChanges(viewModelScope)
     }
 
     // One-shot: a PC shortcut arrived while the Windows Library was unconfigured, so the pin flow
@@ -1306,7 +1309,17 @@ class XMBViewModel @Inject constructor(
                             _uiState.update { it.copy(currentItems = items) }
                         }
                     } else {
-                        _uiState.update { it.copy(currentItems = memoryCardItems()) }
+                        // The Games root re-renders live: a pin/scan can create a card or change
+                        // counts while this screen is up (previously a one-shot snapshot that went
+                        // stale until the next navigation). enabledCards/counts are refreshed by
+                        // observeCategories' collector over these same sources before this fires.
+                        combine(
+                            memoryCardRepository.observeEnabled(),
+                            gameRepository.observeAll(),
+                            collectionRepository.observeCollections(),
+                        ) { _, _, _ -> }.collect {
+                            _uiState.update { it.copy(currentItems = memoryCardItems()) }
+                        }
                     }
                 }
                 BuiltInCategory.MUSIC -> when (val nav = _uiState.value.musicNav) {

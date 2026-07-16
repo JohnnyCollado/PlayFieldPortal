@@ -137,6 +137,7 @@ class LibraryManagerViewModel @Inject constructor(
     private val scanTombstoneDao: com.playfieldportal.core.data.database.dao.ScanTombstoneDao,
     private val emuGameImporter: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamGameImporter,
     private val windowsLibrarySetup: com.playfieldportal.core.data.repository.WindowsLibrarySetup,
+    private val pcShortcutImporter: com.playfieldportal.feature.launcher.PcShortcutImporter,
 ) : ViewModel() {
 
     private val _scratch = MutableStateFlow(LibraryManagerUiState())
@@ -678,6 +679,11 @@ class LibraryManagerViewModel @Inject constructor(
                     added++
                 }
             }
+            // Sweep the OS pin records too: pins that arrived while PFP wasn't Home, or were
+            // UPDATED in place (no confirm fires), reconcile here.
+            runCatching { pcShortcutImporter.reconcilePinnedShortcuts() }
+                .onFailure { Timber.e(it, "Pin reconcile failed") }
+
             // Second pass: emu game folders reconcile with the library — mapped games link
             // LOCAL_STEAM, unmapped folders stay tracked-only and load into Shiba Coins on sync
             // (never game entities — user decision 2026-07-16).
