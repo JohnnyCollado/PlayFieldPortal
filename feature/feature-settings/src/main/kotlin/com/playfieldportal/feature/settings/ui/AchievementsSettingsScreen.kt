@@ -269,6 +269,9 @@ fun AchievementsSettingsScreen(
                             "and replace its Steam files so unlocks can be recorded. A game you " +
                             "set up and played before this feature could otherwise lose access to " +
                             "its existing saves.\n\n" +
+                            "This also uses your own Steam Web API key to read achievement data — " +
+                            "use it at your own risk. Steam tracking is entirely optional; leave " +
+                            "this off if you'd rather not accept these risks.\n\n" +
                             "Back up first, then turn this on and Sync All.",
                     )
                 },

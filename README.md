@@ -500,6 +500,10 @@ every tracked game.
 > existing save data once the emulator starts reading from the new save location. Open your
 > Windows emulator, back up the save files for those games, and only then enable the toggle and
 > run *Sync All*.
+>
+> **Use your own Steam Web API key at your own risk.** This feature reads achievement data with
+> the Steam Web API key you supply. Steam tracking is entirely optional — you do not have to
+> enable it, and should only do so if you accept the risks that come with using your own key.
 
 For a game folder to be tracked it must live under your windows library and carry the Steam-emu
 config; achievement progress is read from the emu's own save redirect, or from a `saves` folder
