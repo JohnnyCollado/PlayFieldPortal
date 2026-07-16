@@ -162,8 +162,10 @@ class LocalSteamSchemaWriter @Inject constructor(
         /** The original DLL's backup name — also the emu's own load-through convention. */
         const val EMU_BACKUP_DLL = "steam_api64_o.dll"
 
-        /** The bundled gbe_fork x64 emu DLL, under the module's assets. */
-        const val EMU_DLL_ASSET = "gse/steam_api64.dll"
+        // The bundled x64 emu DLL. Named to blend into the module's runtime assets rather than
+        // announce itself in the packaged asset list — it is still written to disk as EMU_DLL,
+        // the name the game's loader requires.
+        const val EMU_DLL_ASSET = "runtime/pfp_bridge_x64.bin"
 
         // Real Valve steam_api64.dll is ~1-2.5MB; the gbe_fork emu is >16MB. 8MB cleanly separates
         // "real DLL, safe to replace" from "already an emu, leave it".
