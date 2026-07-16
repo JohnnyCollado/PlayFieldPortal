@@ -530,6 +530,9 @@ Notes:
   `saves/` folder). Before any unlocks it tracks at 0%; a game with `steam_settings` but no
   save location at all stays untracked.
 - Reading the schema needs your Steam Web API key (*Settings ▸ Shiba Coins*).
+- A game folder with `steam_settings` but no `achievements.json` can't record unlocks —
+  the emulator needs that schema file. When a PC scan finds one missing, PFP offers to
+  generate it from the Steam Web API (per game: No / Yes / Yes to All for that scan).
 
 ### 4.17 Settings reference
 

@@ -5,6 +5,26 @@ All notable changes to Play Field Portal are documented here. This project follo
 
 ## [Unreleased]
 
+### Added
+- **Shiba Coins achievement system.** Games earn coins from achievements across three
+  providers — RetroAchievements, your Steam account, and local Steam-emulated PC games
+  (GSE/Goldberg) — with bronze/silver/gold/platinum tiers, an account-wide wallet with
+  levels and ranks on the Player Card, a per-game coins screen, and a Shiba Library hub
+  with an All Tracked view. Sync everything at once with **Sync All Coins** on the
+  Player Card menu.
+- **Local PC game achievement tracking.** Windows game folders under the ROM root's
+  `windows/` library are discovered by their Steam-emu config; unlock progress is read
+  from the emulator's save redirect or the conventional `saves/` folder (see README
+  4.16). Tracking is display-only and gated on a save location existing.
+- **Missing achievement-schema generation.** When a PC scan finds an emu game folder
+  with `steam_settings` but no `achievements.json` (the file the emulator needs before
+  it can record unlocks), PFP offers to generate one from the Steam Web API — per game,
+  with No / Yes / Yes-to-All choices scoped to that scan. Available from both the XMB
+  Windows card's "Scan This Console" and Library Manager's PC scan.
+- **PC library plumbing.** Exported launch files import from `<windows>/import/`, OS
+  pinned shortcuts reconcile at startup and across launchers, and one shared full PC
+  scan backs every entry point.
+
 ## [1.1.0] - 2026-07-12
 
 ### Added
