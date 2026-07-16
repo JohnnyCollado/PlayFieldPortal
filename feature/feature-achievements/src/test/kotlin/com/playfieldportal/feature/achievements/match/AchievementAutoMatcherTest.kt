@@ -27,7 +27,17 @@ class AchievementAutoMatcherTest {
     private val discOpener = mockk<DiscImageOpener>(relaxed = true)
     private val steamGridDb = mockk<com.playfieldportal.feature.artwork.api.SteamGridDbApi>(relaxed = true)
 
-    private val matcher = AchievementAutoMatcher(gameRepository, linkDao, matchNoteDao, raHashResolver, repository, romReader, discOpener, steamGridDb)
+    private val localSteamDiscovery =
+        mockk<com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamDiscovery> {
+            coEvery { scan() } returns emptyList()
+        }
+    private val localSteamOwnership =
+        mockk<com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamOwnership>(relaxed = true)
+
+    private val matcher = AchievementAutoMatcher(
+        gameRepository, linkDao, matchNoteDao, raHashResolver, repository, romReader, discOpener,
+        steamGridDb, localSteamDiscovery, localSteamOwnership,
+    )
 
     private fun game(id: Long, platform: String, title: String = "Game $id") =
         Game(id = id, title = title, platformId = platform)
@@ -107,6 +117,27 @@ class AchievementAutoMatcherTest {
                 match { it.gameId == 1L && it.reason.startsWith("Unsupported disc image") },
             )
         }
+    }
+
+    @Test
+    fun `windows games are folder-first — an emu folder links LOCAL_STEAM before any steam guess`() = runTest {
+        val g = game(1, "windows", title = "MARVEL Cosmic Invasion")
+        stubGames(g)
+        coEvery { localSteamDiscovery.scan() } returns listOf(
+            com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamGame(
+                folderName = "MARVELCosmicInvasion",   // normalized-title match despite the squash
+                folderDocId = "primary:Roms/windows/MARVELCosmicInvasion",
+                appId = "2753970",
+                achievementsUri = null,
+            ),
+        )
+
+        val report = matcher.matchUnlinked()
+
+        assertEquals(1, report.matched)
+        coVerify { repository.linkManually(1, AchievementProvider.LOCAL_STEAM, "2753970") }
+        coVerify { localSteamOwnership.classify(1, "2753970") }
+        coVerify(exactly = 0) { repository.resolveSteamLink(any(), any()) }
     }
 
     @Test

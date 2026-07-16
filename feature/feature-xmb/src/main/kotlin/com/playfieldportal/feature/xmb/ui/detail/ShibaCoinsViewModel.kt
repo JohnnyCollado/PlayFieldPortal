@@ -40,6 +40,9 @@ data class ShibaCoinsUiState(
     val platformLabel: String = "",
     val provider: AchievementProvider = AchievementProvider.RETRO_ACHIEVEMENTS,
     val linked: Boolean = false,
+    // LOCAL_STEAM only: owned-vs-local classification from the link row; null = unknown (the
+    // owned-games cache was never populated) and the UI stays silent about ownership.
+    val ownership: com.playfieldportal.core.domain.achievement.LocalCopyOwnership? = null,
     // An account entry with no library game: syncable, but nothing to link or match.
     val accountOnly: Boolean = false,
     val summary: GameCoins? = null,
@@ -119,6 +122,8 @@ class ShibaCoinsViewModel @Inject constructor(
                         coins = coins.map { e -> e.toRow() },
                         linked = link != null,
                         provider = link?.let { l -> AchievementProvider.fromName(l.provider) } ?: it.provider,
+                        ownership = link?.ownership
+                            ?.let(com.playfieldportal.core.domain.achievement.LocalCopyOwnership::fromName),
                     ).withDisplayed()
                 }
             }

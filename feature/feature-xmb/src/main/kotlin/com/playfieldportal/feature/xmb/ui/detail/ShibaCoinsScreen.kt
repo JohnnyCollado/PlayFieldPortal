@@ -204,6 +204,22 @@ private fun SummaryHeader(state: ShibaCoinsUiState) {
     }
 }
 
+// The sync-source line doubles as the LOCAL_STEAM ownership readout. Wording stays neutral —
+// the owned-list signal can never prove piracy (family sharing, alternate accounts, unplayed
+// free games all look unowned), so "cracked" is never said; unknown states stay silent.
+private fun syncSourceLabel(state: ShibaCoinsUiState): String {
+    if (state.provider != AchievementProvider.LOCAL_STEAM) {
+        return "Synced from ${state.provider.name.lowercase().replace('_', ' ')}"
+    }
+    return when (state.ownership) {
+        com.playfieldportal.core.domain.achievement.LocalCopyOwnership.OWNED ->
+            "Local copy — owned on Steam, played offline"
+        com.playfieldportal.core.domain.achievement.LocalCopyOwnership.NOT_IN_LIBRARY ->
+            "Local copy — not in your Steam library, tracked locally"
+        null -> "Local copy — achievements tracked locally"
+    }
+}
+
 @Composable
 private fun LinkSection(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewModel, focused: Boolean) {
     val edge = menuCursorEdge()
@@ -309,7 +325,7 @@ private fun SyncRow(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewModel, fo
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
     ) {
-        Text("Synced from ${state.provider.name.lowercase().replace('_', ' ')}", color = TextMuted, fontSize = 12.sp, modifier = Modifier.weight(1f))
+        Text(syncSourceLabel(state), color = TextMuted, fontSize = 12.sp, modifier = Modifier.weight(1f))
         if (state.isSyncing) {
             CircularProgressIndicator(color = menuCursorEdge(), modifier = Modifier.size(18.dp))
         } else if (state.linked || state.accountOnly) {

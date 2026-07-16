@@ -43,4 +43,9 @@ interface SteamOwnedGamesDao {
 
     @Query("SELECT EXISTS(SELECT 1 FROM steam_owned_games WHERE appid = :appid)")
     suspend fun isOwned(appid: String): Boolean
+
+    // Distinguishes "unowned" from "the import never ran": an empty cache means ownership is
+    // UNKNOWN, never NOT_IN_LIBRARY.
+    @Query("SELECT COUNT(*) FROM steam_owned_games")
+    suspend fun ownedCount(): Int
 }

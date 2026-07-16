@@ -33,6 +33,17 @@ interface ProviderGameLinkDao {
     )
     suspend fun linkExistsFor(provider: String, providerGameId: String): Boolean
 
+    /** Every link for one provider — the LOCAL_STEAM ownership refresh pass. */
+    @Query("SELECT * FROM provider_game_links WHERE provider = :provider")
+    suspend fun getByProvider(provider: String): List<ProviderGameLinkEntity>
+
+    /** Writes the derived ownership classification (null = unknown) onto an existing link. */
+    @Query(
+        "UPDATE provider_game_links SET ownership = :ownership " +
+            "WHERE game_id = :gameId AND provider = :provider"
+    )
+    suspend fun setOwnership(gameId: Long, provider: String, ownership: String?)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(link: ProviderGameLinkEntity)
 

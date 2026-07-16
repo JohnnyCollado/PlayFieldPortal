@@ -44,6 +44,7 @@ class SteamAccountImporter @Inject constructor(
     private val coinDao: AccountAchievementDao,
     private val linkDao: ProviderGameLinkDao,
     private val repository: AchievementRepository,
+    private val localSteamOwnership: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamOwnership,
 ) {
     suspend fun import(onProgress: suspend (done: Int, total: Int) -> Unit = { _, _ -> }): SteamImportResult {
         when (val owned = steamSource.ownedGames()) {
@@ -62,6 +63,10 @@ class SteamAccountImporter @Inject constructor(
             SteamOwnedGamesResult.ProfileNotPublic -> return emptyResult(profileNotPublic = true)
             is SteamOwnedGamesResult.Failed -> return emptyResult(failed = 1)
         }
+
+        // The fresh owned list upgrades earlier UNKNOWN classifications without a re-scan
+        // (docs/local-steam-achievements-plan.md Phase 2).
+        runCatching { localSteamOwnership.refreshAll() }
 
         val memo = ownedDao.noAchievementAppids().toHashSet()
         val candidates = ownedDao.getAll()

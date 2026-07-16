@@ -195,12 +195,14 @@ for an emu game, which is Phase 2's gap)
       linked to LOCAL_STEAM on the spot, since the appid comes from the folder itself.
       Re-scans converge by the shared normalized-title dedupe and refresh the link; a STEAM
       link on the same game coexists (one link per provider).
-- [ ] `AchievementAutoMatcher`: for `windows` games, discovery-before-title-ladder is now
-      only needed for honest untracked reasons ("No Steam emulator data in the game folder",
-      "DRM-free copy — no achievement data exists") — linking itself happens at scan time.
-- [ ] Four-state classification (section 5): `SteamWebApi.getOwnedGames` + cached owned-appid
-      lookup; owned + emu copies get both provider links; badges/untracked reasons derive from
-      the classification, never from guesses. Approach locked 2026-07-16 (user's calls):
+- [x] `AchievementAutoMatcher` (built 2026-07-16 with refactor-plan Phase 5): windows games
+      are folder-first — an emu-marked folder links LOCAL_STEAM with its own appid and gets
+      classified; the ladder's unmatched reason now names the absence of emulator data
+      honestly.
+- [x] Four-state classification (section 5) — BUILT 2026-07-16 (refactor-plan Phase 5): DB v35
+      `ownership` column on the link, `LocalSteamOwnership` derivation at scan + post-import
+      refresh, both links for owned emu copies, neutral coins-screen wording, and the
+      shortcut-to-folder mapping (title + Steam-name bridge) all landed as locked below:
       - Computed AT SCAN TIME and PERSISTED: the PC scan (and each completed Steam import)
         derives an ownership state per LOCAL_STEAM link — OWNED / NOT_IN_LIBRARY / UNKNOWN —
         stored on the provider link row. UNKNOWN whenever the owned cache is empty, stale, or
@@ -216,10 +218,10 @@ for an emu game, which is Phase 2's gap)
         appid equality beats any title ladder; both sets coexist per section 7.
       - `.desktop` shortcuts carry no appid; they classify only when their rawPath falls
         inside a discovered emu folder (inherit that folder's appid). Otherwise unknown.
-- [ ] Raise `LocalSteamDiscovery.SETTINGS_SEARCH_DEPTH` from 3 to 4 (found 2026-07-16 on
-      device): Unity-built games nest the emu config at
-      `<Game>/<Game>_Data/Plugins/x86_64/steam_settings` — depth 4 — so all four FF pixel
-      remasters (appids 1173780/1173790/1173810/1173820) are invisible to discovery today.
+- [x] Raise `LocalSteamDiscovery.SETTINGS_SEARCH_DEPTH` from 3 to 4 — DONE 2026-07-16 (found
+      same day on device): Unity-built games nest the emu config at
+      `<Game>/<Game>_Data/Plugins/x86_64/steam_settings` — depth 4 — which had left all four
+      FF pixel remasters (appids 1173780/1173790/1173810/1173820) invisible.
 - [ ] Shortcut-to-folder mapping (designed 2026-07-16 against live Thor data). A PC shortcut
       carries only (host package, shortcut id, label) — the OS strips intents for launchers,
       and the emulator's own id-to-path knowledge (private library DB, `exePath=` launch logs

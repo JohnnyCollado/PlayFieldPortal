@@ -35,6 +35,19 @@ class SteamAppListResolver @Inject constructor(
             .map { SteamCandidate(it.id.toString(), it.name) }
     }
 
+    /**
+     * The official Steam store name for [appId], or null. Feeds the shortcut-to-folder mapping's
+     * Steam-name bridge: a renamed game folder still maps to its shortcut because both the
+     * folder's appid-derived name and the launcher's shortcut label originate from Steam.
+     */
+    suspend fun officialNameOf(appId: String): String? =
+        runCatching { storeApi.appDetails(appId) }
+            .getOrElse { e ->
+                if (e is CancellationException) throw e
+                return null
+            }
+            .body()?.get(appId)?.takeIf { it.success }?.data?.name?.takeIf { it.isNotBlank() }
+
     private suspend fun storeSearch(term: String): List<StoreItem> =
         runCatching { storeApi.search(term) }
             .getOrElse { e ->

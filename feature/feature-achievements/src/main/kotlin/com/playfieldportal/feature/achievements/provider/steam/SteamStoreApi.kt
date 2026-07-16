@@ -20,6 +20,18 @@ interface SteamStoreApi {
         @Query("cc") countryCode: String = "us",
         @Query("l") language: String = "en",
     ): Response<StoreSearchResponse>
+
+    /**
+     * Store details for ONE appid (the response is keyed by the appid). `filters=basics` keeps
+     * the payload to name-level metadata; still keyless.
+     */
+    @Headers("User-Agent: Mozilla/5.0")
+    @GET("api/appdetails/")
+    suspend fun appDetails(
+        @Query("appids") appId: String,
+        @Query("filters") filters: String = "basic",
+        @Query("l") language: String = "en",
+    ): Response<Map<String, AppDetailsEntry>>
 }
 
 @Serializable
@@ -27,3 +39,9 @@ data class StoreSearchResponse(val items: List<StoreItem> = emptyList())
 
 @Serializable
 data class StoreItem(val id: Long = 0, val name: String = "", val type: String = "")
+
+@Serializable
+data class AppDetailsEntry(val success: Boolean = false, val data: AppDetailsData? = null)
+
+@Serializable
+data class AppDetailsData(val name: String = "")

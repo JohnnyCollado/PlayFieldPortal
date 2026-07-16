@@ -29,7 +29,11 @@ class SteamAccountImporterTest {
     private val linkDao = mockk<ProviderGameLinkDao>(relaxed = true)
     private val repository = mockk<AchievementRepository>()
 
-    private val importer = SteamAccountImporter(steamSource, ownedDao, setDao, coinDao, linkDao, repository)
+    private val localSteamOwnership =
+        mockk<com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamOwnership>(relaxed = true)
+
+    private val importer =
+        SteamAccountImporter(steamSource, ownedDao, setDao, coinDao, linkDao, repository, localSteamOwnership)
 
     private fun owned(appid: String, playtime: Long = 60, synced: Long? = null) = SteamOwnedGameEntity(
         appid = appid, name = "Game $appid",

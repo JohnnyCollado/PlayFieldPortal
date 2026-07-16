@@ -103,7 +103,7 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         SteamOwnedGameEntity::class,
         SteamNoAchievementsEntity::class,
     ],
-    version = 34,
+    version = 35,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -1064,6 +1064,14 @@ abstract class PFPDatabase : RoomDatabase() {
                     )
                     """.trimIndent()
                 )
+            }
+        }
+
+        // LOCAL_STEAM ownership classification on the provider link (OWNED / NOT_IN_LIBRARY,
+        // null = unknown) — derived from the owned-games cache at scan time, never guessed.
+        val MIGRATION_34_35 = object : Migration(34, 35) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE provider_game_links ADD COLUMN ownership TEXT")
             }
         }
     }

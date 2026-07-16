@@ -245,17 +245,28 @@ commits. No phase starts before the user lifts the coding gate.
       Phase 1 adapter tests.
 - Sec: export files remain untrusted input (existing sanitizer path unchanged).
 
-### Phase 5 — Auto-match, mapping, classification
-- [ ] Shortcut-to-folder mapping join (companion plan Phase 2 design): normalized title, then
-      the Steam-name bridge; merged entries carry launch (shortcut) + tracking (folder).
-      Never guesses — unmapped entries stay separate.
-- [ ] Auto-match ordering per section 5: folder-first, emu markers -> LOCAL_STEAM link +
-      ownership state; no folder -> STEAM ladder ("most likely legit").
-- [ ] Companion-plan items land here where they touch the same code: discovery depth 3 -> 4,
-      scan-time ownership persistence, honest untracked reasons.
-- [ ] Tests: mapping against the 9 live pairs as fixtures (8 map, FFXIV stays unmapped);
-      ordering matrix over the four folder/marker states.
-- Sec: all folder access via the card's SAF grant; appids digits-validated before any web call.
+### Phase 5 — Auto-match, mapping, classification  (CODE DONE 2026-07-16)
+- [x] Shortcut-to-folder mapping join in `LocalSteamGameImporter`: normalized title, then the
+      STEAM-NAME BRIDGE — the appid's official store name via the keyless storefront
+      `appdetails` call (`SteamAppListResolver.officialNameOf`), matched exactly. Merged
+      entries carry launch (shortcut) + tracking (folder); unmapped folders become their own
+      game — never guesses.
+- [x] Auto-match ordering per section 5: windows games are folder-first (one discovery pass
+      per run) — an emu-marked folder links LOCAL_STEAM with its own appid + classification;
+      no folder falls to the STEAM ladder; the unmatched reason now says honestly that no
+      Steam-emulator data exists in the game folders.
+- [x] Ownership persisted at scan time: DB v35 adds `ownership` to `provider_game_links`;
+      `LocalSteamOwnership` derives OWNED / NOT_IN_LIBRARY / null-UNKNOWN (empty cache never
+      classifies), refreshed by every scan AND every completed Steam account import; an OWNED
+      emu copy gets BOTH provider links (appid equality beats any title ladder). The coins
+      screen's sync-source line reads the state neutrally ("Local copy — not in your Steam
+      library, tracked locally"), silent when unknown.
+- [x] Discovery depth 3 -> 4 (Unity nesting; the FF pixel remasters become discoverable).
+- [x] Tests (17 across the module's new/updated suites, 128 module-wide green): the live
+      FFX/X-2 bridge pair, the squashed-title merge, the never-guess case, both-links-when-
+      owned, the UNKNOWN-vs-NOT_IN_LIBRARY rules, folder-first matcher ordering.
+- Sec: all folder access via the card's SAF grant; appids digits-validated before any web
+  call; the appdetails call is keyless (nothing sensitive in its URL).
 
 ## 7. Known bugs this plan fixes
 

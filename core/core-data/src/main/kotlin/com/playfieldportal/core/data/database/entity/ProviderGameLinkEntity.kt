@@ -40,4 +40,9 @@ data class ProviderGameLinkEntity(
 
     @ColumnInfo(name = "resolved_at")
     val resolvedAt: Long,
+
+    // LOCAL_STEAM only — the owned-vs-local classification derived from the Steam owned-games
+    // cache: OWNED / NOT_IN_LIBRARY, null = unknown (cache never populated). Never guessed
+    // (docs/local-steam-achievements-plan.md Phase 2).
+    val ownership: String? = null,
 )

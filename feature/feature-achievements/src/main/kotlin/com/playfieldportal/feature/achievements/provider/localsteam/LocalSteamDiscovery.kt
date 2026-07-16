@@ -131,7 +131,9 @@ class LocalSteamDiscovery @Inject constructor(
 
     private companion object {
         const val PROGRESS_FILE = "achievements.json"
-        const val SETTINGS_SEARCH_DEPTH = 3
+        // Depth 4 reaches Unity's nesting: <Game>/<Game>_Data/Plugins/x86_64/steam_settings
+        // (live case: the FF pixel remasters — docs/windows-library-refactor-plan.md Phase 5).
+        const val SETTINGS_SEARCH_DEPTH = 4
         const val SMALL_FILE_MAX_BYTES = 64
     }
 }

@@ -43,6 +43,8 @@ class AchievementAutoMatcher @Inject constructor(
     private val romReader: RomBytesReader,
     private val discOpener: DiscImageOpener,
     private val steamGridDb: com.playfieldportal.feature.artwork.api.SteamGridDbApi,
+    private val localSteamDiscovery: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamDiscovery,
+    private val localSteamOwnership: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamOwnership,
 ) {
     private sealed interface Outcome {
         data object Matched : Outcome
@@ -60,6 +62,7 @@ class AchievementAutoMatcher @Inject constructor(
 
     /** Matches every unlinked game; [onProgress] reports (done, total). */
     suspend fun matchUnlinked(onProgress: (done: Int, total: Int) -> Unit = { _, _ -> }): MatchReport {
+        emuFolderCache = null   // fresh discovery per run — the singleton outlives folder changes
         val unlinked = gameRepository.observeGamesOnly().first()
             .filter { linkDao.getForGame(it.id) == null }
 
@@ -87,7 +90,7 @@ class AchievementAutoMatcher @Inject constructor(
     }
 
     private suspend fun matchOne(game: Game): Outcome {
-        if (game.platformId == "windows") return matchSteam(game)
+        if (game.platformId == "windows") return matchWindows(game)
         // RetroAchievements is hash-only: a game links solely by its ROM/disc content hash, never
         // by title. If the hash isn't a registered RA hash, the game stays untracked.
         val consoleId = RaConsole.idFor(game.platformId)
@@ -105,6 +108,36 @@ class AchievementAutoMatcher @Inject constructor(
         repository.linkManually(game.id, AchievementProvider.RETRO_ACHIEVEMENTS, raGameId)
         return Outcome.Matched
     }
+
+    // Windows games are folder-first (docs/windows-library-refactor-plan.md section 5): an
+    // emu-marked game folder mapping to this game by normalized title links LOCAL_STEAM with the
+    // folder's own appid — no guessing — and gets its ownership classified. No folder means the
+    // copy is launcher-managed ("most likely legit") and the STEAM ladder decides.
+    private suspend fun matchWindows(game: Game): Outcome {
+        emuFolders().firstOrNull { folder ->
+            steamTitleCandidates(game).any { normalizePc(it) == normalizePc(folder.folderName) }
+        }?.let { folder ->
+            repository.linkManually(game.id, AchievementProvider.LOCAL_STEAM, folder.appId)
+            localSteamOwnership.classify(game.id, folder.appId)
+            return Outcome.Matched
+        }
+        val steam = matchSteam(game)
+        if (steam is Outcome.Unmatched) {
+            return Outcome.Unmatched(
+                "Not found on Steam, and no Steam-emulator data in your windows game folders " +
+                    "(a DRM-free or non-Steam copy has no achievement data)",
+            )
+        }
+        return steam
+    }
+
+    // One discovery pass per auto-match run; windows games all match against the same folder set.
+    private var emuFolderCache: List<com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamGame>? = null
+    private suspend fun emuFolders(): List<com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamGame> =
+        emuFolderCache ?: runCatching { localSteamDiscovery.scan() }.getOrDefault(emptyList())
+            .also { emuFolderCache = it }
+
+    private fun normalizePc(title: String): String = title.lowercase().filter { it.isLetterOrDigit() }
 
     // Steam PC games resolve down a ladder: the appid the shortcut already carries (deterministic),
     // then SteamGridDB's platform data (if we have an SGDB id), then the title match.
