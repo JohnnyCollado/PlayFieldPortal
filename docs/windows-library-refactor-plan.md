@@ -229,15 +229,20 @@ commits. No phase starts before the user lifts the coding gate.
       localGameId never linked; intent-uri dedupe.
 - Sec: pin acceptance unchanged; only PFP-built or user-confirmed intents are parsed.
 
-### Phase 4 — Import PC Games menu rework
-- [ ] Move the `IMPORT_PC` step under the Windows card menu; drop the Auto-Import action and
-      the Home-role section tied to it (pin workflow replaces harvesting; Home role remains
-      only where pins require default-launcher status messaging).
-- [ ] Export scan reads `<ROM Root>/windows/import/` (the drop-folder) instead of trawling
-      the windows folder; `.desktop` `rawPath` kept for Winlator.
-- [ ] Add by ID uses the Phase 1 adapter selection per installed variant; id prompts per app
-      (Steam appid focus; v5 UUID caveat surfaced in the hint text).
-- [ ] Tests: scan reads only the drop-folder; add-by-ID dialog -> correct per-variant intent.
+### Phase 4 — Import PC Games menu rework  (CODE DONE 2026-07-16)
+- [x] Import PC Games now lives ONLY under the Windows card (the top-level Library Manager row
+      is gone; the games context-menu entry stays); opening it self-heals the card + folders.
+      Auto-Import rows and `harvestLauncher` dropped; the Home-role row remains, reworded as
+      the "Add To Home Capture" status for the pin workflow.
+- [x] Export scan reads the `<windows>/import/` drop-folder(s) via
+      `WindowsLibrarySetup.importFolders()` — never the windows folder root; `.desktop`
+      `rawPath` kept for Winlator; second-pass emu import unchanged; messages point users at
+      `<windows>/import`.
+- [x] Add by ID uses the Phase 1 per-variant adapter selection (already wired); launcher rows
+      point to Add-to-home / export-to-import as the alternatives.
+- [x] Tests: `importFolders` resolves only existing drop-folders under the windows surfaces
+      (9/9 in WindowsLibrarySetupTest); per-variant intent shapes already pinned by the
+      Phase 1 adapter tests.
 - Sec: export files remain untrusted input (existing sanitizer path unchanged).
 
 ### Phase 5 — Auto-match, mapping, classification

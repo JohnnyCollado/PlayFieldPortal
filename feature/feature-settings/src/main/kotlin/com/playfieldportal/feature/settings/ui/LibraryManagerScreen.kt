@@ -170,13 +170,6 @@ private fun LibraryListContent(
                 onClick  = { vm.requestRomFolderSetup() },
             )
             SettingsRow(
-                label    = "Import PC Games",
-                sublabel = "Bring games from Winlator, BannerHub, GameHub Lite & GameNative into " +
-                    "your collections",
-                focusKey = IMPORT_PC_FOCUS_KEY,
-                onClick  = { vm.openImportPcGames() },
-            )
-            SettingsRow(
                 label    = "Scan All Consoles",
                 sublabel = when {
                     state.scanningPlatformIds.isNotEmpty() -> "Scanning ${state.scanningPlatformIds.size}…"
@@ -309,6 +302,7 @@ private fun CardDetailContent(
                 SettingsRow(
                     label    = "Import PC Games",
                     sublabel = "Exported games, Add by ID, and launcher status",
+                    focusKey = IMPORT_PC_FOCUS_KEY,
                     onClick  = { vm.openImportPcGames() },
                 )
                 SettingsRow(
@@ -480,24 +474,24 @@ private fun ImportPcGamesContent(
 
             state.message?.let { MessageRow(it) { vm.dismissMessage() } }
 
-            // ── Optional Home mode ────────────────────────────────────────────
-            SettingsGroup("Home App (optional)")
+            // ── Add to home capture (the pin workflow) ────────────────────────
+            SettingsGroup("Add To Home Capture")
             SettingsValueRow(
                 label    = "Play Field Portal as Home",
                 value    = if (state.isHomeLauncher) "Active" else "Set…",
                 sublabel = if (state.isHomeLauncher)
-                    "Auto-import of games a launcher publishes is available below"
+                    "Using \"Add to home\" inside a supported launcher imports the game here automatically"
                 else
-                    "Optional. Set PFP as your Home app to auto-import every game a launcher publishes",
+                    "Set PFP as your Home app so a launcher's \"Add to home\" option imports the game into PFP",
                 onClick  = { runCatching { homeLauncher.launch(vm.homeRoleIntent()) } },
             )
 
             // ── Scan exported games ───────────────────────────────────────────
             SettingsGroup("Exported Games")
             SettingsRow(
-                label    = "Scan for Exported PC Games",
+                label    = "Scan Import Folder",
                 sublabel = "Reads GameNative / Winlator exports (.steam · .epic · .gog · .amazon · " +
-                    ".pcgame · .desktop) from the Windows folder in your ROM roots",
+                    ".pcgame · .desktop) dropped in <windows>/import",
                 onClick  = { vm.scanPcGamesFolder() },
             )
 
@@ -509,20 +503,13 @@ private fun ImportPcGamesContent(
                     launcher.canAddById -> SettingsValueRow(
                         label    = launcher.name,
                         value    = "Add by ID…",
-                        sublabel = "Add a game by its ID and launch it from PFP",
+                        sublabel = "Add a game by its ID — or use the app's own Add-to-home option",
                         onClick  = { addTarget = launcher },
                     )
                     else -> SettingsValueRow(
                         label    = launcher.name,
                         value    = "Installed",
-                        sublabel = "No add-by-ID support — use its export-to-launcher, or Home auto-import",
-                    )
-                }
-                if (state.isHomeLauncher && launcher.installed) {
-                    SettingsRow(
-                        label    = "Auto-import all from ${launcher.name}",
-                        sublabel = "Pull every game shortcut this launcher publishes",
-                        onClick  = { vm.harvestLauncher(launcher) },
+                        sublabel = "No add-by-ID support — export the game to <windows>/import instead",
                     )
                 }
             }

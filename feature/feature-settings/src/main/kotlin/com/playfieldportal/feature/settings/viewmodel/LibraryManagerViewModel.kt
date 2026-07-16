@@ -14,7 +14,6 @@ import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GameContentType
 import com.playfieldportal.feature.appbar.LauncherShortcutRepository
-import com.playfieldportal.feature.appbar.ShortcutHarvestResult
 import com.playfieldportal.feature.launcher.EmulatorProfileRepository
 import com.playfieldportal.feature.launcher.PcLauncherAdapters
 import com.playfieldportal.feature.launcher.PcLauncherCatalog
@@ -544,6 +543,8 @@ class LibraryManagerViewModel @Inject constructor(
     // user pull already-captured games (arrived via pin / INSTALL_SHORTCUT) into a collection
     // named after the launcher. Direct per-launcher scanning is layered on via adapters.
     fun openImportPcGames() {
+        // Entering the PC flow is PC intent — make sure the card and its folders exist.
+        viewModelScope.launch { runCatching { windowsLibrarySetup.ensure() } }
         val pm = context.packageManager
         val launchers = PcLauncherCatalog.entries.map { def ->
             // Fingerprint-verified: GameHub-family variants ship under genuine AnTuTu/PUBG/Genshin
@@ -629,60 +630,56 @@ class LibraryManagerViewModel @Inject constructor(
     }
 
     /**
-     * Scans the "Windows" folder(s) under the ROM roots for frontend-export files and imports each
-     * as a launchable PC game. GameNative store exports (.steam/.epic/.gog/.amazon/.pcgame) carry an
-     * app id (launched via GameNative, or GameHub for a .steam title when GameNative isn't
-     * installed); Winlator .desktop shortcuts launch by path. Games land in the launcher's PC-icon
-     * collection. Turns an exported PC library into a one-tap import.
+     * Scans the `<windows>/import/` drop-folder(s) for frontend-export files and imports each as a
+     * launchable PC game (docs/windows-library-refactor-plan.md section 2). GameNative store
+     * exports (.steam/.epic/.gog/.amazon/.pcgame) carry an app id (launched via GameNative, or
+     * GameHub for a .steam title when GameNative isn't installed); Winlator .desktop shortcuts
+     * launch by path. The second pass imports emu game installs found beside the drop-folder.
      */
     fun scanPcGamesFolder() {
         viewModelScope.launch {
-            val roots = romRootRepository.getAll()
-            if (roots.isEmpty()) {
-                _scratch.update { it.copy(message = "Add a ROM Root that contains your Windows folder first.") }
+            // Self-heal first so a fresh setup creates <root>/windows/import before we look for it.
+            val setup = runCatching { windowsLibrarySetup.ensure() }.getOrNull()
+            if (setup is com.playfieldportal.core.data.repository.WindowsSetupState.NoRomRoot) {
+                _scratch.update { it.copy(message = "Add a ROM Root first — PFP creates <root>/windows/import for exported games.") }
                 return@launch
             }
             val pm = context.packageManager
             fun installed(vararg pkgs: String) = pkgs.firstOrNull { runCatching { pm.getApplicationInfo(it, 0) }.isSuccess }
             val gameNativePkg = installed("app.gamenative")
-            // Label-verified family lookup — covers every side-by-side spoof variant without
+            // Fingerprint-verified family lookup — covers every side-by-side spoof variant without
             // mistaking the genuine AnTuTu/PUBG/Genshin apps for a launcher.
             val gameHubPkg    = PcLauncherCatalog.installedGameHubFamilyPackages(pm).firstOrNull()
             val winlatorPkg   = installed("com.winlator", "com.winlator.cmod")
 
             var added = 0
             var skipped = 0
-            var windowsFolders = 0
-            for (rootUri in roots) {
-                for (name in romScanner.listSubfolderNames(rootUri)) {
-                    if (folderHintResolver.detectFromFolderName(name) != WINDOWS_PLATFORM_ID) continue
-                    windowsFolders++
-                    val childDocId = RomRootRepository.childDocIdOf(rootUri, name) ?: continue
-                    romScanner.scanPcFolder(rootUri, childDocId).forEach { file ->
-                        val launch = buildPcLaunch(file, pm, gameNativePkg, gameHubPkg, winlatorPkg)
-                        if (launch == null) { skipped++; return@forEach }
-                        val (intent, _, launcherPkg) = launch
-                        val intentUri = intent.toUri(Intent.URI_INTENT_SCHEME)
-                        if (gameRepository.getByIntentUri(intentUri) == null &&
-                            findWindowsGame(launcherPkg, file.title) == null
-                        ) {
-                            gameRepository.upsert(
-                                Game(
-                                    title           = file.title,
-                                    platformId      = WINDOWS_PLATFORM_ID,
-                                    packageName     = launcherPkg,
-                                    isManualEntry   = true,
-                                    contentType     = GameContentType.GAME,
-                                    launchIntentUri = intentUri,
-                                )
+            val importFolders = windowsLibrarySetup.importFolders()
+            for ((rootUri, importDocId) in importFolders) {
+                romScanner.scanPcFolder(rootUri, importDocId).forEach { file ->
+                    val launch = buildPcLaunch(file, pm, gameNativePkg, gameHubPkg, winlatorPkg)
+                    if (launch == null) { skipped++; return@forEach }
+                    val (intent, _, launcherPkg) = launch
+                    val intentUri = intent.toUri(Intent.URI_INTENT_SCHEME)
+                    if (gameRepository.getByIntentUri(intentUri) == null &&
+                        findWindowsGame(launcherPkg, file.title) == null
+                    ) {
+                        gameRepository.upsert(
+                            Game(
+                                title           = file.title,
+                                platformId      = WINDOWS_PLATFORM_ID,
+                                packageName     = launcherPkg,
+                                isManualEntry   = true,
+                                contentType     = GameContentType.GAME,
+                                launchIntentUri = intentUri,
                             )
-                        }
-                        added++
+                        )
                     }
+                    added++
                 }
             }
-            // Second pass: emu game installs under the Windows card's own folder become games
-            // linked to LOCAL_STEAM right here — their appid comes from the folder, no matching.
+            // Second pass: emu game installs under the windows folder(s) become games linked to
+            // LOCAL_STEAM right here — their appid comes from the folder, no matching.
             val emu = runCatching { emuGameImporter.import() }
                 .onFailure { Timber.e(it, "Emu game import failed") }
                 .getOrDefault(com.playfieldportal.feature.achievements.provider.localsteam.EmuGameImportResult(0, 0))
@@ -693,17 +690,17 @@ class LibraryManagerViewModel @Inject constructor(
                 " Found ${emu.discovered} emu game folder(s), ${emu.added} new — local achievements linked."
             } else ""
             val message = when {
-                windowsFolders == 0 && emu.discovered == 0 ->
-                    "No \"Windows\" folder found under your ROM roots. Point GameNative's export folder at <root>/Windows."
+                importFolders.isEmpty() && emu.discovered == 0 ->
+                    "No import folder found. Place exported games in <windows>/import (created automatically when the ROM root grant allows it)."
                 added == 0 && skipped == 0 && emu.discovered == 0 ->
-                    "No exported PC games found in the Windows folder."
+                    "No exported PC games found in <windows>/import."
                 else ->
                     "Imported $added PC game(s)" +
                         (if (skipped > 0) ", skipped $skipped (no matching launcher installed)" else "") +
                         "." + emuNote
             }
             _scratch.update { it.copy(message = message) }
-            Timber.i("PC scan — windowsFolders=$windowsFolders added=$added skipped=$skipped emu=${emu.discovered}/${emu.added}")
+            Timber.i("PC scan — importFolders=${importFolders.size} added=$added skipped=$skipped emu=${emu.discovered}/${emu.added}")
         }
     }
 
@@ -742,48 +739,6 @@ class LibraryManagerViewModel @Inject constructor(
             return Triple(intent, name, gameHubPkg)
         }
         return null
-    }
-
-    /** Home-mode auto-import: pulls a launcher's published game shortcuts into its PC collection. */
-    fun harvestLauncher(row: PcLauncherRow) {
-        val pkg = row.packageName ?: return
-        viewModelScope.launch {
-            when (val result = launcherShortcutRepository.harvest(pkg)) {
-                is ShortcutHarvestResult.NotDefaultLauncher ->
-                    _scratch.update { it.copy(message = "Set Play Field Portal as your Home app first, then try again.") }
-                is ShortcutHarvestResult.Error ->
-                    _scratch.update { it.copy(message = "${row.name}: ${result.message}") }
-                is ShortcutHarvestResult.Success -> {
-                    if (result.shortcuts.isEmpty()) {
-                        _scratch.update { it.copy(message = "${row.name}: no game shortcuts published.") }
-                        return@launch
-                    }
-                    runCatching {
-                        result.shortcuts.forEach { sc ->
-                            if (gameRepository.getLauncherShortcut(sc.hostPackage, sc.shortcutId) == null &&
-                                findWindowsGame(sc.hostPackage, sc.label) == null
-                            ) {
-                                gameRepository.upsert(
-                                    Game(
-                                        title         = sc.label,
-                                        platformId    = WINDOWS_PLATFORM_ID,
-                                        packageName   = sc.hostPackage,
-                                        isManualEntry = true,
-                                        contentType   = GameContentType.GAME,
-                                        shortcutId    = sc.shortcutId,
-                                    )
-                                )
-                            }
-                        }
-                        ensureWindowsCard()
-                        result.shortcuts.size
-                    }.fold(
-                        onSuccess = { _scratch.update { it.copy(message = "Imported $it game(s) from ${row.name}.") } },
-                        onFailure = { e -> _scratch.update { it.copy(message = "${row.name}: import failed: ${e.message}") } },
-                    )
-                }
-            }
-        }
     }
 
     // ── Windows Games card helpers ────────────────────────────────────────────

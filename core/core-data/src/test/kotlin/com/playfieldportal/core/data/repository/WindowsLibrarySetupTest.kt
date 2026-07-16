@@ -160,6 +160,25 @@ class WindowsLibrarySetupTest {
     }
 
     @Test
+    fun `importFolders resolves only existing import drop-folders under the windows surfaces`() = runTest {
+        coEvery { memoryCards.getById("windows") } returns card()
+        coEvery { romRoots.getAll() } returns listOf(internalRoot, sdRoot)
+        // Both roots have windows folders; only the internal one has import/ yet.
+        val ops = FakeOps(
+            existing = mapOf(
+                "primary:Roms/windows" to "primary:Roms/windows",
+                "primary:Roms/windows/import" to "primary:Roms/windows/import",
+                "408C-3861:Roms/windows" to "408C-3861:Roms/windows",
+            ),
+        )
+
+        assertEquals(
+            listOf(internalRoot to "primary:Roms/windows/import"),
+            setup().importFolders(ops),
+        )
+    }
+
+    @Test
     fun `windowsFolders lists every root's windows child, or the picked folder alone`() = runTest {
         coEvery { memoryCards.getById("windows") } returns card()
         coEvery { romRoots.getAll() } returns listOf(internalRoot, sdRoot)

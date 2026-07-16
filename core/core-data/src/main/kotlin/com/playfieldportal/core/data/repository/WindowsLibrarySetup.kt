@@ -133,6 +133,20 @@ class WindowsLibrarySetup @Inject constructor(
         }
     }
 
+    /**
+     * Every export drop-folder as (treeUri, importDocId): the `import/` child of each windows
+     * scan surface. Exported games (`.steam`/`.desktop`/…) are read from HERE, never from the
+     * windows folder root (docs/windows-library-refactor-plan.md section 2).
+     */
+    suspend fun importFolders(): List<Pair<String, String>> = withContext(Dispatchers.IO) {
+        importFolders(SafFolderOps())
+    }
+
+    internal suspend fun importFolders(ops: FolderOps): List<Pair<String, String>> =
+        windowsFolders(ops).mapNotNull { (treeUri, windowsDocId) ->
+            ops.findChildDir(treeUri, windowsDocId, IMPORT_FOLDER)?.let { treeUri to it }
+        }
+
     // ── Missing-setup prompt flag ─────────────────────────────────────────────
 
     /** Raises the one-shot setup prompt (pin workflow, plan section 3). */
