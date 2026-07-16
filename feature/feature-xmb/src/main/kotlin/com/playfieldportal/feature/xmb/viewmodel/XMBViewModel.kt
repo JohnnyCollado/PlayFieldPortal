@@ -3617,11 +3617,18 @@ class XMBViewModel @Inject constructor(
                 type = XMBItemType.STANDARD,
             ),
         )
+        // While nothing is tracked yet there is no All Tracked row to carry the sync progress,
+        // so the Player Card itself shows it (its menu is where that first sync starts).
+        val summarySubtitle = if (standing.gamesTracked == 0 && syncAll != null) {
+            "Syncing coins…  ${syncAll.first} / ${syncAll.second}"
+        } else {
+            "${"%,d".format(w.totalCoins)} coins  •  ${standing.gamesTracked} tracked  •  ${standing.gamesMastered} mastered"
+        }
         return listOf(
             XMBItem(
                 id = ACH_SUMMARY_ITEM_ID,
                 title = w.rank.label,
-                subtitle = "${"%,d".format(w.totalCoins)} coins  •  ${standing.gamesTracked} tracked  •  ${standing.gamesMastered} mastered",
+                subtitle = summarySubtitle,
                 levelBadge = "Lv ${w.level}",
                 type = XMBItemType.STANDARD,
             ),
@@ -4058,15 +4065,17 @@ class XMBViewModel @Inject constructor(
         )}
     }
 
-    // Opens the △ options menu for a Shiba Coins hub row. Returns true when [item] is one it owns.
+    // Opens the △ options menu for a Shiba Coins hub row — the Player Card and All Tracked Games
+    // both carry Sync All Coins, so the first-ever sync (nothing tracked yet, no All Tracked row)
+    // is reachable from the card. Returns true when [item] is one it owns.
     private fun openAchievementsContextMenu(item: XMBItem): Boolean {
         if (currentCategory()?.id != BuiltInCategory.ACHIEVEMENTS) return false
-        if (item.id != ACH_ALL_ITEM_ID) return false
+        if (item.id != ACH_ALL_ITEM_ID && item.id != ACH_SUMMARY_ITEM_ID) return false
         val syncing = _uiState.value.hubSyncAll != null
         _uiState.update {
             it.copy(
                 activeContextMenu = XMBContextMenu(
-                    title = "All Tracked Games",
+                    title = if (item.id == ACH_SUMMARY_ITEM_ID) "Player Card" else "All Tracked Games",
                     items = listOf(
                         XMBContextMenuItem(
                             "ach_sync_all",
