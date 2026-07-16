@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
+import timber.log.Timber
 import javax.inject.Singleton
 
 /**
@@ -264,10 +265,26 @@ class AchievementRepository @Inject constructor(
             .filter { it.appId !in linkedLocalAppIds }
             .distinctBy { it.appId }
 
-        // Account-only entries (RA/Steam imports, earlier local syncs) have no library game but
-        // sync all the same — everything shown under All Tracked refreshes in this one pass.
         val linkedIdentities = links.map { it.provider to it.providerGameId }.toHashSet()
         val folderAppIds = trackedFolders.map { it.appId }.toHashSet()
+
+        // The saves-location gate can untrack a folder between runs; its stale set (and coins)
+        // leave All Tracked here. Only LOCAL_STEAM sets are discovery-derived — RA/Steam account
+        // sets are the account's own record and are never pruned.
+        setDao.getAllSets()
+            .filter {
+                it.provider == AchievementProvider.LOCAL_STEAM.name &&
+                    it.providerGameId !in folderAppIds &&
+                    (it.provider to it.providerGameId) !in linkedIdentities
+            }
+            .forEach { stale ->
+                Timber.i("Pruning untracked local set \"${stale.title}\" (${stale.providerGameId})")
+                coinDao.deleteForSet(stale.provider, stale.providerGameId)
+                setDao.deleteSet(stale.provider, stale.providerGameId)
+            }
+
+        // Account-only entries (RA/Steam imports, earlier local syncs) have no library game but
+        // sync all the same — everything shown under All Tracked refreshes in this one pass.
         val accountOnly = setDao.getAllSets().filter { set ->
             (set.provider to set.providerGameId) !in linkedIdentities &&
                 !(set.provider == AchievementProvider.LOCAL_STEAM.name && set.providerGameId in folderAppIds)
