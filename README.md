@@ -526,8 +526,9 @@ Notes:
   `<Game>_Data/Plugins/x86_64/`); PFP finds it automatically.
 - PFP follows whatever `local_save_path` the game already uses first (e.g. `./GSE Saves`) —
   the `saves/` folder is the fallback convention for hand-arranged files.
-- A game with no progress file yet still tracks, at 0% earned; unlocks appear after the next
-  sync once the game writes its achievements file.
+- A game is tracked only once its save location exists (the redirect's target folder, or the
+  `saves/` folder). Before any unlocks it tracks at 0%; a game with `steam_settings` but no
+  save location at all stays untracked.
 - Reading the schema needs your Steam Web API key (*Settings ▸ Shiba Coins*).
 
 ### 4.17 Settings reference
