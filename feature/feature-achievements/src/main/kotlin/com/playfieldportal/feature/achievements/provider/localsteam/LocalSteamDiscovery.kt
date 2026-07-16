@@ -69,10 +69,15 @@ class LocalSteamDiscovery @Inject constructor(
             ?.trim()?.takeIf { it.isNotEmpty() && it.length <= 12 && it.all(Char::isDigit) }
             ?: return null
 
+        // The emu's own redirect is the source of truth; the documented `saves/` convention (see
+        // README "Tracking local (Steam-emulated) PC games") is the fallback, with or without the
+        // appid level, so a hand-arranged folder tracks without any emu config.
         val achievements = settingsChildren.textOf("configs.user.ini", GseUserConfig.MAX_BYTES)
             ?.let(GseUserConfig::localSavePath)
             ?.let(GseUserConfig::savePathSegments)
             ?.let { redirect -> resolveFile(tree, settingsDir.parentDocId, redirect + appId + PROGRESS_FILE) }
+            ?: resolveFile(tree, settingsDir.parentDocId, listOf(SAVES_FOLDER, appId, PROGRESS_FILE))
+            ?: resolveFile(tree, settingsDir.parentDocId, listOf(SAVES_FOLDER, PROGRESS_FILE))
 
         return LocalSteamGame(
             folderName = gameFolder.name,
@@ -131,6 +136,8 @@ class LocalSteamDiscovery @Inject constructor(
 
     private companion object {
         const val PROGRESS_FILE = "achievements.json"
+        // Convention fallback beside the steam_api DLL: saves/[<appid>/]achievements.json.
+        const val SAVES_FOLDER = "saves"
         // Depth 4 reaches Unity's nesting: <Game>/<Game>_Data/Plugins/x86_64/steam_settings
         // (live case: the FF pixel remasters — docs/windows-library-refactor-plan.md Phase 5).
         const val SETTINGS_SEARCH_DEPTH = 4

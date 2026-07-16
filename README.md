@@ -87,7 +87,8 @@ Android home screen as a single front end for ROM emulation, Android games, PC-l
    - [4.13 Discord Social (Full edition)](#413-discord-social-full-edition)
    - [4.14 Adjusting the layout for your screen](#414-adjusting-the-layout-for-your-screen)
    - [4.15 Backup & restore](#415-backup--restore)
-   - [4.16 Settings reference](#416-settings-reference)
+   - [4.16 Tracking local (Steam-emulated) PC games](#416-tracking-local-steam-emulated-pc-games)
+   - [4.17 Settings reference](#417-settings-reference)
 5. [Permissions & privacy](#5-permissions--privacy)
 6. [Troubleshooting](#6-troubleshooting)
 7. [For Developers](#for-developers)
@@ -483,7 +484,53 @@ pick, and restores from one. Because on-device cloud backup is disabled for priv
 move your setup to a new device or recover after a reinstall. Restoring re-links your ROM/media
 folders via *Library ▸ Root Access*.
 
-### 4.16 Settings reference
+### 4.16 Tracking local (Steam-emulated) PC games
+
+PFP can track achievements for Windows games run through Wine emulators (GameHub, Winlator,
+GameNative and friends) whose bundled Steam emulator (GSE / Goldberg) records unlocks in local
+files. Tracking is display-only: PFP reads what the game already wrote, joins it with the Steam
+schema, and shows the result in Shiba Coins — run *Sync All Coins* from the Player Card to load
+every tracked game.
+
+For a game folder to be tracked it must live under your windows library and carry the Steam-emu
+config; achievement progress is read from the emu's own save redirect, or from a `saves` folder
+you keep in the game directory:
+
+```
+<ROM Root>/windows/
+├── import/                          ← exported launch files (.steam / .desktop / …)
+└── <Game>/
+    ├── steam_settings/
+    │   └── steam_appid.txt          ← REQUIRED: marks the game and names its Steam appid
+    ├── saves/
+    │   └── [<appid>/]achievements.json   ← unlock progress (either level works)
+    └── ...game files
+```
+
+To make the emulator RECORD unlocks into that folder (instead of its app-private global
+location, which PFP cannot read), set the GSE save redirect once per game — create or edit
+`steam_settings/configs.user.ini` and add:
+
+```ini
+[user::saves]
+local_save_path=./saves
+```
+
+The path is relative to the folder holding the steam_api `.dll`/`.so`; with it set the emu
+ignores its global save folder entirely (fully portable) and writes
+`saves/<appid>/achievements.json` after each play session.
+
+Notes:
+
+- `steam_settings/steam_appid.txt` may sit a few folders deep (Unity games keep it under
+  `<Game>_Data/Plugins/x86_64/`); PFP finds it automatically.
+- PFP follows whatever `local_save_path` the game already uses first (e.g. `./GSE Saves`) —
+  the `saves/` folder is the fallback convention for hand-arranged files.
+- A game with no progress file yet still tracks, at 0% earned; unlocks appear after the next
+  sync once the game writes its achievements file.
+- Reading the schema needs your Steam Web API key (*Settings ▸ Shiba Coins*).
+
+### 4.17 Settings reference
 
 | Section | What it covers |
 |---|---|
