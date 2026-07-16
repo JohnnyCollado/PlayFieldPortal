@@ -72,12 +72,20 @@ class LocalSteamDiscovery @Inject constructor(
         // The emu's own redirect is the source of truth; the documented `saves/` convention (see
         // README "Tracking local (Steam-emulated) PC games") is the fallback, with or without the
         // appid level, so a hand-arranged folder tracks without any emu config.
-        val achievements = settingsChildren.textOf("configs.user.ini", GseUserConfig.MAX_BYTES)
+        val redirect = settingsChildren.textOf("configs.user.ini", GseUserConfig.MAX_BYTES)
             ?.let(GseUserConfig::localSavePath)
             ?.let(GseUserConfig::savePathSegments)
-            ?.let { redirect -> resolveFile(tree, settingsDir.parentDocId, redirect + appId + PROGRESS_FILE) }
+        val achievements = redirect
+            ?.let { resolveFile(tree, settingsDir.parentDocId, it + appId + PROGRESS_FILE) }
             ?: resolveFile(tree, settingsDir.parentDocId, listOf(SAVES_FOLDER, appId, PROGRESS_FILE))
             ?: resolveFile(tree, settingsDir.parentDocId, listOf(SAVES_FOLDER, PROGRESS_FILE))
+
+        // Opt-in gate (user decision 2026-07-16): a game is tracked only once its save location
+        // exists — the redirect's target folder or a `saves/` folder. steam_settings alone (no
+        // save location) stays untracked instead of cluttering All Tracked at a permanent 0%.
+        if (achievements == null && !savesLocationExists(tree, settingsDir.parentDocId, redirect)) {
+            return null
+        }
 
         return LocalSteamGame(
             folderName = gameFolder.name,
@@ -86,6 +94,12 @@ class LocalSteamDiscovery @Inject constructor(
             achievementsUri = achievements,
         )
     }
+
+    // True when the emu's redirect target folder or the conventional `saves/` folder exists,
+    // even before any achievements file has been written inside it.
+    private fun savesLocationExists(tree: Uri, dllDocId: String, redirect: List<String>?): Boolean =
+        (redirect != null && resolveDir(tree, dllDocId, redirect) != null) ||
+            resolveDir(tree, dllDocId, listOf(SAVES_FOLDER)) != null
 
     private data class FoundDir(val dir: SafChild, val parentDocId: String)
 
@@ -97,6 +111,18 @@ class LocalSteamDiscovery @Inject constructor(
         return children.asSequence()
             .filter { it.isDirectory && !it.isIgnoredDir() }
             .firstNotNullOfOrNull { findSteamSettings(tree, it, depthLeft - 1) }
+    }
+
+    // Walks directory segments down from [startDocId]; the last segment must also be a directory.
+    private fun resolveDir(tree: Uri, startDocId: String, segments: List<String>): String? {
+        var docId = startDocId
+        for (segment in segments) {
+            val child = context.contentResolver.querySafChildren(tree, docId)
+                .firstOrNull { it.isDirectory && it.name.equals(segment, ignoreCase = true) }
+                ?: return null
+            docId = child.documentId
+        }
+        return docId
     }
 
     // Walks name segments down from a directory, matching case-insensitively (the files were
