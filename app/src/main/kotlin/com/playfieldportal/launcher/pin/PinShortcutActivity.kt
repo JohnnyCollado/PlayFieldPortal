@@ -44,10 +44,15 @@ class PinShortcutActivity : ComponentActivity() {
     }
 
     private fun handlePinRequest() {
-        val launcherApps = getSystemService(LauncherApps::class.java) ?: return
-        val request = launcherApps.getPinItemRequest(intent) ?: return
-        if (request.requestType != LauncherApps.PinItemRequest.REQUEST_TYPE_SHORTCUT) return
-        val shortcut = request.shortcutInfo ?: return
+        val launcherApps = getSystemService(LauncherApps::class.java)
+            ?: return Timber.w("Pin request: no LauncherApps service")
+        val request = launcherApps.getPinItemRequest(intent)
+            ?: return Timber.w("Pin request: intent carried no PinItemRequest")
+        if (request.requestType != LauncherApps.PinItemRequest.REQUEST_TYPE_SHORTCUT) {
+            return Timber.w("Pin request: unsupported type ${request.requestType}")
+        }
+        val shortcut = request.shortcutInfo
+            ?: return Timber.w("Pin request: no shortcutInfo payload")
 
         // Accept first so the shortcut is pinned to PFP regardless of what happens next.
         if (!runCatching { request.accept() }.getOrDefault(false)) {

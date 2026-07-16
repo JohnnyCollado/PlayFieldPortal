@@ -72,13 +72,19 @@ class PcShortcutImporter @Inject constructor(
             ?: return 0
         val hosts = hostPackage?.let { listOf(it) }
             ?: PcLauncherCatalog.entries.flatMap { it.packageNames }.distinct()
+        // Pins recorded under ANOTHER launcher (a previous install, a different default) are
+        // invisible to plain FLAG_MATCH_PINNED — the API-30+ any-launcher flag recovers them.
+        val pinFlags = LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED or
+            (if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R)
+                LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED_BY_ANY_LAUNCHER else 0)
         var imported = 0
         for (host in hosts.filter { isPcLauncher(it) }) {
             val query = LauncherApps.ShortcutQuery()
                 .setPackage(host)
-                .setQueryFlags(LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED)
+                .setQueryFlags(pinFlags)
             val pinned = runCatching { launcherApps.getShortcuts(query, Process.myUserHandle()) }
-                .getOrNull().orEmpty()   // SecurityException when PFP isn't the Home app
+                .onFailure { Timber.w(it, "Pinned-shortcut query failed for $host (not the Home app?)") }
+                .getOrNull().orEmpty()
             for (shortcut in pinned.filter { it.isEnabled }) {
                 importPinnedShortcut(
                     hostPackage = host,
@@ -104,6 +110,12 @@ class PcShortcutImporter @Inject constructor(
         if (watcherRegistered) return
         val launcherApps = context.getSystemService(Context.LAUNCHER_APPS_SERVICE) as? LauncherApps
             ?: return
+        // Startup sweep: recover pins that changed while PFP wasn't running (or that belong to
+        // another install's launcher record) without waiting for a manual scan.
+        scope.launch {
+            runCatching { reconcilePinnedShortcuts() }
+                .onFailure { Timber.e(it, "Startup pin reconcile failed") }
+        }
         val callback = object : LauncherApps.Callback() {
             override fun onShortcutsChanged(
                 packageName: String,
