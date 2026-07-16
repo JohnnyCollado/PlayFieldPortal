@@ -25,7 +25,11 @@ class LocalSteamSourceTest {
     private val discovery = mockk<LocalSteamDiscovery>()
     private val webApi = mockk<SteamWebApi>()
     private val credentials = mockk<AchievementCredentialsProvider>()
-    private val source = LocalSteamSource(discovery, webApi, credentials)
+    // Enrichment is exercised in its own test; here it passes coins through unchanged.
+    private val hiddenDescriptions = mockk<LocalSteamHiddenDescriptions> {
+        coEvery { enrich(any(), any()) } answers { secondArg() }
+    }
+    private val source = LocalSteamSource(discovery, webApi, credentials, hiddenDescriptions)
 
     private val progressUri = mockk<Uri>()
     private val game = LocalSteamGame("MARVEL Cosmic Invasion", "doc:games/marvel", "2753970", progressUri)

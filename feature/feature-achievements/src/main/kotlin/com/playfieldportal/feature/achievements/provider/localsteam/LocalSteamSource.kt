@@ -18,15 +18,16 @@ import javax.inject.Singleton
  * the game already wrote; nothing here touches the emulator or the network beyond the same
  * read-only Steam Web API the STEAM provider uses.
  *
- * The hidden-description community-page enrichment is deliberately absent: it reads the USER'S
- * OWN profile page for the game, which only exists for owned copies (decision recorded in
- * docs/local-steam-achievements-plan.md section 8).
+ * Hidden-description enrichment can't use the STEAM path (which reads the user's OWN profile page,
+ * absent for an unowned emu copy), so it goes through [LocalSteamHiddenDescriptions] instead —
+ * reading a roster of public top-owner profiles. Best-effort and never fatal.
  */
 @Singleton
 class LocalSteamSource @Inject constructor(
     private val discovery: LocalSteamDiscovery,
     private val webApi: SteamWebApi,
     private val credentials: AchievementCredentialsProvider,
+    private val hiddenDescriptions: LocalSteamHiddenDescriptions,
 ) : RemoteAchievementSource {
 
     private val rate = RateLimiter(1_100)
@@ -67,9 +68,10 @@ class LocalSteamSource @Inject constructor(
             ?.associate { it.name to it.percent }
             .orEmpty()
 
+        val coins = SteamCoinMapper.map(providerGameId, schemaCoins, percentByName, earnedByName)
         return ProviderSyncResult.Success(
             providerGameId,
-            SteamCoinMapper.map(providerGameId, schemaCoins, percentByName, earnedByName),
+            hiddenDescriptions.enrich(providerGameId, coins),
         )
     }
 }
