@@ -36,11 +36,16 @@ class LocalSteamSource @Inject constructor(
             ?: return ProviderSyncResult.MissingCredentials
         val game = discovery.findByAppId(providerGameId)
             ?: return ProviderSyncResult.Failed("no emu game folder for appid $providerGameId")
-        val progressUri = game.achievementsUri
-            ?: return ProviderSyncResult.Failed("no local save data — the emu's save redirect is not set")
 
-        val earnedByName = discovery.readProgress(progressUri)
-            .associate { it.apiName to SteamPlayerAchievement(it.apiName, if (it.earned) 1 else 0, it.earnedAtEpochSeconds ?: 0) }
+        // No progress file just means nothing earned YET (the emu's save redirect isn't set, or
+        // the game hasn't been played) — the set still tracks at 0%, it never fails the sync.
+        val earnedByName = game.achievementsUri
+            ?.let { uri ->
+                discovery.readProgress(uri).associate {
+                    it.apiName to SteamPlayerAchievement(it.apiName, if (it.earned) 1 else 0, it.earnedAtEpochSeconds ?: 0)
+                }
+            }
+            .orEmpty()
 
         rate.await()
         val schema = runCatching { webApi.getSchemaForGame(key, providerGameId) }

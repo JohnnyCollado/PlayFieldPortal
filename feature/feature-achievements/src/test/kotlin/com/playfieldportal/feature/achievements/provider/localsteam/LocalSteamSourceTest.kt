@@ -75,12 +75,20 @@ class LocalSteamSourceTest {
     }
 
     @Test
-    fun `no discovered folder and no redirect map to typed failures`() = runTest {
+    fun `no discovered folder is a typed failure`() = runTest {
         coEvery { discovery.findByAppId("999") } returns null
         assertIs<ProviderSyncResult.Failed>(source.fetch("999"))
+    }
 
+    @Test
+    fun `no progress file tracks the set at zero earned instead of failing`() = runTest {
+        // No save redirect / never played: the game still appears under All Tracked, at 0%.
         coEvery { discovery.findByAppId("2753970") } returns game.copy(achievementsUri = null)
-        val failed = assertIs<ProviderSyncResult.Failed>(source.fetch("2753970"))
-        assertTrue("redirect" in failed.reason)
+        coEvery { webApi.getSchemaForGame("key", "2753970") } returns schemaOf("ReadyForBattle", "StoppedThanos")
+
+        val result = assertIs<ProviderSyncResult.Success>(source.fetch("2753970"))
+
+        assertEquals(2, result.coins.size)
+        assertTrue(result.coins.none { it.isEarned })
     }
 }
