@@ -533,7 +533,7 @@ class LibraryManagerViewModel @Inject constructor(
     fun openImportPcGames() {
         val pm = context.packageManager
         val launchers = PcLauncherCatalog.entries.map { def ->
-            // Label-verified: GameHub-family variants ship under genuine AnTuTu/PUBG/Genshin
+            // Fingerprint-verified: GameHub-family variants ship under genuine AnTuTu/PUBG/Genshin
             // package names, so a package match alone would flag the real apps as launchers.
             val installedPkg = PcLauncherCatalog.verifiedInstalledPackage(def, pm)
             PcLauncherRow(
@@ -565,7 +565,7 @@ class LibraryManagerViewModel @Inject constructor(
     /** Builds and starts a launcher's game intent immediately, to verify the id before saving. */
     fun testLaunchPcGame(row: PcLauncherRow, id: String, source: String?) {
         val pkg = row.packageName ?: return
-        val intent = PcLauncherAdapters.forType(row.type)?.buildLaunchIntent(pkg, id, source)
+        val intent = PcLauncherAdapters.forType(row.type, context.packageManager)?.buildLaunchIntent(pkg, id, source)
         if (intent == null) {
             _scratch.update { it.copy(message = "Enter a valid game ID (a positive number).") }
             return
@@ -581,7 +581,7 @@ class LibraryManagerViewModel @Inject constructor(
     /** Adds a PC game by id: builds the launch intent, stores it, and files it in the Windows card. */
     fun addPcGameById(row: PcLauncherRow, id: String, title: String?, source: String?) {
         val pkg = row.packageName ?: return
-        val intent = PcLauncherAdapters.forType(row.type)?.buildLaunchIntent(pkg, id, source)
+        val intent = PcLauncherAdapters.forType(row.type, context.packageManager)?.buildLaunchIntent(pkg, id, source)
         if (intent == null) {
             _scratch.update { it.copy(message = "Enter a valid game ID (a positive number).") }
             return
@@ -725,7 +725,7 @@ class LibraryManagerViewModel @Inject constructor(
         if (file.extension == "steam" && gameHubPkg != null) {
             val type = if (gameHubPkg == "gamehub.lite") PcLauncherType.GAMEHUB_LITE else PcLauncherType.BANNERHUB_V6
             val name = if (gameHubPkg == "gamehub.lite") "GameHub Lite" else "BannerHub"
-            val intent = PcLauncherAdapters.forType(type)?.buildLaunchIntent(gameHubPkg, id, "STEAM") ?: return null
+            val intent = PcLauncherAdapters.forType(type, pm)?.buildLaunchIntent(gameHubPkg, id, "STEAM") ?: return null
             return Triple(intent, name, gameHubPkg)
         }
         return null

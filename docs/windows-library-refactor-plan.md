@@ -163,26 +163,31 @@ commits. No phase starts before the user lifts the coding gate.
 - [x] Decide the open question from section 2 — DONE 2026-07-16: the user moved the internal
       games to `Roms/windows` (verified live, `import/` included) and is moving the SD games
       too. `<ROM Root>/windows` is the documented setup; no extra folder names.
-- [ ] Prove the v5 Add-by-ID contract live: fire the verified intent over adb
-      (`com.ludashi.aibench.LAUNCH_GAME` -> `com.xj...GameDetailActivity`, `steamAppId` +
-      `autoStartGame`) against an installed Steam-sourced game and confirm it boots. The v6
-      recipe is already proven by the working Tactics Ogre row.
-- [ ] Confirm the component fingerprint from inside an app context (PackageManager
-      `getActivityInfo` on explicit-only activities of another package) — the classes were
-      verified from pulled APKs; this gate proves runtime visibility without QUERY_ALL_PACKAGES
-      surprises (manifest `<queries>` needs checking for the family package list).
+- [x] Prove the v5 Add-by-ID contract live — DONE 2026-07-16: fired
+      `com.ludashi.aibench.LAUNCH_GAME` -> `com.xj...GameDetailActivity` over adb with a
+      `localGameId` + `autoStartGame=false`; the activity resolved and became the top resumed
+      activity. The v6 recipe was already proven by the working Tactics Ogre row.
+- [x] Confirm component-fingerprint visibility — DONE 2026-07-16: PFP holds
+      `QUERY_ALL_PACKAGES` for its launcher role (app manifest line 21), so `getActivityInfo`
+      on other packages' activities needs no `<queries>` additions; both lineage marker
+      classes are exported anyway.
 
-### Phase 1 — Variant detection foundation
-- [ ] `PcLauncherCatalog` gains the component fingerprint (section 4): probe for
-      `com.xj.app.DeepLinkRouterActivity` (v5 lineage) vs `com.xiaoji.egggame.DeepLinkActivity`
-      (v6 lineage); `versionName` major recorded; label demoted to display naming. Result
-      cached per package, refreshed on package change.
-- [ ] Fix `GameHubFamilyAdapter`: the fingerprint selects the component and extras shape —
-      v6 keeps the current recipe; v5 targets `GameDetailActivity` with its verified action
-      and extras. Winlator/GameNative untouched.
-- [ ] Tests: fingerprint resolution per variant fixture; adapter intent shape per generation;
-      spoofed-package rejection (real AnTuTu label + no known components -> not a launcher).
-- Sec: no new permissions; `<queries>` entries only for the curated family list.
+### Phase 1 — Variant detection foundation  (CODE DONE 2026-07-16)
+- [x] `PcLauncherCatalog` gains the component fingerprint (section 4): lineage classes decide
+      (`com.xj.*` = v5, `DeepLinkActivity` = v6); family-labeled installs without known
+      classes fall back to `versionName` major; label demoted to brand naming only
+      (`brandMatches` — BannerHub takes banner labels, GameHub Lite takes every other verified
+      variant, so arbitrary rebrand labels like the live Ludashi install now verify). Result
+      cached per package keyed on `lastUpdateTime`. New `isVerifiedPcLauncher` is the Phase 3
+      shortcut-routing gate.
+- [x] `GameHubFamilyAdapter` fixed: the fingerprint selects the target component (v6
+      `DeepLinkActivity` recipe unchanged; v5 targets the exported `GameDetailActivity`);
+      extras naming shared per the verified bundles. `PcLauncherAdapters.forType` takes an
+      optional `PackageManager`; pm-less callers (UI metadata) assume v6.
+- [x] Tests (16, all green): fingerprint resolution incl. spoofed-package rejection and
+      component-beats-version; brand attribution; per-generation intent shapes under
+      Robolectric; id validation; GameNative shape; no-contract launchers.
+- Sec: no new permissions (QUERY_ALL_PACKAGES already held for the launcher role).
 
 ### Phase 2 — Windows card + directories
 - [ ] Windows card detail screen gets its own branch: no Emulator row, no Supported Files

@@ -17,6 +17,13 @@ android {
     }
     kotlinOptions { jvmTarget = "17" }
     buildFeatures { compose = true }
+    testOptions { unitTests { isIncludeAndroidResources = true } }
+}
+
+// Robolectric fetches its Android image over HTTPS; the test JVM must trust the Windows cert store
+// too (Avast intercepts HTTPS), matching the systemProp in gradle.properties.
+tasks.withType<Test>().configureEach {
+    systemProperty("javax.net.ssl.trustStoreType", "Windows-ROOT")
 }
 
 dependencies {
@@ -34,4 +41,8 @@ dependencies {
     implementation(project(":core:core-domain"))
     implementation(project(":core:core-data"))
     implementation(project(":core:core-ui"))
+
+    testImplementation(libs.bundles.test.unit)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
 }

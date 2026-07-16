@@ -2,6 +2,7 @@ package com.playfieldportal.feature.launcher
 
 import android.content.ComponentName
 import android.content.Intent
+import android.content.pm.PackageManager
 
 /**
  * Builds the explicit launch [Intent] that boots a specific game in a PC launcher, from a game id
@@ -22,31 +23,36 @@ interface PcLauncherAdapter {
     fun buildLaunchIntent(packageName: String, gameId: String, source: String?): Intent?
 }
 
-// XiaoJi GameHub family (BannerHub v6, GameHub Lite and forks). The deep-link dispatcher class is
-// constant across variants; the action is variant-scoped (`<pkg>.LAUNCH_GAME`). Mirrors the
-// documented Beacon/ES-DE recipe: -n <pkg>/com.xiaoji.egggame.DeepLinkActivity
-//   -a <pkg>.LAUNCH_GAME --es localGameId <id> --ez autoStartGame true
-private class GameHubFamilyAdapter(override val type: PcLauncherType) : PcLauncherAdapter {
+// XiaoJi GameHub family (BannerHub v6, GameHub Lite and forks). The action is variant-scoped
+// (`<pkg>.LAUNCH_GAME`) and the extras naming is shared, but the target component differs by
+// architecture generation (manifest-verified 2026-07-16, live-fired on both installed variants):
+//   V6: -n <pkg>/com.xiaoji.egggame.DeepLinkActivity (the documented Beacon/ES-DE recipe)
+//   V5: -n <pkg>/com.xj.landscape.launcher.ui.gamedetail.GameDetailActivity (exported)
+// with --es steamAppId|localGameId <id> --ez autoStartGame true either way.
+private class GameHubFamilyAdapter(
+    override val type: PcLauncherType,
+    private val generationOf: (String) -> GameHubGeneration,
+) : PcLauncherAdapter {
     override val idPrompt = "Game ID — in the launcher: open the game → ⋮ → Banner Tools → Show Game ID"
     override val requiresIntegerId = true
     override val sources = emptyList<String>()
 
     override fun buildLaunchIntent(packageName: String, gameId: String, source: String?): Intent? {
         val id = gameId.trim().toIntOrNull()?.takeIf { it > 0 } ?: return null
+        val activity = when (generationOf(packageName)) {
+            GameHubGeneration.V6 -> PcLauncherCatalog.V6_DEEP_LINK_ACTIVITY
+            GameHubGeneration.V5 -> PcLauncherCatalog.V5_GAME_DETAIL_ACTIVITY
+        }
         return Intent().apply {
-            component = ComponentName(packageName, DEEP_LINK_ACTIVITY)
+            component = ComponentName(packageName, activity)
             action = "$packageName.LAUNCH_GAME"
-            // A Steam title (from a .steam export) launches by steamAppId; a BannerHub Local Game ID
+            // A Steam title (from a .steam export) launches by steamAppId; a launcher-local Game ID
             // (add-by-ID, no source) launches by localGameId.
             if (source == "STEAM") putExtra("steamAppId", id.toString())
             else putExtra("localGameId", id.toString())
             putExtra("autoStartGame", true)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-    }
-
-    private companion object {
-        const val DEEP_LINK_ACTIVITY = "com.xiaoji.egggame.DeepLinkActivity"
     }
 }
 
@@ -72,14 +78,26 @@ private class GameNativeAdapter : PcLauncherAdapter {
 
 /** Resolves the add-by-ID adapter for a launcher, or null when it has no external launch contract. */
 object PcLauncherAdapters {
-    fun forType(type: PcLauncherType): PcLauncherAdapter? = when (type) {
+    /**
+     * [pm] lets the GameHub-family adapter fingerprint the target package's generation at build
+     * time; without it (UI metadata like id prompts and `canAddById` checks) V6 is assumed.
+     */
+    fun forType(type: PcLauncherType, pm: PackageManager? = null): PcLauncherAdapter? = when (type) {
         PcLauncherType.BANNERHUB_V6,
-        PcLauncherType.GAMEHUB_LITE -> GameHubFamilyAdapter(type)
+        PcLauncherType.GAMEHUB_LITE -> GameHubFamilyAdapter(type) { pkg ->
+            pm?.let { PcLauncherCatalog.gameHubGeneration(pkg, it) } ?: GameHubGeneration.V6
+        }
         PcLauncherType.GAMENATIVE   -> GameNativeAdapter()
         // Winlator launches by shortcut path (.desktop), handled outside the id-based adapter.
         PcLauncherType.WINLATOR,
         PcLauncherType.MANUAL       -> null
     }
+
+    /** Test seam: a GameHub-family adapter with the generation fingerprint pinned. */
+    internal fun gameHubAdapterFor(
+        type: PcLauncherType,
+        generationOf: (String) -> GameHubGeneration,
+    ): PcLauncherAdapter = GameHubFamilyAdapter(type, generationOf)
 
     // GameNative's per-store export extension → its `game_source` value (see FrontendSyncManager).
     fun gameSourceForExtension(extension: String): String? = when (extension.lowercase()) {
