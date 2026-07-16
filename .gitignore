@@ -49,3 +49,9 @@ replay_pid*
 # per-machine permission grants are not)
 .claude/settings.local.json
 .claude/launch.json
+
+# Local companion tools and reference material — never committed. GSE-Generator-main
+# caches a personal Steam Web API key in Tools/steam_api_key.txt, so it must stay out
+# of version control.
+GSE-Generator-main/
+hw/
