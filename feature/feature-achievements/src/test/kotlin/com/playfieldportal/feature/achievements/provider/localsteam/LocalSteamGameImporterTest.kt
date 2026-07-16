@@ -47,7 +47,7 @@ class LocalSteamGameImporterTest {
     @Test
     fun `a folder mapping to a library game links LOCAL_STEAM — no entity is ever created`() = runTest {
         quiet()
-        coEvery { discovery.scan() } returns listOf(marvel)
+        coEvery { discovery.scanAll() } returns listOf(marvel)
         coEvery { gameRepository.getByPlatform("windows") } returns
             listOf(pinnedGame(7L, "MARVELCosmicInvasion"))
 
@@ -62,7 +62,7 @@ class LocalSteamGameImporterTest {
     @Test
     fun `an unmapped folder stays tracked-only — no entity, no link`() = runTest {
         quiet()
-        coEvery { discovery.scan() } returns listOf(marvel)
+        coEvery { discovery.scanAll() } returns listOf(marvel)
         coEvery { gameRepository.getByPlatform("windows") } returns emptyList()
 
         val result = importer.import()
@@ -81,7 +81,7 @@ class LocalSteamGameImporterTest {
             appId = "359870",
             achievementsUri = null,
         )
-        coEvery { discovery.scan() } returns listOf(folder)
+        coEvery { discovery.scanAll() } returns listOf(folder)
         coEvery { gameRepository.getByPlatform("windows") } returns
             listOf(pinnedGame(4L, "FINAL FANTASY X/X-2 HD Remaster"))
         coEvery { steamNames.officialNameOf("359870") } returns "FINAL FANTASY X/X-2 HD Remaster"
@@ -95,7 +95,7 @@ class LocalSteamGameImporterTest {
     @Test
     fun `an owned mapped copy gets BOTH provider links`() = runTest {
         coEvery { steamNames.officialNameOf(any()) } returns null
-        coEvery { discovery.scan() } returns listOf(marvel)
+        coEvery { discovery.scanAll() } returns listOf(marvel)
         coEvery { gameRepository.getByPlatform("windows") } returns
             listOf(pinnedGame(7L, "MARVEL Cosmic Invasion"))
         coEvery { ownership.classify(7L, "2753970") } returns LocalCopyOwnership.OWNED
@@ -109,7 +109,7 @@ class LocalSteamGameImporterTest {
     @Test
     fun `unlaunchable folder-import rows from the pre-rework scan are removed`() = runTest {
         quiet()
-        coEvery { discovery.scan() } returns listOf(marvel)
+        coEvery { discovery.scanAll() } returns listOf(marvel)
         val dead = Game(
             id = 12L, title = "FINAL FANTASY V", platformId = "windows",
             isManualEntry = true, romPath = "/storage/emulated/0/Roms/windows/FINAL FANTASY V",
@@ -124,8 +124,26 @@ class LocalSteamGameImporterTest {
     }
 
     @Test
+    fun `an untrackable folder missing its schema still reaches the prompt but is never linked`() = runTest {
+        quiet()
+        // The regression: a generated configs.user.ini whose saves folder doesn't exist yet made
+        // the game vanish from discovery entirely, so the prompt could never offer the fix.
+        val awaitingKit = marvel.copy(hasSchema = false, trackable = false)
+        coEvery { discovery.scanAll() } returns listOf(awaitingKit)
+        coEvery { gameRepository.getByPlatform("windows") } returns
+            listOf(pinnedGame(7L, "MARVELCosmicInvasion"))
+
+        val result = importer.import()
+
+        assertEquals(listOf(awaitingKit), result.missingSchema)
+        assertEquals(0, result.discovered)
+        assertEquals(0, result.linked)
+        coVerify(exactly = 0) { achievements.linkManually(any(), any(), any()) }
+    }
+
+    @Test
     fun `no discovered folders is a quiet no-op`() = runTest {
-        coEvery { discovery.scan() } returns emptyList()
+        coEvery { discovery.scanAll() } returns emptyList()
 
         assertEquals(EmuGameImportResult(0, 0), importer.import())
         coVerify(exactly = 0) { gameRepository.getByPlatform(any()) }

@@ -33,7 +33,9 @@ class GoldbergAchievementsJsonTest {
         assertEquals("ACH_1", entry.getValue("name").jsonPrimitive.content)
         assertEquals("First \"Steps\"", entry.getValue("displayName").jsonPrimitive.content)
         assertEquals("Do a thing & win", entry.getValue("description").jsonPrimitive.content)
-        assertEquals(0, entry.getValue("hidden").jsonPrimitive.content.toInt())
+        // gbe_fork's canonical example types hidden as a string, not a number.
+        assertTrue(entry.getValue("hidden").jsonPrimitive.isString)
+        assertEquals("0", entry.getValue("hidden").jsonPrimitive.content)
         // Full CDN urls collapse to a folder-relative images/<file> path the emu expects.
         assertEquals("images/aaa111.jpg", entry.getValue("icon").jsonPrimitive.content)
         assertEquals("images/aaa111_gray.jpg", entry.getValue("icongray").jsonPrimitive.content)
@@ -56,7 +58,8 @@ class GoldbergAchievementsJsonTest {
 
         val entry = parser.parseToJsonElement(out).jsonArray.single().jsonObject
         assertEquals("", entry.getValue("description").jsonPrimitive.content)
-        assertEquals(1, entry.getValue("hidden").jsonPrimitive.content.toInt())
+        assertTrue(entry.getValue("hidden").jsonPrimitive.isString)
+        assertEquals("1", entry.getValue("hidden").jsonPrimitive.content)
     }
 
     @Test

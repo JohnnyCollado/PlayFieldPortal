@@ -20,7 +20,9 @@ object GoldbergAchievementsJson {
     private data class Entry(
         val description: String,
         val displayName: String,
-        val hidden: Int,
+        // gbe_fork's canonical example carries hidden as a string ("0"/"1"); the emu accepts both,
+        // stricter forks and tooling only the string.
+        val hidden: String,
         val icon: String,
         val icongray: String,
         val name: String,
@@ -35,7 +37,7 @@ object GoldbergAchievementsJson {
                 Entry(
                     description = a.description.orEmpty(),
                     displayName = a.displayName.orEmpty(),
-                    hidden = a.hidden,
+                    hidden = a.hidden.toString(),
                     icon = imagePath(a.icon),
                     icongray = imagePath(a.icongray),
                     name = a.name,

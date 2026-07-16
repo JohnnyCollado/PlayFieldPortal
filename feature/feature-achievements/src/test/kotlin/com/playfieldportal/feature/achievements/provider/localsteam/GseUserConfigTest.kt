@@ -42,6 +42,17 @@ class GseUserConfigTest {
     }
 
     @Test
+    fun `the generated redirect ini round-trips through the reader`() {
+        // The writer's template and the reader must stay compatible: what the generator writes,
+        // discovery must resolve to the saves folder beside the DLL.
+        val ini = GseUserConfig.savesRedirectIni()
+
+        val redirect = GseUserConfig.localSavePath(ini)
+        assertEquals("./saves", redirect)
+        assertEquals(listOf("saves"), GseUserConfig.savePathSegments(redirect!!))
+    }
+
+    @Test
     fun `commented lines and lookalike keys are ignored`() {
         val ini = """
             # local_save_path=./commented-out

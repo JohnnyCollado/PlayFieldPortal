@@ -70,7 +70,17 @@ data class SteamGame(
 )
 
 @Serializable
-data class SteamGameStats(val achievements: List<SteamSchemaAchievement> = emptyList())
+data class SteamGameStats(
+    val achievements: List<SteamSchemaAchievement> = emptyList(),
+    val stats: List<SteamSchemaStat> = emptyList(),
+)
+
+/** One stat definition from the schema. The Web API carries no int/float type information. */
+@Serializable
+data class SteamSchemaStat(
+    val name: String,
+    @SerialName("defaultvalue") val defaultValue: Double = 0.0,
+)
 
 @Serializable
 data class SteamSchemaAchievement(

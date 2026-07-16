@@ -26,8 +26,17 @@ data class LocalSteamGame(
     val settingsTreeUri: String = "",
     /** The `steam_settings` folder's document id, the write target for a generated schema. */
     val settingsDirDocId: String = "",
+    /** The folder holding `steam_settings` (the DLL folder), where a `saves/` dir can be created. */
+    val settingsParentDocId: String = "",
     /** Whether `steam_settings/achievements.json` (the schema the emu reads) already exists. */
     val hasSchema: Boolean = true,
+    /**
+     * Whether the game's save location exists (the redirect target or a `saves/` folder) — the
+     * opt-in tracking gate (user decision 2026-07-16). Untrackable games stay out of [scan] so
+     * All Tracked never shows a permanent 0%, but remain visible to [scanAll] so the schema
+     * prompt can offer the generation that creates the save location.
+     */
+    val trackable: Boolean = true,
 )
 
 /**
@@ -53,8 +62,11 @@ class LocalSteamDiscovery @Inject constructor(
     private var cachedGames: List<LocalSteamGame> = emptyList()
     private var cachedAt = 0L
 
-    /** Every emu-marked game folder under the windows scan surfaces; empty when none is set up. */
-    suspend fun scan(): List<LocalSteamGame> = scanMutex.withLock { freshScan() }
+    /** Every trackable emu game folder under the windows scan surfaces (the sync/link surface). */
+    suspend fun scan(): List<LocalSteamGame> = scanAll().filter { it.trackable }
+
+    /** Every emu-marked game folder including untrackable ones awaiting schema generation. */
+    suspend fun scanAll(): List<LocalSteamGame> = scanMutex.withLock { freshScan() }
 
     /**
      * The game folder whose `steam_appid.txt` matches [appId], or null. Served from a scan at most
@@ -64,6 +76,8 @@ class LocalSteamDiscovery @Inject constructor(
      */
     suspend fun findByAppId(appId: String): LocalSteamGame? = scanMutex.withLock {
         val fresh = System.currentTimeMillis() - cachedAt <= SCAN_CACHE_MS
+        // Deliberately matches untrackable games too: a sync requested right after generation
+        // (inside the cache window) should read the fresh kit, not fail on the stale gate flag.
         (if (fresh) cachedGames else freshScan()).firstOrNull { it.appId == appId }
     }
 
@@ -112,9 +126,11 @@ class LocalSteamDiscovery @Inject constructor(
         // Opt-in gate (user decision 2026-07-16): a game is tracked only once its save location
         // exists — the redirect's target folder or a `saves/` folder. steam_settings alone (no
         // save location) stays untracked instead of cluttering All Tracked at a permanent 0%.
-        if (achievements == null && !savesLocationExists(tree, settingsDir.parentDocId, redirect)) {
-            return null
-        }
+        // Untrackable folders still surface through scanAll: the schema prompt must see them, or
+        // a generated configs.user.ini whose saves folder is missing would hide the game from
+        // the very step that creates that folder.
+        val trackable = achievements != null ||
+            savesLocationExists(tree, settingsDir.parentDocId, redirect)
 
         // The schema the emu reads to know its achievement list lives in steam_settings itself;
         // its absence is what an in-app generate step (LocalSteamSchemaGenerator) can fill.
@@ -129,7 +145,9 @@ class LocalSteamDiscovery @Inject constructor(
             achievementsUri = achievements,
             settingsTreeUri = tree.toString(),
             settingsDirDocId = settingsDir.dir.documentId,
+            settingsParentDocId = settingsDir.parentDocId,
             hasSchema = hasSchema,
+            trackable = trackable,
         )
     }
 

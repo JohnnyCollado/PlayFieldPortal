@@ -44,9 +44,13 @@ class LocalSteamGameImporter @Inject constructor(
     private val steamNames: SteamAppListResolver,
 ) {
     suspend fun import(): EmuGameImportResult {
-        val found = discovery.scan()
-        if (found.isEmpty()) return EmuGameImportResult(0, 0)
-        val missingSchema = found.filterNot { it.hasSchema }
+        // The full scan: the schema prompt must also see untrackable folders (no save location
+        // yet), because generating the kit is exactly what creates their save location. Linking
+        // and the discovered count stay on the trackable subset.
+        val all = discovery.scanAll()
+        if (all.isEmpty()) return EmuGameImportResult(0, 0)
+        val found = all.filter { it.trackable }
+        val missingSchema = all.filterNot { it.hasSchema }
 
         // One-time hygiene for rows the pre-rework scan created: a windows GAME with no launch
         // handle at all (no package, no shortcut, no intent) is a folder import that can never
