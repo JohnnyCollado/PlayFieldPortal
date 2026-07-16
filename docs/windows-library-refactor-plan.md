@@ -44,9 +44,10 @@ generic console layout:
   instead of trawling the whole windows folder; game folders live as siblings under
   `<ROM Root>/windows/<Game>/`. Created alongside the windows folder by the same
   auto-create rule.
-- OPEN QUESTION (raised by live data): both real game roots are named `Games`, not `windows`,
-  and they span two storage volumes — decide whether the card scans additional folder names /
-  multiple roots.
+- RESOLVED 2026-07-16: the user adopted the canonical layout — internal games now live at
+  `Roms/windows` (verified on device; the `import/` subfolder already created by hand) and
+  the SD-card games will be moved by the user as well. No extra folder-name support needed;
+  multiple ROM roots are already supported as-is.
 
 ## 3. Shortcut importing (locked 2026-07-16)
 
@@ -159,9 +160,9 @@ fixtures), lite-debug on-device validation, pipefail-gated build+install, atomic
 commits. No phase starts before the user lifts the coding gate.
 
 ### Phase 0 — Verification gates (no product code)
-- [ ] Decide the open question from section 2: the live game roots are named `Games` on two
-      volumes, not `windows` — does the card scan extra folder names / multiple roots, or is
-      moving folders under `<ROM Root>/windows` the documented setup? (User decision.)
+- [x] Decide the open question from section 2 — DONE 2026-07-16: the user moved the internal
+      games to `Roms/windows` (verified live, `import/` included) and is moving the SD games
+      too. `<ROM Root>/windows` is the documented setup; no extra folder names.
 - [ ] Prove the v5 Add-by-ID contract live: fire the verified intent over adb
       (`com.ludashi.aibench.LAUNCH_GAME` -> `com.xj...GameDetailActivity`, `steamAppId` +
       `autoStartGame`) against an installed Steam-sourced game and confirm it boots. The v6
