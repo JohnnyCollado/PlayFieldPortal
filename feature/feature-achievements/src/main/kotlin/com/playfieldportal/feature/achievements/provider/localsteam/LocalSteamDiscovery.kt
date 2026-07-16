@@ -8,6 +8,8 @@ import com.playfieldportal.core.data.saf.isIgnoredDir
 import com.playfieldportal.core.data.saf.querySafChildren
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import javax.inject.Inject
@@ -44,8 +46,28 @@ class LocalSteamDiscovery @Inject constructor(
     @ApplicationContext private val context: Context,
     private val windowsLibrary: WindowsLibrarySetup,
 ) {
+    // A full scan is a deep SAF tree walk (one IPC query per directory), so per-game lookups
+    // during a batch pass must not each pay for one. scan() stays always-fresh and primes the
+    // cache; findByAppId reads through it. The mutex also collapses concurrent duplicate scans.
+    private val scanMutex = Mutex()
+    private var cachedGames: List<LocalSteamGame> = emptyList()
+    private var cachedAt = 0L
+
     /** Every emu-marked game folder under the windows scan surfaces; empty when none is set up. */
-    suspend fun scan(): List<LocalSteamGame> = withContext(Dispatchers.IO) {
+    suspend fun scan(): List<LocalSteamGame> = scanMutex.withLock { freshScan() }
+
+    /**
+     * The game folder whose `steam_appid.txt` matches [appId], or null. Served from a scan at most
+     * [SCAN_CACHE_MS] old: Sync All scans once up front, then every per-game sync in the pass
+     * resolves against that result instead of re-walking the tree. A folder moved mid-window is
+     * seen one pass late — the same self-correction a mid-scan move already relies on.
+     */
+    suspend fun findByAppId(appId: String): LocalSteamGame? = scanMutex.withLock {
+        val fresh = System.currentTimeMillis() - cachedAt <= SCAN_CACHE_MS
+        (if (fresh) cachedGames else freshScan()).firstOrNull { it.appId == appId }
+    }
+
+    private suspend fun freshScan(): List<LocalSteamGame> = withContext(Dispatchers.IO) {
         windowsLibrary.windowsFolders()
             .mapNotNull { (treeUri, startDocId) ->
                 runCatching { Uri.parse(treeUri) }.getOrNull()?.let { it to startDocId }
@@ -58,11 +80,12 @@ class LocalSteamDiscovery @Inject constructor(
                     }
                     .mapNotNull { inspect(tree, it) }
             }
-            .also { Timber.i("LOCAL_STEAM discovery — ${it.size} emu game folder(s)") }
+            .also {
+                cachedGames = it
+                cachedAt = System.currentTimeMillis()
+                Timber.i("LOCAL_STEAM discovery — ${it.size} emu game folder(s)")
+            }
     }
-
-    /** The game folder whose `steam_appid.txt` matches [appId], or null. */
-    suspend fun findByAppId(appId: String): LocalSteamGame? = scan().firstOrNull { it.appId == appId }
 
     // A game qualifies through its steam_settings folder, searched a few levels deep because some
     // installs keep the exe (and the DLL beside it) in a subfolder of the distributed folder.
@@ -183,6 +206,9 @@ class LocalSteamDiscovery @Inject constructor(
         // (live case: the FF pixel remasters — docs/windows-library-refactor-plan.md Phase 5).
         const val SETTINGS_SEARCH_DEPTH = 4
         const val SMALL_FILE_MAX_BYTES = 64
+        // Long enough to cover one Sync All pass, short enough that folder changes are seen on
+        // the next user action.
+        const val SCAN_CACHE_MS = 30_000L
     }
 }
 
