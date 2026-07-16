@@ -507,12 +507,25 @@ you keep in the game directory:
     └── ...game files
 ```
 
+To make the emulator RECORD unlocks into that folder (instead of its app-private global
+location, which PFP cannot read), set the GSE save redirect once per game — create or edit
+`steam_settings/configs.user.ini` and add:
+
+```ini
+[user::saves]
+local_save_path=./saves
+```
+
+The path is relative to the folder holding the steam_api `.dll`/`.so`; with it set the emu
+ignores its global save folder entirely (fully portable) and writes
+`saves/<appid>/achievements.json` after each play session.
+
 Notes:
 
 - `steam_settings/steam_appid.txt` may sit a few folders deep (Unity games keep it under
   `<Game>_Data/Plugins/x86_64/`); PFP finds it automatically.
-- If the emu's `steam_settings/configs.user.ini` sets a `local_save_path` redirect, PFP follows
-  that first — the `saves/` folder is the fallback convention.
+- PFP follows whatever `local_save_path` the game already uses first (e.g. `./GSE Saves`) —
+  the `saves/` folder is the fallback convention for hand-arranged files.
 - A game with no progress file yet still tracks, at 0% earned; unlocks appear after the next
   sync once the game writes its achievements file.
 - Reading the schema needs your Steam Web API key (*Settings ▸ Shiba Coins*).
