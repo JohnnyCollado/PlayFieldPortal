@@ -61,9 +61,12 @@ data class PlayerStatusUiState(
     val recent: List<RecentRow> = emptyList(),
     val rarest: RarestCard? = null,
     // Controller focus is two regions: the Recent list (UP/DOWN scrolls through its rows) and the
-    // Rarest card. RIGHT jumps from Recent to Rarest; LEFT returns to Recent.
+    // Rarest card. RIGHT jumps from Recent to Rarest; LEFT returns to Recent. While the rarest
+    // card holds focus, UP/DOWN scroll the PAGE instead: [rarestPageNudge] accumulates +1 per
+    // DOWN and -1 per UP, and the screen turns deltas into relative scrolls.
     val recentIndex: Int = 0,
     val onRarest: Boolean = false,
+    val rarestPageNudge: Int = 0,
     val closed: Boolean = false,
     // A row the user activated — the screen opens its coins overlay and calls onOpenHandled.
     val openCoins: ShibaCoinsTarget? = null,
@@ -91,7 +94,7 @@ class PlayerStatusViewModel @Inject constructor(
 
     fun load() {
         // Retained across open/close: clear the stale closed flag and reset focus to the top row.
-        _state.update { it.copy(closed = false, recentIndex = 0, onRarest = false) }
+        _state.update { it.copy(closed = false, recentIndex = 0, onRarest = false, rarestPageNudge = 0) }
         if (collecting) return
         collecting = true
         viewModelScope.launch {
@@ -169,9 +172,16 @@ class PlayerStatusViewModel @Inject constructor(
         val s = _state.value
         val lastRecent = (s.recent.size - 1).coerceAtLeast(0)
         when (action) {
-            // UP/DOWN scroll the recent list; they do nothing while the rarest card holds focus.
-            GamepadAction.NAVIGATE_UP -> if (!s.onRarest) _state.update { it.copy(recentIndex = (it.recentIndex - 1).coerceIn(0, lastRecent)) }
-            GamepadAction.NAVIGATE_DOWN -> if (!s.onRarest) _state.update { it.copy(recentIndex = (it.recentIndex + 1).coerceIn(0, lastRecent)) }
+            // UP/DOWN scroll the recent list; while the rarest card holds focus they scroll the
+            // PAGE instead (relative nudges the screen converts to scrolls).
+            GamepadAction.NAVIGATE_UP -> _state.update {
+                if (it.onRarest) it.copy(rarestPageNudge = it.rarestPageNudge - 1)
+                else it.copy(recentIndex = (it.recentIndex - 1).coerceIn(0, lastRecent))
+            }
+            GamepadAction.NAVIGATE_DOWN -> _state.update {
+                if (it.onRarest) it.copy(rarestPageNudge = it.rarestPageNudge + 1)
+                else it.copy(recentIndex = (it.recentIndex + 1).coerceIn(0, lastRecent))
+            }
             // RIGHT jumps to the rarest card (it sits in the right column); LEFT returns to the
             // recent list on the left — matching the on-screen layout. With no recent rows the
             // rarest card is the only focus target, so LEFT stays put rather than stranding focus.

@@ -30,6 +30,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
+import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -57,6 +60,9 @@ private val TextMuted = Color(0x99EEEEEE)
 private val TextDim = Color(0x66EEEEEE)
 private val CardFill = Color(0xFF1B1B26)
 private val Track = Color(0x33FFFFFF)
+
+// One DOWN/UP press scrolls the page by this much while browsing (before focus enters the feed).
+private val PAGE_SCROLL_STRIDE = 200.dp
 
 private fun metalOf(tier: ShibaTier) = when (tier) {
     ShibaTier.BRONZE -> Bronze
@@ -109,6 +115,18 @@ fun PlayerStatusScreen(
             state.onRarest -> runCatching { rarestRequester.bringIntoView() }
             state.recentIndex == 0 -> scrollState.animateScrollTo(0)
             else -> runCatching { recentRequesters[state.recentIndex]?.bringIntoView() }
+        }
+    }
+    // While the rarest card holds focus, UP/DOWN nudge the PAGE: the ViewModel accumulates a
+    // counter and each delta becomes a relative scroll (relative because the card's position
+    // came from bringIntoView, not a known offset).
+    val stridePx = with(LocalDensity.current) { PAGE_SCROLL_STRIDE.roundToPx() }
+    LaunchedEffect(Unit) {
+        var last = 0
+        snapshotFlow { state.rarestPageNudge }.collect { nudge ->
+            val delta = nudge - last
+            last = nudge
+            if (delta != 0) scrollState.animateScrollBy(delta * stridePx.toFloat())
         }
     }
 
