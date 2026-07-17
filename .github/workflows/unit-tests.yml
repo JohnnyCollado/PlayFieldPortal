@@ -17,19 +17,22 @@ jobs:
   jvm-unit-tests:
     runs-on: ubuntu-latest
     steps:
+      # Actions are pinned to commit SHAs so a repointed release tag can't inject code into CI.
       - name: Checkout (LFS off — the SDK aar isn't needed for these tests)
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           lfs: false
+          # No later step needs git auth — don't leave the token in .git/config.
+          persist-credentials: false
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4.8.0
         with:
           distribution: temurin
           java-version: '17'
 
       - name: Set up Gradle (with caching)
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@748248ddd2a24f49513d8f472f81c3a07d4d50e1 # v4.4.4
 
       # gradle.properties pins a Windows JDK path + the Windows-ROOT truststore (a local
       # SSL-interception workaround). Both are invalid on a Linux runner, so strip them here — the
@@ -45,7 +48,7 @@ jobs:
 
       - name: Upload test reports on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: unit-test-reports
           path: '**/build/reports/tests/'
