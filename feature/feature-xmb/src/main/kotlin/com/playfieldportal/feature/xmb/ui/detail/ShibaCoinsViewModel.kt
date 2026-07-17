@@ -238,6 +238,10 @@ class ShibaCoinsViewModel @Inject constructor(
                 // Confirm on a hidden coin row reveals its details; confirm again re-hides.
                 else -> s.displayed.getOrNull(s.focusIndex - FOCUS_COINS_START)?.let { toggleReveal(it) }
             }
+            // X / square cycles the sort, Y / triangle cycles the Show filter — from anywhere on
+            // the page, matching the fullscreen Shiba library's bindings.
+            GamepadAction.CHANGE_SORT, GamepadAction.OPEN_TASK_TRAY -> cycleSort(1)
+            GamepadAction.BUTTON_Y, GamepadAction.LONG_PRESS -> cycleFilter(1)
             GamepadAction.BACK -> close()
             else -> Unit
         }

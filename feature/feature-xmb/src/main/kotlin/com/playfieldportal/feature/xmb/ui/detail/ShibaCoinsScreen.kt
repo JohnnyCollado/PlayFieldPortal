@@ -1,11 +1,8 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.relocation.BringIntoViewRequester
-import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -100,21 +97,18 @@ fun ShibaCoinsScreen(
     }
 
     val listState = rememberLazyListState()
-    // Header focus pins the list to the top; coin rows keep themselves in view with a
-    // BringIntoViewRequester (real geometry — same convention as GameDetailScreen's coin strip).
-    // The old index-plus-offset scroll math drifted the focused row off screen under held input.
+    // Same authoritative snap-follow as the Shiba library list: header focus pins the list to
+    // the top; a focused coin row snaps to the 1/3-viewport line (clamped at the list edges).
+    // Instant, PSP-style — animated following lagged behind held input. Reacting to the
+    // displayed ids as well makes a sort/filter reorder re-snap, dropping the keyed list's
+    // viewport anchor to the old rows.
     LaunchedEffect(Unit) {
-        snapshotFlow { state.focusIndex }.collect { focus ->
+        snapshotFlow { state.displayed.map { it.id } to state.focusIndex }.collect { (_, focus) ->
             if (focus < FOCUS_COINS_START) {
-                listState.animateScrollToItem(0)
+                listState.scrollToItem(0)
             } else {
-                // Only a composed row can bring itself into view. A focused row that isn't
-                // composed at all (a sort/filter change teleported focus) is scrolled to by
-                // index first; once composed, its own requester takes over.
-                val item = 1 + (focus - FOCUS_COINS_START)
-                if (listState.layoutInfo.visibleItemsInfo.none { it.index == item }) {
-                    listState.animateScrollToItem(item)
-                }
+                val third = listState.layoutInfo.viewportSize.height / 3
+                listState.scrollToItem(1 + (focus - FOCUS_COINS_START), scrollOffset = -third)
             }
         }
     }
@@ -368,7 +362,7 @@ private fun SortFilterChips(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewM
             verticalAlignment = Alignment.CenterVertically,
             modifier = focusRing(state.focusIndex == FOCUS_SORT),
         ) {
-            Text("Sort", color = TextDim, fontSize = 11.sp)
+            Text("Sort  (X)", color = TextDim, fontSize = 11.sp)
             Chip("Tier", state.sort == CoinSort.TIER) { viewModel.setSort(CoinSort.TIER) }
             Chip("Earned", state.sort == CoinSort.EARNED) { viewModel.setSort(CoinSort.EARNED) }
             Chip("Rarest", state.sort == CoinSort.RAREST) { viewModel.setSort(CoinSort.RAREST) }
@@ -379,7 +373,7 @@ private fun SortFilterChips(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewM
             verticalAlignment = Alignment.CenterVertically,
             modifier = focusRing(state.focusIndex == FOCUS_FILTER),
         ) {
-            Text("Show", color = TextDim, fontSize = 11.sp)
+            Text("Show  (Y)", color = TextDim, fontSize = 11.sp)
             Chip("All", state.filter == CoinFilter.ALL) { viewModel.setFilter(CoinFilter.ALL) }
             Chip("Earned", state.filter == CoinFilter.EARNED) { viewModel.setFilter(CoinFilter.EARNED) }
             Chip("Locked", state.filter == CoinFilter.LOCKED) { viewModel.setFilter(CoinFilter.LOCKED) }
@@ -397,7 +391,6 @@ private fun focusRing(focused: Boolean): Modifier {
     else Modifier
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun CoinListRow(
     coin: CoinRow,
@@ -410,13 +403,10 @@ private fun CoinListRow(
     val hideable = coin.isHidden && !coin.isEarned
     val redacted = hideable && !revealed
     val edge = menuCursorEdge()
-    val bringIntoView = remember { BringIntoViewRequester() }
-    LaunchedEffect(focused) { if (focused) runCatching { bringIntoView.bringIntoView() } }
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .bringIntoViewRequester(bringIntoView)
             .clip(RoundedCornerShape(10.dp))
             .then(if (hideable) Modifier.clickable(onClick = onToggleReveal) else Modifier)
             .then(if (focused) Modifier.border(2.dp, edge, RoundedCornerShape(10.dp)) else Modifier)
