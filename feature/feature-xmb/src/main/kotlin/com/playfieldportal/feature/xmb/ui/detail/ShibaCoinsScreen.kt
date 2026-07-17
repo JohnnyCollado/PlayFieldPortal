@@ -1,8 +1,11 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -96,14 +100,22 @@ fun ShibaCoinsScreen(
     }
 
     val listState = rememberLazyListState()
-    // Center the focused element: the header controls pin to the top, coin rows scroll to mid-view
-    // so the highlighted row is always comfortably reachable.
-    LaunchedEffect(state.focusIndex) {
-        if (state.focusIndex < FOCUS_COINS_START) {
-            listState.animateScrollToItem(0)
-        } else {
-            val viewportH = listState.layoutInfo.viewportSize.height
-            listState.animateScrollToItem(1 + (state.focusIndex - FOCUS_COINS_START), scrollOffset = -(viewportH / 3))
+    // Header focus pins the list to the top; coin rows keep themselves in view with a
+    // BringIntoViewRequester (real geometry — same convention as GameDetailScreen's coin strip).
+    // The old index-plus-offset scroll math drifted the focused row off screen under held input.
+    LaunchedEffect(Unit) {
+        snapshotFlow { state.focusIndex }.collect { focus ->
+            if (focus < FOCUS_COINS_START) {
+                listState.animateScrollToItem(0)
+            } else {
+                // Only a composed row can bring itself into view. A focused row that isn't
+                // composed at all (a sort/filter change teleported focus) is scrolled to by
+                // index first; once composed, its own requester takes over.
+                val item = 1 + (focus - FOCUS_COINS_START)
+                if (listState.layoutInfo.visibleItemsInfo.none { it.index == item }) {
+                    listState.animateScrollToItem(item)
+                }
+            }
         }
     }
 
@@ -130,7 +142,7 @@ fun ShibaCoinsScreen(
             itemsIndexed(state.displayed, key = { _, c -> c.id }) { i, coin ->
                 CoinListRow(
                     coin,
-                    focused = state.focusIndex == 3 + i,
+                    focused = state.focusIndex == FOCUS_COINS_START + i,
                     revealed = coin.id in state.revealedIds,
                     onToggleReveal = { viewModel.toggleReveal(coin) },
                 )
@@ -231,7 +243,7 @@ private fun LinkSection(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewModel
             .padding(vertical = 10.dp, horizontal = if (focused) 8.dp else 0.dp),
     ) {
         when (state.provider) {
-            AchievementProvider.STEAM -> SteamLinkControls(state, viewModel)
+            AchievementProvider.STEAM -> AutoMatchControls(state, viewModel, focused)
             AchievementProvider.RETRO_ACHIEVEMENTS -> {
                 // RetroAchievements is hash-only — no manual / user-provided linking.
                 Text("Not recognised by RetroAchievements", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
@@ -256,65 +268,56 @@ private fun LinkSection(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewModel
     }
 }
 
+// The Auto-Match flow for an unlinked Steam-platform game: one button, a legit-copy prompt that
+// picks the Steam-vs-local branch, and a manual appid fallback when neither branch matched.
 @Composable
-private fun SteamLinkControls(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewModel) {
-    var draft by remember { mutableStateOf("") }
-    Text("This game isn't linked yet", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-    Spacer(Modifier.height(8.dp))
-    OutlinedTextField(
-        value = draft,
-        onValueChange = { draft = it },
-        label = { Text("Steam appid", color = TextMuted) },
-        singleLine = true,
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary,
-            focusedBorderColor = menuCursorEdge(), unfocusedBorderColor = Color(0x44FFFFFF),
-            cursorColor = menuCursorEdge(),
-        ),
-        modifier = Modifier.fillMaxWidth(),
-    )
-    Spacer(Modifier.height(8.dp))
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        PillButton("Link and sync", enabled = draft.isNotBlank()) { viewModel.link(draft) }
-        PillButton("Match by title", enabled = state.title.isNotBlank()) { viewModel.resolveByTitle() }
-    }
-    SteamFinder(state, viewModel)
-}
-
-// Manual "Find on Steam" picker: search the app list by name and pick the right game.
-@Composable
-private fun SteamFinder(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewModel) {
-    var query by remember(state.title) { mutableStateOf(state.title) }
-    Spacer(Modifier.height(12.dp))
-    Text("Or find it on Steam", color = TextMuted, fontSize = 12.sp)
-    Spacer(Modifier.height(6.dp))
-    OutlinedTextField(
-        value = query,
-        onValueChange = { query = it },
-        label = { Text("Search Steam by name", color = TextMuted) },
-        singleLine = true,
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary,
-            focusedBorderColor = menuCursorEdge(), unfocusedBorderColor = Color(0x44FFFFFF),
-            cursorColor = menuCursorEdge(),
-        ),
-        modifier = Modifier.fillMaxWidth(),
-    )
-    Spacer(Modifier.height(8.dp))
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        PillButton("Search", enabled = query.isNotBlank()) { viewModel.searchSteam(query) }
-        if (state.isSearchingSteam) CircularProgressIndicator(color = menuCursorEdge(), modifier = Modifier.size(16.dp))
-    }
-    state.steamResults.forEach { candidate ->
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { viewModel.linkSteamAppId(candidate.appId) }
-                .padding(vertical = 8.dp),
-        ) {
-            Text(candidate.name, color = TextPrimary, fontSize = 13.sp, modifier = Modifier.weight(1f))
-            Text("#${candidate.appId}", color = TextMuted, fontSize = 11.sp)
+private fun AutoMatchControls(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewModel, focused: Boolean) {
+    when (state.autoMatchStep) {
+        null -> {
+            Text("This game isn't linked yet", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            Spacer(Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                PillButton("Auto-Match", enabled = !state.isMatching, focused = focused) { viewModel.startAutoMatch() }
+                if (state.isMatching) CircularProgressIndicator(color = menuCursorEdge(), modifier = Modifier.size(16.dp))
+            }
+        }
+        AutoMatchStep.CONFIRM_COPY -> {
+            Text("Is this a legitimate Steam copy?", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "A legit copy matches against Steam; anything else scans your game folders for Steam-emu data.",
+                color = TextMuted, fontSize = 12.sp,
+            )
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                PillButton("Yes", enabled = true, focused = state.autoMatchYes) { viewModel.chooseAutoMatch(true) }
+                PillButton("No", enabled = true, focused = !state.autoMatchYes) { viewModel.chooseAutoMatch(false) }
+            }
+        }
+        AutoMatchStep.ENTER_APPID -> {
+            var draft by remember { mutableStateOf("") }
+            Text("No automatic match found", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            Spacer(Modifier.height(6.dp))
+            Text("Enter the game's Steam app id:", color = TextMuted, fontSize = 12.sp)
+            Spacer(Modifier.height(6.dp))
+            OutlinedTextField(
+                value = draft,
+                onValueChange = { draft = it },
+                label = { Text("Steam app id", color = TextMuted) },
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary,
+                    focusedBorderColor = menuCursorEdge(), unfocusedBorderColor = Color(0x44FFFFFF),
+                    cursorColor = menuCursorEdge(),
+                ),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                PillButton("Link", enabled = draft.isNotBlank() && !state.isMatching) { viewModel.submitManualAppId(draft) }
+                PillButton("Cancel", enabled = true) { viewModel.cancelAutoMatch() }
+                if (state.isMatching) CircularProgressIndicator(color = menuCursorEdge(), modifier = Modifier.size(16.dp))
+            }
         }
     }
 }
@@ -330,19 +333,29 @@ private fun SyncRow(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewModel, fo
             CircularProgressIndicator(color = menuCursorEdge(), modifier = Modifier.size(18.dp))
         } else if (state.linked || state.accountOnly) {
             // "Change match" is user-provided matching — Steam library games only;
-            // RetroAchievements is hash-only and account entries have no link to change.
-            if (state.provider == AchievementProvider.STEAM && state.linked) {
+            // RetroAchievements is hash-only and account entries have no link to change. On the
+            // controller the action row holds both controls: left/right picks, confirm activates.
+            val hasChangeMatch = state.provider == AchievementProvider.STEAM && state.linked
+            if (hasChangeMatch) {
+                val changeFocused = focused && state.actionOnChangeMatch
+                val edge = menuCursorEdge()
                 Text(
                     "Change match",
-                    color = TextMuted,
+                    color = if (changeFocused) Color.White else TextMuted,
                     fontSize = 12.sp,
                     modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .then(if (changeFocused) Modifier.border(2.dp, edge, RoundedCornerShape(8.dp)) else Modifier)
                         .clickable { viewModel.changeLink() }
                         .padding(horizontal = 8.dp, vertical = 6.dp),
                 )
                 Spacer(Modifier.width(8.dp))
             }
-            PillButton("Sync now", enabled = true, focused = focused) { viewModel.sync() }
+            PillButton(
+                "Sync now",
+                enabled = true,
+                focused = focused && !(hasChangeMatch && state.actionOnChangeMatch),
+            ) { viewModel.sync() }
         }
     }
 }
@@ -384,6 +397,7 @@ private fun focusRing(focused: Boolean): Modifier {
     else Modifier
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun CoinListRow(
     coin: CoinRow,
@@ -396,10 +410,13 @@ private fun CoinListRow(
     val hideable = coin.isHidden && !coin.isEarned
     val redacted = hideable && !revealed
     val edge = menuCursorEdge()
+    val bringIntoView = remember { BringIntoViewRequester() }
+    LaunchedEffect(focused) { if (focused) runCatching { bringIntoView.bringIntoView() } }
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
+            .bringIntoViewRequester(bringIntoView)
             .clip(RoundedCornerShape(10.dp))
             .then(if (hideable) Modifier.clickable(onClick = onToggleReveal) else Modifier)
             .then(if (focused) Modifier.border(2.dp, edge, RoundedCornerShape(10.dp)) else Modifier)

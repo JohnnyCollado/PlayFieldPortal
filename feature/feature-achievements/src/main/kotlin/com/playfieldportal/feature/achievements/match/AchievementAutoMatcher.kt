@@ -89,6 +89,30 @@ class AchievementAutoMatcher @Inject constructor(
         return MatchReport(matched, unmatched)
     }
 
+    /**
+     * Single-game Auto-Match for a launcher-managed ("legit") Steam copy: the same STEAM resolution
+     * ladder the batch run uses (embedded appid, SteamGridDB, title). Returns true when linked.
+     */
+    suspend fun matchSingleAsSteam(gameId: Long): Boolean {
+        val game = gameRepository.getById(gameId) ?: return false
+        return matchSteam(game) is Outcome.Matched
+    }
+
+    /**
+     * Single-game Auto-Match for a non-Steam copy: emu-marked game folders only, linking
+     * LOCAL_STEAM from the matching folder's own appid. Returns true when linked.
+     */
+    suspend fun matchSingleAsLocalSteam(gameId: Long): Boolean {
+        val game = gameRepository.getById(gameId) ?: return false
+        emuFolderCache = null   // fresh discovery — the singleton outlives folder changes
+        val folder = emuFolders().firstOrNull { f ->
+            steamTitleCandidates(game).any { normalizePc(it) == normalizePc(f.folderName) }
+        } ?: return false
+        repository.linkManually(game.id, AchievementProvider.LOCAL_STEAM, folder.appId)
+        localSteamOwnership.classify(game.id, folder.appId)
+        return true
+    }
+
     private suspend fun matchOne(game: Game): Outcome {
         if (game.platformId == "windows") return matchWindows(game)
         // RetroAchievements is hash-only: a game links solely by its ROM/disc content hash, never

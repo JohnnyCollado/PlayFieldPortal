@@ -22,6 +22,9 @@ import javax.inject.Inject
 enum class CoinSort { TIER, EARNED, RAREST }
 enum class CoinFilter { ALL, EARNED, LOCKED }
 
+/** The Auto-Match flow's current step (unlinked Steam-platform games only). */
+enum class AutoMatchStep { CONFIRM_COPY, ENTER_APPID }
+
 /** One coin as the dedicated screen renders it. */
 data class CoinRow(
     val id: String,
@@ -57,9 +60,17 @@ data class ShibaCoinsUiState(
     // Hidden coins the user chose to reveal (confirm/tap toggles). Session-only: cleared on open.
     val revealedIds: Set<String> = emptySet(),
     val isSyncing: Boolean = false,
-    // Manual "Find on Steam" picker (Steam games only).
-    val steamResults: List<com.playfieldportal.feature.achievements.provider.steam.SteamCandidate> = emptyList(),
-    val isSearchingSteam: Boolean = false,
+    // Auto-Match flow (unlinked Steam-platform games): confirm whether the copy is a legit Steam
+    // one, then fall through to manual appid entry when no automatic match is found.
+    val autoMatchStep: AutoMatchStep? = null,
+    // Controller selection on the confirm prompt: true = "Yes, legit Steam copy".
+    val autoMatchYes: Boolean = true,
+    // FOCUS_ACTION holds two controls for a linked Steam game (Change match | Sync now);
+    // left/right picks which one confirm activates. False = Sync now, the primary action.
+    val actionOnChangeMatch: Boolean = false,
+    // The branch the user picked, so manual appid entry links the matching provider.
+    val autoMatchLegit: Boolean = true,
+    val isMatching: Boolean = false,
     val message: String? = null,
     val closed: Boolean = false,
 )
@@ -77,6 +88,7 @@ internal const val FOCUS_COINS_START = 3
 class ShibaCoinsViewModel @Inject constructor(
     private val gameRepository: GameRepository,
     private val achievementRepository: AchievementController,
+    private val autoMatcher: com.playfieldportal.feature.achievements.match.AchievementAutoMatcher,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ShibaCoinsUiState())
@@ -91,7 +103,12 @@ class ShibaCoinsViewModel @Inject constructor(
         // This ViewModel is retained across open/close, so clear the stale closed flag (otherwise
         // the screen's close-effect fires immediately on reopen), reset focus to the top, and
         // re-hide any revealed hidden coins (reveals are session-only).
-        _state.update { it.copy(closed = false, focusIndex = 0, revealedIds = emptySet()) }
+        _state.update {
+            it.copy(
+                closed = false, focusIndex = 0, revealedIds = emptySet(),
+                autoMatchStep = null, isMatching = false, actionOnChangeMatch = false,
+            )
+        }
         loadJobs.forEach { it.cancel() }
         loadJobs.clear()
         when (target) {
@@ -178,16 +195,38 @@ class ShibaCoinsViewModel @Inject constructor(
     /** Controller input forwarded from the shell while this overlay is open. */
     fun handleGamepadAction(action: GamepadAction) {
         val s = _state.value
+        // The Auto-Match prompts capture input while open: they are modal within the screen.
+        when (s.autoMatchStep) {
+            AutoMatchStep.CONFIRM_COPY -> {
+                when (action) {
+                    GamepadAction.NAVIGATE_LEFT, GamepadAction.NAVIGATE_RIGHT ->
+                        _state.update { it.copy(autoMatchYes = !it.autoMatchYes) }
+                    GamepadAction.SELECT -> chooseAutoMatch(s.autoMatchYes)
+                    GamepadAction.BACK -> cancelAutoMatch()
+                    else -> Unit
+                }
+                return
+            }
+            AutoMatchStep.ENTER_APPID -> {
+                // Text entry is touch/IME-driven; the controller can only back out.
+                if (action == GamepadAction.BACK) cancelAutoMatch()
+                return
+            }
+            null -> Unit
+        }
         val lastFocus = (FOCUS_COINS_START + s.displayed.size - 1).coerceAtLeast(0)
         when (action) {
             GamepadAction.NAVIGATE_UP -> _state.update { it.copy(focusIndex = (it.focusIndex - 1).coerceIn(0, lastFocus)) }
             GamepadAction.NAVIGATE_DOWN -> _state.update { it.copy(focusIndex = (it.focusIndex + 1).coerceIn(0, lastFocus)) }
             GamepadAction.NAVIGATE_LEFT -> when (s.focusIndex) {
+                // Change match sits left of Sync now in the row.
+                FOCUS_ACTION -> if (hasChangeMatch(s)) _state.update { it.copy(actionOnChangeMatch = true) }
                 FOCUS_SORT -> cycleSort(-1)
                 FOCUS_FILTER -> cycleFilter(-1)
                 else -> Unit
             }
             GamepadAction.NAVIGATE_RIGHT -> when (s.focusIndex) {
+                FOCUS_ACTION -> if (hasChangeMatch(s)) _state.update { it.copy(actionOnChangeMatch = false) }
                 FOCUS_SORT -> cycleSort(1)
                 FOCUS_FILTER -> cycleFilter(1)
                 else -> Unit
@@ -204,11 +243,16 @@ class ShibaCoinsViewModel @Inject constructor(
         }
     }
 
+    // Whether the action row currently offers Change match next to Sync now.
+    private fun hasChangeMatch(s: ShibaCoinsUiState): Boolean =
+        s.linked && !s.accountOnly && s.provider == AchievementProvider.STEAM
+
     private fun onActionSelect() {
         val s = _state.value
         when {
+            hasChangeMatch(s) && s.actionOnChangeMatch -> changeLink()
             s.linked || s.accountOnly -> sync()
-            s.provider == AchievementProvider.STEAM -> resolveByTitle()
+            s.provider == AchievementProvider.STEAM -> startAutoMatch()
             // RetroAchievements is hash-only — nothing for the user to enter.
             else -> _state.update { it.copy(message = "RetroAchievements games link automatically by ROM hash") }
         }
@@ -229,47 +273,65 @@ class ShibaCoinsViewModel @Inject constructor(
         return copy(displayed = d, focusIndex = focusIndex.coerceIn(0, (FOCUS_COINS_START + d.size - 1).coerceAtLeast(0)))
     }
 
-    /** Links the game to the pasted provider id (RA game id / Steam appid) and syncs. */
-    fun link(providerGameId: String) {
-        val id = providerGameId.trim()
-        if (id.isBlank()) return
+    /** Opens the Auto-Match flow: first ask whether this is a legitimate Steam copy. */
+    fun startAutoMatch() = _state.update { it.copy(autoMatchStep = AutoMatchStep.CONFIRM_COPY, autoMatchYes = true) }
+
+    fun cancelAutoMatch() = _state.update { it.copy(autoMatchStep = null) }
+
+    /**
+     * Runs the branch the user picked: a legit copy resolves against Steam (embedded appid,
+     * SteamGridDB, title), any other copy scans the windows game folders for Steam-emu data.
+     * No match falls through to manual appid entry.
+     */
+    fun chooseAutoMatch(legit: Boolean) {
         viewModelScope.launch {
-            achievementRepository.linkManually(gameId, _state.value.provider, id)
-            sync()
+            _state.update { it.copy(autoMatchStep = null, autoMatchLegit = legit, isMatching = true) }
+            val matched =
+                if (legit) autoMatcher.matchSingleAsSteam(gameId)
+                else autoMatcher.matchSingleAsLocalSteam(gameId)
+            _state.update { it.copy(isMatching = false) }
+            if (matched) sync()
+            else _state.update { it.copy(autoMatchStep = AutoMatchStep.ENTER_APPID) }
         }
     }
 
-    /** Steam only: search the Steam app list for candidates matching [query] (the manual picker). */
-    fun searchSteam(query: String) {
-        if (query.isBlank()) {
-            _state.update { it.copy(steamResults = emptyList()) }
+    /**
+     * Links the hand-entered appid under the branch's provider and validates it by syncing — a
+     * failed sync unlinks again so a wrong id never leaves the game linked to nothing.
+     */
+    fun submitManualAppId(raw: String) {
+        val id = raw.trim()
+        if (id.isEmpty() || !id.all { ch -> ch.isDigit() }) {
+            _state.update { it.copy(message = "A Steam app id is a number — check steamdb.info for more information on the game") }
             return
         }
         viewModelScope.launch {
-            _state.update { it.copy(isSearchingSteam = true) }
-            val results = achievementRepository.searchSteam(query)
-            _state.update { it.copy(isSearchingSteam = false, steamResults = results) }
+            _state.update { it.copy(isMatching = true) }
+            val provider =
+                if (_state.value.autoMatchLegit) AchievementProvider.STEAM else AchievementProvider.LOCAL_STEAM
+            achievementRepository.linkManually(gameId, provider, id)
+            when (val result = achievementRepository.syncGameById(gameId)) {
+                is ProviderSyncResult.Success ->
+                    _state.update { it.copy(isMatching = false, autoMatchStep = null, message = null) }
+                ProviderSyncResult.NotFound, is ProviderSyncResult.Failed -> {
+                    achievementRepository.unlink(gameId)
+                    _state.update {
+                        it.copy(isMatching = false, message = "App id $id doesn't match — check steamdb.info for more information on the game")
+                    }
+                }
+                // Credentials/profile problems aren't the appid's fault — keep the link, surface why.
+                else -> _state.update { it.copy(isMatching = false, autoMatchStep = null, message = messageFor(result)) }
+            }
         }
     }
 
-    /** Links a Steam appid the user picked from the search results, then syncs. */
-    fun linkSteamAppId(appId: String) {
-        _state.update { it.copy(steamResults = emptyList()) }
-        link(appId)
-    }
-
-    /** Steam only: match this game to an appid by its title variants, link it, and sync. */
-    fun resolveByTitle() {
-        viewModelScope.launch {
-            val appId = achievementRepository.resolveSteamByGame(gameId)
-            if (appId != null) sync()
-            else _state.update { it.copy(message = "No Steam match for \"${it.title}\"") }
-        }
-    }
-
-    /** Removes the current link so the user can re-enter it (edit a wrong match). */
+    /** Removes the current link so the user can re-match it (edit a wrong match). */
     fun changeLink() {
-        viewModelScope.launch { achievementRepository.unlink(gameId) }
+        viewModelScope.launch {
+            achievementRepository.unlink(gameId)
+            // The row collapses to Auto-Match only — point confirm back at the primary action.
+            _state.update { it.copy(actionOnChangeMatch = false) }
+        }
     }
 
     fun sync() {
