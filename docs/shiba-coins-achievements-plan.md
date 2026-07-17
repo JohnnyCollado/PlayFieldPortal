@@ -492,6 +492,25 @@ Coins → link + sync → coins persist → the dedicated screen lists them and 
 - [ ] Optional per-provider point display (RA native points alongside the unified wallet).
 - Opt: asset-level (vector medallions, `filterQuality` for any raster fallback).
 
+### Phase 10 — Player Status view — DONE (July 2026)
+- [x] Fullscreen account-wide status view (`PlayerStatusScreen` + `PlayerStatusViewModel`), opened
+  from the XMB player-card row and from the Settings player card (which hides Settings while open;
+  Back restores it). Layout: breadcrumb, full-width level/rank/XP panel, then Recent Achievements
+  (left) beside the Shiba Coin Wallet and Rarest Achievement Unlocked (right).
+- [x] Terminology (user decision): "XP" = the weighted score economy (level curve, totals);
+  "coins" = achievement counts (earned / available, per-tier tallies). Rank line reads
+  `<Rank> • <bones> [bone glyph]`; the glyph is the bone emoji flattened to a flat tint
+  (`BoneGlyph`, core-ui).
+- [x] Data: `AccountAchievementDao.observeRecentEarned(limit)` (parameterized, newest unlock
+  first, timestamped unlocks only) -> `AchievementController.observeRecentCoins`;
+  `LibraryStanding.walletCounts` derives the per-tier earned tally (Platinum = mastered count).
+- [x] Controller navigation (D-pad only): UP/DOWN move through the Recent list, RIGHT jumps to
+  the Rarest card, LEFT returns; scroll-to-focus via `BringIntoViewRequester` (first row returns
+  to absolute top so the header stays reachable). Recent/rarest rows with a library game open its
+  Shiba Coins overlay.
+- [x] Debug: `ShibaStandingSeeder` (debug source set) seeds a deterministic fake standing per
+  rank from the debug menu, for exercising the view at any rank/Bone count.
+
 ---
 
 ## 8. Non-goals (for now)
