@@ -5,12 +5,15 @@ import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -98,6 +101,7 @@ private val PlayGreen = Color(0xFF45C46A)
 private val ActionFill = Color(0xFF1B1B26)
 private val PageBg = Color(0xFF06060C)
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun GameDetailScreen(
     gameId: Long,
@@ -216,13 +220,28 @@ fun GameDetailScreen(
         // (see the ViewModel), which animates the same scroll state in fixed steps.
         val pageScrollState = rememberScrollState()
         val pageStepPx = with(LocalDensity.current) { PageScrollStep.roundToPx() }
-        LaunchedEffect(state.pageScrollSteps) {
-            // Eased tween instead of the default spring — the spring settles with a hard stop,
-            // which made held-D-pad scrolling feel stiff and notchy.
-            pageScrollState.animateScrollTo(
-                (state.pageScrollSteps * pageStepPx).coerceAtMost(pageScrollState.maxValue),
-                animationSpec = tween(durationMillis = 320, easing = LinearOutSlowInEasing),
-            )
+        // Scroll-to-focus: the button row and coin strip frame to their real geometry (so the
+        // coin strip is never clipped when highlighted); reading past the strip and the media
+        // strip use the fixed-stride scroll. Keyed on all three so returning to the strip (e.g.
+        // UP out of the media row) re-frames it.
+        val coinStripRequester = remember { BringIntoViewRequester() }
+        LaunchedEffect(state.mainFocus, state.pageScrollSteps, state.mediaFocus) {
+            val scrollTween = tween<Float>(durationMillis = 320, easing = LinearOutSlowInEasing)
+            when {
+                // Landing on the coin strip: bring the whole strip into view by its actual position.
+                state.mediaFocus < 0 && state.mainFocus == MAIN_FOCUS_COINS && state.pageScrollSteps == 0 ->
+                    runCatching { coinStripRequester.bringIntoView() }
+                // Launch / action buttons live at the top.
+                state.mediaFocus < 0 && state.mainFocus in 0..MAIN_FOCUS_LAST ->
+                    pageScrollState.animateScrollTo(0, scrollTween)
+                // Reading past the strip and the media strip: fixed-stride scroll (eased tween
+                // instead of the default spring, which settled with a stiff, notchy stop).
+                else ->
+                    pageScrollState.animateScrollTo(
+                        (state.pageScrollSteps * pageStepPx).coerceAtMost(pageScrollState.maxValue),
+                        animationSpec = scrollTween,
+                    )
+            }
         }
         Column(
             modifier = Modifier
@@ -297,6 +316,7 @@ fun GameDetailScreen(
 
             ShibaCoinStrip(
                 coins = state.coins,
+                modifier = Modifier.bringIntoViewRequester(coinStripRequester),
                 focused = state.mainFocus == MAIN_FOCUS_COINS,
                 onClick = viewModel::requestOpenCoins,
             )
