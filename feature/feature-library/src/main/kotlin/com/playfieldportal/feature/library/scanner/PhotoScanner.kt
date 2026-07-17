@@ -260,30 +260,33 @@ class PhotoScanner @Inject constructor(
         }.getOrNull()
     }
 
-    // Thumbnail cache lives in app external-files (Android/data/<pkg>/files/cache/thumbnails), so it
-    // sits outside the user's SAF media trees and never gets re-indexed. A .nomedia marker keeps it
-    // out of the device gallery too. Files are named by a hash of the photo uri so re-scans reuse
-    // existing thumbs. The source is decoded subsampled — the full-res bitmap is never loaded here.
+    // Thumbnail cache lives in internal app cache (private to the app, never indexed by MediaStore,
+    // evictable by the OS under storage pressure). Files are named by a hash of the photo uri so
+    // re-scans reuse existing thumbs; missing ones are regenerated on the next scan. The source is
+    // decoded subsampled — the full-res bitmap is never loaded here.
     val thumbnailCacheDir: File by lazy {
-        val base = context.getExternalFilesDir(null) ?: context.filesDir
-        File(base, "cache/thumbnails").apply {
-            mkdirs()
-            ensureNoMedia(this)
+        deleteLegacyExternalCache()
+        File(context.cacheDir, "thumbnails").apply { mkdirs() }
+    }
+
+    // Pre-migration builds kept thumbnails under app external-files (Android/data/<pkg>/files/
+    // cache/thumbnails), which other apps could read on Android 10. Remove any leftovers once;
+    // stale thumbnailUri rows fail the fileExistsForUri check and regenerate on the next scan.
+    private fun deleteLegacyExternalCache() {
+        runCatching {
+            listOfNotNull(context.getExternalFilesDir(null), context.filesDir).forEach { base ->
+                File(base, "cache/thumbnails").deleteRecursively()
+                File(base, "cache").delete()   // only succeeds if now empty
+            }
         }
     }
 
-    private fun ensureNoMedia(dir: File) {
-        runCatching { File(dir, ".nomedia").takeIf { !it.exists() }?.createNewFile() }
-    }
-
-    /** Deletes every generated thumbnail, preserving (recreating) the .nomedia marker. */
+    /** Deletes every generated thumbnail. */
     fun clearThumbnailCache(): Int {
         val dir = thumbnailCacheDir
-        val removed = runCatching {
-            dir.listFiles()?.count { it.name != ".nomedia" && it.delete() } ?: 0
+        return runCatching {
+            dir.listFiles()?.count { it.delete() } ?: 0
         }.getOrDefault(0)
-        ensureNoMedia(dir)
-        return removed
     }
 
     // [knownWidth]/[knownHeight] come from the metadata pass so the file isn't probed twice; when
