@@ -180,13 +180,13 @@ class LibraryConsolidation @Inject constructor(
         memoryCardDao.upsert(
             MemoryCardEntity(
                 platformId  = WINDOWS_PLATFORM_ID,
-                displayName = "Windows Games",
+                displayName = "Windows Memory Card",
                 enabled     = true,
                 sortOrder   = memoryCardDao.maxSortOrder() + 1,
                 gameCount   = count,
             )
         )
-        Timber.i("Windows Games Memory Card created ($count games)")
+        Timber.i("Windows Memory Card created ($count games)")
     }
 
     // ── 4. Launcher-collection cleanup ────────────────────────────────────────

@@ -844,6 +844,24 @@ class LibraryManagerViewModel @Inject constructor(
                 }
             }
 
+            // Windows is import-driven, not ROM-scanned, so the folder loop skips it (no
+            // extensions). Auto-detect finishes with the shared Import PC pass instead: it
+            // creates the Windows Memory Card, wires <root>/windows as its directory
+            // (WindowsLibrarySetup.ensure), makes the import/ drop-folder, and imports any
+            // exported games — the same pass as Import PC's folder scan.
+            val hadWindowsCard = "windows" in haveCard
+            val pcReport = runCatching { pcGameScanner.scan() }
+                .onFailure { Timber.e(it, "Auto-detect PC scan failed") }
+                .getOrNull()
+            if (!hadWindowsCard && memoryCardRepository.getById("windows") != null) {
+                haveCard.add("windows")
+                newCards++
+            }
+            if (pcReport != null && pcReport.newGames > 0) {
+                platformsWithGames.add("windows")
+                totalAdded += pcReport.newGames
+            }
+
             val rootLabel = "${roots.size} root${if (roots.size == 1) "" else "s"}"
             val message = if (platformsWithGames.isEmpty()) {
                 "Scanned $scannedFolders folder(s) across $rootLabel; no new ROMs found. " +

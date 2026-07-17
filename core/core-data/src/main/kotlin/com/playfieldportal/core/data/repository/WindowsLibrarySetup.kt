@@ -75,6 +75,8 @@ class WindowsLibrarySetup @Inject constructor(
             scanRecursively = false,
         )
         if (card.supportedExtensions.isNotEmpty()) memoryCards.setExtensions(PLATFORM_ID, emptyList())
+        // Migrate the pre-rename default card name; a name the user chose is left alone.
+        if (card.displayName == LEGACY_DISPLAY_NAME) memoryCards.rename(PLATFORM_ID, DISPLAY_NAME)
 
         // A folder the user picked by hand stays authoritative; just keep its drop-folder alive.
         card.treeUri?.takeIf { it.isNotBlank() }?.let { tree ->
@@ -185,7 +187,9 @@ class WindowsLibrarySetup @Inject constructor(
 
     companion object {
         const val PLATFORM_ID = "windows"
-        const val DISPLAY_NAME = "Windows Games"
+        const val DISPLAY_NAME = "Windows Memory Card"
+        // The card's default name before the rename — existing installs migrate in [ensure].
+        private const val LEGACY_DISPLAY_NAME = "Windows Games"
         const val WINDOWS_FOLDER = "windows"
         const val IMPORT_FOLDER = "import"
     }
