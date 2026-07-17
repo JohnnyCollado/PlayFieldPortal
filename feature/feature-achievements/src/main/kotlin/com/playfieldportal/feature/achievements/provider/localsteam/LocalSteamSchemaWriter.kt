@@ -115,19 +115,30 @@ class LocalSteamSchemaWriter @Inject constructor(
             val doc = runCatching {
                 DocumentsContract.createDocument(context.contentResolver, parent, MIME_BINARY, EMU_DLL)
             }.getOrNull()
-            if (doc == null) {
-                // Roll the backup back to the original name so the game still launches on the real DLL.
-                runCatching { DocumentsContract.renameDocument(context.contentResolver, renamed, EMU_DLL) }
-                return@withContext DllResult.Failed
-            }
+            if (doc == null) return@withContext restoreOriginal(renamed)
 
             val wrote = runCatching {
                 context.assets.open(EMU_DLL_ASSET).use { input ->
                     context.contentResolver.openOutputStream(doc)?.use { output -> input.copyTo(output) } != null
                 }
             }.getOrDefault(false)
-            if (wrote) DllResult.Installed else DllResult.Failed
+            // A failed or half-written copy must not be left in place: it would be a corrupt
+            // steam_api64.dll the game can't load, and the _o.dll backup would make a later run
+            // report AlreadyEmulated and never repair it. Delete the partial and restore the real
+            // DLL so the folder is exactly as found.
+            if (!wrote) {
+                runCatching { DocumentsContract.deleteDocument(context.contentResolver, doc) }
+                return@withContext restoreOriginal(renamed)
+            }
+            DllResult.Installed
         }
+
+    // Renames the backup back to the load name so the game still launches on its real DLL, then
+    // reports the swap as failed. Best-effort: if even the restore fails there is nothing more to do.
+    private fun restoreOriginal(backupUri: Uri): DllResult {
+        runCatching { DocumentsContract.renameDocument(context.contentResolver, backupUri, EMU_DLL) }
+        return DllResult.Failed
+    }
 
     private fun create(parent: Uri, file: KitFile): Boolean {
         val doc = runCatching {

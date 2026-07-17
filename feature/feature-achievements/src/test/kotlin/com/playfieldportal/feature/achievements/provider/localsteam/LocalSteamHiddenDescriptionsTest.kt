@@ -5,8 +5,11 @@ import com.playfieldportal.feature.achievements.api.SyncedCoin
 import com.playfieldportal.feature.achievements.provider.steam.SteamCommunityApi
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
+import okhttp3.ResponseBody
 import okhttp3.ResponseBody.Companion.toResponseBody
 import retrofit2.Response
 import kotlin.test.Test
@@ -89,6 +92,22 @@ class LocalSteamHiddenDescriptionsTest {
 
         assertEquals("", out.single().description)
         coVerify(exactly = 0) { communityApi.achievementsPage(any(), any(), any()) }
+    }
+
+    @Test
+    fun `a page without a declared length is skipped, not read unbounded`() = runTest {
+        // contentLength() == -1 (no Content-Length header) must fail the size guard, so .string()
+        // is never called and the owner is skipped — even though the body would reveal the title.
+        val unsizedBody = mockk<ResponseBody> {
+            every { contentLength() } returns -1
+            every { string() } returns """<div class="achieveRow"><h3>Secret</h3><h5>Leaked.</h5></div>"""
+        }
+        coEvery { communityApi.achievementsPage(any(), "440", any()) } returns Response.success(unsizedBody)
+
+        val out = enricher.enrich("440", listOf(coin("h1", "Secret")))
+
+        assertEquals("", out.single().description)
+        verify(exactly = 0) { unsizedBody.string() }
     }
 
     @Test

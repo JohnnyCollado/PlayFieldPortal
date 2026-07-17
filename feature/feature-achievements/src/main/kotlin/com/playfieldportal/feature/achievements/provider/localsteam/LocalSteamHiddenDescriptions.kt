@@ -62,8 +62,11 @@ class LocalSteamHiddenDescriptions @Inject constructor(
     private suspend fun fetchPage(ownerId: String, appId: String): String? =
         try {
             rate.await()
+            // Require a known, in-range Content-Length: contentLength() is -1 when the header is
+            // absent (chunked response), and -1 <= MAX would wave through an unbounded .string()
+            // read. A page with no declared size is treated as "not the page we expect" and skipped.
             communityApi.achievementsPage(ownerId, appId)
-                .body()?.takeIf { it.contentLength() <= MAX_PAGE_BYTES }?.string()
+                .body()?.takeIf { it.contentLength() in 0..MAX_PAGE_BYTES }?.string()
         } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) {
