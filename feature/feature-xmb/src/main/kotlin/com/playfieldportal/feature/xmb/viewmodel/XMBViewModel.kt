@@ -23,7 +23,6 @@ import com.playfieldportal.core.domain.model.MemoryCard
 import com.playfieldportal.feature.appbar.AppCategoryRepository
 import com.playfieldportal.feature.appbar.CategorizedApp
 import com.playfieldportal.feature.appbar.LauncherShortcutRepository
-import com.playfieldportal.feature.appbar.ShortcutHarvestResult
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.domain.discord.DiscordFriend
 import com.playfieldportal.core.domain.discord.DiscordPresence
@@ -4053,6 +4052,8 @@ class XMBViewModel @Inject constructor(
             // Android libraries pick installed apps; consoles scan ROM folders.
             if (isAndroid) add(XMBContextMenuItem("find_games", "Find Games"))
             else           add(XMBContextMenuItem("scan_roms",  "Scan This Console"))
+            // The Windows card is import-driven — surface its Import PC Games section here too.
+            if (platformId == "windows") add(XMBContextMenuItem("import_pc_games", "Import PC Games"))
             add(XMBContextMenuItem("update_metadata",        "Update Metadata"))
             add(XMBContextMenuItem("scrape_missing_artwork", "Scrape Missing Artwork"))
             // Global icon display switch — same setting as Artwork Settings, affects every game.
@@ -4163,7 +4164,10 @@ class XMBViewModel @Inject constructor(
             // confirm skip straight into the game. Launch/title/note/scrape actions all live
             // in Game Detail — the menu stays navigational.
             add(XMBContextMenuItem("game_details", "View Game Details"))
-            add(XMBContextMenuItem("view_shiba_coins", "View Shiba Coins"))
+            // Android games can never have achievements — no Shiba Coins entry for them.
+            if (item.platformId != ANDROID_PLATFORM_ID) {
+                add(XMBContextMenuItem("view_shiba_coins", "View Shiba Coins"))
+            }
             // No "Edit App Details" here: package-backed GAME entries (PC shortcuts, Android
             // gaming apps) are games — art/title/note editing lives in Game Detail and the
             // game rows below, never the slim standard-app editor.
@@ -4274,8 +4278,6 @@ class XMBViewModel @Inject constructor(
             // duplicating the app's metadata. Works for every Android app, GameHub included.
             add(XMBContextMenuItem("favorite",          "Add to Favorites"))
             add(XMBContextMenuItem("add_to_collection", "Add to Collection"))
-            // Pull the app's own per-game launcher shortcuts (GameHub PCs, etc.) into PFP.
-            add(XMBContextMenuItem("import_shortcuts",  "Import Game Shortcuts"))
             add(XMBContextMenuItem("move",     "Move To Category"))
             add(XMBContextMenuItem("add",      "Add To Category"))
             if (categoryId != null) add(XMBContextMenuItem("remove", "Remove From Category"))
@@ -4551,6 +4553,7 @@ class XMBViewModel @Inject constructor(
             }
             menu.platformId != null -> when (itemId) {
                 "find_games"       -> openAppPicker(AppPickerTarget.AndroidGames(menu.platformId), "Find Games")
+                "import_pc_games"  -> _uiState.update { it.copy(activeSettingsScreen = "settings_import_pc") }
                 "icon_display_global" -> openGlobalIconDisplayPickerMenu()
                 "scan_roms"        -> scanCard(menu.platformId)
                 "scrape_missing_artwork" -> scrapeMissingArtworkForPlatform(menu.platformId)
@@ -4695,7 +4698,6 @@ class XMBViewModel @Inject constructor(
                     }
                     "favorite"          -> addAppToFavorites(pkg, menu.title)
                     "add_to_collection" -> addAppToCollection(pkg, menu.title)
-                    "import_shortcuts"  -> importGameShortcuts(pkg, menu.title)
                     "move"      -> openCategoryPicker(pkg, menu.categoryContext, "move")
                     "add"       -> openCategoryPicker(pkg, menu.categoryContext, "add")
                     "remove"    -> menu.categoryContext?.let { cat -> appAction { appCategoryRepository.removeFromCategory(pkg, cat) } }
@@ -6468,82 +6470,6 @@ class XMBViewModel @Inject constructor(
                     Timber.e(e, "Failed to prepare app shortcut for collection: $packageName")
                     taskNotifier.failed("shortcut_col_$packageName", label, "Couldn't create shortcut: ${e.message}")
                 }
-        }
-    }
-
-    // ── Launcher-shortcut harvesting (GameHub PCs, Lime3DS games, …) ────────────
-    //
-    // Pulls the host app's published launcher shortcuts and imports each as a launchable PFP
-    // entry (a games-table row carrying the host package + shortcut id). PC-launcher shortcuts
-    // are real games and land in the Windows Games card; shortcuts from any other host (e.g. a
-    // Chrome web app) stay app-style entries in a collection named after the host app.
-    // Requires PFP to be the active default launcher.
-    private fun importGameShortcuts(hostPackage: String, hostLabel: String) {
-        val taskId = "harvest_$hostPackage"
-        viewModelScope.launch {
-            when (val result = launcherShortcutRepository.harvest(hostPackage)) {
-                is ShortcutHarvestResult.NotDefaultLauncher ->
-                    taskNotifier.failed(taskId, hostLabel,
-                        "Set Play Field Portal as your default Home app, then try again.")
-                is ShortcutHarvestResult.Error ->
-                    taskNotifier.failed(taskId, hostLabel, result.message)
-                is ShortcutHarvestResult.Success -> {
-                    val shortcuts = result.shortcuts
-                    if (shortcuts.isEmpty()) {
-                        taskNotifier.complete(taskId, hostLabel, "No game shortcuts published by this app.")
-                        return@launch
-                    }
-                    // The single routing gate every shortcut funnel shares: catalog package +
-                    // component fingerprint (no label heuristics).
-                    val isPcLauncher = pcShortcutImporter.isPcLauncher(hostPackage)
-                    runCatching {
-                        if (isPcLauncher) importPcShortcuts(shortcuts)
-                        else importAppShortcuts(hostLabel, shortcuts)
-                        shortcuts.size
-                    }.onSuccess { count ->
-                        Timber.i("Imported $count launcher shortcut(s) from $hostPackage")
-                        val destination = if (isPcLauncher) "Windows Games" else "collection \"$hostLabel\""
-                        taskNotifier.complete(taskId, hostLabel,
-                            "Imported $count shortcut${if (count == 1) "" else "s"} into $destination")
-                    }.onFailure { e ->
-                        Timber.e(e, "Failed to import shortcuts from $hostPackage")
-                        taskNotifier.failed(taskId, hostLabel, "Import failed: ${e.message}")
-                    }
-                }
-            }
-        }
-    }
-
-    // PC-launcher shortcuts become Windows Games card entries (real games) through the shared
-    // importer — same dedupe/merge/appid-link rules as the pin path, card setup included.
-    private suspend fun importPcShortcuts(shortcuts: List<com.playfieldportal.feature.appbar.HarvestedShortcut>) {
-        for (sc in shortcuts) {
-            pcShortcutImporter.importPinnedShortcut(sc.hostPackage, sc.shortcutId, sc.label)
-        }
-    }
-
-    // Non-PC hosts (Chrome web apps, Lime3DS, …): app-style entries grouped into a collection
-    // named after the host app — the pre-v22 behaviour, still right for things that aren't games.
-    private suspend fun importAppShortcuts(
-        hostLabel: String,
-        shortcuts: List<com.playfieldportal.feature.appbar.HarvestedShortcut>,
-    ) {
-        val collectionId = collectionRepository.getAll().firstOrNull { it.name == hostLabel }?.id
-            ?: collectionRepository.create(hostLabel)
-        shortcuts.forEach { sc ->
-            val gameId = gameRepository.getLauncherShortcut(sc.hostPackage, sc.shortcutId)?.id
-                ?: gameRepository.upsert(
-                    Game(
-                        title         = sc.label,
-                        // Harvested app shortcuts live in a collection, not the Android library.
-                        platformId    = APP_SHORTCUT_PLATFORM_ID,
-                        packageName   = sc.hostPackage,
-                        isManualEntry = true,
-                        contentType   = GameContentType.ANDROID_APP,
-                        shortcutId    = sc.shortcutId,
-                    )
-                )
-            collectionRepository.addGame(collectionId, gameId)
         }
     }
 

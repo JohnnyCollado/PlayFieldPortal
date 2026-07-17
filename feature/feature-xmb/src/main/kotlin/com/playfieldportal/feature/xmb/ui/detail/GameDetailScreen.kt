@@ -343,7 +343,9 @@ fun GameDetailScreen(
 
             Spacer(Modifier.height(18.dp))
 
-            ShibaCoinStrip(
+            // Android games can never have achievements — no coin strip for them (the ViewModel
+            // skips its focus index too).
+            if (game.platformId != "android") ShibaCoinStrip(
                 coins = state.coins,
                 modifier = Modifier.bringIntoViewRequester(coinStripRequester),
                 focused = state.mainFocus == MAIN_FOCUS_COINS,

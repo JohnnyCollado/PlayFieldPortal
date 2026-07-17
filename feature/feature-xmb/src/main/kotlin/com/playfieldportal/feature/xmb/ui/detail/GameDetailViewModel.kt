@@ -349,8 +349,10 @@ class GameDetailViewModel @Inject constructor(
                 when {
                     // First DOWN moves to the button row.
                     it.mainFocus == 0 -> it.copy(mainFocus = 1, actionMessage = null)
-                    // From the button row, DOWN lands on the Shiba Coins strip.
-                    it.mainFocus in 1..MAIN_FOCUS_LAST -> it.copy(mainFocus = MAIN_FOCUS_COINS, actionMessage = null)
+                    // From the button row, DOWN lands on the Shiba Coins strip — except for
+                    // Android games, which never have achievements and render no strip.
+                    it.mainFocus in 1..MAIN_FOCUS_LAST && it.game?.platformId != "android" ->
+                        it.copy(mainFocus = MAIN_FOCUS_COINS, actionMessage = null)
                     // From the strip, DOWN enters the media strip when there is one
                     // (page scrolls to the bottom so the strip is visible)...
                     it.mediaFocus < 0 && it.detailMedia.isNotEmpty() ->
