@@ -61,6 +61,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -81,6 +82,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import coil.compose.AsyncImage
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.theme.LocalPFPColors
@@ -127,12 +131,34 @@ fun GameDetailScreen(
         viewModel.prepareForOpen()
         viewModel.loadGame(gameId)
     }
-    // Launch-on-open ("Launch Game" / direct-launch tap): waits for the game row to load
-    // (launch() no-ops on unloaded state), then fires exactly once per screen open.
+    // Launch-on-open (direct-launch confirm): fire the Play action once THIS game's row is
+    // loaded. Keyed on the loaded game's id — not a loaded/unloaded flag — because the retained
+    // ViewModel still holds the previously viewed game on reopen, and a boolean key made the
+    // effect fire against that stale row (launching the last ROM instead of the selected one).
     if (autoLaunch) {
-        val gameLoaded = state.game != null
-        LaunchedEffect(gameLoaded) {
-            if (gameLoaded) viewModel.launch()
+        val loadedGameId = state.game?.id
+        LaunchedEffect(loadedGameId) {
+            if (loadedGameId == gameId) viewModel.launch()
+        }
+    }
+    // Seamless direct launch: the page stays invisible (the XMB remains on screen) until the
+    // emulator actually covers the launcher — ON_PAUSE fires exactly when another activity
+    // comes in front — so confirm goes straight into the game with no detail-page flash, yet
+    // this page is what greets the user when they exit back out. A failed launch reveals the
+    // page immediately so its error is never trapped behind an invisible screen. Saveable and
+    // keyed on the game so process death or a new game resets the gate correctly.
+    var revealed by rememberSaveable(gameId) { mutableStateOf(!autoLaunch) }
+    if (!revealed) {
+        val lifecycleOwner = LocalLifecycleOwner.current
+        DisposableEffect(lifecycleOwner) {
+            val observer = LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_PAUSE) revealed = true
+            }
+            lifecycleOwner.lifecycle.addObserver(observer)
+            onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+        }
+        LaunchedEffect(state.launchError) {
+            if (state.launchError != null) revealed = true
         }
     }
     LaunchedEffect(Unit) {
@@ -174,6 +200,9 @@ fun GameDetailScreen(
             onGamepadActionConsumed()
         }
     }
+    // Everything above (load, launch, input, close effects) keeps running while hidden.
+    if (!revealed) return
+
     if (state.isLoading) {
         Box(modifier.fillMaxSize().background(PageBg)) {
             CircularProgressIndicator(Modifier.align(Alignment.Center), color = menuCursorEdge())
