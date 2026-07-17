@@ -139,9 +139,9 @@ class MetadataRepository @Inject constructor(
             }.onFailure { Timber.w(it, "TheGamesDB error for '$bestTitle'") }.getOrNull()
         }
 
-        // ── 3. IGDB (secondary artwork) ───────────────────────────────────────
+        // ── 3. IGDB (secondary artwork; skipped on metadata-only runs) ────────
         var igdbInfo: IgdbGameInfo? = null
-        if (igdbApi.hasCredentials()) {
+        if (igdbApi.hasCredentials() && !options.metadataOnly) {
             val needsBoxArt = ssInfo?.artworkUrl == null && tgdbInfo?.artworkUrl == null
             val needsHero   = ssInfo?.heroUrl == null && tgdbInfo?.heroUrl == null
             if (needsBoxArt || needsHero) {
@@ -159,7 +159,7 @@ class MetadataRepository @Inject constructor(
         var sgdbLogoUrl: String? = null
         var sgdbGameId:  Long?   = null
 
-        if (!sgdbKey.isNullOrBlank()) {
+        if (!sgdbKey.isNullOrBlank() && !options.metadataOnly) {
             onAssetProgress?.invoke("SteamGridDB", "Searching…")
             runCatching {
                 val match = steamGridDb.searchGame(bestTitle).getOrNull()?.firstOrNull()
@@ -200,32 +200,41 @@ class MetadataRepository @Inject constructor(
             return path
         }
 
+        var heroPath: String? = null
+        var backgroundPath: String? = null
+        var logoPath: String? = null
+        var boxArtPath: String? = null
+        var physicalMediaPath: String? = null
+        var box3dPath: String? = null
+        // Metadata-only runs stop here: no asset is downloaded and no artwork column is written.
+        if (!options.metadataOnly) {
+
         if (options.downloadHeroes) onAssetProgress?.invoke(src, "Hero")
-        val heroPath = if (options.downloadHeroes) finalHeroUrl?.let { savedTracked(ArtworkKind.HERO, it, fromSs = it == ssInfo?.heroUrl) } else null
+        heroPath = if (options.downloadHeroes) finalHeroUrl?.let { savedTracked(ArtworkKind.HERO, it, fromSs = it == ssInfo?.heroUrl) } else null
 
         // Background (artworkUri) drives the full-screen XMB background, so it MUST be full
         // resolution. The old path composited box art into a tiny fixed-size card (≈288px) which
         // looked crunchy stretched to fullscreen. Download full-res instead, preferring a landscape
         // hero (reuse the hero file if we already have it), else the box/grid art.
         onAssetProgress?.invoke(src, "Background")
-        val backgroundPath = heroPath
+        backgroundPath = heroPath
             ?: finalHeroUrl?.let { savedTracked(ArtworkKind.BACKGROUND, it, fromSs = it == ssInfo?.heroUrl) }
             ?: finalBoxArtUrl?.let { savedTracked(ArtworkKind.BACKGROUND, it, fromSs = it == ssInfo?.artworkUrl) }
 
         if (options.downloadClearLogos) onAssetProgress?.invoke(src, "Logo")
-        val logoPath = finalLogoUrl?.let { savedTracked(ArtworkKind.LOGO, it, fromSs = it == ssInfo?.logoUrl) }
+        logoPath = finalLogoUrl?.let { savedTracked(ArtworkKind.LOGO, it, fromSs = it == ssInfo?.logoUrl) }
 
         // Icon-display-mode tiles — small images, always fetched (no toggles). Box art accepts
         // TGDB/IGDB covers as fallback; SGDB grids are stylized, not boxes, so they stay out.
         // Physical media and 3D boxes are ScreenScraper-only.
         val boxArtSrcUrl = ssInfo?.boxArtUrl ?: tgdbInfo?.artworkUrl ?: igdbInfo?.artworkUrl
         if (boxArtSrcUrl != null) onAssetProgress?.invoke(src, "Box Art")
-        val boxArtPath = boxArtSrcUrl?.let { savedTracked(ArtworkKind.BOX_ART, it, fromSs = it == ssInfo?.boxArtUrl) }
-        val physicalMediaPath = ssInfo?.physicalMediaUrl?.let {
+        boxArtPath = boxArtSrcUrl?.let { savedTracked(ArtworkKind.BOX_ART, it, fromSs = it == ssInfo?.boxArtUrl) }
+        physicalMediaPath = ssInfo?.physicalMediaUrl?.let {
             onAssetProgress?.invoke("ScreenScraper", "Physical Media")
             savedTracked(ArtworkKind.PHYSICAL_MEDIA, it, fromSs = true)
         }
-        val box3dPath = ssInfo?.box3dUrl?.let {
+        box3dPath = ssInfo?.box3dUrl?.let {
             onAssetProgress?.invoke("ScreenScraper", "3D Box")
             savedTracked(ArtworkKind.BOX_3D, it, fromSs = true)
         }
@@ -277,6 +286,8 @@ class MetadataRepository @Inject constructor(
             rawFile?.delete()
         }
 
+        }   // end !options.metadataOnly
+
         // Scraped title: ScreenScraper's canonical name wins, TheGamesDB fallback — only
         // updated when no user override exists.
         val newScrapedTitle = ssInfo?.title ?: tgdbInfo?.title
@@ -293,9 +304,10 @@ class MetadataRepository @Inject constructor(
             publisher    = ssInfo?.publisher,
             releaseYear  = ssInfo?.releaseYear ?: tgdbInfo?.releaseYear,
             genre        = ssInfo?.genre,
-            artworkUri   = backgroundPath ?: finalHeroUrl ?: finalBoxArtUrl,
-            heroUri      = heroPath ?: finalHeroUrl,
-            logoUri      = logoPath ?: finalLogoUrl,
+            // Metadata-only runs pass null artwork columns — COALESCE leaves them untouched.
+            artworkUri   = if (options.metadataOnly) null else backgroundPath ?: finalHeroUrl ?: finalBoxArtUrl,
+            heroUri      = if (options.metadataOnly) null else heroPath ?: finalHeroUrl,
+            logoUri      = if (options.metadataOnly) null else logoPath ?: finalLogoUrl,
             boxArtUri    = boxArtPath,
             physicalMediaUri = physicalMediaPath,
             box3dUri     = box3dPath,
@@ -351,7 +363,7 @@ class MetadataRepository @Inject constructor(
         }
 
         prewarm(backgroundPath, heroPath, logoPath)
-        fetchHorizontalIcon(gameId, bestTitle, sgdbGameId)
+        if (!options.metadataOnly) fetchHorizontalIcon(gameId, bestTitle, sgdbGameId)
 
         Timber.i("Metadata from $src: '$bestTitle' (scrapedTitle='$newScrapedTitle')")
         return MetadataFetchResult(true, src, "Found via $src", scrapedTitle = newScrapedTitle)

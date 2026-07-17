@@ -185,14 +185,34 @@ class ArtworkRepository @Inject constructor(
             fetchForGames(targets.map { it.id to Triple(it.title, it.platformId, it.romPath) }, onProgress)
         }
 
+    // Scrape only [platformId]'s games still missing primary artwork — the per-card menu action.
+    // Same rules as scrapeMissingOnly: complete games are skipped, stale backgrounds cleared,
+    // gaps filled in place without re-downloading anything valid.
+    suspend fun scrapeMissingForPlatform(platformId: String, onProgress: (ScrapeProgress) -> Unit): ScrapeProgress =
+        withContext(Dispatchers.IO) {
+            val targets = gameDao.getAll().filter { it.platformId == platformId && needsArtwork(it) }
+            targets.filter { !it.artworkUri.isNullOrBlank() && !isValidArtworkRef(it.artworkUri) }
+                .forEach { gameDao.clearArtworkForGame(it.id) }
+            fetchForGames(targets.map { it.id to Triple(it.title, it.platformId, it.romPath) }, onProgress)
+        }
+
+    // Text-only metadata pass over every game on [platformId] — no artwork is downloaded and no
+    // artwork column is written (COALESCE fills missing text fields, existing values stay).
+    suspend fun updateMetadataForPlatform(platformId: String, onProgress: (ScrapeProgress) -> Unit): ScrapeProgress =
+        withContext(Dispatchers.IO) {
+            val games = gameDao.getAll().filter { it.platformId == platformId }
+            fetchForGames(games.map { it.id to Triple(it.title, it.platformId, it.romPath) }, onProgress, metadataOnly = true)
+        }
+
     // Shared scrape loop with rich progress and per-game error isolation.
     private suspend fun fetchForGames(
         games: List<Pair<Long, Triple<String, String, String?>>>,
         onProgress: (ScrapeProgress) -> Unit,
         bypassSsCache: Boolean = false,
+        metadataOnly: Boolean = false,
     ): ScrapeProgress {
         metadataRepository.resetSsBatchGuards()
-        val options = scrapePreferences.getOptions().copy(bypassSsCache = bypassSsCache)
+        val options = scrapePreferences.getOptions().copy(bypassSsCache = bypassSsCache, metadataOnly = metadataOnly)
         var ok = 0
         var fail = 0
         games.forEachIndexed { index, (id, info) ->
