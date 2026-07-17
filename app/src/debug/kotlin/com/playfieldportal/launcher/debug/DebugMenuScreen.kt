@@ -85,6 +85,26 @@ fun DebugMenuScreen(
 
             HorizontalDivider(color = Color.White.copy(alpha = 0.15f))
 
+            // ── Shiba standing (player status view) ───────────────────────
+            // Seeds fake achievement data so the player status view can be viewed at any rank.
+            // Close this menu, then Shiba Coin > player card to see it.
+            DebugSection("SHIBA STANDING")
+            com.playfieldportal.core.domain.achievement.ShibaRank.entries.forEach { rank ->
+                val bones = if (rank == com.playfieldportal.core.domain.achievement.ShibaRank.LEGENDARY_HACHIKO) "  (3 Bones)" else ""
+                DebugChip(
+                    label      = "Seed: ${rank.label}$bones",
+                    isSelected = false,
+                    onClick    = { viewModel.seedShibaStanding(rank) },
+                )
+            }
+            DebugChip(
+                label      = "Clear seeded standing",
+                isSelected = false,
+                onClick    = { viewModel.clearShibaStanding() },
+            )
+
+            HorizontalDivider(color = Color.White.copy(alpha = 0.15f))
+
             // ── Wave control ──────────────────────────────────────────────
             DebugSection("WAVE RENDER MODE")
             ForceWaveMode.values().forEach { mode ->
