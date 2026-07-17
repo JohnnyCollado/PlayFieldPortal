@@ -99,7 +99,10 @@ class AchievementRepository @Inject constructor(
                 wallet = wallet,
                 tracked = sets.mapNotNull { it.toGameStanding() },
                 rarestEarned = rarest.mapNotNull { it.toEarnedCoinRef() },
-                untracked = games.filterNot { it.id in linked }.map { it.toUntrackedGame(noteByGame[it.id]) },
+                // Android games can never have achievements, so they are never "untracked".
+                untracked = games
+                    .filterNot { it.id in linked || it.platformId == "android" }
+                    .map { it.toUntrackedGame(noteByGame[it.id]) },
             )
         }
 

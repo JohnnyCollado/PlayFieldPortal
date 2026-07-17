@@ -291,6 +291,8 @@ class AchievementRepositoryTest {
                 com.playfieldportal.core.domain.model.Game(id = 2, title = "Some PC Game", platformId = "windows"),
                 com.playfieldportal.core.domain.model.Game(id = 3, title = "Emerald Crest", platformId = "gba"),
                 com.playfieldportal.core.domain.model.Game(id = 4, title = "Linked Game", platformId = "snes"),
+                // Android games can never have achievements — never listed as untracked.
+                com.playfieldportal.core.domain.model.Game(id = 5, title = "Some Android App", platformId = "android"),
             ),
         )
         every { linkDao.observeLinkedGameIds() } returns flowOf(listOf(4L)) // only the SNES game is linked
@@ -301,7 +303,8 @@ class AchievementRepositoryTest {
 
         val untracked = repo.observeLibraryStanding().first().untracked.associateBy { it.gameId }
 
-        assertEquals(3, untracked.size)
+        assertEquals(3, untracked.size)   // the android game is excluded
+        assertEquals(false, untracked.containsKey(5L))
         assertEquals("Couldn't read the ROM file, and no title match", untracked.getValue(3L).reason) // persisted note wins
         assertEquals("System not supported by RetroAchievements", untracked.getValue(1L).reason)      // x360 fallback
         assertEquals("Not found on Steam", untracked.getValue(2L).reason)                              // windows fallback
