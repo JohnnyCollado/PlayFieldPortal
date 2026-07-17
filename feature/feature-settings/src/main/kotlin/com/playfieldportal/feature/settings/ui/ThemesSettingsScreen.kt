@@ -6,15 +6,21 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -35,9 +41,14 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -80,6 +91,26 @@ fun ThemesSettingsScreen(
     // My Themes card strip: whether the strip holds focus, and which card is selected in it.
     var myThemesFocused by remember { mutableStateOf(false) }
     var cardIndex by remember { mutableStateOf(0) }
+    // Icon color strip: whether it holds focus, and which swatch is selected (the last index is
+    // the "Custom" swatch, which opens the HSV picker below).
+    var iconStripFocused by remember { mutableStateOf(false) }
+    var iconIndex by remember { mutableStateOf(0) }
+    // Custom icon-color picker (HSV). Open state plus the live channel values it edits.
+    var customPicker by remember { mutableStateOf(false) }
+    var pickerHue by remember { mutableStateOf(0f) }        // 0..360
+    var pickerSat by remember { mutableStateOf(0f) }        // 0..1
+    var pickerVal by remember { mutableStateOf(1f) }        // 0..1
+    var pickerChannel by remember { mutableStateOf(0) }     // 0=hue, 1=saturation, 2=brightness
+    val customIndex = IconColorChoices.size
+
+    // Seeds the picker from the current icon color (or white) and opens it.
+    fun openIconPicker() {
+        val argb = state.iconColorArgb ?: 0xFFFFFFFFL
+        val hsv = FloatArray(3)
+        android.graphics.Color.colorToHSV((argb and 0xFFFFFFFFL).toInt(), hsv)
+        pickerHue = hsv[0]; pickerSat = hsv[1]; pickerVal = hsv[2]; pickerChannel = 0
+        customPicker = true
+    }
 
     fun openMenuForSavedTheme(theme: PfpThemeStore.SavedTheme) {
         menuIndex = 0
@@ -100,6 +131,30 @@ fun ThemesSettingsScreen(
         onInterceptAction = { action ->
             val m = menu
             when {
+                // The custom color picker captures ALL input while open.
+                customPicker -> {
+                    when (action) {
+                        GamepadAction.NAVIGATE_UP   -> pickerChannel = (pickerChannel + 2) % 3
+                        GamepadAction.NAVIGATE_DOWN -> pickerChannel = (pickerChannel + 1) % 3
+                        GamepadAction.NAVIGATE_LEFT -> when (pickerChannel) {
+                            0 -> pickerHue = ((pickerHue - 6f) % 360f + 360f) % 360f
+                            1 -> pickerSat = (pickerSat - 0.04f).coerceIn(0f, 1f)
+                            else -> pickerVal = (pickerVal - 0.04f).coerceIn(0f, 1f)
+                        }
+                        GamepadAction.NAVIGATE_RIGHT -> when (pickerChannel) {
+                            0 -> pickerHue = ((pickerHue + 6f) % 360f + 360f) % 360f
+                            1 -> pickerSat = (pickerSat + 0.04f).coerceIn(0f, 1f)
+                            else -> pickerVal = (pickerVal + 0.04f).coerceIn(0f, 1f)
+                        }
+                        GamepadAction.SELECT -> {
+                            viewModel.setIconColor(hsvToArgbLong(pickerHue, pickerSat, pickerVal))
+                            customPicker = false
+                        }
+                        GamepadAction.BACK -> customPicker = false
+                        else -> Unit
+                    }
+                    true
+                }
                 // Open menu captures ALL input while visible.
                 m != null -> {
                     when (action) {
@@ -119,6 +174,14 @@ fun ThemesSettingsScreen(
                 }
                 myThemesFocused && action == GamepadAction.NAVIGATE_RIGHT -> {
                     cardIndex = (cardIndex + 1).coerceAtMost((state.savedThemes.size - 1).coerceAtLeast(0)); true
+                }
+                // Left/Right browse the icon color swatches while that strip holds focus (the last
+                // index is the Custom swatch; Confirm on it opens the HSV picker).
+                iconStripFocused && action == GamepadAction.NAVIGATE_LEFT -> {
+                    iconIndex = (iconIndex - 1).coerceAtLeast(0); true
+                }
+                iconStripFocused && action == GamepadAction.NAVIGATE_RIGHT -> {
+                    iconIndex = (iconIndex + 1).coerceAtMost(customIndex); true
                 }
                 // Options button (LONG_PRESS or BUTTON_Y, mapping-dependent) on a hovered
                 // theme card opens its context menu.
@@ -161,11 +224,26 @@ fun ThemesSettingsScreen(
             }
 
             // Unified icon color: one tint across the XMB's icon set (docs/icon-system-plan.md).
+            // One focusable stop for the whole strip: Up/Down reach it like a row, Left/Right pick
+            // a swatch, A applies (or opens the Custom HSV picker on the last swatch).
             SettingsGroup("Icon Color")
-            IconColorSwatchRow(
-                selectedArgb = state.iconColorArgb,
-                onSelect     = { viewModel.setIconColor(it) },
-            )
+            FocusableStrip(
+                onFocusChange = { focused ->
+                    iconStripFocused = focused
+                    if (focused) iconIndex = iconIndex.coerceIn(0, customIndex)
+                },
+                onSelect = {
+                    if (iconIndex == customIndex) openIconPicker()
+                    else viewModel.setIconColor(IconColorChoices[iconIndex].second)
+                },
+            ) { stripFocused ->
+                IconColorSwatchRow(
+                    selectedArgb   = state.iconColorArgb,
+                    focusedIndex   = if (stripFocused) iconIndex else null,
+                    onSelectPreset = { viewModel.setIconColor(it) },
+                    onSelectCustom = { openIconPicker() },
+                )
+            }
 
             // ── Saved themes (Quick Create + PSP imports) ────────────────────
             SettingsGroup("My Themes")
@@ -261,6 +339,31 @@ fun ThemesSettingsScreen(
         )
     }
 
+    // Custom icon-color HSV picker. Controller drives it via onInterceptAction above; touch can
+    // tap the bars. Commit writes the color through the same setIconColor path as the presets.
+    if (customPicker) {
+        IconColorCustomPicker(
+            hue             = pickerHue,
+            saturation      = pickerSat,
+            brightness      = pickerVal,
+            selectedChannel = pickerChannel,
+            onSelectChannel = { pickerChannel = it },
+            onChannelFraction = { channel, fraction ->
+                pickerChannel = channel
+                when (channel) {
+                    0 -> pickerHue = (fraction * 360f).coerceIn(0f, 360f)
+                    1 -> pickerSat = fraction.coerceIn(0f, 1f)
+                    else -> pickerVal = fraction.coerceIn(0f, 1f)
+                }
+            },
+            onConfirm = {
+                viewModel.setIconColor(hsvToArgbLong(pickerHue, pickerSat, pickerVal))
+                customPicker = false
+            },
+            onCancel = { customPicker = false },
+        )
+    }
+
     }  // wrapping Box
 }
 
@@ -338,8 +441,12 @@ private val IconColorChoices: List<Pair<String, Long?>> = listOf(
 @Composable
 private fun IconColorSwatchRow(
     selectedArgb: Long?,
-    onSelect: (Long?) -> Unit,
+    focusedIndex: Int?,
+    onSelectPreset: (Long?) -> Unit,
+    onSelectCustom: () -> Unit,
 ) {
+    val presetArgbs = IconColorChoices.map { it.second }
+    val customActive = selectedArgb != null && selectedArgb !in presetArgbs
     Row(
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         modifier = Modifier
@@ -347,31 +454,177 @@ private fun IconColorSwatchRow(
             .horizontalScroll(rememberScrollState())
             .padding(horizontal = 48.dp, vertical = 10.dp),
     ) {
-        IconColorChoices.forEach { (label, argb) ->
-            val selected = selectedArgb == argb
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        IconColorChoices.forEachIndexed { index, (label, argb) ->
+            IconSwatch(
+                label = label,
+                fill = Color(argb ?: 0xFFFFFFFFL),
+                brush = null,
+                selected = selectedArgb == argb,
+                focused = focusedIndex == index,
+                onClick = { onSelectPreset(argb) },
+            )
+        }
+        // The Custom swatch: shows the active custom color, else a rainbow wheel hint.
+        IconSwatch(
+            label = "Custom",
+            fill = if (customActive) Color(selectedArgb!! and 0xFFFFFFFFL) else null,
+            brush = if (customActive) null else rainbowBrush(),
+            selected = customActive,
+            focused = focusedIndex == IconColorChoices.size,
+            onClick = onSelectCustom,
+        )
+    }
+}
+
+@Composable
+private fun IconSwatch(
+    label: String,
+    fill: Color?,
+    brush: Brush?,
+    selected: Boolean,
+    focused: Boolean,
+    onClick: () -> Unit,
+) {
+    val ringColor = if (focused || selected) SettingsAccent else Color(0x66FFFFFF)
+    val ringWidth = if (focused) 3.dp else if (selected) 2.dp else 1.dp
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            modifier = Modifier
+                .size(34.dp)
+                .clip(CircleShape)
+                .then(if (fill != null) Modifier.background(fill) else Modifier.background(brush!!))
+                .border(ringWidth, ringColor, CircleShape)
+                .clickable(onClick = onClick),
+        )
+        Text(
+            text = label,
+            color = if (focused || selected) SettingsAccent else SettingsSubtext,
+            fontSize = 11.sp,
+            modifier = Modifier.padding(top = 4.dp),
+        )
+    }
+}
+
+// ── Custom icon-color HSV picker ────────────────────────────────────────────────
+//
+// A controller-first color picker: Up/Down pick a channel (Hue / Saturation / Brightness),
+// Left/Right adjust it, A applies, B cancels. Touch can tap a bar to set it directly.
+@Composable
+private fun IconColorCustomPicker(
+    hue: Float,
+    saturation: Float,
+    brightness: Float,
+    selectedChannel: Int,
+    onSelectChannel: (Int) -> Unit,
+    onChannelFraction: (channel: Int, fraction: Float) -> Unit,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    val preview = hsvColor(hue, saturation, brightness)
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xCC000000))
+            .clickable(onClick = onCancel),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            modifier = Modifier
+                .width(440.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(Color(0xFF15151F))
+                .clickable(onClick = {}) // consume taps so the scrim doesn't dismiss
+                .padding(24.dp),
+        ) {
+            Text("Custom Icon Color", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(16.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
-                        .size(34.dp)
+                        .size(56.dp)
                         .clip(CircleShape)
-                        .background(Color(argb ?: 0xFFFFFFFFL))
-                        .border(
-                            width = if (selected) 3.dp else 1.dp,
-                            color = if (selected) SettingsAccent else Color(0x66FFFFFF),
-                            shape = CircleShape,
-                        )
-                        .clickable { onSelect(argb) },
+                        .background(preview)
+                        .border(1.dp, Color(0x66FFFFFF), CircleShape),
                 )
-                Text(
-                    text = label,
-                    color = if (selected) SettingsAccent else SettingsSubtext,
-                    fontSize = 11.sp,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
+                Spacer(Modifier.width(16.dp))
+                Text(hexOf(preview), color = SettingsSubtext, fontSize = 14.sp, fontFamily = FontFamily.Monospace)
+            }
+            Spacer(Modifier.height(20.dp))
+            ChannelBar("Hue", hue / 360f, rainbowBrush(), selectedChannel == 0,
+                onFraction = { onChannelFraction(0, it) })
+            Spacer(Modifier.height(14.dp))
+            ChannelBar("Saturation", saturation,
+                Brush.horizontalGradient(listOf(hsvColor(hue, 0f, brightness), hsvColor(hue, 1f, brightness))),
+                selectedChannel == 1, onFraction = { onChannelFraction(1, it) })
+            Spacer(Modifier.height(14.dp))
+            ChannelBar("Brightness", brightness,
+                Brush.horizontalGradient(listOf(hsvColor(hue, saturation, 0f), hsvColor(hue, saturation, 1f))),
+                selectedChannel == 2, onFraction = { onChannelFraction(2, it) })
+            Spacer(Modifier.height(20.dp))
+            Text(
+                "◄ ► adjust    ▲ ▼ channel    Ⓐ apply    Ⓑ cancel",
+                color = SettingsSubtext, fontSize = 12.sp,
+            )
+            Spacer(Modifier.height(16.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text("Apply", color = SettingsAccent, fontSize = 15.sp,
+                    modifier = Modifier.clickable(onClick = onConfirm).padding(vertical = 6.dp, horizontal = 10.dp))
+                Text("Cancel", color = SettingsSubtext, fontSize = 15.sp,
+                    modifier = Modifier.clickable(onClick = onCancel).padding(vertical = 6.dp, horizontal = 10.dp))
             }
         }
     }
 }
+
+@Composable
+private fun ChannelBar(
+    label: String,
+    fraction: Float,
+    brush: Brush,
+    selected: Boolean,
+    onFraction: (Float) -> Unit,
+) {
+    Text(label, color = if (selected) SettingsAccent else SettingsSubtext, fontSize = 12.sp)
+    Spacer(Modifier.height(6.dp))
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(28.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(brush)
+            .border(
+                width = if (selected) 2.dp else 1.dp,
+                color = if (selected) SettingsAccent else Color(0x55FFFFFF),
+                shape = RoundedCornerShape(14.dp),
+            )
+            .pointerInput(Unit) {
+                detectTapGestures { pos -> onFraction((pos.x / size.width).coerceIn(0f, 1f)) }
+            },
+    ) {
+        val knobX = maxWidth * fraction.coerceIn(0f, 1f)
+        Box(
+            modifier = Modifier
+                .offset(x = knobX - 9.dp)
+                .align(Alignment.CenterStart)
+                .size(18.dp)
+                .clip(CircleShape)
+                .background(Color.White)
+                .border(2.dp, Color(0x99000000), CircleShape),
+        )
+    }
+}
+
+private fun rainbowBrush(): Brush = Brush.horizontalGradient(
+    listOf(Color.Red, Color.Yellow, Color.Green, Color.Cyan, Color.Blue, Color.Magenta, Color.Red),
+)
+
+private fun hsvColor(hue: Float, saturation: Float, brightness: Float): Color =
+    Color(android.graphics.Color.HSVToColor(floatArrayOf(hue, saturation.coerceIn(0f, 1f), brightness.coerceIn(0f, 1f))))
+
+private fun hsvToArgbLong(hue: Float, saturation: Float, brightness: Float): Long =
+    android.graphics.Color.HSVToColor(floatArrayOf(hue, saturation, brightness)).toLong() and 0xFFFFFFFFL
+
+private fun hexOf(color: Color): String = String.format("#%06X", 0xFFFFFF and color.toArgb())
 
 /** Horizontally-scrolling cards for the saved .pfptheme library: thumbnail, name, actions.
  *  [focusedIndex] highlights the controller-selected card (null while the strip is unfocused). */
