@@ -43,6 +43,8 @@ data class StudioArt(
     val isVideo: Boolean = false,
 )
 
+// Navigation levels, strictly hierarchical: confirm descends, back ascends, left/right acts on
+// the current level only. TABS (categories) → SOURCES → GRID.
 enum class StudioZone { TABS, SOURCES, GRID }
 
 data class ArtworkStudioUiState(
@@ -50,7 +52,7 @@ data class ArtworkStudioUiState(
     val isLoading: Boolean = true,
     val tabIndex: Int = 0,
     val sourceIndex: Int = 0,
-    val zone: StudioZone = StudioZone.GRID,
+    val zone: StudioZone = StudioZone.TABS,
     val gridIndex: Int = 0,
     val page: Int = 0,
     val results: List<StudioArt> = emptyList(),
@@ -128,7 +130,10 @@ val CROPPABLE_KINDS = setOf(
 
 typealias StudioArtworkInfo = com.playfieldportal.feature.artwork.store.StudioArtworkInfo
 
-private const val PAGE_SIZE = 20
+const val STUDIO_GRID_COLUMNS = 4
+const val STUDIO_GRID_ROWS = 5   // fixed 4x5 page; PAGE_SIZE matches columns x rows
+
+private const val PAGE_SIZE = STUDIO_GRID_COLUMNS * STUDIO_GRID_ROWS
 private const val CROP_PAN_STEP = 0.03f
 
 // SS media types browsable per destination (order = preference; all variants are listed).
@@ -147,8 +152,6 @@ private val SS_TYPES_FOR_KIND: Map<ArtworkKind, List<String>> = mapOf(
     ArtworkKind.VIDEO          to listOf("video"),              // full gameplay video
     ArtworkKind.ICON1          to listOf("video-normalized", "video"),  // icon-slot snap
 )
-
-const val STUDIO_GRID_COLUMNS = 4
 
 val STUDIO_TABS = listOf(
     StudioTab(ArtworkKind.ICON,           "ICON0",       "XMB tile · 144×80 · crop"),
@@ -206,7 +209,8 @@ class ArtworkStudioViewModel @Inject constructor(
     fun load(gameId: Long) {
         // Always clear the closed flag: the VM survives across open/close (host-scoped), so a
         // stale closed=true from a prior B-press would otherwise slam the screen shut on reopen.
-        _uiState.update { it.copy(closed = false) }
+        // Every open starts at Level 1 (categories).
+        _uiState.update { it.copy(closed = false, zone = StudioZone.TABS) }
         if (this.gameId == gameId && _uiState.value.game != null) return
         this.gameId = gameId
         viewModelScope.launch {
@@ -383,8 +387,12 @@ class ArtworkStudioViewModel @Inject constructor(
 
     // ── User actions ──────────────────────────────────────────────────────────
 
+    // Selecting a category or source (controller cycle OR touch tap) also lands navigation on
+    // that level, so a tap jumps straight to the section and the grid refreshes underneath.
     fun selectTab(index: Int) {
-        _uiState.update { it.copy(tabIndex = index.coerceIn(0, STUDIO_TABS.lastIndex), sourceIndex = 0) }
+        _uiState.update {
+            it.copy(tabIndex = index.coerceIn(0, STUDIO_TABS.lastIndex), sourceIndex = 0, zone = StudioZone.TABS)
+        }
         viewModelScope.launch { refreshCurrent() }
         loadResults()
     }
@@ -394,7 +402,7 @@ class ArtworkStudioViewModel @Inject constructor(
     fun selectSource(index: Int) {
         val sources = sourcesForTab()
         val clamped = index.coerceIn(0, sources.lastIndex)
-        _uiState.update { it.copy(sourceIndex = clamped) }
+        _uiState.update { it.copy(sourceIndex = clamped, zone = StudioZone.SOURCES) }
         if (sources[clamped] == StudioSource.LOCAL) {
             _uiState.update { it.copy(results = emptyList(), totalResults = 0) }
         } else loadResults()
@@ -881,57 +889,59 @@ class ArtworkStudioViewModel @Inject constructor(
             }
             return
         }
+        // Three hierarchical levels: TABS (categories) → SOURCES → GRID. Confirm descends, BACK
+        // ascends (and closes from Level 1). Left/Right — and LB/RB, which mirror them — act on
+        // the current level only; in the grid LB/RB page instead. D-pad up/down only moves inside
+        // the grid, clamped at the page edges: paging is exclusively LB/RB or the on-screen pills.
         when (action) {
-            GamepadAction.PREV_CATEGORY -> cycleTab(-1)   // LB / RB
-            GamepadAction.NEXT_CATEGORY -> cycleTab(+1)
-            GamepadAction.BACK -> close()
-            GamepadAction.NAVIGATE_UP -> when (s.zone) {
-                // Grid moves a whole ROW up; only the top row exits to the source row.
-                StudioZone.GRID ->
-                    if (s.gridIndex >= STUDIO_GRID_COLUMNS) {
-                        _uiState.update { it.copy(gridIndex = s.gridIndex - STUDIO_GRID_COLUMNS) }
-                    } else _uiState.update { it.copy(zone = StudioZone.SOURCES) }
-                else -> _uiState.update { it.copy(zone = StudioZone.TABS) }
-            }
-            GamepadAction.NAVIGATE_DOWN -> when (s.zone) {
-                StudioZone.TABS -> _uiState.update { it.copy(zone = StudioZone.SOURCES) }
-                StudioZone.SOURCES -> _uiState.update { it.copy(zone = StudioZone.GRID) }
-                // Grid moves a whole ROW down; past the last row flips to the next page.
-                StudioZone.GRID ->
-                    if (s.gridIndex + STUDIO_GRID_COLUMNS <= s.results.lastIndex) {
-                        _uiState.update { it.copy(gridIndex = s.gridIndex + STUDIO_GRID_COLUMNS) }
-                    } else nextPage()
+            GamepadAction.BACK -> when (s.zone) {
+                StudioZone.TABS    -> close()
+                StudioZone.SOURCES -> _uiState.update { it.copy(zone = StudioZone.TABS) }
+                StudioZone.GRID    -> _uiState.update { it.copy(zone = StudioZone.SOURCES) }
             }
             GamepadAction.NAVIGATE_LEFT -> when (s.zone) {
                 StudioZone.TABS    -> cycleTab(-1)
                 StudioZone.SOURCES -> cycleSource(-1)
                 StudioZone.GRID    ->
                     if (s.gridIndex > 0) _uiState.update { it.copy(gridIndex = s.gridIndex - 1) }
-                    else previousPage()
             }
             GamepadAction.NAVIGATE_RIGHT -> when (s.zone) {
                 StudioZone.TABS    -> cycleTab(+1)
                 StudioZone.SOURCES -> cycleSource(+1)
                 StudioZone.GRID    ->
                     if (s.gridIndex < s.results.lastIndex) _uiState.update { it.copy(gridIndex = s.gridIndex + 1) }
-                    else nextPage()
+            }
+            GamepadAction.NAVIGATE_UP -> if (s.zone == StudioZone.GRID && s.gridIndex >= STUDIO_GRID_COLUMNS) {
+                _uiState.update { it.copy(gridIndex = s.gridIndex - STUDIO_GRID_COLUMNS) }
+            }
+            GamepadAction.NAVIGATE_DOWN -> if (s.zone == StudioZone.GRID &&
+                s.gridIndex + STUDIO_GRID_COLUMNS <= s.results.lastIndex
+            ) {
+                _uiState.update { it.copy(gridIndex = s.gridIndex + STUDIO_GRID_COLUMNS) }
+            }
+            GamepadAction.PREV_CATEGORY -> when (s.zone) {   // LB
+                StudioZone.TABS    -> cycleTab(-1)
+                StudioZone.SOURCES -> cycleSource(-1)
+                StudioZone.GRID    -> previousPage()
+            }
+            GamepadAction.NEXT_CATEGORY -> when (s.zone) {   // RB
+                StudioZone.TABS    -> cycleTab(+1)
+                StudioZone.SOURCES -> cycleSource(+1)
+                StudioZone.GRID    -> nextPage()
             }
             GamepadAction.SELECT -> when (s.zone) {
-                StudioZone.TABS    -> _uiState.update { it.copy(zone = StudioZone.GRID) }
+                StudioZone.TABS    -> _uiState.update { it.copy(zone = StudioZone.SOURCES) }
+                // Local never enters the grid — confirm opens the device file picker directly.
                 StudioZone.SOURCES ->
                     if (sourcesForTab().getOrNull(s.sourceIndex) == StudioSource.LOCAL) requestLocalPick()
                     else _uiState.update { it.copy(zone = StudioZone.GRID) }
-                StudioZone.GRID    ->
-                    if (sourcesForTab().getOrNull(s.sourceIndex) == StudioSource.LOCAL) requestLocalPick()
-                    else openCandidate(s.gridIndex)
+                StudioZone.GRID    -> openCandidate(s.gridIndex)
             }
             // X / Square toggles the SGDB NSFW filter while browsing that source.
             GamepadAction.CHANGE_SORT, GamepadAction.OPEN_TASK_TRAY -> toggleNsfw()
-            // Y / Triangle jumps the cursor straight to the source row (lands on the
-            // active source, since sourceIndex already tracks it).
-            GamepadAction.BUTTON_Y -> _uiState.update { it.copy(zone = StudioZone.SOURCES) }
-            // START opens the per-slot actions menu (crop, restore, reset, clear, info).
-            GamepadAction.HOME -> openActions()
+            // Y / Triangle opens the per-slot options menu (crop, restore, reset, clear, info) —
+            // XMB-style context menu, available at every level.
+            GamepadAction.BUTTON_Y, GamepadAction.LONG_PRESS -> openActions()
             else -> Unit
         }
     }

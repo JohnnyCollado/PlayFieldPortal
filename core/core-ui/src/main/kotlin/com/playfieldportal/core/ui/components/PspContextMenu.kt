@@ -68,6 +68,9 @@ fun PspContextMenuOverlay(
     onRowActivated: (index: Int) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
+    // Default keeps the XMB's light PSP-style scrim (wave visible behind); busier hosts
+    // (e.g. the Artwork Studio) pass a darker one so the menu reads clearly.
+    scrim: Color = Color(0x40000000),
 ) {
     val colors = LocalPFPColors.current
     val listState = rememberLazyListState()
@@ -81,8 +84,7 @@ fun PspContextMenuOverlay(
     Box(
         modifier = modifier
             .fillMaxSize()
-            // Light scrim — the wave stays visible behind, PSP-style.
-            .background(Color(0x40000000))
+            .background(scrim)
             .clickable(onClick = onDismiss),
     ) {
         // Right-edge column. A solid backdrop at 75% alpha in the scheme's theme

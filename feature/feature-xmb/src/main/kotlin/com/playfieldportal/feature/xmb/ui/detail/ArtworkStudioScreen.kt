@@ -42,6 +42,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.ui.input.pointer.pointerInput
@@ -122,27 +123,20 @@ fun ArtworkStudioScreen(
     ) {
         Column(Modifier.fillMaxSize().padding(horizontal = 26.dp, vertical = 14.dp)) {
 
-            // ── Header ────────────────────────────────────────────────────────
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    "‹ Back",
-                    color = Color.White.copy(alpha = 0.7f),
-                    fontSize = 13.sp,
-                    modifier = Modifier.clickable(onClick = viewModel::close).padding(6.dp),
-                )
-                Spacer(Modifier.width(14.dp))
-                Text("ARTWORK STUDIO", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.weight(1f))
-                Text(
-                    state.game?.displayTitle ?: "",
-                    color = Color.White.copy(alpha = 0.8f),
-                    fontSize = 13.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.width(320.dp),
-                )
-            }
-            Spacer(Modifier.height(10.dp))
+            // ── Header — the shared breadcrumb every detail menu uses. The back arrow walks the
+            // level ladder exactly like the B button (grid → sources → categories → close), and
+            // the subtitle spells out where you are in it.
+            DetailBreadcrumb(
+                title = state.game?.displayTitle ?: "Artwork Studio",
+                subtitle = buildString {
+                    append("Artwork Studio")
+                    if (state.zone != StudioZone.TABS) append("  ›  ${STUDIO_TABS[state.tabIndex].label}")
+                    if (state.zone == StudioZone.GRID) {
+                        viewModel.sourcesForTab().getOrNull(state.sourceIndex)?.let { append("  ›  ${it.label}") }
+                    }
+                },
+                onBack = { viewModel.handleGamepadAction(GamepadAction.BACK) },
+            )
 
             // ── Destination tabs (LB/RB) — scrollable, selected tab kept in view ──
             val tabListState = rememberLazyListState()
@@ -221,7 +215,7 @@ fun ArtworkStudioScreen(
                     Spacer(Modifier.height(8.dp))
                     if (state.currentUri != null) {
                         Text(
-                            "START  ·  ACTIONS",
+                            "Ⓨ  ·  OPTIONS",
                             color = Color.White.copy(alpha = 0.7f),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
@@ -231,6 +225,39 @@ fun ArtworkStudioScreen(
                                 .clickable(onClick = viewModel::openActions)
                                 .padding(horizontal = 10.dp, vertical = 6.dp),
                         )
+                    }
+                    // Grid paging pills — shown only when the grid actually has more than a page.
+                    if (state.totalResults > 20) {
+                        val hasMore = state.page * 20 + state.results.size < state.totalResults
+                        Spacer(Modifier.height(8.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(
+                                "‹  PREV",
+                                color = Color.White.copy(alpha = if (state.page > 0) 0.8f else 0.3f),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(accent.copy(alpha = if (state.page > 0) 0.18f else 0.08f))
+                                    .clickable(enabled = state.page > 0, onClick = viewModel::previousPage)
+                                    .padding(vertical = 6.dp),
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            )
+                            Text(
+                                "NEXT  ›",
+                                color = Color.White.copy(alpha = if (hasMore) 0.8f else 0.3f),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(accent.copy(alpha = if (hasMore) 0.18f else 0.08f))
+                                    .clickable(enabled = hasMore, onClick = viewModel::nextPage)
+                                    .padding(vertical = 6.dp),
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            )
+                        }
                     }
                     Spacer(Modifier.weight(1f))
                     state.message?.let {
@@ -281,34 +308,14 @@ fun ArtworkStudioScreen(
                             )
                         }
                         Spacer(Modifier.weight(1f))
+                        // Status only — the Prev/Next pill buttons live in the left column.
                         if (state.totalResults > 0) {
                             val first = state.page * 20 + 1
                             val last = (state.page * 20 + state.results.size)
-                            if (state.totalResults > 20) {
-                                Text(
-                                    "‹ Prev", color = Color.White.copy(alpha = if (state.page > 0) 0.8f else 0.25f),
-                                    fontSize = 11.sp,
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(6.dp))
-                                        .clickable(enabled = state.page > 0, onClick = viewModel::previousPage)
-                                        .padding(horizontal = 8.dp, vertical = 4.dp),
-                                )
-                            }
                             Text(
                                 "$first–$last of ${state.totalResults}",
                                 color = Color.White.copy(alpha = 0.45f), fontSize = 10.sp,
                             )
-                            if (state.totalResults > 20) {
-                                val more = last < state.totalResults
-                                Text(
-                                    "Next ›", color = Color.White.copy(alpha = if (more) 0.8f else 0.25f),
-                                    fontSize = 11.sp,
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(6.dp))
-                                        .clickable(enabled = more, onClick = viewModel::nextPage)
-                                        .padding(horizontal = 8.dp, vertical = 4.dp),
-                                )
-                            }
                         }
                     }
                     Spacer(Modifier.height(8.dp))
@@ -416,10 +423,16 @@ fun ArtworkStudioScreen(
                 }
             }
 
-            // Footer hints
+            // Footer hints — per-level so the active bindings are always accurate.
             Text(
-                "LB / RB — artwork type   ·   D-Pad — grid   ·   A — preview / apply   ·   START — actions   ·   " +
-                    "B — back   ·   X — NSFW   ·   Y — sources   ·   past an edge — next / prev page",
+                when (state.zone) {
+                    StudioZone.TABS ->
+                        "◄ ► — artwork type   ·   A — sources   ·   B — close   ·   Y — options"
+                    StudioZone.SOURCES ->
+                        "◄ ► — source   ·   A — browse / pick file   ·   B — back   ·   X — NSFW   ·   Y — options"
+                    StudioZone.GRID ->
+                        "D-Pad — grid   ·   LB / RB — prev / next page   ·   A — preview / apply   ·   B — back   ·   X — NSFW   ·   Y — options"
+                },
                 color = Color.White.copy(alpha = 0.35f), fontSize = 10.sp,
                 modifier = Modifier.padding(top = 6.dp),
             )
@@ -511,56 +524,20 @@ fun ArtworkStudioScreen(
             }
         }
 
-        // ── Actions menu overlay (hold A / ACTIONS) ───────────────────────────
+        // ── Options menu overlay (Y / triangle) — the shared XMB-style context menu ──
         if (state.actionsOpen && !state.showFileInfo) {
             val actions = state.availableActions
-            Box(
-                Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.82f))
-                    .clickable(onClick = viewModel::closeActions),
-                contentAlignment = Alignment.Center,
-            ) {
-                Column(
-                    Modifier
-                        .width(320.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(Color(0xFF14141F))
-                        .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(14.dp))
-                        .padding(vertical = 14.dp),
-                ) {
-                    Text(
-                        "${STUDIO_TABS[state.tabIndex].label}  ·  ACTIONS",
-                        color = Color.White.copy(alpha = 0.55f), fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp),
-                    )
-                    Spacer(Modifier.height(6.dp))
-                    actions.forEachIndexed { index, act ->
-                        val focused = state.actionsIndex == index
-                        val danger = act == StudioAction.CLEAR
-                        Text(
-                            act.label,
-                            color = when {
-                                danger  -> Color(0xFFE57373)
-                                focused -> Color.White
-                                else    -> Color.White.copy(alpha = 0.75f)
-                            },
-                            fontSize = 13.sp,
-                            fontWeight = if (focused) FontWeight.SemiBold else FontWeight.Normal,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(if (focused) accent.copy(alpha = 0.22f) else Color.Transparent)
-                                .clickable { viewModel.runAction(act) }
-                                .padding(horizontal = 18.dp, vertical = 11.dp),
-                        )
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        "D-Pad — move   ·   A — select   ·   B — close",
-                        color = Color.White.copy(alpha = 0.35f), fontSize = 10.sp,
-                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp),
-                    )
-                }
-            }
+            com.playfieldportal.core.ui.components.PspContextMenuOverlay(
+                title = STUDIO_TABS[state.tabIndex].label,
+                rows = actions.map {
+                    com.playfieldportal.core.ui.components.PspMenuRow(it.label, isDestructive = it == StudioAction.CLEAR)
+                },
+                selectedIndex = state.actionsIndex,
+                onRowActivated = { index -> actions.getOrNull(index)?.let(viewModel::runAction) },
+                onDismiss = viewModel::closeActions,
+                // Darker than the XMB default — the grid behind is busy, so let it recede.
+                scrim = Color(0xA6000000),
+            )
         }
 
         // ── File information panel ────────────────────────────────────────────
@@ -677,18 +654,23 @@ private fun StudioCropEditor(
             decodeDisplayBitmap(path)?.asImageBitmap()
         }
     }
-    Box(
-        Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.96f)),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(Modifier.fillMaxSize().padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("ADJUST CROP / POSITION", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(10.dp))
-            // Fixed centered frame; the image pans and scales behind it (avatar-crop model).
-            Box(
+    // Layered, not stacked: the image + dim mask fill the WHOLE screen on the bottom layer
+    // (clipped, so no zoom level can paint outside it), and the title/buttons/hints float on a
+    // layer above — the zoomed image slides underneath them instead of covering them. Only the
+    // crop frame's dimensions are static; everything else moves and scales behind it.
+    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.96f))) {
+
+        // ── Layer 1: full-screen image + fixed frame + dim mask ────────────────
+        val image = bmp
+        if (image == null) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = accent)
+            }
+        } else {
+            androidx.compose.foundation.Canvas(
                 Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
+                    .fillMaxSize()
+                    .clipToBounds()
                     .pointerInput(Unit) {
                         detectTransformGestures { _, pan, zoom, _ ->
                             val g = geom.value
@@ -700,63 +682,63 @@ private fun StudioCropEditor(
                             if (zoom != 1f) onZoom(zoom)
                         }
                     },
-                contentAlignment = Alignment.Center,
             ) {
-                val image = bmp
-                if (image == null) {
-                    CircularProgressIndicator(color = accent)
-                } else {
-                    androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
-                        val g = geom.value
-                        val (fw, fh) = frameSizeFor(g, size.width, size.height)
-                        val fx = (size.width - fw) / 2f; val fy = (size.height - fh) / 2f
-                        // Scale the image so the crop window maps exactly onto the fixed frame.
-                        val imgDispW = fw / (cropR - cropL).coerceAtLeast(0.0001f)
-                        val imgDispH = fh / (cropB - cropT).coerceAtLeast(0.0001f)
-                        val imgLeft = fx - cropL * imgDispW
-                        val imgTop = fy - cropT * imgDispH
-                        drawImage(
-                            image = image,
-                            dstOffset = androidx.compose.ui.unit.IntOffset(imgLeft.roundToInt(), imgTop.roundToInt()),
-                            dstSize = androidx.compose.ui.unit.IntSize(imgDispW.roundToInt(), imgDispH.roundToInt()),
-                        )
-                        // Dim everything outside the fixed frame.
-                        val dim = Color.Black.copy(alpha = 0.62f)
-                        val W = size.width; val H = size.height
-                        drawRect(dim, size = androidx.compose.ui.geometry.Size(W, fy))
-                        drawRect(dim, topLeft = androidx.compose.ui.geometry.Offset(0f, fy + fh), size = androidx.compose.ui.geometry.Size(W, H - fy - fh))
-                        drawRect(dim, topLeft = androidx.compose.ui.geometry.Offset(0f, fy), size = androidx.compose.ui.geometry.Size(fx, fh))
-                        drawRect(dim, topLeft = androidx.compose.ui.geometry.Offset(fx + fw, fy), size = androidx.compose.ui.geometry.Size(W - fx - fw, fh))
-                        drawRect(
-                            accent,
-                            topLeft = androidx.compose.ui.geometry.Offset(fx, fy),
-                            size = androidx.compose.ui.geometry.Size(fw, fh),
-                            style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f),
-                        )
-                    }
-                }
+                val g = geom.value
+                val (fw, fh) = frameSizeFor(g, size.width, size.height)
+                val fx = (size.width - fw) / 2f; val fy = (size.height - fh) / 2f
+                // Scale the image so the crop window maps exactly onto the fixed frame.
+                val imgDispW = fw / (cropR - cropL).coerceAtLeast(0.0001f)
+                val imgDispH = fh / (cropB - cropT).coerceAtLeast(0.0001f)
+                val imgLeft = fx - cropL * imgDispW
+                val imgTop = fy - cropT * imgDispH
+                drawImage(
+                    image = image,
+                    dstOffset = androidx.compose.ui.unit.IntOffset(imgLeft.roundToInt(), imgTop.roundToInt()),
+                    dstSize = androidx.compose.ui.unit.IntSize(imgDispW.roundToInt(), imgDispH.roundToInt()),
+                )
+                // Dim everything outside the fixed frame, edge to edge of the screen.
+                val dim = Color.Black.copy(alpha = 0.62f)
+                val W = size.width; val H = size.height
+                drawRect(dim, size = androidx.compose.ui.geometry.Size(W, fy))
+                drawRect(dim, topLeft = androidx.compose.ui.geometry.Offset(0f, fy + fh), size = androidx.compose.ui.geometry.Size(W, H - fy - fh))
+                drawRect(dim, topLeft = androidx.compose.ui.geometry.Offset(0f, fy), size = androidx.compose.ui.geometry.Size(fx, fh))
+                drawRect(dim, topLeft = androidx.compose.ui.geometry.Offset(fx + fw, fy), size = androidx.compose.ui.geometry.Size(W - fx - fw, fh))
+                drawRect(
+                    accent,
+                    topLeft = androidx.compose.ui.geometry.Offset(fx, fy),
+                    size = androidx.compose.ui.geometry.Size(fw, fh),
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f),
+                )
             }
-            Spacer(Modifier.height(12.dp))
+        }
+
+        // ── Layer 2: title, buttons, hints — always above the image ────────────
+        Column(
+            Modifier.fillMaxSize().padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text("ADJUST CROP / POSITION", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.weight(1f))
             Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 Text(
                     if (applying) "Baking…" else "Ⓐ  APPLY CROP",
                     color = Color(0xFF45C46A), fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
                     modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp)).background(Color.White.copy(alpha = 0.08f))
+                        .clip(RoundedCornerShape(8.dp)).background(Color.Black.copy(alpha = 0.55f))
                         .clickable(enabled = !applying, onClick = onApply)
                         .padding(horizontal = 18.dp, vertical = 9.dp),
                 )
                 Text(
-                    "Ⓑ  CANCEL", color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp,
+                    "Ⓑ  CANCEL", color = Color.White.copy(alpha = 0.8f), fontSize = 14.sp,
                     modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp)).background(Color.White.copy(alpha = 0.08f))
+                        .clip(RoundedCornerShape(8.dp)).background(Color.Black.copy(alpha = 0.55f))
                         .clickable(onClick = onCancel)
                         .padding(horizontal = 18.dp, vertical = 9.dp),
                 )
             }
             Text(
                 "drag to move the image   ·   pinch to zoom   ·   D-Pad move   ·   LB / RB zoom",
-                color = Color.White.copy(alpha = 0.35f), fontSize = 10.sp,
+                color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp,
                 modifier = Modifier.padding(top = 8.dp),
             )
         }
