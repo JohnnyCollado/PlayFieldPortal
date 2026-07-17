@@ -69,6 +69,7 @@ import com.playfieldportal.feature.xmb.preview.PreviewData
 import androidx.media3.common.util.UnstableApi
 import com.playfieldportal.feature.xmb.ui.app.AppDetailScreen
 import com.playfieldportal.feature.xmb.ui.detail.GameDetailScreen
+import com.playfieldportal.feature.xmb.ui.detail.PlayerStatusScreen
 import com.playfieldportal.feature.xmb.ui.detail.ShibaCoinsScreen
 import com.playfieldportal.feature.xmb.ui.detail.ShibaCoinsTarget
 import com.playfieldportal.feature.xmb.ui.detail.ShibaLibraryScreen
@@ -184,6 +185,9 @@ fun XMBShellContainer(
         onShibaCoinsActionConsumed = viewModel::onShibaCoinsActionConsumed,
         onCloseShibaLibrary = viewModel::onCloseShibaLibrary,
         onShibaLibraryActionConsumed = viewModel::onShibaLibraryActionConsumed,
+        onClosePlayerStatus = viewModel::onClosePlayerStatus,
+        onPlayerStatusActionConsumed = viewModel::onPlayerStatusActionConsumed,
+        onOpenPlayerStatus = viewModel::openPlayerStatus,
         onGameDetailActionConsumed = viewModel::consumeGameDetailAction,
         onCloseVideoDetail = viewModel::onCloseVideoDetail,
         onVideoDetailActionConsumed = viewModel::consumeVideoDetailAction,
@@ -287,6 +291,9 @@ fun XMBShell(
     onShibaCoinsActionConsumed: () -> Unit = {},
     onCloseShibaLibrary: () -> Unit = {},
     onShibaLibraryActionConsumed: () -> Unit = {},
+    onClosePlayerStatus: () -> Unit = {},
+    onPlayerStatusActionConsumed: () -> Unit = {},
+    onOpenPlayerStatus: () -> Unit = {},
     onGameDetailActionConsumed: () -> Unit = {},
     onCloseVideoDetail: () -> Unit = {},
     onVideoDetailActionConsumed: () -> Unit = {},
@@ -389,6 +396,7 @@ fun XMBShell(
             val waveCovered = uiState.showBootSequence ||
                 uiState.activeVideoId != null || uiState.activeGameId != null ||
                 uiState.activeShibaCoinsTarget != null || uiState.activeShibaLibrary != null ||
+                uiState.activePlayerStatus ||
                 uiState.activePhotoViewer != null ||
                 uiState.activeAppId != null || uiState.activeAppDrawerFilter != null ||
                 uiState.musicPlayerVisible
@@ -448,6 +456,7 @@ fun XMBShell(
                 uiState.activeGameId == null &&
                 uiState.activeShibaCoinsTarget == null &&
                 uiState.activeShibaLibrary == null &&
+                !uiState.activePlayerStatus &&
                 uiState.activeVideoId == null &&
                 uiState.activeAppId == null &&
                 uiState.activePhotoViewer == null
@@ -652,7 +661,9 @@ fun XMBShell(
             // The Settings screen is suppressed while the color-scheme picker is open so
             // the live wave preview shows through behind the picker (PSP-style).
             if (uiState.colorSchemePicker == null) {
-                uiState.activeSettingsScreen?.let { screenId ->
+                // Hidden while the player status view is open on top of it (opened from the
+                // Settings player card); closing that view brings Settings straight back.
+                if (!uiState.activePlayerStatus) uiState.activeSettingsScreen?.let { screenId ->
                     SettingsNavHost(
                         screenId = screenId,
                         onBack = onCloseSettingsScreen,
@@ -661,6 +672,7 @@ fun XMBShell(
                         onOpenColorSchemePicker = onOpenColorSchemePicker,
                         onOpenXmbLayoutAdjust = onOpenXmbLayoutAdjust,
                         onAddAndroidApps = onOpenAndroidLibraryPicker,
+                        onOpenPlayerStatus = onOpenPlayerStatus,
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
@@ -875,6 +887,18 @@ fun XMBShell(
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
+            }
+
+            // Player status view — hidden while a coin's Shiba Coins overlay is open on top of it
+            // (opened from a recent/rarest row); closing that overlay brings it straight back.
+            if (uiState.activeShibaCoinsTarget == null && uiState.activePlayerStatus) {
+                PlayerStatusScreen(
+                    onClose = onClosePlayerStatus,
+                    onOpenCoins = onOpenShibaCoinsTarget,
+                    pendingGamepadAction = uiState.pendingPlayerStatusAction,
+                    onGamepadActionConsumed = onPlayerStatusActionConsumed,
+                    modifier = Modifier.fillMaxSize(),
+                )
             }
 
             uiState.activeAppId?.let { appId ->

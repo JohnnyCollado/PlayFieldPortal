@@ -16,6 +16,7 @@ fun SettingsNavHost(
     onOpenColorSchemePicker: () -> Unit = {},
     onOpenXmbLayoutAdjust: () -> Unit = {},
     onAddAndroidApps: () -> Unit = {},
+    onOpenPlayerStatus: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     CompositionLocalProvider(
@@ -32,7 +33,7 @@ fun SettingsNavHost(
             "settings_categories" -> CategoryManagerScreen(onBack = onBack, modifier = modifier)
             "settings_artwork"    -> ArtworkSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_artwork_import" -> ArtworkImportScreen(onBack = onBack, modifier = modifier)
-            "settings_achievements" -> AchievementsSettingsScreen(onBack = onBack, modifier = modifier)
+            "settings_achievements" -> AchievementsSettingsScreen(onBack = onBack, onOpenPlayerStatus = onOpenPlayerStatus, modifier = modifier)
             "settings_emulators"  -> EmulatorsSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_themes"     -> ThemesSettingsScreen(
                 onBack = onBack,

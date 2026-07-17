@@ -473,6 +473,9 @@ data class XMBUiState(
     // Fullscreen All Tracked / Untracked overlay (null = closed).
     val activeShibaLibrary: ShibaLibraryMode? = null,
     val pendingShibaLibraryAction: GamepadAction? = null,
+    // Fullscreen player status view, opened from the Shiba Coin player card (XMB + Settings).
+    val activePlayerStatus: Boolean = false,
+    val pendingPlayerStatusAction: GamepadAction? = null,
 
     // ── Discord QR login overlay ──────────────────────────────────────────
     val activeDiscordLogin: Boolean = false,
@@ -578,6 +581,7 @@ data class XMBUiState(
             activeGameId != null ||
             activeShibaCoinsTarget != null ||
             activeShibaLibrary != null ||
+            activePlayerStatus ||
             activeAppId != null ||
             activeVideoId != null ||
             activePhotoViewer != null ||
@@ -733,6 +737,9 @@ data class XMBItem(
     // When set, the leading slot draws a tinted circle with this text centered (e.g. "Lv 27") —
     // the Shiba Coins player-card summary row.
     val levelBadge: String? = null,
+    // Prestige Bones earned (player-card summary row only); renders "• N [bone glyph]" after the
+    // title when greater than zero.
+    val boneCount: Int = 0,
     val type: XMBItemType = XMBItemType.STANDARD,
 )
 
@@ -3648,6 +3655,7 @@ class XMBViewModel @Inject constructor(
                 title = w.rank.label,
                 subtitle = summarySubtitle,
                 levelBadge = "Lv ${w.level}",
+                boneCount = w.bones,
                 type = XMBItemType.STANDARD,
             ),
         ) + allTrackedRow + untrackedRow
@@ -3665,9 +3673,15 @@ class XMBViewModel @Inject constructor(
     // inside a lens returns false so the shared game handler opens its Game Detail page.
     private fun handleAchievementsSelection(item: XMBItem): Boolean {
         when (item.id) {
-            ACH_CONNECT_ITEM_ID, ACH_SUMMARY_ITEM_ID -> {
+            ACH_CONNECT_ITEM_ID -> {
                 menuSound.play(MenuSound.SELECT)
                 _uiState.update { it.copy(activeSettingsScreen = "settings_achievements") }
+                return true
+            }
+            ACH_SUMMARY_ITEM_ID -> {
+                // The player card opens the fullscreen player status view.
+                menuSound.play(MenuSound.SELECT)
+                openPlayerStatus()
                 return true
             }
             ACH_ALL_ITEM_ID     -> { menuSound.play(MenuSound.SELECT); openShibaLibrary(ShibaLibraryMode.TRACKED); return true }
@@ -3887,6 +3901,12 @@ class XMBViewModel @Inject constructor(
             state.activeShibaLibrary != null -> {
                 // Forward everything so the fullscreen library can move focus and close on BACK.
                 _uiState.update { it.copy(pendingShibaLibraryAction = action) }
+                return
+            }
+            state.activePlayerStatus -> {
+                // Forward everything so the player status view can move focus, open a coin's
+                // details, and close on BACK.
+                _uiState.update { it.copy(pendingPlayerStatusAction = action) }
                 return
             }
             state.activeGameId != null -> {
@@ -6267,6 +6287,18 @@ class XMBViewModel @Inject constructor(
 
     fun onShibaLibraryActionConsumed() {
         _uiState.update { it.copy(pendingShibaLibraryAction = null) }
+    }
+
+    fun openPlayerStatus() {
+        _uiState.update { it.copy(activePlayerStatus = true) }
+    }
+
+    fun onClosePlayerStatus() {
+        _uiState.update { it.copy(activePlayerStatus = false, pendingPlayerStatusAction = null) }
+    }
+
+    fun onPlayerStatusActionConsumed() {
+        _uiState.update { it.copy(pendingPlayerStatusAction = null) }
     }
 
     fun onCloseGameDetail() {

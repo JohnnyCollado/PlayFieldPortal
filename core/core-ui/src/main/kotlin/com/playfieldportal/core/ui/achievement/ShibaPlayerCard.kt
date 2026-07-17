@@ -61,13 +61,17 @@ fun ShibaPlayerCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(10.dp).clip(CircleShape).background(accent))
                 Spacer(Modifier.width(8.dp))
+                // Rank standing: "<Rank> • <bones> [bone glyph]"; the bone group appears only once
+                // at least one Bone is minted.
                 Text(wallet.rank.label, color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 if (wallet.bones > 0) {
-                    Spacer(Modifier.width(10.dp))
-                    BoneBadge(bones = wallet.bones, accent = accent)
+                    Spacer(Modifier.width(8.dp))
+                    Text("•  ${wallet.bones}", color = accent, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.width(4.dp))
+                    BoneGlyph(tint = accent, size = 14.dp)
                 }
                 Spacer(Modifier.weight(1f))
-                Text("${"%,d".format(wallet.totalCoins)} coins", color = TextMuted, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                Text("${"%,d".format(wallet.totalCoins)} XP", color = TextMuted, fontSize = 12.sp, fontWeight = FontWeight.Medium)
             }
 
             Spacer(Modifier.height(10.dp))
@@ -93,22 +97,6 @@ fun ShibaPlayerCard(
             )
         }
     }
-}
-
-/** The prestige chip: one Bone per 100 levels earned, permanent once minted. */
-@Composable
-private fun BoneBadge(bones: Int, accent: Color) {
-    Text(
-        text = if (bones == 1) "1 Bone" else "$bones Bones",
-        color = accent,
-        fontSize = 12.sp,
-        fontWeight = FontWeight.Bold,
-        modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(accent.copy(alpha = 0.16f))
-            .border(1.dp, accent.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
-            .padding(horizontal = 8.dp, vertical = 3.dp),
-    )
 }
 
 @Composable

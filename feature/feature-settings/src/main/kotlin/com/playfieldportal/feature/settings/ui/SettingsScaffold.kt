@@ -459,6 +459,66 @@ fun SettingsRow(
     HorizontalDivider(color = SettingsDivider, modifier = Modifier.padding(start = 48.dp))
 }
 
+/**
+ * Wraps arbitrary [content] as a controller-focusable, confirm/tap-activatable settings element,
+ * registering with the scaffold's focus system exactly like [SettingsRow]. Use for custom rows that
+ * don't fit the label/sublabel layout (e.g. the Shiba player card). [content] receives whether the
+ * element currently holds controller focus, so the caller can draw its own highlight.
+ */
+@Composable
+fun SettingsFocusable(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    focusKey: String? = null,
+    content: @Composable (focused: Boolean) -> Unit,
+) {
+    val focusTracker  = LocalSettingsFocusTracker.current
+    val focusRegistry = LocalSettingsFocusRegistry.current
+    val registerFirst = LocalSettingsRegisterFirstFocusable.current
+    val rowPositions  = LocalSettingsRowPositions.current
+    val reportFocused = LocalSettingsReportFocused.current
+    val reportRemoved = LocalSettingsReportRemoved.current
+    var isFocused by remember { mutableStateOf(false) }
+
+    val focusRequester = remember { FocusRequester() }
+    if (focusKey != null) {
+        DisposableEffect(focusKey) {
+            focusRegistry[focusKey] = focusRequester
+            onDispose { if (focusRegistry[focusKey] === focusRequester) focusRegistry.remove(focusKey) }
+        }
+    }
+    DisposableEffect(Unit) {
+        registerFirst(focusRequester)
+        onDispose {
+            rowPositions?.remove(focusRequester)
+            reportRemoved(focusRequester)
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .focusRequester(focusRequester)
+            .then(
+                if (rowPositions != null) {
+                    val positions = rowPositions
+                    val req = focusRequester
+                    Modifier.onGloballyPositioned { positions[req] = it.localToRoot(Offset.Zero).y }
+                } else Modifier
+            )
+            .onFocusChanged { state ->
+                isFocused = state.isFocused
+                if (state.isFocused) {
+                    focusTracker(onClick)
+                    reportFocused(focusRequester)
+                }
+            }
+            .clickable { onClick() },
+    ) {
+        content(isFocused)
+    }
+}
+
 @Composable
 fun SettingsToggleRow(
     label: String,

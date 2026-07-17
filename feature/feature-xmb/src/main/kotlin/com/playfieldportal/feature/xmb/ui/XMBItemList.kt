@@ -91,6 +91,7 @@ import androidx.compose.ui.unit.isUnspecified
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
+import com.playfieldportal.core.ui.achievement.BoneGlyph
 import com.playfieldportal.core.ui.icons.GameIconStyle
 import com.playfieldportal.core.ui.icons.LocalXmbIconOverrides
 import com.playfieldportal.core.ui.icons.PortalIcon
@@ -660,16 +661,33 @@ private fun XmbVerticalListRow(
                         .padding(start = XmbLayoutSpec.DEFAULT.itemTextStartGapDp.dp)
                         .alpha(textAlpha),
                 ) {
-                    Text(
-                        text = item.title,
-                        color = if (isSelected) PrimaryText else InactiveText,
-                        fontSize = if (isSelected) XmbLayoutSpec.DEFAULT.itemTextSelectedSp.sp
-                        else XmbLayoutSpec.DEFAULT.itemTextSp.sp,
-                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                        style = if (isSelected) TextStyle(shadow = SelectedTextShadow) else TextStyle.Default,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                    val titleColor = if (isSelected) PrimaryText else InactiveText
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = item.title,
+                            color = titleColor,
+                            fontSize = if (isSelected) XmbLayoutSpec.DEFAULT.itemTextSelectedSp.sp
+                            else XmbLayoutSpec.DEFAULT.itemTextSp.sp,
+                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                            style = if (isSelected) TextStyle(shadow = SelectedTextShadow) else TextStyle.Default,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
+                        // Prestige Bones: "• N [bone glyph]" after the rank, player-card row only.
+                        if (item.boneCount > 0) {
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = "•  ${item.boneCount}",
+                                color = titleColor,
+                                fontSize = if (isSelected) 13.sp else 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            BoneGlyph(tint = titleColor, size = 14.dp)
+                        }
+                    }
                     if (!item.subtitle.isNullOrBlank()) {
                         // Discord friend rows prefix the subtitle with a colored presence dot; every
                         // other row keeps the plain subtitle.
