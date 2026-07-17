@@ -33,6 +33,11 @@ sealed class ScanResult {
         val alreadyInLibrary: Int,
         val unmatched: List<UnmatchedRom>,
         val requiresUserAssignment: List<UnmatchedRom>, // .chd/.img — platform unknown
+        // Every supported-extension ROM path the walk saw (new AND already-known), so a caller
+        // can compute deletions as dbPaths - presentRomPaths without a second directory pass.
+        // Null when the walk never ran (error / no extensions) — callers MUST NOT treat that as
+        // "everything is gone".
+        val presentRomPaths: Set<String>? = null,
     ) : ScanResult()
     data class Error(val message: String) : ScanResult()
 }
@@ -290,7 +295,10 @@ class RomScanner @Inject constructor(
         }
 
         Timber.i("Memory Card scan complete — platform=$platformId new=${newGames.size} existing=$alreadyInLibrary")
-        emit(ScanResult.Complete(newGames, alreadyInLibrary, emptyList(), emptyList()))
+        emit(ScanResult.Complete(
+            newGames, alreadyInLibrary, emptyList(), emptyList(),
+            presentRomPaths = candidates.mapTo(HashSet()) { it.absolutePath },
+        ))
 
     }.flowOn(Dispatchers.IO)
 
@@ -329,6 +337,7 @@ class RomScanner @Inject constructor(
 
         val newGames         = mutableListOf<Game>()
         val seenPaths        = HashSet<String>()
+        val presentPaths     = HashSet<String>()
         var alreadyInLibrary = 0
         var filesScanned     = 0
 
@@ -356,6 +365,7 @@ class RomScanner @Inject constructor(
                 // Derive the raw path from the document id (pure string math, no file access) so it
                 // stays the stable dedupe key and the {rom_path} value.
                 val rawPath = safDocumentIdToRawPath(child.documentId) ?: child.uri.toString()
+                presentPaths.add(rawPath)
                 if (rawPath in existingRomPaths || !seenPaths.add(rawPath)) {
                     alreadyInLibrary++
                     continue
@@ -382,7 +392,7 @@ class RomScanner @Inject constructor(
         }
 
         Timber.i("Memory Card SAF scan complete — platform=$platformId new=${newGames.size} existing=$alreadyInLibrary")
-        emit(ScanResult.Complete(newGames, alreadyInLibrary, emptyList(), emptyList()))
+        emit(ScanResult.Complete(newGames, alreadyInLibrary, emptyList(), emptyList(), presentRomPaths = presentPaths))
 
     }.flowOn(Dispatchers.IO)
 
