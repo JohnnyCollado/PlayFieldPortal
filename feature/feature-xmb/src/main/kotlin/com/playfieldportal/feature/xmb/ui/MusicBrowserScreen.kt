@@ -4,6 +4,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.runtime.remember
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -94,18 +95,31 @@ fun MusicBrowserScreen(
             ),
     ) {
         Column(modifier = Modifier.fillMaxSize().padding(horizontal = 40.dp, vertical = 24.dp)) {
-            // Header: a clear back button (like the app drawer) + title, with touch pills for the
-            // X (sort) and Y (options) actions on the right.
+            // Header: breadcrumb (matching the detail menus — ◀ + title + trail, tap = back, no
+            // press highlight, always visible), with touch pills for the X (sort) and Y (options)
+            // actions on the right.
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                if (showTouchControls) {
-                    HeaderPill(onClick = onBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = PrimaryText, modifier = Modifier.size(20.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text("Back", color = PrimaryText, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.clickable(
+                        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                        indication = null,
+                        onClick = onBack,
+                    ),
+                ) {
+                    Text("◀", color = SecondaryText, fontSize = 18.sp, modifier = Modifier.padding(end = 16.dp))
+                    Column {
+                        Text(state.title, color = PrimaryText, fontSize = 22.sp, fontWeight = FontWeight.Light)
+                        Text(
+                            when (state.view) {
+                                is com.playfieldportal.feature.xmb.viewmodel.MusicBrowserView.Playlist -> "Music  ›  Playlists"
+                                com.playfieldportal.feature.xmb.viewmodel.MusicBrowserView.Playlists -> "Music"
+                                com.playfieldportal.feature.xmb.viewmodel.MusicBrowserView.AllMusic -> "All Tracks"
+                            },
+                            color = SecondaryText, fontSize = 12.sp,
+                        )
                     }
-                    Spacer(Modifier.width(16.dp))
                 }
-                Text(state.title, color = PrimaryText, fontSize = 24.sp, fontWeight = FontWeight.Light)
                 Spacer(Modifier.weight(1f))
                 if (showTouchControls) {
                     // Sort applies to track views only (the ViewModel ignores it for playlists, so the

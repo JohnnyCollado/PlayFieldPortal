@@ -61,17 +61,27 @@ internal fun DetailBreadcrumb(
             .padding(vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text     = "◀",
-            color    = TextMuted,
-            fontSize = 16.sp,
-            modifier = Modifier
-                .clickable { onBack() }
-                .padding(end = 16.dp),
-        )
-        Column {
-            Text(title, color = TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
-            Text(subtitle, color = TextMuted, fontSize = 12.sp)
+        // Arrow AND title stack both trigger back — one tap target, no press highlight.
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.clickable(
+                interactionSource = androidx.compose.runtime.remember {
+                    androidx.compose.foundation.interaction.MutableInteractionSource()
+                },
+                indication = null,
+                onClick = onBack,
+            ),
+        ) {
+            Text(
+                text     = "◀",
+                color    = TextMuted,
+                fontSize = 16.sp,
+                modifier = Modifier.padding(end = 16.dp),
+            )
+            Column {
+                Text(title, color = TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+                Text(subtitle, color = TextMuted, fontSize = 12.sp)
+            }
         }
     }
 }

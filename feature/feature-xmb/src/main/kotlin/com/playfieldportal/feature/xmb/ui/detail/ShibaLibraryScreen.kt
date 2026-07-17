@@ -33,6 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -120,8 +121,22 @@ fun ShibaLibraryScreen(
             ),
     ) {
         Column(Modifier.fillMaxSize().padding(24.dp)) {
-            // Sibling views (All Tracked <-> Untracked) — switch with LEFT/RIGHT or by tapping.
+            // Breadcrumb header: the ◀ arrow and the ACTIVE title both execute back; tapping the
+            // inactive title switches to that view (LEFT/RIGHT on the controller still switch).
+            // No press highlight, matching the other breadcrumbs.
             Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(22.dp)) {
+                Text(
+                    "◀",
+                    color = TextDim,
+                    fontSize = 18.sp,
+                    modifier = Modifier
+                        .clickable(
+                            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                            indication = null,
+                            onClick = viewModel::close,
+                        )
+                        .padding(bottom = 3.dp),
+                )
                 state.siblings.forEach { sib ->
                     val active = sib == state.mode
                     val count = if (sib == ShibaLibraryMode.TRACKED) state.trackedCount else state.untrackedCount
@@ -131,7 +146,10 @@ fun ShibaLibraryScreen(
                         color = if (active) menuCursorEdge() else TextDim,
                         fontSize = if (active) 22.sp else 16.sp,
                         fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
-                        modifier = Modifier.clickable { viewModel.setMode(sib) },
+                        modifier = Modifier.clickable(
+                            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                            indication = null,
+                        ) { if (active) viewModel.close() else viewModel.setMode(sib) },
                     )
                 }
             }

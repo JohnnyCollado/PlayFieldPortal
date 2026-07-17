@@ -285,40 +285,49 @@ fun SettingsScaffold(
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
 
-                // ── Header ────────────────────────────────────────────────
-                // The header is excluded from focus traversal: its "◀ Back" text is clickable
-                // (touch only — the controller uses the B button), so without this, pressing UP
-                // on the first row would jump focus up into the header instead of clamping.
+                // ── Header — breadcrumb form, matching the detail menus: the ◀ back arrow
+                // leads, followed by the title stack. Excluded from focus traversal: the arrow
+                // is clickable (touch only — the controller uses the B button), so without this,
+                // pressing UP on the first row would jump focus up into the header.
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .focusProperties { canFocus = false }
                         .padding(horizontal = 48.dp, vertical = 20.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    Column {
+                    // Arrow AND title stack both trigger back — one tap target, no press highlight.
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.clickable(
+                            interactionSource = remember {
+                                androidx.compose.foundation.interaction.MutableInteractionSource()
+                            },
+                            indication = null,
+                        ) { onBack() },
+                    ) {
                         Text(
-                            text          = title.uppercase(),
-                            color         = SettingsAccent,
-                            fontSize      = 11.sp,
-                            fontWeight    = FontWeight.Bold,
-                            letterSpacing = 2.sp,
+                            text     = "◀",
+                            color    = SettingsSubtext,
+                            fontSize = 18.sp,
+                            modifier = Modifier.padding(end = 20.dp),
                         )
-                        Text(
-                            text       = subtitle,
-                            color      = SettingsText,
-                            fontSize   = 22.sp,
-                            fontWeight = FontWeight.Light,
-                        )
+                        Column {
+                            Text(
+                                text          = title.uppercase(),
+                                color         = SettingsAccent,
+                                fontSize      = 11.sp,
+                                fontWeight    = FontWeight.Bold,
+                                letterSpacing = 2.sp,
+                            )
+                            Text(
+                                text       = subtitle,
+                                color      = SettingsText,
+                                fontSize   = 22.sp,
+                                fontWeight = FontWeight.Light,
+                            )
+                        }
                     }
-
-                    Text(
-                        text     = "◀  Back",
-                        color    = SettingsSubtext,
-                        fontSize = 13.sp,
-                        modifier = Modifier.clickable { onBack() },
-                    )
                 }
 
                 HorizontalDivider(color = SettingsDivider)
