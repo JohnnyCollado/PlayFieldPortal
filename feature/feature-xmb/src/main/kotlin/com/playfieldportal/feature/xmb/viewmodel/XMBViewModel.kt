@@ -4053,8 +4053,8 @@ class XMBViewModel @Inject constructor(
             // Android libraries pick installed apps; consoles scan ROM folders.
             if (isAndroid) add(XMBContextMenuItem("find_games", "Find Games"))
             else           add(XMBContextMenuItem("scan_roms",  "Scan This Console"))
-            add(XMBContextMenuItem("refresh_metadata", "Refresh Metadata"))
-            add(XMBContextMenuItem("refresh_artwork",  "Refresh Artwork"))
+            add(XMBContextMenuItem("update_metadata",        "Update Metadata"))
+            add(XMBContextMenuItem("scrape_missing_artwork", "Scrape Missing Artwork"))
             // Global icon display switch — same setting as Artwork Settings, affects every game.
             add(XMBContextMenuItem("icon_display_global", "Icon Display (${_uiState.value.iconDisplayMode.label})"))
             if (card.pinned) add(XMBContextMenuItem("unpin", "Unpin"))
@@ -4079,6 +4079,10 @@ class XMBViewModel @Inject constructor(
             activeContextMenu = XMBContextMenu(
                 title      = "All Games",
                 items      = listOf(
+                    // Add-only pass over every console card — quick, so it needs no gate.
+                    XMBContextMenuItem("scan_missing_roms", "Scan Missing ROMs"),
+                    // Full pass that also deletes entries whose ROM file vanished — confirmed first.
+                    XMBContextMenuItem("rescan_all_consoles", "Re-Scan All Consoles"),
                     XMBContextMenuItem("import_pc_games", "Import PC Games"),
                     XMBContextMenuItem("icon_display_global", "Icon Display (${it.iconDisplayMode.label})"),
                 ),
@@ -4155,9 +4159,9 @@ class XMBViewModel @Inject constructor(
         val inGamingCategory = currentCat?.isGamingCategory == true
 
         val items = buildList {
-            add(XMBContextMenuItem("launch", "Launch Game"))
             // The explicit path to the edit surface, essential when direct launch makes
-            // confirm skip straight into the game.
+            // confirm skip straight into the game. Launch/title/note/scrape actions all live
+            // in Game Detail — the menu stays navigational.
             add(XMBContextMenuItem("game_details", "View Game Details"))
             add(XMBContextMenuItem("view_shiba_coins", "View Shiba Coins"))
             // No "Edit App Details" here: package-backed GAME entries (PC shortcuts, Android
@@ -4193,15 +4197,10 @@ class XMBViewModel @Inject constructor(
                 }
             }
 
-            // Game Detail parity — everything but the artwork manager is reachable here too.
-            add(XMBContextMenuItem("edit_title", "Edit Title"))
-            add(XMBContextMenuItem("edit_note",  "Edit Note"))
             // Emulator choice only applies to ROM-backed games; package-backed gaming apps
             // launch via their package/shortcut handle.
             if (!item.isAndroidApp) add(XMBContextMenuItem("change_emulator", "Change Emulator"))
             add(XMBContextMenuItem("icon_display", "Icon Display"))
-            add(XMBContextMenuItem("refresh_metadata", "Refresh Metadata"))
-            add(XMBContextMenuItem("refresh_artwork",  "Refresh Artwork"))
             add(XMBContextMenuItem("file_location",    "View File Location"))
             // Per-location hide for the spot this game is shown in (recoverable in Hidden Items).
             currentHideLocation()?.let { (_, _, label) -> add(XMBContextMenuItem("hide_here", "Hide from $label")) }
@@ -4537,13 +4536,25 @@ class XMBViewModel @Inject constructor(
             } else when (itemId) {
                 "import_pc_games" -> _uiState.update { it.copy(activeSettingsScreen = "settings_import_pc") }
                 "icon_display_global" -> openGlobalIconDisplayPickerMenu()
+                "scan_missing_roms" -> scanAllConsoles(removeMissing = false)
+                // Gate the destructive full pass: it walks every card and deletes vanished entries.
+                "rescan_all_consoles" -> _uiState.update { it.copy(activeContextMenu = XMBContextMenu(
+                    title = "Re-scan every console? This can take a while with a large library.",
+                    items = listOf(
+                        XMBContextMenuItem("cancel_rescan_all", "Cancel", isDestructive = true),
+                        XMBContextMenuItem("confirm_rescan_all", "Yes"),
+                    ),
+                    isAllGames = true,
+                ))}
+                "confirm_rescan_all" -> scanAllConsoles(removeMissing = true)
+                "cancel_rescan_all" -> Unit   // menu already closed
             }
             menu.platformId != null -> when (itemId) {
                 "find_games"       -> openAppPicker(AppPickerTarget.AndroidGames(menu.platformId), "Find Games")
                 "icon_display_global" -> openGlobalIconDisplayPickerMenu()
                 "scan_roms"        -> scanCard(menu.platformId)
-                "refresh_artwork"  -> refreshPlatformArtwork(menu.platformId)
-                "refresh_metadata" -> refreshPlatformArtwork(menu.platformId) // same path for now
+                "scrape_missing_artwork" -> scrapeMissingArtworkForPlatform(menu.platformId)
+                "update_metadata"        -> updatePlatformMetadata(menu.platformId)
                 "pin"              -> setCardPinned(menu.platformId, true)
                 "unpin"            -> setCardPinned(menu.platformId, false)
                 "library_manager"  -> _uiState.update { it.copy(activeSettingsScreen = "settings_library") }
@@ -4566,15 +4577,6 @@ class XMBViewModel @Inject constructor(
                     gameRepository.setIconDisplayMode(gid, IconDisplayMode.fromName(choice)?.name)
                 }
             } else when (itemId) {
-                "launch"                 -> when {
-                    menu.launchIntentUri != null -> launchStoredIntent(menu.launchIntentUri, menu.title)
-                    menu.shortcutId != null -> launchHarvestedShortcut(menu.packageName, menu.shortcutId)
-                    // "Launch Game" means launch: the detail page opens underneath and fires
-                    // its Play action itself once the game loads.
-                    else -> _uiState.update {
-                        it.copy(activeGameId = menu.gameId, activeGameAutoLaunch = true)
-                    }
-                }
                 // Always opens the Game Detail screen (no auto-launch) — the edit surface for
                 // artwork, title, notes, emulator when direct launch is the confirm behavior.
                 "game_details"           -> _uiState.update {
@@ -4617,27 +4619,7 @@ class XMBViewModel @Inject constructor(
                         loadItemsForCategory(currentCategory())
                     }
                 }
-                "refresh_artwork"        -> refreshGameArtwork(menu.gameId)
-                "refresh_metadata"       -> refreshGameArtwork(menu.gameId)
                 "file_location"          -> showGameFileLocation(menu.gameId)
-                "edit_title"             -> {
-                    val gid = menu.gameId
-                    appAction {
-                        val g = gameRepository.getById(gid) ?: return@appAction
-                        _uiState.update { it.copy(collectionNameDialog = CollectionNameDialogState(
-                            title = "Edit Title", initialText = g.displayTitle, editTitleGameId = g.id,
-                        ))}
-                    }
-                }
-                "edit_note"              -> {
-                    val gid = menu.gameId
-                    appAction {
-                        val g = gameRepository.getById(gid) ?: return@appAction
-                        _uiState.update { it.copy(collectionNameDialog = CollectionNameDialogState(
-                            title = "Edit Note", initialText = g.userNote.orEmpty(), editNoteGameId = g.id,
-                        ))}
-                    }
-                }
                 "change_emulator"        -> openEmulatorPickerMenu(menu.gameId)
                 "icon_display"           -> openIconDisplayPickerMenu(menu.gameId)
                 // Two-step delete: a confirm menu first, matching the Game Detail page's guard.
@@ -5141,9 +5123,128 @@ class XMBViewModel @Inject constructor(
         }
     }
 
-    private fun refreshPlatformArtwork(platformId: String) {
-        // Route to artwork settings screen for now; bulk per-platform refresh is a future feature
-        _uiState.update { it.copy(activeSettingsScreen = "settings_artwork") }
+    // One pass over every console card (Android is app-picked, not scanned): adds newly found
+    // ROMs, and with [removeMissing] also deletes entries whose ROM file is gone. Deletion is
+    // driven by the SAME directory walk that finds new games (Complete.presentRomPaths), so the
+    // whole run costs one walk per card. A card whose scan errors (e.g. unmounted SD card)
+    // reports no survey and never has its games removed.
+    private fun scanAllConsoles(removeMissing: Boolean) {
+        viewModelScope.launch {
+            val cards = enabledCards.filter {
+                it.platformId != ANDROID_PLATFORM_ID && !it.romDirectory.isNullOrBlank()
+            }
+            val taskId = if (removeMissing) "rescan_all_consoles" else "scan_missing_roms"
+            addBackgroundTask(BackgroundTaskInfo(
+                id = taskId,
+                label = if (removeMissing) "Re-scanning all consoles…" else "Scanning for new ROMs…",
+                progress = 0f,
+            ))
+            if (cards.isEmpty()) {
+                completeBackgroundTask(taskId, "No console cards to scan")
+                return@launch
+            }
+
+            var added = 0
+            var removed = 0
+            var failedCards = 0
+            cards.forEachIndexed { index, card ->
+                val platformId = card.platformId
+                val base = index.toFloat() / cards.size
+                val existingGames = runCatching {
+                    gameRepository.observeByPlatform(platformId).first()
+                }.getOrDefault(emptyList())
+                val existingPaths = existingGames.mapNotNull { it.romPath }.toSet() +
+                    runCatching { scanTombstoneDao.getPathsForPlatform(platformId) }.getOrDefault(emptyList())
+
+                romScanner.scanDirectory(
+                    directory        = card.romDirectory!!,
+                    extensions       = card.supportedExtensions,
+                    platformId       = platformId,
+                    recursive        = card.scanRecursively,
+                    existingRomPaths = existingPaths,
+                ).collect { result ->
+                    when (result) {
+                        is ScanResult.Progress -> updateBackgroundTask(
+                            taskId,
+                            base + (result.progress.filesScanned.toFloat() /
+                                result.progress.totalEstimated.coerceAtLeast(1)) / cards.size,
+                        )
+                        is ScanResult.Complete -> {
+                            result.newGames.forEach { game -> gameRepository.upsert(game) }
+                            added += result.newGames.size
+                            if (removeMissing) result.presentRomPaths?.let { present ->
+                                val gone = existingGames.filter { it.romPath != null && it.romPath !in present }
+                                // Plain delete, no tombstone: the file is gone, and if it ever
+                                // comes back a future scan should resurrect it.
+                                gone.forEach { gameRepository.delete(it.id) }
+                                removed += gone.size
+                            }
+                            memoryCardRepository.recordScan(platformId, System.currentTimeMillis())
+                            memoryCardRepository.recountGames(platformId)
+                        }
+                        is ScanResult.Error -> {
+                            failedCards++
+                            Timber.e("All-consoles scan error for $platformId: ${result.message}")
+                        }
+                    }
+                }
+            }
+
+            completeBackgroundTask(taskId, buildString {
+                append(if (added == 0) "No new ROMs" else "$added new ROM(s)")
+                if (removeMissing) append(", ${if (removed == 0) "none missing" else "$removed missing removed"}")
+                if (failedCards > 0) append(" — $failedCards card(s) failed")
+            })
+            loadItemsForCategory(currentCategory())
+        }
+    }
+
+    private fun cardName(platformId: String): String =
+        enabledCards.firstOrNull { it.platformId == platformId }?.displayName ?: platformId.uppercase()
+
+    // Scans this card's games for missing/broken primary artwork and scrapes only those —
+    // valid artwork is never re-downloaded or overwritten.
+    private fun scrapeMissingArtworkForPlatform(platformId: String) {
+        viewModelScope.launch {
+            val taskId = "scrape_missing_$platformId"
+            addBackgroundTask(BackgroundTaskInfo(id = taskId, label = "Scraping missing artwork: ${cardName(platformId)}", progress = 0f))
+            runCatching {
+                artworkRepository.scrapeMissingForPlatform(platformId) { p ->
+                    updateBackgroundTask(taskId, p.current.toFloat() / p.total.coerceAtLeast(1))
+                }
+            }.onSuccess { result ->
+                completeBackgroundTask(taskId,
+                    if (result.total == 0) "No games are missing artwork"
+                    else "${result.succeeded} of ${result.total} game(s) updated"
+                )
+                loadItemsForCategory(currentCategory())
+            }.onFailure {
+                if (it is kotlinx.coroutines.CancellationException) throw it
+                failBackgroundTask(taskId, "Artwork scrape failed")
+            }
+        }
+    }
+
+    // Text-only metadata pass over the card's games — artwork files and columns are untouched.
+    private fun updatePlatformMetadata(platformId: String) {
+        viewModelScope.launch {
+            val taskId = "update_metadata_$platformId"
+            addBackgroundTask(BackgroundTaskInfo(id = taskId, label = "Updating metadata: ${cardName(platformId)}", progress = 0f))
+            runCatching {
+                artworkRepository.updateMetadataForPlatform(platformId) { p ->
+                    updateBackgroundTask(taskId, p.current.toFloat() / p.total.coerceAtLeast(1))
+                }
+            }.onSuccess { result ->
+                completeBackgroundTask(taskId,
+                    if (result.total == 0) "No games on this card"
+                    else "${result.succeeded} of ${result.total} game(s) updated"
+                )
+                loadItemsForCategory(currentCategory())
+            }.onFailure {
+                if (it is kotlinx.coroutines.CancellationException) throw it
+                failBackgroundTask(taskId, "Metadata update failed")
+            }
+        }
     }
 
     private fun setCardPinned(platformId: String, pinned: Boolean) {
@@ -5170,20 +5271,6 @@ class XMBViewModel @Inject constructor(
         if (isFavorite) menuSound.play(MenuSound.FAVORITE)
         viewModelScope.launch {
             gameRepository.setFavorite(gameId, isFavorite)
-        }
-    }
-
-    private fun refreshGameArtwork(gameId: Long) {
-        viewModelScope.launch {
-            val game   = gameRepository.getById(gameId) ?: return@launch
-            val taskId = "artwork_$gameId"
-            addBackgroundTask(BackgroundTaskInfo(id = taskId, label = "Fetching artwork: ${game.displayTitle}", progress = null))
-            val result = artworkRepository.fetchArtworkForGame(gameId, game.displayTitle)
-            if (result.success) {
-                completeBackgroundTask(taskId, "Artwork updated")
-            } else {
-                failBackgroundTask(taskId, result.errorMessage ?: "Artwork fetch failed")
-            }
         }
     }
 
