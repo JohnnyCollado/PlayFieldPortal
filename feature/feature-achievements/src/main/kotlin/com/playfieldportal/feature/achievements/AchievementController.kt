@@ -7,6 +7,7 @@ import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.core.domain.achievement.CoinWallet
 import com.playfieldportal.core.domain.achievement.GameCoins
 import com.playfieldportal.core.domain.achievement.LibraryStanding
+import com.playfieldportal.core.domain.achievement.RecentCoin
 import com.playfieldportal.feature.achievements.api.ProviderSyncResult
 import com.playfieldportal.feature.achievements.provider.steam.SteamCandidate
 import kotlinx.coroutines.flow.Flow
@@ -47,6 +48,9 @@ interface AchievementController {
 
     /** The whole-library standing for the Shiba Coins hub, with the [rarestLimit] rarest earned coins. */
     fun observeLibraryStanding(rarestLimit: Int = 15): Flow<LibraryStanding>
+
+    /** The [limit] most recently earned coins across the account, newest first — the status view's feed. */
+    fun observeRecentCoins(limit: Int = 8): Flow<List<RecentCoin>>
 
     /** Fetches [providerGameId] from [provider] and persists the result, or returns why it couldn't. */
     suspend fun syncGame(gameId: Long, provider: AchievementProvider, providerGameId: String): ProviderSyncResult

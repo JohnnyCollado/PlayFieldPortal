@@ -64,4 +64,21 @@ class LibraryStandingTest {
         )
         assertEquals(listOf(2L, 1L), lib.allByStanding.map { it.libraryGameId })
     }
+
+    @Test
+    fun `walletCounts sums earned coins across every tracked set`() {
+        val lib = LibraryStanding(
+            tracked = listOf(
+                GameStanding("a", 1L, "A", null, GameCoins(AchievementProvider.STEAM, CoinCounts(3, 2, 1), CoinCounts(5, 4, 2), isMastered = false)),
+                GameStanding("b", 2L, "B", null, GameCoins(AchievementProvider.RETRO_ACHIEVEMENTS, CoinCounts(10, 1, 0), CoinCounts(10, 1, 0), isMastered = true)),
+            ),
+        )
+        // Platinum is never an individual coin — the mastered set contributes only its Bronze/Silver.
+        assertEquals(CoinCounts(bronze = 13, silver = 3, gold = 1), lib.walletCounts)
+    }
+
+    @Test
+    fun `an empty standing has zero wallet counts`() {
+        assertEquals(CoinCounts.EMPTY, LibraryStanding().walletCounts)
+    }
 }

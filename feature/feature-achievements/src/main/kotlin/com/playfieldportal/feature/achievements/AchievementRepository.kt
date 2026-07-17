@@ -7,6 +7,7 @@ import com.playfieldportal.core.data.database.dao.AchievementMatchNoteDao
 import com.playfieldportal.core.data.database.dao.ProviderGameLinkDao
 import com.playfieldportal.core.data.database.dao.AccountSetRow
 import com.playfieldportal.core.data.database.dao.EarnedCoinRow
+import com.playfieldportal.core.data.database.dao.RecentCoinRow
 import com.playfieldportal.core.data.database.entity.AccountAchievementEntity
 import com.playfieldportal.core.data.database.entity.AccountAchievementSetEntity
 import com.playfieldportal.core.data.database.entity.ProviderGameLinkEntity
@@ -18,6 +19,7 @@ import com.playfieldportal.core.domain.achievement.EarnedCoinRef
 import com.playfieldportal.core.domain.achievement.GameCoins
 import com.playfieldportal.core.domain.achievement.GameStanding
 import com.playfieldportal.core.domain.achievement.LibraryStanding
+import com.playfieldportal.core.domain.achievement.RecentCoin
 import com.playfieldportal.core.domain.achievement.ShibaTier
 import com.playfieldportal.core.domain.achievement.UntrackedGame
 import com.playfieldportal.core.domain.model.Game
@@ -100,6 +102,10 @@ class AchievementRepository @Inject constructor(
                 untracked = games.filterNot { it.id in linked }.map { it.toUntrackedGame(noteByGame[it.id]) },
             )
         }
+
+    /** The most recently earned coins across the account (newest first), for the status view's feed. */
+    override fun observeRecentCoins(limit: Int): Flow<List<RecentCoin>> =
+        coinDao.observeRecentEarned(limit).map { rows -> rows.mapNotNull { it.toRecentCoin() } }
 
     /**
      * Fetches [providerGameId] from [provider] and persists the result. On success the per-coin
@@ -393,6 +399,18 @@ private fun EarnedCoinRow.toEarnedCoinRef(): EarnedCoinRef? {
         tier = t,
         globalRarity = globalRarity,
         iconUrl = iconUrl,
+    )
+}
+
+private fun RecentCoinRow.toRecentCoin(): RecentCoin? {
+    val t = runCatching { ShibaTier.valueOf(tier) }.getOrNull() ?: return null
+    return RecentCoin(
+        libraryGameId = libraryGameId,
+        gameTitle = gameTitle,
+        coinTitle = title,
+        tier = t,
+        iconUrl = iconUrl,
+        earnedAt = earnedAt,
     )
 }
 

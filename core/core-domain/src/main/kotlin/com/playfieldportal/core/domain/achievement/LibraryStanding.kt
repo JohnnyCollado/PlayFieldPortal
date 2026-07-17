@@ -47,6 +47,20 @@ data class EarnedCoinRef(
 )
 
 /**
+ * A recently earned coin tied back to its game — the row shape behind the player status view's
+ * "Recent Achievements" list, ordered most-recent first. [earnedAt] is the unlock time in epoch
+ * millis.
+ */
+data class RecentCoin(
+    val libraryGameId: Long?,
+    val gameTitle: String,
+    val coinTitle: String,
+    val tier: ShibaTier,
+    val iconUrl: String?,
+    val earnedAt: Long,
+)
+
+/**
  * The whole-library Shiba standing shown by the achievements hub: the account wallet, every tracked
  * game's standing, and the rarest earned coins. Counts and the "closest to mastery" lens derive
  * from [tracked], so there is a single source of truth. Built entirely from cached rows, so the hub
@@ -69,6 +83,14 @@ data class LibraryStanding(
 
     /** Number of tracked games that own their Platinum. */
     val gamesMastered: Int get() = tracked.count { it.isMastered }
+
+    /**
+     * Account-wide earned-coin tally by tier (Bronze/Silver/Gold), summed across every tracked set.
+     * Platinum is not an individual coin (see [CoinCounts]); the account's Platinum count is
+     * [gamesMastered], the number of mastered sets.
+     */
+    val walletCounts: CoinCounts
+        get() = tracked.fold(CoinCounts.EMPTY) { acc, standing -> acc + standing.coins.earned }
 
     /** In-progress games nearest to completion, most complete first. */
     fun closestToMastery(limit: Int = 10): List<GameStanding> =

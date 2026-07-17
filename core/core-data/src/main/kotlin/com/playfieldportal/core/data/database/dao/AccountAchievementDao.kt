@@ -18,6 +18,16 @@ data class EarnedCoinRow(
     @ColumnInfo(name = "icon_url") val iconUrl: String?,
 )
 
+/** An earned coin joined to its game's name plus its unlock time — the recent-unlocks projection. */
+data class RecentCoinRow(
+    @ColumnInfo(name = "library_game_id") val libraryGameId: Long?,
+    @ColumnInfo(name = "game_title") val gameTitle: String,
+    val title: String,
+    val tier: String,
+    @ColumnInfo(name = "icon_url") val iconUrl: String?,
+    @ColumnInfo(name = "earned_at") val earnedAt: Long,
+)
+
 @Dao
 interface AccountAchievementDao {
 
@@ -69,4 +79,21 @@ interface AccountAchievementDao {
             "ORDER BY a.global_rarity ASC, a.title ASC LIMIT :limit"
     )
     fun observeRarestEarned(limit: Int): Flow<List<EarnedCoinRow>>
+
+    // The most recently earned coins across the whole account (newest unlock first), each named
+    // after its library game when one links to it, else the provider's title. Only coins with a
+    // recorded unlock time qualify — an imported unlock with no timestamp can't rank by recency.
+    // GROUP BY collapses multi-link duplicates.
+    @Query(
+        "SELECT MIN(l.game_id) AS library_game_id, COALESCE(g.title, s.title) AS game_title, " +
+            "a.title AS title, a.tier AS tier, a.icon_url AS icon_url, MAX(a.earned_at) AS earned_at " +
+            "FROM account_achievements a " +
+            "JOIN account_achievement_sets s ON s.provider = a.provider AND s.provider_game_id = a.provider_game_id " +
+            "LEFT JOIN provider_game_links l ON l.provider = a.provider AND l.provider_game_id = a.provider_game_id " +
+            "LEFT JOIN games g ON g.id = l.game_id " +
+            "WHERE a.is_earned = 1 AND a.earned_at IS NOT NULL " +
+            "GROUP BY a.provider, a.provider_game_id, a.provider_achievement_id " +
+            "ORDER BY earned_at DESC LIMIT :limit"
+    )
+    fun observeRecentEarned(limit: Int): Flow<List<RecentCoinRow>>
 }
