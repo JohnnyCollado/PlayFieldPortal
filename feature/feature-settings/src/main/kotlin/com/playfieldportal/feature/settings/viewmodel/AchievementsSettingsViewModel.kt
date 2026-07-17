@@ -32,6 +32,7 @@ import javax.inject.Inject
 data class AchievementsSettingsUiState(
     val enabled: Boolean = false,
     val localSteamTrackingEnabled: Boolean = false,
+    val achievementPopupsEnabled: Boolean = false,
     val wallet: CoinWallet = CoinWallet.EMPTY,
     val hasRetroAchievements: Boolean = false,
     val raUsername: String = "",
@@ -174,10 +175,12 @@ class AchievementsSettingsViewModel @Inject constructor(
         accounts,
         extra,
         repository.observeWallet(),
-    ) { acc, ex, wallet ->
+        credentials.achievementPopupsEnabledFlow,
+    ) { acc, ex, wallet, popupsEnabled ->
         AchievementsSettingsUiState(
             enabled = acc.enabled,
             localSteamTrackingEnabled = acc.localSteamEnabled,
+            achievementPopupsEnabled = popupsEnabled,
             wallet = wallet,
             hasRetroAchievements = !acc.raUsername.isNullOrBlank(),
             raUsername = acc.raUsername.orEmpty(),
@@ -215,6 +218,11 @@ class AchievementsSettingsViewModel @Inject constructor(
      */
     fun setLocalSteamTracking(enabled: Boolean) {
         viewModelScope.launch { credentials.setLocalSteamTrackingEnabled(enabled) }
+    }
+
+    /** In-game achievement popups (Local Steam sessions). The screen handles the overlay grant. */
+    fun setAchievementPopups(enabled: Boolean) {
+        viewModelScope.launch { credentials.setAchievementPopupsEnabled(enabled) }
     }
 
     fun connectRetroAchievements(username: String, apiKey: String) {

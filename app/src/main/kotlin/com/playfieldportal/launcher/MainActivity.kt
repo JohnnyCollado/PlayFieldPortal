@@ -29,6 +29,7 @@ class MainActivity : ComponentActivity() {
 
     @Inject lateinit var gamepadInputHandler: GamepadInputHandler
     @Inject lateinit var discordBootstrap: DiscordBootstrap
+    @Inject lateinit var achievementSession: com.playfieldportal.feature.achievements.session.AchievementSessionController
 
     // Runtime-registered so it actually fires on Android 8+ (manifest receivers are blocked for
     // this implicit broadcast). Lives for the activity's lifetime.
@@ -71,6 +72,8 @@ class MainActivity : ComponentActivity() {
         // Foreground again = out of any game, so drop the per-game Discord presence back to idle
         // (full build only; no-op in lite). Cheap unless a game was actually being shared.
         discordBootstrap.onResume()
+        // Back on the launcher = the game session is over; stop the achievement watcher.
+        achievementSession.onLauncherResumed()
     }
 
     override fun onDestroy() {

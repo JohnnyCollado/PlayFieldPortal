@@ -125,6 +125,8 @@ dependencies {
     implementation(project(":feature:feature-appbar"))
     implementation(project(":feature:feature-backup"))
     implementation(project(":feature:feature-social"))
+    // Achievement session controller (in-game popup watcher start/stop from MainActivity)
+    implementation(project(":feature:feature-achievements"))
     // Native Discord SDK bridge — provides the DiscordSessionActivator Hilt binding + the .so.
     // Discord SDK only in the "full" flavor — the native libs (WebRTC + Krisp) are the largest part
     // of the download, so "lite" omits them entirely.

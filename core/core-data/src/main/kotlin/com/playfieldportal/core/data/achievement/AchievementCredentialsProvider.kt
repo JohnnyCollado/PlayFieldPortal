@@ -20,6 +20,7 @@ private val KEY_STEAM_ID64 = stringPreferencesKey("steam_id64")
 private val KEY_STEAM_API_KEY = stringPreferencesKey("steam_api_key")
 private val KEY_ENABLED = booleanPreferencesKey("achievements_enabled")
 private val KEY_LOCAL_STEAM_ENABLED = booleanPreferencesKey("local_steam_tracking_enabled")
+private val KEY_POPUPS_ENABLED = booleanPreferencesKey("achievement_popups_enabled")
 private val KEY_SYNC_LAST = longPreferencesKey("achievements_sync_last")
 
 /**
@@ -52,6 +53,11 @@ class AchievementCredentialsProvider @Inject constructor(
      */
     val localSteamTrackingEnabledFlow: Flow<Boolean> =
         context.pfpDataStore.data.map { it[KEY_LOCAL_STEAM_ENABLED] ?: false }
+
+    // In-game achievement popups (Local Steam sessions). Off by default: it needs the
+    // "Draw over other apps" grant and a per-session watch service.
+    val achievementPopupsEnabledFlow: Flow<Boolean> =
+        context.pfpDataStore.data.map { it[KEY_POPUPS_ENABLED] ?: false }
 
     val lastSyncedAtFlow: Flow<Long?> =
         context.pfpDataStore.data.map { it[KEY_SYNC_LAST] }
@@ -98,6 +104,28 @@ class AchievementCredentialsProvider @Inject constructor(
 
     suspend fun setLocalSteamTrackingEnabled(enabled: Boolean) {
         context.pfpDataStore.edit { it[KEY_LOCAL_STEAM_ENABLED] = enabled }
+    }
+
+    suspend fun achievementPopupsEnabled(): Boolean =
+        context.pfpDataStore.data.first()[KEY_POPUPS_ENABLED] ?: false
+
+    suspend fun setAchievementPopupsEnabled(enabled: Boolean) {
+        context.pfpDataStore.edit { it[KEY_POPUPS_ENABLED] = enabled }
+    }
+
+    // Per-game set of achievement popups already displayed, so an unlock banner can never be
+    // shown twice — not even across app restarts or emu file rewrites. Keyed by Steam appid.
+    private fun popupsShownKey(appId: String) =
+        androidx.datastore.preferences.core.stringSetPreferencesKey("achv_popup_shown_$appId")
+
+    suspend fun achievementPopupsShown(appId: String): Set<String> =
+        context.pfpDataStore.data.first()[popupsShownKey(appId)] ?: emptySet()
+
+    suspend fun addAchievementPopupsShown(appId: String, names: Set<String>) {
+        if (names.isEmpty()) return
+        context.pfpDataStore.edit {
+            it[popupsShownKey(appId)] = (it[popupsShownKey(appId)] ?: emptySet()) + names
+        }
     }
 
     suspend fun setLastSyncedAt(epochMillis: Long) {
