@@ -51,7 +51,8 @@ data class ShibaCoinsUiState(
     val displayed: List<CoinRow> = emptyList(),
     val sort: CoinSort = CoinSort.TIER,
     val filter: CoinFilter = CoinFilter.ALL,
-    // Controller focus: 0 = sort, 1 = filter, 2 = action (sync/link), 3+ = coin rows.
+    // Controller focus, in on-screen top-to-bottom order: 0 = action (sync/link), 1 = sort,
+    // 2 = filter, 3+ = coin rows. See the FOCUS_* constants below.
     val focusIndex: Int = 0,
     // Hidden coins the user chose to reveal (confirm/tap toggles). Session-only: cleared on open.
     val revealedIds: Set<String> = emptySet(),
@@ -63,10 +64,14 @@ data class ShibaCoinsUiState(
     val closed: Boolean = false,
 )
 
-private const val FOCUS_SORT = 0
-private const val FOCUS_FILTER = 1
-private const val FOCUS_ACTION = 2
-private const val FOCUS_COINS_START = 3
+// Focus order MUST match the on-screen top-to-bottom layout in ShibaCoinsScreen: the action row
+// (Sync/Link) sits above the Sort and Filter rows, so it is focused first. These constants are the
+// single source of that order — the screen references them by name (no magic numbers) so the visual
+// and navigation order can never drift apart.
+internal const val FOCUS_ACTION = 0
+internal const val FOCUS_SORT = 1
+internal const val FOCUS_FILTER = 2
+internal const val FOCUS_COINS_START = 3
 
 @HiltViewModel
 class ShibaCoinsViewModel @Inject constructor(

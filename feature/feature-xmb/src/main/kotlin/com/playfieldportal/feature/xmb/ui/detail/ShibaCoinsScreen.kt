@@ -99,11 +99,11 @@ fun ShibaCoinsScreen(
     // Center the focused element: the header controls pin to the top, coin rows scroll to mid-view
     // so the highlighted row is always comfortably reachable.
     LaunchedEffect(state.focusIndex) {
-        if (state.focusIndex < 3) {
+        if (state.focusIndex < FOCUS_COINS_START) {
             listState.animateScrollToItem(0)
         } else {
             val viewportH = listState.layoutInfo.viewportSize.height
-            listState.animateScrollToItem(1 + (state.focusIndex - 3), scrollOffset = -(viewportH / 3))
+            listState.animateScrollToItem(1 + (state.focusIndex - FOCUS_COINS_START), scrollOffset = -(viewportH / 3))
         }
     }
 
@@ -149,8 +149,8 @@ private fun HeaderSection(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewMod
         DetailBreadcrumb(title = state.title, subtitle = "Shiba Coins", onBack = viewModel::close)
         SummaryHeader(state)
         // An account entry has nothing to link — it is already keyed to its provider identity.
-        if (!state.linked && !state.accountOnly) LinkSection(state, viewModel, focused = state.focusIndex == 2)
-        SyncRow(state, viewModel, focused = state.focusIndex == 2 && (state.linked || state.accountOnly))
+        if (!state.linked && !state.accountOnly) LinkSection(state, viewModel, focused = state.focusIndex == FOCUS_ACTION)
+        SyncRow(state, viewModel, focused = state.focusIndex == FOCUS_ACTION && (state.linked || state.accountOnly))
         SortFilterChips(state, viewModel)
         state.message?.let { msg ->
             Text(
@@ -353,7 +353,7 @@ private fun SortFilterChips(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewM
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
-            modifier = focusRing(state.focusIndex == 0),
+            modifier = focusRing(state.focusIndex == FOCUS_SORT),
         ) {
             Text("Sort", color = TextDim, fontSize = 11.sp)
             Chip("Tier", state.sort == CoinSort.TIER) { viewModel.setSort(CoinSort.TIER) }
@@ -364,7 +364,7 @@ private fun SortFilterChips(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewM
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
-            modifier = focusRing(state.focusIndex == 1),
+            modifier = focusRing(state.focusIndex == FOCUS_FILTER),
         ) {
             Text("Show", color = TextDim, fontSize = 11.sp)
             Chip("All", state.filter == CoinFilter.ALL) { viewModel.setFilter(CoinFilter.ALL) }
