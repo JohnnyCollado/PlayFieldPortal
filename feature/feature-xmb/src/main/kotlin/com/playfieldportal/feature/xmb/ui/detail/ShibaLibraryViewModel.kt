@@ -2,6 +2,7 @@ package com.playfieldportal.feature.xmb.ui.detail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.core.domain.achievement.GameStanding
 import com.playfieldportal.core.domain.achievement.UntrackedGame
 import com.playfieldportal.core.domain.model.Game
@@ -18,6 +19,17 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/** Provider filter for the All Tracked view (Y / triangle cycles it). */
+enum class LibraryProviderFilter(val label: String, val provider: AchievementProvider?) {
+    ALL("All", null),
+    RETRO("RetroAchievements", AchievementProvider.RETRO_ACHIEVEMENTS),
+    STEAM("Steam", AchievementProvider.STEAM),
+    LOCAL("Local", AchievementProvider.LOCAL_STEAM),
+}
+
+/** Sort field for the library list (X / square cycles field+direction). */
+enum class LibrarySortField(val label: String) { TITLE("Title"), PROGRESS("Progress"), CONSOLE("Console") }
+
 /**
  * One row in the fullscreen library. Tracked rows show coins/progress and open their coins
  * overlay via [coinsTarget]; untracked rows show a [reason] instead. Account-imported entries
@@ -29,6 +41,10 @@ data class ShibaLibraryRow(
     val inLibrary: Boolean,
     val title: String,
     val platformLabel: String,
+    // The achievement provider (tracked rows only); null for untracked rows. Drives the filter.
+    val provider: AchievementProvider?,
+    // Console grouping key for CONSOLE sort — Steam and Local Steam both bucket as "Windows".
+    val consoleSortKey: String,
     val artworkUri: String?,
     val logoUri: String?,
     val progress: Float,
@@ -49,6 +65,11 @@ data class ShibaLibraryUiState(
     val rows: List<ShibaLibraryRow> = emptyList(),
     val focusIndex: Int = 0,
     val query: String = "",
+    // Provider filter (All Tracked view only); Y / triangle cycles it.
+    val providerFilter: LibraryProviderFilter = LibraryProviderFilter.ALL,
+    // Sort field + direction; X / square cycles field then direction.
+    val sortField: LibrarySortField = LibrarySortField.TITLE,
+    val sortAscending: Boolean = true,
     // Counts across all sibling views, for the header tabs.
     val trackedCount: Int = 0,
     val untrackedCount: Int = 0,
@@ -65,6 +86,8 @@ data class ShibaLibraryUiState(
 ) {
     val focused: ShibaLibraryRow? get() = rows.getOrNull(focusIndex)
     val siblings: List<ShibaLibraryMode> get() = ShibaLibraryMode.entries
+    // The provider filter only makes sense for tracked entries (untracked rows have no provider).
+    val showProviderFilter: Boolean get() = mode == ShibaLibraryMode.TRACKED
     val nextRewardCoins: Int get() = (coinsForNextLevel - coinsIntoLevel).coerceAtLeast(0)
     val levelFraction: Float
         get() = if (coinsForNextLevel <= 0) 0f else (coinsIntoLevel.toFloat() / coinsForNextLevel).coerceIn(0f, 1f)
@@ -119,9 +142,47 @@ class ShibaLibraryViewModel @Inject constructor(
             GamepadAction.NAVIGATE_LEFT -> switchSibling(-1)
             GamepadAction.NAVIGATE_RIGHT -> switchSibling(1)
             GamepadAction.SELECT -> openFocused()
+            // Y / triangle cycles the provider filter (All Tracked view only).
+            GamepadAction.BUTTON_Y, GamepadAction.LONG_PRESS -> cycleProviderFilter()
+            // X / square cycles the sort field and direction.
+            GamepadAction.CHANGE_SORT, GamepadAction.OPEN_TASK_TRAY -> cycleSort()
             GamepadAction.BACK -> close()
             else -> Unit
         }
+    }
+
+    /** Y / triangle: advance the provider filter (no-op outside the All Tracked view). */
+    fun cycleProviderFilter() {
+        if (!_state.value.showProviderFilter) return
+        val entries = LibraryProviderFilter.entries
+        setProviderFilter(entries[(_state.value.providerFilter.ordinal + 1) % entries.size])
+    }
+
+    fun setProviderFilter(filter: LibraryProviderFilter) {
+        _state.update { it.copy(providerFilter = filter, focusIndex = 0) }
+        pushRows()
+    }
+
+    /**
+     * X / square: step through the six sort states in order — each field ascending then
+     * descending — so one button reaches every combination: Title ↑↓, Progress ↑↓, Console ↑↓.
+     * Ascending flips to descending on the same field; descending advances to the next field.
+     */
+    fun cycleSort() {
+        _state.update {
+            if (it.sortAscending) {
+                it.copy(sortAscending = false, focusIndex = 0)
+            } else {
+                val next = LibrarySortField.entries[(it.sortField.ordinal + 1) % LibrarySortField.entries.size]
+                it.copy(sortField = next, sortAscending = true, focusIndex = 0)
+            }
+        }
+        pushRows()
+    }
+
+    fun setSort(field: LibrarySortField, ascending: Boolean) {
+        _state.update { it.copy(sortField = field, sortAscending = ascending, focusIndex = 0) }
+        pushRows()
     }
 
     /** Opens the focused tracked entry's Shiba Coins overlay (untracked rows have no coins to show). */
@@ -158,11 +219,13 @@ class ShibaLibraryViewModel @Inject constructor(
 
     private fun rebuild() {
         val (standing, byId) = latest ?: return
+        // Rows are built unsorted here; the provider filter, query, and active sort are all applied
+        // in pushRows so a filter/sort change never needs a full rebuild.
         currentModeRows = when (_state.value.mode) {
             ShibaLibraryMode.TRACKED ->
-                standing.tracked.sortedBy { it.title.lowercase() }.map { it.toRow(it.libraryGameId?.let(byId::get)) }
+                standing.tracked.map { it.toRow(it.libraryGameId?.let(byId::get)) }
             ShibaLibraryMode.UNTRACKED ->
-                standing.untracked.sortedBy { it.title.lowercase() }.map { it.toRow(byId[it.gameId]) }
+                standing.untracked.map { it.toRow(byId[it.gameId]) }
         }
         val w = standing.wallet
         val p = w.levelProgress
@@ -180,13 +243,36 @@ class ShibaLibraryViewModel @Inject constructor(
         pushRows()
     }
 
-    // Applies the current search query to the current mode's rows.
+    // Applies provider filter (tracked only), search query, then the active sort to the mode's rows.
     private fun pushRows() {
-        val q = _state.value.query.trim().lowercase()
-        val filtered = if (q.isEmpty()) currentModeRows
-        else currentModeRows.filter { it.title.lowercase().contains(q) }
+        val s = _state.value
+        val providerFiltered =
+            if (s.showProviderFilter) s.providerFilter.provider
+                ?.let { p -> currentModeRows.filter { it.provider == p } } ?: currentModeRows
+            else currentModeRows
+
+        val q = s.query.trim().lowercase()
+        val queried = if (q.isEmpty()) providerFiltered
+        else providerFiltered.filter { it.title.lowercase().contains(q) }
+
+        val sorted = queried.sortedWith(sortComparator(s.sortField, s.sortAscending))
         _state.update {
-            it.copy(rows = filtered, focusIndex = it.focusIndex.coerceIn(0, (filtered.size - 1).coerceAtLeast(0)))
+            it.copy(rows = sorted, focusIndex = it.focusIndex.coerceIn(0, (sorted.size - 1).coerceAtLeast(0)))
+        }
+    }
+
+    // Title stays A–Z within a group for every sort; only the primary key's direction flips. For
+    // CONSOLE that means consoles order A→Z (asc) or Z→A (desc) with games alphabetical inside.
+    private fun sortComparator(field: LibrarySortField, ascending: Boolean): Comparator<ShibaLibraryRow> {
+        val byTitle = compareBy<ShibaLibraryRow> { it.title.lowercase() }
+        return when (field) {
+            LibrarySortField.TITLE -> if (ascending) byTitle else byTitle.reversed()
+            LibrarySortField.PROGRESS ->
+                if (ascending) compareBy<ShibaLibraryRow> { it.progress }.then(byTitle)
+                else compareByDescending<ShibaLibraryRow> { it.progress }.then(byTitle)
+            LibrarySortField.CONSOLE ->
+                if (ascending) compareBy<ShibaLibraryRow> { it.consoleSortKey.lowercase() }.then(byTitle)
+                else compareByDescending<ShibaLibraryRow> { it.consoleSortKey.lowercase() }.then(byTitle)
         }
     }
 
@@ -197,6 +283,8 @@ class ShibaLibraryViewModel @Inject constructor(
         inLibrary = inLibrary,
         title = game?.displayTitle ?: title,
         platformLabel = game?.platformId?.let(::platformDisplay) ?: providerLabel(coins.provider),
+        provider = coins.provider,
+        consoleSortKey = consoleGroupOf(coins.provider, game?.platformId),
         artworkUri = game?.artworkUri ?: iconUrl,
         logoUri = game?.logoUri,
         progress = coins.progress,
@@ -213,6 +301,8 @@ class ShibaLibraryViewModel @Inject constructor(
         inLibrary = true,
         title = game?.displayTitle ?: title,
         platformLabel = platformDisplay(platformId),
+        provider = null,
+        consoleSortKey = consoleGroupOf(null, platformId),
         artworkUri = game?.artworkUri,
         logoUri = game?.logoUri,
         progress = 0f,
@@ -222,6 +312,16 @@ class ShibaLibraryViewModel @Inject constructor(
         mastered = false,
         reason = reason,
     )
+
+    // Console bucket for CONSOLE sort: Steam and Local Steam (and any windows-platform game) all
+    // count as one "Windows" console; everything else uses its platform's display name.
+    private fun consoleGroupOf(provider: AchievementProvider?, platformId: String?): String = when {
+        provider == AchievementProvider.STEAM || provider == AchievementProvider.LOCAL_STEAM -> "Windows"
+        platformId == "windows" -> "Windows"
+        platformId != null -> platformDisplay(platformId)
+        provider != null -> providerLabel(provider)
+        else -> ""
+    }
 }
 
 // A readable platform label for the panel (e.g. "snes" -> "Super Nintendo"); falls back to upper-case.

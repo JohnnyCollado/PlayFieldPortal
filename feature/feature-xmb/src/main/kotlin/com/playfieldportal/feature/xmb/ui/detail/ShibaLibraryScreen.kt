@@ -33,6 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,6 +50,7 @@ import com.playfieldportal.core.domain.achievement.ShibaTier
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.menuCursorEdge
+import com.playfieldportal.core.ui.theme.menuCursorFill
 import com.playfieldportal.feature.xmb.viewmodel.ShibaLibraryMode
 import kotlin.math.roundToInt
 
@@ -87,10 +89,23 @@ fun ShibaLibraryScreen(
         }
     }
 
+    // Focus follow (both tracked and untracked lists): a row that isn't composed yet — the cursor
+    // moved past the visible buffer, or a sort/filter jump teleported focus — is scrolled to by
+    // index first; once composed, its own BringIntoViewRequester (see GameListRow) refines the
+    // position without clipping the top row under the search field. The old fixed -viewport/3
+    // offset did both jobs and pushed the top row out of view.
     val listState = rememberLazyListState()
-    LaunchedEffect(state.focusIndex, state.rows.size) {
-        val vh = listState.layoutInfo.viewportSize.height
-        if (vh > 0) listState.animateScrollToItem(state.focusIndex, scrollOffset = -(vh / 3))
+    // One authoritative focus-follow: every focus or order change SNAPS the focused row to the
+    // 1/3-viewport line (clamped at the list edges, so top rows sit flush under the search
+    // field and can never clip). Instant, PSP-style — the built-in scroll animation is too slow
+    // for held input and made navigation feel laggy. The snap is also what drops the keyed
+    // LazyColumn's anchor after a reorder (sort/filter/search/mode), which otherwise keeps the
+    // viewport glued to the old rows.
+    LaunchedEffect(Unit) {
+        snapshotFlow { state.rows.map { it.id } to state.focusIndex }.collect { (_, focus) ->
+            val third = listState.layoutInfo.viewportSize.height / 3
+            listState.scrollToItem(focus.coerceAtLeast(0), scrollOffset = -third)
+        }
     }
 
     val pfp = LocalPFPColors.current
@@ -120,7 +135,11 @@ fun ShibaLibraryScreen(
                     )
                 }
             }
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(12.dp))
+
+            // Sort (X / square) and, in All Tracked, provider filter (Y / triangle).
+            SortFilterBar(state, viewModel)
+            Spacer(Modifier.height(12.dp))
 
             // The detail panel sits beside the search field too, so its top edge aligns with the
             // search bar and it gets the full column height.
@@ -174,6 +193,48 @@ private fun SearchField(query: String, onQueryChange: (String) -> Unit) {
             cursorColor = menuCursorEdge(),
         ),
         modifier = Modifier.fillMaxWidth(),
+    )
+}
+
+// Sort chips (with an ▲/▼ direction marker on the active field) and, in the All Tracked view, the
+// provider filter chips. Chips are tappable; the button hints mirror the controller bindings.
+@Composable
+private fun SortFilterBar(state: ShibaLibraryUiState, viewModel: ShibaLibraryViewModel) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Sort  (X)", color = TextDim, fontSize = 11.sp)
+            LibrarySortField.entries.forEach { field ->
+                val active = field == state.sortField
+                val arrow = if (!active) "" else if (state.sortAscending) "  ▲" else "  ▼"
+                LibraryChip(field.label + arrow, active) {
+                    // Tap the active field to flip direction; tap another to select it ascending.
+                    if (active) viewModel.setSort(field, !state.sortAscending) else viewModel.setSort(field, true)
+                }
+            }
+        }
+        if (state.showProviderFilter) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Filter  (Y)", color = TextDim, fontSize = 11.sp)
+                LibraryProviderFilter.entries.forEach { filter ->
+                    LibraryChip(filter.label, filter == state.providerFilter) { viewModel.setProviderFilter(filter) }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LibraryChip(label: String, selected: Boolean, onClick: () -> Unit) {
+    Text(
+        label,
+        color = if (selected) Color.White else TextMuted,
+        fontSize = 12.sp,
+        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+        modifier = Modifier
+            .clip(RoundedCornerShape(999.dp))
+            .background(if (selected) menuCursorFill() else Color(0x22FFFFFF))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 6.dp),
     )
 }
 
