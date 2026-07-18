@@ -4086,10 +4086,8 @@ class XMBViewModel @Inject constructor(
             activeContextMenu = XMBContextMenu(
                 title      = "All Games",
                 items      = listOf(
-                    // Add-only pass over every console card — quick, so it needs no gate.
-                    XMBContextMenuItem("scan_missing_roms", "Scan Missing ROMs"),
-                    // Full pass that also deletes entries whose ROM file vanished — confirmed first.
-                    XMBContextMenuItem("rescan_all_consoles", "Re-Scan All Consoles"),
+                    // Scanning (missing-ROM pass, full re-scan) lives in the Library settings.
+                    XMBContextMenuItem("library_manager", "Manage Library"),
                     XMBContextMenuItem("import_pc_games", "Import PC Games"),
                     XMBContextMenuItem("icon_display_global", "Icon Display (${it.iconDisplayMode.label})"),
                 ),
@@ -4542,20 +4540,9 @@ class XMBViewModel @Inject constructor(
                     viewModelScope.launch { iconDisplayPreferences.setMode(mode) }
                 }
             } else when (itemId) {
+                "library_manager" -> _uiState.update { it.copy(activeSettingsScreen = "settings_library") }
                 "import_pc_games" -> _uiState.update { it.copy(activeSettingsScreen = "settings_import_pc") }
                 "icon_display_global" -> openGlobalIconDisplayPickerMenu()
-                "scan_missing_roms" -> scanAllConsoles(removeMissing = false)
-                // Gate the destructive full pass: it walks every card and deletes vanished entries.
-                "rescan_all_consoles" -> _uiState.update { it.copy(activeContextMenu = XMBContextMenu(
-                    title = "Re-scan every console? This can take a while with a large library.",
-                    items = listOf(
-                        XMBContextMenuItem("cancel_rescan_all", "Cancel", isDestructive = true),
-                        XMBContextMenuItem("confirm_rescan_all", "Yes"),
-                    ),
-                    isAllGames = true,
-                ))}
-                "confirm_rescan_all" -> scanAllConsoles(removeMissing = true)
-                "cancel_rescan_all" -> Unit   // menu already closed
             }
             menu.platformId != null -> when (itemId) {
                 "find_games"       -> openAppPicker(AppPickerTarget.AndroidGames(menu.platformId), "Find Games")
@@ -5128,82 +5115,6 @@ class XMBViewModel @Inject constructor(
                     }
                 }
             }
-        }
-    }
-
-    // One pass over every console card (Android is app-picked, not scanned): adds newly found
-    // ROMs, and with [removeMissing] also deletes entries whose ROM file is gone. Deletion is
-    // driven by the SAME directory walk that finds new games (Complete.presentRomPaths), so the
-    // whole run costs one walk per card. A card whose scan errors (e.g. unmounted SD card)
-    // reports no survey and never has its games removed.
-    private fun scanAllConsoles(removeMissing: Boolean) {
-        viewModelScope.launch {
-            val cards = enabledCards.filter {
-                it.platformId != ANDROID_PLATFORM_ID && !it.romDirectory.isNullOrBlank()
-            }
-            val taskId = if (removeMissing) "rescan_all_consoles" else "scan_missing_roms"
-            addBackgroundTask(BackgroundTaskInfo(
-                id = taskId,
-                label = if (removeMissing) "Re-scanning all consoles…" else "Scanning for new ROMs…",
-                progress = 0f,
-            ))
-            if (cards.isEmpty()) {
-                completeBackgroundTask(taskId, "No console cards to scan")
-                return@launch
-            }
-
-            var added = 0
-            var removed = 0
-            var failedCards = 0
-            cards.forEachIndexed { index, card ->
-                val platformId = card.platformId
-                val base = index.toFloat() / cards.size
-                val existingGames = runCatching {
-                    gameRepository.observeByPlatform(platformId).first()
-                }.getOrDefault(emptyList())
-                val existingPaths = existingGames.mapNotNull { it.romPath }.toSet() +
-                    runCatching { scanTombstoneDao.getPathsForPlatform(platformId) }.getOrDefault(emptyList())
-
-                romScanner.scanDirectory(
-                    directory        = card.romDirectory!!,
-                    extensions       = card.supportedExtensions,
-                    platformId       = platformId,
-                    recursive        = card.scanRecursively,
-                    existingRomPaths = existingPaths,
-                ).collect { result ->
-                    when (result) {
-                        is ScanResult.Progress -> updateBackgroundTask(
-                            taskId,
-                            base + (result.progress.filesScanned.toFloat() /
-                                result.progress.totalEstimated.coerceAtLeast(1)) / cards.size,
-                        )
-                        is ScanResult.Complete -> {
-                            result.newGames.forEach { game -> gameRepository.upsert(game) }
-                            added += result.newGames.size
-                            if (removeMissing) result.presentRomPaths?.let { present ->
-                                val gone = existingGames.filter { it.romPath != null && it.romPath !in present }
-                                // Plain delete, no tombstone: the file is gone, and if it ever
-                                // comes back a future scan should resurrect it.
-                                gone.forEach { gameRepository.delete(it.id) }
-                                removed += gone.size
-                            }
-                            memoryCardRepository.recordScan(platformId, System.currentTimeMillis())
-                            memoryCardRepository.recountGames(platformId)
-                        }
-                        is ScanResult.Error -> {
-                            failedCards++
-                            Timber.e("All-consoles scan error for $platformId: ${result.message}")
-                        }
-                    }
-                }
-            }
-
-            completeBackgroundTask(taskId, buildString {
-                append(if (added == 0) "No new ROMs" else "$added new ROM(s)")
-                if (removeMissing) append(", ${if (removed == 0) "none missing" else "$removed missing removed"}")
-                if (failedCards > 0) append(" — $failedCards card(s) failed")
-            })
-            loadItemsForCategory(currentCategory())
         }
     }
 
