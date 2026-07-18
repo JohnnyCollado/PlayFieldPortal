@@ -21,7 +21,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import timber.log.Timber
 import javax.inject.Inject
 
 /** The four pages of the first-run wizard, in order. */
@@ -57,11 +56,29 @@ data class InitialSetupUiState(
     ).any { it != null }
 }
 
+// Typed intermediate groups so the final combine stays compiler-checked — no positional
+// Array<Any?> casts that silently shift when a flow is added or reordered.
+private data class FolderNames(
+    val rom: String?,
+    val music: String?,
+    val video: String?,
+    val photo: String?,
+    val artwork: String?,
+)
+
+private data class ServiceIdentities(
+    val hasSgdb: Boolean,
+    val igdbClientId: String,
+    val ssUsername: String,
+    val raUsername: String,
+    val steamId64: String,
+)
+
 /**
  * First-run setup wizard: root folders (ROMs, Music, Video, Photo, Artwork) and service
- * credentials (SteamGridDB, ScreenScraper, RetroAchievements, Steam). Pure glue — every value
- * is stored through the same repository/provider the corresponding settings screen uses, so
- * anything configured here shows up there and vice versa. Everything is optional.
+ * credentials (SteamGridDB, IGDB, ScreenScraper, RetroAchievements, Steam). Pure glue — every
+ * value is stored through the same repository/provider the corresponding settings screen uses,
+ * so anything configured here shows up there and vice versa. Everything is optional.
  */
 @HiltViewModel
 class InitialSetupViewModel @Inject constructor(
@@ -76,36 +93,56 @@ class InitialSetupViewModel @Inject constructor(
     private val screenScraperApi: ScreenScraperApi,
 ) : ViewModel() {
 
-    // Wizard-local state (page + transient message); everything else mirrors the stores.
+    // Wizard-local state (page + transient messages); everything else mirrors the stores.
     private val scratch = MutableStateFlow(InitialSetupUiState(ssEnabled = screenScraperApi.isEnabled))
 
-    val uiState: StateFlow<InitialSetupUiState> = combine(
-        scratch,
+    // Display names derive per-flow, so a URI is only re-parsed when that root actually changes.
+    private val folderNames = combine(
         romRootRepository.roots,
         mediaRootRepository.observe(MediaRootKind.MUSIC),
         mediaRootRepository.observe(MediaRootKind.VIDEO),
         mediaRootRepository.observe(MediaRootKind.PHOTO),
         artworkImportManager.folderTreeUri,
+    ) { romRoots, music, video, photo, artwork ->
+        FolderNames(
+            rom     = romRoots.firstOrNull()?.let(::rootDisplayName),
+            music   = music?.let(::rootDisplayName),
+            video   = video?.let(::rootDisplayName),
+            photo   = photo?.let(::rootDisplayName),
+            artwork = artwork?.let(::rootDisplayName),
+        )
+    }
+
+    private val serviceIdentities = combine(
         sgdbKeys.apiKeyFlow,
         metadataKeys.igdbClientIdFlow,
         metadataKeys.ssUsernameFlow,
         achievementCredentials.raUsernameFlow,
         achievementCredentials.steamId64Flow,
-    ) { values ->
-        val local = values[0] as InitialSetupUiState
-        @Suppress("UNCHECKED_CAST")
-        val romRoots = values[1] as List<String>
+    ) { sgdbKey, igdbId, ssUser, raUser, steamId ->
+        ServiceIdentities(
+            hasSgdb      = !sgdbKey.isNullOrBlank(),
+            igdbClientId = igdbId.orEmpty(),
+            ssUsername   = ssUser.orEmpty(),
+            raUsername   = raUser.orEmpty(),
+            steamId64    = steamId.orEmpty(),
+        )
+    }
+
+    val uiState: StateFlow<InitialSetupUiState> = combine(
+        scratch, folderNames, serviceIdentities,
+    ) { local, folders, services ->
         local.copy(
-            romRootName       = romRoots.firstOrNull()?.let(::rootDisplayName),
-            musicRootName     = (values[2] as String?)?.let(::rootDisplayName),
-            videoRootName     = (values[3] as String?)?.let(::rootDisplayName),
-            photoRootName     = (values[4] as String?)?.let(::rootDisplayName),
-            artworkFolderName = (values[5] as String?)?.let(::rootDisplayName),
-            hasSgdb           = !(values[6] as String?).isNullOrBlank(),
-            igdbClientId      = (values[7] as String?).orEmpty(),
-            ssUsername        = (values[8] as String?).orEmpty(),
-            raUsername        = (values[9] as String?).orEmpty(),
-            steamId64         = (values[10] as String?).orEmpty(),
+            romRootName       = folders.rom,
+            musicRootName     = folders.music,
+            videoRootName     = folders.video,
+            photoRootName     = folders.photo,
+            artworkFolderName = folders.artwork,
+            hasSgdb           = services.hasSgdb,
+            igdbClientId      = services.igdbClientId,
+            ssUsername        = services.ssUsername,
+            raUsername        = services.raUsername,
+            steamId64         = services.steamId64,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), scratch.value)
 
@@ -116,16 +153,14 @@ class InitialSetupViewModel @Inject constructor(
      * composition: the ViewModel is activity-scoped and outlives the overlay, so without this a
      * re-run from Settings would resume wherever the wizard was last closed.
      */
-    fun resetWizard() {
-        scratch.update {
-            it.copy(step = SetupStep.WELCOME, message = null, igdbStatus = null, ssStatus = null)
-        }
+    fun resetWizard() = scratch.update {
+        it.copy(step = SetupStep.WELCOME, message = null, igdbStatus = null, ssStatus = null)
     }
 
     fun nextStep() {
         scratch.update { s ->
             val next = SetupStep.entries.getOrNull(s.step.ordinal + 1) ?: s.step
-            s.copy(step = next, message = null)
+            s.copy(step = next, message = null, igdbStatus = null, ssStatus = null)
         }
     }
 
@@ -133,16 +168,25 @@ class InitialSetupViewModel @Inject constructor(
     fun previousStep(): Boolean {
         val current = scratch.value.step
         if (current == SetupStep.WELCOME) return false
-        scratch.update { it.copy(step = SetupStep.entries[current.ordinal - 1], message = null) }
+        scratch.update {
+            it.copy(
+                step = SetupStep.entries[current.ordinal - 1],
+                message = null, igdbStatus = null, ssStatus = null,
+            )
+        }
         return true
     }
 
     // ── Folders ───────────────────────────────────────────────────────────────
 
-    /** ROM root: persisted read grant + added to the root list (same as Library Manager). */
+    /**
+     * ROM root: persisted SAF grant + added to the root list. The grant is read+write, exactly
+     * like Library Manager's add-root path, so a wizard-configured root supports the ES-DE
+     * folder setup the same way a Settings-configured one does.
+     */
     fun onRomRootPicked(uri: Uri) {
         viewModelScope.launch {
-            romRootRepository.persist(uri)
+            romRootRepository.persist(uri, writable = true)
             romRootRepository.add(uri.toString())
         }
     }
@@ -184,33 +228,23 @@ class InitialSetupViewModel @Inject constructor(
         }
     }
 
-    /** Same live check as Settings ▸ Artwork: a Twitch token request with the entered pair. */
+    /** Same live check as Settings ▸ Artwork (shared via [ServiceConnectors]). */
     fun testIgdbCredentials(clientId: String, clientSecret: String) {
         viewModelScope.launch {
             scratch.update { it.copy(igdbStatus = "Testing…") }
-            val ok = igdbApi.testCredentials(clientId.trim(), clientSecret.trim())
-            scratch.update {
-                it.copy(igdbStatus = if (ok) "Valid" else "Invalid — check Client ID and Secret")
-            }
+            val status = ServiceConnectors.testIgdb(igdbApi, clientId, clientSecret)
+            scratch.update { it.copy(igdbStatus = status) }
         }
     }
 
     fun dismissIgdbStatus() = scratch.update { it.copy(igdbStatus = null) }
 
-    /** Same live check as Settings ▸ Artwork: fetches the account's thread/quota limits. */
+    /** Same live check as Settings ▸ Artwork (shared via [ServiceConnectors]). */
     fun testSsCredentials(username: String, password: String) {
         viewModelScope.launch {
             scratch.update { it.copy(ssStatus = "Testing…") }
-            val user = screenScraperApi.fetchUserInfo(username.trim(), password.trim())
-            scratch.update {
-                it.copy(ssStatus = if (user != null) {
-                    buildString {
-                        append("Valid")
-                        user.maxThreads?.let { t -> append(" — $t thread${if (t == "1") "" else "s"}") }
-                        user.maxRequestsPerDay?.let { q -> append(", $q requests/day") }
-                    }
-                } else "Invalid — check username and password")
-            }
+            val status = ServiceConnectors.testScreenScraper(screenScraperApi, username, password)
+            scratch.update { it.copy(ssStatus = status) }
         }
     }
 
@@ -233,33 +267,17 @@ class InitialSetupViewModel @Inject constructor(
         }
     }
 
-    /** Mirrors AchievementsSettingsViewModel.connectSteam: a vanity name is resolved to an id. */
+    /** Same connect flow as Settings ▸ Shiba Coins (shared via [ServiceConnectors]). */
     fun connectSteam(idOrVanity: String, apiKey: String) {
         if (idOrVanity.isBlank() || apiKey.isBlank()) return
         viewModelScope.launch {
-            val input = idOrVanity.trim()
-            val key = apiKey.trim()
-            achievementCredentials.saveSteam(input, key)
             achievementCredentials.setEnabled(true)
-            if (input.matches(STEAM_ID64)) {
-                scratch.update { it.copy(message = "Steam connected") }
-                return@launch
-            }
-            val resolved = steamApi.resolveVanity(input)
-            if (resolved != null) {
-                achievementCredentials.saveSteam(resolved, key)
-                scratch.update { it.copy(message = "Steam connected — resolved \"$input\"") }
-            } else {
-                scratch.update {
-                    it.copy(message = "Key saved, but \"$input\" couldn't be resolved. Enter your SteamID64.")
-                }
-            }
+            val message = ServiceConnectors.connectSteam(
+                achievementCredentials, steamApi, idOrVanity, apiKey,
+            )
+            scratch.update { it.copy(message = message) }
         }
     }
 
     fun dismissMessage() = scratch.update { it.copy(message = null) }
-
-    companion object {
-        private val STEAM_ID64 = Regex("\\d{17}")
-    }
 }

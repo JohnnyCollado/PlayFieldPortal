@@ -87,7 +87,6 @@ private data class Extra(
     val steamImportSummary: String? = null,
 )
 
-private val STEAM_ID64 = Regex("\\d{17}")
 private val DATE_FMT = SimpleDateFormat("MMM d, yyyy HH:mm", Locale.US)
 
 /**
@@ -233,20 +232,8 @@ class AchievementsSettingsViewModel @Inject constructor(
 
     fun connectSteam(idOrVanity: String, apiKey: String) {
         viewModelScope.launch {
-            val input = idOrVanity.trim()
-            val key = apiKey.trim()
-            credentials.saveSteam(input, key)
-            if (input.matches(STEAM_ID64)) {
-                extra.update { it.copy(message = "Steam connected") }
-                return@launch
-            }
-            val resolved = steamApi.resolveVanity(input)
-            if (resolved != null) {
-                credentials.saveSteam(resolved, key)
-                extra.update { it.copy(message = "Steam connected — resolved \"$input\"") }
-            } else {
-                extra.update { it.copy(message = "Key saved, but \"$input\" couldn't be resolved. Enter your SteamID64.") }
-            }
+            val message = ServiceConnectors.connectSteam(credentials, steamApi, idOrVanity, apiKey)
+            extra.update { it.copy(message = message) }
         }
     }
 

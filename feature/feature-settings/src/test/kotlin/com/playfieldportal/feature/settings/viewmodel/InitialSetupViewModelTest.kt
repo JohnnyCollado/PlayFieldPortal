@@ -29,6 +29,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -106,7 +107,8 @@ class InitialSetupViewModelTest {
         vm.onRomRootPicked(uri)
         advanceUntilIdle()
 
-        coVerify { romRoots.persist(uri) }
+        // Read+write, matching Library Manager's add-root path (ES-DE folder setup needs it).
+        coVerify { romRoots.persist(uri, writable = true) }
         coVerify { romRoots.add("content://tree/primary%3ARoms") }
     }
 
@@ -183,6 +185,22 @@ class InitialSetupViewModelTest {
         advanceUntilIdle()
 
         assertEquals("Valid — 2 threads, 20000 requests/day", vm.uiState.value.ssStatus)
+        job.cancel()
+    }
+
+    @Test fun `navigating steps clears stale test statuses`() = runTest(dispatcher) {
+        coEvery { igdbApi.testCredentials("id", "secret") } returns true
+        val job = collectState()
+
+        vm.nextStep()
+        vm.nextStep()
+        vm.testIgdbCredentials("id", "secret")
+        advanceUntilIdle()
+        assertEquals("Valid", vm.uiState.value.igdbStatus)
+
+        vm.nextStep()
+        advanceUntilIdle()
+        assertNull("leaving the page must drop the orphaned status", vm.uiState.value.igdbStatus)
         job.cancel()
     }
 

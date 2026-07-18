@@ -223,10 +223,8 @@ class ArtworkSettingsViewModel @Inject constructor(
     fun testIgdbCredentials(clientId: String, clientSecret: String) {
         viewModelScope.launch {
             _extra.update { it.copy(igdbCredentialStatus = "Testing…") }
-            val ok = igdbApi.testCredentials(clientId.trim(), clientSecret.trim())
-            _extra.update {
-                it.copy(igdbCredentialStatus = if (ok) "Valid" else "Invalid — check Client ID and Secret")
-            }
+            val status = ServiceConnectors.testIgdb(igdbApi, clientId, clientSecret)
+            _extra.update { it.copy(igdbCredentialStatus = status) }
         }
     }
 
@@ -253,16 +251,8 @@ class ArtworkSettingsViewModel @Inject constructor(
     fun testSsCredentials(username: String, password: String) {
         viewModelScope.launch {
             _extra.update { it.copy(ssCredentialStatus = "Testing…") }
-            val user = screenScraperApi.fetchUserInfo(username.trim(), password.trim())
-            _extra.update {
-                it.copy(ssCredentialStatus = if (user != null) {
-                    buildString {
-                        append("Valid")
-                        user.maxThreads?.let { t -> append(" — $t thread${if (t == "1") "" else "s"}") }
-                        user.maxRequestsPerDay?.let { q -> append(", $q requests/day") }
-                    }
-                } else "Invalid — check username and password")
-            }
+            val status = ServiceConnectors.testScreenScraper(screenScraperApi, username, password)
+            _extra.update { it.copy(ssCredentialStatus = status) }
         }
     }
 
