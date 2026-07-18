@@ -162,27 +162,6 @@ fun AchievementsSettingsScreen(
                     if (on) showLocalSteamWarning = true else viewModel.setLocalSteamTracking(false)
                 },
             )
-            val context = androidx.compose.ui.platform.LocalContext.current
-            SettingsToggleRow(
-                label    = "In-Game Achievement Popups",
-                sublabel = "Show a coin banner over a running Local Steam game when an achievement unlocks. " +
-                    "Needs the \"Draw over other apps\" permission.",
-                checked  = state.achievementPopupsEnabled,
-                onToggle = { on ->
-                    viewModel.setAchievementPopups(on)
-                    // The banner is a system overlay — send the user to grant it on first enable.
-                    if (on && !android.provider.Settings.canDrawOverlays(context)) {
-                        runCatching {
-                            context.startActivity(
-                                android.content.Intent(
-                                    android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                                    android.net.Uri.parse("package:${context.packageName}"),
-                                ),
-                            )
-                        }
-                    }
-                },
-            )
 
             // ── Sync ───────────────────────────────────────────────────────────
             SettingsGroup("Sync")

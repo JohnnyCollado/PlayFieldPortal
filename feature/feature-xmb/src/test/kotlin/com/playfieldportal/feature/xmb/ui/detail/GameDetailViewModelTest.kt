@@ -114,7 +114,6 @@ class GameDetailViewModelTest {
             discordPresence   = mockk(relaxed = true),
             launcherShortcutRepository = mockk(relaxed = true),
             achievementRepository = mockk(relaxed = true),
-            achievementSession = mockk(relaxed = true),
         )
     }
 

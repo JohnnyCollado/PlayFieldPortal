@@ -34,8 +34,6 @@
     <!-- WorkManager background tasks -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
-    <!-- In-game achievement popup watcher (reads the emu progress file during a session) -->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- Floating push-to-talk button drawn over a running game (Discord voice, opt-in). -->
@@ -132,14 +130,6 @@
                 android:name="androidx.work.WorkManagerInitializer"
                 tools:node="remove" />
         </provider>
-
-        <!-- ═══ Achievement watch foreground service ═══════════════════ -->
-        <!-- Session-scoped: started when a Local Steam game launches (popups enabled),
-             stopped when the user returns to the launcher. -->
-        <service
-            android:name="com.playfieldportal.feature.achievements.session.AchievementWatchService"
-            android:exported="false"
-            android:foregroundServiceType="dataSync" />
 
         <!-- ═══ Music playback foreground service ══════════════════════ -->
         <!-- Keeps in-app music playing (with a media notification) while the user is in other

@@ -179,7 +179,6 @@ class GameDetailViewModel @Inject constructor(
     private val discordPresence: com.playfieldportal.core.data.discord.DiscordPresenceController,
     private val launcherShortcutRepository: com.playfieldportal.feature.appbar.LauncherShortcutRepository,
     private val achievementRepository: com.playfieldportal.feature.achievements.AchievementController,
-    private val achievementSession: com.playfieldportal.feature.achievements.session.AchievementSessionController,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GameDetailUiState())
@@ -696,9 +695,6 @@ class GameDetailViewModel @Inject constructor(
     fun onLaunchStartActivityReached() {
         Timber.d("Calling context.startActivity for launch intent")
         _uiState.update { it.copy(actionMessage = null) }
-        // The game is actually being started — begin the achievement watch session (no-op unless
-        // popups are enabled and this game is LOCAL_STEAM-linked).
-        _uiState.value.game?.id?.let(achievementSession::onGameLaunched)
     }
     fun onLaunchFailed(message: String) {
         _uiState.update { it.copy(actionMessage = null, launchError = message) }
