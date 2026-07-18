@@ -17,6 +17,7 @@ fun SettingsNavHost(
     onOpenXmbLayoutAdjust: () -> Unit = {},
     onAddAndroidApps: () -> Unit = {},
     onOpenPlayerStatus: () -> Unit = {},
+    onOpenLibraryManager: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     CompositionLocalProvider(
@@ -24,6 +25,18 @@ fun SettingsNavHost(
         LocalSettingsActionConsumed provides onGamepadActionConsumed,
     ) {
         when (screenId) {
+            "settings_initial_setup" -> InitialSetupScreen(
+                onBack = onBack,
+                onOpenLibraryManager = onOpenLibraryManager,
+                modifier = modifier,
+            )
+            // The automatic first-run variant: Back cannot exit from the Welcome page.
+            "settings_initial_setup_first" -> InitialSetupScreen(
+                onBack = onBack,
+                firstRun = true,
+                onOpenLibraryManager = onOpenLibraryManager,
+                modifier = modifier,
+            )
             "settings_library"    -> LibraryManagerScreen(onBack = onBack, onAddAndroidApps = onAddAndroidApps, modifier = modifier)
             // Library Manager opened straight into its Import PC Games section (games context menu).
             "settings_import_pc"  -> LibraryManagerScreen(onBack = onBack, onAddAndroidApps = onAddAndroidApps, startInImportPc = true, modifier = modifier)

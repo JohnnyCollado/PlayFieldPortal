@@ -424,6 +424,10 @@ data class XMBUiState(
     val customWallpaperPath: String? = null,
 
     val showBootSequence: Boolean = true,
+    // Startup choreography: the boot sequence holds on a black frame until MainActivity reports
+    // the notification-permission dialog is out of the way, so the order on a fresh install is
+    // permission dialog -> boot animation -> first-run setup wizard.
+    val startupPermissionsSettled: Boolean = false,
 
     // ── Overlay screens ───────────────────────────────────────────────────
     val activeSettingsScreen: String? = null,
@@ -891,6 +895,8 @@ class XMBViewModel @Inject constructor(
         observeTouchNavButtonMode()
         observeWallpaper()
         observeLibrarySetupState()
+        checkInitialSetup()
+        logStartupSequence()
         observeColorScheme()
         observeCategoryBar()
         observeCategories()
@@ -6707,7 +6713,73 @@ class XMBViewModel @Inject constructor(
     // ── Boot sequence ─────────────────────────────────────────────────────────
 
     fun onBootSequenceComplete() {
+        Timber.d("StartupSeq: boot sequence complete")
         _uiState.update { it.copy(showBootSequence = false) }
+    }
+
+    /** MainActivity reports the notification-permission dialog resolved (or was never needed). */
+    fun onStartupPermissionsSettled() {
+        Timber.d("StartupSeq: notification permission settled")
+        _uiState.update { it.copy(startupPermissionsSettled = true) }
+    }
+
+    // ── First-run setup wizard ────────────────────────────────────────────────
+
+    /**
+     * One-shot first-run check. A fresh install (nothing configured, wizard never shown) gets
+     * the wizard opened immediately: it composes hidden beneath the opaque boot overlay (which
+     * XMBShell draws on top of the settings layer), so the boot dissolve reveals the wizard —
+     * never the XMB. Installs that already carry configuration are upgraders: the seen flag is
+     * written silently so the wizard never appears for them.
+     */
+    private fun checkInitialSetup() {
+        viewModelScope.launch {
+            val prefs = context.pfpDataStore.data.first()
+            if (prefs[KEY_INITIAL_SETUP_SEEN] == true) {
+                Timber.d("StartupSeq: initial setup already seen")
+                return@launch
+            }
+            if (hasExistingSetupConfig(prefs)) {
+                context.pfpDataStore.edit { it[KEY_INITIAL_SETUP_SEEN] = true }
+                Timber.i("StartupSeq: existing configuration found, wizard seeded as seen")
+                return@launch
+            }
+            openInitialSetup()
+        }
+    }
+
+    // Verbose trace of the startup choreography — one line per state change, so logcat shows
+    // exactly what was on screen in what order (permission gate, boot overlay, wizard, XMB).
+    private fun logStartupSequence() {
+        viewModelScope.launch {
+            _uiState
+                .map { Triple(it.startupPermissionsSettled, it.showBootSequence, it.activeSettingsScreen) }
+                .distinctUntilChanged()
+                .collect { (settled, boot, screen) ->
+                    Timber.v(
+                        "StartupSeq: permissionsSettled=$settled showBootSequence=$boot " +
+                            "activeSettingsScreen=$screen xmbForegroundVisible=${!boot && screen == null}"
+                    )
+                }
+        }
+    }
+
+    /** Opens the wizard and stamps it as seen, so it only ever auto-opens once. */
+    private fun openInitialSetup() {
+        Timber.i("Initial setup: opening first-run wizard")
+        _uiState.update { it.copy(activeSettingsScreen = INITIAL_SETUP_FIRST_RUN_SCREEN_ID) }
+        markInitialSetupSeen()
+    }
+
+    private fun markInitialSetupSeen() {
+        viewModelScope.launch {
+            context.pfpDataStore.edit { it[KEY_INITIAL_SETUP_SEEN] = true }
+        }
+    }
+
+    /** Wizard finish page: jump straight into the Library Manager to add consoles and scan. */
+    fun openLibraryManager() {
+        _uiState.update { it.copy(activeSettingsScreen = "settings_library") }
     }
 
     // ── User interaction ──────────────────────────────────────────────────────
@@ -6880,6 +6952,28 @@ class XMBViewModel @Inject constructor(
         // Per-form-factor live layout tunings (scale + horizontal + vertical), one JSON prefs string.
         private val KEY_XMB_LAYOUT_ADJUST = stringPreferencesKey("display_xmb_layout_adjust")
         private val KEY_SETUP_COMPLETE    = booleanPreferencesKey("library_setup_complete")
+        // First-run wizard: set the moment the wizard is shown (or silently seeded for installs
+        // that already carry configuration), so it only ever auto-opens once.
+        private val KEY_INITIAL_SETUP_SEEN = booleanPreferencesKey("initial_setup_seen")
+        internal const val INITIAL_SETUP_SCREEN_ID = "settings_initial_setup"
+        // The automatic first-run variant of the wizard: Back cannot exit from its first page.
+        internal const val INITIAL_SETUP_FIRST_RUN_SCREEN_ID = "settings_initial_setup_first"
+
+        // Pref keys that mean the install already has real configuration (roots or a finished
+        // library setup) — such installs are upgraders and must never see the first-run wizard.
+        private val EXISTING_CONFIG_STRING_KEYS = listOf(
+            stringPreferencesKey("library_rom_root_tree_uris"),
+            stringPreferencesKey("library_rom_root_tree_uri"), // legacy single ROM root
+            stringPreferencesKey("music_root_tree_uris"),
+            stringPreferencesKey("video_root_tree_uris"),
+            stringPreferencesKey("photo_root_tree_uris"),
+            stringPreferencesKey("artwork_folder_tree_uri"),
+        )
+
+        /** Pure decision: does this preferences snapshot already carry user configuration? */
+        internal fun hasExistingSetupConfig(prefs: androidx.datastore.preferences.core.Preferences): Boolean =
+            prefs[KEY_SETUP_COMPLETE] == true ||
+                EXISTING_CONFIG_STRING_KEYS.any { !prefs[it].isNullOrBlank() }
         private val KEY_CUSTOM_WALLPAPER  = stringPreferencesKey("display_custom_wallpaper")
         private val KEY_MENU_SOUND_ENABLED = booleanPreferencesKey("sound_menu_enabled")
         // Must match DisplaySettingsViewModel.KEY_TOUCH_NAV_BUTTON — both read/write this pref.
@@ -6998,6 +7092,7 @@ class XMBViewModel @Inject constructor(
             XMBItem(id = "settings_logs",       title = "Logs",             subtitle = "Debug & error log viewer"),
             XMBItem(id = "settings_about",      title = "About",            subtitle = "Play Field Portal"),
             XMBItem(id = "settings_credits",    title = "Credits",          subtitle = "Artwork & attributions"),
+            XMBItem(id = INITIAL_SETUP_SCREEN_ID, title = "Re-Run Setup Wizard", subtitle = "Guided folder & account setup"),
         )
     }
 

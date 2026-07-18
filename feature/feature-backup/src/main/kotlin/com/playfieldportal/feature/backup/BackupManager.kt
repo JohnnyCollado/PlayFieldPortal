@@ -547,6 +547,9 @@ open class BackupManager @Inject constructor(
             booleanPreferencesKey("pref_sgdb_heroes"),
             // Library
             booleanPreferencesKey("library_setup_complete"),
+            // First-run wizard shown/seeded — carried so restoring onto a new device doesn't
+            // re-open the wizard on top of the restored configuration.
+            booleanPreferencesKey("initial_setup_seen"),
             // Seed flag — kept so a restore over a fresh install doesn't re-seed on top of the
             // restored data.
             booleanPreferencesKey("db_seeded_v1"),

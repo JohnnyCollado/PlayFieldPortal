@@ -188,6 +188,7 @@ fun XMBShellContainer(
         onClosePlayerStatus = viewModel::onClosePlayerStatus,
         onPlayerStatusActionConsumed = viewModel::onPlayerStatusActionConsumed,
         onOpenPlayerStatus = viewModel::openPlayerStatus,
+        onOpenLibraryManager = viewModel::openLibraryManager,
         onGameDetailActionConsumed = viewModel::consumeGameDetailAction,
         onCloseVideoDetail = viewModel::onCloseVideoDetail,
         onVideoDetailActionConsumed = viewModel::consumeVideoDetailAction,
@@ -294,6 +295,7 @@ fun XMBShell(
     onClosePlayerStatus: () -> Unit = {},
     onPlayerStatusActionConsumed: () -> Unit = {},
     onOpenPlayerStatus: () -> Unit = {},
+    onOpenLibraryManager: () -> Unit = {},
     onGameDetailActionConsumed: () -> Unit = {},
     onCloseVideoDetail: () -> Unit = {},
     onVideoDetailActionConsumed: () -> Unit = {},
@@ -654,10 +656,6 @@ fun XMBShell(
                 )
             }
 
-            if (uiState.showBootSequence) {
-                BootSequenceOverlay(onComplete = onBootComplete)
-            }
-
             // The Settings screen is suppressed while the color-scheme picker is open so
             // the live wave preview shows through behind the picker (PSP-style).
             if (uiState.colorSchemePicker == null) {
@@ -673,8 +671,21 @@ fun XMBShell(
                         onOpenXmbLayoutAdjust = onOpenXmbLayoutAdjust,
                         onAddAndroidApps = onOpenAndroidLibraryPicker,
                         onOpenPlayerStatus = onOpenPlayerStatus,
+                        onOpenLibraryManager = onOpenLibraryManager,
                         modifier = Modifier.fillMaxSize(),
                     )
+                }
+            }
+
+            // Boot sequence draws ABOVE the settings layer: on a fresh install the setup wizard
+            // is already composed beneath it, so the boot dissolve reveals the wizard — the XMB
+            // is never on screen first. Startup order: notification-permission dialog (black
+            // hold) -> boot animation -> wizard (first run) or XMB.
+            if (uiState.showBootSequence) {
+                if (uiState.startupPermissionsSettled) {
+                    BootSequenceOverlay(onComplete = onBootComplete)
+                } else {
+                    Box(modifier = Modifier.fillMaxSize().background(Color.Black))
                 }
             }
 

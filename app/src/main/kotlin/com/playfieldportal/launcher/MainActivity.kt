@@ -11,6 +11,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
@@ -20,6 +21,7 @@ import com.playfieldportal.core.ui.theme.PFPTheme
 import com.playfieldportal.launcher.discord.DiscordBootstrap
 import com.playfieldportal.feature.xmb.gamepad.GamepadInputHandler
 import com.playfieldportal.feature.xmb.ui.XMBShellContainer
+import com.playfieldportal.feature.xmb.viewmodel.XMBViewModel
 import com.playfieldportal.launcher.receiver.InstallShortcutReceiver
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -30,12 +32,19 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var gamepadInputHandler: GamepadInputHandler
     @Inject lateinit var discordBootstrap: DiscordBootstrap
 
+    // Same activity-scoped instance the shell's hiltViewModel() resolves — used to report when
+    // the notification-permission dialog is out of the way so the boot sequence can start.
+    private val xmbViewModel: XMBViewModel by viewModels()
+
     // Runtime-registered so it actually fires on Android 8+ (manifest receivers are blocked for
     // this implicit broadcast). Lives for the activity's lifetime.
     private val installShortcutReceiver = InstallShortcutReceiver()
 
     private val requestNotificationPermission =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* best-effort */ }
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+            // Best-effort grant; either way the dialog is resolved and startup can continue.
+            xmbViewModel.onStartupPermissionsSettled()
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -79,11 +88,19 @@ class MainActivity : ComponentActivity() {
     }
 
     // Background-task notifications need the POST_NOTIFICATIONS runtime grant on API 33+.
+    // Every early-return path reports the permission flow settled so the boot sequence
+    // (which holds until then) can start.
     private fun requestNotificationPermissionIfNeeded() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            xmbViewModel.onStartupPermissionsSettled()
+            return
+        }
         if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
             PackageManager.PERMISSION_GRANTED
-        ) return
+        ) {
+            xmbViewModel.onStartupPermissionsSettled()
+            return
+        }
         requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 
