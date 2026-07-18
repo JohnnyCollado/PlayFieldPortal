@@ -68,6 +68,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.transformWhile
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -428,6 +429,10 @@ data class XMBUiState(
     // the notification-permission dialog is out of the way, so the order on a fresh install is
     // permission dialog -> boot animation -> first-run setup wizard.
     val startupPermissionsSettled: Boolean = false,
+    // True once checkInitialSetup has resolved (wizard opened, seeded, or already seen). The
+    // boot animation also holds on this, so on a fresh install the wizard is guaranteed to be
+    // composed beneath the boot overlay before the dissolve can reveal what's under it.
+    val initialSetupDecided: Boolean = false,
 
     // ── Overlay screens ───────────────────────────────────────────────────
     val activeSettingsScreen: String? = null,
@@ -6430,6 +6435,12 @@ class XMBViewModel @Inject constructor(
 
     fun onCloseSettingsScreen() {
         Timber.d("Settings closed")
+        // Leaving the setup wizard by any deliberate path (Skip, Finish, back-out on a re-run)
+        // stamps it as seen — see markInitialSetupSeen for why open time is the wrong moment.
+        val closing = _uiState.value.activeSettingsScreen
+        if (closing == INITIAL_SETUP_SCREEN_ID || closing == INITIAL_SETUP_FIRST_RUN_SCREEN_ID) {
+            markInitialSetupSeen()
+        }
         _uiState.update { it.copy(activeSettingsScreen = null, pendingSettingsAction = null) }
     }
 
@@ -6639,33 +6650,47 @@ class XMBViewModel @Inject constructor(
     /**
      * One-shot first-run check. A fresh install (nothing configured, wizard never shown) gets
      * the wizard opened immediately: it composes hidden beneath the opaque boot overlay (which
-     * XMBShell draws on top of the settings layer), so the boot dissolve reveals the wizard —
-     * never the XMB. Installs that already carry configuration are upgraders: the seen flag is
-     * written silently so the wizard never appears for them.
+     * XMBShell draws on top of the settings layer and holds until this check resolves), so the
+     * boot dissolve reveals the wizard — never the XMB. Installs that already carry
+     * configuration are upgraders: the seen flag is written silently so the wizard never
+     * appears for them.
      */
     private fun checkInitialSetup() {
         viewModelScope.launch {
             val prefs = context.pfpDataStore.data.first()
-            if (prefs[KEY_INITIAL_SETUP_SEEN] == true) {
-                Timber.d("StartupSeq: initial setup already seen")
-                return@launch
+            when {
+                prefs[KEY_INITIAL_SETUP_SEEN] == true ->
+                    Timber.d("StartupSeq: initial setup already seen")
+                hasExistingSetupConfig(prefs) || hasExistingLibrary() -> {
+                    context.pfpDataStore.edit { it[KEY_INITIAL_SETUP_SEEN] = true }
+                    Timber.i("StartupSeq: existing configuration found, wizard seeded as seen")
+                }
+                else -> {
+                    Timber.i("StartupSeq: fresh install, opening first-run wizard")
+                    _uiState.update { it.copy(activeSettingsScreen = INITIAL_SETUP_FIRST_RUN_SCREEN_ID) }
+                }
             }
-            if (hasExistingSetupConfig(prefs)) {
-                context.pfpDataStore.edit { it[KEY_INITIAL_SETUP_SEEN] = true }
-                Timber.i("StartupSeq: existing configuration found, wizard seeded as seen")
-                return@launch
-            }
-            openInitialSetup()
+            // Releases the boot overlay's hold: the wizard (if due) is now composed beneath it,
+            // so the XMB-before-wizard race is excluded by construction, not by timing.
+            _uiState.update { it.copy(initialSetupDecided = true) }
         }
     }
 
+    // Memory cards cover the modern flows that write none of the checked pref keys (e.g. an
+    // Android-apps-only library) — any card means an established install, not a fresh one.
+    private suspend fun hasExistingLibrary(): Boolean =
+        runCatching { memoryCardRepository.getAll().isNotEmpty() }.getOrDefault(false)
+
     // Verbose trace of the startup choreography — one line per state change, so logcat shows
     // exactly what was on screen in what order (permission gate, boot overlay, wizard, XMB).
+    // Bounded: the collector completes right after the emission that ends the boot sequence,
+    // so the hot XMB state stream carries no permanent logging tax.
     private fun logStartupSequence() {
         viewModelScope.launch {
             _uiState
                 .map { Triple(it.startupPermissionsSettled, it.showBootSequence, it.activeSettingsScreen) }
                 .distinctUntilChanged()
+                .transformWhile { emit(it); it.second }
                 .collect { (settled, boot, screen) ->
                     Timber.v(
                         "StartupSeq: permissionsSettled=$settled showBootSequence=$boot " +
@@ -6675,13 +6700,11 @@ class XMBViewModel @Inject constructor(
         }
     }
 
-    /** Opens the wizard and stamps it as seen, so it only ever auto-opens once. */
-    private fun openInitialSetup() {
-        Timber.i("Initial setup: opening first-run wizard")
-        _uiState.update { it.copy(activeSettingsScreen = INITIAL_SETUP_FIRST_RUN_SCREEN_ID) }
-        markInitialSetupSeen()
-    }
-
+    /**
+     * Stamps the wizard as seen. Called on deliberate exits (Skip, Finish, closing the overlay,
+     * jumping to Library Manager) — not at open, so a process death mid-wizard re-opens it on
+     * the next launch instead of silently cancelling first-run setup forever.
+     */
     private fun markInitialSetupSeen() {
         viewModelScope.launch {
             context.pfpDataStore.edit { it[KEY_INITIAL_SETUP_SEEN] = true }
@@ -6690,6 +6713,7 @@ class XMBViewModel @Inject constructor(
 
     /** Wizard finish page: jump straight into the Library Manager to add consoles and scan. */
     fun openLibraryManager() {
+        markInitialSetupSeen()
         _uiState.update { it.copy(activeSettingsScreen = "settings_library") }
     }
 
@@ -6870,8 +6894,10 @@ class XMBViewModel @Inject constructor(
         // The automatic first-run variant of the wizard: Back cannot exit from its first page.
         internal const val INITIAL_SETUP_FIRST_RUN_SCREEN_ID = "settings_initial_setup_first"
 
-        // Pref keys that mean the install already has real configuration (roots or a finished
-        // library setup) — such installs are upgraders and must never see the first-run wizard.
+        // Pref keys that mean the install already has real configuration — roots, a finished
+        // library setup, or connected service credentials. Such installs are upgraders and must
+        // never see the first-run wizard. Complemented by hasExistingLibrary() for modern flows
+        // (e.g. an Android-apps-only library) that write none of these keys.
         private val EXISTING_CONFIG_STRING_KEYS = listOf(
             stringPreferencesKey("library_rom_root_tree_uris"),
             stringPreferencesKey("library_rom_root_tree_uri"), // legacy single ROM root
@@ -6879,6 +6905,13 @@ class XMBViewModel @Inject constructor(
             stringPreferencesKey("video_root_tree_uris"),
             stringPreferencesKey("photo_root_tree_uris"),
             stringPreferencesKey("artwork_folder_tree_uri"),
+            // Service identities/credentials (public parts only — the encrypted secrets always
+            // travel with them, so presence of one implies a configured account).
+            stringPreferencesKey("sgdb_api_key"),
+            stringPreferencesKey("igdb_client_id"),
+            stringPreferencesKey("ss_username"),
+            stringPreferencesKey("ra_username"),
+            stringPreferencesKey("steam_id64"),
         )
 
         /** Pure decision: does this preferences snapshot already carry user configuration? */

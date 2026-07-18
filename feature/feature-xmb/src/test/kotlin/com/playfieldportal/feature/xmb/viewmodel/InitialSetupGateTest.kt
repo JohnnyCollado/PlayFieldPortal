@@ -40,6 +40,23 @@ class InitialSetupGateTest {
         assertFalse(XMBViewModel.hasExistingSetupConfig(prefs))
     }
 
+    @Test fun `stored service credentials count as existing config`() {
+        listOf(
+            "sgdb_api_key",
+            "igdb_client_id",
+            "ss_username",
+            "ra_username",
+            "steam_id64",
+        ).forEach { key ->
+            assertTrue(
+                key,
+                XMBViewModel.hasExistingSetupConfig(
+                    preferencesOf(stringPreferencesKey(key) to "some-value")
+                ),
+            )
+        }
+    }
+
     @Test fun `a completed library setup counts as existing config`() {
         val prefs = preferencesOf(booleanPreferencesKey("library_setup_complete") to true)
         assertTrue(XMBViewModel.hasExistingSetupConfig(prefs))

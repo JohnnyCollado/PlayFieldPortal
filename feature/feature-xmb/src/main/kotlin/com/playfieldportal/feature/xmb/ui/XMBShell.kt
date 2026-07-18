@@ -679,10 +679,12 @@ fun XMBShell(
 
             // Boot sequence draws ABOVE the settings layer: on a fresh install the setup wizard
             // is already composed beneath it, so the boot dissolve reveals the wizard — the XMB
-            // is never on screen first. Startup order: notification-permission dialog (black
-            // hold) -> boot animation -> wizard (first run) or XMB.
+            // is never on screen first. The animation holds on a black frame until BOTH the
+            // notification-permission dialog is resolved AND the first-run check has decided
+            // (wizard opened or not), so that guarantee is by construction, not by timing.
+            // Startup order: permission dialog (black hold) -> boot animation -> wizard or XMB.
             if (uiState.showBootSequence) {
-                if (uiState.startupPermissionsSettled) {
+                if (uiState.startupPermissionsSettled && uiState.initialSetupDecided) {
                     BootSequenceOverlay(onComplete = onBootComplete)
                 } else {
                     Box(modifier = Modifier.fillMaxSize().background(Color.Black))
