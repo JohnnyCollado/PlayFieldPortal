@@ -183,6 +183,7 @@ private fun LibraryListContent(
                     "(gba, snes, psx…) for you to copy games into. No guessing folder names",
                 onClick  = { vm.requestRomFolderSetup() },
             )
+            val anyScannable = state.cards.any { it.enabled && (it.treeUri != null || it.romDirectory != null) }
             SettingsRow(
                 label    = "Scan All Consoles",
                 sublabel = when {
@@ -190,8 +191,31 @@ private fun LibraryListContent(
                     state.cards.none { it.treeUri != null || it.romDirectory != null } -> "Configure a ROM folder first"
                     else -> "Scan every enabled console's folder"
                 },
-                onClick  = if (state.cards.any { it.enabled && (it.treeUri != null || it.romDirectory != null) }) ({ vm.scanAllConsoles() }) else null,
+                onClick  = if (anyScannable) ({ vm.scanAllConsoles() }) else null,
             )
+            // Destructive variant behind an inline confirm step: the same walk also deletes
+            // entries whose ROM file vanished from disk.
+            var confirmRescanAll by remember { mutableStateOf(false) }
+            if (!confirmRescanAll) {
+                SettingsRow(
+                    label    = "Re-Scan All (Remove Missing)",
+                    sublabel = "Also removes games whose ROM file no longer exists",
+                    onClick  = if (anyScannable) ({ confirmRescanAll = true }) else null,
+                )
+            } else {
+                SettingsRow(
+                    label    = "Confirm: Re-Scan and Remove Missing Games?",
+                    sublabel = "Removes library entries whose ROM file is gone. This can take a while with a large library",
+                    onClick  = {
+                        confirmRescanAll = false
+                        vm.scanAllConsoles(removeMissing = true)
+                    },
+                )
+                SettingsRow(
+                    label   = "Cancel",
+                    onClick = { confirmRescanAll = false },
+                )
+            }
 
             state.message?.let { MessageRow(it) { vm.dismissMessage() } }
         }

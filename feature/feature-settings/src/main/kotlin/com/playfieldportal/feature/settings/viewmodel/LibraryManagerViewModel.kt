@@ -444,7 +444,13 @@ class LibraryManagerViewModel @Inject constructor(
 
     // ── Scanning ────────────────────────────────────────────────────────────────
 
-    fun scanConsole(platformId: String) {
+    /**
+     * Scans one console's folders for new ROMs. With [removeMissing] the same directory walk
+     * also deletes entries whose ROM file has vanished ([ScanResult.Complete.presentRomPaths]),
+     * so removal costs no second pass. Removal is skipped when any source errors or reports no
+     * survey (e.g. an unmounted SD card must not wipe that console's games).
+     */
+    fun scanConsole(platformId: String, removeMissing: Boolean = false) {
         if (platformId in _scratch.value.scanningPlatformIds) return
         viewModelScope.launch {
             val card = memoryCardRepository.getById(platformId) ?: return@launch
@@ -459,14 +465,21 @@ class LibraryManagerViewModel @Inject constructor(
             }
             _scratch.update { it.copy(scanningPlatformIds = it.scanningPlatformIds + platformId) }
 
+            val dbGames = runCatching {
+                gameRepository.observeByPlatform(platformId).first()
+            }.getOrDefault(emptyList())
+
             // Live, growing set so a ROM already added from one root isn't re-added from another.
             // Tombstoned paths (user-removed games) count as existing so scans skip them.
             val existing = runCatching {
-                (gameRepository.observeByPlatform(platformId).first().mapNotNull { it.romPath } +
+                (dbGames.mapNotNull { it.romPath } +
                     scanTombstoneDao.getPathsForPlatform(platformId)).toMutableSet()
             }.getOrDefault(mutableSetOf())
 
             var added = 0
+            var scanErrored = false
+            // Union of on-disk ROM paths across all sources; null once any source can't survey.
+            var present: MutableSet<String>? = mutableSetOf()
             for (source in sources) {
                 source(existing).collect { result ->
                     when (result) {
@@ -476,29 +489,51 @@ class LibraryManagerViewModel @Inject constructor(
                                 it.romPath?.let(existing::add)
                             }
                             added += result.newGames.size
+                            result.presentRomPaths?.let { paths -> present?.addAll(paths) }
+                                ?: run { present = null }
                         }
-                        is ScanResult.Error -> _scratch.update { it.copy(message = "${card.displayName}: ${result.message}") }
+                        is ScanResult.Error -> {
+                            scanErrored = true
+                            _scratch.update { it.copy(message = "${card.displayName}: ${result.message}") }
+                        }
                         else -> Unit
                     }
                 }
             }
-            if (added > 0) memoryCardRepository.recordScan(platformId, System.currentTimeMillis())
+
+            var removed = 0
+            val survey = present
+            if (removeMissing && !scanErrored && survey != null) {
+                // Plain delete, no tombstone: the file is gone, and if it ever comes back a
+                // future scan should resurrect it.
+                val gone = dbGames.filter { it.romPath != null && it.romPath !in survey }
+                gone.forEach { gameRepository.delete(it.id) }
+                removed = gone.size
+            }
+
+            if (added > 0 || removed > 0) {
+                memoryCardRepository.recordScan(platformId, System.currentTimeMillis())
+                memoryCardRepository.recountGames(platformId)
+            }
 
             _scratch.update {
                 it.copy(
                     scanningPlatformIds = it.scanningPlatformIds - platformId,
-                    message = "${card.displayName}: ${if (added == 0) "no new ROMs" else "$added new ROM(s) added"}",
+                    message = "${card.displayName}: " + buildString {
+                        append(if (added == 0) "no new ROMs" else "$added new ROM(s) added")
+                        if (removeMissing) append(if (removed == 0) ", none missing" else ", $removed missing removed")
+                    },
                 )
             }
-            Timber.i("Library Manager scan complete for $platformId: $added new")
+            Timber.i("Library Manager scan complete for $platformId: $added new, $removed removed")
         }
     }
 
-    fun scanAllConsoles() {
+    fun scanAllConsoles(removeMissing: Boolean = false) {
         viewModelScope.launch {
             memoryCardRepository.getAll()
                 .filter { it.enabled && (!it.treeUri.isNullOrBlank() || !it.romDirectory.isNullOrBlank()) }
-                .forEach { scanConsole(it.platformId) }
+                .forEach { scanConsole(it.platformId, removeMissing) }
         }
     }
 
