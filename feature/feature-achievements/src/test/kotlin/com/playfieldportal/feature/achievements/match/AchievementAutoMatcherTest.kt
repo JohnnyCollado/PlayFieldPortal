@@ -33,10 +33,14 @@ class AchievementAutoMatcherTest {
         }
     private val localSteamOwnership =
         mockk<com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamOwnership>(relaxed = true)
+    private val steamNames =
+        mockk<com.playfieldportal.feature.achievements.provider.steam.SteamAppListResolver> {
+            coEvery { officialNameOf(any()) } returns null
+        }
 
     private val matcher = AchievementAutoMatcher(
         gameRepository, linkDao, matchNoteDao, raHashResolver, repository, romReader, discOpener,
-        steamGridDb, localSteamDiscovery, localSteamOwnership,
+        steamGridDb, localSteamDiscovery, localSteamOwnership, steamNames,
     )
 
     private fun game(id: Long, platform: String, title: String = "Game $id") =
@@ -191,5 +195,44 @@ class AchievementAutoMatcherTest {
         assertEquals(1, report.matched)
         coVerify { repository.linkManually(1, AchievementProvider.STEAM, "220") }
         coVerify(exactly = 0) { repository.resolveSteamLink(any(), any()) } // never reached the title guess
+    }
+
+    // ── Explicit per-game Local Steam match ───────────────────────────────────
+
+    private fun emuFolder(name: String, appId: String) =
+        com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamGame(
+            folderName = name, folderDocId = "doc:$name", appId = appId, achievementsUri = null,
+        )
+
+    @Test
+    fun `single local steam match links a unique containment folder`() = runTest {
+        val g = Game(id = 7, title = "Resonance of Fate", platformId = "windows")
+        coEvery { gameRepository.getById(7) } returns g
+        coEvery { localSteamDiscovery.scan() } returns
+            listOf(emuFolder("RESONANCE OF FATE 4K_HD EDITION", "293540"))
+
+        val result = matcher.matchSingleAsLocalSteam(7)
+
+        assertEquals(AchievementAutoMatcher.LocalSteamMatchResult.Matched, result)
+        coVerify { repository.linkManually(7, AchievementProvider.LOCAL_STEAM, "293540") }
+    }
+
+    @Test
+    fun `single local steam match reports missing folders and ambiguous names distinctly`() = runTest {
+        val g = Game(id = 7, title = "Fate", platformId = "windows")
+        coEvery { gameRepository.getById(7) } returns g
+
+        coEvery { localSteamDiscovery.scan() } returns emptyList()
+        assertEquals(
+            AchievementAutoMatcher.LocalSteamMatchResult.NoEmuFolders,
+            matcher.matchSingleAsLocalSteam(7),
+        )
+
+        // Two folders both contain "Fate" — ambiguous, so no guess is made.
+        coEvery { localSteamDiscovery.scan() } returns
+            listOf(emuFolder("RESONANCE OF FATE", "1"), emuFolder("FATE EXTELLA", "2"))
+        val result = matcher.matchSingleAsLocalSteam(7)
+        assertTrue(result is AchievementAutoMatcher.LocalSteamMatchResult.NoNameMatch)
+        coVerify(exactly = 0) { repository.linkManually(7, AchievementProvider.LOCAL_STEAM, any()) }
     }
 }

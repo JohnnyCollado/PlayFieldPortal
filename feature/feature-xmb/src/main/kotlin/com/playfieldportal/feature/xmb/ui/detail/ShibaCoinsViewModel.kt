@@ -8,6 +8,7 @@ import com.playfieldportal.core.domain.achievement.GameCoins
 import com.playfieldportal.core.domain.achievement.ShibaTier
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.repository.GameRepository
+import com.playfieldportal.feature.achievements.match.AchievementAutoMatcher
 import com.playfieldportal.feature.achievements.AchievementController
 import com.playfieldportal.feature.achievements.api.ProviderSyncResult
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -69,7 +70,6 @@ data class ShibaCoinsUiState(
     // left/right picks which one confirm activates. False = Sync now, the primary action.
     val actionOnChangeMatch: Boolean = false,
     // The branch the user picked, so manual appid entry links the matching provider.
-    val autoMatchLegit: Boolean = true,
     val isMatching: Boolean = false,
     val message: String? = null,
     val closed: Boolean = false,
@@ -284,18 +284,40 @@ class ShibaCoinsViewModel @Inject constructor(
 
     /**
      * Runs the branch the user picked: a legit copy resolves against Steam (embedded appid,
-     * SteamGridDB, title), any other copy scans the windows game folders for Steam-emu data.
-     * No match falls through to manual appid entry.
+     * SteamGridDB, title) and falls through to manual appid entry when nothing matches. Any
+     * other copy scans the windows game folders for Steam-emu data — no match there means the
+     * game isn't set up for Local Steam yet, so instead of asking for an appid (which can't
+     * help without the emu kit in the game folder) the user is pointed at the setup steps.
      */
     fun chooseAutoMatch(legit: Boolean) {
         viewModelScope.launch {
-            _state.update { it.copy(autoMatchStep = null, autoMatchLegit = legit, isMatching = true) }
-            val matched =
-                if (legit) autoMatcher.matchSingleAsSteam(gameId)
-                else autoMatcher.matchSingleAsLocalSteam(gameId)
+            _state.update { it.copy(autoMatchStep = null, isMatching = true) }
+            if (legit) {
+                val matched = autoMatcher.matchSingleAsSteam(gameId)
+                _state.update { it.copy(isMatching = false) }
+                if (matched) sync()
+                else _state.update { it.copy(autoMatchStep = AutoMatchStep.ENTER_APPID) }
+                return@launch
+            }
+            val result = autoMatcher.matchSingleAsLocalSteam(gameId)
             _state.update { it.copy(isMatching = false) }
-            if (matched) sync()
-            else _state.update { it.copy(autoMatchStep = AutoMatchStep.ENTER_APPID) }
+            when (result) {
+                AchievementAutoMatcher.LocalSteamMatchResult.Matched -> sync()
+                AchievementAutoMatcher.LocalSteamMatchResult.NoEmuFolders -> _state.update {
+                    it.copy(
+                        message = "This game isn't set up for Local Steam yet. Enable Track Local " +
+                            "Steam Games (Emulated) in Settings ▸ Shiba Coins, then scan your " +
+                            "Windows games so its achievement kit is set up, and Auto-Match again.",
+                    )
+                }
+                is AchievementAutoMatcher.LocalSteamMatchResult.NoNameMatch -> _state.update {
+                    val folders = result.folderNames.take(3).joinToString(", ")
+                    it.copy(
+                        message = "Steam-emu data was found ($folders) but no folder matches this " +
+                            "game's name. Rename the game to match its folder and Auto-Match again.",
+                    )
+                }
+            }
         }
     }
 
@@ -311,9 +333,9 @@ class ShibaCoinsViewModel @Inject constructor(
         }
         viewModelScope.launch {
             _state.update { it.copy(isMatching = true) }
-            val provider =
-                if (_state.value.autoMatchLegit) AchievementProvider.STEAM else AchievementProvider.LOCAL_STEAM
-            achievementRepository.linkManually(gameId, provider, id)
+            // Manual appid entry is only reachable from the legit-copy branch: the Local Steam
+            // branch resolves from the emu folders (or explains what to set up) and never asks.
+            achievementRepository.linkManually(gameId, AchievementProvider.STEAM, id)
             when (val result = achievementRepository.syncGameById(gameId)) {
                 is ProviderSyncResult.Success ->
                     _state.update { it.copy(isMatching = false, autoMatchStep = null, message = null) }
