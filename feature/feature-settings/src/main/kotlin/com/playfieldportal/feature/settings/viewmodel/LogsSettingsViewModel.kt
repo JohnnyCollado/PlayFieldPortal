@@ -21,10 +21,10 @@ data class LogFileItem(
     val sizeKb: String,
 )
 
+// Logs open in an external viewer (Confirm) or share via the system sheet (options menu) — no
+// in-app viewer, so the state is just the file list.
 data class LogsSettingsUiState(
     val logFiles: List<LogFileItem> = emptyList(),
-    val selectedFile: String? = null,
-    val logContent: String = "",
 )
 
 @HiltViewModel
@@ -58,30 +58,13 @@ class LogsSettingsViewModel @Inject constructor(
         }
     }
 
-    fun selectFile(name: String) {
-        viewModelScope.launch {
-            val content = withContext(Dispatchers.IO) {
-                File(context.filesDir, "logs/$name")
-                    .takeIf { it.exists() }
-                    ?.readText()
-                    ?: "File not found."
-            }
-            _uiState.update { it.copy(selectedFile = name, logContent = content) }
-        }
-    }
-
-    /** Closes the viewer (controller Back) — keeps the file list, drops the open content. */
-    fun closeViewer() {
-        _uiState.update { it.copy(selectedFile = null, logContent = "") }
-    }
-
     fun clearLogs() {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 File(context.filesDir, "logs").listFiles()?.forEach { it.delete() }
             }
             Timber.i("Logs cleared")
-            _uiState.update { it.copy(logFiles = emptyList(), selectedFile = null, logContent = "") }
+            _uiState.update { it.copy(logFiles = emptyList()) }
         }
     }
 }
