@@ -3,6 +3,14 @@
 All notable changes to Play Field Portal are documented here. This project follows
 [Keep a Changelog](https://keepachangelog.com/) and [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- **Hide games from All Games.** A game's context menu inside the All Games card now
+  offers "Hide from All Games" — the game disappears from the aggregate view but stays
+  on its own Memory Card, in collections, and in Favorites. Hidden games are recoverable
+  from Settings ▸ Hidden Items, like every other per-location hide.
+
 ## [1.2.0] - 2026-07-19
 
 ### Added
@@ -712,6 +720,7 @@ security hardening. (`versionName 1.0.0-alpha.2` / `versionCode 2`.)
 - Initial alpha: XMB launcher shell, ROM library scanning, artwork scraping, emulator launch,
   gaming categories/collections, controller mapping, and touch controls.
 
+[Unreleased]: https://github.com/JohnnyCollado/PlayFieldPortal/compare/1.2.0...HEAD
 [1.2.0]: https://github.com/JohnnyCollado/PlayFieldPortal/compare/1.1.0...1.2.0
 [1.1.0]: https://github.com/JohnnyCollado/PlayFieldPortal/compare/1.0.3...1.1.0
 [1.0.0]: https://github.com/JohnnyCollado/PlayFieldPortal/compare/v1.0.0-alpha.3...v1.0.0

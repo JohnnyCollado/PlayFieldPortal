@@ -1311,10 +1311,12 @@ class XMBViewModel @Inject constructor(
                             _uiState.update { it.copy(currentItems = items) }
                         }
                     } else if (platformId == ALL_GAMES_PLATFORM_ID) {
-                        // All Games aggregates real games only (content_type = GAME).
+                        // All Games aggregates real games only (content_type = GAME), minus any
+                        // the user hid from this card (recoverable in Settings > Hidden Items).
                         gameRepository.observeGamesOnly().collect { games ->
-                            val items = if (games.isEmpty()) listOf(emptyAllGamesItem())
-                                        else games.gameSorted(_uiState.value.gameSortMode).toXmbItems()
+                            val visible = games.notHiddenAt(HideLocationType.ALL_GAMES)
+                            val items = if (visible.isEmpty()) listOf(emptyAllGamesItem())
+                                        else visible.gameSorted(_uiState.value.gameSortMode).toXmbItems()
                             _uiState.update { it.copy(currentItems = items) }
                         }
                     } else if (platformId == FAVORITES_PLATFORM_ID) {
@@ -1751,7 +1753,7 @@ class XMBViewModel @Inject constructor(
     }
 
     // The location a GAME row is currently being shown in (for "Hide from here"), or null when the
-    // current view doesn't support per-location hiding (All Games, the Games root).
+    // current view doesn't support per-location hiding (the Games root).
     private fun currentHideLocation(): Triple<HideLocationType, String, String>? {
         val s = _uiState.value
         val cat = currentCategory()
@@ -1763,9 +1765,13 @@ class XMBViewModel @Inject constructor(
             s.selectedPlatformId == FAVORITES_PLATFORM_ID || cat?.id == BuiltInCategory.FAVORITES ->
                 Triple(HideLocationType.FAVORITES, "", "Favorites")
             s.selectedPlatformId == ANDROID_PLATFORM_ID -> Triple(HideLocationType.ANDROID_PLATFORM, "", "Android")
+            // The aggregated All Games card — hides from THIS view only; the game stays on its
+            // own Memory Card, in collections, and in Favorites.
+            s.selectedPlatformId == ALL_GAMES_PLATFORM_ID ->
+                Triple(HideLocationType.ALL_GAMES, "", "All Games")
             // Any other Memory Card (ROM platforms, Windows Games) — hides from THIS card only;
             // the game stays in All Games, collections, and categories.
-            s.selectedPlatformId != null && s.selectedPlatformId != ALL_GAMES_PLATFORM_ID -> {
+            s.selectedPlatformId != null -> {
                 val name = enabledCards.firstOrNull { it.platformId == s.selectedPlatformId }?.displayName
                     ?: s.selectedPlatformId
                 Triple(HideLocationType.PLATFORM, s.selectedPlatformId, name)
