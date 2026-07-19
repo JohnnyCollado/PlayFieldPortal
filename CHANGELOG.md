@@ -12,18 +12,139 @@ All notable changes to Play Field Portal are documented here. This project follo
   levels and ranks on the Player Card, a per-game coins screen, and a Shiba Library hub
   with an All Tracked view. Sync everything at once with **Sync All Coins** on the
   Player Card menu.
+- **Fullscreen Player Status view.** Confirm on the Shiba Coin Player Card (on the XMB
+  or in Settings) opens an account-wide standing screen: level, rank and XP up top, then
+  Recent Achievements beside the Shiba Coin Wallet and your Rarest Achievement Unlocked.
+  Rank shows its bone count with a theme-tinted bone glyph, and a recent unlock from a
+  library game opens that game's Shiba Coins screen. Fully D-pad drivable, offline reads.
+- **First-run setup wizard.** Fresh installs now open a guided four-page wizard
+  (Welcome, Root Folders, Online Services, Finish) instead of landing on an empty XMB.
+  It configures the ROM / Music / Video / Photo / Artwork roots and the SteamGridDB,
+  IGDB, ScreenScraper, RetroAchievements and Steam accounts — every step optional, with
+  live credential tests for IGDB and ScreenScraper. Upgrades with an existing setup
+  never see it, and it can be re-run any time from Settings.
+- **Auto-Match on the Shiba Coins screen.** Manual Steam linking (appid field,
+  match-by-title, Find-on-Steam picker) is replaced by one Auto-Match button that asks
+  whether your copy is a legitimate Steam one: Yes runs the Steam matching ladder
+  (embedded appid, SteamGridDB, title variants), No scans the windows game folders for
+  Steam-emu data and links the game as Local Steam — with a widened single-game ladder
+  (exact name, the folder appid's official Steam name, then unique containment) and
+  typed results that explain exactly what to fix when nothing links.
 - **Local PC game achievement tracking.** Windows game folders under the ROM root's
   `windows/` library are discovered by their Steam-emu config; unlock progress is read
   from the emulator's save redirect or the conventional `saves/` folder (see README
-  4.16). Tracking is display-only and gated on a save location existing.
-- **Missing achievement-schema generation.** When a PC scan finds an emu game folder
-  with `steam_settings` but no `achievements.json` (the file the emulator needs before
-  it can record unlocks), PFP offers to generate one from the Steam Web API — per game,
-  with No / Yes / Yes-to-All choices scoped to that scan. Available from both the XMB
-  Windows card's "Scan This Console" and Library Manager's PC scan.
+  4.17). Tracking is display-only and gated on a save location existing.
+- **One-step emulator kit generation.** When a PC scan finds an emu game folder with
+  `steam_settings` but no `achievements.json` (the file the emulator needs before it
+  can record unlocks), PFP offers to bring the game up to a current gbe_fork setup —
+  per game, with No / Yes / Yes-to-All choices scoped to that scan. Generation writes
+  the achievement schema and stat files from the Steam Web API, sets the save redirect
+  into the game folder, and swaps the game's `steam_api` DLL for the bundled emulator
+  (the original is backed up alongside; the swap is idempotent and rolls back on any
+  failed write). Available from both the XMB Windows card's "Scan This Console" and
+  Library Manager's PC scan.
+- **Local Steam tracking is opt-in.** The whole subsystem sits behind a
+  **Track Local Steam Games (Emulated)** toggle in Settings ▸ Shiba Coins (default
+  off). Enabling it first shows a warning to back up your emulator save files; with it
+  off, no discovery, schema generation, DLL swap or syncing ever runs.
+- **Hidden achievement descriptions for emu games.** The Steam Web API permanently
+  withholds hidden achievements' descriptions; for games your account does not own, PFP
+  now fills earned hidden coins from the public community pages of known completionist
+  profiles — rate-limited, size-capped, and falling back to the redacted text on any
+  failure.
+- **Shiba Library filter and sort.** All Tracked gains a provider filter
+  (All / RetroAchievements / Steam / Local, cycled with Y) and both views gain six sort
+  states (Title / Progress / Console, each ascending or descending, cycled with X). The
+  per-game coins screen adopts the same X/Y bindings, and both screens snap the focused
+  row to a steady reading line instead of lagging behind held input.
 - **PC library plumbing.** Exported launch files import from `<windows>/import/`, OS
   pinned shortcuts reconcile at startup and across launchers, and one shared full PC
   scan backs every entry point.
+- **Root-driven console management.** Add Console now derives each console's folder
+  from your ROM Root — one grant covers every console, and the per-console folder
+  picker and Change Directory rows are gone. Windows skips the emulator step (PC
+  launchers are not emulator profiles) and its Scan Now runs the real PC import scan.
+  Root rows in Library Manager list the consoles homed under them.
+- **Windows card auto-setup.** Auto-Detect from ROM Root now finishes with the shared
+  Import PC pass: it creates the Windows Memory Card, wires `<root>/windows` as its
+  directory, creates the `import/` drop folder, and imports exported games in the same
+  action. The card's default name is now "Windows Memory Card".
+- **Re-scan can remove missing ROMs.** Library Manager gains
+  **Re-Scan All (Remove Missing)** behind an inline confirm: the same directory walk
+  also deletes entries whose ROM file has vanished. Removal is skipped for any console
+  whose scan errored, so an unmounted SD card can never wipe a library.
+- **Per-console metadata and artwork passes.** The memory-card menu's placeholder
+  Refresh rows become real actions: **Update Metadata** (text-only, artwork untouched)
+  and **Scrape Missing Artwork** (only games missing primary art), with background
+  progress and result counts.
+- **Custom icon color.** The Icon Color strip is now controller-drivable (Left/Right
+  picks a swatch), and a new **Custom** swatch opens an HSV picker — Hue / Saturation /
+  Brightness bars adjustable by D-pad or touch.
+- **Breadcrumb headers across menus.** Detail screens, every settings screen, the Music
+  browser and the Shiba Library share one breadcrumb idiom: a leading back arrow plus
+  the title stack as a single tap target that backs out.
+- **Three-level Artwork Studio navigation.** The Studio's zones are now strictly
+  hierarchical — Category, Sources, Grid. Confirm descends, Back ascends, LB/RB pages
+  the grid, Y opens the per-slot options through the shared PSP-style context menu, and
+  the crop editor layers the full-screen image under floating controls.
+- **GameHub Lite local game ids.** Add-by-ID accepts the `local_<uuid>` ids GameHub's
+  Copy button produces, and bare numeric ids on the Ludashi V5 build resolve against
+  both the Steam and local id namespaces automatically.
+- **Logs open externally.** Confirm on a log file now opens the system "Open with"
+  chooser; the options button offers the existing redacted Share.
+
+### Changed
+- **Direct launch is seamless.** With Launch Games Directly on, confirm boots straight
+  into the game — the Game Detail page no longer flashes first, but is fully formed
+  underneath when you exit back out. A failed launch reveals the page and its error.
+- **Context menus slimmed.** The game menu is navigation-only (Launch Game, Edit Title,
+  Edit Note — everything else lives in Game Detail); the All Games menu's scan rows are
+  replaced by one **Manage Library** entry opening Library settings; the Windows card
+  gains **Import PC Games**; Android games drop every Shiba Coins surface (they can
+  never have achievements); and the app menu's manual Import Game Shortcuts is removed
+  (automatic shortcut capture is unchanged).
+- **Every stock dialog matches the dark theme.** PFPTheme now installs a dark
+  MaterialTheme derived from the shared palette, so playlist naming, the schema prompt
+  and the Windows setup prompt no longer fall back to Material's light purple. Also,
+  every read-only settings row is controller-focusable, so info footers are no longer
+  dead zones the cursor cannot reach.
+- **Smaller APK.** The boot logo and Shiba coin art are re-encoded as right-sized WebP
+  (~3.5 MB saved at identical on-screen quality) and an unreferenced 899 KB drawable is
+  gone.
+
+### Fixed
+- **Logo-less game titles show immediately** — the active row's label no longer waits
+  650 ms for a logo overlay that never appears.
+- **The wizard cannot strand or be stranded.** Setup-seen is stamped on deliberate exit
+  (not on open), so a crash mid-wizard re-opens it; installs configured only through
+  modern flows are recognized as set up; and the boot animation holds until the
+  first-run check resolves, so the XMB can never flash before the wizard.
+- **Wizard flows match Settings.** ROM roots picked in the wizard take the same
+  read+write grant as Library Manager, credential test statuses clear on step
+  navigation, and the connect/test flows are shared code with the settings screens.
+- **A failed emulator DLL swap now rolls back** — a write failure mid-swap previously
+  left the game unlaunchable and unrepairable; the original DLL is restored on any
+  failure.
+- **Local Steam sync is cheaper and better-behaved.** A Sync All pass now walks the
+  windows folders exactly once instead of once per tracked game, and Yes-to-All schema
+  generation paces its Steam Web API calls like every sync source.
+- **Android games are excluded from the untracked list** — they can never have
+  achievements, so they only inflated the count.
+- **Shiba screens follow the controller correctly** — the Game Detail coin strip frames
+  itself when focused, the coins screen's focus order matches its layout, and the
+  Player Status page scrolls from the rarest card.
+
+### Security
+- **Photo thumbnails moved to internal storage.** The thumbnail cache lived in app
+  external files, readable by other apps holding the legacy storage permission on
+  Android 10; it now lives in the app-private cache, and legacy locations are cleaned
+  up once.
+- **One shared Keystore AES-GCM implementation.** Scraper-key and Discord-token
+  encryption now share a single hardware-backed AES-256-GCM helper; fresh installs try
+  a StrongBox-backed key first. Existing installs decrypt unchanged.
+- **CI hardened.** Every GitHub Action is pinned to a full commit SHA and the checkout
+  token is no longer persisted into the workspace; the comment-triggered AI PR
+  workflows (a spendable-API-key and unattended-push exposure) are removed.
 
 ## [1.1.0] - 2026-07-12
 
@@ -574,7 +695,8 @@ security hardening. (`versionName 1.0.0-alpha.2` / `versionCode 2`.)
 - Initial alpha: XMB launcher shell, ROM library scanning, artwork scraping, emulator launch,
   gaming categories/collections, controller mapping, and touch controls.
 
-[Unreleased]: https://github.com/JohnnyCollado/PlayFieldPortal/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/JohnnyCollado/PlayFieldPortal/compare/1.1.0...HEAD
+[1.1.0]: https://github.com/JohnnyCollado/PlayFieldPortal/compare/1.0.3...1.1.0
 [1.0.0]: https://github.com/JohnnyCollado/PlayFieldPortal/compare/v1.0.0-alpha.3...v1.0.0
 [1.0.0-alpha.3]: https://github.com/JohnnyCollado/PlayFieldPortal/compare/v1.0.0-alpha.2...v1.0.0-alpha.3
 [1.0.0-alpha.2]: https://github.com/JohnnyCollado/PlayFieldPortal/compare/v1.0.0-alpha.1...v1.0.0-alpha.2

@@ -87,8 +87,9 @@ Android home screen as a single front end for ROM emulation, Android games, PC-l
    - [4.13 Discord Social (Full edition)](#413-discord-social-full-edition)
    - [4.14 Adjusting the layout for your screen](#414-adjusting-the-layout-for-your-screen)
    - [4.15 Backup & restore](#415-backup--restore)
-   - [4.16 Tracking local (Steam-emulated) PC games](#416-tracking-local-steam-emulated-pc-games)
-   - [4.17 Settings reference](#417-settings-reference)
+   - [4.16 Shiba Coins (achievements)](#416-shiba-coins-achievements)
+   - [4.17 Tracking local (Steam-emulated) PC games](#417-tracking-local-steam-emulated-pc-games)
+   - [4.18 Settings reference](#418-settings-reference)
 5. [Permissions & privacy](#5-permissions--privacy)
 6. [Troubleshooting](#6-troubleshooting)
 7. [For Developers](#for-developers)
@@ -181,17 +182,26 @@ PFP asks for permissions **only when a feature needs them**:
 
 Full detail in [Permissions & privacy](#5-permissions--privacy).
 
-### 2.6 Add your first console
+### 2.6 First-run setup
 
-On first launch the **Game** category shows an inline setup prompt.
+On a fresh install PFP opens a guided **setup wizard** with four pages:
 
-1. Open **Settings ▸ Library ▸ Library Manager ▸ Add Console**.
-2. **Choose Platform** (NES, SNES, PSP, PS2, Dreamcast, Xbox 360, …).
-3. **Choose its ROM folder** with the folder picker.
-4. **Assign an emulator** from the ones PFP detected for that platform.
-5. **Scan now**, or create the card and scan later.
+1. **Welcome** — what the wizard will set up.
+2. **Root Folders** — pick your ROM root plus the Music, Video, Photo and Artwork
+   folders (each optional).
+3. **Online Services** — connect SteamGridDB, IGDB, ScreenScraper, RetroAchievements
+   and Steam (each optional; IGDB and ScreenScraper credentials are tested live).
+4. **Finish.**
 
-Your games appear under a **Memory Card** in the Game category. Full detail in
+Every step can be skipped and everything it configures is the same setting you can reach
+later in Settings — the wizard is just a shortcut. You can re-run it any time from
+**Settings ▸ Re-Run Setup Wizard**. Upgrading installs that are already configured never
+see it.
+
+With a ROM root set, the fastest way to load your library is
+**Settings ▸ Library ▸ Library Manager ▸ Auto-Detect from ROM Root** — it walks the
+root's ES-DE system folders and creates a Memory Card for every console that contains
+games (including a **Windows Memory Card** for PC games). Full detail in
 [Setting up a console](#42-setting-up-a-console-memory-card).
 
 ---
@@ -236,16 +246,32 @@ list and its artwork the center-right of the screen.
 
 ### 4.2 Setting up a console (Memory Card)
 
-Consoles are added manually as **Memory Cards** — PFP never auto-scans your whole device.
+Consoles are added as **Memory Cards** and managed entirely through your **ROM Root** —
+one folder grant covers every console; there is no per-console folder picking. PFP never
+auto-scans your whole device.
 
-1. **Settings ▸ Library ▸ Library Manager ▸ Add Console.**
-2. **Choose Platform.**
-3. **Choose its ROM folder** with the folder picker.
-4. **Assign Emulator** — this becomes the console's default.
-5. **Scan Now**, or create the card and scan later.
+**The fast path — Auto-Detect.** *Library Manager ▸ Auto-Detect from ROM Root* walks the
+root's ES-DE system folders (`gba`, `snes`, `psx`, …), creates a Memory Card for every
+folder that actually contains games, and loads them in one scan. It also sets up the
+**Windows Memory Card** (wiring `<root>/windows` and its `import/` drop folder, and
+importing any exported PC games).
 
-Manage a card any time from *Library Manager*: rename it, change its ROM directory or emulator,
-hide/show it, **Scan This Console**, or remove it (ROM files on disk are never deleted).
+**Adding one console by hand:**
+
+1. **Settings ▸ Library ▸ Library Manager ▸ Add Console** (requires a ROM Root).
+2. **Choose Platform** (NES, SNES, PSP, PS2, Dreamcast, Xbox 360, …). The console's
+   folder is derived from the root automatically — an existing recognized subfolder if
+   one is there, otherwise the standard ES-DE folder name.
+3. **Assign Emulator** — this becomes the console's default. (Windows skips this step;
+   PC games go through your installed PC launchers instead.)
+4. **Scan Now**, or create the card and scan later.
+
+Manage a card any time from *Library Manager*: rename it, change its emulator, hide/show
+it, **Scan This Console**, or remove it (ROM files on disk are never deleted). Each root's
+row lists the consoles homed under it. Library-wide passes live here too: **Scan All
+Consoles** (add-only) and **Re-Scan All (Remove Missing)**, which additionally removes
+entries whose ROM file has vanished — behind a confirm step, and skipped for any console
+whose folder cannot be read, so an unmounted SD card never wipes a library.
 
 > **Scanning is always manual** — there is no background watcher. Re-scan after adding ROMs.
 > ROMs on removable SD cards / USB volumes are supported.
@@ -292,13 +318,18 @@ Memory Card, or per-game emulator.
 
 Press **Y / △** (or long-press) on any item for its context menu.
 
-- **Games** — Launch, Add/Remove Favorite, Add to Collection, Refresh Metadata/Artwork, choose
-  Emulator, Icon Display mode, View File Location, View Game Details.
-- **Android apps** — Launch, Edit App Details, Add to Favorites/Collection, Import Game Shortcuts,
+- **Games** — Launch Game, Edit Title, Edit Note. Everything else (favorites,
+  collections, artwork, emulator choice, icon display, file location) lives on the
+  **Game Detail** screen and its Options menu.
+- **Memory Cards** — Scan This Console, **Update Metadata** (text-only pass, artwork
+  untouched), **Scrape Missing Artwork** (fills only games missing primary art), pin,
+  hide, rename. The Windows card adds **Import PC Games**.
+- **All Games** — sorting plus **Manage Library**, which opens the Library settings.
+- **Android apps** — Launch, Edit App Details, Add to Favorites/Collection,
   Move/Pin/Hide/Rename.
 
-The same actions live on the full **Game Detail** and **App Detail** screens, which also show hero
-art, metadata, screenshots, publisher, and total play time.
+The full **Game Detail** and **App Detail** screens also show hero art, metadata,
+screenshots, publisher, and total play time.
 
 ### 4.6 Artwork & the Artwork Studio
 
@@ -440,8 +471,10 @@ color — the whole crossbar follows* (wave, gradient, cursor and icons all deri
 
 - **Color Scheme** — 12 PSP-style presets, previewed live on the real crossbar (including the
   month-cycling *Original*).
-- **Icon Color** — one tint across every crossbar glyph, 8 curated swatches (*Default* is the
-  native white). Game art, covers and app icons are never tinted.
+- **Icon Color** — one tint across every crossbar glyph: 8 curated swatches (*Default* is the
+  native white) plus a **Custom** swatch that opens an HSV picker (Hue / Saturation /
+  Brightness bars, adjustable by D-pad or touch). Game art, covers and app icons are never
+  tinted.
 - **New Theme from Photo** — any picture becomes the wallpaper; the theme color is auto-derived from
   its dominant hue.
 - **Import PSP Theme (`.ptf`)** — convert an official PSP theme you own (wallpaper + derived color).
@@ -484,7 +517,38 @@ pick, and restores from one. Because on-device cloud backup is disabled for priv
 move your setup to a new device or recover after a reinstall. Restoring re-links your ROM/media
 folders via *Library ▸ Root Access*.
 
-### 4.16 Tracking local (Steam-emulated) PC games
+### 4.16 Shiba Coins (achievements)
+
+**Shiba Coins** turn achievements into a coin economy across your whole library. Enable it
+under **Settings ▸ Shiba Coins** and connect one or more providers:
+
+| Provider | What it tracks | You supply |
+|---|---|---|
+| **RetroAchievements** | Retro console games with RA sets | RA username + Web API key |
+| **Steam** | Games on your own Steam account | SteamID64 (or vanity name) + Steam Web API key |
+| **Local Steam** | Steam-emulated PC games run through Wine emulators | Steam Web API key (see [4.17](#417-tracking-local-steam-emulated-pc-games)) |
+
+Each achievement earns a **bronze, silver, gold or platinum** coin by rarity; coins feed an
+account-wide wallet with **levels and ranks** shown on the **Player Card**.
+
+- **Player Card** — on the XMB and at the top of Settings ▸ Shiba Coins. Its menu holds
+  **Sync All Coins**, which refreshes every tracked game in one pass. Confirm on the card
+  opens the fullscreen **Player Status** view: level, rank and XP, Recent Achievements,
+  your coin wallet, and your Rarest Achievement Unlocked — a recent unlock from a library
+  game jumps straight to that game's coins screen.
+- **Per-game coins screen** — from a game's Shiba Coins strip on Game Detail. Lists every
+  achievement with its coin tier and unlock state; **X** cycles sorting, **Y** cycles the
+  earned/unearned filter.
+- **Auto-Match** — if a game is not linked yet, the coins screen offers one button that
+  asks whether your copy is a legitimate Steam one: *Yes* matches it against Steam
+  (embedded appid, SteamGridDB, title variants); *No* scans your windows game folders for
+  Steam-emu data and links it as Local Steam. When nothing links, the screen tells you
+  exactly what to fix.
+- **Shiba Library** — a hub with an **All Tracked** view (filter by provider with **Y**,
+  sort by Title / Progress / Console with **X**) and an **Untracked** view of games you
+  could still link. Android games are excluded — they can never have achievements.
+
+### 4.17 Tracking local (Steam-emulated) PC games
 
 PFP can track achievements for Windows games run through Wine emulators (GameHub, Winlator,
 GameNative and friends) whose bundled Steam emulator (GSE / Goldberg) records unlocks in local
@@ -552,20 +616,22 @@ Notes:
   installs the bundled emulator over the game's original `steam_api` DLL (backed up alongside
   it). This is the step the Warning Note's backup protects against.
 
-### 4.17 Settings reference
+### 4.18 Settings reference
 
 | Section | What it covers |
 |---|---|
-| **Library** | ROM roots, Library Manager (consoles), Import PC Games, Root Access |
+| **Library** | ROM roots, Library Manager (consoles, Auto-Detect, scan-all passes), Import PC Games, Root Access |
 | **Emulators** | Detected emulators, Custom Emulator Wizard |
 | **Artwork** | API keys, scrape all/missing, Game Icon Display, Artwork Folder & Import |
-| **Themes** | Color scheme, icon color, wallpaper, New Theme from Photo, PSP import, My Themes |
+| **Shiba Coins** | Player Card, enable toggle, RetroAchievements / Steam accounts, Track Local Steam Games (Emulated) |
+| **Themes** | Color scheme, icon color (presets + Custom HSV), wallpaper, New Theme from Photo, PSP import, My Themes |
 | **Display** | Wave style, wallpaper, boot sequence, Adjust XMB Layout, Animated Icons |
 | **Music / Video / Photo** | Root folder, rescan, default player, thumbnail cache |
 | **Controller** | Remap every binding, scroll speed, touch navigation button |
 | **Collections / Categories** | Create, rename, reorder, hide |
 | **Backup & Restore** | Export / import `.pfpbackup` |
-| **Logs** | View and share the rolling, redacted log file |
+| **Logs** | Open a rolling, redacted log in an external viewer; Share for bug reports |
+| **Re-Run Setup Wizard** | Replays the first-run wizard (see [2.6](#26-first-run-setup)) |
 | **About / Credits** | Version, **Edition (Full / Lite)**, attributions |
 
 ---
@@ -623,7 +689,7 @@ to send.
 - **Language:** Kotlin `2.0.0`
 - **UI:** Jetpack Compose (Compose BOM `2024.06.00`), MVVM + state hoisting
 - **DI:** Hilt
-- **Database:** Room — **schema v29**, hand-written migrations only (never destructive)
+- **Database:** Room — **schema v35**, hand-written migrations only (never destructive)
 - **Settings:** DataStore Preferences
 - **Networking:** Ktor (artwork / metadata scrapers)
 - **Media:** Media3 (video snaps + in-app player)
@@ -755,7 +821,7 @@ core/
                           .pfptheme codec, color cascade, icon-slot registry, layout spec + adjust
   core-common/            Shared utilities and extensions
   core-domain/            Domain models, repository interfaces
-  core-data/              Room DB (v29), DAOs, DataStore, repository impls, migrations
+  core-data/              Room DB (v35), DAOs, DataStore, repository impls, migrations
   core-ui/                PFPTheme/PFPColors, WaveStyle, PortalIcon, category-icon catalog
 discord/
   discord-native/         NDK/CMake bridge to the Discord Social SDK (full flavor only)
@@ -764,6 +830,7 @@ feature/
   feature-library/        ROM scanner, disc-image resolver, platform map
   feature-launcher/       Emulator detection + intent resolution
   feature-artwork/        Scraper clients, portable artwork library, ES-DE import/export
+  feature-achievements/   Shiba Coins: RA / Steam / Local Steam providers, wallet, sync
   feature-themes/         Theme loader/repository, built-in themes
   feature-settings/       Settings screens + ViewModels
   feature-appbar/         App drawer, app→category classification, filters

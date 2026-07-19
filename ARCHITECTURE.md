@@ -7,7 +7,7 @@ selected category, and launches games through external emulator apps.
 
 - **Package:** `com.playfieldportal.launcher` (debug builds use the `.debug` suffix)
 - **Min / Target / Compile SDK:** 29 (Android 10 — Winlator's floor) / 35 / 35
-- **Version:** `1.0.0-alpha`
+- **Version:** `1.1.0`
 - **Stack:** Kotlin, Jetpack Compose, MVVM + Clean Architecture, Hilt DI, Room, DataStore,
   Coil (image loading), Coroutines/Flow.
 - **Entry points:** [`PFPApplication`](app/src/main/kotlin/com/playfieldportal/launcher/PFPApplication.kt)
@@ -27,7 +27,9 @@ app  ──▶ feature:*  ──▶ core:core-ui ──▶ core:core-data ──
 | Module | Responsibility |
 | --- | --- |
 | `app` | DI wiring, manifest, `PFPApplication`, `MainActivity` (HOME launcher) |
-| `core:core-common` | Cross-cutting utilities and extensions |
+| `studio` | Theme Studio — Compose Multiplatform Desktop companion (Windows/Linux/macOS); must never grow an Android dependency |
+| `core:theme-kit` | Pure-JVM theme core shared with the Theme Studio: PTF/BMP/GIM/LZR parsers, `.pfptheme` codec, color cascade, icon-slot registry, XMB layout spec |
+| `core:core-common` | Cross-cutting utilities and extensions (incl. the shared Keystore AES-GCM helper) |
 | `core:core-domain` | Domain models, repository interfaces, use-case-level contracts (no Android deps where avoidable) |
 | `core:core-data` | Room database, DAOs, entities, migrations, DataStore, repository implementations, seeders |
 | `core:core-ui` | Shared Compose components, theming, the category-icon catalog, wave renderer |
@@ -35,15 +37,18 @@ app  ──▶ feature:*  ──▶ core:core-ui ──▶ core:core-data ──
 | `feature:feature-library` | ROM scanning into the Memory Card library |
 | `feature:feature-launcher` | Emulator detection + intent resolution (launching a ROM in the right emulator) |
 | `feature:feature-artwork` | Metadata/artwork scrapers (ScreenScraper/TGDB/IGDB/SteamGridDB), the `ArtworkStore` storage seam, the portable artwork library (`portable/` — user-owned SAF folder, manifest, per-entry metadata) and the ES-DE artwork importer (`importer/`) |
-| `feature:feature-themes` | `.xmbtheme` package loader (no in-app install entry point yet — loader is ready to wire up) |
-| `feature:feature-settings` | All settings screens |
+| `feature:feature-achievements` | Shiba Coins: RetroAchievements / Steam / Local Steam (GSE/Goldberg) providers, coin mapping, wallet + standings, sync, emu-kit generation |
+| `feature:feature-themes` | Theme loader/repository, built-in themes, `.pfptheme` / PSP `.ptf` install paths |
+| `feature:feature-settings` | All settings screens, the first-run setup wizard, PC game import |
 | `feature:feature-appbar` | App drawer, app→category classification, filtering |
-| `feature:feature-backup` | Backup & restore (`.pfpbak`) |
+| `feature:feature-backup` | Backup & restore (`.pfpbackup`) |
+| `feature:feature-social` | Discord Social UI — full flavor only |
+| `discord:discord-native` | NDK/CMake bridge to the Discord Social SDK (full flavor only) |
 
 ## Data layer (`core:core-data`)
 
 - **Room** database [`PFPDatabase`](core/core-data/src/main/kotlin/com/playfieldportal/core/data/database/PFPDatabase.kt)
-  (currently **v26**). Migrations are hand-written, one `MIGRATION_n_n+1` per version, registered
+  (currently **v35**). Migrations are hand-written, one `MIGRATION_n_n+1` per version, registered
   in [`DatabaseModule`](core/core-data/src/main/kotlin/com/playfieldportal/core/data/database/di/DatabaseModule.kt).
   **Never** use destructive migration — it would wipe the user's library.
 - **Seeding** is first-run only, gated by a DataStore flag, in
@@ -105,12 +110,16 @@ all from the [xmb-menu-es-de](https://github.com/anthonycaccese/xmb-menu-es-de) 
 
 ## Build & run
 
+The app has two flavors — `full` (ships the Discord Social SDK) and `lite` (omits it;
+use this on x86_64 emulators, the native bridge is arm-only). See the README's
+[For Developers](README.md#for-developers) section for the full build guide.
+
 ```bash
-# Build the debug APK
-./gradlew :app:assembleDebug
+# Build the lite debug APK
+./gradlew :app:assembleLiteDebug
 
 # Install to a connected device
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+adb install -r app/build/outputs/apk/lite/debug/app-lite-debug.apk
 ```
 
 If `adb install` reports `INSTALL_FAILED_UPDATE_INCOMPATIBLE` (debug-signature mismatch),
