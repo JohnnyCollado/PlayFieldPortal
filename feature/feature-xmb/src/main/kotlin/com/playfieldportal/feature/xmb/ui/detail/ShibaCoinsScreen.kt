@@ -239,14 +239,23 @@ private fun LinkSection(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewModel
         when (state.provider) {
             AchievementProvider.STEAM -> AutoMatchControls(state, viewModel, focused)
             AchievementProvider.RETRO_ACHIEVEMENTS -> {
-                // RetroAchievements is hash-only — no manual / user-provided linking.
-                Text("Not recognised by RetroAchievements", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                // RetroAchievements is hash-only — Auto-Match hashes the ROM and looks it up;
+                // there is no copy question and no manual entry.
+                Text("This game isn't linked yet", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
                 Spacer(Modifier.height(6.dp))
                 Text(
-                    "RetroAchievements games link automatically by ROM hash. If this ROM's hash isn't a registered RetroAchievements hash, it can't be tracked.",
+                    "RetroAchievements identifies games by ROM hash. Auto-Match hashes this ROM and looks it up — only a verified dump registered on RetroAchievements can link.",
                     color = TextMuted,
                     fontSize = 12.sp,
                 )
+                Spacer(Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    PillButton(
+                        if (state.isMatching) "Matching…" else "Auto-Match",
+                        enabled = !state.isMatching,
+                        focused = focused,
+                    ) { viewModel.autoMatchRaByHash() }
+                }
             }
             AchievementProvider.LOCAL_STEAM -> {
                 // The appid comes from the game folder's steam_settings — nothing to enter by hand.

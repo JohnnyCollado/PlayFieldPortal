@@ -214,6 +214,42 @@ class AchievementAutoMatcherTest {
         coVerify(exactly = 0) { repository.resolveSteamLink(any(), any()) } // never reached the title guess
     }
 
+    // ── Explicit per-game RetroAchievements hash match ────────────────────────
+
+    @Test
+    fun `single RA hash match links the game and clears its match note`() = runTest {
+        val g = game(9, "snes")
+        coEvery { gameRepository.getById(9) } returns g
+        coEvery { romReader.read(g) } returns byteArrayOf(1, 2, 3, 4)
+        coEvery { raHashResolver.lookup(3, any()) } returns
+            com.playfieldportal.feature.achievements.provider.retro.RaHashLookup.Found("777")
+
+        val result = matcher.matchSingleByHash(9)
+
+        assertEquals(AchievementAutoMatcher.RaMatchResult.Matched, result)
+        coVerify { repository.linkManually(9, AchievementProvider.RETRO_ACHIEVEMENTS, "777") }
+        coVerify { matchNoteDao.deleteForGame(9) }
+    }
+
+    @Test
+    fun `single RA hash match returns the pipeline's reason and records the note`() = runTest {
+        val g = game(9, "gba")
+        coEvery { gameRepository.getById(9) } returns g
+        coEvery { romReader.read(g) } returns byteArrayOf(9, 9, 9)
+        coEvery { raHashResolver.lookup(5, any()) } returns
+            com.playfieldportal.feature.achievements.provider.retro.RaHashLookup.NotRegistered
+
+        val result = matcher.matchSingleByHash(9)
+
+        assertTrue(result is AchievementAutoMatcher.RaMatchResult.Unmatched)
+        assertEquals(
+            "ROM hash isn't registered on RetroAchievements",
+            (result as AchievementAutoMatcher.RaMatchResult.Unmatched).reason,
+        )
+        coVerify { matchNoteDao.upsert(match { it.gameId == 9L && it.reason.contains("isn't registered") }) }
+        coVerify(exactly = 0) { repository.linkManually(any(), any(), any()) }
+    }
+
     // ── Explicit per-game Local Steam match ───────────────────────────────────
 
     private fun emuFolder(name: String, appId: String) =

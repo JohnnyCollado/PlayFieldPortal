@@ -100,6 +100,37 @@ class AchievementAutoMatcher @Inject constructor(
         return matchSteam(game) is Outcome.Matched
     }
 
+    /** Outcome of the explicit per-game RetroAchievements hash match. */
+    sealed interface RaMatchResult {
+        data object Matched : RaMatchResult
+        /** The hash pipeline's plain-language reason — the same strings the batch report uses. */
+        data class Unmatched(val reason: String) : RaMatchResult
+    }
+
+    /**
+     * Single-game Auto-Match for a RetroAchievements-platform game: hash-only, running exactly
+     * the per-game pipeline [matchUnlinked] uses (read/hash the ROM or disc, look the hash up in
+     * the console's registered list). No title fallback and no manual entry — RA identifies
+     * games solely by content hash. The game's match note is updated to mirror this attempt so
+     * the Shiba Library's Untracked view stays truthful.
+     */
+    suspend fun matchSingleByHash(gameId: Long): RaMatchResult {
+        val game = gameRepository.getById(gameId)
+            ?: return RaMatchResult.Unmatched("Game not found")
+        return when (val outcome = matchOne(game)) {
+            Outcome.Matched -> {
+                matchNoteDao.deleteForGame(gameId)
+                RaMatchResult.Matched
+            }
+            is Outcome.Unmatched -> {
+                matchNoteDao.upsert(
+                    AchievementMatchNoteEntity(gameId, outcome.reason, System.currentTimeMillis()),
+                )
+                RaMatchResult.Unmatched(outcome.reason)
+            }
+        }
+    }
+
     /** Outcome of the explicit per-game Local Steam match, so the UI can say what to fix. */
     sealed interface LocalSteamMatchResult {
         data object Matched : LocalSteamMatchResult

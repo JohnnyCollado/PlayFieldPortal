@@ -58,6 +58,11 @@ All notable changes to Play Field Portal are documented here. This project follo
 ## [1.2.0] - 2026-07-19
 
 ### Added
+- **Per-game Auto-Match for RetroAchievements.** The Shiba Coins screen of an unlinked
+  retro game now offers Auto-Match: hash-only (no copy question, no manual entry) — the
+  ROM is hashed and looked up, a fresh link syncs immediately, and a failure explains
+  itself (unreadable ROM, unsupported disc, hash not registered, or list unavailable).
+  The game's Untracked note is updated to match the attempt.
 - **Shiba Coins achievement system.** Games earn coins from achievements across three
   providers — RetroAchievements, your Steam account, and local Steam-emulated PC games
   (GSE/Goldberg) — with bronze/silver/gold/platinum tiers, an account-wide wallet with

@@ -257,8 +257,11 @@ class ShibaCoinsViewModel @Inject constructor(
             hasChangeMatch(s) && s.actionOnChangeMatch -> changeLink()
             s.linked || s.accountOnly -> sync()
             s.provider == AchievementProvider.STEAM -> startAutoMatch()
-            // RetroAchievements is hash-only — nothing for the user to enter.
-            else -> _state.update { it.copy(message = "RetroAchievements games link automatically by ROM hash") }
+            s.provider == AchievementProvider.RETRO_ACHIEVEMENTS -> autoMatchRaByHash()
+            // Local Steam links from the game folder's own appid — nothing to enter here.
+            else -> _state.update {
+                it.copy(message = "Local Steam-emu games link from their game folder. Run Auto-match in Settings ▸ Shiba Coins.")
+            }
         }
     }
 
@@ -279,6 +282,26 @@ class ShibaCoinsViewModel @Inject constructor(
 
     /** Opens the Auto-Match flow: first ask whether this is a legitimate Steam copy. */
     fun startAutoMatch() = _state.update { it.copy(autoMatchStep = AutoMatchStep.CONFIRM_COPY, autoMatchYes = true) }
+
+    /**
+     * RetroAchievements Auto-Match: hash-only, so there is no copy question and no manual
+     * fallback — hash the ROM, look it up, and either sync the fresh link or surface the
+     * pipeline's reason (unreadable ROM, unsupported disc, hash not registered, list
+     * unavailable) so the user knows what to fix.
+     */
+    fun autoMatchRaByHash() {
+        if (_state.value.isMatching) return
+        viewModelScope.launch {
+            _state.update { it.copy(isMatching = true) }
+            val result = autoMatcher.matchSingleByHash(gameId)
+            _state.update { it.copy(isMatching = false) }
+            when (result) {
+                AchievementAutoMatcher.RaMatchResult.Matched -> sync()
+                is AchievementAutoMatcher.RaMatchResult.Unmatched ->
+                    _state.update { it.copy(message = result.reason) }
+            }
+        }
+    }
 
     fun cancelAutoMatch() = _state.update { it.copy(autoMatchStep = null) }
 
