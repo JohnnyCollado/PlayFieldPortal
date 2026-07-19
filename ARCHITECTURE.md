@@ -7,7 +7,7 @@ selected category, and launches games through external emulator apps.
 
 - **Package:** `com.playfieldportal.launcher` (debug builds use the `.debug` suffix)
 - **Min / Target / Compile SDK:** 29 (Android 10 — Winlator's floor) / 35 / 35
-- **Version:** `1.1.0`
+- **Version:** `1.2.0`
 - **Stack:** Kotlin, Jetpack Compose, MVVM + Clean Architecture, Hilt DI, Room, DataStore,
   Coil (image loading), Coroutines/Flow.
 - **Entry points:** [`PFPApplication`](app/src/main/kotlin/com/playfieldportal/launcher/PFPApplication.kt)
