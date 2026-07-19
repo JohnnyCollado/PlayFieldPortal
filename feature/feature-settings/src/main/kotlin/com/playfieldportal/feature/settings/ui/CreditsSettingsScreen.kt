@@ -114,6 +114,35 @@ fun CreditsSettingsScreen(
             CreditLine("Metadata", "TheGamesDB · IGDB")
 
             Spacer(Modifier.height(16.dp))
+            SettingsGroup("Achievements — Shiba Coins")
+
+            CreditParagraph(
+                "Achievement data for the Shiba Coins system comes from the following services and " +
+                    "projects, and remains the property of their respective owners."
+            )
+            CreditLine("RetroAchievements", "retroachievements.org — community-made achievement sets and unlock data for retro games, via the official RetroAchievements Web API and api-kotlin client")
+            CreditLine("Steam", "Powered by Steam — achievement schemas and unlock data via the Steam Web API, using your own key. Steam and the Steam logo are trademarks of Valve Corporation. steampowered.com")
+
+            Spacer(Modifier.height(16.dp))
+            SettingsGroup("Goldberg Steam Emulator (gbe_fork)")
+
+            CreditParagraph(
+                "Local achievement tracking for Steam-emulated PC games bundles the Goldberg Steam " +
+                    "Emulator — specifically gbe_fork, the community fork maintained by Detanup01 and " +
+                    "contributors, building on the original Goldberg Emulator by Mr. Goldberg."
+            )
+            CreditParagraph(
+                "The emulator is free software licensed under the GNU Lesser General Public License " +
+                    "v3.0 (LGPL-3.0). Play Field Portal bundles an unmodified build of its " +
+                    "steam_api64.dll; the complete corresponding source code and the full license text " +
+                    "are available at the links below."
+            )
+            CreditLine("Project", "gbe_fork — Detanup01 and contributors")
+            CreditLine("Source", "github.com/Detanup01/gbe_fork")
+            CreditLine("Original project", "Goldberg Emulator by Mr. Goldberg — gitlab.com/Mr_Goldberg/goldberg_emulator")
+            CreditLine("License", "LGPL-3.0 — gnu.org/licenses/lgpl-3.0.html")
+
+            Spacer(Modifier.height(16.dp))
             SettingsGroup("Notes")
             CreditParagraph(
                 "If you are a rights holder and would like attribution changed or any asset removed, " +

@@ -92,6 +92,10 @@ All notable changes to Play Field Portal are documented here. This project follo
   both the Steam and local id namespaces automatically.
 - **Logs open externally.** Confirm on a log file now opens the system "Open with"
   chooser; the options button offers the existing redacted Share.
+- **Achievement credits.** Settings ▸ Credits and the README now credit the Shiba Coins
+  data sources — RetroAchievements, Steam (Powered by Steam; Valve trademarks), and the
+  bundled Goldberg Steam Emulator (gbe_fork by Detanup01 and contributors, original by
+  Mr. Goldberg) with its LGPL-3.0 license and source links.
 
 ### Changed
 - **Direct launch is seamless.** With Launch Games Directly on, confirm boots straight

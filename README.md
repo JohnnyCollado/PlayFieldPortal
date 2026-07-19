@@ -897,6 +897,33 @@ Fetched at the user's request from third-party providers and remaining the prope
 - **SteamGridDB** — community artwork (grids, heroes, logos, icons)
 - **IGDB** and **TheGamesDB** — optional metadata / artwork sources
 
+### Achievement data (Shiba Coins)
+- **RetroAchievements** — community-made achievement sets and unlock data for retro games,
+  fetched via the official RetroAchievements Web API and the official
+  [api-kotlin](https://github.com/RetroAchievements/api-kotlin) client. Achievement sets are
+  the work of the RetroAchievements community. https://retroachievements.org
+- **Steam** — achievement schemas and unlock data are fetched from the **Steam Web API**
+  using the user's own API key. **Powered by Steam.** Steam and the Steam logo are
+  trademarks and/or registered trademarks of **Valve Corporation**. Play Field Portal is
+  not affiliated with or endorsed by Valve. https://steampowered.com
+
+### Goldberg Steam Emulator (gbe_fork)
+Local achievement tracking for Steam-emulated PC games ([4.17](#417-tracking-local-steam-emulated-pc-games))
+bundles the **Goldberg Steam Emulator** — specifically **gbe_fork**, the community fork
+maintained by **Detanup01** and contributors, building on the original **Goldberg Emulator**
+by **Mr. Goldberg**.
+
+- Project: [gbe_fork](https://github.com/Detanup01/gbe_fork) · Original:
+  [Goldberg Emulator](https://gitlab.com/Mr_Goldberg/goldberg_emulator)
+- License: **GNU Lesser General Public License v3.0 (LGPL-3.0)** —
+  [full text](https://www.gnu.org/licenses/lgpl-3.0.html)
+- What PFP ships: an **unmodified** build of the emulator's `steam_api64.dll`, bundled as an
+  app asset and installed into a game folder only when you opt in and confirm (see the
+  Warning Note in [4.17](#417-tracking-local-steam-emulated-pc-games)). The original DLL is
+  always backed up alongside, so the emulator build can be freely replaced with your own —
+  as the LGPL requires. The complete corresponding source code is available from the
+  project links above.
+
 If you are a rights holder and would like attribution changed or an asset removed, please open an
 issue and it will be addressed promptly.
 
