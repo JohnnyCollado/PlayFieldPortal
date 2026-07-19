@@ -5,6 +5,11 @@ All notable changes to Play Field Portal are documented here. This project follo
 
 ## [Unreleased]
 
+### Changed
+- **The Auto-match report is counts-only.** Settings ▸ Shiba Coins now shows one
+  dismissible "Matched N · Unmatched M" row instead of a long per-game list — each
+  unmatched game's reason still shows on its row in the Shiba Library's Untracked view.
+
 ### Fixed
 - **RetroAchievements hash lists no longer time out.** The RA client ships with 10-second
   HTTP timeouts baked in; the registered-hash list Auto-Match joins against runs to

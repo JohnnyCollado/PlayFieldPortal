@@ -251,20 +251,15 @@ fun AchievementsSettingsScreen(
                     onClick = { viewModel.autoMatch() },
                 )
             }
+            // Counts only — the per-game reasons live in the Shiba Library's Untracked view,
+            // so the settings screen never grows a long scrolling report.
             state.matchReport?.let { report ->
-                SettingsValueRow(label = "Matched", value = report.matched.toString())
-                if (report.unmatched.isEmpty()) {
-                    SettingsValueRow(label = "Unmatched", value = "0")
-                } else {
-                    SettingsRow(
-                        label = "Unmatched: ${report.unmatched.size} (tap to dismiss)",
-                        sublabel = "Link these from each game's Shiba Coins screen",
-                        onClick = { viewModel.dismissReport() },
-                    )
-                    report.unmatched.forEach { u ->
-                        SettingsValueRow(label = u.title, sublabel = u.platformId, value = u.reason)
-                    }
-                }
+                SettingsRow(
+                    label = "Matched ${report.matched} · Unmatched ${report.unmatched.size}",
+                    sublabel = if (report.unmatched.isEmpty()) "Tap to dismiss"
+                               else "See each game's reason in the Shiba Library's Untracked view. Tap to dismiss",
+                    onClick = { viewModel.dismissReport() },
+                )
             }
 
             state.message?.let {
