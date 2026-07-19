@@ -72,8 +72,12 @@ class DiscImageOpener @Inject constructor(
 
     private fun rawCdFromUri(game: Game): DiscImage? {
         val uri = game.romUri ?: return null
-        if (uri.endsWith(".cue", ignoreCase = true)) return null
-        val pfd = context.contentResolver.openFileDescriptor(Uri.parse(uri), "r") ?: return null
+        val target = if (uri.endsWith(".cue", ignoreCase = true)) {
+            cueSiblingUri(Uri.parse(uri)) ?: return null
+        } else {
+            Uri.parse(uri)
+        }
+        val pfd = context.contentResolver.openFileDescriptor(target, "r") ?: return null
         return DiscImage.openRawCd(FdSource(pfd))
     }
 
@@ -115,10 +119,34 @@ class DiscImageOpener @Inject constructor(
         val line = cue.useLines { lines ->
             lines.map { it.trim() }.firstOrNull { it.startsWith("FILE", ignoreCase = true) }
         } ?: return null
-        val name = Regex("""FILE\s+"([^"]+)"""", RegexOption.IGNORE_CASE).find(line)?.groupValues?.get(1)
-            ?: line.removePrefix("FILE").trim().substringBefore(" BINARY").trim().trim('"')
+        val name = cueFileName(line) ?: return null
         if (!isSafeSiblingName(name)) return null
         return File(cue.parentFile, name).takeIf(File::exists)
+    }
+
+    private fun cueFileName(fileLine: String): String? =
+        Regex("""FILE\s+"([^"]+)"""", RegexOption.IGNORE_CASE).find(fileLine)?.groupValues?.get(1)
+            ?: fileLine.removePrefix("FILE").trim().substringBefore(" BINARY").trim().trim('"')
+                .takeIf { it.isNotEmpty() }
+
+    /**
+     * Resolves a SAF `.cue` document to its referenced `.bin`: reads the sheet's first `FILE`
+     * entry and rebuilds the sibling's document URI by swapping the last segment of the document
+     * id — the ROM root's tree grant covers every sibling in the same folder. Requires a
+     * tree-based URI (every scanned ROM's is); returns null otherwise.
+     */
+    private fun cueSiblingUri(cueUri: Uri): Uri? {
+        val line = context.contentResolver.openInputStream(cueUri)?.bufferedReader()?.useLines { lines ->
+            lines.map { it.trim() }.firstOrNull { it.startsWith("FILE", ignoreCase = true) }
+        } ?: return null
+        val name = cueFileName(line) ?: return null
+        if (!isSafeSiblingName(name)) return null
+        val docId = runCatching { android.provider.DocumentsContract.getDocumentId(cueUri) }.getOrNull()
+            ?: return null
+        val siblingId = siblingDocumentId(docId, name) ?: return null
+        return runCatching {
+            android.provider.DocumentsContract.buildDocumentUriUsingTree(cueUri, siblingId)
+        }.getOrNull()
     }
 
     // A referenced track/bin file must be a bare sibling name — no path component may escape the
@@ -126,12 +154,16 @@ class DiscImageOpener @Inject constructor(
     private fun isSafeSiblingName(name: String): Boolean =
         name.isNotEmpty() && !name.contains('/') && !name.contains('\\') && File(name).name == name
 
-    // SAF fallback: open the content URI directly (a bare .iso / .bin; a .cue's sibling can't be
-    // resolved through SAF, so those fall to the title match).
+    // SAF fallback: open the content URI directly; a .cue is followed to its sibling .bin via
+    // the tree grant (see cueSiblingUri).
     private fun openFromUri(game: Game): DiscImage? {
         val uri = game.romUri ?: return null
-        if (uri.endsWith(".cue", ignoreCase = true)) return null
-        val pfd = context.contentResolver.openFileDescriptor(Uri.parse(uri), "r") ?: return null
+        val target = if (uri.endsWith(".cue", ignoreCase = true)) {
+            cueSiblingUri(Uri.parse(uri)) ?: return null
+        } else {
+            Uri.parse(uri)
+        }
+        val pfd = context.contentResolver.openFileDescriptor(target, "r") ?: return null
         return DiscImage.open(FdSource(pfd))
     }
 
@@ -230,4 +262,17 @@ class DiscImageOpener @Inject constructor(
         // A .gdi track line: index, start LBA, type, sector size, filename (quoted or bare), byte offset.
         val GDI_LINE = Regex("""^(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(?:"([^"]+)"|(\S+))\s+(\d+)$""")
     }
+}
+
+/**
+ * Swaps the last path segment of a SAF document id for [name]:
+ * "primary:Roms/psx/Game/d.cue" -> "primary:Roms/psx/Game/name"; a root-level id keeps its
+ * "root:" prefix. Pure string logic, shared by [DiscImageOpener.cueSiblingUri] and its tests.
+ */
+internal fun siblingDocumentId(docId: String, name: String): String? {
+    val slash = docId.lastIndexOf('/')
+    if (slash >= 0) return docId.substring(0, slash + 1) + name
+    val colon = docId.lastIndexOf(':')
+    if (colon >= 0) return docId.substring(0, colon + 1) + name
+    return null
 }

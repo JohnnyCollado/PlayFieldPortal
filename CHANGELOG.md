@@ -11,6 +11,12 @@ All notable changes to Play Field Portal are documented here. This project follo
   unmatched game's reason still shows on its row in the Shiba Library's Untracked view.
 
 ### Fixed
+- **Cue/bin disc games can now hash through SAF.** A `.cue` sheet opened via a content
+  URI (how the whole SAF-first library loads) previously could not reach its sibling
+  `.bin`, so every cue/bin PSX, Saturn, and Sega CD game silently fell to "Unsupported
+  disc image" during Auto-Match. The referenced track file is now resolved as a sibling
+  document under the ROM root's tree grant, with the same path-traversal guard as the
+  filesystem path.
 - **RetroAchievements hash lists no longer time out.** The RA client ships with 10-second
   HTTP timeouts baked in; the registered-hash list Auto-Match joins against runs to
   several megabytes on big consoles and could not download in time on device Wi-Fi, so
