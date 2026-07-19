@@ -478,6 +478,8 @@ data class XMBUiState(
     val achievementsConnected: Boolean = false,
     // (done, total) while the hub's "Sync All Coins" runs; null when idle.
     val hubSyncAll: Pair<Int, Int>? = null,
+    // True while the hub's "Auto-Matching" pass runs (hubSyncAll then carries match progress).
+    val hubMatching: Boolean = false,
     // Fullscreen All Tracked / Untracked overlay (null = closed).
     val activeShibaLibrary: ShibaLibraryMode? = null,
     val pendingShibaLibraryAction: GamepadAction? = null,
@@ -839,6 +841,7 @@ class XMBViewModel @Inject constructor(
     private val artworkStore: com.playfieldportal.feature.artwork.store.ArtworkStore,
     private val gameLaunchPreferences: com.playfieldportal.core.data.repository.GameLaunchPreferences,
     private val achievementRepository: com.playfieldportal.feature.achievements.AchievementController,
+    private val achievementAutoMatcher: com.playfieldportal.feature.achievements.match.AchievementAutoMatcher,
     private val achievementCredentials: com.playfieldportal.core.data.achievement.AchievementCredentialsProvider,
     private val windowsLibrarySetup: com.playfieldportal.core.data.repository.WindowsLibrarySetup,
     private val pcShortcutImporter: com.playfieldportal.feature.launcher.PcShortcutImporter,
@@ -1267,7 +1270,7 @@ class XMBViewModel @Inject constructor(
                     // Rebuilt reactively by observeLibraryStanding() and on nav change; a one-shot
                     // build from the current standing is enough here.
                     _uiState.update {
-                        it.copy(currentItems = achievementsItems(it.libraryStanding, it.achievementsNav, it.achievementsConnected, it.hubSyncAll))
+                        it.copy(currentItems = achievementsItems(it.libraryStanding, it.achievementsNav, it.achievementsConnected, it.hubSyncAll, it.hubMatching))
                     }
                 }
                 BuiltInCategory.SOCIAL -> when (_uiState.value.socialNav) {
@@ -3622,14 +3625,16 @@ class XMBViewModel @Inject constructor(
         nav: AchievementsNav,
         connected: Boolean,
         syncAll: Pair<Int, Int>? = null,
+        matching: Boolean = false,
     ): List<XMBItem> = when (nav) {
-        AchievementsNav.Root -> achievementsRootItems(standing, connected, syncAll)
+        AchievementsNav.Root -> achievementsRootItems(standing, connected, syncAll, matching)
     }
 
     private fun achievementsRootItems(
         standing: com.playfieldportal.core.domain.achievement.LibraryStanding,
         connected: Boolean,
         syncAll: Pair<Int, Int>? = null,
+        matching: Boolean = false,
     ): List<XMBItem> {
         val untrackedRow = if (standing.untracked.isEmpty()) emptyList() else listOf(
             XMBItem(id = ACH_UNTRACKED_ITEM_ID, title = "Untracked", subtitle = "${standing.untracked.size} games", type = XMBItemType.STANDARD),
@@ -3650,8 +3655,9 @@ class XMBViewModel @Inject constructor(
             XMBItem(
                 id = ACH_ALL_ITEM_ID,
                 title = "All Tracked Games",
-                subtitle = syncAll?.let { (done, total) -> "Syncing coins…  $done / $total" }
-                    ?: "${standing.gamesTracked} games",
+                subtitle = syncAll?.let { (done, total) ->
+                    if (matching) "Auto-matching…  $done / $total" else "Syncing coins…  $done / $total"
+                } ?: "${standing.gamesTracked} games",
                 type = XMBItemType.STANDARD,
             ),
         )
@@ -3660,7 +3666,8 @@ class XMBViewModel @Inject constructor(
         // Coins read as earned/available COUNTS (user decision 2026-07-16); the weighted value
         // stays the level economy behind the Lv badge.
         val summarySubtitle = if (standing.gamesTracked == 0 && syncAll != null) {
-            "Syncing coins…  ${syncAll.first} / ${syncAll.second}"
+            if (matching) "Auto-matching…  ${syncAll.first} / ${syncAll.second}"
+            else "Syncing coins…  ${syncAll.first} / ${syncAll.second}"
         } else {
             "${"%,d".format(standing.coinsEarned)} / ${"%,d".format(standing.coinsAvailable)} coins  •  " +
                 "${standing.gamesTracked} tracked  •  ${standing.gamesMastered} mastered"
@@ -4123,18 +4130,28 @@ class XMBViewModel @Inject constructor(
         )}
     }
 
-    // Opens the △ options menu for a Shiba Coins hub row — the Player Card and All Tracked Games
-    // both carry Sync All Coins, so the first-ever sync (nothing tracked yet, no All Tracked row)
-    // is reachable from the card. Returns true when [item] is one it owns.
+    // Opens the △ options menu for a Shiba Coins hub row — the Player Card, All Tracked Games,
+    // and Untracked all carry Sync All Coins and Auto-Matching, so the first-ever match/sync
+    // (nothing tracked yet, no All Tracked row) is reachable from the card. Returns true when
+    // [item] is one it owns.
     private fun openAchievementsContextMenu(item: XMBItem): Boolean {
         if (currentCategory()?.id != BuiltInCategory.ACHIEVEMENTS) return false
-        if (item.id != ACH_ALL_ITEM_ID && item.id != ACH_SUMMARY_ITEM_ID) return false
-        val syncing = _uiState.value.hubSyncAll != null
+        if (item.id != ACH_ALL_ITEM_ID && item.id != ACH_SUMMARY_ITEM_ID && item.id != ACH_UNTRACKED_ITEM_ID) return false
+        val matching = _uiState.value.hubMatching
+        val syncing = _uiState.value.hubSyncAll != null && !matching
         _uiState.update {
             it.copy(
                 activeContextMenu = XMBContextMenu(
-                    title = if (item.id == ACH_SUMMARY_ITEM_ID) "Player Card" else "All Tracked Games",
+                    title = when (item.id) {
+                        ACH_SUMMARY_ITEM_ID -> "Player Card"
+                        ACH_UNTRACKED_ITEM_ID -> "Untracked"
+                        else -> "All Tracked Games"
+                    },
                     items = listOf(
+                        XMBContextMenuItem(
+                            "ach_auto_match",
+                            if (matching) "Auto-Matching…" else "Auto-Matching",
+                        ),
                         XMBContextMenuItem(
                             "ach_sync_all",
                             if (syncing) "Syncing…" else "Sync All Coins",
@@ -4145,6 +4162,26 @@ class XMBViewModel @Inject constructor(
             )
         }
         return true
+    }
+
+    // Auto-matches every unlinked game (the batch matcher's full ladder — RA hashes, Steam,
+    // Local Steam), then chains straight into Sync All so fresh links land with their coins.
+    // One run at a time; the hub rows show "Auto-matching… n / m" while the match pass runs.
+    private fun autoMatchFromHub() {
+        if (_uiState.value.hubSyncAll != null || _uiState.value.hubMatching) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(hubMatching = true, hubSyncAll = 0 to 0) }
+            refreshAchievementsHubIfVisible()
+            runCatching {
+                achievementAutoMatcher.matchUnlinked { done, total ->
+                    _uiState.update { it.copy(hubSyncAll = done to total) }
+                    refreshAchievementsHubIfVisible()
+                }
+            }.onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
+            _uiState.update { it.copy(hubMatching = false, hubSyncAll = null) }
+            refreshAchievementsHubIfVisible()
+            syncAllCoinsFromHub()
+        }
     }
 
     // Refreshes coin data for every linked game, with progress on the hub row. One run at a time;
@@ -4538,6 +4575,7 @@ class XMBViewModel @Inject constructor(
         when {
             menu.achievementsHubMenu -> when (itemId) {
                 "ach_sync_all" -> syncAllCoinsFromHub()
+                "ach_auto_match" -> autoMatchFromHub()
             }
             menu.musicTrackId == MUSIC_PLAYER_MENU_MARKER -> when (itemId) {
                 "music_background" -> musicPlayInBackground()

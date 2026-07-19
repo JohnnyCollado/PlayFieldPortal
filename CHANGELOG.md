@@ -58,6 +58,11 @@ All notable changes to Play Field Portal are documented here. This project follo
 ## [1.2.0] - 2026-07-19
 
 ### Added
+- **Auto-Matching from the Shiba Coins hub.** The Player Card, All Tracked Games, and
+  Untracked rows' options menus gain **Auto-Matching**: one action that batch-matches
+  every unlinked game (RetroAchievements hashes, Steam, Local Steam) and then runs Sync
+  All Coins so fresh links land with their coins. The hub rows show "Auto-matching
+  n / m" then the usual sync progress.
 - **Per-game Auto-Match for RetroAchievements.** The Shiba Coins screen of an unlinked
   retro game now offers Auto-Match: hash-only (no copy question, no manual entry) — the
   ROM is hashed and looked up, a fresh link syncs immediately, and a failure explains
