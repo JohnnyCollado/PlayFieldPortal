@@ -28,8 +28,11 @@ fun RootAccessSection(
         SettingsValueRow(
             label    = root.name,
             value    = if (root.linked) "Linked" else "Re-link",
-            sublabel = if (root.linked) "Access OK · tap to replace this root"
-                else "Access lost — tap to re-grant (happens after a restore or reinstall)",
+            sublabel = when {
+                !root.linked -> "Access lost — tap to re-grant (happens after a restore or reinstall)"
+                root.consoles != null -> "Consoles: ${root.consoles} · tap to replace this root"
+                else -> "Access OK · tap to replace this root"
+            },
             onClick  = { onRelinkRoot(root) },
         )
         SettingsRow(

@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -43,6 +44,9 @@ const val ADD_CONSOLE_FOCUS_KEY = "add_console"
 // Platform whose library is built from installed apps (picker) rather than a ROM folder.
 private const val ANDROID_PLATFORM_ID = "android"
 private const val WINDOWS_PLATFORM_ID = "windows"
+
+private const val INVALID_GAME_ID_MESSAGE =
+    "Enter a valid game ID — a number, or a local_… ID copied from the game's page in the launcher."
 
 enum class LibraryStep { LIST, PICK_PLATFORM, PICK_EMULATOR, SCAN_PROMPT, CARD_DETAIL, IMPORT_PC }
 
@@ -64,7 +68,6 @@ data class PcLauncherRow(
 // Windows Games card. gameId references the existing games row.
 data class PcGameRow(val gameId: Long, val title: String, val launcherName: String)
 
-enum class DirectoryPickPurpose { ADD, CHANGE }
 
 data class LibraryCardRow(
     val platformId: String,
@@ -93,8 +96,6 @@ data class LibraryManagerUiState(
     val pendingPlatformId: String? = null,
     val pendingPlatformName: String? = null,
     val pendingDirectory: String? = null,
-    // Persisted SAF tree URI for the folder being added (source of truth for scan/launch).
-    val pendingTreeUri: String? = null,
     val pendingEmulatorId: String? = null,
 
     // Card detail (edit) target
@@ -112,7 +113,6 @@ data class LibraryManagerUiState(
     val isHomeLauncher: Boolean = false,
 
     // UI signals
-    val awaitingDirectoryPick: DirectoryPickPurpose? = null,
     // Set when the screen should launch the folder picker to set up the ES-DE ROM structure.
     val awaitingRomRootSetup: Boolean = false,
     val renameTargetPlatformId: String? = null,
@@ -157,7 +157,15 @@ class LibraryManagerViewModel @Inject constructor(
     fun onSchemaPromptYes() = schemaPrompts.yes()
     fun onSchemaPromptYesToAll() = schemaPrompts.yesToAll()
 
-    init { refreshRomRoots() }
+    init {
+        // Reactive, not one-shot: roots granted anywhere (the first-run wizard, a restore) show
+        // up here immediately — this ViewModel is activity-scoped and outlives any single open.
+        // distinctUntilChanged matters: the backing DataStore is app-wide, so without it every
+        // unrelated preference write would re-run the persisted-grant binder scan.
+        viewModelScope.launch {
+            romRootRepository.roots.distinctUntilChanged().collect { refreshRomRoots() }
+        }
+    }
 
     val uiState: StateFlow<LibraryManagerUiState> = combine(
         memoryCardRepository.observeAll(),
@@ -168,6 +176,15 @@ class LibraryManagerViewModel @Inject constructor(
         val emulatorNames = profiles.associate { it.id to it.name }
         val counts = games.groupBy { it.platformId }.mapValues { it.value.size }
         scratch.copy(
+            // Each root shows the consoles homed under it (matched by the card's directory).
+            romRoots = scratch.romRoots.map { root ->
+                val rootRaw = RomRootRepository.rawPathOfTree(root.treeUri)?.trimEnd('/')
+                val homed = if (rootRaw == null) emptyList() else cards.mapNotNull { card ->
+                    card.romDirectory?.takeIf { it.startsWith("$rootRaw/") }
+                        ?.let { card.displayName.removeSuffix(" Memory Card") }
+                }
+                root.copy(consoles = homed.takeIf { it.isNotEmpty() }?.joinToString(", "))
+            },
             cards = cards.map { card ->
                 LibraryCardRow(
                     platformId   = card.platformId,
@@ -220,12 +237,25 @@ class LibraryManagerViewModel @Inject constructor(
     }
 
     private fun resetToList() {
+        // Copy-with-clear, never a fresh state: display fields (cards, romRoots, message, scan
+        // progress — and whatever gets added next) survive by DEFAULT; only the transient
+        // sub-screen scratch is reset. A fresh-state rebuild silently wipes any field someone
+        // forgets to carry over (romRoots was the live instance of that bug).
         _scratch.update {
-            LibraryManagerUiState(
-                step                = LibraryStep.LIST,
-                message             = it.message,
-                scanningPlatformIds = it.scanningPlatformIds,
-                returnFocusKey      = it.returnFocusKey,   // restore focus to the row we came from
+            it.copy(
+                step                   = LibraryStep.LIST,
+                platformOptions        = emptyList(),
+                emulatorOptions        = emptyList(),
+                pendingPlatformId      = null,
+                pendingPlatformName    = null,
+                pendingDirectory       = null,
+                pendingEmulatorId      = null,
+                detailPlatformId       = null,
+                androidApps            = emptyList(),
+                pcLaunchers            = emptyList(),
+                pcGames                = emptyList(),
+                renameTargetPlatformId = null,
+                awaitingRomRootSetup   = false,
             )
         }
     }
@@ -236,6 +266,14 @@ class LibraryManagerViewModel @Inject constructor(
 
     fun startAddConsole() {
         viewModelScope.launch {
+            // Consoles scan their subfolder under the ROM Root — without a root there is
+            // nothing to add a console against, so setting one up comes first.
+            if (romRootRepository.getAll().isEmpty()) {
+                _scratch.update {
+                    it.copy(message = "Set up a ROM Root first — grant your ROM folder under ROM Root Access, then add consoles.")
+                }
+                return@launch
+            }
             val options = memoryCardRepository.unconfiguredPlatforms()
                 .map { PlatformOption(it.id, it.name, it.shortName) }
             if (options.isEmpty()) {
@@ -275,12 +313,55 @@ class LibraryManagerViewModel @Inject constructor(
             }
             return
         }
-        _scratch.update {
-            it.copy(
-                pendingPlatformId   = option.id,
-                pendingPlatformName = option.name,
-                awaitingDirectoryPick = DirectoryPickPurpose.ADD,
-            )
+        // Console folders come from the ROM Root — the subfolder already recognized as this
+        // platform under a granted root, else the platform's ES-DE folder name under the first
+        // root. No per-console folder picker: one root grant covers every console, so a user
+        // without a root is pointed at ROM Root Access instead.
+        viewModelScope.launch {
+            val roots = romRootRepository.getAll()
+            if (roots.isEmpty()) {
+                _scratch.update {
+                    it.copy(message = "Set up a ROM Root first — grant your ROM folder under ROM Root Access, then add consoles.")
+                }
+                return@launch
+            }
+            var chosenRoot = roots.first()
+            var folderName = folderHintResolver.esDeFolderName(option.id)
+            outer@ for (rootUri in roots) {
+                for (name in romScanner.listSubfolderNames(rootUri)) {
+                    if (folderHintResolver.detectFromFolderName(name) == option.id) {
+                        chosenRoot = rootUri
+                        folderName = name
+                        break@outer
+                    }
+                }
+            }
+            val rootRaw = RomRootRepository.rawPathOfTree(chosenRoot)
+            val directory = rootRaw?.let { "${it.trimEnd('/')}/$folderName" }
+            // Windows games launch through PC launchers, not an emulator profile — skip the
+            // emulator step entirely, straight to the scan prompt.
+            if (option.id == WINDOWS_PLATFORM_ID) {
+                _scratch.update {
+                    it.copy(
+                        pendingPlatformId   = option.id,
+                        pendingPlatformName = option.name,
+                        pendingDirectory    = directory,
+                        pendingEmulatorId   = null,
+                        step                = LibraryStep.SCAN_PROMPT,
+                    )
+                }
+                return@launch
+            }
+            val options = buildEmulatorOptions(option.id)
+            _scratch.update {
+                it.copy(
+                    pendingPlatformId   = option.id,
+                    pendingPlatformName = option.name,
+                    pendingDirectory    = directory,
+                    emulatorOptions     = options,
+                    step                = LibraryStep.PICK_EMULATOR,
+                )
+            }
         }
     }
 
@@ -299,59 +380,21 @@ class LibraryManagerViewModel @Inject constructor(
                 romDirectory = s.pendingDirectory,
                 emulatorId   = s.pendingEmulatorId,
             )
-            // Attach the SAF grant so the card scans/launches via content URIs (no permission).
-            s.pendingTreeUri?.let { memoryCardRepository.setSafFolder(platformId, it, s.pendingDirectory) }
+            // No per-card SAF grant: root-managed consoles scan and launch through the ROM
+            // Root's recursive grant (buildScanSources maps the card to its root subfolder).
             resetToList()
-            if (scanNow && (s.pendingTreeUri != null || s.pendingDirectory != null)) scanConsole(platformId)
+            if (scanNow) {
+                // Windows uses the PC import scan (setup self-heal, launcher exports, emu
+                // folders) — the generic ROM directory walk would find nothing to import.
+                // Other consoles scan through the ROM roots (buildScanSources maps the card
+                // to its subfolder under every granted root).
+                if (platformId == WINDOWS_PLATFORM_ID) scanPcGamesFolder()
+                else scanConsole(platformId)
+            }
         }
     }
 
     private fun defaultDisplayName(platformName: String): String = "$platformName Memory Card"
-
-    // ── Directory picking (SAF) ───────────────────────────────────────────────────
-
-    fun onDirectoryPicked(uri: Uri) {
-        val purpose = _scratch.value.awaitingDirectoryPick
-        // Keep the SAF grant: the tree URI is the scan/launch source of truth (no storage
-        // permission needed). The derived raw path is display + a {rom_path} fallback only.
-        persistReadPermission(uri)
-        val treeUri = uri.toString()
-        val path = uri.toRealPath()
-
-        when (purpose) {
-            DirectoryPickPurpose.ADD -> viewModelScope.launch {
-                val platformId = _scratch.value.pendingPlatformId
-                val options = buildEmulatorOptions(platformId)
-                _scratch.update {
-                    it.copy(
-                        pendingDirectory      = path,
-                        pendingTreeUri        = treeUri,
-                        emulatorOptions       = options,
-                        awaitingDirectoryPick = null,
-                        step                  = LibraryStep.PICK_EMULATOR,
-                    )
-                }
-            }
-            DirectoryPickPurpose.CHANGE -> viewModelScope.launch {
-                val platformId = _scratch.value.detailPlatformId ?: return@launch
-                memoryCardRepository.setSafFolder(platformId, treeUri, path)
-                _scratch.update { it.copy(awaitingDirectoryPick = null) }
-            }
-            null -> _scratch.update { it.copy(awaitingDirectoryPick = null) }
-        }
-    }
-
-    // User cancelled the system folder picker.
-    fun onDirectoryPickCancelled() {
-        val purpose = _scratch.value.awaitingDirectoryPick
-        _scratch.update {
-            it.copy(
-                awaitingDirectoryPick = null,
-                // If they cancelled while adding, drop back to platform pick.
-                step = if (purpose == DirectoryPickPurpose.ADD) LibraryStep.PICK_PLATFORM else it.step,
-            )
-        }
-    }
 
     private suspend fun buildEmulatorOptions(platformId: String?): List<EmulatorOption> {
         val installed = platformId?.let { emulatorProfileRepository.getProfilesForPlatform(it) } ?: emptyList()
@@ -390,12 +433,6 @@ class LibraryManagerViewModel @Inject constructor(
         viewModelScope.launch {
             memoryCardRepository.remove(platformId)
             if (_scratch.value.detailPlatformId == platformId) resetToList()
-        }
-    }
-
-    fun requestChangeDirectory(platformId: String) {
-        _scratch.update {
-            it.copy(detailPlatformId = platformId, awaitingDirectoryPick = DirectoryPickPurpose.CHANGE)
         }
     }
 
@@ -557,15 +594,14 @@ class LibraryManagerViewModel @Inject constructor(
             // Read+write: the windows library auto-creates <root>/windows and its import/
             // drop-folder; older read-only roots degrade to find-only (WindowsLibrarySetup).
             romRootRepository.persist(uri, writable = true)
+            // The roots flow collector picks up the change and refreshes the rows.
             romRootRepository.add(uri.toString())
-            refreshRomRoots()
         }
     }
 
     fun removeRomRoot(treeUri: String) {
         viewModelScope.launch {
             romRootRepository.remove(treeUri)
-            refreshRomRoots()
         }
     }
 
@@ -632,7 +668,7 @@ class LibraryManagerViewModel @Inject constructor(
         val pkg = row.packageName ?: return
         val intent = PcLauncherAdapters.forType(row.type, context.packageManager)?.buildLaunchIntent(pkg, id, source)
         if (intent == null) {
-            _scratch.update { it.copy(message = "Enter a valid game ID (a positive number).") }
+            _scratch.update { it.copy(message = INVALID_GAME_ID_MESSAGE) }
             return
         }
         runCatching { context.startActivity(intent) }.onFailure { e ->
@@ -643,16 +679,24 @@ class LibraryManagerViewModel @Inject constructor(
         }
     }
 
-    /** Adds a PC game by id: builds the launch intent, stores it, and files it in the Windows card. */
+    /**
+     * Adds a PC game by id: builds the launch intent, stores it, and files it in the Windows card.
+     * The name is required — launchers keep their local libraries private, so PFP cannot resolve
+     * a title from the id; the user copies the id from the game's page where its name is visible.
+     */
     fun addPcGameById(row: PcLauncherRow, id: String, title: String?, source: String?) {
         val pkg = row.packageName ?: return
+        val displayName = title?.trim().orEmpty()
+        if (displayName.isBlank()) {
+            _scratch.update { it.copy(message = "Enter the game's name — it's shown next to the ID in ${row.name}.") }
+            return
+        }
         val intent = PcLauncherAdapters.forType(row.type, context.packageManager)?.buildLaunchIntent(pkg, id, source)
         if (intent == null) {
-            _scratch.update { it.copy(message = "Enter a valid game ID (a positive number).") }
+            _scratch.update { it.copy(message = INVALID_GAME_ID_MESSAGE) }
             return
         }
         val intentUri = intent.toUri(Intent.URI_INTENT_SCHEME)
-        val displayName = title?.trim()?.takeIf { it.isNotBlank() } ?: "${row.name} game $id"
         viewModelScope.launch {
             runCatching {
                 if (gameRepository.getByIntentUri(intentUri) == null &&
@@ -960,24 +1004,4 @@ class LibraryManagerViewModel @Inject constructor(
         return complete
     }
 
-    // ── SAF helpers ────────────────────────────────────────────────────────────────
-
-    private fun persistReadPermission(uri: Uri) {
-        runCatching {
-            context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-    }
-
-    private fun Uri.toRealPath(): String? = try {
-        val docId = DocumentsContract.getTreeDocumentId(this)
-        val parts = docId.split(":")
-        when {
-            parts.size < 2        -> null
-            parts[0] == "primary" -> "/storage/emulated/0/${parts[1]}"
-            else                  -> "/storage/${parts[0]}/${parts[1]}"   // removable SD card
-        }
-    } catch (e: Exception) {
-        Timber.w(e, "Could not extract real path from $this")
-        null
-    }
 }

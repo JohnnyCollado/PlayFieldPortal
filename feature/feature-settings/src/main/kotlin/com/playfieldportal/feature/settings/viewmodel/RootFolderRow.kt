@@ -10,6 +10,9 @@ data class RootFolderRow(
     val treeUri: String,
     val name: String,
     val linked: Boolean,
+    // Comma-joined names of the consoles homed under this root (ROM roots only; null = none
+    // known, or a section that doesn't track consoles, e.g. the media roots).
+    val consoles: String? = null,
 )
 
 /** Human-readable label for a root tree URI: its raw path when derivable, else the URI tail. */

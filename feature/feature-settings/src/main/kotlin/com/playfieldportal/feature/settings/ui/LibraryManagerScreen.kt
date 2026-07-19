@@ -50,18 +50,7 @@ fun LibraryManagerScreen(
         if (startInImportPc) viewModel.openImportPcGames()
     }
 
-    // Folder picker — drives both Add Console and Change Directory.
-    val dirPicker = rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenDocumentTree()
-    ) { uri ->
-        if (uri != null) viewModel.onDirectoryPicked(uri) else viewModel.onDirectoryPickCancelled()
-    }
-
-    LaunchedEffect(state.awaitingDirectoryPick) {
-        if (state.awaitingDirectoryPick != null) dirPicker.launch(null)
-    }
-
-    // Separate picker for ES-DE folder setup: creates the system-folder structure under the
+    // Picker for ES-DE folder setup: creates the system-folder structure under the
     // chosen folder (which also becomes the ROM Root).
     val setupPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
@@ -173,7 +162,7 @@ private fun LibraryListContent(
 
             SettingsRow(
                 label    = "Add Console",
-                sublabel = "Pick a platform, choose its ROM folder, assign an emulator",
+                sublabel = "Pick a platform — its games live in the matching folder under your ROM Root",
                 focusKey = ADD_CONSOLE_FOCUS_KEY,
                 onClick  = { vm.startAddConsole() },
             )
@@ -332,7 +321,6 @@ private fun CardDetailContent(
                     value    = card.romDirectory?.substringAfterLast('/') ?: "Not set",
                     sublabel = card.romDirectory
                         ?: "Add a ROM Root — PFP creates and uses <root>/windows automatically",
-                    onClick  = { vm.requestChangeDirectory(card.platformId) },
                 )
                 SettingsValueRow(label = "Games", value = card.gameCount.toString())
 
@@ -371,8 +359,8 @@ private fun CardDetailContent(
                 SettingsValueRow(
                     label    = "ROM Directory",
                     value    = card.romDirectory?.substringAfterLast('/') ?: "Not set",
-                    sublabel = card.romDirectory ?: "Choose the folder this console scans",
-                    onClick  = { vm.requestChangeDirectory(card.platformId) },
+                    sublabel = card.romDirectory
+                        ?: "Scans this console's folder under your ROM Root",
                 )
                 SettingsValueRow(
                     label   = "Emulator",
@@ -606,7 +594,9 @@ private fun AddPcGameDialog(
             Column {
                 adapter?.idPrompt?.let { Text(it, color = SettingsSubtext, fontSize = 12.sp) }
                 OutlinedTextField(value = id, onValueChange = { id = it }, label = { Text("Game ID") }, singleLine = true)
-                OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Title (optional)") }, singleLine = true)
+                // Required: launchers keep their libraries private, so the id can't be resolved
+                // to a name — the user copies both from the game's page in the launcher.
+                OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Game name") }, singleLine = true)
                 if (adapter != null && adapter.sources.isNotEmpty()) {
                     Text("Source", color = SettingsSubtext, fontSize = 12.sp)
                     Row {
@@ -623,7 +613,12 @@ private fun AddPcGameDialog(
                 }
             }
         },
-        confirmButton = { TextButton(onClick = { onAdd(id, title, source) }) { Text("Add") } },
+        confirmButton = {
+            TextButton(
+                onClick = { onAdd(id, title, source) },
+                enabled = id.isNotBlank() && title.isNotBlank(),
+            ) { Text("Add") }
+        },
         dismissButton = {
             Row {
                 TextButton(onClick = { onTest(id, source) }) { Text("Test Launch") }
