@@ -15,7 +15,7 @@ interface PcLauncherAdapter {
     val type: PcLauncherType
     /** Hint shown in the Add-by-ID dialog for where to find the id. */
     val idPrompt: String
-    /** The id must be a positive integer (text ids like `gog_…` are rejected). */
+    /** True when only positive integer ids are accepted (GameHub also takes `local_<uuid>`). */
     val requiresIntegerId: Boolean
     /** Optional game-source choices (e.g. GameNative's STEAM/EPIC/GOG/AMAZON); empty = none. */
     val sources: List<String>
@@ -25,34 +25,62 @@ interface PcLauncherAdapter {
 
 // XiaoJi GameHub family (BannerHub v6, GameHub Lite and forks). The action is variant-scoped
 // (`<pkg>.LAUNCH_GAME`) and the extras naming is shared, but the target component differs by
-// architecture generation (manifest-verified 2026-07-16, live-fired on both installed variants):
+// architecture generation (manifest-verified 2026-07-16, live-fired on both installed variants;
+// V5 id namespaces live-fired on Ludashi 5.1.7, 2026-07-18):
 //   V6: -n <pkg>/com.xiaoji.egggame.DeepLinkActivity (the documented Beacon/ES-DE recipe)
 //   V5: -n <pkg>/com.xj.landscape.launcher.ui.gamedetail.GameDetailActivity (exported)
 // with --es steamAppId|localGameId <id> --ez autoStartGame true either way.
+//
+// Two id namespaces exist and do not overlap:
+//   local_<uuid>  — manually added local EXEs (shown with a Copy button on the game's page);
+//                   launches via localGameId with the string passed through verbatim.
+//   numeric       — Steam-matched installs address by steamAppId; launcher-local integer ids
+//                   (Banner Tools → Show Game ID) address by localGameId. On V5 the wrong
+//                   namespace opens an empty "Get Game" stub, so numeric ids are sent as BOTH
+//                   extras — the launcher resolves whichever matches (steam wins, live-fired).
+//                   V6 keeps localGameId-only, its proven contract.
 private class GameHubFamilyAdapter(
     override val type: PcLauncherType,
     private val generationOf: (String) -> GameHubGeneration,
 ) : PcLauncherAdapter {
-    override val idPrompt = "Game ID — in the launcher: open the game → ⋮ → Banner Tools → Show Game ID"
-    override val requiresIntegerId = true
+    override val idPrompt =
+        "Game ID — on the game's page: tap Copy next to Local Game ID, or ⋮ → Banner Tools → Show Game ID"
+    override val requiresIntegerId = false
     override val sources = emptyList<String>()
 
     override fun buildLaunchIntent(packageName: String, gameId: String, source: String?): Intent? {
-        val id = gameId.trim().toIntOrNull()?.takeIf { it > 0 } ?: return null
-        val activity = when (generationOf(packageName)) {
+        val trimmed = gameId.trim()
+        val isLocalId = trimmed.startsWith(LOCAL_ID_PREFIX) && trimmed.length > LOCAL_ID_PREFIX.length
+        val numericId = trimmed.toIntOrNull()?.takeIf { it > 0 }
+        if (!isLocalId && numericId == null) return null
+        val generation = generationOf(packageName)
+        val activity = when (generation) {
             GameHubGeneration.V6 -> PcLauncherCatalog.V6_DEEP_LINK_ACTIVITY
             GameHubGeneration.V5 -> PcLauncherCatalog.V5_GAME_DETAIL_ACTIVITY
         }
         return Intent().apply {
             component = ComponentName(packageName, activity)
             action = "$packageName.LAUNCH_GAME"
-            // A Steam title (from a .steam export) launches by steamAppId; a launcher-local Game ID
-            // (add-by-ID, no source) launches by localGameId.
-            if (source == "STEAM") putExtra("steamAppId", id.toString())
-            else putExtra("localGameId", id.toString())
+            when {
+                // A manually added local game: the launcher's own string id, verbatim.
+                isLocalId -> putExtra("localGameId", trimmed)
+                // A Steam title (from a .steam export) launches by steamAppId.
+                source == "STEAM" -> putExtra("steamAppId", numericId.toString())
+                // Add-by-ID numeric on V5: namespace unknown, send both and let the launcher
+                // resolve the one that matches.
+                generation == GameHubGeneration.V5 -> {
+                    putExtra("steamAppId", numericId.toString())
+                    putExtra("localGameId", numericId.toString())
+                }
+                else -> putExtra("localGameId", numericId.toString())
+            }
             putExtra("autoStartGame", true)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
+    }
+
+    private companion object {
+        const val LOCAL_ID_PREFIX = "local_"
     }
 }
 

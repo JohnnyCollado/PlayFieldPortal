@@ -26,6 +26,8 @@ class PcLauncherAdapterTest {
         assertEquals("com.xiaoji.egggame.LAUNCH_GAME", intent.action)
         assertEquals(PcLauncherCatalog.V6_DEEP_LINK_ACTIVITY, intent.component?.className)
         assertEquals("1451090", intent.getStringExtra("localGameId"))
+        // V6 keeps its proven single-extra contract for numeric ids.
+        assertNull(intent.getStringExtra("steamAppId"))
         assertTrue(intent.getBooleanExtra("autoStartGame", false))
     }
 
@@ -47,6 +49,31 @@ class PcLauncherAdapterTest {
         assertNull(intent.getStringExtra("localGameId"))
     }
 
+    // Live-fired on Ludashi 5.1.7: a bare numeric id may be a Steam app id or a launcher-local
+    // int, and the wrong namespace opens an empty stub — so V5 sends both and the launcher
+    // resolves whichever matches.
+    @Test
+    fun `v5 numeric add-by-id sends both namespaces`() {
+        val intent = gameHubAdapter(GameHubGeneration.V5)
+            .buildLaunchIntent("com.ludashi.aibench", "993090", null)!!
+        assertEquals("993090", intent.getStringExtra("steamAppId"))
+        assertEquals("993090", intent.getStringExtra("localGameId"))
+    }
+
+    // Live-fired on Ludashi 5.1.7: manually added local EXEs carry a local_<uuid> string id
+    // (Copy button on the game's page) that launches via localGameId verbatim.
+    @Test
+    fun `local uuid ids pass through as localGameId on both generations`() {
+        val id = "local_0c81a609-d158-4b86-bc85-fc642c52c411"
+        for (generation in GameHubGeneration.entries) {
+            val intent = gameHubAdapter(generation)
+                .buildLaunchIntent("com.ludashi.aibench", " $id ", null)!!
+            assertEquals(id, intent.getStringExtra("localGameId"))
+            assertNull(intent.getStringExtra("steamAppId"))
+            assertTrue(intent.getBooleanExtra("autoStartGame", false))
+        }
+    }
+
     @Test
     fun `pm-less resolution assumes v6`() {
         val intent = PcLauncherAdapters.forType(PcLauncherType.BANNERHUB_V6)!!
@@ -55,10 +82,12 @@ class PcLauncherAdapterTest {
     }
 
     @Test
-    fun `non-numeric and non-positive ids are rejected`() {
+    fun `malformed ids are rejected`() {
         val adapter = PcLauncherAdapters.forType(PcLauncherType.GAMEHUB_LITE)!!
-        assertNull(adapter.buildLaunchIntent("com.xiaoji.egggame", "local_3d55fbbd", null))
+        assertNull(adapter.buildLaunchIntent("com.xiaoji.egggame", "gog_1207658930", null))
+        assertNull(adapter.buildLaunchIntent("com.xiaoji.egggame", "local_", null))
         assertNull(adapter.buildLaunchIntent("com.xiaoji.egggame", "-5", null))
+        assertNull(adapter.buildLaunchIntent("com.xiaoji.egggame", "0", null))
         assertNull(adapter.buildLaunchIntent("com.xiaoji.egggame", "", null))
     }
 
