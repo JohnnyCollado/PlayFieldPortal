@@ -11,6 +11,12 @@ All notable changes to Play Field Portal are documented here. This project follo
   unmatched game's reason still shows on its row in the Shiba Library's Untracked view.
 
 ### Fixed
+- **RetroAchievements syncing works in release builds.** The RA client's POJOs name a
+  Gson deserializer in `@JsonAdapter` annotations; it is only ever constructed
+  reflectively, so release minification stripped its constructor and marked it abstract,
+  making every sync's converter creation throw — while matching, whose types don't use
+  it, kept working. Root-caused with a desktop R8 reproduction of the exact stack and
+  fixed with a keep for the client's core package.
 - **RetroAchievements works in release builds.** The official RA client deserializes its
   API responses with Gson reflection, and release minification renamed those model
   classes' fields — every RA call threw and auto-match reported "Couldn't load the

@@ -49,7 +49,8 @@ class RaRemoteDataSource @Inject constructor(
         val resp = runCatching { session.api.getGameInfoAndUserProgress(session.username, id) }
             .getOrElse { e ->
                 if (e is kotlinx.coroutines.CancellationException) throw e
-                Timber.i("RA game sync threw for %s: %s", gameId, e.toString())
+                // Full throwable: the cause chain names the real failure (redacted on write).
+                Timber.i(e, "RA game sync threw for %s", gameId)
                 return ProviderSyncResult.Failed("network error")
             }
 

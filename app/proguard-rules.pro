@@ -47,3 +47,11 @@
 -keep class org.retroachivements.api.data.** { *; }
 -keep class com.haroldadmin.cnradapter.** { *; }
 -keepattributes Signature, EnclosingMethod
+# api.core holds Gson plumbing the POJOs reference REFLECTIVELY: BooleanJsonDeserializer is
+# named in @JsonAdapter field annotations and instantiated by Gson's ConstructorConstructor.
+# R8 full mode sees no direct construction, strips its constructor and marks it abstract, and
+# adapter creation for any type using it (e.g. GetGameInfoAndUserProgress.Response.isFinal)
+# throws "Abstract class can't be instantiated" -> Retrofit's "Unable to create converter".
+# GetGameList's types don't use it, which is why matching worked while every sync failed.
+# Root-caused via a desktop R8 repro (same rules, same jars) and its retrace mapping.
+-keep class org.retroachivements.api.core.** { *; }
