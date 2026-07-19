@@ -11,6 +11,13 @@ All notable changes to Play Field Portal are documented here. This project follo
   unmatched game's reason still shows on its row in the Shiba Library's Untracked view.
 
 ### Fixed
+- **RetroAchievements works in release builds.** The official RA client deserializes its
+  API responses with Gson reflection, and release minification renamed those model
+  classes' fields — every RA call threw and auto-match reported "Couldn't load the
+  RetroAchievements game list" (debug builds were unaffected, which is why it never
+  reproduced in development). Keep rules now cover the RA client's models and its
+  network adapter. Confirmed from a device log: the minified exception decoded to
+  Gson's JsonIOException via the release build's R8 mapping.
 - **Cue/bin disc games can now hash through SAF.** A `.cue` sheet opened via a content
   URI (how the whole SAF-first library loads) previously could not reach its sibling
   `.bin`, so every cue/bin PSX, Saturn, and Sega CD game silently fell to "Unsupported

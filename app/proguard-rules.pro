@@ -37,3 +37,13 @@
 -keep public class androidx.compose.ui.platform.AndroidCompositionLocals_androidKt {
     public static androidx.compose.runtime.ProvidableCompositionLocal getLocalLifecycleOwner();
 }
+
+# RetroAchievements api-kotlin deserializes its response POJOs with GSON REFLECTION, and the
+# JitPack build ships no consumer rules. Without these keeps, R8 renames/strips the model
+# fields and constructors, Gson throws JsonIOException on every RA response, and release
+# builds report "Couldn't load the RetroAchievements game list" (debug builds are unaffected
+# because nothing is renamed). The NetworkResponseAdapter reflects over generic response
+# types, so it needs its classes and the Signature attribute intact too.
+-keep class org.retroachivements.api.data.** { *; }
+-keep class com.haroldadmin.cnradapter.** { *; }
+-keepattributes Signature, EnclosingMethod

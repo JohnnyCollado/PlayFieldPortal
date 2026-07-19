@@ -125,8 +125,9 @@ class RaRemoteDataSource @Inject constructor(
             )
         }.getOrElse { e ->
             if (e is kotlinx.coroutines.CancellationException) throw e
-            // INFO so the failure class (e.g. SocketTimeoutException) reaches the release log file.
-            Timber.i("RA hash list fetch threw for console %d: %s", consoleId, e.javaClass.simpleName)
+            // INFO so the failure (class + message — the message survives R8 renaming) reaches
+            // the release log file.
+            Timber.i("RA hash list fetch threw for console %d: %s", consoleId, e.toString())
             return null
         }
 
