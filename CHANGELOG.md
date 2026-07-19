@@ -137,6 +137,14 @@ All notable changes to Play Field Portal are documented here. This project follo
 - **Shiba screens follow the controller correctly** — the Game Detail coin strip frames
   itself when focused, the coins screen's focus order matches its layout, and the
   Player Status page scrolls from the rarest card.
+- **Refresh on Game Detail no longer wipes the whole library's artwork.** The Refresh
+  action called the repository's `clearCache()` after its single-game scrape — a call
+  whose meaning had since grown into the full "Clear All Artwork" reset (stored files,
+  artwork records, and every game's art references). Refresh now evicts only that game's
+  image URIs from the display cache, which is all it ever needed; the destructive reset
+  remains exclusively behind Settings ▸ Artwork ▸ Clear All Artwork. Artwork files in a
+  linked portable folder were never deleted by the bug — Scan & Relink Library restores
+  them; internally stored art must be re-scraped.
 
 ### Security
 - **Photo thumbnails moved to internal storage.** The thumbnail cache lived in app

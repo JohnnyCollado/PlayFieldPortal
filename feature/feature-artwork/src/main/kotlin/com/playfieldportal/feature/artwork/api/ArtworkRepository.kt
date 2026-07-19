@@ -94,6 +94,19 @@ class ArtworkRepository @Inject constructor(
     suspend fun clearSsMediaCache() = ssMediaCacheDao.clearAll()
 
     /**
+     * Evicts just [uris] from Coil's memory and disk caches. Scraped files reuse stable
+     * filenames, so a re-scraped image must be evicted or the path-keyed cache keeps showing
+     * the old bytes. Nothing on disk or in the DB is touched — this is display-cache only.
+     */
+    fun evictFromImageCache(uris: Collection<String>) {
+        val loader = context.imageLoader
+        uris.forEach { uri ->
+            loader.memoryCache?.remove(coil.memory.MemoryCache.Key(uri))
+            loader.diskCache?.remove(uri)
+        }
+    }
+
+    /**
      * App-side artwork footprint in bytes: Coil's disk cache + the internal artwork store.
      * Files in the user's portable library are the user's own and are never counted.
      */

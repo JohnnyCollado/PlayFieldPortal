@@ -1039,8 +1039,11 @@ class GameDetailViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isFetchingArtwork = true, artworkMessage = null) }
             val result = artworkRepository.fetchArtworkForGame(game.id, game.title)
-            artworkRepository.clearCache()
             val updated = gameRepository.getById(game.id)
+            // Re-scraped files reuse stable names, so evict only THIS game's refs (old and new)
+            // from the image cache. Never clearCache() here — that is the library-wide reset
+            // behind Settings > Artwork > Clear All Artwork.
+            artworkRepository.evictFromImageCache((artRefsOf(game) + artRefsOf(updated)).toSet())
             _uiState.update {
                 it.copy(
                     game              = updated ?: it.game,
@@ -1061,4 +1064,10 @@ class GameDetailViewModel @Inject constructor(
 
     private fun mediaOf(game: Game?): List<String> =
         listOfNotNull(game?.heroUri, game?.artworkUri, game?.logoUri).distinct()
+
+    // Every artwork column a scrape can rewrite — the eviction set for a single-game refresh.
+    private fun artRefsOf(game: Game?): List<String> = listOfNotNull(
+        game?.artworkUri, game?.heroUri, game?.logoUri, game?.iconUri,
+        game?.boxArtUri, game?.physicalMediaUri, game?.box3dUri,
+    )
 }

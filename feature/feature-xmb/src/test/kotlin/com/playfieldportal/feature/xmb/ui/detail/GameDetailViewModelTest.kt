@@ -515,7 +515,7 @@ class GameDetailViewModelTest {
     }
 
     @Test
-    fun `fetchArtwork clears artwork cache after scrape completes`() = runTest {
+    fun `fetchArtwork evicts only this game's refs and never wipes the library`() = runTest {
         coEvery { artworkRepository.fetchArtworkForGame(any(), any()) } returns
             ArtworkFetchResult(gameId = 1L, title = "Crash Bandicoot", success = true)
 
@@ -524,8 +524,12 @@ class GameDetailViewModelTest {
         viewModel.fetchArtwork()
         testDispatcher.scheduler.advanceUntilIdle()
 
-        // The scraper overwrites the fixed-path card file; Coil must re-read from disk.
-        coVerify { artworkRepository.clearCache() }
+        // The scraper overwrites fixed-path files, so this game's refs must be evicted from
+        // the image cache — but ONLY evicted. clearCache() is the library-wide destructive
+        // reset (deletes stored files and every game's artwork refs); calling it here was the
+        // bug that wiped all artwork on refresh.
+        verify { artworkRepository.evictFromImageCache(any()) }
+        coVerify(exactly = 0) { artworkRepository.clearCache() }
 
         viewModel.uiState.test {
             val state = awaitItem()
