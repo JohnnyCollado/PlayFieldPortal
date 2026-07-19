@@ -101,12 +101,17 @@ class RaRemoteDataSource @Inject constructor(
     /**
      * Every registered hash on [consoleId] mapped to its RA game id (lowercased). RA identifies
      * games solely by content hash, so this is the lookup table the hash matcher joins against.
-     * `f=1` limits to games with achievements; `h=1` includes the hashes. Empty on any failure.
+     * `f=1` limits to games with achievements; `h=1` includes the hashes.
+     *
+     * Returns null when the list COULD NOT be fetched (no credentials, network or server error)
+     * so callers can tell "couldn't load" apart from "this console genuinely has no hashes" —
+     * a failure returned as an empty map used to get cached and permanently mask every later
+     * lookup as "hash isn't registered".
      *
      * Uncached by design — the per-console caching lives in [RaHashResolver].
      */
-    suspend fun hashMap(consoleId: Int): Map<String, String> {
-        val session = clientFactory.session() ?: return emptyMap()
+    suspend fun hashMap(consoleId: Int): Map<String, String>? {
+        val session = clientFactory.session() ?: return null
         rate.await()
         val resp = runCatching {
             session.api.getGameList(
@@ -116,13 +121,13 @@ class RaRemoteDataSource @Inject constructor(
             )
         }.getOrElse { e ->
             if (e is kotlinx.coroutines.CancellationException) throw e
-            return emptyMap()
+            return null
         }
 
         return when (resp) {
             is NetworkResponse.Success ->
                 resp.body.flatMap { game -> game.hashes.map { it.lowercase() to game.id.toString() } }.toMap()
-            else -> emptyMap()
+            else -> null
         }
     }
 }

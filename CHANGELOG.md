@@ -5,6 +5,14 @@ All notable changes to Play Field Portal are documented here. This project follo
 
 ## [Unreleased]
 
+### Fixed
+- **RetroAchievements auto-matching no longer fails silently.** A failed fetch of a
+  console's registered-hash list (offline, server error, or RetroAchievements not yet
+  connected) came back as an empty list and was cached for the whole app session — every
+  game on that console then reported "ROM hash isn't registered" no matter how many times
+  Auto-Match ran. A failed fetch is now never cached (the next run retries) and is
+  reported as its own reason: check your connection and RetroAchievements credentials.
+
 ### Added
 - **Hide games from All Games.** A game's context menu inside the All Games card now
   offers "Hide from All Games" — the game disappears from the aggregate view but stays

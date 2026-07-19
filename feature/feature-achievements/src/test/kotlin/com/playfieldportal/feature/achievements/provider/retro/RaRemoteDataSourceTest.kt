@@ -25,8 +25,10 @@ class RaRemoteDataSourceTest {
     }
 
     @Test
-    fun `hashMap returns empty when RA is not connected`() = runTest {
+    fun `hashMap returns null (not an empty map) when RA is not connected`() = runTest {
+        // Null = "couldn't fetch" — an empty map here used to get cached by RaHashResolver and
+        // permanently report every hash on the console as unregistered.
         coEvery { factory.session() } returns null
-        assertEquals(emptyMap<String, String>(), dataSource.hashMap(7))
+        assertEquals(null, dataSource.hashMap(7))
     }
 }

@@ -7,6 +7,7 @@ import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.feature.achievements.AchievementController
+import com.playfieldportal.feature.achievements.provider.retro.RaHashLookup
 import com.playfieldportal.feature.achievements.provider.retro.RaHashResolver
 import com.playfieldportal.feature.achievements.provider.steam.SteamShortcut
 import kotlinx.coroutines.flow.first
@@ -161,11 +162,21 @@ class AchievementAutoMatcher @Inject constructor(
         if (attempt is HashAttempt.Hashed) {
             Timber.d("auto-match hash [%s] %s = %s", game.platformId, game.displayTitle, attempt.hash)
         }
-        val raGameId = (attempt as? HashAttempt.Hashed)?.let { raHashResolver.gameIdForHash(consoleId, it.hash) }
-            ?: return Outcome.Unmatched(reasonFor(attempt))
+        if (attempt !is HashAttempt.Hashed) return Outcome.Unmatched(reasonFor(attempt))
 
-        repository.linkManually(game.id, AchievementProvider.RETRO_ACHIEVEMENTS, raGameId)
-        return Outcome.Matched
+        return when (val lookup = raHashResolver.lookup(consoleId, attempt.hash)) {
+            is RaHashLookup.Found -> {
+                repository.linkManually(game.id, AchievementProvider.RETRO_ACHIEVEMENTS, lookup.gameId)
+                Outcome.Matched
+            }
+            RaHashLookup.NotRegistered ->
+                Outcome.Unmatched("ROM hash isn't registered on RetroAchievements")
+            RaHashLookup.Unavailable ->
+                Outcome.Unmatched(
+                    "Couldn't load the RetroAchievements game list — check your connection and " +
+                        "your RetroAchievements credentials in Settings, then run Auto-Match again",
+                )
+        }
     }
 
     // Windows games are folder-first (docs/windows-library-refactor-plan.md section 5): an

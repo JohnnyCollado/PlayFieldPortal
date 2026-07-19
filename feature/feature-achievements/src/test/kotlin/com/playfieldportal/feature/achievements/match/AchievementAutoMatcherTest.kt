@@ -56,7 +56,8 @@ class AchievementAutoMatcherTest {
         val g = game(1, "snes")
         stubGames(g)
         coEvery { romReader.read(g) } returns byteArrayOf(1, 2, 3, 4)
-        coEvery { raHashResolver.gameIdForHash(3, any()) } returns "999"
+        coEvery { raHashResolver.lookup(3, any()) } returns
+            com.playfieldportal.feature.achievements.provider.retro.RaHashLookup.Found("999")
 
         val report = matcher.matchUnlinked()
 
@@ -70,13 +71,29 @@ class AchievementAutoMatcherTest {
         val g = game(1, "gba")
         stubGames(g)
         coEvery { romReader.read(g) } returns byteArrayOf(9, 9, 9)
-        coEvery { raHashResolver.gameIdForHash(5, any()) } returns null
+        coEvery { raHashResolver.lookup(5, any()) } returns
+            com.playfieldportal.feature.achievements.provider.retro.RaHashLookup.NotRegistered
 
         val report = matcher.matchUnlinked()
 
         assertEquals(0, report.matched)
         assertEquals(1, report.unmatched.size)
         assertEquals("ROM hash isn't registered on RetroAchievements", report.unmatched.first().reason)
+    }
+
+    @Test
+    fun `a failed hash-list fetch is reported as unavailable, not as an unregistered hash`() = runTest {
+        val g = game(1, "gba")
+        stubGames(g)
+        coEvery { romReader.read(g) } returns byteArrayOf(9, 9, 9)
+        coEvery { raHashResolver.lookup(5, any()) } returns
+            com.playfieldportal.feature.achievements.provider.retro.RaHashLookup.Unavailable
+
+        val report = matcher.matchUnlinked()
+
+        assertEquals(0, report.matched)
+        assertTrue(report.unmatched.first().reason.startsWith("Couldn't load the RetroAchievements game list"))
+        coVerify(exactly = 0) { repository.linkManually(any(), any(), any()) }
     }
 
     @Test
