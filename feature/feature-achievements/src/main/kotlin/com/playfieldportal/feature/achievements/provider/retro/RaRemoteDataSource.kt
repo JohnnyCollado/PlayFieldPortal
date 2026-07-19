@@ -49,6 +49,7 @@ class RaRemoteDataSource @Inject constructor(
         val resp = runCatching { session.api.getGameInfoAndUserProgress(session.username, id) }
             .getOrElse { e ->
                 if (e is kotlinx.coroutines.CancellationException) throw e
+                Timber.i("RA game sync threw for %s: %s", gameId, e.toString())
                 return ProviderSyncResult.Failed("network error")
             }
 
@@ -56,10 +57,19 @@ class RaRemoteDataSource @Inject constructor(
             is NetworkResponse.Success -> RaCoinMapper.map(resp.body, gameId)
             is NetworkResponse.ServerError -> when (resp.code) {
                 401, 403 -> ProviderSyncResult.MissingCredentials
-                else -> ProviderSyncResult.Failed("RetroAchievements returned ${resp.code ?: "an error"}")
+                else -> {
+                    Timber.i("RA game sync failed for %s: HTTP %s", gameId, resp.code ?: "?")
+                    ProviderSyncResult.Failed("RetroAchievements returned ${resp.code ?: "an error"}")
+                }
             }
-            is NetworkResponse.NetworkError -> ProviderSyncResult.Failed("network error")
-            is NetworkResponse.UnknownError -> ProviderSyncResult.Failed("unexpected error")
+            is NetworkResponse.NetworkError -> {
+                Timber.i("RA game sync failed for %s: %s", gameId, resp.error.toString())
+                ProviderSyncResult.Failed("network error")
+            }
+            is NetworkResponse.UnknownError -> {
+                Timber.i(resp.error, "RA game sync failed for %s", gameId)
+                ProviderSyncResult.Failed("unexpected error")
+            }
         }
     }
 

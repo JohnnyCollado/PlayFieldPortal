@@ -138,7 +138,12 @@ class AchievementRepository @Inject constructor(
         title: String,
     ): ProviderSyncResult {
         val result = remoteSources.forProvider(provider).fetch(providerGameId)
-        if (result !is ProviderSyncResult.Success) return result
+        if (result !is ProviderSyncResult.Success) {
+            // INFO so a field log (Settings > Logs) names every non-success sync outcome; the
+            // result's reason string survives release minification.
+            Timber.i("Sync %s/%s (%s): %s", provider.name, providerGameId, title, result)
+            return result
+        }
 
         val now = System.currentTimeMillis()
         val resolvedId = result.providerGameId
