@@ -112,12 +112,14 @@ private fun reseedFocus(
 
 // ── Colors ────────────────────────────────────────────────────────────────────
 
+// Sourced from the shared palette so the settings rows and the Material dialogs (PFPTheme's
+// dark scheme) can never drift apart on a rebrand.
 val SettingsBg         = Color(0xE6000000)
-val SettingsAccent     = Color(0xFF4A90D9)
+val SettingsAccent     = com.playfieldportal.core.ui.theme.PfpPalette.Accent
 val SettingsText       = Color.White
-val SettingsSubtext    = Color(0xFFAAAAAA)
-val SettingsDivider    = Color(0xFF2A2A2A)
-val SettingsSelectedBg = Color(0xFF4A90D9).copy(alpha = 0.14f)
+val SettingsSubtext    = com.playfieldportal.core.ui.theme.PfpPalette.Subtext
+val SettingsDivider    = com.playfieldportal.core.ui.theme.PfpPalette.Divider
+val SettingsSelectedBg = com.playfieldportal.core.ui.theme.PfpPalette.Accent.copy(alpha = 0.14f)
 
 // ── Scaffold ──────────────────────────────────────────────────────────────────
 
@@ -392,34 +394,33 @@ fun SettingsRow(
     val reportRemoved = LocalSettingsReportRemoved.current
     var isFocused by remember { mutableStateOf(false) }
 
-    // Every clickable row owns a FocusRequester. Rows with a focusKey publish it so the scaffold
-    // can restore focus to them; and the first clickable row to compose claims the initial-focus
-    // slot so the menu always opens with a real, selectable row highlighted.
-    val focusRequester = if (onClick != null) remember { FocusRequester() } else null
-    if (focusKey != null && focusRequester != null) {
+    // EVERY row is controller-focusable — a non-focusable row is a dead zone the cursor can't
+    // reach or scroll to (read-only value rows, info footers). Only rows with a real [onClick]
+    // claim the initial-focus slot, so a screen still opens on its first ACTION, and only they
+    // draw the strong cursor fill; read-only rows get a softer frame and SELECT is a no-op.
+    val focusRequester = remember { FocusRequester() }
+    if (focusKey != null) {
         DisposableEffect(focusKey) {
             focusRegistry[focusKey] = focusRequester
             onDispose { if (focusRegistry[focusKey] === focusRequester) focusRegistry.remove(focusKey) }
         }
     }
-    if (focusRequester != null) {
-        DisposableEffect(Unit) {
-            registerFirst(focusRequester)
-            onDispose {
-                rowPositions?.remove(focusRequester)
-                // If this row held focus, the scaffold refocuses the nearest surviving row.
-                reportRemoved(focusRequester)
-            }
+    DisposableEffect(Unit) {
+        if (onClick != null) registerFirst(focusRequester)
+        onDispose {
+            rowPositions?.remove(focusRequester)
+            // If this row held focus, the scaffold refocuses the nearest surviving row.
+            reportRemoved(focusRequester)
         }
     }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
+            .focusRequester(focusRequester)
             // Report on-screen Y so the scaffold can navigate to this row explicitly.
             .then(
-                if (focusRequester != null && rowPositions != null) {
+                if (rowPositions != null) {
                     val positions = rowPositions
                     val req = focusRequester
                     Modifier.onGloballyPositioned { positions[req] = it.localToRoot(Offset.Zero).y }
@@ -431,16 +432,20 @@ fun SettingsRow(
                 onFocusChangedExternal?.invoke(state.isFocused)
                 if (state.isFocused) {
                     focusTracker(onClick)
-                    focusRequester?.let { reportFocused(it) }
+                    reportFocused(focusRequester)
                     Timber.d("Settings focus: row=\"$label\" clickable=${onClick != null}")
                 }
             }
-            // Theme-adaptive cursor fill (noticeably stronger than the old fixed 14% blue).
+            // Theme-adaptive cursor fill for actions; a faint frame for read-only rows so the
+            // cursor stays visible without promising a press does anything.
             .background(
-                if (isFocused && onClick != null) com.playfieldportal.core.ui.theme.menuCursorFill()
-                else Color.Transparent
+                when {
+                    isFocused && onClick != null -> com.playfieldportal.core.ui.theme.menuCursorFill()
+                    isFocused                    -> Color.White.copy(alpha = 0.06f)
+                    else                         -> Color.Transparent
+                }
             )
-            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
+            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier.focusable())
             .padding(horizontal = 48.dp, vertical = 14.dp),
         verticalAlignment     = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,

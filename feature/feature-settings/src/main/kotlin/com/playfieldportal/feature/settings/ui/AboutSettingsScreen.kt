@@ -1,19 +1,13 @@
 package com.playfieldportal.feature.settings.ui
 
-import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.dp
-import com.playfieldportal.core.domain.model.GamepadAction
-import kotlinx.coroutines.launch
 
 @Composable
 fun AboutSettingsScreen(
@@ -33,29 +27,18 @@ fun AboutSettingsScreen(
     // omits it — so the edition is a real, user-visible difference worth surfacing here.
     val isLite = remember(context) { context.packageName.contains(".lite") }
 
-    // Pure info screen — no interactive rows for the scaffold's focus navigation to walk, so
-    // Up/Down scroll the column directly instead.
-    val scrollState = rememberScrollState()
-    val scope = rememberCoroutineScope()
-    val stepPx = with(LocalDensity.current) { 120.dp.toPx() }
-
+    // Value rows are focusable, so the cursor walks the list and focus-driven scrolling brings
+    // each row into view — no manual scroll interception needed.
     SettingsScaffold(
         title    = "Settings",
         subtitle = "About",
         onBack   = onBack,
         modifier = modifier,
-        onInterceptAction = { action ->
-            when (action) {
-                GamepadAction.NAVIGATE_UP   -> { scope.launch { scrollState.animateScrollBy(-stepPx) }; true }
-                GamepadAction.NAVIGATE_DOWN -> { scope.launch { scrollState.animateScrollBy(stepPx) }; true }
-                else -> false
-            }
-        },
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(scrollState),
+                .verticalScroll(rememberScrollState()),
         ) {
             SettingsGroup("Play Field Portal")
 
