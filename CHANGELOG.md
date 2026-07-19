@@ -145,6 +145,11 @@ All notable changes to Play Field Portal are documented here. This project follo
   remains exclusively behind Settings ▸ Artwork ▸ Clear All Artwork. Artwork files in a
   linked portable folder were never deleted by the bug — Scan & Relink Library restores
   them; internally stored art must be re-scraped.
+- **Scan & Relink restores the full-screen background again.** The scraper reuses the
+  hero file as the XMB background whenever a hero exists, so most games have no
+  `fanart/` file of their own — after the refs were wiped, the relink walk found nothing
+  under BACKGROUND to refill from and the background stayed missing. Relink now mirrors
+  the scrape's rule: a hero file also repoints a missing or dead background column.
 
 ### Security
 - **Photo thumbnails moved to internal storage.** The thumbnail cache lived in app

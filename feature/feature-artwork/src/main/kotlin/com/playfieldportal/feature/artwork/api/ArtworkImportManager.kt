@@ -410,6 +410,18 @@ class ArtworkImportManager @Inject constructor(
                                 linkedIds.add(gameId)
                             }
                         }
+                        // The scrape reuses the hero file as the full-screen background
+                        // (artworkUri = heroPath) whenever a hero exists, so most games have no
+                        // fanart/ file of their own — after a wipe there is nothing under
+                        // BACKGROUND for the walk to refill artworkUri from. Mirror the scrape's
+                        // rule: a HERO file also repoints a missing/dead background column.
+                        if (kind == ArtworkKind.HERO && ArtworkKind.BACKGROUND.name !in lockedTypes(gameId)) {
+                            val bg = game.artworkUri
+                            if (!artworkStore.isValidRef(bg) || bg?.startsWith("http", ignoreCase = true) == true) {
+                                gameDao.updateArtwork(gameId, uri)
+                                linkedIds.add(gameId)
+                            }
+                        }
                         // Refresh the record but PRESERVE provenance — a scan must never launder
                         // a user-assigned/locked asset into a plain "relink" row.
                         val prior = priorRecords[gameId to kind.name]
