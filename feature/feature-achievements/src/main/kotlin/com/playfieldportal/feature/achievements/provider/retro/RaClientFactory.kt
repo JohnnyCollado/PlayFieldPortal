@@ -40,11 +40,27 @@ class RaClientFactory @Inject constructor(
         val credKey = user to key
         val api = mutex.withLock {
             if (cachedKey != credKey || cachedApi == null) {
-                cachedApi = RetroClient(RetroCredentials(user, key), debugging = false).api
+                cachedApi = buildApi(user, key)
                 cachedKey = credKey
             }
             cachedApi!!
         }
         return RaSession(api, user)
+    }
+
+    // api-kotlin builds its OkHttp client with the default 10 s timeouts and bakes it into a
+    // final Retrofit at construction. That is fine for the small per-game calls, but
+    // GetGameList?h=1 (the hash lists the auto-matcher joins against) runs to several MB on the
+    // big consoles and cannot finish in 10 s on a handheld's Wi-Fi — the fetch times out and
+    // every game reports as unmatchable. Rebuild the interface over the same client (keeping
+    // the library's auth interceptor) with timeouts sized for those responses.
+    private fun buildApi(user: String, key: String): RetroInterface {
+        val client = RetroClient(RetroCredentials(user, key), debugging = false)
+        val patched = client.httpClient.newBuilder()
+            .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(120, java.util.concurrent.TimeUnit.SECONDS)
+            .build()
+        return client.retroClient.newBuilder().client(patched).build()
+            .create(RetroInterface::class.java)
     }
 }

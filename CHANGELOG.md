@@ -6,6 +6,12 @@ All notable changes to Play Field Portal are documented here. This project follo
 ## [Unreleased]
 
 ### Fixed
+- **RetroAchievements hash lists no longer time out.** The RA client ships with 10-second
+  HTTP timeouts baked in; the registered-hash list Auto-Match joins against runs to
+  several megabytes on big consoles and could not download in time on device Wi-Fi, so
+  matching failed while regular per-game syncs (small responses) kept working. The
+  achievements client is rebuilt with timeouts sized for those responses, and hash-list
+  failures now log their cause to the Settings ▸ Logs file.
 - **RetroAchievements auto-matching no longer fails silently.** A failed fetch of a
   console's registered-hash list (offline, server error, or RetroAchievements not yet
   connected) came back as an empty list and was cached for the whole app session — every

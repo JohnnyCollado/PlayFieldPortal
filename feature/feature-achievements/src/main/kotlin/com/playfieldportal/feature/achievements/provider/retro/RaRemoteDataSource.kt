@@ -4,6 +4,7 @@ import com.haroldadmin.cnradapter.NetworkResponse
 import com.playfieldportal.feature.achievements.api.ProviderSyncResult
 import com.playfieldportal.feature.achievements.api.RateLimiter
 import org.retroachivements.api.data.pojo.user.GetUserCompletionProgress
+import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -111,7 +112,10 @@ class RaRemoteDataSource @Inject constructor(
      * Uncached by design — the per-console caching lives in [RaHashResolver].
      */
     suspend fun hashMap(consoleId: Int): Map<String, String>? {
-        val session = clientFactory.session() ?: return null
+        val session = clientFactory.session() ?: run {
+            Timber.i("RA hash list: no credentials — console %d skipped", consoleId)
+            return null
+        }
         rate.await()
         val resp = runCatching {
             session.api.getGameList(
@@ -121,13 +125,26 @@ class RaRemoteDataSource @Inject constructor(
             )
         }.getOrElse { e ->
             if (e is kotlinx.coroutines.CancellationException) throw e
+            // INFO so the failure class (e.g. SocketTimeoutException) reaches the release log file.
+            Timber.i("RA hash list fetch threw for console %d: %s", consoleId, e.javaClass.simpleName)
             return null
         }
 
         return when (resp) {
             is NetworkResponse.Success ->
                 resp.body.flatMap { game -> game.hashes.map { it.lowercase() to game.id.toString() } }.toMap()
-            else -> null
+            is NetworkResponse.ServerError -> {
+                Timber.i("RA hash list fetch failed for console %d: HTTP %s", consoleId, resp.code ?: "?")
+                null
+            }
+            is NetworkResponse.NetworkError -> {
+                Timber.i("RA hash list fetch failed for console %d: %s", consoleId, resp.error.javaClass.simpleName)
+                null
+            }
+            is NetworkResponse.UnknownError -> {
+                Timber.i(resp.error, "RA hash list fetch failed for console %d", consoleId)
+                null
+            }
         }
     }
 }
