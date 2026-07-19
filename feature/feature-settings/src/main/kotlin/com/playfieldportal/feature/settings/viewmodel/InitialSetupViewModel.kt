@@ -91,6 +91,7 @@ class InitialSetupViewModel @Inject constructor(
     private val steamApi: SteamRemoteDataSource,
     private val igdbApi: IgdbApi,
     private val screenScraperApi: ScreenScraperApi,
+    private val wizardMediaScanRunner: com.playfieldportal.feature.settings.media.WizardMediaScanRunner,
 ) : ViewModel() {
 
     // Wizard-local state (page + transient messages); everything else mirrors the stores.
@@ -195,6 +196,10 @@ class InitialSetupViewModel @Inject constructor(
         viewModelScope.launch {
             mediaRootRepository.persist(uri)
             mediaRootRepository.set(kind, uri.toString())
+            // The settings screens pair set-root with an immediate rescan — that scan is what
+            // creates the library row and clears the XMB's "+ Add" getting-started row. Mirror
+            // it here, on a scope that survives the wizard closing.
+            wizardMediaScanRunner.kickoff(kind)
         }
     }
 

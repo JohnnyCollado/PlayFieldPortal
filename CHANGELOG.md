@@ -11,6 +11,12 @@ All notable changes to Play Field Portal are documented here. This project follo
   unmatched game's reason still shows on its row in the Shiba Library's Untracked view.
 
 ### Fixed
+- **Media roots picked in the setup wizard now build their libraries.** The wizard
+  persisted the Music / Photo / Video root but never ran the first scan, so the XMB's
+  "+ Add" getting-started rows stayed up and the sections sat empty until the user found
+  Rescan in Settings. Picking a root in the wizard now kicks off the same
+  single-library sync and scan the settings screens run, on a scope that survives the
+  wizard closing, with the usual scan notifications.
 - **RetroAchievements syncing works in release builds.** The RA client's POJOs name a
   Gson deserializer in `@JsonAdapter` annotations; it is only ever constructed
   reflectively, so release minification stripped its constructor and marked it abstract,

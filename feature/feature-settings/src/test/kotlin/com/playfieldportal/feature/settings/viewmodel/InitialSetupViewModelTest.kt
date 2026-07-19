@@ -47,6 +47,7 @@ class InitialSetupViewModelTest {
     private val steamApi = mockk<SteamRemoteDataSource>()
     private val igdbApi = mockk<IgdbApi>()
     private val screenScraperApi = mockk<ScreenScraperApi>()
+    private val scanRunner = mockk<com.playfieldportal.feature.settings.media.WizardMediaScanRunner>(relaxed = true)
     private lateinit var vm: InitialSetupViewModel
 
     @Before fun setUp() {
@@ -62,7 +63,7 @@ class InitialSetupViewModelTest {
         every { screenScraperApi.isEnabled } returns true
         vm = InitialSetupViewModel(
             romRoots, mediaRoots, artworkImport, sgdbKeys, metadataKeys,
-            credentials, steamApi, igdbApi, screenScraperApi,
+            credentials, steamApi, igdbApi, screenScraperApi, scanRunner,
         )
     }
 
@@ -120,6 +121,10 @@ class InitialSetupViewModelTest {
 
         coVerify { mediaRoots.persist(uri) }
         coVerify { mediaRoots.set(MediaRootKind.MUSIC, "content://tree/primary%3AMusic") }
+        // The settings screens pair set-root with a rescan; the wizard must too, or the XMB's
+        // "+ Add" getting-started rows never clear and the section stays empty (the library
+        // row + lastScannedAt only exist after a scan).
+        io.mockk.verify { scanRunner.kickoff(MediaRootKind.MUSIC) }
     }
 
     @Test fun `artwork folder link failure surfaces a message`() = runTest(dispatcher) {
