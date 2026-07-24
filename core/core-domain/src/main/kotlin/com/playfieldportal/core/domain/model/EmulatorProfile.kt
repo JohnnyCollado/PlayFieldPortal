@@ -15,6 +15,10 @@ data class EmulatorProfile(
     val intentAction: String? = null,    // overrides ACTION_MAIN for COMPONENT intents
     val intentFlags: List<String> = emptyList(),             // "CLEAR_TASK" | "CLEAR_TOP" | "NEW_TASK"
     val intentCategory: String? = null,  // e.g. "android.intent.category.LEANBACK_LAUNCHER"
+    // COMPONENT intents only: also set the ROM content:// URI as the intent data. Needed by
+    // emulators whose EmulationActivity filter matches on action + data rather than extras
+    // (e.g. the yuzu lineage's android.nfc.action.TECH_DISCOVERED quirk).
+    val attachRomData: Boolean = false,
     val coreMap: Map<String, String> = emptyMap(),           // platformId → core path
     val mimeType: String? = null,
     val useFileUri: Boolean = true,

@@ -126,6 +126,7 @@ class EmulatorIntentResolver @Inject constructor(
                     setPackage(profile.packageName)
                 }
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                applyProfileFlags(profile)
             }
 
         // Most-specific first (preserves behaviour for emulators that already work), then relax:
@@ -155,7 +156,8 @@ class EmulatorIntentResolver @Inject constructor(
         val activity = profile.activityClass
             ?: error("Activity class required for COMPONENT intent - profile: ${profile.name}")
 
-        val needsRomUri = profile.intentExtras.values.any { it.contains(LaunchTemplate.ROM_URI) }
+        val needsRomUri = profile.attachRomData ||
+            profile.intentExtras.values.any { it.contains(LaunchTemplate.ROM_URI) }
         val romUri: Uri? = if (needsRomUri) {
             // SAF game → the granted content URI; legacy game → a FileProvider URI from its raw path.
             game.romUri?.takeIf { it.isNotBlank() }?.let { runCatching { Uri.parse(it) }.getOrNull() }
@@ -169,13 +171,9 @@ class EmulatorIntentResolver @Inject constructor(
         return Intent(action).apply {
             component = ComponentName(profile.packageName, activity)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            applyProfileFlags(profile)
 
-            profile.intentFlags.forEach { flag ->
-                when (flag) {
-                    "CLEAR_TASK" -> addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                    "CLEAR_TOP"  -> addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                }
-            }
+            if (profile.attachRomData && romUri != null) data = romUri
 
             profile.intentCategory?.let { addCategory(it) }
 
@@ -218,6 +216,15 @@ class EmulatorIntentResolver @Inject constructor(
             )
         }
         return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", romFile)
+    }
+
+    private fun Intent.applyProfileFlags(profile: EmulatorProfile) {
+        profile.intentFlags.forEach { flag ->
+            when (flag) {
+                "CLEAR_TASK" -> addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                "CLEAR_TOP"  -> addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            }
+        }
     }
 
     private fun Intent.grantReadPermissionIfNeeded(uri: Uri, title: String, packageName: String) {
