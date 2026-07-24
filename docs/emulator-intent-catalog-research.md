@@ -317,3 +317,94 @@ Fetched `app/src/main/AndroidManifest.xml` from RPCSX/rpcsx-ui-android master:
   and PlayStation 5 emulator for Linux"; press coverage and the pack ecosystem treat the
   Android UI as the PS3 (RPCS3-successor) app; the pack's own description says PS4. Do not
   assign `platformIds` until verified on-device.
+
+## F. On-device recipe validation (Stage 2, 2026-07-24)
+
+Device: Galaxy Tab S9 Wi-Fi (SM-X710), Adreno 740, Android 16 / API 36, arm64-v8a.
+Method: each catalog recipe checked against the **actually-installed** APK manifest
+(`aapt2 dump xmltree` on the on-device base.apk, plus `dumpsys package`). This validates
+recipe *resolution* — target activity exists, is exported, handles the expected
+action/VIEW — which is the #1 launch failure mode. It does **not** validate full boot
+(BIOS/keys/cores) or the SAF read path (that runs through PFP, not adb).
+
+### F.1 Result — every installed emulator's recipe resolves (0 activity-class bugs)
+
+| Console(s) | Emulator (pkg) | Activity | Verified |
+|---|---|---|---|
+| NDS | melonDS (`me.magnum.melonds`) | `…ui.emulator.EmulatorActivity` | exported=true, action `me.magnum.melonds.LAUNCH_ROM` |
+| 3DS | Azahar (`org.azahar_emu.azahar`) | `org.citra.citra_emu.activities.EmulationActivity` | exported, VIEW |
+| Switch | Citron (`org.citron.citron_emu`) | `…activities.EmulationActivity` | exported, VIEW + `TECH_DISCOVERED` |
+| Switch | Eden (`dev.eden.eden_emulator`) | `org.yuzu.yuzu_emu.activities.EmulationActivity` | exported, VIEW + `TECH_DISCOVERED` |
+| Dreamcast | Flycast (`com.flycast.emulator`) | `com.flycast.emulator.MainActivity` | exported, VIEW |
+| PS2 | NetherSX2 (`xyz.aethersx2.android`) | `xyz.aethersx2.android.EmulationActivity` | exported=true |
+| PS2 | ARMSX2 (`com.armsx2`) | `com.armsx2.MainActivity` | exported, VIEW |
+| Wii U | Cemu (`info.cemu.cemu`) | `info.cemu.cemu.emulation.EmulationActivity` | exported, VIEW |
+| Xbox | X1 BOX / xemu (`com.izzy2lost.x1box`) | `com.izzy2lost.x1box.LauncherActivity` | exported, VIEW |
+| Xbox | hakuX (`com.rfandango.haku_x`) | `com.rfandango.haku_x.LauncherActivity` | exported, VIEW |
+| All 2D systems | RetroArch (`com.retroarch`) | `com.retroarch.browser.retroactivity.RetroActivityFuture` | exported=true |
+
+- **ARMSX2 "Refresh" build (2.6.5)** ships *both* `com.armsx2.Main` and
+  `com.armsx2.MainActivity`, both exported VIEW handlers; the catalog's `.MainActivity`
+  resolves. Drawer launcher is a third activity, `.BootSplashActivity`. Which of `.Main`
+  vs `.MainActivity` boots straight to the game vs. the menu is a runtime nuance for
+  on-device testing, not a resolution failure.
+- Eden/Citron confirm Section A.2 / C.3: their `EmulationActivity` really does accept
+  `android.nfc.action.TECH_DISCOVERED` (the shipped `attachRomData` recipe is correct).
+
+### F.2 Raw-path vs SAF — the load-bearing distinction for testing
+
+adb dry-runs (`am start … --es <extra> <raw path>`) hit a shared-storage permission wall
+that **does not apply to PFP's own launches**:
+
+- adb passes a **raw filesystem path**. A sideloaded emulator reading it needs
+  `MANAGE_EXTERNAL_STORAGE` (all-files access), which is off by default and — on Android
+  13+ for sideloaded apps — is gated behind *restricted settings* (greyed toggle). Failure
+  is silent: `E MediaProvider: Permission to access file … denied` (DocumentFile path) or a
+  bare native `EACCES` with no log at all (native `open()` path, e.g. an ISO).
+- PFP passes a **SAF/FileProvider `content://` URI with `FLAG_GRANT_READ_URI_PERMISSION`**
+  (already implemented in `EmulatorIntentResolver`). This grants the emulator per-URI read
+  access to that one ROM — **no app-level storage permission required**. So the recipes
+  validated in F.1 should launch through PFP even where raw-path adb probes could not read
+  the file.
+- **Exception — folder/`game_dir` launches** (PS3 JB disc folders): these pass a raw
+  directory path, not a content URI, so they *do* require the target emulator to hold
+  all-files access. PFP cannot grant it. See F.3.
+
+### F.3 PS3 folder launch (aPS3e) — verified recipe + a real permission trap
+
+Tested with a decrypted JB disc folder (`PS3_DISC.SFB` + `PS3_GAME/USRDIR/EBOOT.BIN`) and
+a decrypted `.dec.iso`, on aPS3e 2.40 (`aenu.aps3e`).
+
+- Launch activity confirmed on-device: `aenu.aps3e/.EmulatorActivity`, handling both
+  `android.intent.action.VIEW` and `aenu.intent.action.APS3E`. The folder recipe
+  (`--es game_dir <raw dir>`) and ISO recipe (`--es iso_uri <…>`) both resolve and start
+  the emulation activity — recipe is correct.
+- Boot blocked by storage access, not the recipe: aPS3e reads the game by raw path, so it
+  needs all-files access. On this device the toggle was **greyed out** because the app was
+  sideloaded → Android *restricted settings*. Fix chain a user must walk:
+  1. App info → ⋮ menu → **Allow restricted settings** (un-greys the toggle).
+  2. Grant **All files access** (Settings → Apps → Special access → All files access).
+  3. Then the `game_dir`/`iso_uri` raw-path launch reads the game.
+- `appops set aenu.aps3e MANAGE_EXTERNAL_STORAGE allow` (with and without `--uid`) is
+  **silently blocked by Samsung/Knox** — the grant does not persist from the shell. Only
+  the UI toggle works. `am start -a android.settings.MANAGE_APP_ALL_FILES_ACCESS_PERMISSION`
+  deep-links to the toggle screen.
+- Firmware is a separate hard requirement (aPS3e `dev_flash` must be present) — a boot with
+  access but no firmware still fails.
+
+**Catalog/PFP implication:** a folder-launch (PS3 JB) recipe must (a) pass the raw dir in
+`game_dir` — distinct from the ISO `iso_uri` recipe already noted in Sections A/B — and
+(b) pre-check `MANAGE_EXTERNAL_STORAGE` on the target emulator, warn when missing, and
+deep-link the user through the restricted-settings unlock + all-files toggle. Without that,
+the only symptom is a silent denial / black screen. This is the strongest evidence yet that
+folder games need first-class handling separate from file/URI games.
+
+### F.4 Prerequisites that gate boot but not resolution
+
+- **RetroArch cores** live only in internal storage (`/data/user/0/com.retroarch/cores/`,
+  == `/data/data/com.retroarch/cores/` — matches the resolver's normalized path). The build
+  is not debuggable, so adb cannot place cores; they must be installed via the in-app Core
+  Downloader (or Install/Restore from the staged `Roms/downloads` zips). Until then, the
+  2D-console recipes resolve but will not boot.
+- **BIOS/keys/firmware** per console (Switch keys, Dreamcast/Sega CD/Neo Geo CD BIOS, PS3
+  firmware) — the BIOS-checker feature (Section E.3) is the intended mitigation.

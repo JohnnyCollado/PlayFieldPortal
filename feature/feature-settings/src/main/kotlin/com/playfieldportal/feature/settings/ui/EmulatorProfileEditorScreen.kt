@@ -12,9 +12,15 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.domain.model.IntentType
 import com.playfieldportal.feature.settings.viewmodel.EmulatorTemplate
 import com.playfieldportal.feature.settings.viewmodel.ProfileEditorState
@@ -52,6 +58,12 @@ fun EmulatorProfileEditorScreen(
     modifier: Modifier = Modifier,
 ) {
     val subtitle = if (editorState.isNew) "New Profile" else "Edit Profile"
+
+    // Custom-intent field guide (Advanced section). Shown while the ⓘ row is focused
+    // ("hovered" on a controller); pressing SELECT pins it open so it stays visible while
+    // the user edits the fields below.
+    var intentHelpPinned  by remember { mutableStateOf(false) }
+    var intentHelpFocused by remember { mutableStateOf(false) }
 
     SettingsScaffold(
         title    = "Emulators",
@@ -180,6 +192,20 @@ fun EmulatorProfileEditorScreen(
             // ── Advanced ──────────────────────────────────────────────────
             SettingsGroup("Advanced")
 
+            // Info affordance for the custom-intent fields: focusing it (controller "hover")
+            // reveals the guide; pressing SELECT pins it open so it stays while editing below.
+            SettingsRow(
+                label    = "How custom intents work",
+                sublabel = if (intentHelpPinned) "Press to hide the field guide"
+                           else "Hover or press to show the field guide",
+                leading  = { Text("ⓘ", color = EditorAccent, fontSize = 18.sp) },
+                onFocusChangedExternal = { intentHelpFocused = it },
+                onClick  = { intentHelpPinned = !intentHelpPinned },
+            )
+            if (intentHelpPinned || intentHelpFocused) {
+                CustomIntentHelp()
+            }
+
             EditorTextField(
                 label         = "Intent Action",
                 value         = editorState.intentActionText,
@@ -276,6 +302,60 @@ private fun EditorTextField(
         onValueChange = onValueChange,
         placeholder   = placeholder,
         singleLine    = singleLine,
+    )
+}
+
+// Inline field guide for the Advanced custom-intent inputs. Non-focusable text — the D-pad
+// cursor skips straight past it from the ⓘ row to the Intent Action field.
+@Composable
+private fun CustomIntentHelp() {
+    Column(modifier = Modifier.padding(start = 64.dp, end = 48.dp, top = 2.dp, bottom = 12.dp)) {
+        HelpSection("Launch Method")
+        HelpLine("ACTION_VIEW — ROM handed to the app as the intent's data URI (most emulators).")
+        HelpLine("COMPONENT — explicit activity + extras (RetroArch ROM/LIBRETRO, DuckStation bootPath).")
+        HelpLine("CUSTOM COMMAND — advanced am-style command string.")
+
+        HelpSection("Intent Action")
+        HelpLine("The action the emulator's activity expects. Blank = default (VIEW / MAIN).")
+        HelpLine("e.g. me.magnum.melonds.LAUNCH_ROM   or   android.nfc.action.TECH_DISCOVERED")
+
+        HelpSection("Intent Extras  (one key=value per line)")
+        HelpLine("Tokens are replaced at launch time:")
+        HelpLine("   {rom_uri} — content:// URI  (recommended; works with scoped storage)")
+        HelpLine("   {rom_path} — raw file path      {core_path}   {package}   {platform}")
+        HelpLine("A value of true or false is sent as a boolean extra.")
+        HelpLine("e.g.   bootPath={rom_uri}      resumeState=false")
+
+        HelpSection("Intent Flags")
+        HelpLine("Comma-separated:  CLEAR_TASK, CLEAR_TOP, NEW_TASK")
+
+        HelpSection("Intent Category")
+        HelpLine("e.g. android.intent.category.LEANBACK_LAUNCHER")
+
+        HelpSection("Tip")
+        HelpLine("Prefer {rom_uri} with \"Use SAF URI\" enabled — the emulator gets read access to")
+        HelpLine("that one ROM without needing All-files-access permission.")
+    }
+}
+
+@Composable
+private fun HelpSection(text: String) {
+    Text(
+        text       = text,
+        color      = EditorAccent,
+        fontSize   = 12.sp,
+        fontWeight = FontWeight.Bold,
+        modifier   = Modifier.padding(top = 8.dp, bottom = 2.dp),
+    )
+}
+
+@Composable
+private fun HelpLine(text: String) {
+    Text(
+        text     = text,
+        color    = EditorSubtext,
+        fontSize = 12.sp,
+        modifier = Modifier.padding(bottom = 1.dp),
     )
 }
 
