@@ -1,285 +1,13 @@
 [
   {
-    "id": "retroarch",
-    "name": "RetroArch",
-    "packageName": "com.retroarch",
-    "activityClass": "com.retroarch.browser.retroactivity.RetroActivityFuture",
-    "intentType": "COMPONENT",
-    "supportedPlatformIds": [
-      "nes","fam","snes","gb","gbc","gba","n64","psx","ps1","ps2","nds","ds",
-      "psp","saturn","genesis","megadrive","sms","mastersystem","gamegear",
-      "atarilynx","lynx","pcengine","pce","tgfx16","wonderswan","wonderswancolor",
-      "ws","wsc","virtualboy","vb","dreamcast","dc","naomi","arcade","neogeo",
-      "atari2600","atari7800","3ds","n3ds","gc","gamecube","wii","mame","msx",
-      "c64","amiga","ngp","ngpc","3do"
-    ],
-    "intentExtras": {
-      "ROM":      "{rom_path}",
-      "LIBRETRO": "{core_path}"
-    },
-    "coreMap": {
-      "nes":            "/data/data/com.retroarch/cores/fceumm_libretro_android.so",
-      "fam":            "/data/data/com.retroarch/cores/fceumm_libretro_android.so",
-      "snes":           "/data/data/com.retroarch/cores/snes9x_libretro_android.so",
-      "gb":             "/data/data/com.retroarch/cores/gambatte_libretro_android.so",
-      "gbc":            "/data/data/com.retroarch/cores/gambatte_libretro_android.so",
-      "gba":            "/data/data/com.retroarch/cores/mgba_libretro_android.so",
-      "n64":            "/data/data/com.retroarch/cores/mupen64plus_next_libretro_android.so",
-      "psx":            "/data/data/com.retroarch/cores/swanstation_libretro_android.so",
-      "ps1":            "/data/data/com.retroarch/cores/swanstation_libretro_android.so",
-      "ps2":            "/data/data/com.retroarch/cores/pcsx2_libretro_android.so",
-      "nds":            "/data/data/com.retroarch/cores/melonds_libretro_android.so",
-      "ds":             "/data/data/com.retroarch/cores/melonds_libretro_android.so",
-      "psp":            "/data/data/com.retroarch/cores/ppsspp_libretro_android.so",
-      "saturn":         "/data/data/com.retroarch/cores/kronos_libretro_android.so",
-      "genesis":        "/data/data/com.retroarch/cores/genesis_plus_gx_libretro_android.so",
-      "megadrive":      "/data/data/com.retroarch/cores/genesis_plus_gx_libretro_android.so",
-      "sms":            "/data/data/com.retroarch/cores/genesis_plus_gx_libretro_android.so",
-      "mastersystem":   "/data/data/com.retroarch/cores/genesis_plus_gx_libretro_android.so",
-      "gamegear":       "/data/data/com.retroarch/cores/genesis_plus_gx_libretro_android.so",
-      "atarilynx":      "/data/data/com.retroarch/cores/handy_libretro_android.so",
-      "lynx":           "/data/data/com.retroarch/cores/handy_libretro_android.so",
-      "pcengine":       "/data/data/com.retroarch/cores/mednafen_pce_fast_libretro_android.so",
-      "pce":            "/data/data/com.retroarch/cores/mednafen_pce_fast_libretro_android.so",
-      "tgfx16":         "/data/data/com.retroarch/cores/mednafen_pce_fast_libretro_android.so",
-      "wonderswan":     "/data/data/com.retroarch/cores/mednafen_wswan_libretro_android.so",
-      "wonderswancolor":"/data/data/com.retroarch/cores/mednafen_wswan_libretro_android.so",
-      "ws":             "/data/data/com.retroarch/cores/mednafen_wswan_libretro_android.so",
-      "wsc":            "/data/data/com.retroarch/cores/mednafen_wswan_libretro_android.so",
-      "virtualboy":     "/data/data/com.retroarch/cores/mednafen_vb_libretro_android.so",
-      "vb":             "/data/data/com.retroarch/cores/mednafen_vb_libretro_android.so",
-      "dreamcast":      "/data/data/com.retroarch/cores/flycast_libretro_android.so",
-      "dc":             "/data/data/com.retroarch/cores/flycast_libretro_android.so",
-      "naomi":          "/data/data/com.retroarch/cores/flycast_libretro_android.so",
-      "arcade":         "/data/data/com.retroarch/cores/fbneo_libretro_android.so",
-      "neogeo":         "/data/data/com.retroarch/cores/fbneo_libretro_android.so",
-      "atari2600":      "/data/data/com.retroarch/cores/stella_libretro_android.so",
-      "atari7800":      "/data/data/com.retroarch/cores/prosystem_libretro_android.so",
-      "3ds":            "/data/data/com.retroarch/cores/citra_libretro_android.so",
-      "n3ds":           "/data/data/com.retroarch/cores/citra_libretro_android.so",
-      "gc":             "/data/data/com.retroarch/cores/dolphin_libretro_android.so",
-      "gamecube":       "/data/data/com.retroarch/cores/dolphin_libretro_android.so",
-      "wii":            "/data/data/com.retroarch/cores/dolphin_libretro_android.so",
-      "mame":           "/data/data/com.retroarch/cores/mame_libretro_android.so",
-      "msx":            "/data/data/com.retroarch/cores/bluemsx_libretro_android.so",
-      "c64":            "/data/data/com.retroarch/cores/vice_x64_libretro_android.so",
-      "amiga":          "/data/data/com.retroarch/cores/puae_libretro_android.so",
-      "ngp":            "/data/data/com.retroarch/cores/mednafen_ngp_libretro_android.so",
-      "ngpc":           "/data/data/com.retroarch/cores/mednafen_ngp_libretro_android.so",
-      "3do":            "/data/data/com.retroarch/cores/opera_libretro_android.so"
-    }
-  },
-  {
-    "id": "retroarch_aarch64",
-    "name": "RetroArch (64-bit)",
-    "packageName": "com.retroarch.aarch64",
-    "activityClass": "com.retroarch.browser.retroactivity.RetroActivityFuture",
-    "intentType": "COMPONENT",
-    "supportedPlatformIds": [
-      "nes","fam","snes","gb","gbc","gba","n64","psx","ps1","ps2","nds","ds",
-      "psp","saturn","genesis","megadrive","sms","mastersystem","gamegear",
-      "atarilynx","lynx","pcengine","pce","tgfx16","wonderswan","wonderswancolor",
-      "ws","wsc","virtualboy","vb","dreamcast","dc","naomi","arcade","neogeo",
-      "atari2600","atari7800","3ds","n3ds","gc","gamecube","wii","mame","msx",
-      "c64","amiga","ngp","ngpc","3do"
-    ],
-    "intentExtras": {
-      "ROM":      "{rom_path}",
-      "LIBRETRO": "{core_path}"
-    },
-    "coreMap": {
-      "nes":            "/data/data/com.retroarch.aarch64/cores/fceumm_libretro_android.so",
-      "fam":            "/data/data/com.retroarch.aarch64/cores/fceumm_libretro_android.so",
-      "snes":           "/data/data/com.retroarch.aarch64/cores/snes9x_libretro_android.so",
-      "gb":             "/data/data/com.retroarch.aarch64/cores/gambatte_libretro_android.so",
-      "gbc":            "/data/data/com.retroarch.aarch64/cores/gambatte_libretro_android.so",
-      "gba":            "/data/data/com.retroarch.aarch64/cores/mgba_libretro_android.so",
-      "n64":            "/data/data/com.retroarch.aarch64/cores/mupen64plus_next_libretro_android.so",
-      "psx":            "/data/data/com.retroarch.aarch64/cores/swanstation_libretro_android.so",
-      "ps1":            "/data/data/com.retroarch.aarch64/cores/swanstation_libretro_android.so",
-      "ps2":            "/data/data/com.retroarch.aarch64/cores/pcsx2_libretro_android.so",
-      "nds":            "/data/data/com.retroarch.aarch64/cores/melonds_libretro_android.so",
-      "ds":             "/data/data/com.retroarch.aarch64/cores/melonds_libretro_android.so",
-      "psp":            "/data/data/com.retroarch.aarch64/cores/ppsspp_libretro_android.so",
-      "saturn":         "/data/data/com.retroarch.aarch64/cores/kronos_libretro_android.so",
-      "genesis":        "/data/data/com.retroarch.aarch64/cores/genesis_plus_gx_libretro_android.so",
-      "megadrive":      "/data/data/com.retroarch.aarch64/cores/genesis_plus_gx_libretro_android.so",
-      "sms":            "/data/data/com.retroarch.aarch64/cores/genesis_plus_gx_libretro_android.so",
-      "mastersystem":   "/data/data/com.retroarch.aarch64/cores/genesis_plus_gx_libretro_android.so",
-      "gamegear":       "/data/data/com.retroarch.aarch64/cores/genesis_plus_gx_libretro_android.so",
-      "atarilynx":      "/data/data/com.retroarch.aarch64/cores/handy_libretro_android.so",
-      "lynx":           "/data/data/com.retroarch.aarch64/cores/handy_libretro_android.so",
-      "pcengine":       "/data/data/com.retroarch.aarch64/cores/mednafen_pce_fast_libretro_android.so",
-      "pce":            "/data/data/com.retroarch.aarch64/cores/mednafen_pce_fast_libretro_android.so",
-      "tgfx16":         "/data/data/com.retroarch.aarch64/cores/mednafen_pce_fast_libretro_android.so",
-      "wonderswan":     "/data/data/com.retroarch.aarch64/cores/mednafen_wswan_libretro_android.so",
-      "wonderswancolor":"/data/data/com.retroarch.aarch64/cores/mednafen_wswan_libretro_android.so",
-      "ws":             "/data/data/com.retroarch.aarch64/cores/mednafen_wswan_libretro_android.so",
-      "wsc":            "/data/data/com.retroarch.aarch64/cores/mednafen_wswan_libretro_android.so",
-      "virtualboy":     "/data/data/com.retroarch.aarch64/cores/mednafen_vb_libretro_android.so",
-      "vb":             "/data/data/com.retroarch.aarch64/cores/mednafen_vb_libretro_android.so",
-      "dreamcast":      "/data/data/com.retroarch.aarch64/cores/flycast_libretro_android.so",
-      "dc":             "/data/data/com.retroarch.aarch64/cores/flycast_libretro_android.so",
-      "naomi":          "/data/data/com.retroarch.aarch64/cores/flycast_libretro_android.so",
-      "arcade":         "/data/data/com.retroarch.aarch64/cores/fbneo_libretro_android.so",
-      "neogeo":         "/data/data/com.retroarch.aarch64/cores/fbneo_libretro_android.so",
-      "atari2600":      "/data/data/com.retroarch.aarch64/cores/stella_libretro_android.so",
-      "atari7800":      "/data/data/com.retroarch.aarch64/cores/prosystem_libretro_android.so",
-      "3ds":            "/data/data/com.retroarch.aarch64/cores/citra_libretro_android.so",
-      "n3ds":           "/data/data/com.retroarch.aarch64/cores/citra_libretro_android.so",
-      "gc":             "/data/data/com.retroarch.aarch64/cores/dolphin_libretro_android.so",
-      "gamecube":       "/data/data/com.retroarch.aarch64/cores/dolphin_libretro_android.so",
-      "wii":            "/data/data/com.retroarch.aarch64/cores/dolphin_libretro_android.so",
-      "mame":           "/data/data/com.retroarch.aarch64/cores/mame_libretro_android.so",
-      "msx":            "/data/data/com.retroarch.aarch64/cores/bluemsx_libretro_android.so",
-      "c64":            "/data/data/com.retroarch.aarch64/cores/vice_x64_libretro_android.so",
-      "amiga":          "/data/data/com.retroarch.aarch64/cores/puae_libretro_android.so",
-      "ngp":            "/data/data/com.retroarch.aarch64/cores/mednafen_ngp_libretro_android.so",
-      "ngpc":           "/data/data/com.retroarch.aarch64/cores/mednafen_ngp_libretro_android.so",
-      "3do":            "/data/data/com.retroarch.aarch64/cores/opera_libretro_android.so"
-    },
-    "minVersionCode": 1170117
-  },
-  {
-    "id": "retroarch_ra32",
-    "name": "RetroArch (32-bit)",
-    "packageName": "com.retroarch.ra32",
-    "activityClass": "com.retroarch.browser.retroactivity.RetroActivityFuture",
-    "intentType": "COMPONENT",
-    "supportedPlatformIds": [
-      "nes","fam","snes","gb","gbc","gba","n64","psx","ps1","nds","ds",
-      "psp","saturn","genesis","megadrive","sms","mastersystem","gamegear",
-      "atarilynx","lynx","pcengine","pce","tgfx16","wonderswan","wonderswancolor",
-      "ws","wsc","virtualboy","vb","dreamcast","dc","arcade","neogeo",
-      "atari2600","atari7800","mame","msx","c64","ngp","ngpc"
-    ],
-    "intentExtras": {
-      "ROM":      "{rom_path}",
-      "LIBRETRO": "{core_path}"
-    },
-    "coreMap": {
-      "nes":            "/data/data/com.retroarch.ra32/cores/fceumm_libretro_android.so",
-      "fam":            "/data/data/com.retroarch.ra32/cores/fceumm_libretro_android.so",
-      "snes":           "/data/data/com.retroarch.ra32/cores/snes9x_libretro_android.so",
-      "gb":             "/data/data/com.retroarch.ra32/cores/gambatte_libretro_android.so",
-      "gbc":            "/data/data/com.retroarch.ra32/cores/gambatte_libretro_android.so",
-      "gba":            "/data/data/com.retroarch.ra32/cores/mgba_libretro_android.so",
-      "n64":            "/data/data/com.retroarch.ra32/cores/mupen64plus_next_libretro_android.so",
-      "psx":            "/data/data/com.retroarch.ra32/cores/pcsx_rearmed_libretro_android.so",
-      "ps1":            "/data/data/com.retroarch.ra32/cores/pcsx_rearmed_libretro_android.so",
-      "nds":            "/data/data/com.retroarch.ra32/cores/melonds_libretro_android.so",
-      "ds":             "/data/data/com.retroarch.ra32/cores/melonds_libretro_android.so",
-      "psp":            "/data/data/com.retroarch.ra32/cores/ppsspp_libretro_android.so",
-      "saturn":         "/data/data/com.retroarch.ra32/cores/kronos_libretro_android.so",
-      "genesis":        "/data/data/com.retroarch.ra32/cores/genesis_plus_gx_libretro_android.so",
-      "megadrive":      "/data/data/com.retroarch.ra32/cores/genesis_plus_gx_libretro_android.so",
-      "sms":            "/data/data/com.retroarch.ra32/cores/genesis_plus_gx_libretro_android.so",
-      "mastersystem":   "/data/data/com.retroarch.ra32/cores/genesis_plus_gx_libretro_android.so",
-      "gamegear":       "/data/data/com.retroarch.ra32/cores/genesis_plus_gx_libretro_android.so",
-      "atarilynx":      "/data/data/com.retroarch.ra32/cores/handy_libretro_android.so",
-      "lynx":           "/data/data/com.retroarch.ra32/cores/handy_libretro_android.so",
-      "pcengine":       "/data/data/com.retroarch.ra32/cores/mednafen_pce_fast_libretro_android.so",
-      "pce":            "/data/data/com.retroarch.ra32/cores/mednafen_pce_fast_libretro_android.so",
-      "tgfx16":         "/data/data/com.retroarch.ra32/cores/mednafen_pce_fast_libretro_android.so",
-      "wonderswan":     "/data/data/com.retroarch.ra32/cores/mednafen_wswan_libretro_android.so",
-      "wonderswancolor":"/data/data/com.retroarch.ra32/cores/mednafen_wswan_libretro_android.so",
-      "ws":             "/data/data/com.retroarch.ra32/cores/mednafen_wswan_libretro_android.so",
-      "wsc":            "/data/data/com.retroarch.ra32/cores/mednafen_wswan_libretro_android.so",
-      "virtualboy":     "/data/data/com.retroarch.ra32/cores/mednafen_vb_libretro_android.so",
-      "vb":             "/data/data/com.retroarch.ra32/cores/mednafen_vb_libretro_android.so",
-      "dreamcast":      "/data/data/com.retroarch.ra32/cores/flycast_libretro_android.so",
-      "dc":             "/data/data/com.retroarch.ra32/cores/flycast_libretro_android.so",
-      "arcade":         "/data/data/com.retroarch.ra32/cores/fbneo_libretro_android.so",
-      "neogeo":         "/data/data/com.retroarch.ra32/cores/fbneo_libretro_android.so",
-      "atari2600":      "/data/data/com.retroarch.ra32/cores/stella_libretro_android.so",
-      "atari7800":      "/data/data/com.retroarch.ra32/cores/prosystem_libretro_android.so",
-      "mame":           "/data/data/com.retroarch.ra32/cores/mame_libretro_android.so",
-      "msx":            "/data/data/com.retroarch.ra32/cores/bluemsx_libretro_android.so",
-      "c64":            "/data/data/com.retroarch.ra32/cores/vice_x64_libretro_android.so",
-      "ngp":            "/data/data/com.retroarch.ra32/cores/mednafen_ngp_libretro_android.so",
-      "ngpc":           "/data/data/com.retroarch.ra32/cores/mednafen_ngp_libretro_android.so"
-    },
-    "notes": "32-bit RetroArch — for devices without aarch64 support"
-  },
-  {
-    "id": "retroarch_ra64",
-    "name": "RetroArch (ra64)",
-    "packageName": "com.retroarch.ra64",
-    "activityClass": "com.retroarch.browser.retroactivity.RetroActivityFuture",
-    "intentType": "COMPONENT",
-    "supportedPlatformIds": [
-      "nes","fam","snes","gb","gbc","gba","n64","psx","ps1","ps2","nds","ds",
-      "psp","saturn","genesis","megadrive","sms","mastersystem","gamegear",
-      "atarilynx","lynx","pcengine","pce","tgfx16","wonderswan","wonderswancolor",
-      "ws","wsc","virtualboy","vb","dreamcast","dc","naomi","arcade","neogeo",
-      "atari2600","atari7800","3ds","n3ds","gc","gamecube","wii","mame","msx",
-      "c64","amiga","ngp","ngpc","3do"
-    ],
-    "intentExtras": {
-      "ROM":      "{rom_path}",
-      "LIBRETRO": "{core_path}"
-    },
-    "coreMap": {
-      "nes":            "/data/data/com.retroarch.ra64/cores/fceumm_libretro_android.so",
-      "fam":            "/data/data/com.retroarch.ra64/cores/fceumm_libretro_android.so",
-      "snes":           "/data/data/com.retroarch.ra64/cores/snes9x_libretro_android.so",
-      "gb":             "/data/data/com.retroarch.ra64/cores/gambatte_libretro_android.so",
-      "gbc":            "/data/data/com.retroarch.ra64/cores/gambatte_libretro_android.so",
-      "gba":            "/data/data/com.retroarch.ra64/cores/mgba_libretro_android.so",
-      "n64":            "/data/data/com.retroarch.ra64/cores/mupen64plus_next_libretro_android.so",
-      "psx":            "/data/data/com.retroarch.ra64/cores/swanstation_libretro_android.so",
-      "ps1":            "/data/data/com.retroarch.ra64/cores/swanstation_libretro_android.so",
-      "ps2":            "/data/data/com.retroarch.ra64/cores/pcsx2_libretro_android.so",
-      "nds":            "/data/data/com.retroarch.ra64/cores/melonds_libretro_android.so",
-      "ds":             "/data/data/com.retroarch.ra64/cores/melonds_libretro_android.so",
-      "psp":            "/data/data/com.retroarch.ra64/cores/ppsspp_libretro_android.so",
-      "saturn":         "/data/data/com.retroarch.ra64/cores/kronos_libretro_android.so",
-      "genesis":        "/data/data/com.retroarch.ra64/cores/genesis_plus_gx_libretro_android.so",
-      "megadrive":      "/data/data/com.retroarch.ra64/cores/genesis_plus_gx_libretro_android.so",
-      "sms":            "/data/data/com.retroarch.ra64/cores/genesis_plus_gx_libretro_android.so",
-      "mastersystem":   "/data/data/com.retroarch.ra64/cores/genesis_plus_gx_libretro_android.so",
-      "gamegear":       "/data/data/com.retroarch.ra64/cores/genesis_plus_gx_libretro_android.so",
-      "atarilynx":      "/data/data/com.retroarch.ra64/cores/handy_libretro_android.so",
-      "lynx":           "/data/data/com.retroarch.ra64/cores/handy_libretro_android.so",
-      "pcengine":       "/data/data/com.retroarch.ra64/cores/mednafen_pce_fast_libretro_android.so",
-      "pce":            "/data/data/com.retroarch.ra64/cores/mednafen_pce_fast_libretro_android.so",
-      "tgfx16":         "/data/data/com.retroarch.ra64/cores/mednafen_pce_fast_libretro_android.so",
-      "wonderswan":     "/data/data/com.retroarch.ra64/cores/mednafen_wswan_libretro_android.so",
-      "wonderswancolor":"/data/data/com.retroarch.ra64/cores/mednafen_wswan_libretro_android.so",
-      "ws":             "/data/data/com.retroarch.ra64/cores/mednafen_wswan_libretro_android.so",
-      "wsc":            "/data/data/com.retroarch.ra64/cores/mednafen_wswan_libretro_android.so",
-      "virtualboy":     "/data/data/com.retroarch.ra64/cores/mednafen_vb_libretro_android.so",
-      "vb":             "/data/data/com.retroarch.ra64/cores/mednafen_vb_libretro_android.so",
-      "dreamcast":      "/data/data/com.retroarch.ra64/cores/flycast_libretro_android.so",
-      "dc":             "/data/data/com.retroarch.ra64/cores/flycast_libretro_android.so",
-      "naomi":          "/data/data/com.retroarch.ra64/cores/flycast_libretro_android.so",
-      "arcade":         "/data/data/com.retroarch.ra64/cores/fbneo_libretro_android.so",
-      "neogeo":         "/data/data/com.retroarch.ra64/cores/fbneo_libretro_android.so",
-      "atari2600":      "/data/data/com.retroarch.ra64/cores/stella_libretro_android.so",
-      "atari7800":      "/data/data/com.retroarch.ra64/cores/prosystem_libretro_android.so",
-      "3ds":            "/data/data/com.retroarch.ra64/cores/citra_libretro_android.so",
-      "n3ds":           "/data/data/com.retroarch.ra64/cores/citra_libretro_android.so",
-      "gc":             "/data/data/com.retroarch.ra64/cores/dolphin_libretro_android.so",
-      "gamecube":       "/data/data/com.retroarch.ra64/cores/dolphin_libretro_android.so",
-      "wii":            "/data/data/com.retroarch.ra64/cores/dolphin_libretro_android.so",
-      "mame":           "/data/data/com.retroarch.ra64/cores/mame_libretro_android.so",
-      "msx":            "/data/data/com.retroarch.ra64/cores/bluemsx_libretro_android.so",
-      "c64":            "/data/data/com.retroarch.ra64/cores/vice_x64_libretro_android.so",
-      "amiga":          "/data/data/com.retroarch.ra64/cores/puae_libretro_android.so",
-      "ngp":            "/data/data/com.retroarch.ra64/cores/mednafen_ngp_libretro_android.so",
-      "ngpc":           "/data/data/com.retroarch.ra64/cores/mednafen_ngp_libretro_android.so",
-      "3do":            "/data/data/com.retroarch.ra64/cores/opera_libretro_android.so"
-    },
-    "notes": "ra64 variant — some nightly builds use this package"
-  },
-
-  {
     "id": "ppsspp",
     "name": "PPSSPP",
     "packageName": "org.ppsspp.ppsspp",
     "activityClass": "org.ppsspp.ppsspp.PpssppActivity",
     "intentType": "ACTION_VIEW",
-    "supportedPlatformIds": ["psp"],
+    "supportedPlatformIds": [
+      "psp"
+    ],
     "mimeType": "application/octet-stream",
     "useSafUri": true
   },
@@ -289,56 +17,78 @@
     "packageName": "org.ppsspp.ppssppgold",
     "activityClass": "org.ppsspp.ppsspp.PpssppActivity",
     "intentType": "ACTION_VIEW",
-    "supportedPlatformIds": ["psp"],
+    "supportedPlatformIds": [
+      "psp"
+    ],
     "mimeType": "application/octet-stream",
     "useSafUri": true
   },
-
   {
     "id": "dolphin",
     "name": "Dolphin Emulator",
     "packageName": "org.dolphinemu.dolphinemu",
     "activityClass": "org.dolphinemu.dolphinemu.ui.main.TvMainActivity",
     "intentType": "COMPONENT",
-    "supportedPlatformIds": ["gamecube","gc","wii"],
-    "intentExtras": { "AutoStartFile": "{rom_path}" },
+    "supportedPlatformIds": [
+      "gamecube",
+      "gc",
+      "wii"
+    ],
+    "intentExtras": {
+      "AutoStartFile": "{rom_path}"
+    },
     "intentCategory": "android.intent.category.LEANBACK_LAUNCHER"
   },
-
   {
     "id": "duckstation",
     "name": "DuckStation",
     "packageName": "com.github.stenzek.duckstation",
     "activityClass": "com.github.stenzek.duckstation.EmulationActivity",
     "intentType": "COMPONENT",
-    "supportedPlatformIds": ["ps1","psx"],
-    "intentExtras": { "bootPath": "{rom_path}" },
-    "intentBoolExtras": { "resumeState": false },
-    "intentFlags": ["CLEAR_TASK", "CLEAR_TOP"]
+    "supportedPlatformIds": [
+      "ps1",
+      "psx"
+    ],
+    "intentExtras": {
+      "bootPath": "{rom_path}"
+    },
+    "intentBoolExtras": {
+      "resumeState": false
+    },
+    "intentFlags": [
+      "CLEAR_TASK",
+      "CLEAR_TOP"
+    ]
   },
-
   {
     "id": "nethersx2",
     "name": "NetherSX2 / AetherSX2",
     "packageName": "xyz.aethersx2.android",
     "activityClass": "xyz.aethersx2.android.EmulationActivity",
     "intentType": "COMPONENT",
-    "supportedPlatformIds": ["ps2"],
-    "intentExtras": { "bootPath": "{rom_path}" },
-    "intentFlags": ["CLEAR_TASK", "CLEAR_TOP"]
+    "supportedPlatformIds": [
+      "ps2"
+    ],
+    "intentExtras": {
+      "bootPath": "{rom_path}"
+    },
+    "intentFlags": [
+      "CLEAR_TASK",
+      "CLEAR_TOP"
+    ]
   },
-
   {
     "id": "armsx2",
     "name": "ARMSX2",
     "packageName": "com.armsx2",
     "activityClass": "com.armsx2.MainActivity",
     "intentType": "ACTION_VIEW",
-    "supportedPlatformIds": ["ps2"],
+    "supportedPlatformIds": [
+      "ps2"
+    ],
     "useSafUri": true,
     "notes": "NetherSX2-derived fork with a rewritten frontend — no EmulationActivity/bootPath. Boots via ACTION_VIEW + content:// URI into the exported MainActivity alias (scheme-only intent filter, no MIME type); the app queues it as a pending external launch and takes a persistable URI grant."
   },
-
   {
     "id": "melonds",
     "name": "melonDS",
@@ -346,28 +96,37 @@
     "activityClass": "me.magnum.melonds.ui.emulator.EmulatorActivity",
     "intentType": "COMPONENT",
     "intentAction": "me.magnum.melonds.LAUNCH_ROM",
-    "supportedPlatformIds": ["nds","ds"],
-    "intentExtras": { "uri": "{rom_uri}" }
+    "supportedPlatformIds": [
+      "nds",
+      "ds"
+    ],
+    "intentExtras": {
+      "uri": "{rom_uri}"
+    }
   },
-
   {
     "id": "drastic",
     "name": "DraStic",
     "packageName": "com.dsemu.drastic",
     "activityClass": "com.dsemu.drastic.DraSticActivity",
     "intentType": "ACTION_VIEW",
-    "supportedPlatformIds": ["nds","ds"],
+    "supportedPlatformIds": [
+      "nds",
+      "ds"
+    ],
     "mimeType": "application/octet-stream",
     "useSafUri": true
   },
-
   {
     "id": "azahar",
     "name": "Azahar (3DS)",
     "packageName": "org.azahar_emu.azahar",
     "activityClass": "org.citra.citra_emu.activities.EmulationActivity",
     "intentType": "ACTION_VIEW",
-    "supportedPlatformIds": ["3ds","n3ds"],
+    "supportedPlatformIds": [
+      "3ds",
+      "n3ds"
+    ],
     "mimeType": "application/octet-stream",
     "useSafUri": true
   },
@@ -377,7 +136,10 @@
     "packageName": "org.citra_emu.citra",
     "activityClass": "org.citra_emu.citra.activities.EmulationActivity",
     "intentType": "ACTION_VIEW",
-    "supportedPlatformIds": ["3ds","n3ds"],
+    "supportedPlatformIds": [
+      "3ds",
+      "n3ds"
+    ],
     "mimeType": "application/octet-stream",
     "useSafUri": true
   },
@@ -386,7 +148,10 @@
     "name": "Lime3DS",
     "packageName": "io.github.lime3ds.android",
     "intentType": "ACTION_VIEW",
-    "supportedPlatformIds": ["3ds","n3ds"],
+    "supportedPlatformIds": [
+      "3ds",
+      "n3ds"
+    ],
     "mimeType": "application/octet-stream",
     "useSafUri": true,
     "notes": "Resolves the EmulationActivity by package (no hardcoded class) so it also works with the AzaharPlus 'replaces' build, which reuses this package but uses org.citra.citra_emu activities."
@@ -397,18 +162,24 @@
     "packageName": "io.github.azaharplus.android",
     "activityClass": "org.citra.citra_emu.activities.EmulationActivity",
     "intentType": "ACTION_VIEW",
-    "supportedPlatformIds": ["3ds","n3ds"],
+    "supportedPlatformIds": [
+      "3ds",
+      "n3ds"
+    ],
     "mimeType": "application/octet-stream",
     "useSafUri": true,
     "notes": "AzaharPlus — Citra/Azahar fork. This is the 'coexists with Azahar' build (io.github.azaharplus.android). Boots a ROM via ACTION_VIEW + content:// URI into the exported EmulationActivity."
   },
-
   {
     "id": "mgba",
     "name": "mGBA",
     "packageName": "io.mgba",
     "intentType": "ACTION_VIEW",
-    "supportedPlatformIds": ["gba","gbc","gb"],
+    "supportedPlatformIds": [
+      "gba",
+      "gbc",
+      "gb"
+    ],
     "mimeType": "application/octet-stream",
     "useSafUri": true
   },
@@ -418,7 +189,9 @@
     "packageName": "com.fastemulator.gba",
     "activityClass": "com.fastemulator.gba.EmulatorActivity",
     "intentType": "ACTION_VIEW",
-    "supportedPlatformIds": ["gba"],
+    "supportedPlatformIds": [
+      "gba"
+    ],
     "mimeType": "application/octet-stream",
     "useSafUri": true
   },
@@ -428,7 +201,9 @@
     "packageName": "com.fastemulator.gbafree",
     "activityClass": "com.fastemulator.gbafree.EmulatorActivity",
     "intentType": "ACTION_VIEW",
-    "supportedPlatformIds": ["gba"],
+    "supportedPlatformIds": [
+      "gba"
+    ],
     "mimeType": "application/octet-stream",
     "useSafUri": true
   },
@@ -438,18 +213,22 @@
     "packageName": "com.fastemulator.gbc",
     "activityClass": "com.fastemulator.gbc.EmulatorActivity",
     "intentType": "ACTION_VIEW",
-    "supportedPlatformIds": ["gbc","gb"],
+    "supportedPlatformIds": [
+      "gbc",
+      "gb"
+    ],
     "mimeType": "application/octet-stream",
     "useSafUri": true
   },
-
   {
     "id": "gbaemu",
     "name": "GBA.emu",
     "packageName": "com.explusalpha.GbaEmu",
     "activityClass": "com.imagine.BaseActivity",
     "intentType": "ACTION_VIEW",
-    "supportedPlatformIds": ["gba"],
+    "supportedPlatformIds": [
+      "gba"
+    ],
     "mimeType": "application/octet-stream",
     "useSafUri": true
   },
@@ -459,7 +238,10 @@
     "packageName": "com.explusalpha.GbcEmu",
     "activityClass": "com.imagine.BaseActivity",
     "intentType": "ACTION_VIEW",
-    "supportedPlatformIds": ["gbc","gb"],
+    "supportedPlatformIds": [
+      "gbc",
+      "gb"
+    ],
     "mimeType": "application/octet-stream",
     "useSafUri": true
   },
@@ -469,7 +251,10 @@
     "packageName": "com.explusalpha.NesEmu",
     "activityClass": "com.imagine.BaseActivity",
     "intentType": "ACTION_VIEW",
-    "supportedPlatformIds": ["nes","fam"],
+    "supportedPlatformIds": [
+      "nes",
+      "fam"
+    ],
     "mimeType": "application/octet-stream",
     "useSafUri": true
   },
@@ -479,7 +264,13 @@
     "packageName": "com.explusalpha.MdEmu",
     "activityClass": "com.imagine.BaseActivity",
     "intentType": "ACTION_VIEW",
-    "supportedPlatformIds": ["genesis","megadrive","md","sms","mastersystem"],
+    "supportedPlatformIds": [
+      "genesis",
+      "megadrive",
+      "md",
+      "sms",
+      "mastersystem"
+    ],
     "mimeType": "application/octet-stream",
     "useSafUri": true
   },
@@ -489,7 +280,9 @@
     "packageName": "com.explusalpha.Snes9xPlus",
     "activityClass": "com.imagine.BaseActivity",
     "intentType": "ACTION_VIEW",
-    "supportedPlatformIds": ["snes"],
+    "supportedPlatformIds": [
+      "snes"
+    ],
     "mimeType": "application/octet-stream",
     "useSafUri": true
   },
@@ -499,7 +292,11 @@
     "packageName": "com.PceEmu",
     "activityClass": "com.imagine.BaseActivity",
     "intentType": "ACTION_VIEW",
-    "supportedPlatformIds": ["pcengine","pce","tgfx16"],
+    "supportedPlatformIds": [
+      "pcengine",
+      "pce",
+      "tgfx16"
+    ],
     "mimeType": "application/octet-stream",
     "useSafUri": true
   },
@@ -509,7 +306,10 @@
     "packageName": "com.explusalpha.NeoEmu",
     "activityClass": "com.imagine.BaseActivity",
     "intentType": "ACTION_VIEW",
-    "supportedPlatformIds": ["neogeo","arcade"],
+    "supportedPlatformIds": [
+      "neogeo",
+      "arcade"
+    ],
     "mimeType": "application/octet-stream",
     "useSafUri": true
   },
@@ -519,7 +319,12 @@
     "packageName": "com.explusalpha.SwanEmu",
     "activityClass": "com.imagine.BaseActivity",
     "intentType": "ACTION_VIEW",
-    "supportedPlatformIds": ["wonderswan","wonderswancolor","ws","wsc"],
+    "supportedPlatformIds": [
+      "wonderswan",
+      "wonderswancolor",
+      "ws",
+      "wsc"
+    ],
     "mimeType": "application/octet-stream",
     "useSafUri": true
   },
@@ -529,18 +334,22 @@
     "packageName": "com.explusalpha.LynxEmu",
     "activityClass": "com.imagine.BaseActivity",
     "intentType": "ACTION_VIEW",
-    "supportedPlatformIds": ["atarilynx","lynx"],
+    "supportedPlatformIds": [
+      "atarilynx",
+      "lynx"
+    ],
     "mimeType": "application/octet-stream",
     "useSafUri": true
   },
-
   {
     "id": "m64pfz",
     "name": "M64Plus FZ",
     "packageName": "org.mupen64plusae.v3.fzurita",
     "activityClass": "paulscode.android.mupen64plusae.SplashActivity",
     "intentType": "ACTION_VIEW",
-    "supportedPlatformIds": ["n64"],
+    "supportedPlatformIds": [
+      "n64"
+    ],
     "mimeType": "application/octet-stream",
     "useSafUri": true
   },
@@ -550,7 +359,9 @@
     "packageName": "org.mupen64plusae.v3.fzurita.pro",
     "activityClass": "paulscode.android.mupen64plusae.SplashActivity",
     "intentType": "ACTION_VIEW",
-    "supportedPlatformIds": ["n64"],
+    "supportedPlatformIds": [
+      "n64"
+    ],
     "mimeType": "application/octet-stream",
     "useSafUri": true
   },
@@ -560,18 +371,24 @@
     "packageName": "org.mupen64plusae.v3.alpha",
     "activityClass": "paulscode.android.mupen64plusae.SplashActivity",
     "intentType": "ACTION_VIEW",
-    "supportedPlatformIds": ["n64"],
+    "supportedPlatformIds": [
+      "n64"
+    ],
     "mimeType": "application/octet-stream",
     "useSafUri": true
   },
-
   {
     "id": "flycast",
     "name": "Flycast (Dreamcast)",
     "packageName": "com.flycast.emulator",
     "activityClass": "com.flycast.emulator.MainActivity",
     "intentType": "ACTION_VIEW",
-    "supportedPlatformIds": ["dreamcast","dc","naomi","atomiswave"],
+    "supportedPlatformIds": [
+      "dreamcast",
+      "dc",
+      "naomi",
+      "atomiswave"
+    ],
     "mimeType": "application/octet-stream",
     "useSafUri": true
   },
@@ -581,56 +398,72 @@
     "packageName": "com.flycast.emulator.gles2",
     "activityClass": "com.flycast.emulator.MainActivity",
     "intentType": "ACTION_VIEW",
-    "supportedPlatformIds": ["dreamcast","dc","naomi","atomiswave"],
+    "supportedPlatformIds": [
+      "dreamcast",
+      "dc",
+      "naomi",
+      "atomiswave"
+    ],
     "mimeType": "application/octet-stream",
     "useSafUri": true
   },
-
   {
     "id": "redream",
     "name": "Redream (Dreamcast)",
     "packageName": "io.recompiled.redream",
     "activityClass": "io.recompiled.redream.MainActivity",
     "intentType": "ACTION_VIEW",
-    "supportedPlatformIds": ["dreamcast","dc"],
+    "supportedPlatformIds": [
+      "dreamcast",
+      "dc"
+    ],
     "mimeType": "application/octet-stream",
     "useSafUri": true
   },
-
   {
     "id": "eden",
     "name": "Eden (Switch)",
     "packageName": "dev.eden.eden_emulator",
     "activityClass": "org.yuzu.yuzu_emu.activities.EmulationActivity",
     "intentType": "ACTION_VIEW",
-    "supportedPlatformIds": ["switch","nx"],
+    "supportedPlatformIds": [
+      "switch",
+      "nx"
+    ],
     "mimeType": "application/octet-stream",
     "useSafUri": true,
     "notes": "Eden is a Yuzu fork; its EmulationActivity (org.yuzu.yuzu_emu) is exported and boots a ROM via ACTION_VIEW + content:// URI. Loads single-file NSP/XCI."
   },
-
   {
     "id": "sudachi",
     "name": "Sudachi (Switch)",
     "packageName": "org.sudachi.android",
     "intentType": "ACTION_VIEW",
-    "supportedPlatformIds": ["switch","nx"],
+    "supportedPlatformIds": [
+      "switch",
+      "nx"
+    ],
     "mimeType": "application/octet-stream",
     "useSafUri": true
   },
-
   {
     "id": "winlator",
     "name": "Winlator",
     "packageName": "com.winlator",
     "intentType": "SHORTCUT",
-    "supportedPlatformIds": ["windows"]
+    "supportedPlatformIds": [
+      "windows"
+    ]
   },
   {
     "id": "gamehub",
     "name": "GameHub",
     "packageName": "com.github.tkashkin.gamehub",
     "intentType": "SHORTCUT",
-    "supportedPlatformIds": ["android","steam","gog"]
+    "supportedPlatformIds": [
+      "android",
+      "steam",
+      "gog"
+    ]
   }
 ]

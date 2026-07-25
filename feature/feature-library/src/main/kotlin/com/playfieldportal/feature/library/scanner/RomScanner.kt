@@ -72,6 +72,7 @@ class RomScanner @Inject constructor(
     private val platformExtensionMap: PlatformExtensionMap,
     private val discImageResolver: DiscImageResolver,
     private val folderHintResolver: PlatformFolderHintResolver,
+    private val arcadeRomsets: ArcadeRomsetCatalog,
 ) {
     private val defaultFolders = listOf(
         "/storage/emulated/0/ROMs",
@@ -196,6 +197,26 @@ class RomScanner @Inject constructor(
                     platformExtensionMap.detectPlatform(file.extension)
                 }
 
+                // Arcade validation: a .zip/.7z is only a game if it's a recognised romset, and its
+                // romset name routes it to the exact CPS system (splitting CPS out of generic MAME).
+                when (val decision = arcadeRomsets.decide(
+                    file.nameWithoutExtension, file.extension.lowercase(), platformId,
+                )) {
+                    is ArcadeRomsetCatalog.Decision.Route -> {
+                        newGames.add(Game(
+                            title      = decision.title,
+                            platformId = decision.platformId,
+                            romPath    = file.absolutePath,
+                        ))
+                        continue
+                    }
+                    ArcadeRomsetCatalog.Decision.Skip -> {
+                        Timber.d("Skipped non-romset in CPS folder: ${file.name}")
+                        continue
+                    }
+                    ArcadeRomsetCatalog.Decision.UseDefault -> Unit  // fall through to normal handling
+                }
+
                 if (platformId != null) {
                     newGames.add(
                         Game(
@@ -285,10 +306,19 @@ class RomScanner @Inject constructor(
                 )
             ))
 
+            val (title, resolvedPlatform) =
+                when (val d = arcadeRomsets.decide(file.nameWithoutExtension, file.extension.lowercase(), platformId)) {
+                    is ArcadeRomsetCatalog.Decision.Route -> d.title to d.platformId
+                    ArcadeRomsetCatalog.Decision.Skip -> {
+                        Timber.d("Skipped non-romset in CPS card: ${file.name}")
+                        continue
+                    }
+                    ArcadeRomsetCatalog.Decision.UseDefault -> cleanRomTitle(file.nameWithoutExtension) to platformId
+                }
             newGames.add(
                 Game(
-                    title      = cleanRomTitle(file.nameWithoutExtension),
-                    platformId = platformId,
+                    title      = title,
+                    platformId = resolvedPlatform,
                     romPath    = path,
                 )
             )
@@ -380,10 +410,20 @@ class RomScanner @Inject constructor(
                     )
                 ))
 
+                val stem = child.name.substringBeforeLast('.', child.name)
+                val (title, resolvedPlatform) =
+                    when (val d = arcadeRomsets.decide(stem, ext, platformId)) {
+                        is ArcadeRomsetCatalog.Decision.Route -> d.title to d.platformId
+                        ArcadeRomsetCatalog.Decision.Skip -> {
+                            Timber.d("Skipped non-romset in CPS card: ${child.name}")
+                            continue
+                        }
+                        ArcadeRomsetCatalog.Decision.UseDefault -> cleanRomTitle(stem) to platformId
+                    }
                 newGames.add(
                     Game(
-                        title      = cleanRomTitle(child.name.substringBeforeLast('.', child.name)),
-                        platformId = platformId,
+                        title      = title,
+                        platformId = resolvedPlatform,
                         romPath    = rawPath,
                         romUri     = child.uri.toString(),
                     )

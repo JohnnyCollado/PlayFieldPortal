@@ -327,6 +327,32 @@ class PlatformSeeder @Inject constructor(
                 romExtensions = "zip,7z,neo",
             ),
 
+            // ── Capcom Play System — split out from generic Arcade/MAME ─────
+            PlatformEntity(
+                id            = "cps1",
+                name          = "Capcom Play System",
+                shortName     = "CPS-1",
+                iconRes       = "ic_platform_arcade",
+                accentColor   = 0xFF1E5AA8L,
+                romExtensions = "zip,7z",
+            ),
+            PlatformEntity(
+                id            = "cps2",
+                name          = "Capcom Play System II",
+                shortName     = "CPS-2",
+                iconRes       = "ic_platform_arcade",
+                accentColor   = 0xFF1E5AA8L,
+                romExtensions = "zip,7z",
+            ),
+            PlatformEntity(
+                id            = "cps3",
+                name          = "Capcom Play System III",
+                shortName     = "CPS-3",
+                iconRes       = "ic_platform_arcade",
+                accentColor   = 0xFF1E5AA8L,
+                romExtensions = "zip,7z,chd",
+            ),
+
             // ── Microsoft ──────────────────────────────────────────────────
             PlatformEntity(
                 id            = "x360",

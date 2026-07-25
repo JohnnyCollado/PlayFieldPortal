@@ -663,14 +663,14 @@ internal object KnownEmulatorCatalog {
         KnownEmulator(
             packageNames  = listOf("com.seleuco.mame4d2024"),
             suggestedName = "MAME4droid 2024",
-            platformIds   = listOf("mame", "arcade"),
+            platformIds   = listOf("mame", "arcade", "cps1", "cps2", "cps3"),
             activityClass = "com.seleuco.mame4droid.MAME4droid",
             useSafUri     = true,
         ),
         KnownEmulator(
             packageNames  = listOf("com.seleuco.mame4droid"),
             suggestedName = "MAME4droid 0.139",
-            platformIds   = listOf("mame", "arcade"),
+            platformIds   = listOf("mame", "arcade", "cps1", "cps2"),
             activityClass = "com.seleuco.mame4droid.MAME4droid",
             useSafUri     = true,
         ),

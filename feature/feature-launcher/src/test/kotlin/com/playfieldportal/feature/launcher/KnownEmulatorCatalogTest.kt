@@ -19,7 +19,7 @@ class KnownEmulatorCatalogTest {
         "megadrive", "mastersystem", "gamegear", "saturn", "dreamcast", "segacd", "sega32x",
         "atari2600", "atari5200", "atari7800", "atarilynx",
         "pcengine", "neogeo", "ngp", "wonderswan", "wonderswancolor",
-        "c64", "mame", "x360", "windows", "android",
+        "c64", "mame", "cps1", "cps2", "cps3", "x360", "windows", "android",
     )
     private val platformExceptions = setOf("symbian")
 

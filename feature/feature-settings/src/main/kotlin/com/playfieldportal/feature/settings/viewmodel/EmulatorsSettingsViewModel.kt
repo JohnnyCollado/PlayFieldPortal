@@ -9,10 +9,13 @@ import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.IntentType
 import com.playfieldportal.core.domain.repository.GameRepository
 import kotlinx.coroutines.flow.first
+import android.net.Uri
 import com.playfieldportal.feature.launcher.AppLaunchInspector
 import com.playfieldportal.feature.launcher.DetectableApp
+import com.playfieldportal.feature.launcher.EmulatorAutoConfigService
 import com.playfieldportal.feature.launcher.EmulatorIntentResolver
 import com.playfieldportal.feature.launcher.EmulatorProfileRepository
+import com.playfieldportal.core.data.repository.RetroArchLink
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -116,6 +119,11 @@ data class EmulatorsSettingsUiState(
     val returnFocusKey: String? = null,
     val showResetConfirm: Boolean = false,
     val isResetting: Boolean = false,
+    // RetroArch core detection: null count = not linked (offering unverified curated cores);
+    // a count = linked and this many installed cores were detected.
+    val retroArchLinked: Boolean = false,
+    val retroArchCoreCount: Int? = null,
+    val isDetectingCores: Boolean = false,
 )
 
 @HiltViewModel
@@ -124,6 +132,8 @@ class EmulatorsSettingsViewModel @Inject constructor(
     private val appLaunchInspector: AppLaunchInspector,
     private val gameRepository: GameRepository,
     private val intentResolver: EmulatorIntentResolver,
+    private val retroArchLink: RetroArchLink,
+    private val autoConfig: EmulatorAutoConfigService,
     @ApplicationContext private val appContext: Context,
 ) : ViewModel() {
 
@@ -136,6 +146,48 @@ class EmulatorsSettingsViewModel @Inject constructor(
 
     init {
         observeProfiles()
+        refreshRetroArchStatus()
+    }
+
+    // ── RetroArch core detection (SAF link) ────────────────────────────────────
+
+    private fun refreshRetroArchStatus() {
+        viewModelScope.launch {
+            val linked = retroArchLink.isLinked()
+            val count = if (linked) retroArchLink.installedCoreFiles()?.size else null
+            _uiState.update { it.copy(retroArchLinked = linked, retroArchCoreCount = count) }
+        }
+    }
+
+    /** User picked RetroArch's folder in the SAF tree picker: persist it and re-run detection so
+     *  only installed cores are offered. */
+    fun linkRetroArch(treeUri: Uri) {
+        _uiState.update { it.copy(isDetectingCores = true) }
+        viewModelScope.launch {
+            retroArchLink.save(treeUri)
+            autoConfig.runOnStartup()
+            val count = retroArchLink.installedCoreFiles()?.size
+            _uiState.update { it.copy(isDetectingCores = false, retroArchLinked = true, retroArchCoreCount = count) }
+        }
+    }
+
+    /** Re-scan the already-linked RetroArch folder (after the user downloads more cores). */
+    fun redetectRetroArchCores() {
+        if (!_uiState.value.retroArchLinked) return
+        _uiState.update { it.copy(isDetectingCores = true) }
+        viewModelScope.launch {
+            autoConfig.runOnStartup()
+            val count = retroArchLink.installedCoreFiles()?.size
+            _uiState.update { it.copy(isDetectingCores = false, retroArchCoreCount = count) }
+        }
+    }
+
+    fun unlinkRetroArch() {
+        viewModelScope.launch {
+            retroArchLink.clear()
+            autoConfig.runOnStartup()
+            _uiState.update { it.copy(retroArchLinked = false, retroArchCoreCount = null) }
+        }
     }
 
     private fun observeProfiles() {

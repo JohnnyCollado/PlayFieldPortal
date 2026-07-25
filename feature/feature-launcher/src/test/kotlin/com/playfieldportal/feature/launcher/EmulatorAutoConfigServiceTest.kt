@@ -24,7 +24,12 @@ class EmulatorAutoConfigServiceTest {
 
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val repository = EmulatorProfileRepository(context)
-    private val service = EmulatorAutoConfigService(EmulatorDetector(context), repository)
+    // Unlinked RetroArch (no stored tree) → installedCoreFiles() is null → curated cores offered.
+    private val service = EmulatorAutoConfigService(
+        EmulatorDetector(context),
+        repository,
+        com.playfieldportal.core.data.repository.RetroArchLink(context),
+    )
 
     private fun installPackage(packageName: String) {
         shadowOf(context.packageManager)
@@ -125,6 +130,47 @@ class EmulatorAutoConfigServiceTest {
         service.runOnStartup()
 
         assertFalse(persistedById(id).isAvailable)
+    }
+
+    // Regression: the old detector scanned /storage/emulated/0/RetroArch/cores, which never exists
+    // on a modern install (cores live in RetroArch's private internal dir), so it produced zero
+    // profiles and every RetroArch console was unlaunchable.
+    @Test
+    fun `retroarch profiles are offered without a readable cores directory`() {
+        installPackage("com.retroarch")
+
+        val profiles = EmulatorDetector(context).detect()
+            .filter { it.autoSource == "retroarch-core" }
+
+        assertTrue(profiles.isNotEmpty(), "No RetroArch core profiles offered")
+        val snes = profiles.firstOrNull { "snes" in it.supportedPlatformIds }
+        assertTrue(snes != null, "No RetroArch profile covers SNES")
+        assertEquals("com.retroarch", snes!!.packageName)
+        assertEquals(IntentType.COMPONENT, snes.intentType)
+        assertEquals(
+            "/data/data/com.retroarch/cores/snes9x_libretro_android.so",
+            snes.intentExtras["LIBRETRO"],
+            "LIBRETRO must name RetroArch's internal core path",
+        )
+        assertEquals(snes.intentExtras["LIBRETRO"], snes.coreMap["snes"])
+    }
+
+    @Test
+    fun `curated retroarch cores cover the seeded 2D platforms`() {
+        installPackage("com.retroarch")
+        val covered = EmulatorDetector(context).detect()
+            .filter { it.autoSource == "retroarch-core" }
+            .flatMap { it.supportedPlatformIds }
+            .toSet()
+
+        for (platform in listOf(
+            "nes", "snes", "n64", "gb", "gbc", "gba", "megadrive", "mastersystem",
+            "gamegear", "sega32x", "segacd", "saturn", "psx", "pcengine", "neogeo",
+            "ngp", "wonderswan", "atari2600", "atari5200", "atari7800", "atarilynx",
+            "virtualboy", "c64", "mame",
+        )) {
+            assertTrue(platform in covered, "No RetroArch core offered for '$platform'")
+        }
     }
 
     @Test

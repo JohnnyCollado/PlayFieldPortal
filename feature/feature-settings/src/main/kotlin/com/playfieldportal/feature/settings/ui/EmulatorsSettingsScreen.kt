@@ -1,5 +1,8 @@
 package com.playfieldportal.feature.settings.ui
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -36,6 +39,11 @@ fun EmulatorsSettingsScreen(
     viewModel: EmulatorsSettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
+
+    // SAF tree picker for linking RetroArch's folder so PFP can enumerate installed cores.
+    val retroArchPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri: Uri? -> uri?.let { viewModel.linkRetroArch(it) } }
 
     state.editorState?.let { editor ->
         // Test-launch flow renders over the editor when active.
@@ -154,6 +162,41 @@ fun EmulatorsSettingsScreen(
                 focusKey = ADD_CUSTOM_EMULATOR_FOCUS_KEY,
                 onClick  = { viewModel.startAddEmulatorWizard() },
             )
+
+            SettingsGroup("RetroArch Core Detection")
+
+            EmulatorHint(
+                when {
+                    state.isDetectingCores ->
+                        "Scanning RetroArch for installed cores…"
+                    state.retroArchLinked && state.retroArchCoreCount != null ->
+                        "Linked — ${state.retroArchCoreCount} core(s) detected. Only installed cores are offered, so a missing core can't cause a black screen."
+                    state.retroArchLinked ->
+                        "Linked, but access was lost (e.g. after reinstall). Re-link RetroArch to detect cores again."
+                    else ->
+                        "Not linked. PFP can't see which RetroArch cores are installed, so it offers them all — launching one that isn't installed shows a black screen. Link RetroArch to detect installed cores."
+                }
+            )
+
+            SettingsRow(
+                label    = if (state.retroArchLinked) "Re-link RetroArch Folder" else "Link RetroArch to Detect Cores",
+                sublabel = "In the picker, choose RetroArch's folder (grant access) so PFP can read its installed cores",
+                focusKey = "retroarch_link",
+                onClick  = { retroArchPicker.launch(null) },
+            )
+
+            if (state.retroArchLinked) {
+                SettingsRow(
+                    label    = "Re-scan Installed Cores",
+                    sublabel = "Run after downloading more cores in RetroArch's Core Downloader",
+                    onClick  = { viewModel.redetectRetroArchCores() },
+                )
+                SettingsRow(
+                    label    = "Unlink RetroArch",
+                    sublabel = "Go back to offering all cores unverified",
+                    onClick  = { viewModel.unlinkRetroArch() },
+                )
+            }
 
             SettingsGroup("Maintenance")
 

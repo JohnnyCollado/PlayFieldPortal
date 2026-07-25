@@ -49,6 +49,10 @@ class DatabaseInitializer @Inject constructor(
     // Called once from PFPApplication after DI is ready.
     // Safe to call multiple times — guarded by DataStore flags and INSERT OR IGNORE.
     suspend fun initialize() {
+        // Runs every launch (INSERT OR IGNORE): built-in platforms added in an app update reach
+        // databases seeded by older builds too. Only inserts missing IDs — never overwrites a
+        // user's platform customizations (pinned/preferred-emulator/etc.).
+        platformSeeder.seed()
         seedMainDb()
         // Runs every launch (not gated by DB_SEEDED): corrects system-defined flags on
         // built-in categories so definition changes reach databases seeded by older builds.
@@ -67,7 +71,8 @@ class DatabaseInitializer @Inject constructor(
         }
 
         Timber.i("First launch — seeding database")
-        platformSeeder.seed()
+        // Platforms are seeded every launch in initialize(); here we only do the one-shot
+        // first-launch category seed and set the DB_SEEDED flag.
         categoryRepository.seedBuiltInCategories()
 
         context.pfpDataStore.edit { it[KEY_DB_SEEDED] = true }

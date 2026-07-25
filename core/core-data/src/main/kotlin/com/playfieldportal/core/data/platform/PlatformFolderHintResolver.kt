@@ -243,6 +243,18 @@ class PlatformFolderHintResolver @Inject constructor() {
         "fba"                       to "mame",
         "naomi"                     to "mame",
 
+        // Capcom Play System — split out from generic MAME/arcade (ES-DE canonical cps1/2/3).
+        "cps1"                      to "cps1",
+        "cps-1"                     to "cps1",
+        "cps 1"                     to "cps1",
+        "capcom play system"        to "cps1",
+        "cps2"                      to "cps2",
+        "cps-2"                     to "cps2",
+        "cps 2"                     to "cps2",
+        "cps3"                      to "cps3",
+        "cps-3"                     to "cps3",
+        "cps 3"                     to "cps3",
+
         // ── PC / Other ─────────────────────────────────────────────────────
 
         // ── Microsoft ──────────────────────────────────────────────────────

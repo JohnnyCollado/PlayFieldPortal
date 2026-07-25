@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.first
 import com.playfieldportal.feature.artwork.store.ArtworkStore
 import com.playfieldportal.feature.launcher.EmulatorIntentResolver
 import com.playfieldportal.feature.launcher.EmulatorProfileRepository
+import com.playfieldportal.feature.launcher.byLaunchPreference
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.Channel
@@ -706,7 +707,11 @@ class GameDetailViewModel @Inject constructor(
     ): Result<ResolvedLaunchProfile> {
         val platformId = game.platformId
         val installed = profileRepository.getInstalledProfiles()
-        val platformProfiles = installed.filter { it.supportsPlatform(platformId) }
+        // Ordered so the automatic fallback below picks a standalone emulator over a RetroArch
+        // core when both support the console. Unavailable profiles (e.g. a RetroArch core the SAF
+        // link detected as not installed) are excluded so the fallback never lands on one.
+        val platformProfiles =
+            installed.filter { it.isAvailable && it.supportsPlatform(platformId) }.byLaunchPreference()
 
         fun resolveConfigured(configuredIdOrPackage: String, source: String): Result<ResolvedLaunchProfile> {
             val profile = installed.firstOrNull { it.id == configuredIdOrPackage }
@@ -755,7 +760,9 @@ class GameDetailViewModel @Inject constructor(
 
     private fun openEmulatorPicker() {
         val game = _uiState.value.game ?: return
-        val options = profileRepository.getInstalledProfiles().filter { it.supportsPlatform(game.platformId) }
+        val options = profileRepository.getInstalledProfiles()
+            .filter { it.isAvailable && it.supportsPlatform(game.platformId) }
+            .byLaunchPreference()
         if (options.isEmpty()) {
             showActionMessage("No emulators installed for ${game.platformId.uppercase()}")
             return

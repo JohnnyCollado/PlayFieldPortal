@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.launcher
 
+import com.playfieldportal.core.data.repository.RetroArchLink
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -8,11 +9,15 @@ import javax.inject.Singleton
 class EmulatorAutoConfigService @Inject constructor(
     private val detector: EmulatorDetector,
     private val repository: EmulatorProfileRepository,
+    private val retroArchLink: RetroArchLink,
 ) {
 
     suspend fun runOnStartup() {
+        // When RetroArch is linked, this is the authoritative set of installed cores so detection
+        // offers only cores that exist; null when unlinked (offer curated defaults unverified).
+        val installedRetroArchCores = retroArchLink.installedCoreFiles()
         val existing = repository.getAllPersistedProfiles()
-        val detected = detector.detect()
+        val detected = detector.detect(installedRetroArchCores)
         val now = System.currentTimeMillis()
         var added = 0
         var refreshed = 0

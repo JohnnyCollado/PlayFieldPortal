@@ -41,8 +41,14 @@ class EmulatorProfileRepository @Inject constructor(
         }
     }
 
+    // Ordered so the automatic pick (first entry) is a standalone emulator when one is installed,
+    // with RetroArch cores after it (see EmulatorLaunchPreference). Unavailable profiles — e.g. a
+    // RetroArch core detected as NOT installed via the SAF link — are excluded so they can never be
+    // launched into a black screen.
     fun getProfilesForPlatform(platformId: String): List<EmulatorProfile> =
-        getInstalledProfiles().filter { it.supportsPlatform(platformId) }
+        getInstalledProfiles()
+            .filter { it.isAvailable && it.supportsPlatform(platformId) }
+            .byLaunchPreference()
 
     fun getInstalledVersionCode(packageName: String): Long {
         return try {
