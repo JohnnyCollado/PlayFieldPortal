@@ -561,13 +561,16 @@ class GameDetailViewModel @Inject constructor(
 
     // ── Launch ────────────────────────────────────────────────────────────
 
-    fun launch() {
+    // playSound is false for direct-launch auto-fire: the XMB icon confirm already played the
+    // launch sfx, so replaying it here would double it. Manual Play (button / controller SELECT)
+    // leaves it true.
+    fun launch(playSound: Boolean = true) {
         val selectedGame = _uiState.value.game ?: run {
             Timber.w("Play requested before game detail state was loaded")
             _uiState.update { it.copy(actionMessage = null, launchError = "Game is still loading") }
             return
         }
-        menuSound.play(com.playfieldportal.core.ui.sound.MenuSound.LAUNCH)
+        if (playSound) menuSound.play(com.playfieldportal.core.ui.sound.MenuSound.LAUNCH)
         _uiState.update {
             it.copy(
                 launchError = null,

@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -38,8 +39,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
-import com.playfieldportal.core.domain.model.GamepadAction
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -48,10 +49,11 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -59,19 +61,14 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-// compose-ui 1.6.x (Compose BOM 2024.06) only provides the platform LocalLifecycleOwner.
-// The androidx.lifecycle.compose variant requires compose-ui 1.7+, so reading it crashes
-// with "LocalLifecycleOwner not present". Use the platform one until the BOM is upgraded.
-import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.foundation.Image
-import androidx.compose.runtime.snapshotFlow
 import com.google.accompanist.drawablepainter.DrawablePainter
+import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.ui.preview.CombinedPreviews
+import com.playfieldportal.core.ui.preview.PfpPreview
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.core.ui.theme.menuCursorFill
 import kotlinx.coroutines.flow.distinctUntilChanged
 
-// Neutral surfaces stay fixed; accent/highlight colors come from the active theme via
-// menuCursorFill()/menuCursorEdge() so the drawer follows the chosen color scheme.
 private val DrawerText    = Color.White
 private val DrawerSubtext = Color(0xFFAAAAAA)
 private val DrawerChip    = Color(0xFF1A1A2E)
@@ -88,17 +85,12 @@ fun AppDrawerScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     var searchActive by remember { mutableStateOf(false) }
-    val searchFocus = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
+    val lifecycleOwner = LocalLifecycleOwner.current
 
-    // Y toggles the search field. Other actions drive grid navigation as before. (BACK never
-    // reaches here — XMBViewModel intercepts it to close the drawer.)
     LaunchedEffect(pendingGamepadAction) {
         if (pendingGamepadAction != null) {
-            timber.log.Timber.d("AppDrawer: action=$pendingGamepadAction filter=${viewModel.uiState.value.activeFilter}")
             val overlayOpen = state.menuApp != null || state.confirmUninstall != null
-            // Y toggles search only when no mini menu / dialog is up — otherwise it's forwarded so
-            // the menu can consume it (Y/hold closes the menu).
             if (!overlayOpen && pendingGamepadAction == GamepadAction.BUTTON_Y) {
                 searchActive = !searchActive
                 if (!searchActive) viewModel.setSearchQuery("")
@@ -109,23 +101,6 @@ fun AppDrawerScreen(
         }
     }
 
-    // When search turns on, focus the field and open the keyboard; off hides it. Wait a couple
-    // of frames first because the field mounts inside an AnimatedVisibility that lags a frame.
-    LaunchedEffect(searchActive) {
-        if (searchActive) {
-            withFrameNanos {}
-            withFrameNanos {}
-            runCatching { searchFocus.requestFocus() }
-            keyboard?.show()
-        } else {
-            keyboard?.hide()
-        }
-    }
-    val lifecycleOwner = LocalLifecycleOwner.current
-
-    // Apply initial filter once on first composition. Also clear any stale search query so the
-    // drawer always opens showing the full (unfiltered) list — the ViewModel is retained across
-    // open/close, and the search field starts hidden.
     val appliedInitial = remember { mutableStateOf(false) }
     if (!appliedInitial.value) {
         viewModel.setFilter(initialFilter)
@@ -135,13 +110,65 @@ fun AppDrawerScreen(
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.refresh()
-            }
+            if (event == Lifecycle.Event.ON_RESUME) viewModel.refresh()
         }
         lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    AppDrawerContent(
+        state = state,
+        searchActive = searchActive,
+        onBack = onBack,
+        onSearchQueryChange = { viewModel.setSearchQuery(it) },
+        onSearchToggle = { searchActive = it; if (!it) viewModel.setSearchQuery("") },
+        onSearchDone = { keyboard?.hide() },
+        onFilterSelected = { viewModel.setFilter(it) },
+        onAppTapped = { viewModel.onAppTapped(it) },
+        onAppLaunched = { viewModel.launchApp(it) },
+        onAppMenu = { viewModel.openAppMenu(it) },
+        onTouchBrowse = { viewModel.onTouchBrowse(it) },
+        onMenuAction = { viewModel.onMenuAction(it) },
+        onCloseMenu = { viewModel.closeAppMenu() },
+        onConfirmUninstall = { viewModel.confirmUninstall() },
+        onCancelUninstall = { viewModel.cancelUninstall() },
+        onGrantUsageAccess = { viewModel.openUsageAccessSettings() },
+        modifier = modifier
+    )
+}
+
+@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+private fun AppDrawerContent(
+    state: AppDrawerUiState,
+    searchActive: Boolean,
+    onBack: () -> Unit,
+    onSearchQueryChange: (String) -> Unit,
+    onSearchToggle: (Boolean) -> Unit,
+    onSearchDone: () -> Unit,
+    onFilterSelected: (AppFilter) -> Unit,
+    onAppTapped: (Int) -> Unit,
+    onAppLaunched: (String) -> Unit,
+    onAppMenu: (InstalledApp) -> Unit,
+    onTouchBrowse: (Int) -> Unit,
+    onMenuAction: (AppMenuAction) -> Unit,
+    onCloseMenu: () -> Unit,
+    onConfirmUninstall: () -> Unit,
+    onCancelUninstall: () -> Unit,
+    onGrantUsageAccess: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val searchFocus = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(searchActive) {
+        if (searchActive) {
+            withFrameNanos {}
+            withFrameNanos {}
+            runCatching { searchFocus.requestFocus() }
+            keyboard?.show()
+        } else {
+            keyboard?.hide()
         }
     }
 
@@ -157,27 +184,23 @@ fun AppDrawerScreen(
             ),
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-
-            // ── Header ─────────────────────────────────────────────────────
             DrawerHeader(
                 title        = state.activeFilter.label,
                 appCount     = state.visibleApps.size,
                 searchQuery  = state.searchQuery,
                 searchActive = searchActive,
                 searchFocus  = searchFocus,
-                onSearchToggle   = { searchActive = it; if (!it) viewModel.setSearchQuery("") },
-                onSearchChange   = { viewModel.setSearchQuery(it) },
-                onSearchDone     = { keyboard?.hide() },
+                onSearchToggle   = onSearchToggle,
+                onSearchChange   = onSearchQueryChange,
+                onSearchDone     = onSearchDone,
                 onBack           = onBack,
             )
 
-            // ── Filter tabs ────────────────────────────────────────────────
             FilterTabRow(
                 activeFilter = state.activeFilter,
-                onFilterSelected = { viewModel.setFilter(it) },
+                onFilterSelected = onFilterSelected,
             )
 
-            // ── Content ────────────────────────────────────────────────────
             Box(modifier = Modifier.weight(1f)) {
                 when {
                     state.isLoading -> {
@@ -186,55 +209,49 @@ fun AppDrawerScreen(
                             modifier = Modifier.align(Alignment.Center),
                         )
                     }
-
                     state.visibleApps.isEmpty() -> {
                         EmptyDrawerMessage(
                             filter          = state.activeFilter,
                             hasQuery        = state.searchQuery.isNotBlank(),
                             hasUsageAccess  = state.hasUsageAccess,
-                            onGrantUsageAccess = viewModel::openUsageAccessSettings,
+                            onGrantUsageAccess = onGrantUsageAccess,
                             modifier        = Modifier.align(Alignment.Center),
                         )
                     }
-
                     else -> {
                         AppGrid(
                             apps          = state.visibleApps,
                             selectedIndex = state.selectedIndex,
                             usingTouch    = state.usingTouch,
-                            onAppTapped   = { viewModel.onAppTapped(it) },
-                            onAppLaunched = { viewModel.launchApp(it) },
-                            onAppMenu     = { viewModel.openAppMenu(it) },
-                            onTouchBrowse = { viewModel.onTouchBrowse(it) },
+                            onAppTapped   = onAppTapped,
+                            onAppLaunched = onAppLaunched,
+                            onAppMenu     = onAppMenu,
+                            onTouchBrowse = onTouchBrowse,
                         )
                     }
                 }
             }
         }
 
-        // ── Long-press mini menu (App Info / Uninstall) ────────────────────────
         state.menuApp?.let { app ->
             AppMiniMenu(
                 app           = app,
                 actions       = state.menuActions,
                 selectedIndex = state.menuIndex,
-                onAction      = { viewModel.onMenuAction(it) },
-                onDismiss     = { viewModel.closeAppMenu() },
+                onAction      = onMenuAction,
+                onDismiss     = onCloseMenu,
             )
         }
 
-        // ── Uninstall confirmation (guard rail) ────────────────────────────────
         state.confirmUninstall?.let { app ->
             UninstallConfirmDialog(
                 app       = app,
-                onConfirm = { viewModel.confirmUninstall() },
-                onCancel  = { viewModel.cancelUninstall() },
+                onConfirm = onConfirmUninstall,
+                onCancel  = onCancelUninstall,
             )
         }
     }
 }
-
-// ── Long-press mini menu ────────────────────────────────────────────────────────
 
 @Composable
 private fun AppMiniMenu(
@@ -244,7 +261,6 @@ private fun AppMiniMenu(
     onAction: (AppMenuAction) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    // Full-screen scrim; tap outside dismisses. The menu itself is centered.
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -281,7 +297,7 @@ private fun AppMiniMenu(
                     fontSize = 15.sp,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(if (i == selectedIndex) com.playfieldportal.core.ui.theme.menuCursorFill() else Color.Transparent)
+                        .background(if (i == selectedIndex) menuCursorFill() else Color.Transparent)
                         .clickable { onAction(action) }
                         .padding(horizontal = 18.dp, vertical = 12.dp),
                 )
@@ -311,8 +327,6 @@ private fun UninstallConfirmDialog(
     )
 }
 
-// ── Header ────────────────────────────────────────────────────────────────────
-
 @Composable
 private fun DrawerHeader(
     title: String,
@@ -332,7 +346,6 @@ private fun DrawerHeader(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        // Back / title
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text     = "◀",
@@ -343,26 +356,12 @@ private fun DrawerHeader(
                     .padding(end = 16.dp),
             )
             Column {
-                Text(
-                    text       = title,
-                    color      = DrawerText,
-                    fontSize   = 20.sp,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text     = "$appCount apps",
-                    color    = DrawerSubtext,
-                    fontSize = 12.sp,
-                )
+                Text(text = title, color = DrawerText, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+                Text(text = "$appCount apps", color = DrawerSubtext, fontSize = 12.sp)
             }
         }
 
-        // Search
-        AnimatedVisibility(
-            visible = searchActive,
-            enter   = fadeIn(),
-            exit    = fadeOut(),
-        ) {
+        AnimatedVisibility(visible = searchActive, enter = fadeIn(), exit = fadeOut()) {
             BasicTextField(
                 value         = searchQuery,
                 onValueChange = onSearchChange,
@@ -373,9 +372,7 @@ private fun DrawerHeader(
                 keyboardActions = KeyboardActions(onSearch = { onSearchDone() }, onDone = { onSearchDone() }),
                 decorationBox = { inner ->
                     Box {
-                        if (searchQuery.isEmpty()) {
-                            Text("Search apps…", color = DrawerSubtext, fontSize = 14.sp)
-                        }
+                        if (searchQuery.isEmpty()) Text("Search apps…", color = DrawerSubtext, fontSize = 14.sp)
                         inner()
                     }
                 },
@@ -387,7 +384,6 @@ private fun DrawerHeader(
             )
         }
 
-        // Touch toggle + controller hint: navigating with a pad, press Y to open search.
         Text(
             text     = if (searchActive) "✕" else "Y  ⌕",
             color    = menuCursorEdge(),
@@ -397,8 +393,6 @@ private fun DrawerHeader(
         )
     }
 }
-
-// ── Filter tab row ────────────────────────────────────────────────────────────
 
 @Composable
 private fun FilterTabRow(
@@ -413,8 +407,6 @@ private fun FilterTabRow(
     ) {
         AppFilter.values().forEach { filter ->
             val isActive = filter == activeFilter
-            // Active tab: white label on a theme-tinted chip (the shared menu-cursor treatment),
-            // so the highlight follows the active color scheme.
             Text(
                 text       = filter.label,
                 color      = if (isActive) Color.White else DrawerSubtext,
@@ -435,8 +427,6 @@ private fun FilterTabRow(
     }
 }
 
-// ── App grid ──────────────────────────────────────────────────────────────────
-
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun AppGrid(
@@ -450,21 +440,15 @@ private fun AppGrid(
 ) {
     val gridState = rememberLazyGridState()
 
-    // Auto-scroll follows the cursor only in controller mode — while browsing by touch the silent
-    // cursor updates must never fight the user's finger.
     LaunchedEffect(selectedIndex, usingTouch) {
         if (!usingTouch && apps.isNotEmpty()) gridState.animateScrollToItem(selectedIndex)
     }
 
-    // When a FINGER scroll settles, park the cursor on the tile nearest the viewport centre so a
-    // switch to the d-pad picks up where the finger left off. Keyed off drag interactions — never
-    // off isScrollInProgress alone, which programmatic (controller-driven) scrolls also flip.
     var fingerScrolled by remember { mutableStateOf(false) }
     LaunchedEffect(gridState) {
         gridState.interactionSource.interactions.collect { interaction ->
             if (interaction is androidx.compose.foundation.interaction.DragInteraction.Start) {
                 fingerScrolled = true
-                // Enter touch mode immediately so the cursor hides mid-drag.
                 onTouchBrowse(gridState.firstVisibleItemIndex)
             }
         }
@@ -497,10 +481,7 @@ private fun AppGrid(
         itemsIndexed(apps) { index, app ->
             AppGridItem(
                 app        = app,
-                // The cursor highlight is controller-only; fingers don't need one.
                 isSelected = !usingTouch && index == selectedIndex,
-                // Single tap launches (moving focus there first so a later d-pad session resumes
-                // here). Matches the controller SELECT behaviour and standard launcher expectations.
                 onClick    = { onAppTapped(index); onAppLaunched(app.packageName) },
                 onMenu     = { onAppTapped(index); onAppMenu(app) },
             )
@@ -526,47 +507,21 @@ private fun AppGridItem(
                 color = if (isSelected) com.playfieldportal.core.ui.theme.menuCursorEdge() else Color.Transparent,
                 shape = RoundedCornerShape(12.dp),
             )
-            // Single tap launches; long-press opens the app's mini menu.
-            .combinedClickable(
-                onClick     = onClick,
-                onLongClick = onMenu,
-            )
+            .combinedClickable(onClick = onClick, onLongClick = onMenu)
             .padding(vertical = 10.dp, horizontal = 8.dp),
     ) {
-        // App icon
         Image(
             painter  = DrawablePainter(app.icon),
             contentDescription = app.label,
-            modifier = Modifier
-                .size(56.dp)
-                .clip(RoundedCornerShape(12.dp)),
+            modifier = Modifier.size(56.dp).clip(RoundedCornerShape(12.dp)),
         )
-
         Spacer(Modifier.height(6.dp))
-
-        Text(
-            text      = app.label,
-            color     = DrawerText,
-            fontSize  = 11.sp,
-            maxLines  = 2,
-            overflow  = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center,
-        )
-
-        // Emulator badge
+        Text(text = app.label, color = DrawerText, fontSize = 11.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
         if (app.isEmulator) {
-            Text(
-                text     = "EMU",
-                color    = menuCursorEdge(),
-                fontSize = 9.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(top = 2.dp),
-            )
+            Text(text = "EMU", color = menuCursorEdge(), fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 2.dp))
         }
     }
 }
-
-// ── Empty state ───────────────────────────────────────────────────────────────
 
 @Composable
 private fun EmptyDrawerMessage(
@@ -576,12 +531,9 @@ private fun EmptyDrawerMessage(
     onGrantUsageAccess: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier            = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
-            text      = when {
+            text = when {
                 hasQuery          -> "No apps match your search"
                 filter == AppFilter.GAMES     -> "No games found"
                 filter == AppFilter.EMULATORS -> "No emulators installed"
@@ -606,20 +558,47 @@ private fun EmptyDrawerMessage(
             textAlign = TextAlign.Center,
             modifier  = Modifier.padding(horizontal = 48.dp),
         )
-
         if (filter == AppFilter.RECENT && !hasUsageAccess) {
             Spacer(Modifier.height(16.dp))
-            Text(
-                text       = "Open Usage Access",
-                color      = menuCursorEdge(),
-                fontSize   = 13.sp,
-                fontWeight = FontWeight.Bold,
-                modifier   = Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(DrawerChip)
-                    .clickable { onGrantUsageAccess() }
-                    .padding(horizontal = 14.dp, vertical = 8.dp),
-            )
+            Text(text = "Open Usage Access", color = menuCursorEdge(), fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(DrawerChip).clickable { onGrantUsageAccess() }.padding(horizontal = 14.dp, vertical = 8.dp))
         }
+    }
+}
+
+@CombinedPreviews
+@Composable
+fun AppDrawerScreenPreview() {
+    val mockIcon = android.graphics.drawable.ColorDrawable(android.graphics.Color.LTGRAY)
+    val mockApps = listOf(
+        InstalledApp("com.android.chrome", "Chrome", mockIcon, isGame = false, isEmulator = false),
+        InstalledApp("org.ppsspp.ppsspp", "PPSSPP", mockIcon, isGame = false, isEmulator = true),
+        InstalledApp("com.retroarch", "RetroArch", mockIcon, isGame = false, isEmulator = true),
+        InstalledApp("com.google.android.youtube", "YouTube", mockIcon, isGame = false, isEmulator = false),
+        InstalledApp("com.playfieldportal.launcher", "Play Field Portal", mockIcon, isGame = false, isEmulator = false),
+    )
+    val mockState = AppDrawerUiState(
+        visibleApps = mockApps,
+        activeFilter = AppFilter.ALL,
+        selectedIndex = 1
+    )
+    PfpPreview {
+        AppDrawerContent(
+            state = mockState,
+            searchActive = false,
+            onBack = {},
+            onSearchQueryChange = {},
+            onSearchToggle = {},
+            onSearchDone = {},
+            onFilterSelected = {},
+            onAppTapped = {},
+            onAppLaunched = {},
+            onAppMenu = {},
+            onTouchBrowse = {},
+            onMenuAction = {},
+            onCloseMenu = {},
+            onConfirmUninstall = {},
+            onCancelUninstall = {},
+            onGrantUsageAccess = {}
+        )
     }
 }

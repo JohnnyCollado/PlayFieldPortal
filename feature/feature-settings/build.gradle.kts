@@ -59,4 +59,6 @@ dependencies {
 
     testImplementation(libs.bundles.test.unit)
     testImplementation(libs.hilt.android.testing)
+
+    debugImplementation(libs.compose.ui.tooling)
 }

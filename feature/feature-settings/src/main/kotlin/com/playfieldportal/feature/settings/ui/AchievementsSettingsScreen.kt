@@ -37,6 +37,7 @@ fun AchievementsSettingsScreen(
     var steamIdDraft by remember(state.steamId64) { mutableStateOf("") }
     var steamKeyDraft by remember(state.hasSteam) { mutableStateOf("") }
     var showLocalSteamWarning by remember { mutableStateOf(false) }
+    var showGoldbergWarning by remember { mutableStateOf(false) }
 
     SettingsScaffold(
         title    = "Settings",
@@ -160,6 +161,17 @@ fun AchievementsSettingsScreen(
                 onToggle = { on ->
                     // Enabling is gated behind the save-backup warning; disabling is immediate.
                     if (on) showLocalSteamWarning = true else viewModel.setLocalSteamTracking(false)
+                },
+            )
+            SettingsToggleRow(
+                label    = "Install Goldberg & Convert Games",
+                sublabel = "When scanning, offer to write achievement data into detected games so " +
+                    "the emulator can track them",
+                checked  = state.goldbergInstallerEnabled,
+                onToggle = { on ->
+                    // Converting rewrites game folders, so enabling is gated behind the same
+                    // save-backup warning; disabling is immediate.
+                    if (on) showGoldbergWarning = true else viewModel.setGoldbergInstaller(false)
                 },
             )
 
@@ -293,6 +305,35 @@ fun AchievementsSettingsScreen(
                 },
                 dismissButton = {
                     TextButton(onClick = { showLocalSteamWarning = false }) { Text("Cancel") }
+                },
+            )
+        }
+
+        if (showGoldbergWarning) {
+            AlertDialog(
+                onDismissRequest = { showGoldbergWarning = false },
+                title = { Text("Back up your save files first") },
+                text = {
+                    Text(
+                        "Before you convert any game, open your Windows emulator and back up the " +
+                            "save files for any Steam-emulated games you already set up.\n\n" +
+                            "Converting rewrites each game's emulator config and replaces its Steam " +
+                            "files so unlocks can be recorded. A game you set up and played before " +
+                            "this feature could otherwise lose access to its existing saves.\n\n" +
+                            "This also uses your own Steam Web API key to read achievement data — " +
+                            "use it at your own risk. Leave this off if you'd rather not accept " +
+                            "these risks.\n\n" +
+                            "Back up first, then turn this on and scan your games.",
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        viewModel.setGoldbergInstaller(true)
+                        showGoldbergWarning = false
+                    }) { Text("I've backed up — enable") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showGoldbergWarning = false }) { Text("Cancel") }
                 },
             )
         }

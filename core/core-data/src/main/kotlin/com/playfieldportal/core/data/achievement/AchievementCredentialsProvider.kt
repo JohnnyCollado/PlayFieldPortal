@@ -20,6 +20,7 @@ private val KEY_STEAM_ID64 = stringPreferencesKey("steam_id64")
 private val KEY_STEAM_API_KEY = stringPreferencesKey("steam_api_key")
 private val KEY_ENABLED = booleanPreferencesKey("achievements_enabled")
 private val KEY_LOCAL_STEAM_ENABLED = booleanPreferencesKey("local_steam_tracking_enabled")
+private val KEY_GOLDBERG_INSTALLER = booleanPreferencesKey("goldberg_installer_enabled")
 private val KEY_SYNC_LAST = longPreferencesKey("achievements_sync_last")
 
 /**
@@ -52,6 +53,16 @@ class AchievementCredentialsProvider @Inject constructor(
      */
     val localSteamTrackingEnabledFlow: Flow<Boolean> =
         context.pfpDataStore.data.map { it[KEY_LOCAL_STEAM_ENABLED] ?: false }
+
+    /**
+     * Whether PFP may actively install the Goldberg emu into detected game folders — writing the
+     * `steam_settings` kit (achievements.json et al.) and swapping in the emu DLL. Independent of
+     * [localSteamTrackingEnabledFlow]: turning this on lets a scan discover and convert games even
+     * when ongoing tracking/sync is off. Off by default and gated behind the same save-backup
+     * warning, because converting rewrites the game folder.
+     */
+    val goldbergInstallerEnabledFlow: Flow<Boolean> =
+        context.pfpDataStore.data.map { it[KEY_GOLDBERG_INSTALLER] ?: false }
 
     val lastSyncedAtFlow: Flow<Long?> =
         context.pfpDataStore.data.map { it[KEY_SYNC_LAST] }
@@ -100,6 +111,13 @@ class AchievementCredentialsProvider @Inject constructor(
         context.pfpDataStore.edit { it[KEY_LOCAL_STEAM_ENABLED] = enabled }
     }
 
+    suspend fun goldbergInstallerEnabled(): Boolean =
+        context.pfpDataStore.data.first()[KEY_GOLDBERG_INSTALLER] ?: false
+
+    suspend fun setGoldbergInstallerEnabled(enabled: Boolean) {
+        context.pfpDataStore.edit { it[KEY_GOLDBERG_INSTALLER] = enabled }
+    }
+
     suspend fun setLastSyncedAt(epochMillis: Long) {
         context.pfpDataStore.edit { it[KEY_SYNC_LAST] = epochMillis }
     }
@@ -129,6 +147,7 @@ class AchievementCredentialsProvider @Inject constructor(
             it.remove(KEY_STEAM_API_KEY)
             it.remove(KEY_ENABLED)
             it.remove(KEY_LOCAL_STEAM_ENABLED)
+            it.remove(KEY_GOLDBERG_INSTALLER)
             it.remove(KEY_SYNC_LAST)
         }
     }

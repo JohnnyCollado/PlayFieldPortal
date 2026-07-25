@@ -16,8 +16,16 @@ import android.net.Uri
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.playfieldportal.core.ui.preview.CombinedPreviews
+import com.playfieldportal.core.ui.preview.PfpScreenPreview
+import com.playfieldportal.feature.settings.viewmodel.PhotoSettingsUiState
 import com.playfieldportal.feature.settings.viewmodel.PhotoSettingsViewModel
 
+/**
+ * Stateful entry point: owns the ViewModel, collects its state, and wires the folder picker. Kept
+ * deliberately thin so the previewable UI lives in [PhotoSettingsContent]. This is the template for
+ * previewing any ViewModel-driven screen — see [com.playfieldportal.core.ui.preview.PfpPreview].
+ */
 @Composable
 fun PhotoSettingsScreen(
     onBack: () -> Unit,
@@ -35,6 +43,29 @@ fun PhotoSettingsScreen(
     // restore/reinstall lands on the exact same folder in one tap.
     val initialRootUri = state.rootUri?.let { runCatching { Uri.parse(it) }.getOrNull() }
 
+    PhotoSettingsContent(
+        state        = state,
+        onBack       = onBack,
+        onPickRoot   = { rootPicker.launch(initialRootUri) },
+        onRescan     = viewModel::rescan,
+        onClearCache = viewModel::clearThumbnailCache,
+        modifier     = modifier,
+    )
+}
+
+/**
+ * Stateless UI: everything the screen draws, driven purely by [state] and callbacks. No ViewModel,
+ * no Hilt — so it renders in `@Preview` with a hand-built [PhotoSettingsUiState].
+ */
+@Composable
+fun PhotoSettingsContent(
+    state: PhotoSettingsUiState,
+    onBack: () -> Unit,
+    onPickRoot: () -> Unit,
+    onRescan: () -> Unit,
+    onClearCache: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     SettingsScaffold(
         title    = "Settings",
         subtitle = "Photo",
@@ -53,14 +84,14 @@ fun PhotoSettingsScreen(
                 sublabel = "The folder PFP scans for photos, including its subfolders",
                 value    = state.rootName ?: "Not set",
                 focusKey = "photo_root",
-                onClick  = { rootPicker.launch(initialRootUri) },
+                onClick  = onPickRoot,
             )
             SettingsRow(
                 label    = if (state.hasRoot) "Replace Root Folder" else "Add Root Folder",
                 sublabel = if (state.hasRoot) "Choose a different folder — replaces the current root"
                            else "Grant one folder; PFP keeps read access and scans it",
                 focusKey = "photo_root_pick",
-                onClick  = { rootPicker.launch(initialRootUri) },
+                onClick  = onPickRoot,
             )
             SettingsRow(
                 label    = "Rescan Photo Library",
@@ -69,7 +100,7 @@ fun PhotoSettingsScreen(
                     state.scanMessage != null -> state.scanMessage
                     else                      -> "Update the library from the root folder"
                 },
-                onClick  = if (state.scanning || !state.hasRoot) null else ({ viewModel.rescan() }),
+                onClick  = if (state.scanning || !state.hasRoot) null else onRescan,
             )
 
             if (state.scanning) {
@@ -85,8 +116,25 @@ fun PhotoSettingsScreen(
             SettingsRow(
                 label    = "Clear Thumbnail Cache",
                 sublabel = "Delete generated thumbnails. A rescan regenerates them.",
-                onClick  = { viewModel.clearThumbnailCache() },
+                onClick  = onClearCache,
             )
         }
+    }
+}
+
+@CombinedPreviews
+@Composable
+private fun PhotoSettingsContentPreview() {
+    PfpScreenPreview {
+        PhotoSettingsContent(
+            state = PhotoSettingsUiState(
+                rootUri  = "content://preview/tree/primary%3ADCIM",
+                rootName = "DCIM/Camera",
+            ),
+            onBack       = {},
+            onPickRoot   = {},
+            onRescan     = {},
+            onClearCache = {},
+        )
     }
 }

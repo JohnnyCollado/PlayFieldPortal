@@ -138,7 +138,8 @@ fun GameDetailScreen(
     if (autoLaunch) {
         val loadedGameId = state.game?.id
         LaunchedEffect(loadedGameId) {
-            if (loadedGameId == gameId) viewModel.launch()
+            // Direct-launch auto-fire: the XMB icon confirm already played the launch sfx.
+            if (loadedGameId == gameId) viewModel.launch(playSound = false)
         }
     }
     // Seamless direct launch: the page stays invisible (the XMB remains on screen) until the

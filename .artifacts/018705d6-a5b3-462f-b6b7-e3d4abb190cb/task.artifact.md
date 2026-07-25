@@ -1,0 +1,4 @@
+- [x] Fix lambda type mismatch in `LibraryManagerScreenPreview`
+- [x] Add `pcImportLabel` to `LibraryManagerUiState` and populate it
+- [x] Generalize PC scan report messages
+- [x] Verify build and functionality

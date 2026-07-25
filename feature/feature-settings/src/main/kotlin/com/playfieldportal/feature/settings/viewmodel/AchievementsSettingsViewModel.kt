@@ -32,6 +32,7 @@ import javax.inject.Inject
 data class AchievementsSettingsUiState(
     val enabled: Boolean = false,
     val localSteamTrackingEnabled: Boolean = false,
+    val goldbergInstallerEnabled: Boolean = false,
     val wallet: CoinWallet = CoinWallet.EMPTY,
     val hasRetroAchievements: Boolean = false,
     val raUsername: String = "",
@@ -173,10 +174,12 @@ class AchievementsSettingsViewModel @Inject constructor(
         accounts,
         extra,
         repository.observeWallet(),
-    ) { acc, ex, wallet ->
+        credentials.goldbergInstallerEnabledFlow,
+    ) { acc, ex, wallet, goldberg ->
         AchievementsSettingsUiState(
             enabled = acc.enabled,
             localSteamTrackingEnabled = acc.localSteamEnabled,
+            goldbergInstallerEnabled = goldberg,
             wallet = wallet,
             hasRetroAchievements = !acc.raUsername.isNullOrBlank(),
             raUsername = acc.raUsername.orEmpty(),
@@ -214,6 +217,15 @@ class AchievementsSettingsViewModel @Inject constructor(
      */
     fun setLocalSteamTracking(enabled: Boolean) {
         viewModelScope.launch { credentials.setLocalSteamTrackingEnabled(enabled) }
+    }
+
+    /**
+     * Opts into (or out of) the Goldberg installer: when on, a scan offers to convert detected emu
+     * games (write their achievement data and swap in the emu DLL). Like tracking, enabling rewrites
+     * game folders, so the screen gates the on-transition behind the same save-backup warning.
+     */
+    fun setGoldbergInstaller(enabled: Boolean) {
+        viewModelScope.launch { credentials.setGoldbergInstallerEnabled(enabled) }
     }
 
     fun connectRetroAchievements(username: String, apiKey: String) {

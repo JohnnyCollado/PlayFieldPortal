@@ -29,6 +29,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.playfieldportal.core.ui.preview.CombinedPreviews
+import com.playfieldportal.core.ui.preview.PfpPreview
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 
@@ -188,5 +190,28 @@ private fun PspContextMenuRow(
                 )
             }
         }
+    }
+}
+
+// ── Previews ──────────────────────────────────────────────────────────────────
+
+@CombinedPreviews
+@Composable
+fun PspContextMenuPreview() {
+    val rows = listOf(
+        PspMenuRow("Play"),
+        PspMenuRow("Information"),
+        PspMenuRow("Delete", isDestructive = true),
+        PspMenuRow("Add to Favorites", checked = true),
+        PspMenuRow("Assign Album"),
+    )
+    PfpPreview {
+        PspContextMenuOverlay(
+            title = "Gran Turismo 4",
+            rows = rows,
+            selectedIndex = 1,
+            onRowActivated = {},
+            onDismiss = {},
+        )
     }
 }

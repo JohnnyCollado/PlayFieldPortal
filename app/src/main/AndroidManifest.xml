@@ -67,7 +67,7 @@
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTask"
-            android:screenOrientation="landscape"
+            android:screenOrientation="sensorLandscape"
             android:configChanges="orientation|screenSize|keyboardHidden|keyboard|navigation"
             android:windowSoftInputMode="stateAlwaysHidden">
 

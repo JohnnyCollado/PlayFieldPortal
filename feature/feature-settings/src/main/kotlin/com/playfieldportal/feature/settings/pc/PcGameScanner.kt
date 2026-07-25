@@ -3,6 +3,8 @@ package com.playfieldportal.feature.settings.pc
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
+import com.playfieldportal.core.data.repository.RomRootRepository
 import com.playfieldportal.core.data.repository.WindowsLibrarySetup
 import com.playfieldportal.core.data.repository.WindowsSetupState
 import com.playfieldportal.core.domain.model.Game
@@ -48,10 +50,15 @@ class PcGameScanner @Inject constructor(
     private val romScanner: RomScanner,
     private val gameRepository: GameRepository,
 ) {
-    suspend fun scan(): PcScanReport {
+    /**
+     * @param overrideFolder a tree URI the user picked from the file manager. When set, exported
+     * games are read from THAT folder for this scan only; otherwise the scan reads the default
+     * `<ROM Root>/windows/import` drop-folders. A picked folder does not require a ROM root.
+     */
+    suspend fun scan(overrideFolder: Uri? = null): PcScanReport {
         // Self-heal first so a fresh setup creates <root>/windows/import before we look for it.
         val setup = runCatching { windowsLibrarySetup.ensure() }.getOrNull()
-        if (setup is WindowsSetupState.NoRomRoot) {
+        if (overrideFolder == null && setup is WindowsSetupState.NoRomRoot) {
             return PcScanReport(
                 setup, 0, 0, 0, EmuGameImportResult(0, 0),
                 message = "Add a ROM Root first — PFP creates <root>/windows/import for exported games.",
@@ -74,7 +81,12 @@ class PcGameScanner @Inject constructor(
 
         var added = 0
         var skipped = 0
-        val importFolders = windowsLibrarySetup.importFolders()
+        val importFolders = if (overrideFolder != null) {
+            val treeUri = overrideFolder.toString()
+            RomRootRepository.treeDocId(treeUri)?.let { listOf(treeUri to it) } ?: emptyList()
+        } else {
+            windowsLibrarySetup.importFolders()
+        }
         for ((rootUri, importDocId) in importFolders) {
             romScanner.scanPcFolder(rootUri, importDocId).forEach { file ->
                 val launch = buildPcLaunch(file, pm, gameNativePkg, gameHubPkg, winlatorPkg)
@@ -114,9 +126,9 @@ class PcGameScanner @Inject constructor(
         val pinNote = if (pins > 0) " $pins pinned shortcut(s) reconciled." else ""
         val message = when {
             importFolders.isEmpty() && emu.discovered == 0 && pins == 0 ->
-                "No import folder found. Place exported games in <windows>/import (created automatically when the ROM root grant allows it)."
+                "Couldn't read that folder. Pick the folder your launcher exports games into."
             added == 0 && skipped == 0 && emu.discovered == 0 && pins == 0 ->
-                "No exported PC games found in <windows>/import."
+                "No exported PC games found in the selected folder."
             else ->
                 "Imported $added PC game(s)" +
                     (if (skipped > 0) ", skipped $skipped (no matching launcher installed)" else "") +

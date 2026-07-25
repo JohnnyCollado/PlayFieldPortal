@@ -9,9 +9,7 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.playfieldportal.core.data.database.dao.LibrarySourceDao
 import com.playfieldportal.core.data.database.dao.PlatformDao
-import com.playfieldportal.core.data.database.dao.ThemeDao
 import com.playfieldportal.core.data.database.entity.PlatformEntity
 import com.playfieldportal.core.data.repository.CategoryRepositoryImpl
 import com.playfieldportal.core.data.repository.CollectionRepository
@@ -47,7 +45,6 @@ import com.playfieldportal.core.domain.model.resolve
 import com.playfieldportal.feature.artwork.api.ArtworkRepository
 import com.playfieldportal.feature.library.scanner.RomScanner
 import com.playfieldportal.feature.library.scanner.ScanResult
-import com.playfieldportal.feature.library.scanner.ScanType
 import com.playfieldportal.feature.xmb.gamepad.GamepadInputHandler
 import com.playfieldportal.core.ui.notification.BackgroundTaskNotifier
 import com.playfieldportal.core.ui.sound.MenuSound
@@ -807,8 +804,6 @@ data class BackgroundTaskInfo(
 class XMBViewModel @Inject constructor(
     private val gameRepository: GameRepository,
     private val platformDao: PlatformDao,
-    private val themeDao: ThemeDao,
-    private val librarySourceDao: LibrarySourceDao,
     private val memoryCardRepository: MemoryCardRepository,
     private val collectionRepository: CollectionRepository,
     private val categoryRepository: CategoryRepositoryImpl,
@@ -825,7 +820,6 @@ class XMBViewModel @Inject constructor(
     private val menuSound: com.playfieldportal.core.ui.sound.MenuSoundPlayer,
     private val musicRepository: com.playfieldportal.core.domain.repository.MusicRepository,
     private val musicScanner: com.playfieldportal.feature.library.scanner.MusicScanner,
-    private val musicIntentResolver: com.playfieldportal.core.data.music.MusicIntentResolver,
     private val musicPlayer: com.playfieldportal.feature.xmb.music.MusicPlayerController,
     private val emulatorProfileRepository: com.playfieldportal.feature.launcher.EmulatorProfileRepository,
     private val videoRepository: com.playfieldportal.core.domain.repository.VideoRepository,
@@ -847,20 +841,40 @@ class XMBViewModel @Inject constructor(
     private val pcShortcutImporter: com.playfieldportal.feature.launcher.PcShortcutImporter,
     private val pcGameScanner: com.playfieldportal.feature.settings.pc.PcGameScanner,
     private val localSteamSchemaGenerator: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSchemaGenerator,
+    private val localSteamDiscovery: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamDiscovery,
 ) : ViewModel() {
 
-    // Drives the per-game "generate the missing achievement schema?" prompt after a Windows-card
-    // scan; the same controller and dialog serve the Library Manager (see LibraryManagerViewModel).
-    private val schemaPrompts =
-        com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSchemaPromptController(
+    // Drives the "convert detected games?" multi-select picker after a Windows-card scan; the same
+    // controller and dialog serve the Library Manager (see LibraryManagerViewModel).
+    private val convertPickerController =
+        com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamConvertPickerController(
             localSteamSchemaGenerator, viewModelScope,
         )
-    val schemaPrompt: StateFlow<com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSchemaPromptController.Prompt?> =
-        schemaPrompts.prompt
+    val convertPicker: StateFlow<com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamConvertPickerController.Picker?> =
+        convertPickerController.picker
 
-    fun onSchemaPromptNo() = schemaPrompts.no()
-    fun onSchemaPromptYes() = schemaPrompts.yes()
-    fun onSchemaPromptYesToAll() = schemaPrompts.yesToAll()
+    fun onConvertToggle(index: Int) = convertPickerController.toggle(index)
+    fun onConvertSelectAll() = convertPickerController.setAll(true)
+    fun onConvertSelectNone() = convertPickerController.setAll(false)
+    fun onConvertConfirm() = convertPickerController.confirm()
+    fun onConvertCancel() = convertPickerController.cancel()
+
+    private fun convertOutcomeMessage(
+        outcome: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamConvertPickerController.Outcome,
+    ): String? {
+        if (outcome.converted == 0 && outcome.noAchievements == 0 &&
+            outcome.noKey == 0 && outcome.failed == 0
+        ) {
+            return null
+        }
+        return buildString {
+            append("Converted ${outcome.converted} game(s)")
+            if (outcome.noAchievements > 0) append(", ${outcome.noAchievements} had no achievements")
+            if (outcome.noKey > 0) append(", ${outcome.noKey} need a Steam Web API key")
+            if (outcome.failed > 0) append(", ${outcome.failed} failed")
+            append(". Play each game to start earning coins.")
+        }
+    }
 
     // The track list currently on screen (in display/sort order), used as the in-app player's queue
     // when a song is picked. [currentMusicTracksRaw] is the same set in DB order, kept so a sort
@@ -3684,9 +3698,6 @@ class XMBViewModel @Inject constructor(
         ) + allTrackedRow + untrackedRow
     }
 
-    private fun achievementsEmptyItem(text: String) =
-        XMBItem(id = EMPTY_CATEGORY_ITEM_ID, title = text, type = XMBItemType.EMPTY)
-
     private fun openAchievementsView(nav: AchievementsNav) =
         navigateRememberingCursor { it.copy(achievementsNav = nav) }
 
@@ -4054,19 +4065,6 @@ class XMBViewModel @Inject constructor(
         }
     }
 
-    fun onKeyDown(action: GamepadAction) {
-        if (action.isDirectional()) gamepadInputHandler.startRepeating(action, viewModelScope)
-    }
-
-    fun onKeyUp(action: GamepadAction) {
-        if (action.isDirectional()) gamepadInputHandler.cancelRepeat()
-    }
-
-    private fun GamepadAction.isDirectional() = this in setOf(
-        GamepadAction.NAVIGATE_UP, GamepadAction.NAVIGATE_DOWN,
-        GamepadAction.NAVIGATE_LEFT, GamepadAction.NAVIGATE_RIGHT,
-    )
-
     // ── Context menu ──────────────────────────────────────────────────────────
 
     private fun openPlatformContextMenu(platformId: String) {
@@ -4220,6 +4218,11 @@ class XMBViewModel @Inject constructor(
             if (item.platformId != ANDROID_PLATFORM_ID) {
                 add(XMBContextMenuItem("view_shiba_coins", "View Shiba Coins"))
             }
+            // Emulated PC (Local Steam) games can have their Goldberg achievement data installed on
+            // demand — gated per-game at dispatch on the installer toggle being on.
+            if (item.platformId == WINDOWS_PLATFORM_ID) {
+                add(XMBContextMenuItem("install_goldberg", "Install Goldberg Achievements"))
+            }
             // No "Edit App Details" here: package-backed GAME entries (PC shortcuts, Android
             // gaming apps) are games — art/title/note editing lives in Game Detail and the
             // game rows below, never the slim standard-app editor.
@@ -4317,9 +4320,6 @@ class XMBViewModel @Inject constructor(
     private fun openAppContextMenu(item: XMBItem, categoryIdOverride: String? = null) {
         val pkg = item.packageName ?: return
         val categoryId = categoryIdOverride ?: currentCategory()?.id
-        // In non-gaming (app) categories the user wants to simply remove an app from the category,
-        // not hide it globally — so "Hide App" is only offered in gaming categories.
-        val isGamingCat = _uiState.value.categories.firstOrNull { it.id == categoryId }?.isGamingCategory == true
         val items = buildList {
             add(XMBContextMenuItem("launch",   "Launch"))
             add(XMBContextMenuItem("edit_app", "Edit App Details"))
@@ -4630,6 +4630,7 @@ class XMBViewModel @Inject constructor(
                 "view_shiba_coins"       -> _uiState.update {
                     it.copy(activeShibaCoinsTarget = com.playfieldportal.feature.xmb.ui.detail.ShibaCoinsTarget.LibraryGame(menu.gameId))
                 }
+                "install_goldberg"       -> installGoldbergForGame(menu.gameId)
                 "edit_app"               -> openAppDetail(menu.gameId, menu.packageName ?: return)
                 "favorite"               -> toggleGameFavorite(menu.gameId, true)
                 "unfavorite"             -> toggleGameFavorite(menu.gameId, false)
@@ -4904,6 +4905,45 @@ class XMBViewModel @Inject constructor(
 
     fun dismissInfoDialog() = _uiState.update { it.copy(infoDialog = null) }
 
+    // Per-game Goldberg conversion from the Shiba/game context menu. When the installer is off the
+    // user is told there is no proper achievements.json (and how to enable generation); when it is
+    // on, the game's emu folder is matched by title and its schema kit is written in place.
+    private fun installGoldbergForGame(gameId: Long) {
+        viewModelScope.launch {
+            val game = gameRepository.getById(gameId) ?: return@launch
+            fun info(message: String) = _uiState.update {
+                it.copy(infoDialog = InfoDialogState(title = game.displayTitle, message = message))
+            }
+            if (!achievementCredentials.goldbergInstallerEnabled()) {
+                info(
+                    "No proper achievements.json for this game. Turn on \"Install Goldberg & " +
+                        "Convert Games\" in Achievement settings to generate one.",
+                )
+                return@launch
+            }
+            val key = normalizePcTitleKey(game.displayTitle)
+            val folder = localSteamDiscovery.scanAll().firstOrNull { normalizePcTitleKey(it.folderName) == key }
+            when {
+                folder == null -> info("No Steam-emu setup (steam_settings) found for this game.")
+                folder.hasSchema -> info("${game.displayTitle} already has achievement data.")
+                else -> when (localSteamSchemaGenerator.generate(folder)) {
+                    is com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSchemaGenerator.Result.Written ->
+                        info("Installed Goldberg achievements. Play it through the emulator to start earning coins.")
+                    is com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSchemaGenerator.Result.NoAchievements ->
+                        info("This game has no achievements to install.")
+                    is com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSchemaGenerator.Result.NoKey ->
+                        info("Add your Steam Web API key in Achievement settings first.")
+                    is com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSchemaGenerator.Result.Failed ->
+                        info("Couldn't install achievements for this game.")
+                }
+            }
+        }
+    }
+
+    // Folder-name/title match key, mirroring LocalSteamGameImporter.normalizeTitle.
+    private fun normalizePcTitleKey(title: String): String =
+        title.lowercase().filter { it.isLetterOrDigit() }
+
     // Called from touch interaction on the overlay
     fun onContextMenuItemActivatedAt(index: Int) {
         _uiState.update { it.copy(activeContextMenu = it.activeContextMenu?.copy(selectedIndex = index)) }
@@ -5104,18 +5144,15 @@ class XMBViewModel @Inject constructor(
                         taskId,
                         if (report.newGames == 0) "No new PC games found" else report.message,
                     )
-                    // Offer to fill in any emu folder missing its achievement schema; each write is
-                    // gated per game by the shared prompt (No / Yes / Yes to All for this scan).
-                    schemaPrompts.start(report.emu.missingSchema) { outcome ->
-                        if (outcome.generated > 0 || outcome.failed > 0) {
-                            val id = "schema_gen_$platformId"
-                            addBackgroundTask(BackgroundTaskInfo(id = id, label = "Achievement schemas", progress = null))
-                            completeBackgroundTask(
-                                id,
-                                "Generated ${outcome.generated} schema(s)" +
-                                    (if (outcome.failed > 0) ", ${outcome.failed} failed (check the Steam key)" else "") +
-                                    ". Play each game to start earning coins.",
-                            )
+                    // When the Goldberg installer is on, offer to convert every detected emu folder
+                    // that has steam_settings but no achievements.json yet — the user picks which.
+                    if (achievementCredentials.goldbergInstallerEnabled()) {
+                        convertPickerController.start(report.emu.missingSchema) { outcome ->
+                            convertOutcomeMessage(outcome)?.let { msg ->
+                                val id = "schema_gen_$platformId"
+                                addBackgroundTask(BackgroundTaskInfo(id = id, label = "Achievement schemas", progress = null))
+                                completeBackgroundTask(id, msg)
+                            }
                         }
                     }
                 }
@@ -6130,9 +6167,18 @@ class XMBViewModel @Inject constructor(
         // Sound: launch for items that boot something immediately; select for opening a folder,
         // detail, picker, or settings; silent for non-selectable placeholder rows.
         val silentRow = item?.id in setOf(NO_GAMES_ITEM_ID, EMPTY_COLLECTION_ITEM_ID, EMPTY_CATEGORY_ITEM_ID)
-        val launches  = item?.launchIntentUri != null ||
-            (item?.shortcutId != null && item.packageName != null) ||
-            item?.packageName != null
+        // A real game opens the Game Detail page, which only boots the game immediately (earning
+        // the launch sfx on confirm) when direct launch is on. Without it, confirm just opens the
+        // detail "menu" (select) and the launch sfx fires from its Play button instead — otherwise
+        // the sfx double-plays (confirm + Play).
+        val opensGameDetail = item?.gameId != null && item.isRealGame
+        val launches = if (opensGameDetail) {
+            _uiState.value.directLaunch
+        } else {
+            item?.launchIntentUri != null ||
+                (item?.shortcutId != null && item.packageName != null) ||
+                item?.packageName != null
+        }
         if (!silentRow) menuSound.play(if (launches) MenuSound.LAUNCH else MenuSound.SELECT)
 
         // Empty-state rows

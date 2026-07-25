@@ -69,13 +69,19 @@ class LocalSteamDiscovery @Inject constructor(
 
     /**
      * Every emu-marked game folder including untrackable ones awaiting schema generation. Empty
-     * when the user hasn't opted into Local Steam tracking — the single gate that keeps discovery,
-     * generation, the DLL swap, and syncing off until the save-backup warning has been accepted.
+     * unless the user has opted in — either to Local Steam tracking (detect + sync) or to the
+     * Goldberg installer (convert on scan). Either gate permits discovery so the installer can find
+     * and convert games without ongoing tracking; both sit behind the save-backup warning.
      */
     suspend fun scanAll(): List<LocalSteamGame> {
-        if (!credentials.localSteamTrackingEnabled()) return emptyList()
+        if (!discoveryEnabled()) return emptyList()
         return scanMutex.withLock { freshScan() }
     }
+
+    // Discovery is permitted when EITHER opt-in is on: tracking (detect + sync) or the Goldberg
+    // installer (convert on scan) — see AchievementCredentialsProvider.goldbergInstallerEnabledFlow.
+    private suspend fun discoveryEnabled(): Boolean =
+        credentials.localSteamTrackingEnabled() || credentials.goldbergInstallerEnabled()
 
     /**
      * The game folder whose `steam_appid.txt` matches [appId], or null. Served from a scan at most
@@ -84,7 +90,7 @@ class LocalSteamDiscovery @Inject constructor(
      * seen one pass late — the same self-correction a mid-scan move already relies on.
      */
     suspend fun findByAppId(appId: String): LocalSteamGame? {
-        if (!credentials.localSteamTrackingEnabled()) return null
+        if (!discoveryEnabled()) return null
         return scanMutex.withLock {
             val fresh = System.currentTimeMillis() - cachedAt <= SCAN_CACHE_MS
             // Deliberately matches untrackable games too: a sync requested right after generation

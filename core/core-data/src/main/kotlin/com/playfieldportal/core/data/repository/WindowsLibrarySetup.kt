@@ -39,8 +39,7 @@ sealed interface WindowsSetupState {
  * Creates and wires the Windows Games library (docs/windows-library-refactor-plan.md section 2):
  * the memory card itself, the `<ROM Root>/windows` default directory (created when the grant
  * permits), and the `windows/import/` drop-folder for frontend-export files. The card is
- * ROOT-MANAGED — its `treeUri` stays null and scanning walks the roots' `windows` subfolders —
- * unless the user explicitly picked a folder, which always wins.
+ * ROOT-MANAGED — its `treeUri` stays null and scanning walks the roots' `windows` subfolders.
  *
  * Windows scanning is extension-free by design; [ensure] clears any stray extension list.
  */

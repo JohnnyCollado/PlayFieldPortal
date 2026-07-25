@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.settings.ui
 
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -25,15 +26,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.playfieldportal.core.ui.preview.CombinedPreviews
+import com.playfieldportal.core.ui.preview.PfpPreview
 import com.playfieldportal.feature.launcher.PcLauncherAdapters
 import com.playfieldportal.feature.settings.viewmodel.ADD_CONSOLE_FOCUS_KEY
 import com.playfieldportal.feature.settings.viewmodel.EmulatorOption
 import com.playfieldportal.feature.settings.viewmodel.IMPORT_PC_FOCUS_KEY
-import com.playfieldportal.feature.settings.viewmodel.PcLauncherRow
 import com.playfieldportal.feature.settings.viewmodel.LibraryCardRow
 import com.playfieldportal.feature.settings.viewmodel.LibraryManagerUiState
 import com.playfieldportal.feature.settings.viewmodel.LibraryManagerViewModel
 import com.playfieldportal.feature.settings.viewmodel.LibraryStep
+import com.playfieldportal.feature.settings.viewmodel.PcGameRow
+import com.playfieldportal.feature.settings.viewmodel.PcLauncherRow
+import com.playfieldportal.feature.settings.viewmodel.PlatformOption
+import com.playfieldportal.feature.settings.viewmodel.RootFolderRow
+import com.playfieldportal.core.ui.achievement.LocalSteamConvertPickerDialog
+import com.playfieldportal.core.ui.achievement.LocalSteamConvertRow
+import com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamConvertPickerController
 
 @Composable
 fun LibraryManagerScreen(
@@ -45,6 +54,7 @@ fun LibraryManagerScreen(
     viewModel: LibraryManagerViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
+    val convertPicker by viewModel.convertPicker.collectAsState()
 
     LaunchedEffect(startInImportPc) {
         if (startInImportPc) viewModel.openImportPcGames()
@@ -60,29 +70,123 @@ fun LibraryManagerScreen(
         if (state.awaitingRomRootSetup) setupPicker.launch(null)
     }
 
-    // Hierarchical back: collapse a sub-screen first, otherwise close the overlay.
-    val handleBack: () -> Unit = { if (!viewModel.onBack()) onBack() }
+    LibraryManagerContent(
+        state = state,
+        convertPicker = convertPicker,
+        onBack = { if (!viewModel.onBack()) onBack() },
+        onAddAndroidApps = onAddAndroidApps,
+        onAddRomRoot = { it?.let { viewModel.addRomRoot(it) } },
+        onRelinkRomRoot = { _, uri ->
+            if (uri != null) viewModel.onRomRootRelinkPicked(uri)
+        },
+        onBeginRelink = { viewModel.beginRelinkRomRoot(it.treeUri) ?: Uri.EMPTY },
+        onRemoveRomRoot = { viewModel.removeRomRoot(it.treeUri) },
+        onScanRomRoot = { viewModel.scanRomRoot() },
+        onOpenCardDetail = { viewModel.openCardDetail(it) },
+        onStartAddConsole = { viewModel.startAddConsole() },
+        onRequestRomFolderSetup = { viewModel.requestRomFolderSetup() },
+        onScanAllConsoles = { viewModel.scanAllConsoles(it) },
+        onDismissMessage = { viewModel.dismissMessage() },
+        onPlatformChosen = { viewModel.onPlatformChosen(it) },
+        onEmulatorChosen = { viewModel.onEmulatorChosen(it) },
+        onConfirmAddConsole = { viewModel.confirmAddConsole(it) },
+        onLoadEmulatorOptions = { viewModel.loadEmulatorOptionsForDetail() },
+        onRemoveExtension = { p, e -> viewModel.removeExtension(p, e) },
+        onAddExtension = { p, e -> viewModel.addExtension(p, e) },
+        onScanConsole = { viewModel.scanConsole(it) },
+        onBeginRename = { viewModel.beginRename(it) },
+        onCancelRename = { viewModel.cancelRename() },
+        onConfirmRename = { viewModel.confirmRename(it) },
+        onToggleEnabled = { p, e -> viewModel.toggleEnabled(p, e) },
+        onTogglePinned = { p, pin -> viewModel.togglePinned(p, pin) },
+        onMoveCard = { p, up -> viewModel.moveCard(p, up) },
+        onRemoveCard = { viewModel.removeCard(it) },
+        onSetEmulatorForDetail = { viewModel.setEmulatorForDetail(it) },
+        onOpenImportPcGames = { viewModel.openImportPcGames() },
+        onRemoveApp = { viewModel.removeApp(it) },
+        onRefreshHomeStatus = { viewModel.refreshHomeStatus() },
+        onScanPcGamesFolder = { viewModel.scanPcGamesFolder(it) },
+        onImportPcGame = { viewModel.importPcGame(it) },
+        onImportAllPcGames = { viewModel.importAllPcGames() },
+        onTestLaunchPcGame = { l, id, s -> viewModel.testLaunchPcGame(l, id, s) },
+        onAddPcGameById = { l, id, t, s -> viewModel.addPcGameById(l, id, t, s) },
+        onConvertToggle = { viewModel.onConvertToggle(it) },
+        onConvertSelectAll = { viewModel.onConvertSelectAll() },
+        onConvertSelectNone = { viewModel.onConvertSelectNone() },
+        onConvertConfirm = { viewModel.onConvertConfirm() },
+        onConvertCancel = { viewModel.onConvertCancel() },
+        homeRoleIntentProvider = { viewModel.homeRoleIntent() },
+        modifier = modifier
+    )
+}
+
+@Composable
+private fun LibraryManagerContent(
+    state: LibraryManagerUiState,
+    convertPicker: LocalSteamConvertPickerController.Picker?,
+    onBack: () -> Unit,
+    onAddAndroidApps: () -> Unit,
+    onAddRomRoot: (Uri?) -> Unit,
+    onRelinkRomRoot: (RootFolderRow, Uri?) -> Unit,
+    onBeginRelink: (RootFolderRow) -> Uri,
+    onRemoveRomRoot: (RootFolderRow) -> Unit,
+    onScanRomRoot: () -> Unit,
+    onOpenCardDetail: (String) -> Unit,
+    onStartAddConsole: () -> Unit,
+    onRequestRomFolderSetup: () -> Unit,
+    onScanAllConsoles: (removeMissing: Boolean) -> Unit,
+    onDismissMessage: () -> Unit,
+    onPlatformChosen: (PlatformOption) -> Unit,
+    onEmulatorChosen: (EmulatorOption) -> Unit,
+    onConfirmAddConsole: (scanNow: Boolean) -> Unit,
+    onLoadEmulatorOptions: () -> Unit,
+    onRemoveExtension: (platformId: String, ext: String) -> Unit,
+    onAddExtension: (platformId: String, ext: String) -> Unit,
+    onScanConsole: (platformId: String) -> Unit,
+    onBeginRename: (platformId: String) -> Unit,
+    onCancelRename: () -> Unit,
+    onConfirmRename: (String) -> Unit,
+    onToggleEnabled: (platformId: String, enabled: Boolean) -> Unit,
+    onTogglePinned: (platformId: String, pinned: Boolean) -> Unit,
+    onMoveCard: (platformId: String, up: Boolean) -> Unit,
+    onRemoveCard: (platformId: String) -> Unit,
+    onSetEmulatorForDetail: (EmulatorOption) -> Unit,
+    onOpenImportPcGames: () -> Unit,
+    onRemoveApp: (Long) -> Unit,
+    onRefreshHomeStatus: () -> Unit,
+    onScanPcGamesFolder: (Uri) -> Unit,
+    onImportPcGame: (PcGameRow) -> Unit,
+    onImportAllPcGames: () -> Unit,
+    onTestLaunchPcGame: (PcLauncherRow, String, String?) -> Unit,
+    onAddPcGameById: (PcLauncherRow, String, String, String?) -> Unit,
+    onConvertToggle: (Int) -> Unit,
+    onConvertSelectAll: () -> Unit,
+    onConvertSelectNone: () -> Unit,
+    onConvertConfirm: () -> Unit,
+    onConvertCancel: () -> Unit,
+    homeRoleIntentProvider: () -> android.content.Intent?,
+    modifier: Modifier = Modifier,
+) {
+    val handleBack: () -> Unit = onBack
 
     when (state.step) {
-        LibraryStep.LIST          -> LibraryListContent(state, viewModel, handleBack, modifier)
-        LibraryStep.PICK_PLATFORM -> PickPlatformContent(state, viewModel, handleBack, modifier)
-        LibraryStep.PICK_EMULATOR -> PickEmulatorContent(state, viewModel, handleBack, modifier)
-        LibraryStep.SCAN_PROMPT   -> ScanPromptContent(state, viewModel, handleBack, modifier)
-        LibraryStep.CARD_DETAIL   -> CardDetailContent(state, viewModel, handleBack, onAddAndroidApps, modifier)
-        LibraryStep.IMPORT_PC     -> ImportPcGamesContent(state, viewModel, handleBack, modifier)
+        LibraryStep.LIST          -> LibraryListContent(state, handleBack, onAddRomRoot, onRelinkRomRoot, onBeginRelink, onRemoveRomRoot, onScanRomRoot, onOpenCardDetail, onStartAddConsole, onRequestRomFolderSetup, onScanAllConsoles, onDismissMessage, modifier)
+        LibraryStep.PICK_PLATFORM -> PickPlatformContent(state, onBack = handleBack, onPlatformChosen = onPlatformChosen, modifier = modifier)
+        LibraryStep.PICK_EMULATOR -> PickEmulatorContent(state, onBack = handleBack, onEmulatorChosen = onEmulatorChosen, modifier = modifier)
+        LibraryStep.SCAN_PROMPT   -> ScanPromptContent(state, onBack = handleBack, onConfirmAddConsole = onConfirmAddConsole, modifier = modifier)
+        LibraryStep.CARD_DETAIL   -> CardDetailContent(state, onBack = handleBack, onAddAndroidApps = onAddAndroidApps, onLoadEmulatorOptions = onLoadEmulatorOptions, onRemoveExtension = onRemoveExtension, onAddExtension = onAddExtension, onScanConsole = onScanConsole, onBeginRename = onBeginRename, onToggleEnabled = onToggleEnabled, onTogglePinned = onTogglePinned, onMoveCard = onMoveCard, onRemoveCard = onRemoveCard, onSetEmulatorForDetail = onSetEmulatorForDetail, onOpenImportPcGames = onOpenImportPcGames, onRemoveApp = onRemoveApp, modifier = modifier)
+        LibraryStep.IMPORT_PC     -> ImportPcGamesContent(state, onBack = handleBack, onRefreshHomeStatus = onRefreshHomeStatus, onScanPcGamesFolder = onScanPcGamesFolder, onImportPcGame = onImportPcGame, onImportAllPcGames = onImportAllPcGames, onTestLaunchPcGame = onTestLaunchPcGame, onAddPcGameById = onAddPcGameById, onDismissMessage = onDismissMessage, homeRoleIntentProvider = homeRoleIntentProvider, modifier = modifier)
     }
 
-    // ── Missing achievement-schema prompt (after a PC scan) ───────────────────
-    val schemaPrompt by viewModel.schemaPrompt.collectAsState()
-    schemaPrompt?.let { prompt ->
-        com.playfieldportal.core.ui.achievement.LocalSteamSchemaPromptDialog(
-            folderName = prompt.folderName,
-            appId = prompt.appId,
-            index = prompt.index,
-            total = prompt.total,
-            onNo = { viewModel.onSchemaPromptNo() },
-            onYes = { viewModel.onSchemaPromptYes() },
-            onYesToAll = { viewModel.onSchemaPromptYesToAll() },
+    // ── Convert-detected-games picker (after a PC scan, when the installer is on) ──
+    convertPicker?.let { picker ->
+        LocalSteamConvertPickerDialog(
+            rows = picker.rows.map { LocalSteamConvertRow(it.folderName, it.appId, it.selected) },
+            onToggle = onConvertToggle,
+            onSelectAll = onConvertSelectAll,
+            onSelectNone = onConvertSelectNone,
+            onConfirm = onConvertConfirm,
+            onCancel = onConvertCancel,
         )
     }
 
@@ -91,13 +195,13 @@ fun LibraryManagerScreen(
         val current = state.cards.firstOrNull { it.platformId == targetId }?.displayName ?: ""
         var text by remember(targetId) { mutableStateOf(current) }
         AlertDialog(
-            onDismissRequest = { viewModel.cancelRename() },
+            onDismissRequest = onCancelRename,
             title   = { Text("Rename Memory Card") },
             text    = {
                 OutlinedTextField(value = text, onValueChange = { text = it }, singleLine = true)
             },
-            confirmButton = { TextButton(onClick = { viewModel.confirmRename(text) }) { Text("Save") } },
-            dismissButton = { TextButton(onClick = { viewModel.cancelRename() }) { Text("Cancel") } },
+            confirmButton = { TextButton(onClick = { onConfirmRename(text) }) { Text("Save") } },
+            dismissButton = { TextButton(onClick = onCancelRename) { Text("Cancel") } },
         )
     }
 }
@@ -107,16 +211,27 @@ fun LibraryManagerScreen(
 @Composable
 private fun LibraryListContent(
     state: LibraryManagerUiState,
-    vm: LibraryManagerViewModel,
     onBack: () -> Unit,
+    onAddRomRoot: (Uri?) -> Unit,
+    onRelinkRomRoot: (RootFolderRow, Uri?) -> Unit,
+    onBeginRelink: (RootFolderRow) -> Uri,
+    onRemoveRomRoot: (RootFolderRow) -> Unit,
+    onScanRomRoot: () -> Unit,
+    onOpenCardDetail: (String) -> Unit,
+    onStartAddConsole: () -> Unit,
+    onRequestRomFolderSetup: () -> Unit,
+    onScanAllConsoles: (removeMissing: Boolean) -> Unit,
+    onDismissMessage: () -> Unit,
     modifier: Modifier,
 ) {
     val addRootPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
-    ) { uri -> uri?.let { vm.addRomRoot(it) } }
+    ) { uri -> onAddRomRoot(uri) }
+    
+    var relinkTarget by remember { mutableStateOf<RootFolderRow?>(null) }
     val relinkRootPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
-    ) { uri -> vm.onRomRootRelinkPicked(uri) }
+    ) { uri -> relinkTarget?.let { onRelinkRomRoot(it, uri) }; relinkTarget = null }
 
     SettingsScaffold(
         title = "Settings",
@@ -134,12 +249,15 @@ private fun LibraryListContent(
                 addLabel    = "Add ROM Root",
                 addSublabel = "Grant a root folder (e.g. /Roms) — or a second location like an SD card",
                 onAddRoot    = { addRootPicker.launch(null) },
-                onRelinkRoot = { relinkRootPicker.launch(vm.beginRelinkRomRoot(it.treeUri)) },
-                onRemoveRoot = { vm.removeRomRoot(it.treeUri) },
+                onRelinkRoot = { 
+                    relinkTarget = it
+                    relinkRootPicker.launch(onBeginRelink(it)) 
+                },
+                onRemoveRoot = { onRemoveRomRoot(it) },
                 autoDetectLabel    = "Auto-Detect Consoles",
                 autoDetectSublabel = "One pass over your ROM roots: a console per ES-DE system folder " +
                     "(gba, snes, psx…) that contains games",
-                onAutoDetect       = { vm.scanRomRoot() },
+                onAutoDetect       = { onScanRomRoot() },
             )
 
             SettingsGroup("Consoles")
@@ -153,7 +271,7 @@ private fun LibraryListContent(
                         sublabel = cardSublabel(card),
                         focusKey = card.platformId,
                         trailing = { if (card.pinned) Text("PINNED", color = SettingsAccent) },
-                        onClick  = { vm.openCardDetail(card.platformId) },
+                        onClick  = { onOpenCardDetail(card.platformId) },
                     )
                 }
             }
@@ -164,13 +282,13 @@ private fun LibraryListContent(
                 label    = "Add Console",
                 sublabel = "Pick a platform — its games live in the matching folder under your ROM Root",
                 focusKey = ADD_CONSOLE_FOCUS_KEY,
-                onClick  = { vm.startAddConsole() },
+                onClick  = { onStartAddConsole() },
             )
             SettingsRow(
                 label    = "Set Up ROM Folders (ES-DE)",
                 sublabel = "Pick an empty folder — PFP creates the standard ES-DE system folders " +
                     "(gba, snes, psx…) for you to copy games into. No guessing folder names",
-                onClick  = { vm.requestRomFolderSetup() },
+                onClick  = { onRequestRomFolderSetup() },
             )
             val anyScannable = state.cards.any { it.enabled && (it.treeUri != null || it.romDirectory != null) }
             SettingsRow(
@@ -180,10 +298,8 @@ private fun LibraryListContent(
                     state.cards.none { it.treeUri != null || it.romDirectory != null } -> "Configure a ROM folder first"
                     else -> "Scan every enabled console's folder"
                 },
-                onClick  = if (anyScannable) ({ vm.scanAllConsoles() }) else null,
+                onClick  = if (anyScannable) ({ onScanAllConsoles(false) }) else null,
             )
-            // Destructive variant behind an inline confirm step: the same walk also deletes
-            // entries whose ROM file vanished from disk.
             var confirmRescanAll by remember { mutableStateOf(false) }
             if (!confirmRescanAll) {
                 SettingsRow(
@@ -197,7 +313,7 @@ private fun LibraryListContent(
                     sublabel = "Removes library entries whose ROM file is gone. This can take a while with a large library",
                     onClick  = {
                         confirmRescanAll = false
-                        vm.scanAllConsoles(removeMissing = true)
+                        onScanAllConsoles(true)
                     },
                 )
                 SettingsRow(
@@ -206,7 +322,7 @@ private fun LibraryListContent(
                 )
             }
 
-            state.message?.let { MessageRow(it) { vm.dismissMessage() } }
+            state.message?.let { MessageRow(it) { onDismissMessage() } }
         }
     }
 }
@@ -216,8 +332,8 @@ private fun LibraryListContent(
 @Composable
 private fun PickPlatformContent(
     state: LibraryManagerUiState,
-    vm: LibraryManagerViewModel,
     onBack: () -> Unit,
+    onPlatformChosen: (PlatformOption) -> Unit,
     modifier: Modifier,
 ) {
     SettingsScaffold(title = "Add Console", subtitle = "Choose Platform", onBack = onBack, modifier = modifier) {
@@ -227,7 +343,7 @@ private fun PickPlatformContent(
                 SettingsRow(
                     label    = option.name,
                     sublabel = option.shortName,
-                    onClick  = { vm.onPlatformChosen(option) },
+                    onClick  = { onPlatformChosen(option) },
                 )
             }
         }
@@ -239,8 +355,8 @@ private fun PickPlatformContent(
 @Composable
 private fun PickEmulatorContent(
     state: LibraryManagerUiState,
-    vm: LibraryManagerViewModel,
     onBack: () -> Unit,
+    onEmulatorChosen: (EmulatorOption) -> Unit,
     modifier: Modifier,
 ) {
     SettingsScaffold(title = "Add Console", subtitle = "Assign Emulator", onBack = onBack, modifier = modifier) {
@@ -250,7 +366,7 @@ private fun PickEmulatorContent(
                 Hint("No installed emulators detected for this platform. You can assign one later from the console's detail screen.")
             }
             state.emulatorOptions.forEach { option ->
-                SettingsRow(label = option.name, onClick = { vm.onEmulatorChosen(option) })
+                SettingsRow(label = option.name, onClick = { onEmulatorChosen(option) })
             }
         }
     }
@@ -261,8 +377,8 @@ private fun PickEmulatorContent(
 @Composable
 private fun ScanPromptContent(
     state: LibraryManagerUiState,
-    vm: LibraryManagerViewModel,
     onBack: () -> Unit,
+    onConfirmAddConsole: (Boolean) -> Unit,
     modifier: Modifier,
 ) {
     SettingsScaffold(title = "Add Console", subtitle = "Scan Now?", onBack = onBack, modifier = modifier) {
@@ -276,12 +392,12 @@ private fun ScanPromptContent(
             SettingsRow(
                 label    = "Scan Now",
                 sublabel = "Create the Memory Card and scan its folder immediately",
-                onClick  = { vm.confirmAddConsole(scanNow = true) },
+                onClick  = { onConfirmAddConsole(true) },
             )
             SettingsRow(
                 label    = "Add Without Scanning",
                 sublabel = "Create the Memory Card now, scan later",
-                onClick  = { vm.confirmAddConsole(scanNow = false) },
+                onClick  = { onConfirmAddConsole(false) },
             )
         }
     }
@@ -292,23 +408,29 @@ private fun ScanPromptContent(
 @Composable
 private fun CardDetailContent(
     state: LibraryManagerUiState,
-    vm: LibraryManagerViewModel,
     onBack: () -> Unit,
     onAddAndroidApps: () -> Unit,
+    onLoadEmulatorOptions: () -> Unit,
+    onRemoveExtension: (String, String) -> Unit,
+    onAddExtension: (String, String) -> Unit,
+    onScanConsole: (String) -> Unit,
+    onBeginRename: (String) -> Unit,
+    onToggleEnabled: (String, Boolean) -> Unit,
+    onTogglePinned: (String, Boolean) -> Unit,
+    onMoveCard: (String, Boolean) -> Unit,
+    onRemoveCard: (String) -> Unit,
+    onSetEmulatorForDetail: (EmulatorOption) -> Unit,
+    onOpenImportPcGames: () -> Unit,
+    onRemoveApp: (Long) -> Unit,
     modifier: Modifier,
 ) {
-    val card = state.detailCard
-    if (card == null) { LaunchedEffect(Unit) { vm.onBack() }; return }
+    val card = state.detailCard ?: return
 
     var showEmulatorDialog by remember { mutableStateOf(false) }
     var showRemoveConfirm  by remember { mutableStateOf(false) }
     var newExt             by remember(card.platformId) { mutableStateOf("") }
     val isScanning = card.platformId in state.scanningPlatformIds
-    // The Android library is curated from installed apps — no ROM folder, emulator, extensions,
-    // or scanning. It's managed by the app picker + a removable app list instead.
     val isAndroid = card.platformId == "android"
-    // Windows games launch through PC launcher apps (never an emulator profile) and scanning is
-    // extension-free, so the card manages only its directory and the PC import flows.
     val isWindows = card.platformId == "windows"
 
     SettingsScaffold(title = "Library Manager", subtitle = card.displayName, onBack = onBack, modifier = modifier) {
@@ -329,12 +451,7 @@ private fun CardDetailContent(
                     label    = "Import PC Games",
                     sublabel = "Exported games, Add by ID, and launcher status",
                     focusKey = IMPORT_PC_FOCUS_KEY,
-                    onClick  = { vm.openImportPcGames() },
-                )
-                SettingsRow(
-                    label    = "Scan For PC Games",
-                    sublabel = "Reads the windows folder: game installs and exported shortcuts",
-                    onClick  = { vm.scanPcGamesFolder() },
+                    onClick  = onOpenImportPcGames,
                 )
             } else if (isAndroid) {
                 SettingsGroup("Apps")
@@ -350,7 +467,7 @@ private fun CardDetailContent(
                         SettingsRow(
                             label    = app.label,
                             trailing = { Text("Remove", color = SettingsAccent) },
-                            onClick  = { vm.removeApp(app.gameId) },
+                            onClick  = { onRemoveApp(app.gameId) },
                         )
                     }
                 }
@@ -365,11 +482,10 @@ private fun CardDetailContent(
                 SettingsValueRow(
                     label   = "Emulator",
                     value   = card.emulatorName ?: "None",
-                    onClick = { vm.loadEmulatorOptionsForDetail(); showEmulatorDialog = true },
+                    onClick = { onLoadEmulatorOptions(); showEmulatorDialog = true },
                 )
                 SettingsValueRow(label = "Games", value = card.gameCount.toString())
 
-                // ── Supported scan extensions (user-managed) ──────────────────────
                 SettingsGroup("Supported Files")
                 if (card.extensions.isEmpty()) {
                     Hint("No extensions set — add at least one so scanning can match this console's ROMs.")
@@ -378,7 +494,7 @@ private fun CardDetailContent(
                         SettingsRow(
                             label    = ".$ext",
                             trailing = { Text("Remove", color = SettingsAccent) },
-                            onClick  = { vm.removeExtension(card.platformId, ext) },
+                            onClick  = { onRemoveExtension(card.platformId, ext) },
                         )
                     }
                 }
@@ -394,7 +510,7 @@ private fun CardDetailContent(
                     ?.let { clean ->
                         SettingsRow(
                             label   = "Add \".$clean\"",
-                            onClick = { vm.addExtension(card.platformId, newExt); newExt = "" },
+                            onClick = { onAddExtension(card.platformId, newExt); newExt = "" },
                         )
                     }
 
@@ -406,25 +522,25 @@ private fun CardDetailContent(
                         card.romDirectory == null -> "ROM directory not configured"
                         else -> "Scan only this console's folder"
                     },
-                    onClick  = if (!isScanning && card.romDirectory != null) ({ vm.scanConsole(card.platformId) }) else null,
+                    onClick  = if (!isScanning && card.romDirectory != null) ({ onScanConsole(card.platformId) }) else null,
                 )
             }
 
             if (isAndroid) SettingsGroup("Actions")
-            SettingsRow(label = "Rename Memory Card", onClick = { vm.beginRename(card.platformId) })
+            SettingsRow(label = "Rename Memory Card", onClick = { onBeginRename(card.platformId) })
             SettingsToggleRow(
                 label    = "Show In Games",
                 sublabel = "Enable or hide this Memory Card",
                 checked  = card.enabled,
-                onToggle = { vm.toggleEnabled(card.platformId, it) },
+                onToggle = { onToggleEnabled(card.platformId, it) },
             )
             SettingsToggleRow(
                 label    = "Pin To Top",
                 checked  = card.pinned,
-                onToggle = { vm.togglePinned(card.platformId, it) },
+                onToggle = { onTogglePinned(card.platformId, it) },
             )
-            SettingsRow(label = "Move Up",   onClick = { vm.moveCard(card.platformId, up = true) })
-            SettingsRow(label = "Move Down", onClick = { vm.moveCard(card.platformId, up = false) })
+            SettingsRow(label = "Move Up",   onClick = { onMoveCard(card.platformId, true) })
+            SettingsRow(label = "Move Down", onClick = { onMoveCard(card.platformId, false) })
 
             SettingsGroup("Danger Zone")
             SettingsRow(
@@ -439,7 +555,7 @@ private fun CardDetailContent(
     if (showEmulatorDialog) {
         EmulatorPickerDialog(
             options    = state.emulatorOptions,
-            onSelect   = { vm.setEmulatorForDetail(it); showEmulatorDialog = false },
+            onSelect   = { onSetEmulatorForDetail(it); showEmulatorDialog = false },
             onDismiss  = { showEmulatorDialog = false },
         )
     }
@@ -449,7 +565,7 @@ private fun CardDetailContent(
             onDismissRequest = { showRemoveConfirm = false },
             title   = { Text("Remove ${card.displayName}?") },
             text    = { Text("This removes the console and its scanned games from the library. ROM files on disk are not deleted.") },
-            confirmButton = { TextButton(onClick = { showRemoveConfirm = false; vm.removeCard(card.platformId) }) { Text("Remove") } },
+            confirmButton = { TextButton(onClick = { showRemoveConfirm = false; onRemoveCard(card.platformId) }) { Text("Remove") } },
             dismissButton = { TextButton(onClick = { showRemoveConfirm = false }) { Text("Cancel") } },
         )
     }
@@ -476,31 +592,37 @@ private fun EmulatorPickerDialog(
 }
 
 // ── IMPORT PC GAMES ─────────────────────────────────────────────────────────────
-//
-// PFP as a PC-game frontend: shows which supported launchers are installed and imports games
-// already captured from them (via their shortcut/export flows) into launcher-named collections.
-// The Play button always launches back into the source app — PFP is never the PC runtime.
+
 @Composable
 private fun ImportPcGamesContent(
     state: LibraryManagerUiState,
-    vm: LibraryManagerViewModel,
     onBack: () -> Unit,
+    onRefreshHomeStatus: () -> Unit,
+    onScanPcGamesFolder: (Uri) -> Unit,
+    onImportPcGame: (PcGameRow) -> Unit,
+    onImportAllPcGames: () -> Unit,
+    onTestLaunchPcGame: (PcLauncherRow, String, String?) -> Unit,
+    onAddPcGameById: (PcLauncherRow, String, String, String?) -> Unit,
+    onDismissMessage: () -> Unit,
+    homeRoleIntentProvider: () -> android.content.Intent?,
     modifier: Modifier,
 ) {
-    // Row whose Add-game-by-ID dialog is open (null = closed).
     var addTarget by remember { mutableStateOf<PcLauncherRow?>(null) }
 
-    // Home-app role / settings request; refresh the Home status when the user returns.
+    // Picking a folder IS the scan trigger: on pick, scan that folder for exports one-shot.
+    val importPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri -> uri?.let { onScanPcGamesFolder(it) } }
+
     val homeLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
-    ) { vm.refreshHomeStatus() }
+    ) { onRefreshHomeStatus() }
 
     SettingsScaffold(title = "Library", subtitle = "Import PC Games", onBack = onBack, modifier = modifier) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
 
-            state.message?.let { MessageRow(it) { vm.dismissMessage() } }
+            state.message?.let { MessageRow(it) { onDismissMessage() } }
 
-            // ── Add to home capture (the pin workflow) ────────────────────────
             SettingsGroup("Add To Home Capture")
             SettingsValueRow(
                 label    = "Play Field Portal as Home",
@@ -509,19 +631,17 @@ private fun ImportPcGamesContent(
                     "Using \"Add to home\" inside a supported launcher imports the game here automatically"
                 else
                     "Set PFP as your Home app so a launcher's \"Add to home\" option imports the game into PFP",
-                onClick  = { runCatching { homeLauncher.launch(vm.homeRoleIntent()) } },
+                onClick  = { runCatching { homeLauncher.launch(homeRoleIntentProvider()) } },
             )
 
-            // ── Scan exported games ───────────────────────────────────────────
             SettingsGroup("Exported Games")
             SettingsRow(
                 label    = "Scan Import Folder",
-                sublabel = "Reads GameNative / Winlator exports (.steam · .epic · .gog · .amazon · " +
-                    ".pcgame · .desktop) dropped in <windows>/import",
-                onClick  = { vm.scanPcGamesFolder() },
+                sublabel = "Pick the folder your launcher exports to — PFP scans it for GameNative / " +
+                    "Winlator exports (.steam · .epic · .gog · .amazon · .pcgame · .desktop) and imports them",
+                onClick  = { importPicker.launch(null) },
             )
 
-            // ── Launchers ─────────────────────────────────────────────────────
             SettingsGroup("PC Launchers")
             state.pcLaunchers.forEach { launcher ->
                 when {
@@ -540,26 +660,22 @@ private fun ImportPcGamesContent(
                 }
             }
 
-            // ── Captured games ────────────────────────────────────────────────
             SettingsGroup("Found Games (${state.pcGames.size})")
             if (state.pcGames.isEmpty()) {
-                Hint(
-                    "No PC games captured yet. Add one by ID above, or in your launcher use its " +
-                    "\"add shortcut\" / \"export to launcher\" action — captured games appear here."
-                )
+                Hint("No PC games captured yet.")
             } else {
                 state.pcGames.forEach { row ->
                     SettingsValueRow(
                         label    = row.title,
                         sublabel = row.launcherName,
                         value    = "Import",
-                        onClick  = { vm.importPcGame(row) },
+                        onClick  = { onImportPcGame(row) },
                     )
                 }
                 SettingsRow(
                     label    = "Import All",
                     sublabel = "Add every found game to a collection named after its launcher",
-                    onClick  = { vm.importAllPcGames() },
+                    onClick  = onImportAllPcGames,
                 )
             }
         }
@@ -568,8 +684,8 @@ private fun ImportPcGamesContent(
     addTarget?.let { launcher ->
         AddPcGameDialog(
             launcher = launcher,
-            onTest   = { id, source -> vm.testLaunchPcGame(launcher, id, source) },
-            onAdd    = { id, title, source -> vm.addPcGameById(launcher, id, title, source); addTarget = null },
+            onTest   = { id, source -> onTestLaunchPcGame(launcher, id, source) },
+            onAdd    = { id, title, source -> onAddPcGameById(launcher, id, title, source); addTarget = null },
             onDismiss = { addTarget = null },
         )
     }
@@ -594,8 +710,6 @@ private fun AddPcGameDialog(
             Column {
                 adapter?.idPrompt?.let { Text(it, color = SettingsSubtext, fontSize = 12.sp) }
                 OutlinedTextField(value = id, onValueChange = { id = it }, label = { Text("Game ID") }, singleLine = true)
-                // Required: launchers keep their libraries private, so the id can't be resolved
-                // to a name — the user copies both from the game's page in the launcher.
                 OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Game name") }, singleLine = true)
                 if (adapter != null && adapter.sources.isNotEmpty()) {
                     Text("Source", color = SettingsSubtext, fontSize = 12.sp)
@@ -648,4 +762,58 @@ private fun MessageRow(message: String, onDismiss: () -> Unit) {
         trailing = { Text("✕", color = SettingsAccent, fontWeight = FontWeight.Bold) },
         onClick  = onDismiss,
     )
+}
+
+// ── Previews ──────────────────────────────────────────────────────────────────
+
+@CombinedPreviews
+@Composable
+fun LibraryManagerScreenPreview() {
+    PfpPreview {
+        LibraryManagerContent(
+            state = SettingsPreviewData.libraryListState,
+            convertPicker = null,
+            onBack = {},
+            onAddAndroidApps = {},
+            onAddRomRoot = {},
+            onRelinkRomRoot = { _, _ -> },
+            onBeginRelink = { Uri.EMPTY },
+            onRemoveRomRoot = {},
+            onScanRomRoot = {},
+            onOpenCardDetail = {},
+            onStartAddConsole = {},
+            onRequestRomFolderSetup = {},
+            onScanAllConsoles = {},
+            onDismissMessage = {},
+            onPlatformChosen = {},
+            onEmulatorChosen = {},
+            onConfirmAddConsole = {},
+            onLoadEmulatorOptions = {},
+            onRemoveExtension = { _, _ -> },
+            onAddExtension = { _, _ -> },
+            onScanConsole = {},
+            onBeginRename = {},
+            onCancelRename = {},
+            onConfirmRename = {},
+            onToggleEnabled = { _, _ -> },
+            onTogglePinned = { _, _ -> },
+            onMoveCard = { _, _ -> },
+            onRemoveCard = {},
+            onSetEmulatorForDetail = {},
+            onOpenImportPcGames = {},
+            onRemoveApp = {},
+            onRefreshHomeStatus = {},
+            onScanPcGamesFolder = {},
+            onImportPcGame = {},
+            onImportAllPcGames = {},
+            onTestLaunchPcGame = { _, _, _ -> },
+            onAddPcGameById = { _, _, _, _ -> },
+            onConvertToggle = {},
+            onConvertSelectAll = {},
+            onConvertSelectNone = {},
+            onConvertConfirm = {},
+            onConvertCancel = {},
+            homeRoleIntentProvider = { null }
+        )
+    }
 }

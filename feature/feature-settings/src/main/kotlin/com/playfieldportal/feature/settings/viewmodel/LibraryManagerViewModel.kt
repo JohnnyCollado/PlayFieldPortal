@@ -3,7 +3,6 @@ package com.playfieldportal.feature.settings.viewmodel
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.provider.DocumentsContract
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.repository.FolderLinkStatus
@@ -135,27 +134,28 @@ class LibraryManagerViewModel @Inject constructor(
     private val folderHintResolver: PlatformFolderHintResolver,
     private val launcherShortcutRepository: LauncherShortcutRepository,
     private val scanTombstoneDao: com.playfieldportal.core.data.database.dao.ScanTombstoneDao,
-    private val emuGameImporter: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamGameImporter,
     private val windowsLibrarySetup: com.playfieldportal.core.data.repository.WindowsLibrarySetup,
-    private val pcShortcutImporter: com.playfieldportal.feature.launcher.PcShortcutImporter,
     private val pcGameScanner: com.playfieldportal.feature.settings.pc.PcGameScanner,
     private val localSteamSchemaGenerator: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSchemaGenerator,
+    private val credentials: com.playfieldportal.core.data.achievement.AchievementCredentialsProvider,
 ) : ViewModel() {
 
     private val _scratch = MutableStateFlow(LibraryManagerUiState())
 
-    // Drives the per-game "generate the missing achievement schema?" prompt after a PC scan; the
-    // same controller and dialog serve the XMB Windows card (see XMBViewModel).
-    private val schemaPrompts =
-        com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSchemaPromptController(
+    // Drives the "convert detected games?" multi-select picker after a PC scan; the same controller
+    // and dialog serve the XMB Windows card (see XMBViewModel).
+    private val convertPickerController =
+        com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamConvertPickerController(
             localSteamSchemaGenerator, viewModelScope,
         )
-    val schemaPrompt: StateFlow<com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSchemaPromptController.Prompt?> =
-        schemaPrompts.prompt
+    val convertPicker: StateFlow<com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamConvertPickerController.Picker?> =
+        convertPickerController.picker
 
-    fun onSchemaPromptNo() = schemaPrompts.no()
-    fun onSchemaPromptYes() = schemaPrompts.yes()
-    fun onSchemaPromptYesToAll() = schemaPrompts.yesToAll()
+    fun onConvertToggle(index: Int) = convertPickerController.toggle(index)
+    fun onConvertSelectAll() = convertPickerController.setAll(true)
+    fun onConvertSelectNone() = convertPickerController.setAll(false)
+    fun onConvertConfirm() = convertPickerController.confirm()
+    fun onConvertCancel() = convertPickerController.cancel()
 
     init {
         // Reactive, not one-shot: roots granted anywhere (the first-run wizard, a restore) show
@@ -631,7 +631,9 @@ class LibraryManagerViewModel @Inject constructor(
     // named after the launcher. Direct per-launcher scanning is layered on via adapters.
     fun openImportPcGames() {
         // Entering the PC flow is PC intent — make sure the card and its folders exist.
-        viewModelScope.launch { runCatching { windowsLibrarySetup.ensure() } }
+        viewModelScope.launch {
+            runCatching { windowsLibrarySetup.ensure() }
+        }
         val pm = context.packageManager
         val launchers = PcLauncherCatalog.entries.map { def ->
             // Fingerprint-verified: GameHub-family variants ship under genuine AnTuTu/PUBG/Genshin
@@ -725,12 +727,17 @@ class LibraryManagerViewModel @Inject constructor(
     }
 
     /**
-     * Runs the shared full PC scan (setup self-heal, OS pin sweep, `<windows>/import/` exports,
-     * emu folder reconcile) — the same pass the XMB card's "Scan This Console" uses.
+     * Runs the shared full PC scan (setup self-heal, OS pin sweep, exported-game imports, emu
+     * folder reconcile) — the same pass the XMB card's "Scan This Console" uses.
+     *
+     * When [folder] is non-null (the user picked one from the file manager), exported games are
+     * read from THAT folder for this scan only; otherwise the scan falls back to the default
+     * `<ROM Root>/windows/import` drop-folders.
      */
-    fun scanPcGamesFolder() {
+    fun scanPcGamesFolder(folder: Uri? = null) {
         viewModelScope.launch {
-            val report = runCatching { pcGameScanner.scan() }
+            if (folder != null) romRootRepository.persist(folder)
+            val report = runCatching { pcGameScanner.scan(folder) }
                 .onFailure { Timber.e(it, "PC scan failed") }
                 .getOrNull()
             if (report == null) {
@@ -740,24 +747,33 @@ class LibraryManagerViewModel @Inject constructor(
             if (report.newGames > 0) ensureWindowsCard()
             _scratch.update { it.copy(message = report.message) }
 
-            // Offer to fill in any emu folder that has steam_settings but no achievements schema;
-            // each write is gated per game by the prompt (No / Yes / Yes to All for this scan).
-            schemaPrompts.start(report.emu.missingSchema) { outcome ->
-                if (outcome.generated > 0 || outcome.failed > 0) {
-                    _scratch.update {
-                        it.copy(message = schemaOutcomeMessage(outcome))
+            // When the Goldberg installer is on, offer to convert every detected emu folder that
+            // carries steam_settings but no achievements.json yet — the user picks which to convert.
+            if (credentials.goldbergInstallerEnabled()) {
+                convertPickerController.start(report.emu.missingSchema) { outcome ->
+                    convertOutcomeMessage(outcome)?.let { msg ->
+                        _scratch.update { it.copy(message = msg) }
                     }
                 }
             }
         }
     }
 
-    private fun schemaOutcomeMessage(
-        outcome: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSchemaPromptController.Outcome,
-    ): String = buildString {
-        append("Generated ${outcome.generated} achievement schema(s)")
-        if (outcome.failed > 0) append(", ${outcome.failed} failed (check the Steam key)")
-        append(". Play each game through the emulator to start earning coins.")
+    private fun convertOutcomeMessage(
+        outcome: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamConvertPickerController.Outcome,
+    ): String? {
+        if (outcome.converted == 0 && outcome.noAchievements == 0 &&
+            outcome.noKey == 0 && outcome.failed == 0
+        ) {
+            return null
+        }
+        return buildString {
+            append("Converted ${outcome.converted} game(s)")
+            if (outcome.noAchievements > 0) append(", ${outcome.noAchievements} had no achievements")
+            if (outcome.noKey > 0) append(", ${outcome.noKey} need a Steam Web API key")
+            if (outcome.failed > 0) append(", ${outcome.failed} failed")
+            append(". Play each game through the emulator to start earning coins.")
+        }
     }
 
     // ── Windows Games card helpers ────────────────────────────────────────────

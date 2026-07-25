@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
@@ -25,6 +26,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.playfieldportal.core.ui.preview.CombinedPreviews
+import com.playfieldportal.core.ui.preview.PfpPreview
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 
 // The one touch-button treatment shared across XMB screens: a transparent square that blends into
@@ -175,5 +178,37 @@ fun XmbTouchPill(
             fontWeight = FontWeight.SemiBold,
             style = TextStyle(shadow = XmbGlyphShadow),
         )
+    }
+}
+
+// ── Previews ──────────────────────────────────────────────────────────────────
+
+@CombinedPreviews
+@Composable
+fun XmbTouchButtonPreview() {
+    PfpPreview {
+        Row(Modifier.padding(16.dp)) {
+            XmbTouchButton(onClick = {}) {
+                Text("A", color = Color.White)
+            }
+            Spacer(Modifier.width(12.dp))
+            XmbBackTouchButton(onClick = {})
+            Spacer(Modifier.width(12.dp))
+            XmbGlyphTouchButton(glyph = "⋯", onClick = {})
+        }
+    }
+}
+
+@CombinedPreviews
+@Composable
+fun XmbPillPreview() {
+    PfpPreview {
+        Column(Modifier.padding(16.dp)) {
+            XmbHeaderPill(label = "Options", onClick = {}, leadingGlyph = "⋯")
+            Spacer(Modifier.height(12.dp))
+            XmbHeaderPill(label = "Back", onClick = {}, leadingGlyph = "◀", focused = true)
+            Spacer(Modifier.height(12.dp))
+            XmbTouchPill(label = "Sort by Name", onClick = {}, leadingGlyph = "⇵")
+        }
     }
 }

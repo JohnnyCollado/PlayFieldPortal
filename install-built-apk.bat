@@ -3,6 +3,13 @@ setlocal EnableExtensions EnableDelayedExpansion
 
 pushd "%~dp0"
 
+REM ============================================================
+REM  Play Field Portal - APK Installer
+REM  Choose flavor (full/lite) and build type (debug/release),
+REM  then install the matching APK to a connected device.
+REM ============================================================
+
+REM ── Locate adb ──────────────────────────────────────────────
 set "ADB=adb"
 set "ADB_FOUND=0"
 where adb >nul 2>nul
@@ -19,22 +26,85 @@ if "%ADB_FOUND%"=="0" (
     exit /b 1
 )
 
-set "APK="
-for /f "delims=" %%F in ('dir /b /s /a-d /o-d "%~dp0app\build\outputs\apk\*.apk" 2^>nul') do (
-    if not defined APK set "APK=%%F"
-)
-
-if not defined APK (
-    echo No built APK was found under app\build\outputs\apk.
-    echo Run build-debug-apk.bat first.
+REM ── Choose flavor ───────────────────────────────────────────
+echo.
+echo Choose flavor:
+echo   1. full   ^(includes the Discord Social SDK^)
+echo   2. lite   ^(smaller download, no Discord native libs^)
+echo.
+set /p FLAVORCHOICE=Flavor [1-2]:
+if "%FLAVORCHOICE%"=="1" (
+    set "FLAVORLC=full"
+    set "FLAVORUC=Full"
+) else if "%FLAVORCHOICE%"=="2" (
+    set "FLAVORLC=lite"
+    set "FLAVORUC=Lite"
+) else (
+    echo Invalid flavor selection.
     popd
     exit /b 1
 )
 
-echo APK to install:
-echo %APK%
+REM ── Choose build type ───────────────────────────────────────
+echo.
+echo Choose build type:
+echo   1. debug
+echo   2. release
+echo.
+set /p TYPECHOICE=Build type [1-2]:
+if "%TYPECHOICE%"=="1" (
+    set "TYPELC=debug"
+    set "TYPEUC=Debug"
+) else if "%TYPECHOICE%"=="2" (
+    set "TYPELC=release"
+    set "TYPEUC=Release"
+) else (
+    echo Invalid build type selection.
+    popd
+    exit /b 1
+)
+
+set "VARIANT=%FLAVORLC%-%TYPELC%"
+set "APK=%~dp0app\build\outputs\apk\%FLAVORLC%\%TYPELC%\app-%FLAVORLC%-%TYPELC%.apk"
+set "TASK=:app:assemble%FLAVORUC%%TYPEUC%"
+
+echo.
+echo Selected variant: %VARIANT%
+echo APK path:         %APK%
 echo.
 
+REM ── Build if the chosen APK isn't there yet ─────────────────
+if not exist "%APK%" (
+    echo APK not found for %VARIANT%.
+    set /p BUILDNOW=Build it now with gradlew %TASK%? [Y/N]:
+    if /i "!BUILDNOW!"=="Y" (
+        echo.
+        echo Building %VARIANT%...
+        call "%~dp0gradlew.bat" --console=plain -Dorg.gradle.problems.report=false %TASK%
+        if errorlevel 1 (
+            echo.
+            echo Build failed.
+            popd
+            exit /b 1
+        )
+    ) else (
+        echo.
+        echo Nothing to install. Build it first with:
+        echo   gradlew.bat %TASK%
+        popd
+        exit /b 1
+    )
+)
+
+if not exist "%APK%" (
+    echo Build finished but the APK is still missing: %APK%
+    echo ^(A release APK also needs a signing key - see keystore.properties.^)
+    popd
+    exit /b 1
+)
+
+REM ── Choose device ───────────────────────────────────────────
+echo.
 echo Connected Android devices:
 "%ADB%" devices
 echo.
@@ -56,7 +126,7 @@ if %COUNT% EQU 0 (
 )
 
 echo.
-set /p CHOICE=Choose a device number to install to: 
+set /p CHOICE=Choose a device number to install to:
 
 if not defined DEVICE_%CHOICE% (
     echo Invalid device selection.
@@ -66,7 +136,7 @@ if not defined DEVICE_%CHOICE% (
 
 set "TARGET=!DEVICE_%CHOICE%!"
 echo.
-echo Installing to !TARGET!...
+echo Installing %VARIANT% to !TARGET!...
 "%ADB%" -s "!TARGET!" install -r "%APK%"
 if errorlevel 1 (
     echo.
@@ -76,6 +146,6 @@ if errorlevel 1 (
 )
 
 echo.
-echo Install complete.
+echo Install complete ^(%VARIANT%^).
 popd
 exit /b 0

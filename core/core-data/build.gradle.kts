@@ -16,10 +16,17 @@ android {
     }
     kotlinOptions { jvmTarget = "17" }
     testOptions { unitTests { isIncludeAndroidResources = true } }
-    // Schema JSONs land in /schemas for migration tests; @Database(exportSchema = true) is
-    // meaningless without this output directory.
-    sourceSets["test"].assets.srcDir("$projectDir/schemas")
 }
+
+// Schema JSONs land in /schemas for migration tests; @Database(exportSchema = true) is
+// meaningless without this output directory. Under the legacy DSL (android.newDsl=false) AGP 9
+// casts library source sets to the removed com.android.build.gradle.api.AndroidLibrarySourceSet
+// and throws, so reach the "test" source set through the new-DSL LibraryExtension interface —
+// which the same source-set impl still implements — instead of the legacy accessor.
+(extensions.getByName("android") as com.android.build.api.dsl.LibraryExtension)
+    .sourceSets.named("test") {
+        assets.srcDir("$projectDir/schemas")
+    }
 
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")

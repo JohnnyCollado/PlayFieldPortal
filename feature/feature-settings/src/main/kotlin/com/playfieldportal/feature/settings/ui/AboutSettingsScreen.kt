@@ -8,6 +8,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import com.playfieldportal.core.ui.preview.CombinedPreviews
+import com.playfieldportal.core.ui.preview.PfpPreview
 
 @Composable
 fun AboutSettingsScreen(
@@ -73,5 +75,13 @@ fun AboutSettingsScreen(
                 sublabel = "PlayStation, PSP and XMB are trademarks of Sony Interactive Entertainment Inc.",
             )
         }
+    }
+}
+
+@CombinedPreviews
+@Composable
+fun AboutSettingsScreenPreview() {
+    PfpPreview {
+        AboutSettingsScreen(onBack = {})
     }
 }

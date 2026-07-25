@@ -1,6 +1,9 @@
 package com.playfieldportal.core.ui.achievement
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -11,6 +14,8 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.playfieldportal.core.ui.preview.CombinedPreviews
+import com.playfieldportal.core.ui.preview.PfpPreview
 
 // The bone emoji, drawn as the prestige glyph. Flattened to a single flat color at render time.
 private const val BONE = "🦴" // U+1F9B4 BONE
@@ -46,6 +51,20 @@ fun BoneGlyph(
         val baseline = this.size.height / 2f - (metrics.ascent + metrics.descent) / 2f
         drawIntoCanvas { canvas ->
             canvas.nativeCanvas.drawText(BONE, this.size.width / 2f, baseline, paint)
+        }
+    }
+}
+
+@CombinedPreviews
+@Composable
+fun BoneGlyphPreview() {
+    PfpPreview {
+        Row(Modifier.padding(16.dp)) {
+            BoneGlyph(tint = Color.White, size = 24.dp)
+            Spacer(Modifier.size(12.dp))
+            BoneGlyph(tint = Color.Yellow, size = 24.dp)
+            Spacer(Modifier.size(12.dp))
+            BoneGlyph(tint = Color.Cyan, size = 24.dp)
         }
     }
 }

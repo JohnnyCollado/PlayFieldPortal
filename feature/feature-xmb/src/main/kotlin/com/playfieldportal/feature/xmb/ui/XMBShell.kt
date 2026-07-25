@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.ui
 
+import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.Crossfade
@@ -50,6 +51,9 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.text.TextStyle
+import com.playfieldportal.core.ui.preview.DevicePreviews
+import com.playfieldportal.core.ui.preview.PfpPreview
+import com.playfieldportal.core.ui.theme.DefaultPFPColors
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.text.font.FontWeight
@@ -241,20 +245,21 @@ fun XMBShellContainer(
         onOpenAndroidLibraryPicker = viewModel::openAndroidLibraryPicker,
     )
 
-    // Per-game prompt to generate a missing emu achievement schema after a Windows-card scan.
-    // Same dialog + controller the Library Manager uses.
-    val schemaPrompt by viewModel.schemaPrompt.collectAsStateWithLifecycle(
+    // Multi-select picker to convert detected emu games after a Windows-card scan (when the
+    // Goldberg installer is on). Same dialog + controller the Library Manager uses.
+    val convertPicker by viewModel.convertPicker.collectAsStateWithLifecycle(
         lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current,
     )
-    schemaPrompt?.let { prompt ->
-        com.playfieldportal.core.ui.achievement.LocalSteamSchemaPromptDialog(
-            folderName = prompt.folderName,
-            appId = prompt.appId,
-            index = prompt.index,
-            total = prompt.total,
-            onNo = viewModel::onSchemaPromptNo,
-            onYes = viewModel::onSchemaPromptYes,
-            onYesToAll = viewModel::onSchemaPromptYesToAll,
+    convertPicker?.let { picker ->
+        com.playfieldportal.core.ui.achievement.LocalSteamConvertPickerDialog(
+            rows = picker.rows.map {
+                com.playfieldportal.core.ui.achievement.LocalSteamConvertRow(it.folderName, it.appId, it.selected)
+            },
+            onToggle = viewModel::onConvertToggle,
+            onSelectAll = viewModel::onConvertSelectAll,
+            onSelectNone = viewModel::onConvertSelectNone,
+            onConfirm = viewModel::onConvertConfirm,
+            onCancel = viewModel::onConvertCancel,
         )
     }
 
@@ -1054,20 +1059,43 @@ private fun InfoDialog(
     )
 }
 
-@Preview(name = "XMB - Default (Games)", widthDp = 960, heightDp = 540, showBackground = true)
+@OptIn(UnstableApi::class)
+@DevicePreviews
 @Composable
 private fun PreviewXMBDefault() {
-    XMBShell(uiState = PreviewData.defaultState)
+    PfpPreview {
+        XMBShell(uiState = PreviewData.defaultState)
+    }
 }
 
-@Preview(name = "XMB - Empty Library", widthDp = 960, heightDp = 540, showBackground = true)
+@OptIn(UnstableApi::class)
+@DevicePreviews
 @Composable
 private fun PreviewXMBEmpty() {
-    XMBShell(uiState = PreviewData.emptyLibraryState)
+    PfpPreview {
+        XMBShell(uiState = PreviewData.emptyLibraryState)
+    }
 }
 
-@Preview(name = "XMB - Boot Sequence", widthDp = 960, heightDp = 540, showBackground = true)
+@OptIn(UnstableApi::class)
+@DevicePreviews
 @Composable
 private fun PreviewXMBBoot() {
-    XMBShell(uiState = PreviewData.bootState)
+    PfpPreview {
+        XMBShell(uiState = PreviewData.bootState)
+    }
+}
+
+@OptIn(UnstableApi::class)
+@Preview(name = "XMB - Red Theme", widthDp = 960, heightDp = 540)
+@Composable
+private fun PreviewXMBRedTheme() {
+    val redColors = DefaultPFPColors.copy(
+        backgroundTop = Color(0xFF8B0000),
+        backgroundBottom = Color(0xFFB22222),
+        waveColor = Color(0xFFFF4500)
+    )
+    PfpPreview(colors = redColors) {
+        XMBShell(uiState = PreviewData.defaultState)
+    }
 }
