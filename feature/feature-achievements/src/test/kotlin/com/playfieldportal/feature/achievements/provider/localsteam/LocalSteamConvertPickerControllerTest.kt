@@ -2,6 +2,7 @@ package com.playfieldportal.feature.achievements.provider.localsteam
 
 import io.mockk.coEvery
 import io.mockk.mockk
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -46,6 +47,7 @@ class LocalSteamConvertPickerControllerTest {
 
         controller.start(listOf(game("A", "1"), game("B", "2"))) { outcome = it }
         controller.confirm()
+        advanceUntilIdle()
 
         assertNull(controller.picker.value)
         assertEquals(LocalSteamConvertPickerController.Outcome(converted = 2, noAchievements = 0, noKey = 0, failed = 0, skipped = 0), outcome)
@@ -60,6 +62,7 @@ class LocalSteamConvertPickerControllerTest {
         controller.start(listOf(game("A", "1"), game("B", "2"))) { outcome = it }
         controller.toggle(1) // uncheck B
         controller.confirm()
+        advanceUntilIdle()
 
         assertEquals(LocalSteamConvertPickerController.Outcome(converted = 1, noAchievements = 0, noKey = 0, failed = 0, skipped = 1), outcome)
     }
@@ -86,6 +89,7 @@ class LocalSteamConvertPickerControllerTest {
 
         controller.start(listOf(game("A", "1"), game("B", "2"), game("C", "3"))) { outcome = it }
         controller.confirm()
+        advanceUntilIdle()
 
         assertEquals(LocalSteamConvertPickerController.Outcome(converted = 1, noAchievements = 1, noKey = 1, failed = 0, skipped = 0), outcome)
     }
