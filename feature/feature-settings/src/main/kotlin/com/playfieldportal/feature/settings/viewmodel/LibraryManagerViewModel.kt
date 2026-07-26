@@ -43,6 +43,7 @@ const val ADD_CONSOLE_FOCUS_KEY = "add_console"
 // Platform whose library is built from installed apps (picker) rather than a ROM folder.
 private const val ANDROID_PLATFORM_ID = "android"
 private const val WINDOWS_PLATFORM_ID = "windows"
+private const val PSVITA_PLATFORM_ID = "psvita"
 
 private const val INVALID_GAME_ID_MESSAGE =
     "Enter a valid game ID — a number, or a local_… ID copied from the game's page in the launcher."
@@ -108,6 +109,8 @@ data class LibraryManagerUiState(
     // Import PC Games section
     val pcLaunchers: List<PcLauncherRow> = emptyList(),
     val pcGames: List<PcGameRow> = emptyList(),
+    // Display name of the granted Vita3K ux0 folder (null = not set).
+    val vita3KFolderLabel: String? = null,
     // True when PFP is the active Home app (unlocks auto-import of published game shortcuts).
     val isHomeLauncher: Boolean = false,
 
@@ -138,6 +141,8 @@ class LibraryManagerViewModel @Inject constructor(
     private val pcGameScanner: com.playfieldportal.feature.settings.pc.PcGameScanner,
     private val localSteamSchemaGenerator: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSchemaGenerator,
     private val credentials: com.playfieldportal.core.data.achievement.AchievementCredentialsProvider,
+    private val vita3KLibrary: com.playfieldportal.core.data.repository.Vita3KLibrary,
+    private val vitaGameScanner: com.playfieldportal.feature.achievements.provider.vita.VitaGameScanner,
 ) : ViewModel() {
 
     private val _scratch = MutableStateFlow(LibraryManagerUiState())
@@ -171,11 +176,16 @@ class LibraryManagerViewModel @Inject constructor(
         memoryCardRepository.observeAll(),
         gameRepository.observeAll(),
         emulatorProfileRepository.profiles,
+        vita3KLibrary.ux0TreeUriFlow,
         _scratch,
-    ) { cards, games, profiles, scratch ->
+    ) { cards, games, profiles, vitaUx0, scratch ->
         val emulatorNames = profiles.associate { it.id to it.name }
         val counts = games.groupBy { it.platformId }.mapValues { it.value.size }
         scratch.copy(
+            vita3KFolderLabel = vitaUx0?.let { uri ->
+                RomRootRepository.rawPathOfTree(uri)?.substringAfterLast('/')
+                    ?: Uri.decode(uri).substringAfterLast('/').substringAfterLast(':')
+            },
             // Each root shows the consoles homed under it (matched by the card's directory).
             romRoots = scratch.romRoots.map { root ->
                 val rootRaw = RomRootRepository.rawPathOfTree(root.treeUri)?.trimEnd('/')
@@ -487,8 +497,39 @@ class LibraryManagerViewModel @Inject constructor(
      * so removal costs no second pass. Removal is skipped when any source errors or reports no
      * survey (e.g. an unmounted SD card must not wipe that console's games).
      */
+    /** Scans Vita3K's granted ux0/app for installed titles onto the PS Vita card. */
+    fun scanVitaGames() {
+        if (PSVITA_PLATFORM_ID in _scratch.value.scanningPlatformIds) return
+        viewModelScope.launch {
+            _scratch.update { it.copy(scanningPlatformIds = it.scanningPlatformIds + PSVITA_PLATFORM_ID) }
+            val result = runCatching { vitaGameScanner.scan() }
+                .onFailure { Timber.e(it, "Vita scan failed") }
+                .getOrNull()
+            if (result != null && (result.added > 0 || result.updated > 0)) {
+                runCatching { memoryCardRepository.recountGames(PSVITA_PLATFORM_ID) }
+            }
+            _scratch.update {
+                it.copy(
+                    scanningPlatformIds = it.scanningPlatformIds - PSVITA_PLATFORM_ID,
+                    message = result?.message ?: "Vita scan failed — see the log.",
+                )
+            }
+        }
+    }
+
+    /** Grants (and persists) the Vita3K ux0 folder, then scans it. */
+    fun setVita3KFolder(uri: Uri?) {
+        if (uri == null) return
+        viewModelScope.launch {
+            vita3KLibrary.setUx0Folder(uri)   // persists the SAF read grant
+            scanVitaGames()
+        }
+    }
+
     fun scanConsole(platformId: String, removeMissing: Boolean = false) {
         if (platformId in _scratch.value.scanningPlatformIds) return
+        // PS Vita has no ROM folder: it scans Vita3K's granted ux0/app installed titles instead.
+        if (platformId == PSVITA_PLATFORM_ID) { scanVitaGames(); return }
         viewModelScope.launch {
             val card = memoryCardRepository.getById(platformId) ?: return@launch
 

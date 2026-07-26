@@ -413,6 +413,7 @@ internal fun providerLabel(provider: AchievementProvider): String = when (provid
     AchievementProvider.RETRO_ACHIEVEMENTS -> "RetroAchievements"
     AchievementProvider.STEAM -> "Steam"
     AchievementProvider.LOCAL_STEAM -> "Local Steam"
+    AchievementProvider.VITA_TROPHY -> "PS Vita"
 }
 
 private fun AccountAchievementEntity.toRow() = CoinRow(

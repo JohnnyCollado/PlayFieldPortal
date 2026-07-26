@@ -1,6 +1,7 @@
 package com.playfieldportal.studio.preview
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
@@ -10,6 +11,7 @@ import androidx.compose.material.icons.filled.Collections
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Headset
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Movie
@@ -52,6 +54,9 @@ object StudioIconSet {
         "catbar_appstore" to "xmb/catbar_appstore.png",
         "catbar_social" to "xmb/catbar_social.xml",
         "catbar_favorites" to "xmb/catbar_favorites.png",
+        "catbar_achievements" to "xmb/catbar_achievements.png",   // the Shiba Coin
+        // "All Tracked Games" reads as a memory card in the XMB (MEMORY_CARD_DEFAULT_ART).
+        "item_shiba_track" to "xmb/item_memcard.png",
         // Default memory-card art (launcher: systems/physical-media/_default.png) — one
         // asset, four semantic slots so themes can diverge per category.
         "item_memcard_games" to "xmb/item_memcard.png",
@@ -100,6 +105,9 @@ object StudioIconSet {
         "item_social_activity" to Icons.Filled.SportsEsports,
         "item_social_discord_settings" to Icons.Filled.Settings,
         "item_social_signout" to Icons.AutoMirrored.Filled.Logout,
+        // Shiba Coins (achievements) hub rows.
+        "item_shiba_connect" to Icons.Filled.Link,
+        "item_shiba_untracked" to Icons.AutoMirrored.Filled.HelpOutline,
     )
 
     /** Default painter for a slot key, or a play-arrow stand-in for unknown keys. */

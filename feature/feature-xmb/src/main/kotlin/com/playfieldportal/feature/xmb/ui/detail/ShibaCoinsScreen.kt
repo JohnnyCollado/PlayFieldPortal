@@ -267,6 +267,16 @@ private fun LinkSection(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewModel
                     fontSize = 12.sp,
                 )
             }
+            AchievementProvider.VITA_TROPHY -> {
+                // PS Vita trophies link from the Vita3K ux0 scan — nothing to enter by hand.
+                Text("Not linked yet", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "PS Vita trophies link automatically from Vita3K. Set your Vita3K data folder in the library and scan to link this game.",
+                    color = TextMuted,
+                    fontSize = 12.sp,
+                )
+            }
         }
     }
 }

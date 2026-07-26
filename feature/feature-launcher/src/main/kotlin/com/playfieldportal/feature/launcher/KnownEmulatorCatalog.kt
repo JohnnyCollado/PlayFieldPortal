@@ -1,6 +1,7 @@
 package com.playfieldportal.feature.launcher
 
 import com.playfieldportal.core.domain.model.IntentType
+import com.playfieldportal.core.domain.model.LaunchTemplate
 
 internal data class KnownEmulator(
     val packageNames: List<String>,   // tried in order; first installed one wins
@@ -10,6 +11,7 @@ internal data class KnownEmulator(
     val activityClass: String? = null,
     val intentExtras: Map<String, String> = emptyMap(),
     val intentBoolExtras: Map<String, Boolean> = emptyMap(),
+    val intentArrayExtras: Map<String, List<String>> = emptyMap(),
     val intentAction: String? = null,
     val intentFlags: List<String> = emptyList(),
     val intentCategory: String? = null,
@@ -25,13 +27,33 @@ internal data class KnownEmulator(
  * entries; verified recipes for unseeded systems (MSX, 3DO, Jaguar, J2ME, ...) live in
  * the research doc until their platforms exist.
  *
- * Not representable yet (see research doc, Section C): Vita3K and EmuCoreV (string-array
- * extra + title-ID launch), GameNative (int extra), ScummVM (sidecar game-id launch),
- * RPCSX (emulation activity not exported). Winlator/GameHub/GameNative are handled by
- * the PC launcher subsystem, not this catalog.
+ * Not representable yet (see research doc, Section C): GameNative (int extra), ScummVM
+ * (sidecar game-id launch), RPCSX (emulation activity not exported). Winlator/GameHub/
+ * GameNative are handled by the PC launcher subsystem, not this catalog.
  */
 internal object KnownEmulatorCatalog {
     val entries: List<KnownEmulator> = listOf(
+
+        // ── PS Vita ────────────────────────────────────────────────────────────
+        // Launches an INSTALLED title by its Title ID (ux0:app/<TITLE_ID>), not a ROM file:
+        // AppStartParameters = ["-r", "<TITLE_ID>"]. The scanner supplies the id as the game's
+        // launchToken (see VitaGameScanner). No rom data URI.
+        KnownEmulator(
+            packageNames      = listOf("org.vita3k.emulator", "org.vita3k.emulator.ikhoeyZX"),
+            suggestedName     = "Vita3K",
+            platformIds       = listOf("psvita"),
+            intentType        = IntentType.COMPONENT,
+            activityClass     = "org.vita3k.emulator.Emulator",
+            intentArrayExtras = mapOf("AppStartParameters" to listOf("-r", LaunchTemplate.TITLE_ID)),
+        ),
+        KnownEmulator(
+            packageNames      = listOf("com.sbro.emucorev"),
+            suggestedName     = "EmuCoreV",
+            platformIds       = listOf("psvita"),
+            intentType        = IntentType.COMPONENT,
+            activityClass     = "com.sbro.emucorev.core.vita.Emulator",
+            intentArrayExtras = mapOf("AppStartParameters" to listOf("-r", LaunchTemplate.TITLE_ID)),
+        ),
 
         // ── PSP ──────────────────────────────────────────────────────────────
         KnownEmulator(

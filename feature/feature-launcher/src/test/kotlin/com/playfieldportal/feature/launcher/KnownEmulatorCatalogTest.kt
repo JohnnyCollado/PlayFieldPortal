@@ -50,12 +50,16 @@ class KnownEmulatorCatalogTest {
             .filterNot { entry ->
                 entry.attachRomData || entry.intentExtras.values.any {
                     it.contains("{rom_uri}") || it.contains("{rom_path}")
-                }
+                } ||
+                    // ID-launch entries (e.g. Vita3K) boot an installed title by {title_id} and
+                    // deliver no ROM file by design.
+                    (entry.intentExtras.values + entry.intentArrayExtras.values.flatten())
+                        .any { it.contains("{title_id}") }
             }
             .map { it.suggestedName }
         assertTrue(
             silent.isEmpty(),
-            "COMPONENT entries with no ROM extra and no attachRomData (game cannot boot): $silent",
+            "COMPONENT entries with no ROM extra, no attachRomData, and no {title_id} (game cannot boot): $silent",
         )
     }
 

@@ -161,6 +161,11 @@ data class GameEntity(
     // Captured legacy INSTALL_SHORTCUT launch intent (Intent.toUri), for BannerHub / old Winlator.
     @ColumnInfo(name = "launch_intent_uri")
     val launchIntentUri: String? = null,
+
+    // Per-game launch token for ID-launch emulators (e.g. Vita3K installed Title ID). Resolves
+    // {title_id} in the emulator profile; null for ordinary ROM/app games.
+    @ColumnInfo(name = "launch_token")
+    val launchToken: String? = null,
 )
 
 fun GameEntity.toDomain() = Game(
@@ -206,6 +211,7 @@ fun GameEntity.toDomain() = Game(
     contentType         = GameContentType.fromName(contentType),
     shortcutId          = launchShortcutId,
     launchIntentUri     = launchIntentUri,
+    launchToken         = launchToken,
 )
 
 fun Game.toEntity() = GameEntity(
@@ -251,4 +257,5 @@ fun Game.toEntity() = GameEntity(
     contentType         = contentType.name,
     launchShortcutId    = shortcutId,
     launchIntentUri     = launchIntentUri,
+    launchToken         = launchToken,
 )

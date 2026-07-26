@@ -168,6 +168,49 @@ class EmulatorIntentResolverTest {
 
     // ── validation ───────────────────────────────────────────────────────────
 
+    // ── ID-launch (Vita3K string-array extra + Title ID, no ROM file) ─────────
+
+    private fun vita3kProfile() = EmulatorProfile(
+        id = "test_vita3k",
+        name = "Vita3K",
+        packageName = "org.vita3k.emulator",
+        activityClass = "org.vita3k.emulator.Emulator",
+        intentType = IntentType.COMPONENT,
+        supportedPlatformIds = listOf("psvita"),
+        intentArrayExtras = mapOf("AppStartParameters" to listOf("-r", "{title_id}")),
+    )
+
+    @Test
+    fun `vita3k launches installed title by id via string-array extra, no rom data`() {
+        installPackage("org.vita3k.emulator")
+        // No romUri / romPath — a Vita game boots by its installed Title ID.
+        val game = Game(title = "Disgaea 3", platformId = "psvita", launchToken = "PCSB00098")
+
+        val intent = resolver.resolve(game, vita3kProfile()).getOrThrow()
+
+        assertEquals("org.vita3k.emulator.Emulator", intent.component?.className)
+        assertEquals(
+            listOf("-r", "PCSB00098"),
+            intent.getStringArrayExtra("AppStartParameters")?.toList(),
+        )
+        assertNull(intent.data, "an ID launch must not attach a ROM data uri")
+        assertTrue(intent.hasFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    }
+
+    @Test
+    fun `token launch without a launch token fails with a readable message`() {
+        installPackage("org.vita3k.emulator")
+        val game = Game(title = "Disgaea 3", platformId = "psvita")  // no launchToken
+
+        val result = resolver.resolve(game, vita3kProfile())
+
+        assertTrue(result.isFailure)
+        assertTrue(
+            result.exceptionOrNull()!!.message!!.contains("launch ID", ignoreCase = true),
+            "Expected a re-scan hint, got: ${result.exceptionOrNull()!!.message}",
+        )
+    }
+
     @Test
     fun `missing emulator fails with a readable message instead of throwing`() {
         val profile = EmulatorProfile(

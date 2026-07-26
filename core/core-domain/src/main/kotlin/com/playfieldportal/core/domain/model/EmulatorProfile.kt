@@ -12,6 +12,9 @@ data class EmulatorProfile(
     val supportedPlatformIds: List<String>,
     val intentExtras: Map<String, String> = emptyMap(),         // key → string value template
     val intentBoolExtras: Map<String, Boolean> = emptyMap(),   // key → boolean value (e.g. resumeState=false)
+    // key → array of value templates. Needed by ID-launch emulators like Vita3K, whose
+    // AppStartParameters = ["-r", "{title_id}"] boots an installed title rather than a ROM file.
+    val intentArrayExtras: Map<String, List<String>> = emptyMap(),
     val intentAction: String? = null,    // overrides ACTION_MAIN for COMPONENT intents
     val intentFlags: List<String> = emptyList(),             // "CLEAR_TASK" | "CLEAR_TOP" | "NEW_TASK"
     val intentCategory: String? = null,  // e.g. "android.intent.category.LEANBACK_LAUNCHER"
@@ -57,4 +60,5 @@ object LaunchTemplate {
     const val CONFIG_PATH = "{config_path}"
     const val PACKAGE     = "{package}"
     const val PLATFORM    = "{platform}"
+    const val TITLE_ID    = "{title_id}"   // per-game launch token (e.g. Vita3K installed Title ID)
 }

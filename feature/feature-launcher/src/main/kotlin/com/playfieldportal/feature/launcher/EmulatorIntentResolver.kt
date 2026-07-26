@@ -87,10 +87,16 @@ class EmulatorIntentResolver @Inject constructor(
             }
         }
 
-        // A SAF game launches from its granted content:// URI — PFP holds no raw path to stat, so
-        // just require the URI is present/parseable; the OS grant + emulator report any lost access.
-        // A legacy raw-path game keeps the on-disk existence check.
-        if (!game.romUri.isNullOrBlank()) {
+        // ID-launch emulators (e.g. Vita3K) boot an installed title by its launch token, not a ROM
+        // file — there is nothing on disk for PFP to stat, so validate the token instead.
+        if (launchesByToken(profile)) {
+            if (game.launchToken.isNullOrBlank()) {
+                error("No launch ID recorded for ${game.title}. Re-scan its library.")
+            }
+        } else if (!game.romUri.isNullOrBlank()) {
+            // A SAF game launches from its granted content:// URI — PFP holds no raw path to stat,
+            // so just require the URI is present/parseable; the OS grant + emulator report any lost
+            // access. A legacy raw-path game keeps the on-disk existence check.
             runCatching { Uri.parse(game.romUri) }.getOrNull()
                 ?: error("This game's ROM link is invalid. Re-scan its library.")
         } else {
@@ -107,6 +113,12 @@ class EmulatorIntentResolver @Inject constructor(
             // storage. Skip the file-existence check and let RetroArch report a missing core.
         }
     }
+
+    // True when the profile boots by launch token (the {title_id} template appears in a string or
+    // array extra) rather than by ROM file — e.g. Vita3K's AppStartParameters.
+    private fun launchesByToken(profile: EmulatorProfile): Boolean =
+        profile.intentArrayExtras.values.flatten().any { it.contains(LaunchTemplate.TITLE_ID) } ||
+            profile.intentExtras.values.any { it.contains(LaunchTemplate.TITLE_ID) }
 
     private fun buildViewIntent(game: Game, profile: EmulatorProfile): Intent {
         val uri = romLaunchUri(game, profile)
@@ -183,6 +195,10 @@ class EmulatorIntentResolver @Inject constructor(
             profile.intentBoolExtras.forEach { (key, value) ->
                 putExtra(key, value)
             }
+            // String-array extras (e.g. Vita3K's AppStartParameters = ["-r", "<TITLE_ID>"]).
+            profile.intentArrayExtras.forEach { (key, templates) ->
+                putExtra(key, templates.map { resolveTemplate(it, game, profile, romUri) }.toTypedArray())
+            }
 
             if (romUri != null) {
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
@@ -252,6 +268,7 @@ class EmulatorIntentResolver @Inject constructor(
             .replace(LaunchTemplate.CONFIG_PATH, retroarchConfigPath(profile.packageName))
             .replace(LaunchTemplate.PACKAGE, profile.packageName)
             .replace(LaunchTemplate.PLATFORM, game.platformId)
+            .replace(LaunchTemplate.TITLE_ID, game.launchToken ?: "")
     }
 
     private fun retroarchConfigPath(packageName: String): String =

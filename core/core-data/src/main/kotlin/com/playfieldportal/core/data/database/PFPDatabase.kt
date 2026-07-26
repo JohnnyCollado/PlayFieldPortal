@@ -103,7 +103,7 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         SteamOwnedGameEntity::class,
         SteamNoAchievementsEntity::class,
     ],
-    version = 35,
+    version = 36,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -1072,6 +1072,13 @@ abstract class PFPDatabase : RoomDatabase() {
         val MIGRATION_34_35 = object : Migration(34, 35) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE provider_game_links ADD COLUMN ownership TEXT")
+            }
+        }
+
+        // launch_token: per-game launch token for ID-launch emulators (Vita3K Title ID).
+        val MIGRATION_35_36 = object : Migration(35, 36) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE games ADD COLUMN launch_token TEXT")
             }
         }
     }

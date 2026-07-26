@@ -184,7 +184,7 @@ class AchievementRepository @Inject constructor(
     ): List<SyncedCoin> {
         when (provider) {
             AchievementProvider.RETRO_ACHIEVEMENTS -> return fresh
-            AchievementProvider.STEAM, AchievementProvider.LOCAL_STEAM -> Unit
+            AchievementProvider.STEAM, AchievementProvider.LOCAL_STEAM, AchievementProvider.VITA_TROPHY -> Unit
         }
         val lastSyncedAt = storedSet?.lastSyncedAt ?: return fresh
         if (now - lastSyncedAt >= TIER_STABILITY_WINDOW_MS) return fresh

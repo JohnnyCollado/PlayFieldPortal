@@ -103,6 +103,8 @@ fun LibraryManagerScreen(
         onRemoveCard = { viewModel.removeCard(it) },
         onSetEmulatorForDetail = { viewModel.setEmulatorForDetail(it) },
         onOpenImportPcGames = { viewModel.openImportPcGames() },
+        onSetVita3KFolder = { viewModel.setVita3KFolder(it) },
+        onScanVitaGames = { viewModel.scanVitaGames() },
         onRemoveApp = { viewModel.removeApp(it) },
         onRefreshHomeStatus = { viewModel.refreshHomeStatus() },
         onScanPcGamesFolder = { viewModel.scanPcGamesFolder(it) },
@@ -152,6 +154,8 @@ private fun LibraryManagerContent(
     onRemoveCard: (platformId: String) -> Unit,
     onSetEmulatorForDetail: (EmulatorOption) -> Unit,
     onOpenImportPcGames: () -> Unit,
+    onSetVita3KFolder: (Uri) -> Unit,
+    onScanVitaGames: () -> Unit,
     onRemoveApp: (Long) -> Unit,
     onRefreshHomeStatus: () -> Unit,
     onScanPcGamesFolder: (Uri) -> Unit,
@@ -174,7 +178,7 @@ private fun LibraryManagerContent(
         LibraryStep.PICK_PLATFORM -> PickPlatformContent(state, onBack = handleBack, onPlatformChosen = onPlatformChosen, modifier = modifier)
         LibraryStep.PICK_EMULATOR -> PickEmulatorContent(state, onBack = handleBack, onEmulatorChosen = onEmulatorChosen, modifier = modifier)
         LibraryStep.SCAN_PROMPT   -> ScanPromptContent(state, onBack = handleBack, onConfirmAddConsole = onConfirmAddConsole, modifier = modifier)
-        LibraryStep.CARD_DETAIL   -> CardDetailContent(state, onBack = handleBack, onAddAndroidApps = onAddAndroidApps, onLoadEmulatorOptions = onLoadEmulatorOptions, onRemoveExtension = onRemoveExtension, onAddExtension = onAddExtension, onScanConsole = onScanConsole, onBeginRename = onBeginRename, onToggleEnabled = onToggleEnabled, onTogglePinned = onTogglePinned, onMoveCard = onMoveCard, onRemoveCard = onRemoveCard, onSetEmulatorForDetail = onSetEmulatorForDetail, onOpenImportPcGames = onOpenImportPcGames, onRemoveApp = onRemoveApp, modifier = modifier)
+        LibraryStep.CARD_DETAIL   -> CardDetailContent(state, onBack = handleBack, onAddAndroidApps = onAddAndroidApps, onLoadEmulatorOptions = onLoadEmulatorOptions, onRemoveExtension = onRemoveExtension, onAddExtension = onAddExtension, onScanConsole = onScanConsole, onBeginRename = onBeginRename, onToggleEnabled = onToggleEnabled, onTogglePinned = onTogglePinned, onMoveCard = onMoveCard, onRemoveCard = onRemoveCard, onSetEmulatorForDetail = onSetEmulatorForDetail, onOpenImportPcGames = onOpenImportPcGames, onSetVita3KFolder = onSetVita3KFolder, onScanVitaGames = onScanVitaGames, onRemoveApp = onRemoveApp, modifier = modifier)
         LibraryStep.IMPORT_PC     -> ImportPcGamesContent(state, onBack = handleBack, onRefreshHomeStatus = onRefreshHomeStatus, onScanPcGamesFolder = onScanPcGamesFolder, onImportPcGame = onImportPcGame, onImportAllPcGames = onImportAllPcGames, onTestLaunchPcGame = onTestLaunchPcGame, onAddPcGameById = onAddPcGameById, onDismissMessage = onDismissMessage, homeRoleIntentProvider = homeRoleIntentProvider, modifier = modifier)
     }
 
@@ -421,6 +425,8 @@ private fun CardDetailContent(
     onRemoveCard: (String) -> Unit,
     onSetEmulatorForDetail: (EmulatorOption) -> Unit,
     onOpenImportPcGames: () -> Unit,
+    onSetVita3KFolder: (Uri) -> Unit,
+    onScanVitaGames: () -> Unit,
     onRemoveApp: (Long) -> Unit,
     modifier: Modifier,
 ) {
@@ -432,6 +438,10 @@ private fun CardDetailContent(
     val isScanning = card.platformId in state.scanningPlatformIds
     val isAndroid = card.platformId == "android"
     val isWindows = card.platformId == "windows"
+    val isVita    = card.platformId == "psvita"
+    val vitaFolderPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri -> uri?.let { onSetVita3KFolder(it) } }
 
     SettingsScaffold(title = "Library Manager", subtitle = card.displayName, onBack = onBack, modifier = modifier) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
@@ -452,6 +462,24 @@ private fun CardDetailContent(
                     sublabel = "Exported games, Add by ID, and launcher status",
                     focusKey = IMPORT_PC_FOCUS_KEY,
                     onClick  = onOpenImportPcGames,
+                )
+            } else if (isVita) {
+                SettingsGroup("Library")
+                SettingsValueRow(
+                    label    = "Vita3K Data Folder",
+                    value    = state.vita3KFolderLabel ?: "Not set",
+                    sublabel = state.vita3KFolderLabel
+                        ?.let { "Reading installed titles from this ux0 folder" }
+                        ?: "Pick your Vita3K ux0 folder (e.g. Roms/vita/ux0) so PFP can find games",
+                    onClick  = { vitaFolderPicker.launch(null) },
+                )
+                SettingsValueRow(label = "Games", value = card.gameCount.toString())
+
+                SettingsGroup("Actions")
+                SettingsRow(
+                    label    = "Scan For Vita Games",
+                    sublabel = "Reads installed titles from ux0/app in your Vita3K data folder",
+                    onClick  = if (!isScanning && state.vita3KFolderLabel != null) ({ onScanVitaGames() }) else null,
                 )
             } else if (isAndroid) {
                 SettingsGroup("Apps")
@@ -801,6 +829,8 @@ fun LibraryManagerScreenPreview() {
             onRemoveCard = {},
             onSetEmulatorForDetail = {},
             onOpenImportPcGames = {},
+            onSetVita3KFolder = {},
+            onScanVitaGames = {},
             onRemoveApp = {},
             onRefreshHomeStatus = {},
             onScanPcGamesFolder = {},

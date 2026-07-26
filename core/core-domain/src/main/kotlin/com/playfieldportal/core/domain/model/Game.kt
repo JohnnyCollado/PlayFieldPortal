@@ -70,6 +70,9 @@ data class Game(
     // For legacy INSTALL_SHORTCUT entries (BannerHub, old Winlator): the captured launch Intent
     // serialized via Intent.toUri(URI_INTENT_SCHEME). Launched by parsing and starting it.
     val launchIntentUri: String? = null,
+    // Per-game launch token for ID-launch emulators (e.g. Vita3K installed Title ID). Resolves
+    // {title_id} in the emulator profile; null for ordinary ROM/app games.
+    val launchToken: String? = null,
 ) {
     // Resolved display name: user override → scraped metadata title → raw scan title.
     val displayTitle: String get() = userTitleOverride ?: scrapedTitle ?: title

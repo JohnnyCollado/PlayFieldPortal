@@ -86,8 +86,9 @@ class PlatformExtensionMap @Inject constructor() {
         "ws"    to "wonderswan",
         "wsc"   to "wonderswancolor",
 
-        // ── Sony Vita ─────────────────────────────────────────────────────
-        "vpk"   to "psvita",
+        // Sony Vita has no ROM-file extension: Android Vita3K runs only INSTALLED titles from
+        // ux0/app/<TITLE_ID> (a loose .vpk can't be installed or launched), so the psvita platform
+        // is scanned by VitaGameScanner via the granted ux0 folder, not by file extension.
 
         // ── Commodore ─────────────────────────────────────────────────────
         "d64"   to "c64",

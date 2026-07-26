@@ -47,6 +47,7 @@ class EmulatorDetector @Inject constructor(
                 supportedPlatformIds = known.platformIds,
                 intentExtras         = known.intentExtras,
                 intentBoolExtras     = known.intentBoolExtras,
+                intentArrayExtras    = known.intentArrayExtras,
                 intentAction         = known.intentAction,
                 intentFlags          = known.intentFlags,
                 intentCategory       = known.intentCategory,
