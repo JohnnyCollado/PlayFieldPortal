@@ -103,7 +103,7 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         SteamOwnedGameEntity::class,
         SteamNoAchievementsEntity::class,
     ],
-    version = 36,
+    version = 37,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -1079,6 +1079,14 @@ abstract class PFPDatabase : RoomDatabase() {
         val MIGRATION_35_36 = object : Migration(35, 36) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE games ADD COLUMN launch_token TEXT")
+            }
+        }
+
+        // v37 - Adding the ability to mark missing files and see when they were last present in the library.
+        val MIGRATION_36_37 = object : Migration(36, 37) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE games ADD COLUMN is_missing INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE games ADD COLUMN last_seen_at INTEGER")
             }
         }
     }

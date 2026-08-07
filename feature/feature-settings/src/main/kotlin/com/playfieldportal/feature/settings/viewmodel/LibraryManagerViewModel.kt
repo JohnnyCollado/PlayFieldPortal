@@ -18,6 +18,7 @@ import com.playfieldportal.feature.launcher.PcLauncherAdapters
 import com.playfieldportal.feature.launcher.PcLauncherCatalog
 import com.playfieldportal.feature.launcher.PcLauncherType
 import com.playfieldportal.core.data.platform.PlatformFolderHintResolver
+import com.playfieldportal.core.data.repository.LibraryReconciler
 import com.playfieldportal.feature.library.scanner.RomScanner
 import com.playfieldportal.feature.library.scanner.ScanResult
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -143,6 +144,7 @@ class LibraryManagerViewModel @Inject constructor(
     private val credentials: com.playfieldportal.core.data.achievement.AchievementCredentialsProvider,
     private val vita3KLibrary: com.playfieldportal.core.data.repository.Vita3KLibrary,
     private val vitaGameScanner: com.playfieldportal.feature.achievements.provider.vita.VitaGameScanner,
+    private val libraryReconciler: LibraryReconciler,
 ) : ViewModel() {
 
     private val _scratch = MutableStateFlow(LibraryManagerUiState())
@@ -579,14 +581,12 @@ class LibraryManagerViewModel @Inject constructor(
                 }
             }
 
+            // Non-destructive reconcile: present files are marked seen, gone files are marked
+            // missing (never deleted). The reconciler internally skips removals when the survey is
+            // untrustworthy — scan error, no survey, or an empty survey against a non-empty library.
             var removed = 0
-            val survey = present
-            if (removeMissing && !scanErrored && survey != null) {
-                // Plain delete, no tombstone: the file is gone, and if it ever comes back a
-                // future scan should resurrect it.
-                val gone = dbGames.filter { it.romPath != null && it.romPath !in survey }
-                gone.forEach { gameRepository.delete(it.id) }
-                removed = gone.size
+            if (removeMissing) {
+                removed = libraryReconciler.reconcile(dbGames, present, scanErrored).markedMissing
             }
 
             if (added > 0 || removed > 0) {
@@ -599,11 +599,11 @@ class LibraryManagerViewModel @Inject constructor(
                     scanningPlatformIds = it.scanningPlatformIds - platformId,
                     message = "${card.displayName}: " + buildString {
                         append(if (added == 0) "no new ROMs" else "$added new ROM(s) added")
-                        if (removeMissing) append(if (removed == 0) ", none missing" else ", $removed missing removed")
+                        if (removeMissing) append(if (removed == 0) ", none missing" else ", $removed marked missing")
                     },
                 )
             }
-            Timber.i("Library Manager scan complete for $platformId: $added new, $removed removed")
+            Timber.i("Library Manager scan complete for $platformId: $added new, $removed marked missing")
         }
     }
 

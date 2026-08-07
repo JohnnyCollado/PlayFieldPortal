@@ -55,4 +55,11 @@ interface GameRepository {
     // (Note: updateBoxArt above is legacy naming for the BACKGROUND/artwork_uri column, not the
     // BOX_ART tile — the new tile columns are written by the scraper/importer, not through here.)
     suspend fun setIconDisplayMode(id: Long, mode: String?)
+
+    // Missing-ROM tracking. markSeen / markMissing take explicit path lists the reconciler has
+    // already diffed (never a whole-table sweep), so a bad or partial scan can't mass-flag the
+    // library. observeMissing drives the Missing bucket UI.
+    fun observeMissing(): Flow<List<Game>>
+    suspend fun markSeen(romPaths: List<String>, seenAt: Long)
+    suspend fun markMissing(romPaths: List<String>)
 }

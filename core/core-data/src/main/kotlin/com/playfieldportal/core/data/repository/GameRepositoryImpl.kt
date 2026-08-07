@@ -145,4 +145,13 @@ class GameRepositoryImpl @Inject constructor(
         return missingIds.mapNotNull { gameDao.getById(it)?.toDomain() }
             .also { Timber.i("Missing ROM check: ${it.size} missing of ${romPaths.size} total") }
     }
+
+    override fun observeMissing(): Flow<List<Game>> =
+        gameDao.observeMissing().map { entities -> entities.map { it.toDomain() } }
+
+    override suspend fun markSeen(romPaths: List<String>, seenAt: Long) =
+        gameDao.markSeen(romPaths, seenAt)
+
+    override suspend fun markMissing(romPaths: List<String>) =
+        gameDao.markMissing(romPaths)
 }

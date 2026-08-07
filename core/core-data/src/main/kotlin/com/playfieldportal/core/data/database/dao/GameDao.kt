@@ -11,21 +11,21 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface GameDao {
 
-    @Query("SELECT * FROM games ORDER BY title ASC")
+    @Query("SELECT * FROM games WHERE is_missing = 0 ORDER BY title ASC")
     fun observeAll(): Flow<List<GameEntity>>
 
     // "All Games" aggregate — real games only. App-style entries (content_type != 'GAME',
     // e.g. ANDROID_APP / VIDEO_APP) are excluded so they never show up here automatically.
-    @Query("SELECT * FROM games WHERE content_type = 'GAME' ORDER BY title ASC")
+    @Query("SELECT * FROM games WHERE content_type = 'GAME'  AND is_missing = 0 ORDER BY title ASC")
     fun observeGamesOnly(): Flow<List<GameEntity>>
 
     @Query("UPDATE games SET content_type = :contentType WHERE id = :id")
     suspend fun setContentType(id: Long, contentType: String)
 
-    @Query("SELECT * FROM games WHERE is_favorite = 1 ORDER BY favorite_sort_order ASC")
+    @Query("SELECT * FROM games WHERE is_favorite = 1 AND is_missing = 0 ORDER BY favorite_sort_order ASC")
     fun observeFavorites(): Flow<List<GameEntity>>
 
-    @Query("SELECT * FROM games WHERE platform_id = :platformId ORDER BY title ASC")
+    @Query("SELECT * FROM games WHERE platform_id = :platformId AND is_missing = 0 ORDER BY title ASC")
     fun observeByPlatform(platformId: String): Flow<List<GameEntity>>
 
     @Query("SELECT * FROM games WHERE platform_id = :platformId ORDER BY title ASC")
@@ -56,17 +56,20 @@ interface GameDao {
     @Query("SELECT * FROM games WHERE launch_intent_uri = :intentUri LIMIT 1")
     suspend fun getByIntentUri(intentUri: String): GameEntity?
 
-    @Query("SELECT * FROM games WHERE last_played_at IS NOT NULL ORDER BY last_played_at DESC LIMIT :limit")
+    @Query("SELECT * FROM games WHERE last_played_at IS NOT NULL  AND is_missing = 0 ORDER BY last_played_at DESC LIMIT :limit")
     fun observeRecentlyPlayed(limit: Int): Flow<List<GameEntity>>
 
     // Used by recently played per-platform drill-down
-    @Query("""
+    @Query(
+        """
         SELECT * FROM games
         WHERE platform_id = :platformId
-          AND last_played_at IS NOT NULL
+          AND last_played_at IS NOT NULL  
+          AND is_missing = 0
         ORDER BY last_played_at DESC
         LIMIT :limit
-    """)
+        """
+    )
     fun observeRecentByPlatform(platformId: String, limit: Int): Flow<List<GameEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -84,11 +87,11 @@ interface GameDao {
     @Query("DELETE FROM games WHERE platform_id = :platformId")
     suspend fun deleteByPlatform(platformId: String)
 
-    @Query("SELECT COUNT(*) FROM games WHERE platform_id = :platformId")
+    @Query("SELECT COUNT(*) FROM games WHERE platform_id = :platformId AND is_missing = 0")
     suspend fun countByPlatform(platformId: String): Int
 
     // Real games only — what a Memory Card actually displays (standard app rows are excluded).
-    @Query("SELECT COUNT(*) FROM games WHERE platform_id = :platformId AND content_type = 'GAME'")
+    @Query("SELECT COUNT(*) FROM games WHERE platform_id = :platformId AND content_type = 'GAME'  AND is_missing = 0")
     suspend fun countGamesByPlatform(platformId: String): Int
 
     @Query("UPDATE games SET is_favorite = :isFavorite WHERE id = :id")
@@ -112,22 +115,44 @@ interface GameDao {
     @Query("UPDATE games SET hero_uri = :heroUri, logo_uri = :logoUri WHERE id = :id")
     suspend fun updateHeroAndLogo(id: Long, heroUri: String?, logoUri: String?)
 
-    @Query("""
+    @Query(
+        """
         UPDATE games
         SET total_play_time_millis = total_play_time_millis + :durationMillis,
             last_played_at = :playedAt
         WHERE id = :id
-    """)
+    """
+    )
     suspend fun addPlayTime(id: Long, durationMillis: Long, playedAt: Long)
 
-    @Query("""
+    @Query(
+        """
         UPDATE games SET emulator_package = :emulatorPackage WHERE id = :id
-    """)
+    """
+    )
     suspend fun setPreferredEmulator(id: Long, emulatorPackage: String?)
 
     // For missing ROM check — returns all games that have a rom_path
     @Query("SELECT id, rom_path FROM games WHERE rom_path IS NOT NULL")
     suspend fun getAllRomPaths(): List<RomPathProjection>
+
+    // ── Missing-ROM tracking ──────────────────────────────────────────────────
+    // A missing game keeps all its state (favorite, play stats, artwork) and is only hidden
+    // from the normal views; it reappears everywhere once its file is seen again.
+
+    // Marks the given paths present: clears the missing flag and stamps the last-seen time.
+    @Query("UPDATE games SET is_missing = 0, last_seen_at = :seenAt WHERE rom_path IN (:romPaths)")
+    suspend fun markSeen(romPaths: List<String>, seenAt: Long)
+
+    // Flags the given paths missing. last_seen_at is left untouched — it holds the last time the
+    // file WAS present. The reconciler passes an explicit, already-diffed list (never a NOT IN over
+    // the whole table) so an empty or partial scan can never mass-flag the library.
+    @Query("UPDATE games SET is_missing = 1 WHERE rom_path IN (:romPaths)")
+    suspend fun markMissing(romPaths: List<String>)
+
+    // The Missing bucket — every game whose file was unreachable on the last scan.
+    @Query("SELECT * FROM games WHERE is_missing = 1 ORDER BY title ASC")
+    fun observeMissing(): Flow<List<GameEntity>>
 
     @Query("SELECT * FROM games ORDER BY title ASC")
     suspend fun getAll(): List<GameEntity>
@@ -141,7 +166,8 @@ interface GameDao {
     // Updates only non-null fields — COALESCE keeps existing value when new value is null.
     // scraped_title is updated when a metadata source returns a title.
     // user_title_override is NEVER touched here — only explicit user action changes it.
-    @Query("""
+    @Query(
+        """
         UPDATE games SET
             description     = COALESCE(:description,  description),
             developer       = COALESCE(:developer,    developer),
@@ -167,32 +193,33 @@ interface GameDao {
             steam_grid_db_id = COALESCE(:steamGridDbId, steam_grid_db_id),
             rom_crc32       = COALESCE(:romCrc32,     rom_crc32)
         WHERE id = :id
-    """)
+    """
+    )
     suspend fun updateMetadata(
         id: Long,
-        description: String?  = null,
-        developer: String?    = null,
-        publisher: String?    = null,
-        releaseYear: Int?     = null,
-        genre: String?        = null,
-        artworkUri: String?   = null,
-        heroUri: String?      = null,
-        logoUri: String?      = null,
-        iconUri: String?      = null,
-        boxArtUri: String?    = null,
+        description: String? = null,
+        developer: String? = null,
+        publisher: String? = null,
+        releaseYear: Int? = null,
+        genre: String? = null,
+        artworkUri: String? = null,
+        heroUri: String? = null,
+        logoUri: String? = null,
+        iconUri: String? = null,
+        boxArtUri: String? = null,
         physicalMediaUri: String? = null,
-        box3dUri: String?     = null,
+        box3dUri: String? = null,
         scrapedTitle: String? = null,
-        players: String?      = null,
-        ageRating: String?    = null,
-        franchise: String?    = null,
+        players: String? = null,
+        ageRating: String? = null,
+        franchise: String? = null,
         communityRating: Float? = null,
-        releaseDate: String?  = null,
-        ssId: Long?           = null,
-        tgdbId: Long?         = null,
-        igdbId: Long?         = null,
-        steamGridDbId: Long?  = null,
-        romCrc32: String?     = null,
+        releaseDate: String? = null,
+        ssId: Long? = null,
+        tgdbId: Long? = null,
+        igdbId: Long? = null,
+        steamGridDbId: Long? = null,
+        romCrc32: String? = null,
     )
 
     @Query("UPDATE games SET scraped_title = :scrapedTitle WHERE id = :id")
@@ -201,7 +228,8 @@ interface GameDao {
     // Fill-missing-only metadata write (reversed COALESCE — the EXISTING value always wins).
     // Used by the artwork importer's gamelist.xml pass: imported metadata never overwrites
     // anything a scraper or the user already set.
-    @Query("""
+    @Query(
+        """
         UPDATE games SET
             description   = COALESCE(description,   :description),
             developer     = COALESCE(developer,     :developer),
@@ -210,14 +238,15 @@ interface GameDao {
             genre         = COALESCE(genre,         :genre),
             scraped_title = COALESCE(scraped_title, :scrapedTitle)
         WHERE id = :id
-    """)
+    """
+    )
     suspend fun updateMetadataIfMissing(
         id: Long,
-        description: String?  = null,
-        developer: String?    = null,
-        publisher: String?    = null,
-        releaseYear: Int?     = null,
-        genre: String?        = null,
+        description: String? = null,
+        developer: String? = null,
+        publisher: String? = null,
+        releaseYear: Int? = null,
+        genre: String? = null,
         scrapedTitle: String? = null,
     )
 
@@ -243,10 +272,12 @@ interface GameDao {
 
     // Full artwork reset (Clear Cache): every artwork reference on every game. Titles,
     // metadata, scraper ids and play stats are untouched — only the art pointers go.
-    @Query("""
+    @Query(
+        """
         UPDATE games SET artwork_uri = NULL, hero_uri = NULL, logo_uri = NULL, icon_uri = NULL,
             box_art_uri = NULL, physical_media_uri = NULL, box3d_uri = NULL
-    """)
+    """
+    )
     suspend fun clearAllArtworkRefs()
 
     // Mints the portable artwork key once — an already-set key is never rewritten (slug rules
