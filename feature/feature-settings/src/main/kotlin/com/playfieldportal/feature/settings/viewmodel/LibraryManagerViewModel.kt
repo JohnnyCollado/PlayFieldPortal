@@ -145,6 +145,7 @@ class LibraryManagerViewModel @Inject constructor(
     private val vita3KLibrary: com.playfieldportal.core.data.repository.Vita3KLibrary,
     private val vitaGameScanner: com.playfieldportal.feature.achievements.provider.vita.VitaGameScanner,
     private val libraryReconciler: LibraryReconciler,
+    private val scanSourceResolver: com.playfieldportal.feature.library.scanner.ScanSourceResolver,
 ) : ViewModel() {
 
     private val _scratch = MutableStateFlow(LibraryManagerUiState())
@@ -393,12 +394,12 @@ class LibraryManagerViewModel @Inject constructor(
                 emulatorId   = s.pendingEmulatorId,
             )
             // No per-card SAF grant: root-managed consoles scan and launch through the ROM
-            // Root's recursive grant (buildScanSources maps the card to its root subfolder).
+            // Root's recursive grant (scanSourceResolver maps the card to its root subfolder).
             resetToList()
             if (scanNow) {
                 // Windows uses the PC import scan (setup self-heal, launcher exports, emu
                 // folders) — the generic ROM directory walk would find nothing to import.
-                // Other consoles scan through the ROM roots (buildScanSources maps the card
+                // Other consoles scan through the ROM roots (scanSourceResolver maps the card
                 // to its subfolder under every granted root).
                 if (platformId == WINDOWS_PLATFORM_ID) scanPcGamesFolder()
                 else scanConsole(platformId)
@@ -538,7 +539,7 @@ class LibraryManagerViewModel @Inject constructor(
             // A card's ROMs come from (in priority): its own SAF grant; else every ROM root's
             // subfolder that maps to this platform (aggregated, so an SD card adds to the same
             // console); else its legacy raw directory.
-            val sources = buildScanSources(card)
+            val sources = scanSourceResolver.sourcesFor(card)
             if (sources.isEmpty()) {
                 _scratch.update { it.copy(message = "${card.displayName}: ROM folder not configured.") }
                 return@launch
@@ -1013,47 +1014,9 @@ class LibraryManagerViewModel @Inject constructor(
     }
 
     // ── Scan-source resolution shared by scanConsole / autoload ──────────────────
-
-    // Lazy scan-flow factories for a card, evaluated with the live "already-known paths" set so
-    // multi-root aggregation de-dupes across sources.
-    private suspend fun buildScanSources(
-        card: com.playfieldportal.core.domain.model.MemoryCard,
-    ): List<(Set<String>) -> Flow<ScanResult>> {
-        val exts = card.supportedExtensions
-        val rec  = card.scanRecursively
-        // 1. Own explicit SAF folder.
-        if (!card.treeUri.isNullOrBlank()) {
-            return listOf({ existing -> romScanner.scanTree(card.treeUri!!, exts, card.platformId, rec, existing) })
-        }
-        // 2. Root-managed: every ROM root subfolder that maps to this platform (internal + SD).
-        val targets = rootScanTargets(card.platformId)
-        if (targets.isNotEmpty()) {
-            return targets.map { (rootUri, childDocId) ->
-                { existing: Set<String> ->
-                    romScanner.scanTree(rootUri, exts, card.platformId, rec, existing, startDocId = childDocId)
-                }
-            }
-        }
-        // 3. Legacy raw path.
-        if (!card.romDirectory.isNullOrBlank()) {
-            return listOf({ existing -> romScanner.scanDirectory(card.romDirectory!!, exts, card.platformId, rec, existing) })
-        }
-        return emptyList()
-    }
-
-    // (rootUri, childDocId) for every ROM root that has a subfolder mapping to [platformId]. Uses
-    // the real (case-correct) folder name from the provider, so it works regardless of casing.
-    private suspend fun rootScanTargets(platformId: String): List<Pair<String, String>> {
-        val out = mutableListOf<Pair<String, String>>()
-        for (rootUri in romRootRepository.getAll()) {
-            for (name in romScanner.listSubfolderNames(rootUri)) {
-                if (folderHintResolver.detectFromFolderName(name) == platformId) {
-                    RomRootRepository.childDocIdOf(rootUri, name)?.let { out.add(rootUri to it) }
-                }
-            }
-        }
-        return out
-    }
+    //
+    // Folder-resolution logic itself moved to ScanSourceResolver (shared with
+    // LibraryRescanCoordinator's Phase 5 rescan) — see scanSourceResolver.sourcesFor(card) above.
 
     private suspend fun firstComplete(flow: Flow<ScanResult>): ScanResult.Complete? {
         var complete: ScanResult.Complete? = null
