@@ -1,6 +1,7 @@
 package com.playfieldportal.launcher
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
@@ -8,6 +9,7 @@ import android.os.Bundle
 import android.view.KeyEvent
 import android.view.MotionEvent
 import androidx.activity.ComponentActivity
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -18,10 +20,9 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.playfieldportal.core.ui.theme.PFPTheme
-import com.playfieldportal.launcher.discord.DiscordBootstrap
 import com.playfieldportal.feature.xmb.gamepad.GamepadInputHandler
-import com.playfieldportal.feature.xmb.ui.XMBShellContainer
 import com.playfieldportal.feature.xmb.viewmodel.XMBViewModel
+import com.playfieldportal.launcher.discord.DiscordBootstrap
 import com.playfieldportal.launcher.receiver.InstallShortcutReceiver
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -29,8 +30,11 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    @Inject lateinit var gamepadInputHandler: GamepadInputHandler
-    @Inject lateinit var discordBootstrap: DiscordBootstrap
+    @Inject
+    lateinit var gamepadInputHandler: GamepadInputHandler
+
+    @Inject
+    lateinit var discordBootstrap: DiscordBootstrap
 
     // Same activity-scoped instance the shell's hiltViewModel() resolves — used to report when
     // the notification-permission dialog is out of the way so the boot sequence can start.
@@ -59,6 +63,15 @@ class MainActivity : ComponentActivity() {
             IntentFilter(InstallShortcutReceiver.ACTION_INSTALL_SHORTCUT),
             ContextCompat.RECEIVER_EXPORTED,
         )
+
+        val callback = object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                //Left blank so that it can be ignored, preventing users from exiting the launcher.
+                //Back is already handled by the gamepad input handler.
+            }
+        }
+
+        onBackPressedDispatcher.addCallback(this, callback)
 
         // Discord bootstrap: attaches the SDK engine + restores a saved session in the full build,
         // or does nothing in the lite build (SDK excluded). Wired per flavor via Hilt.
@@ -115,6 +128,7 @@ class MainActivity : ComponentActivity() {
 
     // ── Controller input forwarding ───────────────────────────────────────────
 
+    @SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         // Let the gamepad handler process it first; fall back to normal dispatch
         if (gamepadInputHandler.onKeyEvent(event)) return true
@@ -124,13 +138,5 @@ class MainActivity : ComponentActivity() {
     override fun onGenericMotionEvent(event: MotionEvent): Boolean {
         if (gamepadInputHandler.onMotionEvent(event)) return true
         return super.onGenericMotionEvent(event)
-    }
-
-    // Intercept back press — prevent leaving the launcher accidentally
-    @Deprecated("Deprecated in Java")
-    override fun onBackPressed() {
-        // Gamepad BACK action is handled in XMBViewModel via GamepadInputHandler.
-        // Physical back key on devices without a gamepad is suppressed here —
-        // users navigate back using the B/Circle button or on-screen back button.
     }
 }
