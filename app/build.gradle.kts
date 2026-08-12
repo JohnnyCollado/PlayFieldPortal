@@ -154,3 +154,19 @@ listOf("Full", "Lite").forEach { flavor ->
         finalizedBy(copyApk)
     }
 }
+
+// Same idea for debug builds: mirror every debug APK into <root>/debug so it's always found
+// in one predictable, gitignored place regardless of flavor.
+val debugDir = rootProject.layout.projectDirectory.dir("debug")
+listOf("Full", "Lite").forEach { flavor ->
+    val copyApk = tasks.register<Copy>("copy${flavor}DebugToDebugDir") {
+        from(layout.buildDirectory.dir("outputs/apk/${flavor.lowercase()}/debug"))
+        include("*.apk")
+        rename { "PlayFieldPortal-$appVersion-${flavor.lowercase()}-debug.apk" }
+        into(debugDir)
+        outputs.upToDateWhen { false }
+    }
+    tasks.matching { it.name == "assemble${flavor}Debug" }.configureEach {
+        finalizedBy(copyApk)
+    }
+}

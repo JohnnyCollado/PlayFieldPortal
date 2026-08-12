@@ -23,6 +23,7 @@ keystore.properties
 *.aab
 /app/release/
 /dist/
+/debug/
 
 # Google Services (Firebase)
 google-services.json
