@@ -1,0 +1,20 @@
+{
+  "allFiles": [
+    {
+      "file": "/storage/emulated/0/repos/PlayFieldPortal/core/core-data/src/main/kotlin/com/playfieldportal/core/data/repository/LibraryRescanCoordinator.kt",
+      "selection": {
+        "end": {
+          "column": 70,
+          "index": 3396,
+          "line": 70
+        },
+        "start": {
+          "column": 70,
+          "index": 3396,
+          "line": 70
+        }
+      }
+    }
+  ],
+  "selectedFile": "/storage/emulated/0/repos/PlayFieldPortal/core/core-data/src/main/kotlin/com/playfieldportal/core/data/repository/LibraryRescanCoordinator.kt"
+}
