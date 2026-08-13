@@ -2,6 +2,7 @@ package com.playfieldportal.launcher
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
@@ -19,12 +20,17 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.lifecycleScope
 import com.playfieldportal.core.ui.theme.PFPTheme
+import com.playfieldportal.feature.library.scanner.LibraryRescanCoordinator
 import com.playfieldportal.feature.xmb.gamepad.GamepadInputHandler
 import com.playfieldportal.feature.xmb.viewmodel.XMBViewModel
 import com.playfieldportal.launcher.discord.DiscordBootstrap
 import com.playfieldportal.launcher.receiver.InstallShortcutReceiver
+import com.playfieldportal.launcher.receiver.MediaMountReceiver
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
+import timber.log.Timber
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -36,6 +42,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var discordBootstrap: DiscordBootstrap
 
+    @Inject
+    lateinit var libraryRescanCoordinator: LibraryRescanCoordinator
+
     // Same activity-scoped instance the shell's hiltViewModel() resolves — used to report when
     // the notification-permission dialog is out of the way so the boot sequence can start.
     private val xmbViewModel: XMBViewModel by viewModels()
@@ -43,6 +52,10 @@ class MainActivity : ComponentActivity() {
     // Runtime-registered so it actually fires on Android 8+ (manifest receivers are blocked for
     // this implicit broadcast). Lives for the activity's lifetime.
     private val installShortcutReceiver = InstallShortcutReceiver()
+
+    // Also runtime-registered: ACTION_MEDIA_MOUNTED is an implicit broadcast, so a manifest entry
+    // would never fire on Android 8+. Lives for the activity's lifetime.
+    private val mediaMountReceiver = MediaMountReceiver()
 
     private val requestNotificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) {
@@ -61,6 +74,14 @@ class MainActivity : ComponentActivity() {
             this,
             installShortcutReceiver,
             IntentFilter(InstallShortcutReceiver.ACTION_INSTALL_SHORTCUT),
+            ContextCompat.RECEIVER_EXPORTED,
+        )
+        ContextCompat.registerReceiver(
+            this,
+            mediaMountReceiver,
+            // The "file" data scheme is required — ACTION_MEDIA_MOUNTED carries a file:// URI for
+            // the mounted volume, and a filter without a scheme never matches it.
+            IntentFilter(Intent.ACTION_MEDIA_MOUNTED).apply { addDataScheme("file") },
             ContextCompat.RECEIVER_EXPORTED,
         )
 
@@ -93,10 +114,18 @@ class MainActivity : ComponentActivity() {
         // Foreground again = out of any game, so drop the per-game Discord presence back to idle
         // (full build only; no-op in lite). Cheap unless a game was actually being shared.
         discordBootstrap.onResume()
+        // Same "back from a game" moment is the weak rescan signal: it catches ROMs downloaded or
+        // deleted while PFP was backgrounded. The coordinator throttles this internally (5 min), so
+        // calling it on every resume costs nothing when it fires in quick succession.
+        lifecycleScope.launch {
+            runCatching { libraryRescanCoordinator.onResume() }
+                .onFailure { Timber.e(it, "Resume-triggered library rescan failed") }
+        }
     }
 
     override fun onDestroy() {
         runCatching { unregisterReceiver(installShortcutReceiver) }
+        runCatching { unregisterReceiver(mediaMountReceiver) }
         super.onDestroy()
     }
 

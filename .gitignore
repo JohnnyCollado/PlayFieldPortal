@@ -10,6 +10,9 @@
 /.idea
 *.orig
 
+# VS Code
+/.vscode
+
 # Local config — never commit
 local.properties
 keystore.properties

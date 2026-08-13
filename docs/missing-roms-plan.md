@@ -82,7 +82,7 @@ The DAO writes take an explicit, already-diffed path list -- never a
 `WHERE rom_path NOT IN (...)` sweep -- so a bad scan cannot mass-flag the library
 even if a guard were bypassed.
 
-## Triggers (Phase 5, not yet built)
+## Triggers (Phase 5, built)
 
 SAF-only means the trigger is a cheap rescan at a user-present moment, not a
 watcher. Two signals, plus a manual path:
@@ -138,13 +138,20 @@ Note: the reconciler lives in `core-data` (not `core-domain`) because
 - [x] Phase 3 -- Repository: expose the three DAO methods through `GameRepository`.
 - [x] Phase 4 -- `LibraryReconciler` + non-destructive write policy; wired into the
   manual scan (flags instead of deleting).
-- [ ] Phase 5 -- Triggers: `onResume` (throttled) + `MEDIA_MOUNTED`, calling the
+- [x] Phase 5 -- Triggers: `onResume` (throttled) + `MEDIA_MOUNTED`, calling the
   reconcile path; single-flight / debounce / throttle.
 - [ ] Phase 6 -- Missing bucket UI + "Remove permanently".
 - [ ] Phase 7 -- Verify: add/remove/re-add matrix, pull-card-nothing-vanishes,
   remount reconciles, no wasted walks on rapid resume.
 
-## Open decisions for Phase 5
+## Decisions settled in Phase 5
 
-- Throttle interval N for `onResume`.
-- Lifecycle owner: `Activity.onResume` vs `ProcessLifecycleOwner`.
+- Throttle interval N for `onResume`: **5 minutes** (`RESUME_THROTTLE_MS`).
+- Lifecycle owner: **`Activity.onResume`** (`MainActivity`), not `ProcessLifecycleOwner`.
+  PFP is a single-activity launcher, so `onResume` already is the "backed out of a
+  game" moment, and it avoids adding an `androidx.lifecycle:lifecycle-process`
+  dependency the project does not otherwise have.
+- `MediaMountReceiver` does not use `goAsync()`: a pending broadcast result must be
+  finished within ~10s, but a full SAF walk plus the 2s debounce can exceed that. The
+  receiver is registered only while `MainActivity` lives, so the foreground activity
+  keeps the process alive for the scan instead.

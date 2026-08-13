@@ -32,10 +32,17 @@ ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
 
-// Robolectric downloads its Android image over HTTPS; the test JVM must trust the Windows cert
-// store too (Avast SSL scanning intercepts HTTPS), matching the systemProp in gradle.properties.
+// Robolectric downloads its Android image over HTTPS. On Windows, Avast's SSL scanning intercepts
+// the connection, so the test JVM is pointed at the OS trust store, which carries the interceptor's
+// root; the JVM's bundled cacerts does not.
+//
+// Windows-only on purpose: the "Windows-ROOT" store type does not exist on Linux or macOS, and
+// setting it there makes the JVM fail to load any trust store at all — breaking TLS rather than
+// fixing it. Guarding on the OS is what lets this repo build on a non-Windows machine.
 tasks.withType<Test>().configureEach {
-    systemProperty("javax.net.ssl.trustStoreType", "Windows-ROOT")
+    if (System.getProperty("os.name").startsWith("Windows", ignoreCase = true)) {
+        systemProperty("javax.net.ssl.trustStoreType", "Windows-ROOT")
+    }
 }
 
 dependencies {
