@@ -89,9 +89,22 @@ watcher. Two signals, plus a manual path:
 
 - `onResume` -- weak, frequent signal (fires after every game launch). Covers the
   common "download / leave and come back" case. Must be time-throttled.
-- `ACTION_MEDIA_MOUNTED` -- strong signal. Covers the "added from PC" case: the
-  files become readable on remount/unplug, and this is when they appear. Runtime-
+- `ACTION_MEDIA_MOUNTED` -- strong signal for **physically inserted removable
+  media** (an SD card, USB-OTG storage): fires when the volume mounts. Runtime-
   registered (like `InstallShortcutReceiver`). May bypass the time-throttle.
+  NOTE: this does NOT cover a PC file transfer. MTP never unmounts the volume --
+  Android keeps it mounted and the PC reads/writes through MediaProvider -- so
+  unplugging the cable fires no MEDIA_MOUNTED (nothing was unmounted to re-mount).
+  The original plan assumed it would; on-device testing (Android 13) proved it does
+  not. See the USB-cable signal below.
+- `ACTION_USB_STATE` -- strong signal for the **USB-cable / MTP** case. Its
+  `connected` extra flips to false on unplug; the rescan fires on that
+  connected -> disconnected edge, which is the moment PC-copied ROMs are done and
+  the user is back on the device. Routed to the same coordinator path as
+  MEDIA_MOUNTED (throttle-bypassing, debounced, single-flight), so a card mount and
+  a cable unplug arriving together collapse into one scan. Registered
+  NOT_EXPORTED (protected system broadcast). The action and `connected` extra are
+  @hide, so their stable string values are inlined.
 - `ACTION_MEDIA_UNMOUNTED` and friends -- do nothing to the database. Unmount is
   the untrustworthy state the removal guard exists for; never diff on it.
 
@@ -192,7 +205,9 @@ would be a battery regression that a reconcile-count assertion would miss.
 Still needs a device (not reachable from unit tests, all involve real SAF/OS behaviour):
 
 - Physically pulling a card mid-session and confirming nothing vanishes from the UI.
-- A real `ACTION_MEDIA_MOUNTED` burst from an actual remount reaching the receiver.
+- A real `ACTION_MEDIA_MOUNTED` burst from an actual card insertion reaching the receiver.
+- `ACTION_USB_STATE` firing with the `connected` extra on cable unplug (the edge
+  logic is trivial; whether the broadcast fires as expected is the device question).
 - The 5-minute throttle *expiring* (the tests prove it holds, not that it releases —
   `RESUME_THROTTLE_MS` is compared against `System.currentTimeMillis()`, which the
   coordinator does not take as an injectable clock).

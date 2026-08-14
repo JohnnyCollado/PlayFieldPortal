@@ -15,9 +15,12 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 
 /**
- * The strong rescan signal: a card was just mounted, so ROMs added from a PC have only now become
- * readable. This is the moment they appear, so unlike the [onResume] path this bypasses the time
- * throttle (see docs/missing-roms-plan.md).
+ * Strong rescan signal for PHYSICALLY INSERTED removable media — an SD card or USB-OTG drive
+ * mounting. That is the moment ROMs on freshly inserted media appear, so unlike the onResume path
+ * this bypasses the time throttle (see docs/missing-roms-plan.md).
+ *
+ * This does NOT cover copying ROMs over a USB cable from a PC: MTP never unmounts the volume, so
+ * unplugging fires no ACTION_MEDIA_MOUNTED. That case is handled by [UsbDisconnectReceiver].
  *
  * Only ACTION_MEDIA_MOUNTED is handled. Unmount and friends are deliberately ignored — an
  * unmounted card is exactly the untrustworthy state the removal guard exists for, and diffing the

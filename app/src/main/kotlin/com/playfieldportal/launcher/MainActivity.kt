@@ -28,6 +28,7 @@ import com.playfieldportal.feature.xmb.viewmodel.XMBViewModel
 import com.playfieldportal.launcher.discord.DiscordBootstrap
 import com.playfieldportal.launcher.receiver.InstallShortcutReceiver
 import com.playfieldportal.launcher.receiver.MediaMountReceiver
+import com.playfieldportal.launcher.receiver.UsbDisconnectReceiver
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -57,6 +58,10 @@ class MainActivity : ComponentActivity() {
     // would never fire on Android 8+. Lives for the activity's lifetime.
     private val mediaMountReceiver = MediaMountReceiver()
 
+    // Covers the USB-cable case the mount receiver can't: an MTP transfer never unmounts storage,
+    // so unplugging fires no MEDIA_MOUNTED. USB_STATE's disconnect edge is the actual unplug signal.
+    private val usbDisconnectReceiver = UsbDisconnectReceiver()
+
     private val requestNotificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) {
             // Best-effort grant; either way the dialog is resolved and startup can continue.
@@ -83,6 +88,15 @@ class MainActivity : ComponentActivity() {
             // the mounted volume, and a filter without a scheme never matches it.
             IntentFilter(Intent.ACTION_MEDIA_MOUNTED).apply { addDataScheme("file") },
             ContextCompat.RECEIVER_EXPORTED,
+        )
+        ContextCompat.registerReceiver(
+            this,
+            usbDisconnectReceiver,
+            IntentFilter(UsbDisconnectReceiver.ACTION_USB_STATE),
+            // NOT_EXPORTED: USB_STATE is a protected system broadcast, so only the OS can send it —
+            // no need to accept it from other apps, and this is the flag Android recommends for a
+            // receiver registered purely for system broadcasts.
+            ContextCompat.RECEIVER_NOT_EXPORTED,
         )
 
         val callback = object : OnBackPressedCallback(true) {
@@ -126,6 +140,7 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         runCatching { unregisterReceiver(installShortcutReceiver) }
         runCatching { unregisterReceiver(mediaMountReceiver) }
+        runCatching { unregisterReceiver(usbDisconnectReceiver) }
         super.onDestroy()
     }
 

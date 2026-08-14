@@ -65,16 +65,29 @@ if "%TYPECHOICE%"=="1" (
 )
 
 set "VARIANT=%FLAVORLC%-%TYPELC%"
-set "APK=%~dp0app\build\outputs\apk\%FLAVORLC%\%TYPELC%\app-%FLAVORLC%-%TYPELC%.apk"
 set "TASK=:app:assemble%FLAVORUC%%TYPEUC%"
+
+REM ── Where to look for the built APK ─────────────────────────
+REM Debug builds are mirrored into <root>\debug by the copy task wired into
+REM assemble*Debug (see app/build.gradle.kts), named
+REM PlayFieldPortal-<version>-<flavor>-debug.apk. Glob it so the version in the
+REM filename never needs to be hardcoded here. Release builds keep the standard
+REM Gradle output path.
+if "%TYPELC%"=="debug" (
+    set "APKPATTERN=%~dp0debug\PlayFieldPortal-*-%FLAVORLC%-debug.apk"
+) else (
+    set "APKPATTERN=%~dp0app\build\outputs\apk\%FLAVORLC%\%TYPELC%\app-%FLAVORLC%-%TYPELC%.apk"
+)
+
+call :resolveApk
 
 echo.
 echo Selected variant: %VARIANT%
-echo APK path:         %APK%
+echo APK path:         !APK!
 echo.
 
 REM ── Build if the chosen APK isn't there yet ─────────────────
-if not exist "%APK%" (
+if not defined APK (
     echo APK not found for %VARIANT%.
     set /p BUILDNOW=Build it now with gradlew %TASK%? [Y/N]:
     if /i "!BUILDNOW!"=="Y" (
@@ -87,6 +100,8 @@ if not exist "%APK%" (
             popd
             exit /b 1
         )
+        REM assemble*Debug finalizes into <root>\debug, so re-resolve the glob.
+        call :resolveApk
     ) else (
         echo.
         echo Nothing to install. Build it first with:
@@ -96,8 +111,8 @@ if not exist "%APK%" (
     )
 )
 
-if not exist "%APK%" (
-    echo Build finished but the APK is still missing: %APK%
+if not defined APK (
+    echo Build finished but no APK matched: !APKPATTERN!
     echo ^(A release APK also needs a signing key - see keystore.properties.^)
     popd
     exit /b 1
@@ -148,4 +163,16 @@ if errorlevel 1 (
 echo.
 echo Install complete ^(%VARIANT%^).
 popd
+exit /b 0
+
+REM ── Resolve APKPATTERN to a concrete APK path ───────────────
+REM Leaves APK undefined when nothing matches. For the debug glob, the for-loop
+REM enumerates only files that actually exist; for the concrete release path it
+REM would echo the literal even if absent, so existence is re-checked after.
+REM (If several versioned debug APKs linger in <root>\debug, the last match wins;
+REM clear the folder to be sure of the one installed.)
+:resolveApk
+set "APK="
+for %%F in (%APKPATTERN%) do set "APK=%%~fF"
+if defined APK if not exist "!APK!" set "APK="
 exit /b 0
