@@ -280,6 +280,70 @@ class GameDetailViewModelTest {
         }
     }
 
+    // The guard has to hold even when launching would otherwise fully succeed — otherwise the test
+    // passes for the wrong reason (no emulator installed) and the real regression slips through.
+    @Test
+    fun `launch refuses a missing game even when an emulator is available`() = runTest {
+        val missingGame = fakeGame.copy(isMissing = true)
+        val fakeProfile = com.playfieldportal.core.domain.model.EmulatorProfile(
+            id                   = "ppsspp",
+            name                 = "PPSSPP",
+            packageName          = "org.ppsspp.ppsspp",
+            intentType           = com.playfieldportal.core.domain.model.IntentType.ACTION_VIEW,
+            supportedPlatformIds = listOf("psx"),
+        )
+        coEvery { gameRepository.getById(1L) }                    returns missingGame
+        every { profileRepository.getInstalledProfiles() }        returns listOf(fakeProfile)
+        every { profileRepository.getProfilesForPlatform("psx") } returns listOf(fakeProfile)
+        every { intentResolver.resolve(any(), any()) }            returns Result.success(fakeLaunchIntent())
+
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.launchEffect.test {
+            viewModel.launch()
+            testDispatcher.scheduler.advanceUntilIdle()
+            // Refused before the launch channel: no intent must reach the emulator.
+            expectNoEvents()
+            cancelAndIgnoreRemainingEvents()
+        }
+        verify(exactly = 0) { intentResolver.resolve(any(), any()) }
+
+        viewModel.uiState.test {
+            val state = awaitItem()
+            assertNotNull(state.launchError)
+            assertNull(state.actionMessage)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `launch succeeds once a previously missing game is seen again`() = runTest {
+        val fakeProfile = com.playfieldportal.core.domain.model.EmulatorProfile(
+            id                   = "ppsspp",
+            name                 = "PPSSPP",
+            packageName          = "org.ppsspp.ppsspp",
+            intentType           = com.playfieldportal.core.domain.model.IntentType.ACTION_VIEW,
+            supportedPlatformIds = listOf("psx"),
+        )
+        val fakeIntent = fakeLaunchIntent()
+        // isMissing back to false is exactly what markSeen does when the file reappears.
+        coEvery { gameRepository.getById(1L) }                    returns fakeGame.copy(isMissing = false)
+        every { profileRepository.getInstalledProfiles() }        returns listOf(fakeProfile)
+        every { profileRepository.getProfilesForPlatform("psx") } returns listOf(fakeProfile)
+        every { intentResolver.resolve(any(), any()) }            returns Result.success(fakeIntent)
+
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.launchEffect.test {
+            viewModel.launch()
+            testDispatcher.scheduler.advanceUntilIdle()
+            assertEquals(fakeIntent, awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
     @Test
     fun `launch uses per-game emulator override before platform default`() = runTest {
         val overrideGame = fakeGame.copy(emulatorPackage = "duckstation")

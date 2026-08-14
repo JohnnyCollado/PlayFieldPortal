@@ -362,6 +362,9 @@ data class XMBUiState(
     val allGamesCount: Int = 0,
     // Count of favorited entries — drives the Games-root "Favorites" item visibility.
     val favoritesCount: Int = 0,
+    // Games flagged missing by the reconciler. Tracked separately because every other count here
+    // comes from queries that filter is_missing = 0, so missing rows are invisible to them.
+    val missingCount: Int = 0,
     val selectedPlatformId: String? = null,
     // When non-null, the Games category is showing the contents of a user collection.
     val selectedCollectionId: Long? = null,
@@ -612,6 +615,9 @@ enum class XMBItemType {
     STANDARD,
     ALL_GAMES,
     FAVORITES,
+    // The Missing bucket: games whose ROM file was gone on the last trustworthy scan. Sits beside
+    // All Games / Favorites and only appears when something is actually missing.
+    MISSING,
     MEMORY_CARD,
     COLLECTION,
     MUSIC_FOLDER,
@@ -922,6 +928,7 @@ class XMBViewModel @Inject constructor(
         observeColorScheme()
         observeCategoryBar()
         observeCategories()
+        observeMissingGames()
         observeAppChanges()
         observeGamepadMappings()
         observeSoundSetting()
@@ -1163,6 +1170,26 @@ class XMBViewModel @Inject constructor(
 
     // ── Library (memory cards + game counts) ────────────────────────────────────
 
+    // Missing games need their own collector: every other library flow here (observeAll,
+    // observeGamesOnly, the per-platform counts) filters is_missing = 0, so a game becoming missing
+    // is invisible to observeCategories and the bucket would never appear or update.
+    private fun observeMissingGames() {
+        viewModelScope.launch {
+            gameRepository.observeMissing().collect { missing ->
+                val was = _uiState.value.missingCount
+                _uiState.update { it.copy(missingCount = missing.size) }
+                // Crossing the zero boundary adds or removes the Missing row itself, so the Games
+                // root has to rebuild. Count-only changes just re-render the row's subtitle, which
+                // memoryCardItems() reads from state on the next natural render.
+                if ((was == 0) != (missing.size == 0) &&
+                    currentCategory()?.id == BuiltInCategory.GAMES
+                ) {
+                    loadItemsForCategory(currentCategory())
+                }
+            }
+        }
+    }
+
     private fun observeCategories() {
         viewModelScope.launch {
             combine(
@@ -1182,11 +1209,12 @@ class XMBViewModel @Inject constructor(
                     val favoritesTotal = games.count { it.isFavorite }
 
                     // Drop a stale platform folder if its card was removed or disabled. The
-                    // synthetic All Games and Favorites folders are always valid.
+                    // synthetic All Games, Favorites, and Missing folders are always valid.
                     val validPlatformId = _uiState.value.selectedPlatformId
                         ?.takeIf { id ->
                             id == ALL_GAMES_PLATFORM_ID ||
                                 id == FAVORITES_PLATFORM_ID ||
+                                id == MISSING_PLATFORM_ID ||
                                 cards.any { c -> c.platformId == id }
                         }
                     // Drop a stale collection folder if the collection was deleted.
@@ -1342,6 +1370,20 @@ class XMBViewModel @Inject constructor(
                             val visible = games.notHiddenAt(HideLocationType.FAVORITES)
                             val items = if (visible.isEmpty()) listOf(emptyFavoritesItem())
                                         else visible.gameSorted(_uiState.value.gameSortMode).toXmbItems()
+                            _uiState.update { it.copy(currentItems = items) }
+                        }
+                    } else if (platformId == MISSING_PLATFORM_ID) {
+                        // The Missing bucket. Deliberately NOT filtered by notHiddenAt: a game the
+                        // user hid from a normal view still needs to be reachable here, since this
+                        // is the only place "Remove permanently" is offered.
+                        gameRepository.observeMissing().collect { games ->
+                            val items = if (games.isEmpty()) listOf(emptyMissingItem())
+                                        else games.gameSorted(_uiState.value.gameSortMode)
+                                            .toXmbItems()
+                                            // Each row states why it is here, per the plan. The
+                                            // subtitle would otherwise carry play stats that are
+                                            // meaningless for a file that isn't there.
+                                            .map { it.copy(subtitle = MISSING_REASON) }
                             _uiState.update { it.copy(currentItems = items) }
                         }
                     } else if (platformId != null) {
@@ -1781,6 +1823,10 @@ class XMBViewModel @Inject constructor(
             }
             s.selectedPlatformId == FAVORITES_PLATFORM_ID || cat?.id == BuiltInCategory.FAVORITES ->
                 Triple(HideLocationType.FAVORITES, "", "Favorites")
+            // No per-location hide in the Missing bucket. It is the only place "Remove permanently"
+            // is offered, so hiding a row here would strand the entry: invisible everywhere (it is
+            // already filtered out of normal views by is_missing) and no longer removable.
+            s.selectedPlatformId == MISSING_PLATFORM_ID -> null
             s.selectedPlatformId == ANDROID_PLATFORM_ID -> Triple(HideLocationType.ANDROID_PLATFORM, "", "Android")
             // The aggregated All Games card — hides from THIS view only; the game stays on its
             // own Memory Card, in collections, and in Favorites.
@@ -3279,6 +3325,7 @@ class XMBViewModel @Inject constructor(
                 s.collections.firstOrNull { it.id == s.selectedCollectionId }?.name ?: "Collection"
             s.selectedPlatformId == ALL_GAMES_PLATFORM_ID -> "All Games"
             s.selectedPlatformId == FAVORITES_PLATFORM_ID -> "Favorites"
+            s.selectedPlatformId == MISSING_PLATFORM_ID   -> "Missing"
             s.selectedPlatformId != null ->
                 enabledCards.firstOrNull { it.platformId == s.selectedPlatformId }?.displayName
                     ?: platformCache[s.selectedPlatformId]?.name
@@ -3423,12 +3470,14 @@ class XMBViewModel @Inject constructor(
         if (category?.id == BuiltInCategory.GAMES) {
             val sibs = memoryCardItems().filter {
                 it.type == XMBItemType.ALL_GAMES || it.type == XMBItemType.FAVORITES ||
+                    it.type == XMBItemType.MISSING ||
                     it.type == XMBItemType.MEMORY_CARD || it.type == XMBItemType.COLLECTION
             }
             val idx = sibs.indexOfFirst { sib ->
                 when {
                     s.selectedPlatformId == ALL_GAMES_PLATFORM_ID -> sib.type == XMBItemType.ALL_GAMES
                     s.selectedPlatformId == FAVORITES_PLATFORM_ID -> sib.type == XMBItemType.FAVORITES
+                    s.selectedPlatformId == MISSING_PLATFORM_ID   -> sib.type == XMBItemType.MISSING
                     s.selectedCollectionId != null               -> sib.collectionId == s.selectedCollectionId
                     s.selectedPlatformId != null                 -> sib.platformId == s.selectedPlatformId
                     else -> false
@@ -3495,7 +3544,19 @@ class XMBViewModel @Inject constructor(
                 type     = XMBItemType.FAVORITES,
             )
         } else null
-        val header = listOfNotNull(allGamesItem, favoritesItem)
+
+        // Missing sits under Favorites and only exists while something is actually missing, so a
+        // healthy library never sees it. It disappears on its own once the files come back.
+        val missingCount = _uiState.value.missingCount
+        val missingItem = if (missingCount > 0) {
+            XMBItem(
+                id       = MISSING_ITEM_ID,
+                title    = "Missing",
+                subtitle = "$missingCount ${if (missingCount == 1) "Game" else "Games"}",
+                type     = XMBItemType.MISSING,
+            )
+        } else null
+        val header = listOfNotNull(allGamesItem, favoritesItem, missingItem)
 
         // User collections sit just under All Games / Favorites — like Favorites but user-defined.
         // Only collections assigned to this (the Main Game) category appear here; categoryId
@@ -3555,6 +3616,15 @@ class XMBViewModel @Inject constructor(
         id       = EMPTY_FAVORITES_ITEM_ID,
         title    = "No favorites yet",
         subtitle = "Mark a game as a favorite from its options (△) menu.",
+        type     = XMBItemType.EMPTY,
+    )
+
+    // Only reachable in the gap between the last missing game being resolved and the Missing row
+    // disappearing — worth having so the bucket never renders as a blank list.
+    private fun emptyMissingItem(): XMBItem = XMBItem(
+        id       = EMPTY_MISSING_ITEM_ID,
+        title    = "Nothing missing",
+        subtitle = "Every game's file was found on the last scan.",
         type     = XMBItemType.EMPTY,
     )
 
@@ -4208,6 +4278,7 @@ class XMBViewModel @Inject constructor(
         val inCollection = _uiState.value.selectedCollectionId != null
         val currentCat = currentCategory()
         val inGamingCategory = currentCat?.isGamingCategory == true
+        val inMissingBucket = _uiState.value.selectedPlatformId == MISSING_PLATFORM_ID
 
         val items = buildList {
             // The explicit path to the edit surface, essential when direct launch makes
@@ -4265,7 +4336,14 @@ class XMBViewModel @Inject constructor(
             currentHideLocation()?.let { (_, _, label) -> add(XMBContextMenuItem("hide_here", "Hide from $label")) }
             // Android-library apps are user-curated, so let the user remove one like any game,
             // or demote it to a standard app without losing its art/collections.
-            if (item.platformId == ANDROID_PLATFORM_ID && item.packageName != null && !inCollection) {
+            if (inMissingBucket) {
+                // The plan's explicit user delete, and the only destructive action anywhere in the
+                // missing-ROM flow. Mechanically identical to "Remove from Library" (tombstone +
+                // delete row, file untouched), but labelled for what it means here: this bucket is
+                // the entry's last visible trace, so removing it ends the line rather than dropping
+                // it from one view. Everything else is recoverable by putting the file back.
+                add(XMBContextMenuItem("remove_missing", "Remove permanently", isDestructive = true))
+            } else if (item.platformId == ANDROID_PLATFORM_ID && item.packageName != null && !inCollection) {
                 add(XMBContextMenuItem("unmark_game", "Unmark as Game"))
                 add(XMBContextMenuItem("remove_app", "Remove from Library", isDestructive = true))
             } else if (!inCollection) {
@@ -4682,6 +4760,23 @@ class XMBViewModel @Inject constructor(
                     appAction { removeGameFromLibrary(gid) }
                 }
                 "cancel_remove_game"     -> Unit   // menu already closed
+                // Same two-step confirm as remove_game, with copy that states the consequence: the
+                // file is already gone, so there is no "put it back" once the entry goes too.
+                "remove_missing"         -> _uiState.update { it.copy(activeContextMenu = XMBContextMenu(
+                    title  = "Permanently remove \"${menu.title}\"?",
+                    items  = listOf(
+                        XMBContextMenuItem("confirm_remove_missing", "Remove permanently", isDestructive = true),
+                        XMBContextMenuItem("cancel_remove_missing",  "Cancel"),
+                    ),
+                    gameId = menu.gameId,
+                ))}
+                "confirm_remove_missing" -> {
+                    val gid = menu.gameId
+                    // Reuses the standard removal: tombstones the ROM path so a later scan can't
+                    // resurrect the entry, deletes the row, recounts the card.
+                    appAction { removeGameFromLibrary(gid) }
+                }
+                "cancel_remove_missing"  -> Unit   // menu already closed
                 "hide_here"              -> currentHideLocation()?.let { (type, id, label) ->
                     persistHide(HiddenPlacement.gameKey(menu.gameId), menu.title, type, id, label)
                 }
@@ -6195,6 +6290,10 @@ class XMBViewModel @Inject constructor(
                 openFavoritesFolder()
                 return
             }
+            MISSING_ITEM_ID -> {
+                openMissingFolder()
+                return
+            }
             ADD_APPS_ITEM_ID -> {
                 category?.id?.let { openAppPicker(AppPickerTarget.CategoryShortcuts(it), "Add Apps") }
                 return
@@ -6336,6 +6435,17 @@ class XMBViewModel @Inject constructor(
             it.copy(
                 selectedCategoryIndex = gamesCategoryIndex.takeIf { index -> index >= 0 } ?: it.selectedCategoryIndex,
                 selectedPlatformId = FAVORITES_PLATFORM_ID,
+                selectedCollectionId = null,
+            )
+        }
+    }
+
+    private fun openMissingFolder() {
+        val gamesCategoryIndex = _uiState.value.categories.indexOfFirst { it.id == BuiltInCategory.GAMES }
+        navigateRememberingCursor {
+            it.copy(
+                selectedCategoryIndex = gamesCategoryIndex.takeIf { index -> index >= 0 } ?: it.selectedCategoryIndex,
+                selectedPlatformId = MISSING_PLATFORM_ID,
                 selectedCollectionId = null,
             )
         }
@@ -7032,6 +7142,12 @@ class XMBViewModel @Inject constructor(
         private const val ALL_GAMES_PLATFORM_ID = "__all_games__"
         private const val FAVORITES_ITEM_ID = "favorites_folder"
         private const val FAVORITES_PLATFORM_ID = "__favorites__"
+        private const val MISSING_ITEM_ID = "missing_folder"
+        private const val MISSING_PLATFORM_ID = "__missing__"
+        private const val EMPTY_MISSING_ITEM_ID = "empty_missing"
+        // Shown as each missing row's subtitle. Phrased around the scan rather than the file
+        // ("File not found" alone reads as permanent) because dropping the file back reactivates it.
+        private const val MISSING_REASON = "File not found on last scan"
         private const val ADD_APPS_ITEM_ID = "add_apps"
         private const val ADD_GAMES_ITEM_ID = "add_games"
         private const val FIND_GAMES_ITEM_ID = "find_games"

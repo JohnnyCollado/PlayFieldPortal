@@ -570,6 +570,25 @@ class GameDetailViewModel @Inject constructor(
             _uiState.update { it.copy(actionMessage = null, launchError = "Game is still loading") }
             return
         }
+        // A missing game's file was gone on the last trustworthy scan, so every launch handle below
+        // would hand the emulator a dead path and surface as an opaque emulator-side error. Refuse
+        // here instead, with the reason. Deliberately before the launch sfx — a refused launch that
+        // still plays the launch sound reads as a crash.
+        //
+        // This is the single chokepoint for Play, controller SELECT, and direct-launch auto-fire,
+        // so guarding it once covers all three. The entry is untouched: dropping the file back
+        // clears is_missing on the next scan and Play works again.
+        if (selectedGame.isMissing) {
+            Timber.i("Launch refused for missing game: ${selectedGame.title}")
+            _uiState.update {
+                it.copy(
+                    actionMessage = null,
+                    launchError = "File not found on the last scan. Reconnect the card or restore " +
+                        "the file, then rescan.",
+                )
+            }
+            return
+        }
         if (playSound) menuSound.play(com.playfieldportal.core.ui.sound.MenuSound.LAUNCH)
         _uiState.update {
             it.copy(

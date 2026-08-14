@@ -54,6 +54,7 @@ object IconSlots {
         // ── First-level item glyphs (one key per semantic slot, not per shape:
         //    the video folder and photo folder may diverge in a custom theme) ──
         item("item_add", "Add / create action"),
+        item("item_missing", "Missing games bucket"),
         // Default memory-card art: the "Music"/"Videos"/"Photos" library cards and the
         // Games-side default (collections without a picked icon). Per-console cards keep
         // their console identity and stay non-themeable.

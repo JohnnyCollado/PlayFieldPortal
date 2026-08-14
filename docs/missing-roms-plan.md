@@ -105,15 +105,38 @@ Three guards, three jobs:
 Strong signals (mount) bypass the throttle but still respect single-flight and
 debounce.
 
-## UI (Phase 6, not yet built)
+## UI (Phase 6, built)
 
-Mirror the existing Shiba "Untracked" pattern (`ShibaLibraryMode.UNTRACKED`): a
-sibling view of rows, each carrying a reason. The Missing bucket:
+Built as a `__missing__` pseudo-platform bucket in the Games category, sitting
+beside All Games and Favorites and appearing only while `missingCount > 0` --
+not as a third `ShibaLibraryMode`. The Shiba siblings live in the Achievements
+hub and carry wallet / coin / provider chrome that means nothing for a missing
+ROM, whereas the Games row reuses the existing grid, tiles, and context menu.
 
-- Reason per row ("File not found on last scan").
-- Launch disabled.
-- "Remove permanently" -- the explicit user delete (real delete + tombstone).
+- Reason per row ("File not found on last scan"), replacing the play-stat
+  subtitle that is meaningless for an absent file.
+- Launch disabled in `GameDetailViewModel.launch()` -- the single chokepoint for
+  the Play button, controller SELECT, and direct-launch auto-fire, so one guard
+  covers all three. Refused before the launch sfx, since a launch sound followed
+  by nothing reads as a crash.
+- "Remove permanently" -- the explicit user delete, reusing `removeGameFromLibrary`
+  (tombstone + delete row, file untouched) behind the same two-step destructive
+  confirm as "Remove from Library".
 - Re-add-to-reactivate: dropping the file back clears the flag on the next scan.
+
+No per-location "Hide from ..." is offered in this bucket: the entry is already
+filtered out of every normal view by `is_missing`, so hiding it here would strand
+it -- invisible everywhere and no longer removable.
+
+The row's icon is the "?" glyph (`Icons.Filled.HelpOutline`) -- the same one the
+Shiba hub's Untracked row uses, since both mean "we know about this entry but
+cannot account for it". It takes the Material-vector path rather than console art:
+there is no `sysicon_missing.png`, and the console fallback (`sysicon_default`) is
+a blank white square, which would have rendered the row as an empty tile between
+All Games and Favorites. No new drawable is needed as a result.
+
+The glyph is themeable through the `item_missing` slot, registered in both
+theme-kit's `IconSlots` catalog and the Theme Studio's `StudioIconSet.ITEM_VECTORS`.
 
 ## Module map
 
@@ -140,9 +163,41 @@ Note: the reconciler lives in `core-data` (not `core-domain`) because
   manual scan (flags instead of deleting).
 - [x] Phase 5 -- Triggers: `onResume` (throttled) + `MEDIA_MOUNTED`, calling the
   reconcile path; single-flight / debounce / throttle.
-- [ ] Phase 6 -- Missing bucket UI + "Remove permanently".
-- [ ] Phase 7 -- Verify: add/remove/re-add matrix, pull-card-nothing-vanishes,
-  remount reconciles, no wasted walks on rapid resume.
+- [x] Phase 6 -- Missing bucket UI + "Remove permanently".
+- [x] Phase 7 -- Verify: add/remove/re-add matrix, pull-card-nothing-vanishes,
+  remount reconciles, no wasted walks on rapid resume. (Automated coverage; see
+  "Phase 7 coverage" below for what still needs a device.)
+
+## Phase 7 coverage
+
+Automated (`LibraryReconcilerTest` in core-data, `LibraryRescanCoordinatorTest` in
+feature-library, plus two launch-guard cases in `GameDetailViewModelTest`):
+
+| Plan item | Covered by |
+| --- | --- |
+| add / remove / re-add matrix | reconciler: seen, gone, re-add clears the flag, unknown paths ignored |
+| pull-card-nothing-vanishes | reconciler: null present-set, errored scan, empty survey vs non-empty library |
+| remount reconciles | coordinator: mount scans after the debounce, and bypasses the resume throttle |
+| no wasted walks on rapid resume | coordinator: a second (and tenth) rapid resume never reaches a scan source |
+| launch disabled | detail VM: refuses a missing game even with a working emulator + resolver |
+
+Each guard test was checked against a deliberately broken build (guard stubbed out)
+to confirm it actually fails — the debounce case matters most, since the
+single-flight mutex can otherwise make a broken token check look green.
+
+The coordinator tests assert on how many times a **scan source** was invoked, not on
+`reconcile` calls: a guard that still walks the folders and only skips the DB write
+would be a battery regression that a reconcile-count assertion would miss.
+
+Still needs a device (not reachable from unit tests, all involve real SAF/OS behaviour):
+
+- Physically pulling a card mid-session and confirming nothing vanishes from the UI.
+- A real `ACTION_MEDIA_MOUNTED` burst from an actual remount reaching the receiver.
+- The 5-minute throttle *expiring* (the tests prove it holds, not that it releases —
+  `RESUME_THROTTLE_MS` is compared against `System.currentTimeMillis()`, which the
+  coordinator does not take as an injectable clock).
+- Whether the "?" glyph reads correctly at both icon sizes (the main list uses the
+  memory-card size; the drill flyout dims and resizes it as a sibling chip).
 
 ## Decisions settled in Phase 5
 

@@ -278,6 +278,10 @@ private fun XmbGameColumn(
 private fun SiblingIcon(item: XMBItem, selected: Boolean) {
     val chip = if (selected) 56.dp else 40.dp
     val videoGlyph = when (item.type) {
+        // Missing takes the vector path rather than console art: there is no sysicon for it, and
+        // the console fallback is the blank sysicon_default. Same "?" glyph the Untracked row in
+        // the Shiba hub uses — both mean "we know about this entry but can't account for it".
+        XMBItemType.MISSING         -> Icons.Filled.HelpOutline
         XMBItemType.VIDEO_FOLDER    -> Icons.Filled.Folder
         XMBItemType.VIDEO_LIBRARY   -> Icons.Filled.VideoLibrary
         XMBItemType.VIDEO_APPS        -> Icons.Filled.Movie
@@ -333,6 +337,7 @@ internal fun memoryCardSlotKeyFor(item: XMBItem): String? = when {
 
 internal fun itemSlotKeyFor(type: XMBItemType): String? = when (type) {
     XMBItemType.ADD_ACTION -> "item_add"
+    XMBItemType.MISSING -> "item_missing"
     XMBItemType.VIDEO_FOLDER -> "item_video_folder"
     XMBItemType.VIDEO_LIBRARY -> "item_video_library"
     XMBItemType.VIDEO_RECENT -> "item_video_recent"
@@ -1003,6 +1008,25 @@ private fun XmbItemLeadingIcon(
         item.type == XMBItemType.SOCIAL_SIGNOUT -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
                 ThemedGlyph(itemSlotKeyFor(item.type) ?: "", Icons.AutoMirrored.Filled.Logout, null, iconTint, Modifier.size(44.dp))
+            }
+        }
+        // Missing sits beside All Games / Favorites but is not console art — it gets the same "?"
+        // glyph as the Shiba hub's Untracked row, at the memory-card icon size so it lines up with
+        // the cards above it. Themeable via the item_missing slot like any other vector row.
+        item.type == XMBItemType.MISSING -> {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.size(LEADING_ICON_SIZE).selectedIconBloom(isSelected),
+                ) {
+                    ThemedGlyph(
+                        itemSlotKeyFor(item.type) ?: "",
+                        Icons.Filled.HelpOutline,
+                        null,
+                        iconTint,
+                        Modifier.size(LEADING_ICON_SIZE),
+                    )
+                }
             }
         }
         item.type == XMBItemType.ALL_GAMES ||

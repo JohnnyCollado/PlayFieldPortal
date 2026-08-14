@@ -12,6 +12,9 @@
 
 # VS Code
 /.vscode
+# Eclipse JDT output — the VS Code Java language server writes these per module
+# (core/theme-kit/bin, studio/bin). Regenerated on demand; never build inputs.
+bin/
 
 # Local config — never commit
 local.properties
@@ -24,6 +27,8 @@ keystore.properties
 # Build artifacts
 *.apk
 *.aab
+# Installers downloaded into the tree (JDK/SDK msi) — large and machine-specific.
+*.msi
 /app/release/
 /dist/
 /debug/

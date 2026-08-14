@@ -2,6 +2,9 @@ package com.playfieldportal.studio.preview
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
+// Non-mirrored variant: matches the launcher's item_missing / ach_untracked glyph exactly. The
+// existing item_shiba_untracked above uses the auto-mirrored one, so both are imported here.
+import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
@@ -79,6 +82,7 @@ object StudioIconSet {
      */
     val ITEM_VECTORS: Map<String, ImageVector> = mapOf(
         "item_add" to Icons.Filled.Add,
+        "item_missing" to Icons.Filled.HelpOutline,
         "item_video_folder" to Icons.Filled.Folder,
         "item_video_library" to Icons.Filled.VideoLibrary,
         "item_video_recent" to Icons.Filled.History,
