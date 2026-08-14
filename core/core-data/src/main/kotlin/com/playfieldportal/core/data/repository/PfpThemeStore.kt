@@ -128,7 +128,10 @@ class PfpThemeStore @Inject constructor(
         val appliedName = _themes.value.firstOrNull { it.id == id }?.name ?: "Custom Theme"
         context.pfpDataStore.edit { prefs ->
             prefs[KEY_APPLIED_THEME_NAME] = appliedName
-            if (wallpaperOk) prefs[KEY_CUSTOM_WALLPAPER] = dest.absolutePath
+            // Wave-only themes carry no wallpaper: clear any previous theme's wallpaper so the
+            // look reverts to the live wave background instead of lingering — same set-or-remove
+            // contract as the accent, icon-color and layout overrides below.
+            if (wallpaperOk) prefs[KEY_CUSTOM_WALLPAPER] = dest.absolutePath else prefs.remove(KEY_CUSTOM_WALLPAPER)
             if (accent != null) prefs[KEY_ACCENT_OVERRIDE] = accent else prefs.remove(KEY_ACCENT_OVERRIDE)
             if (iconColor != null) prefs[KEY_ICON_COLOR] = iconColor else prefs.remove(KEY_ICON_COLOR)
             if (layoutJson != null) prefs[KEY_THEME_LAYOUT] = layoutJson else prefs.remove(KEY_THEME_LAYOUT)
@@ -189,10 +192,12 @@ class PfpThemeStore @Inject constructor(
             context.contentResolver.openInputStream(uri)?.use { with(SafeMedia) { it.readCapped() } }
         }.getOrNull() ?: return@withContext null
         val bundle = PfpThemeCodec.read(bytes) ?: return@withContext null
-        // v1 themes are wallpaper-carrying; the sidecars (and preview) regenerate from it.
-        val wallpaper = bundle.wallpaper
-            ?.let { SafeMedia.decodeBitmapCapped(it) }
-            ?: return@withContext null
+        // Wallpaper is optional: a wave-only theme (accent + wave style, no image) is a valid
+        // bundle — apply() keeps the live wave background when the sidecar is absent. Only bytes
+        // that are present but won't decode are a real corruption and reject the import.
+        val wallpaper = bundle.wallpaper?.let {
+            SafeMedia.decodeBitmapCapped(it) ?: return@withContext null
+        }
         // Store the bundle VERBATIM (not re-encoded through save()) so fields this build
         // doesn't materialize — custom icons, wave style, layout spec — survive the
         // import → library → apply round-trip.
@@ -201,13 +206,26 @@ class PfpThemeStore @Inject constructor(
             val id = "pfp_${System.currentTimeMillis()}"
             val name = bundle.manifest.name.ifBlank { nextDefaultName() }
             File(dir, "$id.pfptheme").writeBytes(bytes)
-            FileOutputStream(File(dir, "$id.wallpaper.jpg")).use { wallpaper.compress(Bitmap.CompressFormat.JPEG, 92, it) }
+            // Wave-only themes leave no wallpaper sidecar — apply() treats its absence as "keep
+            // the wave background", so nothing downstream dangles.
+            wallpaper?.let { wp ->
+                FileOutputStream(File(dir, "$id.wallpaper.jpg")).use { wp.compress(Bitmap.CompressFormat.JPEG, 92, it) }
+            }
+            // Preview sidecar: prefer the bundle's rendered preview; else derive from the
+            // wallpaper; a wave-only theme with no preview simply has no thumbnail.
             val preview = bundle.preview?.let { SafeMedia.decodeBitmapCapped(it) }
-                ?: downscale(wallpaper, maxEdge = 480)
-            FileOutputStream(File(dir, "$id.preview.jpg")).use { preview.compress(Bitmap.CompressFormat.JPEG, 88, it) }
-            if (preview !== wallpaper) preview.recycle()
+                ?: wallpaper?.let { downscale(it, maxEdge = 480) }
+            preview?.let { p ->
+                FileOutputStream(File(dir, "$id.preview.jpg")).use { p.compress(Bitmap.CompressFormat.JPEG, 88, it) }
+                if (p !== wallpaper) p.recycle()
+            }
             _themes.value = scan()
-            SavedTheme(id, name, bundle.manifest.accentColor.toAccentArgbOrNull(), File(dir, "$id.preview.jpg").absolutePath)
+            SavedTheme(
+                id,
+                name,
+                bundle.manifest.accentColor.toAccentArgbOrNull(),
+                File(dir, "$id.preview.jpg").takeIf { it.isFile }?.absolutePath,
+            )
         }.onFailure { Timber.w(it, "PfpThemeStore: import failed") }.getOrNull()
     }
 
