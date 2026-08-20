@@ -1,11 +1,29 @@
 {
   "version": 1,
   "skills": {
+    "compose-multiplatform-patterns": {
+      "source": "affaan-m/ecc",
+      "sourceType": "github",
+      "skillPath": "skills/compose-multiplatform-patterns/SKILL.md",
+      "computedHash": "d42483b2fcf3d9aec758a9605aab0041d1cdd1fe2813fe23b13c95c4dbe36fed"
+    },
+    "grill-with-docs": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "skillPath": "skills/engineering/grill-with-docs/SKILL.md",
+      "computedHash": "a610223c9796f755b603f15ec114849a4b38b9ba3006acfa9bdf3cc56dd44dad"
+    },
     "improve-codebase-architecture": {
       "source": "mattpocock/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/improve-codebase-architecture/SKILL.md",
       "computedHash": "016f12709bff30a27419e8add978a9be70f5ca1fb6738b3be6793038e0aba631"
+    },
+    "kotlin-coroutines-flows": {
+      "source": "affaan-m/ecc",
+      "sourceType": "github",
+      "skillPath": "skills/kotlin-coroutines-flows/SKILL.md",
+      "computedHash": "54bcdc709902f6befca567861a1e3ce7effa0214f9862cf9e492dc30c583e905"
     }
   }
 }

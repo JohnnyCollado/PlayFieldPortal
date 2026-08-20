@@ -18,9 +18,11 @@ import com.playfieldportal.feature.launcher.PcLauncherAdapters
 import com.playfieldportal.feature.launcher.PcLauncherCatalog
 import com.playfieldportal.feature.launcher.PcLauncherType
 import com.playfieldportal.core.data.platform.PlatformFolderHintResolver
-import com.playfieldportal.core.data.repository.LibraryReconciler
+import com.playfieldportal.feature.library.scanner.LibraryScanner
+import com.playfieldportal.feature.library.scanner.PlatformScanOutcome
 import com.playfieldportal.feature.library.scanner.RomScanner
 import com.playfieldportal.feature.library.scanner.ScanResult
+import com.playfieldportal.feature.library.scanner.ScanStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -144,8 +146,7 @@ class LibraryManagerViewModel @Inject constructor(
     private val credentials: com.playfieldportal.core.data.achievement.AchievementCredentialsProvider,
     private val vita3KLibrary: com.playfieldportal.core.data.repository.Vita3KLibrary,
     private val vitaGameScanner: com.playfieldportal.feature.achievements.provider.vita.VitaGameScanner,
-    private val libraryReconciler: LibraryReconciler,
-    private val scanSourceResolver: com.playfieldportal.feature.library.scanner.ScanSourceResolver,
+    private val libraryScanner: LibraryScanner,
 ) : ViewModel() {
 
     private val _scratch = MutableStateFlow(LibraryManagerUiState())
@@ -534,79 +535,35 @@ class LibraryManagerViewModel @Inject constructor(
         // PS Vita has no ROM folder: it scans Vita3K's granted ux0/app installed titles instead.
         if (platformId == PSVITA_PLATFORM_ID) { scanVitaGames(); return }
         viewModelScope.launch {
-            val card = memoryCardRepository.getById(platformId) ?: return@launch
-
-            // A card's ROMs come from (in priority): its own SAF grant; else every ROM root's
-            // subfolder that maps to this platform (aggregated, so an SD card adds to the same
-            // console); else its legacy raw directory.
-            val sources = scanSourceResolver.sourcesFor(card)
-            if (sources.isEmpty()) {
-                _scratch.update { it.copy(message = "${card.displayName}: ROM folder not configured.") }
-                return@launch
-            }
             _scratch.update { it.copy(scanningPlatformIds = it.scanningPlatformIds + platformId) }
-
-            val dbGames = runCatching {
-                gameRepository.observeByPlatform(platformId).first()
-            }.getOrDefault(emptyList())
-
-            // Live, growing set so a ROM already added from one root isn't re-added from another.
-            // Tombstoned paths (user-removed games) count as existing so scans skip them.
-            val existing = runCatching {
-                (dbGames.mapNotNull { it.romPath } +
-                    scanTombstoneDao.getPathsForPlatform(platformId)).toMutableSet()
-            }.getOrDefault(mutableSetOf())
-
-            var added = 0
-            var scanErrored = false
-            // Union of on-disk ROM paths across all sources; null once any source can't survey.
-            var present: MutableSet<String>? = mutableSetOf()
-            for (source in sources) {
-                source(existing).collect { result ->
-                    when (result) {
-                        is ScanResult.Complete -> {
-                            result.newGames.forEach {
-                                gameRepository.upsert(it)
-                                it.romPath?.let(existing::add)
-                            }
-                            added += result.newGames.size
-                            result.presentRomPaths?.let { paths -> present?.addAll(paths) }
-                                ?: run { present = null }
-                        }
-                        is ScanResult.Error -> {
-                            scanErrored = true
-                            _scratch.update { it.copy(message = "${card.displayName}: ${result.message}") }
-                        }
-                        else -> Unit
-                    }
-                }
-            }
-
-            // Non-destructive reconcile: present files are marked seen, gone files are marked
-            // missing (never deleted). The reconciler internally skips removals when the survey is
-            // untrustworthy — scan error, no survey, or an empty survey against a non-empty library.
-            var removed = 0
-            if (removeMissing) {
-                removed = libraryReconciler.reconcile(dbGames, present, scanErrored).markedMissing
-            }
-
-            if (added > 0 || removed > 0) {
-                memoryCardRepository.recordScan(platformId, System.currentTimeMillis())
-                memoryCardRepository.recountGames(platformId)
-            }
-
+            val outcome = libraryScanner.scanPlatform(platformId, removeMissing)
             _scratch.update {
                 it.copy(
                     scanningPlatformIds = it.scanningPlatformIds - platformId,
-                    message = "${card.displayName}: " + buildString {
-                        append(if (added == 0) "no new ROMs" else "$added new ROM(s) added")
-                        if (removeMissing) append(if (removed == 0) ", none missing" else ", $removed marked missing")
-                    },
+                    message = scanOutcomeMessage(outcome, removeMissing),
                 )
             }
-            Timber.i("Library Manager scan complete for $platformId: $added new, $removed marked missing")
+            Timber.i(
+                "Library Manager scan complete for $platformId: " +
+                    "${outcome.added} new, ${outcome.markedMissing} marked missing (status=${outcome.status})"
+            )
         }
     }
+
+    private fun scanOutcomeMessage(outcome: PlatformScanOutcome, removeMissing: Boolean): String =
+        when (outcome.status) {
+            ScanStatus.SKIPPED_NO_SOURCE -> "${outcome.displayName}: ROM folder not configured."
+            ScanStatus.SKIPPED_BUSY -> "${outcome.displayName}: scan already in progress."
+            ScanStatus.FAILED -> "${outcome.displayName}: ${outcome.errorMessage ?: "scan failed."}"
+            ScanStatus.COMPLETED ->
+                "${outcome.displayName}: " + buildString {
+                    append(if (outcome.added == 0) "no new ROMs" else "${outcome.added} new ROM(s) added")
+                    if (removeMissing) {
+                        append(if (outcome.markedMissing == 0) ", none missing" else ", ${outcome.markedMissing} marked missing")
+                    }
+                    outcome.errorMessage?.let { append(" ($it)") }
+                }
+        }
 
     fun scanAllConsoles(removeMissing: Boolean = false) {
         viewModelScope.launch {

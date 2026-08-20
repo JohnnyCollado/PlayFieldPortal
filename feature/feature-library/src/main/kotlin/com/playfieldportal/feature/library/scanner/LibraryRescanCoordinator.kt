@@ -1,21 +1,17 @@
 package com.playfieldportal.feature.library.scanner
 
-import com.playfieldportal.core.data.database.dao.ScanTombstoneDao
-import com.playfieldportal.core.data.repository.LibraryReconciler
-import com.playfieldportal.core.data.repository.MemoryCardRepository
-import com.playfieldportal.core.domain.repository.GameRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import timber.log.Timber
 
 /**
- * Decides WHEN a library-wide missing-ROM rescan is allowed to run, then runs it. The scan +
- * reconcile work itself mirrors LibraryManagerViewModel.scanConsole(removeMissing = true), but
- * this class owns the trigger guards so callers (MainActivity.onResume, a MEDIA_MOUNTED
- * receiver) can call it freely without worrying about spamming the SAF walk.
+ * Decides WHEN a library-wide missing-ROM rescan is allowed to run, then runs it via
+ * [LibraryScanner] — see docs/adr/0001-library-scanner-owns-rom-survey.md. This class owns only
+ * the trigger guards so callers (MainActivity.onResume, a MEDIA_MOUNTED receiver) can call it
+ * freely without worrying about spamming the SAF walk; the survey + reconcile policy itself lives
+ * in [LibraryScanner], shared with the settings screen's manual scan.
  *
  * Three separate concerns, three separate guards — resist merging them, they fail differently:
  *  - Throttle (onResume only): a full folder walk on every "back out of a game" is wasteful and
@@ -23,16 +19,12 @@ import timber.log.Timber
  *  - Debounce (onMediaMounted only): a card mount fires a BURST of broadcasts (one per volume,
  *    sometimes duplicated by the OS). Debounce waits for MOUNT_DEBOUNCE_MS of quiet before
  *    actually scanning, so ten broadcasts in one second cause one scan, not ten.
- *  - Single-flight (both): a Mutex ensures only one rescan ever runs at a time, so a resume and
- *    a mount arriving together can't walk the same folders concurrently and race on the DB.
+ *  - Single-flight (both): a Mutex ensures only one rescan-all pass runs at a time here; per-card
+ *    single-flight against a concurrent manual scan is enforced inside LibraryScanner itself.
  */
 @Singleton
 class LibraryRescanCoordinator @Inject constructor(
-    private val gameRepo: GameRepository,
-    private val memoryCardRepo: MemoryCardRepository,
-    private val libraryReconciler: LibraryReconciler,
-    private val scanSourceResolver: ScanSourceResolver,
-    private val scanTombstoneDao: ScanTombstoneDao,
+    private val libraryScanner: LibraryScanner,
 ) {
     private val scanMutex = Mutex()
 
@@ -77,63 +69,13 @@ class LibraryRescanCoordinator @Inject constructor(
         try {
             lastRunAt = System.currentTimeMillis()
             Timber.i("Library Rescan — starting")
-            var totalAdded = 0
-            var totalMissing = 0
-            memoryCardRepo.getAll()
-                .filter { it.enabled && (!it.treeUri.isNullOrBlank() || !it.romDirectory.isNullOrBlank()) }
-                .forEach { card ->
-                    val (added, missing) = scanCard(card.platformId)
-                    totalAdded += added
-                    totalMissing += missing
-                }
+            val outcomes = libraryScanner.scanAllEnabled(removeMissing = true)
+            val totalAdded = outcomes.sumOf { it.added }
+            val totalMissing = outcomes.sumOf { it.markedMissing }
             Timber.i("Library Rescan — done: $totalAdded new, $totalMissing marked missing")
         } finally {
             scanMutex.unlock()
         }
-    }
-
-    // Same shape as LibraryManagerViewModel.scanConsole(removeMissing = true), minus the UI-state
-    // updates that method also does — this runs headless, with nothing to show a spinner on.
-    private suspend fun scanCard(platformId: String): Pair<Int, Int> {
-        val card = memoryCardRepo.getById(platformId) ?: return 0 to 0
-        val sources = scanSourceResolver.sourcesFor(card)
-        if (sources.isEmpty()) return 0 to 0
-
-        val dbGames = runCatching { gameRepo.observeByPlatform(platformId).first() }.getOrDefault(emptyList())
-
-        // Live, growing set so a ROM already added from one root isn't re-added from another.
-        // Tombstoned paths (user-removed games) count as existing so this skips them too.
-        val existing = runCatching {
-            (dbGames.mapNotNull { it.romPath } + scanTombstoneDao.getPathsForPlatform(platformId)).toMutableSet()
-        }.getOrDefault(mutableSetOf())
-
-        var added = 0
-        var scanErrored = false
-        // Union of on-disk ROM paths across all sources; null once any source can't survey.
-        var present: MutableSet<String>? = mutableSetOf()
-        for (source in sources) {
-            source(existing).collect { result ->
-                when (result) {
-                    is ScanResult.Complete -> {
-                        result.newGames.forEach {
-                            gameRepo.upsert(it)
-                            it.romPath?.let(existing::add)
-                        }
-                        added += result.newGames.size
-                        result.presentRomPaths?.let { paths -> present?.addAll(paths) } ?: run { present = null }
-                    }
-                    is ScanResult.Error -> scanErrored = true
-                    else -> Unit
-                }
-            }
-        }
-
-        val missing = libraryReconciler.reconcile(dbGames, present, scanErrored).markedMissing
-        if (added > 0 || missing > 0) {
-            memoryCardRepo.recordScan(platformId, System.currentTimeMillis())
-            memoryCardRepo.recountGames(platformId)
-        }
-        return added to missing
     }
 
     private companion object {

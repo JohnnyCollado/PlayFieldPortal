@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PlayFieldPortal — Architecture Deepening Review</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    :root { color-scheme: dark; }
+    body { background: #07111f; color: #dbeafe; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+    .glass { background: linear-gradient(145deg, rgba(15,31,54,.94), rgba(9,20,36,.94)); border: 1px solid rgba(96,165,250,.18); box-shadow: 0 18px 50px rgba(0,0,0,.2); }
+    .muted { color: #93a9c5; }
+    .accent { color: #67e8f9; }
+    .strong { color: #86efac; background: rgba(34,197,94,.12); border-color: rgba(74,222,128,.32); }
+    .worth { color: #fde68a; background: rgba(234,179,8,.12); border-color: rgba(250,204,21,.32); }
+    .spec { color: #c4b5fd; background: rgba(139,92,246,.12); border-color: rgba(167,139,250,.32); }
+    .flow { display: flex; align-items: center; justify-content: center; gap: .45rem; flex-wrap: wrap; min-height: 118px; padding: 1rem; background: rgba(2,6,23,.46); border-radius: .75rem; }
+    .node { border: 1px solid rgba(125,211,252,.3); background: rgba(14,116,144,.18); color: #cffafe; padding: .6rem .7rem; border-radius: .6rem; font-size: .76rem; text-align: center; min-width: 92px; }
+    .node.deep { border-color: rgba(134,239,172,.5); background: rgba(22,101,52,.28); color: #dcfce7; box-shadow: 0 0 0 2px rgba(134,239,172,.08); }
+    .arrow { color: #64748b; font-size: 1.25rem; }
+    .mermaid { background: rgba(2,6,23,.4); border-radius: .75rem; padding: 1rem; overflow: auto; }
+    code { color: #a5f3fc; background: rgba(8,47,73,.55); padding: .1rem .3rem; border-radius: .25rem; }
+  </style>
+</head>
+<body>
+  <main class="max-w-7xl mx-auto px-5 py-10 md:px-10">
+    <header class="mb-10">
+      <div class="flex flex-wrap items-center gap-3 mb-4">
+        <span class="text-xs uppercase tracking-[.25em] text-cyan-300">Architecture deepening review</span>
+        <span class="text-xs text-slate-500">generated 2026-08-20 · branch polishing-UI</span>
+      </div>
+      <h1 class="text-4xl md:text-6xl font-black tracking-tight text-white">Make the hot paths deeper.</h1>
+      <p class="mt-4 max-w-4xl text-lg muted">A focused review of the recent theme and Missing-ROM work, looking for modules whose implementation leaks across a seam, whose interface is too broad, or whose logic has poor locality.</p>
+      <div class="mt-6 glass rounded-2xl p-5 grid md:grid-cols-3 gap-5 text-sm">
+        <div><div class="text-slate-500 uppercase text-xs tracking-wider">Scope</div><div class="mt-1">Recent theme + library commits and their callers</div></div>
+        <div><div class="text-slate-500 uppercase text-xs tracking-wider">Domain sources</div><div class="mt-1">ARCHITECTURE.md, xmb-theme-creator-plan.md, missing-roms-plan.md</div></div>
+        <div><div class="text-slate-500 uppercase text-xs tracking-wider">Repository note</div><div class="mt-1">No CONTEXT.md or docs/adr/ directory exists; no ADR conflicts were evaluated.</div></div>
+      </div>
+      <div class="mt-5 rounded-xl border border-amber-300/20 bg-amber-300/5 p-4 text-sm text-amber-100"><strong>Working-tree note:</strong> the checkout contains unrelated deleted skill files and an untracked <code>.freebuff/</code> marker. This review does not propose touching them.</div>
+    </header>
+
+    <section class="grid gap-7">
+      <article class="glass rounded-2xl p-6 md:p-8">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+          <div><div class="text-xs uppercase tracking-[.2em] accent">Candidate 01 · library scan depth</div><h2 class="mt-2 text-2xl font-bold text-white">Deepen the ROM survey into one scan module</h2></div>
+          <span class="strong border rounded-full px-3 py-1 text-xs font-bold">Strong</span>
+        </div>
+        <div class="mt-6 grid lg:grid-cols-2 gap-6">
+          <div><h3 class="font-semibold text-cyan-100">Files / modules</h3><ul class="mt-2 space-y-1 text-sm muted list-disc list-inside"><li><code>LibraryManagerViewModel.kt:532-608</code></li><li><code>LibraryRescanCoordinator.kt:30-158</code></li><li><code>ScanSourceResolver.kt</code> and <code>LibraryReconciler.kt</code></li><li>the two existing test modules for manual and triggered scans</li></ul><h3 class="mt-5 font-semibold text-cyan-100">Problem</h3><p class="mt-2 text-sm leading-6 muted">The <code>ScanSourceResolver</code> is shared, but the important scan loop is not. Both callers rebuild the existing-path set, collect every source, upsert new games, union <code>presentRomPaths</code>, propagate errors, reconcile Missing rows, and record counts. The ViewModel adds UI state on top; the coordinator repeats the policy headlessly. The comment in the coordinator openly describes the duplication.</p><h3 class="mt-5 font-semibold text-cyan-100">Solution</h3><p class="mt-2 text-sm leading-6 muted">Deepen a library scan module that owns the full survey and reconciliation policy. Keep UI message/state mapping in <code>LibraryManagerViewModel</code> and trigger timing in <code>LibraryRescanCoordinator</code>; both callers consume the same scan result.</p></div>
+          <div><h3 class="font-semibold text-cyan-100">Before / after</h3><div class="mt-3 flow"><div class="node">Settings<br>ViewModel</div><div class="arrow">→</div><div class="node">Resolver</div><div class="arrow">→</div><div class="node">Scanner</div><div class="arrow">→</div><div class="node">Reconciler</div><div class="w-full text-center text-slate-600 text-xs">and a second copy of the scan loop in the trigger path</div></div><div class="mt-3 flow"><div class="node">Settings<br>ViewModel</div><div class="arrow">↘</div><div class="node deep">Deep Library<br>Scan Module</div><div class="arrow">↙</div><div class="node">Rescan<br>Coordinator</div><div class="w-full text-center text-slate-500 text-xs">one policy seam · two callers · one test surface</div></div></div>
+        </div>
+        <div class="mt-6 grid md:grid-cols-3 gap-4 text-sm"><div><strong class="text-emerald-200">Locality</strong><p class="mt-1 muted">Trust rules, tombstones, source union, and Missing writes live together.</p></div><div><strong class="text-emerald-200">Leverage</strong><p class="mt-1 muted">A scanner fix benefits manual scans, resume scans, and strong media signals.</p></div><div><strong class="text-emerald-200">Tests</strong><p class="mt-1 muted">The interface becomes a focused survey-result test surface instead of duplicating guard fixtures.</p></div></div>
+        <div class="mt-6 mermaid">flowchart LR
+          VM[LibraryManagerViewModel] --> R[ScanSourceResolver]
+          C[LibraryRescanCoordinator] --> R
+          VM --> L[Library scan loop]
+          C --> L2[Duplicate library scan loop]
+          L --> REC[LibraryReconciler]
+          L2 --> REC
+          style L2 fill:#7f1d1d,stroke:#fca5a5,color:#fff
+        </div>
+      </article>
+
+      <article class="glass rounded-2xl p-6 md:p-8">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+          <div><div class="text-xs uppercase tracking-[.2em] accent">Candidate 02 · theme depth</div><h2 class="mt-2 text-2xl font-bold text-white">Deepen theme application from file plumbing into a theme module</h2></div>
+          <span class="worth border rounded-full px-3 py-1 text-xs font-bold">Worth exploring</span>
+        </div>
+        <div class="mt-6 grid lg:grid-cols-2 gap-6">
+          <div><h3 class="font-semibold text-cyan-100">Files / modules</h3><ul class="mt-2 space-y-1 text-sm muted list-disc list-inside"><li><code>PfpThemeStore.kt</code> — 348 lines</li><li><code>ThemesSettingsViewModel.kt</code> and <code>ThemesSettingsScreen.kt</code></li><li><code>PfpThemeCodec.kt</code>, <code>SafeMedia.kt</code>, and XMB preference readers</li><li><code>PfpThemeStoreTest.kt</code> — Robolectric + real files + DataStore</li></ul><h3 class="mt-5 font-semibold text-cyan-100">Problem</h3><p class="mt-2 text-sm leading-6 muted"><code>PfpThemeStore</code> owns library indexing, SAF reads, bounded decoding, bitmap lifecycle, sidecar generation, bundle persistence, export naming, icon extraction, layout sanitization, wave-style mapping, and DataStore cascade writes. The theme settings module and XMB module also repeat preference-key contracts. The implementation is deep, but its interface exposes a broad set of unrelated operations and the tests must reconstruct Android storage to reach the real behavior.</p><h3 class="mt-5 font-semibold text-cyan-100">Solution</h3><p class="mt-2 text-sm leading-6 muted">Deepen the theme module around two cohesive concepts: bundle/library ownership and applied-look ownership. Keep SAF and file access behind adapters, make the applied-look calculation local, and let settings render state rather than know cascade key details. Do not choose the final interface before grilling.</p></div>
+          <div><h3 class="font-semibold text-cyan-100">Before / after</h3><div class="mt-3 flow"><div class="node">Settings<br>ViewModel</div><div class="arrow">→</div><div class="node">PfpThemeStore<br><span class="text-[10px]">all concerns</span></div><div class="arrow">↔</div><div class="node">DataStore keys</div><div class="w-full text-center text-slate-600 text-xs">Codec · bitmap decode · sidecars · icons · layout · export all cross the same seam</div></div><div class="mt-3 flow"><div class="node">Settings<br>ViewModel</div><div class="arrow">→</div><div class="node deep">Deep Theme<br>Module</div><div class="arrow">→</div><div class="node">Applied-look<br>state</div><div class="w-full text-center text-slate-500 text-xs">storage adapters stay behind the seam; XMB reads one coherent look</div></div></div>
+        </div>
+        <div class="mt-6 grid md:grid-cols-3 gap-4 text-sm"><div><strong class="text-emerald-200">Locality</strong><p class="mt-1 muted">A theme's bundle, sidecars, and applied look have one home instead of scattered key knowledge.</p></div><div><strong class="text-emerald-200">Leverage</strong><p class="mt-1 muted">New schema fields or preview rules stop requiring edits across storage, settings, and XMB readers.</p></div><div><strong class="text-emerald-200">Tests</strong><p class="mt-1 muted">Pure applied-look decisions can be tested without Robolectric; adapter tests cover Android I/O once.</p></div></div>
+        <div class="mt-6 mermaid">flowchart LR
+          UI[ThemesSettingsViewModel] --> STORE[PfpThemeStore]
+          STORE --> SAF[SAF read]
+          STORE --> MEDIA[Bitmap decode]
+          STORE --> FILES[Sidecars + bundle files]
+          STORE --> PREFS[DataStore cascade keys]
+          XMB[XMBViewModel] --> PREFS
+          DISPLAY[Display settings] --> PREFS
+          style STORE fill:#7c2d12,stroke:#fdba74,color:#fff
+          style PREFS fill:#7c2d12,stroke:#fdba74,color:#fff
+        </div>
+      </article>
+
+      <article class="glass rounded-2xl p-6 md:p-8">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+          <div><div class="text-xs uppercase tracking-[.2em] accent">Candidate 03 · trigger seam</div><h2 class="mt-2 text-2xl font-bold text-white">Deepen rescan triggers into one Android adapter path</h2></div>
+          <span class="worth border rounded-full px-3 py-1 text-xs font-bold">Worth exploring</span>
+        </div>
+        <div class="mt-6 grid lg:grid-cols-2 gap-6">
+          <div><h3 class="font-semibold text-cyan-100">Files / modules</h3><ul class="mt-2 space-y-1 text-sm muted list-disc list-inside"><li><code>MainActivity.kt</code></li><li><code>MediaMountReceiver.kt</code></li><li><code>UsbDisconnectReceiver.kt</code></li><li><code>LibraryRescanCoordinator.kt</code></li></ul><h3 class="mt-5 font-semibold text-cyan-100">Problem</h3><p class="mt-2 text-sm leading-6 muted">Three Android entry points repeat Hilt EntryPoint lookup, an IO coroutine scope, logging, and exception swallowing. The coordinator owns throttle/debounce/single-flight policy, but mutable trigger state is still spread across entry points and its token/time fields. Receiver lifetime and cancellation are difficult to test through the current interface.</p><h3 class="mt-5 font-semibold text-cyan-100">Solution</h3><p class="mt-2 text-sm leading-6 muted">Treat Activity resume and system broadcasts as thin Android adapters into one trigger module. Let that module own event normalization, cancellation, and the handoff to the scan module. Preserve the existing Android signals and the current user-visible behavior.</p></div>
+          <div><h3 class="font-semibold text-cyan-100">Before / after</h3><div class="mt-3 flow"><div class="node">Activity<br>onResume</div><div class="node">Media<br>receiver</div><div class="node">USB<br>receiver</div><div class="w-full text-center text-slate-500">↘ &nbsp; ↓ &nbsp; ↙</div><div class="node">Repeated scopes + Hilt lookups</div><div class="arrow">→</div><div class="node">Coordinator</div></div><div class="mt-3 flow"><div class="node">Activity adapter</div><div class="node">Media adapter</div><div class="node">USB adapter</div><div class="w-full text-center text-slate-500">↘ &nbsp; ↓ &nbsp; ↙</div><div class="node deep">Deep trigger<br>module</div><div class="arrow">→</div><div class="node">Deep scan<br>module</div></div></div>
+        </div>
+        <div class="mt-6 grid md:grid-cols-3 gap-4 text-sm"><div><strong class="text-emerald-200">Locality</strong><p class="mt-1 muted">Android lifecycle quirks stay in adapters; trigger semantics stay in one module.</p></div><div><strong class="text-emerald-200">Leverage</strong><p class="mt-1 muted">A new signal, such as a future user-visible manual event, reuses the same path.</p></div><div><strong class="text-emerald-200">Tests</strong><p class="mt-1 muted">Event normalization and cancellation can be tested without constructing Activity receivers.</p></div></div>
+        <div class="mt-6 mermaid">sequenceDiagram
+          participant A as Activity adapter
+          participant M as Media adapter
+          participant U as USB adapter
+          participant T as Trigger module
+          participant S as Scan module
+          A->>T: resume
+          M->>T: mounted
+          U->>T: unplug edge
+          T->>T: throttle / debounce / single-flight
+          T->>S: one normalized scan request
+        </div>
+      </article>
+
+      <article class="glass rounded-2xl p-6 md:p-8">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+          <div><div class="text-xs uppercase tracking-[.2em] accent">Candidate 04 · shell depth</div><h2 class="mt-2 text-2xl font-bold text-white">Carve the Missing-bucket projection out of XMBViewModel</h2></div>
+          <span class="spec border rounded-full px-3 py-1 text-xs font-bold">Speculative</span>
+        </div>
+        <div class="mt-6 grid lg:grid-cols-2 gap-6">
+          <div><h3 class="font-semibold text-cyan-100">Files / modules</h3><ul class="mt-2 space-y-1 text-sm muted list-disc list-inside"><li><code>XMBViewModel.kt</code> — 7,282 lines</li><li><code>XMBItemList.kt</code> and game-detail launch guards</li><li>Missing-game queries, pseudo-platform rows, counts, navigation, and shell state</li></ul><h3 class="mt-5 font-semibold text-cyan-100">Problem</h3><p class="mt-2 text-sm leading-6 muted">The recent Missing-ROM feature crossed persistence, scan policy, detail launch, pseudo-platform navigation, and rendering. The XMB ViewModel now owns this projection alongside music, video, photo, Discord, achievements, themes, layout editing, and input. Pure helpers are testable, but the call-site locality remains low because the shell module is the integration point for nearly every concern.</p><h3 class="mt-5 font-semibold text-cyan-100">Solution</h3><p class="mt-2 text-sm leading-6 muted">Explore a deep library projection module for All Games, Favorites, Missing, collections, and Memory Card rows. Keep XMB navigation and rendering decisions in the shell, but move database observation, counts, and pseudo-platform projection together. This is deliberately deferred until the scan module shape is settled.</p></div>
+          <div><h3 class="font-semibold text-cyan-100">Before / after</h3><div class="mt-3 flow"><div class="node">Room flows</div><div class="arrow">→</div><div class="node">7,282-line<br>XMBViewModel</div><div class="arrow">→</div><div class="node">XMB shell</div><div class="w-full text-center text-slate-600 text-xs">library projection shares a state holder with every overlay</div></div><div class="mt-3 flow"><div class="node">Room flows</div><div class="arrow">→</div><div class="node deep">Deep library<br>projection module</div><div class="arrow">→</div><div class="node">XMB shell</div><div class="w-full text-center text-slate-500 text-xs">Missing policy and row projection gain locality</div></div></div>
+        </div>
+        <div class="mt-6 grid md:grid-cols-3 gap-4 text-sm"><div><strong class="text-emerald-200">Locality</strong><p class="mt-1 muted">Missing visibility rules and row construction become discoverable in one module.</p></div><div><strong class="text-emerald-200">Leverage</strong><p class="mt-1 muted">Future library buckets reuse the projection without expanding the shell's state holder.</p></div><div><strong class="text-emerald-200">Tests</strong><p class="mt-1 muted">Projection tests can cover counts, visibility, and pseudo-platform rows without the full XMB state.</p></div></div>
+        <div class="mt-6 mermaid">flowchart LR
+          DB[(Room flows)] --> VM[XMBViewModel]
+          VM --> G[Games]
+          VM --> F[Favorites]
+          VM --> M[Missing]
+          VM --> C[Collections]
+          VM --> O[Music / Video / Photo / Social]
+          DB --> P[Deep library projection]
+          P --> ROWS[Library row model]
+          ROWS --> X[XMB shell]
+          style VM fill:#4c1d95,stroke:#c4b5fd,color:#fff
+          style P fill:#166534,stroke:#86efac,color:#fff
+        </div>
+      </article>
+    </section>
+
+    <section class="mt-10 glass rounded-2xl p-6 md:p-8 border-cyan-300/30">
+      <div class="text-xs uppercase tracking-[.2em] accent">Top recommendation</div>
+      <h2 class="mt-2 text-3xl font-bold text-white">Start with Candidate 01: the deep library scan module</h2>
+      <p class="mt-4 max-w-4xl leading-7 muted">It has the clearest deletion test and the highest leverage: the same ROM survey and Missing policy currently exist in both the settings interface and the trigger path. Deepening it reduces drift without requiring a shell redesign, and it gives Candidate 03 a stable scan seam afterward. Candidate 02 is the next best target for the theme hot spot; Candidate 04 should wait until the library projection is understood.</p>
+      <div class="mt-6 grid md:grid-cols-3 gap-4 text-sm"><div class="rounded-xl bg-emerald-300/5 border border-emerald-300/15 p-4"><strong class="text-emerald-200">Why now</strong><p class="mt-1 muted">Recent commits already exposed duplicated scan policy.</p></div><div class="rounded-xl bg-cyan-300/5 border border-cyan-300/15 p-4"><strong class="text-cyan-200">Why deep</strong><p class="mt-1 muted">The module can own the hard policy while callers retain their distinct interfaces.</p></div><div class="rounded-xl bg-violet-300/5 border border-violet-300/15 p-4"><strong class="text-violet-200">Why safe</strong><p class="mt-1 muted">Existing reconciler and coordinator tests provide a strong seam to preserve.</p></div></div>
+    </section>
+
+    <footer class="mt-8 text-sm muted">Choose a candidate to explore. No interface design or refactor has been started.</footer>
+  </main>
+  <script>mermaid.initialize({ startOnLoad: true, theme: 'dark', securityLevel: 'loose' });</script>
+</body>
+</html>
