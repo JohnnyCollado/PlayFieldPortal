@@ -11,7 +11,7 @@ import org.junit.Before
 import org.junit.Test
 
 /**
- * Phase 7 verification for the rescan trigger guards (docs/missing-roms-plan.md), now scoped to
+ * Phase 7 verification for the rescan trigger guards, now scoped to
  * just the throttle/debounce/single-flight decisions — the scan + reconcile mechanics they gate
  * moved to LibraryScannerTest with LibraryScanner (docs/adr/0001-library-scanner-owns-rom-survey.md).
  * This coordinator's only job is deciding WHEN to call libraryScanner.scanAllEnabled(); these tests

@@ -81,8 +81,13 @@ class LibraryScannerTest {
     // built per-test (inside runTest) rather than in setUp().
     private fun TestScope.scannerFor(
         gameRepository: GameRepository = this@LibraryScannerTest.gameRepository,
+        tombstoneDao: ScanTombstoneDao = this@LibraryScannerTest.tombstoneDao,
     ) = LibraryScanner(
-        memoryCardRepository, gameRepository, scanSourceResolver, tombstoneDao, reconciler,
+        memoryCardRepository,
+        gameRepository,
+        scanSourceResolver,
+        ExistingRomPathResolver(gameRepository, tombstoneDao),
+        reconciler,
         ioDispatcher = StandardTestDispatcher(testScheduler),
     )
 
@@ -177,6 +182,7 @@ class LibraryScannerTest {
         val outcome = scanner.scanPlatform("psx", removeMissing = false)
 
         assertEquals(ScanStatus.FAILED, outcome.status)
+        assertFalse(outcome.surveyTrusted)
         coVerify(exactly = 0) { scanSourceResolver.sourcesFor(any()) }
         coVerify(exactly = 0) { gameRepository.upsert(any()) }
     }
@@ -189,7 +195,21 @@ class LibraryScannerTest {
         val outcome = scanner.scanPlatform("psx", removeMissing = false)
 
         assertEquals(ScanStatus.FAILED, outcome.status)
+        assertFalse(outcome.surveyTrusted)
         coVerify(exactly = 0) { scanSourceResolver.sourcesFor(any()) }
+    }
+
+    @Test
+    fun `an unexpected source exception becomes a FAILED untrusted outcome`() = runTest {
+        val scanner = scannerFor()
+        coEvery { scanSourceResolver.sourcesFor(card) } returns listOf({
+            flow<ScanResult> { throw RuntimeException("provider exploded") }
+        })
+
+        val outcome = scanner.scanPlatform("psx", removeMissing = false)
+
+        assertEquals(ScanStatus.FAILED, outcome.status)
+        assertFalse(outcome.surveyTrusted)
     }
 
     @Test

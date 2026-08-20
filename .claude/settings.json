@@ -67,5 +67,16 @@
         ]
       }
     ]
+  },
+  "extraKnownMarketplaces": {
+    "android-reverse-engineering-skill": {
+      "source": {
+        "source": "directory",
+        "path": "D:\\NEXTJJEN\\repos\\PlayFieldPortal\\.claude\\skills\\android-reverse-engineering-skill"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "android-reverse-engineering@android-reverse-engineering-skill": true
   }
 }

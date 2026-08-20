@@ -1,6 +1,5 @@
 package com.playfieldportal.feature.library.scanner
 
-import com.playfieldportal.core.data.database.dao.ScanTombstoneDao
 import com.playfieldportal.core.data.repository.LibraryReconciler
 import com.playfieldportal.core.data.repository.MemoryCardRepository
 import com.playfieldportal.core.domain.model.MemoryCard
@@ -16,7 +15,6 @@ import javax.inject.Singleton
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 
@@ -40,9 +38,9 @@ enum class ScanStatus { COMPLETED, SKIPPED_NO_SOURCE, SKIPPED_BUSY, FAILED }
  * Result of surveying one Memory Card. No Android/Compose types — both the settings ViewModel
  * and the headless rescan coordinator map this into their own presentation.
  *
- * [surveyTrusted] mirrors whether Missing reconciliation actually ran (or would have, had
- * [removeMissing][LibraryScanner.scanPlatform] been requested) — false when any source errored,
- * couldn't survey, or the scan failed outright.
+ * [surveyTrusted] is true only when a survey completed trustworthily (the COMPLETED outcome
+ * computes it from scan errors and the present set). Every other outcome — skipped, busy, or
+ * failed — defaults to false because no trustworthy survey ran.
  */
 data class PlatformScanOutcome(
     val platformId: String,
@@ -50,9 +48,17 @@ data class PlatformScanOutcome(
     val status: ScanStatus,
     val added: Int = 0,
     val markedMissing: Int = 0,
-    val surveyTrusted: Boolean = true,
+    val surveyTrusted: Boolean = false,
     val errorMessage: String? = null,
 )
+
+/**
+ * Whether a Memory Card is eligible for a scan pass: enabled, with a configured ROM source and at
+ * least one supported extension. Shared by [LibraryScanner.scanAllEnabled] and the settings
+ * screen's "Scan All" so the two bulk entry points can't drift on eligibility.
+ */
+fun MemoryCard.isScannable(): Boolean =
+    enabled && (!treeUri.isNullOrBlank() || !romDirectory.isNullOrBlank()) && supportedExtensions.isNotEmpty()
 
 /**
  * Owns the ROM survey and Missing-reconciliation policy for a Memory Card: resolves its sources,
@@ -65,7 +71,7 @@ class LibraryScanner @Inject constructor(
     private val memoryCardRepository: MemoryCardRepository,
     private val gameRepository: GameRepository,
     private val scanSourceResolver: ScanSourceResolver,
-    private val scanTombstoneDao: ScanTombstoneDao,
+    private val existingRomPathResolver: ExistingRomPathResolver,
     private val libraryReconciler: LibraryReconciler,
     @ScannerIoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) {
@@ -108,11 +114,7 @@ class LibraryScanner @Inject constructor(
      * cards.
      */
     suspend fun scanAllEnabled(removeMissing: Boolean): List<PlatformScanOutcome> {
-        val eligible = memoryCardRepository.getAll().filter {
-            it.enabled &&
-                (!it.treeUri.isNullOrBlank() || !it.romDirectory.isNullOrBlank()) &&
-                it.supportedExtensions.isNotEmpty()
-        }
+        val eligible = memoryCardRepository.getAll().filter { it.isScannable() }
         return eligible.map { scanPlatform(it.platformId, removeMissing) }
     }
 
@@ -123,28 +125,18 @@ class LibraryScanner @Inject constructor(
         // failed DB or tombstone read fails the card before source resolution or any folder walk
         // starts. Falling back to an empty set (the old behavior) could re-add tombstoned or
         // already-known games.
-        val dbGames = try {
-            gameRepository.observeByPlatform(platformId).first()
+        val baseline = try {
+            existingRomPathResolver.baselineFor(platformId)
         } catch (ce: CancellationException) {
             throw ce
         } catch (e: Exception) {
-            Timber.e(e, "Library scan — DB snapshot failed for $platformId")
+            Timber.e(e, "Library scan — existing-path baseline failed for $platformId")
             return PlatformScanOutcome(
                 platformId, card.displayName, ScanStatus.FAILED,
-                errorMessage = "Could not read the library: ${e.message}",
+                errorMessage = e.message ?: "Could not read the library.",
             )
         }
-        val tombstones = try {
-            scanTombstoneDao.getPathsForPlatform(platformId)
-        } catch (ce: CancellationException) {
-            throw ce
-        } catch (e: Exception) {
-            Timber.e(e, "Library scan — tombstone read failed for $platformId")
-            return PlatformScanOutcome(
-                platformId, card.displayName, ScanStatus.FAILED,
-                errorMessage = "Could not read scan history: ${e.message}",
-            )
-        }
+        val dbGames = baseline.games
 
         val sources = scanSourceResolver.sourcesFor(card)
         if (sources.isEmpty()) {
@@ -153,7 +145,7 @@ class LibraryScanner @Inject constructor(
 
         // Live, growing set so a ROM already added from one source isn't re-added from another.
         // Tombstoned paths (user-removed games) count as existing so scans skip them too.
-        val existing = (dbGames.mapNotNull { it.romPath } + tombstones).toMutableSet()
+        val existing = baseline.romPaths.toMutableSet()
 
         var added = 0
         var scanErrored = false

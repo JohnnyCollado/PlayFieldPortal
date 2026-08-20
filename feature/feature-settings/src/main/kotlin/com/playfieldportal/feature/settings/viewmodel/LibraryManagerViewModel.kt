@@ -18,20 +18,22 @@ import com.playfieldportal.feature.launcher.PcLauncherAdapters
 import com.playfieldportal.feature.launcher.PcLauncherCatalog
 import com.playfieldportal.feature.launcher.PcLauncherType
 import com.playfieldportal.core.data.platform.PlatformFolderHintResolver
+import com.playfieldportal.feature.library.scanner.ExistingRomPathResolver
 import com.playfieldportal.feature.library.scanner.LibraryScanner
 import com.playfieldportal.feature.library.scanner.PlatformScanOutcome
 import com.playfieldportal.feature.library.scanner.RomScanner
 import com.playfieldportal.feature.library.scanner.ScanResult
 import com.playfieldportal.feature.library.scanner.ScanStatus
+import com.playfieldportal.feature.library.scanner.isScannable
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -139,7 +141,7 @@ class LibraryManagerViewModel @Inject constructor(
     private val romRootRepository: RomRootRepository,
     private val folderHintResolver: PlatformFolderHintResolver,
     private val launcherShortcutRepository: LauncherShortcutRepository,
-    private val scanTombstoneDao: com.playfieldportal.core.data.database.dao.ScanTombstoneDao,
+    private val existingRomPathResolver: ExistingRomPathResolver,
     private val windowsLibrarySetup: com.playfieldportal.core.data.repository.WindowsLibrarySetup,
     private val pcGameScanner: com.playfieldportal.feature.settings.pc.PcGameScanner,
     private val localSteamSchemaGenerator: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSchemaGenerator,
@@ -395,12 +397,13 @@ class LibraryManagerViewModel @Inject constructor(
                 emulatorId   = s.pendingEmulatorId,
             )
             // No per-card SAF grant: root-managed consoles scan and launch through the ROM
-            // Root's recursive grant (scanSourceResolver maps the card to its root subfolder).
+            // root's recursive grant (ScanSourceResolver, inside LibraryScanner, maps the card
+            // to its subfolder under every granted root).
             resetToList()
             if (scanNow) {
                 // Windows uses the PC import scan (setup self-heal, launcher exports, emu
                 // folders) — the generic ROM directory walk would find nothing to import.
-                // Other consoles scan through the ROM roots (scanSourceResolver maps the card
+                // Other consoles scan through the ROM roots (ScanSourceResolver, inside LibraryScanner, maps the card
                 // to its subfolder under every granted root).
                 if (platformId == WINDOWS_PLATFORM_ID) scanPcGamesFolder()
                 else scanConsole(platformId)
@@ -550,25 +553,10 @@ class LibraryManagerViewModel @Inject constructor(
         }
     }
 
-    private fun scanOutcomeMessage(outcome: PlatformScanOutcome, removeMissing: Boolean): String =
-        when (outcome.status) {
-            ScanStatus.SKIPPED_NO_SOURCE -> "${outcome.displayName}: ROM folder not configured."
-            ScanStatus.SKIPPED_BUSY -> "${outcome.displayName}: scan already in progress."
-            ScanStatus.FAILED -> "${outcome.displayName}: ${outcome.errorMessage ?: "scan failed."}"
-            ScanStatus.COMPLETED ->
-                "${outcome.displayName}: " + buildString {
-                    append(if (outcome.added == 0) "no new ROMs" else "${outcome.added} new ROM(s) added")
-                    if (removeMissing) {
-                        append(if (outcome.markedMissing == 0) ", none missing" else ", ${outcome.markedMissing} marked missing")
-                    }
-                    outcome.errorMessage?.let { append(" ($it)") }
-                }
-        }
-
     fun scanAllConsoles(removeMissing: Boolean = false) {
         viewModelScope.launch {
             memoryCardRepository.getAll()
-                .filter { it.enabled && (!it.treeUri.isNullOrBlank() || !it.romDirectory.isNullOrBlank()) }
+                .filter { it.isScannable() }
                 .forEach { scanConsole(it.platformId, removeMissing) }
         }
     }
@@ -895,6 +883,7 @@ class LibraryManagerViewModel @Inject constructor(
             val platformsWithGames = mutableSetOf<String>()
             var newCards = 0
             var totalAdded = 0
+            var skipped = 0
 
             // Scan every root's subfolders. A folder only becomes a console if it actually contains
             // ROMs — empty ES-DE folders (e.g. the ones "Set Up ROM Folders" created) are skipped.
@@ -910,10 +899,15 @@ class LibraryManagerViewModel @Inject constructor(
                         ?.takeIf { it.isNotEmpty() } ?: platform.romExtensions
                     if (exts.isEmpty()) continue   // nothing scannable for this platform
 
-                    val existing = runCatching {
-                        gameRepository.observeByPlatform(platformId).first().mapNotNull { it.romPath }.toSet() +
-                            scanTombstoneDao.getPathsForPlatform(platformId)
-                    }.getOrDefault(emptySet())
+                    val existing = try {
+                        existingRomPathResolver.baselineFor(platformId).romPaths
+                    } catch (ce: CancellationException) {
+                        throw ce
+                    } catch (e: Exception) {
+                        Timber.e(e, "Auto-detect skipped $platformId — could not read its library")
+                        skipped++
+                        continue
+                    }
 
                     val found = firstComplete(
                         romScanner.scanTree(rootUri, exts, platformId, true, existing, startDocId = childDocId)
@@ -957,13 +951,16 @@ class LibraryManagerViewModel @Inject constructor(
             }
 
             val rootLabel = "${roots.size} root${if (roots.size == 1) "" else "s"}"
-            val message = if (platformsWithGames.isEmpty()) {
-                "Scanned $scannedFolders folder(s) across $rootLabel; no new ROMs found. " +
-                    "Copy games into the matching system folders and try again."
-            } else {
-                "Loaded ${platformsWithGames.size} system(s)" +
-                    (if (newCards > 0) " ($newCards new console(s))" else "") +
-                    ", $totalAdded ROM(s) from $rootLabel."
+            val message = buildString {
+                if (platformsWithGames.isEmpty()) {
+                    append("Scanned $scannedFolders folder(s) across $rootLabel; no new ROMs found. ")
+                    append("Copy games into the matching system folders and try again.")
+                } else {
+                    append("Loaded ${platformsWithGames.size} system(s)")
+                    if (newCards > 0) append(" ($newCards new console(s))")
+                    append(", $totalAdded ROM(s) from $rootLabel.")
+                }
+                if (skipped > 0) append(" $skipped folder(s) skipped (library unreadable).")
             }
             _scratch.update { it.copy(message = message) }
             Timber.i("ROM root autoload — folders=$scannedFolders systems=${platformsWithGames.size} new=$newCards roms=$totalAdded roots=${roots.size}")
@@ -973,7 +970,7 @@ class LibraryManagerViewModel @Inject constructor(
     // ── Scan-source resolution shared by scanConsole / autoload ──────────────────
     //
     // Folder-resolution logic itself moved to ScanSourceResolver (shared with
-    // LibraryRescanCoordinator's Phase 5 rescan) — see scanSourceResolver.sourcesFor(card) above.
+    // LibraryRescanCoordinator's Phase 5 rescan) — see LibraryScanner.scanLocked / ScanSourceResolver.sourcesFor.
 
     private suspend fun firstComplete(flow: Flow<ScanResult>): ScanResult.Complete? {
         var complete: ScanResult.Complete? = null
@@ -982,3 +979,19 @@ class LibraryManagerViewModel @Inject constructor(
     }
 
 }
+
+internal fun scanOutcomeMessage(outcome: PlatformScanOutcome, removeMissing: Boolean): String =
+    when (outcome.status) {
+        ScanStatus.SKIPPED_NO_SOURCE ->
+            "${outcome.displayName}: ${outcome.errorMessage ?: "ROM folder not configured."}"
+        ScanStatus.SKIPPED_BUSY -> "${outcome.displayName}: scan already in progress."
+        ScanStatus.FAILED -> "${outcome.displayName}: ${outcome.errorMessage ?: "scan failed."}"
+        ScanStatus.COMPLETED ->
+            "${outcome.displayName}: " + buildString {
+                append(if (outcome.added == 0) "no new ROMs" else "${outcome.added} new ROM(s) added")
+                if (removeMissing) {
+                    append(if (outcome.markedMissing == 0) ", none missing" else ", ${outcome.markedMissing} marked missing")
+                }
+                outcome.errorMessage?.let { append(" ($it)") }
+            }
+    }
