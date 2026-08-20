@@ -103,7 +103,7 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         SteamOwnedGameEntity::class,
         SteamNoAchievementsEntity::class,
     ],
-    version = 37,
+    version = 38,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -1087,6 +1087,20 @@ abstract class PFPDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE games ADD COLUMN is_missing INTEGER NOT NULL DEFAULT 0")
                 db.execSQL("ALTER TABLE games ADD COLUMN last_seen_at INTEGER")
+            }
+        }
+
+        // v38 — multi-disc set identity (docs/plans/multi-disc-games-plan.md step 2). Adds the
+        // disc-set columns to games: disc_set_key (platform + containing folder + disc-stripped,
+        // region/revision-stripped title), disc_number (position within the set; NULL for an .m3u
+        // primary), is_disc_primary (the row a set projects to — the .m3u when present, else disc
+        // 1). All nullable/additive: existing rows migrate with NULL keys and behave exactly as
+        // before until a rescan populates them (the plan's reversibility guarantee).
+        val MIGRATION_37_38 = object : Migration(37, 38) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE games ADD COLUMN disc_set_key TEXT")
+                db.execSQL("ALTER TABLE games ADD COLUMN disc_number INTEGER")
+                db.execSQL("ALTER TABLE games ADD COLUMN is_disc_primary INTEGER NOT NULL DEFAULT 0")
             }
         }
     }

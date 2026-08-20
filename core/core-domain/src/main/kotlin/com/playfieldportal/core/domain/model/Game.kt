@@ -16,6 +16,12 @@ data class Game(
     // SAF document content:// URI for the ROM. Present when the game came from a SAF library and is
     // the preferred launch handle (no storage permission needed); null for legacy raw-path games.
     val romUri: String?           = null,
+    // Multi-disc set identity (docs/plans/multi-disc-games-plan.md). Null for single-ROM games;
+    // populated by DiscSetBuilder at scan time. Downstream projection (step 5) shows one row per
+    // set — the primary — while paths, play sessions and achievements stay per-disc.
+    val discSetKey: String? = null,
+    val discNumber: Int? = null,
+    val isDiscPrimary: Boolean = false,
     val packageName: String?      = null,   // null for ROM-based games
     val emulatorPackage: String?  = null,   // preferred emulator override
     val artworkUri: String?       = null,   // cached box/grid art path

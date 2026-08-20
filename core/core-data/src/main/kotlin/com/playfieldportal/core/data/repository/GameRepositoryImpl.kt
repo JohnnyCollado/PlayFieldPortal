@@ -30,11 +30,17 @@ class GameRepositoryImpl @Inject constructor(
     override fun observeGamesOnly(): Flow<List<Game>> =
         gameDao.observeGamesOnly().map { entities -> entities.map { it.toDomain() } }
 
+    override fun observeAllGames(): Flow<List<Game>> =
+        gameDao.observeAllGames().map { entities -> entities.map { it.toDomain() } }
+
     override fun observeFavorites(): Flow<List<Game>> =
         gameDao.observeFavorites().map { entities -> entities.map { it.toDomain() } }
 
     override fun observeByPlatform(platformId: String): Flow<List<Game>> =
         gameDao.observeByPlatform(platformId).map { entities -> entities.map { it.toDomain() } }
+
+    override fun observePlatformGames(platformId: String): Flow<List<Game>> =
+        gameDao.observePlatformGames(platformId).map { entities -> entities.map { it.toDomain() } }
 
     override suspend fun getByPlatform(platformId: String): List<Game> =
         gameDao.getByPlatformOnce(platformId).map { it.toDomain() }

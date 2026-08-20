@@ -11,7 +11,11 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface GameDao {
 
-    @Query("SELECT * FROM games WHERE is_missing = 0 ORDER BY title ASC")
+    // Projects one row per multi-disc set (the primary) so display counts never double-count a
+    // set's discs. Every consumer is display-side (card subtitles, pickers, Games root).
+    @Query(
+        "SELECT * FROM games WHERE is_missing = 0 AND (disc_set_key IS NULL OR is_disc_primary = 1) ORDER BY title ASC"
+    )
     fun observeAll(): Flow<List<GameEntity>>
 
     // "All Games" aggregate — real games only. App-style entries (content_type != 'GAME',
@@ -19,14 +23,36 @@ interface GameDao {
     @Query("SELECT * FROM games WHERE content_type = 'GAME'  AND is_missing = 0 ORDER BY title ASC")
     fun observeGamesOnly(): Flow<List<GameEntity>>
 
+    // Multi-disc projection (docs/plans/multi-disc-games-plan.md step 5): one row per disc set —
+    // the primary — for the All Games surface. The unprojected [observeGamesOnly] above stays
+    // untouched for per-disc achievement matching.
+    @Query(
+        "SELECT * FROM games WHERE content_type = 'GAME' AND is_missing = 0 " +
+            "AND (disc_set_key IS NULL OR is_disc_primary = 1) ORDER BY title ASC"
+    )
+    fun observeAllGames(): Flow<List<GameEntity>>
+
     @Query("UPDATE games SET content_type = :contentType WHERE id = :id")
     suspend fun setContentType(id: Long, contentType: String)
 
-    @Query("SELECT * FROM games WHERE is_favorite = 1 AND is_missing = 0 ORDER BY favorite_sort_order ASC")
+    // Projects one row per multi-disc set (the primary) — favorites count a set once. Display-only.
+    @Query(
+        "SELECT * FROM games WHERE is_favorite = 1 AND is_missing = 0 " +
+            "AND (disc_set_key IS NULL OR is_disc_primary = 1) ORDER BY favorite_sort_order ASC"
+    )
     fun observeFavorites(): Flow<List<GameEntity>>
 
     @Query("SELECT * FROM games WHERE platform_id = :platformId AND is_missing = 0 ORDER BY title ASC")
     fun observeByPlatform(platformId: String): Flow<List<GameEntity>>
+
+    // Multi-disc projection (docs/plans/multi-disc-games-plan.md step 5): one row per disc set —
+    // the primary — for the Memory Card game list. The unprojected [observeByPlatform] above stays
+    // untouched for scan baselines (existing-path resolution must see every disc).
+    @Query(
+        "SELECT * FROM games WHERE platform_id = :platformId AND is_missing = 0 " +
+            "AND (disc_set_key IS NULL OR is_disc_primary = 1) ORDER BY title ASC"
+    )
+    fun observePlatformGames(platformId: String): Flow<List<GameEntity>>
 
     @Query("SELECT * FROM games WHERE platform_id = :platformId ORDER BY title ASC")
     suspend fun getByPlatformOnce(platformId: String): List<GameEntity>
@@ -91,7 +117,12 @@ interface GameDao {
     suspend fun countByPlatform(platformId: String): Int
 
     // Real games only — what a Memory Card actually displays (standard app rows are excluded).
-    @Query("SELECT COUNT(*) FROM games WHERE platform_id = :platformId AND content_type = 'GAME'  AND is_missing = 0")
+    // Counts one row per multi-disc set (the primary) — a Memory Card's game count never
+    // double-counts a set's discs.
+    @Query(
+        "SELECT COUNT(*) FROM games WHERE platform_id = :platformId AND content_type = 'GAME' " +
+            "AND is_missing = 0 AND (disc_set_key IS NULL OR is_disc_primary = 1)"
+    )
     suspend fun countGamesByPlatform(platformId: String): Int
 
     @Query("UPDATE games SET is_favorite = :isFavorite WHERE id = :id")

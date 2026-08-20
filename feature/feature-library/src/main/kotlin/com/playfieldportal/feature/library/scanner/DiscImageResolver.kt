@@ -69,6 +69,19 @@ class DiscImageResolver @Inject constructor(
                 )
             }
 
+            // ── Dreamcast .gdi → referenced track files suppressed ────────
+            // A .gdi references trackNN.bin/.raw files that are parts of one disc, never games in
+            // their own right. Suppressed by content (the sheet's track list), so a user-edited
+            // extension list that includes bin/raw still produces one row per .gdi.
+            for (gdiFile in siblings.filter { it.extension.lowercase() == "gdi" }) {
+                val trackNames = gdiSheetTrackNames(readLinesOrEmpty(gdiFile))
+                val trackFiles = siblings.filter { it.name.lowercase() in trackNames }
+                trackFiles.forEach { suppressedPaths.add(it.absolutePath) }
+                if (trackFiles.isNotEmpty()) {
+                    Timber.d("GDI tracks suppressed for ${gdiFile.name}: ${trackFiles.size}")
+                }
+            }
+
             // ── Orphan .bin (no sibling .cue) → Mega Drive ──────────────
             val claimedBins = resolvedDiscs
                 .flatMap { it.suppressedFiles }
@@ -125,8 +138,8 @@ class DiscImageResolver @Inject constructor(
         val referencedNames = parseCueFileReferences(cueFile)
 
         return if (referencedNames.isNotEmpty()) {
-            // Authoritative: use what the .cue sheet declares
-            candidates.filter { it.name in referencedNames }
+            // Authoritative: use what the .cue sheet declares (names are normalised lowercase)
+            candidates.filter { it.name.lowercase() in referencedNames }
         } else {
             // Fallback: same directory, same base name, different track suffix
             // e.g. "Game (Track 1).bin", "Game (Track 2).bin" → all belong to "Game.cue"
@@ -143,23 +156,22 @@ class DiscImageResolver @Inject constructor(
     }
 
     /**
-     * Reads the CUE sheet and extracts all FILE references.
+     * Reads the CUE sheet and extracts all FILE references (shared [cueSheetReferences] parser).
      * CUE format: FILE "filename.bin" BINARY
      */
     private fun parseCueFileReferences(cueFile: File): Set<String> {
         return try {
-            cueFile.readLines()
-                .filter { it.trimStart().startsWith("FILE", ignoreCase = true) }
-                .mapNotNull { line ->
-                    // Extract filename between quotes
-                    val start = line.indexOf('"')
-                    val end   = line.lastIndexOf('"')
-                    if (start >= 0 && end > start) line.substring(start + 1, end) else null
-                }
-                .toSet()
+            cueSheetReferences(cueFile.readLines())
         } catch (e: Exception) {
             Timber.w(e, "Could not parse CUE sheet: ${cueFile.name} — falling back to name matching")
             emptySet()
         }
+    }
+
+    private fun readLinesOrEmpty(file: File): List<String> = try {
+        file.readLines()
+    } catch (e: Exception) {
+        Timber.w(e, "Could not read sheet: ${file.name}")
+        emptyList()
     }
 }

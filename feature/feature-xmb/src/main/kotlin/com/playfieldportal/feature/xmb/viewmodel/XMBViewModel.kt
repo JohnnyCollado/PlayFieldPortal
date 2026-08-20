@@ -1358,7 +1358,8 @@ class XMBViewModel @Inject constructor(
                     } else if (platformId == ALL_GAMES_PLATFORM_ID) {
                         // All Games aggregates real games only (content_type = GAME), minus any
                         // the user hid from this card (recoverable in Settings > Hidden Items).
-                        gameRepository.observeGamesOnly().collect { games ->
+                        // Multi-disc sets project one row (the primary) — see observeAllGames.
+                        gameRepository.observeAllGames().collect { games ->
                             val visible = games.notHiddenAt(HideLocationType.ALL_GAMES)
                             val items = if (visible.isEmpty()) listOf(emptyAllGamesItem())
                                         else visible.gameSorted(_uiState.value.gameSortMode).toXmbItems()
@@ -1387,7 +1388,8 @@ class XMBViewModel @Inject constructor(
                             _uiState.update { it.copy(currentItems = items) }
                         }
                     } else if (platformId != null) {
-                        gameRepository.observeByPlatform(platformId).collect { all ->
+                        // Multi-disc sets project one row (the primary) — see observePlatformGames.
+                        gameRepository.observePlatformGames(platformId).collect { all ->
                             // Memory Cards show real games only — a standard (unmarked) app row on
                             // this platform stays in the table for art/collections but not here.
                             val games = all.filter { it.contentType == GameContentType.GAME }

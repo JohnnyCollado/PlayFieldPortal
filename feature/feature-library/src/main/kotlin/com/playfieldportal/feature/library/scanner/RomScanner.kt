@@ -66,6 +66,14 @@ data class PcExportFile(
 
 private val PC_EXPORT_EXTENSIONS = setOf("steam", "epic", "gog", "amazon", "pcgame", "desktop")
 
+// A file child collected during the scanTree walk — name, stable raw path (dedupe/display key)
+// and the SAF document URI (content access + launch handle).
+private data class SafFileChild(
+    val name: String,
+    val rawPath: String,
+    val uri: String,
+)
+
 @Singleton
 class RomScanner @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -73,6 +81,8 @@ class RomScanner @Inject constructor(
     private val discImageResolver: DiscImageResolver,
     private val folderHintResolver: PlatformFolderHintResolver,
     private val arcadeRomsets: ArcadeRomsetCatalog,
+    private val discSetBuilder: DiscSetBuilder,
+    private val discCompanionSuppressor: DiscCompanionSuppressor,
 ) {
     private val defaultFolders = listOf(
         "/storage/emulated/0/ROMs",
@@ -245,7 +255,14 @@ class RomScanner @Inject constructor(
             "existing=$alreadyInLibrary"
         )
 
-        emit(ScanResult.Complete(newGames, alreadyInLibrary, unmatched, requiresUserAssignment))
+        emit(
+            ScanResult.Complete(
+                discSetBuilder.assign(newGames, ::readM3uPlaylist),
+                alreadyInLibrary,
+                unmatched,
+                requiresUserAssignment,
+            )
+        )
 
     }.flowOn(Dispatchers.IO)
 
@@ -277,11 +294,18 @@ class RomScanner @Inject constructor(
             return@flow
         }
 
-        val candidates = (if (recursive) root.walkTopDown() else root.listFiles()?.asSequence() ?: emptySequence())
+        // Collect the folder's files once, then suppress disc companions: a .bin listed in a
+        // sibling .cue (or a Dreamcast .gdi track file) is part of a disc, never a game row on its
+        // own — the same suppression the ROM-root walk gets from DiscImageResolver.
+        val allFiles = (if (recursive) root.walkTopDown() else root.listFiles()?.asSequence() ?: emptySequence())
             .filter { it.isFile }
             .filter { !it.name.startsWith(".") }                 // ignore hidden files
-            .filter { it.extension.lowercase() in allowed }      // only supported extensions
             .toList()
+        val suppressedPaths = discImageResolver.resolveFiles(allFiles).suppressedPaths
+
+        val candidates = allFiles
+            .filter { it.extension.lowercase() in allowed }      // only supported extensions
+            .filterNot { it.absolutePath in suppressedPaths }    // never companion files
 
         val newGames         = mutableListOf<Game>()
         val seenPaths        = HashSet<String>()                 // de-dupe within this scan
@@ -326,7 +350,8 @@ class RomScanner @Inject constructor(
 
         Timber.i("Memory Card scan complete — platform=$platformId new=${newGames.size} existing=$alreadyInLibrary")
         emit(ScanResult.Complete(
-            newGames, alreadyInLibrary, emptyList(), emptyList(),
+            discSetBuilder.assign(newGames, ::readM3uPlaylist),
+            alreadyInLibrary, emptyList(), emptyList(),
             presentRomPaths = candidates.mapTo(HashSet()) { it.absolutePath },
         ))
 
@@ -371,13 +396,14 @@ class RomScanner @Inject constructor(
         var alreadyInLibrary = 0
         var filesScanned     = 0
 
-        // Iterative DFS over document IDs; visited-set guards a cyclic/hostile provider. The start
-        // is the requested subfolder (single-root model) or the tree's own root document.
+        // Phase 1 — collect every file child (name / raw path / document uri). Directory
+        // traversal only: companion suppression (a .cue hiding its .bin rows) must see the whole
+        // folder before any game row is created, so files are processed in phase 2.
         val visited = HashSet<String>()
         val rootDocId = startDocId ?: DocumentsContract.getTreeDocumentId(tree)
         visited.add(rootDocId)
-        val stack = ArrayDeque<String>()
-        stack.addLast(rootDocId)
+        val stack = ArrayDeque<String>().apply { addLast(rootDocId) }
+        val fileChildren = mutableListOf<SafFileChild>()
         while (stack.isNotEmpty()) {
             coroutineContext.ensureActive()
             val dirDocId = stack.removeLast()
@@ -388,51 +414,77 @@ class RomScanner @Inject constructor(
                     continue
                 }
                 if (child.name.startsWith(".")) continue
-                val ext = child.name.substringAfterLast('.', "").lowercase()
-                if (ext !in allowed) continue
-
-                filesScanned++
                 // Derive the raw path from the document id (pure string math, no file access) so it
                 // stays the stable dedupe key and the {rom_path} value.
                 val rawPath = safDocumentIdToRawPath(child.documentId) ?: child.uri.toString()
-                presentPaths.add(rawPath)
-                if (rawPath in existingRomPaths || !seenPaths.add(rawPath)) {
-                    alreadyInLibrary++
-                    continue
-                }
-
-                emit(ScanResult.Progress(
-                    ScanProgress(
-                        currentFolder  = child.name,
-                        filesScanned   = filesScanned,
-                        filesFound     = newGames.size,
-                        totalEstimated = filesScanned,
-                    )
-                ))
-
-                val stem = child.name.substringBeforeLast('.', child.name)
-                val (title, resolvedPlatform) =
-                    when (val d = arcadeRomsets.decide(stem, ext, platformId)) {
-                        is ArcadeRomsetCatalog.Decision.Route -> d.title to d.platformId
-                        ArcadeRomsetCatalog.Decision.Skip -> {
-                            Timber.d("Skipped non-romset in CPS card: ${child.name}")
-                            continue
-                        }
-                        ArcadeRomsetCatalog.Decision.UseDefault -> cleanRomTitle(stem) to platformId
-                    }
-                newGames.add(
-                    Game(
-                        title      = title,
-                        platformId = resolvedPlatform,
-                        romPath    = rawPath,
-                        romUri     = child.uri.toString(),
-                    )
-                )
+                fileChildren.add(SafFileChild(child.name, rawPath, child.uri.toString()))
             }
         }
 
+        // Phase 2 — companion suppression over SAF: a .cue-listed .bin or a Dreamcast .gdi track
+        // file is part of a disc, never a game row on its own (same policy as the raw paths, whose
+        // counterpart lives in DiscImageResolver). Sheets are read through their document URIs.
+        val uriByPath = fileChildren.associate { it.rawPath to it.uri }
+        val suppressedPaths = discCompanionSuppressor.suppressedFiles(
+            fileChildren.map { ScannedDiscFile(it.rawPath, it.name) },
+        ) { file ->
+            val uri = uriByPath[file.rawPath] ?: return@suppressedFiles null
+            runCatching {
+                context.contentResolver.openInputStream(Uri.parse(uri))?.bufferedReader()?.readLines()
+            }.getOrNull()
+        }
+
+        // Phase 3 — the actual scan over the collected files.
+        for (child in fileChildren) {
+            coroutineContext.ensureActive()
+            if (child.rawPath in suppressedPaths) continue
+            val ext = child.name.substringAfterLast('.', "").lowercase()
+            if (ext !in allowed) continue
+
+            filesScanned++
+            presentPaths.add(child.rawPath)
+            if (child.rawPath in existingRomPaths || !seenPaths.add(child.rawPath)) {
+                alreadyInLibrary++
+                continue
+            }
+
+            emit(ScanResult.Progress(
+                ScanProgress(
+                    currentFolder  = child.name,
+                    filesScanned   = filesScanned,
+                    filesFound     = newGames.size,
+                    totalEstimated = filesScanned,
+                )
+            ))
+
+            val stem = child.name.substringBeforeLast('.', child.name)
+            val (title, resolvedPlatform) =
+                when (val d = arcadeRomsets.decide(stem, ext, platformId)) {
+                    is ArcadeRomsetCatalog.Decision.Route -> d.title to d.platformId
+                    ArcadeRomsetCatalog.Decision.Skip -> {
+                        Timber.d("Skipped non-romset in CPS card: ${child.name}")
+                        continue
+                    }
+                    ArcadeRomsetCatalog.Decision.UseDefault -> cleanRomTitle(stem) to platformId
+                }
+            newGames.add(
+                Game(
+                    title      = title,
+                    platformId = resolvedPlatform,
+                    romPath    = child.rawPath,
+                    romUri     = child.uri,
+                )
+            )
+        }
+
         Timber.i("Memory Card SAF scan complete — platform=$platformId new=${newGames.size} existing=$alreadyInLibrary")
-        emit(ScanResult.Complete(newGames, alreadyInLibrary, emptyList(), emptyList(), presentRomPaths = presentPaths))
+        emit(
+            ScanResult.Complete(
+                discSetBuilder.assign(newGames, ::readM3uPlaylist),
+                alreadyInLibrary, emptyList(), emptyList(),
+                presentRomPaths = presentPaths,
+            )
+        )
 
     }.flowOn(Dispatchers.IO)
 
@@ -524,6 +576,26 @@ class RomScanner @Inject constructor(
             Timber.i("PC folder scan — found ${out.size} export file(s)")
             out
         }
+
+    // Reads an .m3u playlist's raw entry lines for DiscSetBuilder. Raw-path games are read from
+    // disk; SAF games from their document URI (the derived raw path may not exist as a File under
+    // scoped storage). An unreadable playlist is a soft failure — the discs keep their own
+    // identity and the .m3u simply stays a plain game row.
+    private fun readM3uPlaylist(game: Game): List<String>? {
+        val path = game.romPath ?: return null
+        if (!path.endsWith(".m3u", ignoreCase = true)) return null
+        return try {
+            if (!game.romUri.isNullOrBlank()) {
+                context.contentResolver.openInputStream(Uri.parse(game.romUri))
+                    ?.bufferedReader()?.readLines()
+            } else {
+                File(path).takeIf { it.isFile }?.readLines()
+            }
+        } catch (e: Exception) {
+            Timber.w(e, "Could not read playlist $path — discs keep their own identity")
+            null
+        }
+    }
 
     suspend fun findMissingRoms(knownPaths: List<String>): List<String> =
         knownPaths.filter { path -> !File(path).exists() }

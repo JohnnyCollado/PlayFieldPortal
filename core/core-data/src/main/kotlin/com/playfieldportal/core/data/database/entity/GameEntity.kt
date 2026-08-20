@@ -36,6 +36,18 @@ data class GameEntity(
     @ColumnInfo(name = "rom_uri")
     val romUri: String? = null,
 
+    // Multi-disc set identity (docs/plans/multi-disc-games-plan.md). Null for single-ROM games;
+    // populated by DiscSetBuilder at scan time. Downstream projection (step 5) shows one row per
+    // set — the primary — while paths, play sessions and achievements stay per-disc.
+    @ColumnInfo(name = "disc_set_key")
+    val discSetKey: String? = null,
+
+    @ColumnInfo(name = "disc_number")
+    val discNumber: Int? = null,
+
+    @ColumnInfo(name = "is_disc_primary")
+    val isDiscPrimary: Boolean = false,
+
     @ColumnInfo(name = "package_name")
     val packageName: String?,
 
@@ -180,6 +192,9 @@ fun GameEntity.toDomain() = Game(
     platformId = platformId,
     romPath = romPath,
     romUri = romUri,
+    discSetKey = discSetKey,
+    discNumber = discNumber,
+    isDiscPrimary = isDiscPrimary,
     packageName = packageName,
     emulatorPackage = emulatorPackage,
     artworkUri = artworkUri,
@@ -228,6 +243,9 @@ fun Game.toEntity() = GameEntity(
     platformId = platformId,
     romPath = romPath,
     romUri = romUri,
+    discSetKey = discSetKey,
+    discNumber = discNumber,
+    isDiscPrimary = isDiscPrimary,
     packageName = packageName,
     emulatorPackage = emulatorPackage,
     artworkUri = artworkUri,
