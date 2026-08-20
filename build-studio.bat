@@ -36,19 +36,33 @@ goto collect_args
 :args_done
 
 echo.
-echo === Building Theme Studio (test + createDistributable) ===
+echo === Testing Theme Studio ===
 echo.
 
-REM Tests first so a failure stops the build before packaging.
-call ".\gradlew.bat" :studio:test :studio:createDistributable%GRADLE_ARGS%
+REM Run tests separately so packaging cannot start if they fail.
+call ".\gradlew.bat" :studio:test%GRADLE_ARGS%
+set "TEST_EXIT=%ERRORLEVEL%"
+
+if not "%TEST_EXIT%"=="0" (
+    echo.
+    echo === TESTS FAILED ^(exit %TEST_EXIT%^) ===
+    endlocal & exit /b %TEST_EXIT%
+)
+
+echo.
+echo === Packaging Theme Studio ^(createDistributable^) ===
+echo.
+
+call ".\gradlew.bat" :studio:createDistributable%GRADLE_ARGS%
 set "BUILD_EXIT=%ERRORLEVEL%"
 
-echo.
 if not "%BUILD_EXIT%"=="0" (
+    echo.
     echo === BUILD FAILED ^(exit %BUILD_EXIT%^) ===
     endlocal & exit /b %BUILD_EXIT%
 )
 
+echo.
 echo === BUILD SUCCESSFUL ===
 echo App image: studio\build\compose\binaries\main\app\PlayField Theme Studio
 echo Test report: studio\build\reports\tests\test\index.html

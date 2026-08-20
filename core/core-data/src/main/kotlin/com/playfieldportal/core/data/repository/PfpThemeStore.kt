@@ -2,7 +2,6 @@ package com.playfieldportal.core.data.repository
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
@@ -90,7 +89,7 @@ class PfpThemeStore @Inject constructor(
             )
         }
 
-    /** Applies a saved theme: wallpaper + accent + custom icons through the standard cascade prefs. */
+    /** Applies a saved theme: wallpaper + wave style + accent + custom icons through the standard cascade prefs. */
     suspend fun apply(id: String): Boolean = withContext(Dispatchers.IO) {
         val wallpaperSidecar = File(dir, "$id.wallpaper.jpg")
         val bundle = runCatching { PfpThemeCodec.read(File(dir, "$id.pfptheme").readBytes()) }.getOrNull()
@@ -125,9 +124,17 @@ class PfpThemeStore @Inject constructor(
             ?.let(com.playfieldportal.themekit.XmbLayoutSpecCodec::sanitize)
             ?.takeUnless { it == com.playfieldportal.themekit.XmbLayoutSpec.DEFAULT }
             ?.let(com.playfieldportal.themekit.XmbLayoutSpecCodec::encode)
+        // Keep the manifest's wave treatment in the same preference contract as Display settings.
+        // Unknown values fail safe to the normal animated wave instead of persisting an invalid enum.
+        val waveStyle = when (bundle.manifest.waveStyle) {
+            PfpThemeManifest.WAVE_STATIC -> WAVE_STYLE_STATIC
+            PfpThemeManifest.WAVE_REDUCED -> WAVE_STYLE_REDUCED
+            else -> WAVE_STYLE_ANIMATED
+        }
         val appliedName = _themes.value.firstOrNull { it.id == id }?.name ?: "Custom Theme"
         context.pfpDataStore.edit { prefs ->
             prefs[KEY_APPLIED_THEME_NAME] = appliedName
+            prefs[KEY_WAVE_STYLE] = waveStyle
             // Wave-only themes carry no wallpaper: clear any previous theme's wallpaper so the
             // look reverts to the live wave background instead of lingering — same set-or-remove
             // contract as the accent, icon-color and layout overrides below.
@@ -155,6 +162,7 @@ class PfpThemeStore @Inject constructor(
             prefs.remove(KEY_CUSTOM_WALLPAPER)
             prefs.remove(KEY_ACCENT_OVERRIDE)
             prefs.remove(KEY_ICON_COLOR)
+            prefs.remove(KEY_WAVE_STYLE)
             prefs.remove(KEY_THEME_LAYOUT)
             prefs.remove(KEY_THEME_ICONS_STAMP)
             prefs.remove(KEY_APPLIED_THEME_NAME)
@@ -216,8 +224,11 @@ class PfpThemeStore @Inject constructor(
             val preview = bundle.preview?.let { SafeMedia.decodeBitmapCapped(it) }
                 ?: wallpaper?.let { downscale(it, maxEdge = 480) }
             preview?.let { p ->
-                FileOutputStream(File(dir, "$id.preview.jpg")).use { p.compress(Bitmap.CompressFormat.JPEG, 88, it) }
-                if (p !== wallpaper) p.recycle()
+                try {
+                    FileOutputStream(File(dir, "$id.preview.jpg")).use { p.compress(Bitmap.CompressFormat.JPEG, 88, it) }
+                } finally {
+                    if (p !== wallpaper) p.recycle()
+                }
             }
             _themes.value = scan()
             SavedTheme(
@@ -227,6 +238,7 @@ class PfpThemeStore @Inject constructor(
                 File(dir, "$id.preview.jpg").takeIf { it.isFile }?.absolutePath,
             )
         }.onFailure { Timber.w(it, "PfpThemeStore: import failed") }.getOrNull()
+            .also { wallpaper?.recycle() }
     }
 
     // ── internals ────────────────────────────────────────────────────────────
@@ -305,8 +317,13 @@ class PfpThemeStore @Inject constructor(
     companion object {
         // Must match XMBViewModel / ThemesSettingsViewModel — shared cascade prefs contract.
         private val KEY_CUSTOM_WALLPAPER = stringPreferencesKey("display_custom_wallpaper")
+        private val KEY_WAVE_STYLE = stringPreferencesKey("display_wave_style")
         private val KEY_ACCENT_OVERRIDE = longPreferencesKey("theme_accent_override")
         private val KEY_ICON_COLOR = longPreferencesKey("theme_icon_color")
+
+        private const val WAVE_STYLE_ANIMATED = "ANIMATED"
+        private const val WAVE_STYLE_REDUCED = "REDUCED"
+        private const val WAVE_STYLE_STATIC = "STATIC"
 
         /** Extracted custom icons of the applied theme, under filesDir. */
         const val THEME_ICONS_DIR = "theme-icons"

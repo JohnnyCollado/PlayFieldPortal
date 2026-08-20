@@ -131,6 +131,22 @@ class PfpThemeStoreTest {
         assertTrue(File(path).isFile, "the pref points at the copied wallpaper file")
     }
 
+    @Test
+    fun `applying a theme applies its wave style and reset clears the override`() = runTest {
+        val store = PfpThemeStore(context)
+        val saved = requireNotNull(
+            store.importBundle(
+                register(bundleBytes("Static", "#FF0000", waveStyle = PfpThemeManifest.WAVE_STATIC)),
+            ),
+        )
+
+        assertTrue(store.apply(saved.id))
+        assertEquals("STATIC", context.pfpDataStore.data.first()[KEY_WAVE_STYLE])
+
+        store.resetApplied()
+        assertNull(context.pfpDataStore.data.first()[KEY_WAVE_STYLE])
+    }
+
     // ── helpers ────────────────────────────────────────────────────────────────
 
     /** Serializes a `.pfptheme` bundle exactly as Theme Studio / share export would. */
@@ -139,9 +155,10 @@ class PfpThemeStoreTest {
         accent: String,
         wallpaper: ByteArray? = null,
         preview: ByteArray? = null,
+        waveStyle: String = PfpThemeManifest.WAVE_ANIMATED,
     ): ByteArray = PfpThemeCodec.write(
         PfpThemeBundle(
-            manifest = PfpThemeManifest(name = name, accentColor = accent),
+            manifest = PfpThemeManifest(name = name, accentColor = accent, waveStyle = waveStyle),
             wallpaper = wallpaper,
             preview = preview,
         ),
@@ -165,6 +182,7 @@ class PfpThemeStoreTest {
     private companion object {
         // Mirror PfpThemeStore's private cascade-pref keys by their string contract.
         val KEY_CUSTOM_WALLPAPER = stringPreferencesKey("display_custom_wallpaper")
+        val KEY_WAVE_STYLE = stringPreferencesKey("display_wave_style")
         val KEY_ACCENT_OVERRIDE = longPreferencesKey("theme_accent_override")
     }
 }
