@@ -37,6 +37,8 @@ class LibraryScannerTest {
     private lateinit var reconciler: LibraryReconciler
     private lateinit var scanSourceResolver: ScanSourceResolver
     private lateinit var tombstoneDao: ScanTombstoneDao
+    private lateinit var discSetBuilder: DiscSetBuilder
+    private lateinit var m3uPlaylistReader: M3uPlaylistReader
 
     private val card = MemoryCard(
         platformId = "psx",
@@ -68,6 +70,10 @@ class LibraryScannerTest {
         reconciler = mockk(relaxed = true)
         scanSourceResolver = mockk(relaxed = true)
         tombstoneDao = mockk(relaxed = true)
+        // The real builder: the reconciliation under test derives over existing + new rows.
+        discSetBuilder = DiscSetBuilder()
+        // The reader is context-backed (SAF URIs) — mocked; the builder's caller seam stays real.
+        m3uPlaylistReader = mockk(relaxed = true)
 
         coEvery { memoryCardRepository.getById("psx") } returns card
         coEvery { memoryCardRepository.getAll() } returns listOf(card)
@@ -88,6 +94,9 @@ class LibraryScannerTest {
         scanSourceResolver,
         ExistingRomPathResolver(gameRepository, tombstoneDao),
         reconciler,
+        // Real reconciler over the real builder + mocked reader, so the integration test drives
+        // the actual union derivation while playlist reads stay context-free.
+        DiscSetReconciler(discSetBuilder, m3uPlaylistReader, gameRepository),
         ioDispatcher = StandardTestDispatcher(testScheduler),
     )
 
@@ -270,6 +279,60 @@ class LibraryScannerTest {
         })
 
         scanner.scanPlatform("psx", removeMissing = false)
+    }
+
+    @Test
+    fun `a later scan adding disc 3 re-derives the existing m3u set`() = runTest {
+        // Incremental rescan (plan follow-up): the m3u and discs 1-2 are already in the library
+        // with the m3u's set key; disc 3 arrives with the single-pass stale enrichment (its own
+        // folder set). The scanner must re-derive the union and upsert the corrected disc 3.
+        val scanner = scannerFor()
+        val m3uKey = "psx\u0001/roms/psx\u0001Final Fantasy VII"
+        val existing = listOf(
+            Game(
+                title = "Final Fantasy VII", platformId = "psx",
+                romPath = "/roms/psx/Final Fantasy VII.m3u",
+                discSetKey = m3uKey, discNumber = null, isDiscPrimary = true,
+            ),
+            Game(
+                title = "Final Fantasy VII (Disc 1)", platformId = "psx",
+                romPath = "/roms/psx/Final Fantasy VII (Disc 1)/Final Fantasy VII (Disc 1).cue",
+                discSetKey = m3uKey, discNumber = 1, isDiscPrimary = false,
+            ),
+            Game(
+                title = "Final Fantasy VII (Disc 2)", platformId = "psx",
+                romPath = "/roms/psx/Final Fantasy VII (Disc 2)/Final Fantasy VII (Disc 2).cue",
+                discSetKey = m3uKey, discNumber = 2, isDiscPrimary = false,
+            ),
+        )
+        coEvery { gameRepository.observeByPlatform("psx") } returns flowOf(existing)
+        val disc3 = Game(
+            title = "Final Fantasy VII (Disc 3)", platformId = "psx",
+            romPath = "/roms/psx/Final Fantasy VII (Disc 3)/Final Fantasy VII (Disc 3).cue",
+            discSetKey = "psx\u0001/roms/psx/Final Fantasy VII (Disc 3)\u0001Final Fantasy VII",
+            discNumber = 3, isDiscPrimary = true,
+        )
+        coEvery { scanSourceResolver.sourcesFor(card) } returns listOf(
+            completeSource(newGames = listOf(disc3), present = setOf(disc3.romPath!!)),
+        )
+        coEvery { m3uPlaylistReader.read(any()) } returns listOf(
+            "Final Fantasy VII (Disc 1).cue",
+            "Final Fantasy VII (Disc 2).cue",
+            "Final Fantasy VII (Disc 3).cue",
+        )
+
+        val outcome = scanner.scanPlatform("psx", removeMissing = false)
+
+        assertEquals(ScanStatus.COMPLETED, outcome.status)
+        assertEquals(1, outcome.added)
+        coVerify(exactly = 1) {
+            gameRepository.upsert(match {
+                it.romPath == disc3.romPath &&
+                    it.discSetKey == m3uKey &&
+                    it.discNumber == 3 &&
+                    !it.isDiscPrimary
+            })
+        }
     }
 
     @Test

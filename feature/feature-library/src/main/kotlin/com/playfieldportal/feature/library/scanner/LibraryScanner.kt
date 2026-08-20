@@ -2,6 +2,7 @@ package com.playfieldportal.feature.library.scanner
 
 import com.playfieldportal.core.data.repository.LibraryReconciler
 import com.playfieldportal.core.data.repository.MemoryCardRepository
+import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.MemoryCard
 import com.playfieldportal.core.domain.repository.GameRepository
 import dagger.Module
@@ -73,6 +74,7 @@ class LibraryScanner @Inject constructor(
     private val scanSourceResolver: ScanSourceResolver,
     private val existingRomPathResolver: ExistingRomPathResolver,
     private val libraryReconciler: LibraryReconciler,
+    private val discSetReconciler: DiscSetReconciler,
     @ScannerIoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) {
     // Per-card single-flight, shared across every caller (manual scans, resume, mount, unplug).
@@ -150,6 +152,9 @@ class LibraryScanner @Inject constructor(
         var added = 0
         var scanErrored = false
         var firstSourceError: String? = null
+        // The newly discovered rows, as enriched by the scanner's single-pass assign — the fresh
+        // half of the disc-set reconcile below.
+        val scannedGames = mutableListOf<Game>()
         // Union of on-disk ROM paths across all sources; null once any source can't survey.
         var present: MutableSet<String>? = mutableSetOf()
         var firstWriteFailure: String? = null
@@ -158,6 +163,7 @@ class LibraryScanner @Inject constructor(
             source(existing).collect { result ->
                 when (result) {
                     is ScanResult.Complete -> {
+                        scannedGames.addAll(result.newGames)
                         for (game in result.newGames) {
                             try {
                                 gameRepository.upsert(game)
@@ -196,6 +202,13 @@ class LibraryScanner @Inject constructor(
                 errorMessage = firstWriteFailure,
             )
         }
+
+        // Disc-set reconcile (docs/plans/multi-disc-games-plan.md follow-up): the scanner only
+        // enriched the newly added rows against themselves, so a disc arriving into an
+        // already-scanned .m3u set (or a new .m3u adopting existing discs) needs the union
+        // re-derived. Deterministic and idempotent — only rows whose disc fields changed are
+        // rewritten, and a failure here is non-fatal (the next scan re-derives the same union).
+        discSetReconciler.reconcilePlatform(platformId, dbGames, scannedGames)
 
         // Non-destructive reconcile: present files are marked seen, gone files are marked
         // missing (never deleted). The reconciler internally skips removals when the survey is

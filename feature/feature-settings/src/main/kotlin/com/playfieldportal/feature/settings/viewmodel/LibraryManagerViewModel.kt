@@ -18,6 +18,7 @@ import com.playfieldportal.feature.launcher.PcLauncherAdapters
 import com.playfieldportal.feature.launcher.PcLauncherCatalog
 import com.playfieldportal.feature.launcher.PcLauncherType
 import com.playfieldportal.core.data.platform.PlatformFolderHintResolver
+import com.playfieldportal.feature.library.scanner.DiscSetReconciler
 import com.playfieldportal.feature.library.scanner.ExistingRomPathResolver
 import com.playfieldportal.feature.library.scanner.LibraryScanner
 import com.playfieldportal.feature.library.scanner.PlatformScanOutcome
@@ -142,6 +143,7 @@ class LibraryManagerViewModel @Inject constructor(
     private val folderHintResolver: PlatformFolderHintResolver,
     private val launcherShortcutRepository: LauncherShortcutRepository,
     private val existingRomPathResolver: ExistingRomPathResolver,
+    private val discSetReconciler: DiscSetReconciler,
     private val windowsLibrarySetup: com.playfieldportal.core.data.repository.WindowsLibrarySetup,
     private val pcGameScanner: com.playfieldportal.feature.settings.pc.PcGameScanner,
     private val localSteamSchemaGenerator: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSchemaGenerator,
@@ -899,8 +901,8 @@ class LibraryManagerViewModel @Inject constructor(
                         ?.takeIf { it.isNotEmpty() } ?: platform.romExtensions
                     if (exts.isEmpty()) continue   // nothing scannable for this platform
 
-                    val existing = try {
-                        existingRomPathResolver.baselineFor(platformId).romPaths
+                    val baseline = try {
+                        existingRomPathResolver.baselineFor(platformId)
                     } catch (ce: CancellationException) {
                         throw ce
                     } catch (e: Exception) {
@@ -910,7 +912,7 @@ class LibraryManagerViewModel @Inject constructor(
                     }
 
                     val found = firstComplete(
-                        romScanner.scanTree(rootUri, exts, platformId, true, existing, startDocId = childDocId)
+                        romScanner.scanTree(rootUri, exts, platformId, true, baseline.romPaths, startDocId = childDocId)
                     )?.newGames.orEmpty()
 
                     if (found.isEmpty()) continue   // empty (or fully-known) folder → no card, no change
@@ -926,6 +928,9 @@ class LibraryManagerViewModel @Inject constructor(
                         newCards++
                     }
                     found.forEach { gameRepository.upsert(it) }
+                    // Same incremental disc-set join as LibraryScanner: a disc added into an
+                    // already-scanned .m3u set is union-reconciled against the pre-scan rows.
+                    discSetReconciler.reconcilePlatform(platformId, baseline.games, found)
                     memoryCardRepository.recordScan(platformId, System.currentTimeMillis())
                     platformsWithGames.add(platformId)
                     totalAdded += found.size

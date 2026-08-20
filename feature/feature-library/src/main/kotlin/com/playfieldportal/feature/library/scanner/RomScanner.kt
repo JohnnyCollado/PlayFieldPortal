@@ -83,6 +83,7 @@ class RomScanner @Inject constructor(
     private val arcadeRomsets: ArcadeRomsetCatalog,
     private val discSetBuilder: DiscSetBuilder,
     private val discCompanionSuppressor: DiscCompanionSuppressor,
+    private val m3uPlaylistReader: M3uPlaylistReader,
 ) {
     private val defaultFolders = listOf(
         "/storage/emulated/0/ROMs",
@@ -257,7 +258,7 @@ class RomScanner @Inject constructor(
 
         emit(
             ScanResult.Complete(
-                discSetBuilder.assign(newGames, ::readM3uPlaylist),
+                discSetBuilder.assign(newGames, m3uPlaylistReader::read),
                 alreadyInLibrary,
                 unmatched,
                 requiresUserAssignment,
@@ -350,7 +351,7 @@ class RomScanner @Inject constructor(
 
         Timber.i("Memory Card scan complete — platform=$platformId new=${newGames.size} existing=$alreadyInLibrary")
         emit(ScanResult.Complete(
-            discSetBuilder.assign(newGames, ::readM3uPlaylist),
+            discSetBuilder.assign(newGames, m3uPlaylistReader::read),
             alreadyInLibrary, emptyList(), emptyList(),
             presentRomPaths = candidates.mapTo(HashSet()) { it.absolutePath },
         ))
@@ -480,7 +481,7 @@ class RomScanner @Inject constructor(
         Timber.i("Memory Card SAF scan complete — platform=$platformId new=${newGames.size} existing=$alreadyInLibrary")
         emit(
             ScanResult.Complete(
-                discSetBuilder.assign(newGames, ::readM3uPlaylist),
+                discSetBuilder.assign(newGames, m3uPlaylistReader::read),
                 alreadyInLibrary, emptyList(), emptyList(),
                 presentRomPaths = presentPaths,
             )
@@ -576,26 +577,6 @@ class RomScanner @Inject constructor(
             Timber.i("PC folder scan — found ${out.size} export file(s)")
             out
         }
-
-    // Reads an .m3u playlist's raw entry lines for DiscSetBuilder. Raw-path games are read from
-    // disk; SAF games from their document URI (the derived raw path may not exist as a File under
-    // scoped storage). An unreadable playlist is a soft failure — the discs keep their own
-    // identity and the .m3u simply stays a plain game row.
-    private fun readM3uPlaylist(game: Game): List<String>? {
-        val path = game.romPath ?: return null
-        if (!path.endsWith(".m3u", ignoreCase = true)) return null
-        return try {
-            if (!game.romUri.isNullOrBlank()) {
-                context.contentResolver.openInputStream(Uri.parse(game.romUri))
-                    ?.bufferedReader()?.readLines()
-            } else {
-                File(path).takeIf { it.isFile }?.readLines()
-            }
-        } catch (e: Exception) {
-            Timber.w(e, "Could not read playlist $path — discs keep their own identity")
-            null
-        }
-    }
 
     suspend fun findMissingRoms(knownPaths: List<String>): List<String> =
         knownPaths.filter { path -> !File(path).exists() }

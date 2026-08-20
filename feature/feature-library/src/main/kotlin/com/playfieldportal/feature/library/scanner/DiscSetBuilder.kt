@@ -50,9 +50,31 @@ class DiscSetBuilder @Inject constructor() {
 
     /**
      * Returns the games with disc-set fields populated, preserving the input order. Games that are
-     * not part of a set are returned unchanged.
+     * not part of a set are returned unchanged. Runs over the games of one scan pass (see
+     * [reconcile] for joining those games into sets whose other members were scanned earlier).
      */
-    fun assign(games: List<Game>, m3uReader: M3uReader): List<Game> {
+    fun assign(games: List<Game>, m3uReader: M3uReader): List<Game> = derive(games, m3uReader)
+
+    /**
+     * Re-derives set identity over a batch that mixes already-scanned rows with newly added ones
+     * (an incremental scan: a new disc arriving into an already-scanned `.m3u` set, a new `.m3u`
+     * adopting existing discs, or a lower-numbered disc that must take the primary). Returns only
+     * the rows whose disc fields changed, so the caller upserts just those. The derivation is
+     * deterministic, so reconcile is a no-op on a fully correct batch — stored values are never
+     * trusted, they are only diffed against.
+     */
+    fun reconcile(games: List<Game>, m3uReader: M3uReader): List<Game> {
+        val derived = derive(games, m3uReader)
+        return games.zip(derived)
+            .filter { (before, after) ->
+                before.discSetKey != after.discSetKey ||
+                    before.discNumber != after.discNumber ||
+                    before.isDiscPrimary != after.isDiscPrimary
+            }
+            .map { it.second }
+    }
+
+    private fun derive(games: List<Game>, m3uReader: M3uReader): List<Game> {
         if (games.isEmpty()) return games
 
         val candidates = games.mapNotNull { game -> game.candidate() }

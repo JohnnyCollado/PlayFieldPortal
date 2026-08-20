@@ -221,6 +221,115 @@ class DiscSetBuilderTest {
         assertEquals(2, assigned.count { it.discSetKey != null && !it.isDiscPrimary })
     }
 
+    private fun setGame(
+        path: String,
+        key: String?,
+        number: Int?,
+        primary: Boolean,
+        platformId: String = "psx",
+    ): Game = game(path, platformId).copy(discSetKey = key, discNumber = number, isDiscPrimary = primary)
+
+    @Test
+    fun `reconcile joins a newly added disc into an existing m3u set`() {
+        // Incremental scan (plan follow-up): the m3u and discs 1-2 were scanned earlier and carry
+        // the m3u's set key; disc 3 just arrived, so its single-pass assign left it as its own
+        // per-folder set. Reconcile must re-derive the union and pull disc 3 into the m3u's set.
+        val m3uKey = "psx\u0001/roms/psx\u0001Final Fantasy VII"
+        val existing = listOf(
+            setGame("/roms/psx/Final Fantasy VII.m3u", m3uKey, null, true),
+            setGame("/roms/psx/Final Fantasy VII (Disc 1)/Final Fantasy VII (Disc 1).cue", m3uKey, 1, false),
+            setGame("/roms/psx/Final Fantasy VII (Disc 2)/Final Fantasy VII (Disc 2).cue", m3uKey, 2, false),
+        )
+        val disc3 = setGame(
+            "/roms/psx/Final Fantasy VII (Disc 3)/Final Fantasy VII (Disc 3).cue",
+            "psx\u0001/roms/psx/Final Fantasy VII (Disc 3)\u0001Final Fantasy VII",
+            3,
+            true,
+        )
+
+        val updated = builder.reconcile(existing + disc3) {
+            m3u(listOf(
+                "Final Fantasy VII (Disc 1).cue",
+                "Final Fantasy VII (Disc 2).cue",
+                "Final Fantasy VII (Disc 3).cue",
+            )).read(it)
+        }
+
+        assertEquals(1, updated.size)
+        val joined = updated.single()
+        assertEquals(disc3.romPath, joined.romPath)
+        assertEquals(m3uKey, joined.discSetKey)
+        assertEquals(3, joined.discNumber)
+        assertFalse(joined.isDiscPrimary)
+    }
+
+    @Test
+    fun `reconcile flips the primary to a newly added lower disc`() {
+        // No m3u: the first scan found disc 2 (primary of the folder's set); disc 1 arrives later.
+        // The union's lowest disc number must win the primary, flipping the existing row.
+        val key = "psx\u0001/roms/psx\u0001Final Fantasy VII"
+        val disc2 = setGame("/roms/psx/Final Fantasy VII (Disc 2).cue", key, 2, true)
+        val disc1 = setGame("/roms/psx/Final Fantasy VII (Disc 1).cue", key, 1, true)
+
+        val updated = builder.reconcile(listOf(disc2, disc1)) { null }
+
+        assertEquals(1, updated.size)
+        val flipped = updated.single()
+        assertEquals(disc2.romPath, flipped.romPath)
+        assertFalse(flipped.isDiscPrimary)
+    }
+
+    @Test
+    fun `reconcile is a no-op on a fully correct batch`() {
+        val m3uKey = "psx\u0001/roms/psx\u0001Final Fantasy VII"
+        val correct = listOf(
+            setGame("/roms/psx/Final Fantasy VII.m3u", m3uKey, null, true),
+            setGame("/roms/psx/Final Fantasy VII (Disc 1)/Final Fantasy VII (Disc 1).cue", m3uKey, 1, false),
+            setGame("/roms/psx/Final Fantasy VII (Disc 2)/Final Fantasy VII (Disc 2).cue", m3uKey, 2, false),
+            setGame("/roms/gba/Pokemon Emerald.gba", null, null, false, "gba"),
+        )
+
+        val updated = builder.reconcile(correct) {
+            m3u(listOf(
+                "Final Fantasy VII (Disc 1).cue",
+                "Final Fantasy VII (Disc 2).cue",
+            )).read(it)
+        }
+
+        assertTrue(updated.isEmpty())
+    }
+
+    @Test
+    fun `reconcile adopts existing discs into a newly added m3u set`() {
+        // The reverse direction: discs 1-2 were scanned as their own per-folder sets, then the user
+        // adds an m3u beside the folders. Single-pass assign for the lone m3u resolves nothing, so
+        // reconcile must pull the existing discs into the m3u's set and make the m3u primary.
+        val m3u = setGame("/roms/psx/Final Fantasy VII.m3u", null, null, false)
+        val disc1 = setGame(
+            "/roms/psx/Final Fantasy VII (Disc 1)/Final Fantasy VII (Disc 1).cue",
+            "psx\u0001/roms/psx/Final Fantasy VII (Disc 1)\u0001Final Fantasy VII",
+            1,
+            true,
+        )
+        val disc2 = setGame(
+            "/roms/psx/Final Fantasy VII (Disc 2)/Final Fantasy VII (Disc 2).cue",
+            "psx\u0001/roms/psx/Final Fantasy VII (Disc 2)\u0001Final Fantasy VII",
+            2,
+            true,
+        )
+
+        val updated = builder.reconcile(listOf(m3u, disc1, disc2)) {
+            m3u(listOf("Final Fantasy VII (Disc 1).cue", "Final Fantasy VII (Disc 2).cue")).read(it)
+        }
+
+        val m3uKey = "psx\u0001/roms/psx\u0001Final Fantasy VII"
+        assertEquals(3, updated.size)
+        assertEquals(m3uKey, updated.single { it.romPath.orEmpty().endsWith(".m3u") }.discSetKey)
+        assertTrue(updated.single { it.romPath.orEmpty().endsWith(".m3u") }.isDiscPrimary)
+        assertEquals(1, updated.single { it.romPath.orEmpty().contains("(Disc 1)") }.discNumber)
+        assertEquals(m3uKey, updated.single { it.romPath.orEmpty().contains("(Disc 1)") }.discSetKey)
+    }
+
     @Test
     fun `untagged playlist entries take playlist order for disc numbers`() {
         val games = listOf(

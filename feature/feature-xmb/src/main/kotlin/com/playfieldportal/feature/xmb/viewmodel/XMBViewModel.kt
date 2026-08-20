@@ -43,6 +43,7 @@ import com.playfieldportal.core.domain.model.XmbPalette
 import com.playfieldportal.core.domain.model.displayLabel
 import com.playfieldportal.core.domain.model.resolve
 import com.playfieldportal.feature.artwork.api.ArtworkRepository
+import com.playfieldportal.feature.library.scanner.DiscSetReconciler
 import com.playfieldportal.feature.library.scanner.RomScanner
 import com.playfieldportal.feature.library.scanner.ScanResult
 import com.playfieldportal.feature.xmb.gamepad.GamepadInputHandler
@@ -846,6 +847,7 @@ class XMBViewModel @Inject constructor(
     private val windowsLibrarySetup: com.playfieldportal.core.data.repository.WindowsLibrarySetup,
     private val pcShortcutImporter: com.playfieldportal.feature.launcher.PcShortcutImporter,
     private val pcGameScanner: com.playfieldportal.feature.settings.pc.PcGameScanner,
+    private val discSetReconciler: DiscSetReconciler,
     private val localSteamSchemaGenerator: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSchemaGenerator,
     private val localSteamDiscovery: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamDiscovery,
 ) : ViewModel() {
@@ -5263,9 +5265,12 @@ class XMBViewModel @Inject constructor(
                 return@launch
             }
 
+            val existingGames = runCatching {
+                gameRepository.observeByPlatform(platformId).first()
+            }.getOrDefault(emptyList())
             val existingPaths = runCatching {
                 // Tombstoned paths (user-removed games) count as "existing" so scans skip them.
-                gameRepository.observeByPlatform(platformId).first().mapNotNull { it.romPath }.toSet() +
+                existingGames.mapNotNull { it.romPath }.toSet() +
                     scanTombstoneDao.getPathsForPlatform(platformId)
             }.getOrDefault(emptySet())
 
@@ -5285,6 +5290,10 @@ class XMBViewModel @Inject constructor(
                     )
                     is ScanResult.Complete -> {
                         result.newGames.forEach { game -> gameRepository.upsert(game) }
+                        // Same incremental disc-set join as the LibraryScanner path: a disc added
+                        // into an already-scanned .m3u set (or a new .m3u over existing discs) is
+                        // union-reconciled against the card's pre-scan rows.
+                        discSetReconciler.reconcilePlatform(platformId, existingGames, result.newGames)
                         memoryCardRepository.recordScan(platformId, System.currentTimeMillis())
                         completeBackgroundTask(taskId,
                             if (result.newGames.isEmpty()) "No new ROMs found"
