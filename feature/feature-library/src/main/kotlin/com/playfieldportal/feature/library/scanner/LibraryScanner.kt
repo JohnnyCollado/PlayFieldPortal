@@ -235,3 +235,20 @@ class LibraryScanner @Inject constructor(
         )
     }
 }
+
+/** Formats a per-platform scan result consistently for every scan entry point. */
+fun scanOutcomeMessage(outcome: PlatformScanOutcome, removeMissing: Boolean): String =
+    when (outcome.status) {
+        ScanStatus.SKIPPED_NO_SOURCE ->
+            "${outcome.displayName}: ${outcome.errorMessage ?: "ROM folder not configured."}"
+        ScanStatus.SKIPPED_BUSY -> "${outcome.displayName}: scan already in progress."
+        ScanStatus.FAILED -> "${outcome.displayName}: ${outcome.errorMessage ?: "scan failed."}"
+        ScanStatus.COMPLETED ->
+            "${outcome.displayName}: " + buildString {
+                append(if (outcome.added == 0) "no new ROMs" else "${outcome.added} new ROM(s) added")
+                if (removeMissing) {
+                    append(if (outcome.markedMissing == 0) ", none missing" else ", ${outcome.markedMissing} marked missing")
+                }
+                outcome.errorMessage?.let { append(" ($it)") }
+            }
+    }

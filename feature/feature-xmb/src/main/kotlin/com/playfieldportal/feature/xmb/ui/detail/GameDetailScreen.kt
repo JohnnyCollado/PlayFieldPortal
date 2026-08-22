@@ -342,6 +342,16 @@ fun GameDetailScreen(
                 }
             }
 
+            if (state.showDiscPicker) {
+                Spacer(Modifier.height(18.dp))
+                DiscPicker(
+                    members = state.discMembers,
+                    focusedIndex = state.discFocusIndex,
+                    selectedId = state.selectedDiscId,
+                    onSelect = viewModel::selectDisc,
+                )
+            }
+
             Spacer(Modifier.height(18.dp))
 
             // Android games can never have achievements — no coin strip for them (the ViewModel
@@ -549,6 +559,49 @@ private fun Game.kindLabel(): String = when {
     shortcutId != null || launchIntentUri != null -> "PC Shortcut"
     romPath == null && packageName != null        -> "Game App"
     else                                          -> "ROM"
+}
+
+@Composable
+private fun DiscPicker(
+    members: List<Game>,
+    focusedIndex: Int,
+    selectedId: Long?,
+    onSelect: (Long) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("DISCS", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            itemsIndexed(members) { index, member ->
+                val isFocused = focusedIndex == index
+                val isSelected = selectedId == member.id
+                val label = member.discNumber?.let { "Disc $it" } ?: "Playlist"
+                Column(
+                    modifier = Modifier
+                        .widthIn(min = 110.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(if (isSelected) menuCursorFill().copy(alpha = 0.2f) else ActionFill)
+                        .border(
+                            width = if (isFocused) 2.dp else 1.dp,
+                            color = when {
+                                isFocused -> menuCursorEdge()
+                                isSelected -> menuCursorEdge().copy(alpha = 0.55f)
+                                else -> Color.White.copy(alpha = 0.14f)
+                            },
+                            shape = RoundedCornerShape(8.dp),
+                        )
+                        .clickable { onSelect(member.id) }
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                ) {
+                    Text(label, color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        if (member.isMissing) "Missing" else "Available",
+                        color = if (member.isMissing) Color(0xFFFFB4AB) else TextMuted,
+                        fontSize = 11.sp,
+                    )
+                }
+            }
+        }
+    }
 }
 
 @Composable

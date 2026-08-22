@@ -67,6 +67,9 @@ data class ArtPickerItem(
 data class GameDetailUiState(
     val game: Game? = null,
     val platform: PlatformEntity? = null,
+    /** All rows in the loaded set; empty for ordinary single-ROM/app entries. */
+    val discMembers: List<Game> = emptyList(),
+    val selectedDiscId: Long? = null,
     val isLoading: Boolean = true,
     val isEditingNote: Boolean = false,
     val noteText: String = "",
@@ -93,6 +96,8 @@ data class GameDetailUiState(
     // D-pad page scrolling: DOWN past the button row scrolls the page in steps so gamepad
     // users can read the full info/description area; UP unwinds before refocusing Play.
     val pageScrollSteps: Int = 0,
+    // -1 means the main button row is focused; otherwise this is the focused disc member.
+    val discFocusIndex: Int = -1,
     val showOptions: Boolean = false,
     val optionsIndex: Int = 0,
     val mediaUris: List<String> = emptyList(),
@@ -122,6 +127,12 @@ data class GameDetailUiState(
     // ── Add-to-collection picker ──────────────────────────────────────────
     val collectionPicker: CollectionPickerUi = CollectionPickerUi(),
 ) {
+    val selectedDisc: Game?
+        get() = discMembers.firstOrNull { it.id == selectedDiscId } ?: game
+
+    val showDiscPicker: Boolean
+        get() = discMembers.size > 1
+
     // Package-backed gaming apps (Android / Windows card entries) launch through their package,
     // shortcut, or captured-intent handle — never an emulator.
     val isPackageBacked: Boolean
@@ -221,12 +232,20 @@ class GameDetailViewModel @Inject constructor(
                 )
             }
             val game     = gameRepository.getById(id)
+            val discMembers = game?.discSetKey
+                ?.let { gameRepository.getDiscSetMembers(it) }
+                ?.takeIf { it.isNotEmpty() }
+                ?: listOfNotNull(game)
+            val selectedDisc = discMembers.firstOrNull { it.isDiscPrimary }
+                ?: discMembers.firstOrNull()
             val platform = game?.let { platformDao.getById(it.platformId) }
             val emulator = game?.let { resolveLaunchProfile(it, platform).getOrNull()?.profile?.name }
             _uiState.update {
                 it.copy(
                     game              = game,
                     platform          = platform,
+                    discMembers       = discMembers,
+                    selectedDiscId    = selectedDisc?.id,
                     noteText          = game?.userNote ?: "",
                     mediaUris         = mediaOf(game),
                     emulatorName      = emulator,
@@ -248,6 +267,7 @@ class GameDetailViewModel @Inject constructor(
                     isLoading          = false,
                     mainFocus          = 0,
                     pageScrollSteps    = 0,
+                    discFocusIndex     = -1,
                     manualViewerUri    = null,
                     showOptions        = false,
                     optionsIndex       = 0,
@@ -260,6 +280,18 @@ class GameDetailViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    // ── Disc picker ───────────────────────────────────────────────────────
+
+    fun selectDisc(id: Long) {
+        if (_uiState.value.discMembers.any { it.id == id }) {
+            _uiState.update { it.copy(selectedDiscId = id, actionMessage = null, launchError = null) }
+        }
+    }
+
+    fun selectDiscAt(index: Int) {
+        _uiState.value.discMembers.getOrNull(index)?.id?.let(::selectDisc)
     }
 
     // ── Controller input ──────────────────────────────────────────────────
@@ -330,15 +362,22 @@ class GameDetailViewModel @Inject constructor(
         // Main page focus: 0 = Play, 1 = Options (gear), 2 = Artwork (brush).
         when (action) {
             GamepadAction.NAVIGATE_LEFT  -> _uiState.update {
-                if (it.mediaFocus >= 0) it.copy(mediaFocus = (it.mediaFocus - 1).coerceAtLeast(0), actionMessage = null)
-                else it.copy(mainFocus = (it.mainFocus - 1).coerceIn(0, MAIN_FOCUS_LAST), actionMessage = null)
+                when {
+                    it.mediaFocus >= 0 -> it.copy(mediaFocus = (it.mediaFocus - 1).coerceAtLeast(0), actionMessage = null)
+                    it.discFocusIndex >= 0 -> it.copy(discFocusIndex = (it.discFocusIndex - 1).coerceAtLeast(0), actionMessage = null)
+                    else -> it.copy(mainFocus = (it.mainFocus - 1).coerceIn(0, MAIN_FOCUS_LAST), actionMessage = null)
+                }
             }
             GamepadAction.NAVIGATE_RIGHT -> _uiState.update {
-                if (it.mediaFocus >= 0) it.copy(mediaFocus = (it.mediaFocus + 1).coerceAtMost(it.detailMedia.lastIndex), actionMessage = null)
-                else it.copy(mainFocus = (it.mainFocus + 1).coerceIn(0, MAIN_FOCUS_LAST), actionMessage = null)
+                when {
+                    it.mediaFocus >= 0 -> it.copy(mediaFocus = (it.mediaFocus + 1).coerceAtMost(it.detailMedia.lastIndex), actionMessage = null)
+                    it.discFocusIndex >= 0 -> it.copy(discFocusIndex = (it.discFocusIndex + 1).coerceAtMost(it.discMembers.lastIndex), actionMessage = null)
+                    else -> it.copy(mainFocus = (it.mainFocus + 1).coerceIn(0, MAIN_FOCUS_LAST), actionMessage = null)
+                }
             }
             GamepadAction.NAVIGATE_UP    -> _uiState.update {
                 if (it.mediaFocus >= 0) return@update it.copy(mediaFocus = -1, pageScrollSteps = 0, actionMessage = null)
+                if (it.discFocusIndex >= 0) return@update it.copy(discFocusIndex = -1, mainFocus = 1, actionMessage = null)
                 // One press rewinds the whole page scroll; the next lands on Launch — no more
                 // unwinding step by step before focus comes back.
                 if (it.pageScrollSteps > 0) return@update it.copy(pageScrollSteps = 0, actionMessage = null)
@@ -350,10 +389,18 @@ class GameDetailViewModel @Inject constructor(
                 when {
                     // First DOWN moves to the button row.
                     it.mainFocus == 0 -> it.copy(mainFocus = 1, actionMessage = null)
+                    // From the button row, enter the disc picker before the lower strips.
+                    it.discFocusIndex < 0 && it.mainFocus in 1..MAIN_FOCUS_LAST && it.showDiscPicker ->
+                        it.copy(discFocusIndex = 0, actionMessage = null)
                     // From the button row, DOWN lands on the Shiba Coins strip — except for
                     // Android games, which never have achievements and render no strip.
                     it.mainFocus in 1..MAIN_FOCUS_LAST && it.game?.platformId != "android" ->
                         it.copy(mainFocus = MAIN_FOCUS_COINS, actionMessage = null)
+                    // From the disc picker, move across members and then continue down.
+                    it.discFocusIndex >= 0 && it.discFocusIndex < it.discMembers.lastIndex ->
+                        it.copy(discFocusIndex = it.discFocusIndex + 1, actionMessage = null)
+                    it.discFocusIndex >= 0 && it.game?.platformId != "android" ->
+                        it.copy(discFocusIndex = -1, mainFocus = MAIN_FOCUS_COINS, actionMessage = null)
                     // From the strip, DOWN enters the media strip when there is one
                     // (page scrolls to the bottom so the strip is visible)...
                     it.mediaFocus < 0 && it.detailMedia.isNotEmpty() ->
@@ -364,6 +411,8 @@ class GameDetailViewModel @Inject constructor(
             }
             GamepadAction.SELECT        -> if (s.mediaFocus >= 0) {
                 openMediaAt(s.mediaFocus)
+            } else if (s.discFocusIndex >= 0) {
+                selectDiscAt(s.discFocusIndex)
             } else when (s.mainFocus) {
                 0 -> { Timber.d("Controller SELECT activated Launch"); launch() }
                 1 -> openOptions()
@@ -565,7 +614,7 @@ class GameDetailViewModel @Inject constructor(
     // launch sfx, so replaying it here would double it. Manual Play (button / controller SELECT)
     // leaves it true.
     fun launch(playSound: Boolean = true) {
-        val selectedGame = _uiState.value.game ?: run {
+        val selectedGame = _uiState.value.selectedDisc ?: run {
             Timber.w("Play requested before game detail state was loaded")
             _uiState.update { it.copy(actionMessage = null, launchError = "Game is still loading") }
             return

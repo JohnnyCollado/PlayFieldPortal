@@ -28,11 +28,10 @@ class DiscSetReconciler @Inject constructor(
 ) {
 
     /**
-     * @return the number of existing rows whose disc fields were corrected (0 when [newRows] is
-     * empty — nothing new can join a set, so there is nothing to re-derive).
+     * @return the number of rows whose disc fields were corrected. A completed scan may re-derive
+     * existing rows even when [newRows] is empty, because a playlist can disappear or change.
      */
     suspend fun reconcilePlatform(platformId: String, existingRows: List<Game>, newRows: List<Game>): Int {
-        if (newRows.isEmpty()) return 0
         var corrected = 0
         discSetBuilder.reconcile(existingRows + newRows, m3uPlaylistReader::read)
             .forEach { changed ->

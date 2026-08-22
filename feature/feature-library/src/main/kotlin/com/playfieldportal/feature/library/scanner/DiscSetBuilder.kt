@@ -123,8 +123,6 @@ class DiscSetBuilder @Inject constructor() {
             }
         }
 
-        if (assignments.isEmpty()) return games
-
         // Step C — one primary per set: the .m3u when present, else the lowest disc number.
         val primaryByKey = assignments.entries
             .groupBy { it.value.key }
@@ -142,7 +140,14 @@ class DiscSetBuilder @Inject constructor() {
             val path = game.romPath
             val assignment = if (path != null) assignments[path] else null
             if (assignment == null) {
-                game
+                // A previously linked playlist can become unreadable, disappear, or stop listing
+                // this row. Do not leave stale primary/set fields behind; otherwise a missing m3u
+                // can continue to project itself over the real disc rows.
+                if (game.discSetKey != null || game.discNumber != null || game.isDiscPrimary) {
+                    game.copy(discSetKey = null, discNumber = null, isDiscPrimary = false)
+                } else {
+                    game
+                }
             } else {
                 game.copy(
                     discSetKey = assignment.key,

@@ -43,9 +43,9 @@ import com.playfieldportal.core.domain.model.XmbPalette
 import com.playfieldportal.core.domain.model.displayLabel
 import com.playfieldportal.core.domain.model.resolve
 import com.playfieldportal.feature.artwork.api.ArtworkRepository
-import com.playfieldportal.feature.library.scanner.DiscSetReconciler
-import com.playfieldportal.feature.library.scanner.RomScanner
-import com.playfieldportal.feature.library.scanner.ScanResult
+import com.playfieldportal.feature.library.scanner.LibraryScanner
+import com.playfieldportal.feature.library.scanner.ScanStatus
+import com.playfieldportal.feature.library.scanner.scanOutcomeMessage
 import com.playfieldportal.feature.xmb.gamepad.GamepadInputHandler
 import com.playfieldportal.core.ui.notification.BackgroundTaskNotifier
 import com.playfieldportal.core.ui.sound.MenuSound
@@ -690,6 +690,24 @@ internal fun List<Game>.gameSorted(mode: XmbSortMode): List<Game> = when (mode) 
     else                      -> sortedBy { it.displayTitle.lowercase() }
 }
 
+// Projects a raw game snapshot for display-only counts. DAO-backed list flows already apply the
+// same rule, but the category collector also drives card subtitles and must not count every disc.
+internal fun List<Game>.projectGamesForDisplay(): List<Game> {
+    val singles = filter { it.discSetKey == null && !it.isMissing }
+    val sets = groupBy { it.discSetKey }
+        .filterKeys { it != null }
+        .values
+        .mapNotNull { members ->
+            val present = members.filterNot { it.isMissing }
+            if (present.isEmpty()) return@mapNotNull null
+            val display = members.firstOrNull { it.isDiscPrimary } ?: present.first()
+            // A favorite on any member makes the logical set favorite; preserve that signal when
+            // this snapshot feeds the Favorites count and card badges.
+            display.copy(isFavorite = members.any { it.isFavorite })
+        }
+    return singles + sets
+}
+
 internal fun List<MusicTrack>.trackSorted(mode: XmbSortMode): List<MusicTrack> = when (mode) {
     XmbSortMode.ARTIST     -> sortedWith(
         compareBy(nullsLast<String>()) { t: MusicTrack -> t.artist?.lowercase() }
@@ -817,7 +835,7 @@ class XMBViewModel @Inject constructor(
     private val appCategoryRepository: AppCategoryRepository,
     private val gameCategoryRepository: com.playfieldportal.core.data.repository.GameCategoryRepository,
     private val launcherShortcutRepository: LauncherShortcutRepository,
-    private val romScanner: RomScanner,
+    private val libraryScanner: LibraryScanner,
     private val artworkRepository: ArtworkRepository,
     @ApplicationContext private val context: Context,
     private val gamepadInputHandler: GamepadInputHandler,
@@ -847,7 +865,6 @@ class XMBViewModel @Inject constructor(
     private val windowsLibrarySetup: com.playfieldportal.core.data.repository.WindowsLibrarySetup,
     private val pcShortcutImporter: com.playfieldportal.feature.launcher.PcShortcutImporter,
     private val pcGameScanner: com.playfieldportal.feature.settings.pc.PcGameScanner,
-    private val discSetReconciler: DiscSetReconciler,
     private val localSteamSchemaGenerator: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSchemaGenerator,
     private val localSteamDiscovery: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamDiscovery,
 ) : ViewModel() {
@@ -1199,16 +1216,23 @@ class XMBViewModel @Inject constructor(
                 gameRepository.observeAll(),
                 platformDao.observeAll(),
                 collectionRepository.observeCollections(),
-            ) { cards, games, platforms, collections -> CardsGamesPlatformsCollections(cards, games, platforms, collections) }
-                .collect { (cards, games, platforms, collections) ->
+                gameRepository.observeFavorites(),
+            ) { cards, games, platforms, collections, favorites ->
+                CardsGamesPlatformsCollections(cards, games, platforms, collections, favorites)
+            }
+                .collect { (cards, games, platforms, collections, favorites) ->
                     platformCache = platforms.associateBy { it.id }
                     enabledCards  = cards
                     // Card subtitles count what the card actually shows: real games only. Standard
                     // (unmarked) apps stay rows in the table but are invisible to Memory Cards.
-                    val counts = games.filter { it.contentType == GameContentType.GAME }
+                    val displayGames = games.projectGamesForDisplay()
+                    val counts = displayGames.filter { it.contentType == GameContentType.GAME }
                         .groupBy { it.platformId }.mapValues { it.value.size }
-                    val gamesOnlyTotal = games.count { it.contentType == GameContentType.GAME }
-                    val favoritesTotal = games.count { it.isFavorite }
+                    val gamesOnlyTotal = displayGames.count { it.contentType == GameContentType.GAME }
+                    // The display snapshot contains only primaries, so a favorite on a secondary
+                    // disc would otherwise be lost. observeFavorites already applies the set-level
+                    // projection and is the authoritative count for this folder.
+                    val favoritesTotal = favorites.size
 
                     // Drop a stale platform folder if its card was removed or disabled. The
                     // synthetic All Games, Favorites, and Missing folders are always valid.
@@ -1248,6 +1272,7 @@ class XMBViewModel @Inject constructor(
         val games: List<Game>,
         val platforms: List<PlatformEntity>,
         val collections: List<GameCollection>,
+        val favorites: List<Game>,
     )
 
     // ── App category changes (assignments / overrides) ──────────────────────────
@@ -5258,54 +5283,17 @@ class XMBViewModel @Inject constructor(
                 return@launch
             }
 
-            val dir = card.romDirectory
-            if (dir.isNullOrBlank()) {
-                addBackgroundTask(BackgroundTaskInfo(id = taskId, label = card.displayName, progress = null))
-                failBackgroundTask(taskId, "ROM directory not configured")
-                return@launch
-            }
-
-            val existingGames = runCatching {
-                gameRepository.observeByPlatform(platformId).first()
-            }.getOrDefault(emptyList())
-            val existingPaths = runCatching {
-                // Tombstoned paths (user-removed games) count as "existing" so scans skip them.
-                existingGames.mapNotNull { it.romPath }.toSet() +
-                    scanTombstoneDao.getPathsForPlatform(platformId)
-            }.getOrDefault(emptySet())
-
             addBackgroundTask(BackgroundTaskInfo(id = taskId, label = "Scanning ${card.displayName}…", progress = null))
-
-            romScanner.scanDirectory(
-                directory        = dir,
-                extensions       = card.supportedExtensions,
-                platformId       = platformId,
-                recursive        = card.scanRecursively,
-                existingRomPaths = existingPaths,
-            ).collect { result ->
-                when (result) {
-                    is ScanResult.Progress -> updateBackgroundTask(
-                        taskId, result.progress.filesScanned.toFloat() /
-                                (result.progress.totalEstimated.coerceAtLeast(1))
-                    )
-                    is ScanResult.Complete -> {
-                        result.newGames.forEach { game -> gameRepository.upsert(game) }
-                        // Same incremental disc-set join as the LibraryScanner path: a disc added
-                        // into an already-scanned .m3u set (or a new .m3u over existing discs) is
-                        // union-reconciled against the card's pre-scan rows.
-                        discSetReconciler.reconcilePlatform(platformId, existingGames, result.newGames)
-                        memoryCardRepository.recordScan(platformId, System.currentTimeMillis())
-                        completeBackgroundTask(taskId,
-                            if (result.newGames.isEmpty()) "No new ROMs found"
-                            else "${result.newGames.size} new ROM(s) added"
-                        )
-                        Timber.i("Card scan complete: ${result.newGames.size} new games for $platformId")
-                    }
-                    is ScanResult.Error -> {
-                        failBackgroundTask(taskId, result.message)
-                        Timber.e("Card scan error for $platformId: ${result.message}")
-                    }
-                }
+            val outcome = libraryScanner.scanPlatform(platformId, removeMissing = true)
+            when (outcome.status) {
+                ScanStatus.COMPLETED -> completeBackgroundTask(
+                    taskId,
+                    scanOutcomeMessage(outcome, removeMissing = true),
+                )
+                else -> failBackgroundTask(
+                    taskId,
+                    scanOutcomeMessage(outcome, removeMissing = true),
+                )
             }
         }
     }

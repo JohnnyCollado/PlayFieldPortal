@@ -106,6 +106,7 @@ class RomScanner @Inject constructor(
         val requiresUserAssignment = mutableListOf<UnmatchedRom>()
         var alreadyInLibrary       = 0
         var filesScanned           = 0
+        val presentRomPaths        = mutableSetOf<String>()
 
         val foldersToScan = folders.ifEmpty { defaultFolders }
 
@@ -121,8 +122,12 @@ class RomScanner @Inject constructor(
             // and the full set of companion files that must be suppressed.
             val discResolution = discImageResolver.resolveFolder(folder)
 
-            // Add resolved disc games (.cue → PS1, orphan .bin → Mega Drive)
+            // Add resolved disc games (.cue → PS1, orphan .bin → Mega Drive). Keep their launch
+            // paths separate so phase 2 does not add the same sheet a second time.
+            val resolvedLaunchPaths = discResolution.resolvedDiscs
+                .mapTo(mutableSetOf()) { it.launchFile.absolutePath }
             for (disc in discResolution.resolvedDiscs) {
+                presentRomPaths += disc.launchFile.absolutePath
                 if (scanType == ScanType.NEW_FILES_ONLY &&
                     disc.launchFile.absolutePath in existingRomPaths) {
                     alreadyInLibrary++
@@ -142,6 +147,7 @@ class RomScanner @Inject constructor(
             for (ambiguousFile in discResolution.requiresUserAssignment) {
                 val hint = folderHintResolver.detectFromPath(ambiguousFile.absolutePath)
                 if (hint != null) {
+                    presentRomPaths += ambiguousFile.absolutePath
                     if (scanType == ScanType.NEW_FILES_ONLY &&
                         ambiguousFile.absolutePath in existingRomPaths) {
                         alreadyInLibrary++
@@ -170,14 +176,19 @@ class RomScanner @Inject constructor(
             val allFiles = folder.walkTopDown()
                 .filter { it.isFile &&
                     (platformExtensionMap.isDefinitive(it.extension) ||
-                     platformExtensionMap.isFolderSensitive(it.extension)) }
+                     platformExtensionMap.isFolderSensitive(it.extension) ||
+                     platformExtensionMap.isPlaylist(it.extension)) }
                 .toList()
 
             for (file in allFiles) {
                 filesScanned++
 
-                // Skip if suppressed by disc resolver (companion .bin files)
-                if (file.absolutePath in discResolution.suppressedPaths) continue
+                // Resolved sheets were emitted in phase 1; companion files (and any resolved
+                // launch path already handled there) must not become duplicate game rows.
+                if (file.absolutePath in discResolution.suppressedPaths ||
+                    file.absolutePath in resolvedLaunchPaths
+                ) continue
+                presentRomPaths += file.absolutePath
 
                 if (scanType == ScanType.NEW_FILES_ONLY &&
                     file.absolutePath in existingRomPaths) {
@@ -196,7 +207,9 @@ class RomScanner @Inject constructor(
 
                 // For folder-sensitive extensions (.iso), let parent folder name win;
                 // fall back to the extension's default platform.
-                val platformId = if (platformExtensionMap.isFolderSensitive(file.extension)) {
+                val platformId = if (platformExtensionMap.isFolderSensitive(file.extension) ||
+                    platformExtensionMap.isPlaylist(file.extension)
+                ) {
                     val hint = folderHintResolver.detectFromPath(file.absolutePath)
                     if (hint != null) {
                         Timber.d("Folder-hinted: ${file.name} → $hint")
@@ -262,6 +275,7 @@ class RomScanner @Inject constructor(
                 alreadyInLibrary,
                 unmatched,
                 requiresUserAssignment,
+                presentRomPaths = presentRomPaths,
             )
         )
 

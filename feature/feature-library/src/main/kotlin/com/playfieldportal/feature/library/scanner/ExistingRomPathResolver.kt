@@ -6,7 +6,6 @@ import com.playfieldportal.core.domain.repository.GameRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.cancellation.CancellationException
-import kotlinx.coroutines.flow.first
 
 /**
  * Resolves the "already known" ROM state for one platform: the current library rows plus the scan
@@ -26,7 +25,9 @@ class ExistingRomPathResolver @Inject constructor(
 
     suspend fun baselineFor(platformId: String): Baseline {
         val games = try {
-            gameRepository.observeByPlatform(platformId).first()
+            // Include rows currently hidden by is_missing so a returning disc can be reactivated
+            // and set-level reconciliation can see every member.
+            gameRepository.getByPlatform(platformId)
         } catch (ce: CancellationException) {
             throw ce
         } catch (e: Exception) {

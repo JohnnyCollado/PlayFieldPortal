@@ -2,6 +2,8 @@ package com.playfieldportal.core.data.database.di
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.RoomDatabase
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.playfieldportal.core.data.database.PFPDatabase
 import com.playfieldportal.core.data.database.dao.AppOverrideDao
 import com.playfieldportal.core.data.database.dao.ArtworkImportReportDao
@@ -56,6 +58,17 @@ object DatabaseModule {
             PFPDatabase.DATABASE_NAME,
         )
         // Never use fallbackToDestructiveMigration — users would lose their entire library
+        .addCallback(object : RoomDatabase.Callback() {
+            override fun onCreate(db: SupportSQLiteDatabase) {
+                // Room cannot express a partial unique index through @Index. Create the same
+                // invariant used by MIGRATION_38_39 for fresh installs as well.
+                db.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS index_games_one_disc_primary " +
+                        "ON games (disc_set_key) " +
+                        "WHERE disc_set_key IS NOT NULL AND is_disc_primary = 1"
+                )
+            }
+        })
         .addMigrations(
             PFPDatabase.MIGRATION_1_2,
             PFPDatabase.MIGRATION_2_3,
@@ -94,6 +107,7 @@ object DatabaseModule {
             PFPDatabase.MIGRATION_35_36,
             PFPDatabase.MIGRATION_36_37,
             PFPDatabase.MIGRATION_37_38,
+            PFPDatabase.MIGRATION_38_39,
         )
         .build()
 

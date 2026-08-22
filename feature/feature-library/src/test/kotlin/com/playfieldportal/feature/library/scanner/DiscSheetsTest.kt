@@ -60,6 +60,14 @@ class DiscSheetsTest {
     }
 
     @Test
+    fun `gdi sheet quoted track names containing spaces parse as one field`() {
+        assertEquals(
+            setOf("track one.bin"),
+            gdiSheetTrackNames(listOf("1 0 4 2352 \"track one.bin\" 0")),
+        )
+    }
+
+    @Test
     fun `gdi lines with too few fields are ignored`() {
         assertTrue(gdiSheetTrackNames(listOf("1 0 4 2352")).isEmpty())
         assertTrue(gdiSheetTrackNames(listOf("", "   ")).isEmpty())

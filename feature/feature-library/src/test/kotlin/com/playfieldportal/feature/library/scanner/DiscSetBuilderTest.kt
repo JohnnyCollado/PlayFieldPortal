@@ -331,6 +331,19 @@ class DiscSetBuilderTest {
     }
 
     @Test
+    fun `an unreadable existing playlist clears its stale set assignment`() {
+        val key = "psx\u0001/roms/psx\u0001Final Fantasy VII"
+        val playlist = setGame("/roms/psx/Final Fantasy VII.m3u", key, null, true)
+
+        val updated = builder.reconcile(listOf(playlist)) { null }
+
+        assertEquals(1, updated.size)
+        assertNull(updated.single().discSetKey)
+        assertNull(updated.single().discNumber)
+        assertFalse(updated.single().isDiscPrimary)
+    }
+
+    @Test
     fun `untagged playlist entries take playlist order for disc numbers`() {
         val games = listOf(
             game("/roms/psx/Resident Evil.cue"),

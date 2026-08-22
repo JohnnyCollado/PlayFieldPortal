@@ -70,6 +70,9 @@ class GameRepositoryImpl @Inject constructor(
     override suspend fun getById(id: Long): Game? =
         gameDao.getById(id)?.toDomain()
 
+    override suspend fun getDiscSetMembers(discSetKey: String): List<Game> =
+        gameDao.getDiscSetMembers(discSetKey).map { it.toDomain() }
+
     override suspend fun getByPackageName(packageName: String): Game? =
         gameDao.getByPackageName(packageName)?.toDomain()
 
@@ -82,8 +85,15 @@ class GameRepositoryImpl @Inject constructor(
     override suspend fun getByIntentUri(intentUri: String): Game? =
         gameDao.getByIntentUri(intentUri)?.toDomain()
 
-    override suspend fun upsert(game: Game): Long =
-        gameDao.upsert(game.toEntity())
+    override suspend fun upsert(game: Game): Long {
+        // Keep the database invariant true before REPLACE touches the incoming row. This also
+        // makes callers safe on databases upgraded to v39 where the partial unique index exists.
+        val discSetKey = game.discSetKey
+        if (game.isDiscPrimary && discSetKey != null) {
+            gameDao.clearOtherDiscPrimaries(discSetKey, game.id)
+        }
+        return gameDao.upsert(game.toEntity())
+    }
 
     override suspend fun delete(id: Long) {
         gameDao.deleteById(id)

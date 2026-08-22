@@ -103,7 +103,7 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         SteamOwnedGameEntity::class,
         SteamNoAchievementsEntity::class,
     ],
-    version = 38,
+    version = 39,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -1101,6 +1101,58 @@ abstract class PFPDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE games ADD COLUMN disc_set_key TEXT")
                 db.execSQL("ALTER TABLE games ADD COLUMN disc_number INTEGER")
                 db.execSQL("ALTER TABLE games ADD COLUMN is_disc_primary INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        // v39 — enforce the one-primary-per-disc-set invariant. Existing databases may contain
+        // duplicate primaries from incremental scans, so repair them deterministically first:
+        // an m3u-style NULL disc number wins, then the lowest disc number, then the lowest id.
+        // The index is partial because non-primary members (and rows outside a set) are allowed
+        // to share a set key.
+        val MIGRATION_38_39 = object : Migration(38, 39) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    UPDATE games
+                    SET is_disc_primary = 0
+                    WHERE disc_set_key IS NOT NULL
+                      AND is_disc_primary = 1
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    UPDATE games
+                    SET is_disc_primary = 1
+                    WHERE disc_set_key IS NOT NULL
+                      AND id IN (
+                          SELECT winner.id
+                          FROM games winner
+                          WHERE NOT EXISTS (
+                              SELECT 1 FROM games better
+                              WHERE better.disc_set_key = winner.disc_set_key
+                                AND (
+                                    (better.disc_number IS NULL AND winner.disc_number IS NOT NULL)
+                                    OR (
+                                        better.disc_number IS NOT NULL
+                                        AND winner.disc_number IS NOT NULL
+                                        AND better.disc_number < winner.disc_number
+                                    )
+                                    OR (
+                                        (better.disc_number IS NULL AND winner.disc_number IS NULL
+                                         OR better.disc_number IS NOT NULL AND winner.disc_number IS NOT NULL
+                                            AND better.disc_number = winner.disc_number)
+                                        AND better.id < winner.id
+                                    )
+                                )
+                          )
+                      )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS index_games_one_disc_primary " +
+                        "ON games (disc_set_key) " +
+                        "WHERE disc_set_key IS NOT NULL AND is_disc_primary = 1"
+                )
             }
         }
     }

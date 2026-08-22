@@ -44,20 +44,38 @@ class GameCategoryRepository @Inject constructor(
     // Resolves all games assigned to a gaming category, sorted with pinned first.
     suspend fun itemsForCategory(categoryId: String): List<GameCategoryItem> {
         val rows = categoryDao.getItemsForCategory(categoryId)
-        val items = mutableListOf<GameCategoryItem>()
-
-        for (row in rows) {
-            if (row.itemType == ITEM_TYPE_GAME) {
-                val gameId = row.itemId.toLongOrNull()
-                if (gameId != null) {
-                    gameRepository.getById(gameId)?.let { game ->
-                        items.add(GameCategoryItem.GameItem(game, row.pinned))
-                    }
-                }
+            .filter { it.itemType == ITEM_TYPE_GAME }
+        val games = rows.mapNotNull { row ->
+            row.itemId.toLongOrNull()?.let { id ->
+                gameRepository.getById(id)?.let { game -> row to game }
             }
         }
 
-        return items.sortedWith(compareByDescending<GameCategoryItem> { it.pinned }.thenBy { it.title })
+        // A category membership belongs to a logical game, not to a physical disc. If any disc in
+        // a set is assigned, project the set's primary (or the first available member) once. The
+        // pinned state follows the set when a non-primary member was the one pinned.
+        val projected = mutableListOf<GameCategoryItem>()
+        val seenSets = mutableSetOf<String>()
+        for ((row, game) in games) {
+            val setKey = game.discSetKey
+            if (setKey == null) {
+                if (!game.isMissing) projected += GameCategoryItem.GameItem(game, row.pinned)
+                continue
+            }
+            if (!seenSets.add(setKey)) continue
+            val members = gameRepository.getDiscSetMembers(setKey).ifEmpty { listOf(game) }
+            val present = members.filterNot { it.isMissing }
+            if (present.isEmpty()) continue
+            val display = members.firstOrNull { it.isDiscPrimary }
+                ?: present.firstOrNull()
+                ?: continue
+            val pinned = games.any { (memberRow, member) ->
+                memberRow.pinned && member.discSetKey == setKey
+            }
+            projected += GameCategoryItem.GameItem(display, pinned)
+        }
+
+        return projected.sortedWith(compareByDescending<GameCategoryItem> { it.pinned }.thenBy { it.title })
     }
 
     suspend fun addGameToCategory(gameId: Long, categoryId: String) {

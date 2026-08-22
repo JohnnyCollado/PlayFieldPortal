@@ -26,6 +26,7 @@ import com.playfieldportal.feature.library.scanner.RomScanner
 import com.playfieldportal.feature.library.scanner.ScanResult
 import com.playfieldportal.feature.library.scanner.ScanStatus
 import com.playfieldportal.feature.library.scanner.isScannable
+import com.playfieldportal.feature.library.scanner.scanOutcomeMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlin.coroutines.cancellation.CancellationException
@@ -937,6 +938,20 @@ class LibraryManagerViewModel @Inject constructor(
                 }
             }
 
+            // The discovery pass above is needed to decide which empty-root folders should create
+            // cards. Re-run every discovered/previously configured console through the shared
+            // scanner so root autoload gets the same missing-file safety and set reconciliation as
+            // Scan This Console. Known rows are skipped as additions, but are still surveyed.
+            haveCard.filter { it != WINDOWS_PLATFORM_ID }.forEach { platformId ->
+                val outcome = libraryScanner.scanPlatform(platformId, removeMissing = true)
+                if (outcome.status == ScanStatus.COMPLETED &&
+                    (outcome.added > 0 || outcome.markedMissing > 0)
+                ) {
+                    platformsWithGames.add(platformId)
+                    totalAdded += outcome.added
+                }
+            }
+
             // Windows is import-driven, not ROM-scanned, so the folder loop skips it (no
             // extensions). Auto-detect finishes with the shared Import PC pass instead: it
             // creates the Windows Memory Card, wires <root>/windows as its directory
@@ -984,19 +999,3 @@ class LibraryManagerViewModel @Inject constructor(
     }
 
 }
-
-internal fun scanOutcomeMessage(outcome: PlatformScanOutcome, removeMissing: Boolean): String =
-    when (outcome.status) {
-        ScanStatus.SKIPPED_NO_SOURCE ->
-            "${outcome.displayName}: ${outcome.errorMessage ?: "ROM folder not configured."}"
-        ScanStatus.SKIPPED_BUSY -> "${outcome.displayName}: scan already in progress."
-        ScanStatus.FAILED -> "${outcome.displayName}: ${outcome.errorMessage ?: "scan failed."}"
-        ScanStatus.COMPLETED ->
-            "${outcome.displayName}: " + buildString {
-                append(if (outcome.added == 0) "no new ROMs" else "${outcome.added} new ROM(s) added")
-                if (removeMissing) {
-                    append(if (outcome.markedMissing == 0) ", none missing" else ", ${outcome.markedMissing} marked missing")
-                }
-                outcome.errorMessage?.let { append(" ($it)") }
-            }
-    }

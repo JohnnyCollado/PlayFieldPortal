@@ -7,8 +7,6 @@ import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -36,11 +34,9 @@ class ExistingRomPathResolverTest {
 
     @Test
     fun `baseline unions game paths and tombstone paths`() = runTest {
-        coEvery { gameRepository.observeByPlatform("psx") } returns flowOf(
-            listOf(
-                Game(title = "Crash", platformId = "psx", romPath = "/roms/psx/crash.bin"),
-                Game(title = "App entry", platformId = "psx", romPath = null),
-            )
+        coEvery { gameRepository.getByPlatform("psx") } returns listOf(
+            Game(title = "Crash", platformId = "psx", romPath = "/roms/psx/crash.bin", isMissing = true),
+            Game(title = "App entry", platformId = "psx", romPath = null),
         )
         coEvery { tombstoneDao.getPathsForPlatform("psx") } returns listOf("/roms/psx/removed.bin")
 
@@ -53,7 +49,7 @@ class ExistingRomPathResolverTest {
 
     @Test
     fun `a DB read failure throws`() = runTest {
-        coEvery { gameRepository.observeByPlatform("psx") } returns flow { throw RuntimeException("db closed") }
+        coEvery { gameRepository.getByPlatform("psx") } throws RuntimeException("db closed")
 
         try {
             resolver.baselineFor("psx")
@@ -65,7 +61,7 @@ class ExistingRomPathResolverTest {
 
     @Test
     fun `a tombstone read failure throws`() = runTest {
-        coEvery { gameRepository.observeByPlatform("psx") } returns flowOf(emptyList())
+        coEvery { gameRepository.getByPlatform("psx") } returns emptyList()
         coEvery { tombstoneDao.getPathsForPlatform("psx") } throws RuntimeException("db closed")
 
         try {
@@ -78,8 +74,7 @@ class ExistingRomPathResolverTest {
 
     @Test(expected = CancellationException::class)
     fun `CancellationException is rethrown, not wrapped`() = runTest {
-        coEvery { gameRepository.observeByPlatform("psx") } returns
-            flow<List<Game>> { throw CancellationException("cancelled") }
+        coEvery { gameRepository.getByPlatform("psx") } throws CancellationException("cancelled")
 
         resolver.baselineFor("psx")
     }

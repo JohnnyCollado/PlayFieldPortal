@@ -3,6 +3,8 @@ package com.playfieldportal.core.data.database.dao
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.playfieldportal.core.data.database.PFPDatabase
+import com.playfieldportal.core.data.database.entity.CollectionEntity
+import com.playfieldportal.core.data.database.entity.CollectionGameEntity
 import com.playfieldportal.core.data.database.entity.GameEntity
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -26,6 +28,7 @@ class GameDaoProjectionTest {
 
     private lateinit var db: PFPDatabase
     private lateinit var dao: GameDao
+    private lateinit var collectionDao: CollectionDao
 
     @Before
     fun setUp() {
@@ -34,6 +37,7 @@ class GameDaoProjectionTest {
             PFPDatabase::class.java,
         ).allowMainThreadQueries().build()
         dao = db.gameDao()
+        collectionDao = db.collectionDao()
     }
 
     @After
@@ -50,6 +54,7 @@ class GameDaoProjectionTest {
         isDiscPrimary: Boolean = false,
         isFavorite: Boolean = false,
         contentType: String = "GAME",
+        isMissing: Boolean = false,
     ) = GameEntity(
         title = title,
         platformId = platformId,
@@ -70,6 +75,7 @@ class GameDaoProjectionTest {
         isDiscPrimary = isDiscPrimary,
         isFavorite = isFavorite,
         contentType = contentType,
+        isMissing = isMissing,
     )
 
     private val psxSetKey = "psx\u0001/roms/psx\u0001Final Fantasy VII"
@@ -130,6 +136,50 @@ class GameDaoProjectionTest {
         dao.upsert(game("Chrono Trigger", "psx", "/roms/psx/ct.cue"))
 
         assertEquals(setOf("Chrono Trigger", "Final Fantasy VII (Disc 1)"), dao.observeAll().first().map { it.title }.toSet())
+    }
+
+    @Test
+    fun `partial set remains visible and missing bucket stays empty`() = runTest {
+        dao.upsert(game("Final Fantasy VII", "psx", "/roms/psx/ff7-1.cue", psxSetKey, 1, true, isMissing = true))
+        dao.upsert(game("Final Fantasy VII", "psx", "/roms/psx/ff7-2.cue", psxSetKey, 2, false, isMissing = false))
+        dao.upsert(game("Final Fantasy VII", "psx", "/roms/psx/ff7-3.cue", psxSetKey, 3, false, isMissing = true))
+
+        assertEquals(1, dao.observePlatformGames("psx").first().size)
+        assertEquals(0, dao.observeMissing().first().size)
+    }
+
+    @Test
+    fun `fully missing set projects one primary into missing bucket`() = runTest {
+        dao.upsert(game("Final Fantasy VII", "psx", "/roms/psx/ff7-1.cue", psxSetKey, 1, true, isMissing = true))
+        dao.upsert(game("Final Fantasy VII", "psx", "/roms/psx/ff7-2.cue", psxSetKey, 2, false, isMissing = true))
+        dao.upsert(game("Final Fantasy VII", "psx", "/roms/psx/ff7-3.cue", psxSetKey, 3, false, isMissing = true))
+
+        assertEquals(0, dao.observePlatformGames("psx").first().size)
+        assertEquals(listOf("Final Fantasy VII"), dao.observeMissing().first().map { it.title })
+    }
+
+    @Test
+    fun `collection projects a secondary membership to the primary once`() = runTest {
+        val primaryId = dao.upsert(game("Final Fantasy VII", "psx", "/roms/psx/ff7-1.cue", psxSetKey, 1, true))
+        val secondaryId = dao.upsert(game("Final Fantasy VII", "psx", "/roms/psx/ff7-2.cue", psxSetKey, 2, false))
+        val collectionId = collectionDao.insert(CollectionEntity(name = "RPGs"))
+        collectionDao.addGame(CollectionGameEntity(collectionId, secondaryId))
+
+        val projected = collectionDao.observeGames(collectionId).first()
+
+        assertEquals(listOf(primaryId), projected.map { it.id })
+    }
+
+    @Test
+    fun `collection count treats a partial set as one logical game`() = runTest {
+        val primaryId = dao.upsert(game("Final Fantasy VII", "psx", "/roms/psx/ff7-1.cue", psxSetKey, 1, true, isMissing = true))
+        val secondaryId = dao.upsert(game("Final Fantasy VII", "psx", "/roms/psx/ff7-2.cue", psxSetKey, 2, false))
+        val collectionId = collectionDao.insert(CollectionEntity(name = "RPGs"))
+        collectionDao.addGame(CollectionGameEntity(collectionId, primaryId))
+        collectionDao.addGame(CollectionGameEntity(collectionId, secondaryId))
+
+        assertEquals(1, collectionDao.getAllWithCounts().single().game_count)
+        assertEquals(listOf(primaryId), collectionDao.observeGames(collectionId).first().map { it.id })
     }
 
     @Test

@@ -23,7 +23,27 @@ interface CollectionDao {
     @Query(
         """
         SELECT c.*, (
-            SELECT COUNT(*) FROM collection_games cg WHERE cg.collection_id = c.id
+            SELECT COUNT(*)
+            FROM games display_game
+            WHERE (
+                  (display_game.disc_set_key IS NULL AND display_game.is_missing = 0 AND EXISTS (
+                      SELECT 1 FROM collection_games cg
+                      WHERE cg.collection_id = c.id AND cg.game_id = display_game.id
+                  ))
+                  OR (display_game.disc_set_key IS NOT NULL
+                      AND display_game.is_disc_primary = 1
+                      AND EXISTS (
+                          SELECT 1 FROM collection_games cg
+                          JOIN games member ON member.id = cg.game_id
+                          WHERE cg.collection_id = c.id
+                            AND member.disc_set_key = display_game.disc_set_key
+                      )
+                      AND EXISTS (
+                          SELECT 1 FROM games present
+                          WHERE present.disc_set_key = display_game.disc_set_key
+                            AND present.is_missing = 0
+                      ))
+              )
         ) AS game_count
         FROM collections c
         ORDER BY c.sort_order ASC, c.created_at ASC
@@ -34,7 +54,27 @@ interface CollectionDao {
     @Query(
         """
         SELECT c.*, (
-            SELECT COUNT(*) FROM collection_games cg WHERE cg.collection_id = c.id
+            SELECT COUNT(*)
+            FROM games display_game
+            WHERE (
+                  (display_game.disc_set_key IS NULL AND display_game.is_missing = 0 AND EXISTS (
+                      SELECT 1 FROM collection_games cg
+                      WHERE cg.collection_id = c.id AND cg.game_id = display_game.id
+                  ))
+                  OR (display_game.disc_set_key IS NOT NULL
+                      AND display_game.is_disc_primary = 1
+                      AND EXISTS (
+                          SELECT 1 FROM collection_games cg
+                          JOIN games member ON member.id = cg.game_id
+                          WHERE cg.collection_id = c.id
+                            AND member.disc_set_key = display_game.disc_set_key
+                      )
+                      AND EXISTS (
+                          SELECT 1 FROM games present
+                          WHERE present.disc_set_key = display_game.disc_set_key
+                            AND present.is_missing = 0
+                      ))
+              )
         ) AS game_count
         FROM collections c
         ORDER BY c.sort_order ASC, c.created_at ASC
@@ -51,10 +91,34 @@ interface CollectionDao {
     // Games in a collection, in the order they were added (oldest first).
     @Query(
         """
-        SELECT g.* FROM games g
-        INNER JOIN collection_games cg ON cg.game_id = g.id
-        WHERE cg.collection_id = :collectionId
-        ORDER BY cg.added_at ASC
+        SELECT display_game.* FROM games display_game
+        WHERE (
+              (display_game.disc_set_key IS NULL AND display_game.is_missing = 0 AND EXISTS (
+                  SELECT 1 FROM collection_games cg
+                  WHERE cg.collection_id = :collectionId
+                    AND cg.game_id = display_game.id
+              ))
+              OR (display_game.disc_set_key IS NOT NULL
+                  AND display_game.is_disc_primary = 1
+                  AND EXISTS (
+                      SELECT 1 FROM collection_games cg
+                      JOIN games member ON member.id = cg.game_id
+                      WHERE cg.collection_id = :collectionId
+                        AND member.disc_set_key = display_game.disc_set_key
+                  )
+                  AND EXISTS (
+                      SELECT 1 FROM games present
+                      WHERE present.disc_set_key = display_game.disc_set_key
+                        AND present.is_missing = 0
+                  ))
+          )
+        ORDER BY (
+            SELECT MIN(cg.added_at)
+            FROM collection_games cg
+            JOIN games member ON member.id = cg.game_id
+            WHERE cg.collection_id = :collectionId
+              AND (member.id = display_game.id OR member.disc_set_key = display_game.disc_set_key)
+        ) ASC
         """
     )
     fun observeGames(collectionId: Long): Flow<List<GameEntity>>

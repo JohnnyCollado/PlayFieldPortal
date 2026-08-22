@@ -77,7 +77,7 @@ class LibraryScannerTest {
 
         coEvery { memoryCardRepository.getById("psx") } returns card
         coEvery { memoryCardRepository.getAll() } returns listOf(card)
-        coEvery { gameRepository.observeByPlatform("psx") } returns flowOf(emptyList())
+        coEvery { gameRepository.getByPlatform("psx") } returns emptyList()
         coEvery { tombstoneDao.getPathsForPlatform("psx") } returns emptyList()
         coEvery { reconciler.reconcile(any(), any(), any(), any()) } returns
             LibraryReconciler.Result(markedSeen = 0, markedMissing = 0, skipped = false)
@@ -186,7 +186,7 @@ class LibraryScannerTest {
     @Test
     fun `a database read failure fails the card before any source is surveyed`() = runTest {
         val scanner = scannerFor()
-        coEvery { gameRepository.observeByPlatform("psx") } returns flow { throw RuntimeException("db closed") }
+        coEvery { gameRepository.getByPlatform("psx") } throws RuntimeException("db closed")
 
         val outcome = scanner.scanPlatform("psx", removeMissing = false)
 
@@ -305,7 +305,7 @@ class LibraryScannerTest {
                 discSetKey = m3uKey, discNumber = 2, isDiscPrimary = false,
             ),
         )
-        coEvery { gameRepository.observeByPlatform("psx") } returns flowOf(existing)
+        coEvery { gameRepository.getByPlatform("psx") } returns existing
         val disc3 = Game(
             title = "Final Fantasy VII (Disc 3)", platformId = "psx",
             romPath = "/roms/psx/Final Fantasy VII (Disc 3)/Final Fantasy VII (Disc 3).cue",
@@ -330,6 +330,35 @@ class LibraryScannerTest {
                 it.romPath == disc3.romPath &&
                     it.discSetKey == m3uKey &&
                     it.discNumber == 3 &&
+                    !it.isDiscPrimary
+            })
+        }
+    }
+
+    @Test
+    fun `a completed scan re-derives stale playlist assignments even with no new rows`() = runTest {
+        val scanner = scannerFor()
+        val stale = Game(
+            title = "Final Fantasy VII",
+            platformId = "psx",
+            romPath = "/roms/psx/Final Fantasy VII.m3u",
+            discSetKey = "psx\u0001/roms/psx\u0001Final Fantasy VII",
+            isDiscPrimary = true,
+        )
+        coEvery { gameRepository.getByPlatform("psx") } returns listOf(stale)
+        coEvery { scanSourceResolver.sourcesFor(card) } returns listOf(
+            completeSource(present = setOf(stale.romPath!!)),
+        )
+        coEvery { m3uPlaylistReader.read(stale) } returns null
+
+        val outcome = scanner.scanPlatform("psx", removeMissing = false)
+
+        assertEquals(ScanStatus.COMPLETED, outcome.status)
+        coVerify(exactly = 1) {
+            gameRepository.upsert(match {
+                it.romPath == stale.romPath &&
+                    it.discSetKey == null &&
+                    it.discNumber == null &&
                     !it.isDiscPrimary
             })
         }

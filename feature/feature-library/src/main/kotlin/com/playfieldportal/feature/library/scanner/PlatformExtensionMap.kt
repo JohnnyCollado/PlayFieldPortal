@@ -129,6 +129,10 @@ class PlatformExtensionMap @Inject constructor() {
     fun isContextDependent(extension: String): Boolean =
         extension.lowercase() in contextDependentExtensions
 
+    // Playlists are context-dependent because their platform comes from the containing system
+    // folder, but unlike cue/bin/track companions they are launchable scan entries.
+    fun isPlaylist(extension: String): Boolean = extension.equals("m3u", ignoreCase = true)
+
     fun isKnownExtension(extension: String): Boolean =
         isDefinitive(extension) || isContextDependent(extension) || isFolderSensitive(extension)
 }

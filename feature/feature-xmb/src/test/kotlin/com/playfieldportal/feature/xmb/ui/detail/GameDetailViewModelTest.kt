@@ -158,6 +158,69 @@ class GameDetailViewModelTest {
         }
     }
 
+    // ── multi-disc picker ────────────────────────────────────────────────
+
+    @Test
+    fun `loadGame exposes disc members and selects the primary by default`() = runTest {
+        val setKey = "psx\u0001/roms/psx\u0001Final Fantasy VII"
+        val primary = fakeGame.copy(
+            id = 1L,
+            title = "Final Fantasy VII",
+            romPath = "/roms/psx/Final Fantasy VII.m3u",
+            discSetKey = setKey,
+            discNumber = null,
+            isDiscPrimary = true,
+        )
+        val disc2 = fakeGame.copy(
+            id = 2L,
+            title = "Final Fantasy VII",
+            romPath = "/roms/psx/Final Fantasy VII (Disc 2).cue",
+            discSetKey = setKey,
+            discNumber = 2,
+            isDiscPrimary = false,
+        )
+        coEvery { gameRepository.getById(1L) } returns primary
+        coEvery { gameRepository.getDiscSetMembers(setKey) } returns listOf(primary, disc2)
+
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.uiState.test {
+            val state = awaitItem()
+            assertEquals(listOf(1L, 2L), state.discMembers.map { it.id })
+            assertEquals(1L, state.selectedDiscId)
+            assertEquals(1L, state.selectedDisc?.id)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `selecting a non-primary disc launches that member`() = runTest {
+        val setKey = "psx\u0001/roms/psx\u0001Final Fantasy VII"
+        val primary = fakeGame.copy(id = 1L, discSetKey = setKey, isDiscPrimary = true, discNumber = 1)
+        val disc2 = fakeGame.copy(id = 2L, discSetKey = setKey, discNumber = 2, isDiscPrimary = false)
+        val fakeProfile = com.playfieldportal.core.domain.model.EmulatorProfile(
+            id = "duckstation",
+            name = "DuckStation",
+            packageName = "com.github.stenzek.duckstation",
+            intentType = com.playfieldportal.core.domain.model.IntentType.ACTION_VIEW,
+            supportedPlatformIds = listOf("psx"),
+        )
+        coEvery { gameRepository.getById(1L) } returns primary
+        coEvery { gameRepository.getById(2L) } returns disc2
+        coEvery { gameRepository.getDiscSetMembers(setKey) } returns listOf(primary, disc2)
+        every { profileRepository.getInstalledProfiles() } returns listOf(fakeProfile)
+        every { intentResolver.resolve(any(), any()) } returns Result.success(fakeLaunchIntent())
+
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.selectDisc(2L)
+        viewModel.launch()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        verify { intentResolver.resolve(disc2, match { it.id == "duckstation" }) }
+    }
+
     // ── toggleFavorite ────────────────────────────────────────────────────
 
     @Test

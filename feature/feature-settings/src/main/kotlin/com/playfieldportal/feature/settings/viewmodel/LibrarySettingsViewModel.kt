@@ -14,8 +14,11 @@ import com.playfieldportal.core.data.database.dao.LibrarySourceDao
 import com.playfieldportal.core.data.database.dao.UnmatchedRomDao
 import com.playfieldportal.core.data.database.entity.LibrarySourceEntity
 import com.playfieldportal.core.data.database.entity.UnmatchedRomEntity
+import com.playfieldportal.core.data.database.entity.toDomain
 import com.playfieldportal.core.data.datastore.pfpDataStore
+import com.playfieldportal.core.data.repository.LibraryReconciler
 import com.playfieldportal.core.domain.repository.GameRepository
+import com.playfieldportal.feature.library.scanner.DiscSetReconciler
 import com.playfieldportal.feature.library.scanner.RomScanner
 import com.playfieldportal.feature.library.scanner.ScanProgress
 import com.playfieldportal.feature.library.scanner.ScanResult
@@ -67,6 +70,8 @@ class LibrarySettingsViewModel @Inject constructor(
     private val gameRepository: GameRepository,
     private val unmatchedRomDao: UnmatchedRomDao,
     private val romScanner: RomScanner,
+    private val discSetReconciler: DiscSetReconciler,
+    private val libraryReconciler: LibraryReconciler,
 ) : ViewModel() {
 
     private val _extra = MutableStateFlow(LibrarySettingsUiState())
@@ -170,7 +175,8 @@ class LibrarySettingsViewModel @Inject constructor(
                 return@launch
             }
 
-            val existingPaths = gameDao.getAll().mapNotNull { it.romPath }.toSet()
+            val baselineGames = gameDao.getAll().map { it.toDomain() }
+            val existingPaths = baselineGames.mapNotNull { it.romPath }.toSet()
 
             // Build a map of folder-path → platform override for platform-specific sources
             val platformOverrides = enabledSources
@@ -178,6 +184,8 @@ class LibrarySettingsViewModel @Inject constructor(
                 .associate { it.path to it.platformId!! }
 
             var newGameCount = 0
+            var scanErrored = false
+            var presentRomPaths: Set<String>? = emptySet()
 
             romScanner.scan(folders, ScanType.NEW_FILES_ONLY, existingPaths)
                 .collect { result ->
@@ -188,16 +196,21 @@ class LibrarySettingsViewModel @Inject constructor(
 
                         is ScanResult.Complete -> {
                             newGameCount = result.newGames.size
+                            result.presentRomPaths?.let { paths ->
+                                presentRomPaths = presentRomPaths.orEmpty() + paths
+                            } ?: run { presentRomPaths = null }
 
-                            result.newGames.forEach { game ->
+                            val adjustedGames = result.newGames.map { game ->
                                 val overridePlatform = platformOverrides.entries
                                     .firstOrNull { (folder, _) ->
                                         game.romPath?.startsWith(folder) == true
                                     }?.value
-                                gameRepository.upsert(
-                                    if (overridePlatform != null) game.copy(platformId = overridePlatform)
-                                    else game
-                                )
+                                if (overridePlatform != null) game.copy(platformId = overridePlatform) else game
+                            }
+                            adjustedGames.forEach { gameRepository.upsert(it) }
+                            adjustedGames.groupBy { it.platformId }.forEach { (platformId, newRows) ->
+                                val existingRows = baselineGames.filter { it.platformId == platformId }
+                                discSetReconciler.reconcilePlatform(platformId, existingRows, newRows)
                             }
 
                             val unmatchedEntities = (result.unmatched + result.requiresUserAssignment)
@@ -235,12 +248,24 @@ class LibrarySettingsViewModel @Inject constructor(
                         }
 
                         is ScanResult.Error -> {
+                            scanErrored = true
+                            presentRomPaths = null
                             _extra.update {
                                 it.copy(isScanning = false, scanProgress = null, scanMessage = "Scan error: ${result.message}")
                             }
                         }
                     }
                 }
+
+            // The legacy settings screen still supports LibrarySource rows, but it now uses the
+            // same non-destructive missing policy as Memory Card scans. The complete baseline is
+            // intentionally the unprojected platform rows, so missing disc members can return and
+            // retain their metadata.
+            if (!scanErrored && presentRomPaths != null) {
+                baselineGames.groupBy { it.platformId }.forEach { (platformId, games) ->
+                    libraryReconciler.reconcile(games, presentRomPaths, scanErrored)
+                }
+            }
         }
     }
 
@@ -280,3 +305,10 @@ class LibrarySettingsViewModel @Inject constructor(
         null
     }
 }
+
+// Kept as a package-local compatibility seam for the legacy settings tests/callers; the shared
+// implementation lives with LibraryScanner so XMB and settings format outcomes identically.
+internal fun scanOutcomeMessage(
+    outcome: com.playfieldportal.feature.library.scanner.PlatformScanOutcome,
+    removeMissing: Boolean,
+): String = com.playfieldportal.feature.library.scanner.scanOutcomeMessage(outcome, removeMissing)

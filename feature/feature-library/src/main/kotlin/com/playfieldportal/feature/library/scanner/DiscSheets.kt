@@ -32,9 +32,11 @@ fun cueSheetReferences(lines: List<String>): Set<String> {
 fun gdiSheetTrackNames(lines: List<String>): Set<String> {
     val tracks = mutableSetOf<String>()
     for (line in lines) {
-        val fields = line.trim().split(Regex("\\s+"))
+        // The filename field may be quoted and contain spaces; tokenise while preserving quotes.
+        val fields = Regex("\"(?:\\\\.|[^\"])*\"|\\S+")
+            .findAll(line.trim()).map { it.value }.toList()
         if (fields.size < 5) continue
-        val name = fields[4].trim('"')
+        val name = fields[4].removePrefix("\"").removeSuffix("\"")
         if (name.isNotEmpty()) tracks.add(name.substringAfterLast('/').substringAfterLast('\\').lowercase())
     }
     return tracks

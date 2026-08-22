@@ -14,7 +14,17 @@ interface GameDao {
     // Projects one row per multi-disc set (the primary) so display counts never double-count a
     // set's discs. Every consumer is display-side (card subtitles, pickers, Games root).
     @Query(
-        "SELECT * FROM games WHERE is_missing = 0 AND (disc_set_key IS NULL OR is_disc_primary = 1) ORDER BY title ASC"
+        """
+        SELECT * FROM games
+        WHERE (disc_set_key IS NULL AND is_missing = 0)
+           OR (disc_set_key IS NOT NULL AND is_disc_primary = 1
+               AND EXISTS (
+                   SELECT 1 FROM games member
+                   WHERE member.disc_set_key = games.disc_set_key
+                     AND member.is_missing = 0
+               ))
+        ORDER BY title ASC
+        """
     )
     fun observeAll(): Flow<List<GameEntity>>
 
@@ -27,8 +37,20 @@ interface GameDao {
     // the primary — for the All Games surface. The unprojected [observeGamesOnly] above stays
     // untouched for per-disc achievement matching.
     @Query(
-        "SELECT * FROM games WHERE content_type = 'GAME' AND is_missing = 0 " +
-            "AND (disc_set_key IS NULL OR is_disc_primary = 1) ORDER BY title ASC"
+        """
+        SELECT * FROM games
+        WHERE content_type = 'GAME'
+          AND (
+              (disc_set_key IS NULL AND is_missing = 0)
+              OR (disc_set_key IS NOT NULL AND is_disc_primary = 1
+                  AND EXISTS (
+                      SELECT 1 FROM games member
+                      WHERE member.disc_set_key = games.disc_set_key
+                        AND member.is_missing = 0
+                  ))
+          )
+        ORDER BY title ASC
+        """
     )
     fun observeAllGames(): Flow<List<GameEntity>>
 
@@ -37,8 +59,24 @@ interface GameDao {
 
     // Projects one row per multi-disc set (the primary) — favorites count a set once. Display-only.
     @Query(
-        "SELECT * FROM games WHERE is_favorite = 1 AND is_missing = 0 " +
-            "AND (disc_set_key IS NULL OR is_disc_primary = 1) ORDER BY favorite_sort_order ASC"
+        """
+        SELECT * FROM games
+        WHERE (
+            (disc_set_key IS NULL AND is_favorite = 1 AND is_missing = 0)
+            OR (disc_set_key IS NOT NULL AND is_disc_primary = 1
+                AND EXISTS (
+                    SELECT 1 FROM games member
+                    WHERE member.disc_set_key = games.disc_set_key
+                      AND member.is_missing = 0
+                )
+                AND EXISTS (
+                    SELECT 1 FROM games member
+                    WHERE member.disc_set_key = games.disc_set_key
+                      AND member.is_favorite = 1
+                ))
+        )
+        ORDER BY favorite_sort_order ASC, title ASC
+        """
     )
     fun observeFavorites(): Flow<List<GameEntity>>
 
@@ -49,8 +87,20 @@ interface GameDao {
     // the primary — for the Memory Card game list. The unprojected [observeByPlatform] above stays
     // untouched for scan baselines (existing-path resolution must see every disc).
     @Query(
-        "SELECT * FROM games WHERE platform_id = :platformId AND is_missing = 0 " +
-            "AND (disc_set_key IS NULL OR is_disc_primary = 1) ORDER BY title ASC"
+        """
+        SELECT * FROM games
+        WHERE platform_id = :platformId
+          AND (
+              (disc_set_key IS NULL AND is_missing = 0)
+              OR (disc_set_key IS NOT NULL AND is_disc_primary = 1
+                  AND EXISTS (
+                      SELECT 1 FROM games member
+                      WHERE member.disc_set_key = games.disc_set_key
+                        AND member.is_missing = 0
+                  ))
+          )
+        ORDER BY title ASC
+        """
     )
     fun observePlatformGames(platformId: String): Flow<List<GameEntity>>
 
@@ -62,6 +112,17 @@ interface GameDao {
 
     @Query("SELECT * FROM games WHERE id = :id")
     suspend fun getById(id: Long): GameEntity?
+
+    @Query("SELECT * FROM games WHERE disc_set_key = :discSetKey " +
+            "ORDER BY is_disc_primary DESC, disc_number IS NULL ASC, disc_number ASC, id ASC"
+    )
+    suspend fun getDiscSetMembers(discSetKey: String): List<GameEntity>
+
+    // The v39 partial index allows only one primary per set. Clear competing primaries before a
+    // replacement upsert, including when an incremental scan promotes a newly discovered disc.
+    @Query("UPDATE games SET is_disc_primary = 0 WHERE disc_set_key = :discSetKey AND id != :gameId")
+    suspend fun clearOtherDiscPrimaries(discSetKey: String, gameId: Long)
+
 
     @Query("SELECT * FROM games WHERE rom_path = :romPath LIMIT 1")
     suspend fun getByRomPath(romPath: String): GameEntity?
@@ -120,8 +181,20 @@ interface GameDao {
     // Counts one row per multi-disc set (the primary) — a Memory Card's game count never
     // double-counts a set's discs.
     @Query(
-        "SELECT COUNT(*) FROM games WHERE platform_id = :platformId AND content_type = 'GAME' " +
-            "AND is_missing = 0 AND (disc_set_key IS NULL OR is_disc_primary = 1)"
+        """
+        SELECT COUNT(*) FROM games primary_game
+        WHERE primary_game.platform_id = :platformId
+          AND primary_game.content_type = 'GAME'
+          AND (
+              (primary_game.disc_set_key IS NULL AND primary_game.is_missing = 0)
+              OR (primary_game.disc_set_key IS NOT NULL AND primary_game.is_disc_primary = 1
+                  AND EXISTS (
+                      SELECT 1 FROM games member
+                      WHERE member.disc_set_key = primary_game.disc_set_key
+                        AND member.is_missing = 0
+                  ))
+          )
+        """
     )
     suspend fun countGamesByPlatform(platformId: String): Int
 
@@ -181,8 +254,20 @@ interface GameDao {
     @Query("UPDATE games SET is_missing = 1 WHERE rom_path IN (:romPaths)")
     suspend fun markMissing(romPaths: List<String>)
 
-    // The Missing bucket — every game whose file was unreachable on the last scan.
-    @Query("SELECT * FROM games WHERE is_missing = 1 ORDER BY title ASC")
+    // The Missing bucket — one primary per fully missing set, plus ordinary missing games.
+    @Query(
+        """
+        SELECT * FROM games
+        WHERE (disc_set_key IS NULL AND is_missing = 1)
+           OR (disc_set_key IS NOT NULL AND is_disc_primary = 1
+               AND NOT EXISTS (
+                   SELECT 1 FROM games member
+                   WHERE member.disc_set_key = games.disc_set_key
+                     AND member.is_missing = 0
+               ))
+        ORDER BY title ASC
+        """
+    )
     fun observeMissing(): Flow<List<GameEntity>>
 
     @Query("SELECT * FROM games ORDER BY title ASC")
