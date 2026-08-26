@@ -84,6 +84,7 @@ class RomScanner @Inject constructor(
     private val discSetBuilder: DiscSetBuilder,
     private val discCompanionSuppressor: DiscCompanionSuppressor,
     private val m3uPlaylistReader: M3uPlaylistReader,
+    private val discRegionReader: DiscRegionReader,
 ) {
     private val defaultFolders = listOf(
         "/storage/emulated/0/ROMs",
@@ -271,7 +272,7 @@ class RomScanner @Inject constructor(
 
         emit(
             ScanResult.Complete(
-                discSetBuilder.assign(newGames, m3uPlaylistReader::read),
+                discSetBuilder.assign(newGames, discRegionReader::read, m3uPlaylistReader::read),
                 alreadyInLibrary,
                 unmatched,
                 requiresUserAssignment,
@@ -365,7 +366,7 @@ class RomScanner @Inject constructor(
 
         Timber.i("Memory Card scan complete — platform=$platformId new=${newGames.size} existing=$alreadyInLibrary")
         emit(ScanResult.Complete(
-            discSetBuilder.assign(newGames, m3uPlaylistReader::read),
+            discSetBuilder.assign(newGames, discRegionReader::read, m3uPlaylistReader::read),
             alreadyInLibrary, emptyList(), emptyList(),
             presentRomPaths = candidates.mapTo(HashSet()) { it.absolutePath },
         ))
@@ -495,7 +496,7 @@ class RomScanner @Inject constructor(
         Timber.i("Memory Card SAF scan complete — platform=$platformId new=${newGames.size} existing=$alreadyInLibrary")
         emit(
             ScanResult.Complete(
-                discSetBuilder.assign(newGames, m3uPlaylistReader::read),
+                discSetBuilder.assign(newGames, discRegionReader::read, m3uPlaylistReader::read),
                 alreadyInLibrary, emptyList(), emptyList(),
                 presentRomPaths = presentPaths,
             )

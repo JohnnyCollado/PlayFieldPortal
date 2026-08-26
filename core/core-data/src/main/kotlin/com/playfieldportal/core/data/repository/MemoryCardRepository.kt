@@ -3,7 +3,6 @@ package com.playfieldportal.core.data.repository
 import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.data.database.dao.MemoryCardDao
 import com.playfieldportal.core.data.database.dao.PlatformDao
-import com.playfieldportal.core.data.database.dao.ScanTombstoneDao
 import com.playfieldportal.core.data.database.entity.toDomain
 import com.playfieldportal.core.data.database.entity.toEntity
 import com.playfieldportal.core.domain.model.MemoryCard
@@ -23,7 +22,6 @@ class MemoryCardRepository @Inject constructor(
     private val memoryCardDao: MemoryCardDao,
     private val platformDao: PlatformDao,
     private val gameDao: GameDao,
-    private val scanTombstoneDao: ScanTombstoneDao,
 ) {
     fun observeAll(): Flow<List<MemoryCard>> =
         memoryCardDao.observeAll().map { list -> list.map { it.toDomain() } }
@@ -78,10 +76,9 @@ class MemoryCardRepository @Inject constructor(
     }
 
     // Removing a card also removes that platform's games from the library. ROM files on
-    // disk are never touched. Tombstones go too, so a re-added card starts from a clean scan.
+    // disk are never touched.
     suspend fun remove(platformId: String) {
         gameDao.deleteByPlatform(platformId)
-        scanTombstoneDao.clearPlatform(platformId)
         memoryCardDao.delete(platformId)
         Timber.i("Memory Card removed and games cleared: $platformId")
     }

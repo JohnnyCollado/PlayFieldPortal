@@ -103,7 +103,7 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         SteamOwnedGameEntity::class,
         SteamNoAchievementsEntity::class,
     ],
-    version = 39,
+    version = 40,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -1107,8 +1107,9 @@ abstract class PFPDatabase : RoomDatabase() {
         // v39 — enforce the one-primary-per-disc-set invariant. Existing databases may contain
         // duplicate primaries from incremental scans, so repair them deterministically first:
         // an m3u-style NULL disc number wins, then the lowest disc number, then the lowest id.
-        // The index is partial because non-primary members (and rows outside a set) are allowed
-        // to share a set key.
+        // (No index here: the invariant is enforced by DiscSetBuilder/DiscSetReconciler at scan
+        // time, and Room cannot express the partial unique index that would enforce it in SQL —
+        // a raw-SQL partial index fails Room's post-migration validation, see MIGRATION_39_40.)
         val MIGRATION_38_39 = object : Migration(38, 39) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
@@ -1148,11 +1149,27 @@ abstract class PFPDatabase : RoomDatabase() {
                       )
                     """.trimIndent()
                 )
-                db.execSQL(
-                    "CREATE UNIQUE INDEX IF NOT EXISTS index_games_one_disc_primary " +
-                        "ON games (disc_set_key) " +
-                        "WHERE disc_set_key IS NOT NULL AND is_disc_primary = 1"
-                )
+                // Defensive: an earlier build's 38→39 migration created a partial unique index
+                // that Room's validation cannot accept; drop it in case this path is ever rerun
+                // on a database that still carries it.
+                db.execSQL("DROP INDEX IF EXISTS index_games_one_disc_primary")
+            }
+        }
+
+        // v40 — detected disc region. games.region holds the TV format detected from the disc image
+        // content (GameRegion enum name; null = not detected). Additive; existing rows keep NULL
+        // and get their region on the next scan that touches them.
+        //
+        // Also drops index_games_one_disc_primary: the v39-era build created that partial unique
+        // index via raw SQL, but Room cannot express partial indexes in its schema export, so the
+        // post-migration validation saw an unexpected index and refused to open the database
+        // ("Migration didn't properly handle: games"). Databases stuck on that build carry the
+        // index; the one-primary-per-set invariant is enforced by DiscSetBuilder/DiscSetReconciler
+        // at scan time, so the index can be dropped safely.
+        val MIGRATION_39_40 = object : Migration(39, 40) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("DROP INDEX IF EXISTS index_games_one_disc_primary")
+                db.execSQL("ALTER TABLE games ADD COLUMN region TEXT")
             }
         }
     }

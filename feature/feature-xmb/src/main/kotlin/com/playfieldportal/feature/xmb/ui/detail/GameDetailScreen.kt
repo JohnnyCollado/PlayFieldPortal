@@ -121,15 +121,18 @@ fun GameDetailScreen(
     // opens underneath (all launch plumbing lives in the ViewModel) and is what the user
     // returns to when they exit the game.
     autoLaunch: Boolean = false,
+    // When set (from the XMB context menu's "Choose Disc"), opens the detail page with this
+    // disc pre-selected instead of the set's primary — the disc an auto-launch then boots.
+    initialDiscId: Long? = null,
     modifier: Modifier = Modifier,
     viewModel: GameDetailViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
-    LaunchedEffect(gameId) {
+    LaunchedEffect(gameId, initialDiscId) {
         viewModel.prepareForOpen()
-        viewModel.loadGame(gameId)
+        viewModel.loadGame(gameId, initialDiscId)
     }
     // Launch-on-open (direct-launch confirm): fire the Play action once THIS game's row is
     // loaded. Keyed on the loaded game's id — not a loaded/unloaded flag — because the retained

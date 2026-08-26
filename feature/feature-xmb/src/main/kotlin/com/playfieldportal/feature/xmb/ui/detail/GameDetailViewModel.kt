@@ -213,7 +213,12 @@ class GameDetailViewModel @Inject constructor(
         }
     }
 
-    fun loadGame(id: Long) {
+    /**
+     * @param requestedDiscId when set (XMB context menu "Choose Disc"), the set member to select
+     *   instead of the primary — the disc an auto-launch then boots. Falls back to the primary
+     *   when the id isn't a member (stale row, single-disc game).
+     */
+    fun loadGame(id: Long, requestedDiscId: Long? = null) {
         // Offline-first coin summary for the glance strip — streams straight from Room.
         viewModelScope.launch {
             achievementRepository.observeGameCoins(id).collect { coins ->
@@ -236,7 +241,8 @@ class GameDetailViewModel @Inject constructor(
                 ?.let { gameRepository.getDiscSetMembers(it) }
                 ?.takeIf { it.isNotEmpty() }
                 ?: listOfNotNull(game)
-            val selectedDisc = discMembers.firstOrNull { it.isDiscPrimary }
+            val selectedDisc = discMembers.firstOrNull { it.id == requestedDiscId }
+                ?: discMembers.firstOrNull { it.isDiscPrimary }
                 ?: discMembers.firstOrNull()
             val platform = game?.let { platformDao.getById(it.platformId) }
             val emulator = game?.let { resolveLaunchProfile(it, platform).getOrNull()?.profile?.name }

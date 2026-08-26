@@ -58,17 +58,10 @@ object DatabaseModule {
             PFPDatabase.DATABASE_NAME,
         )
         // Never use fallbackToDestructiveMigration — users would lose their entire library
-        .addCallback(object : RoomDatabase.Callback() {
-            override fun onCreate(db: SupportSQLiteDatabase) {
-                // Room cannot express a partial unique index through @Index. Create the same
-                // invariant used by MIGRATION_38_39 for fresh installs as well.
-                db.execSQL(
-                    "CREATE UNIQUE INDEX IF NOT EXISTS index_games_one_disc_primary " +
-                        "ON games (disc_set_key) " +
-                        "WHERE disc_set_key IS NOT NULL AND is_disc_primary = 1"
-                )
-            }
-        })
+        // (No partial unique index on games: Room cannot express it in the schema export, so any
+        // database carrying it — from a migration or this callback — fails Room's post-migration
+        // validation. The one-primary-per-disc-set invariant is enforced by DiscSetBuilder /
+        // DiscSetReconciler at scan time instead.)
         .addMigrations(
             PFPDatabase.MIGRATION_1_2,
             PFPDatabase.MIGRATION_2_3,
@@ -108,6 +101,7 @@ object DatabaseModule {
             PFPDatabase.MIGRATION_36_37,
             PFPDatabase.MIGRATION_37_38,
             PFPDatabase.MIGRATION_38_39,
+            PFPDatabase.MIGRATION_39_40,
         )
         .build()
 

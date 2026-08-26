@@ -1,6 +1,5 @@
 package com.playfieldportal.feature.library.scanner
 
-import com.playfieldportal.core.data.database.dao.ScanTombstoneDao
 import com.playfieldportal.core.data.repository.LibraryReconciler
 import com.playfieldportal.core.data.repository.MemoryCardRepository
 import com.playfieldportal.core.domain.model.Game
@@ -22,7 +21,6 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -36,9 +34,9 @@ class LibraryScannerTest {
     private lateinit var memoryCardRepository: MemoryCardRepository
     private lateinit var reconciler: LibraryReconciler
     private lateinit var scanSourceResolver: ScanSourceResolver
-    private lateinit var tombstoneDao: ScanTombstoneDao
     private lateinit var discSetBuilder: DiscSetBuilder
     private lateinit var m3uPlaylistReader: M3uPlaylistReader
+    private lateinit var discRegionReader: DiscRegionReader
 
     private val card = MemoryCard(
         platformId = "psx",
@@ -69,16 +67,15 @@ class LibraryScannerTest {
         memoryCardRepository = mockk(relaxed = true)
         reconciler = mockk(relaxed = true)
         scanSourceResolver = mockk(relaxed = true)
-        tombstoneDao = mockk(relaxed = true)
         // The real builder: the reconciliation under test derives over existing + new rows.
         discSetBuilder = DiscSetBuilder()
-        // The reader is context-backed (SAF URIs) — mocked; the builder's caller seam stays real.
+        // The readers are context-backed (SAF URIs) — mocked; the builder's caller seams stay real.
         m3uPlaylistReader = mockk(relaxed = true)
+        discRegionReader = mockk(relaxed = true)
 
         coEvery { memoryCardRepository.getById("psx") } returns card
         coEvery { memoryCardRepository.getAll() } returns listOf(card)
         coEvery { gameRepository.getByPlatform("psx") } returns emptyList()
-        coEvery { tombstoneDao.getPathsForPlatform("psx") } returns emptyList()
         coEvery { reconciler.reconcile(any(), any(), any(), any()) } returns
             LibraryReconciler.Result(markedSeen = 0, markedMissing = 0, skipped = false)
     }
@@ -87,16 +84,15 @@ class LibraryScannerTest {
     // built per-test (inside runTest) rather than in setUp().
     private fun TestScope.scannerFor(
         gameRepository: GameRepository = this@LibraryScannerTest.gameRepository,
-        tombstoneDao: ScanTombstoneDao = this@LibraryScannerTest.tombstoneDao,
     ) = LibraryScanner(
         memoryCardRepository,
         gameRepository,
         scanSourceResolver,
-        ExistingRomPathResolver(gameRepository, tombstoneDao),
+        ExistingRomPathResolver(gameRepository),
         reconciler,
         // Real reconciler over the real builder + mocked reader, so the integration test drives
         // the actual union derivation while playlist reads stay context-free.
-        DiscSetReconciler(discSetBuilder, m3uPlaylistReader, gameRepository),
+        DiscSetReconciler(discSetBuilder, m3uPlaylistReader, discRegionReader, gameRepository),
         ioDispatcher = StandardTestDispatcher(testScheduler),
     )
 
@@ -113,22 +109,6 @@ class LibraryScannerTest {
 
         assertEquals(1, outcome.added)
         coVerify(exactly = 1) { gameRepository.upsert(game) }
-    }
-
-    @Test
-    fun `tombstoned paths are never re-added`() = runTest {
-        val scanner = scannerFor()
-        coEvery { tombstoneDao.getPathsForPlatform("psx") } returns listOf("/roms/psx/removed.bin")
-        // The source is handed `existing`, which must already contain the tombstoned path.
-        var seenExisting: Set<String>? = null
-        coEvery { scanSourceResolver.sourcesFor(card) } returns listOf({ existing ->
-            seenExisting = existing
-            flowOf(ScanResult.Complete(emptyList(), 0, emptyList(), emptyList(), presentRomPaths = emptySet()))
-        })
-
-        scanner.scanPlatform("psx", removeMissing = false)
-
-        assertTrue("/roms/psx/removed.bin" in seenExisting.orEmpty())
     }
 
     @Test
@@ -194,18 +174,6 @@ class LibraryScannerTest {
         assertFalse(outcome.surveyTrusted)
         coVerify(exactly = 0) { scanSourceResolver.sourcesFor(any()) }
         coVerify(exactly = 0) { gameRepository.upsert(any()) }
-    }
-
-    @Test
-    fun `a tombstone read failure fails the card before any source is surveyed`() = runTest {
-        val scanner = scannerFor()
-        coEvery { tombstoneDao.getPathsForPlatform("psx") } throws RuntimeException("db closed")
-
-        val outcome = scanner.scanPlatform("psx", removeMissing = false)
-
-        assertEquals(ScanStatus.FAILED, outcome.status)
-        assertFalse(outcome.surveyTrusted)
-        coVerify(exactly = 0) { scanSourceResolver.sourcesFor(any()) }
     }
 
     @Test

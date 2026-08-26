@@ -1,12 +1,12 @@
-# Multi-Disc — Next Session Task Plan
+# Multi-Disc — Status and Follow-Ups
 
-Continuation of `multi-disc-games-plan.md` (C1). Working notes + ordered task list, not a
-design doc. Verify the current git branch/status first — the multi-disc patch (steps 1–5 plus
-reconciliation) is uncommitted in the working tree.
+Working notes for `multi-disc-games-plan.md` (C1). The full plan is implemented on the
+`polishing-UI` branch as of 2026-08-26 — this file now records what shipped, which commits landed
+it, and what optional backlog remains. No uncommitted work remains.
 
-## State at the end of the previous session
+## Shipped
 
-- [x] Steps 1–3: `DiscTag`, `DiscSetBuilder`, schema v38 (`disc_set_key`/`disc_number`/
+- [x] Steps 1–3 (`812ef36`): `DiscTag`, `DiscSetBuilder`, schema v38 (`disc_set_key`/`disc_number`/
       `is_disc_primary`), `MIGRATION_37_38`, wiring into all three scan paths
       (`RomScanner.scan`/`scanDirectory`/`scanTree`).
 - [x] Step 4: companion suppression — `DiscSheets` (cue/gdi parsers), `DiscCompanionSuppressor`
@@ -15,47 +15,33 @@ reconciliation) is uncommitted in the working tree.
       `observeAllGames`/`observePlatformGames`; XMB display surfaces switched.
       Deliberately unprojected: `observeByPlatform` (scan baselines) and `observeGamesOnly`
       (per-disc achievement matching) — pinned by `GameDaoProjectionTest`.
-- [x] Live-data verification (D:\Emulators\Roms): separator-agnostic paths; m3u-unifies-
-      per-disc-subfolders pinned for backslash and forward-slash layouts.
-- [x] Incremental reconciliation: `DiscSetBuilder.reconcile` (derive + diff), `M3uPlaylistReader`
-      extraction, `DiscSetReconciler` (single owner of reconcile-and-persist) wired into
-      `LibraryScanner.scanLocked`, XMB manual Memory Card scan, and `LibraryManagerViewModel`
-      ROM-root autoload.
+- [x] Incremental reconciliation (`6e637d6`): `DiscSetBuilder.reconcile` (derive + diff),
+      `M3uPlaylistReader` extraction, `DiscSetReconciler` (single owner of reconcile-and-persist)
+      wired into `LibraryScanner.scanLocked`, XMB manual Memory Card scan, and
+      `LibraryManagerViewModel` ROM-root autoload.
+- [x] Step 6 — Disc picker on game detail: `getDiscSetMembers` DAO query + `GameRepository`
+      exposure; `GameDetailUiState.discMembers`/`selectedDiscId`/`showDiscPicker`; picking a
+      non-primary disc launches that disc's path; the projected one-row-per-set list opens the
+      picker.
+- [x] Step 7 — Set-level Missing: display queries require at least one present member, and
+      `observeMissing()` shows one primary row per fully-missing set ("The Missing bucket — one
+      primary per fully missing set, plus ordinary missing games"). `LibraryReconciler` keeps its
+      explicit-path per-row contract; the projection supplies the set semantics.
+- [x] Legacy multi-folder scan reconciled: `LibrarySettingsViewModel`'s direct
+      `romScanner.scan(folders, NEW_FILES_ONLY, …)` path groups new games by platform and runs
+      `DiscSetReconciler.reconcilePlatform` per platform.
+- [x] Structural one-primary-per-set invariant (`2c00f66`): partial unique index
+      `ON games(disc_set_key) WHERE disc_set_key IS NOT NULL AND is_disc_primary = 1` → schema
+      v39 + `MIGRATION_38_39`, applied on upgrade and on fresh installs.
+- [x] Live-data verification (D:\Emulators\Roms): separator-agnostic paths; m3u-unifies-per-disc-
+      subfolders pinned for backslash and forward-slash layouts.
 
-Test conventions: hermetic JUnit + mockk; test-first (write the failing test, then implement).
-Full suites green at last run: feature-library 77, feature-settings 51, feature-xmb compiles.
+Test conventions: hermetic JUnit + mockk; test-first. Suites: feature-library (DiscTag,
+DiscSetBuilder, DiscSheets, DiscCompanionSuppressor, DiscImageResolver, LibraryScanner,
+LibraryRescanCoordinator, ExistingRomPathResolver), feature-settings (LibraryManagerViewModel),
+feature-xmb.
 
-## Next tasks (in order)
-
-### 1. Step 6 — Disc picker on game detail (M)
-- [ ] Find the game-detail entry point (feature-xmb `GameDetailViewModel` + detail screen) and
-      the launch path that resolves `romPath`/`romUri`.
-- [ ] Add a DAO query for a set's members (`WHERE disc_set_key = :key`) and expose it through
-      `GameRepository`; the projected platform/All-Games queries already return the primary.
-- [ ] Picker state: default selection = the set's primary; launching a non-primary disc must
-      launch that disc's `romPath`/`romUri`, not the primary's.
-- [ ] Test-first: picker selection + launch resolution unit tests (red → green).
-- [ ] Wire into the detail screen; verify the projected list (one row per set) opens the picker.
-
-### 2. Step 7 — Set-level Missing in LibraryReconciler (M)
-- [ ] A set is missing only when *every* disc is missing; the primary row represents the set in
-      the Missing bucket.
-- [ ] Inspect `LibraryReconciler.reconcile` / `markSeen` / `markMissing` — currently per-row;
-      extend to set granularity without mass-sweeping (the reconciler's explicit-path contract).
-- [ ] Mind the interplay with `DiscSetReconciler` upserts (they preserve `is_missing`).
-- [ ] Test-first: reconciler tests for partial vs. full-set disappearance.
-
-### 3. Reconcile the legacy multi-folder scan (S)
-- [ ] `LibrarySettingsViewModel` line ~182 calls `romScanner.scan(folders, NEW_FILES_ONLY, …)`
-      directly — the only scan path not reconciled. Group its new games by platform and run
-      `DiscSetReconciler.reconcilePlatform` per platform (needs a per-platform baseline fetch).
-
-### 4. Structural one-primary-per-set invariant (S, optional)
-- [ ] Partial unique index `CREATE UNIQUE INDEX … ON games(disc_set_key) WHERE is_disc_primary = 1`
-      → schema v39 + migration + validation, mirroring the v38 migration test pattern. The
-      builder already guarantees it; the index guards against future drift.
-
-## Backlog / verification ideas
+## Backlog / open questions (not required for the plan)
 
 - [ ] Confirm artwork behavior for non-primary discs (`ArtworkImportMatcher` is disc-aware via
       `-discN` slugs) — is set-level art (one row per set) desired, and does it need a change?

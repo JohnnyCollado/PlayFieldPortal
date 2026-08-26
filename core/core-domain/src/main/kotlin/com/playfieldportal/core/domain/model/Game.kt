@@ -22,6 +22,10 @@ data class Game(
     val discSetKey: String? = null,
     val discNumber: Int? = null,
     val isDiscPrimary: Boolean = false,
+    // TV format / region detected from the disc image content at scan time (see [GameRegion]) —
+    // never parsed from the filename. Participates in multi-disc set membership: sibling disc
+    // folders whose images disagree on region are two dumps, not one set.
+    val region: GameRegion? = null,
     val packageName: String?      = null,   // null for ROM-based games
     val emulatorPackage: String?  = null,   // preferred emulator override
     val artworkUri: String?       = null,   // cached box/grid art path

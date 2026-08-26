@@ -195,6 +195,69 @@ class GameDetailViewModelTest {
     }
 
     @Test
+    fun `loadGame with a requested disc selects that member instead of the primary`() = runTest {
+        val setKey = "psx\u0001/roms/psx\u0001Final Fantasy VII"
+        val primary = fakeGame.copy(id = 1L, discSetKey = setKey, isDiscPrimary = true, discNumber = 1)
+        val disc2 = fakeGame.copy(id = 2L, discSetKey = setKey, discNumber = 2, isDiscPrimary = false)
+        coEvery { gameRepository.getById(1L) } returns primary
+        coEvery { gameRepository.getDiscSetMembers(setKey) } returns listOf(primary, disc2)
+
+        viewModel.loadGame(1L, requestedDiscId = 2L)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.uiState.test {
+            val state = awaitItem()
+            assertEquals(2L, state.selectedDiscId)
+            assertEquals(2L, state.selectedDisc?.id)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `loadGame with an unknown requested disc falls back to the primary`() = runTest {
+        val setKey = "psx\u0001/roms/psx\u0001Final Fantasy VII"
+        val primary = fakeGame.copy(id = 1L, discSetKey = setKey, isDiscPrimary = true, discNumber = 1)
+        val disc2 = fakeGame.copy(id = 2L, discSetKey = setKey, discNumber = 2, isDiscPrimary = false)
+        coEvery { gameRepository.getById(1L) } returns primary
+        coEvery { gameRepository.getDiscSetMembers(setKey) } returns listOf(primary, disc2)
+
+        viewModel.loadGame(1L, requestedDiscId = 999L)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.uiState.test {
+            val state = awaitItem()
+            assertEquals(1L, state.selectedDiscId)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `loadGame with a requested disc launches that member directly`() = runTest {
+        val setKey = "psx\u0001/roms/psx\u0001Final Fantasy VII"
+        val primary = fakeGame.copy(id = 1L, discSetKey = setKey, isDiscPrimary = true, discNumber = 1)
+        val disc2 = fakeGame.copy(id = 2L, discSetKey = setKey, discNumber = 2, isDiscPrimary = false)
+        val fakeProfile = com.playfieldportal.core.domain.model.EmulatorProfile(
+            id = "duckstation",
+            name = "DuckStation",
+            packageName = "com.github.stenzek.duckstation",
+            intentType = com.playfieldportal.core.domain.model.IntentType.ACTION_VIEW,
+            supportedPlatformIds = listOf("psx"),
+        )
+        coEvery { gameRepository.getById(1L) } returns primary
+        coEvery { gameRepository.getById(2L) } returns disc2
+        coEvery { gameRepository.getDiscSetMembers(setKey) } returns listOf(primary, disc2)
+        every { profileRepository.getInstalledProfiles() } returns listOf(fakeProfile)
+        every { intentResolver.resolve(any(), any()) } returns Result.success(fakeLaunchIntent())
+
+        viewModel.loadGame(1L, requestedDiscId = 2L)
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.launch()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        verify { intentResolver.resolve(disc2, match { it.id == "duckstation" }) }
+    }
+
+    @Test
     fun `selecting a non-primary disc launches that member`() = runTest {
         val setKey = "psx\u0001/roms/psx\u0001Final Fantasy VII"
         val primary = fakeGame.copy(id = 1L, discSetKey = setKey, isDiscPrimary = true, discNumber = 1)

@@ -872,6 +872,7 @@ fun XMBShell(
                         gameId = gameId,
                         onBack = onCloseGameDetail,
                         autoLaunch = uiState.activeGameAutoLaunch,
+                        initialDiscId = uiState.activeGameDiscId,
                         pendingGamepadAction = uiState.pendingGameDetailAction,
                         onGamepadActionConsumed = onGameDetailActionConsumed,
                         showTouchControls = uiState.resolvedShowTouchButton,

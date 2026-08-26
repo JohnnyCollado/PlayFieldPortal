@@ -449,6 +449,10 @@ data class XMBUiState(
     // True when the Game Detail screen should fire its Play action as soon as the game loads —
     // set by direct-launch confirms and the △ "Launch Game" entry; cleared on close.
     val activeGameAutoLaunch: Boolean = false,
+    // The specific disc to open (and auto-launch) when [activeGameId] is set — set by the game
+    // context menu's "Choose Disc" so a direct-launch user can pick a non-primary disc. The
+    // primary remains the default whenever this is null.
+    val activeGameDiscId: Long? = null,
     // Global launch behavior: confirm on a game launches directly (true) or opens Detail (false).
     val directLaunch: Boolean = false,
     val activeAppId: Long? = null,
@@ -851,7 +855,6 @@ class XMBViewModel @Inject constructor(
     private val photoRepository: com.playfieldportal.core.domain.repository.PhotoRepository,
     private val photoScanner: com.playfieldportal.feature.library.scanner.PhotoScanner,
     private val hiddenPlacementDao: com.playfieldportal.core.data.database.dao.HiddenPlacementDao,
-    private val scanTombstoneDao: com.playfieldportal.core.data.database.dao.ScanTombstoneDao,
     private val discordAuthRepository: com.playfieldportal.core.data.discord.DiscordAuthRepository,
     private val discordPresence: com.playfieldportal.core.data.discord.DiscordPresenceController,
     private val discordVoice: com.playfieldportal.core.data.discord.DiscordVoiceController,
@@ -4304,6 +4307,23 @@ class XMBViewModel @Inject constructor(
     }
 
     private fun openGameContextMenu(item: XMBItem) {
+        val gameId = item.gameId
+        if (gameId == null) {
+            openGameContextMenuCore(item, discCount = 0)
+            return
+        }
+        // Whether the game belongs to a multi-disc set is a DB read, so the "Choose Disc" entry
+        // (and only that) is decided asynchronously — the rest of the menu builds unchanged.
+        viewModelScope.launch {
+            val discCount = runCatching {
+                val game = gameRepository.getById(gameId)
+                game?.discSetKey?.let { gameRepository.getDiscSetMembers(it).size } ?: 0
+            }.getOrDefault(0)
+            openGameContextMenuCore(item, discCount)
+        }
+    }
+
+    private fun openGameContextMenuCore(item: XMBItem, discCount: Int) {
         val inCollection = _uiState.value.selectedCollectionId != null
         val currentCat = currentCategory()
         val inGamingCategory = currentCat?.isGamingCategory == true
@@ -4314,6 +4334,9 @@ class XMBViewModel @Inject constructor(
             // confirm skip straight into the game. Launch/title/note/scrape actions all live
             // in Game Detail — the menu stays navigational.
             add(XMBContextMenuItem("game_details", "View Game Details"))
+            // Multi-disc sets: pick which disc to boot — the only way to reach a non-primary
+            // disc when direct launch skips Game Detail's picker. Launches the chosen disc.
+            if (discCount > 1) add(XMBContextMenuItem("choose_disc", "Choose Disc"))
             // Android games can never have achievements — no Shiba Coins entry for them.
             if (item.platformId != ANDROID_PLATFORM_ID) {
                 add(XMBContextMenuItem("view_shiba_coins", "View Shiba Coins"))
@@ -4367,17 +4390,17 @@ class XMBViewModel @Inject constructor(
             // or demote it to a standard app without losing its art/collections.
             if (inMissingBucket) {
                 // The plan's explicit user delete, and the only destructive action anywhere in the
-                // missing-ROM flow. Mechanically identical to "Remove from Library" (tombstone +
-                // delete row, file untouched), but labelled for what it means here: this bucket is
-                // the entry's last visible trace, so removing it ends the line rather than dropping
-                // it from one view. Everything else is recoverable by putting the file back.
+                // missing-ROM flow. Mechanically identical to "Remove from Library" (delete row,
+                // file untouched), but labelled for what it means here: this bucket is the entry's
+                // last visible trace, so removing it ends the line rather than dropping it from one
+                // view. Everything else is recoverable by putting the file back.
                 add(XMBContextMenuItem("remove_missing", "Remove permanently", isDestructive = true))
             } else if (item.platformId == ANDROID_PLATFORM_ID && item.packageName != null && !inCollection) {
                 add(XMBContextMenuItem("unmark_game", "Unmark as Game"))
                 add(XMBContextMenuItem("remove_app", "Remove from Library", isDestructive = true))
             } else if (!inCollection) {
                 // Every other game gets full delete too (confirmed first). Deleting a scanned ROM
-                // entry tombstones its path so a re-scan won't resurrect it; the file is untouched.
+                // entry leaves the file untouched — the next scan re-discovers it.
                 add(XMBContextMenuItem("remove_game", "Remove from Library", isDestructive = true))
             }
         }
@@ -4728,12 +4751,27 @@ class XMBViewModel @Inject constructor(
                 appAction {
                     gameRepository.setIconDisplayMode(gid, IconDisplayMode.fromName(choice)?.name)
                 }
+            } else if (itemId.startsWith("disc_pick_")) {
+                // Disc chosen from the "Choose Disc" submenu — boot that disc now, exactly like a
+                // direct-launch confirm would (the detail page opens underneath, disc pre-selected).
+                val discId = itemId.removePrefix("disc_pick_").toLongOrNull()
+                if (discId != null) {
+                    menuSound.play(MenuSound.LAUNCH)
+                    _uiState.update {
+                        it.copy(
+                            activeGameId       = menu.gameId,
+                            activeGameDiscId   = discId,
+                            activeGameAutoLaunch = true,
+                        )
+                    }
+                }
             } else when (itemId) {
                 // Always opens the Game Detail screen (no auto-launch) — the edit surface for
                 // artwork, title, notes, emulator when direct launch is the confirm behavior.
                 "game_details"           -> _uiState.update {
                     it.copy(activeGameId = menu.gameId, activeGameAutoLaunch = false)
                 }
+                "choose_disc"             -> openDiscPickerMenu(menu.gameId)
                 "view_shiba_coins"       -> _uiState.update {
                     it.copy(activeShibaCoinsTarget = com.playfieldportal.feature.xmb.ui.detail.ShibaCoinsTarget.LibraryGame(menu.gameId))
                 }
@@ -4801,8 +4839,8 @@ class XMBViewModel @Inject constructor(
                 ))}
                 "confirm_remove_missing" -> {
                     val gid = menu.gameId
-                    // Reuses the standard removal: tombstones the ROM path so a later scan can't
-                    // resurrect the entry, deletes the row, recounts the card.
+                    // Reuses the standard removal: deletes the row, recounts the card; the file is
+                    // untouched and a later scan re-discovers it.
                     appAction { removeGameFromLibrary(gid) }
                 }
                 "cancel_remove_missing"  -> Unit   // menu already closed
@@ -4925,17 +4963,34 @@ class XMBViewModel @Inject constructor(
         }
     }
 
-    // Deletes a game row (never the file). Scanned ROM entries leave a tombstone so the next
-    // folder scan doesn't just re-import the file the user removed.
+    // Second-level menu: the discs of a multi-disc set. Picking one boots that disc directly
+    // (direct-launch-consistent — the Game Detail picker remains the select-then-play path). The
+    // primary row is marked, matching the detail page's default selection.
+    private fun openDiscPickerMenu(gameId: Long) {
+        viewModelScope.launch {
+            val game = gameRepository.getById(gameId) ?: return@launch
+            val key = game.discSetKey ?: return@launch
+            val members = gameRepository.getDiscSetMembers(key)
+            if (members.size <= 1) return@launch
+            val items = members.map { member ->
+                XMBContextMenuItem(
+                    id      = "disc_pick_${member.id}",
+                    label   = member.discNumber?.let { "Disc $it" } ?: "Playlist",
+                    checked = member.isDiscPrimary,
+                )
+            }
+            _uiState.update { it.copy(activeContextMenu = XMBContextMenu(
+                title  = "Choose Disc",
+                items  = items,
+                gameId = gameId,
+            ))}
+        }
+    }
+
+    // Deletes a game row (never the file). "Remove from Library" is a plain removal: the file
+    // stays on disk and is re-discovered by the next scan of any kind.
     private suspend fun removeGameFromLibrary(gameId: Long) {
         val game = gameRepository.getById(gameId) ?: return
-        game.romPath?.let { path ->
-            scanTombstoneDao.insert(
-                com.playfieldportal.core.data.database.entity.ScanTombstoneEntity(
-                    romPath = path, platformId = game.platformId,
-                )
-            )
-        }
         gameRepository.delete(gameId)
         memoryCardRepository.recountGames(game.platformId)
         loadItemsForCategory(currentCategory())
@@ -6513,7 +6568,12 @@ class XMBViewModel @Inject constructor(
 
     fun onCloseGameDetail() {
         _uiState.update {
-            it.copy(activeGameId = null, activeGameAutoLaunch = false, pendingGameDetailAction = null)
+            it.copy(
+                activeGameId = null,
+                activeGameAutoLaunch = false,
+                activeGameDiscId = null,
+                pendingGameDetailAction = null,
+            )
         }
         // Rebuild the visible list: title/artwork edits made in the detail screen must show the
         // moment the overlay closes (the item build is one-shot, not reactive to those tables).

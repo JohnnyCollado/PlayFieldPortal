@@ -5,10 +5,11 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 /**
- * A user-deleted scanned game. "Remove from Library" only deletes the DB row — the ROM file stays
- * on disk — so without a tombstone the next folder scan would just re-import it. Scanners must
- * skip any file whose rom_path has a tombstone. Rows are cleared when the user re-scans after
- * explicitly clearing hidden/removed items, or when the platform's card is removed.
+ * RETIRED. "Remove from Library" previously wrote one of these so a folder rescan would not
+ * re-import the still-on-disk file. That behavior was removed (see ADR-0001): removal now just
+ * deletes the row and the next scan re-discovers the file, so nothing reads or writes tombstones
+ * anymore. The entity and its `scan_tombstones` table are kept only to hold the Room schema
+ * version steady for existing installs; no migration drops the table yet.
  */
 @Entity(tableName = "scan_tombstones")
 data class ScanTombstoneEntity(

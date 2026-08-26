@@ -6,6 +6,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GameContentType
+import com.playfieldportal.core.domain.model.GameRegion
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -47,6 +48,12 @@ data class GameEntity(
 
     @ColumnInfo(name = "is_disc_primary")
     val isDiscPrimary: Boolean = false,
+
+    // TV format / region detected from the disc image content at scan time (GameRegion enum name,
+    // null when undetected). Drives multi-disc set membership: same-region discs unify, genuinely
+    // conflicting regions split.
+    @ColumnInfo(name = "region")
+    val region: String? = null,
 
     @ColumnInfo(name = "package_name")
     val packageName: String?,
@@ -195,6 +202,7 @@ fun GameEntity.toDomain() = Game(
     discSetKey = discSetKey,
     discNumber = discNumber,
     isDiscPrimary = isDiscPrimary,
+    region = GameRegion.fromName(region),
     packageName = packageName,
     emulatorPackage = emulatorPackage,
     artworkUri = artworkUri,
@@ -246,6 +254,7 @@ fun Game.toEntity() = GameEntity(
     discSetKey = discSetKey,
     discNumber = discNumber,
     isDiscPrimary = isDiscPrimary,
+    region = region?.name,
     packageName = packageName,
     emulatorPackage = emulatorPackage,
     artworkUri = artworkUri,

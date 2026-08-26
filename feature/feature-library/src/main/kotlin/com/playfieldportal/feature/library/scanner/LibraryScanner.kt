@@ -124,9 +124,8 @@ class LibraryScanner @Inject constructor(
         val platformId = card.platformId
 
         // An incomplete existing-path set is unsafe for upserts or Missing reconciliation — a
-        // failed DB or tombstone read fails the card before source resolution or any folder walk
-        // starts. Falling back to an empty set (the old behavior) could re-add tombstoned or
-        // already-known games.
+        // failed DB read fails the card before source resolution or any folder walk starts.
+        // Falling back to an empty set (the old behavior) could duplicate already-known games.
         val baseline = try {
             existingRomPathResolver.baselineFor(platformId)
         } catch (ce: CancellationException) {
@@ -146,7 +145,6 @@ class LibraryScanner @Inject constructor(
         }
 
         // Live, growing set so a ROM already added from one source isn't re-added from another.
-        // Tombstoned paths (user-removed games) count as existing so scans skip them too.
         val existing = baseline.romPaths.toMutableSet()
 
         var added = 0

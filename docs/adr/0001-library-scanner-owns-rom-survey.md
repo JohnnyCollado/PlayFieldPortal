@@ -11,7 +11,7 @@ The ROM survey and Missing-reconciliation policy currently exists in two loops:
 - `LibraryManagerViewModel.scanConsole` serves the settings interface.
 - `LibraryRescanCoordinator.scanCard` serves app-resume, media-mount, and USB-unplug triggers.
 
-Both loops resolve sources, seed existing paths from library rows and scan tombstones, collect source
+Both loops resolve sources, seed existing paths from library rows, collect source
 flows, upsert new games, union present paths, propagate trust failures, reconcile Missing rows, and
 record changes. `ScanSourceResolver` is shared, but the policy around it is duplicated. That makes
 future scanner changes drift-prone and leaves the important behavior with poor locality.
@@ -24,7 +24,7 @@ callers retain their distinct interfaces and scheduling responsibilities.
 Create a `LibraryScanner` module in `feature:feature-library/scanner/` with these responsibilities:
 
 1. Survey one configured Memory Card's ROM sources.
-2. Seed and grow the existing-path set using database rows plus scan tombstones.
+2. Seed and grow the existing-path set using database rows.
 3. Upsert newly discovered games exactly once across multiple sources.
 4. Union `presentRomPaths` and treat a source error or null survey as untrustworthy.
 5. Optionally invoke `LibraryReconciler` when `removeMissing` is requested.
@@ -35,7 +35,7 @@ Create a `LibraryScanner` module in `feature:feature-library/scanner/` with thes
 9. Return an explicit skipped outcome when source resolution produces no usable source.
 10. Retain the first actionable source error plus an untrusted-survey flag; do not broaden the
     outcome into a provider-specific error taxonomy yet.
-11. Fail a card before surveying when the database snapshot or tombstone lookup fails. An incomplete
+11. Fail a card before surveying when the database snapshot read fails. An incomplete
     existing-path set is not safe for upserts or Missing reconciliation.
 12. If an individual upsert fails, keep successful prior writes as a partial result, skip Missing
     reconciliation for that card, and return the first write failure.
@@ -91,8 +91,8 @@ then deduplicate and simplify callers after parity tests pass.
   absent ROMs Missing.
 - **New scanner-source interface:** the existing `ScanSourceResolver` seam is already real and is
   sufficient for this extraction; another adapter would add indirection without leverage.
-- **Empty existing-path fallback:** treating a failed database read as an empty set could re-add
-  tombstoned or already-known games, so the safer untrusted outcome is chosen.
+- **Empty existing-path fallback:** treating a failed database read as an empty set could duplicate
+  already-known games, so the safer untrusted outcome is chosen.
 - **Queued single-flight:** stale queued scans add work after the useful survey already ran; a busy
   outcome is easier for callers to ignore and keeps the trigger module lean.
 
@@ -102,10 +102,9 @@ Before implementation is considered complete:
 
 - Compare both current loops line by line and record every intentional difference.
 - Prove duplicate paths across multiple sources are upserted once.
-- Prove tombstoned paths are not re-added.
 - Prove null present sets and source errors disable Missing writes for the whole platform.
 - Prove changed-only `recordScan` and `recountGames` semantics.
-- Prove database/tombstone read failures do not scan or mutate the library.
+- Prove database read failures do not scan or mutate the library.
 - Prove partial upsert failure skips Missing reconciliation and returns an actionable outcome.
 - Prove manual and triggered requests for the same Memory Card share single-flight behavior.
 - Prove cancellation is not converted into an error outcome.
