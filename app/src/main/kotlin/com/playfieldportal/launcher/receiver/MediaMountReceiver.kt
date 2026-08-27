@@ -8,10 +8,6 @@ import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
 import timber.log.Timber
 
 /**
@@ -43,21 +39,14 @@ class MediaMountReceiver : BroadcastReceiver() {
     // on top. Holding the broadcast open for that would risk the receiver being killed mid-scan.
     // This receiver only lives while MainActivity does, so the foreground activity is what keeps the
     // process alive for the duration — no pending result needed.
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != Intent.ACTION_MEDIA_MOUNTED) return
 
         Timber.i("Media mounted (${intent.data}) — requesting library rescan")
-        val coordinator = EntryPointAccessors
+        EntryPointAccessors
             .fromApplication(context.applicationContext, Deps::class.java)
             .libraryRescanCoordinator()
-
-        // The coordinator owns the debounce/single-flight guards, so the burst of broadcasts a
-        // single mount produces collapses into one scan there rather than being filtered here.
-        scope.launch {
-            runCatching { coordinator.onMediaMounted() }
-                .onFailure { Timber.e(it, "Mount-triggered library rescan failed") }
-        }
+            .onMediaMounted()
     }
 }

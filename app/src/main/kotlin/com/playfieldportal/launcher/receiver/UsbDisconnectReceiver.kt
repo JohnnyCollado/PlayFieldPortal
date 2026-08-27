@@ -8,10 +8,6 @@ import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
 import timber.log.Timber
 
 /**
@@ -41,7 +37,6 @@ class UsbDisconnectReceiver : BroadcastReceiver() {
         fun libraryRescanCoordinator(): LibraryRescanCoordinator
     }
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     // Last seen USB connection state. Null until the first broadcast so the sticky delivery that
     // arrives immediately on registration only RECORDS the current state — it must not be mistaken
@@ -60,13 +55,10 @@ class UsbDisconnectReceiver : BroadcastReceiver() {
         if (was != true || connected) return
 
         Timber.i("USB disconnected — requesting library rescan")
-        val coordinator = EntryPointAccessors
+        EntryPointAccessors
             .fromApplication(context.applicationContext, Deps::class.java)
             .libraryRescanCoordinator()
-        scope.launch {
-            runCatching { coordinator.onMediaMounted() }
-                .onFailure { Timber.e(it, "USB-unplug library rescan failed") }
-        }
+            .onMediaMounted()
     }
 
     companion object {

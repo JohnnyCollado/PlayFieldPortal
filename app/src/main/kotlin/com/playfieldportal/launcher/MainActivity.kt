@@ -23,6 +23,8 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
 import com.playfieldportal.core.ui.theme.PFPTheme
 import com.playfieldportal.feature.library.scanner.LibraryRescanCoordinator
+import kotlinx.coroutines.launch
+import timber.log.Timber
 import com.playfieldportal.feature.xmb.gamepad.GamepadInputHandler
 import com.playfieldportal.feature.xmb.viewmodel.XMBViewModel
 import com.playfieldportal.launcher.discord.DiscordBootstrap
@@ -30,8 +32,6 @@ import com.playfieldportal.launcher.receiver.InstallShortcutReceiver
 import com.playfieldportal.launcher.receiver.MediaMountReceiver
 import com.playfieldportal.launcher.receiver.UsbDisconnectReceiver
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.launch
-import timber.log.Timber
 import javax.inject.Inject
 
 @AndroidEntryPoint

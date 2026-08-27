@@ -9,6 +9,10 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import com.playfieldportal.feature.library.scanner.RescanApplicationScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import javax.inject.Singleton
 
 @Module
@@ -25,4 +29,10 @@ object AppModule {
     @Singleton
     fun providePowerManager(@ApplicationContext context: Context): PowerManager =
         context.getSystemService(Context.POWER_SERVICE) as PowerManager
+
+    @Provides
+    @Singleton
+    @RescanApplicationScope
+    fun provideRescanApplicationScope(): CoroutineScope =
+        CoroutineScope(SupervisorJob() + Dispatchers.IO)
 }
