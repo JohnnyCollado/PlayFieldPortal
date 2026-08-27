@@ -6,6 +6,10 @@ independent and reviewable on its own. Status reflects the state of the `polishi
 
 Status key: ✅ implemented · 🟡 partially implemented · ❌ not implemented
 
+## Open issue: Settings controller navigation
+
+The Settings overlay still has a persistent controller-navigation synchronization bug. Section headers must be reachable by Up/Down but must not be selectable. The expected sequence is `header → first row → second row`; currently, navigating from a header can skip the first row, and repeated Up presses can leave the header visually hidden. See [settings-controller-navigation-issue.md](settings-controller-navigation-issue.md) for the observed behavior, likely causes, instrumentation requirements, and regression scenarios.
+
 ## Source: architecture-review-20260820-013228.html
 
 | # | Plan | Status | Review verdict | Effort |

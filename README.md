@@ -1,6 +1,8 @@
 # Play Field Portal (PFP)
 
 **A controller-first Android game launcher inspired by the PSP's XMB (Cross Media Bar).**
+
+> **Known issue — Settings controller navigation:** Settings section headers must be reachable with Up/Down but must not activate on Select. The expected order is `header → first row → second row`; the current implementation can skip the first row after leaving a header, and repeated Up presses can leave the relevant header visually hidden. Investigation details and regression scenarios are tracked in [docs/plans/settings-controller-navigation-issue.md](docs/plans/settings-controller-navigation-issue.md).
 A horizontal category bar crosses a vertical item list — the **crossbar** — and replaces your
 Android home screen as a single front end for ROM emulation, Android games, PC-layer titles
 (Winlator), native apps, and your music, video and photo libraries.
