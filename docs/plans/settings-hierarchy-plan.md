@@ -14,6 +14,10 @@ Settings
 │   ├── Collections                          L2 — current Collections settings
 │   ├── Artwork                               L2 — current Artwork settings
 │   └── Hidden Games                          L2 — moved from Display settings
+├── Media                                    L1 nested XMB item
+│   ├── Music                                 L2 — Music folders & default player
+│   ├── Video                                 L2 — Video libraries & playback
+│   └── Photo                                 L2 — Photo libraries & scanning
 ├── Emulators                                L1 nested XMB item
 │   ├── Installed                             L2 — installed/not-installed knowledge-base apps
 │   ├── Custom Emulators                      L2 — custom emulator profiles and Add Custom Emulator
@@ -24,6 +28,9 @@ Settings
 │   ├── Display                               L2 — current Display settings
 │   └── Controller                            L2 — current Controller settings
 ├── Achievements                             L1 nested XMB item
+│   │                                             — deliberately labeled "Achievements" (not
+│   │                                             "Shiba Coins") so new users can tell what it is;
+│   │                                             the feature's inner screens keep their branding
 │   ├── Player Card                           L2
 │   ├── Provider Credentials                  L2
 │   ├── Local Windows                         L2
@@ -38,7 +45,7 @@ Settings
 
 ## Navigation model
 
-1. The Settings category root contains only the Android Settings row and the five nested L1 section rows.
+1. The Settings category root contains only the Android Settings row and the six nested L1 section rows.
 2. Selecting a nested L1 row opens a settings flyout/list containing its L2 rows.
 3. Selecting an L2 row opens the associated existing settings overlay screen.
 4. Back from an L2 screen returns to the owning L1 flyout.
@@ -75,6 +82,7 @@ Settings
 Create the following section item lists:
 
 - Library: Platforms, Collections, Artwork, Hidden Games.
+- Media: Music, Video, Photo.
 - Emulators: Installed, Custom Emulators, RetroArch.
 - Interface: Categories, Themes, Display, Controller.
 - Achievements: Player Card, Provider Credentials, Local Windows, Update Achievements.
@@ -87,6 +95,7 @@ For the first pass, L2 entries may route into existing combined screens with an 
 - Library Platforms opens the current Library Manager.
 - Collections opens the current Collections screen.
 - Artwork opens Artwork settings.
+- Media L2 entries reuse the existing Music, Video, and Photo settings screens unchanged.
 - Emulators L2 entries reuse the existing emulator screen, with focus/section entry points for Installed, Custom Emulators, and RetroArch.
 - Achievements L2 entries reuse the existing Achievements screen, with focus/section entry points for Player Card, credentials, Local Windows, and update actions.
 - Interface entries reuse the existing Categories, Themes, Display, and Controller screens.
@@ -114,11 +123,19 @@ Audit and update all routes that open settings directly, including:
 
 Direct links should open the correct L2 screen and, where supported, select the relevant owning section on return.
 
+## Touch navigation button
+
+The bottom-right contextual button (Display ▸ Touch Navigation Button: Auto / Always Show / Always
+Hide) currently hides while any drill-in flyout or blocking overlay is open; full current-behavior
+inventory lives in [`touch-nav-button-workflow-plan.md`](touch-nav-button-workflow-plan.md). Its
+workflow while a Settings section flyout is open is a tracked decision in that doc before the
+hierarchy change ships.
+
 ## Testing plan
 
 ### Unit tests
 
-- Settings root contains Android Settings plus the five nested sections in the expected order.
+- Settings root contains Android Settings plus the six nested sections in the expected order.
 - Each L1 section exposes the expected L2 IDs and labels.
 - Every L2 ID maps to the correct existing screen route.
 - Back navigation moves from L2 screen to L1 flyout and then to the XMB.

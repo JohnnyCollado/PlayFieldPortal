@@ -1,6 +1,17 @@
 package com.playfieldportal.feature.settings.ui
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Create
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import com.playfieldportal.feature.settings.viewmodel.RootFolderRow
 
 /**
@@ -24,22 +35,38 @@ fun RootAccessSection(
 ) {
     SettingsGroup(groupTitle)
 
-    roots.forEach { root ->
-        SettingsValueRow(
-            label    = root.name,
-            value    = if (root.linked) "Linked" else "Re-link",
-            sublabel = when {
-                !root.linked -> "Access lost — tap to re-grant (happens after a restore or reinstall)"
-                root.consoles != null -> "Consoles: ${root.consoles} · tap to replace this root"
-                else -> "Access OK · tap to replace this root"
-            },
-            onClick  = { onRelinkRoot(root) },
-        )
+    if (roots.isEmpty()) {
         SettingsRow(
-            label    = "Remove This Root",
-            sublabel = "Stops using ${root.name}. Files on disk are kept.",
-            onClick  = { onRemoveRoot(root) },
+            label = "No ROM roots configured",
+            sublabel = "Add a folder below to start managing your library",
         )
+    } else {
+        // One compact, controller-friendly row per root: the path is the focusable picker row;
+        // folder replaces it, and the red trash button removes it without adding extra navigation rows.
+        roots.forEach { root ->
+            SettingsRow(
+                label = root.name,
+                sublabel = when {
+                    !root.linked -> "Access lost — choose the folder button to re-grant access"
+                    root.consoles != null -> "Consoles: ${root.consoles}"
+                    else -> "ROM root"
+                },
+                trailing = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
+                        IconButton(onClick = { onRelinkRoot(root) }) {
+                            Icon(Icons.Default.Create, contentDescription = "Replace root folder", tint = SettingsAccent)
+                        }
+                        IconButton(onClick = { onRemoveRoot(root) }) {
+                            Icon(Icons.Default.Delete, contentDescription = "Remove root folder", tint = Color(0xFFE55353))
+                        }
+                    }
+                },
+                onClick = { onRelinkRoot(root) },
+            )
+        }
     }
 
     SettingsRow(

@@ -3,14 +3,14 @@ package com.playfieldportal.feature.launcher
 import timber.log.Timber
 import java.io.File
 
-internal data class RetroArchCore(
+data class RetroArchCore(
     val name: String,           // human-readable label derived from filename
     val fileName: String,       // e.g. "nestopia_libretro_android.so"
     val absolutePath: String,
     val platformIds: List<String>,
 )
 
-internal object RetroArchCoreScanner {
+object RetroArchCoreScanner {
 
     val RETROARCH_PACKAGES = listOf(
         "com.retroarch.aarch64",

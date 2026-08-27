@@ -306,6 +306,73 @@ sealed interface AchievementsNav {
 /** Which fullscreen Shiba Coins library overlay is open. */
 enum class ShibaLibraryMode { TRACKED, UNTRACKED }
 
+// ── Settings hierarchy ────────────────────────────────────────────────────────
+// The Settings category root shows the Android system-settings leaf plus these six nested L1
+// sections. Selecting a section drills into the shared two-pane flyout (same interaction model
+// as Music/Video/Photo/Social); selecting an L2 row inside it opens the existing settings screen
+// overlay. L2 row ids ARE screen route ids — SettingsNavHost resolves them, so legacy direct
+// callers keep working during migration.
+enum class SettingsSection(
+    val id: String,
+    val title: String,
+    val subtitle: String,
+) {
+    LIBRARY     ("settings_section_library",      "Library",      "Library Manager, collections, artwork & hidden games"),
+    MEDIA       ("settings_section_media",        "Media",        "Music, video & photo settings"),
+    EMULATORS   ("settings_section_emulators",    "Emulators",    "Launch profiles & RetroArch cores"),
+    INTERFACE   ("settings_section_interface",    "Interface",    "Categories, themes, display & controller"),
+    ACHIEVEMENTS("settings_section_achievements", "Achievements", "RetroAchievements & Steam"),
+    SYSTEM      ("settings_section_system",       "System",       "About, logs, backup, setup & credits"),
+}
+
+fun settingsSectionForId(id: String): SettingsSection? =
+    SettingsSection.entries.firstOrNull { it.id == id }
+
+// The L2 rows of a section. Ids must be unique inside the list (list keys + cursor restore) and
+// distinct from every section id (the select handler routes section ids to the flyout and
+// everything else to activeSettingsScreen — see SettingsHierarchyTest).
+fun settingsSectionItems(section: SettingsSection): List<XMBItem> = when (section) {
+    SettingsSection.LIBRARY -> listOf(
+        XMBItem(id = "settings_library",        title = "Library Manager",    subtitle = "ROM sources & scanning"),
+        XMBItem(id = "settings_windows_games",  title = "Windows Games", subtitle = "PC games, launchers & imports"),
+        XMBItem(id = "settings_collections",    title = "Collections",  subtitle = "Create & manage game collections"),
+        XMBItem(id = "settings_artwork",        title = "Artwork",      subtitle = "Scraping sources & cache"),
+        XMBItem(id = "settings_app_visibility", title = "Hidden Games", subtitle = "Review apps & games you've hidden"),
+    )
+    SettingsSection.MEDIA -> listOf(
+        XMBItem(id = "settings_music", title = "Music", subtitle = "Music folders & default player"),
+        XMBItem(id = "settings_video", title = "Video", subtitle = "Video libraries, scanning & playback"),
+        XMBItem(id = "settings_photo", title = "Photo", subtitle = "Photo libraries & scanning"),
+    )
+    SettingsSection.EMULATORS -> listOf(
+        // First pass: all three open the combined Emulators screen (plan §4); distinct ids keep
+        // list keys stable so per-section focus targets can land later without migrating callers.
+        XMBItem(id = "settings_emulators_installed", title = "Installed",        subtitle = "Detected emulator profiles"),
+        XMBItem(id = "settings_emulators_custom",    title = "Custom Emulators", subtitle = "Custom profiles & Add Custom Emulator"),
+        XMBItem(id = "settings_emulators_retroarch", title = "RetroArch",        subtitle = "Core detection & linking"),
+    )
+    SettingsSection.INTERFACE -> listOf(
+        XMBItem(id = "settings_categories", title = "Categories", subtitle = "Manage XMB categories"),
+        XMBItem(id = "settings_themes",     title = "Themes",     subtitle = "XMB appearance & color scheme"),
+        XMBItem(id = "settings_display",    title = "Display",    subtitle = "Wave, wallpaper, boot & icons"),
+        XMBItem(id = "settings_controller", title = "Controller", subtitle = "Button mapping"),
+    )
+    SettingsSection.ACHIEVEMENTS -> listOf(
+        // Same first-pass note as Emulators: the combined Shiba Coins screen, distinct ids.
+        XMBItem(id = "settings_achievements_player_card",   title = "Player Card",          subtitle = "Levels, ranks & sync status"),
+        XMBItem(id = "settings_achievements_credentials",   title = "Provider Credentials", subtitle = "RetroAchievements & Steam accounts"),
+        XMBItem(id = "settings_achievements_local_windows", title = "Local Windows",        subtitle = "Track local Windows (Steam-emu) games"),
+        XMBItem(id = "settings_achievements_update",        title = "Update Achievements",  subtitle = "Sync & auto-match tracked games"),
+    )
+    SettingsSection.SYSTEM -> listOf(
+        XMBItem(id = "settings_about",  title = "About",            subtitle = "Play Field Portal"),
+        XMBItem(id = "settings_logs",   title = "Logs",             subtitle = "Debug & error log viewer"),
+        XMBItem(id = "settings_backup", title = "Backup & Restore", subtitle = "Export & import"),
+        XMBItem(id = XMBViewModel.INITIAL_SETUP_SCREEN_ID, title = "Setup Wizard", subtitle = "Guided folder & account setup"),
+        XMBItem(id = "settings_credits", title = "Credits",         subtitle = "Artwork & attributions"),
+    )
+}
+
 // ── Fullscreen music browser (Settings-style, searchable) ───────────────────────
 // Opened from the "Music" and "Playlist" root items as a fullscreen overlay (not the inline XMB
 // list). Rows reuse XMBItem so the same row visuals/actions apply: tracks play, playlists drill in,
@@ -437,6 +504,10 @@ data class XMBUiState(
 
     // ── Overlay screens ───────────────────────────────────────────────────
     val activeSettingsScreen: String? = null,
+    // The drilled-into Settings L1 section — non-null while its two-pane flyout shows the L2 rows,
+    // null at the flat section root. Deliberately NOT part of hasBlockingOverlay: the flyout is
+    // XMB foreground, so input keeps driving the item list exactly like every other drill.
+    val settingsSectionNav: SettingsSection? = null,
     val pendingSettingsAction: GamepadAction? = null,
     val activeAppDrawerFilter: String? = null,
     val pendingDrawerAction: GamepadAction? = null,
@@ -575,6 +646,7 @@ data class XMBUiState(
             photoNav != PhotoNav.Root ||
             socialNav != SocialNav.Root ||
             achievementsNav != AchievementsNav.Root ||
+            settingsSectionNav != null ||
             selectedPlatformId != null ||
             selectedCollectionId != null
 
@@ -1337,7 +1409,18 @@ class XMBViewModel @Inject constructor(
                     _uiState.update { it.copy(currentItems = ANDROID_ITEMS) }
                 }
                 BuiltInCategory.SETTINGS -> {
-                    _uiState.update { it.copy(currentItems = SETTINGS_ITEMS) }
+                    // Root rows while no section is open; the drilled-into section's L2 rows otherwise.
+                    // Always reset the cursor against the newly selected list so nested Settings
+                    // cannot retain an out-of-range index from the parent list.
+                    _uiState.update { state ->
+                        val items = state.settingsSectionNav
+                            ?.let(::settingsSectionItems)
+                            ?: SETTINGS_ROOT_ITEMS
+                        state.copy(
+                            currentItems = items,
+                            selectedItemIndex = state.selectedItemIndex.coerceIn(0, (items.size - 1).coerceAtLeast(0)),
+                        )
+                    }
                 }
                 BuiltInCategory.ACHIEVEMENTS -> {
                     // Rebuilt reactively by observeLibraryStanding() and on nav change; a one-shot
@@ -2151,6 +2234,7 @@ class XMBViewModel @Inject constructor(
             catId == BuiltInCategory.PHOTO -> "photo_${photoNavKey(s.photoNav)}"
             catId == BuiltInCategory.SOCIAL -> "social_${socialNavKey(s.socialNav)}"
             catId == BuiltInCategory.ACHIEVEMENTS -> "ach_${achievementsNavKey(s.achievementsNav)}"
+            catId == BuiltInCategory.SETTINGS -> "settings_${s.settingsSectionNav?.id ?: "root"}"
             s.selectedCollectionId != null -> "col_${s.selectedCollectionId}"
             s.selectedPlatformId != null   -> "plat_${s.selectedPlatformId}"
             else                           -> "root"
@@ -2166,7 +2250,8 @@ class XMBViewModel @Inject constructor(
         viewCursor[viewCursorKey(cur)] = cur.selectedItemIndex
         _uiState.update { state ->
             val next = mutate(state)
-            next.copy(selectedItemIndex = viewCursor[viewCursorKey(next)] ?: 0)
+            val remembered = viewCursor[viewCursorKey(next)] ?: 0
+            next.copy(selectedItemIndex = remembered)
         }
         loadItemsForCategory(currentCategory())
     }
@@ -3308,6 +3393,9 @@ class XMBViewModel @Inject constructor(
     // a playlist / All Music). Null = top level, normal single-column list.
     private fun computeDrillTitle(): String? {
         val s = _uiState.value
+        // Settings L1 flyout: the section name parents the L2 rows, like every other drill-in.
+        val settingsTitle = s.settingsSectionNav?.title
+        if (settingsTitle != null) return settingsTitle
         // Music sub-navigation is a drill-in too — a non-null title makes it show the two-pane flyout.
         val musicTitle = when (val nav = s.musicNav) {
             MusicNav.MusicApps   -> "Music Apps"
@@ -3388,6 +3476,17 @@ class XMBViewModel @Inject constructor(
     // single parent so the flyout still shows one icon.
     private fun computeDrillSiblings(category: Category?): Pair<List<XMBItem>, Int> {
         val s = _uiState.value
+        // Settings L1 flyout: the left column is the six section rows, drilled-into one centred.
+        if (s.settingsSectionNav != null) {
+            // Android Settings is a real sibling of the section cards. Keep it in the left
+            // column so Library (and every other L1 section) always has a visible parent icon
+            // above the category bar, matching the established Music flyout geometry.
+            val sibs = listOf(
+                XMBItem(id = ANDROID_SETTINGS_ITEM_ID, title = "Android Settings", subtitle = "Opens device settings"),
+            ) + SettingsSection.entries.map { XMBItem(id = it.id, title = it.title, subtitle = it.subtitle) }
+            val idx = sibs.indexOfFirst { it.id == s.settingsSectionNav.id }.coerceAtLeast(0)
+            return sibs to idx
+        }
         // Music sub-navigation: the left column is the Music root's sections (Playlist / Music Apps /
         // Music), with the drilled-into one centred on the arrow.
         if (s.musicNav != MusicNav.Root) {
@@ -3618,11 +3717,18 @@ class XMBViewModel @Inject constructor(
             )
         }
 
-        return header + collectionItems + enabledCards.map { card ->
+        // Windows is import-driven and belongs under Settings ▸ Library rather than the normal
+        // console cards. Only surface it here when the Windows card actually contains game rows.
+        val visibleCards = enabledCards.filter { card ->
+            card.platformId != WINDOWS_PLATFORM_ID ||
+                (_uiState.value.platformGameCounts[WINDOWS_PLATFORM_ID] ?: card.gameCount) > 0
+        }
+
+        return header + collectionItems + visibleCards.map { card ->
             val count = _uiState.value.platformGameCounts[card.platformId] ?: card.gameCount
             XMBItem(
                 id          = "card_${card.platformId}",
-                title       = card.displayName,
+                title       = if (card.platformId == WINDOWS_PLATFORM_ID) "Windows Games" else card.displayName,
                 subtitle    = "$count ${if (count == 1) "Game" else "Games"}",
                 platformId  = card.platformId,
                 accentColor = platformCache[card.platformId]?.accentColor,
@@ -4123,6 +4229,7 @@ class XMBViewModel @Inject constructor(
             GamepadAction.BACK       -> {
                 menuSound.play(MenuSound.BACK)
                 when {
+                    state.settingsSectionNav != null -> closeSettingsSection()
                     state.musicNav != MusicNav.Root -> closeMusicView()
                     // Two-level video paths back out one level first.
                     state.videoNav is VideoNav.Library -> openVideoView(VideoNav.Libraries)
@@ -5470,7 +5577,7 @@ class XMBViewModel @Inject constructor(
         // activeAppDrawerFilter is cleared as an invariant: landing on a category always shows the
         // plain XMB (the drawer can't normally be open here, but this keeps the contextual button
         // state correct no matter which path selected the category).
-        _uiState.update { it.copy(selectedCategoryIndex = index, selectedItemIndex = restore, selectedPlatformId = null, selectedCollectionId = null, musicNav = MusicNav.Root, videoNav = VideoNav.Root, photoNav = PhotoNav.Root, socialNav = SocialNav.Root, achievementsNav = AchievementsNav.Root, activeAppDrawerFilter = null) }
+        _uiState.update { it.copy(selectedCategoryIndex = index, selectedItemIndex = restore, selectedPlatformId = null, selectedCollectionId = null, musicNav = MusicNav.Root, videoNav = VideoNav.Root, photoNav = PhotoNav.Root, socialNav = SocialNav.Root, achievementsNav = AchievementsNav.Root, settingsSectionNav = null, activeAppDrawerFilter = null) }
         tintWaveForCategory(category)
         loadItemsForCategory(category)
     }
@@ -5570,6 +5677,7 @@ class XMBViewModel @Inject constructor(
         if (s.hasBlockingOverlay) return
         menuSound.play(MenuSound.BACK)
         when {
+            s.settingsSectionNav != null -> closeSettingsSection()
             s.musicNav != MusicNav.Root -> closeMusicView()
             s.videoNav is VideoNav.Library -> openVideoView(VideoNav.Libraries)
             s.videoNav is VideoNav.Playlist -> openVideoView(VideoNav.Playlists)
@@ -6433,9 +6541,16 @@ class XMBViewModel @Inject constructor(
             }
             else -> when (category?.id) {
                 BuiltInCategory.SETTINGS -> {
-                    if (item?.id != null) {
-                        Timber.d("Opening settings screen: ${item.id}")
-                        _uiState.update { it.copy(activeSettingsScreen = item.id) }
+                    val id = item?.id
+                    if (id != null) {
+                        val section = settingsSectionForId(id)
+                        if (section != null) {
+                            Timber.d("Opening settings section flyout: ${section.title}")
+                            openSettingsSection(section)
+                        } else {
+                            Timber.d("Opening settings screen: $id")
+                            _uiState.update { it.copy(activeSettingsScreen = id) }
+                        }
                     }
                 }
                 BuiltInCategory.ANDROID -> {
@@ -6558,6 +6673,12 @@ class XMBViewModel @Inject constructor(
 
     fun openPlayerStatus() {
         _uiState.update { it.copy(activePlayerStatus = true) }
+    }
+
+    fun openPlayerStatusFromSettings() {
+        _uiState.update {
+            it.copy(activeSettingsScreen = null, pendingSettingsAction = null, activePlayerStatus = true)
+        }
     }
 
     fun onClosePlayerStatus() {
@@ -6754,6 +6875,23 @@ class XMBViewModel @Inject constructor(
 
     fun consumeAppDetailAction() {
         _uiState.update { it.copy(pendingAppDetailAction = null) }
+    }
+
+    // ── Settings hierarchy (L1 section flyouts) ───────────────────────────────
+    // Drilling into a section reuses the shared drill path (computeDrillTitle / computeDrillSiblings
+    // → XmbDrillFlyout) with cursor memory, exactly like Music/Video/Photo/Social. Back from an L2
+    // screen simply closes the overlay: settingsSectionNav survives underneath, so the owning
+    // flyout is revealed — there is no extra stack to unwind.
+
+    private fun openSettingsSection(section: SettingsSection) {
+        // Rebuild immediately: the settings section changes the visible item list and drill
+        // metadata. Waiting for a category reload can leave the old selection/index in place,
+        // which may activate an invalid row and crash on nested Settings screens.
+        navigateRememberingCursor { it.copy(settingsSectionNav = section) }
+    }
+
+    private fun closeSettingsSection() {
+        navigateRememberingCursor { it.copy(settingsSectionNav = null) }
     }
 
     // ── Settings overlay ──────────────────────────────────────────────────────
@@ -7349,26 +7487,13 @@ class XMBViewModel @Inject constructor(
         // First item opens the device's own Settings app (not a PFP screen).
         internal const val ANDROID_SETTINGS_ITEM_ID = "settings_android_system"
 
-        private val SETTINGS_ITEMS = listOf(
-            XMBItem(id = ANDROID_SETTINGS_ITEM_ID,  title = "Android Settings", subtitle = "Opens device settings"),
-            XMBItem(id = "settings_library",    title = "Library",          subtitle = "ROM sources & scanning"),
-            XMBItem(id = "settings_music",      title = "Music",            subtitle = "Music folders & default player"),
-            XMBItem(id = "settings_video",      title = "Video",            subtitle = "Video libraries, scanning & playback"),
-            XMBItem(id = "settings_photo",      title = "Photo",            subtitle = "Photo libraries & scanning"),
-            XMBItem(id = "settings_categories", title = "Categories",       subtitle = "Manage XMB categories"),
-            XMBItem(id = "settings_collections", title = "Collections",     subtitle = "Create & manage game collections"),
-            XMBItem(id = "settings_artwork",    title = "Artwork",          subtitle = "Scraping sources & cache"),
-            XMBItem(id = "settings_achievements", title = "Shiba Coins",    subtitle = "RetroAchievements & Steam"),
-            XMBItem(id = "settings_emulators",  title = "Emulators",        subtitle = "Launch profiles"),
-            XMBItem(id = "settings_themes",     title = "Themes",           subtitle = "XMB appearance & color scheme"),
-            XMBItem(id = "settings_display",    title = "Display",          subtitle = "Wave, wallpaper, boot & icons"),
-            XMBItem(id = "settings_controller", title = "Controller",       subtitle = "Button mapping"),
-            XMBItem(id = "settings_backup",     title = "Backup & Restore", subtitle = "Export & import"),
-            XMBItem(id = "settings_logs",       title = "Logs",             subtitle = "Debug & error log viewer"),
-            XMBItem(id = "settings_about",      title = "About",            subtitle = "Play Field Portal"),
-            XMBItem(id = "settings_credits",    title = "Credits",          subtitle = "Artwork & attributions"),
-            XMBItem(id = INITIAL_SETUP_SCREEN_ID, title = "Re-Run Setup Wizard", subtitle = "Guided folder & account setup"),
-        )
+        // Settings root: the Android system-settings leaf plus the six nested L1 sections
+        // (settingsSectionItems supplies each section's L2 rows). Section rows drill into the
+        // two-pane flyout; any other id opens its screen overlay directly. `internal` so the
+        // hierarchy unit tests can assert the exact root order.
+        internal val SETTINGS_ROOT_ITEMS = listOf(
+            XMBItem(id = ANDROID_SETTINGS_ITEM_ID, title = "Android Settings", subtitle = "Opens device settings"),
+        ) + SettingsSection.entries.map { XMBItem(id = it.id, title = it.title, subtitle = it.subtitle) }
     }
 
     // Rebuilds the bar from the canonical built-in definitions (name/icon/position/order) merged with

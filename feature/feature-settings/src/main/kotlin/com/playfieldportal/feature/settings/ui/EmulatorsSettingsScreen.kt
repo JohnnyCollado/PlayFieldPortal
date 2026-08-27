@@ -28,6 +28,8 @@ import com.playfieldportal.feature.settings.viewmodel.EmulatorsSettingsViewModel
 import com.playfieldportal.feature.settings.viewmodel.ProfileListItem
 import com.playfieldportal.feature.settings.viewmodel.TestLaunchState
 
+enum class EmulatorSettingsSection { INSTALLED, CUSTOM, RETROARCH }
+
 private val AutoBadgeColor    = Color(0xFF4A9EFF)
 private val UnavailableColor  = Color(0xFFFF6B6B)
 private val ModifiedBadgeColor = Color(0xFF45C46A)
@@ -36,6 +38,7 @@ private val ModifiedBadgeColor = Color(0xFF45C46A)
 fun EmulatorsSettingsScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    section: EmulatorSettingsSection? = null,
     viewModel: EmulatorsSettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -109,8 +112,13 @@ fun EmulatorsSettingsScreen(
     }
 
     SettingsScaffold(
-        title           = "Settings",
-        subtitle        = "Emulators",
+        title    = "Settings",
+        subtitle = when (section) {
+            EmulatorSettingsSection.INSTALLED -> "Emulator · Installed"
+            EmulatorSettingsSection.CUSTOM -> "Emulator · Custom"
+            EmulatorSettingsSection.RETROARCH -> "Emulator · RetroArch"
+            null -> "Emulators"
+        },
         onBack          = onBack,
         modifier        = modifier,
         restoreFocusKey = state.returnFocusKey,
@@ -120,30 +128,37 @@ fun EmulatorsSettingsScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState()),
         ) {
-            SettingsGroup("Installed")
+            if (section == null || section == EmulatorSettingsSection.INSTALLED) {
+                val installedNonRetroArch = state.installedProfiles.filterNot(::isRetroArchProfile)
+                SettingsGroup("Installed")
 
-            if (state.installedProfiles.isEmpty()) {
-                EmulatorHint("No supported emulators detected on this device")
-            } else {
-                state.installedProfiles.forEach { profile ->
-                    EmulatorProfileRow(
-                        profile = profile,
-                        onEdit  = { viewModel.openEditor(profile.id) },
-                    )
+                if (installedNonRetroArch.isEmpty()) {
+                    EmulatorHint("No supported emulators detected on this device")
+                } else {
+                    installedNonRetroArch.forEach { profile ->
+                        EmulatorProfileRow(
+                            profile = profile,
+                            onEdit  = { viewModel.openEditor(profile.id) },
+                        )
+                    }
                 }
             }
 
-            SettingsGroup("Available (Not Installed)")
+            if (section == null || section == EmulatorSettingsSection.INSTALLED) {
+                val availableNonRetroArch = state.availableProfiles.filterNot(::isRetroArchProfile)
+                SettingsGroup("Available (Not Installed)")
 
-            if (state.availableProfiles.isEmpty()) {
-                EmulatorHint("All bundled profiles are installed")
-            } else {
-                state.availableProfiles.forEach { profile ->
-                    EmulatorProfileRow(profile = profile, onEdit = null)
+                if (availableNonRetroArch.isEmpty()) {
+                    EmulatorHint("All bundled profiles are installed")
+                } else {
+                    availableNonRetroArch.forEach { profile ->
+                        EmulatorProfileRow(profile = profile, onEdit = null)
+                    }
                 }
             }
 
-            SettingsGroup("Custom Profiles")
+            if (section == null || section == EmulatorSettingsSection.CUSTOM) {
+                SettingsGroup("Custom Profiles")
 
             if (state.customProfiles.isEmpty()) {
                 EmulatorHint("No custom profiles yet")
@@ -162,7 +177,9 @@ fun EmulatorsSettingsScreen(
                 focusKey = ADD_CUSTOM_EMULATOR_FOCUS_KEY,
                 onClick  = { viewModel.startAddEmulatorWizard() },
             )
+            }
 
+            if (section == null || section == EmulatorSettingsSection.RETROARCH) {
             SettingsGroup("RetroArch Core Detection")
 
             EmulatorHint(
@@ -185,6 +202,15 @@ fun EmulatorsSettingsScreen(
                 onClick  = { retroArchPicker.launch(null) },
             )
 
+            SettingsGroup("Available Cores")
+            if (state.retroArchCores.isEmpty()) {
+                EmulatorHint("No RetroArch cores detected yet.")
+            } else {
+                state.retroArchCores.forEach { core ->
+                    SettingsRow(label = core, sublabel = "Available in RetroArch")
+                }
+            }
+
             if (state.retroArchLinked) {
                 SettingsRow(
                     label    = "Re-scan Installed Cores",
@@ -198,9 +224,11 @@ fun EmulatorsSettingsScreen(
                 )
             }
 
-            SettingsGroup("Maintenance")
+            }
 
-            SettingsRow(
+            if (section == null) SettingsGroup("Maintenance")
+
+            if (section == null) SettingsRow(
                 label    = "Reset Emulator Configuration",
                 sublabel = "Clear launch settings and restore defaults. Your games, artwork, and saves are not affected.",
                 focusKey = "reset_emulator_config",
@@ -384,6 +412,12 @@ private fun Badge(label: String, color: Color) {
         modifier = Modifier.padding(horizontal = 4.dp),
     )
 }
+
+private fun isRetroArchProfile(profile: ProfileListItem): Boolean =
+    profile.autoSource == "retroarch-core" ||
+        profile.packageName.equals("com.retroarch", ignoreCase = true) ||
+        profile.packageName.contains("retroarch", ignoreCase = true) ||
+        profile.name.contains("retroarch", ignoreCase = true)
 
 private fun buildSublabel(profile: ProfileListItem): String {
     val base = "${profile.packageName}  ·  ${profile.intentType}"

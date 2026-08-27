@@ -244,7 +244,7 @@ class GamePickerViewModel @Inject constructor(
         // Determine what type of item was selected
         for (group in state.platformGroups) {
             if (pickerPlatformId(group.platform.platformId) == selectedId) {
-                // Platform header selected
+                // Platform headers are actionable in the picker.
                 val selectAll = !group.isAllSelected
                 togglePlatformAllSelection(group.platform.platformId, selectAll)
                 return
@@ -280,6 +280,7 @@ class GamePickerViewModel @Inject constructor(
         // If the selected item is a platform header, toggle its expanded state
         for (group in state.platformGroups) {
             if (pickerPlatformId(group.platform.platformId) == selectedId) {
+                // Platform headers can still expand/collapse in the picker.
                 togglePlatformExpanded(group.platform.platformId)
                 return
             }

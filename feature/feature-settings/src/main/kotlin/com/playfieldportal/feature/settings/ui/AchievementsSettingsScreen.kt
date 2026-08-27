@@ -17,17 +17,21 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.playfieldportal.core.ui.achievement.ShibaPlayerCard
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.feature.settings.viewmodel.AchievementsSettingsViewModel
 
+enum class AchievementsSettingsSection { PROVIDER_CREDENTIALS, LOCAL_WINDOWS, UPDATE }
+
 @Composable
 fun AchievementsSettingsScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     onOpenPlayerStatus: () -> Unit = {},
+    section: AchievementsSettingsSection? = null,
     viewModel: AchievementsSettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -39,9 +43,17 @@ fun AchievementsSettingsScreen(
     var showLocalSteamWarning by remember { mutableStateOf(false) }
     var showGoldbergWarning by remember { mutableStateOf(false) }
 
+    val credentialsEnabled = state.enabled
+    val credentialsAlpha = if (credentialsEnabled) 1f else 0.45f
+
     SettingsScaffold(
         title    = "Settings",
-        subtitle = "Shiba Coins",
+        subtitle = when (section) {
+            AchievementsSettingsSection.PROVIDER_CREDENTIALS -> "Achievements · Provider Credentials"
+            AchievementsSettingsSection.LOCAL_WINDOWS -> "Achievements · Local Windows"
+            AchievementsSettingsSection.UPDATE -> "Achievements · Update Achievements"
+            null -> "Shiba Coins"
+        },
         onBack   = onBack,
         modifier = modifier,
     ) {
@@ -52,8 +64,9 @@ fun AchievementsSettingsScreen(
         ) {
 
             // Account-wide standing: level, rank, and the running coin wallet. Confirm or tap opens
-            // the fullscreen player status view.
-            SettingsFocusable(
+            // the fullscreen player status view. It is part of the combined legacy screen only;
+            // the dedicated Player Card L2 route is handled by the host overlay.
+            if (section == null) SettingsFocusable(
                 onClick = onOpenPlayerStatus,
                 focusKey = "player_card",
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
@@ -68,6 +81,7 @@ fun AchievementsSettingsScreen(
                 )
             }
 
+            if (section == null || section == AchievementsSettingsSection.PROVIDER_CREDENTIALS) {
             SettingsToggleRow(
                 label    = "Enable Shiba Coins",
                 sublabel = "Track achievements as Shiba Coins across RetroAchievements and Steam",
@@ -75,17 +89,22 @@ fun AchievementsSettingsScreen(
                 onToggle = { viewModel.setEnabled(it) },
             )
 
+            }
+
+            if (section == null || section == AchievementsSettingsSection.PROVIDER_CREDENTIALS) {
             // ── RetroAchievements ─────────────────────────────────────────────
             SettingsGroup("RetroAchievements")
 
             if (state.hasRetroAchievements) {
                 SettingsValueRow(label = "Connected as", value = state.raUsername)
             }
+            Column(modifier = Modifier.alpha(credentialsAlpha)) {
             SettingsTextFieldRow(
                 label         = "Username",
                 value         = raUsernameDraft,
                 onValueChange = { raUsernameDraft = it },
                 placeholder   = state.raUsername.ifBlank { "Your RA username" },
+                enabled       = credentialsEnabled,
             )
             SettingsTextFieldRow(
                 label         = if (state.hasRetroAchievements) "Web API Key (saved)" else "Web API Key",
@@ -94,8 +113,9 @@ fun AchievementsSettingsScreen(
                 placeholder   = if (state.hasRetroAchievements) "••••••••  (tap to replace)" else "Paste your RA Web API key",
                 isPassword    = true,
                 helper        = "retroachievements.org → Settings → Keys → Web API Key",
+                enabled       = credentialsEnabled,
             )
-            if (raUsernameDraft.isNotBlank() && raKeyDraft.isNotBlank()) {
+            if (credentialsEnabled && raUsernameDraft.isNotBlank() && raKeyDraft.isNotBlank()) {
                 SettingsRow(
                     label   = "Connect RetroAchievements",
                     onClick = {
@@ -112,6 +132,7 @@ fun AchievementsSettingsScreen(
                     onClick  = { viewModel.disconnectRetroAchievements() },
                 )
             }
+            }
 
             // ── Steam ──────────────────────────────────────────────────────────
             SettingsGroup("Steam")
@@ -119,12 +140,14 @@ fun AchievementsSettingsScreen(
             if (state.hasSteam) {
                 SettingsValueRow(label = "SteamID64", value = state.steamId64)
             }
+            Column(modifier = Modifier.alpha(credentialsAlpha)) {
             SettingsTextFieldRow(
                 label         = "SteamID64 or profile name",
                 value         = steamIdDraft,
                 onValueChange = { steamIdDraft = it },
                 placeholder   = state.steamId64.ifBlank { "76561… or your vanity name" },
                 helper        = "A vanity name is resolved to a SteamID64 when you connect",
+                enabled       = credentialsEnabled,
             )
             SettingsTextFieldRow(
                 label         = if (state.hasSteam) "API Key (saved)" else "API Key",
@@ -133,8 +156,9 @@ fun AchievementsSettingsScreen(
                 placeholder   = if (state.hasSteam) "••••••••  (tap to replace)" else "Paste your Steam Web API key",
                 isPassword    = true,
                 helper        = "steamcommunity.com/dev — your profile's Game Details must be Public",
+                enabled       = credentialsEnabled,
             )
-            if (steamIdDraft.isNotBlank() && steamKeyDraft.isNotBlank()) {
+            if (credentialsEnabled && steamIdDraft.isNotBlank() && steamKeyDraft.isNotBlank()) {
                 SettingsRow(
                     label   = "Connect Steam",
                     onClick = {
@@ -151,8 +175,11 @@ fun AchievementsSettingsScreen(
                     onClick  = { viewModel.disconnectSteam() },
                 )
             }
+            }
+            }
 
             // ── Local Steam (emulated) ─────────────────────────────────────────
+            if (section == null || section == AchievementsSettingsSection.LOCAL_WINDOWS) {
             SettingsGroup("Local Steam (Emulated)")
             SettingsToggleRow(
                 label    = "Track Local Steam Games (Emulated)",
@@ -175,107 +202,60 @@ fun AchievementsSettingsScreen(
                 },
             )
 
-            // ── Sync ───────────────────────────────────────────────────────────
-            SettingsGroup("Sync")
-            SettingsValueRow(label = "Last Synced", value = state.lastSyncedLabel)
-            if (state.isSyncing) {
-                SettingsValueRow(label = "Syncing coins…", value = "${state.syncDone} / ${state.syncTotal}")
-            } else {
-                SettingsRow(
-                    label = "Sync all coins",
-                    sublabel = if (state.isMatching) "Runs automatically once auto-match completes"
-                               else "Refresh earned coins for every linked game",
-                    onClick = { viewModel.syncAll() },
-                )
-            }
-            state.syncResult?.let { r ->
-                val summary = buildString {
-                    append("${r.synced} synced")
-                    if (r.noCoins > 0) append(" · ${r.noCoins} no coins")
-                    if (r.failed > 0) append(" · ${r.failed} failed")
-                }
-                SettingsRow(
-                    label = summary,
-                    sublabel = if (r.missingCredentials) "Some providers need credentials — tap to dismiss"
-                               else "Tap to dismiss",
-                    onClick = { viewModel.dismissSyncResult() },
-                )
             }
 
-            // ── Account import ─────────────────────────────────────────────────
-            if (state.hasRetroAchievements) {
-                SettingsGroup("Account import")
-                if (state.isImporting) {
-                    SettingsValueRow(label = "Importing RA history…", value = "${state.importDone} / ${state.importTotal}")
+            // Update Achievements intentionally contains only the original update actions: Sync All
+            // and Auto-match, plus their live progress/result messages. Account imports remain
+            // available from the combined legacy screen but are not exposed in this focused route.
+            if (section == null || section == AchievementsSettingsSection.UPDATE) {
+                SettingsGroup("Sync")
+                SettingsValueRow(label = "Last Synced", value = state.lastSyncedLabel)
+                if (state.isSyncing) {
+                    SettingsValueRow(label = "Syncing coins…", value = "${state.syncDone} / ${state.syncTotal}")
                 } else {
                     SettingsRow(
-                        label = "Import my RA history",
-                        sublabel = "Track every game your RetroAchievements account has progress in — even without a local copy",
-                        onClick = { viewModel.importRaHistory() },
+                        label = "Sync all coins",
+                        sublabel = if (state.isMatching) "Runs automatically once auto-match completes"
+                                   else "Refresh earned coins for every linked game",
+                        onClick = { viewModel.syncAll() },
                     )
                 }
-                state.importResult?.let { r ->
+                state.syncResult?.let { r ->
                     val summary = buildString {
-                        append("${r.imported} imported")
+                        append("${r.synced} synced")
                         if (r.noCoins > 0) append(" · ${r.noCoins} no coins")
                         if (r.failed > 0) append(" · ${r.failed} failed")
                     }
                     SettingsRow(
                         label = summary,
-                        sublabel = if (r.missingCredentials) "RetroAchievements needs credentials — tap to dismiss"
+                        sublabel = if (r.missingCredentials) "Some providers need credentials — tap to dismiss"
                                    else "Tap to dismiss",
-                        onClick = { viewModel.dismissImportResult() },
+                        onClick = { viewModel.dismissSyncResult() },
                     )
                 }
-            }
-            if (state.hasSteam) {
-                if (!state.hasRetroAchievements) SettingsGroup("Account import")
-                if (state.isSteamImporting) {
-                    SettingsRow(
-                        label = "Importing Steam library…  ${state.steamImportDone} / ${state.steamImportTotal}",
-                        sublabel = "Runs in the background — safe to leave this screen. Tap to cancel.",
-                        onClick = { viewModel.cancelSteamImport() },
-                    )
+
+                SettingsGroup("Auto-match")
+                if (state.isMatching) {
+                    SettingsValueRow(label = "Matching games…", value = "${state.matchDone} / ${state.matchTotal}")
                 } else {
                     SettingsRow(
-                        label = "Import my Steam library",
-                        sublabel = "Track every owned game with achievement progress — a large library takes a while, and runs in the background",
-                        onClick = { viewModel.importSteamLibrary() },
+                        label = "Auto-match games",
+                        sublabel = "Link RetroAchievements (ROM hash) and Steam (title) automatically",
+                        onClick = { viewModel.autoMatch() },
                     )
                 }
-                state.steamImportSummary?.let { summary ->
+                state.matchReport?.let { report ->
                     SettingsRow(
-                        label = summary,
-                        sublabel = "Tap to dismiss",
-                        onClick = { viewModel.dismissSteamImportSummary() },
+                        label = "Matched ${report.matched} · Unmatched ${report.unmatched.size}",
+                        sublabel = if (report.unmatched.isEmpty()) "Tap to dismiss"
+                                   else "See each game's reason in the Shiba Library's Untracked view. Tap to dismiss",
+                        onClick = { viewModel.dismissReport() },
                     )
                 }
-            }
 
-            // ── Auto-match ─────────────────────────────────────────────────────
-            SettingsGroup("Auto-match")
-            if (state.isMatching) {
-                SettingsValueRow(label = "Matching games…", value = "${state.matchDone} / ${state.matchTotal}")
-            } else {
-                SettingsRow(
-                    label = "Auto-match games",
-                    sublabel = "Link RetroAchievements (ROM hash) and Steam (title) automatically",
-                    onClick = { viewModel.autoMatch() },
-                )
-            }
-            // Counts only — the per-game reasons live in the Shiba Library's Untracked view,
-            // so the settings screen never grows a long scrolling report.
-            state.matchReport?.let { report ->
-                SettingsRow(
-                    label = "Matched ${report.matched} · Unmatched ${report.unmatched.size}",
-                    sublabel = if (report.unmatched.isEmpty()) "Tap to dismiss"
-                               else "See each game's reason in the Shiba Library's Untracked view. Tap to dismiss",
-                    onClick = { viewModel.dismissReport() },
-                )
-            }
-
-            state.message?.let {
-                SettingsRow(label = it, sublabel = "Tap to dismiss", onClick = { viewModel.dismissMessage() })
+                state.message?.let {
+                    SettingsRow(label = it, sublabel = "Tap to dismiss", onClick = { viewModel.dismissMessage() })
+                }
             }
         }
 

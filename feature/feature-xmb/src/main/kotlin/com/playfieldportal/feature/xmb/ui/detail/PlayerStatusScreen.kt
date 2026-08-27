@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -147,6 +148,9 @@ fun PlayerStatusScreen(
                 .widthIn(max = 1100.dp)
                 .align(Alignment.TopCenter)
                 .verticalScroll(scrollState)
+                // Keep the empty state scrollable so the page still responds to touch/controller
+                // scrolling and preserves the same navigation surface before achievements exist.
+                .heightIn(min = 720.dp)
                 .padding(horizontal = 28.dp, vertical = 20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {

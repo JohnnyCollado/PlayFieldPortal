@@ -49,15 +49,19 @@ fun LibraryManagerScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     onAddAndroidApps: () -> Unit = {},
-    // Open directly into the Import PC Games section (the games context-menu entry point).
+    // Open directly into the standalone Windows Games screen.
     startInImportPc: Boolean = false,
+    startAtWindowsCard: Boolean = false,
     viewModel: LibraryManagerViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
     val convertPicker by viewModel.convertPicker.collectAsState()
 
-    LaunchedEffect(startInImportPc) {
-        if (startInImportPc) viewModel.openImportPcGames()
+    LaunchedEffect(startInImportPc, startAtWindowsCard) {
+        when {
+            startInImportPc -> viewModel.openImportPcGames()
+            startAtWindowsCard -> viewModel.openWindowsGamesRoot()
+        }
     }
 
     // Picker for ES-DE folder setup: creates the system-folder structure under the
@@ -258,18 +262,15 @@ private fun LibraryListContent(
                     relinkRootPicker.launch(onBeginRelink(it)) 
                 },
                 onRemoveRoot = { onRemoveRomRoot(it) },
-                autoDetectLabel    = "Auto-Detect Consoles",
-                autoDetectSublabel = "One pass over your ROM roots: a console per ES-DE system folder " +
-                    "(gba, snes, psx…) that contains games",
-                onAutoDetect       = { onScanRomRoot() },
             )
 
             SettingsGroup("Consoles")
 
-            if (state.cards.isEmpty()) {
+            val consoleCards = state.cards.filterNot { it.platformId == "windows" }
+            if (consoleCards.isEmpty()) {
                 Hint("No consoles configured. Add a console to create a Memory Card that appears inside Games.")
             } else {
-                state.cards.forEach { card ->
+                consoleCards.forEach { card ->
                     SettingsRow(
                         label    = card.displayName + if (!card.enabled) "  (Hidden)" else "",
                         sublabel = cardSublabel(card),

@@ -14,6 +14,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.HorizontalDivider
@@ -35,11 +38,13 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateMap
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,6 +58,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalConfiguration
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -88,6 +94,8 @@ internal val LocalSettingsRegisterFirstFocusable =
 // canFocus inheritance does not reach the XMB's LazyColumn across subcompositions).
 internal val LocalSettingsRowPositions =
     compositionLocalOf<SnapshotStateMap<FocusRequester, Float>?> { null }
+internal val LocalSettingsNavigationOrder =
+    compositionLocalOf<SnapshotStateList<FocusRequester>?> { null }
 internal val LocalSettingsReportFocused =
     compositionLocalOf<(FocusRequester) -> Unit> { {} }
 
@@ -139,6 +147,7 @@ fun SettingsScaffold(
     content: @Composable () -> Unit,
 ) {
     val focusManager    = LocalFocusManager.current
+    val scrollState     = rememberScrollState()
     val bootstrapFR     = remember { FocusRequester() }
     val pendingAction   = LocalSettingsPendingAction.current
     val onConsumed      = LocalSettingsActionConsumed.current
@@ -148,6 +157,7 @@ fun SettingsScaffold(
 
     // Tracks the onclick of whichever row currently has controller focus
     val focusedRowClick = remember { mutableStateOf<(() -> Unit)?>(null) }
+    val navigationState = remember { ControllerNavigationState() }
 
     // Per-row FocusRequesters keyed by focusKey, for focus-restoration on child return.
     val focusRegistry   = remember { mutableStateMapOf<String, FocusRequester>() }
@@ -158,6 +168,8 @@ fun SettingsScaffold(
     // On-screen Y of every interactive row, and which row currently holds focus — drives
     // explicit, escape-proof Up/Down navigation.
     val rowPositions    = remember { mutableStateMapOf<FocusRequester, Float>() }
+    val navigationOrder = remember { androidx.compose.runtime.mutableStateListOf<FocusRequester>() }
+    val firstVisibleContentY = remember { mutableStateOf<Float?>(null) }
     var focusedRow      by remember { mutableStateOf<FocusRequester?>(null) }
     // Last known Y of the focused row — the anchor for re-focusing when that row is removed
     // from composition (imported list items, sections that re-render away).
@@ -213,6 +225,30 @@ fun SettingsScaffold(
     }
 
     // Handle UP / DOWN / SELECT forwarded from XMBViewModel via pendingSettingsAction
+    // Keep the focused row below the header and scroll it into view. The extra header margin is
+    // intentional: placing a row at the very top would hide the breadcrumb after scrolling.
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val screenHeightPx = LocalConfiguration.current.screenHeightDp.toFloat() * density.density
+    LaunchedEffect(focusedRow) {
+        val focused = focusedRow ?: return@LaunchedEffect
+        withFrameNanos { }
+        val y = rowPositions[focused] ?: return@LaunchedEffect
+        val headerBottom = 120f
+        val viewportBottom = screenHeightPx - 24f * density.density
+        // Keep the first content landmark visible when returning to the top. Headers are not
+        // focusable, but the user must still see the section heading that explains the focused row.
+        val topTarget = firstVisibleContentY.value?.let { it - headerBottom - 16f }
+        val target = when {
+            topTarget != null && y <= headerBottom + 2f -> (scrollState.value.toFloat() - topTarget).coerceAtLeast(0f)
+            y < headerBottom -> (scrollState.value.toFloat() - (headerBottom - y + 16f)).coerceAtLeast(0f)
+            y > viewportBottom -> scrollState.value.toFloat() + (y - viewportBottom + 16f)
+            else -> null
+        }
+        target?.let { scrollState.animateScrollTo(it.toInt().coerceIn(0, scrollState.maxValue)) }
+    }
+
+    val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
+
     LaunchedEffect(pendingAction) {
         if (pendingAction == null) return@LaunchedEffect
         Timber.d("Settings focus: action=$pendingAction focusedClick=${focusedRowClick.value != null}")
@@ -228,23 +264,23 @@ fun SettingsScaffold(
             // simply stays — it can NEVER wander into the XMB because we only ever requestFocus()
             // a registered settings row, never call directional moveFocus. If the current row's
             // geometry isn't known yet, re-seed on the first row rather than risk an escape.
-            GamepadAction.NAVIGATE_UP   -> {
-                val curY = focusedRow?.let { rowPositions[it] }
-                if (curY != null) {
-                    rowPositions.entries.filter { it.value < curY - 0.5f }
-                        .maxByOrNull { it.value }?.key
-                        ?.let { runCatching { it.requestFocus() } }
-                } else reseedFocus(rowPositions, lastFocusedY, firstRowFocus.value)
+            GamepadAction.NAVIGATE_UP -> {
+                val currentIndex = focusedRow?.let { navigationOrder.indexOf(it) } ?: -1
+                if (currentIndex > 0) {
+                    runCatching { navigationOrder[currentIndex - 1].requestFocus() }
+                } else {
+                    coroutineScope.launch { scrollState.animateScrollTo(0) }
+                    focusedRow?.let { runCatching { it.requestFocus() } }
+                        ?: reseedFocus(rowPositions, lastFocusedY, firstRowFocus.value)
+                }
             }
             GamepadAction.NAVIGATE_DOWN -> {
-                val curY = focusedRow?.let { rowPositions[it] }
-                if (curY != null) {
-                    rowPositions.entries.filter { it.value > curY + 0.5f }
-                        .minByOrNull { it.value }?.key
-                        ?.let { runCatching { it.requestFocus() } }
-                } else reseedFocus(rowPositions, lastFocusedY, firstRowFocus.value)
+                val currentIndex = focusedRow?.let { navigationOrder.indexOf(it) } ?: -1
+                val nextIndex = if (currentIndex < 0) 0 else currentIndex + 1
+                navigationOrder.getOrNull(nextIndex)?.let { runCatching { it.requestFocus() } }
+                    ?: reseedFocus(rowPositions, lastFocusedY, firstRowFocus.value)
             }
-            GamepadAction.SELECT        -> focusedRowClick.value?.invoke()
+            GamepadAction.SELECT        -> navigationState.select() || focusedRowClick.value?.invoke() == Unit
             // One-level-up navigation: invoke this screen's back handler. For multi-step
             // screens that's "collapse a sub-step (else close)"; for leaf screens it closes
             // the overlay back to the XMB. Mirrors the on-screen Back button exactly.
@@ -262,6 +298,7 @@ fun SettingsScaffold(
         // First clickable row to compose wins the initial-focus slot.
         LocalSettingsRegisterFirstFocusable provides { fr -> if (firstRowFocus.value == null) firstRowFocus.value = fr },
         LocalSettingsRowPositions provides rowPositions,
+        LocalSettingsNavigationOrder provides navigationOrder,
         LocalSettingsReportFocused provides { fr ->
             focusedRow = fr
             rowPositions[fr]?.let { lastFocusedY = it }
@@ -285,7 +322,11 @@ fun SettingsScaffold(
                     )
                 ),
         ) {
-            Column(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .heightIn(min = 720.dp),
+            ) {
 
                 // ── Header — breadcrumb form, matching the detail menus: the ◀ back arrow
                 // leads, followed by the title stack. Excluded from focus traversal: the arrow
@@ -354,7 +395,13 @@ fun SettingsScaffold(
                         }
                 )
 
-                content()
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onGloballyPositioned { firstVisibleContentY.value = it.localToRoot(Offset.Zero).y },
+                ) {
+                    content()
+                }
             }
         }
     }
@@ -364,13 +411,45 @@ fun SettingsScaffold(
 
 @Composable
 fun SettingsGroup(title: String) {
+    val rowPositions = LocalSettingsRowPositions.current
+    val navigationOrder = LocalSettingsNavigationOrder.current
+    val reportFocused = LocalSettingsReportFocused.current
+    val reportRemoved = LocalSettingsReportRemoved.current
+    val focusTracker = LocalSettingsFocusTracker.current
+    val focusRequester = remember { FocusRequester() }
+    var isFocused by remember { mutableStateOf(false) }
+
+    DisposableEffect(Unit) {
+        navigationOrder?.add(focusRequester)
+        onDispose {
+            navigationOrder?.remove(focusRequester)
+            rowPositions?.remove(focusRequester)
+            reportRemoved(focusRequester)
+        }
+    }
+
     Text(
+        modifier = Modifier
+            .fillMaxWidth()
+            .focusRequester(focusRequester)
+            .focusable()
+            .onFocusChanged { state ->
+                isFocused = state.isFocused
+                if (state.isFocused) {
+                    focusTracker(null)
+                    reportFocused(focusRequester)
+                }
+            }
+            .onGloballyPositioned { coordinates ->
+                rowPositions?.let { it[focusRequester] = coordinates.localToRoot(Offset.Zero).y }
+            }
+            .background(if (isFocused) Color.White.copy(alpha = 0.16f) else Color.White.copy(alpha = 0.1f))
+            .padding(start = 48.dp, top = 10.dp, bottom = 10.dp),
         text          = title.uppercase(),
-        color         = SettingsAccent.copy(alpha = 0.7f),
-        fontSize      = 10.sp,
+        color         = Color.White,
+        fontSize      = 15.sp,
         fontWeight    = FontWeight.Bold,
-        letterSpacing = 1.5.sp,
-        modifier      = Modifier.padding(start = 48.dp, top = 20.dp, bottom = 6.dp),
+        letterSpacing = 1.8.sp,
     )
 }
 
@@ -390,6 +469,7 @@ fun SettingsRow(
     val focusRegistry = LocalSettingsFocusRegistry.current
     val registerFirst = LocalSettingsRegisterFirstFocusable.current
     val rowPositions  = LocalSettingsRowPositions.current
+    val navigationOrder = LocalSettingsNavigationOrder.current
     val reportFocused = LocalSettingsReportFocused.current
     val reportRemoved = LocalSettingsReportRemoved.current
     var isFocused by remember { mutableStateOf(false) }
@@ -406,8 +486,10 @@ fun SettingsRow(
         }
     }
     DisposableEffect(Unit) {
+        navigationOrder?.add(focusRequester)
         if (onClick != null) registerFirst(focusRequester)
         onDispose {
+            navigationOrder?.remove(focusRequester)
             rowPositions?.remove(focusRequester)
             // If this row held focus, the scaffold refocuses the nearest surviving row.
             reportRemoved(focusRequester)
@@ -444,8 +526,7 @@ fun SettingsRow(
                     isFocused                    -> Color.White.copy(alpha = 0.06f)
                     else                         -> Color.Transparent
                 }
-            )
-            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier.focusable())
+            )                    .focusable()
             .padding(horizontal = 48.dp, vertical = 14.dp),
         verticalAlignment     = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -490,6 +571,7 @@ fun SettingsFocusable(
     val focusRegistry = LocalSettingsFocusRegistry.current
     val registerFirst = LocalSettingsRegisterFirstFocusable.current
     val rowPositions  = LocalSettingsRowPositions.current
+    val navigationOrder = LocalSettingsNavigationOrder.current
     val reportFocused = LocalSettingsReportFocused.current
     val reportRemoved = LocalSettingsReportRemoved.current
     var isFocused by remember { mutableStateOf(false) }
@@ -502,8 +584,10 @@ fun SettingsFocusable(
         }
     }
     DisposableEffect(Unit) {
+        navigationOrder?.add(focusRequester)
         registerFirst(focusRequester)
         onDispose {
+            navigationOrder?.remove(focusRequester)
             rowPositions?.remove(focusRequester)
             reportRemoved(focusRequester)
         }
@@ -527,7 +611,7 @@ fun SettingsFocusable(
                     reportFocused(focusRequester)
                 }
             }
-            .clickable { onClick() },
+            .focusable(),
     ) {
         content(isFocused)
     }
@@ -604,11 +688,13 @@ fun SettingsTextFieldRow(
     singleLine: Boolean = true,
     isPassword: Boolean = false,
     helper: String? = null,
+    enabled: Boolean = true,
 ) {
     val focusTracker  = LocalSettingsFocusTracker.current
     val focusRegistry = LocalSettingsFocusRegistry.current
     val registerFirst = LocalSettingsRegisterFirstFocusable.current
     val rowPositions  = LocalSettingsRowPositions.current
+    val navigationOrder = LocalSettingsNavigationOrder.current
     val reportFocused = LocalSettingsReportFocused.current
     val keyboard      = LocalSoftwareKeyboardController.current
     val reportRemoved = LocalSettingsReportRemoved.current
@@ -653,6 +739,7 @@ fun SettingsTextFieldRow(
             OutlinedTextField(
                 value         = value,
                 onValueChange = onValueChange,
+                enabled       = enabled,
                 readOnly      = !editing,
                 singleLine    = singleLine,
                 placeholder   = { Text(placeholder, color = SettingsSubtext) },
@@ -693,7 +780,7 @@ fun SettingsTextFieldRow(
             // While not editing, a non-focusable tap layer lets touch users enter edit mode
             // (a read-only field ignores taps). pointerInput adds no focus target, so it never
             // interferes with controller D-pad traversal.
-            if (!editing) {
+            if (!editing && enabled) {
                 Box(
                     modifier = Modifier
                         .matchParentSize()

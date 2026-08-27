@@ -5,23 +5,22 @@ import android.content.Intent
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.playfieldportal.core.data.platform.PlatformFolderHintResolver
 import com.playfieldportal.core.data.repository.FolderLinkStatus
 import com.playfieldportal.core.data.repository.MemoryCardRepository
 import com.playfieldportal.core.data.repository.RomRootRepository
 import com.playfieldportal.core.data.repository.SafGrants
-import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GameContentType
+import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.feature.appbar.LauncherShortcutRepository
 import com.playfieldportal.feature.launcher.EmulatorProfileRepository
 import com.playfieldportal.feature.launcher.PcLauncherAdapters
 import com.playfieldportal.feature.launcher.PcLauncherCatalog
 import com.playfieldportal.feature.launcher.PcLauncherType
-import com.playfieldportal.core.data.platform.PlatformFolderHintResolver
 import com.playfieldportal.feature.library.scanner.DiscSetReconciler
 import com.playfieldportal.feature.library.scanner.ExistingRomPathResolver
 import com.playfieldportal.feature.library.scanner.LibraryScanner
-import com.playfieldportal.feature.library.scanner.PlatformScanOutcome
 import com.playfieldportal.feature.library.scanner.RomScanner
 import com.playfieldportal.feature.library.scanner.ScanResult
 import com.playfieldportal.feature.library.scanner.ScanStatus
@@ -29,7 +28,6 @@ import com.playfieldportal.feature.library.scanner.isScannable
 import com.playfieldportal.feature.library.scanner.scanOutcomeMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -41,6 +39,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
 
 // ── Screen model ────────────────────────────────────────────────────────────────
 
@@ -129,6 +128,8 @@ data class LibraryManagerUiState(
     val message: String? = null,
     // Row to restore focus to when returning to the LIST from a child screen.
     val returnFocusKey: String? = null,
+    // True when this manager was opened directly from the XMB Windows Games item.
+    val windowsGamesOpenedFromXmb: Boolean = false,
 ) {
     val detailCard: LibraryCardRow? get() = cards.firstOrNull { it.platformId == detailPlatformId }
 }
@@ -206,15 +207,15 @@ class LibraryManagerViewModel @Inject constructor(
             },
             cards = cards.map { card ->
                 LibraryCardRow(
-                    platformId   = card.platformId,
-                    displayName  = card.displayName,
-                    enabled      = card.enabled,
-                    pinned       = card.pinned,
-                    treeUri      = card.treeUri,
+                    platformId = card.platformId,
+                    displayName = card.displayName,
+                    enabled = card.enabled,
+                    pinned = card.pinned,
+                    treeUri = card.treeUri,
                     romDirectory = card.romDirectory,
                     emulatorName = card.emulatorId?.let { emulatorNames[it] },
-                    extensions   = card.supportedExtensions,
-                    gameCount    = counts[card.platformId] ?: card.gameCount,
+                    extensions = card.supportedExtensions,
+                    gameCount = counts[card.platformId] ?: card.gameCount,
                 )
             },
             androidApps = games.filter { it.platformId == ANDROID_PLATFORM_ID }
@@ -242,13 +243,51 @@ class LibraryManagerViewModel @Inject constructor(
 
     // ── Navigation ──────────────────────────────────────────────────────────────
 
+    /** Opens the Windows Games landing screen; its first row is the Windows Memory Card. */
+    fun openWindowsGamesRoot() {
+        _scratch.update {
+            it.copy(
+                step = LibraryStep.CARD_DETAIL,
+                detailPlatformId = WINDOWS_PLATFORM_ID,
+                returnFocusKey = null,
+                windowsGamesOpenedFromXmb = true,
+            )
+        }
+    }
+
     // Returns true if the back press was consumed internally (sub-screen → list).
     fun onBack(): Boolean {
-        val step = _scratch.value.step
+        val current = _scratch.value
+        val step = current.step
         if (step == LibraryStep.LIST) return false
-        // Import PC Games opened from the Windows card detail returns there, not to the list.
-        if (step == LibraryStep.IMPORT_PC && _scratch.value.detailPlatformId != null) {
-            _scratch.update { it.copy(step = LibraryStep.CARD_DETAIL) }
+        // Windows Games is a standalone settings screen. Its Import screen must return to the
+        // Windows Memory Card detail, not the Library root; the following Back then returns to
+        // the Settings ▸ Library flyout with Windows Games selected.
+        if (step == LibraryStep.IMPORT_PC) {
+           _scratch.update {
+                it.copy(
+                    step = LibraryStep.CARD_DETAIL,
+                    detailPlatformId = WINDOWS_PLATFORM_ID,
+                    returnFocusKey = null,
+                )
+            }
+            return true
+        }
+        if (
+            step == LibraryStep.CARD_DETAIL &&
+                current.detailPlatformId == WINDOWS_PLATFORM_ID &&
+                current.windowsGamesOpenedFromXmb
+        ) {
+            return false
+        }
+        if (step == LibraryStep.CARD_DETAIL && current.detailPlatformId == WINDOWS_PLATFORM_ID) {
+            _scratch.update {
+                it.copy(
+                    step = LibraryStep.LIST,
+                    detailPlatformId = null,
+                    returnFocusKey = WINDOWS_PLATFORM_ID,
+                )
+            }
             return true
         }
         resetToList()
@@ -262,19 +301,20 @@ class LibraryManagerViewModel @Inject constructor(
         // forgets to carry over (romRoots was the live instance of that bug).
         _scratch.update {
             it.copy(
-                step                   = LibraryStep.LIST,
-                platformOptions        = emptyList(),
-                emulatorOptions        = emptyList(),
-                pendingPlatformId      = null,
-                pendingPlatformName    = null,
-                pendingDirectory       = null,
-                pendingEmulatorId      = null,
-                detailPlatformId       = null,
-                androidApps            = emptyList(),
-                pcLaunchers            = emptyList(),
-                pcGames                = emptyList(),
+                step = LibraryStep.LIST,
+                platformOptions = emptyList(),
+                emulatorOptions = emptyList(),
+                pendingPlatformId = null,
+                pendingPlatformName = null,
+                pendingDirectory = null,
+                pendingEmulatorId = null,
+                detailPlatformId = null,
+                androidApps = emptyList(),
+                pcLaunchers = emptyList(),
+                pcGames = emptyList(),
                 renameTargetPlatformId = null,
                 awaitingRomRootSetup   = false,
+                windowsGamesOpenedFromXmb = false,
             )
         }
     }
@@ -294,6 +334,7 @@ class LibraryManagerViewModel @Inject constructor(
                 return@launch
             }
             val options = memoryCardRepository.unconfiguredPlatforms()
+                .filter { it.id != ANDROID_PLATFORM_ID }
                 .map { PlatformOption(it.id, it.name, it.shortName) }
             if (options.isEmpty()) {
                 _scratch.update { it.copy(message = "Every supported platform already has a Memory Card.") }
@@ -301,13 +342,13 @@ class LibraryManagerViewModel @Inject constructor(
             }
             _scratch.update {
                 it.copy(
-                    step               = LibraryStep.PICK_PLATFORM,
-                    platformOptions    = options,
-                    pendingPlatformId  = null,
+                    step = LibraryStep.PICK_PLATFORM,
+                    platformOptions = options,
+                    pendingPlatformId = null,
                     pendingPlatformName = null,
-                    pendingDirectory   = null,
-                    pendingEmulatorId  = null,
-                    returnFocusKey     = ADD_CONSOLE_FOCUS_KEY,
+                    pendingDirectory = null,
+                    pendingEmulatorId = null,
+                    returnFocusKey = ADD_CONSOLE_FOCUS_KEY,
                 )
             }
         }
@@ -320,10 +361,10 @@ class LibraryManagerViewModel @Inject constructor(
         if (option.id == ANDROID_PLATFORM_ID) {
             viewModelScope.launch {
                 memoryCardRepository.addCard(
-                    platformId   = option.id,
-                    displayName  = defaultDisplayName(option.name),
+                    platformId = option.id,
+                    displayName = defaultDisplayName(option.name),
                     romDirectory = null,
-                    emulatorId   = null,
+                    emulatorId = null,
                 )
                 resetToList()
                 _scratch.update {
@@ -362,11 +403,11 @@ class LibraryManagerViewModel @Inject constructor(
             if (option.id == WINDOWS_PLATFORM_ID) {
                 _scratch.update {
                     it.copy(
-                        pendingPlatformId   = option.id,
+                        pendingPlatformId = option.id,
                         pendingPlatformName = option.name,
-                        pendingDirectory    = directory,
-                        pendingEmulatorId   = null,
-                        step                = LibraryStep.SCAN_PROMPT,
+                        pendingDirectory = directory,
+                        pendingEmulatorId = null,
+                        step = LibraryStep.SCAN_PROMPT,
                     )
                 }
                 return@launch
@@ -374,11 +415,11 @@ class LibraryManagerViewModel @Inject constructor(
             val options = buildEmulatorOptions(option.id)
             _scratch.update {
                 it.copy(
-                    pendingPlatformId   = option.id,
+                    pendingPlatformId = option.id,
                     pendingPlatformName = option.name,
-                    pendingDirectory    = directory,
-                    emulatorOptions     = options,
-                    step                = LibraryStep.PICK_EMULATOR,
+                    pendingDirectory = directory,
+                    emulatorOptions = options,
+                    step = LibraryStep.PICK_EMULATOR,
                 )
             }
         }
@@ -394,10 +435,10 @@ class LibraryManagerViewModel @Inject constructor(
         viewModelScope.launch {
             val displayName = defaultDisplayName(s.pendingPlatformName ?: platformId)
             memoryCardRepository.addCard(
-                platformId   = platformId,
-                displayName  = displayName,
+                platformId = platformId,
+                displayName = displayName,
                 romDirectory = s.pendingDirectory,
-                emulatorId   = s.pendingEmulatorId,
+                emulatorId = s.pendingEmulatorId,
             )
             // No per-card SAF grant: root-managed consoles scan and launch through the ROM
             // root's recursive grant (ScanSourceResolver, inside LibraryScanner, maps the card
@@ -417,7 +458,8 @@ class LibraryManagerViewModel @Inject constructor(
     private fun defaultDisplayName(platformName: String): String = "$platformName Memory Card"
 
     private suspend fun buildEmulatorOptions(platformId: String?): List<EmulatorOption> {
-        val installed = platformId?.let { emulatorProfileRepository.getProfilesForPlatform(it) } ?: emptyList()
+        val installed =
+            platformId?.let { emulatorProfileRepository.getProfilesForPlatform(it) } ?: emptyList()
         return buildList {
             installed.forEach { add(EmulatorOption(it.id, it.name)) }
             add(EmulatorOption(null, "Decide later"))
@@ -428,7 +470,11 @@ class LibraryManagerViewModel @Inject constructor(
 
     fun openCardDetail(platformId: String) {
         _scratch.update {
-            it.copy(step = LibraryStep.CARD_DETAIL, detailPlatformId = platformId, returnFocusKey = platformId)
+            it.copy(
+                step = LibraryStep.CARD_DETAIL,
+                detailPlatformId = platformId,
+                returnFocusKey = platformId
+            )
         }
         // Opening the Windows card self-heals its setup: assigns <ROM Root>/windows (creating it
         // and the import/ drop-folder when the grant permits) if no directory is set yet.
@@ -456,7 +502,9 @@ class LibraryManagerViewModel @Inject constructor(
         }
     }
 
-    fun beginRename(platformId: String) = _scratch.update { it.copy(renameTargetPlatformId = platformId) }
+    fun beginRename(platformId: String) =
+        _scratch.update { it.copy(renameTargetPlatformId = platformId) }
+
     fun cancelRename() = _scratch.update { it.copy(renameTargetPlatformId = null) }
 
     fun confirmRename(newName: String) {
@@ -539,7 +587,9 @@ class LibraryManagerViewModel @Inject constructor(
     fun scanConsole(platformId: String, removeMissing: Boolean = false) {
         if (platformId in _scratch.value.scanningPlatformIds) return
         // PS Vita has no ROM folder: it scans Vita3K's granted ux0/app installed titles instead.
-        if (platformId == PSVITA_PLATFORM_ID) { scanVitaGames(); return }
+        if (platformId == PSVITA_PLATFORM_ID) {
+            scanVitaGames(); return
+        }
         viewModelScope.launch {
             _scratch.update { it.copy(scanningPlatformIds = it.scanningPlatformIds + platformId) }
             val outcome = libraryScanner.scanPlatform(platformId, removeMissing)
@@ -551,7 +601,7 @@ class LibraryManagerViewModel @Inject constructor(
             }
             Timber.i(
                 "Library Manager scan complete for $platformId: " +
-                    "${outcome.added} new, ${outcome.markedMissing} marked missing (status=${outcome.status})"
+                        "${outcome.added} new, ${outcome.markedMissing} marked missing (status=${outcome.status})"
             )
         }
     }
@@ -573,7 +623,11 @@ class LibraryManagerViewModel @Inject constructor(
         viewModelScope.launch {
             val persisted = SafGrants.persistedReadUris(context.contentResolver)
             val rows = romRootRepository.getAll().map { uri ->
-                RootFolderRow(uri, rootDisplayName(uri), SafGrants.linkStatus(uri, persisted) == FolderLinkStatus.LINKED)
+                RootFolderRow(
+                    uri,
+                    rootDisplayName(uri),
+                    SafGrants.linkStatus(uri, persisted) == FolderLinkStatus.LINKED
+                )
             }
             _scratch.update { it.copy(romRoots = rows) }
         }
@@ -584,8 +638,12 @@ class LibraryManagerViewModel @Inject constructor(
             // Read+write: the windows library auto-creates <root>/windows and its import/
             // drop-folder; older read-only roots degrade to find-only (WindowsLibrarySetup).
             romRootRepository.persist(uri, writable = true)
-            // The roots flow collector picks up the change and refreshes the rows.
+            // The roots flow collector picks up the change and refreshes the rows. Auto-detect
+            // immediately discovers supported ES-DE folders, creates cards, and scans them; there
+            // is no separate manual auto-detect action because a newly-added root is otherwise
+            // not useful until this pass runs.
             romRootRepository.add(uri.toString())
+            scanRomRoot()
         }
     }
 
@@ -610,6 +668,7 @@ class LibraryManagerViewModel @Inject constructor(
             romRootRepository.persist(uri)
             romRootRepository.replace(old, uri.toString())
             refreshRomRoots()
+            scanRomRoot()
         }
     }
 
@@ -630,17 +689,17 @@ class LibraryManagerViewModel @Inject constructor(
             // package names, so a package match alone would flag the real apps as launchers.
             val installedPkg = PcLauncherCatalog.verifiedInstalledPackage(def, pm)
             PcLauncherRow(
-                type        = def.type,
-                name        = def.displayName,
-                installed   = installedPkg != null,
+                type = def.type,
+                name = def.displayName,
+                installed = installedPkg != null,
                 packageName = installedPkg,
-                canAddById  = PcLauncherAdapters.forType(def.type) != null,
+                canAddById = PcLauncherAdapters.forType(def.type) != null,
             )
         }
         _scratch.update {
             it.copy(
-                step           = LibraryStep.IMPORT_PC,
-                pcLaunchers    = launchers,
+                step = LibraryStep.IMPORT_PC,
+                pcLaunchers = launchers,
                 isHomeLauncher = launcherShortcutRepository.isDefaultLauncher(),
                 returnFocusKey = IMPORT_PC_FOCUS_KEY,
             )
@@ -658,7 +717,8 @@ class LibraryManagerViewModel @Inject constructor(
     /** Builds and starts a launcher's game intent immediately, to verify the id before saving. */
     fun testLaunchPcGame(row: PcLauncherRow, id: String, source: String?) {
         val pkg = row.packageName ?: return
-        val intent = PcLauncherAdapters.forType(row.type, context.packageManager)?.buildLaunchIntent(pkg, id, source)
+        val intent = PcLauncherAdapters.forType(row.type, context.packageManager)
+            ?.buildLaunchIntent(pkg, id, source)
         if (intent == null) {
             _scratch.update { it.copy(message = INVALID_GAME_ID_MESSAGE) }
             return
@@ -683,7 +743,8 @@ class LibraryManagerViewModel @Inject constructor(
             _scratch.update { it.copy(message = "Enter the game's name — it's shown next to the ID in ${row.name}.") }
             return
         }
-        val intent = PcLauncherAdapters.forType(row.type, context.packageManager)?.buildLaunchIntent(pkg, id, source)
+        val intent = PcLauncherAdapters.forType(row.type, context.packageManager)
+            ?.buildLaunchIntent(pkg, id, source)
         if (intent == null) {
             _scratch.update { it.copy(message = INVALID_GAME_ID_MESSAGE) }
             return
@@ -696,11 +757,11 @@ class LibraryManagerViewModel @Inject constructor(
                 ) {
                     gameRepository.upsert(
                         Game(
-                            title           = displayName,
-                            platformId      = WINDOWS_PLATFORM_ID,
-                            packageName     = pkg,
-                            isManualEntry   = true,
-                            contentType     = GameContentType.GAME,
+                            title = displayName,
+                            platformId = WINDOWS_PLATFORM_ID,
+                            packageName = pkg,
+                            isManualEntry = true,
+                            contentType = GameContentType.GAME,
                             launchIntentUri = intentUri,
                         )
                     )
@@ -819,7 +880,10 @@ class LibraryManagerViewModel @Inject constructor(
                 runCatching {
                     val game = gameRepository.getById(row.gameId) ?: error("Game not found")
                     gameRepository.upsert(
-                        game.copy(platformId = WINDOWS_PLATFORM_ID, contentType = GameContentType.GAME)
+                        game.copy(
+                            platformId = WINDOWS_PLATFORM_ID,
+                            contentType = GameContentType.GAME
+                        )
                     )
                     added++
                 }.onFailure { Timber.e(it, "PC game import failed for ${row.gameId}") }
@@ -857,8 +921,8 @@ class LibraryManagerViewModel @Inject constructor(
             _scratch.update {
                 it.copy(
                     message = "ROM Root ready: ${result.created} folder(s) created" +
-                        (if (result.existing > 0) ", ${result.existing} already there" else "") +
-                        ". Copy your games into the matching folders, then Auto-Detect.",
+                            (if (result.existing > 0) ", ${result.existing} already there" else "") +
+                            ". Copy your games into the matching folders; the root will be scanned automatically when you add or replace it.",
                 )
             }
         }
@@ -879,7 +943,7 @@ class LibraryManagerViewModel @Inject constructor(
                 return@launch
             }
 
-            val catalog  = memoryCardRepository.availablePlatformCatalog().associateBy { it.id }
+            val catalog = memoryCardRepository.availablePlatformCatalog().associateBy { it.id }
             val haveCard = memoryCardRepository.getAll().map { it.platformId }.toMutableSet()
 
             var scannedFolders = 0
@@ -895,7 +959,7 @@ class LibraryManagerViewModel @Inject constructor(
                 for (name in romScanner.listSubfolderNames(rootUri)) {
                     scannedFolders++
                     val platformId = folderHintResolver.detectFromFolderName(name) ?: continue
-                    val platform   = catalog[platformId] ?: continue
+                    val platform = catalog[platformId] ?: continue
                     val childDocId = RomRootRepository.childDocIdOf(rootUri, name) ?: continue
 
                     val exts = memoryCardRepository.getById(platformId)?.supportedExtensions
@@ -913,17 +977,24 @@ class LibraryManagerViewModel @Inject constructor(
                     }
 
                     val found = firstComplete(
-                        romScanner.scanTree(rootUri, exts, platformId, true, baseline.romPaths, startDocId = childDocId)
+                        romScanner.scanTree(
+                            rootUri,
+                            exts,
+                            platformId,
+                            true,
+                            baseline.romPaths,
+                            startDocId = childDocId
+                        )
                     )?.newGames.orEmpty()
 
                     if (found.isEmpty()) continue   // empty (or fully-known) folder → no card, no change
 
                     if (platformId !in haveCard) {
                         memoryCardRepository.addCard(
-                            platformId   = platformId,
-                            displayName  = "${platform.name} Memory Card",
+                            platformId = platformId,
+                            displayName = "${platform.name} Memory Card",
                             romDirectory = rootRaw?.let { "${it.trimEnd('/')}/$name" },
-                            emulatorId   = null,
+                            emulatorId = null,
                         )
                         haveCard.add(platformId)
                         newCards++

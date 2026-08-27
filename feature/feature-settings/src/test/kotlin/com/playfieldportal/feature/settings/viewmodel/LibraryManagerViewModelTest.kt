@@ -100,6 +100,27 @@ class LibraryManagerViewModelTest {
     private fun TestScope.collectState() = launch { vm.uiState.collect {} }
 
     @Test
+    fun `Windows Games back unwinds import to card detail then to list`() = runTest(dispatcher) {
+        val job = collectState()
+
+        vm.openImportPcGames()
+        advanceUntilIdle()
+        assertEquals(LibraryStep.IMPORT_PC, vm.uiState.value.step)
+        assertTrue(vm.uiState.value.returnFocusKey != null)
+        // The standalone route is expected to unwind directly to its owning card.
+        vm.openCardDetail("windows")
+        vm.openImportPcGames()
+        assertTrue(vm.onBack())
+        assertEquals(LibraryStep.CARD_DETAIL, vm.uiState.value.step)
+        assertEquals("windows", vm.uiState.value.detailPlatformId)
+        assertTrue(vm.onBack())
+        assertEquals(LibraryStep.LIST, vm.uiState.value.step)
+        assertEquals(null, vm.uiState.value.returnFocusKey)
+
+        job.cancel()
+    }
+
+    @Test
     fun `scanConsole delegates to LibraryScanner and clears the spinner`() = runTest(dispatcher) {
         coEvery { libraryScanner.scanPlatform("psx", false) } returns
             PlatformScanOutcome("psx", "PlayStation Memory Card", ScanStatus.COMPLETED, added = 3)
