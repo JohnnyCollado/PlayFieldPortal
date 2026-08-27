@@ -51,6 +51,8 @@ interface GameRepository {
     suspend fun updateLogoArt(id: Long, uri: String?)
     suspend fun updateIconArt(id: Long, uri: String?)
     suspend fun setPreferredEmulator(id: Long, profileIdOrPackage: String?)
+    /** Selects the disc used when the logical multi-disc game is launched. */
+    suspend fun setPreferredDisc(id: Long, discId: Long)
     suspend fun recordPlaySession(session: PlaySession)
     suspend fun getMissingRoms(): List<Game>
     suspend fun updateScrapedTitle(id: Long, scrapedTitle: String?)

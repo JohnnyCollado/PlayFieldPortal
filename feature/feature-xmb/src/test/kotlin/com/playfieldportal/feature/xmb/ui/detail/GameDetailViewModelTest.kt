@@ -187,7 +187,7 @@ class GameDetailViewModelTest {
 
         viewModel.uiState.test {
             val state = awaitItem()
-            assertEquals(listOf(1L, 2L), state.discMembers.map { it.id })
+            assertEquals(listOf(2L, 1L), state.discMembers.map { it.id })
             assertEquals(1L, state.selectedDiscId)
             assertEquals(1L, state.selectedDisc?.id)
             cancelAndIgnoreRemainingEvents()
@@ -195,18 +195,20 @@ class GameDetailViewModelTest {
     }
 
     @Test
-    fun `loadGame with a requested disc selects that member instead of the primary`() = runTest {
+    fun `loadGame orders discs numerically while selecting requested disc`() = runTest {
         val setKey = "psx\u0001/roms/psx\u0001Final Fantasy VII"
         val primary = fakeGame.copy(id = 1L, discSetKey = setKey, isDiscPrimary = true, discNumber = 1)
         val disc2 = fakeGame.copy(id = 2L, discSetKey = setKey, discNumber = 2, isDiscPrimary = false)
         coEvery { gameRepository.getById(1L) } returns primary
-        coEvery { gameRepository.getDiscSetMembers(setKey) } returns listOf(primary, disc2)
+        val disc10 = fakeGame.copy(id = 10L, discSetKey = setKey, discNumber = 10, isDiscPrimary = false)
+        coEvery { gameRepository.getDiscSetMembers(setKey) } returns listOf(disc10, disc2, primary)
 
         viewModel.loadGame(1L, requestedDiscId = 2L)
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.uiState.test {
             val state = awaitItem()
+            assertEquals(listOf(1L, 2L, 10L), state.discMembers.map { it.id })
             assertEquals(2L, state.selectedDiscId)
             assertEquals(2L, state.selectedDisc?.id)
             cancelAndIgnoreRemainingEvents()
@@ -255,6 +257,23 @@ class GameDetailViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         verify { intentResolver.resolve(disc2, match { it.id == "duckstation" }) }
+    }
+
+    @Test
+    fun `selecting a disc persists the preferred disc`() = runTest {
+        val setKey = "psx\u0001/roms/psx\u0001Final Fantasy VII"
+        val primary = fakeGame.copy(id = 1L, discSetKey = setKey, discNumber = 1, isDiscPrimary = true)
+        val disc2 = fakeGame.copy(id = 2L, discSetKey = setKey, discNumber = 2, isDiscPrimary = false)
+        coEvery { gameRepository.getById(1L) } returns primary
+        coEvery { gameRepository.getDiscSetMembers(setKey) } returns listOf(primary, disc2)
+
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.selectDisc(2L)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify { gameRepository.setPreferredDisc(1L, 2L) }
+        assertEquals(2L, viewModel.uiState.value.selectedDiscId)
     }
 
     @Test

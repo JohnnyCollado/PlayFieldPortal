@@ -577,6 +577,8 @@ private fun DiscPicker(
             itemsIndexed(members) { index, member ->
                 val isFocused = focusedIndex == index
                 val isSelected = selectedId == member.id
+                // The list is numeric; selection/preference is communicated solely by the
+                // highlighted styling below.
                 val label = member.discNumber?.let { "Disc $it" } ?: "Playlist"
                 Column(
                     modifier = Modifier
@@ -587,6 +589,7 @@ private fun DiscPicker(
                             width = if (isFocused) 2.dp else 1.dp,
                             color = when {
                                 isFocused -> menuCursorEdge()
+                                // Preferred disc is indicated by highlight styling, not ordering.
                                 isSelected -> menuCursorEdge().copy(alpha = 0.55f)
                                 else -> Color.White.copy(alpha = 0.14f)
                             },

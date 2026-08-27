@@ -237,9 +237,17 @@ class GameDetailViewModel @Inject constructor(
                 )
             }
             val game     = gameRepository.getById(id)
+            // Always keep the detail picker in numeric disc order. The primary flag only
+            // determines the highlighted/default selection; it must never move that disc ahead
+            // of the numbered rows.
             val discMembers = game?.discSetKey
                 ?.let { gameRepository.getDiscSetMembers(it) }
                 ?.takeIf { it.isNotEmpty() }
+                ?.sortedWith(
+                    compareBy<Game> { it.discNumber == null }
+                        .thenBy { it.discNumber ?: Int.MAX_VALUE }
+                        .thenBy { it.id },
+                )
                 ?: listOfNotNull(game)
             val selectedDisc = discMembers.firstOrNull { it.id == requestedDiscId }
                 ?: discMembers.firstOrNull { it.isDiscPrimary }
@@ -291,8 +299,18 @@ class GameDetailViewModel @Inject constructor(
     // ── Disc picker ───────────────────────────────────────────────────────
 
     fun selectDisc(id: Long) {
-        if (_uiState.value.discMembers.any { it.id == id }) {
+        val state = _uiState.value
+        if (state.discMembers.any { it.id == id }) {
             _uiState.update { it.copy(selectedDiscId = id, actionMessage = null, launchError = null) }
+            // Selecting a disc in detail is the same preference-changing action as selecting one
+            // from the XMB context menu. Persist it immediately so the highlight and subsequent
+            // launches remain consistent after leaving and reopening this screen.
+            val gameId = state.game?.id
+            if (gameId != null && state.discMembers.size > 1) {
+                viewModelScope.launch {
+                    gameRepository.setPreferredDisc(gameId, id)
+                }
+            }
         }
     }
 

@@ -851,6 +851,7 @@ class XMBViewModel @Inject constructor(
     private val musicScanner: com.playfieldportal.feature.library.scanner.MusicScanner,
     private val musicPlayer: com.playfieldportal.feature.xmb.music.MusicPlayerController,
     private val emulatorProfileRepository: com.playfieldportal.feature.launcher.EmulatorProfileRepository,
+    private val intentResolver: com.playfieldportal.feature.launcher.EmulatorIntentResolver,
     private val videoRepository: com.playfieldportal.core.domain.repository.VideoRepository,
     private val photoRepository: com.playfieldportal.core.domain.repository.PhotoRepository,
     private val photoScanner: com.playfieldportal.feature.library.scanner.PhotoScanner,
@@ -4752,18 +4753,12 @@ class XMBViewModel @Inject constructor(
                     gameRepository.setIconDisplayMode(gid, IconDisplayMode.fromName(choice)?.name)
                 }
             } else if (itemId.startsWith("disc_pick_")) {
-                // Disc chosen from the "Choose Disc" submenu — boot that disc now, exactly like a
-                // direct-launch confirm would (the detail page opens underneath, disc pre-selected).
+                // Disc chosen from the "Choose Disc" submenu — only remember the preferred disc.
+                // Launching remains an explicit confirm action from the XMB entity.
                 val discId = itemId.removePrefix("disc_pick_").toLongOrNull()
                 if (discId != null) {
-                    menuSound.play(MenuSound.LAUNCH)
-                    _uiState.update {
-                        it.copy(
-                            activeGameId       = menu.gameId,
-                            activeGameDiscId   = discId,
-                            activeGameAutoLaunch = true,
-                        )
-                    }
+                    menuSound.play(MenuSound.SELECT)
+                    appAction { gameRepository.setPreferredDisc(menu.gameId, discId) }
                 }
             } else when (itemId) {
                 // Always opens the Game Detail screen (no auto-launch) — the edit surface for
@@ -4972,13 +4967,16 @@ class XMBViewModel @Inject constructor(
             val key = game.discSetKey ?: return@launch
             val members = gameRepository.getDiscSetMembers(key)
             if (members.size <= 1) return@launch
-            val items = members.map { member ->
-                XMBContextMenuItem(
-                    id      = "disc_pick_${member.id}",
-                    label   = member.discNumber?.let { "Disc $it" } ?: "Playlist",
-                    checked = member.isDiscPrimary,
-                )
-            }
+            val preferredDiscId = members.firstOrNull { it.isDiscPrimary }?.id
+            val items = members
+                .sortedWith(compareBy<Game> { it.discNumber == null }.thenBy { it.discNumber ?: Int.MAX_VALUE }.thenBy { it.id })
+                .map { member ->
+                    XMBContextMenuItem(
+                        id      = "disc_pick_${member.id}",
+                        label   = member.discNumber?.let { "Disc $it" } ?: "Playlist",
+                        checked = member.id == preferredDiscId,
+                    )
+                }
             _uiState.update { it.copy(activeContextMenu = XMBContextMenu(
                 title  = "Choose Disc",
                 items  = items,
@@ -6374,12 +6372,16 @@ class XMBViewModel @Inject constructor(
         }
 
         // Real games — including package/shortcut-backed gaming apps (Android/Windows cards) —
-        // open the Game Detail page; its Play button routes to the right launch handle. With
-        // direct launch on, the page fires that Play action itself the moment the game loads,
-        // so confirm goes straight into the game (and returning lands on the detail page).
+        // Open the Game Detail page only when direct launch is disabled. Direct launch hands off
+        // from the XMB itself, so returning from the emulator leaves the cursor on this entity.
         if (item?.gameId != null && item.isRealGame) {
-            _uiState.update {
-                it.copy(activeGameId = item.gameId, activeGameAutoLaunch = it.directLaunch)
+            if (_uiState.value.directLaunch) {
+                // Direct launch is intentionally a true XMB hand-off: do not compose Game Detail
+                // at all. This keeps the transition seamless and leaves the cursor on the same
+                // entity when PFP resumes after the emulator closes.
+                launchGameDirectly(item.gameId)
+            } else {
+                _uiState.update { it.copy(activeGameId = item.gameId, activeGameAutoLaunch = false) }
             }
             return
         }
@@ -6564,6 +6566,70 @@ class XMBViewModel @Inject constructor(
 
     fun onPlayerStatusActionConsumed() {
         _uiState.update { it.copy(pendingPlayerStatusAction = null) }
+    }
+
+    private fun launchGameDirectly(gameId: Long, discId: Long? = null) {
+        // Keep the XMB selection untouched. The detail overlay is only an editing surface; direct
+        // launch should never navigate through it, so onResume naturally returns to this row.
+        _uiState.update { it.copy(activeGameId = null, activeGameAutoLaunch = false, activeGameDiscId = null) }
+        viewModelScope.launch {
+            val selected = gameRepository.getById(gameId) ?: run {
+                Timber.w("Direct launch requested for missing game id=$gameId")
+                return@launch
+                return@launch
+            }
+            val game = if (discId != null) gameRepository.getById(discId) ?: selected else selected
+            if (game.isMissing) {
+                Timber.i("Direct launch refused for missing game: ${game.title}")
+                return@launch
+                return@launch
+            }
+            launchResolvedGame(game)
+        }
+    }
+
+    private suspend fun launchResolvedGame(game: Game) {
+        val platform = platformDao.getById(game.platformId)
+        val shortcutId = game.shortcutId
+        val packageName = game.packageName
+        if (shortcutId != null && packageName != null) {
+            launcherShortcutRepository.launch(packageName, shortcutId)
+                .onFailure { e -> Timber.w(e, "Direct shortcut launch failed") }
+            return
+        }
+        if (game.launchIntentUri != null) {
+            runCatching {
+                val parsed = Intent.parseUri(game.launchIntentUri, Intent.URI_INTENT_SCHEME)
+                com.playfieldportal.core.common.security.ShortcutIntentSanitizer.sanitize(parsed, context.packageManager)
+                    ?: error("Captured shortcut is not safe to launch")
+            }.onSuccess { intent -> launchIntentFromXmb(intent, game.title) }
+                .onFailure { e -> Timber.w(e, "Direct stored-intent launch failed") }
+            return
+        }
+        if (game.romPath.isNullOrBlank() && !game.packageName.isNullOrBlank()) {
+            intentResolver.resolveNativeApp(game).onSuccess { launchIntentFromXmb(it, game.title) }
+                .onFailure { e ->            Timber.w(e, "Direct native-app launch failed") }
+            return
+        }
+        val profile = emulatorProfileRepository.getProfilesForPlatform(game.platformId)
+            .firstOrNull { it.isAvailable }
+        if (profile == null) {
+            Timber.w("No emulator available for direct launch: ${game.platformId}")
+            return
+        }
+        intentResolver.resolve(game, profile).onSuccess { launchIntentFromXmb(it, game.title) }
+            .onFailure { e -> Timber.w(e, "Direct emulator launch failed: ${profile.name}") }
+    }
+
+    private fun launchIntentFromXmb(intent: Intent, title: String) {
+        runCatching {
+            context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        }.onSuccess {
+            viewModelScope.launch { discordPresence.setCurrentGame(title) }
+        }.onFailure { e ->
+            Timber.w(e, "Direct launch failed for $title")
+            Timber.w(e, "Could not open $title directly")
+        }
     }
 
     fun onCloseGameDetail() {
