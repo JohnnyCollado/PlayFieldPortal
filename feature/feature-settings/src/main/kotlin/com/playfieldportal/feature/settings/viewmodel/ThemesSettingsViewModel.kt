@@ -11,6 +11,7 @@ import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.data.repository.PfpThemeStore
 import com.playfieldportal.core.data.repository.PtfThemeImporter
+import com.playfieldportal.core.domain.model.PFPTheme
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,8 +25,7 @@ import timber.log.Timber
 import javax.inject.Inject
 
 data class ThemesSettingsUiState(
-    // Name of the theme applied through PfpThemeStore ("Default" = stock look). The legacy
-    // ThemeEntity list is gone from this screen — My Themes IS the theme library now.
+    // Name of the theme applied through PfpThemeStore ("Default" = stock look).
     val activeThemeName: String = "Default",
     val isInstalling: Boolean = false,
     val installMessage: String? = null,
@@ -35,6 +35,8 @@ data class ThemesSettingsUiState(
     val iconColorArgb: Long? = null,
     // The user's saved .pfptheme library (imports + Quick Create).
     val savedThemes: List<PfpThemeStore.SavedTheme> = emptyList(),
+    // Installed .xmbtheme themes from the ThemeRepository (built-in + user-installed).
+    val installedThemes: List<PFPTheme> = emptyList(),
 )
 
 @HiltViewModel
@@ -85,6 +87,15 @@ class ThemesSettingsViewModel @Inject constructor(
         viewModelScope.launch {
             context.pfpDataStore.edit { prefs ->
                 if (argb != null) prefs[KEY_ICON_COLOR] = argb else prefs.remove(KEY_ICON_COLOR)
+            }
+        }
+    }
+
+    /** Sets a custom accent color override; null clears it and returns to the preset scheme. */
+    fun setAccentColor(argb: Long?) {
+        viewModelScope.launch {
+            context.pfpDataStore.edit { prefs ->
+                if (argb != null) prefs[KEY_ACCENT_OVERRIDE] = argb else prefs.remove(KEY_ACCENT_OVERRIDE)
             }
         }
     }

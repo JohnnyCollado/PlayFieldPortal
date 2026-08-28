@@ -182,6 +182,21 @@ data class ColorSchemePickerState(
     val selectedIndex: Int = 0,
 )
 
+data class ColorSchemeOption(
+    val scheme: XmbColorScheme?,
+    val label: String,
+    val sublabel: String,
+    val swatch: Long,
+    val isCustom: Boolean = false,
+)
+
+data class CustomColorPickerState(
+    val hue: Float,
+    val saturation: Float,
+    val brightness: Float,
+    val selectedChannel: Int = 0,
+)
+
 // ── Live "Adjust XMB Layout" editor ────────────────────────────────────────────
 // A full-screen editor rendered OVER the real XMB (settings closed): D-pad / shoulder buttons or
 // on-screen sliders drive the cross's scale + horizontal + vertical placement live. [draft] is the
@@ -194,12 +209,6 @@ data class XmbLayoutAdjustSession(
     val slidersVisible: Boolean = false,
 )
 
-data class ColorSchemeOption(
-    val scheme: XmbColorScheme,
-    val label: String,
-    val sublabel: String,
-    val swatch: Long, // ARGB preview color (the scheme's wave color)
-)
 
 // ── Installed-app picker ───────────────────────────────────────────────────────
 // A reusable multi-select picker over installed apps. Where the selection goes is
@@ -580,6 +589,7 @@ data class XMBUiState(
 
     // ── Color-scheme picker (Settings ▸ Themes ▸ Color Scheme) ─────────────
     val colorSchemePicker: ColorSchemePickerState? = null,
+    val customColorPicker: CustomColorPickerState? = null,
 
     // ── App rename dialog ─────────────────────────────────────────────────
     val renameAppTarget: String? = null,    // package name being renamed
@@ -675,6 +685,7 @@ data class XMBUiState(
             activeContextMenu != null ||
             activeDiscordLogin ||
             colorSchemePicker != null ||
+            customColorPicker != null ||
             xmbLayoutAdjust != null ||
             appPicker != null ||
             gamePickerCategoryId != null ||
@@ -4061,6 +4072,18 @@ class XMBViewModel @Inject constructor(
         }
 
         // ── Color-scheme picker captures ALL input when open (sits above Settings) ──
+        if (state.customColorPicker != null) {
+            when (action) {
+                GamepadAction.NAVIGATE_UP -> moveCustomColorChannel(-1)
+                GamepadAction.NAVIGATE_DOWN -> moveCustomColorChannel(1)
+                GamepadAction.NAVIGATE_LEFT -> adjustCustomColor(-0.04f)
+                GamepadAction.NAVIGATE_RIGHT -> adjustCustomColor(0.04f)
+                GamepadAction.SELECT -> confirmCustomColor()
+                GamepadAction.BACK, GamepadAction.LONG_PRESS -> cancelCustomColor()
+                else -> Unit
+            }
+            return
+        }
         if (state.colorSchemePicker != null) {
             when (action) {
                 GamepadAction.NAVIGATE_UP   -> moveColorSchemePicker(-1)
@@ -6962,8 +6985,16 @@ class XMBViewModel @Inject constructor(
                     swatch   = scheme.resolve(month).waveColor,
                 )
             }
-            val index = options.indexOfFirst { it.scheme == current }.coerceAtLeast(0)
-            _uiState.update { it.copy(colorSchemePicker = ColorSchemePickerState(options, index)) }
+            val custom = prefs[KEY_ACCENT_OVERRIDE]
+            val pickerOptions = options + ColorSchemeOption(
+                scheme = null,
+                label = "Custom",
+                sublabel = "Choose a custom accent color",
+                swatch = custom ?: 0xFF888888L,
+                isCustom = true,
+            )
+            val index = if (custom != null) pickerOptions.lastIndex else options.indexOfFirst { it.scheme == current }.coerceAtLeast(0)
+            _uiState.update { it.copy(colorSchemePicker = ColorSchemePickerState(pickerOptions, index)) }
         }
     }
 
@@ -6972,7 +7003,7 @@ class XMBViewModel @Inject constructor(
         val next = (picker.selectedIndex + delta).coerceIn(0, picker.options.lastIndex)
         if (next == picker.selectedIndex) { gamepadInputHandler.cancelRepeat(); return }
         _uiState.update { it.copy(colorSchemePicker = picker.copy(selectedIndex = next)) }
-        previewColorScheme(picker.options[next].scheme)
+        picker.options[next].scheme?.let(::previewColorScheme)
     }
 
     /** Touch handler — highlight (and live-preview) the tapped row. */
@@ -6980,7 +7011,7 @@ class XMBViewModel @Inject constructor(
         val picker = _uiState.value.colorSchemePicker ?: return
         if (index !in picker.options.indices || index == picker.selectedIndex) return
         _uiState.update { it.copy(colorSchemePicker = picker.copy(selectedIndex = index)) }
-        previewColorScheme(picker.options[index].scheme)
+        picker.options[index].scheme?.let(::previewColorScheme)
     }
 
     private fun previewColorScheme(scheme: XmbColorScheme) {
@@ -6996,7 +7027,12 @@ class XMBViewModel @Inject constructor(
 
     fun confirmColorSchemePicker() {
         val picker = _uiState.value.colorSchemePicker ?: return
-        val chosen = picker.options.getOrNull(picker.selectedIndex)?.scheme
+        val selected = picker.options.getOrNull(picker.selectedIndex)
+        val chosen = selected?.scheme
+        if (selected?.isCustom == true) {
+            openCustomColorPicker()
+            return
+        }
         viewModelScope.launch {
             if (chosen != null) {
                 context.pfpDataStore.edit {
@@ -7014,6 +7050,57 @@ class XMBViewModel @Inject constructor(
             accentOverrideOriginal = null
             _uiState.update { it.copy(colorSchemePicker = null) }
         }
+    }
+
+    private fun openCustomColorPicker() {
+        val argb = _uiState.value.themeColors.accentColor.toArgb().toLong() and 0xFFFFFFFFL
+        val hsv = FloatArray(3)
+        android.graphics.Color.colorToHSV((argb and 0xFFFFFFFFL).toInt(), hsv)
+        _uiState.update { state ->
+            return@update state.copy(customColorPicker = CustomColorPickerState(hsv[0], hsv[1], hsv[2]))
+        }
+    }
+
+    fun updateCustomColor(channel: Int, fraction: Float) {
+        _uiState.update { state ->
+            val picker = state.customColorPicker ?: return@update state
+            val clamped = fraction.coerceIn(0f, 1f)
+            return@update state.copy(customColorPicker = picker.copy(
+                hue = if (channel == 0) clamped * 360f else picker.hue,
+                saturation = if (channel == 1) clamped else picker.saturation,
+                brightness = if (channel == 2) clamped else picker.brightness,
+                selectedChannel = channel,
+            ))
+        }
+    }
+
+    fun moveCustomColorChannel(delta: Int) {
+        _uiState.update { state ->
+            val picker = state.customColorPicker ?: return@update state
+            state.copy(customColorPicker = picker.copy(selectedChannel = (picker.selectedChannel + delta + 3) % 3))
+        }
+    }
+
+    fun adjustCustomColor(delta: Float) {
+        val picker = _uiState.value.customColorPicker ?: return
+        val value = when (picker.selectedChannel) {
+            0 -> ((picker.hue / 360f) + delta).mod(1f)
+            1 -> picker.saturation + delta
+            else -> picker.brightness + delta
+        }
+        updateCustomColor(picker.selectedChannel, value)
+    }
+
+    fun confirmCustomColor() {
+        val picker = _uiState.value.customColorPicker ?: return
+        viewModelScope.launch {
+            context.pfpDataStore.edit { it[KEY_ACCENT_OVERRIDE] = android.graphics.Color.HSVToColor(floatArrayOf(picker.hue, picker.saturation, picker.brightness)).toLong() and 0xFFFFFFFFL }
+            _uiState.update { it.copy(customColorPicker = null, colorSchemePicker = null) }
+        }
+    }
+
+    fun cancelCustomColor() {
+        _uiState.update { it.copy(customColorPicker = null) }
     }
 
     fun cancelColorSchemePicker() {

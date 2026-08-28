@@ -207,6 +207,11 @@ fun XMBShellContainer(
         onColorSchemeHighlightedAt = viewModel::onColorSchemeHighlightedAt,
         onColorSchemeConfirm = viewModel::confirmColorSchemePicker,
         onColorSchemeCancel = viewModel::cancelColorSchemePicker,
+        onCustomColorUpdate = viewModel::updateCustomColor,
+        onCustomColorChannelMove = viewModel::moveCustomColorChannel,
+        onCustomColorAdjust = viewModel::adjustCustomColor,
+        onCustomColorConfirm = viewModel::confirmCustomColor,
+        onCustomColorCancel = viewModel::cancelCustomColor,
         onXmbLayoutScale = viewModel::setXmbLayoutScale,
         onXmbLayoutHorizontal = viewModel::setXmbLayoutHorizontal,
         onXmbLayoutVertical = viewModel::setXmbLayoutVertical,
@@ -322,6 +327,11 @@ fun XMBShell(
     onColorSchemeHighlightedAt: (Int) -> Unit = {},
     onColorSchemeConfirm: () -> Unit = {},
     onColorSchemeCancel: () -> Unit = {},
+    onCustomColorUpdate: (Int, Float) -> Unit = { _, _ -> },
+    onCustomColorChannelMove: (Int) -> Unit = {},
+    onCustomColorAdjust: (Float) -> Unit = {},
+    onCustomColorConfirm: () -> Unit = {},
+    onCustomColorCancel: () -> Unit = {},
     onXmbLayoutScale: (Float) -> Unit = {},
     onXmbLayoutHorizontal: (Float) -> Unit = {},
     onXmbLayoutVertical: (Float) -> Unit = {},
@@ -766,6 +776,16 @@ fun XMBShell(
                     onHighlightedAt = onColorSchemeHighlightedAt,
                     onConfirm = onColorSchemeConfirm,
                     onDismiss = onColorSchemeCancel,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+
+            uiState.customColorPicker?.let { picker ->
+                CustomColorPickerOverlay(
+                    state = picker,
+                    onChannelFraction = onCustomColorUpdate,
+                    onConfirm = onCustomColorConfirm,
+                    onCancel = onCustomColorCancel,
                     modifier = Modifier.fillMaxSize(),
                 )
             }

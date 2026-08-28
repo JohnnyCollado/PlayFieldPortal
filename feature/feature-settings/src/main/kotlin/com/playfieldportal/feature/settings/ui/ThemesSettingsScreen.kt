@@ -30,6 +30,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -116,7 +117,9 @@ private fun ThemesSettingsContent(
     var myThemesFocused by remember { mutableStateOf(false) }
     var cardIndex by remember { mutableStateOf(0) }
     var iconStripFocused by remember { mutableStateOf(false) }
+    val iconStripRequester = remember { FocusRequester() }
     var iconIndex by remember { mutableStateOf(0) }
+    // Icon color picker state
     var customPicker by remember { mutableStateOf(false) }
     var pickerHue by remember { mutableStateOf(0f) }
     var pickerSat by remember { mutableStateOf(0f) }
@@ -192,10 +195,14 @@ private fun ThemesSettingsContent(
                         cardIndex = (cardIndex + 1).coerceAtMost((state.savedThemes.size - 1).coerceAtLeast(0)); true
                     }
                     iconStripFocused && action == GamepadAction.NAVIGATE_LEFT -> {
-                        iconIndex = (iconIndex - 1).coerceAtLeast(0); true
+                        iconIndex = (iconIndex - 1).coerceAtLeast(0)
+                        runCatching { iconStripRequester.requestFocus() }
+                        true
                     }
                     iconStripFocused && action == GamepadAction.NAVIGATE_RIGHT -> {
-                        iconIndex = (iconIndex + 1).coerceAtMost(customIndex); true
+                        iconIndex = (iconIndex + 1).coerceAtMost(customIndex)
+                        runCatching { iconStripRequester.requestFocus() }
+                        true
                     }
                     action == GamepadAction.LONG_PRESS || action == GamepadAction.BUTTON_Y -> {
                         if (myThemesFocused) {
@@ -232,6 +239,7 @@ private fun ThemesSettingsContent(
 
                 SettingsGroup("Icon Color")
                 FocusableStrip(
+                    focusRequester = iconStripRequester,
                     onFocusChange = { focused ->
                         iconStripFocused = focused
                         if (focused) iconIndex = iconIndex.coerceIn(0, customIndex)
@@ -316,7 +324,7 @@ private fun ThemesSettingsContent(
             PspContextMenuOverlay(
                 title          = m.title,
                 rows           = m.options.map { PspMenuRow(it.label, it.destructive) },
-                selectedIndex  = menuIndex,
+                selectedIndex  = menuIndex.coerceIn(0, (m.options.size - 1).coerceAtLeast(0)),
                 onRowActivated = { index -> m.options.getOrNull(index)?.action?.invoke(); menu = null },
                 onDismiss      = { menu = null },
             )
@@ -352,6 +360,7 @@ private data class ThemeMenu(val title: String, val options: List<ThemeMenuOptio
 
 @Composable
 private fun FocusableStrip(
+    focusRequester: FocusRequester? = null,
     onFocusChange: (Boolean) -> Unit,
     onSelect: () -> Unit,
     content: @Composable (focused: Boolean) -> Unit,
@@ -359,17 +368,33 @@ private fun FocusableStrip(
     val focusTracker  = LocalSettingsFocusTracker.current
     val registerFirst = LocalSettingsRegisterFirstFocusable.current
     val rowPositions  = LocalSettingsRowPositions.current
+    val navigationOrder = LocalSettingsNavigationOrder.current
     val reportFocused = LocalSettingsReportFocused.current
     val reportRemoved = LocalSettingsReportRemoved.current
     var isFocused by remember { mutableStateOf(false) }
-    val fr = remember { FocusRequester() }
+    val fr = focusRequester ?: remember { FocusRequester() }
+    val navItem = ControllerNavItem(
+        key        = "strip-${System.identityHashCode(fr)}",
+        focusable  = true,
+        selectable = true,
+        enabled    = true,
+        onSelect   = onSelect,
+    )
 
     DisposableEffect(Unit) {
+        navigationOrder?.add(fr to navItem)
         registerFirst(fr)
         onDispose {
+            navigationOrder?.removeAll { it.first === fr }
             rowPositions?.remove(fr)
             reportRemoved(fr)
         }
+    }
+
+    SideEffect {
+        val list = navigationOrder ?: return@SideEffect
+        val index = list.indexOfFirst { it.first === fr }
+        if (index >= 0) list[index] = fr to navItem
     }
 
     Box(
@@ -428,7 +453,7 @@ private fun IconColorSwatchRow(
         }
         IconSwatch(
             label = "Custom",
-            fill = if (customActive) Color(selectedArgb!! and 0xFFFFFFFFL) else null,
+            fill = selectedArgb?.takeIf { customActive }?.let { Color(it and 0xFFFFFFFFL) },
             brush = if (customActive) null else rainbowBrush(),
             selected = customActive,
             focused = focusedIndex == IconColorChoices.size,
@@ -453,7 +478,13 @@ private fun IconSwatch(
             modifier = Modifier
                 .size(34.dp)
                 .clip(CircleShape)
-                .then(if (fill != null) Modifier.background(fill) else Modifier.background(brush!!))
+                .then(
+                    when {
+                        fill != null -> Modifier.background(fill)
+                        brush != null -> Modifier.background(brush)
+                        else -> Modifier.background(Color.White)
+                    }
+                )
                 .border(ringWidth, ringColor, CircleShape)
                 .clickable(onClick = onClick),
         )
@@ -593,9 +624,9 @@ fun ThemesSettingsScreenPreview() {
             onShareSavedTheme = {},
             onDeleteSavedTheme = {},
             onSetIconColor = {},
-            onClearAccentOverride = {},
-            onResetTheme = {},
-            onDismissMessage = {}
-        )
+    onClearAccentOverride = {},
+    onResetTheme = {},
+    onDismissMessage = {},
+)
     }
 }
