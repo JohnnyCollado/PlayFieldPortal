@@ -482,7 +482,7 @@ private fun IconSwatch(
                     when {
                         fill != null -> Modifier.background(fill)
                         brush != null -> Modifier.background(brush)
-                        else -> Modifier.background(Color.White)
+                        else -> Modifier.background(Color.Transparent)
                     }
                 )
                 .border(ringWidth, ringColor, CircleShape)
