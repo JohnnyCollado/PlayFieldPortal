@@ -1,20 +1,20 @@
 package com.playfieldportal.feature.settings.ui
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.playfieldportal.feature.settings.viewmodel.RootFolderRow
 
-/**
- * The shared "Root Access" settings group: managed ROOT folders (one persisted SAF grant each),
- * ROM-root style. Each root shows its live grant status — tap to re-link (replace/re-grant, the
- * picker opens at the saved folder) — plus a Remove row, an Add row, and optional auto-detect.
- * Used by Library (ROM roots) and the Music/Video/Photo settings.
- */
 @Composable
 fun RootAccessSection(
     groupTitle: String,
@@ -36,41 +36,69 @@ fun RootAccessSection(
             sublabel = "Add a folder below to start managing your library",
         )
     } else {
-        // One compact, controller-friendly row per root: the path row relinks on SELECT, and
-        // the Folder/Trash icons are controller-reachable inline actions (RIGHT onto the row,
-        // LEFT/RIGHT between them) so replace and remove both work from the D-pad.
         roots.forEach { root ->
-            SettingsRow(
+            DirectoryRow(
                 label = root.name,
                 sublabel = when {
-                    !root.linked -> "Access lost — choose the folder button to re-grant access"
+                    !root.linked -> "Access lost — use Edit to re-grant access"
                     root.consoles != null -> "Consoles: ${root.consoles}"
                     else -> "ROM root"
                 },
-                actions = listOf(
-                    SettingsRowAction(label = "Replace root folder", onClick = { onRelinkRoot(root) }) {
-                        Icon(Icons.Default.Create, contentDescription = "Replace root folder", tint = SettingsAccent)
-                    },
-                    SettingsRowAction(label = "Remove root folder", onClick = { onRemoveRoot(root) }) {
-                        Icon(Icons.Default.Delete, contentDescription = "Remove root folder", tint = Color(0xFFE55353))
-                    },
-                ),
-                onClick = { onRelinkRoot(root) },
+                onEdit = { onRelinkRoot(root) },
+                onRemove = { onRemoveRoot(root) },
             )
         }
     }
 
-    SettingsRow(
-        label    = addLabel,
-        sublabel = addSublabel,
-        onClick  = onAddRoot,
-    )
+    SettingsRow(label = addLabel, sublabel = addSublabel, onClick = onAddRoot)
 
     if (autoDetectLabel != null && onAutoDetect != null) {
-        SettingsRow(
-            label    = autoDetectLabel,
-            sublabel = autoDetectSublabel,
-            onClick  = onAutoDetect,
-        )
+        SettingsRow(label = autoDetectLabel, sublabel = autoDetectSublabel, onClick = onAutoDetect)
     }
+}
+
+/** A non-selectable directory row with exactly two controller-reachable inline actions. */
+@Composable
+fun DirectoryRow(
+    label: String,
+    sublabel: String? = null,
+    focusKey: String? = null,
+    onEdit: () -> Unit,
+    onRemove: () -> Unit,
+) {
+    SettingsRow(
+        label = label,
+        sublabel = sublabel,
+        focusKey = focusKey,
+        hideRowHighlightOnActionFocus = true,
+        onClick = null,
+        actions = listOf(
+            SettingsRowAction(
+                "Edit directory", onEdit,
+                actionFocusBackgroundColor = Color.Black.copy(alpha = 0.3f),
+            ) {
+                Icon(
+                    Icons.Default.Create,
+                    contentDescription = "Edit directory",
+                    tint = SettingsAccent,
+                    modifier = Modifier
+                        .background(Color.Black.copy(alpha = 0.1f), RoundedCornerShape(6.dp))
+                        .padding(4.dp)
+                )
+            },
+            SettingsRowAction(
+                "Remove directory", onRemove,
+                actionFocusBackgroundColor = Color.Black.copy(alpha = 0.3f),
+            ) {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = "Remove directory",
+                    tint = Color(0xFFE55353),
+                    modifier = Modifier
+                        .background(Color.Black.copy(alpha = 0.1f), RoundedCornerShape(6.dp))
+                        .padding(4.dp)
+                )
+            },
+        ),
+    )
 }

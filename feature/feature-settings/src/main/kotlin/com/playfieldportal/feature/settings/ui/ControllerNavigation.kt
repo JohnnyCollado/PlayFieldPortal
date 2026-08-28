@@ -70,7 +70,15 @@ class ControllerNavigationState {
         val baseKey = owner?.key ?: focusedKey
         val current = navigable.indexOfFirst { it.key == baseKey }
         val target = if (current < 0) 0 else (current + delta).coerceIn(0, navigable.lastIndex)
-        focusedKey = navigable[target].key
+        val targetItem = navigable[target]
+        
+        // When navigating to a row with trailing actions, automatically focus the first action
+        // instead of the row itself. This provides immediate button highlighting.
+        val firstAction = targetItem.trailingActions
+            .filter { it.focusable && it.enabled }
+            .firstOrNull()
+        
+        focusedKey = firstAction?.key ?: targetItem.key
         return focusedKey
     }
 

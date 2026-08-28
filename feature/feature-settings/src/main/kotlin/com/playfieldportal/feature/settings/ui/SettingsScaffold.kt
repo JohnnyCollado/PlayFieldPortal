@@ -46,6 +46,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -529,6 +530,8 @@ fun SettingsGroup(title: String) {
 class SettingsRowAction(
     val label: String,
     val onClick: () -> Unit,
+    // Background color drawn behind the icon when this action holds controller focus.
+    val actionFocusBackgroundColor: Color = Color.White.copy(alpha = 0.25f),
     val icon: @Composable () -> Unit,
 )
 
@@ -545,7 +548,12 @@ fun SettingsRow(
     // open a per-row context menu on the options button).
     onFocusChangedExternal: ((Boolean) -> Unit)? = null,
     onClick: (() -> Unit)? = null,
+    // When true the row-level cursor fill is suppressed while an inline action has focus,
+    // letting the action's own background be the sole highlight indicator.
+    hideRowHighlightOnActionFocus: Boolean = false,
 ) {
+    val actionFocusCount = remember { mutableIntStateOf(0) }
+    val anyActionFocused = actionFocusCount.intValue > 0
     val focusTracker  = LocalSettingsFocusTracker.current
     val focusRegistry = LocalSettingsFocusRegistry.current
     val registerFirst = LocalSettingsRegisterFirstFocusable.current
@@ -628,7 +636,9 @@ fun SettingsRow(
             // highlight as actions. A dimmer tint read as "not navigable" and broke the visual
             // rhythm, so the cursor now treats every row identically.
             .background(
-                if (isFocused) com.playfieldportal.core.ui.theme.menuCursorFill() else Color.Transparent
+                if (isFocused && !(hideRowHighlightOnActionFocus && anyActionFocused))
+                    com.playfieldportal.core.ui.theme.menuCursorFill()
+                else Color.Transparent
             )                    .focusable()
             .padding(horizontal = 48.dp, vertical = 14.dp),
         verticalAlignment     = Alignment.CenterVertically,
@@ -641,7 +651,7 @@ fun SettingsRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text      = label,
-                color     = if (isFocused) Color.White else SettingsText,
+                color     = if (isFocused && !(hideRowHighlightOnActionFocus && anyActionFocused)) Color.White else SettingsText,
                 fontSize  = 15.sp,
             )
             if (!sublabel.isNullOrBlank()) {
@@ -679,13 +689,16 @@ fun SettingsRow(
                                 .onFocusChanged { state ->
                                     actionFocused = state.isFocused
                                     if (state.isFocused) {
+                                        actionFocusCount.intValue++
                                         focusTracker(action.onClick)
                                         reportFocused(actionFr)
+                                    } else {
+                                        actionFocusCount.intValue--
                                     }
                                 }
                                 .focusable()
                                 .background(
-                                    if (actionFocused) Color.White.copy(alpha = 0.25f)
+                                    if (actionFocused) action.actionFocusBackgroundColor
                                     else Color.Transparent
                                 ),
                         ) {
