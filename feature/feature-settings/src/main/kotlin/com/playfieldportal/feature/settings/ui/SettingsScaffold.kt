@@ -3,6 +3,7 @@ package com.playfieldportal.feature.settings.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -696,13 +697,19 @@ fun SettingsRow(
                                         actionFocusCount.intValue--
                                     }
                                 }
-                                .focusable()
-                                .background(
-                                    if (actionFocused) action.actionFocusBackgroundColor
-                                    else Color.Transparent
-                                ),
+                                .focusable(),
                         ) {
-                            action.icon()
+                            Box(
+                                modifier = Modifier
+                                    .background(
+                                        if (actionFocused) action.actionFocusBackgroundColor
+                                        else Color.Transparent,
+                                        RoundedCornerShape(6.dp),
+                                    ),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                action.icon()
+                            }
                         }
                     }
                 }

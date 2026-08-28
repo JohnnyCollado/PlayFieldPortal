@@ -12,6 +12,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.unit.dp
 import com.playfieldportal.feature.settings.viewmodel.RootFolderRow
 
@@ -75,7 +76,7 @@ fun DirectoryRow(
         actions = listOf(
             SettingsRowAction(
                 "Edit directory", onEdit,
-                actionFocusBackgroundColor = Color.Black.copy(alpha = 0.3f),
+                actionFocusBackgroundColor = lerp(SettingsAccent, Color.Black, 0.50f),
             ) {
                 Icon(
                     Icons.Default.Create,
@@ -88,7 +89,7 @@ fun DirectoryRow(
             },
             SettingsRowAction(
                 "Remove directory", onRemove,
-                actionFocusBackgroundColor = Color.Black.copy(alpha = 0.3f),
+                actionFocusBackgroundColor = lerp(Color(0xFFE55353), Color.Black, 0.50f),
             ) {
                 Icon(
                     Icons.Default.Delete,

@@ -4294,7 +4294,8 @@ class XMBViewModel @Inject constructor(
             else             add(XMBContextMenuItem("pin",   "Pin To Top"))
             add(XMBContextMenuItem("library_manager",  "Open in Library Manager"))
             add(XMBContextMenuItem("hide",             "Hide From Games"))
-            add(XMBContextMenuItem("remove",           "Remove Memory Card", isDestructive = true))
+            // The Windows Memory Card is managed by the PC import system and cannot be removed.
+            if (platformId != "windows") add(XMBContextMenuItem("remove", "Remove Memory Card", isDestructive = true))
         }
 
         _uiState.update { it.copy(

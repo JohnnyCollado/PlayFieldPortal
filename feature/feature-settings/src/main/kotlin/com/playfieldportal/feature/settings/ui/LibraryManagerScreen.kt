@@ -573,13 +573,16 @@ private fun CardDetailContent(
             SettingsRow(label = "Move Up",   onClick = { onMoveCard(card.platformId, true) })
             SettingsRow(label = "Move Down", onClick = { onMoveCard(card.platformId, false) })
 
-            SettingsGroup("Danger Zone")
-            SettingsRow(
-                label    = "Remove Memory Card",
-                sublabel = "Removes this console and its games. ROM files are not deleted.",
-                trailing = { Text("Remove", color = SettingsAccent) },
-                onClick  = { showRemoveConfirm = true },
-            )
+            // The Windows Memory Card is managed by the PC import system and cannot be removed.
+            if (!isWindows) {
+                SettingsGroup("Danger Zone")
+                SettingsRow(
+                    label    = "Remove Memory Card",
+                    sublabel = "Removes this console and its games. ROM files are not deleted.",
+                    trailing = { Text("Remove", color = SettingsAccent) },
+                    onClick  = { showRemoveConfirm = true },
+                )
+            }
         }
     }
 
