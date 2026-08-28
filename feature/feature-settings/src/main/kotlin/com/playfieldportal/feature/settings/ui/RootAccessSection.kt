@@ -1,15 +1,10 @@
 package com.playfieldportal.feature.settings.ui
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.playfieldportal.feature.settings.viewmodel.RootFolderRow
@@ -41,8 +36,9 @@ fun RootAccessSection(
             sublabel = "Add a folder below to start managing your library",
         )
     } else {
-        // One compact, controller-friendly row per root: the path is the focusable picker row;
-        // folder replaces it, and the red trash button removes it without adding extra navigation rows.
+        // One compact, controller-friendly row per root: the path row relinks on SELECT, and
+        // the Folder/Trash icons are controller-reachable inline actions (RIGHT onto the row,
+        // LEFT/RIGHT between them) so replace and remove both work from the D-pad.
         roots.forEach { root ->
             SettingsRow(
                 label = root.name,
@@ -51,19 +47,14 @@ fun RootAccessSection(
                     root.consoles != null -> "Consoles: ${root.consoles}"
                     else -> "ROM root"
                 },
-                trailing = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(2.dp),
-                    ) {
-                        IconButton(onClick = { onRelinkRoot(root) }) {
-                            Icon(Icons.Default.Create, contentDescription = "Replace root folder", tint = SettingsAccent)
-                        }
-                        IconButton(onClick = { onRemoveRoot(root) }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Remove root folder", tint = Color(0xFFE55353))
-                        }
-                    }
-                },
+                actions = listOf(
+                    SettingsRowAction(label = "Replace root folder", onClick = { onRelinkRoot(root) }) {
+                        Icon(Icons.Default.Create, contentDescription = "Replace root folder", tint = SettingsAccent)
+                    },
+                    SettingsRowAction(label = "Remove root folder", onClick = { onRemoveRoot(root) }) {
+                        Icon(Icons.Default.Delete, contentDescription = "Remove root folder", tint = Color(0xFFE55353))
+                    },
+                ),
                 onClick = { onRelinkRoot(root) },
             )
         }

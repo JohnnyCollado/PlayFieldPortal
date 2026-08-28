@@ -19,8 +19,19 @@ android {
     buildFeatures {
         compose = true
     }
+    // Robolectric (Compose UI tests) needs the merged manifest + resources on the test classpath
+    testOptions { unitTests { isIncludeAndroidResources = true } }
     // (No hardcoded VERSION_NAME/VERSION_CODE here anymore — the About screen reads the real
     // installed version from PackageManager, so it can never go stale again.)
+}
+
+// Robolectric fetches its Android image over HTTPS. On Windows, HTTPS interception (Avast) means
+// the JVM's bundled cacerts can't validate the chain, so the test JVM is pointed at the OS trust
+// store, which does carry the interceptor's root. Same workaround as feature-launcher/core-common.
+tasks.withType<Test>().configureEach {
+    if (System.getProperty("os.name").startsWith("Windows", ignoreCase = true)) {
+        systemProperty("javax.net.ssl.trustStoreType", "Windows-ROOT")
+    }
 }
 
 dependencies {
@@ -59,6 +70,12 @@ dependencies {
 
     testImplementation(libs.bundles.test.unit)
     testImplementation(libs.hilt.android.testing)
+    // Compose UI tests run on the JVM via Robolectric (same pattern as core-data / feature-launcher)
+    testImplementation(libs.compose.ui.test.junit4)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
 
     debugImplementation(libs.compose.ui.tooling)
+    // Registers ComponentActivity in the debug manifest so createAndroidComposeRule works
+    debugImplementation(libs.compose.ui.test.manifest)
 }

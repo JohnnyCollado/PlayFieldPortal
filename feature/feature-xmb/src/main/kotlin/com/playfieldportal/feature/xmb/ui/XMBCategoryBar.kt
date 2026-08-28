@@ -41,8 +41,9 @@ import com.playfieldportal.core.domain.model.Category
 import com.playfieldportal.core.ui.icons.CategoryIconGlyph
 import com.playfieldportal.themekit.XmbLayoutSpec
 
-// Classic PSP blue theme: selected label crisp white with a dark glow; unselected labels recede
-// into a dimmer blue-white so they read against the saturated blue gradient.
+// Classic PSP blue theme: the active category's label is crisp white with a dark glow. Labels on
+// other categories are hidden entirely (alpha 0) until the user navigates to them — the bar stays
+// uncluttered and only the focused category announces itself.
 private val SelectedIcon = Color.White
 private val LabelInactive = Color(0xCCD8E6FF)
 private val SelectedLabelShadow = Shadow(
@@ -144,6 +145,13 @@ private fun XMBCategoryItem(
         animationSpec = spring(stiffness = Spring.StiffnessMedium),
         label = "xmbCategoryAlpha",
     )
+    // Only the active category shows its label; others stay hidden (alpha 0) until navigated to.
+    // The label keeps its slot so icons never shift when labels fade in/out.
+    val labelAlpha by animateFloatAsState(
+        targetValue = if (isSelected) 1f else 0f,
+        animationSpec = spring(stiffness = Spring.StiffnessMedium),
+        label = "xmbCategoryLabelAlpha",
+    )
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -185,7 +193,7 @@ private fun XMBCategoryItem(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 4.dp)
-                .alpha(if (isSelected) 1f else 0.82f),
+                .alpha(labelAlpha),
         )
     }
 }

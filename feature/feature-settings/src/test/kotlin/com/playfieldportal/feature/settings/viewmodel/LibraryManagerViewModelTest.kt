@@ -35,6 +35,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -111,11 +113,38 @@ class LibraryManagerViewModelTest {
         vm.openCardDetail("windows")
         vm.openImportPcGames()
         assertTrue(vm.onBack())
+        // uiState is stateIn(WhileSubscribed) — the sharing coroutine must run before reads.
+        advanceUntilIdle()
         assertEquals(LibraryStep.CARD_DETAIL, vm.uiState.value.step)
         assertEquals("windows", vm.uiState.value.detailPlatformId)
         assertTrue(vm.onBack())
+        advanceUntilIdle()
         assertEquals(LibraryStep.LIST, vm.uiState.value.step)
-        assertEquals(null, vm.uiState.value.returnFocusKey)
+        // Focus returns to the Windows row it was opened from.
+        assertEquals("windows", vm.uiState.value.returnFocusKey)
+
+        job.cancel()
+    }
+
+    @Test
+    fun `closing Windows Games opened from XMB resets the shared state`() = runTest(dispatcher) {
+        val job = collectState()
+
+        // Opening Windows Games from the XMB puts the activity-scoped ViewModel into the
+        // Windows card detail.
+        vm.openWindowsGamesRoot()
+        advanceUntilIdle()
+        assertEquals(LibraryStep.CARD_DETAIL, vm.uiState.value.step)
+        assertEquals("windows", vm.uiState.value.detailPlatformId)
+        assertTrue(vm.uiState.value.windowsGamesOpenedFromXmb)
+
+        // Backing out closes the screen — it must not leak the detail into the next open
+        // (Library Manager would otherwise pop up the Windows Memory Card detail again).
+        assertFalse(vm.onBack())
+        advanceUntilIdle()
+        assertEquals(LibraryStep.LIST, vm.uiState.value.step)
+        assertNull(vm.uiState.value.detailPlatformId)
+        assertFalse(vm.uiState.value.windowsGamesOpenedFromXmb)
 
         job.cancel()
     }

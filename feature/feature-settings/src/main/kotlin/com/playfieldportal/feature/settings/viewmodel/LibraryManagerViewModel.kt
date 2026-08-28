@@ -278,6 +278,11 @@ class LibraryManagerViewModel @Inject constructor(
                 current.detailPlatformId == WINDOWS_PLATFORM_ID &&
                 current.windowsGamesOpenedFromXmb
         ) {
+            // The standalone Windows Games screen is closing (the caller dismisses the overlay).
+            // Clear the transient sub-screen state: this ViewModel is activity-scoped, so without
+            // the reset the stale Windows card detail would pop up again on the next Library
+            // Manager open.
+            resetToList()
             return false
         }
         if (step == LibraryStep.CARD_DETAIL && current.detailPlatformId == WINDOWS_PLATFORM_ID) {

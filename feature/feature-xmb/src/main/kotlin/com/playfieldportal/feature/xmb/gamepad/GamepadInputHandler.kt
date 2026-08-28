@@ -1,6 +1,8 @@
 package com.playfieldportal.feature.xmb.gamepad
 
+import android.os.SystemClock
 import android.view.InputDevice
+import com.playfieldportal.core.data.repository.ControllerRegistry
 import com.playfieldportal.core.data.repository.RemapCoordinator
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.GamepadMappings
@@ -19,8 +21,23 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.abs
 
-// Dead zone for analog stick — below this magnitude, input is ignored
+// Dead zone for analog stick — below this magnitude, input is ignored. Device-reported flat
+// (MotionRange.getFlat) can raise this floor; see stickDirection().
 private const val STICK_DEAD_ZONE = 0.5f
+
+// A stick direction engaged past activation stays engaged until deflection falls below
+// activation * STICK_RELEASE_FACTOR — hysteresis so noise around the activation edge cannot
+// flap press/release/re-press.
+private const val STICK_RELEASE_FACTOR = 0.6f
+
+// HAT (D-pad) deflection threshold. HAT axes are usually discrete (-1/0/1) but may be analog.
+private const val HAT_DEAD_ZONE = 0.5f
+
+// One physical D-pad press can arrive as KEYCODE_DPAD_* and a HAT/axis deflection within the
+// same frame. Same-direction presses from another source inside this window are consumed without
+// emitting so navigation never double-steps. Kept well under the fastest repeat interval so a
+// held direction never suppresses its own legitimate repeats.
+private const val DUPLICATE_WINDOW_MS = 80L
 
 // Stick deflection past this magnitude skips the ramp and repeats at the fast interval
 // immediately — full tilt is an explicit "scroll fast" gesture the D-pad can't make.
@@ -45,6 +62,7 @@ private fun ScrollSpeed.tuning(): RepeatTuning = when (this) {
 @Singleton
 class GamepadInputHandler @Inject constructor(
     private val remapCoordinator: RemapCoordinator,
+    private val registry: ControllerRegistry,
 ) {
     private val _actions = MutableSharedFlow<GamepadAction>(extraBufferCapacity = 16)
     val actions: SharedFlow<GamepadAction> = _actions.asSharedFlow()
@@ -69,6 +87,14 @@ class GamepadInputHandler @Inject constructor(
     // Live stick deflection while a stick direction is held — read by the repeat loop each step
     // so pushing to full tilt speeds up mid-hold without restarting the repeat. 0 for D-pad holds.
     @Volatile private var stickMagnitude: Float = 0f
+
+    // Last emit time per directional action, for same-source duplicate suppression. Stamped by
+    // emit(); read by isDuplicateDirection() before a new edge is emitted.
+    private val lastDirectionalEmitAt = mutableMapOf<GamepadAction, Long>()
+
+    // Test seam: injectable clock so duplicate-window tests are deterministic. Production uses
+    // the system uptime clock.
+    internal var clock: () -> Long = SystemClock::uptimeMillis
 
     // Push-to-talk (Discord voice): set by XMBViewModel while a call is active with PTT on and a
     // button mapped. When set, the matching keycode holds the mic open (down) / closes it (up)
@@ -106,6 +132,7 @@ class GamepadInputHandler @Inject constructor(
         // Android handhelds (Ayn Thor, Retroid, etc.) sometimes report SOURCE_KEYBOARD
         // for built-in controller buttons even when they're physically a gamepad.
         val action = currentMappings.actionFor(event.keyCode) ?: return false
+        registry.markActive(event.deviceId)
 
         // Settings overlay: only BACK is ours — let Compose handle D-pad/select natively
         if (bypassToComposeFocus && action != GamepadAction.BACK) return false
@@ -113,7 +140,11 @@ class GamepadInputHandler @Inject constructor(
         return when (event.action) {
             KeyEvent.ACTION_DOWN -> {
                 if (event.repeatCount == 0) {
-                    // First press — emit immediately
+                    // First press — emit immediately. A directional press from a redundant source
+                    // (HAT + DPAD keys on one physical button) is consumed without emitting so
+                    // navigation never double-steps.
+                    if (action.isDirectional() && isDuplicateDirection(action)) return true
+
                     emit(action)
 
                     // Start repeat for navigation actions
@@ -137,38 +168,41 @@ class GamepadInputHandler @Inject constructor(
             return false
         }
         if (event.action != MotionEvent.ACTION_MOVE) return false
+        registry.markActive(event.deviceId)
 
         val x = event.getAxisValue(MotionEvent.AXIS_X)
         val y = event.getAxisValue(MotionEvent.AXIS_Y)
+        val hatX = event.getAxisValue(MotionEvent.AXIS_HAT_X)
+        val hatY = event.getAxisValue(MotionEvent.AXIS_HAT_Y)
 
-        val stickAction = when {
-            y < -STICK_DEAD_ZONE          -> GamepadAction.NAVIGATE_UP
-            y >  STICK_DEAD_ZONE          -> GamepadAction.NAVIGATE_DOWN
-            x < -STICK_DEAD_ZONE          -> GamepadAction.NAVIGATE_LEFT
-            x >  STICK_DEAD_ZONE          -> GamepadAction.NAVIGATE_RIGHT
-            else                          -> null
-        }
+        val stickAction = stickDirection(x, y, stickFlatFor(event.deviceId))
+        val hatAction = hatDirection(hatX, hatY)
+
+        // HAT wins over the stick when both report a direction: HAT is the discrete D-pad, and a
+        // stick deflection near a HAT press is usually the same physical gesture leaking onto both.
+        val motionAction = hatAction ?: stickAction
 
         // Track deflection on every event (not just direction changes) so easing into or out of
         // full tilt adjusts the repeat speed of the hold already in progress.
-        stickMagnitude = if (stickAction != null) maxOf(abs(x), abs(y)) else 0f
+        stickMagnitude = if (motionAction != null) maxOf(abs(x), abs(y), abs(hatX), abs(hatY)) else 0f
 
-        if (stickAction != lastStickAction) {
+        if (motionAction != lastStickAction) {
             cancelRepeat()
-            lastStickAction = stickAction
-            if (stickAction != null) {
-                emit(stickAction)
-                startRepeat(stickAction)
+            lastStickAction = motionAction
+            if (motionAction != null && !isDuplicateDirection(motionAction)) {
+                emit(motionAction)
+                startRepeat(motionAction)
             }
         }
 
-        return stickAction != null
+        return motionAction != null
     }
 
     // Used to inject actions from the ViewModel for button remapping preview
     fun emitAction(action: GamepadAction) = emit(action)
 
     private fun emit(action: GamepadAction) {
+        if (action.isDirectional()) lastDirectionalEmitAt[action] = clock()
         _actions.tryEmit(action)
         Timber.v("Gamepad action: $action")
     }
@@ -203,6 +237,61 @@ class GamepadInputHandler @Inject constructor(
         repeatJob = null
         lastStickAction = null
         stickMagnitude = 0f
+    }
+
+    // ── Normalization helpers ──────────────────────────────────────────────────────────────
+
+    /**
+     * Left-stick direction with hysteresis. Activation is the device-reported neutral flat (or the
+     * [STICK_DEAD_ZONE] floor); a direction engaged past activation stays engaged until deflection
+     * falls below the lower release threshold.
+     */
+    private fun stickDirection(x: Float, y: Float, flat: Float): GamepadAction? {
+        val activation = maxOf(STICK_DEAD_ZONE, flat)
+        val release = activation * STICK_RELEASE_FACTOR
+
+        val strong = when {
+            y < -activation -> GamepadAction.NAVIGATE_UP
+            y >  activation -> GamepadAction.NAVIGATE_DOWN
+            x < -activation -> GamepadAction.NAVIGATE_LEFT
+            x >  activation -> GamepadAction.NAVIGATE_RIGHT
+            else -> null
+        }
+        if (strong != null) return strong
+
+        val engaged = lastStickAction ?: return null
+        val stillEngaged = when (engaged) {
+            GamepadAction.NAVIGATE_UP -> y < -release
+            GamepadAction.NAVIGATE_DOWN -> y > release
+            GamepadAction.NAVIGATE_LEFT -> x < -release
+            GamepadAction.NAVIGATE_RIGHT -> x > release
+            else -> false
+        }
+        return if (stillEngaged) engaged else null
+    }
+
+    private fun hatDirection(hatX: Float, hatY: Float): GamepadAction? = when {
+        hatY < -HAT_DEAD_ZONE -> GamepadAction.NAVIGATE_UP
+        hatY >  HAT_DEAD_ZONE -> GamepadAction.NAVIGATE_DOWN
+        hatX < -HAT_DEAD_ZONE -> GamepadAction.NAVIGATE_LEFT
+        hatX >  HAT_DEAD_ZONE -> GamepadAction.NAVIGATE_RIGHT
+        else -> null
+    }
+
+    /** Device-reported neutral flat for the left stick; 0 when unavailable (JVM tests, odd devices). */
+    private fun stickFlatFor(deviceId: Int): Float =
+        runCatching { InputDevice.getDevice(deviceId)?.getMotionRange(MotionEvent.AXIS_X)?.flat }
+            .getOrNull() ?: 0f
+
+    /**
+     * True when the same directional action was emitted from another source inside
+     * [DUPLICATE_WINDOW_MS] — a redundant physical representation of one press, not a new intent.
+     */
+    private fun isDuplicateDirection(action: GamepadAction): Boolean {
+        if (!action.isDirectional()) return false
+        val now = clock()
+        val last = lastDirectionalEmitAt[action]
+        return last != null && now - last < DUPLICATE_WINDOW_MS
     }
 
     private fun GamepadAction.isDirectional() = this in setOf(
