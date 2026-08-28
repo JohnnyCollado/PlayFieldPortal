@@ -16,6 +16,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -123,10 +124,12 @@ fun EmulatorsSettingsScreen(
         modifier        = modifier,
         restoreFocusKey = state.returnFocusKey,
     ) {
+        val scrollState = rememberScrollState()
+        LocalSettingsScrollStateRegistrar.current(scrollState)
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(scrollState),
         ) {
             if (section == null || section == EmulatorSettingsSection.INSTALLED) {
                 val installedNonRetroArch = state.installedProfiles.filterNot(::isRetroArchProfile)

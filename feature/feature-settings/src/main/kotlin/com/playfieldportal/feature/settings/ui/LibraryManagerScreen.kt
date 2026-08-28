@@ -248,7 +248,9 @@ private fun LibraryListContent(
         modifier = modifier,
         restoreFocusKey = state.returnFocusKey,
     ) {
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        val scrollState = rememberScrollState()
+        LocalSettingsScrollStateRegistrar.current(scrollState)
+        Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
 
             // ── ROM Root Access ─────────────────────────────────────────────────
             RootAccessSection(

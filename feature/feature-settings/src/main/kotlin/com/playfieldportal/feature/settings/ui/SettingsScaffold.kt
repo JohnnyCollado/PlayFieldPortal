@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -109,6 +110,15 @@ internal val LocalSettingsNavigationOrder =
 // are reached via LEFT/RIGHT and never participate in vertical traversal.
 internal val LocalSettingsRowActions =
     compositionLocalOf<SnapshotStateMap<String, SnapshotStateList<Pair<String, FocusRequester>>>?> { null }
+
+// The scrollable Column inside each screen is the real scroll owner. SettingsScaffold registers
+// it here so controller boundary navigation resets that exact state rather than an unrelated
+// scaffold-local ScrollState.
+internal val LocalSettingsScrollStateRegistrar =
+    compositionLocalOf<(ScrollState) -> Unit> { {} }
+
+internal val LocalSettingsScrollToTop =
+    compositionLocalOf<() -> Unit> { {} }
 internal val LocalSettingsReportFocused =
     compositionLocalOf<(FocusRequester) -> Unit> { {} }
 
@@ -161,6 +171,10 @@ fun SettingsScaffold(
 ) {
     val focusManager    = LocalFocusManager.current
     val scrollState     = rememberScrollState()
+    // The screen content owns the actual verticalScroll state. The scaffold state above is
+    // intentionally not used for navigation; expose a controller so nested settings columns can
+    // register their ScrollState and the top-boundary action can reset the real owner.
+    val contentScrollState = remember { mutableStateOf<ScrollState?>(null) }
     val bootstrapFR     = remember { FocusRequester() }
     val pendingAction   = LocalSettingsPendingAction.current
     val onConsumed      = LocalSettingsActionConsumed.current
@@ -209,6 +223,9 @@ fun SettingsScaffold(
         }
             .collect { entries -> navigationState.updateItems(entries.map { it.second }) }
     }
+    // Absolute content position at the top of the scroll viewport. Used as the stable anchor
+    // when clamping at the first item; unlike the focused row's moving Y it remains valid while
+    // the column is scrolled.
     val firstVisibleContentY = remember { mutableStateOf<Float?>(null) }
     var focusedRow      by remember { mutableStateOf<FocusRequester?>(null) }
     // Last known Y of the focused row — the anchor for re-focusing when that row is removed
@@ -327,7 +344,10 @@ fun SettingsScaffold(
                 val target = navigationState.move(-1)
                 // Clamped at the first navigable item: stay put but scroll back to the top.
                 if (target != null && target == previous) {
-                    coroutineScope.launch { scrollState.animateScrollTo(0) }
+                    // Up at the first logical item is a deliberate top-boundary action. Always
+                    // return the whole scrollable settings column to offset zero, including
+                    // screens whose first visible content is a section header.
+                    coroutineScope.launch { contentScrollState.value?.animateScrollTo(0) }
                 }
                 requestFocusFor(target)
             }
@@ -377,6 +397,7 @@ fun SettingsScaffold(
             }
         },
         LocalSettingsRowActions provides rowActionFrs,
+        LocalSettingsScrollStateRegistrar provides { state -> contentScrollState.value = state },
     ) {
         Box(
             modifier = modifier
@@ -484,9 +505,9 @@ private fun stableKey(prefix: String, fr: FocusRequester, focusKey: String?): St
 
 @Composable
 fun SettingsGroup(title: String) {
-    // Section headers are navigation landmarks only — skippable by the controller. They are
-    // not focusable and never enter the ordered navigation sequence, so the cursor cannot land
-    // on a title that does nothing.
+    // Headers are visual landmarks. The scaffold's first-item clamp scrolls the complete
+    // settings column to offset zero, ensuring a long screen that starts with this header can
+    // always be returned to its true top with UP at the first row.
     Text(
         modifier = Modifier
             .fillMaxWidth()

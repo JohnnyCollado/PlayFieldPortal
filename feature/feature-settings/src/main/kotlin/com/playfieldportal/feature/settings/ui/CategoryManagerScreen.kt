@@ -84,7 +84,17 @@ private fun CategoryListContent(
         modifier = modifier,
         restoreFocusKey = state.returnFocusKey,
     ) {
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        val scrollState = rememberScrollState()
+        LocalSettingsScrollStateRegistrar.current(scrollState)
+        Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
+            SettingsGroup("Manage")
+            SettingsRow(
+                label    = "Create Category",
+                sublabel = "Add a new category to the XMB bar",
+                focusKey = CREATE_CATEGORY_FOCUS_KEY,
+                onClick  = { vm.startCreate() },
+            )
+
             SettingsGroup("XMB Categories")
             state.categories.forEach { cat ->
                 SettingsRow(
@@ -95,13 +105,6 @@ private fun CategoryListContent(
                 )
             }
 
-            SettingsGroup("Manage")
-            SettingsRow(
-                label    = "Create Category",
-                sublabel = "Add a new category to the XMB bar",
-                focusKey = CREATE_CATEGORY_FOCUS_KEY,
-                onClick  = { vm.startCreate() },
-            )
         }
     }
 }
