@@ -1,6 +1,15 @@
 package com.playfieldportal.feature.settings.ui
 
-/** A logical item exposed to controller navigation. */
+import com.playfieldportal.core.navigation.NavigationEngine
+import com.playfieldportal.core.navigation.NavigationNode
+
+/**
+ * A logical item exposed to controller navigation.
+ *
+ * This is the Settings-side of the shared navigation contract (spec §17): the adapter maps these
+ * onto the generic [NavigationNode]s the core understands. The core never knows what a row can do —
+ * it only navigates generic nodes.
+ */
 data class ControllerNavItem(
     val key: String,
     val focusable: Boolean = true,
@@ -12,128 +21,81 @@ data class ControllerNavItem(
     val trailingActions: List<ControllerNavItem> = emptyList(),
 )
 
+/** Maps a Settings row onto the generic navigation-core node contract (spec §3, §4). */
+internal fun ControllerNavItem.toNavigationNode(): NavigationNode = NavigationNode(
+    key = key,
+    focusable = focusable,
+    selectable = selectable,
+    enabled = enabled,
+    onSelect = onSelect,
+    // Inline trailing actions become child nodes (spec §4): reached via LEFT/RIGHT,
+    // never vertically, and clamps at the ends.
+    children = trailingActions.map { it.toNavigationNode() },
+)
+
 /**
- * Ordered controller navigation for vertical screens. UI code owns focus request/scrolling; this
- * class owns the logical selection and never allows navigation to escape the screen.
+ * Settings adapter for the unified navigation core (Phase 2—3 of the migration).
  *
- * The scaffold feeds the current item list via [updateItems]; [move] traverses the navigable items
- * in list order, [moveHorizontal] steps into a row's inline [trailingActions] (LEFT/RIGHT),
- * [select] dispatches to the focused item, and [focusFirst]/[setFocused] establish or realign
- * focus. Items disappear as rows leave composition — the focused key then recovers to the nearest
- * surviving navigable item by list order.
+ * This class drives a core [NavigationEngine] — cycling one [com.playfieldportal.core.navigation.NavigationContext]
+ * per screen — while preserving Settings' legacy public surface ([updateItems], [move],
+ * [moveHorizontal], [focusFirst], [setFocused], [select], [focusedKey]) so the scaffold and its
+ * tests keep working unchanged.
+ *
+ * Ownership stays with the core: stable-key focus preservation, nearest-survivor recovery
+ * (visual geometry → order fallback), no-wrap clamping and inline-action traversal all come
+ * from the engine. This class only translates between Settings rows and generic nodes.
  */
-class ControllerNavigationState {
-    private var items: List<ControllerNavItem> = emptyList()
+class ControllerNavigationState(
+    private val engine: NavigationEngine = NavigationEngine("settings"),
+) {
+    /** The key of the node currently focused, mirrored from the engine. */
     var focusedKey: String? = null
         private set
 
-    fun updateItems(newItems: List<ControllerNavItem>) {
-        val previousItems = items
-        val previousKey = focusedKey
-        items = newItems
-        val navigable = navigableItems()
-        val navigableKeys = navigable.flatMap { row ->
-            listOf(row.key) + row.trailingActions
-                .filter { it.focusable && it.enabled }
-                .map { it.key }
-        }
-        focusedKey = when {
-            previousKey != null && previousKey in navigableKeys -> previousKey
-            previousKey != null -> {
-                // The focused item disappeared. If it was an inline action, fall back to its
-                // owning row; otherwise recover to the nearest survivor by list order.
-                val ownerRow = previousItems.firstOrNull { it.trailingActions.any { a -> a.key == previousKey } }
-                when {
-                    ownerRow != null && navigable.any { it.key == ownerRow.key } -> ownerRow.key
-                    else -> {
-                        val previousIndex = previousItems.indexOfFirst { it.key == previousKey }
-                        if (previousIndex >= 0) {
-                            navigable.minByOrNull { kotlin.math.abs(newItems.indexOf(it) - previousIndex) }?.key
-                        } else {
-                            navigable.firstOrNull()?.key
-                        }
-                    }
-                }
-            }
-            else -> navigable.firstOrNull()?.key
-        }
+    val acceptsInput: Boolean get() = engine.acceptsInput
+
+    /**
+     * Feed the current row list (registration order or, ideally, Y-sorted visual order) plus
+     * optional geometry. The engine preserves focus on the same logical key and recovers to the
+     * nearest survivor when the focused row disappears (spec §7, §8).
+     */
+    fun updateItems(
+        newItems: List<ControllerNavItem>,
+        geometry: Map<String, Float> = emptyMap(),
+    ) {
+        engine.replaceNodes(newItems.map { it.toNavigationNode() }, geometry)
+        focusedKey = engine.focusedKey
     }
 
+    /** Vertical traversal (UP/DOWN) by [delta] steps, clamped with no wrapping. */
     fun move(delta: Int): String? {
-        val navigable = navigableItems()
-        if (navigable.isEmpty()) {
-            focusedKey = null
-            return null
-        }
-        // Focus on an inline action: exit back to its owning row before moving vertically.
-        val owner = items.firstOrNull { it.trailingActions.any { a -> a.key == focusedKey } }
-        val baseKey = owner?.key ?: focusedKey
-        val current = navigable.indexOfFirst { it.key == baseKey }
-        val target = if (current < 0) 0 else (current + delta).coerceIn(0, navigable.lastIndex)
-        val targetItem = navigable[target]
-        
-        // When navigating to a row with trailing actions, automatically focus the first action
-        // instead of the row itself. This provides immediate button highlighting.
-        val firstAction = targetItem.trailingActions
-            .filter { it.focusable && it.enabled }
-            .firstOrNull()
-        
-        focusedKey = firstAction?.key ?: targetItem.key
+        focusedKey = engine.moveVerticalActive(delta)
         return focusedKey
     }
 
     /**
-     * Horizontal movement between a row and its inline trailing actions. RIGHT enters the first
-     * action; from an action, LEFT/RIGHT step between them (clamped), and LEFT past the first
-     * action returns to the row. Returns null when the current row has no actions (no-op).
+     * Horizontal movement between a row and its inline [trailingActions] (spec §4). RIGHT enters
+     * the first action; from an action, LEFT/RIGHT step between them (clamped at the ends);
+     * LEFT past the first action returns to the row. Returns null when the row has no actions.
      */
     fun moveHorizontal(delta: Int): String? {
-        val owner = items.firstOrNull { it.trailingActions.any { a -> a.key == focusedKey } }
-        val navigableActions = (owner ?: items.firstOrNull { it.key == focusedKey })
-            ?.trailingActions
-            ?.filter { it.focusable && it.enabled }
-            ?: return null
-        if (navigableActions.isEmpty()) return null
-        if (owner != null) {
-            val index = navigableActions.indexOfFirst { it.key == focusedKey }
-            val targetIndex = index + delta
-            focusedKey = when {
-                targetIndex < 0 -> owner.key
-                targetIndex >= navigableActions.size -> focusedKey
-                else -> navigableActions[targetIndex].key
-            }
-        } else {
-            // On the row: RIGHT enters the first action; LEFT stays put.
-            focusedKey = if (delta > 0) navigableActions.first().key else focusedKey
-        }
+        focusedKey = engine.moveHorizontalActive(delta)
         return focusedKey
     }
 
+    /** Realign focus to the first navigable node (screen entry when nothing to restore). */
     fun focusFirst(): String? {
-        focusedKey = navigableItems().firstOrNull()?.key
+        engine.focusFirst()
+        focusedKey = engine.focusedKey
         return focusedKey
     }
 
     /** Realign the focused key with actual (e.g. Compose-driven) focus; ignores unknown keys. */
     fun setFocused(key: String?) {
-        if (key == null) {
-            focusedKey = null
-            return
-        }
-        val known = items.any { it.key == key } ||
-            items.any { it.trailingActions.any { a -> a.key == key } }
-        if (known) focusedKey = key
+        engine.setFocused(key)
+        focusedKey = engine.focusedKey
     }
 
-    fun select(): Boolean {
-        val item = items.firstOrNull { it.key == focusedKey }
-            ?: items.flatMap { it.trailingActions }.firstOrNull { it.key == focusedKey }
-            ?: return false
-        if (!item.focusable || !item.selectable || !item.enabled) return false
-        item.onSelect?.invoke() ?: return false
-        return true
-    }
-
-    private fun navigableItems(): List<ControllerNavItem> =
-        items.filter { it.focusable && it.enabled }
-}
+    /** Confirm on the focused node; dispatches to its action. Returns whether anything consumed it. */
+    fun select(): Boolean = engine.confirmDirect()
+}

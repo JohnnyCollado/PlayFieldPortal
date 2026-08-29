@@ -51,6 +51,7 @@ include(":core:core-common")
 include(":core:core-domain")
 include(":core:core-data")
 include(":core:core-ui")
+include(":core:core-navigation")
 
 // Discord Social integration
 include(":discord:discord-native")
