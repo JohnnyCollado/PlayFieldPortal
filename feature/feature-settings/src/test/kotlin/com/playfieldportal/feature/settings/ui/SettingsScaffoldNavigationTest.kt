@@ -326,13 +326,18 @@ class SettingsScaffoldNavigationTest {
         assertFocusedRow("Row 1")
         val contentTop = composeRule.onNode(isFocused()).fetchSemanticsNode().boundsInRoot.top
         val rootHeight = composeRule.onRoot().fetchSemanticsNode().boundsInRoot.height
+        var rowHeight = 0f
 
-        // Walk far past the fold; after every step the focused row must be fully visible.
+        // Walk far past the fold; after every step the ENTIRE focused row must stay on screen.
+        // A clipped row reports bounds that ride the fold's bottom edge (a sliver), so asserting
+        // the bottom stays clear of the edge and the height stays full catches the regression.
         repeat(30) { step ->
             press(GamepadAction.NAVIGATE_DOWN)
             val bounds = composeRule.onNode(isFocused()).fetchSemanticsNode().boundsInRoot
+            if (step == 0) rowHeight = bounds.height
             assertTrue("step $step: row top ${bounds.top} drifted above viewport top $contentTop", bounds.top >= contentTop - 0.5f)
-            assertTrue("step $step: row bottom ${bounds.bottom} drifted below viewport bottom $rootHeight", bounds.bottom <= rootHeight + 0.5f)
+            assertTrue("step $step: row bottom ${bounds.bottom} hit the viewport bottom $rootHeight", bounds.bottom <= rootHeight - 1f)
+            assertTrue("step $step: row clipped to height ${bounds.height}", abs(bounds.height - rowHeight) < 1f)
         }
     }
 }

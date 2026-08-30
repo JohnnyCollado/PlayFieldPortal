@@ -370,6 +370,7 @@ private fun FocusableStrip(
     val focusTracker  = LocalSettingsFocusTracker.current
     val registerFirst = LocalSettingsRegisterFirstFocusable.current
     val rowPositions  = LocalSettingsRowPositions.current
+    val rowSizes      = LocalSettingsRowSizes.current
     val navigationOrder = LocalSettingsNavigationOrder.current
     val reportFocused = LocalSettingsReportFocused.current
     val reportRemoved = LocalSettingsReportRemoved.current
@@ -389,6 +390,7 @@ private fun FocusableStrip(
         onDispose {
             navigationOrder?.removeAll { it.first === fr }
             rowPositions?.remove(fr)
+            rowSizes?.remove(fr)
             reportRemoved(fr)
         }
     }
@@ -403,7 +405,10 @@ private fun FocusableStrip(
         modifier = Modifier
             .fillMaxWidth()
             .focusRequester(fr)
-            .onGloballyPositioned { rowPositions?.put(fr, it.localToRoot(Offset.Zero).y) }
+            .onGloballyPositioned {
+                rowPositions?.put(fr, it.localToRoot(Offset.Zero).y)
+                rowSizes?.put(fr, it.size.height.toFloat())
+            }
             .onFocusChanged { st ->
                 isFocused = st.isFocused
                 onFocusChange(st.isFocused)

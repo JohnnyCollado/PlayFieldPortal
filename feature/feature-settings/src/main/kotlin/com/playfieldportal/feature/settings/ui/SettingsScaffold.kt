@@ -107,6 +107,11 @@ internal val LocalSettingsRegisterFirstFocusable =
 // reach the XMB's LazyColumn across subcompositions).
 internal val LocalSettingsRowPositions =
     compositionLocalOf<SnapshotStateMap<FocusRequester, Float>?> { null }
+// On-screen HEIGHT of each row, used for keep-in-view clamping by the row's bottom edge. Kept
+// separate from [LocalSettingsRowPositions] (row tops) because the engine's geometry and the
+// reseed fallback both consume the top-Y map as-is.
+internal val LocalSettingsRowSizes =
+    compositionLocalOf<SnapshotStateMap<FocusRequester, Float>?> { null }
 internal val LocalSettingsNavigationOrder =
     compositionLocalOf<SnapshotStateList<Pair<FocusRequester, ControllerNavItem>>?> { null }
 
@@ -207,6 +212,9 @@ fun SettingsScaffold(
     // On-screen Y of every interactive row — presentation only (scroll-into-view, reseed
     // fallback). Movement and selection live in ControllerNavigationState.
     val rowPositions = remember { mutableStateMapOf<FocusRequester, Float>() }
+    // On-screen HEIGHT of every interactive row — presentation only, for the keep-in-view
+    // clamp to align a row's bottom edge (rather than its top) at the lower viewport edge.
+    val rowSizes = remember { mutableStateMapOf<FocusRequester, Float>() }
     // Ordered navigation: rows register (FocusRequester, ControllerNavItem) pairs in composition
     // order; the model consumes them and the scaffold requests focus for the focused key.
     val navigationOrder =
@@ -326,15 +334,20 @@ fun SettingsScaffold(
         val viewportTop = firstVisibleContentY.value ?: return@LaunchedEffect
         val viewportHeight = contentViewportHeight.value ?: return@LaunchedEffect
         val activeScrollState = contentScrollState.value ?: return@LaunchedEffect
+        val rowHeight = rowSizes[focused] ?: return@LaunchedEffect
         val margin = 16f * density.density
         val viewportBottom = viewportTop + viewportHeight
-        // Bring the focused row just inside the visible area: scroll the smallest distance
-        // needed to place it within [viewportTop + margin, viewportBottom - margin].
+        // Bring the WHOLE focused row inside the visible area, symmetric for both edges: the
+        // row's TOP clears the top margin and its BOTTOM clears the bottom margin. Aligning by
+        // the row's own relevant edge is what keeps it fully on-screen — scrolling so the TOP
+        // just clears the bottom edge would leave the lower part of the cursor clipped below
+        // the fold (the bug fixed here; going UP was already correct because a row extends
+        // downward from its top).
         val target = when {
             y < viewportTop + margin ->
                 (activeScrollState.value.toFloat() - (viewportTop + margin - y)).coerceAtLeast(0f)
-            y > viewportBottom - margin ->
-                activeScrollState.value.toFloat() + (y - (viewportBottom - margin))
+            y + rowHeight > viewportBottom - margin ->
+                activeScrollState.value.toFloat() + ((y + rowHeight) - (viewportBottom - margin))
             else -> null
         }
         target?.let {
@@ -466,6 +479,7 @@ fun SettingsScaffold(
             if (firstRowFocus.value == null) firstRowFocus.value = fr
         },
         LocalSettingsRowPositions provides rowPositions,
+        LocalSettingsRowSizes provides rowSizes,
         LocalSettingsNavigationOrder provides navigationOrder,
         LocalSettingsReportFocused provides { fr ->
             focusedRow = fr
@@ -669,6 +683,7 @@ fun SettingsRow(
     val focusRegistry = LocalSettingsFocusRegistry.current
     val registerFirst = LocalSettingsRegisterFirstFocusable.current
     val rowPositions = LocalSettingsRowPositions.current
+    val rowSizes = LocalSettingsRowSizes.current
     val navigationOrder = LocalSettingsNavigationOrder.current
     val rowActionFrs = LocalSettingsRowActions.current
     val reportFocused = LocalSettingsReportFocused.current
@@ -715,6 +730,7 @@ fun SettingsRow(
         onDispose {
             navigationOrder?.removeAll { it.first === focusRequester }
             rowPositions?.remove(focusRequester)
+            rowSizes?.remove(focusRequester)
             // If this row held focus, the scaffold refocuses the nearest surviving row.
             reportRemoved(focusRequester)
         }
@@ -731,12 +747,16 @@ fun SettingsRow(
         modifier = Modifier
             .fillMaxWidth()
             .focusRequester(focusRequester)
-            // Report on-screen Y so the scaffold can navigate to this row explicitly.
+            // Report on-screen Y and height so the scaffold can navigate and keep the row in view.
             .then(
-                if (rowPositions != null) {
+                if (rowPositions != null && rowSizes != null) {
                     val positions = rowPositions
+                    val sizes = rowSizes
                     val req = focusRequester
-                    Modifier.onGloballyPositioned { positions[req] = it.localToRoot(Offset.Zero).y }
+                    Modifier.onGloballyPositioned {
+                        positions[req] = it.localToRoot(Offset.Zero).y
+                        sizes[req] = it.size.height.toFloat()
+                    }
                 } else Modifier
             )
             // Observe focus to register onclick with scaffold (for SELECT) and show highlight
@@ -867,6 +887,7 @@ fun SettingsFocusable(
     val focusRegistry = LocalSettingsFocusRegistry.current
     val registerFirst = LocalSettingsRegisterFirstFocusable.current
     val rowPositions = LocalSettingsRowPositions.current
+    val rowSizes = LocalSettingsRowSizes.current
     val navigationOrder = LocalSettingsNavigationOrder.current
     val reportFocused = LocalSettingsReportFocused.current
     val reportRemoved = LocalSettingsReportRemoved.current
@@ -896,6 +917,7 @@ fun SettingsFocusable(
         onDispose {
             navigationOrder?.removeAll { it.first === focusRequester }
             rowPositions?.remove(focusRequester)
+            rowSizes?.remove(focusRequester)
             reportRemoved(focusRequester)
         }
     }
@@ -910,10 +932,14 @@ fun SettingsFocusable(
             .fillMaxWidth()
             .focusRequester(focusRequester)
             .then(
-                if (rowPositions != null) {
+                if (rowPositions != null && rowSizes != null) {
                     val positions = rowPositions
+                    val sizes = rowSizes
                     val req = focusRequester
-                    Modifier.onGloballyPositioned { positions[req] = it.localToRoot(Offset.Zero).y }
+                    Modifier.onGloballyPositioned {
+                        positions[req] = it.localToRoot(Offset.Zero).y
+                        sizes[req] = it.size.height.toFloat()
+                    }
                 } else Modifier
             )
             .onFocusChanged { state ->
@@ -1011,6 +1037,7 @@ fun SettingsTextFieldRow(
     val focusRegistry = LocalSettingsFocusRegistry.current
     val registerFirst = LocalSettingsRegisterFirstFocusable.current
     val rowPositions = LocalSettingsRowPositions.current
+    val rowSizes = LocalSettingsRowSizes.current
     val navigationOrder = LocalSettingsNavigationOrder.current
     val reportFocused = LocalSettingsReportFocused.current
     val keyboard = LocalSoftwareKeyboardController.current
@@ -1041,6 +1068,7 @@ fun SettingsTextFieldRow(
         onDispose {
             navigationOrder?.removeAll { it.first === fr }
             rowPositions?.remove(fr)
+            rowSizes?.remove(fr)
             reportRemoved(fr)
         }
     }
@@ -1102,10 +1130,12 @@ fun SettingsTextFieldRow(
                     .fillMaxWidth()
                     .focusRequester(fr)
                     .then(
-                        if (rowPositions != null) {
+                        if (rowPositions != null && rowSizes != null) {
                             val positions = rowPositions
+                            val sizes = rowSizes
                             Modifier.onGloballyPositioned {
                                 positions[fr] = it.localToRoot(Offset.Zero).y
+                                sizes[fr] = it.size.height.toFloat()
                             }
                         } else Modifier
                     )
