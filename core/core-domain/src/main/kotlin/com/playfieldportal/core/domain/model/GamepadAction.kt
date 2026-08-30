@@ -15,3 +15,10 @@ enum class GamepadAction {
     OPEN_TASK_TRAY,
     CHANGE_SORT,
 }
+
+/** True for the four directional navigation actions (D-pad / stick movement). */
+val GamepadAction.isDirectional: Boolean
+    get() = this == GamepadAction.NAVIGATE_UP ||
+        this == GamepadAction.NAVIGATE_DOWN ||
+        this == GamepadAction.NAVIGATE_LEFT ||
+        this == GamepadAction.NAVIGATE_RIGHT

@@ -57,10 +57,12 @@ fun AchievementsSettingsScreen(
         onBack   = onBack,
         modifier = modifier,
     ) {
+        val scrollState = rememberScrollState()
+        LocalSettingsScrollStateRegistrar.current(scrollState)
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(scrollState),
         ) {
 
             // Account-wide standing: level, rank, and the running coin wallet. Confirm or tap opens

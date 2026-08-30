@@ -78,10 +78,12 @@ fun LogsSettingsScreen(
             }
         },
     ) {
+        val scrollState = rememberScrollState()
+        LocalSettingsScrollStateRegistrar.current(scrollState)
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(scrollState),
         ) {
             SettingsGroup("Log Files   —   Ⓐ open externally · Ⓨ options")
 

@@ -87,12 +87,13 @@ fun InitialSetupScreen(
             title    = "Initial Setup",
             subtitle = subtitle,
             onBack   = { if (!viewModel.previousStep() && !firstRun) onBack() },
-            modifier = modifier,
-        ) {
+            modifier = modifier,            ) {
+            val scrollState = rememberScrollState()
+            LocalSettingsScrollStateRegistrar.current(scrollState)
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState()),
+                    .verticalScroll(scrollState),
             ) {
                 state.message?.let { message ->
                     SettingsRow(

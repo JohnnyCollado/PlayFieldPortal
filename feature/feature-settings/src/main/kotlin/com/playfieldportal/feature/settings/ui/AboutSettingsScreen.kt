@@ -37,10 +37,12 @@ fun AboutSettingsScreen(
         onBack   = onBack,
         modifier = modifier,
     ) {
+        val scrollState = rememberScrollState()
+        LocalSettingsScrollStateRegistrar.current(scrollState)
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(scrollState),
         ) {
             SettingsGroup("Play Field Portal")
 

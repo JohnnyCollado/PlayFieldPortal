@@ -59,10 +59,12 @@ fun DisplaySettingsScreen(
             false
         },
     ) {
+        val scrollState = rememberScrollState()
+        LocalSettingsScrollStateRegistrar.current(scrollState)
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(scrollState),
         ) {
             SettingsGroup("Appearance")
 

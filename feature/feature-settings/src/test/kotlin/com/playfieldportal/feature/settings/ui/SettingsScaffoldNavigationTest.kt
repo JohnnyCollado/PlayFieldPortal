@@ -31,6 +31,7 @@ import com.playfieldportal.core.ui.theme.PFPTheme
 import kotlinx.coroutines.channels.Channel
 import kotlin.math.abs
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -262,28 +263,27 @@ class SettingsScaffoldNavigationTest {
     }
 
     @Test
-    fun `first dpad press after a touch drag re-anchors to the row nearest the viewport centre`() {
+    fun `first dpad press after a touch drag re-anchors to the viewport centre without moving`() {
         // A long, scrollable list so the viewport centre lands mid-list — not on the stale
         // pre-drag row at the top.
         showScreen(onBack = {}) {
-            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+            val scrollState = rememberScrollState()
+            LocalSettingsScrollStateRegistrar.current(scrollState)
+            Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
                 repeat(30) { i -> SettingsRow(label = "Row ${i + 1}", onClick = {}) }
             }
         }
         // Opens focused on the first row.
         assertFocusedRow("Row 1")
 
-        // Measure the geometry the scaffold re-anchors against: the content top is the root Y
-        // of the first row (the scrollable column starts at the content box), and the viewport
-        // centre is contentTop + half the configured screen height (the same LocalConfiguration
-        // screenHeightDp the scaffold reads — not the inset-reduced root bounds).
-        val density = composeRule.density.density
-        val screenHeightDp = composeRule.activity.resources.configuration.screenHeightDp.toFloat()
-        val screenHeightPx = screenHeightDp * density
+        // Measure the geometry the scaffold re-anchors against. The content box starts at the
+        // root Y of the first row and extends to the bottom of the root — that measured span,
+        // NOT the configured screen height, is what the scaffold treats as the viewport.
+        val rootHeight = composeRule.onRoot().fetchSemanticsNode().boundsInRoot.height
         val firstRowNode = composeRule.onNode(isFocused()).fetchSemanticsNode()
         val contentTop = firstRowNode.boundsInRoot.top
         val rowHeight = firstRowNode.boundsInRoot.height
-        val viewportCenter = contentTop + screenHeightPx / 2f
+        val viewportCenter = contentTop + (rootHeight - contentTop) / 2f
 
         // A real touch drag: the contact itself flags the screen as touch-scrolled (the scaffold
         // hides the cursor on any pointer activity); the small move keeps the list from scrolling.
@@ -302,9 +302,37 @@ class SettingsScaffoldNavigationTest {
             abs(centerY - (viewportCenter + rowHeight / 2f))
         }!!
 
-        // First DOWN: re-anchor to the visible centre, then step one row below it — never the
-        // stale pre-drag row (Row 1) and its continuation (Row 2).
+        // First DOWN is the REVIVAL press: it only makes the cursor reappear on the row
+        // nearest the visible centre — it must NOT move. Never the stale pre-drag row (Row 1)
+        // or its continuation (Row 2).
+        press(GamepadAction.NAVIGATE_DOWN)
+        assertFocusedRow("Row $nearest")
+
+        // The second press is normal navigation: exactly one row down from the re-anchored row.
         press(GamepadAction.NAVIGATE_DOWN)
         assertFocusedRow("Row ${(nearest + 1).coerceAtMost(30)}")
+    }
+
+    @Test
+    fun `cursor never leaves the visible viewport while walking a long list`() {
+        // 40 rows, ~14 visible at a time: the cursor must keep itself on screen as it walks.
+        showScreen(onBack = {}) {
+            val scrollState = rememberScrollState()
+            LocalSettingsScrollStateRegistrar.current(scrollState)
+            Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
+                repeat(40) { i -> SettingsRow(label = "Row ${i + 1}", onClick = {}) }
+            }
+        }
+        assertFocusedRow("Row 1")
+        val contentTop = composeRule.onNode(isFocused()).fetchSemanticsNode().boundsInRoot.top
+        val rootHeight = composeRule.onRoot().fetchSemanticsNode().boundsInRoot.height
+
+        // Walk far past the fold; after every step the focused row must be fully visible.
+        repeat(30) { step ->
+            press(GamepadAction.NAVIGATE_DOWN)
+            val bounds = composeRule.onNode(isFocused()).fetchSemanticsNode().boundsInRoot
+            assertTrue("step $step: row top ${bounds.top} drifted above viewport top $contentTop", bounds.top >= contentTop - 0.5f)
+            assertTrue("step $step: row bottom ${bounds.bottom} drifted below viewport bottom $rootHeight", bounds.bottom <= rootHeight + 0.5f)
+        }
     }
 }

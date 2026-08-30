@@ -71,10 +71,12 @@ fun EmulatorProfileEditorScreen(
         onBack   = onCancel,
         modifier = modifier,
     ) {
+        val scrollState = rememberScrollState()
+        LocalSettingsScrollStateRegistrar.current(scrollState)
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(scrollState),
         ) {
 
             // ── Detection banner (wizard) ─────────────────────────────────

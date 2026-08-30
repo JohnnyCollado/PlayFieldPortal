@@ -58,7 +58,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
@@ -69,6 +68,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.domain.model.isDirectional
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -247,6 +247,10 @@ fun SettingsScaffold(
     // when clamping at the first item; unlike the focused row's moving Y it remains valid while
     // the column is scrolled.
     val firstVisibleContentY = remember { mutableStateOf<Float?>(null) }
+    // Height of the visible content viewport (px), measured from the content Box. Keep-in-view
+    // and re-anchoring use this REAL on-screen area — not the full configured screen height,
+    // which includes system bars and would let the cursor walk past the visible edge.
+    val contentViewportHeight = remember { mutableStateOf<Float?>(null) }
     var focusedRow by remember { mutableStateOf<FocusRequester?>(null) }
     // Last known Y of the focused row — the anchor for re-focusing when that row is removed
     // from composition (imported list items, sections that re-render away).
@@ -310,27 +314,27 @@ fun SettingsScaffold(
     }
 
     // Handle UP / DOWN / SELECT forwarded from XMBViewModel via pendingSettingsAction
-    // Keep the focused row below the header and scroll it into view. The extra header margin is
-    // intentional: placing a row at the very top would hide the breadcrumb after scrolling.
+    // Keep the focused row inside the REAL visible content viewport and scroll it into view.
+    // The bounds come from the measured content Box (root-space Y), so the cursor can never
+    // walk past the visible edge — even on devices with system bars. A small margin keeps the
+    // row below the header (breadcrumb stays visible) and above the bottom edge.
     val density = androidx.compose.ui.platform.LocalDensity.current
-    val screenHeightPx = LocalConfiguration.current.screenHeightDp.toFloat() * density.density
     LaunchedEffect(focusedRow) {
         val focused = focusedRow ?: return@LaunchedEffect
         withFrameNanos { }
         val y = rowPositions[focused] ?: return@LaunchedEffect
-        val headerBottom = 120f
-        val viewportBottom = screenHeightPx - 24f * density.density
-        // Keep the first content landmark visible when returning to the top. Headers are not
-        // focusable, but the user must still see the section heading that explains the focused row.
-        val topTarget = firstVisibleContentY.value?.let { it - headerBottom - 16f }
+        val viewportTop = firstVisibleContentY.value ?: return@LaunchedEffect
+        val viewportHeight = contentViewportHeight.value ?: return@LaunchedEffect
         val activeScrollState = contentScrollState.value ?: return@LaunchedEffect
+        val margin = 16f * density.density
+        val viewportBottom = viewportTop + viewportHeight
+        // Bring the focused row just inside the visible area: scroll the smallest distance
+        // needed to place it within [viewportTop + margin, viewportBottom - margin].
         val target = when {
-            topTarget != null && y <= headerBottom + 2f ->
-                (activeScrollState.value.toFloat() - topTarget).coerceAtLeast(0f)
-            y < headerBottom ->
-                (activeScrollState.value.toFloat() - (headerBottom - y + 16f)).coerceAtLeast(0f)
-            y > viewportBottom ->
-                activeScrollState.value.toFloat() + (y - viewportBottom + 16f)
+            y < viewportTop + margin ->
+                (activeScrollState.value.toFloat() - (viewportTop + margin - y)).coerceAtLeast(0f)
+            y > viewportBottom - margin ->
+                activeScrollState.value.toFloat() + (y - (viewportBottom - margin))
             else -> null
         }
         target?.let {
@@ -359,9 +363,18 @@ fun SettingsScaffold(
         // screen-specific modal/editor. Reconcile the existing stable-key focus before showing it.
         cursorVisible.value = true
         navigationState.markControllerInput()
-        if (touchScrolled.value) {
-            val viewportCenter = firstVisibleContentY.value?.let { top ->
-                top + screenHeightPx / 2f
+        // Revival press: the first controller press after a touch drag. It re-anchors the
+        // cursor to the row nearest the viewport centre (the content the user was looking at)
+        // and shows it there — it must NOT also move. Only the NEXT directional press moves,
+        // so the cursor can never step past the visible area while it is re-appearing.
+        val revivalPress = touchScrolled.value
+        if (revivalPress) {
+            val viewportTop = firstVisibleContentY.value
+            val viewportHeight = contentViewportHeight.value
+            val viewportCenter = if (viewportTop != null && viewportHeight != null) {
+                viewportTop + viewportHeight / 2f
+            } else {
+                null
             }
             if (viewportCenter != null) {
                 navigationState.focusNearestTo(viewportCenter)
@@ -376,6 +389,11 @@ fun SettingsScaffold(
         // Give the screen a chance to consume the action first (e.g. remap capture mode).
         // If the interceptor returns true the action is fully consumed — no navigation fires.
         if (onInterceptAction?.invoke(pendingAction) == true) {
+            onConsumed()
+            return@LaunchedEffect
+        }
+        // Revival presses are consumed by the re-anchor itself: no directional movement.
+        if (revivalPress && pendingAction.isDirectional) {
             onConsumed()
             return@LaunchedEffect
         }
@@ -576,6 +594,7 @@ fun SettingsScaffold(
                         .fillMaxWidth()
                         .onGloballyPositioned {
                             firstVisibleContentY.value = it.localToRoot(Offset.Zero).y
+                            contentViewportHeight.value = it.size.height.toFloat()
                         },
                 ) {
                     content()

@@ -161,7 +161,9 @@ private fun CollectionListStep(
     modifier: Modifier = Modifier,
 ) {
     SettingsScaffold(title = "Settings", subtitle = "Collections", onBack = onBack, modifier = modifier) {
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        val scrollState = rememberScrollState()
+        LocalSettingsScrollStateRegistrar.current(scrollState)
+        Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
             SettingsGroup("Manage")
             SettingsRow(
                 label    = "Create New Collection",
@@ -204,7 +206,9 @@ private fun CollectionDetailStep(
     val games by remember(collection.id) { gamesFlow() }.collectAsState(initial = emptyList())
 
     SettingsScaffold(title = "Settings", subtitle = collection.name, onBack = onBack, modifier = modifier) {
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        val scrollState = rememberScrollState()
+        LocalSettingsScrollStateRegistrar.current(scrollState)
+        Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
             SettingsGroup("Collection")
             SettingsRow(label = "Rename", onClick = onRename)
             SettingsRow(
