@@ -327,10 +327,10 @@ enum class SettingsSection(
     val subtitle: String,
 ) {
     LIBRARY     ("settings_section_library",      "Library",      "Library Manager, collections, artwork & hidden games"),
-    MEDIA       ("settings_section_media",        "Media",        "Music, video & photo settings"),
     EMULATORS   ("settings_section_emulators",    "Emulators",    "Launch profiles & RetroArch cores"),
     INTERFACE   ("settings_section_interface",    "Interface",    "Categories, themes, display & controller"),
     ACHIEVEMENTS("settings_section_achievements", "Achievements", "RetroAchievements & Steam"),
+    MEDIA       ("settings_section_media",        "Media",        "Music, video & photo settings"),
     SYSTEM      ("settings_section_system",       "System",       "About, logs, backup, setup & credits"),
 }
 
@@ -347,11 +347,6 @@ fun settingsSectionItems(section: SettingsSection): List<XMBItem> = when (sectio
         XMBItem(id = "settings_collections",    title = "Collections",  subtitle = "Create & manage game collections"),
         XMBItem(id = "settings_artwork",        title = "Artwork",      subtitle = "Scraping sources & cache"),
         XMBItem(id = "settings_app_visibility", title = "Hidden Games", subtitle = "Review apps & games you've hidden"),
-    )
-    SettingsSection.MEDIA -> listOf(
-        XMBItem(id = "settings_music", title = "Music", subtitle = "Music folders & default player"),
-        XMBItem(id = "settings_video", title = "Video", subtitle = "Video libraries, scanning & playback"),
-        XMBItem(id = "settings_photo", title = "Photo", subtitle = "Photo libraries & scanning"),
     )
     SettingsSection.EMULATORS -> listOf(
         // First pass: all three open the combined Emulators screen (plan §4); distinct ids keep
@@ -372,6 +367,11 @@ fun settingsSectionItems(section: SettingsSection): List<XMBItem> = when (sectio
         XMBItem(id = "settings_achievements_credentials",   title = "Provider Credentials", subtitle = "RetroAchievements & Steam accounts"),
         XMBItem(id = "settings_achievements_local_windows", title = "Local Windows",        subtitle = "Track local Windows (Steam-emu) games"),
         XMBItem(id = "settings_achievements_update",        title = "Update Achievements",  subtitle = "Sync & auto-match tracked games"),
+    )
+    SettingsSection.MEDIA -> listOf(
+        XMBItem(id = "settings_music", title = "Music", subtitle = "Music folders & default player"),
+        XMBItem(id = "settings_video", title = "Video", subtitle = "Video libraries, scanning & playback"),
+        XMBItem(id = "settings_photo", title = "Photo", subtitle = "Photo libraries & scanning"),
     )
     SettingsSection.SYSTEM -> listOf(
         XMBItem(id = "settings_about",  title = "About",            subtitle = "Play Field Portal"),

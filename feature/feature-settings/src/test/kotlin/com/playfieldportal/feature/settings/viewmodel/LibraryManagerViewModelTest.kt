@@ -12,8 +12,6 @@ import com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSc
 import com.playfieldportal.feature.achievements.provider.vita.VitaGameScanner
 import com.playfieldportal.feature.appbar.LauncherShortcutRepository
 import com.playfieldportal.feature.launcher.EmulatorProfileRepository
-import com.playfieldportal.feature.library.scanner.DiscSetReconciler
-import com.playfieldportal.feature.library.scanner.ExistingRomPathResolver
 import com.playfieldportal.feature.library.scanner.LibraryScanner
 import com.playfieldportal.feature.library.scanner.PlatformScanOutcome
 import com.playfieldportal.feature.library.scanner.RomScanner
@@ -54,8 +52,6 @@ class LibraryManagerViewModelTest {
     private val romRootRepository = mockk<RomRootRepository>(relaxed = true)
     private val folderHintResolver = mockk<PlatformFolderHintResolver>(relaxed = true)
     private val launcherShortcutRepository = mockk<LauncherShortcutRepository>(relaxed = true)
-    private val existingRomPathResolver = mockk<ExistingRomPathResolver>(relaxed = true)
-    private val discSetReconciler = mockk<DiscSetReconciler>(relaxed = true)
     private val windowsLibrarySetup = mockk<WindowsLibrarySetup>(relaxed = true)
     private val pcGameScanner = mockk<PcGameScanner>(relaxed = true)
     private val localSteamSchemaGenerator = mockk<LocalSteamSchemaGenerator>(relaxed = true)
@@ -63,6 +59,7 @@ class LibraryManagerViewModelTest {
     private val vita3KLibrary = mockk<Vita3KLibrary>(relaxed = true)
     private val vitaGameScanner = mockk<VitaGameScanner>(relaxed = true)
     private val libraryScanner = mockk<LibraryScanner>(relaxed = true)
+    private val romRootScanRunner = mockk<RomRootScanRunner>(relaxed = true)
 
     private lateinit var vm: LibraryManagerViewModel
 
@@ -83,8 +80,6 @@ class LibraryManagerViewModelTest {
             romRootRepository,
             folderHintResolver,
             launcherShortcutRepository,
-            existingRomPathResolver,
-            discSetReconciler,
             windowsLibrarySetup,
             pcGameScanner,
             localSteamSchemaGenerator,
@@ -92,6 +87,7 @@ class LibraryManagerViewModelTest {
             vita3KLibrary,
             vitaGameScanner,
             libraryScanner,
+            romRootScanRunner,
         )
     }
 

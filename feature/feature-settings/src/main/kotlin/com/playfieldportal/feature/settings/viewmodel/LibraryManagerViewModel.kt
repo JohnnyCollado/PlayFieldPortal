@@ -18,17 +18,12 @@ import com.playfieldportal.feature.launcher.EmulatorProfileRepository
 import com.playfieldportal.feature.launcher.PcLauncherAdapters
 import com.playfieldportal.feature.launcher.PcLauncherCatalog
 import com.playfieldportal.feature.launcher.PcLauncherType
-import com.playfieldportal.feature.library.scanner.DiscSetReconciler
-import com.playfieldportal.feature.library.scanner.ExistingRomPathResolver
 import com.playfieldportal.feature.library.scanner.LibraryScanner
 import com.playfieldportal.feature.library.scanner.RomScanner
-import com.playfieldportal.feature.library.scanner.ScanResult
-import com.playfieldportal.feature.library.scanner.ScanStatus
 import com.playfieldportal.feature.library.scanner.isScannable
 import com.playfieldportal.feature.library.scanner.scanOutcomeMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -39,7 +34,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
-import kotlin.coroutines.cancellation.CancellationException
 
 // ── Screen model ────────────────────────────────────────────────────────────────
 
@@ -144,8 +138,6 @@ class LibraryManagerViewModel @Inject constructor(
     private val romRootRepository: RomRootRepository,
     private val folderHintResolver: PlatformFolderHintResolver,
     private val launcherShortcutRepository: LauncherShortcutRepository,
-    private val existingRomPathResolver: ExistingRomPathResolver,
-    private val discSetReconciler: DiscSetReconciler,
     private val windowsLibrarySetup: com.playfieldportal.core.data.repository.WindowsLibrarySetup,
     private val pcGameScanner: com.playfieldportal.feature.settings.pc.PcGameScanner,
     private val localSteamSchemaGenerator: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSchemaGenerator,
@@ -153,6 +145,7 @@ class LibraryManagerViewModel @Inject constructor(
     private val vita3KLibrary: com.playfieldportal.core.data.repository.Vita3KLibrary,
     private val vitaGameScanner: com.playfieldportal.feature.achievements.provider.vita.VitaGameScanner,
     private val libraryScanner: LibraryScanner,
+    private val romRootScanRunner: RomRootScanRunner,
 ) : ViewModel() {
 
     private val _scratch = MutableStateFlow(LibraryManagerUiState())
@@ -936,142 +929,15 @@ class LibraryManagerViewModel @Inject constructor(
     // ── Single-scan autoload from the ES-DE ROM root ─────────────────────────────
     //
     // Walks the granted ROM root's top-level subfolders, maps each to a platform by its ES-DE
-    // folder name (PlatformFolderHintResolver), auto-creates a Memory Card for any system that
-    // doesn't have one yet (pointed at its subfolder under the root), then scans every detected
-    // console — the whole library set up from one action. Folders that don't map to a supported
-    // platform are skipped.
+    // folder name, auto-creates a Memory Card for any system that doesn't have one yet, then
+    // scans every detected console — the whole library set up from one action. Folders that
+    // don't map to a supported platform are skipped. The scan loop lives in [RomRootScanRunner]
+    // so the first-run wizard's ROM-root pick triggers the exact same pass without duplicating it.
     fun scanRomRoot() {
         viewModelScope.launch {
-            val roots = romRootRepository.getAll()
-            if (roots.isEmpty()) {
-                _scratch.update { it.copy(message = "Add a ROM Root first in Settings → Folder Access.") }
-                return@launch
-            }
-
-            val catalog = memoryCardRepository.availablePlatformCatalog().associateBy { it.id }
-            val haveCard = memoryCardRepository.getAll().map { it.platformId }.toMutableSet()
-
-            var scannedFolders = 0
-            val platformsWithGames = mutableSetOf<String>()
-            var newCards = 0
-            var totalAdded = 0
-            var skipped = 0
-
-            // Scan every root's subfolders. A folder only becomes a console if it actually contains
-            // ROMs — empty ES-DE folders (e.g. the ones "Set Up ROM Folders" created) are skipped.
-            for (rootUri in roots) {
-                val rootRaw = RomRootRepository.rawPathOfTree(rootUri)
-                for (name in romScanner.listSubfolderNames(rootUri)) {
-                    scannedFolders++
-                    val platformId = folderHintResolver.detectFromFolderName(name) ?: continue
-                    val platform = catalog[platformId] ?: continue
-                    val childDocId = RomRootRepository.childDocIdOf(rootUri, name) ?: continue
-
-                    val exts = memoryCardRepository.getById(platformId)?.supportedExtensions
-                        ?.takeIf { it.isNotEmpty() } ?: platform.romExtensions
-                    if (exts.isEmpty()) continue   // nothing scannable for this platform
-
-                    val baseline = try {
-                        existingRomPathResolver.baselineFor(platformId)
-                    } catch (ce: CancellationException) {
-                        throw ce
-                    } catch (e: Exception) {
-                        Timber.e(e, "Auto-detect skipped $platformId — could not read its library")
-                        skipped++
-                        continue
-                    }
-
-                    val found = firstComplete(
-                        romScanner.scanTree(
-                            rootUri,
-                            exts,
-                            platformId,
-                            true,
-                            baseline.romPaths,
-                            startDocId = childDocId
-                        )
-                    )?.newGames.orEmpty()
-
-                    if (found.isEmpty()) continue   // empty (or fully-known) folder → no card, no change
-
-                    if (platformId !in haveCard) {
-                        memoryCardRepository.addCard(
-                            platformId = platformId,
-                            displayName = "${platform.name} Memory Card",
-                            romDirectory = rootRaw?.let { "${it.trimEnd('/')}/$name" },
-                            emulatorId = null,
-                        )
-                        haveCard.add(platformId)
-                        newCards++
-                    }
-                    found.forEach { gameRepository.upsert(it) }
-                    // Same incremental disc-set join as LibraryScanner: a disc added into an
-                    // already-scanned .m3u set is union-reconciled against the pre-scan rows.
-                    discSetReconciler.reconcilePlatform(platformId, baseline.games, found)
-                    memoryCardRepository.recordScan(platformId, System.currentTimeMillis())
-                    platformsWithGames.add(platformId)
-                    totalAdded += found.size
-                }
-            }
-
-            // The discovery pass above is needed to decide which empty-root folders should create
-            // cards. Re-run every discovered/previously configured console through the shared
-            // scanner so root autoload gets the same missing-file safety and set reconciliation as
-            // Scan This Console. Known rows are skipped as additions, but are still surveyed.
-            haveCard.filter { it != WINDOWS_PLATFORM_ID }.forEach { platformId ->
-                val outcome = libraryScanner.scanPlatform(platformId, removeMissing = true)
-                if (outcome.status == ScanStatus.COMPLETED &&
-                    (outcome.added > 0 || outcome.markedMissing > 0)
-                ) {
-                    platformsWithGames.add(platformId)
-                    totalAdded += outcome.added
-                }
-            }
-
-            // Windows is import-driven, not ROM-scanned, so the folder loop skips it (no
-            // extensions). Auto-detect finishes with the shared Import PC pass instead: it
-            // creates the Windows Memory Card, wires <root>/windows as its directory
-            // (WindowsLibrarySetup.ensure), makes the import/ drop-folder, and imports any
-            // exported games — the same pass as Import PC's folder scan.
-            val hadWindowsCard = "windows" in haveCard
-            val pcReport = runCatching { pcGameScanner.scan() }
-                .onFailure { Timber.e(it, "Auto-detect PC scan failed") }
-                .getOrNull()
-            if (!hadWindowsCard && memoryCardRepository.getById("windows") != null) {
-                haveCard.add("windows")
-                newCards++
-            }
-            if (pcReport != null && pcReport.newGames > 0) {
-                platformsWithGames.add("windows")
-                totalAdded += pcReport.newGames
-            }
-
-            val rootLabel = "${roots.size} root${if (roots.size == 1) "" else "s"}"
-            val message = buildString {
-                if (platformsWithGames.isEmpty()) {
-                    append("Scanned $scannedFolders folder(s) across $rootLabel; no new ROMs found. ")
-                    append("Copy games into the matching system folders and try again.")
-                } else {
-                    append("Loaded ${platformsWithGames.size} system(s)")
-                    if (newCards > 0) append(" ($newCards new console(s))")
-                    append(", $totalAdded ROM(s) from $rootLabel.")
-                }
-                if (skipped > 0) append(" $skipped folder(s) skipped (library unreadable).")
-            }
-            _scratch.update { it.copy(message = message) }
-            Timber.i("ROM root autoload — folders=$scannedFolders systems=${platformsWithGames.size} new=$newCards roms=$totalAdded roots=${roots.size}")
+            val report = romRootScanRunner.scan()
+            _scratch.update { it.copy(message = report.message) }
         }
-    }
-
-    // ── Scan-source resolution shared by scanConsole / autoload ──────────────────
-    //
-    // Folder-resolution logic itself moved to ScanSourceResolver (shared with
-    // LibraryRescanCoordinator's Phase 5 rescan) — see LibraryScanner.scanLocked / ScanSourceResolver.sourcesFor.
-
-    private suspend fun firstComplete(flow: Flow<ScanResult>): ScanResult.Complete? {
-        var complete: ScanResult.Complete? = null
-        flow.collect { if (it is ScanResult.Complete) complete = it }
-        return complete
     }
 
 }

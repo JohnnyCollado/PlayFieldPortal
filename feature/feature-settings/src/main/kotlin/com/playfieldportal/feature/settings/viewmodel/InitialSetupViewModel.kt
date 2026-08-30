@@ -92,6 +92,7 @@ class InitialSetupViewModel @Inject constructor(
     private val igdbApi: IgdbApi,
     private val screenScraperApi: ScreenScraperApi,
     private val wizardMediaScanRunner: com.playfieldportal.feature.settings.media.WizardMediaScanRunner,
+    private val romRootScanRunner: RomRootScanRunner,
 ) : ViewModel() {
 
     // Wizard-local state (page + transient messages); everything else mirrors the stores.
@@ -189,6 +190,12 @@ class InitialSetupViewModel @Inject constructor(
         viewModelScope.launch {
             romRootRepository.persist(uri, writable = true)
             romRootRepository.add(uri.toString())
+            // The settings screens (Library Manager's add-root path) pair root-set with an
+            // immediate auto-detect + scan — that pass creates the Memory Cards and stamps
+            // lastScannedAt, the signal the XMB's "+ Add" getting-started rows key off. Mirror
+            // it here, on a scope that survives the wizard closing, or wizard-configured
+            // consoles stay empty until the user finds Auto-Detect in Settings.
+            romRootScanRunner.kickoff()
         }
     }
 

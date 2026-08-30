@@ -48,6 +48,7 @@ class InitialSetupViewModelTest {
     private val igdbApi = mockk<IgdbApi>()
     private val screenScraperApi = mockk<ScreenScraperApi>()
     private val scanRunner = mockk<com.playfieldportal.feature.settings.media.WizardMediaScanRunner>(relaxed = true)
+    private val romRootScanRunner = mockk<RomRootScanRunner>(relaxed = true)
     private lateinit var vm: InitialSetupViewModel
 
     @Before fun setUp() {
@@ -63,7 +64,7 @@ class InitialSetupViewModelTest {
         every { screenScraperApi.isEnabled } returns true
         vm = InitialSetupViewModel(
             romRoots, mediaRoots, artworkImport, sgdbKeys, metadataKeys,
-            credentials, steamApi, igdbApi, screenScraperApi, scanRunner,
+            credentials, steamApi, igdbApi, screenScraperApi, scanRunner, romRootScanRunner,
         )
     }
 
@@ -102,16 +103,21 @@ class InitialSetupViewModelTest {
         job.cancel()
     }
 
-    @Test fun `rom root pick persists the grant then stores the root`() = runTest(dispatcher) {
-        val uri = mockk<Uri> { every { this@mockk.toString() } returns "content://tree/primary%3ARoms" }
+    @Test fun `rom root pick persists the grant, stores the root, then kicks off the scan`() =
+        runTest(dispatcher) {
+            val uri = mockk<Uri> { every { this@mockk.toString() } returns "content://tree/primary%3ARoms" }
 
-        vm.onRomRootPicked(uri)
-        advanceUntilIdle()
+            vm.onRomRootPicked(uri)
+            advanceUntilIdle()
 
-        // Read+write, matching Library Manager's add-root path (ES-DE folder setup needs it).
-        coVerify { romRoots.persist(uri, writable = true) }
-        coVerify { romRoots.add("content://tree/primary%3ARoms") }
-    }
+            // Read+write, matching Library Manager's add-root path (ES-DE folder setup needs it).
+            coVerify { romRoots.persist(uri, writable = true) }
+            coVerify { romRoots.add("content://tree/primary%3ARoms") }
+            // The settings screens pair add-root with an auto-detect + scan — the wizard must
+            // too, or wizard-configured consoles stay empty until the user finds Auto-Detect
+            // in Settings (the Memory Cards + lastScannedAt only exist after a scan).
+            io.mockk.verify { romRootScanRunner.kickoff() }
+        }
 
     @Test fun `media root pick persists and sets the chosen kind`() = runTest(dispatcher) {
         val uri = mockk<Uri> { every { this@mockk.toString() } returns "content://tree/primary%3AMusic" }

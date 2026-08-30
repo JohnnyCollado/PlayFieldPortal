@@ -20,10 +20,10 @@ class SettingsHierarchyTest {
             listOf(
                 "settings_android_system",
                 "settings_section_library",
-                "settings_section_media",
                 "settings_section_emulators",
                 "settings_section_interface",
                 "settings_section_achievements",
+                "settings_section_media",
                 "settings_section_system",
             ),
             XMBViewModel.SETTINGS_ROOT_ITEMS.map { it.id },
