@@ -2,6 +2,8 @@ package com.playfieldportal.feature.settings.ui
 
 import com.playfieldportal.core.navigation.NavigationEngine
 import com.playfieldportal.core.navigation.NavigationNode
+import com.playfieldportal.core.navigation.NavigationTouchAction
+import kotlin.math.abs
 
 /**
  * A logical item exposed to controller navigation.
@@ -16,6 +18,7 @@ data class ControllerNavItem(
     val selectable: Boolean = true,
     val enabled: Boolean = true,
     val onSelect: (() -> Unit)? = null,
+    val onLongPress: (() -> Unit)? = null,
     // Inline actions rendered in the row's trailing slot, reached via LEFT/RIGHT (e.g. a
     // root row's Replace/Remove buttons). They never participate in vertical movement.
     val trailingActions: List<ControllerNavItem> = emptyList(),
@@ -28,6 +31,7 @@ internal fun ControllerNavItem.toNavigationNode(): NavigationNode = NavigationNo
     selectable = selectable,
     enabled = enabled,
     onSelect = onSelect,
+    onLongPress = onLongPress,
     // Inline trailing actions become child nodes (spec §4): reached via LEFT/RIGHT,
     // never vertically, and clamps at the ends.
     children = trailingActions.map { it.toNavigationNode() },
@@ -53,6 +57,27 @@ class ControllerNavigationState(
         private set
 
     val acceptsInput: Boolean get() = engine.acceptsInput
+    val cursorVisible: Boolean get() = engine.cursorVisible
+
+    fun markControllerInput() = engine.markControllerInput()
+    fun markTouchInput() = engine.markTouchInput()
+
+    /**
+     * Restores controller focus after touch scrolling to the focusable item nearest the viewport
+     * centre. Geometry is supplied in root coordinates by the scaffold.
+     */
+    fun focusNearestTo(y: Float): String? {
+        val target = engine.currentGeometry()
+            .filterKeys { key -> key in engine.focusableKeys() }
+            .minByOrNull { (_, nodeY) -> abs(nodeY - y) }
+            ?.key
+        if (target != null) engine.setFocused(target)
+        focusedKey = engine.focusedKey
+        return focusedKey
+    }
+
+    fun touch(key: String, longPress: Boolean = false): Boolean =
+        engine.dispatchTouch(key, if (longPress) NavigationTouchAction.LONG_PRESS else NavigationTouchAction.TAP)
 
     /**
      * Feed the current row list (registration order or, ideally, Y-sorted visual order) plus

@@ -15,7 +15,7 @@ class NavigationContext(
     /** Modal contexts sit above the graph they interrupted and receive all input (spec §15). */
     val modal: Boolean = false,
 ) {
-    private var nodes: List<NavigationNode> = emptyList()
+    internal var nodes: List<NavigationNode> = emptyList()
     private var geometry: Map<String, Float> = emptyMap()
     private var ready: Boolean = false
 

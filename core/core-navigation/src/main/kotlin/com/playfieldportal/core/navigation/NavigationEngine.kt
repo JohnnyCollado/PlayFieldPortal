@@ -45,6 +45,32 @@ class NavigationEngine(
     val acceptsInput: Boolean
         get() = ready && !inputLocked
 
+    /** Whether the visual cursor should be rendered. Touch hides it until controller input resumes. */
+    var cursorVisible: Boolean = true
+        private set
+
+    /** Mark a pointer interaction without changing logical focus. */
+    fun markTouchInput() {
+        cursorVisible = false
+    }
+
+    /** Mark controller input and restore the visual cursor. */
+    fun markControllerInput() {
+        cursorVisible = true
+    }
+
+    /** Dispatch a tap or long press to a known node. Long press never falls through to tap. */
+    fun dispatchTouch(key: String, action: NavigationTouchAction): Boolean {
+        if (!ready || inputLocked) return false
+        val node = active.findNode(key) ?: return false
+        markTouchInput()
+        active.setFocused(key)
+        return when (action) {
+            NavigationTouchAction.TAP -> active.confirm()
+            NavigationTouchAction.LONG_PRESS -> node.onLongPress?.let { it(); true } ?: false
+        }
+    }
+
     private val active: NavigationContext
         get() = contexts.last()
 
@@ -97,6 +123,8 @@ class NavigationEngine(
         activeGeometry[key] = y
     }
 
+    fun focusableKeys(): Set<String> = active.nodes.filter { it.focusable && it.enabled }.mapTo(mutableSetOf()) { it.key }
+
     private val activeGeometry = mutableMapOf<String, Float>()
 
     fun currentGeometry(): Map<String, Float> = activeGeometry.toMap()
@@ -131,6 +159,7 @@ class NavigationEngine(
      * Gating order: readiness → input lock → modal/edit routing (all inside the active context).
      */
     fun dispatch(command: NavigationCommand): String? {
+        markControllerInput()
         // Readiness gate (spec §13): input ignored, never buffered.
         if (!ready) return null
         // Recovery-animation gate (spec §9): drop, don't queue.

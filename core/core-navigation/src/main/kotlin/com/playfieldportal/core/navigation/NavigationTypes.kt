@@ -6,6 +6,9 @@ package com.playfieldportal.core.navigation
  */
 enum class NavigationDirection { UP, DOWN, LEFT, RIGHT }
 
+/** Pointer interaction supported by the platform adapters. */
+enum class NavigationTouchAction { TAP, LONG_PRESS }
+
 /**
  * A logical location the controller cursor may interact with (spec §3).
  *
@@ -20,8 +23,10 @@ data class NavigationNode(
     val focusable: Boolean = true,
     val selectable: Boolean = true,
     val enabled: Boolean = true,
-    /** Activated by Confirm. Null means the node is read-only (Confirm is a no-op). */
+    /** Activated by Confirm or a tap. Null means the node is read-only. */
     val onSelect: (() -> Unit)? = null,
+    /** Opens a component-owned context menu on long press. Null means no context menu. */
+    val onLongPress: (() -> Unit)? = null,
     /**
      * Child nodes (inline actions, composite controls) reached via LEFT/RIGHT (spec §4).
      * Children never participate in vertical traversal; horizontal movement clamps at the ends.
