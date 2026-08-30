@@ -39,6 +39,14 @@ class NavigationContext(
 
     fun geometryFor(key: String): Float? = geometry[key]
 
+    /** Full key → Y geometry map currently known (used by the engine's touch re-anchor). */
+    fun allGeometry(): Map<String, Float> = geometry
+
+    /** Single-node geometry update (adapter seam; bulk updates flow through [updateNodes]). */
+    fun reportGeometry(key: String, y: Float) {
+        geometry = geometry + (key to y)
+    }
+
     fun hasGeometry(): Boolean = geometry.isNotEmpty()
 
     fun focusedNode(): NavigationNode? = focusedKey?.let { findNode(it) }

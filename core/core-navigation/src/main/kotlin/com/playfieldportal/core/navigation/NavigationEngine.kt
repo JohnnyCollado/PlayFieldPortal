@@ -120,14 +120,16 @@ class NavigationEngine(
     fun reportNodeGeometry(key: String, y: Float) {
         // Geometry bookkeeping is context-level; updates flow through replaceNodes* calls.
         // Kept as an explicit seam so adapters can report single-node moves cheaply.
-        activeGeometry[key] = y
+        active.reportGeometry(key, y)
     }
 
     fun focusableKeys(): Set<String> = active.nodes.filter { it.focusable && it.enabled }.mapTo(mutableSetOf()) { it.key }
 
-    private val activeGeometry = mutableMapOf<String, Float>()
-
-    fun currentGeometry(): Map<String, Float> = activeGeometry.toMap()
+    /**
+     * The active context's key → Y geometry. Geometry lands here via [replaceNodes]/[replaceNodesWithGeometry]
+     * (bulk) or [reportNodeGeometry] (single node), and is what touch→D-pad re-anchoring reads.
+     */
+    fun currentGeometry(): Map<String, Float> = active.allGeometry()
 
     // ── Context stack / modals (spec §15, §16) ───────────────────────────────────
 

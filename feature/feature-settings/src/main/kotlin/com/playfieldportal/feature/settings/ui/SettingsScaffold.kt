@@ -230,9 +230,18 @@ fun SettingsScaffold(
         snapshotFlow {
             // Reading rowPositions subscribes the flow to layout changes, so the order re-sorts
             // the moment a late row lands (or everything scrolls by the same delta — a no-op).
-            navigationOrder.sortedBy { (fr, _) -> rowPositions[fr] ?: Float.MAX_VALUE }
+            // The geometry map is emitted alongside so position changes re-trigger the flow even
+            // when the visual order itself is unchanged (rows already in order) — the engine's
+            // touch re-anchor needs the Y positions, not just the ordering.
+            val sorted = navigationOrder.sortedBy { (fr, _) -> rowPositions[fr] ?: Float.MAX_VALUE }
+            val geometry = sorted.mapNotNull { (fr, item) ->
+                rowPositions[fr]?.let { item.key to it }
+            }.toMap()
+            sorted to geometry
         }
-            .collect { entries -> navigationState.updateItems(entries.map { it.second }) }
+            .collect { (entries, geometry) ->
+                navigationState.updateItems(entries.map { it.second }, geometry)
+            }
     }
     // Absolute content position at the top of the scroll viewport. Used as the stable anchor
     // when clamping at the first item; unlike the focused row's moving Y it remains valid while
@@ -286,10 +295,12 @@ fun SettingsScaffold(
     LaunchedEffect(refocusTick) {
         if (refocusTick == 0) return@LaunchedEffect
         withFrameNanos { }
+        val sortedEntries = navigationOrder.sortedBy { (fr, _) -> rowPositions[fr] ?: Float.MAX_VALUE }
         navigationState.updateItems(
-            navigationOrder
-                .sortedBy { (fr, _) -> rowPositions[fr] ?: Float.MAX_VALUE }
-                .map { it.second }
+            sortedEntries.map { it.second },
+            sortedEntries.mapNotNull { (fr, item) ->
+                rowPositions[fr]?.let { item.key to it }
+            }.toMap(),
         )
         val target = navigationState.focusedKey
             ?.let { key -> navigationOrder.firstOrNull { it.second.key == key }?.first }

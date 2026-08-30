@@ -28,6 +28,16 @@ class NavigationEngineGeometryTest {
     }
 
     @Test
+    fun `currentGeometry exposes the geometry passed via replaceNodes`() {
+        val engine = NavigationEngine()
+        engine.replaceNodes(
+            listOf(node("a"), node("b")),
+            geometry = mapOf("a" to 100f, "b" to 200f),
+        )
+        assertEquals(mapOf("a" to 100f, "b" to 200f), engine.currentGeometry())
+    }
+
+    @Test
     fun `order fallback when geometry is unavailable`() {
         val engine = NavigationEngine()
         engine.replaceNodes(listOf(node("a"), node("b"), node("c")))

@@ -22,9 +22,14 @@ import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performTouchInput
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.theme.PFPTheme
 import kotlinx.coroutines.channels.Channel
+import kotlin.math.abs
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -254,5 +259,52 @@ class SettingsScaffoldNavigationTest {
         // Clamped at the top row.
         press(GamepadAction.NAVIGATE_UP)
         assertFocusedRow("Phone Storage")
+    }
+
+    @Test
+    fun `first dpad press after a touch drag re-anchors to the row nearest the viewport centre`() {
+        // A long, scrollable list so the viewport centre lands mid-list — not on the stale
+        // pre-drag row at the top.
+        showScreen(onBack = {}) {
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                repeat(30) { i -> SettingsRow(label = "Row ${i + 1}", onClick = {}) }
+            }
+        }
+        // Opens focused on the first row.
+        assertFocusedRow("Row 1")
+
+        // Measure the geometry the scaffold re-anchors against: the content top is the root Y
+        // of the first row (the scrollable column starts at the content box), and the viewport
+        // centre is contentTop + half the configured screen height (the same LocalConfiguration
+        // screenHeightDp the scaffold reads — not the inset-reduced root bounds).
+        val density = composeRule.density.density
+        val screenHeightDp = composeRule.activity.resources.configuration.screenHeightDp.toFloat()
+        val screenHeightPx = screenHeightDp * density
+        val firstRowNode = composeRule.onNode(isFocused()).fetchSemanticsNode()
+        val contentTop = firstRowNode.boundsInRoot.top
+        val rowHeight = firstRowNode.boundsInRoot.height
+        val viewportCenter = contentTop + screenHeightPx / 2f
+
+        // A real touch drag: the contact itself flags the screen as touch-scrolled (the scaffold
+        // hides the cursor on any pointer activity); the small move keeps the list from scrolling.
+        composeRule.onRoot().performTouchInput {
+            down(center)
+            moveBy(Offset(0f, -5f))
+            up()
+        }
+        composeRule.waitForIdle()
+
+        // Row centres sit half a row below their tops, so compare against centre + rowHeight/2
+        // (the scaffold compares row tops against the viewport centre).
+        val nearest: Int = (1..30).minByOrNull { i: Int ->
+            val centerY = composeRule.onNodeWithText("Row $i")
+                .fetchSemanticsNode().boundsInRoot.center.y
+            abs(centerY - (viewportCenter + rowHeight / 2f))
+        }!!
+
+        // First DOWN: re-anchor to the visible centre, then step one row below it — never the
+        // stale pre-drag row (Row 1) and its continuation (Row 2).
+        press(GamepadAction.NAVIGATE_DOWN)
+        assertFocusedRow("Row ${(nearest + 1).coerceAtMost(30)}")
     }
 }

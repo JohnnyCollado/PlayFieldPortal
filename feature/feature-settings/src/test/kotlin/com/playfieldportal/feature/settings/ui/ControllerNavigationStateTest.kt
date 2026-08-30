@@ -152,6 +152,31 @@ class ControllerNavigationStateTest {
     }
 
     @Test
+    fun `focusNearestTo re-anchors to the row nearest the given Y when geometry is present`() {
+        val state = ControllerNavigationState()
+        state.updateItems(
+            listOf(item("a"), item("b"), item("c"), item("d")),
+            geometry = mapOf("a" to 100f, "b" to 300f, "c" to 500f, "d" to 700f),
+        )
+        // Pre-drag focus was on the first row; the viewport centre now sits between b and c.
+        state.setFocused("a")
+        assertEquals("c", state.focusNearestTo(460f))
+        assertEquals("c", state.focusedKey)
+        // Movement continues from the re-anchored row, not the stale pre-drag one.
+        assertEquals("d", state.move(1))
+        assertEquals("b", state.move(-2))
+    }
+
+    @Test
+    fun `focusNearestTo leaves focus unchanged when no geometry was supplied`() {
+        val state = ControllerNavigationState()
+        state.updateItems(listOf(item("a"), item("b"), item("c")))
+        state.setFocused("b")
+        assertEquals("b", state.focusNearestTo(0f))
+        assertEquals("b", state.focusedKey)
+    }
+
+    @Test
     fun `focusFirst returns the first navigable key`() {
         val state = ControllerNavigationState()
         state.updateItems(listOf(item("a"), item("b")))
