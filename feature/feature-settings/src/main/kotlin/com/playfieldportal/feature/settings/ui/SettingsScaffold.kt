@@ -178,6 +178,16 @@ fun SettingsScaffold(
     // Used by ControllerSettingsScreen to capture button presses during remap mode.
     onInterceptAction: ((GamepadAction) -> Boolean)? = null,
     onTouchInput: () -> Unit = {},
+    // ── Chrome overrides — the first-run wizard's PSP skin (see WizardScaffold) ──
+    // Replaces the ◀ breadcrumb header (the wizard draws a step badge + title instead).
+    header: (@Composable () -> Unit)? = null,
+    // Hides the divider under the header (the wizard header has its own bottom rule).
+    showDivider: Boolean = true,
+    // Light scrim: the XMB wave reads through instead of sitting behind a dark overlay.
+    lightScrim: Boolean = false,
+    // Pinned footer under the content (the wizard's ✕ Enter / ○ Back chrome). When set, the
+    // content area becomes a weighted column so the viewport excludes the footer band.
+    footer: (@Composable () -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
@@ -523,11 +533,20 @@ fun SettingsScaffold(
                 .fillMaxSize()
                 // Semi-transparent scrim so the XMB wave/wallpaper background stays visible behind
                 // Settings (the XMB foreground is hidden by XMBShell while a Settings screen is up).
+                // The wizard skin uses a much lighter scrim so the wave reads through like the
+                // PSP original's rich blue background while white text stays readable.
                 .background(
-                    Brush.verticalGradient(
-                        0f to pfpColors.backgroundTop.copy(alpha = 0.72f),
-                        1f to pfpColors.backgroundBottom.copy(alpha = 0.90f),
-                    )
+                    if (lightScrim) {
+                        Brush.verticalGradient(
+                            0f to pfpColors.backgroundTop.copy(alpha = 0.45f),
+                            1f to pfpColors.backgroundBottom.copy(alpha = 0.55f),
+                        )
+                    } else {
+                        Brush.verticalGradient(
+                            0f to pfpColors.backgroundTop.copy(alpha = 0.72f),
+                            1f to pfpColors.backgroundBottom.copy(alpha = 0.90f),
+                        )
+                    }
                 ),
         ) {
             Column(
@@ -535,7 +554,9 @@ fun SettingsScaffold(
                     .fillMaxSize()
                     .heightIn(min = 720.dp),
             ) {
-
+                if (header != null) {
+                    header()
+                } else {
                 // ── Header — breadcrumb form, matching the detail menus: the ◀ back arrow
                 // leads, followed by the title stack. Excluded from focus traversal: the arrow
                 // is clickable (touch only — the controller uses the B button), so without this,
@@ -580,8 +601,9 @@ fun SettingsScaffold(
                         }
                     }
                 }
+                }
 
-                HorizontalDivider(color = SettingsDivider)
+                if (showDivider) HorizontalDivider(color = SettingsDivider)
 
                 // Invisible 0dp focus bootstrap element. requestFocus() lands here first;
                 // onFocusChanged immediately redirects to the first real interactive row via
@@ -603,9 +625,13 @@ fun SettingsScaffold(
                         }
                 )
 
+                // Content owns the remaining height; with a wizard footer the content Box is
+                // weighted so the measured viewport (below) excludes the footer band and
+                // keep-in-view clamping never walks a row underneath it.
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .then(if (footer != null) Modifier.weight(1f) else Modifier)
                         .onGloballyPositioned {
                             firstVisibleContentY.value = it.localToRoot(Offset.Zero).y
                             contentViewportHeight.value = it.size.height.toFloat()
@@ -613,17 +639,26 @@ fun SettingsScaffold(
                 ) {
                     content()
                 }
+
+                if (footer != null) {
+                    // Footer chrome (✕ Enter / ○ Back) is display-only — never a focus target,
+                    // so UP on the first content row cannot land inside it.
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .focusProperties { canFocus = false },
+                    ) {
+                        footer()
+                    }
+                }
             }
         }
     }
 }
 
 // ── Reusable row components ───────────────────────────────────────────────────
-
-// Stable key for rows without an explicit focusKey: derived from the FocusRequester's identity,
-// which is remembered and therefore stable for the row's lifetime.
-private fun stableKey(prefix: String, fr: FocusRequester, focusKey: String?): String =
-    focusKey ?: "$prefix-${System.identityHashCode(fr)}"
+// (Controller-row registration helpers live in ControllerRowRegistration.kt — shared with the
+// first-run wizard's row family so focus behavior can never drift between the two families.)
 
 @Composable
 fun SettingsGroup(title: String) {
@@ -680,87 +715,44 @@ fun SettingsRow(
     val focusTracker = LocalSettingsFocusTracker.current
     val touchInput = LocalSettingsTouchInput.current
     val cursorVisible = LocalSettingsCursorVisible.current
-    val focusRegistry = LocalSettingsFocusRegistry.current
-    val registerFirst = LocalSettingsRegisterFirstFocusable.current
-    val rowPositions = LocalSettingsRowPositions.current
-    val rowSizes = LocalSettingsRowSizes.current
-    val navigationOrder = LocalSettingsNavigationOrder.current
-    val rowActionFrs = LocalSettingsRowActions.current
     val reportFocused = LocalSettingsReportFocused.current
-    val reportRemoved = LocalSettingsReportRemoved.current
     var isFocused by remember { mutableStateOf(false) }
 
     // EVERY row is controller-focusable — a non-focusable row is a dead zone the cursor can't
     // reach or scroll to (read-only value rows, info footers). Only rows with a real [onClick]
     // claim the initial-focus slot, so a screen still opens on its first ACTION, and only they
     // draw the strong cursor fill; read-only rows get a softer frame and SELECT is a no-op.
-    val focusRequester = remember { FocusRequester() }
-    if (focusKey != null) {
-        DisposableEffect(focusKey) {
-            focusRegistry[focusKey] = focusRequester
-            onDispose {
-                if (focusRegistry[focusKey] === focusRequester) focusRegistry.remove(
-                    focusKey
-                )
-            }
-        }
-    }
-    val rowKey = stableKey("row", focusRequester, focusKey)
-    val navItem = ControllerNavItem(
-        key = rowKey,
-        focusable = true,
+    // Registration + geometry reporting are shared with the wizard's row family via
+    // rememberControllerRowRegistration so both families navigate identically.
+    val row = rememberControllerRowRegistration(
+        prefix = "row",
+        focusKey = focusKey,
+        claimInitialFocus = onClick != null,
         selectable = onClick != null,
-        enabled = true,
         onSelect = onClick,
         onLongPress = onLongPress,
-        trailingActions = actions.mapIndexed { index, action ->
-            ControllerNavItem(
-                key = "$rowKey:action:$index",
-                focusable = true,
-                selectable = true,
-                enabled = true, onSelect = action.onClick,
-                onLongPress = action.onLongPress,
-
+        trailingActionsFor = { rowKey ->
+            actions.mapIndexed { index, action ->
+                ControllerNavItem(
+                    key = "$rowKey:action:$index",
+                    focusable = true,
+                    selectable = true,
+                    enabled = true,
+                    onSelect = action.onClick,
+                    onLongPress = action.onLongPress,
                 )
+            }
         },
     )
-    DisposableEffect(Unit) {
-        navigationOrder?.add(focusRequester to navItem)
-        if (onClick != null) registerFirst(focusRequester)
-        onDispose {
-            navigationOrder?.removeAll { it.first === focusRequester }
-            rowPositions?.remove(focusRequester)
-            rowSizes?.remove(focusRequester)
-            // If this row held focus, the scaffold refocuses the nearest surviving row.
-            reportRemoved(focusRequester)
-        }
-    }
-    // Keep the registered item fresh — onClick/selectability can change across recompositions
-    // (e.g. a toggle row whose checked state the screen owns).
-    SideEffect {
-        val list = navigationOrder ?: return@SideEffect
-        val index = list.indexOfFirst { it.first === focusRequester }
-        if (index >= 0) list[index] = focusRequester to navItem
-    }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .focusRequester(focusRequester)
+            .focusRequester(row.focusRequester)
             // Report on-screen Y and height so the scaffold can navigate and keep the row in view.
-            .then(
-                if (rowPositions != null && rowSizes != null) {
-                    val positions = rowPositions
-                    val sizes = rowSizes
-                    val req = focusRequester
-                    Modifier.onGloballyPositioned {
-                        positions[req] = it.localToRoot(Offset.Zero).y
-                        sizes[req] = it.size.height.toFloat()
-                    }
-                } else Modifier
-            )
+            .then(row.positionReporting)
             // Observe focus to register onclick with scaffold (for SELECT) and show highlight
-            .pointerInput(rowKey, onClick, onLongPress) {
+            .pointerInput(row.rowKey, onClick, onLongPress) {
                 detectTapGestures(
                     onTap = { touchInput(); onClick?.invoke() },
                     onLongPress = { touchInput(); onLongPress?.invoke() },
@@ -771,7 +763,7 @@ fun SettingsRow(
                 onFocusChangedExternal?.invoke(state.isFocused)
                 if (state.isFocused) {
                     focusTracker(onClick)
-                    reportFocused(focusRequester)
+                    reportFocused(row.focusRequester)
                     Timber.d("Settings focus: row=\"$label\" clickable=${onClick != null}")
                 }
             }
@@ -815,51 +807,15 @@ fun SettingsRow(
             ) {
                 actions.forEachIndexed { index, action ->
                     key(index) {
-                        val actionFr = remember { FocusRequester() }
-                        val actionKey = "$rowKey:action:$index"
-                        var actionFocused by remember { mutableStateOf(false) }
-                        DisposableEffect(actionKey) {
-                            val list = rowActionFrs?.getOrPut(rowKey) { mutableStateListOf() }
-                            list?.add(actionKey to actionFr)
-                            onDispose {
-                                list?.removeAll { it.second === actionFr }
-                                reportRemoved(actionFr)
-                            }
-                        }
-                        IconButton(
-                            onClick = action.onClick,
-                            modifier = Modifier
-                                .pointerInput(actionKey, action.onClick, action.onLongPress) {
-                                    detectTapGestures(
-                                        onTap = { touchInput(); action.onClick() },
-                                        onLongPress = { touchInput(); action.onLongPress?.invoke() },
-                                    )
-                                }
-                                .focusRequester(actionFr)
-                                .onFocusChanged { state ->
-                                    actionFocused = state.isFocused
-                                    if (state.isFocused) {
-                                        actionFocusCount.intValue++
-                                        focusTracker(action.onClick)
-                                        reportFocused(actionFr)
-                                    } else {
-                                        actionFocusCount.intValue--
-                                    }
-                                }
-                                .focusable(),
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .background(
-                                        if (actionFocused) action.actionFocusBackgroundColor
-                                        else Color.Transparent,
-                                        RoundedCornerShape(6.dp),
-                                    ),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                action.icon()
-                            }
-                        }
+                        SettingsRowActionButton(
+                            rowKey = row.rowKey,
+                            index = index,
+                            action = action,
+                            onFocusedChanged = { focused ->
+                                if (focused) actionFocusCount.intValue++
+                                else actionFocusCount.intValue--
+                            },
+                        )
                     }
                 }
             }
@@ -883,70 +839,27 @@ fun SettingsFocusable(
 ) {
     val focusTracker = LocalSettingsFocusTracker.current
     val touchInput = LocalSettingsTouchInput.current
-    val cursorVisible = LocalSettingsCursorVisible.current
-    val focusRegistry = LocalSettingsFocusRegistry.current
-    val registerFirst = LocalSettingsRegisterFirstFocusable.current
-    val rowPositions = LocalSettingsRowPositions.current
-    val rowSizes = LocalSettingsRowSizes.current
-    val navigationOrder = LocalSettingsNavigationOrder.current
     val reportFocused = LocalSettingsReportFocused.current
-    val reportRemoved = LocalSettingsReportRemoved.current
     var isFocused by remember { mutableStateOf(false) }
 
-    val focusRequester = remember { FocusRequester() }
-    if (focusKey != null) {
-        DisposableEffect(focusKey) {
-            focusRegistry[focusKey] = focusRequester
-            onDispose {
-                if (focusRegistry[focusKey] === focusRequester) focusRegistry.remove(
-                    focusKey
-                )
-            }
-        }
-    }
-    val navItem = ControllerNavItem(
-        key = stableKey("custom", focusRequester, focusKey),
-        focusable = true,
+    val row = rememberControllerRowRegistration(
+        prefix = "custom",
+        focusKey = focusKey,
+        claimInitialFocus = true,
         selectable = true,
-        enabled = true,
         onSelect = onClick,
     )
-    DisposableEffect(Unit) {
-        navigationOrder?.add(focusRequester to navItem)
-        registerFirst(focusRequester)
-        onDispose {
-            navigationOrder?.removeAll { it.first === focusRequester }
-            rowPositions?.remove(focusRequester)
-            rowSizes?.remove(focusRequester)
-            reportRemoved(focusRequester)
-        }
-    }
-    SideEffect {
-        val list = navigationOrder ?: return@SideEffect
-        val index = list.indexOfFirst { it.first === focusRequester }
-        if (index >= 0) list[index] = focusRequester to navItem
-    }
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .focusRequester(focusRequester)
-            .then(
-                if (rowPositions != null && rowSizes != null) {
-                    val positions = rowPositions
-                    val sizes = rowSizes
-                    val req = focusRequester
-                    Modifier.onGloballyPositioned {
-                        positions[req] = it.localToRoot(Offset.Zero).y
-                        sizes[req] = it.size.height.toFloat()
-                    }
-                } else Modifier
-            )
+            .focusRequester(row.focusRequester)
+            .then(row.positionReporting)
             .onFocusChanged { state ->
                 isFocused = state.isFocused
                 if (state.isFocused) {
                     focusTracker(onClick)
-                    reportFocused(focusRequester)
+                    reportFocused(row.focusRequester)
                 }
             }
             .pointerInput(onClick) {
@@ -1032,51 +945,23 @@ fun SettingsTextFieldRow(
     enabled: Boolean = true,
 ) {
     val focusTracker = LocalSettingsFocusTracker.current
-    val touchInput = LocalSettingsTouchInput.current
-    val cursorVisible = LocalSettingsCursorVisible.current
-    val focusRegistry = LocalSettingsFocusRegistry.current
-    val registerFirst = LocalSettingsRegisterFirstFocusable.current
-    val rowPositions = LocalSettingsRowPositions.current
-    val rowSizes = LocalSettingsRowSizes.current
-    val navigationOrder = LocalSettingsNavigationOrder.current
-    val reportFocused = LocalSettingsReportFocused.current
     val keyboard = LocalSoftwareKeyboardController.current
-    val reportRemoved = LocalSettingsReportRemoved.current
+    val reportFocused = LocalSettingsReportFocused.current
     var editing by remember { mutableStateOf(false) }
 
-    // Always own a FocusRequester so this field can be the screen's initial-focus target
-    // (a screen that starts with a text field still opens with it highlighted, read-only).
-    val fr = remember { FocusRequester() }
-    if (focusKey != null) {
-        DisposableEffect(focusKey) {
-            focusRegistry[focusKey] = fr
-            onDispose { if (focusRegistry[focusKey] === fr) focusRegistry.remove(focusKey) }
-        }
-    }
-    // Selectable + part of the ordered traversal (unlike plain read-only rows, SELECT enters
-    // edit mode). Disabled fields are excluded from navigation entirely.
-    val navItem = ControllerNavItem(
-        key = stableKey("field", fr, focusKey),
-        focusable = true,
+    // Always focusable so this field can be the screen's initial-focus target (a screen that
+    // starts with a text field still opens with it highlighted, read-only). Registration is
+    // shared with every other row family via rememberControllerRowRegistration; SELECT enters
+    // edit mode, and disabled fields are excluded from navigation entirely.
+    val row = rememberControllerRowRegistration(
+        prefix = "field",
+        focusKey = focusKey,
+        claimInitialFocus = true,
         selectable = enabled,
         enabled = enabled,
         onSelect = { editing = true },
     )
-    DisposableEffect(Unit) {
-        navigationOrder?.add(fr to navItem)
-        registerFirst(fr)
-        onDispose {
-            navigationOrder?.removeAll { it.first === fr }
-            rowPositions?.remove(fr)
-            rowSizes?.remove(fr)
-            reportRemoved(fr)
-        }
-    }
-    SideEffect {
-        val list = navigationOrder ?: return@SideEffect
-        val index = list.indexOfFirst { it.first === fr }
-        if (index >= 0) list[index] = fr to navItem
-    }
+    val fr = row.focusRequester
 
     // The keyboard follows edit mode only — focus alone (navigating onto the field) never
     // opens it, because the field stays read-only until SELECT/tap flips `editing`.
@@ -1129,16 +1014,7 @@ fun SettingsTextFieldRow(
                 modifier = Modifier
                     .fillMaxWidth()
                     .focusRequester(fr)
-                    .then(
-                        if (rowPositions != null && rowSizes != null) {
-                            val positions = rowPositions
-                            val sizes = rowSizes
-                            Modifier.onGloballyPositioned {
-                                positions[fr] = it.localToRoot(Offset.Zero).y
-                                sizes[fr] = it.size.height.toFloat()
-                            }
-                        } else Modifier
-                    )
+                    .then(row.positionReporting)
                     .onFocusChanged { state ->
                         if (state.isFocused) {
                             // Controller SELECT over the field starts editing (opens the keyboard).

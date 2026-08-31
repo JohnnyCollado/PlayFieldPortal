@@ -3928,8 +3928,10 @@ class XMBViewModel @Inject constructor(
     private fun handleAchievementsSelection(item: XMBItem): Boolean {
         when (item.id) {
             ACH_CONNECT_ITEM_ID -> {
+                // Connect accounts lands straight on Provider Credentials (RetroAchievements &
+                // Steam) rather than the achievements root — the only next step on first run.
                 menuSound.play(MenuSound.SELECT)
-                _uiState.update { it.copy(activeSettingsScreen = "settings_achievements") }
+                _uiState.update { it.copy(activeSettingsScreen = "settings_achievements_credentials") }
                 return true
             }
             ACH_SUMMARY_ITEM_ID -> {

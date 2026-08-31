@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>PSP Skype · Create New Skype Account — recreation mockup</title>
+<style>
+  /* ============================================================
+     Recreation mockup — PSP Skype "Create New Skype Account" flow
+     Design space: 480 × 272 (native PSP), rendered at 2× inside a
+     slim bezel. No external assets; system fonts only.
+     ============================================================ */
+  :root{
+    --page-bg:#17191E;
+    --bezel-edge:#2A2E36;
+    --field-fill:#F3F7FB;
+    --field-ink:#123A63;
+    --badge-ring:#9BD489;
+    --warn:#FFC966;
+    --cross:#CFE4F8;   /* ✕ — soft blue (PSP confirm)   */
+    --circle:#F2A9A0;  /* ○ — soft red  (PSP back)      */
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{
+    min-height:100%;
+    background:radial-gradient(1200px 700px at 50% -10%, #1E222B 0%, var(--page-bg) 62%);
+    color:#C9CDD6;
+    font-family:"Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    display:flex; flex-direction:column; align-items:center;
+    padding:26px 16px 44px;
+  }
+  .page-head{ font-size:13px; color:#8B93A3; margin-bottom:18px; text-align:center; }
+  .page-head b{ color:#DDE3EE; font-weight:600; }
+
+  .fitbox{ width:994px; }
+  .bezel{
+    width:992px;               /* 480×2 + 14px padding + border */
+    background:linear-gradient(#121419,#0B0D10);
+    border:1px solid var(--bezel-edge);
+    border-radius:20px;
+    padding:14px;
+    box-shadow:0 18px 60px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.05);
+  }
+
+  /* ---- PSP screen: authored at 480×272, scaled ×2 ---- */
+  .psp-scale{ width:960px; height:544px; position:relative; }
+  .screen{
+    width:480px; height:272px;
+    position:absolute; top:0; left:0;
+    transform-origin:0 0; transform:scale(2);
+    overflow:hidden; border-radius:4px;
+    color:#fff; user-select:none;
+  }
+
+  /* ---- Background: deep navy → azure + soft wave bands ---- */
+  .bg{ position:absolute; inset:0; z-index:0;
+    background:linear-gradient(180deg, #08224B 0%, #0B2E63 22%, #16549E 48%, #2B74BE 72%, #3E96D6 100%);
+  }
+  .band{ position:absolute; border-radius:50%; filter:blur(11px); }
+  .band.a{ left:-70px;  top:146px; width:640px; height:66px; background:rgba(138,186,228,.42); transform:rotate(-4deg); }
+  .band.b{ left:30px;   top:196px; width:560px; height:50px; background:rgba(160,202,236,.30); transform:rotate(-6deg); }
+  .band.c{ left:110px;  top:104px; width:430px; height:32px; background:rgba(130,176,220,.16); transform:rotate(-3deg); }
+  .vign{ position:absolute; inset:0; z-index:1;
+    background:
+      linear-gradient(180deg, rgba(4,16,40,.50) 0%, rgba(4,16,40,0) 26%),
+      radial-gradient(140% 55% at 50% 110%, rgba(160,205,240,.22) 0%, rgba(160,205,240,0) 60%);
+  }
+
+  /* ---- Header: step badge + title ---- */
+  .hdr{ position:absolute; top:10px; left:14px; z-index:3;
+    display:flex; align-items:center; gap:9px; }
+  .badge{ width:19px; height:19px; border-radius:50%;
+    border:2px solid var(--badge-ring);
+    background:rgba(10,30,55,.32);
+    color:#fff; font-size:11px; line-height:15px; text-align:center; }
+  .hdr-title{ font-size:14px; letter-spacing:.2px; text-shadow:0 1px 2px rgba(0,0,0,.4); }
+
+  /* ---- Step bodies ---- */
+  .body{ position:absolute; inset:0; z-index:2; }
+  .step{ position:absolute; inset:0; display:none; }
+  .step.on{ display:block; animation:fadein .09s ease-out; }
+  @keyframes fadein{ from{ opacity:.45; } to{ opacity:1; } }
+
+  .heading{ text-align:center; font-size:17px; text-shadow:0 1px 2px rgba(0,0,0,.4); }
+  .hint{ text-align:center; font-size:11px; opacity:.92; margin-top:8px; text-shadow:0 1px 2px rgba(0,0,0,.35); }
+  #s4 .heading{ margin-top:92px; }
+  #s4 .fieldblock{ margin-top:24px; }
+  #s5 .heading{ margin-top:76px; }
+  #s5 .fieldblock{ margin-top:18px; }
+  #s6 .heading{ margin-top:70px; }
+  #s6 .fieldblock{ margin-top:16px; }
+
+  .fieldblock{ width:312px; margin-left:auto; margin-right:auto; } /* field 270 + gap 12 + ▶ 30 */
+  .flabel{ font-size:10px; margin:0 0 3px 2px; opacity:.95; text-shadow:0 1px 2px rgba(0,0,0,.35); }
+  .frow{ display:flex; align-items:center; gap:12px; }
+  .field{ width:270px; height:28px; border-radius:6px;
+    background:var(--field-fill);
+    border:1px solid rgba(255,255,255,.75);
+    box-shadow:inset 0 2px 4px rgba(12,48,92,.28), 0 1px 2px rgba(0,0,0,.18); }
+  .field input{ width:100%; height:100%; border:0; outline:0; background:transparent;
+    color:var(--field-ink); caret-color:var(--field-ink);
+    font:13px "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    padding:0 10px; border-radius:6px; }
+  .next{ width:30px; height:30px; border-radius:50%; border:0; cursor:pointer;
+    color:#1B4E7F; font-size:15px; line-height:1; padding:0 0 2px 3px;
+    background:radial-gradient(circle at 32% 28%, rgba(255,255,255,.98), rgba(206,230,248,.82));
+    box-shadow:0 0 10px rgba(200,230,252,.55), inset 0 -2px 4px rgba(120,160,200,.35); }
+  .next:hover{ box-shadow:0 0 15px rgba(225,242,255,.85), inset 0 -2px 4px rgba(120,160,200,.3); }
+  .next:active{ transform:scale(.94); }
+
+  /* ---- Checkboxes ---- */
+  .crow{ display:flex; align-items:center; gap:8px; width:max-content;
+    margin-top:14px; cursor:pointer; user-select:none; }
+  .cbox{ width:14px; height:14px; flex:none;
+    border:1.5px solid rgba(255,255,255,.9); border-radius:2px;
+    background:rgba(255,255,255,.06);
+    display:inline-flex; align-items:center; justify-content:center;
+    font-size:10px; line-height:1; color:#fff; }
+  .cbox.on::after{ content:"✓"; }
+  .ctext{ font-size:11px; text-shadow:0 1px 2px rgba(0,0,0,.35); }
+
+  /* ---- Terms step (⑧) ---- */
+  .terms-wrap{ width:300px; margin:62px auto 0; }
+  .legal{ font-size:11px; line-height:1.5; text-shadow:0 1px 2px rgba(0,0,0,.35); }
+  .cbox.inline{ display:inline-block; vertical-align:-2px; margin-right:6px; cursor:pointer; }
+  .emergency{ margin-top:16px; font-size:11px; line-height:1.5; opacity:.96;
+    text-shadow:0 1px 2px rgba(0,0,0,.35); }
+  .emergency b{ font-weight:600; }
+
+  /* ---- Inline validation ---- */
+  .msg{ text-align:center; font-size:10.5px; color:var(--warn);
+    min-height:15px; margin-top:10px; opacity:0; transition:opacity .18s;
+    text-shadow:0 1px 2px rgba(0,0,0,.4); }
+  .msg.show{ opacity:1; }
+  #s8 .msg{ margin-top:12px; }
+
+  /* ---- Footer: shoulder-button line + ✕ Enter / ○ Back ---- */
+  .foot{ position:absolute; left:0; right:0; bottom:8px; z-index:3; text-align:center; }
+  .f1{ font-size:10px; opacity:.96; text-shadow:0 1px 2px rgba(0,0,0,.4); }
+  .pill{ display:inline-flex; align-items:center; justify-content:center;
+    width:26px; height:13px; margin:0 2px; vertical-align:middle;
+    border:1px solid rgba(255,255,255,.75); border-radius:7px;
+    background:rgba(255,255,255,.08); font-size:8px; line-height:1; }
+  .f2{ margin-top:7px; display:flex; justify-content:center; gap:64px; }
+  .fb{ display:inline-flex; align-items:center; gap:5px;
+    background:none; border:0; cursor:pointer;
+    color:#fff; font:inherit; font-size:11px; }
+  .fb .glyph{ font-size:12px; line-height:1; }
+  .fb .cross{ color:var(--cross); }
+  .fb .circle{ color:var(--circle); }
+  .fb:hover .glyph{ filter:brightness(1.25); }
+  .fb.dim{ opacity:.32; pointer-events:none; cursor:default; }
+
+  /* ---- Toast ---- */
+  .toast{ position:absolute; left:50%; bottom:42px; transform:translateX(-50%); z-index:4;
+    background:rgba(6,26,54,.9); border:1px solid rgba(255,255,255,.25);
+    color:#EAF2FB; font-size:10px; padding:5px 12px; border-radius:10px;
+    opacity:0; transition:opacity .25s; pointer-events:none; white-space:nowrap; }
+  .toast.show{ opacity:1; }
+
+  /* ---- Notes strip ---- */
+  .notes{ width:992px; max-width:100%; margin-top:22px;
+    background:#1B1F26; border:1px solid #2A2E36; border-radius:12px;
+    padding:14px 18px; }
+  .notes h2{ font-size:12px; color:#AAB3C2; font-weight:600; letter-spacing:.4px;
+    text-transform:uppercase; margin-bottom:8px; }
+  .notes ul{ list-style:none; }
+  .notes li{ font-size:12px; color:#98A1B0; line-height:1.55; margin:4px 0; }
+  .notes code{ color:#B8C4D6; background:#232833; border-radius:4px; padding:1px 5px;
+    font:11px Consolas, "Courier New", monospace; }
+  .notes li b{ color:#C6CFDC; font-weight:600; }
+</style>
+</head>
+<body>
+  <div class="page-head"><b>PSP · Skype — “Create New Skype Account”</b> · recreation mockup of <b>createaccount003 / 004 / 005 / 007</b></div>
+
+  <div class="fitbox" id="fitbox">
+    <div class="bezel">
+      <div class="psp-scale">
+        <div class="screen" id="screen">
+          <div class="bg">
+            <div class="band c"></div>
+            <div class="band a"></div>
+            <div class="band b"></div>
+          </div>
+          <div class="vign"></div>
+
+          <header class="hdr">
+            <span class="badge" id="badge">4</span>
+            <span class="hdr-title">Create New Skype Account</span>
+          </header>
+
+          <main class="body">
+            <!-- ④ Full name -->
+            <section class="step on" id="s4">
+              <div class="heading">Enter your full name.</div>
+              <div class="fieldblock">
+                <div class="flabel">Full Name</div>
+                <div class="frow">
+                  <div class="field"><input id="in-full" type="text" autocomplete="off" spellcheck="false" aria-label="Full Name"></div>
+                  <button class="next" id="nxt-4" title="Continue" aria-label="Continue">▶</button>
+                </div>
+              </div>
+              <div class="msg" id="msg-4"></div>
+            </section>
+
+            <!-- ⑤ Skype name -->
+            <section class="step" id="s5">
+              <div class="heading">Enter a Skype Name.</div>
+              <div class="hint">(8-32 characters)</div>
+              <div class="fieldblock">
+                <div class="flabel">Skye Name</div><!-- sic — typo in the original capture -->
+                <div class="frow">
+                  <div class="field"><input id="in-skype" type="text" autocomplete="off" spellcheck="false" aria-label="Skye Name"></div>
+                  <button class="next" id="nxt-5" title="Continue" aria-label="Continue">▶</button>
+                </div>
+              </div>
+              <div class="msg" id="msg-5"></div>
+            </section>
+
+            <!-- ⑥ Password -->
+            <section class="step" id="s6">
+              <div class="heading">Enter a password.</div>
+              <div class="hint">(4-20 characters)</div>
+              <div class="fieldblock">
+                <div class="flabel">Password</div>
+                <div class="frow">
+                  <div class="field"><input id="in-pass" type="password" autocomplete="off" aria-label="Password"></div>
+                  <button class="next" id="nxt-6" title="Continue" aria-label="Continue">▶</button>
+                </div>
+                <div class="crow" id="crow-signin" title="Toggle">
+                  <span class="cbox" id="cb-signin"></span>
+                  <span class="ctext">Sign Me In When Skype Starts</span>
+                </div>
+              </div>
+              <div class="msg" id="msg-6"></div>
+            </section>
+
+            <!-- ⑧ Terms -->
+            <section class="step" id="s8">
+              <div class="terms-wrap">
+                <p class="legal"><span class="cbox inline" id="cb-terms" title="Toggle"></span>I have read and accept Skype's terms and conditions at www.skype.com/go/privacypolicy, www.skype.com/legal/terms/, www.skype.com/go/legal.eula.</p>
+                <p class="emergency"><b>No Emergency Calls:</b> Skype is not a replacement for your ordinary telephone and can not be used for emergency dialing.</p>
+              </div>
+              <div class="msg" id="msg-8"></div>
+            </section>
+          </main>
+
+          <footer class="foot">
+            <div class="f1">Press the <span class="pill">◀▶</span> button to go back, or the <span class="pill">◀▶</span> button to continue.</div>
+            <div class="f2">
+              <button class="fb" id="chip-cross" title="Continue (✕ / Enter)"><span class="glyph cross">✕</span> Enter</button>
+              <button class="fb" id="chip-circle" title="Back (○ / Esc)"><span class="glyph circle">○</span> Back</button>
+            </div>
+          </footer>
+
+          <div class="toast" id="toast"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <aside class="notes">
+    <h2>Recreation notes</h2>
+    <ul>
+      <li>Faithful recreation of the four supplied captures: <code>createaccount003</code> ④ Full Name · <code>004</code> ⑤ Skype Name · <code>005</code> ⑥ Password · <code>007</code> ⑧ Terms.</li>
+      <li>The captures skip ⑦ (most likely “Confirm password”), so ▶ on ⑥ advances straight to ⑧ — badge numbering follows the originals.</li>
+      <li><b>“Skye Name”</b> reproduces the typo visible in <code>createaccount004</code> — the real capture says “Skye”, not “Skype”.</li>
+      <li>Controls: type into fields · <b>▶ / ✕ / Enter</b> continues (validated: name non-empty · Skype name 8–32 · password 4–20 · terms accepted) · <b>○ / Esc</b> goes back (dimmed on ④ — step ③ wasn’t captured). Password field is masked. Values persist when navigating back.</li>
+    </ul>
+  </aside>
+
+<script>
+(function(){
+  'use strict';
+  var ORDER = [4,5,6,8];                 // captured flow (⑦ “Confirm password” not among the captures)
+  var idx = 0;                           // index into ORDER — starts on ④
+  var state = { full:'', skype:'', pass:'', signin:false, terms:false };
+
+  var badge      = document.getElementById('badge');
+  var toast      = document.getElementById('toast');
+  var chipCross  = document.getElementById('chip-cross');
+  var chipCircle = document.getElementById('chip-circle');
+  var inFull  = document.getElementById('in-full');
+  var inSkype = document.getElementById('in-skype');
+  var inPass  = document.getElementById('in-pass');
+  var cbSignin = document.getElementById('cb-signin');
+  var cbTerms  = document.getElementById('cb-terms');
+
+  function cur(){ return ORDER[idx]; }
+
+  function showMsg(step, text){
+    var el = document.getElementById('msg-'+step);
+    el.textContent = text;
+    el.classList.add('show');
+  }
+  function clearMsg(step){
+    var el = document.getElementById('msg-'+step);
+    if(el){ el.classList.remove('show'); }
+  }
+
+  function syncStep(){
+    var s = cur();
+    var i;
+    for(i=0;i<ORDER.length;i++){ document.getElementById('s'+ORDER[i]).classList.remove('on'); }
+    document.getElementById('s'+s).classList.add('on');
+    badge.textContent = s;
+    // Restore persisted values
+    if(s===4) inFull.value  = state.full;
+    if(s===5) inSkype.value = state.skype;
+    if(s===6) inPass.value  = state.pass;
+    cbSignin.classList.toggle('on', state.signin);
+    cbTerms.classList.toggle('on',  state.terms);
+    clearMsg(s);
+    chipCircle.classList.toggle('dim', idx===0); // ○ disabled on ④ — step ③ wasn’t captured
+  }
+
+  function validate(s){
+    if(s===4) return state.full.trim().length>0 ? null : 'Please enter your full name.';
+    if(s===5){ var n=state.skype.trim().length;
+      return (n>=8 && n<=32) ? null : 'Your Skype Name must be 8-32 characters.'; }
+    if(s===6){ var p=state.pass.length;
+      return (p>=4 && p<=20) ? null : 'Your password must be 4-20 characters.'; }
+    if(s===8) return state.terms ? null : 'You must accept the terms to continue.';
+    return null;
+  }
+
+  var toastTimer = null;
+  function showToast(text){
+    toast.textContent = text;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ toast.classList.remove('show'); }, 2000);
+  }
+
+  function advance(){
+    var s = cur();
+    var err = validate(s);
+    if(err){ showMsg(s, err); return; }
+    if(idx < ORDER.length-1){ idx++; syncStep(); }
+    else showToast('✕ accepted — end of the captured flow');
+  }
+  function back(){
+    if(idx===0) return;                    // ○ dimmed on ④
+    idx--; syncStep();
+  }
+
+  // ── Wiring ──────────────────────────────────────────────────
+  document.getElementById('nxt-4').addEventListener('click', advance);
+  document.getElementById('nxt-5').addEventListener('click', advance);
+  document.getElementById('nxt-6').addEventListener('click', advance);
+  chipCross.addEventListener('click', advance);
+  chipCircle.addEventListener('click', back);
+
+  inFull.addEventListener('input',  function(){ state.full  = this.value; clearMsg(4); });
+  inSkype.addEventListener('input', function(){ state.skype = this.value; clearMsg(5); });
+  inPass.addEventListener('input',  function(){ state.pass  = this.value; clearMsg(6); });
+
+  document.getElementById('crow-signin').addEventListener('click', function(){
+    state.signin = !state.signin;
+    cbSignin.classList.toggle('on', state.signin);
+  });
+  cbTerms.addEventListener('click', function(ev){
+    ev.stopPropagation();
+    state.terms = !state.terms;
+    cbTerms.classList.toggle('on', state.terms);
+    clearMsg(8);
+  });
+
+  document.addEventListener('keydown', function(e){
+    var inField = e.target && e.target.tagName === 'INPUT';
+    if(e.key === 'Enter'){ e.preventDefault(); advance(); }
+    else if(e.key === 'Escape'){ back(); }
+    else if(e.key === 'Backspace' && !inField){ back(); }
+  });
+
+  // ── Fit the 2× bezel to the preview pane ────────────────────
+  var fitbox = document.getElementById('fitbox');
+  function fit(){
+    var avail = Math.min(window.innerWidth - 24, 996);
+    var z = Math.min(1, avail / 996);
+    if(window.CSS && CSS.supports && CSS.supports('zoom','1')){
+      fitbox.style.zoom = z;
+    }else{
+      fitbox.style.transformOrigin = 'top center';
+      fitbox.style.transform = 'scale(' + z + ')';
+      fitbox.style.height = (576 * z) + 'px';
+    }
+  }
+  window.addEventListener('resize', fit);
+
+  syncStep();
+  fit();
+})();
+</script>
+</body>
+</html>

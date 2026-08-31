@@ -2,6 +2,7 @@ package com.playfieldportal.feature.settings.ui
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import android.net.Uri
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,10 +16,16 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import android.net.Uri
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.playfieldportal.core.ui.preview.CombinedPreviews
+import com.playfieldportal.core.ui.preview.PfpPreview
+import com.playfieldportal.feature.settings.viewmodel.RootFolderRow
+import com.playfieldportal.feature.settings.viewmodel.VideoSettingsUiState
 import com.playfieldportal.feature.settings.viewmodel.VideoSettingsViewModel
 
 @Composable
@@ -29,14 +36,52 @@ fun VideoSettingsScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
 
-    val rootPicker = rememberLauncherForActivityResult(
+    // Pickers: one for adding a root, one pre-pointed at the root being re-linked (re-granting
+    // after a restore/reinstall lands on the exact same folder in one tap).
+    val addRootPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
-    ) { uri -> uri?.let { viewModel.setRoot(it) } }
+    ) { uri -> uri?.let { viewModel.addRoot(it) } }
+    var relinkTarget by remember { mutableStateOf<String?>(null) }
+    val relinkRootPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri ->
+        val old = relinkTarget
+        relinkTarget = null
+        if (uri != null && old != null) viewModel.relinkRoot(old, uri)
+    }
 
-    // Open the picker pre-pointed at the saved root (if any) so re-granting after a
-    // restore/reinstall lands on the exact same folder in one tap.
-    val initialRootUri = state.rootUri?.let { runCatching { Uri.parse(it) }.getOrNull() }
+    VideoSettingsContent(
+        state = state,
+        onBack = onBack,
+        onAddRoot = { addRootPicker.launch(null) },
+        onRelinkRoot = { row ->
+            relinkTarget = row.treeUri
+            relinkRootPicker.launch(runCatching { Uri.parse(row.treeUri) }.getOrNull())
+        },
+        onRemoveRoot = { viewModel.removeRoot(it.treeUri) },
+        onRescan = viewModel::rescan,
+        onOpenPlayerPicker = viewModel::openPlayerPicker,
+        onDismissPlayerPicker = viewModel::dismissPlayerPicker,
+        onChoosePlayer = viewModel::chooseDefaultPlayer,
+        onDismissMessage = viewModel::dismissMessage,
+        modifier = modifier,
+    )
+}
 
+@Composable
+fun VideoSettingsContent(
+    state: VideoSettingsUiState,
+    onBack: () -> Unit,
+    onAddRoot: () -> Unit,
+    onRelinkRoot: (RootFolderRow) -> Unit,
+    onRemoveRoot: (RootFolderRow) -> Unit,
+    onRescan: () -> Unit,
+    onOpenPlayerPicker: () -> Unit,
+    onDismissPlayerPicker: () -> Unit,
+    onChoosePlayer: (String?) -> Unit,
+    onDismissMessage: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     SettingsScaffold(
         title    = "Settings",
         subtitle = "Video",
@@ -50,30 +95,25 @@ fun VideoSettingsScreen(
                 .fillMaxSize()
                 .verticalScroll(scrollState),
         ) {
-            SettingsGroup("Root Folder")
+            RootAccessSection(
+                groupTitle  = "Root Folders",
+                roots       = state.roots,
+                addLabel    = "Add Video Root",
+                addSublabel = "Grant a root folder (e.g. /Movies) — add several to span locations",
+                onAddRoot   = onAddRoot,
+                onRelinkRoot = onRelinkRoot,
+                onRemoveRoot = onRemoveRoot,
+            )
 
-            SettingsValueRow(
-                label    = "Root Folder",
-                sublabel = "The folder PFP scans for videos, including its subfolders",
-                value    = state.rootName ?: "Not set",
-                focusKey = "video_root",
-                onClick  = { rootPicker.launch(initialRootUri) },
-            )
-            SettingsRow(
-                label    = if (state.hasRoot) "Replace Root Folder" else "Add Root Folder",
-                sublabel = if (state.hasRoot) "Choose a different folder — replaces the current root"
-                           else "Grant one folder; PFP keeps read access and scans it",
-                focusKey = "video_root_pick",
-                onClick  = { rootPicker.launch(initialRootUri) },
-            )
             SettingsRow(
                 label    = "Rescan Video Library",
                 sublabel = when {
                     state.scanning            -> "Scanning…"
                     state.scanMessage != null -> state.scanMessage
-                    else                      -> "Update the library from the root folder"
+                    else                      -> "Update the libraries from every root folder"
                 },
-                onClick  = if (state.scanning || !state.hasRoot) null else ({ viewModel.rescan() }),
+                focusKey = "video_rescan",
+                onClick  = if (state.scanning || !state.hasRoots) null else onRescan,
             )
 
             if (state.scanning) {
@@ -91,7 +131,7 @@ fun VideoSettingsScreen(
                 sublabel = "Play Field Portal plays in-app; or pick an app / be asked each time.",
                 value    = state.defaultPlayerLabel,
                 focusKey = "video_default_player",
-                onClick  = { viewModel.openPlayerPicker() },
+                onClick  = onOpenPlayerPicker,
             )
         }
     }
@@ -99,25 +139,25 @@ fun VideoSettingsScreen(
     // ── Default player picker: Play Field Portal / System Default / an installed app ──
     if (state.showPlayerPicker) {
         AlertDialog(
-            onDismissRequest = { viewModel.dismissPlayerPicker() },
+            onDismissRequest = onDismissPlayerPicker,
             title = { Text("Default Video Player") },
             text = {
                 Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                     PlayerChoiceRow(
                         label = "Play Field Portal",
                         selected = state.defaultPlayer == null || state.defaultPlayer == "builtin",
-                        onClick = { viewModel.chooseDefaultPlayer("builtin") },
+                        onClick = { onChoosePlayer("builtin") },
                     )
                     PlayerChoiceRow(
                         label = "System Default",
                         selected = state.defaultPlayer == "ask",
-                        onClick = { viewModel.chooseDefaultPlayer("ask") },
+                        onClick = { onChoosePlayer("ask") },
                     )
                     state.availablePlayers.forEach { player ->
                         PlayerChoiceRow(
                             label = player.label,
                             selected = state.defaultPlayer == player.packageName,
-                            onClick = { viewModel.chooseDefaultPlayer(player.packageName) },
+                            onClick = { onChoosePlayer(player.packageName) },
                         )
                     }
                     if (state.availablePlayers.isEmpty()) {
@@ -130,7 +170,7 @@ fun VideoSettingsScreen(
                 }
             },
             confirmButton = {},
-            dismissButton = { TextButton(onClick = { viewModel.dismissPlayerPicker() }) { Text("Close") } },
+            dismissButton = { TextButton(onClick = onDismissPlayerPicker) { Text("Close") } },
         )
     }
 }
@@ -141,6 +181,29 @@ private fun PlayerChoiceRow(label: String, selected: Boolean, onClick: () -> Uni
         Text(
             text = (if (selected) "● " else "○ ") + label,
             modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}
+
+@CombinedPreviews
+@Composable
+private fun VideoSettingsContentPreview() {
+    PfpPreview {
+        VideoSettingsContent(
+            state = VideoSettingsUiState(
+                roots = listOf(
+                    RootFolderRow("content://preview/tree/primary%3AMovies", "Movies", linked = true),
+                ),
+            ),
+            onBack = {},
+            onAddRoot = {},
+            onRelinkRoot = {},
+            onRemoveRoot = {},
+            onRescan = {},
+            onOpenPlayerPicker = {},
+            onDismissPlayerPicker = {},
+            onChoosePlayer = {},
+            onDismissMessage = {},
         )
     }
 }

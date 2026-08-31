@@ -28,16 +28,18 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Runs the first library scan for a media root picked in the SETUP WIZARD.
+ * Runs the library (re)scan for a media section after a root change in the SETUP WIZARD (or any
+ * other root list edit).
  *
- * The settings screens pair "set root" with an immediate rescan, which is what creates the
- * single library row and stamps its lastScannedAt — the signal the XMB's "+ Add" getting-started
- * rows key off. The wizard only persisted the root, so wizard-configured sections kept their
- * Add rows (and stayed empty) until the user found Rescan in Settings.
+ * The settings screens pair every root change with an immediate rescan, which is what creates the
+ * library rows and stamps their lastScannedAt — the signal the XMB's "+ Add" getting-started rows
+ * key off. This runner is the shared pass: it RECONCILES each section's library rows with the
+ * configured roots (creating a row per root, removing rows whose root was removed) and then scans
+ * every configured root incrementally. Roots may be MULTIPLE — a music library can span internal
+ * storage plus an SD card, exactly like ROM roots.
  *
  * Each scan mirrors the corresponding settings flow (Music/Photo/VideoSettingsViewModel.rescan)
- * minus the per-screen UI state: sync the single library row for the root, scan incrementally,
- * replace the library contents, and report through the shared background-task notifications.
+ * minus the per-screen UI state, and reports through the shared background-task notifications.
  * Runs on its own application-scoped supervisor so a scan survives the wizard (and its
  * ViewModel) closing; one scan per kind at a time.
  */
@@ -66,19 +68,44 @@ class WizardMediaScanRunner @Inject constructor(
     }
 
     private suspend fun scan(kind: MediaRootKind) {
-        val root = mediaRootRepository.get(kind) ?: return
+        val roots = mediaRootRepository.getAll(kind)
         when (kind) {
-            MediaRootKind.MUSIC -> scanMusic(root)
-            MediaRootKind.PHOTO -> scanPhoto(root)
-            MediaRootKind.VIDEO -> scanVideo(root)
+            MediaRootKind.MUSIC -> {
+                dropOrphanMusicLibraries(roots); roots.forEach { scanMusic(it) }
+            }
+            MediaRootKind.PHOTO -> {
+                dropOrphanPhotoLibraries(roots); roots.forEach { scanPhoto(it) }
+            }
+            MediaRootKind.VIDEO -> {
+                dropOrphanVideoLibraries(roots); roots.forEach { scanVideo(it) }
+            }
         }
+    }
+
+    // Library rows are keyed by their root's tree URI; a root removed from the configured list
+    // (in the wizard or Settings) takes its library row with it on the next scan pass.
+    private suspend fun dropOrphanMusicLibraries(roots: List<String>) {
+        musicRepository.getFolders()
+            .filter { it.treeUri !in roots }
+            .forEach { musicRepository.removeFolder(it.id) }
+    }
+
+    private suspend fun dropOrphanPhotoLibraries(roots: List<String>) {
+        photoRepository.getLibraries()
+            .filter { it.treeUri !in roots }
+            .forEach { photoRepository.removeLibrary(it.id) }
+    }
+
+    private suspend fun dropOrphanVideoLibraries(roots: List<String>) {
+        videoRepository.getLibraries()
+            .filter { it.treeUri !in roots }
+            .forEach { videoRepository.removeLibrary(it.id) }
     }
 
     private suspend fun scanMusic(root: String) {
         val folders = musicRepository.getFolders()
         val existingRow = folders.firstOrNull { it.treeUri == root }
         val folder = existingRow ?: musicRepository.addFolder(displayName(root, "Music"), root)
-        folders.filter { it.id != folder.id }.forEach { musicRepository.removeFolder(it.id) }
         val target = musicRepository.getFolder(folder.id) ?: folder
 
         val taskId = "music_scan_${target.id}"
@@ -100,7 +127,6 @@ class WizardMediaScanRunner @Inject constructor(
         val libs = photoRepository.getLibraries()
         val existingRow = libs.firstOrNull { it.treeUri == root }
         val library = existingRow ?: photoRepository.addLibrary(displayName(root, "Photos"), root, scanRecursively = true)
-        libs.filter { it.id != library.id }.forEach { photoRepository.removeLibrary(it.id) }
         val target = photoRepository.getLibrary(library.id) ?: library
 
         val taskId = "photo_scan_${target.id}"
@@ -121,7 +147,6 @@ class WizardMediaScanRunner @Inject constructor(
         val libs = videoRepository.getLibraries()
         val existingRow = libs.firstOrNull { it.treeUri == root }
         val library = existingRow ?: videoRepository.addLibrary(displayName(root, "Videos"), root, scanRecursively = true)
-        libs.filter { it.id != library.id }.forEach { videoRepository.removeLibrary(it.id) }
         val target = videoRepository.getLibrary(library.id) ?: library
 
         val taskId = "video_scan_${target.id}"

@@ -2,6 +2,7 @@ package com.playfieldportal.feature.settings.ui
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import android.net.Uri
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,12 +16,18 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import android.net.Uri
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.playfieldportal.core.data.music.MusicIntentResolver
+import com.playfieldportal.core.ui.preview.CombinedPreviews
+import com.playfieldportal.core.ui.preview.PfpPreview
+import com.playfieldportal.feature.settings.viewmodel.MusicSettingsUiState
 import com.playfieldportal.feature.settings.viewmodel.MusicSettingsViewModel
+import com.playfieldportal.feature.settings.viewmodel.RootFolderRow
 
 @Composable
 fun MusicSettingsScreen(
@@ -30,14 +37,52 @@ fun MusicSettingsScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
 
-    val rootPicker = rememberLauncherForActivityResult(
+    // Pickers: one for adding a root, one pre-pointed at the root being re-linked (re-granting
+    // after a restore/reinstall lands on the exact same folder in one tap).
+    val addRootPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
-    ) { uri -> uri?.let { viewModel.setRoot(it) } }
+    ) { uri -> uri?.let { viewModel.addRoot(it) } }
+    var relinkTarget by remember { mutableStateOf<String?>(null) }
+    val relinkRootPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri ->
+        val old = relinkTarget
+        relinkTarget = null
+        if (uri != null && old != null) viewModel.relinkRoot(old, uri)
+    }
 
-    // Open the picker pre-pointed at the saved root (if any) so re-granting after a
-    // restore/reinstall lands on the exact same folder in one tap.
-    val initialRootUri = state.rootUri?.let { runCatching { Uri.parse(it) }.getOrNull() }
+    MusicSettingsContent(
+        state = state,
+        onBack = onBack,
+        onAddRoot = { addRootPicker.launch(null) },
+        onRelinkRoot = { row ->
+            relinkTarget = row.treeUri
+            relinkRootPicker.launch(runCatching { Uri.parse(row.treeUri) }.getOrNull())
+        },
+        onRemoveRoot = { viewModel.removeRoot(it.treeUri) },
+        onRescan = viewModel::rescan,
+        onOpenPlayerPicker = viewModel::openPlayerPicker,
+        onDismissPlayerPicker = viewModel::dismissPlayerPicker,
+        onChoosePlayer = viewModel::chooseDefaultPlayer,
+        onDismissMessage = viewModel::dismissMessage,
+        modifier = modifier,
+    )
+}
 
+@Composable
+fun MusicSettingsContent(
+    state: MusicSettingsUiState,
+    onBack: () -> Unit,
+    onAddRoot: () -> Unit,
+    onRelinkRoot: (RootFolderRow) -> Unit,
+    onRemoveRoot: (RootFolderRow) -> Unit,
+    onRescan: () -> Unit,
+    onOpenPlayerPicker: () -> Unit,
+    onDismissPlayerPicker: () -> Unit,
+    onChoosePlayer: (String?) -> Unit,
+    onDismissMessage: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     SettingsScaffold(
         title    = "Settings",
         subtitle = "Music",
@@ -51,30 +96,25 @@ fun MusicSettingsScreen(
                 .fillMaxSize()
                 .verticalScroll(scrollState),
         ) {
-            SettingsGroup("Root Folder")
+            RootAccessSection(
+                groupTitle  = "Root Folders",
+                roots       = state.roots,
+                addLabel    = "Add Music Root",
+                addSublabel = "Grant a root folder (e.g. /Music) — add several to span locations",
+                onAddRoot   = onAddRoot,
+                onRelinkRoot = onRelinkRoot,
+                onRemoveRoot = onRemoveRoot,
+            )
 
-            SettingsValueRow(
-                label    = "Root Folder",
-                sublabel = "The folder PFP scans for music, including its subfolders",
-                value    = state.rootName ?: "Not set",
-                focusKey = "music_root",
-                onClick  = { rootPicker.launch(initialRootUri) },
-            )
-            SettingsRow(
-                label    = if (state.hasRoot) "Replace Root Folder" else "Add Root Folder",
-                sublabel = if (state.hasRoot) "Choose a different folder — replaces the current root"
-                           else "Grant one folder; PFP keeps read access and scans it",
-                focusKey = "music_root_pick",
-                onClick  = { rootPicker.launch(initialRootUri) },
-            )
             SettingsRow(
                 label    = "Rescan Music Library",
                 sublabel = when {
                     state.scanning            -> "Scanning…"
                     state.scanMessage != null -> state.scanMessage
-                    else                      -> "Update the library from the root folder"
+                    else                      -> "Update the libraries from every root folder"
                 },
-                onClick  = if (state.scanning || !state.hasRoot) null else ({ viewModel.rescan() }),
+                focusKey = "music_rescan",
+                onClick  = if (state.scanning || !state.hasRoots) null else onRescan,
             )
 
             if (state.scanning) {
@@ -92,7 +132,7 @@ fun MusicSettingsScreen(
                 sublabel = "App that opens music tracks",
                 value    = state.defaultPlayerLabel,
                 focusKey = "music_default_player",
-                onClick  = { viewModel.openPlayerPicker() },
+                onClick  = onOpenPlayerPicker,
             )
         }
     }
@@ -100,25 +140,25 @@ fun MusicSettingsScreen(
     // ── Default player picker: Play Field Portal / System Default / an installed app ──
     if (state.showPlayerPicker) {
         AlertDialog(
-            onDismissRequest = { viewModel.dismissPlayerPicker() },
+            onDismissRequest = onDismissPlayerPicker,
             title   = { Text("Default Music Player") },
             text    = {
                 Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                     PlayerChoiceRow(
                         label = "Play Field Portal",
                         selected = state.defaultPlayer == MusicIntentResolver.BUILTIN,
-                        onClick = { viewModel.chooseDefaultPlayer(MusicIntentResolver.BUILTIN) },
+                        onClick = { onChoosePlayer(MusicIntentResolver.BUILTIN) },
                     )
                     PlayerChoiceRow(
                         label = "System Default",
                         selected = state.defaultPlayer == null,
-                        onClick = { viewModel.chooseDefaultPlayer(null) },
+                        onClick = { onChoosePlayer(null) },
                     )
                     state.availablePlayers.forEach { player ->
                         PlayerChoiceRow(
                             label = player.label,
                             selected = state.defaultPlayer == player.packageName,
-                            onClick = { viewModel.chooseDefaultPlayer(player.packageName) },
+                            onClick = { onChoosePlayer(player.packageName) },
                         )
                     }
                     if (state.availablePlayers.isEmpty()) {
@@ -131,7 +171,7 @@ fun MusicSettingsScreen(
                 }
             },
             confirmButton = {},
-            dismissButton = { TextButton(onClick = { viewModel.dismissPlayerPicker() }) { Text("Close") } },
+            dismissButton = { TextButton(onClick = onDismissPlayerPicker) { Text("Close") } },
         )
     }
 }
@@ -142,6 +182,31 @@ private fun PlayerChoiceRow(label: String, selected: Boolean, onClick: () -> Uni
         Text(
             text = (if (selected) "● " else "○ ") + label,
             modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}
+
+@CombinedPreviews
+@Composable
+private fun MusicSettingsContentPreview() {
+    PfpPreview {
+        MusicSettingsContent(
+            state = MusicSettingsUiState(
+                roots = listOf(
+                    RootFolderRow("content://preview/tree/primary%3AMusic", "Music", linked = true),
+                    RootFolderRow("content://preview/tree/1A2B-3C4D%3AMusic", "SDCARD/Music", linked = false),
+                ),
+                defaultPlayer = null,
+            ),
+            onBack = {},
+            onAddRoot = {},
+            onRelinkRoot = {},
+            onRemoveRoot = {},
+            onRescan = {},
+            onOpenPlayerPicker = {},
+            onDismissPlayerPicker = {},
+            onChoosePlayer = {},
+            onDismissMessage = {},
         )
     }
 }
