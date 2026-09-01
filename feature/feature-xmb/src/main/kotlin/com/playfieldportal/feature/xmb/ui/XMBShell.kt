@@ -748,6 +748,7 @@ fun XMBShell(
                     onBack = onCloseAppDrawer,
                     pendingGamepadAction = uiState.pendingDrawerAction,
                     onGamepadActionConsumed = onDrawerActionConsumed,
+                    displayType = uiState.controllerDisplayType,
                     modifier = Modifier.fillMaxSize(),
                 )
             }

@@ -3,6 +3,7 @@ package com.playfieldportal.feature.appbar
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -50,7 +51,10 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
@@ -64,7 +68,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.google.accompanist.drawablepainter.DrawablePainter
+import com.playfieldportal.core.domain.model.ControllerDisplayType
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.ui.R
 import com.playfieldportal.core.ui.preview.CombinedPreviews
 import com.playfieldportal.core.ui.preview.PfpPreview
 import com.playfieldportal.core.ui.theme.deriveStorefrontColors
@@ -87,6 +93,7 @@ fun AppDrawerScreen(
     initialFilter: AppFilter = AppFilter.ALL,
     pendingGamepadAction: GamepadAction? = null,
     onGamepadActionConsumed: () -> Unit = {},
+    displayType: ControllerDisplayType = ControllerDisplayType.XBOX,
     modifier: Modifier = Modifier,
     viewModel: AppDrawerViewModel = hiltViewModel(),
 ) {
@@ -141,6 +148,7 @@ fun AppDrawerScreen(
         onConfirmUninstall = { viewModel.confirmUninstall() },
         onCancelUninstall = { viewModel.cancelUninstall() },
         onGrantUsageAccess = { viewModel.openUsageAccessSettings() },
+        displayType = displayType,
         modifier = modifier,
     )
 }
@@ -166,6 +174,7 @@ private fun AppDrawerContent(
     onConfirmUninstall: () -> Unit,
     onCancelUninstall: () -> Unit,
     onGrantUsageAccess: () -> Unit,
+    displayType: ControllerDisplayType,
     modifier: Modifier = Modifier,
 ) {
     val searchFocus = remember { FocusRequester() }
@@ -188,9 +197,9 @@ private fun AppDrawerContent(
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    0f to sf.chromeTop,
-                    0.35f to sf.chromeBottom,
-                    1f to sf.chromeTop.copy(alpha = 0.70f),
+                    0f to sf.chromeTop.copy(alpha = 0.94f),
+                    0.35f to sf.chromeBottom.copy(alpha = 0.94f),
+                    1f to sf.chromeTop.copy(alpha = 0.94f),
                 )
             ),
     ) {
@@ -284,7 +293,7 @@ private fun AppDrawerContent(
             )
 
             // ── Controller command bar ───────────────────────────────────────
-            ControllerCommandBar(colors = sf)
+            ControllerCommandBar(colors = sf, displayType = displayType)
         }
 
         // ── Overlays ──────────────────────────────────────────────────────────
@@ -399,40 +408,47 @@ private fun StorefrontHeader(
 
         // Header actions: Search icon + View placeholder
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            // Search button (X / Square)
+            // Search button (magnifying glass)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.clickable {
                     onSearchToggle(!searchActive)
                 },
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(22.dp)
-                        .border(1.5.dp, colors.textSecondary, RoundedCornerShape(3.dp))
-                        .background(Color.Transparent),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text("\u25A1", color = colors.textSecondary, fontSize = 10.sp)
+                Canvas(modifier = Modifier.size(18.dp)) {
+                    val strokeW = 1.8f.dp.toPx()
+                    val cx = size.width * 0.42f
+                    val cy = size.height * 0.42f
+                    val r = size.width * 0.30f
+                    // Lens circle
+                    drawCircle(
+                        color = colors.textSecondary,
+                        radius = r,
+                        center = androidx.compose.ui.geometry.Offset(cx, cy),
+                        style = Stroke(strokeW),
+                    )
+                    // Handle line
+                    val handleStart = androidx.compose.ui.geometry.Offset(
+                        cx + r * 0.70f,
+                        cy + r * 0.70f,
+                    )
+                    val handleEnd = androidx.compose.ui.geometry.Offset(
+                        cx + r * 0.70f + size.width * 0.22f,
+                        cy + r * 0.70f + size.height * 0.22f,
+                    )
+                    drawLine(
+                        color = colors.textSecondary,
+                        start = handleStart,
+                        end = handleEnd,
+                        strokeWidth = strokeW,
+                        cap = androidx.compose.ui.graphics.StrokeCap.Round,
+                    )
                 }
                 Spacer(Modifier.width(5.dp))
                 Text("Search", color = colors.textSecondary, fontSize = 13.sp)
             }
 
-            // View placeholder (reserved for future)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(22.dp)
-                        .border(1.5.dp, colors.textSecondary.copy(alpha = 0.5f), RoundedCornerShape(3.dp)),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text("\u2395", color = colors.textSecondary.copy(alpha = 0.5f), fontSize = 10.sp)
-                }
-                Spacer(Modifier.width(5.dp))
-                Text("View", color = colors.textSecondary.copy(alpha = 0.5f), fontSize = 13.sp)
             }
-        }
     }
 }
 
@@ -646,15 +662,6 @@ private fun AppGridItem(
             textAlign = TextAlign.Center,
             lineHeight = 13.sp,
         )
-        if (app.isEmulator) {
-            Text(
-                text = "EMU",
-                color = colors.chromeDivider,
-                fontSize = 9.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(top = 2.dp),
-            )
-        }
     }
 }
 
@@ -663,49 +670,44 @@ private fun AppGridItem(
 @Composable
 private fun ControllerCommandBar(
     colors: com.playfieldportal.core.ui.theme.StorefrontColors,
+    displayType: ControllerDisplayType,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(FOOTER_HEIGHT)
-            .background(colors.footerBackground)
+            .background(colors.footerBackground.copy(alpha = 0.94f))
             .padding(horizontal = 24.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(28.dp, Alignment.CenterHorizontally),
     ) {
-        CommandEntry("L", "Prev Category", colors)
-        CommandEntry("R", "Next Category", colors)
-        CommandEntry("\u25CB", "Back", colors)
-        CommandEntry("\u2718", "Launch", colors)
-        CommandEntry("\u25B3", "Options", colors)
-        CommandEntry("\u25A1", "Search", colors)
+        CommandEntry("L", "Prev Category", displayType, colors, isShoulder = true)
+        CommandEntry("R", "Next Category", displayType, colors, isShoulder = true)
+        CommandEntry("B", "Back", displayType, colors)
+        CommandEntry("A", "Launch", displayType, colors)
+        CommandEntry("Y", "Options", displayType, colors)
+        CommandEntry("X", "Search", displayType, colors)
     }
 }
 
 @Composable
 private fun CommandEntry(
-    glyph: String,
+    buttonLabel: String,
     label: String,
+    displayType: ControllerDisplayType,
     colors: com.playfieldportal.core.ui.theme.StorefrontColors,
+    isShoulder: Boolean = false,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Box(
-            modifier = Modifier
-                .size(22.dp)
-                .border(1.dp, colors.textSecondary, RoundedCornerShape(3.dp))
-                .background(colors.footerBackground),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = glyph,
-                color = colors.textPrimary,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-            )
-        }
+        ButtonGlyph(
+            buttonLabel = buttonLabel,
+            displayType = displayType,
+            isShoulder = isShoulder,
+            modifier = Modifier.size(22.dp),
+        )
         Text(
             text = label,
             color = colors.textSecondary,
@@ -865,6 +867,103 @@ private fun EmptyDrawerMessage(
     }
 }
 
+// ── Controller button glyph ──────────────────────────────────────────────────────
+
+/**
+ * Renders the correct button glyph for the user's controller display type.
+ * PlayStation gets shape symbols, Xbox/Nintendo/Generic get letter labels in a filled circle.
+ */
+@Composable
+private fun ButtonGlyph(
+    buttonLabel: String,
+    displayType: ControllerDisplayType,
+    isShoulder: Boolean = false,
+    modifier: Modifier = Modifier,
+) {
+    when (displayType) {
+        // PlayStation — use triangle drawable for Y, draw other shapes with Canvas
+        ControllerDisplayType.PLAYSTATION -> {
+            if (buttonLabel == "Y") {
+                // Triangle — use the existing hint drawable
+                Image(
+                    painter = painterResource(R.drawable.btn_hint_triangle),
+                    contentDescription = "Triangle",
+                    modifier = modifier,
+                )
+            } else {
+                // Draw circle / cross / square / shoulder shapes with Canvas
+                val shapeColor = Color(0xFF2A2A2A)
+                val strokeColor = Color.White
+                Canvas(modifier = modifier) {
+                    val strokeW = 1.5f.dp.toPx()
+                    val cornerR = 4.dp.toPx()
+                    val cx = size.width / 2f
+                    val cy = size.height / 2f
+                    val r = size.width / 2f
+                    when (buttonLabel) {
+                        "B" -> {
+                            // Circle outline
+                            drawCircle(color = shapeColor, radius = r, center = androidx.compose.ui.geometry.Offset(cx, cy))
+                            drawCircle(color = strokeColor, radius = r, center = androidx.compose.ui.geometry.Offset(cx, cy), style = Stroke(strokeW))
+                        }
+                        "A" -> {
+                            // Cross (X shape)
+                            val arm = size.width * 0.32f
+                            val armW = strokeW * 1.2f
+                            drawLine(strokeColor, androidx.compose.ui.geometry.Offset(cx - arm, cy - arm), androidx.compose.ui.geometry.Offset(cx + arm, cy + arm), armW)
+                            drawLine(strokeColor, androidx.compose.ui.geometry.Offset(cx + arm, cy - arm), androidx.compose.ui.geometry.Offset(cx - arm, cy + arm), armW)
+                        }
+                        "X" -> {
+                            // Square outline
+                            val m = size.width * 0.15f
+                            val path = Path().apply {
+                                moveTo(m, m)
+                                lineTo(size.width - m, m)
+                                lineTo(size.width - m, size.height - m)
+                                lineTo(m, size.height - m)
+                                close()
+                            }
+                            drawPath(path, shapeColor)
+                            drawPath(path, strokeColor, style = Stroke(strokeW))
+                        }
+                        else -> {
+                            // Shoulder / other — rounded rect with text
+                            drawRoundRect(shapeColor, cornerRadius = androidx.compose.ui.geometry.CornerRadius(cornerR))
+                            drawRoundRect(strokeColor, cornerRadius = androidx.compose.ui.geometry.CornerRadius(cornerR), style = Stroke(strokeW))
+                        }
+                    }
+                }
+                if (buttonLabel !in listOf("B", "A", "X")) {
+                    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+                        Text(buttonLabel, color = strokeColor, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+        // Xbox / Nintendo / Generic — letter labels in a filled circle
+        else -> {
+            val displayChar = when (displayType) {
+                ControllerDisplayType.NINTENDO -> when (buttonLabel) {
+                    "Y" -> "X"  // Nintendo swaps X/Y labels
+                    "X" -> "Y"
+                    else -> buttonLabel
+                }
+                else -> buttonLabel
+            }
+            Canvas(modifier = modifier) {
+                val cx = size.width / 2f
+                val cy = size.height / 2f
+                val r = size.width / 2f
+                drawCircle(color = Color(0xFF2A2A2A), radius = r, center = androidx.compose.ui.geometry.Offset(cx, cy))
+                drawCircle(color = Color.White, radius = r, center = androidx.compose.ui.geometry.Offset(cx, cy), style = Stroke(1.5.dp.toPx()))
+            }
+            Box(modifier = modifier, contentAlignment = Alignment.Center) {
+                Text(displayChar, color = Color.White, fontSize = if (isShoulder) 9.sp else 11.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
 // ── Preview ─────────────────────────────────────────────────────────────────────
 
 @CombinedPreviews
@@ -908,6 +1007,7 @@ fun AppDrawerScreenPreview() {
             onConfirmUninstall = {},
             onCancelUninstall = {},
             onGrantUsageAccess = {},
+            displayType = ControllerDisplayType.PLAYSTATION,
         )
     }
 }
