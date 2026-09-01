@@ -49,6 +49,7 @@ fun GamepadAction.displayLabel(): String = when (this) {
     GamepadAction.HOME            -> "Start (Confirm in pickers)"
     GamepadAction.OPEN_TASK_TRAY  -> "Open Task Tray"
     GamepadAction.CHANGE_SORT     -> "Change Sort Order"
+    GamepadAction.BUTTON_X        -> "Search (App Drawer)"
 }
 
 fun Int.keycodeDisplayName(): String = when (this) {

@@ -14,6 +14,7 @@ enum class GamepadAction {
     HOME,
     OPEN_TASK_TRAY,
     CHANGE_SORT,
+    BUTTON_X,
 }
 
 /** True for the four directional navigation actions (D-pad / stick movement). */

@@ -54,6 +54,8 @@ data class AppDrawerUiState(
     val confirmUninstall: InstalledApp? = null,
     // True when the menu app is marked as a game (an android-platform GAME row exists for it).
     val menuAppIsGame: Boolean = false,
+    /** Per-filter app counts (unfiltered by search query) for the category rail. */
+    val filterCounts: Map<AppFilter, Int> = emptyMap(),
 ) {
     // App Info for every app; Mark/Unmark as Game toggles library membership; Uninstall only
     // for non-system apps (guard rail).
@@ -246,6 +248,8 @@ class AppDrawerViewModel @Inject constructor(
                 GamepadAction.SELECT        -> onMenuAction(actions[state.menuIndex.coerceIn(0, actions.size - 1)])
                 // Hold again, or Y, dismisses the menu (BACK closes the whole drawer via XMBViewModel).
                 GamepadAction.LONG_PRESS, GamepadAction.BUTTON_Y -> closeAppMenu()
+                // X in menu context: dismiss menu too
+                GamepadAction.BUTTON_X -> closeAppMenu()
                 else -> Unit
             }
             return
@@ -280,6 +284,8 @@ class AppDrawerViewModel @Inject constructor(
                 val app = state.visibleApps.getOrNull(cur)
                 if (app != null) launchApp(app.packageName)
             }
+            // Y / Triangle — open options for the currently focused app
+            GamepadAction.BUTTON_Y -> openAppMenuForSelected()
             // L1 / R1 — cycle through filter tabs (App Drawer only)
             GamepadAction.PREV_CATEGORY -> {
                 val filters = AppFilter.values()
@@ -319,6 +325,18 @@ class AppDrawerViewModel @Inject constructor(
                 }
             }
 
-        _uiState.update { it.copy(visibleApps = filtered) }
+        // Compute per-filter counts (unfiltered by search query) for the category rail.
+        val counts = AppFilter.values().associateWith { filter ->
+            state.allApps.count { app ->
+                when (filter) {
+                    AppFilter.ALL       -> true
+                    AppFilter.GAMES     -> app.isGame
+                    AppFilter.EMULATORS -> app.isEmulator
+                    AppFilter.RECENT    -> app.lastUsedAt > 0L
+                }
+            }
+        }
+
+        _uiState.update { it.copy(visibleApps = filtered, filterCounts = counts) }
     }
 }

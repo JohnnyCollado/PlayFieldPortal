@@ -4420,6 +4420,7 @@ class XMBViewModel @Inject constructor(
             GamepadAction.OPEN_TASK_TRAY,
             GamepadAction.CHANGE_SORT -> cycleSort()
             GamepadAction.BUTTON_Y,
+            GamepadAction.BUTTON_X,
             GamepadAction.PREV_CATEGORY,
             GamepadAction.NEXT_CATEGORY -> Unit
         }
