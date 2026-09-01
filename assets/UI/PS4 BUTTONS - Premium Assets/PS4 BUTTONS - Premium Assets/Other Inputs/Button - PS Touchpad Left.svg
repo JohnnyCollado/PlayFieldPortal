@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="120" height="120" viewBox="0 0 120 120">
+  <defs>
+    <clipPath id="clip-path">
+      <rect width="36" height="36" fill="none"/>
+    </clipPath>
+    <clipPath id="clip-Button_-_PS_Touchpad_Left">
+      <rect width="120" height="120"/>
+    </clipPath>
+  </defs>
+  <g id="Button_-_PS_Touchpad_Left" data-name="Button - PS Touchpad Left" clip-path="url(#clip-Button_-_PS_Touchpad_Left)">
+    <g id="Rectangle_49" data-name="Rectangle 49" transform="translate(14 30)" fill="#2a2a2a" stroke="#fff" stroke-width="4">
+      <path d="M4,0H88a4,4,0,0,1,4,4V52a8,8,0,0,1-8,8H8a8,8,0,0,1-8-8V4A4,4,0,0,1,4,0Z" stroke="none"/>
+      <path d="M4-2H88a6,6,0,0,1,6,6V52A10,10,0,0,1,84,62H8A10,10,0,0,1-2,52V4A6,6,0,0,1,4-2Z" fill="none"/>
+    </g>
+    <path id="Rectangle_50" data-name="Rectangle 50" d="M0,0H92a0,0,0,0,1,0,0V36a8,8,0,0,1-8,8H8a8,8,0,0,1-8-8V0A0,0,0,0,1,0,0Z" transform="translate(14 46)" fill="#404040"/>
+    <rect id="Rectangle_71" data-name="Rectangle 71" width="92" height="31" rx="15.5" transform="translate(14 30)" fill="#2a2a2a"/>
+    <rect id="Rectangle_52" data-name="Rectangle 52" width="84" height="44" rx="4" transform="translate(18 42)" fill="#5b5b5b"/>
+    <g id="Repeat_Grid_1" data-name="Repeat Grid 1" transform="translate(22 46)" clip-path="url(#clip-path)" style="isolation: isolate">
+      <g transform="translate(-19 -35)">
+        <circle id="Ellipse_25" data-name="Ellipse 25" cx="2" cy="2" r="2" transform="translate(19 35)" fill="#404040"/>
+      </g>
+      <g transform="translate(-11 -35)">
+        <circle id="Ellipse_25-2" data-name="Ellipse 25" cx="2" cy="2" r="2" transform="translate(19 35)" fill="#404040"/>
+      </g>
+      <g transform="translate(-3 -35)">
+        <circle id="Ellipse_25-3" data-name="Ellipse 25" cx="2" cy="2" r="2" transform="translate(19 35)" fill="#404040"/>
+      </g>
+      <g transform="translate(5 -35)">
+        <circle id="Ellipse_25-4" data-name="Ellipse 25" cx="2" cy="2" r="2" transform="translate(19 35)" fill="#404040"/>
+      </g>
+      <g transform="translate(13 -35)">
+        <circle id="Ellipse_25-5" data-name="Ellipse 25" cx="2" cy="2" r="2" transform="translate(19 35)" fill="#404040"/>
+      </g>
+      <g transform="translate(-19 -27)">
+        <circle id="Ellipse_25-6" data-name="Ellipse 25" cx="2" cy="2" r="2" transform="translate(19 35)" fill="#404040"/>
+      </g>
+      <g transform="translate(-11 -27)">
+        <circle id="Ellipse_25-7" data-name="Ellipse 25" cx="2" cy="2" r="2" transform="translate(19 35)" fill="#404040"/>
+      </g>
+      <g transform="translate(-3 -27)">
+        <circle id="Ellipse_25-8" data-name="Ellipse 25" cx="2" cy="2" r="2" transform="translate(19 35)" fill="#404040"/>
+      </g>
+      <g transform="translate(5 -27)">
+        <circle id="Ellipse_25-9" data-name="Ellipse 25" cx="2" cy="2" r="2" transform="translate(19 35)" fill="#404040"/>
+      </g>
+      <g transform="translate(13 -27)">
+        <circle id="Ellipse_25-10" data-name="Ellipse 25" cx="2" cy="2" r="2" transform="translate(19 35)" fill="#404040"/>
+      </g>
+      <g transform="translate(-19 -19)">
+        <circle id="Ellipse_25-11" data-name="Ellipse 25" cx="2" cy="2" r="2" transform="translate(19 35)" fill="#404040"/>
+      </g>
+      <g transform="translate(-11 -19)">
+        <circle id="Ellipse_25-12" data-name="Ellipse 25" cx="2" cy="2" r="2" transform="translate(19 35)" fill="#404040"/>
+      </g>
+      <g transform="translate(-3 -19)">
+        <circle id="Ellipse_25-13" data-name="Ellipse 25" cx="2" cy="2" r="2" transform="translate(19 35)" fill="#404040"/>
+      </g>
+      <g transform="translate(5 -19)">
+        <circle id="Ellipse_25-14" data-name="Ellipse 25" cx="2" cy="2" r="2" transform="translate(19 35)" fill="#404040"/>
+      </g>
+      <g transform="translate(13 -19)">
+        <circle id="Ellipse_25-15" data-name="Ellipse 25" cx="2" cy="2" r="2" transform="translate(19 35)" fill="#404040"/>
+      </g>
+      <g transform="translate(-19 -11)">
+        <circle id="Ellipse_25-16" data-name="Ellipse 25" cx="2" cy="2" r="2" transform="translate(19 35)" fill="#404040"/>
+      </g>
+      <g transform="translate(-11 -11)">
+        <circle id="Ellipse_25-17" data-name="Ellipse 25" cx="2" cy="2" r="2" transform="translate(19 35)" fill="#404040"/>
+      </g>
+      <g transform="translate(-3 -11)">
+        <circle id="Ellipse_25-18" data-name="Ellipse 25" cx="2" cy="2" r="2" transform="translate(19 35)" fill="#404040"/>
+      </g>
+      <g transform="translate(5 -11)">
+        <circle id="Ellipse_25-19" data-name="Ellipse 25" cx="2" cy="2" r="2" transform="translate(19 35)" fill="#404040"/>
+      </g>
+      <g transform="translate(13 -11)">
+        <circle id="Ellipse_25-20" data-name="Ellipse 25" cx="2" cy="2" r="2" transform="translate(19 35)" fill="#404040"/>
+      </g>
+      <g transform="translate(-19 -3)">
+        <circle id="Ellipse_25-21" data-name="Ellipse 25" cx="2" cy="2" r="2" transform="translate(19 35)" fill="#404040"/>
+      </g>
+      <g transform="translate(-11 -3)">
+        <circle id="Ellipse_25-22" data-name="Ellipse 25" cx="2" cy="2" r="2" transform="translate(19 35)" fill="#404040"/>
+      </g>
+      <g transform="translate(-3 -3)">
+        <circle id="Ellipse_25-23" data-name="Ellipse 25" cx="2" cy="2" r="2" transform="translate(19 35)" fill="#404040"/>
+      </g>
+      <g transform="translate(5 -3)">
+        <circle id="Ellipse_25-24" data-name="Ellipse 25" cx="2" cy="2" r="2" transform="translate(19 35)" fill="#404040"/>
+      </g>
+      <g transform="translate(13 -3)">
+        <circle id="Ellipse_25-25" data-name="Ellipse 25" cx="2" cy="2" r="2" transform="translate(19 35)" fill="#404040"/>
+      </g>
+    </g>
+    <g id="Rectangle_56" data-name="Rectangle 56" transform="translate(10 34)" fill="none" stroke="#fff" stroke-width="4">
+      <path d="M8,0H44a8,8,0,0,1,8,8V52a8,8,0,0,1-8,8H12A12,12,0,0,1,0,48V8A8,8,0,0,1,8,0Z" stroke="none"/>
+      <path d="M8,2H44a6,6,0,0,1,6,6V52a6,6,0,0,1-6,6H12A10,10,0,0,1,2,48V8A6,6,0,0,1,8,2Z" fill="none"/>
+    </g>
+  </g>
+</svg>

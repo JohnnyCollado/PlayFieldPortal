@@ -61,8 +61,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -320,24 +320,24 @@ fun GameDetailScreen(
                         onClick = viewModel::onPlayClicked,
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        SquareActionButton(
-                            icon = Icons.Filled.Settings,
-                            contentDescription = "Options",
-                            focused = state.mainFocus == 1,
-                            onClick = viewModel::onOptionsClicked,
-                        )
-                        SquareActionButton(
-                            icon = Icons.Filled.Brush,
-                            contentDescription = "Edit Artwork",
-                            focused = state.mainFocus == 2,
-                            onClick = viewModel::openArtworkManager,
-                        )
-                        SquareActionButton(
-                            icon = Icons.AutoMirrored.Filled.MenuBook,
-                            contentDescription = "Manual",
-                            focused = state.mainFocus == 3,
-                            onClick = viewModel::onManualClicked,
-                        )
+                            SquareActionButton(
+                                icon = Icons.Filled.Settings,
+                                contentDescription = "Options",
+                                focused = state.mainFocus == 1,
+                                onClick = viewModel::onOptionsClicked,
+                            )
+                            SquareActionButton(
+                                icon = Icons.Filled.Brush,
+                                contentDescription = "Edit Artwork",
+                                focused = state.mainFocus == 2,
+                                onClick = viewModel::openArtworkManager,
+                            )
+                            SquareActionButton(
+                                icon = Icons.AutoMirrored.Filled.MenuBook,
+                                contentDescription = "Manual",
+                                focused = state.mainFocus == 3,
+                                onClick = viewModel::onManualClicked,
+                            )
                     }
                     (state.launchError ?: state.actionMessage ?: state.artworkMessage)?.let {
                         Text(it, color = menuCursorEdge(), fontSize = 12.sp)

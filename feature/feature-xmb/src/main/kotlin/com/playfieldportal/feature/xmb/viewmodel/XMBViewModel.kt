@@ -2,9 +2,11 @@ package com.playfieldportal.feature.xmb.viewmodel
 
 import android.content.Context
 import android.content.Intent
+import android.os.SystemClock
 import android.provider.MediaStore
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.ViewModel
@@ -485,6 +487,18 @@ data class XMBUiState(
     // True when touch was the most recent input, false when a controller/key was. Flips only on a
     // real input event, so the contextual button doesn't flicker.
     val lastInputWasTouch: Boolean = false,
+    // The user's chosen controller button-glyph style (Settings ▸ Controller ▸ Display Type).
+    // Drives the idle context-menu hint's face-button icon (△ / Y / X).
+    val controllerDisplayType: com.playfieldportal.core.domain.model.ControllerDisplayType =
+        com.playfieldportal.core.domain.model.ControllerDisplayType.XBOX,
+    // True when the user has been idle on an item that has a context menu, while touch controls
+    // are active and no overlay is up — drives the small "Options" hint pill. See
+    // XMBViewModel's idle-timer loop for the gate conditions.
+    val showContextMenuHint: Boolean = false,
+    // User setting (Display ▸ Context Menu Hint). When false the idle hint never shows.
+    val contextMenuHintEnabled: Boolean = true,
+    // User-configured idle delay in seconds, clamped to 1..5 and defaulting to the original 2.5s.
+    val contextMenuHintDelaySeconds: Float = 2.5f,
     val touchNavButtonMode: com.playfieldportal.core.domain.model.TouchNavButtonMode =
         com.playfieldportal.core.domain.model.TouchNavButtonMode.AUTO,
     // Swipe sensitivity for the XMB gesture layer (Settings ▸ Display ▸ Touch Sensitivity).
@@ -660,6 +674,17 @@ data class XMBUiState(
             selectedPlatformId != null ||
             selectedCollectionId != null
 
+    // The item currently under the XMB cursor, or null.
+    val focusedItem: XMBItem?
+        get() = currentItems.getOrNull(selectedItemIndex)
+
+    // True iff a Y/Triangle press on the focused item would open a context menu — the exact mirror
+    // of XMBViewModel.onItemLongPress / dispatchGamepadAction(BUTTON_Y)'s when-branches, so the
+    // idle hint and the real trigger never drift apart. Computed (never stored) so it stays
+    // current with the cursor without plumbing at every stepItem call site.
+    val focusedItemHasContextMenu: Boolean
+        get() = focusedItem?.hasContextMenu(this) == true
+
     // Whether the bottom-right contextual button (App Drawer / Back) should be shown, per the
     // user's Touch Navigation Button setting. AUTO follows the last input source.
     val resolvedShowTouchButton: Boolean
@@ -809,6 +834,72 @@ internal fun List<MusicTrack>.trackSorted(mode: XmbSortMode): List<MusicTrack> =
     XmbSortMode.DATE_ADDED -> sortedByDescending { it.lastModified ?: 0L }
     else                   -> sortedBy { it.displayTitle.lowercase() }
 }
+
+/**
+ * True iff a Y/Triangle press on [this] item would open a context menu under [state] — the exact
+ * mirror of `XMBViewModel.onItemLongPress` / `dispatchGamepadAction(BUTTON_Y)`'s `when` branches.
+ * Pure (no side effects) so the idle hint can read it without opening a menu, and so it is
+ * unit-testable. The per-category `openXxxContextMenu` functions start with a category guard that
+ * returns false on mismatch; those guards are reproduced here as category-id checks so this never
+ * calls the side-effectful openers.
+ */
+fun XMBItem.hasContextMenu(state: XMBUiState): Boolean {
+    val categoryId = state.categories.getOrNull(state.selectedCategoryIndex)?.id
+    return when {
+        // Music tracks / Now Playing / playlists / music-apps.
+        categoryId == BuiltInCategory.MUSIC && (
+            id == XMBViewModel.NOW_PLAYING_ITEM_ID ||
+                type == XMBItemType.MUSIC_TRACK ||
+                (type == XMBItemType.PLAYLIST && playlistId != null) ||
+                (state.musicNav == MusicNav.MusicApps && packageName != null)
+        ) -> true
+        // Video files / libraries / playlists / video-apps.
+        categoryId == BuiltInCategory.VIDEO && (
+            (type == XMBItemType.VIDEO_FILE && id.startsWith("vid_")) ||
+                (type == XMBItemType.VIDEO_FOLDER && id.startsWith("vlib_")) ||
+                (type == XMBItemType.PLAYLIST && playlistId != null) ||
+                (state.videoNav == VideoNav.VideoApps && packageName != null)
+        ) -> true
+        // Photo files / libraries / photo-apps.
+        categoryId == BuiltInCategory.PHOTO && (
+            (type == XMBItemType.PHOTO_FILE && id.startsWith("pho_")) ||
+                (type == XMBItemType.PHOTO_FOLDER && id.startsWith("plib_")) ||
+                (state.photoNav == PhotoNav.PhotoApps && packageName != null)
+        ) -> true
+        // Achievements hub: the summary / all / untracked rows.
+        categoryId == BuiltInCategory.ACHIEVEMENTS &&
+            (id == XMBViewModel.ACH_ALL_ITEM_ID ||
+                id == XMBViewModel.ACH_SUMMARY_ITEM_ID ||
+                id == XMBViewModel.ACH_UNTRACKED_ITEM_ID) -> true
+        gameId != null -> true
+        collectionId != null && type == XMBItemType.COLLECTION -> true
+        type == XMBItemType.ALL_GAMES -> true
+        type == XMBItemType.SOCIAL_ACCOUNT -> true
+        platformId != null -> true
+        packageName != null -> true
+        else -> false
+    }
+}
+
+/**
+ * Pure decision: should the idle context-menu hint be visible right now? Top-level so unit tests
+ * can exercise it without a ViewModel instance. Gates:
+ *  - the most recent input came from a controller (not touch);
+ *  - no blocking overlay, no open context menu ([XMBUiState.hasBlockingOverlay],
+ *    [XMBUiState.activeContextMenu]);
+ *  - not drilled into a sub-item ([XMBUiState.isInSubItem]) so the hint mirrors the App
+ *    Drawer button's own visibility contract (they are a stacked pair);
+ *  - the focused item actually has a context menu ([XMBUiState.focusedItemHasContextMenu]);
+ *  - the idle delay [idleMs] has elapsed (>= IDLE_HINT_DELAY_MS).
+ */
+fun shouldShowContextMenuHint(state: XMBUiState, idleMs: Long): Boolean =
+    state.contextMenuHintEnabled &&
+        !state.lastInputWasTouch &&
+        !state.hasBlockingOverlay &&
+        state.activeContextMenu == null &&
+        !state.isInSubItem &&
+        state.focusedItemHasContextMenu &&
+        idleMs >= (state.contextMenuHintDelaySeconds * 1_000f).toLong()
 
 data class XMBItem(
     val id: String,
@@ -1002,6 +1093,13 @@ class XMBViewModel @Inject constructor(
     @Volatile
     private var defaultMusicPlayer: String? = null
 
+    // Elapsed-realtime ms of the most recent user input (touch or controller). Drives the idle
+    // context-menu hint: after IDLE_HINT_DELAY_MS with no input, if the focused item has a context
+    // menu and touch controls are active, the hint pill fades in. Refreshed by markTouchInput,
+    // markControllerInput, and onUserInteraction.
+    @Volatile
+    private var lastInteractionMs: Long = 0L
+
     private val _uiState = MutableStateFlow(XMBUiState())
     val uiState: StateFlow<XMBUiState> = _uiState.asStateFlow()
 
@@ -1023,6 +1121,7 @@ class XMBViewModel @Inject constructor(
 
     init {
         gamepadInputHandler.scope = viewModelScope
+        observeContextMenuHintIdle()
         observeIconDisplayMode()
         observeFocusedGameVideo()
         observeBackgroundSettings()
@@ -3963,6 +4062,10 @@ class XMBViewModel @Inject constructor(
         viewModelScope.launch {
             controllerLayoutRepository.prefs.collect { prefs ->
                 gamepadInputHandler.scrollSpeed = prefs.scrollSpeed
+                // Surface the display type so the idle context-menu hint can render the
+                // matching face-button glyph (△ / Y / X). Reactive — updates instantly
+                // when the user cycles the setting.
+                _uiState.update { it.copy(controllerDisplayType = prefs.displayType) }
             }
         }
     }
@@ -3972,6 +4075,28 @@ class XMBViewModel @Inject constructor(
             gamepadInputHandler.actions.collect { action ->
                 onUserInteraction()
                 dispatchGamepadAction(action)
+            }
+        }
+    }
+
+    // ── Idle context-menu hint ──────────────────────────────────────────────────
+    // A configurable idle pause over an item that has a context menu (after controller input,
+    // with no overlay up) fades in a small "Options" pill next to the App Drawer button, showing
+    // the face-button glyph for the user's controller display style. Any input, focus move, or
+    // overlay opening hides it. The loop polls state cheaply (every ~500ms) and only writes
+    // state on a visibility transition, so it costs nothing while idle.
+    private fun observeContextMenuHintIdle() {
+        viewModelScope.launch {
+            while (isActive) {
+                delay(IDLE_HINT_POLL_MS)
+                val s = _uiState.value
+                val shouldShow = com.playfieldportal.feature.xmb.viewmodel.shouldShowContextMenuHint(
+                    state = s,
+                    idleMs = SystemClock.elapsedRealtime() - lastInteractionMs,
+                )
+                if (shouldShow != s.showContextMenuHint) {
+                    _uiState.update { it.copy(showContextMenuHint = shouldShow) }
+                }
             }
         }
     }
@@ -5686,12 +5811,15 @@ class XMBViewModel @Inject constructor(
 
     /** Marks the last input source as touch. Public so fullscreen overlays (detail screens, the
      *  music browser) can report a touch interaction, keeping the single `lastInputWasTouch` source
-     *  of truth — the same one that drives the XMB's contextual App Drawer button. */
+     *  of truth — the same one that drives the XMB's contextual App Drawer button. Also refreshes
+     *  [lastInteractionMs] so the idle context-menu hint resets. */
     fun markTouchInput() {
+        lastInteractionMs = SystemClock.elapsedRealtime()
         if (!_uiState.value.lastInputWasTouch) _uiState.update { it.copy(lastInputWasTouch = true) }
     }
 
     private fun markControllerInput() {
+        lastInteractionMs = SystemClock.elapsedRealtime()
         if (_uiState.value.lastInputWasTouch) _uiState.update { it.copy(lastInputWasTouch = false) }
     }
 
@@ -7273,10 +7401,14 @@ class XMBViewModel @Inject constructor(
     // ── User interaction ──────────────────────────────────────────────────────
 
     /**
-     * Hook invoked on every gamepad action. The background mode and wave style are now
-     * explicit, user-controlled settings, so interaction no longer mutates the wave.
+     * Hook invoked on every gamepad action (and from touch gestures via the activity). The
+     * background mode and wave style are now explicit, user-controlled settings, so interaction
+     * no longer mutates the wave — but it DOES refresh the idle-timer so the context-menu hint
+     * hides immediately on any activity.
      */
-    fun onUserInteraction() = Unit
+    fun onUserInteraction() {
+        lastInteractionMs = SystemClock.elapsedRealtime()
+    }
 
     // ── Library setup state ───────────────────────────────────────────────────
 
@@ -7384,7 +7516,17 @@ class XMBViewModel @Inject constructor(
                     .fromName(prefs[KEY_TOUCH_NAV_BUTTON])
                 val sensitivity = com.playfieldportal.core.domain.model.TouchSensitivity
                     .fromName(prefs[KEY_TOUCH_SENSITIVITY])
-                _uiState.update { it.copy(touchNavButtonMode = mode, touchSensitivity = sensitivity) }
+                val hintEnabled = prefs[KEY_CONTEXT_MENU_HINT] ?: true
+                val hintDelaySeconds =
+                    (prefs[KEY_CONTEXT_MENU_HINT_DELAY_SECONDS] ?: 2.5f).coerceIn(1f, 5f)
+                _uiState.update {
+                    it.copy(
+                        touchNavButtonMode = mode,
+                        touchSensitivity = sensitivity,
+                        contextMenuHintEnabled = hintEnabled,
+                        contextMenuHintDelaySeconds = hintDelaySeconds,
+                    )
+                }
             }
         }
     }
@@ -7438,6 +7580,9 @@ class XMBViewModel @Inject constructor(
         private val KEY_XMB_SCALE         = androidx.datastore.preferences.core.floatPreferencesKey("display_xmb_scale")
         private val KEY_BAR_TOP_FRACTION  = androidx.datastore.preferences.core.floatPreferencesKey("display_bar_top_fraction")
         // Per-form-factor live layout tunings (scale + horizontal + vertical), one JSON prefs string.
+        // Idle context-menu hint: how long to wait before showing, and how often to recheck.
+        internal const val IDLE_HINT_DELAY_MS = 2_500L
+        internal const val IDLE_HINT_POLL_MS  = 500L
         private val KEY_XMB_LAYOUT_ADJUST = stringPreferencesKey("display_xmb_layout_adjust")
         private val KEY_SETUP_COMPLETE    = booleanPreferencesKey("library_setup_complete")
         // First-run wizard: set the moment the wizard is shown (or silently seeded for installs
@@ -7475,6 +7620,10 @@ class XMBViewModel @Inject constructor(
         private val KEY_MENU_SOUND_ENABLED = booleanPreferencesKey("sound_menu_enabled")
         // Must match DisplaySettingsViewModel.KEY_TOUCH_NAV_BUTTON — both read/write this pref.
         private val KEY_TOUCH_NAV_BUTTON  = stringPreferencesKey("interface_touch_nav_button")
+        // Must match DisplaySettingsViewModel.KEY_CONTEXT_MENU_HINT — both read/write this pref.
+        private val KEY_CONTEXT_MENU_HINT = booleanPreferencesKey("interface_context_menu_hint")
+        private val KEY_CONTEXT_MENU_HINT_DELAY_SECONDS =
+            floatPreferencesKey("interface_context_menu_hint_delay_seconds")
         // Must match DisplaySettingsViewModel.KEY_TOUCH_SENSITIVITY — both read/write this pref.
         private val KEY_TOUCH_SENSITIVITY = stringPreferencesKey("interface_touch_sensitivity")
         // ICON1 linger gate — matches the PSP's rest-then-animate choreography and guarantees
@@ -7488,9 +7637,9 @@ class XMBViewModel @Inject constructor(
         private const val EMPTY_CATEGORY_ITEM_ID = "empty_category"
         // Shiba Coins hub root rows.
         private const val ACH_CONNECT_ITEM_ID = "ach_connect"
-        private const val ACH_SUMMARY_ITEM_ID = "ach_summary"
-        private const val ACH_ALL_ITEM_ID      = "ach_all"
-        private const val ACH_UNTRACKED_ITEM_ID = "ach_untracked"
+        internal const val ACH_SUMMARY_ITEM_ID = "ach_summary"
+        internal const val ACH_ALL_ITEM_ID      = "ach_all"
+        internal const val ACH_UNTRACKED_ITEM_ID = "ach_untracked"
         private const val ALL_GAMES_ITEM_ID = "all_games"
         private const val ALL_GAMES_PLATFORM_ID = "__all_games__"
         private const val FAVORITES_ITEM_ID = "favorites_folder"
@@ -7516,7 +7665,7 @@ class XMBViewModel @Inject constructor(
         // Music category synthetic rows / drill ids.
         private const val ADD_MUSIC_FOLDER_ITEM_ID = "add_music_folder"
         private const val ALL_MUSIC_ITEM_ID = "all_music"
-        private const val NOW_PLAYING_ITEM_ID = "now_playing"
+        internal const val NOW_PLAYING_ITEM_ID = "now_playing"
         private const val PLAYLISTS_ITEM_ID = "playlists"
         private const val MUSIC_APPS_ITEM_ID = "music_apps_item"
         private const val ADD_MUSIC_APPS_ITEM_ID = "add_music_apps"

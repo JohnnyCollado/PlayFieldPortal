@@ -4,6 +4,7 @@ import android.graphics.drawable.Drawable
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
@@ -210,18 +211,18 @@ fun AppDetailScreen(
                         onClick = viewModel::launchApp,
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        SquareActionButton(
-                            icon = Icons.Filled.Settings,
-                            contentDescription = "Options",
-                            focused = state.mainFocus == 1,
-                            onClick = viewModel::openOptions,
-                        )
-                        SquareActionButton(
-                            icon = Icons.Filled.Brush,
-                            contentDescription = "Edit Artwork",
-                            focused = state.mainFocus == 2,
-                            onClick = viewModel::openArtworkMenu,
-                        )
+                            SquareActionButton(
+                                icon = Icons.Filled.Settings,
+                                contentDescription = "Options",
+                                focused = state.mainFocus == 1,
+                                onClick = viewModel::openOptions,
+                            )
+                            SquareActionButton(
+                                icon = Icons.Filled.Brush,
+                                contentDescription = "Edit Artwork",
+                                focused = state.mainFocus == 2,
+                                onClick = viewModel::openArtworkMenu,
+                            )
                     }
                     state.artworkMessage?.let {
                         Text(it, color = menuCursorEdge(), fontSize = 12.sp)

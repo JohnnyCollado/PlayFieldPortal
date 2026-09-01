@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="120" height="120" viewBox="0 0 120 120">
+  <defs>
+    <clipPath id="clip-Button_-_PS_Home">
+      <rect width="120" height="120"/>
+    </clipPath>
+  </defs>
+  <g id="Button_-_PS_Home" data-name="Button - PS Home" clip-path="url(#clip-Button_-_PS_Home)">
+    <g id="Border_white_-_outer" data-name="Border white - outer" transform="translate(10 10)">
+      <g id="Border_white_-_outer-2" data-name="Border white - outer" fill="none" stroke="#fff" stroke-width="4">
+        <circle cx="50" cy="50" r="50" stroke="none"/>
+        <circle cx="50" cy="50" r="48" fill="none"/>
+      </g>
+    </g>
+    <g id="Border_white_-_inner" data-name="Border white - inner" transform="translate(18 18)">
+      <g id="Border_white_-_inner-2" data-name="Border white - inner" fill="none" stroke="#fff" stroke-width="4">
+        <circle cx="42" cy="42" r="42" stroke="none"/>
+        <circle cx="42" cy="42" r="44" fill="none"/>
+      </g>
+    </g>
+    <g id="Button_-_Base" data-name="Button - Base" transform="translate(14 14)">
+      <g id="Button_-_Base-2" data-name="Button - Base" fill="#404040" stroke="#2a2a2a" stroke-width="8">
+        <circle cx="46" cy="46" r="46" stroke="none"/>
+        <circle cx="46" cy="46" r="42" fill="none"/>
+      </g>
+    </g>
+    <g id="Button_-_Top_Alt" data-name="Button - Top Alt" transform="translate(22 22)">
+      <g id="Button_-_Top" data-name="Button - Top" fill="#5b5b5b" stroke="#404040" stroke-width="8">
+        <circle cx="38" cy="38" r="38" stroke="none"/>
+        <circle cx="38" cy="38" r="34" fill="none"/>
+      </g>
+    </g>
+    <g id="Ellipse_22" data-name="Ellipse 22" transform="translate(22 22)" fill="#006eff" stroke="#fff" stroke-width="2">
+      <circle cx="38" cy="38" r="38" stroke="none"/>
+      <circle cx="38" cy="38" r="37" fill="none"/>
+    </g>
+    <g id="Group_17" data-name="Group 17">
+      <path id="Subtraction_2" data-name="Subtraction 2" d="M-312-1676a35.776,35.776,0,0,1-14.013-2.829,35.884,35.884,0,0,1-11.443-7.715,35.882,35.882,0,0,1-7.715-11.443A35.773,35.773,0,0,1-348-1712a35.775,35.775,0,0,1,2.829-14.013,35.88,35.88,0,0,1,7.715-11.443,35.878,35.878,0,0,1,11.443-7.715A35.774,35.774,0,0,1-312-1748a35.775,35.775,0,0,1,14.013,2.829,35.878,35.878,0,0,1,11.443,7.715,35.877,35.877,0,0,1,7.715,11.443A35.777,35.777,0,0,1-276-1712a35.775,35.775,0,0,1-2.829,14.013,35.88,35.88,0,0,1-7.715,11.443,35.883,35.883,0,0,1-11.443,7.715A35.777,35.777,0,0,1-312-1676Zm-6.93-59.85h0v39.592l8.954,2.842v-33.205c0-1.4.545-2.307,1.388-2.307a1.4,1.4,0,0,1,.426.071c1.55.43,1.749,2.041,1.749,3.4v13.26a9.272,9.272,0,0,0,4,1.026,5.239,5.239,0,0,0,4.319-2.086,9.952,9.952,0,0,0,1.66-6.059c0-7.222-2.562-10.539-10.155-13.146a108.869,108.869,0,0,0-12.336-3.383Zm23.611,29.4a6.655,6.655,0,0,1,2,.26c.546.179.849.437.853.727.005.39-.509.8-1.41,1.122l-14.405,5.133v5.185l19.574-7.031a10.333,10.333,0,0,0,3.705-2.321,1.944,1.944,0,0,0,.407-1.828c-.241-.786-1.137-1.915-4.035-2.831a28.124,28.124,0,0,0-9.573-1.63,26.2,26.2,0,0,0-2.852.151,33.537,33.537,0,0,0-6.673,1.414l-.553.187v5.38l9.6-3.38A10.509,10.509,0,0,1-295.32-1706.447Zm-40.043,6.7h0a29.262,29.262,0,0,0,9.175,1.486h.008a28.738,28.738,0,0,0,4.624-.374l.257-.042.029,0c.179-.029.4-.066.6-.1v-4.657l-4.432,1.608a10.518,10.518,0,0,1-3.357.536,6.676,6.676,0,0,1-2.007-.26c-.545-.179-.848-.437-.852-.727-.005-.39.508-.8,1.408-1.123l9.24-3.307v-5.2l-12.84,4.565a21.184,21.184,0,0,0-4.934,2.373,2.171,2.171,0,0,0-1.014,2.151c.237,1.292,1.73,2.415,4.1,3.082Z" transform="translate(372 1772)" fill="#2a2a2a"/>
+    </g>
+  </g>
+</svg>

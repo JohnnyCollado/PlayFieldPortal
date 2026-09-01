@@ -1,0 +1,2 @@
+--- 20-09-06 ---
+- Some letters appeared as text in the svg rather than as shapes meaning that the fonts changed based on installed font packages.

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="120" height="120" viewBox="0 0 120 120">
+  <defs>
+    <clipPath id="clip-Button_-_PS_L2_Blank">
+      <rect width="120" height="120"/>
+    </clipPath>
+  </defs>
+  <g id="Button_-_PS_L2_Blank" data-name="Button - PS L2 Blank" clip-path="url(#clip-Button_-_PS_L2_Blank)">
+    <g id="Rectangle_49" data-name="Rectangle 49" transform="translate(14 30)" fill="#2a2a2a" stroke="#fff" stroke-width="4">
+      <path d="M4,0H90a4,4,0,0,1,4,4V31A34,34,0,0,1,60,65H14A14,14,0,0,1,0,51V4A4,4,0,0,1,4,0Z" stroke="none"/>
+      <path d="M4-2H90a6,6,0,0,1,6,6V31A36,36,0,0,1,60,67H14A16,16,0,0,1-2,51V4A6,6,0,0,1,4-2Z" fill="none"/>
+    </g>
+    <path id="Rectangle_50" data-name="Rectangle 50" d="M4,0H86a4,4,0,0,1,4,4V31A30,30,0,0,1,60,61H10A10,10,0,0,1,0,51V4A4,4,0,0,1,4,0Z" transform="translate(14 30)" fill="#404040"/>
+    <path id="Rectangle_52" data-name="Rectangle 52" d="M0,0H79.176A2.824,2.824,0,0,1,82,2.824v0A21.176,21.176,0,0,1,60.824,24H7.059A7.059,7.059,0,0,1,0,16.941V0A0,0,0,0,1,0,0Z" transform="translate(14 63)" fill="#5b5b5b"/>
+  </g>
+</svg>

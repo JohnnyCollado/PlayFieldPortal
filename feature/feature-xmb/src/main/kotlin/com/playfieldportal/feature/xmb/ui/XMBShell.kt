@@ -5,6 +5,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -670,6 +671,25 @@ fun XMBShell(
                 AppDrawerButton(
                     onClick = onOpenAppDrawer,
                     modifier = Modifier.padding(bottom = 24.dp, end = 20.dp),
+                )
+            }
+
+            // Idle context-menu hint: a small "Options" pill (with the controller-style
+            // face-button glyph) that fades in above the App Drawer button after the user has
+            // been idle over an item with a context menu. It is controller-only: touch input
+            // suppresses it. Driven by uiState.showContextMenuHint (set by XMBViewModel's idle
+            // timer), and stacked above the drawer button so the affordances never overlap.
+            AnimatedVisibility(
+                visible = uiState.showContextMenuHint &&
+                    uiState.activeContextMenu == null &&
+                    !uiState.hasBlockingOverlay,
+                enter = fadeIn(tween(200)),
+                exit = ExitTransition.None,
+                modifier = Modifier.align(Alignment.BottomEnd),
+            ) {
+                ContextMenuHint(
+                    displayType = uiState.controllerDisplayType,
+                    modifier = Modifier.padding(bottom = 76.dp, end = 20.dp),
                 )
             }
 

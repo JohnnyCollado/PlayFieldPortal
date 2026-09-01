@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.provider.DocumentsContract
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.playfieldportal.core.data.database.dao.BackupDao
@@ -427,6 +428,9 @@ open class BackupManager @Inject constructor(
         BACKED_UP_BOOLEAN_KEYS.forEach { key ->
             prefs[key]?.let { entries[key.name] = it.toString() }
         }
+        BACKED_UP_FLOAT_KEYS.forEach { key ->
+            prefs[key]?.let { entries[key.name] = it.toString() }
+        }
 
         return SettingsSnapshot(entries)
     }
@@ -452,6 +456,9 @@ open class BackupManager @Inject constructor(
             }
             BACKED_UP_BOOLEAN_KEYS.forEach { key ->
                 snapshot.entries[key.name]?.toBooleanStrictOrNull()?.let { prefs[key] = it }
+            }
+            BACKED_UP_FLOAT_KEYS.forEach { key ->
+                snapshot.entries[key.name]?.toFloatOrNull()?.let { prefs[key] = it }
             }
         }
     }
@@ -539,6 +546,7 @@ open class BackupManager @Inject constructor(
             booleanPreferencesKey("display_boot_on_resume"),
             booleanPreferencesKey("display_thermal_aware"),
             booleanPreferencesKey("display_battery_saver"),
+            booleanPreferencesKey("interface_context_menu_hint"),
             // Sound
             booleanPreferencesKey("sound_menu_enabled"),
             // Artwork download preferences
@@ -551,8 +559,13 @@ open class BackupManager @Inject constructor(
             // re-open the wizard on top of the restored configuration.
             booleanPreferencesKey("initial_setup_seen"),
             // Seed flag — kept so a restore over a fresh install doesn't re-seed on top of the
-            // restored data.
-            booleanPreferencesKey("db_seeded_v1"),
+            // restored data.            booleanPreferencesKey("db_seeded_v1"),
         )
+
+        private val BACKED_UP_FLOAT_KEYS = listOf(
+            floatPreferencesKey("interface_context_menu_hint_delay_seconds"),
+        )
+
+
     }
 }

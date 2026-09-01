@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="120" height="120" viewBox="0 0 120 120">
+  <defs>
+    <clipPath id="clip-Button_-_PS_R2_Blank_2">
+      <rect width="120" height="120"/>
+    </clipPath>
+  </defs>
+  <g id="Button_-_PS_R2_Blank_2" data-name="Button - PS R2 Blank – 2" clip-path="url(#clip-Button_-_PS_R2_Blank_2)">
+    <g id="Rectangle_49" data-name="Rectangle 49" transform="translate(14 30)" fill="#2a2a2a" stroke="#fff" stroke-width="4">
+      <path d="M4,0H90a4,4,0,0,1,4,4V51A14,14,0,0,1,80,65H34A34,34,0,0,1,0,31V4A4,4,0,0,1,4,0Z" stroke="none"/>
+      <path d="M4-2H90a6,6,0,0,1,6,6V51A16,16,0,0,1,80,67H34A36,36,0,0,1-2,31V4A6,6,0,0,1,4-2Z" fill="none"/>
+    </g>
+    <path id="Rectangle_50" data-name="Rectangle 50" d="M4,0H86a4,4,0,0,1,4,4V51A10,10,0,0,1,80,61H30A30,30,0,0,1,0,31V4A4,4,0,0,1,4,0Z" transform="translate(18 30)" fill="#404040"/>
+  </g>
+</svg>

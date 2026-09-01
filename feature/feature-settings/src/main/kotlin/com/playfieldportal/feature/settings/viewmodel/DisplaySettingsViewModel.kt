@@ -32,6 +32,9 @@ private val KEY_THERMAL_AWARE      = booleanPreferencesKey("display_thermal_awar
 private val KEY_RESPECT_BATTERY    = booleanPreferencesKey("display_battery_saver")
 // Must match XMBViewModel.KEY_TOUCH_NAV_BUTTON — both read/write this same pref.
 private val KEY_TOUCH_NAV_BUTTON   = stringPreferencesKey("interface_touch_nav_button")
+// Must match XMBViewModel.KEY_CONTEXT_MENU_HINT — both read/write this same pref.
+private val KEY_CONTEXT_MENU_HINT  = booleanPreferencesKey("interface_context_menu_hint")
+private val KEY_CONTEXT_MENU_HINT_DELAY_SECONDS = floatPreferencesKey("interface_context_menu_hint_delay_seconds")
 // Must match XMBViewModel.KEY_TOUCH_SENSITIVITY — both read/write this same pref.
 private val KEY_TOUCH_SENSITIVITY  = stringPreferencesKey("interface_touch_sensitivity")
 // Must match GameLaunchPreferences.KEY_DIRECT_LAUNCH — both read/write this same pref.
@@ -70,12 +73,15 @@ data class DisplaySettingsUiState(
     val thermalThrottleAware: Boolean = true,
     val respectBatterySaver: Boolean = true,
     val touchNavButtonMode: TouchNavButtonMode = TouchNavButtonMode.AUTO,
+    // Show the idle "Options" hint pill over XMB items with a context menu. Default on.
+    val contextMenuHintDelaySeconds: Float = 2.5f,
     val touchSensitivity: TouchSensitivity = TouchSensitivity.NORMAL,
     val menuSoundEnabled: Boolean = true,
     // Confirm on a game launches it directly (true) or opens Game Detail first (false).
     val directLaunch: Boolean = false,
     val customWallpaperPath: String? = null,
     val wallpaperMessage: String? = null,
+    val contextMenuHintEnabled: Boolean = true,
     val wallpaperImporting: Boolean = false,
     val wallpaperPreviewVisible: Boolean = false,
 ) {
@@ -106,6 +112,8 @@ class DisplaySettingsViewModel @Inject constructor(
             thermalThrottleAware = prefs[KEY_THERMAL_AWARE]   ?: true,
             respectBatterySaver  = prefs[KEY_RESPECT_BATTERY] ?: true,
             touchNavButtonMode   = TouchNavButtonMode.fromName(prefs[KEY_TOUCH_NAV_BUTTON]),
+            contextMenuHintEnabled = prefs[KEY_CONTEXT_MENU_HINT] ?: true,
+            contextMenuHintDelaySeconds = (prefs[KEY_CONTEXT_MENU_HINT_DELAY_SECONDS] ?: 2.5f).coerceIn(1f, 5f),
             touchSensitivity     = TouchSensitivity.fromName(prefs[KEY_TOUCH_SENSITIVITY]),
             menuSoundEnabled     = prefs[KEY_MENU_SOUND]      ?: true,
             directLaunch         = prefs[KEY_DIRECT_LAUNCH]   ?: false,
@@ -129,6 +137,10 @@ class DisplaySettingsViewModel @Inject constructor(
     fun setRespectBatterySaver(v: Boolean)   = save { it[KEY_RESPECT_BATTERY] = v }
     fun setMenuSoundEnabled(v: Boolean)      = save { it[KEY_MENU_SOUND]      = v }
     fun setDirectLaunch(v: Boolean)          = save { it[KEY_DIRECT_LAUNCH]   = v }
+    fun setContextMenuHintEnabled(v: Boolean) = save { it[KEY_CONTEXT_MENU_HINT] = v }
+    fun setContextMenuHintDelaySeconds(v: Float) = save {
+        it[KEY_CONTEXT_MENU_HINT_DELAY_SECONDS] = v.coerceIn(1f, 5f)
+    }
 
     fun cycleTouchNavButtonMode() {
         val modes = TouchNavButtonMode.entries
