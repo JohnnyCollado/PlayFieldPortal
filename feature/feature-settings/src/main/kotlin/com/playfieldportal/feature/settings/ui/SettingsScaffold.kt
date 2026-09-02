@@ -434,7 +434,13 @@ fun SettingsScaffold(
                     // Up at the first logical item is a deliberate top-boundary action. Always
                     // return the whole scrollable settings column to offset zero, including
                     // screens whose first visible content is a section header.
-                    coroutineScope.launch { contentScrollState.value?.animateScrollTo(0) }
+                    // Bind the state to a local first: a suspend call behind `?.` becomes the
+                    // lambda's boxed `Unit?` result, and the resume value (a Float from the
+                    // animation) then fails the checkcast to Unit at runtime.
+                    val topScrollState = contentScrollState.value
+                    if (topScrollState != null) {
+                        coroutineScope.launch { topScrollState.animateScrollTo(0) }
+                    }
                 }
                 requestFocusFor(target)
             }

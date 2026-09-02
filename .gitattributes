@@ -3,3 +3,7 @@
 
 # Discord Social SDK vendored binaries — tracked via Git LFS (large, not our IP)
 discord/discord-native/libs/*.aar filter=lfs diff=lfs merge=lfs -text
+
+# Batch scripts must keep CRLF - cmd.exe mis-parses blocks/labels with LF endings.
+*.bat text eol=crlf
+*.cmd text eol=crlf

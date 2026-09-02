@@ -7,6 +7,12 @@
       "skillPath": "skills/android-kotlin/SKILL.md",
       "computedHash": "14a2b30a2cfd1e807f54d7de00c211a96db130a1cf0526a3449b5dce686b021a"
     },
+    "batch-files": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/batch-files/SKILL.md",
+      "computedHash": "9a374062b036abf397548f8b080435332c3be2ecd17a1d90311167ece84c377a"
+    },
     "code-review": {
       "source": "mattpocock/skills",
       "sourceType": "github",

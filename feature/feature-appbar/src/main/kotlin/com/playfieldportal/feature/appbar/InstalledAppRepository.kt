@@ -64,7 +64,13 @@ class InstalledAppRepository @Inject constructor(
             addCategory(Intent.CATEGORY_LAUNCHER)
         }
 
+        // One ResolveInfo comes back per launcher ACTIVITY, and a package may declare more than
+        // one (the AYN Thor's dual-screen keyboard does). The app model is package-level all the
+        // way down — selection, launching and lazy-list keys are all packageName — so a second
+        // entry is a duplicate that crashes the pickers. Collapse per package, as the music and
+        // video intent resolvers already do.
         val resolvedApps = pm.queryIntentActivities(launchIntent, PackageManager.GET_META_DATA)
+            .distinctBy { it.activityInfo?.applicationInfo?.packageName }
 
         val apps = resolvedApps.mapNotNull { resolveInfo ->
             try {
