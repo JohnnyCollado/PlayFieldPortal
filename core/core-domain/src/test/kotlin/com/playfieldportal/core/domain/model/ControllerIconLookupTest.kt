@@ -184,6 +184,111 @@ class ControllerIconLookupTest {
         assertNull(keyboardOnly.iconFor(GamepadAction.SELECT))
     }
 
+    // ── Multi-input prompts ─────────────────────────────────────────────────
+
+    @Test
+    fun `a multi-input prompt keeps the order it was asked for`() {
+        // "◀▶ Seek" must not come out as "▶◀".
+        assertEquals(
+            listOf(ControllerIcon.DPAD_LEFT, ControllerIcon.DPAD_RIGHT),
+            standard.iconsFor(listOf(GamepadAction.NAVIGATE_LEFT, GamepadAction.NAVIGATE_RIGHT)),
+        )
+        assertEquals(
+            listOf(ControllerIcon.DPAD_RIGHT, ControllerIcon.DPAD_LEFT),
+            standard.iconsFor(listOf(GamepadAction.NAVIGATE_RIGHT, GamepadAction.NAVIGATE_LEFT)),
+        )
+    }
+
+    @Test
+    fun `an unbound member drops out and the rest of the prompt survives`() {
+        val stripped = GamepadMappings(
+            standard.bindings.filterNot { it.action == GamepadAction.NEXT_CATEGORY },
+        )
+        assertEquals(
+            listOf(ControllerIcon.BUMPER_LEFT),
+            stripped.iconsFor(listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY)),
+        )
+    }
+
+    @Test
+    fun `a prompt whose every member is unbound resolves to nothing`() {
+        // The caller renders nothing at all rather than a label with no glyph.
+        val keyboardOnly = GamepadMappings(
+            listOf(GamepadBinding(KeyEvent.KEYCODE_ENTER, GamepadAction.SELECT)),
+        )
+        assertTrue(keyboardOnly.iconsFor(listOf(GamepadAction.SELECT)).isEmpty())
+    }
+
+    @Test
+    fun `two actions on one button draw that button once`() {
+        // A remap can land both members of a pair on the same physical button.
+        // The same glyph twice reads as a broken prompt, not as a pair.
+        val collapsed = GamepadMappings(
+            listOf(
+                GamepadBinding(KeyEvent.KEYCODE_BUTTON_A, GamepadAction.SELECT),
+                GamepadBinding(KeyEvent.KEYCODE_BUTTON_A, GamepadAction.BACK),
+            ),
+        )
+        assertEquals(
+            listOf(ControllerIcon.FACE_SOUTH),
+            collapsed.iconsFor(listOf(GamepadAction.SELECT, GamepadAction.BACK)),
+        )
+    }
+
+    @Test
+    fun `each member agrees with the single-action lookup`() {
+        for (confirmBack in ConfirmBackLayout.entries) {
+            for (xy in XYLayout.entries) {
+                val m = mappings(confirmBack, xy)
+                val actions = GamepadAction.entries.toList()
+                assertEquals(
+                    actions.mapNotNull { m.iconFor(it) }.distinct(),
+                    m.iconsFor(actions),
+                )
+            }
+        }
+    }
+
+    // ── The media footers, end to end ───────────────────────────────────────
+
+    @Test
+    fun `the video transport bar resolves under every layout combination`() {
+        // The Music/Video/Photo footers were hardcoded Xbox letters; they are
+        // now action-driven, so every entry must resolve under every layout.
+        val transport = listOf(
+            listOf(GamepadAction.SELECT),
+            listOf(GamepadAction.NAVIGATE_LEFT, GamepadAction.NAVIGATE_RIGHT),
+            listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY),
+            listOf(GamepadAction.OPEN_CONTEXT_MENU),
+        )
+        for (confirmBack in ConfirmBackLayout.entries) {
+            for (xy in XYLayout.entries) {
+                val m = mappings(confirmBack, xy)
+                for (prompt in transport) {
+                    assertEquals(
+                        "$prompt lost a glyph under $confirmBack/$xy",
+                        prompt.size,
+                        m.iconsFor(prompt).size,
+                    )
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `the track picker Add prompt sits on Start under every layout`() {
+        // HOME is the picker's confirm ("Start to add"); the layout settings
+        // touch only the face buttons and must never move it.
+        for (confirmBack in ConfirmBackLayout.entries) {
+            for (xy in XYLayout.entries) {
+                assertEquals(
+                    ControllerIcon.START,
+                    mappings(confirmBack, xy).iconFor(GamepadAction.HOME),
+                )
+            }
+        }
+    }
+
     // ── The App Drawer footer, end to end ───────────────────────────────────
 
     @Test

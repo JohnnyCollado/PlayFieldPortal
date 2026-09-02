@@ -60,6 +60,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -69,6 +70,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.isDirectional
+import com.playfieldportal.core.ui.components.ControllerPromptBar
+import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -188,6 +191,11 @@ fun SettingsScaffold(
     // Pinned footer under the content (the wizard's Enter / Back prompt chrome). When set, the
     // content area becomes a weighted column so the viewport excludes the footer band.
     footer: (@Composable () -> Unit)? = null,
+    // Identity of what [content] currently shows. Ordinary settings screens leave this null —
+    // their content is fixed for the life of the scaffold, so mount-time focus is the whole story.
+    // The wizard passes its SetupStep: each page is a fresh screen inside one scaffold, and a
+    // change here re-runs initial focus so the new page's own first row takes the cursor.
+    contentKey: Any? = null,
     content: @Composable () -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
@@ -218,6 +226,16 @@ fun SettingsScaffold(
 
     // FocusRequester of the first interactive row — the reliable initial-focus target.
     val firstRowFocus = remember { mutableStateOf<FocusRequester?>(null) }
+
+    // A new [contentKey] means the whole content was swapped (a wizard page turn): re-open the
+    // first-focusable slot so the incoming page's own first row claims it, instead of the cursor
+    // staying latched to the outgoing page's now-disposed requester.
+    //
+    // Deliberately a `remember` and not a LaunchedEffect: this must clear BEFORE the new rows run
+    // their registration effects, and it does — the scaffold's own composition runs ahead of
+    // content()'s, whereas a LaunchedEffect body is dispatched and can land after those effects,
+    // wiping the latch the new page just set.
+    remember(contentKey) { firstRowFocus.value = null; contentKey }
 
     // On-screen Y of every interactive row — presentation only (scroll-into-view, reseed
     // fallback). Movement and selection live in ControllerNavigationState.
@@ -308,6 +326,15 @@ fun SettingsScaffold(
             (firstRowFocus.value ?: bootstrapFR).let { runCatching { it.requestFocus() } }
         }
         Timber.d("Settings focus: default focus assigned=$focusRedirected after $attempts frame(s) ($subtitle)")
+    }
+
+    // Companion to the latch reset above: a frame later the new page's rows have registered, so
+    // hand its first row the cursor. Only for content-swapping scaffolds — everything else keeps
+    // the mount-only path above, which the null default leaves untouched.
+    LaunchedEffect(contentKey) {
+        if (contentKey == null) return@LaunchedEffect
+        withFrameNanos { }
+        firstRowFocus.value?.let { runCatching { it.requestFocus() } }
     }
 
     // The focused row left composition (e.g. a "Found Games" item just imported away, or a
@@ -948,6 +975,9 @@ fun SettingsTextFieldRow(
     singleLine: Boolean = true,
     isPassword: Boolean = false,
     helper: String? = null,
+    // An optional prompt shown after [helper] — for rows whose helper text used to spell out a
+    // button ("Press A to type"), so the glyph follows the user's pad instead of being baked in.
+    helperPrompt: ControllerPromptItem? = null,
     enabled: Boolean = true,
 ) {
     val focusTracker = LocalSettingsFocusTracker.current
@@ -1042,9 +1072,24 @@ fun SettingsTextFieldRow(
                 )
             }
         }
-        if (!helper.isNullOrBlank()) {
+        if (!helper.isNullOrBlank() || helperPrompt != null) {
             Spacer(Modifier.height(4.dp))
-            Text(text = helper, color = SettingsSubtext.copy(alpha = 0.6f), fontSize = 11.sp)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                if (!helper.isNullOrBlank()) {
+                    Text(text = helper, color = SettingsSubtext.copy(alpha = 0.6f), fontSize = 11.sp)
+                }
+                if (helperPrompt != null) {
+                    ControllerPromptBar(
+                        items = listOf(helperPrompt),
+                        labelColor = SettingsSubtext.copy(alpha = 0.6f),
+                        labelStyle = TextStyle(fontSize = 11.sp),
+                        glyphSize = 14.dp,
+                    )
+                }
+            }
         }
     }
 }

@@ -13,6 +13,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.playfieldportal.core.domain.model.ControllerDisplayType
+import com.playfieldportal.core.domain.model.ControllerIcon
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.GamepadMappings
 
@@ -67,13 +68,94 @@ fun ControllerPrompt(
     glyphSize: Dp = 22.dp,
     spacing: Dp = 4.dp,
 ) {
-    val icon = style.mappings.iconFor(action) ?: return
+    ControllerPrompt(
+        actions = listOf(action),
+        label = label,
+        modifier = modifier,
+        style = style,
+        labelColor = labelColor,
+        labelStyle = labelStyle,
+        glyphSize = glyphSize,
+        spacing = spacing,
+    )
+}
+
+/**
+ * A prompt naming several inputs under one label — "◀▶ Seek", "L1/R1 Prev / Next".
+ *
+ * The alternative, one prompt per input, doubles the width of an already tight
+ * media footer and reads as two unrelated actions rather than one range.
+ *
+ * Same contract as the single-action form: [actions] that are not bound to a
+ * physical button drop out, and when none of them resolve the prompt renders
+ * nothing at all.
+ */
+@Composable
+fun ControllerPrompt(
+    actions: List<GamepadAction>,
+    label: String,
+    modifier: Modifier = Modifier,
+    style: ControllerPromptStyle = LocalControllerPromptStyle.current,
+    labelColor: Color = Color.White.copy(alpha = 0.75f),
+    labelStyle: TextStyle = TextStyle.Default,
+    glyphSize: Dp = 22.dp,
+    spacing: Dp = 4.dp,
+    /** Gap between the glyphs themselves — tighter than [spacing], so a pair reads as one unit. */
+    glyphSpacing: Dp = 2.dp,
+) {
+    ControllerPromptGlyphs(
+        icons = style.mappings.iconsFor(actions),
+        label = label,
+        modifier = modifier,
+        family = style.family,
+        labelColor = labelColor,
+        labelStyle = labelStyle,
+        glyphSize = glyphSize,
+        spacing = spacing,
+        glyphSpacing = glyphSpacing,
+    )
+}
+
+/**
+ * The renderer every prompt form funnels into, taking positions that are already
+ * resolved.
+ *
+ * Public because a few prompts name an input that no setting can remap and that
+ * therefore has no action to resolve: the D-pad as a whole ([ControllerIcon.DPAD_ALL]),
+ * and a raw-keycode escape hatch such as the PTT capture's cancel button, which
+ * reads the physical button before any mapping is applied. Naming the position
+ * directly is the truthful thing there; everywhere else, name the action and let
+ * the mappings decide.
+ *
+ * Renders nothing for an empty [icons], so an unresolvable prompt disappears
+ * rather than showing a bare label.
+ */
+@Composable
+fun ControllerPromptGlyphs(
+    icons: List<ControllerIcon>,
+    label: String,
+    modifier: Modifier = Modifier,
+    family: ControllerDisplayType = LocalControllerPromptStyle.current.family,
+    labelColor: Color = Color.White.copy(alpha = 0.75f),
+    labelStyle: TextStyle = TextStyle.Default,
+    glyphSize: Dp = 22.dp,
+    spacing: Dp = 4.dp,
+    glyphSpacing: Dp = 2.dp,
+) {
+    if (icons.isEmpty()) return
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(spacing),
     ) {
-        ControllerIconGlyph(icon = icon, family = style.family, size = glyphSize)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(glyphSpacing),
+        ) {
+            for (icon in icons) {
+                ControllerIconGlyph(icon = icon, family = family, size = glyphSize)
+            }
+        }
         Text(
             text = label,
             color = labelColor,
@@ -83,14 +165,41 @@ fun ControllerPrompt(
 }
 
 /**
+ * One entry in a [ControllerPromptBar]. [actions] names a single input or a set
+ * that share a label.
+ *
+ * [fixedIcons], when set, is drawn instead of resolving [actions] — see
+ * [ControllerPromptGlyphs] for when that is the honest choice. Build those with
+ * [fixed] rather than by hand.
+ */
+@Immutable
+data class ControllerPromptItem(
+    val actions: List<GamepadAction>,
+    val label: String,
+    val fixedIcons: List<ControllerIcon>? = null,
+) {
+    constructor(action: GamepadAction, label: String) : this(listOf(action), label)
+
+    companion object {
+        /** A prompt for a position no setting remaps (the D-pad, a raw-keycode escape). */
+        fun fixed(icon: ControllerIcon, label: String) =
+            ControllerPromptItem(emptyList(), label, listOf(icon))
+    }
+}
+
+/**
  * A row of prompts — the shape every command bar and footer hint wants.
  *
- * [prompts] is ordered action-to-label; unbound actions drop out silently, so a
- * bar stays coherent rather than showing a gap.
+ * [items] is ordered; unbound actions drop out silently, so a bar stays coherent
+ * rather than showing a gap. An item may name one input or several, which is what
+ * the media footers need: "Seek" is a D-pad pair, "Play" one face button.
+ *
+ * Takes items rather than action-to-label pairs because a `List<Pair<..>>` and a
+ * `List<ControllerPromptItem>` overload erase to the same JVM signature.
  */
 @Composable
 fun ControllerPromptBar(
-    prompts: List<Pair<GamepadAction, String>>,
+    items: List<ControllerPromptItem>,
     modifier: Modifier = Modifier,
     style: ControllerPromptStyle = LocalControllerPromptStyle.current,
     labelColor: Color = Color.White.copy(alpha = 0.75f),
@@ -103,11 +212,11 @@ fun ControllerPromptBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = arrangement,
     ) {
-        for ((action, label) in prompts) {
-            ControllerPrompt(
-                action = action,
-                label = label,
-                style = style,
+        for (item in items) {
+            ControllerPromptGlyphs(
+                icons = item.fixedIcons ?: style.mappings.iconsFor(item.actions),
+                label = item.label,
+                family = style.family,
                 labelColor = labelColor,
                 labelStyle = labelStyle,
                 glyphSize = glyphSize,

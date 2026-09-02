@@ -1,6 +1,7 @@
 package com.playfieldportal.feature.xmb.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,11 +23,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.ui.components.ControllerPromptBar
+import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.theme.menuCursor
 
 @Composable
@@ -117,12 +121,32 @@ fun GamePickerScreen(
             )
         }
 
-        Text(
-            text = "${state.selectedGameIds.size + state.selectedCollectionIds.size} selected  ·  A to toggle  ·  Y to expand  ·  Start to add  ·  B to cancel",
-            fontSize = 12.sp,
-            color = Color(0xFFC9C7E8),
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(18.dp),
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 0.dp),
-        )
+        ) {
+            Text(
+                text = "${state.selectedGameIds.size + state.selectedCollectionIds.size} selected",
+                fontSize = 12.sp,
+                color = Color(0xFFC9C7E8),
+            )
+            ControllerPromptBar(
+                items = listOf(
+                    ControllerPromptItem(GamepadAction.SELECT, "Toggle"),
+                    // Only meaningful on a platform header, but the picker opens on one and the
+                    // bar is fixed chrome — a prompt that comes and goes as the cursor moves down
+                    // a list reads as flicker.
+                    ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Expand / Collapse"),
+                    ControllerPromptItem(GamepadAction.HOME, "Add"),
+                    ControllerPromptItem(GamepadAction.BACK, "Cancel"),
+                ),
+                labelColor = Color(0xFFC9C7E8),
+                labelStyle = TextStyle(fontSize = 12.sp),
+                glyphSize = 16.dp,
+                arrangement = Arrangement.spacedBy(18.dp),
+            )
+        }
 
         // Content
         LazyColumn(

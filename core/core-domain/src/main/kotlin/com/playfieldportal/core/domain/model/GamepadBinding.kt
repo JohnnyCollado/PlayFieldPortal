@@ -33,6 +33,17 @@ data class GamepadMappings(
             .filter { it.action == action }
             .mapNotNull { it.keyCode.toControllerIcon() }
             .firstOrNull()
+
+    /**
+     * The positions performing [actions], in the order asked for, for a prompt
+     * that names more than one input at once ("◀▶ Seek", "L1/R1 Prev / Next").
+     *
+     * Unbound actions drop out, as they do for [iconFor]. Repeats collapse:
+     * under a swapped layout two listed actions can land on the same button, and
+     * the same glyph drawn twice reads as a broken prompt rather than a pair.
+     */
+    fun iconsFor(actions: List<GamepadAction>): List<ControllerIcon> =
+        actions.mapNotNull { iconFor(it) }.distinct()
 }
 
 val DEFAULT_BINDINGS = listOf(

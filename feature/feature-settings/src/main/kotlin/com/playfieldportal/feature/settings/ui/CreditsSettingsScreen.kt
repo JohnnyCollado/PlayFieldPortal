@@ -90,6 +90,28 @@ fun CreditsSettingsScreen(
             CreditLine("Source", "github.com/anthonycaccese/xmb-menu-es-de")
 
             Spacer(Modifier.height(16.dp))
+            SettingsGroup("Controller Button Icons")
+
+            CreditParagraph(
+                "Every on-screen button prompt — the PlayStation, Xbox and Nintendo face buttons, " +
+                    "D-pads, bumpers, triggers, sticks and system buttons — is drawn from Zacksly's " +
+                    "button icon packs, used under the Creative Commons Attribution 3.0 license."
+            )
+            CreditParagraph(
+                "The artwork is unmodified: only the file names were changed to Android resource " +
+                    "names, and just the icons the launcher renders are bundled."
+            )
+            CreditLine("Author", "Zacksly")
+            CreditLine("Website", "zacksly.itch.io")
+            CreditLine("Support", "patreon.com/zacksly")
+            CreditLine(
+                "Packs",
+                "PS5 Button Icons and Controls · Xbox Series Button Icons and Controls · " +
+                    "Switch 2 Button Icons and Controls"
+            )
+            CreditLine("License", "CC BY 3.0 — creativecommons.org/licenses/by/3.0")
+
+            Spacer(Modifier.height(16.dp))
             SettingsGroup("Menu Sounds")
 
             CreditParagraph(

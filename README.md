@@ -885,6 +885,22 @@ its respective authors.
 - Source: https://github.com/anthonycaccese/xmb-menu-es-de
 - Used for: category-bar icons, per-console system icons, the physical-media (cartridge) icon set
 
+### Controller button icons
+Every on-screen button prompt — the PlayStation, Xbox and Nintendo face buttons, D-pads,
+bumpers, triggers, sticks and system buttons — is drawn from **Zacksly's** button icon packs.
+
+- Author: **Zacksly** · Website: https://zacksly.itch.io · Support: https://www.patreon.com/zacksly
+- Packs: *PS5 Button Icons and Controls*, *Xbox Series Button Icons and Controls*,
+  *Switch 2 Button Icons and Controls* (all "Buttons Solid / White / 128w")
+- License: **CC BY 3.0** — http://creativecommons.org/licenses/by/3.0/
+- Used for: `ctl_ps_*`, `ctl_xb_*`, `ctl_ns_*` in `core-ui` — the glyphs behind every
+  `ControllerPrompt`, resolved to the user's chosen controller type
+- **Unmodified.** The bundled PNGs are byte-identical to the pack originals; only the file
+  names were changed to Android resource names, and only the needed subset is included.
+
+> "PS5 Button Icons and Controls - Zacksly
+> Licensed under CC BY 3.0 - https://zacksly.itch.io"
+
 ### Menu sounds
 The navigation, select, back and launch **sound effects** are bundled from the same
 **[XMB Menu for ES-DE](https://github.com/anthonycaccese/xmb-menu-es-de)** theme and remain the

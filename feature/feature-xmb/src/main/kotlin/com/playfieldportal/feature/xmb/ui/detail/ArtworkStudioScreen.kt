@@ -60,6 +60,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.components.ControllerPromptBar
+import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 
@@ -428,25 +429,25 @@ fun ArtworkStudioScreen(
             // Footer hints — per-zone, and resolved from the live bindings so the
             // glyphs follow the user's controller type and any remapped layout.
             ControllerPromptBar(
-                prompts = when (state.zone) {
+                items = when (state.zone) {
                     StudioZone.TABS -> listOf(
-                        GamepadAction.SELECT to "sources",
-                        GamepadAction.BACK to "close",
-                        GamepadAction.OPEN_CONTEXT_MENU to "options",
+                        ControllerPromptItem(GamepadAction.SELECT, "sources"),
+                        ControllerPromptItem(GamepadAction.BACK, "close"),
+                        ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "options"),
                     )
                     StudioZone.SOURCES -> listOf(
-                        GamepadAction.SELECT to "browse / pick file",
-                        GamepadAction.BACK to "back",
-                        GamepadAction.CHANGE_SORT to "NSFW",
-                        GamepadAction.OPEN_CONTEXT_MENU to "options",
+                        ControllerPromptItem(GamepadAction.SELECT, "browse / pick file"),
+                        ControllerPromptItem(GamepadAction.BACK, "back"),
+                        ControllerPromptItem(GamepadAction.CHANGE_SORT, "NSFW"),
+                        ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "options"),
                     )
                     StudioZone.GRID -> listOf(
-                        GamepadAction.PREV_CATEGORY to "prev page",
-                        GamepadAction.NEXT_CATEGORY to "next page",
-                        GamepadAction.SELECT to "preview / apply",
-                        GamepadAction.BACK to "back",
-                        GamepadAction.CHANGE_SORT to "NSFW",
-                        GamepadAction.OPEN_CONTEXT_MENU to "options",
+                        ControllerPromptItem(GamepadAction.PREV_CATEGORY, "prev page"),
+                        ControllerPromptItem(GamepadAction.NEXT_CATEGORY, "next page"),
+                        ControllerPromptItem(GamepadAction.SELECT, "preview / apply"),
+                        ControllerPromptItem(GamepadAction.BACK, "back"),
+                        ControllerPromptItem(GamepadAction.CHANGE_SORT, "NSFW"),
+                        ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "options"),
                     )
                 },
                 modifier = Modifier.padding(top = 6.dp),

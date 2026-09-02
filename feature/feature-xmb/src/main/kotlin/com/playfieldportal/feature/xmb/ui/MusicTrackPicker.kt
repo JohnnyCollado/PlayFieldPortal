@@ -3,6 +3,7 @@ package com.playfieldportal.feature.xmb.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -28,11 +29,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.ui.components.ControllerPromptBar
+import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.feature.xmb.viewmodel.MusicTrackPickerState
 
@@ -72,12 +77,24 @@ fun MusicTrackPicker(
     ) {
         Column(modifier = Modifier.fillMaxSize().padding(horizontal = 48.dp, vertical = 28.dp)) {
             Text("Add to ${state.playlistName}", color = PickerText, fontSize = 22.sp, fontWeight = FontWeight.Light)
-            Text(
-                "${state.selected.size} selected  ·  A to toggle  ·  Start to add  ·  B to cancel",
-                color = PickerSubtext,
-                fontSize = 12.sp,
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(18.dp),
                 modifier = Modifier.padding(top = 2.dp, bottom = 12.dp),
-            )
+            ) {
+                Text("${state.selected.size} selected", color = PickerSubtext, fontSize = 12.sp)
+                ControllerPromptBar(
+                    items = listOf(
+                        ControllerPromptItem(GamepadAction.SELECT, "Toggle"),
+                        ControllerPromptItem(GamepadAction.HOME, "Add"),
+                        ControllerPromptItem(GamepadAction.BACK, "Cancel"),
+                    ),
+                    labelColor = PickerSubtext,
+                    labelStyle = TextStyle(fontSize = 12.sp),
+                    glyphSize = 16.dp,
+                    arrangement = Arrangement.spacedBy(18.dp),
+                )
+            }
 
             if (state.tracks.isEmpty()) {
                 Text(

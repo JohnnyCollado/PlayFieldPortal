@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -37,6 +38,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -45,6 +47,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.Photo
+import com.playfieldportal.core.ui.components.ControllerPromptBar
+import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.components.XmbHeaderPill
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.feature.xmb.ui.DetailContextMenu
@@ -65,9 +69,10 @@ private val MediaPillBg = Color(0x99000000)
 
 /**
  * PSP-style fullscreen photo viewer: just the image on black, all UI hidden until toggled.
- * A = toggle controls · B = back · Y = options · L1/R1 = previous/next · D-pad/stick pans when
- * zoomed. The Options menu carries the wallpaper workflow (preview → apply), rotate/zoom, info,
- * and Remove From Library.
+ * Confirm toggles the controls, Back exits, the context-menu button opens Options, the bumpers
+ * step previous/next, and the D-pad/stick pans when zoomed — the help row names those actions and
+ * the shared resolver draws whichever buttons the user's pad binds them to. The Options menu
+ * carries the wallpaper workflow (preview → apply), rotate/zoom, info, and Remove From Library.
  */
 @Composable
 fun PhotoViewerScreen(
@@ -194,13 +199,21 @@ fun PhotoViewerScreen(
                     .padding(horizontal = 24.dp, vertical = 14.dp),
                 horizontalArrangement = Arrangement.Center,
             ) {
-                HelpHint("L1/R1", "Prev / Next")
-                Spacer(Modifier.width(18.dp))
-                HelpHint("A", "Hide Controls")
-                Spacer(Modifier.width(18.dp))
-                HelpHint("Y", "Options")
-                Spacer(Modifier.width(18.dp))
-                HelpHint("B", "Back")
+                ControllerPromptBar(
+                    items = listOf(
+                        ControllerPromptItem(
+                            listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY),
+                            "Prev / Next",
+                        ),
+                        ControllerPromptItem(GamepadAction.SELECT, "Hide Controls"),
+                        ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"),
+                        ControllerPromptItem(GamepadAction.BACK, "Back"),
+                    ),
+                    labelColor = TextMuted,
+                    labelStyle = TextStyle(fontSize = 12.sp),
+                    glyphSize = 16.dp,
+                    arrangement = Arrangement.spacedBy(18.dp, Alignment.CenterHorizontally),
+                )
             }
             // Header pills matching the detail screens: Back top-left, Options top-right — the
             // touch counterparts of B and Y. Shown while the controls layer is visible AND the last
@@ -275,7 +288,18 @@ fun PhotoViewerScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text("Set as launcher wallpaper?", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                Text("It replaces the XMB wave background. A = Apply · B = Cancel", color = TextMuted, fontSize = 12.sp)
+                Text("It replaces the XMB wave background.", color = TextMuted, fontSize = 12.sp)
+                Spacer(Modifier.height(4.dp))
+                ControllerPromptBar(
+                    items = listOf(
+                        ControllerPromptItem(GamepadAction.SELECT, "Apply"),
+                        ControllerPromptItem(GamepadAction.BACK, "Cancel"),
+                    ),
+                    labelColor = TextMuted,
+                    labelStyle = TextStyle(fontSize = 12.sp),
+                    glyphSize = 16.dp,
+                    arrangement = Arrangement.spacedBy(18.dp, Alignment.CenterHorizontally),
+                )
                 Row(horizontalArrangement = Arrangement.Center) {
                     TextButton(onClick = viewModel::confirmWallpaper, enabled = !state.applyingWallpaper) {
                         Text(if (state.applyingWallpaper) "Applying…" else "Apply", color = menuCursorEdge())
@@ -316,15 +340,6 @@ fun PhotoViewerScreen(
             )
             LaunchedEffect(msg) { kotlinx.coroutines.delay(2500); viewModel.dismissMessage() }
         }
-    }
-}
-
-@Composable
-private fun HelpHint(button: String, label: String) {
-    Row {
-        Text(button, color = menuCursorEdge(), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.width(6.dp))
-        Text(label, color = TextMuted, fontSize = 12.sp)
     }
 }
 

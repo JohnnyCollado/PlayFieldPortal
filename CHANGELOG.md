@@ -6,6 +6,13 @@ All notable changes to Play Field Portal are documented here. This project follo
 ## [Unreleased]
 
 ### Changed
+- **PlayStation button glyphs are now the DualSense set, and Zacksly is properly credited.**
+  The PlayStation prompts used the PS4 Premium pack at 480px, which read heavier and larger
+  than the flat 128px Xbox and Switch art beside it; they are now the PS5 pack's
+  Buttons Solid / White / 128w, so all three families share one treatment. The bundled art is
+  unmodified. Settings ▸ Credits, the README and `assets/UI/ui-art-credit.txt` now carry the
+  attribution its CC BY 3.0 license requires — author, source, license and a modification
+  statement — which the app had been missing entirely for these packs.
 - **The Auto-match report is counts-only.** Settings ▸ Shiba Coins now shows one
   dismissible "Matched N · Unmatched M" row instead of a long per-game list — each
   unmatched game's reason still shows on its row in the Shiba Library's Untracked view.

@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.Intent
 import android.os.SystemClock
 import android.provider.MediaStore
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.toArgb
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
@@ -12,67 +14,66 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.database.dao.PlatformDao
+import com.playfieldportal.core.data.database.entity.HiddenPlacementEntity
 import com.playfieldportal.core.data.database.entity.PlatformEntity
+import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.data.repository.CategoryRepositoryImpl
 import com.playfieldportal.core.data.repository.CollectionRepository
+import com.playfieldportal.core.data.repository.ControllerMappingRepository
 import com.playfieldportal.core.data.repository.MemoryCardRepository
-import com.playfieldportal.core.domain.model.HideLocationType
-import com.playfieldportal.core.domain.model.HiddenPlacement
-import com.playfieldportal.core.data.database.entity.HiddenPlacementEntity
-import com.playfieldportal.core.domain.model.MemoryCard
-import com.playfieldportal.feature.appbar.AppCategoryRepository
-import com.playfieldportal.feature.appbar.CategorizedApp
-import com.playfieldportal.feature.appbar.LauncherShortcutRepository
-import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.domain.discord.DiscordFriend
 import com.playfieldportal.core.domain.discord.DiscordPresence
 import com.playfieldportal.core.domain.model.BuiltInCategory
 import com.playfieldportal.core.domain.model.Category
 import com.playfieldportal.core.domain.model.CategoryType
-import com.playfieldportal.core.domain.repository.GameRepository
-import com.playfieldportal.core.ui.icons.GameIconStyle
-import com.playfieldportal.core.ui.theme.DefaultPFPColors
-import com.playfieldportal.core.ui.theme.PFPColors
-import com.playfieldportal.core.ui.wave.WaveStyle
-import com.playfieldportal.core.data.repository.ControllerMappingRepository
+import com.playfieldportal.core.domain.model.ControllerIcon
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GameCollection
 import com.playfieldportal.core.domain.model.GameContentType
-import com.playfieldportal.core.domain.model.IconDisplayMode
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.domain.model.HiddenPlacement
+import com.playfieldportal.core.domain.model.HideLocationType
+import com.playfieldportal.core.domain.model.IconDisplayMode
+import com.playfieldportal.core.domain.model.MemoryCard
+import com.playfieldportal.core.domain.model.MusicTrack
 import com.playfieldportal.core.domain.model.XmbColorScheme
 import com.playfieldportal.core.domain.model.XmbPalette
 import com.playfieldportal.core.domain.model.displayLabel
 import com.playfieldportal.core.domain.model.resolve
+import com.playfieldportal.core.domain.repository.GameRepository
+import com.playfieldportal.core.ui.icons.GameIconStyle
+import com.playfieldportal.core.ui.notification.BackgroundTaskNotifier
+import com.playfieldportal.core.ui.sound.MenuSound
+import com.playfieldportal.core.ui.theme.DefaultPFPColors
+import com.playfieldportal.core.ui.theme.PFPColors
+import com.playfieldportal.core.ui.wave.WaveStyle
+import com.playfieldportal.feature.appbar.AppCategoryRepository
+import com.playfieldportal.feature.appbar.CategorizedApp
+import com.playfieldportal.feature.appbar.LauncherShortcutRepository
 import com.playfieldportal.feature.artwork.api.ArtworkRepository
 import com.playfieldportal.feature.library.scanner.LibraryScanner
 import com.playfieldportal.feature.library.scanner.ScanStatus
 import com.playfieldportal.feature.library.scanner.scanOutcomeMessage
 import com.playfieldportal.feature.xmb.gamepad.GamepadInputHandler
-import com.playfieldportal.core.ui.notification.BackgroundTaskNotifier
-import com.playfieldportal.core.ui.sound.MenuSound
-import com.playfieldportal.core.domain.model.MusicTrack
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.toArgb
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
 import kotlin.math.roundToInt
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.transformWhile
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
 
 private fun XmbPalette.toPFPColors() = PFPColors(
     waveColor         = androidx.compose.ui.graphics.Color(waveColor),
@@ -682,6 +683,12 @@ data class XMBUiState(
     val focusedItemHasContextMenu: Boolean
         get() = focusedItem?.hasContextMenu(this) == true
 
+    // True iff an X/Square press would re-sort the list currently on screen — drives the Sort
+    // half of the hint pill. Computed, like focusedItemHasContextMenu, so it tracks the cursor
+    // and the drill level without plumbing.
+    val canSortCurrentList: Boolean
+        get() = activeSortModes() != null
+
     // Whether the bottom-right contextual button (App Drawer / Back) should be shown, per the
     // user's Touch Navigation Button setting. AUTO follows the last input source.
     val resolvedShowTouchButton: Boolean
@@ -879,23 +886,51 @@ fun XMBItem.hasContextMenu(state: XMBUiState): Boolean {
 }
 
 /**
+ * The sort modes valid for the list currently on screen, or null when it isn't sortable (the
+ * Games memory-card root, the Music root, playlist lists, and app sections don't sort).
+ *
+ * Pure and top-level for the same reason as [XMBItem.hasContextMenu]: the idle hint has to ask
+ * "can this list sort?" without triggering a sort, and both it and the real X/Square handler now
+ * read one function, so the pill cannot promise an action the press won't perform.
+ */
+fun XMBUiState.activeSortModes(): List<XmbSortMode>? {
+    val cat = categories.getOrNull(selectedCategoryIndex) ?: return null
+    return when {
+        cat.id == BuiltInCategory.MUSIC &&
+            (musicNav == MusicNav.AllMusic || musicNav is MusicNav.Playlist) -> MUSIC_SORTS
+        // Video lists sort, except the intrinsically-ordered ones (recency / manual playlist).
+        cat.id == BuiltInCategory.VIDEO &&
+            (videoNav == VideoNav.AllVideos || videoNav == VideoNav.Favorites ||
+                videoNav is VideoNav.Library) -> VIDEO_SORTS
+        cat.id == BuiltInCategory.GAMES &&
+            (selectedPlatformId != null || selectedCollectionId != null) -> GAME_SORTS
+        cat.isGamingCategory -> GAME_SORTS
+        else -> null
+    }
+}
+
+/**
  * Pure decision: should the idle context-menu hint be visible right now? Top-level so unit tests
  * can exercise it without a ViewModel instance. Gates:
  *  - the most recent input came from a controller (not touch);
  *  - no blocking overlay, no open context menu ([XMBUiState.hasBlockingOverlay],
  *    [XMBUiState.activeContextMenu]);
- *  - not drilled into a sub-item ([XMBUiState.isInSubItem]) so the hint mirrors the App
- *    Drawer button's own visibility contract (they are a stacked pair);
- *  - the focused item actually has a context menu ([XMBUiState.focusedItemHasContextMenu]);
+ *  - the pill has something true to say — the focused item has a context menu
+ *    ([XMBUiState.focusedItemHasContextMenu]) or the current list can sort
+ *    ([XMBUiState.canSortCurrentList]);
  *  - the idle delay [idleMs] has elapsed (>= IDLE_HINT_DELAY_MS).
+ *
+ * Deliberately NOT gated on [XMBUiState.isInSubItem]: drilled-in items (the game flyout, a
+ * library's files) have context menus and can sort, so that gate hid the hint exactly where a
+ * new user is most likely to need it. The App Drawer button it used to pair with is touch-only
+ * and this hint is controller-only, so the two are never really on screen together anyway.
  */
 fun shouldShowContextMenuHint(state: XMBUiState, idleMs: Long): Boolean =
     state.contextMenuHintEnabled &&
         !state.lastInputWasTouch &&
         !state.hasBlockingOverlay &&
         state.activeContextMenu == null &&
-        !state.isInSubItem &&
-        state.focusedItemHasContextMenu &&
+        (state.focusedItemHasContextMenu || state.canSortCurrentList) &&
         idleMs >= (state.contextMenuHintDelaySeconds * 1_000f).toLong()
 
 data class XMBItem(
@@ -912,6 +947,12 @@ data class XMBItem(
     val box3dUri: String? = null,
     val iconDisplayModeOverride: String? = null,
     val subtitle: String? = null,
+    // A controller prompt appended to the subtitle: the physical position plus its label.
+    // Deliberately a position and not a GamepadAction — the only user today is the PTT capture,
+    // whose cancel reads a RAW keycode before any mapping is applied, so no action describes it.
+    // Domain types, so the item model stays free of Compose.
+    val subtitleHintIcon: ControllerIcon? = null,
+    val subtitleHintLabel: String? = null,
     val gameId: Long? = null,
     val platformId: String? = null,
     val collectionId: Long? = null,     // set on COLLECTION rows in the Games root
@@ -3422,24 +3463,9 @@ class XMBViewModel @Inject constructor(
 
     // ── Sort (X / Square) ─────────────────────────────────────────────────────
 
-    // The sort modes valid for the list currently on screen, or null when it isn't sortable
-    // (the Games memory-card root, the Music root, playlist list, and app sections don't sort).
-    private fun activeSortContext(): List<XmbSortMode>? {
-        val cat = currentCategory() ?: return null
-        val s = _uiState.value
-        return when {
-            cat.id == BuiltInCategory.MUSIC &&
-                (s.musicNav == MusicNav.AllMusic || s.musicNav is MusicNav.Playlist) -> MUSIC_SORTS
-            // Video lists sort, except the intrinsically-ordered ones (recency / manual playlist).
-            cat.id == BuiltInCategory.VIDEO &&
-                (s.videoNav == VideoNav.AllVideos || s.videoNav == VideoNav.Favorites ||
-                    s.videoNav is VideoNav.Library) -> VIDEO_SORTS
-            cat.id == BuiltInCategory.GAMES &&
-                (s.selectedPlatformId != null || s.selectedCollectionId != null) -> GAME_SORTS
-            cat.isGamingCategory -> GAME_SORTS
-            else -> null
-        }
-    }
+    // Delegates to the pure XMBUiState.activeSortModes() so the sort hint pill and this handler
+    // can never disagree about whether the current list sorts.
+    private fun activeSortContext(): List<XmbSortMode>? = _uiState.value.activeSortModes()
 
     /** Touch: the status-bar sort chip — cycles the sort order, same as X/Square. */
     fun onSortLabelTapped() {
@@ -4074,12 +4100,19 @@ class XMBViewModel @Inject constructor(
         }
     }
 
-    // ── Idle context-menu hint ──────────────────────────────────────────────────
-    // A configurable idle pause over an item that has a context menu (after controller input,
-    // with no overlay up) fades in a small "Options" pill next to the App Drawer button, showing
-    // the face-button glyph for the user's controller display style. Any input, focus move, or
-    // overlay opening hides it. The loop polls state cheaply (every ~500ms) and only writes
-    // state on a visibility transition, so it costs nothing while idle.
+    // ── Idle hint pill ─────────────────────────────────────────────────────────
+    // A configurable idle pause over an item that has a context menu, or on a list that sorts
+    // (after controller input, with no overlay up), fades in the Sort / Options pill next to the
+    // App Drawer button, drawn with the user's own controller glyphs.
+    //
+    // HIDING IS NOT THIS LOOP'S JOB for the common case: every input path clears the flag
+    // synchronously (markTouchInput / markControllerInput / onUserInteraction), so the pill goes
+    // the instant a button is pressed rather than up to IDLE_HINT_POLL_MS later. The loop still
+    // clears it for causes that bypass those hooks (an overlay raised by a background task), and
+    // it remains the only thing that RAISES it.
+    //
+    // Polls cheaply (every ~500ms) and only writes on a visibility transition, so it costs
+    // nothing while idle.
     private fun observeContextMenuHintIdle() {
         viewModelScope.launch {
             while (isActive) {
@@ -4165,8 +4198,10 @@ class XMBViewModel @Inject constructor(
                 GamepadAction.NAVIGATE_DOWN  -> nudgeXmbLayoutVertical(+1)
                 GamepadAction.PREV_CATEGORY  -> nudgeXmbLayoutScale(-1)
                 GamepadAction.NEXT_CATEGORY  -> nudgeXmbLayoutScale(+1)
-                GamepadAction.OPEN_CONTEXT_MENU       -> resetXmbLayoutAdjust()
-                GamepadAction.OPEN_CONTEXT_MENU     -> toggleXmbLayoutSliders()
+                GamepadAction.OPEN_CONTEXT_MENU -> resetXmbLayoutAdjust()
+                // Was a second OPEN_CONTEXT_MENU branch, so it never ran and the sliders could
+                // only be reached by touch. The overlay's own hint always named Square/X for it.
+                GamepadAction.CHANGE_SORT       -> toggleXmbLayoutSliders()
                 GamepadAction.SELECT         -> saveXmbLayoutAdjust()
                 GamepadAction.BACK           -> cancelXmbLayoutAdjust()
                 else -> Unit
@@ -5806,12 +5841,20 @@ class XMBViewModel @Inject constructor(
      *  [lastInteractionMs] so the idle context-menu hint resets. */
     fun markTouchInput() {
         lastInteractionMs = SystemClock.elapsedRealtime()
-        if (!_uiState.value.lastInputWasTouch) _uiState.update { it.copy(lastInputWasTouch = true) }
+        // One write for both flags: the hint must clear on the SAME frame as the input (see
+        // noteInteraction), and a second update() here would cost an extra recomposition.
+        _uiState.update {
+            if (it.lastInputWasTouch && !it.showContextMenuHint) it
+            else it.copy(lastInputWasTouch = true, showContextMenuHint = false)
+        }
     }
 
     private fun markControllerInput() {
         lastInteractionMs = SystemClock.elapsedRealtime()
-        if (_uiState.value.lastInputWasTouch) _uiState.update { it.copy(lastInputWasTouch = false) }
+        _uiState.update {
+            if (!it.lastInputWasTouch && !it.showContextMenuHint) it
+            else it.copy(lastInputWasTouch = false, showContextMenuHint = false)
+        }
     }
 
     /** Touch: the left-edge-swipe Back — exit an open folder, or open the app drawer at the root
@@ -6127,10 +6170,16 @@ class XMBViewModel @Inject constructor(
                     id = "vs_ptt_button",
                     title = "PTT Button",
                     subtitle = when {
-                        _uiState.value.capturingPttKey -> "Press a controller button…  ·  B to cancel"
+                        _uiState.value.capturingPttKey -> "Press a controller button…"
                         s.pttKeyCode != null -> "${pttButtonLabel(s.pttKeyCode)}  ·  hold to talk while in Playfield Portal"
                         else -> "Not set · select to map a controller button"
                     },
+                    // beginPttCapture cancels on the east face button or hardware Back, matched by
+                    // keycode, so the prompt names that position rather than the BACK action — the
+                    // two disagree the moment Confirm/Back is reversed.
+                    subtitleHintIcon =
+                        if (_uiState.value.capturingPttKey) ControllerIcon.FACE_EAST else null,
+                    subtitleHintLabel = if (_uiState.value.capturingPttKey) "cancel" else null,
                     type = XMBItemType.SOCIAL_VOICE_CYCLE,
                 ))
             }
@@ -7394,11 +7443,17 @@ class XMBViewModel @Inject constructor(
     /**
      * Hook invoked on every gamepad action (and from touch gestures via the activity). The
      * background mode and wave style are now explicit, user-controlled settings, so interaction
-     * no longer mutates the wave — but it DOES refresh the idle-timer so the context-menu hint
-     * hides immediately on any activity.
+     * no longer mutates the wave — but it DOES reset the idle timer and drop the hint pill.
+     *
+     * The drop is done here rather than left to the idle loop: this comment used to promise the
+     * hint "hides immediately on any activity" while the actual hide waited for the next poll
+     * tick, leaving the pill up for as much as IDLE_HINT_POLL_MS after a press.
      */
     fun onUserInteraction() {
         lastInteractionMs = SystemClock.elapsedRealtime()
+        if (_uiState.value.showContextMenuHint) {
+            _uiState.update { it.copy(showContextMenuHint = false) }
+        }
     }
 
     // ── Library setup state ───────────────────────────────────────────────────

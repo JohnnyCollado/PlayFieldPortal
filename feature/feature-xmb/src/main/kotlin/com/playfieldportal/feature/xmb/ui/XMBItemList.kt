@@ -9,8 +9,8 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -33,33 +33,33 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bookmarks
-import androidx.compose.material.icons.filled.HelpOutline
-import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.CallEnd
 import androidx.compose.material.icons.filled.Collections
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Headset
+import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.LibraryMusic
+import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PhotoLibrary
-import androidx.compose.material.icons.filled.QueueMusic
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.VideoLibrary
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.CallEnd
-import androidx.compose.material.icons.filled.Headset
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.People
-import androidx.compose.material.icons.filled.PersonAdd
-import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.QrCode2
+import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SportsEsports
-import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -92,6 +92,7 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.playfieldportal.core.ui.achievement.BoneGlyph
+import com.playfieldportal.core.ui.components.ControllerPromptGlyphs
 import com.playfieldportal.core.ui.icons.GameIconStyle
 import com.playfieldportal.core.ui.icons.LocalXmbIconOverrides
 import com.playfieldportal.core.ui.icons.PortalIcon
@@ -99,9 +100,9 @@ import com.playfieldportal.core.ui.icons.ThemedGlyph
 import com.playfieldportal.core.ui.icons.categoryIconFor
 import com.playfieldportal.core.ui.icons.systemIconRes
 import com.playfieldportal.core.ui.theme.LocalPFPColors
-import com.playfieldportal.themekit.XmbLayoutSpec
 import com.playfieldportal.feature.xmb.viewmodel.XMBItem
 import com.playfieldportal.feature.xmb.viewmodel.XMBItemType
+import com.playfieldportal.themekit.XmbLayoutSpec
 
 // Game icons use the authentic PSP ICON0 ratio 144:80 (= 1.8), scaled for the list.
 private val GAME_ICON_WIDTH = 126.dp
@@ -109,7 +110,9 @@ private val GAME_ICON_HEIGHT = 70.dp
 
 // Every row is exactly this tall so the list viewport can be sized to a whole number of rows —
 // this is what lets us "hard stop" at a row boundary and never render a partially-clipped row.
-private val ROW_HEIGHT = 88.dp
+// Internal because XMBShell needs it too: the drill flyout's PIC0 logo centres on the active
+// row, and it can only do that if it measures the row the same way the column lays it out.
+internal val ROW_HEIGHT = 88.dp
 
 // Gap between a wide artwork tile and its title. Small-icon rows get this spacing for free from
 // their 58dp icon box; the 126dp artwork tiles have none, so the text butts against the art.
@@ -677,7 +680,7 @@ private fun XmbVerticalListRow(
                             BoneGlyph(tint = titleColor, size = 14.dp)
                         }
                     }
-                    if (!item.subtitle.isNullOrBlank()) {
+                    if (!item.subtitle.isNullOrBlank() || item.subtitleHintIcon != null) {
                         // Discord friend rows prefix the subtitle with a colored presence dot; every
                         // other row keeps the plain subtitle.
                         Row(
@@ -693,14 +696,31 @@ private fun XmbVerticalListRow(
                                 )
                                 Spacer(Modifier.width(6.dp))
                             }
-                            Text(
-                                text = item.subtitle,
-                                color = SecondaryText,
-                                fontSize = if (isSelected) 12.sp else 11.sp,
-                                fontWeight = FontWeight.Normal,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
+                            item.subtitle?.takeIf { it.isNotBlank() }?.let { subtitle ->
+                                Text(
+                                    text = subtitle,
+                                    color = SecondaryText,
+                                    fontSize = if (isSelected) 12.sp else 11.sp,
+                                    fontWeight = FontWeight.Normal,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                            // A fixed-position prompt trailing the subtitle (the PTT capture's
+                            // cancel button). Drawn in the user's controller family via the
+                            // ambient style, like every other prompt.
+                            item.subtitleHintIcon?.let { icon ->
+                                Spacer(Modifier.width(6.dp))
+                                ControllerPromptGlyphs(
+                                    icons = listOf(icon),
+                                    label = item.subtitleHintLabel.orEmpty(),
+                                    labelColor = SecondaryText,
+                                    labelStyle = TextStyle(
+                                        fontSize = if (isSelected) 12.sp else 11.sp,
+                                    ),
+                                    glyphSize = 14.dp,
+                                )
+                            }
                         }
                     }
                 }

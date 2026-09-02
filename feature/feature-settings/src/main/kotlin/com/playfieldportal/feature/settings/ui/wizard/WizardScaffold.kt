@@ -3,10 +3,10 @@ package com.playfieldportal.feature.settings.ui.wizard
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -18,19 +18,20 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.TextStyle
-import com.playfieldportal.core.domain.model.GamepadAction
-import com.playfieldportal.core.ui.components.ControllerPrompt
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.ui.components.ControllerPrompt
 import com.playfieldportal.feature.settings.ui.LocalSettingsScrollStateRegistrar
 import com.playfieldportal.feature.settings.ui.SettingsScaffold
 
@@ -77,6 +78,8 @@ fun WizardScaffold(
     onDismissMessage: (() -> Unit)? = null,
     /** Overrides the footer's guidance line (defaults to the PSP ◀▶/▶ wording). */
     footerNote: String? = null,
+    /** The page [content] currently shows. Changing it returns the page to the top. */
+    contentKey: Any? = null,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
@@ -89,11 +92,19 @@ fun WizardScaffold(
         lightScrim = true,
         header = { WizardHeader(stepNumber, title) },
         footer = { WizardFooter(backEnabled, footerNote) },
+        contentKey = contentKey,
     ) {
         // The wizard owns the shared scrollable column (registered with the scaffold so
         // controller boundary navigation and keep-in-view share one scroll owner).
         val scrollState = rememberScrollState()
         LocalSettingsScrollStateRegistrar.current(scrollState)
+        // One scroll state serves all eleven pages, so without this a tall page's offset carries
+        // into the short page after it and opens it scrolled past its own content. Every page
+        // starts at the top, going forward and back alike.
+        //
+        // scrollTo, not animateScrollTo: a page turn is a cut, not a movement, and animating it
+        // would race the scaffold's keep-in-view clamp as the new page's focus lands.
+        LaunchedEffect(contentKey) { scrollState.scrollTo(0) }
         Column(
             modifier = Modifier
                 .fillMaxSize()

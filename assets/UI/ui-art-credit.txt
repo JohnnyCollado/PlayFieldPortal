@@ -1,1 +1,42 @@
-https://zacksly.itch.io/
+CONTROLLER BUTTON ICON ART — ATTRIBUTION
+========================================
+
+The controller button glyphs bundled in core-ui (res/drawable-nodpi/ctl_ps_*, ctl_xb_*,
+ctl_ns_*) come from Zacksly's button icon packs.
+
+  Author:   Zacksly
+  Website:  https://zacksly.itch.io
+  Support:  https://www.patreon.com/zacksly
+  License:  Creative Commons Attribution 3.0 Unported (CC BY 3.0)
+            http://creativecommons.org/licenses/by/3.0/
+
+Packs in use (all "Buttons Solid / White / 128w"):
+
+  - PS5 Button Icons and Controls          -> ctl_ps_*   (DualSense)
+  - Xbox Series Button Icons and Controls  -> ctl_xb_*
+  - Switch 2 Button Icons and Controls     -> ctl_ns_*
+
+Modification statement (required by the license):
+  The artwork is UNMODIFIED — the bundled PNGs are byte-identical to the pack originals.
+  Only the file names were changed, to Android resource names, and just the subset of icons
+  the launcher renders is included. ctl_ps_select and ctl_ps_share are the same source file
+  (Create.png): the DualSense prints one Create button that serves both roles.
+
+Credit line, in the form the license asks for:
+
+  "PS5 Button Icons and Controls - Zacksly
+   Licensed under CC BY 3.0 - https://zacksly.itch.io"
+
+  Short form: "Button Icons and Controls by Zacksly (CC BY 3.0 Licensed | zacksly.itch.io)"
+
+
+NO LONGER BUNDLED
+-----------------
+The PlayStation glyphs were previously from "PS4 BUTTONS - Premium Assets" by Arks, replaced
+by the PS5 pack so all three families share one treatment and size. That pack is kept in this
+folder for reference only; nothing from it ships. If it is ever used again it must be credited:
+
+  Author:   Mikkel Julian "Arks" Petersen  (Arks @ScissorMarks)
+  Website:  https://arks.itch.io  ·  https://arks.itch.io/ps4-buttons
+  Social:   @ScissorMarks (Twitter)
+  Label the credit "UI Elements" or similar, per the pack's README.

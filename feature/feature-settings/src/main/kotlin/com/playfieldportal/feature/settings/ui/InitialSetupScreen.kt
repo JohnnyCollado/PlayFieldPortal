@@ -119,6 +119,7 @@ fun InitialSetupScreen(
         onDismissMessage = viewModel::dismissMessage,
         heading = headingFor(step),
         hint = hintFor(step),
+        contentKey = step,
         modifier = modifier,
     ) {
         when (step) {

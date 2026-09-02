@@ -31,9 +31,13 @@ import com.playfieldportal.core.ui.R
 // controller-agnostic.
 //
 // Art provenance (see Controller_Helper_Icon_Mapping.md):
-//   PLAYSTATION → PS4 Premium pack, unsuffixed / "1"-series files
+//   PLAYSTATION → PS5 pack,          Buttons Solid/White/128w (DualSense)
 //   XBOX        → Xbox Series pack,  Buttons Solid/White/128w
 //   NINTENDO    → Switch 2 pack,     Buttons Solid/White/128w, Pro D-Pad art
+//
+// All three are the same treatment at the same size, so a prompt row reads as one set. The
+// PlayStation glyphs were previously the PS4 Premium pack — 480px and a different look, which
+// stood out beside the flat white Xbox/Switch art.
 //
 // Nintendo has its own art for every core input, so no family ever borrows
 // another family's letters — their physical A/B and X/Y positions are reversed.
@@ -41,7 +45,7 @@ import com.playfieldportal.core.ui.R
 /**
  * The drawable for [family]'s art of this position, or `null` when the input
  * does not exist on that hardware (a touchpad on an Xbox pad, GameChat on a
- * DualShock). Pure, so the whole mapping is unit-testable without Compose.
+ * DualSense). Pure, so the whole mapping is unit-testable without Compose.
  *
  * Returning `null` rather than throwing matters: a prompt row that happens to
  * reference a family-exclusive input must degrade, not crash the screen.
@@ -84,8 +88,8 @@ private val psTable = mapOf(
     ControllerIcon.STICK_LEFT_CLICK to R.drawable.ctl_ps_stick_left_click,
     ControllerIcon.STICK_RIGHT_CLICK to R.drawable.ctl_ps_stick_right_click,
     ControllerIcon.START to R.drawable.ctl_ps_start,
-    // SELECT and SHARE stay distinct concepts even though the DualShock 4 prints
-    // one Share button that serves both roles — the art repeats, the IDs do not.
+    // SELECT and SHARE stay distinct concepts even though the DualSense prints
+    // one Create button that serves both roles — the art repeats, the IDs do not.
     ControllerIcon.SELECT to R.drawable.ctl_ps_select,
     ControllerIcon.SYSTEM to R.drawable.ctl_ps_system,
     ControllerIcon.SHARE to R.drawable.ctl_ps_share,
@@ -156,8 +160,8 @@ private val psLabels = mapOf(
     ControllerIcon.BUMPER_LEFT to "L1", ControllerIcon.BUMPER_RIGHT to "R1",
     ControllerIcon.TRIGGER_LEFT to "L2", ControllerIcon.TRIGGER_RIGHT to "R2",
     ControllerIcon.STICK_LEFT_CLICK to "L3", ControllerIcon.STICK_RIGHT_CLICK to "R3",
-    ControllerIcon.START to "Options", ControllerIcon.SELECT to "Share",
-    ControllerIcon.SYSTEM to "PS", ControllerIcon.SHARE to "Share",
+    ControllerIcon.START to "Options", ControllerIcon.SELECT to "Create",
+    ControllerIcon.SYSTEM to "PS", ControllerIcon.SHARE to "Create",
     ControllerIcon.TOUCHPAD to "Touchpad",
     ControllerIcon.TOUCHPAD_LEFT to "Touchpad left",
     ControllerIcon.TOUCHPAD_RIGHT to "Touchpad right",
@@ -194,10 +198,10 @@ private val nsLabels = mapOf(
  * Renders the [family] art for a physical controller position.
  *
  * Falls back per the icon-mapping contract: art, else the family's printed
- * label as text, else nothing. Glyphs are normalized to [size] — the source
- * packs ship at different intrinsic resolutions (480px PlayStation vs 128px
- * Xbox/Switch), so an unsized Image would render families at wildly different
- * scales in the same row.
+ * label as text, else nothing. Glyphs are normalized to [size]: every family's
+ * art is 128px today, but sizing here is what guarantees a row stays aligned if
+ * a future pack ships at another resolution — as the 480px PlayStation set that
+ * these replaced did.
  *
  * The glyph is decorative: callers pair it with an action label that carries
  * the meaning, so semantics are cleared here to avoid a doubled announcement.

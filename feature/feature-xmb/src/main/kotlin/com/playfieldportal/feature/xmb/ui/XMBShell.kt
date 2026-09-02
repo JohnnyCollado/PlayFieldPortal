@@ -2,23 +2,19 @@ package com.playfieldportal.feature.xmb.ui
 
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.SizeTransform
-import androidx.compose.animation.Crossfade
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import coil3.compose.AsyncImage
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -36,8 +32,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -45,33 +41,38 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.media3.common.util.UnstableApi
+import coil3.compose.AsyncImage
+import com.playfieldportal.core.domain.model.BuiltInCategory
+import com.playfieldportal.core.ui.components.XmbTouchButton
 import com.playfieldportal.core.ui.preview.DevicePreviews
 import com.playfieldportal.core.ui.preview.PfpPreview
 import com.playfieldportal.core.ui.theme.DefaultPFPColors
 import com.playfieldportal.core.ui.theme.LocalPFPColors
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
-import com.playfieldportal.core.domain.model.BuiltInCategory
-import com.playfieldportal.core.ui.components.XmbTouchButton
 import com.playfieldportal.core.ui.theme.PFPTheme
 import com.playfieldportal.feature.appbar.AppDrawerScreen
 import com.playfieldportal.feature.appbar.AppFilter
 import com.playfieldportal.feature.settings.ui.SettingsNavHost
-import androidx.compose.runtime.LaunchedEffect
 import com.playfieldportal.feature.social.ui.QrLoginScreen
 import com.playfieldportal.feature.xmb.preview.PreviewData
-import androidx.media3.common.util.UnstableApi
 import com.playfieldportal.feature.xmb.ui.app.AppDetailScreen
 import com.playfieldportal.feature.xmb.ui.detail.GameDetailScreen
 import com.playfieldportal.feature.xmb.ui.detail.PlayerStatusScreen
@@ -100,6 +101,11 @@ private const val XMB_MAX_SCALE = 2.5f
 // Left margin the memory-card cross is pinned to WHILE DRILLED IN, so the game flyout takes the
 // centre-right of the screen. Small so the cross hugs the edge; the ◀ + game column ride along.
 private val DRILL_CROSSBAR_LEFT_MARGIN = 16.dp
+
+// Height of the caticon (category) bar band. A file constant rather than a local because the
+// active row's line — barTop + this — is needed both by the cross itself and by the drill
+// flyout's PIC0 logo, which centres on that row.
+private val CAT_BAR_HEIGHT = 112.dp
 
 /**
  * Stateful entry point for the XMB home screen: collects [XMBViewModel.uiState] and wires the
@@ -502,7 +508,31 @@ fun XMBShell(
                 label = "pic0Fade",
             )
             if (selectedLogo != null && pic0Alpha > 0f) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
+                // BoxWithConstraints, not Box: the vertical placement below is derived from the
+                // screen height, and it MUST be measured here rather than reusing the shell's outer
+                // maxHeight — that one is taken before the LocalDensity override above, so its dp
+                // values mean a different number of pixels inside this subtree.
+                BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
+                    // At the XMB root the logo sits on the screen's centre line, as the PSP does.
+                    // Inside the Games drill flyout it belongs to the ACTIVE GAME, so it centres on
+                    // that card's row instead — otherwise the logo drifts away from the game it
+                    // names whenever the user's crossbar position is anything but mid-screen.
+                    //
+                    // The flyout pins the active card at anchorTop (= barTop + the caticon bar)
+                    // inside the content Box, which is inset by contentTopPadding. This rebuilds
+                    // that same line here in the unpadded space, from the very constants the cross
+                    // and the game column lay out with, so the two cannot drift apart.
+                    val logoCenterOffset: Dp = if (uiState.drillTitle != null) {
+                        val contentTop = uiState.layoutSpec.contentTopPaddingDp.dp
+                        val crossHeight = maxHeight - contentTop
+                        val anchorTop = crossHeight * layoutAdjust.barTopFraction + CAT_BAR_HEIGHT
+                        val rowCenter = contentTop + anchorTop + ROW_HEIGHT / 2
+                        // The logo is 38% of the height and centred, so keep its centre within
+                        // [19%, 81%] — a low crossbar must not push it off the bottom edge.
+                        rowCenter.coerceIn(maxHeight * 0.19f, maxHeight * 0.81f) - maxHeight / 2
+                    } else {
+                        0.dp
+                    }
                     AsyncImage(
                         model = selectedLogo,
                         contentDescription = null,
@@ -510,6 +540,7 @@ fun XMBShell(
                         modifier = Modifier
                             .fillMaxWidth(0.30f)
                             .fillMaxHeight(0.38f)
+                            .offset(y = logoCenterOffset)
                             .padding(end = 44.dp)
                             .alpha(pic0Alpha),
                     )
@@ -547,7 +578,7 @@ fun XMBShell(
                     // caticon (anchorTop = barTop + bar height) and previous items rise up through the
                     // bar band to dissolve. The column's leading icon is shifted right so it lands on
                     // the same vertical line as the caticon (centred in its slot).
-                    val catBarHeight = 112.dp
+                    val catBarHeight = CAT_BAR_HEIGHT
                     // Crossbar vertical position from the theme's layout spec — DEFAULT holds the
                     // pixel-tuned authentic-PSP geometry (caticon row ~25% of height); imported
                     // themes whose wallpaper draws its own cross band may override it.
@@ -674,11 +705,19 @@ fun XMBShell(
                 )
             }
 
-            // Idle context-menu hint: a small "Options" pill (with the controller-style
-            // face-button glyph) that fades in above the App Drawer button after the user has
-            // been idle over an item with a context menu. It is controller-only: touch input
-            // suppresses it. Driven by uiState.showContextMenuHint (set by XMBViewModel's idle
-            // timer), and stacked above the drawer button so the affordances never overlap.
+            // Idle hint pill: [ X Sort   Y Options ], with the controller-style glyphs, fading
+            // in after the user has been idle. Controller-only — touch input suppresses it.
+            // Driven by uiState.showContextMenuHint (set by XMBViewModel's idle timer); each half
+            // appears only where that action really does something, so the pill shrinks to just
+            // Options on an unsortable list and to just Sort on an item with no context menu.
+            //
+            // It shows while drilled in too (the game flyout, a library's files) — those rows have
+            // context menus and sort, and are where the affordance is least discoverable.
+            //
+            // Sits in the App Drawer button's slot when that button is hidden, and stacks above it
+            // when both are up, so the two affordances never overlap.
+            val drawerButtonVisible =
+                uiState.resolvedShowTouchButton && !uiState.hasBlockingOverlay && !uiState.isInSubItem
             AnimatedVisibility(
                 visible = uiState.showContextMenuHint &&
                     uiState.activeContextMenu == null &&
@@ -688,7 +727,12 @@ fun XMBShell(
                 modifier = Modifier.align(Alignment.BottomEnd),
             ) {
                 ContextMenuHint(
-                    modifier = Modifier.padding(bottom = 76.dp, end = 20.dp),
+                    showSort = uiState.canSortCurrentList,
+                    showOptions = uiState.focusedItemHasContextMenu,
+                    modifier = Modifier.padding(
+                        bottom = if (drawerButtonVisible) 76.dp else 24.dp,
+                        end = 20.dp,
+                    ),
                 )
             }
 

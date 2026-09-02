@@ -69,6 +69,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.accompanist.drawablepainter.DrawablePainter
 import com.playfieldportal.core.ui.components.ControllerPromptBar
+import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.R
 import com.playfieldportal.core.ui.preview.CombinedPreviews
@@ -672,13 +673,13 @@ private fun ControllerCommandBar(
     // Actions, not buttons: ControllerPromptBar resolves each to whichever face
     // button the user's Confirm/Back and X/Y settings currently bind it to.
     ControllerPromptBar(
-        prompts = listOf(
-            GamepadAction.PREV_CATEGORY to "Prev Category",
-            GamepadAction.NEXT_CATEGORY to "Next Category",
-            GamepadAction.BACK to "Back",
-            GamepadAction.SELECT to "Launch",
-            GamepadAction.OPEN_CONTEXT_MENU to "Options",
-            GamepadAction.CHANGE_SORT to "Search",
+        items = listOf(
+            ControllerPromptItem(GamepadAction.PREV_CATEGORY, "Prev Category"),
+            ControllerPromptItem(GamepadAction.NEXT_CATEGORY, "Next Category"),
+            ControllerPromptItem(GamepadAction.BACK, "Back"),
+            ControllerPromptItem(GamepadAction.SELECT, "Launch"),
+            ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"),
+            ControllerPromptItem(GamepadAction.CHANGE_SORT, "Search"),
         ),
         modifier = Modifier
             .fillMaxWidth()

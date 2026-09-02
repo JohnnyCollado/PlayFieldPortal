@@ -4,7 +4,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.runtime.remember
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,17 +32,22 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.ui.components.ControllerPromptBar
+import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.feature.xmb.viewmodel.MusicBrowserState
@@ -69,7 +73,8 @@ fun MusicBrowserScreen(
     onSortTapped: () -> Unit = {},
     onOptionsTapped: () -> Unit = {},
     // Show the touch header pills only when the last input was touch (AUTO), matching the XMB's
-    // contextual App Drawer button. Controller users rely on the on-screen A/X/Y/B hints below.
+    // contextual App Drawer button. Controller users rely on the prompt bar below, which names
+    // the actions and lets the shared resolver draw whichever buttons their pad binds them to.
     showTouchControls: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
@@ -172,10 +177,19 @@ fun MusicBrowserScreen(
             }
 
             Spacer(Modifier.height(8.dp))
-            Text(
-                "A: open   ·   X: sort   ·   Y: options   ·   B: back",
-                color = SecondaryText.copy(alpha = 0.7f),
-                fontSize = 11.sp,
+            ControllerPromptBar(
+                items = listOfNotNull(
+                    ControllerPromptItem(GamepadAction.SELECT, "Open"),
+                    // Sort is a no-op on playlist views — the ViewModel ignores it and the touch
+                    // pill above is hidden there, so the prompt goes too rather than promising it.
+                    state.sortLabel?.let { ControllerPromptItem(GamepadAction.CHANGE_SORT, "Sort") },
+                    ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"),
+                    ControllerPromptItem(GamepadAction.BACK, "Back"),
+                ),
+                labelColor = SecondaryText.copy(alpha = 0.7f),
+                labelStyle = TextStyle(fontSize = 11.sp),
+                glyphSize = 16.dp,
+                arrangement = Arrangement.spacedBy(18.dp),
             )
         }
     }

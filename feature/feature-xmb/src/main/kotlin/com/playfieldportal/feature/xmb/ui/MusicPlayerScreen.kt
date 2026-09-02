@@ -15,29 +15,33 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.ui.components.ControllerPromptBar
+import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.feature.xmb.music.MusicPlaybackState
 
 private val Backdrop   = Color(0xF20A0A12)
@@ -134,7 +138,7 @@ fun MusicPlayerScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // Transport controls (touch). Controller maps Left/Right=prev/next, A=play-pause.
+            // Transport controls (touch); the prompt bar below names the controller equivalents.
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(28.dp)) {
                 TransportButton(Icons.Filled.SkipPrevious, "Previous", 40.dp, onPrev)
                 TransportButton(
@@ -146,7 +150,27 @@ fun MusicPlayerScreen(
             }
 
             Spacer(Modifier.height(20.dp))
-            Text("Y: Play in background   ·   B: Close", color = Secondary.copy(alpha = 0.7f), fontSize = 11.sp)
+            // Every binding the player actually honours (XMBViewModel's musicPlayerVisible
+            // branch), not just the two the old hint listed.
+            ControllerPromptBar(
+                items = listOf(
+                    ControllerPromptItem(GamepadAction.SELECT, "Play / Pause"),
+                    ControllerPromptItem(
+                        listOf(GamepadAction.NAVIGATE_LEFT, GamepadAction.NAVIGATE_RIGHT),
+                        "Track",
+                    ),
+                    ControllerPromptItem(
+                        listOf(GamepadAction.NAVIGATE_UP, GamepadAction.NAVIGATE_DOWN),
+                        "Seek",
+                    ),
+                    ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"),
+                    ControllerPromptItem(GamepadAction.BACK, "Close"),
+                ),
+                labelColor = Secondary.copy(alpha = 0.7f),
+                labelStyle = TextStyle(fontSize = 11.sp),
+                glyphSize = 16.dp,
+                arrangement = Arrangement.spacedBy(18.dp, Alignment.CenterHorizontally),
+            )
         }
     }
 }

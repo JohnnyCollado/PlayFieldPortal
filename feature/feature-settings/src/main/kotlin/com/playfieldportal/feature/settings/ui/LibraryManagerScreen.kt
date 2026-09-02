@@ -26,8 +26,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.ui.achievement.LocalSteamConvertPickerDialog
+import com.playfieldportal.core.ui.achievement.LocalSteamConvertRow
+import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.preview.CombinedPreviews
 import com.playfieldportal.core.ui.preview.PfpPreview
+import com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamConvertPickerController
 import com.playfieldportal.feature.launcher.PcLauncherAdapters
 import com.playfieldportal.feature.settings.viewmodel.ADD_CONSOLE_FOCUS_KEY
 import com.playfieldportal.feature.settings.viewmodel.EmulatorOption
@@ -40,9 +45,6 @@ import com.playfieldportal.feature.settings.viewmodel.PcGameRow
 import com.playfieldportal.feature.settings.viewmodel.PcLauncherRow
 import com.playfieldportal.feature.settings.viewmodel.PlatformOption
 import com.playfieldportal.feature.settings.viewmodel.RootFolderRow
-import com.playfieldportal.core.ui.achievement.LocalSteamConvertPickerDialog
-import com.playfieldportal.core.ui.achievement.LocalSteamConvertRow
-import com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamConvertPickerController
 
 @Composable
 fun LibraryManagerScreen(
@@ -534,7 +536,8 @@ private fun CardDetailContent(
                     value         = newExt,
                     onValueChange = { newExt = it },
                     placeholder   = "e.g. iso, chd, zip",
-                    helper        = "Matched case-insensitively when scanning. Press A to type.",
+                    helper        = "Matched case-insensitively when scanning.",
+                    helperPrompt  = ControllerPromptItem(GamepadAction.SELECT, "Type"),
                 )
                 newExt.trim().lowercase().removePrefix(".").filter { it.isLetterOrDigit() }
                     .takeIf { it.isNotBlank() }

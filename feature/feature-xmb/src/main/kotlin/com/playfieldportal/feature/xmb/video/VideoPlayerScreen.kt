@@ -28,6 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -44,9 +45,12 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.domain.model.Video
+import com.playfieldportal.core.ui.components.ControllerPrompt
+import com.playfieldportal.core.ui.components.ControllerPromptBar
+import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.theme.menuCursor
 import com.playfieldportal.core.ui.theme.menuCursorEdge
-import com.playfieldportal.core.domain.model.Video
 import kotlinx.coroutines.delay
 import timber.log.Timber
 
@@ -226,7 +230,13 @@ fun VideoPlayerScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(errorMessage!!, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.height(8.dp))
-                    Text("Press A or B to go back", color = Color(0xFFB0B0B0), fontSize = 13.sp)
+                    ControllerPrompt(
+                        actions = listOf(GamepadAction.SELECT, GamepadAction.BACK),
+                        label = "Go back",
+                        labelColor = Color(0xFFB0B0B0),
+                        labelStyle = TextStyle(fontSize = 13.sp),
+                        glyphSize = 18.dp,
+                    )
                 }
             }
         }
@@ -300,17 +310,38 @@ private fun ControlsOverlay(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text("${fmt(positionMs)} / ${fmt(durationMs)}", color = Color.White, fontSize = 13.sp)
-                Text(
-                    buildString {
-                        append(if (isPlaying) "❚❚  A Pause" else "▶  A Play")
-                        append("   ·   ◀▶ Seek")
-                        if (hasPrev || hasNext) append("   ·   L1/R1 Prev/Next")
-                        append("   ·   Y Options")
-                        append("   ·   ${speed}× · $screenMode")
-                    },
-                    color = Color(0xFFCCCCCC),
-                    fontSize = 12.sp,
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    ControllerPromptBar(
+                        items = listOfNotNull(
+                            ControllerPromptItem(
+                                GamepadAction.SELECT,
+                                if (isPlaying) "Pause" else "Play",
+                            ),
+                            ControllerPromptItem(
+                                listOf(GamepadAction.NAVIGATE_LEFT, GamepadAction.NAVIGATE_RIGHT),
+                                "Seek",
+                            ),
+                            if (hasPrev || hasNext) {
+                                ControllerPromptItem(
+                                    listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY),
+                                    "Prev / Next",
+                                )
+                            } else {
+                                null
+                            },
+                            ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"),
+                        ),
+                        labelColor = Color(0xFFCCCCCC),
+                        labelStyle = TextStyle(fontSize = 12.sp),
+                        glyphSize = 16.dp,
+                        arrangement = Arrangement.spacedBy(16.dp),
+                    )
+                    // Status, not a prompt — no button changes it from here.
+                    Text("${speed}× · $screenMode", color = Color(0xFFCCCCCC), fontSize = 12.sp)
+                }
             }
         }
     }
@@ -358,10 +389,21 @@ private fun OptionsOverlay(
                 }
             }
             Spacer(Modifier.height(4.dp))
-            Text(
-                "A/▶ change · Y/B close",
-                color = Color(0xFF888888),
-                fontSize = 11.sp,
+            ControllerPromptBar(
+                items = listOf(
+                    ControllerPromptItem(
+                        listOf(GamepadAction.SELECT, GamepadAction.NAVIGATE_RIGHT),
+                        "Change",
+                    ),
+                    ControllerPromptItem(
+                        listOf(GamepadAction.OPEN_CONTEXT_MENU, GamepadAction.BACK),
+                        "Close",
+                    ),
+                ),
+                labelColor = Color(0xFF888888),
+                labelStyle = TextStyle(fontSize = 11.sp),
+                glyphSize = 15.dp,
+                arrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
             )
         }

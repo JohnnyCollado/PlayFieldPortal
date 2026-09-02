@@ -23,9 +23,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.playfieldportal.core.domain.model.ControllerIcon
+import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.ui.components.ControllerPromptBar
+import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.themekit.XmbLayoutAdjust
 import kotlin.math.roundToInt
 
@@ -83,10 +88,24 @@ fun XmbLayoutAdjustOverlay(
                 fontSize = 13.sp,
             )
             // Controller hints (the other half of "both" control modes).
-            Text(
-                text = "D-pad: move   L1/R1: scale   Y: reset   □ hold: sliders   A: save   B: cancel",
-                color = Color(0x99B9C6DC),
-                fontSize = 11.sp,
+            ControllerPromptBar(
+                items = listOf(
+                    // The whole D-pad moves the bar; four direction glyphs in a row would
+                    // read as four separate prompts.
+                    ControllerPromptItem.fixed(ControllerIcon.DPAD_ALL, "Move"),
+                    ControllerPromptItem(
+                        listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY),
+                        "Scale",
+                    ),
+                    ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Reset"),
+                    ControllerPromptItem(GamepadAction.CHANGE_SORT, "Sliders"),
+                    ControllerPromptItem(GamepadAction.SELECT, "Save"),
+                    ControllerPromptItem(GamepadAction.BACK, "Cancel"),
+                ),
+                labelColor = Color(0x99B9C6DC),
+                labelStyle = TextStyle(fontSize = 11.sp),
+                glyphSize = 15.dp,
+                arrangement = Arrangement.spacedBy(14.dp),
             )
 
             if (slidersVisible) {

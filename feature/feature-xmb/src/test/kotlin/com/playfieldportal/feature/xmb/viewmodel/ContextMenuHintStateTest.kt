@@ -65,15 +65,50 @@ class ContextMenuHintStateTest {
     }
 
     @Test
-    fun `does not show when the focused item has no context menu`() {
+    fun `does not show when the focused item has no context menu and the list cannot sort`() {
         val plain = XMBItem(id = "x", title = "Plain", type = XMBItemType.STANDARD)
         val s = eligibleState().copy(currentItems = listOf(plain))
         assertFalse(shouldShowContextMenuHint(s, XMBViewModel.IDLE_HINT_DELAY_MS))
     }
 
     @Test
-    fun `does not show while drilled into a sub-item`() {
+    fun `shows while drilled into a sub-item`() {
+        // Previously suppressed. Drilled-in rows (the game flyout, a library's files) have
+        // context menus and sort, so this is where the affordance is least discoverable.
         val s = eligibleState().copy(selectedPlatformId = "psp") // drilled into a memory card
+        assertTrue(shouldShowContextMenuHint(s, XMBViewModel.IDLE_HINT_DELAY_MS))
+    }
+
+    // ── Sort half of the pill ───────────────────────────────────────────────
+
+    @Test
+    fun `an unsortable root list offers no sort prompt`() {
+        // The Games memory-card root: no platform or collection drilled into.
+        assertFalse(eligibleState().canSortCurrentList)
+    }
+
+    @Test
+    fun `drilling into a platform makes the list sortable`() {
+        assertTrue(eligibleState().copy(selectedPlatformId = "psp").canSortCurrentList)
+        assertTrue(eligibleState().copy(selectedCollectionId = 7L).canSortCurrentList)
+    }
+
+    @Test
+    fun `a sortable list shows the pill even when the focused item has no context menu`() {
+        // Only the Sort half is drawn; the pill is still worth showing.
+        val plain = XMBItem(id = "x", title = "Plain", type = XMBItemType.STANDARD)
+        val s = eligibleState().copy(currentItems = listOf(plain), selectedPlatformId = "psp")
+        assertFalse(s.focusedItemHasContextMenu)
+        assertTrue(s.canSortCurrentList)
+        assertTrue(shouldShowContextMenuHint(s, XMBViewModel.IDLE_HINT_DELAY_MS))
+    }
+
+    @Test
+    fun `neither half applicable means no pill`() {
+        val plain = XMBItem(id = "x", title = "Plain", type = XMBItemType.STANDARD)
+        val s = eligibleState().copy(currentItems = listOf(plain))
+        assertFalse(s.focusedItemHasContextMenu)
+        assertFalse(s.canSortCurrentList)
         assertFalse(shouldShowContextMenuHint(s, XMBViewModel.IDLE_HINT_DELAY_MS))
     }
 
