@@ -2,13 +2,12 @@ package com.playfieldportal.feature.artwork.store
 
 import android.content.Context
 import android.net.Uri
-import coil.imageLoader
-import coil.memory.MemoryCache
 import com.playfieldportal.core.data.database.dao.ArtworkRecordDao
 import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.data.database.entity.ArtworkRecordEntity
 import com.playfieldportal.core.data.database.entity.GameEntity
 import com.playfieldportal.core.data.repository.ArtworkFolderRepository
+import com.playfieldportal.feature.artwork.api.ArtworkImageCache
 import com.playfieldportal.feature.artwork.portable.ArtworkPathResolver
 import com.playfieldportal.feature.artwork.portable.PortableArtworkLibrary
 import com.playfieldportal.feature.artwork.portable.PortableNameResolver
@@ -45,6 +44,7 @@ class RoutingArtworkStore @Inject constructor(
     private val gameDao: GameDao,
     private val artworkRecordDao: ArtworkRecordDao,
     private val httpClient: HttpClient,
+    private val imageCache: ArtworkImageCache,
 ) : ArtworkStore {
 
     override suspend fun saveFromUrl(gameId: Long, kind: ArtworkKind, url: String): String? {
@@ -362,11 +362,8 @@ class RoutingArtworkStore @Inject constructor(
         return saved.uriString
     }
 
-    private fun bustCoil(uriString: String) {
-        // Stable names → stable URIs: bust Coil so the replacement is visible immediately.
-        context.imageLoader.memoryCache?.remove(MemoryCache.Key(uriString))
-        context.imageLoader.diskCache?.remove(uriString)
-    }
+    // Stable names → stable URIs: bust Coil so the replacement is visible immediately.
+    private fun bustCoil(uriString: String) = imageCache.evict(uriString)
 
     // ".png" from a relative path/uri; ".jpg" fallback so a temp always has a plausible suffix.
     private fun extSuffix(pathOrNull: String?): String {

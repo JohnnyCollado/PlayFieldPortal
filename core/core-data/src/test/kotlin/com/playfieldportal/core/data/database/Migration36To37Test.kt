@@ -1,7 +1,6 @@
 package com.playfieldportal.core.data.database
 
-import androidx.room.testing.MigrationTestHelper
-import androidx.test.platform.app.InstrumentationRegistry
+import androidx.sqlite.execSQL
 import org.junit.Rule
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -20,36 +19,29 @@ import kotlin.test.assertTrue
 class Migration36To37Test {
 
     @get:Rule
-    val helper = MigrationTestHelper(
-        InstrumentationRegistry.getInstrumentation(),
-        PFPDatabase::class.java,
-    )
+    val helper = migrationTestHelper(DB)
 
     @Test
     fun `v37 adds is_missing and last_seen_at without touching existing rows`() {
         // Seed a v36 database with one curated (favorited) game.
-        helper.createDatabase(DB, 36).apply {
-            execSQL(
+        helper.createDatabase(36).use { db ->
+            db.execSQL(
                 "INSERT INTO games (title, platform_id, is_favorite, favorite_sort_order, " +
                     "total_play_time_millis, is_manual_entry, created_at, content_type) " +
                     "VALUES ('Chrono Trigger', 'snes', 1, 0, 0, 0, 0, 'GAME')",
             )
-            close()
         }
 
         // Run the migration and validate the result against the exported 37 schema.
-        val db = helper.runMigrationsAndValidate(DB, 37, true, PFPDatabase.MIGRATION_36_37)
-
-        db.query(
-            "SELECT title, is_favorite, is_missing, last_seen_at FROM games",
-        ).use {
-            assertTrue(it.moveToFirst())
-            // Non-destructive: the row and its curation survived the migration.
-            assertEquals("Chrono Trigger", it.getString(0))
-            assertEquals(1, it.getInt(1))
-            // New columns get their safe defaults for the pre-existing row.
-            assertEquals(0, it.getInt(2))          // is_missing defaults to 0 (not missing)
-            assertTrue(it.isNull(3))               // last_seen_at defaults to NULL
+        helper.runMigrationsAndValidate(37, listOf(PFPDatabase.MIGRATION_36_37)).use { db ->
+            db.singleRow("SELECT title, is_favorite, is_missing, last_seen_at FROM games") {
+                // Non-destructive: the row and its curation survived the migration.
+                assertEquals("Chrono Trigger", it.getText(0))
+                assertEquals(1, it.getLong(1).toInt())
+                // New columns get their safe defaults for the pre-existing row.
+                assertEquals(0, it.getLong(2).toInt())   // is_missing defaults to 0 (not missing)
+                assertTrue(it.isNull(3))                 // last_seen_at defaults to NULL
+            }
         }
     }
 

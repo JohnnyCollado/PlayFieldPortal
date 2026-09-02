@@ -30,7 +30,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.ContentScale
-import coil.compose.AsyncImage
+import coil3.compose.AsyncImage
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.wave.WaveStyle
 import kotlin.math.sin

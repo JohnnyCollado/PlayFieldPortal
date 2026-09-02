@@ -2,7 +2,6 @@
 
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
@@ -22,7 +21,7 @@ fun ssProp(key: String, env: String): String =
 
 android {
     namespace  = "com.playfieldportal.feature.artwork"
-    compileSdk = 35
+    compileSdk = 37
     defaultConfig {
         minSdk = 29
         // String.valueOf(...) keeps these fields NON-constant: plain literals would be
@@ -37,8 +36,14 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions { jvmTarget = "17" }
     buildFeatures { compose = true; buildConfig = true }
+
+    testOptions {
+        // Robolectric 4.16 emulates up to SDK 36. Library modules default targetSdk to
+        // compileSdk (37), which Robolectric rejects outright, so pin the test target here.
+        // This affects unit tests only — the published library is unchanged.
+        targetSdk = 36
+    }
 }
 
 dependencies {
@@ -51,7 +56,9 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.bundles.ktor)
-    implementation(libs.coil.compose)
+    // api, not implementation: ArtworkImageCache exposes coil3.ImageLoader in its constructor,
+    // so :app needs the type on its compile classpath for Hilt to construct it.
+    api(libs.coil.compose)
     implementation(libs.datastore.preferences)
     implementation(libs.workmanager.ktx)
     // Local ICON1 snap generation: trim + downscale full videos when SS has no normalized snap.
@@ -62,6 +69,9 @@ dependencies {
     ksp(libs.hilt.compiler)
     ksp(libs.hilt.work.compiler)
     testImplementation(libs.bundles.test.unit)
+    // ArtworkImageCacheTest drives a real Coil ImageLoader, which needs an Android Context.
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
 
     implementation(project(":core:core-common"))
     implementation(project(":core:core-domain"))

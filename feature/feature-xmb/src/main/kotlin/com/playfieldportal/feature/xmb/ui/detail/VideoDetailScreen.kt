@@ -58,7 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
-import coil.compose.AsyncImage
+import coil3.compose.AsyncImage
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.Video
 import com.playfieldportal.core.ui.components.XmbHeaderPill

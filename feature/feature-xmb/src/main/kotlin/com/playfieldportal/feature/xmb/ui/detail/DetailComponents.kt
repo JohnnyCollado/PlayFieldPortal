@@ -30,7 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
+import coil3.compose.AsyncImage
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 
 // The hero-card detail design system, shared by the Game Detail page (ROMs, game apps, PC

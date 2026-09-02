@@ -16,10 +16,10 @@ kotlin {
 dependencies {
     implementation(project(":core:theme-kit"))
     implementation(compose.desktop.currentOs)
-    implementation(compose.material3)
+    implementation(libs.compose.mp.material3)
     // Same Material glyph set the launcher's item rows use — drives default icon-slot
     // rendering and the editable template export.
-    implementation(compose.materialIconsExtended)
+    implementation(libs.compose.mp.icons.extended)
     implementation(libs.kotlinx.coroutines.swing)
 
     testImplementation(libs.junit)

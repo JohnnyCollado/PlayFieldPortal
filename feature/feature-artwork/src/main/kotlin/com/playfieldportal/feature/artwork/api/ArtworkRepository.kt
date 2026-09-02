@@ -1,11 +1,8 @@
 package com.playfieldportal.feature.artwork.api
 
-import android.content.Context
-import coil.imageLoader
 import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.feature.artwork.MetadataRepository
 import com.playfieldportal.feature.artwork.store.ArtworkStore
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -42,7 +39,7 @@ data class ScrapeProgress(
 
 @Singleton
 class ArtworkRepository @Inject constructor(
-    @ApplicationContext private val context: Context,
+    private val imageCache: ArtworkImageCache,
     private val gameDao: GameDao,
     private val metadataRepository: MetadataRepository,
     private val scrapePreferences: ArtworkScrapePreferences,
@@ -93,26 +90,15 @@ class ArtworkRepository @Inject constructor(
     /** Drops every cached ScreenScraper media-URL list — next scrape refreshes per game. */
     suspend fun clearSsMediaCache() = ssMediaCacheDao.clearAll()
 
-    /**
-     * Evicts just [uris] from Coil's memory and disk caches. Scraped files reuse stable
-     * filenames, so a re-scraped image must be evicted or the path-keyed cache keeps showing
-     * the old bytes. Nothing on disk or in the DB is touched — this is display-cache only.
-     */
-    fun evictFromImageCache(uris: Collection<String>) {
-        val loader = context.imageLoader
-        uris.forEach { uri ->
-            loader.memoryCache?.remove(coil.memory.MemoryCache.Key(uri))
-            loader.diskCache?.remove(uri)
-        }
-    }
+    /** Evicts just [uris] from the display caches — see [ArtworkImageCache.evict]. */
+    fun evictFromImageCache(uris: Collection<String>) = imageCache.evict(uris)
 
     /**
      * App-side artwork footprint in bytes: Coil's disk cache + the internal artwork store.
      * Files in the user's portable library are the user's own and are never counted.
      */
     suspend fun cacheSizeBytes(): Long = withContext(Dispatchers.IO) {
-        val coilBytes = context.imageLoader.diskCache?.size ?: 0L
-        coilBytes + internalStore.footprint().second
+        imageCache.diskSizeBytes() + internalStore.footprint().second
     }
 
     /**
@@ -121,8 +107,7 @@ class ArtworkRepository @Inject constructor(
      * library are NEVER deleted — Relink/re-scrape rebuilds from them at any time.
      */
     suspend fun clearCache() {
-        context.imageLoader.diskCache?.clear()
-        context.imageLoader.memoryCache?.clear()
+        imageCache.clear()
         artworkStore.deleteAll()          // internal files + artwork_records (never library files)
         gameDao.clearAllArtworkRefs()
         ssMediaCacheDao.clearAll()

@@ -2,7 +2,6 @@ import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
@@ -20,7 +19,7 @@ val keystoreProperties = Properties().apply {
 
 android {
     namespace = "com.playfieldportal.launcher"
-    compileSdk = 35
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.playfieldportal.launcher"
@@ -83,10 +82,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
     buildFeatures {
         compose = true
         buildConfig = true
@@ -104,7 +99,8 @@ dependencies {
     implementation(libs.hilt.android)
     implementation(libs.hilt.navigation.compose)
     implementation(libs.timber)
-    implementation(libs.accompanist.systemuicontroller)
+    // Coil 3 service-loads its network fetcher; without this artifact remote URLs never load.
+    implementation(libs.coil.network.okhttp)
     ksp(libs.hilt.compiler)
     implementation(libs.hilt.work)
     ksp(libs.hilt.work.compiler)

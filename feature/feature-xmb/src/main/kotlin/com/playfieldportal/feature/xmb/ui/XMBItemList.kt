@@ -89,7 +89,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.isUnspecified
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
+import coil3.compose.AsyncImage
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.playfieldportal.core.ui.achievement.BoneGlyph
 import com.playfieldportal.core.ui.icons.GameIconStyle
@@ -97,6 +97,7 @@ import com.playfieldportal.core.ui.icons.LocalXmbIconOverrides
 import com.playfieldportal.core.ui.icons.PortalIcon
 import com.playfieldportal.core.ui.icons.ThemedGlyph
 import com.playfieldportal.core.ui.icons.categoryIconFor
+import com.playfieldportal.core.ui.icons.systemIconRes
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.themekit.XmbLayoutSpec
 import com.playfieldportal.feature.xmb.viewmodel.XMBItem
@@ -310,7 +311,7 @@ private fun SiblingIcon(item: XMBItem, selected: Boolean) {
             )
         } else {
             PortalIcon(
-                painter = painterResource(rememberConsoleIconId(consoleIconKeyFor(item))),
+                painter = painterResource(systemIconRes(consoleIconKeyFor(item))),
                 contentDescription = item.title,
                 modifier = Modifier.size(chip).alpha(if (selected) 1f else 0.5f),
             )
@@ -1099,7 +1100,7 @@ private fun XmbItemLeadingIcon(
                         else                    -> null
                     }
                     PortalIcon(
-                        painter = painterResource(rememberConsoleIconId(iconKey)),
+                        painter = painterResource(systemIconRes(iconKey)),
                         contentDescription = null,
                         modifier = Modifier.size(LEADING_ICON_SIZE),
                     )
@@ -1156,7 +1157,7 @@ private fun XmbItemLeadingIcon(
                     )
                 } else {
                     PortalIcon(
-                        painter = painterResource(rememberConsoleIconId("settings")),
+                        painter = painterResource(systemIconRes("settings")),
                         contentDescription = null,
                         modifier = Modifier.size(LEADING_ICON_SIZE),
                     )
@@ -1215,22 +1216,6 @@ private fun achievementsGlyphFor(id: String): androidx.compose.ui.graphics.vecto
     "ach_untracked" -> Icons.Filled.HelpOutline
     "ach_connect" -> Icons.Filled.Link
     else -> null
-}
-
-// Resolves a per-console icon (bundled from the xmb-menu-es-de set) by platform id,
-// e.g. platformId "psp" -> R.drawable.sysicon_psp. Falls back to the theme's generic
-// sysicon_default when the platform is unknown or has no dedicated icon.
-@Composable
-private fun rememberConsoleIconId(platformId: String?): Int {
-    val context = LocalContext.current
-    return remember(platformId) {
-        val safe = platformId?.lowercase()?.filter { it.isLetterOrDigit() || it == '_' }
-        val specific = if (!safe.isNullOrBlank()) {
-            context.resources.getIdentifier("sysicon_$safe", "drawable", context.packageName)
-        } else 0
-        if (specific != 0) specific
-        else context.resources.getIdentifier("sysicon_default", "drawable", context.packageName)
-    }
 }
 
 @Composable

@@ -1,6 +1,5 @@
 ﻿plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
@@ -9,18 +8,23 @@
 
 android {
     namespace  = "com.playfieldportal.feature.settings"
-    compileSdk = 35
+    compileSdk = 37
     defaultConfig { minSdk = 29 }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions { jvmTarget = "17" }
     buildFeatures {
         compose = true
     }
     // Robolectric (Compose UI tests) needs the merged manifest + resources on the test classpath
-    testOptions { unitTests { isIncludeAndroidResources = true } }
+    testOptions {
+        unitTests { isIncludeAndroidResources = true }
+        // Robolectric 4.16 emulates up to SDK 36. Library modules default targetSdk to
+        // compileSdk (37), which Robolectric rejects outright, so pin the test target here.
+        // This affects unit tests only — the published library is unchanged.
+        targetSdk = 36
+    }
     // (No hardcoded VERSION_NAME/VERSION_CODE here anymore — the About screen reads the real
     // installed version from PackageManager, so it can never go stale again.)
 }
@@ -49,6 +53,7 @@ dependencies {
     implementation(libs.workmanager.ktx)
     implementation(libs.coil.compose)
     implementation(libs.androidx.documentfile)
+    implementation(libs.material.icons.extended)
 
     implementation(project(":core:core-common"))
     implementation(project(":core:core-domain"))

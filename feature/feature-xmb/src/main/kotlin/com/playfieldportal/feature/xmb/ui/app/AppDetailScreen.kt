@@ -67,7 +67,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
 import androidx.core.graphics.drawable.toBitmap
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.AsyncImage
+import coil3.compose.AsyncImage
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.menuCursorEdge

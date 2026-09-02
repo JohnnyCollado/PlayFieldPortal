@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
@@ -8,25 +7,33 @@ plugins {
 
 android {
     namespace  = "com.playfieldportal.core.data"
-    compileSdk = 35
+    compileSdk = 37
     defaultConfig { minSdk = 29 }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions { jvmTarget = "17" }
-    testOptions { unitTests { isIncludeAndroidResources = true } }
+    testOptions {
+        unitTests { isIncludeAndroidResources = true }
+        // Robolectric 4.16 emulates up to SDK 36. Library modules default targetSdk to
+        // compileSdk (37), which Robolectric rejects outright, so pin the test target here.
+        // This affects unit tests only — the published library is unchanged.
+        targetSdk = 36
+    }
 }
 
-// Schema JSONs land in /schemas for migration tests; @Database(exportSchema = true) is
-// meaningless without this output directory. Under the legacy DSL (android.newDsl=false) AGP 9
-// casts library source sets to the removed com.android.build.gradle.api.AndroidLibrarySourceSet
-// and throws, so reach the "test" source set through the new-DSL LibraryExtension interface —
-// which the same source-set impl still implements — instead of the legacy accessor.
-(extensions.getByName("android") as com.android.build.api.dsl.LibraryExtension)
-    .sourceSets.named("test") {
-        assets.srcDir("$projectDir/schemas")
+// Schema JSONs land in /schemas for the migration tests; @Database(exportSchema = true) is
+// meaningless without this output directory on the test source set.
+//
+// Configured through the new-DSL LibraryExtension interface rather than the `android { }` block:
+// the generated Kotlin DSL accessor is still typed to the legacy extension, so `sourceSets` there
+// hands back a container whose configure block casts to the removed AndroidLibrarySourceSet and
+// throws. The impl object implements both interfaces, so naming the new one is enough.
+extensions.configure<com.android.build.api.dsl.LibraryExtension> {
+    sourceSets.named("test") {
+        assets.directories.add("$projectDir/schemas")
     }
+}
 
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")

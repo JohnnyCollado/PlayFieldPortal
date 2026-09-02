@@ -1,6 +1,5 @@
 ﻿plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
@@ -9,15 +8,20 @@
 
 android {
     namespace  = "com.playfieldportal.feature.launcher"
-    compileSdk = 35
+    compileSdk = 37
     defaultConfig { minSdk = 29 }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions { jvmTarget = "17" }
     buildFeatures { compose = true }
-    testOptions { unitTests { isIncludeAndroidResources = true } }
+    testOptions {
+        unitTests { isIncludeAndroidResources = true }
+        // Robolectric 4.16 emulates up to SDK 36. Library modules default targetSdk to
+        // compileSdk (37), which Robolectric rejects outright, so pin the test target here.
+        // This affects unit tests only — the published library is unchanged.
+        targetSdk = 36
+    }
 }
 
 // Robolectric fetches its Android image over HTTPS. On Windows, HTTPS interception (Avast) means

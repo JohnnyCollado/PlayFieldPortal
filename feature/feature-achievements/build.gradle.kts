@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
@@ -8,13 +7,12 @@ plugins {
 
 android {
     namespace  = "com.playfieldportal.feature.achievements"
-    compileSdk = 35
+    compileSdk = 37
     defaultConfig { minSdk = 29 }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions { jvmTarget = "17" }
 
     testOptions {
         unitTests.all { test ->

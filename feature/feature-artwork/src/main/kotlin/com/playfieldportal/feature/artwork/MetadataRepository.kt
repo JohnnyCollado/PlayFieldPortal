@@ -1,8 +1,8 @@
 package com.playfieldportal.feature.artwork
 
 import android.content.Context
-import coil.ImageLoader
-import coil.request.ImageRequest
+import coil3.ImageLoader
+import coil3.request.ImageRequest
 import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.data.database.dao.SsMediaCacheDao
 import com.playfieldportal.core.data.database.entity.SsMediaCacheEntity

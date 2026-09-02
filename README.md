@@ -688,10 +688,10 @@ to send.
 
 ### 7.1 Tech stack
 
-- **Language:** Kotlin `2.0.0`
-- **UI:** Jetpack Compose (Compose BOM `2024.06.00`), MVVM + state hoisting
+- **Language:** Kotlin `2.4.10`
+- **UI:** Jetpack Compose (Compose BOM `2026.08.00`), MVVM + state hoisting
 - **DI:** Hilt
-- **Database:** Room — **schema v35**, hand-written migrations only (never destructive)
+- **Database:** Room — **schema v40**, hand-written migrations only (never destructive)
 - **Settings:** DataStore Preferences
 - **Networking:** Ktor (artwork / metadata scrapers)
 - **Media:** Media3 (video snaps + in-app player)
@@ -701,7 +701,7 @@ to send.
 - **Native:** an NDK/CMake bridge to the Discord Social SDK (**full flavor only**)
 - **Desktop companion:** Compose Multiplatform Desktop (`:studio`)
 - **Testing:** JUnit 4 + MockK + Turbine
-- **Build:** Gradle `8.14.5` (Kotlin DSL), AGP `8.10.1`
+- **Build:** Gradle `9.7.1` (Kotlin DSL), AGP `9.4.0` (built-in Kotlin), KSP2
 
 ### 7.2 Prerequisites
 
@@ -709,7 +709,7 @@ to send.
   JetBrains Runtime (JBR 17/21)** as the IDE boot runtime.
 - **JDK 17** for command-line Gradle (`JAVA_HOME` pointing at a JDK 17). The desktop `:studio`
   module targets a JVM 17 toolchain.
-- **Android SDK 35** installed, with **NDK + CMake** (required to build the full flavor's native
+- **Android SDK 37** installed (compileSdk 37; targetSdk stays 35), with **NDK + CMake** (required to build the full flavor's native
   Discord bridge). Minimum supported device API is **29** (Android 10).
 
 ### 7.3 Get the code & open it in Android Studio
@@ -721,9 +721,9 @@ cd PlayFieldPortal
 
 1. In Android Studio choose **Open** and select the project root (the folder with
    `settings.gradle.kts`).
-2. Let Gradle sync finish. Android Studio downloads the wrapper (`8.14.5`) and the declared
+2. Let Gradle sync finish. Android Studio downloads the wrapper (`9.7.1`) and the declared
    plugins/dependencies automatically.
-3. If prompted, install the matching **Android SDK 35**, **NDK,** and **CMake** from the SDK
+3. If prompted, install the matching **Android SDK 37**, **NDK,** and **CMake** from the SDK
    Manager.
 
 ### 7.4 Build variants & flavors
@@ -823,7 +823,7 @@ core/
                           .pfptheme codec, color cascade, icon-slot registry, layout spec + adjust
   core-common/            Shared utilities and extensions
   core-domain/            Domain models, repository interfaces
-  core-data/              Room DB (v35), DAOs, DataStore, repository impls, migrations
+  core-data/              Room DB (v40), DAOs, DataStore, repository impls, migrations
   core-ui/                PFPTheme/PFPColors, WaveStyle, PortalIcon, category-icon catalog
 discord/
   discord-native/         NDK/CMake bridge to the Discord Social SDK (full flavor only)

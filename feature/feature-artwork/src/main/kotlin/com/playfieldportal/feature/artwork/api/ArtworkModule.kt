@@ -1,9 +1,10 @@
 package com.playfieldportal.feature.artwork.api
 
 import android.content.Context
-import coil.ImageLoader
-import coil.disk.DiskCache
-import coil.memory.MemoryCache
+import coil3.ImageLoader
+import coil3.disk.DiskCache
+import coil3.memory.MemoryCache
+import coil3.request.crossfade
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -65,8 +66,10 @@ object ArtworkModule {
     fun provideCoilImageLoader(@ApplicationContext context: Context): ImageLoader =
         ImageLoader.Builder(context)
             .memoryCache {
-                MemoryCache.Builder(context)
-                    .maxSizePercent(0.20)
+                // Coil 3 dropped the context argument from the builder; the percentage
+                // helper now takes it instead, since it reads the device memory class.
+                MemoryCache.Builder()
+                    .maxSizePercent(context, 0.20)
                     .build()
             }
             .diskCache {

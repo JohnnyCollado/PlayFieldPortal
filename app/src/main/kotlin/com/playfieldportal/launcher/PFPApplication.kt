@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.work.Configuration
 import com.playfieldportal.core.data.database.seeder.DatabaseInitializer
 import com.playfieldportal.core.data.database.seeder.StartupDataPrep
+import com.playfieldportal.feature.artwork.api.ArtworkImageCache
 import com.playfieldportal.feature.launcher.EmulatorAutoConfigService
 import com.playfieldportal.feature.launcher.EmulatorProfileRepository
 import dagger.hilt.android.HiltAndroidApp
@@ -22,12 +23,16 @@ class PFPApplication : Application(), Configuration.Provider {
     @Inject lateinit var startupDataPrep: StartupDataPrep
     @Inject lateinit var emulatorProfileRepository: EmulatorProfileRepository
     @Inject lateinit var emulatorAutoConfigService: EmulatorAutoConfigService
+    @Inject lateinit var artworkImageCache: ArtworkImageCache
 
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onCreate() {
         super.onCreate()
         initLogging()
+        // Must run before anything can request an image: Coil builds its singleton loader on
+        // first use and will not swap one out afterwards.
+        artworkImageCache.installAsSingleton()
         initDatabase()
         initEmulators()
     }

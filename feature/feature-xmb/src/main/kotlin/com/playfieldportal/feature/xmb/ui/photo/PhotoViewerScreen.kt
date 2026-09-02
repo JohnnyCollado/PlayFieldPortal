@@ -42,7 +42,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.AsyncImage
+import coil3.compose.AsyncImage
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.Photo
 import com.playfieldportal.core.ui.components.XmbHeaderPill

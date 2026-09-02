@@ -1,13 +1,12 @@
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
 }
 
 android {
     namespace  = "com.playfieldportal.discord"
-    compileSdk = 35
+    compileSdk = 37
 
     // Pinned to the NDK version AGP 8.10.x defaults to, so native builds are reproducible across
     // machines and CI. Install with: sdkmanager "ndk;27.0.12077973"
@@ -36,7 +35,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions { jvmTarget = "17" }
 }
 
 dependencies {
@@ -44,9 +42,9 @@ dependencies {
     // settings.gradle.kts. The aar bundles: the Java glue classes (DiscordSocialSdkInit,
     // NativeCalls, AuthenticationActivity), the prebuilt libdiscord_partner_sdk.so per ABI,
     // and the prefab package our CMake links against. Transitively packaged into the app.
-    implementation(mapOf("name" to "discord_partner_sdk", "ext" to "aar"))
+    implementation(":discord_partner_sdk@aar")
     // Krisp noise-cancellation (voice). Kept wired from M0 so the voice milestone needs no build change.
-    implementation(mapOf("name" to "discord_partner_sdk_krisp", "ext" to "aar"))
+    implementation(":discord_partner_sdk_krisp@aar")
     // Custom Tabs — required by the SDK's AuthenticationActivity (browser OAuth path).
     implementation(libs.androidx.browser)
     implementation(libs.timber)

@@ -57,7 +57,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.AsyncImage
+import coil3.compose.AsyncImage
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.components.ControllerPromptBar
 import com.playfieldportal.core.ui.theme.LocalPFPColors

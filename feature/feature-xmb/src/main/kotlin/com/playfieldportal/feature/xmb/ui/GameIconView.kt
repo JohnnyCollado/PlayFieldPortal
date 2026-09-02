@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -43,7 +44,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.aspectRatio
-import coil.compose.AsyncImage
+import coil3.compose.AsyncImage
 import com.playfieldportal.core.domain.model.IconDisplayMode
 import com.playfieldportal.core.ui.icons.GameIconStyle
 import com.playfieldportal.feature.xmb.R
@@ -232,14 +233,15 @@ private fun NaturalAspectArtIcon(
 ) {
     // Size.ORIGINAL is load-bearing: the painter is only drawn AFTER it succeeds, so without
     // an explicit size the request would wait forever for draw-time constraints (blank tile).
-    val painter = coil.compose.rememberAsyncImagePainter(
-        model = coil.request.ImageRequest.Builder(LocalContext.current)
+    val painter = coil3.compose.rememberAsyncImagePainter(
+        model = coil3.request.ImageRequest.Builder(LocalContext.current)
             .data(artworkUri)
-            .size(coil.size.Size.ORIGINAL)
+            .size(coil3.size.Size.ORIGINAL)
             .build()
     )
-    val state = painter.state
-    val ratio = (state as? coil.compose.AsyncImagePainter.State.Success)
+    // Coil 3 exposes the painter state as a StateFlow rather than a plain value.
+    val state by painter.state.collectAsState()
+    val ratio = (state as? coil3.compose.AsyncImagePainter.State.Success)
         ?.painter?.intrinsicSize
         ?.takeIf { it.width > 0f && it.height > 0f }
         ?.let { it.width / it.height }
@@ -264,7 +266,7 @@ private fun NaturalAspectArtIcon(
                     modifier           = Modifier.fillMaxSize(),
                 )
             }
-            state is coil.compose.AsyncImagePainter.State.Error -> PspIcon0Icon(
+            state is coil3.compose.AsyncImagePainter.State.Error -> PspIcon0Icon(
                 artworkUri  = null,   // letter tile — the art is unreadable
                 accentColor = accentColor,
                 title       = title,
