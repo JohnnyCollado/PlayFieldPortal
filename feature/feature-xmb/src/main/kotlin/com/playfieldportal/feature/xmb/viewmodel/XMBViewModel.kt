@@ -493,6 +493,11 @@ data class XMBUiState(
     // are active and no overlay is up — drives the small "Options" hint pill. See
     // XMBViewModel's idle-timer loop for the gate conditions.
     val showContextMenuHint: Boolean = false,
+    // True when the user has been idle inside the App Drawer with a controller — the drawer's own
+    // contextual hint bar (see shouldShowAppDrawerHint). Deliberately a separate flag from
+    // showContextMenuHint: the drawer is a blocking overlay, so the XMB pill's gate is false
+    // exactly while the drawer is open; AppDrawerScreen renders its own pill from this flag.
+    val showAppDrawerHint: Boolean = false,
     // User setting (Display ▸ Context Menu Hint). When false the idle hint never shows.
     val contextMenuHintEnabled: Boolean = true,
     // User-configured idle delay in seconds, clamped to 1..5 and defaulting to the original 2.5s.
@@ -931,6 +936,28 @@ fun shouldShowContextMenuHint(state: XMBUiState, idleMs: Long): Boolean =
         !state.hasBlockingOverlay &&
         state.activeContextMenu == null &&
         (state.focusedItemHasContextMenu || state.canSortCurrentList) &&
+        idleMs >= (state.contextMenuHintDelaySeconds * 1_000f).toLong()
+
+/**
+ * Pure decision: should the App Drawer's contextual controller hint bar be visible right now?
+ * Top-level so unit tests can exercise it without a ViewModel instance. Gates:
+ *  - the most recent input came from a controller (not touch);
+ *  - the App Drawer is actually open ([XMBUiState.activeAppDrawerFilter] non-null);
+ *  - no context menu is up (one can never sit over the drawer, but the gate stays symmetric with
+ *    [shouldShowContextMenuHint]);
+ *  - the idle delay [idleMs] has elapsed.
+ *
+ * Deliberately separate from [shouldShowContextMenuHint]: the drawer is a blocking overlay
+ * ([XMBUiState.hasBlockingOverlay]), so the XMB pill's gate is false whenever the drawer is open —
+ * and this gate is true only then. Both share the same idle clock and the
+ * contextMenuHintEnabled / contextMenuHintDelaySeconds settings, so Display ▸ Context Menu Hint
+ * toggles the drawer hint too.
+ */
+fun shouldShowAppDrawerHint(state: XMBUiState, idleMs: Long): Boolean =
+    state.contextMenuHintEnabled &&
+        !state.lastInputWasTouch &&
+        state.activeAppDrawerFilter != null &&
+        state.activeContextMenu == null &&
         idleMs >= (state.contextMenuHintDelaySeconds * 1_000f).toLong()
 
 data class XMBItem(
@@ -4118,12 +4145,25 @@ class XMBViewModel @Inject constructor(
             while (isActive) {
                 delay(IDLE_HINT_POLL_MS)
                 val s = _uiState.value
+                val idleMs = SystemClock.elapsedRealtime() - lastInteractionMs
                 val shouldShow = com.playfieldportal.feature.xmb.viewmodel.shouldShowContextMenuHint(
                     state = s,
-                    idleMs = SystemClock.elapsedRealtime() - lastInteractionMs,
+                    idleMs = idleMs,
                 )
-                if (shouldShow != s.showContextMenuHint) {
-                    _uiState.update { it.copy(showContextMenuHint = shouldShow) }
+                // Same clock, second consumer: the App Drawer's own pill. The two gates are mutually
+                // exclusive (the drawer is a blocking overlay, so the XMB gate is false while it is
+                // open), but both ride this poller so there is a single idle source of truth.
+                val shouldShowDrawer = com.playfieldportal.feature.xmb.viewmodel.shouldShowAppDrawerHint(
+                    state = s,
+                    idleMs = idleMs,
+                )
+                if (shouldShow != s.showContextMenuHint || shouldShowDrawer != s.showAppDrawerHint) {
+                    _uiState.update {
+                        it.copy(
+                            showContextMenuHint = shouldShow,
+                            showAppDrawerHint = shouldShowDrawer,
+                        )
+                    }
                 }
             }
         }
@@ -4364,8 +4404,11 @@ class XMBViewModel @Inject constructor(
                 return
             }
             state.activeAppDrawerFilter != null -> {
-                if (action == GamepadAction.BACK) onCloseAppDrawer()
-                else _uiState.update { it.copy(pendingDrawerAction = action) }
+                // Every action — including BACK — is forwarded to the drawer. The drawer resolves
+                // BACK itself, the same way Game/App Detail do: while its options menu or
+                // uninstall confirm is open, BACK pops that inner overlay (never the drawer);
+                // only a BACK on the plain grid closes the drawer (via onBack → onCloseAppDrawer).
+                _uiState.update { it.copy(pendingDrawerAction = action) }
                 return
             }
             state.activeDiscordLogin -> {
@@ -5841,19 +5884,19 @@ class XMBViewModel @Inject constructor(
      *  [lastInteractionMs] so the idle context-menu hint resets. */
     fun markTouchInput() {
         lastInteractionMs = SystemClock.elapsedRealtime()
-        // One write for both flags: the hint must clear on the SAME frame as the input (see
+        // One write for both flags: the hints must clear on the SAME frame as the input (see
         // noteInteraction), and a second update() here would cost an extra recomposition.
         _uiState.update {
-            if (it.lastInputWasTouch && !it.showContextMenuHint) it
-            else it.copy(lastInputWasTouch = true, showContextMenuHint = false)
+            if (it.lastInputWasTouch && !it.showContextMenuHint && !it.showAppDrawerHint) it
+            else it.copy(lastInputWasTouch = true, showContextMenuHint = false, showAppDrawerHint = false)
         }
     }
 
     private fun markControllerInput() {
         lastInteractionMs = SystemClock.elapsedRealtime()
         _uiState.update {
-            if (!it.lastInputWasTouch && !it.showContextMenuHint) it
-            else it.copy(lastInputWasTouch = false, showContextMenuHint = false)
+            if (!it.lastInputWasTouch && !it.showContextMenuHint && !it.showAppDrawerHint) it
+            else it.copy(lastInputWasTouch = false, showContextMenuHint = false, showAppDrawerHint = false)
         }
     }
 
@@ -7487,6 +7530,13 @@ class XMBViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
+            // User-adjustable rest gate (Artwork ▸ Art Preferences ▸ Video Snap Delay). Each new
+            // rest starts from the current value; the in-flight delay simply runs out unchanged.
+            iconDisplayPreferences.lingerDelaySecondsFlow.collect { seconds ->
+                icon1LingerMs = (seconds * 1_000f).toLong()
+            }
+        }
+        viewModelScope.launch {
             gameLaunchPreferences.directLaunchFlow.collect { direct ->
                 _uiState.update { it.copy(directLaunch = direct) }
             }
@@ -7496,6 +7546,10 @@ class XMBViewModel @Inject constructor(
     // ── ICON1 video snaps ─────────────────────────────────────────────────────
 
     @Volatile private var animatedIconsEnabled = true
+
+    // Live rest-before-play gate, fed by IconDisplayPreferences.lingerDelaySecondsFlow; starts at
+    // the PSP-faithful 1.5 s and tracks the user's Video Snap Delay setting.
+    @Volatile private var icon1LingerMs = ICON1_LINGER_MS
 
     /**
      * PSP ICON1 choreography with a battery conscience: when the cursor RESTS on a game whose
@@ -7519,7 +7573,7 @@ class XMBViewModel @Inject constructor(
                         _uiState.update { it.copy(focusedGameVideo = null) }
                     }
                     if (gameId == null) return@collectLatest
-                    kotlinx.coroutines.delay(ICON1_LINGER_MS)
+                    kotlinx.coroutines.delay(icon1LingerMs)
                     if (!videoSnapsAllowed()) {
                         Timber.d("ICON1: gates vetoed playback for game $gameId (toggle/battery/thermal)")
                         return@collectLatest
@@ -7672,8 +7726,9 @@ class XMBViewModel @Inject constructor(
             floatPreferencesKey("interface_context_menu_hint_delay_seconds")
         // Must match DisplaySettingsViewModel.KEY_TOUCH_SENSITIVITY — both read/write this pref.
         private val KEY_TOUCH_SENSITIVITY = stringPreferencesKey("interface_touch_sensitivity")
-        // ICON1 linger gate — matches the PSP's rest-then-animate choreography and guarantees
-        // scrolling through the row never spins up a video decoder.
+        // ICON1 linger default (1.5 s) — the user can adjust the delay under Artwork ▸ Art
+        // Preferences ▸ Video Snap Delay. Rest-then-animate matches the PSP's choreography and
+        // guarantees scrolling through the row never spins up a video decoder.
         private const val ICON1_LINGER_MS = 1_500L
         private const val SETUP_ITEM_ID = "library_setup"
         private const val NO_CONSOLES_ITEM_ID = "no_consoles"

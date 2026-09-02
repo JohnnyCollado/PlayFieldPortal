@@ -135,6 +135,14 @@ internal val LocalSettingsScrollToTop =
 internal val LocalSettingsReportFocused =
     compositionLocalOf<(FocusRequester) -> Unit> { {} }
 
+// Slider nodes (SettingsSliderRow): a normal navigable row that becomes value-adjustable after
+// SELECT. The scaffold holds the node of the slider currently in adjust mode and hands LEFT/RIGHT
+// to it; SELECT/BACK exit adjust (BACK is consumed, never popping the screen); UP/DOWN exit adjust
+// and then move normally. Null while no slider is being adjusted.
+internal val LocalSettingsEnterSliderMode =
+    compositionLocalOf<(SettingsSliderNode) -> Unit> { {} }
+internal val LocalSettingsSliderAdjusting = compositionLocalOf { false }
+
 // Rows report leaving composition. If the FOCUSED row is removed (a list item deleted, a
 // section re-rendered), Compose silently clears focus and the menu goes dead until the user
 // presses a direction — the scaffold uses this signal to refocus the nearest surviving row.
@@ -215,6 +223,10 @@ fun SettingsScaffold(
     // Declarative navigation model: owns the focused key, ordered movement and selection.
     // Rows feed it items via the ordered registration list below.
     val navigationState = remember { ControllerNavigationState() }
+    // The slider currently in adjust mode (see LocalSettingsEnterSliderMode). Written by the
+    // focused row's SELECT and read by the action handler below + the adjusting flag provided
+    // down to rows so the active slider can paint itself.
+    val sliderNodeState = remember { mutableStateOf<SettingsSliderNode?>(null) }
     val cursorVisible = remember { mutableStateOf(true) }
     // Root-space centre of the visible content viewport. Touch scrolling hides the cursor;
     // the next controller action reanchors focus to the closest visible node instead of resuming
@@ -447,6 +459,30 @@ fun SettingsScaffold(
             onConsumed()
             return@LaunchedEffect
         }
+        // ── Slider adjust mode ──────────────────────────────────────────────
+        // A focused slider node (SettingsSliderRow) captures input after SELECT: LEFT/RIGHT step
+        // its value (the gamepad layer supplies auto-repeat for held buttons); SELECT or BACK
+        // exit back to row navigation — BACK is consumed here, so it never pops the settings
+        // screen while a slider is being adjusted. UP/DOWN exit adjust and fall through to the
+        // ordinary vertical movement below.
+        val adjustingSlider = sliderNodeState.value
+        if (adjustingSlider != null) {
+            when (pendingAction) {
+                GamepadAction.NAVIGATE_LEFT  -> adjustingSlider.onStep(-1)
+                GamepadAction.NAVIGATE_RIGHT -> adjustingSlider.onStep(1)
+                GamepadAction.SELECT,
+                GamepadAction.BACK -> sliderNodeState.value = null
+                GamepadAction.NAVIGATE_UP,
+                GamepadAction.NAVIGATE_DOWN -> sliderNodeState.value = null
+                else -> Unit
+            }
+            if (pendingAction != GamepadAction.NAVIGATE_UP &&
+                pendingAction != GamepadAction.NAVIGATE_DOWN
+            ) {
+                onConsumed()
+                return@LaunchedEffect
+            }
+        }
         when (pendingAction) {
             // Explicit, clamped vertical navigation: focus the nearest registered row above/below
             // the current one by screen-Y. At the first/last row there is no neighbour, so focus
@@ -514,6 +550,9 @@ fun SettingsScaffold(
             cursorVisible.value = false
             touchScrolled.value = true
             navigationState.markTouchInput()
+            // Any pointer activity hands control back to touch: a finger on the slider (or
+            // anywhere else) ends controller adjust mode.
+            sliderNodeState.value = null
             onTouchInput()
         },
         LocalSettingsFocusRegistry provides focusRegistry,
@@ -540,6 +579,8 @@ fun SettingsScaffold(
                 refocusTick++
             }
         },
+        LocalSettingsEnterSliderMode provides { node -> sliderNodeState.value = node },
+        LocalSettingsSliderAdjusting provides (sliderNodeState.value != null),
         LocalSettingsRowActions provides rowActionFrs,
         LocalSettingsScrollStateRegistrar provides { state -> contentScrollState.value = state },
     ) {

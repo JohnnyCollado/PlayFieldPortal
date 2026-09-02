@@ -456,12 +456,15 @@ fun XMBShell(
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize(),
                         )
+                        // Legibility scrim over the artwork. Deliberately light-handed: heavier
+                        // alphas dim the art too much, so darker photos lose their vibrancy — the
+                        // icons/labels carry their own contrast (tiles, glows, text shadows).
                         Box(
                             Modifier.fillMaxSize().background(
                                 Brush.horizontalGradient(
-                                    0.0f to Color(0xCC05050C),
-                                    0.5f to Color(0x9905050C),
-                                    1.0f to Color(0xE605050C),
+                                    0.0f to Color(0xA605050C),
+                                    0.5f to Color(0x8005050C),
+                                    1.0f to Color(0xBF05050C),
                                 )
                             )
                         )
@@ -791,6 +794,12 @@ fun XMBShell(
                     onBack = onCloseAppDrawer,
                     pendingGamepadAction = uiState.pendingDrawerAction,
                     onGamepadActionConsumed = onDrawerActionConsumed,
+                    // The drawer renders its own idle controller hint pill (same fade system as
+                    // the XMB's ContextMenuHint — see shouldShowAppDrawerHint).
+                    showControllerHint = uiState.showAppDrawerHint,
+                    // Drawer touches are reported to the shared input-source tracker so a finger
+                    // tap/browse suppresses that hint exactly like touch on the XMB does.
+                    onTouchInteraction = onTouchInput,
                     modifier = Modifier.fillMaxSize(),
                 )
             }

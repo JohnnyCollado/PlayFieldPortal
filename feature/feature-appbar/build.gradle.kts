@@ -28,6 +28,10 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.coil.compose)
     implementation(libs.accompanist.drawablepainter)
+    // Compose @Preview rendering: Studio's Layoutlib loads androidx.compose.ui.tooling.
+    // ComposeViewAdapter from ui-tooling when rendering a preview declared in this module.
+    // (ui-tooling-preview — the @Preview annotations — already rides in bundles.compose.)
+    debugImplementation(libs.compose.ui.tooling)
     ksp(libs.hilt.compiler)
 
     implementation(project(":core:core-common"))

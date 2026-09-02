@@ -263,6 +263,53 @@ class SettingsScaffoldNavigationTest {
     }
 
     @Test
+    fun `slider node steps with left right after select and back returns to navigation`() {
+        var backCount = 0
+        var rowSelects = 0
+        val volume = mutableStateOf(0.4f)
+        showScreen(onBack = { backCount++ }) {
+            SettingsRow(label = "Theme", onClick = { rowSelects++ })
+            SettingsSliderRow(
+                label = "Volume",
+                sublabel = "Test volume",
+                value = volume.value,
+                onValueChange = { volume.value = it },
+                valueRange = 0f..1f,
+                steps = 4,
+                valueFormatter = { "${it}" },
+            )
+            SettingsRow(label = "Brightness", onClick = {})
+        }
+
+        // Sliders are navigable rows but never claim the screen's initial focus.
+        assertFocusedRow("Theme")
+        press(GamepadAction.NAVIGATE_DOWN)
+        assertFocusedRow("Volume")
+
+        // SELECT enters adjust mode: LEFT/RIGHT step the value (0.4 → 0.6 → 0.8 → 0.6) and the
+        // cursor stays on the slider row while it is being adjusted.
+        press(GamepadAction.SELECT)
+        press(GamepadAction.NAVIGATE_RIGHT)
+        press(GamepadAction.NAVIGATE_RIGHT)
+        press(GamepadAction.NAVIGATE_LEFT)
+        assertEquals(0.6f, volume.value, 0.001f)
+        assertFocusedRow("Volume")
+
+        // BACK while adjusting only exits adjust mode — it must NOT trigger the screen's back
+        // handler (adjusting never pops the settings screen).
+        press(GamepadAction.BACK)
+        assertEquals(0, backCount)
+
+        // Ordinary row navigation is restored: DOWN walks off the slider to the next row.
+        press(GamepadAction.NAVIGATE_DOWN)
+        assertFocusedRow("Brightness")
+
+        // And BACK outside adjust mode remains the screen back handler.
+        press(GamepadAction.BACK)
+        assertEquals(1, backCount)
+    }
+
+    @Test
     fun `first dpad press after a touch drag re-anchors to the viewport centre without moving`() {
         // A long, scrollable list so the viewport centre lands mid-list — not on the stale
         // pre-drag row at the top.

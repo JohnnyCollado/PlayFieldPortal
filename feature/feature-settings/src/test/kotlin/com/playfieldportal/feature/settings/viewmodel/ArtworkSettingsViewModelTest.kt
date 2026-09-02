@@ -42,6 +42,7 @@ class ArtworkSettingsViewModelTest {
     private lateinit var scrapePreferences: ArtworkScrapePreferences
     private lateinit var igdbApi: IgdbApi
     private lateinit var screenScraperApi: com.playfieldportal.feature.artwork.api.ScreenScraperApi
+    private lateinit var iconDisplayPreferences: com.playfieldportal.core.data.repository.IconDisplayPreferences
     private lateinit var viewModel: ArtworkSettingsViewModel
 
     @Before
@@ -59,6 +60,11 @@ class ArtworkSettingsViewModelTest {
         every { metadataKeyProvider.igdbClientIdFlow }   returns flowOf(null)
         every { metadataKeyProvider.ssUsernameFlow }     returns flowOf(null)
         every { scrapePreferences.preferSteamGridDbHeroesFlow } returns flowOf(false)
+        iconDisplayPreferences = mockk(relaxed = true) {
+            every { modeFlow } returns flowOf(com.playfieldportal.core.domain.model.IconDisplayMode.DEFAULT)
+            every { animatedIconsFlow } returns flowOf(true)
+            every { lingerDelaySecondsFlow } returns flowOf(1.5f)
+        }
         coEvery { artworkRepository.computeStatus() }    returns ArtworkStatus(total = 10, complete = 8, missing = 2)
         coEvery { scrapePreferences.getOptions() }       returns ScrapeOptions()
     }
@@ -82,10 +88,7 @@ class ArtworkSettingsViewModelTest {
         artworkFolderRepository = mockk(relaxed = true) {
             coEvery { getTreeUri() } returns null
         },
-        iconDisplayPreferences = mockk(relaxed = true) {
-            every { modeFlow } returns flowOf(com.playfieldportal.core.domain.model.IconDisplayMode.DEFAULT)
-            every { animatedIconsFlow } returns flowOf(true)
-        },
+        iconDisplayPreferences = iconDisplayPreferences,
     )
 
     // uiState is a WhileSubscribed StateFlow, so it only reflects upstream (the credential flows +
@@ -220,6 +223,26 @@ class ArtworkSettingsViewModelTest {
 
         assertFalse(viewModel.uiState.value.downloadLogos)
         coVerify { scrapePreferences.setDownloadClearLogos(false) }
+    }
+
+    @Test
+    fun `icon1 linger delay defaults to 1 point 5 seconds`() = runTest(testDispatcher) {
+        viewModel = activeViewModel()
+        advanceUntilIdle()
+
+        assertEquals(1.5f, viewModel.uiState.value.icon1LingerDelaySeconds)
+    }
+
+    @Test
+    fun `setIcon1LingerDelaySeconds updates state and persists`() = runTest(testDispatcher) {
+        viewModel = activeViewModel()
+        advanceUntilIdle()
+
+        viewModel.setIcon1LingerDelaySeconds(3.5f)
+        advanceUntilIdle()
+
+        assertEquals(3.5f, viewModel.uiState.value.icon1LingerDelaySeconds)
+        coVerify { iconDisplayPreferences.setLingerDelaySeconds(3.5f) }
     }
 
     // ── IGDB credential test ───────────────────────────────────────────────────

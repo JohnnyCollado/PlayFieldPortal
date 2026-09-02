@@ -1,26 +1,16 @@
 package com.playfieldportal.feature.xmb.ui
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.domain.model.ControllerDisplayType
 import com.playfieldportal.core.domain.model.GamepadAction
-import com.playfieldportal.core.ui.components.ControllerPromptBar
+import com.playfieldportal.core.ui.components.ControllerHintBar
 import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.components.ControllerPromptStyle
 import com.playfieldportal.core.ui.components.LocalControllerPromptStyle
@@ -44,6 +34,9 @@ import com.playfieldportal.core.ui.preview.PfpPreview
 // Visibility is driven entirely by XMBUiState.showContextMenuHint (the shell/detail screens
 // fade it in but remove it immediately when it becomes ineligible); this composable only renders
 // its content.
+//
+// The pill chrome itself is the shared core-ui [ControllerHintBar] — the App Drawer renders the
+// same pill for its own actions (see feature-appbar's AppDrawerHintBar).
 
 @Composable
 fun ContextMenuHint(
@@ -57,28 +50,7 @@ fun ContextMenuHint(
         if (showSort) add(ControllerPromptItem(GamepadAction.CHANGE_SORT, "Sort"))
         if (showOptions) add(ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"))
     }
-    if (items.isEmpty()) return
-    ControllerPromptBar(
-        items = items,
-        modifier = modifier
-            .background(
-                color = Color.Black.copy(alpha = 0.5f),
-                shape = RoundedCornerShape(10.dp),
-            )
-            .padding(horizontal = 14.dp, vertical = 8.dp),
-        labelColor = Color.White,
-        labelStyle = TextStyle(
-            fontSize = 14.sp,
-            fontWeight = FontWeight.SemiBold,
-            shadow = Shadow(
-                color = Color.Black.copy(alpha = 0.75f),
-                offset = Offset(0f, 2f),
-                blurRadius = 4f,
-            ),
-        ),
-        glyphSize = 20.dp,
-        arrangement = Arrangement.spacedBy(16.dp),
-    )
+    ControllerHintBar(items = items, modifier = modifier)
 }
 
 // ── Previews ──────────────────────────────────────────────────────────────────

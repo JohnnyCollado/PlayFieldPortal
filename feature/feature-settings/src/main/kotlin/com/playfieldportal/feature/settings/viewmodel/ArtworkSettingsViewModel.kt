@@ -52,6 +52,9 @@ data class ArtworkSettingsUiState(
         com.playfieldportal.core.domain.model.IconDisplayMode.DEFAULT,
     // ICON1 video snaps in the focused icon slot (Custom Icon mode only).
     val animatedIcons: Boolean = true,
+    // How long the cursor must rest on a game before its video snap plays (Video Snap Delay,
+    // under the Animated Icons toggle). Seconds, clamped 1..5; default 1.5 matches the PSP.
+    val icon1LingerDelaySeconds: Float = 1.5f,
     val downloadHeroes: Boolean = true,
     val downloadLogos: Boolean = true,
     val downloadManuals: Boolean = true,
@@ -86,6 +89,11 @@ class ArtworkSettingsViewModel @Inject constructor(
         viewModelScope.launch {
             iconDisplayPreferences.animatedIconsFlow.collect { enabled ->
                 _extra.update { it.copy(animatedIcons = enabled) }
+            }
+        }
+        viewModelScope.launch {
+            iconDisplayPreferences.lingerDelaySecondsFlow.collect { seconds ->
+                _extra.update { it.copy(icon1LingerDelaySeconds = seconds) }
             }
         }
         // Startup grant check (§17): a configured folder whose grant died gets a visible
@@ -313,6 +321,12 @@ class ArtworkSettingsViewModel @Inject constructor(
     fun setAnimatedIcons(enabled: Boolean) {
         _extra.update { it.copy(animatedIcons = enabled) }
         viewModelScope.launch { iconDisplayPreferences.setAnimatedIcons(enabled) }
+    }
+
+    fun setIcon1LingerDelaySeconds(seconds: Float) {
+        val clamped = seconds.coerceIn(1f, 5f)
+        _extra.update { it.copy(icon1LingerDelaySeconds = clamped) }
+        viewModelScope.launch { iconDisplayPreferences.setLingerDelaySeconds(clamped) }
     }
 
     fun setDownloadHeroes(enabled: Boolean) {

@@ -12,8 +12,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -184,29 +182,16 @@ fun DisplaySettingsScreen(
                 onToggle = { viewModel.setContextMenuHintEnabled(it) },
             )
 
-            Column(modifier = Modifier.padding(horizontal = 48.dp, vertical = 8.dp)) {
-                Text(
-                    text = "Hint Delay",
-                    color = SettingsText,
-                    fontSize = 14.sp,
-                )
-                Text(
-                    text = "Show after ${formatHintDelay(state.contextMenuHintDelaySeconds)} of inactivity (1–5 seconds)",
-                    color = SettingsSubtext,
-                    fontSize = 12.sp,
-                )
-                Slider(
-                    value = state.contextMenuHintDelaySeconds,
-                    onValueChange = viewModel::setContextMenuHintDelaySeconds,
-                    valueRange = 1f..5f,
-                    steps = 7,
-                    enabled = state.contextMenuHintEnabled,
-                    colors = SliderDefaults.colors(
-                        thumbColor = SettingsAccent,
-                        activeTrackColor = SettingsAccent,
-                    ),
-                )
-            }
+            SettingsSliderRow(
+                label     = "Hint Delay",
+                sublabel  = "Show after ${formatHintDelay(state.contextMenuHintDelaySeconds)} of inactivity (1–5 seconds)",
+                value     = state.contextMenuHintDelaySeconds,
+                onValueChange = viewModel::setContextMenuHintDelaySeconds,
+                valueRange = 1f..5f,
+                steps     = 7,
+                enabled  = state.contextMenuHintEnabled,
+                valueFormatter = { formatHintDelay(it) },
+            )
 
             SettingsGroup("Performance")
 

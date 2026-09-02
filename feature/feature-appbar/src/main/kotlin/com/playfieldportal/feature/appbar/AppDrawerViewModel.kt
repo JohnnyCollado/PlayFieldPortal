@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-const val GRID_COLUMNS = 5
+const val GRID_COLUMNS = 6
 
 // The Android Memory Card's platform id, and the sentinel platform for rows that only back an
 // app's artwork/favorites/collections without placing it in the library (mirrors XMBViewModel).
@@ -248,12 +248,27 @@ class AppDrawerViewModel @Inject constructor(
                 GamepadAction.NAVIGATE_UP   -> _uiState.update { s -> s.copy(menuIndex = (s.menuIndex - 1 + actions.size) % actions.size) }
                 GamepadAction.NAVIGATE_DOWN -> _uiState.update { s -> s.copy(menuIndex = (s.menuIndex + 1) % actions.size) }
                 GamepadAction.SELECT        -> onMenuAction(actions[state.menuIndex.coerceIn(0, actions.size - 1)])
-                // Hold again, or Y, dismisses the menu (BACK closes the whole drawer via XMBViewModel).
-                GamepadAction.OPEN_CONTEXT_MENU -> closeAppMenu()
-                // X in menu context: dismiss menu too
-                GamepadAction.CHANGE_SORT -> closeAppMenu()
+                // The options module holds controller focus while it's up; BACK is its close
+                // gesture and only pops the menu — XMBViewModel forwards BACK here, so it never
+                // closes the drawer while the menu is open (the drawer only closes on a BACK on
+                // the plain grid). Hold/Y and X dismiss the menu too, as before.
+                GamepadAction.BACK               -> closeAppMenu()
+                GamepadAction.OPEN_CONTEXT_MENU  -> closeAppMenu()
+                GamepadAction.CHANGE_SORT        -> closeAppMenu()
                 else -> Unit
             }
+            return
+        }
+
+        // L1/R1 — cycle through the filter tabs. Checked BEFORE the empty-grid guard on purpose:
+        // a filter with zero apps (Recently Used before usage access is granted, or any list
+        // emptied by a search) must never strand the cursor — category cycling always works, so
+        // the user can always move out of an empty section.
+        if (action == GamepadAction.PREV_CATEGORY || action == GamepadAction.NEXT_CATEGORY) {
+            val filters = AppFilter.values()
+            val idx = filters.indexOf(state.activeFilter)
+            val target = if (action == GamepadAction.PREV_CATEGORY) idx - 1 else idx + 1
+            if (target in filters.indices) setFilter(filters[target])
             return
         }
 
@@ -286,19 +301,7 @@ class AppDrawerViewModel @Inject constructor(
                 val app = state.visibleApps.getOrNull(cur)
                 if (app != null) launchApp(app.packageName)
             }
-            // Y / Triangle — open options for the currently focused app
-            GamepadAction.OPEN_CONTEXT_MENU -> openAppMenuForSelected()
-            // L1 / R1 — cycle through filter tabs (App Drawer only)
-            GamepadAction.PREV_CATEGORY -> {
-                val filters = AppFilter.values()
-                val idx = filters.indexOf(state.activeFilter)
-                if (idx > 0) setFilter(filters[idx - 1])
-            }
-            GamepadAction.NEXT_CATEGORY -> {
-                val filters = AppFilter.values()
-                val idx = filters.indexOf(state.activeFilter)
-                if (idx < filters.size - 1) setFilter(filters[idx + 1])
-            }
+            // (L1/R1 category cycling is handled above the empty-grid guard.)
             else -> Unit
         }
     }

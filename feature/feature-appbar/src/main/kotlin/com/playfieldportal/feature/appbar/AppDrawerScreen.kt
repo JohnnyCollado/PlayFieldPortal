@@ -1,36 +1,20 @@
 package com.playfieldportal.feature.appbar
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.itemsIndexed
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -40,50 +24,48 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.core.graphics.drawable.toDrawable
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.google.accompanist.drawablepainter.DrawablePainter
-import com.playfieldportal.core.ui.components.ControllerPromptBar
-import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.domain.model.GamepadAction
-import com.playfieldportal.core.ui.R
+import com.playfieldportal.core.domain.model.lightBackgroundAnchors
 import com.playfieldportal.core.ui.preview.CombinedPreviews
 import com.playfieldportal.core.ui.preview.PfpPreview
+import com.playfieldportal.core.ui.theme.PFPColors
+import com.playfieldportal.core.ui.theme.StorefrontColors
 import com.playfieldportal.core.ui.theme.deriveStorefrontColors
 import com.playfieldportal.core.ui.theme.menuCursorEdge
-import kotlinx.coroutines.flow.distinctUntilChanged
+import com.playfieldportal.feature.appbar.appdrawer.AppDrawerCategoryTabs
+import com.playfieldportal.feature.appbar.appdrawer.AppDrawerGrid
+import com.playfieldportal.feature.appbar.appdrawer.AppDrawerHeader
+import com.playfieldportal.feature.appbar.appdrawer.AppDrawerHintBar
+import com.playfieldportal.feature.appbar.appdrawer.AppDrawerOptions
+import com.playfieldportal.feature.appbar.appdrawer.UninstallConfirmDialog
 
-// ── Layout constants ────────────────────────────────────────────────────────────
-private val RAIL_WIDTH = 180.dp
-private val HEADER_HEIGHT = 56.dp
-private val FOOTER_HEIGHT = 48.dp
-private val TILE_CORNER = 2.dp
-private val TILE_BORDER = 1.dp
+// ── PSP-era grid App Drawer ───────────────────────────────────────────────────
+//
+// Grid-centric and artwork-first: a header/breadcrumb, a horizontal category tab row, and a
+// 6-column application grid over an accent-derived gradient (see deriveStorefrontColors). The
+// controller hint pill floats as an overlay so grid geometry never shifts when it fades in/out;
+// the pre-redesign storefront layout (vertical rail + command bar) is preserved for the future
+// RSS Channels feature in the appbar/storefront package.
 
 // ── Entry point ─────────────────────────────────────────────────────────────────
 
@@ -91,26 +73,45 @@ private val TILE_BORDER = 1.dp
 @Composable
 fun AppDrawerScreen(
     onBack: () -> Unit,
+    modifier: Modifier = Modifier,
     initialFilter: AppFilter = AppFilter.ALL,
     pendingGamepadAction: GamepadAction? = null,
     onGamepadActionConsumed: () -> Unit = {},
-    modifier: Modifier = Modifier,
+    /** Idle-controller gate: when true (and no drawer overlay is open) the hint pill fades in. */
+    showControllerHint: Boolean = false,
+    /** Any touch interaction inside the drawer — reported to the XMB input-source tracker so a
+     *  finger tap/browse suppresses the controller hint the same way it does on the XMB. */
+    onTouchInteraction: () -> Unit = {},
     viewModel: AppDrawerViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var searchActive by remember { mutableStateOf(false) }
     val keyboard = LocalSoftwareKeyboardController.current
+    // Platform variant on purpose: this Compose BOM doesn't provide the lifecycle-runtime-compose
+    // LocalLifecycleOwner (reading it crashes at composition — see XMBShell's note on the same
+    // workaround), so the deprecated platform local is the one that is actually populated.
+    @Suppress("DEPRECATION")
     val lifecycleOwner = LocalLifecycleOwner.current
 
     LaunchedEffect(pendingGamepadAction) {
         if (pendingGamepadAction != null) {
             val overlayOpen = state.menuApp != null || state.confirmUninstall != null
-            if (!overlayOpen && (pendingGamepadAction == GamepadAction.CHANGE_SORT)) {
-                // X / Square — toggle search (App Drawer remap)
-                searchActive = !searchActive
-                if (!searchActive) viewModel.setSearchQuery("")
-            } else {
-                viewModel.handleGamepadAction(pendingGamepadAction)
+            when {
+                // An inner drawer overlay (options menu / uninstall confirm) is up: BACK goes to
+                // the drawer ViewModel, which pops that overlay. XMBViewModel forwards every
+                // action — including BACK — to the drawer, so BACK here NEVER closes the drawer
+                // itself while an overlay is open.
+                overlayOpen -> viewModel.handleGamepadAction(pendingGamepadAction)
+                // BACK on the plain grid closes the drawer (its only controller escape).
+                pendingGamepadAction == GamepadAction.BACK -> onBack()
+                pendingGamepadAction == GamepadAction.CHANGE_SORT -> {
+                    // X / Square — toggle search (App Drawer remap). Deliberately NOT routed
+                    // through onSearchToggle: that path reports touch input, and this is
+                    // controller input.
+                    searchActive = !searchActive
+                    if (!searchActive) viewModel.setSearchQuery("")
+                }
+                else -> viewModel.handleGamepadAction(pendingGamepadAction)
             }
             onGamepadActionConsumed()
         }
@@ -134,15 +135,34 @@ fun AppDrawerScreen(
     AppDrawerContent(
         state = state,
         searchActive = searchActive,
-        onBack = onBack,
+        showControllerHint = showControllerHint,
+        // The back breadcrumb is a touch target; controller BACK closes the drawer at the XMB
+        // layer (never through this lambda), so reporting touch here is always accurate.
+        onBack = {
+            onTouchInteraction()
+            onBack()
+        },
         onSearchQueryChange = { viewModel.setSearchQuery(it) },
-        onSearchToggle = { searchActive = it; if (!it) viewModel.setSearchQuery("") },
+        onSearchToggle = { active ->
+            onTouchInteraction()
+            searchActive = active
+            if (!active) viewModel.setSearchQuery("")
+        },
         onSearchDone = { keyboard?.hide() },
-        onFilterSelected = { viewModel.setFilter(it) },
-        onAppTapped = { viewModel.onAppTapped(it) },
+        onFilterSelected = { filter ->
+            onTouchInteraction()
+            viewModel.setFilter(filter)
+        },
+        onAppTapped = { index ->
+            onTouchInteraction()
+            viewModel.onAppTapped(index)
+        },
         onAppLaunched = { viewModel.launchApp(it) },
         onAppMenu = { viewModel.openAppMenu(it) },
-        onTouchBrowse = { viewModel.onTouchBrowse(it) },
+        onTouchBrowse = { index ->
+            onTouchInteraction()
+            viewModel.onTouchBrowse(index)
+        },
         onMenuAction = { viewModel.onMenuAction(it) },
         onCloseMenu = { viewModel.closeAppMenu() },
         onConfirmUninstall = { viewModel.confirmUninstall() },
@@ -159,6 +179,7 @@ fun AppDrawerScreen(
 private fun AppDrawerContent(
     state: AppDrawerUiState,
     searchActive: Boolean,
+    showControllerHint: Boolean,
     onBack: () -> Unit,
     onSearchQueryChange: (String) -> Unit,
     onSearchToggle: (Boolean) -> Unit,
@@ -193,17 +214,17 @@ private fun AppDrawerContent(
     Box(
         modifier = modifier
             .fillMaxSize()
+            // Deep upper (header) region easing into the rich midtone grid region — accent
+            // derived, at ~0.94 alpha so the XMB wave still reads through.
             .background(
                 Brush.verticalGradient(
-                    0f to sf.chromeTop.copy(alpha = 0.94f),
-                    0.35f to sf.chromeBottom.copy(alpha = 0.94f),
-                    1f to sf.chromeTop.copy(alpha = 0.94f),
+                    listOf(sf.backgroundDeep, sf.backgroundMid),
                 )
             ),
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // ── Header / breadcrumb bar ──────────────────────────────────────
-            StorefrontHeader(
+            // ── Header / breadcrumb bar ──────────────────────────────────
+            AppDrawerHeader(
                 categoryLabel = state.activeFilter.label,
                 searchQuery = state.searchQuery,
                 searchActive = searchActive,
@@ -214,7 +235,7 @@ private fun AppDrawerContent(
                 onBack = onBack,
                 colors = sf,
             )
-            // Thin cyan divider under header
+            // Thin accent divider under the header
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -222,81 +243,69 @@ private fun AppDrawerContent(
                     .background(sf.chromeDivider),
             )
 
-            // ── Category rail + Content area ─────────────────────────────────
-            Row(modifier = Modifier.weight(1f)) {
-                CategoryRail(
-                    activeFilter = state.activeFilter,
-                    filterCounts = state.filterCounts,
-                    onFilterSelected = onFilterSelected,
-                    colors = sf,
-                )
+            // ── Horizontal category tabs ────────────────────────────────
+            AppDrawerCategoryTabs(
+                activeFilter = state.activeFilter,
+                filterCounts = state.filterCounts,
+                onFilterSelected = onFilterSelected,
+                colors = sf,
+            )
 
-                // Thin vertical divider between rail and content
-                Box(
-                    modifier = Modifier
-                        .width(1.dp)
-                        .fillMaxHeight()
-                        .background(sf.chromeDivider.copy(alpha = 0.45f)),
-                )
+            // ── Grid area ───────────────────────────────────────────────
+            Box(modifier = Modifier.weight(1f)) {
+                when {
+                    state.isLoading -> {
+                        CircularProgressIndicator(
+                            color = menuCursorEdge(),
+                            modifier = Modifier.align(Alignment.Center),
+                        )
+                    }
 
-                // ── Content area ─────────────────────────────────────────────
-                Column(modifier = Modifier.weight(1f)) {
-                    ContentHeader(
-                        label = state.activeFilter.label.uppercase(),
-                        count = state.visibleApps.size,
-                        colors = sf,
-                    )
+                    state.visibleApps.isEmpty() -> {
+                        EmptyDrawerMessage(
+                            filter = state.activeFilter,
+                            hasQuery = state.searchQuery.isNotBlank(),
+                            hasUsageAccess = state.hasUsageAccess,
+                            onGrantUsageAccess = onGrantUsageAccess,
+                            colors = sf,
+                            modifier = Modifier.align(Alignment.Center),
+                        )
+                    }
 
-                    Box(modifier = Modifier.weight(1f)) {
-                        when {
-                            state.isLoading -> {
-                                CircularProgressIndicator(
-                                    color = menuCursorEdge(),
-                                    modifier = Modifier.align(Alignment.Center),
-                                )
-                            }
-                            state.visibleApps.isEmpty() -> {
-                                EmptyDrawerMessage(
-                                    filter = state.activeFilter,
-                                    hasQuery = state.searchQuery.isNotBlank(),
-                                    hasUsageAccess = state.hasUsageAccess,
-                                    onGrantUsageAccess = onGrantUsageAccess,
-                                    colors = sf,
-                                    modifier = Modifier.align(Alignment.Center),
-                                )
-                            }
-                            else -> {
-                                AppGrid(
-                                    apps = state.visibleApps,
-                                    selectedIndex = state.selectedIndex,
-                                    usingTouch = state.usingTouch,
-                                    onAppTapped = onAppTapped,
-                                    onAppLaunched = onAppLaunched,
-                                    onAppMenu = onAppMenu,
-                                    onTouchBrowse = onTouchBrowse,
-                                    colors = sf,
-                                )
-                            }
-                        }
+                    else -> {
+                        AppDrawerGrid(
+                            apps = state.visibleApps,
+                            selectedIndex = state.selectedIndex,
+                            usingTouch = state.usingTouch,
+                            onAppTapped = onAppTapped,
+                            onAppLaunched = onAppLaunched,
+                            onAppMenu = onAppMenu,
+                            onTouchBrowse = onTouchBrowse,
+                            colors = sf,
+                        )
                     }
                 }
             }
-
-            // Thin divider above footer
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(sf.footerDivider),
-            )
-
-            // ── Controller command bar ───────────────────────────────────────
-            ControllerCommandBar(colors = sf)
         }
 
-        // ── Overlays ──────────────────────────────────────────────────────────
+        // ── Controller hint pill (overlay — content geometry never shifts) ──
+        // Same fade-in timing and ExitTransition.None convention as the XMB's own hint
+        // (XMBShell.kt): the pill cuts out instantly on any input and fades in after the idle
+        // delay. Suppressed while a drawer-level overlay (options menu / confirm) is up.
+        AnimatedVisibility(
+            visible = showControllerHint && state.menuApp == null && state.confirmUninstall == null,
+            enter = fadeIn(tween(200)),
+            exit = ExitTransition.None,
+            modifier = Modifier.align(Alignment.BottomCenter),
+        ) {
+            AppDrawerHintBar(
+                modifier = Modifier.padding(bottom = 20.dp),
+            )
+        }
+
+        // ── Overlays ──────────────────────────────────────────────────────
         state.menuApp?.let { app ->
-            AppMiniMenu(
+            AppDrawerOptions(
                 app = app,
                 actions = state.menuActions,
                 selectedIndex = state.menuIndex,
@@ -311,479 +320,10 @@ private fun AppDrawerContent(
                 app = app,
                 onConfirm = onConfirmUninstall,
                 onCancel = onCancelUninstall,
+                colors = sf,
             )
         }
     }
-}
-
-// ── Header / breadcrumb bar ─────────────────────────────────────────────────────
-
-@Composable
-private fun StorefrontHeader(
-    categoryLabel: String,
-    searchQuery: String,
-    searchActive: Boolean,
-    searchFocus: FocusRequester,
-    onSearchToggle: (Boolean) -> Unit,
-    onSearchChange: (String) -> Unit,
-    onSearchDone: () -> Unit,
-    onBack: () -> Unit,
-    colors: com.playfieldportal.core.ui.theme.StorefrontColors,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(HEADER_HEIGHT)
-            .background(
-                Brush.verticalGradient(0f to colors.chromeTop, 1f to colors.chromeBottom)
-            )
-            .padding(horizontal = 24.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        // Breadcrumb: ‹ Android › category
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.weight(1f),
-        ) {
-            Text(
-                text = "\u2039",
-                color = colors.textSecondary,
-                fontSize = 18.sp,
-                modifier = Modifier
-                    .clickable { onBack() }
-                    .padding(end = 8.dp),
-            )
-            Text(
-                text = "Android",
-                color = colors.textSecondary,
-                fontSize = 14.sp,
-                modifier = Modifier.clickable { onBack() }.padding(end = 6.dp),
-            )
-            Text(
-                text = "\u203A",
-                color = colors.textSecondary.copy(alpha = 0.6f),
-                fontSize = 14.sp,
-                modifier = Modifier.padding(end = 8.dp),
-            )
-            Text(
-                text = categoryLabel,
-                color = colors.textPrimary,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-            )
-        }
-
-        // Search field (animated)
-        AnimatedVisibility(visible = searchActive, enter = fadeIn(), exit = fadeOut()) {
-            BasicTextField(
-                value = searchQuery,
-                onValueChange = onSearchChange,
-                singleLine = true,
-                textStyle = TextStyle(color = colors.textPrimary, fontSize = 14.sp),
-                cursorBrush = SolidColor(colors.chromeDivider),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { onSearchDone() }, onDone = { onSearchDone() }),
-                decorationBox = { inner ->
-                    Box {
-                        if (searchQuery.isEmpty()) Text(
-                            "Search\u2026",
-                            color = colors.textSecondary.copy(alpha = 0.6f),
-                            fontSize = 14.sp,
-                        )
-                        inner()
-                    }
-                },
-                modifier = Modifier
-                    .width(220.dp)
-                    .focusRequester(searchFocus)
-                    .background(colors.searchField, RoundedCornerShape(TILE_CORNER))
-                    .border(TILE_BORDER, colors.searchBorder, RoundedCornerShape(TILE_CORNER))
-                    .padding(horizontal = 10.dp, vertical = 6.dp),
-            )
-        }
-
-        Spacer(Modifier.width(16.dp))
-
-        // Header actions: Search icon + View placeholder
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            // Search button (magnifying glass)
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.clickable {
-                    onSearchToggle(!searchActive)
-                },
-            ) {
-                Canvas(modifier = Modifier.size(18.dp)) {
-                    val strokeW = 1.8f.dp.toPx()
-                    val cx = size.width * 0.42f
-                    val cy = size.height * 0.42f
-                    val r = size.width * 0.30f
-                    // Lens circle
-                    drawCircle(
-                        color = colors.textSecondary,
-                        radius = r,
-                        center = androidx.compose.ui.geometry.Offset(cx, cy),
-                        style = Stroke(strokeW),
-                    )
-                    // Handle line
-                    val handleStart = androidx.compose.ui.geometry.Offset(
-                        cx + r * 0.70f,
-                        cy + r * 0.70f,
-                    )
-                    val handleEnd = androidx.compose.ui.geometry.Offset(
-                        cx + r * 0.70f + size.width * 0.22f,
-                        cy + r * 0.70f + size.height * 0.22f,
-                    )
-                    drawLine(
-                        color = colors.textSecondary,
-                        start = handleStart,
-                        end = handleEnd,
-                        strokeWidth = strokeW,
-                        cap = androidx.compose.ui.graphics.StrokeCap.Round,
-                    )
-                }
-                Spacer(Modifier.width(5.dp))
-                Text("Search", color = colors.textSecondary, fontSize = 13.sp)
-            }
-
-            }
-    }
-}
-
-// ── Category navigation rail ────────────────────────────────────────────────────
-
-@Composable
-private fun CategoryRail(
-    activeFilter: AppFilter,
-    filterCounts: Map<AppFilter, Int>,
-    onFilterSelected: (AppFilter) -> Unit,
-    colors: com.playfieldportal.core.ui.theme.StorefrontColors,
-) {
-    Column(
-        modifier = Modifier
-            .width(RAIL_WIDTH)
-            .fillMaxHeight()
-            .background(colors.railBackground)
-            .padding(vertical = 4.dp),
-    ) {
-        AppFilter.values().forEach { filter ->
-            val isActive = filter == activeFilter
-            val bgColor = if (isActive) colors.categorySelected else colors.categoryInactive
-            val textColor = if (isActive) colors.textPrimary else colors.textSecondary
-            val count = filterCounts[filter] ?: 0
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 2.dp)
-                    .clip(RoundedCornerShape(TILE_CORNER))
-                    .background(bgColor)
-                    .then(
-                        if (isActive) Modifier.border(TILE_BORDER, colors.categorySelectedEdge, RoundedCornerShape(TILE_CORNER))
-                        else Modifier
-                    )
-                    .clickable { onFilterSelected(filter) }
-                    .padding(horizontal = 14.dp, vertical = 10.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = filter.label.uppercase(),
-                    color = textColor,
-                    fontSize = 12.sp,
-                    fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
-                    maxLines = 1,
-                )
-                if (count > 0) {
-                    Text(
-                        text = count.toString(),
-                        color = if (isActive) colors.categorySelectedEdge else colors.textSecondary.copy(alpha = 0.7f),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
-            }
-        }
-    }
-}
-
-// ── Content header ──────────────────────────────────────────────────────────────
-
-@Composable
-private fun ContentHeader(
-    label: String,
-    count: Int,
-    colors: com.playfieldportal.core.ui.theme.StorefrontColors,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = label,
-            color = colors.textPrimary,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-        )
-        Text(
-            text = "$count APPS",
-            color = colors.textSecondary,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Medium,
-        )
-    }
-    // Thin horizontal rule under the section header
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(1.dp)
-            .padding(horizontal = 24.dp)
-            .background(colors.chromeDivider.copy(alpha = 0.35f)),
-    )
-}
-
-// ── Application grid ────────────────────────────────────────────────────────────
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun AppGrid(
-    apps: List<InstalledApp>,
-    selectedIndex: Int,
-    usingTouch: Boolean,
-    onAppTapped: (Int) -> Unit,
-    onAppLaunched: (String) -> Unit,
-    onAppMenu: (InstalledApp) -> Unit,
-    onTouchBrowse: (Int) -> Unit,
-    colors: com.playfieldportal.core.ui.theme.StorefrontColors,
-) {
-    val gridState = rememberLazyGridState()
-
-    LaunchedEffect(selectedIndex, usingTouch) {
-        // Clamp: a stale cursor past the end (list shrank mid-scroll) must not crash the grid.
-        if (!usingTouch && apps.isNotEmpty()) gridState.animateScrollToItem(selectedIndex.coerceIn(0, apps.lastIndex))
-    }
-
-    var fingerScrolled by remember { mutableStateOf(false) }
-    LaunchedEffect(gridState) {
-        gridState.interactionSource.interactions.collect { interaction ->
-            if (interaction is androidx.compose.foundation.interaction.DragInteraction.Start) {
-                fingerScrolled = true
-                onTouchBrowse(gridState.firstVisibleItemIndex)
-            }
-        }
-    }
-    LaunchedEffect(gridState) {
-        snapshotFlow { gridState.isScrollInProgress }
-            .distinctUntilChanged()
-            .collect { scrolling ->
-                if (!scrolling && fingerScrolled) {
-                    fingerScrolled = false
-                    val info = gridState.layoutInfo
-                    val center = (info.viewportStartOffset + info.viewportEndOffset) / 2
-                    val nearest = info.visibleItemsInfo.minByOrNull { item ->
-                        val itemCenter = item.offset.y + item.size.height / 2
-                        kotlin.math.abs(itemCenter - center)
-                    }?.index
-                    if (nearest != null) onTouchBrowse(nearest)
-                }
-            }
-    }
-
-    LazyVerticalGrid(
-        state = gridState,
-        columns = GridCells.Fixed(GRID_COLUMNS),
-        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.fillMaxSize(),
-    ) {
-        itemsIndexed(apps) { index, app ->
-            AppGridItem(
-                app = app,
-                isSelected = !usingTouch && index == selectedIndex,
-                onClick = { onAppTapped(index); onAppLaunched(app.packageName) },
-                onMenu = { onAppTapped(index); onAppMenu(app) },
-                colors = colors,
-            )
-        }
-    }
-}
-
-// ── Application tile ────────────────────────────────────────────────────────────
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun AppGridItem(
-    app: InstalledApp,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    onMenu: () -> Unit,
-    colors: com.playfieldportal.core.ui.theme.StorefrontColors,
-) {
-    val bgColor = if (isSelected) colors.tileSelected else colors.tileNormal
-    val borderColor = if (isSelected) colors.tileSelectedEdge else colors.chromeDivider.copy(alpha = 0.25f)
-    val innerBorderColor = if (isSelected) colors.tileSelectedInner else Color.Transparent
-
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .clip(RoundedCornerShape(TILE_CORNER))
-            .background(bgColor)
-            .border(TILE_BORDER, borderColor, RoundedCornerShape(TILE_CORNER))
-            .then(
-                if (isSelected) Modifier.border(
-                    1.dp,
-                    innerBorderColor,
-                    RoundedCornerShape((TILE_CORNER + TILE_BORDER).value.dp),
-                )
-                else Modifier
-            )
-            .combinedClickable(onClick = onClick, onLongClick = onMenu)
-            .padding(vertical = 10.dp, horizontal = 6.dp),
-    ) {
-        Image(
-            painter = DrawablePainter(app.icon),
-            contentDescription = app.label,
-            modifier = Modifier
-                .size(52.dp)
-                .clip(RoundedCornerShape(TILE_CORNER)),
-        )
-        Spacer(Modifier.height(6.dp))
-        Text(
-            text = app.label,
-            color = colors.textPrimary,
-            fontSize = 11.sp,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center,
-            lineHeight = 13.sp,
-        )
-    }
-}
-
-// ── Controller command bar ──────────────────────────────────────────────────────
-
-@Composable
-private fun ControllerCommandBar(
-    colors: com.playfieldportal.core.ui.theme.StorefrontColors,
-) {
-    // Actions, not buttons: ControllerPromptBar resolves each to whichever face
-    // button the user's Confirm/Back and X/Y settings currently bind it to.
-    ControllerPromptBar(
-        items = listOf(
-            ControllerPromptItem(GamepadAction.PREV_CATEGORY, "Prev Category"),
-            ControllerPromptItem(GamepadAction.NEXT_CATEGORY, "Next Category"),
-            ControllerPromptItem(GamepadAction.BACK, "Back"),
-            ControllerPromptItem(GamepadAction.SELECT, "Launch"),
-            ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"),
-            ControllerPromptItem(GamepadAction.CHANGE_SORT, "Search"),
-        ),
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(FOOTER_HEIGHT)
-            .background(colors.footerBackground.copy(alpha = 0.94f))
-            .padding(horizontal = 24.dp),
-        labelColor = colors.textSecondary,
-        labelStyle = TextStyle(fontSize = 12.sp),
-    )
-}
-
-// ── Mini menu overlay ───────────────────────────────────────────────────────────
-
-@Composable
-private fun AppMiniMenu(
-    app: InstalledApp,
-    actions: List<AppMenuAction>,
-    selectedIndex: Int,
-    onAction: (AppMenuAction) -> Unit,
-    onDismiss: () -> Unit,
-    colors: com.playfieldportal.core.ui.theme.StorefrontColors,
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(colors.overlayDim)
-            .clickable(
-                indication = null,
-                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-            ) { onDismiss() },
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            modifier = Modifier
-                .width(280.dp)
-                .clip(RoundedCornerShape(TILE_CORNER))
-                .background(colors.menuPanel)
-                .border(TILE_BORDER, colors.chromeDivider.copy(alpha = 0.4f), RoundedCornerShape(TILE_CORNER))
-                .padding(vertical = 8.dp),
-        ) {
-            // Menu title
-            Text(
-                text = app.label,
-                color = colors.textPrimary,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            )
-            // Thin divider
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .padding(horizontal = 12.dp)
-                    .background(colors.chromeDivider.copy(alpha = 0.25f)),
-            )
-            Spacer(Modifier.height(4.dp))
-            // Action rows
-            actions.forEachIndexed { i, action ->
-                val destructive = action == AppMenuAction.UNINSTALL
-                val isSelected = i == selectedIndex
-                Text(
-                    text = action.label,
-                    color = when {
-                        isSelected && destructive -> colors.destructive
-                        isSelected -> colors.textPrimary
-                        destructive -> colors.destructive.copy(alpha = 0.7f)
-                        else -> colors.textSecondary
-                    },
-                    fontSize = 14.sp,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(if (isSelected) colors.menuRowSelected else Color.Transparent)
-                        .clickable { onAction(action) }
-                        .padding(horizontal = 16.dp, vertical = 11.dp),
-                )
-            }
-        }
-    }
-}
-
-// ── Uninstall confirmation dialog ───────────────────────────────────────────────
-
-@Composable
-private fun UninstallConfirmDialog(
-    app: InstalledApp,
-    onConfirm: () -> Unit,
-    onCancel: () -> Unit,
-) {
-    androidx.compose.material3.AlertDialog(
-        onDismissRequest = onCancel,
-        confirmButton = {
-            androidx.compose.material3.TextButton(onClick = onConfirm) {
-                Text("Uninstall", color = Color(0xFFFF6B6B))
-            }
-        },
-        dismissButton = {
-            androidx.compose.material3.TextButton(onClick = onCancel) { Text("Cancel") }
-        },
-        title = { Text("Uninstall ${app.label}?") },
-        text = { Text("This removes ${app.label} from your device. Android will ask you to confirm.") },
-    )
 }
 
 // ── Empty state ─────────────────────────────────────────────────────────────────
@@ -794,7 +334,7 @@ private fun EmptyDrawerMessage(
     hasQuery: Boolean,
     hasUsageAccess: Boolean,
     onGrantUsageAccess: () -> Unit,
-    colors: com.playfieldportal.core.ui.theme.StorefrontColors,
+    colors: StorefrontColors,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
@@ -828,13 +368,13 @@ private fun EmptyDrawerMessage(
             Spacer(Modifier.height(16.dp))
             Text(
                 text = "Open Usage Access",
-                color = colors.chromeDivider,
+                color = colors.textPrimary,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(TILE_CORNER))
+                    .clip(RoundedCornerShape(2.dp))
                     .background(colors.searchField)
-                    .border(TILE_BORDER, colors.searchBorder, RoundedCornerShape(TILE_CORNER))
+                    .border(1.dp, colors.searchBorder, RoundedCornerShape(2.dp))
                     .clickable { onGrantUsageAccess() }
                     .padding(horizontal = 14.dp, vertical = 8.dp),
             )
@@ -847,44 +387,121 @@ private fun EmptyDrawerMessage(
 @CombinedPreviews
 @Composable
 fun AppDrawerScreenPreview() {
-    val mockIcon = android.graphics.drawable.ColorDrawable(android.graphics.Color.LTGRAY)
+    PfpPreview {
+        AppDrawerPreviewContent()
+    }
+}
+
+// Accent sweep: the same content re-themed over the presets' real waves, to eyeball that the
+// drawer visibly changes hue and that text stays readable (Silver Mono / Golden Amber flip to
+// dark text). One plain parameterless @Preview per accent rather than @PreviewParameter —
+// parameterized previews are fragile across Studio/library-module combinations.
+@Preview(name = "Classic Blue", group = "App Drawer Accents")
+@Composable
+fun AppDrawerScreenPreviewClassicBlue() {
+    PfpPreview(colors = accentPreviewColors(0xFF0055AAL)) { AppDrawerPreviewContent() }
+}
+
+@Preview(name = "Sunset Orange", group = "App Drawer Accents")
+@Composable
+fun AppDrawerScreenPreviewSunsetOrange() {
+    PfpPreview(colors = accentPreviewColors(0xFFFF8A3DL)) { AppDrawerPreviewContent() }
+}
+
+@Preview(name = "Fresh Green", group = "App Drawer Accents")
+@Composable
+fun AppDrawerScreenPreviewFreshGreen() {
+    PfpPreview(colors = accentPreviewColors(0xFF36C26BL)) { AppDrawerPreviewContent() }
+}
+
+@Preview(name = "Sakura Pink", group = "App Drawer Accents")
+@Composable
+fun AppDrawerScreenPreviewSakuraPink() {
+    PfpPreview(colors = accentPreviewColors(0xFFE87FB0L)) { AppDrawerPreviewContent() }
+}
+
+@Preview(name = "Silver Mono", group = "App Drawer Accents")
+@Composable
+fun AppDrawerScreenPreviewSilverMono() {
+    PfpPreview(colors = accentPreviewColors(0xFFB8C4D0L)) { AppDrawerPreviewContent() }
+}
+
+@Preview(name = "Golden Amber", group = "App Drawer Accents")
+@Composable
+fun AppDrawerScreenPreviewGoldenAmber() {
+    PfpPreview(colors = accentPreviewColors(0xFFE0A32EL)) { AppDrawerPreviewContent() }
+}
+
+@Composable
+private fun AppDrawerPreviewContent() {
+    val mockIcon = android.graphics.Color.LTGRAY.toDrawable()
     val mockApps = listOf(
         InstalledApp("com.android.chrome", "Chrome", mockIcon, isGame = false, isEmulator = false),
         InstalledApp("org.ppsspp.ppsspp", "PPSSPP", mockIcon, isGame = false, isEmulator = true),
         InstalledApp("com.retroarch", "RetroArch", mockIcon, isGame = false, isEmulator = true),
-        InstalledApp("com.google.android.youtube", "YouTube", mockIcon, isGame = false, isEmulator = false),
-        InstalledApp("com.playfieldportal.launcher", "Play Field Portal", mockIcon, isGame = false, isEmulator = false),
+        InstalledApp(
+            "com.google.android.youtube",
+            "YouTube",
+            mockIcon,
+            isGame = false,
+            isEmulator = false
+        ),
+        InstalledApp(
+            "com.playfieldportal.launcher",
+            "Play Field Portal",
+            mockIcon,
+            isGame = false,
+            isEmulator = false
+        ),
     )
-    val mockCounts = AppFilter.values().associateWith { when (it) {
-        AppFilter.ALL -> 42
-        AppFilter.GAMES -> 28
-        AppFilter.EMULATORS -> 9
-        AppFilter.RECENT -> 12
-    } }
+    val mockCounts = AppFilter.entries.associateWith {
+        when (it) {
+            AppFilter.ALL -> 42
+            AppFilter.GAMES -> 28
+            AppFilter.EMULATORS -> 9
+            AppFilter.RECENT -> 12
+        }
+    }
     val mockState = AppDrawerUiState(
         visibleApps = mockApps,
         activeFilter = AppFilter.ALL,
         selectedIndex = 1,
         filterCounts = mockCounts,
     )
-    PfpPreview {
-        AppDrawerContent(
-            state = mockState,
-            searchActive = false,
-            onBack = {},
-            onSearchQueryChange = {},
-            onSearchToggle = {},
-            onSearchDone = {},
-            onFilterSelected = {},
-            onAppTapped = {},
-            onAppLaunched = {},
-            onAppMenu = {},
-            onTouchBrowse = {},
-            onMenuAction = {},
-            onCloseMenu = {},
-            onConfirmUninstall = {},
-            onCancelUninstall = {},
-            onGrantUsageAccess = {},
-        )
-    }
+    AppDrawerContent(
+        state = mockState,
+        searchActive = false,
+        // Preview shows the overlay hint pill so the design can be inspected without a device.
+        showControllerHint = true,
+        onBack = {},
+        onSearchQueryChange = {},
+        onSearchToggle = {},
+        onSearchDone = {},
+        onFilterSelected = {},
+        onAppTapped = {},
+        onAppLaunched = {},
+        onAppMenu = {},
+        onTouchBrowse = {},
+        onMenuAction = {},
+        onCloseMenu = {},
+        onConfirmUninstall = {},
+        onCancelUninstall = {},
+        onGrantUsageAccess = {},
+    )
+}
+
+/** Rebuild the exact palette XmbColorScheme.resolve produces for [waveArgb] (white accent). */
+private fun accentPreviewColors(waveArgb: Long): PFPColors {
+    val (top, bottom) = lightBackgroundAnchors(waveArgb)
+    return PFPColors(
+        waveColor = Color(waveArgb),
+        accentColor = Color.White,
+        textPrimary = Color.White,
+        textSecondary = Color.White.copy(alpha = 0.7f),
+        backgroundOverlay = Color(0x88000000),
+        selectedItem = Color.White,
+        categoryBar = Color(0x00000000),
+        backgroundTop = Color(top),
+        backgroundBottom = Color(bottom),
+    )
 }

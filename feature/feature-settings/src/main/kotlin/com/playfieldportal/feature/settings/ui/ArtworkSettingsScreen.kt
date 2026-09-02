@@ -181,6 +181,18 @@ fun ArtworkSettingsScreen(
                 onToggle = { viewModel.setAnimatedIcons(it) },
             )
 
+            SettingsSliderRow(
+                label     = "Video Snap Delay",
+                sublabel  = "Rest on a game ${formatSnapDelay(state.icon1LingerDelaySeconds)} " +
+                    "before its video snap plays (1–5 seconds) — higher delays avoid pops while browsing",
+                value     = state.icon1LingerDelaySeconds,
+                onValueChange = viewModel::setIcon1LingerDelaySeconds,
+                valueRange = 1f..5f,
+                steps     = 7,
+                enabled  = state.animatedIcons,
+                valueFormatter = { formatSnapDelay(it) },
+            )
+
             SettingsToggleRow(
                 label    = "Prefer SteamGridDB Heroes",
                 sublabel = "Try SteamGridDB first for hero/banner art",
@@ -388,6 +400,9 @@ fun ArtworkSettingsScreen(
         )
     }
 }
+
+private fun formatSnapDelay(seconds: Float): String =
+    if (seconds % 1f == 0f) "${seconds.toInt()}s" else "${seconds}s"
 
 @Composable
 private fun credentialFieldColors() = OutlinedTextFieldDefaults.colors(
