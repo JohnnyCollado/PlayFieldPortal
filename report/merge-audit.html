@@ -1,0 +1,745 @@
+<title>Controller Prompts Merge Audit</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+:root{
+  --ground:#F5F7F9; --surface:#FFFFFF; --surface-2:#EDF1F4;
+  --ink:#151D27; --ink-2:#3D4A59; --muted:#65727F; --faint:#8A96A3;
+  --line:#DCE3E9; --line-strong:#C3CDD6;
+  --accent:#0D6E78; --accent-soft:#E1F0F1; --accent-ink:#0A555D;
+  --crit:#A81E14; --crit-bg:#FBE9E7;
+  --warn:#8A5200; --warn-bg:#FBF0DC;
+  --info:#2A548F; --info-bg:#E6EDF8;
+  --ok:#26604A; --ok-bg:#E2F0EA;
+  --shadow:0 1px 2px rgba(21,29,39,.06),0 4px 14px rgba(21,29,39,.05);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0E131A; --surface:#161D26; --surface-2:#1D2630;
+    --ink:#E5EAF0; --ink-2:#C0CAD5; --muted:#94A1AE; --faint:#71808E;
+    --line:#26313D; --line-strong:#374553;
+    --accent:#4FB6BF; --accent-soft:#12333A; --accent-ink:#7FD0D6;
+    --crit:#F08C82; --crit-bg:#3A1A17;
+    --warn:#E0AC5B; --warn-bg:#33260F;
+    --info:#8FB4EC; --info-bg:#182741;
+    --ok:#7FC7A8; --ok-bg:#14301F;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 16px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0E131A; --surface:#161D26; --surface-2:#1D2630;
+  --ink:#E5EAF0; --ink-2:#C0CAD5; --muted:#94A1AE; --faint:#71808E;
+  --line:#26313D; --line-strong:#374553;
+  --accent:#4FB6BF; --accent-soft:#12333A; --accent-ink:#7FD0D6;
+  --crit:#F08C82; --crit-bg:#3A1A17;
+  --warn:#E0AC5B; --warn-bg:#33260F;
+  --info:#8FB4EC; --info-bg:#182741;
+  --ok:#7FC7A8; --ok-bg:#14301F;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 16px rgba(0,0,0,.3);
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:15px; line-height:1.6; margin:0;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1080px; margin:0 auto; padding:0 28px 96px}
+code,.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
+
+/* ── masthead ─────────────────────────────────── */
+.mast{padding:56px 0 28px; border-bottom:2px solid var(--ink); margin-bottom:0}
+.eyebrow{
+  font-family:"IBM Plex Mono",monospace; font-size:11px; font-weight:500;
+  letter-spacing:.16em; text-transform:uppercase; color:var(--accent); margin:0 0 14px
+}
+h1{
+  font-family:Archivo,sans-serif; font-weight:700; font-size:clamp(30px,5vw,46px);
+  line-height:1.05; letter-spacing:-.02em; margin:0 0 14px; text-wrap:balance;
+}
+.standfirst{font-size:17px; color:var(--ink-2); max-width:64ch; margin:0 0 26px}
+.meta{
+  display:flex; flex-wrap:wrap; gap:0; border:1px solid var(--line);
+  border-radius:6px; overflow:hidden; background:var(--surface); box-shadow:var(--shadow);
+}
+.meta div{
+  padding:11px 16px; border-right:1px solid var(--line); flex:1 1 auto; min-width:130px;
+}
+.meta div:last-child{border-right:none}
+.meta dt{
+  font-family:"IBM Plex Mono",monospace; font-size:10px; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--faint); margin:0 0 3px
+}
+.meta dd{margin:0; font-size:14px; font-weight:600; font-variant-numeric:tabular-nums}
+
+/* ── verdict ──────────────────────────────────── */
+.verdict{
+  margin:32px 0 0; border:1px solid var(--line); border-left:5px solid var(--warn);
+  border-radius:6px; background:var(--surface); padding:22px 24px; box-shadow:var(--shadow);
+}
+.verdict h2{
+  font-family:Archivo,sans-serif; font-size:20px; margin:0 0 8px; letter-spacing:-.01em;
+}
+.verdict p{margin:0 0 12px; color:var(--ink-2); max-width:70ch}
+.verdict p:last-child{margin-bottom:0}
+
+/* ── sections ─────────────────────────────────── */
+section{margin-top:56px}
+h2.sec{
+  font-family:Archivo,sans-serif; font-size:13px; font-weight:600; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--muted); margin:0 0 6px;
+  padding-bottom:8px; border-bottom:1px solid var(--line-strong);
+  display:flex; justify-content:space-between; align-items:baseline; gap:16px;
+}
+h2.sec span{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--faint); font-variant-numeric:tabular-nums}
+.sec-lede{color:var(--muted); font-size:14px; margin:10px 0 22px; max-width:70ch}
+
+/* ── finding cards ────────────────────────────── */
+.find{
+  background:var(--surface); border:1px solid var(--line); border-radius:6px;
+  margin-bottom:14px; overflow:hidden; box-shadow:var(--shadow);
+  display:grid; grid-template-columns:4px 1fr;
+}
+.stripe{background:var(--line-strong)}
+.find.crit .stripe{background:var(--crit)}
+.find.warn .stripe{background:var(--warn)}
+.find.info .stripe{background:var(--info)}
+.find.ok   .stripe{background:var(--ok)}
+.find-body{padding:16px 20px 18px}
+.find-head{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:9px}
+.find-head h3{
+  font-family:Archivo,sans-serif; font-size:16px; font-weight:600; margin:0;
+  letter-spacing:-.005em; flex:1 1 340px; line-height:1.3;
+}
+.chip{
+  font-family:"IBM Plex Mono",monospace; font-size:10px; font-weight:600;
+  letter-spacing:.09em; text-transform:uppercase; padding:3px 8px; border-radius:3px;
+  white-space:nowrap;
+}
+.chip.crit{background:var(--crit-bg); color:var(--crit)}
+.chip.warn{background:var(--warn-bg); color:var(--warn)}
+.chip.info{background:var(--info-bg); color:var(--info)}
+.chip.ok{background:var(--ok-bg); color:var(--ok)}
+.chip.count{background:var(--surface-2); color:var(--muted)}
+.find p{margin:0 0 10px; color:var(--ink-2); max-width:76ch}
+.find p:last-child{margin-bottom:0}
+.find .why{
+  font-size:14px; color:var(--muted); border-left:2px solid var(--line-strong);
+  padding-left:12px; margin-top:11px;
+}
+.paths{
+  font-family:"IBM Plex Mono",monospace; font-size:12px; line-height:1.85;
+  background:var(--surface-2); border-radius:4px; padding:10px 13px; margin:11px 0 0;
+  color:var(--ink-2); overflow-x:auto; white-space:pre;
+}
+code:not(.paths){
+  background:var(--surface-2); padding:1px 5px; border-radius:3px;
+  font-size:.88em; color:var(--accent-ink);
+}
+
+/* ── diagram ──────────────────────────────────── */
+.diagram{
+  background:var(--surface); border:1px solid var(--line); border-radius:6px;
+  padding:26px 24px; margin:18px 0 0; overflow-x:auto; box-shadow:var(--shadow);
+}
+.chain{display:flex; align-items:stretch; gap:0; min-width:660px}
+.node{
+  flex:1; background:var(--surface-2); border:1px solid var(--line);
+  border-radius:5px; padding:12px 13px; position:relative;
+}
+.node.trigger{border-color:var(--crit); background:var(--crit-bg)}
+.node.terminal{border-color:var(--warn); background:var(--warn-bg)}
+.node .k{
+  font-family:"IBM Plex Mono",monospace; font-size:11px; font-weight:600;
+  color:var(--ink); display:block; margin-bottom:5px; word-break:break-all;
+}
+.node .v{font-size:12px; color:var(--muted); line-height:1.45; display:block}
+.arrow{
+  flex:0 0 34px; display:flex; align-items:center; justify-content:center;
+  color:var(--faint); font-size:17px;
+}
+.dcap{
+  font-size:13px; color:var(--muted); margin:16px 0 0; padding-top:14px;
+  border-top:1px solid var(--line); max-width:76ch;
+}
+
+/* ── drift table ──────────────────────────────── */
+.tblwrap{overflow-x:auto; border:1px solid var(--line); border-radius:6px; box-shadow:var(--shadow)}
+table{border-collapse:collapse; width:100%; background:var(--surface); font-size:14px; min-width:600px}
+th{
+  font-family:"IBM Plex Mono",monospace; font-size:10px; letter-spacing:.11em;
+  text-transform:uppercase; color:var(--faint); text-align:left; font-weight:600;
+  padding:11px 15px; border-bottom:1px solid var(--line-strong); background:var(--surface-2);
+}
+td{padding:11px 15px; border-bottom:1px solid var(--line); vertical-align:top}
+tr:last-child td{border-bottom:none}
+td.claim{color:var(--crit); font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-variant-numeric:tabular-nums}
+td.actual{color:var(--ok); font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; font-variant-numeric:tabular-nums}
+td.loc{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--muted)}
+
+/* ── correction callout ───────────────────────── */
+.corr{
+  background:var(--info-bg); border:1px solid var(--info); border-radius:6px;
+  padding:16px 20px; margin:18px 0 0;
+}
+.corr h4{
+  font-family:Archivo,sans-serif; font-size:13px; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--info); margin:0 0 8px;
+}
+.corr p{margin:0 0 8px; font-size:14px; color:var(--ink-2)}
+.corr p:last-child{margin:0}
+
+footer{
+  margin-top:64px; padding-top:22px; border-top:1px solid var(--line);
+  font-size:13px; color:var(--faint);
+}
+footer p{margin:0 0 6px; max-width:74ch}
+a{color:var(--accent-ink)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media (max-width:640px){
+  .wrap{padding:0 18px 64px}
+  .meta div{min-width:50%}
+}
+</style>
+
+<div class="wrap">
+
+<header class="mast">
+  <p class="eyebrow">Pre-merge audit · ui-helper-buttons</p>
+  <h1>Controller Prompts Merge Audit</h1>
+  <p class="standfirst">Kotlin 2.2 practice, deprecated API surface, dead code, and documentation drift across 21 modules — plus one regression this branch introduced.</p>
+  <dl class="meta">
+    <div><dt>Branch</dt><dd>5 ahead · 0 behind</dd></div>
+    <div><dt>Tests</dt><dd>1069 passing</dd></div>
+    <div><dt>Kotlin</dt><dd>2.2.10</dd></div>
+    <div><dt>AGP / Gradle</dt><dd>9.3.1 / 9.5</dd></div>
+    <div><dt>Sources</dt><dd>665 files · 104k LOC</dd></div>
+    <div><dt>Dead code</dt><dd>~800 lines</dd></div>
+  </dl>
+</header>
+
+<div class="verdict">
+  <h2>Verdict: hold for one fix</h2>
+  <p>The branch compiles on both flavours, all 1069 tests pass, and it is not behind <code>main</code>. Nothing in the older codebase blocks this merge.</p>
+  <p><strong>One blocker is mine.</strong> The Phase 0 action collapse in commit <code>14e9e8c</code> merged two <em>different</em> behaviours in the XMB layout-adjust overlay. The Kotlin compiler flags it as a duplicate <code>when</code> branch; I missed the warning because I filtered compile output to errors. Everything else in this report is pre-existing and can follow at your pace.</p>
+</div>
+
+<!-- ══════════ BLOCKERS ══════════ -->
+<section>
+  <h2 class="sec">Blockers introduced by this branch <span>2 findings</span></h2>
+  <p class="sec-lede">Both surfaced from compiler warnings on a clean rebuild. Both trace to the same assumption in the action-vocabulary collapse.</p>
+
+  <article class="find crit">
+    <div class="stripe"></div>
+    <div class="find-body">
+      <div class="find-head">
+        <h3>Layout-adjust overlay lost its controller path to the slider toggle</h3>
+        <span class="chip crit">Regression</span>
+        <span class="chip count">Verified</span>
+      </div>
+      <p>Phase 0 collapsed <code>BUTTON_Y</code> and <code>LONG_PRESS</code> into <code>OPEN_CONTEXT_MENU</code> on the premise that they always meant the same thing. In 14 of 15 call sites they did. In this one they did not: <code>BUTTON_Y</code> reset the adjustment while <code>LONG_PRESS</code> toggled the sliders. Both now match the first branch, so the second is unreachable.</p>
+      <div class="paths">feature-xmb/.../viewmodel/XMBViewModel.kt:4168   OPEN_CONTEXT_MENU -> resetXmbLayoutAdjust()
+feature-xmb/.../viewmodel/XMBViewModel.kt:4169   OPEN_CONTEXT_MENU -> toggleXmbLayoutSliders()   ← dead
+
+before (128b4bc):
+  BUTTON_Y   -> resetXmbLayoutAdjust()
+  LONG_PRESS -> toggleXmbLayoutSliders()</div>
+      <p class="why">Not a total loss of function — <code>XMBShell.kt:219</code> still reaches <code>toggleXmbLayoutSliders</code> through the on-screen touch control, so only the controller route is gone. It needs its own action (the honest fix) rather than a re-pairing, since the two behaviours are genuinely distinct.</p>
+    </div>
+  </article>
+
+  <article class="find warn">
+    <div class="stripe"></div>
+    <div class="find-body">
+      <div class="find-head">
+        <h3>Redundant duplicate branch in the App Drawer dispatcher</h3>
+        <span class="chip warn">Cleanup</span>
+        <span class="chip count">Verified</span>
+      </div>
+      <p>Same collapse, benign outcome. The original had <code>LONG_PRESS</code> and <code>BUTTON_Y</code> both calling <code>openAppMenuForSelected()</code> from two branches; they merged into two identical branches. No behaviour change — the second is simply unreachable and should be deleted.</p>
+      <div class="paths">feature-appbar/.../AppDrawerViewModel.kt:288</div>
+    </div>
+  </article>
+
+  <div class="corr">
+    <h4>Process note</h4>
+    <p>Both of these were sitting in <code>w:</code> lines the whole time. My verification during the refactor grepped for <code>^e:</code> and <code>BUILD</code> only, so a green build and 1069 green tests told me nothing about them. Neither has a test that could have caught it — the collapse was semantically wrong in a way only the compiler noticed.</p>
+  </div>
+</section>
+
+<!-- ══════════ AGP ══════════ -->
+<section>
+  <h2 class="sec">Toolchain: one chain, four flags, a hard expiry <span>AGP 10</span></h2>
+  <p class="sec-lede">The most consequential finding in the repo. Four separate <code>gradle.properties</code> entries look independent but form a single dependency chain, and AGP names the exit itself.</p>
+
+  <div class="diagram">
+    <div class="chain">
+      <div class="node trigger">
+        <span class="k">android.builtInKotlin=false</span>
+        <span class="v">Opts out of AGP's built-in Kotlin support</span>
+      </div>
+      <div class="arrow" aria-hidden="true">→</div>
+      <div class="node">
+        <span class="k">kotlin-android plugin</span>
+        <span class="v">Used instead — and it calls the legacy variant API</span>
+      </div>
+      <div class="arrow" aria-hidden="true">→</div>
+      <div class="node">
+        <span class="k">applicationVariants<br>testVariants</span>
+        <span class="v">Legacy API, off by default in AGP 9</span>
+      </div>
+      <div class="arrow" aria-hidden="true">→</div>
+      <div class="node terminal">
+        <span class="k">android.newDsl=false</span>
+        <span class="v">Required to re-enable it — and it is also what keeps <code>kotlinOptions {}</code> compiling in 16 modules</span>
+      </div>
+    </div>
+    <p class="dcap">AGP's own diagnostic states the reason and the fix: <em>“The 'kotlin-android' plugin is currently calling this deprecated API. Please migrate this project to built-in kotlin.”</em> Every link is removed in AGP 10, so this is dated debt, not open-ended. Migrating <code>builtInKotlin</code> is the head of the chain — the <code>kotlinOptions</code> → <code>compilerOptions</code> rewrite across 16 build scripts follows from it rather than standing alone.</p>
+  </div>
+
+  <article class="find warn">
+    <div class="stripe"></div>
+    <div class="find-body">
+      <div class="find-head">
+        <h3>Three more AGP 9 escape hatches set to legacy behaviour</h3>
+        <span class="chip warn">Deprecated</span>
+        <span class="chip count">Verified</span>
+      </div>
+      <p>Beyond the chain above, <code>gradle.properties</code> pins four further compatibility flags back to pre-AGP-9 defaults. Each is individually reported as deprecated on a <code>--warning-mode=all</code> build.</p>
+      <div class="paths">android.enableAppCompileTimeRClass=false
+android.r8.optimizedResourceShrinking=false
+android.usesSdkInManifest.disallowed=false
+android.sdk.defaultTargetSdkToCompileSdkIfUnset=false</div>
+      <p class="why"><code>r8.optimizedResourceShrinking=false</code> is not free-standing: it is load-bearing for the <code>Resources.getIdentifier</code> lookup in <code>XMBItemList.kt:1229</code>, which resolves <code>sysicon_*</code> drawables by string name. Optimised shrinking would strip those drawables, since nothing references them statically. Fixing the lookup and the flag is one job, not two.</p>
+    </div>
+  </article>
+
+  <article class="find warn">
+    <div class="stripe"></div>
+    <div class="find-body">
+      <div class="find-head">
+        <h3>KSP forced to the legacy KSP1 implementation</h3>
+        <span class="chip warn">Config conflict</span>
+        <span class="chip count">Verified</span>
+      </div>
+      <p>The catalog pins a KSP2-generation artifact while <code>gradle.properties</code> forces the old implementation. Room and Hilt codegen both run through this.</p>
+      <div class="paths">libs.versions.toml:10   ksp = "2.2.10-2.0.2"     ← KSP2 generation
+gradle.properties:11    ksp.useKSP2=false        ← forces KSP1</div>
+      <p class="why">It builds today, so this is not urgent. But the pairing is almost certainly a leftover workaround, and whatever it was working around is worth re-testing before it becomes load-bearing knowledge nobody has.</p>
+    </div>
+  </article>
+</section>
+
+<!-- ══════════ KOTLIN ══════════ -->
+<section>
+  <h2 class="sec">Kotlin 2.2 practice &amp; deprecated APIs <span>10 findings</span></h2>
+  <p class="sec-lede">Ordered by consequence, not by count. The first three are correctness; the rest are hygiene with real but bounded cost.</p>
+
+  <article class="find crit">
+    <div class="stripe"></div>
+    <div class="find-body">
+      <div class="find-head">
+        <h3>Disk read and JSON parse on the main thread during game launch</h3>
+        <span class="chip crit">Correctness</span>
+        <span class="chip count">Verified</span>
+      </div>
+      <p><code>getProfilesForPlatform()</code> is a plain non-suspend function that calls <code>loadPersistedProfiles()</code> → <code>file.readText()</code> plus a <code>decodeFromString</code>. Its callers sit inside <code>viewModelScope.launch { }</code>, which is <code>Dispatchers.Main.immediate</code> — so the file read happens on the UI thread every time a game is launched.</p>
+      <div class="paths">feature-launcher/.../EmulatorProfileRepository.kt:34,36,48   non-suspend, reads disk
+feature-xmb/.../XMBViewModel.kt:6877   launchGameDirectly() — viewModelScope
+feature-xmb/.../XMBViewModel.kt:5194
+feature-settings/.../LibraryManagerViewModel.kt:460</div>
+      <p class="why">Nothing in the signature warns a caller that it blocks. The sibling <code>suspend</code> functions in the same class also omit <code>withContext(Dispatchers.IO)</code> — they are safe today only because <code>PFPApplication.appScope</code> happens to be <code>Dispatchers.IO</code>, which is a coincidence of the call site rather than a property of the repository.</p>
+    </div>
+  </article>
+
+  <article class="find warn">
+    <div class="stripe"></div>
+    <div class="find-body">
+      <div class="find-head">
+        <h3><code>catch (e: Exception)</code> swallowing cancellation inside coroutines</h3>
+        <span class="chip warn">Structured concurrency</span>
+        <span class="chip count">Scan · spot-checked</span>
+      </div>
+      <p>Roughly a dozen sites catch broad <code>Exception</code> inside <code>suspend</code> or <code>withContext</code> bodies, converting a cancelled scope into a business-level failure result instead of letting it propagate.</p>
+      <div class="paths">EmulatorProfileRepository.kt:91,114,125,137
+XmbThemeLoader.kt:59,74,137      IgdbApi.kt:86,100,117
+InstalledAppRepository.kt:99     LibraryScanner.kt  (3 sites)</div>
+      <p class="why">The codebase already knows the correct shape — <code>DiscordAuthRepository</code>, <code>RaRemoteDataSource</code> and the workers all rethrow <code>CancellationException</code> explicitly. These sites are drift from an established local convention, which makes them cheap to fix and easy to justify.</p>
+    </div>
+  </article>
+
+  <article class="find warn">
+    <div class="stripe"></div>
+    <div class="find-body">
+      <div class="find-head">
+        <h3>Kotlin 2.2 annotation use-site target migration — ~25 warnings</h3>
+        <span class="chip warn">Kotlin 2.2</span>
+        <span class="chip count">Verified</span>
+      </div>
+      <p>Every Hilt-injected ViewModel and several other classes emit <em>“This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.”</em> This is the Kotlin 2.2 change to default annotation use-site targets on constructor properties.</p>
+      <p>It is the single most frequent warning in the build and is specific to the 2.2 upgrade. Resolve it project-wide with the <code>-Xannotation-default-target</code> compiler flag rather than annotating ~25 sites by hand.</p>
+      <div class="paths">All feature-settings ViewModels · XMBViewModel · GameDetailViewModel
+ArtworkStudioViewModel · PhotoViewerViewModel · VideoDetailViewModel
+MusicPlayerController · MusicPlaybackService · ThemeRepository · XmbThemeLoader · PttOverlayManager</div>
+    </div>
+  </article>
+
+  <article class="find warn">
+    <div class="stripe"></div>
+    <div class="find-body">
+      <div class="find-head">
+        <h3><code>collectAsState()</code> at 33 screen entry points — and the doc that teaches it</h3>
+        <span class="chip warn">Compose</span>
+        <span class="chip count">Verified</span>
+      </div>
+      <p>33 uses of <code>collectAsState()</code> against 16 of <code>collectAsStateWithLifecycle()</code>. On a launcher that is the resident home app, the non-lifecycle variant keeps collecting while backgrounded.</p>
+      <p>The root cause is documented, not accidental. The canonical “how to structure a screen in this codebase” example teaches the wrong call:</p>
+      <div class="paths">core-ui/.../preview/PfpPreviewWrapper.kt:30
+  val state by viewModel.uiState.collectAsState()</div>
+      <p class="why">This is the highest-leverage item in the section. Fixing that one KDoc block stops the pattern reproducing; the 33 call sites are then a mechanical sweep rather than a recurring drift. <code>lifecycle-runtime-compose</code> is already on every module's classpath.</p>
+    </div>
+  </article>
+
+  <article class="find warn">
+    <div class="stripe"></div>
+    <div class="find-body">
+      <div class="find-head">
+        <h3>11 of 12 lazy list builders have no <code>key</code></h3>
+        <span class="chip warn">Compose</span>
+        <span class="chip count">Verified</span>
+      </div>
+      <p>Without keys, Compose re-binds item state and animations by index. On a library that inserts and removes games during a scan, that produces visible artifacts precisely when the list is changing.</p>
+      <div class="paths">XMBItemList.kt:441            GamePickerScreen.kt:150,182
+GameDetailScreen.kt:407,577   ArtworkStudioScreen.kt:367
+AppDrawerScreen.kt:601        AppDetailScreen.kt:435
+DetailContextMenu.kt:120      PspContextMenu.kt:129
+ColorSchemePickerOverlay.kt:114   PlatformSdCardRow.kt:89</div>
+    </div>
+  </article>
+
+  <article class="find info">
+    <div class="stripe"></div>
+    <div class="find-body">
+      <div class="find-head">
+        <h3>Side effect executed directly in a composable body</h3>
+        <span class="chip info">Compose</span>
+        <span class="chip count">Scan · confirmed</span>
+      </div>
+      <p><code>AppDrawerScreen.kt:118–123</code> runs <code>viewModel.setFilter(...)</code> and <code>setSearchQuery("")</code> guarded by a <code>remember</code> boolean, directly during composition rather than in a <code>LaunchedEffect</code>. A discarded composition leaves the flag set with the work not done.</p>
+    </div>
+  </article>
+
+  <article class="find info">
+    <div class="stripe"></div>
+    <div class="find-body">
+      <div class="find-head">
+        <h3>Deprecated AndroidX APIs still in use</h3>
+        <span class="chip info">Deprecated</span>
+        <span class="chip count">Verified</span>
+      </div>
+      <div class="paths">androidx.compose.ui.platform.LocalLifecycleOwner   5 sites   → androidx.lifecycle.compose.*
+  AppDrawerScreen.kt:57 · VideoDetailScreen.kt:46 · QrLoginScreen.kt:61
+  XMBShell.kt:122,258
+
+Icons.Filled.HelpOutline / QueueMusic            6 sites   → Icons.AutoMirrored.*
+  XMBItemList.kt (5) · MusicBrowserScreen.kt (1)
+
+android.telephony.PhoneStateListener              SystemStatus.kt   → TelephonyCallback (API 31+)
+Notification.Action.Builder(int,…)                MusicPlaybackService.kt</div>
+    </div>
+  </article>
+
+  <article class="find info">
+    <div class="stripe"></div>
+    <div class="find-body">
+      <div class="find-head">
+        <h3>Missing opt-in annotations</h3>
+        <span class="chip info">Warning</span>
+        <span class="chip count">Verified</span>
+      </div>
+      <p>Seven warnings for experimental APIs used without declaring the opt-in — four <code>ExperimentalCoroutinesApi</code> in <code>VideoSnapTranscoder.kt</code>, three <code>ExperimentalCoilApi</code> in <code>ArtworkRepository.kt</code>. Adding <code>@OptIn</code> makes the dependency on unstable API explicit at the call site.</p>
+    </div>
+  </article>
+
+  <article class="find info">
+    <div class="stripe"></div>
+    <div class="find-body">
+      <div class="find-head">
+        <h3><code>Enum.values()</code> instead of <code>.entries</code> — 11 sites</h3>
+        <span class="chip info">Idiom</span>
+        <span class="chip count">Verified</span>
+      </div>
+      <p><code>.values()</code> allocates a fresh array per call. Mostly cosmetic, except <code>AppDrawerViewModel.kt:329</code>, which calls it inside an <code>associateWith</code> on the filter-count path.</p>
+      <div class="paths">AppDrawerViewModel.kt:291,296,329   AppDrawerScreen.kt:468,856
+DisplaySettingsViewModel.kt:129    XMBViewModel.kt:7098
+DebugMenuScreen.kt:76,110,122      GamepadBindingTest.kt:54</div>
+    </div>
+  </article>
+
+  <article class="find info">
+    <div class="stripe"></div>
+    <div class="find-body">
+      <div class="find-head">
+        <h3>Two provably-redundant conditions</h3>
+        <span class="chip info">Logic</span>
+        <span class="chip count">Verified</span>
+      </div>
+      <p>The compiler proves both always true: <code>XMBViewModel.kt:2066</code> and <code>:4612</code>, each of the form <code>cat.isGamingCategory &amp;&amp; cat.id != BuiltInCategory.GAMES</code>. Either the predicate is genuinely redundant, or the intended check was something else — worth a human read rather than a blind deletion.</p>
+    </div>
+  </article>
+</section>
+
+<!-- ══════════ DEAD CODE ══════════ -->
+<section>
+  <h2 class="sec">Dead code <span>~800 lines removable</span></h2>
+  <p class="sec-lede">Everything below was confirmed unreferenced by index comparison, not inferred. Android makes this genuinely risky to guess at — four <code>sysicon_*</code> drawables looked orphaned and are in fact resolved by string name at runtime.</p>
+
+  <article class="find warn">
+    <div class="stripe"></div>
+    <div class="find-body">
+      <div class="find-head">
+        <h3>Twelve orphaned <code>ic_help_button_*</code> vector drawables</h3>
+        <span class="chip warn">Dead</span>
+        <span class="chip count">Verified</span>
+      </div>
+      <p>A third generation of the controller-glyph system, predating both <code>btn_hint_*</code> (deleted this branch) and the current <code>ctl_*</code> set. Referenced by no Kotlin source and no XML.</p>
+      <div class="paths">core-ui/src/main/res/drawable/ic_help_button_{a,b,x,start}_{ps,switch,xbox}.xml</div>
+      <p class="why">Why they survived: they encode the button by <em>printed letter</em> and family — <code>a_ps</code>, <code>b_xbox</code> — which is exactly the modelling mistake this branch removed. They are the fossil of the approach, and deleting them closes the loop on it.</p>
+    </div>
+  </article>
+
+  <article class="find warn">
+    <div class="stripe"></div>
+    <div class="find-body">
+      <div class="find-head">
+        <h3>Deprecated dependency declared but never imported</h3>
+        <span class="chip warn">Dead</span>
+        <span class="chip count">Verified</span>
+      </div>
+      <p><code>accompanist-systemuicontroller</code> 0.34.0 is declared in <code>app/build.gradle.kts:107</code> and referenced by zero source files. The library is itself officially deprecated in favour of <code>enableEdgeToEdge()</code>, which <code>MainActivity</code> already calls.</p>
+      <div class="paths">app/build.gradle.kts:107   libs.versions.toml:30,125</div>
+    </div>
+  </article>
+
+  <article class="find info">
+    <div class="stripe"></div>
+    <div class="find-body">
+      <div class="find-head">
+        <h3>Orphaned version-catalog pin</h3>
+        <span class="chip info">Dead</span>
+        <span class="chip count">Verified</span>
+      </div>
+      <p><code>compose-compiler = "1.5.14"</code> at <code>libs.versions.toml:12</code> is referenced by no <code>version.ref</code>, no <code>composeOptions</code>, and no <code>kotlinCompilerExtensionVersion</code>. Under Kotlin 2.x the Compose compiler ships with the <code>kotlin-compose</code> plugin. It is the only unreferenced version key in the catalog — everything else, including the Compose Multiplatform pin used by <code>:studio</code>, is live.</p>
+      <p class="why">Actively misleading rather than merely inert: it reads as a deliberate pin, so anyone auditing Compose versions will try to reason about why it is held back at a 2023 number.</p>
+    </div>
+  </article>
+
+  <article class="find crit">
+    <div class="stripe"></div>
+    <div class="find-body">
+      <div class="find-head">
+        <h3>Two entirely dead source files — 526 lines</h3>
+        <span class="chip crit">Dead</span>
+        <span class="chip count">Verified</span>
+      </div>
+      <p>Every declaration in each file is referenced nowhere but its own file. Confirmed by word-boundary search across <code>.kt</code>, <code>.xml</code>, <code>.gradle.kts</code> and the manifest.</p>
+      <div class="paths">feature-xmb/.../ui/PlatformSdCardRow.kt              354 lines
+  PlatformSdCardRow · PlatformInfoStrip · PlatformSdCard · UtilityTab
+  SdCardShapeImpl · rememberSdCardShape · glowEffect · platformAbbrev …
+
+feature-settings/.../ui/LibrarySettingsScreen.kt     172 lines
+  + cascades to LibrarySettingsViewModel.kt (referenced only by the dead screen)</div>
+      <p class="why"><strong>Why they are dead is knowable, and it matters.</strong> <code>LibrarySettingsScreen</code> was superseded by <code>LibraryManagerScreen</code>, which now owns the <code>settings_library</code> route at <code>SettingsNavHost.kt:81</code> — so it is a genuinely orphaned predecessor, not an unreachable feature users are missing. <code>PlatformSdCardRow</code> is a legacy category bar that <code>DESIGN.md</code> itself records as superseded. Both are safe to delete.</p>
+      <p class="why">Cross-check: <code>PlatformSdCardRow.kt:89</code> appears in the unkeyed-lazy-list finding above. If the file goes, that finding drops to 10.</p>
+    </div>
+  </article>
+
+  <article class="find warn">
+    <div class="stripe"></div>
+    <div class="find-body">
+      <div class="find-head">
+        <h3>A third file is dead because its definition was duplicated, not abandoned</h3>
+        <span class="chip warn">Divergence risk</span>
+        <span class="chip count">Verified</span>
+      </div>
+      <p><code>feature-themes/.../BuiltInThemes.kt</code> is unreferenced, and its own KDoc says it is <em>“seeded once by <code>DatabaseInitializer</code>”</em>. It is not. But theme seeding did <strong>not</strong> silently regress — <code>DatabaseInitializer.kt:20</code> carries its own <code>private val BUILTIN_CLASSIC_BLUE</code> with the same <code>builtin_classic_blue</code> id and seeds that instead.</p>
+      <p class="why">So this is a duplicated definition where one copy went stale and orphaned, which is worse than plain dead code: the file reads as the authoritative source of the app's built-in theme, so anyone editing it to change what ships would see no effect. Delete the orphan and correct the seeder's comment, rather than treating it as a missing wire-up.</p>
+    </div>
+  </article>
+
+  <article class="find warn">
+    <div class="stripe"></div>
+    <div class="find-body">
+      <div class="find-head">
+        <h3>Fifteen unreferenced top-level declarations</h3>
+        <span class="chip warn">Dead</span>
+        <span class="chip count">Verified</span>
+      </div>
+      <div class="paths">GameIconView.kt:395     CartridgeIcon()          @Composable, public
+GameIconView.kt:336     PspRectangleIcon()       @Composable, public
+XMBItemList.kt:385      CenterLockedColumn()
+XMBItemList.kt:278      SiblingIcon()
+WizardRows.kt:262       WizardCheckboxRow()      @Composable, public
+ArtworkSettingsScreen.kt:393   credentialFieldColors()
+PFPTheme.kt:24          enum ThemeSoundEvent     + all 6 constants
+PFPTheme.kt:96          object PFPThemeTokens
+StorefrontColors.kt:89  LocalStorefrontColors    CompositionLocal
+SettingsScaffold.kt:130 LocalSettingsScrollToTop · :158 SettingsBg · :163 SettingsSelectedBg
+EmulatorProfileEditorScreen.kt:28 EditorText · :32 EditorBorder
+InstalledAppPicker.kt:35 PickerScrim</div>
+      <p class="why"><code>ThemeSoundEvent</code> is the one to leave alone: <code>DESIGN.md:422</code> tracks it as pending work (“wire <code>SoundPool</code> player triggered by <code>ThemeSoundEvent</code>”), so it is a planned feature's placeholder rather than a leftover. The rest are residue.</p>
+    </div>
+  </article>
+
+  <article class="find info">
+    <div class="stripe"></div>
+    <div class="find-body">
+      <div class="find-head">
+        <h3>~37 properties written but never read</h3>
+        <span class="chip info">Dead</span>
+        <span class="chip count">Scan · caveated</span>
+      </div>
+      <p>Room entities and <code>@Serializable</code> classes were excluded, so these are genuine state fields kept up to date by code that nothing consumes. Concentrated in UI state classes — <code>XMBUiState.mediaUri</code> (written at three sites), <code>GameDetailUiState.hasManual</code> and <code>.mediaUris</code>, <code>InitialSetupUiState.retroArchDetecting</code> (five sites) — plus <code>PFPColors.backgroundOverlay</code>/<code>.selectedItem</code>/<code>.categoryBar</code> and all three <code>ControllerDevice</code> capability flags.</p>
+      <p>A dozen more are declared and never even assigned: four <code>ArtworkScrapePreferences</code> flows, <code>ArtworkFolderRepository.storageMode</code>, <code>NavigationEngine.activeContextId</code>, <code>PcLauncherAdapter.requiresIntegerId</code> (overridden twice, read never), and several computed <code>val</code>s.</p>
+      <p class="why">One honest caveat carried over from the sweep: several of these sit on <code>data class</code>es (<code>SsLookupDiagnostics</code>, <code>ControllerDevice</code>, <code>RaProgressEntry</code>), whose generated <code>toString()</code> could carry a field into a Timber log without any identifier reference. A grep for those types in log statements found none, but that is the one path identifier search cannot fully close — treat the diagnostics-flavoured ones as likely rather than certain.</p>
+    </div>
+  </article>
+
+  <article class="find ok">
+    <div class="stripe"></div>
+    <div class="find-body">
+      <div class="find-head">
+        <h3>Three categories came back clean</h3>
+        <span class="chip ok">Clear</span>
+        <span class="chip count">Verified</span>
+      </div>
+      <p><strong>No orphaned Gradle modules.</strong> All 21 have at least one dependent. <code>:studio</code> has none by design — it is a Compose Desktop application entry point, not dead. <code>:feature:feature-achievements</code> reaches <code>:app</code> transitively through <code>:feature-settings</code> and <code>:feature-xmb</code>.</p>
+      <p><strong>No unused <code>res/values</code> resources.</strong> Only <code>:app</code> has a <code>values/</code> directory, holding exactly two entries — <code>app_name</code> and <code>Theme.PFP</code> — both referenced from the manifest.</p>
+      <p><strong>No commented-out code.</strong> Three candidate blocks of 5+ consecutive comment lines turned out to be prose explaining SQL and intent syntax, not disabled code.</p>
+    </div>
+  </article>
+</section>
+
+<!-- ══════════ DOCS ══════════ -->
+<section>
+  <h2 class="sec">Documentation <span>4 wrong facts</span></h2>
+  <p class="sec-lede">The prose quality here is genuinely high — comments explain <em>why</em>, which is rare. The problem is not style, it is that the reference numbers have drifted and now actively mislead.</p>
+
+  <div class="tblwrap">
+    <table>
+      <thead><tr><th>Fact</th><th>Docs claim</th><th>Actually</th><th>Location</th></tr></thead>
+      <tbody>
+        <tr><td>Room schema version</td><td class="claim">v35</td><td class="actual">40</td><td class="loc">ARCHITECTURE.md:51<br>README.md:694, 826</td></tr>
+        <tr><td>Kotlin</td><td class="claim">2.0.0</td><td class="actual">2.2.10</td><td class="loc">README.md:691</td></tr>
+        <tr><td>Gradle</td><td class="claim">8.14.5</td><td class="actual">9.5.0</td><td class="loc">README.md:704, 724</td></tr>
+        <tr><td>AGP</td><td class="claim">8.10.1</td><td class="actual">9.3.1</td><td class="loc">README.md:704</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <article class="find crit" style="margin-top:18px">
+    <div class="stripe"></div>
+    <div class="find-body">
+      <div class="find-head">
+        <h3>The schema number is the dangerous one</h3>
+        <span class="chip crit">Correctness</span>
+        <span class="chip count">Verified</span>
+      </div>
+      <p>Both docs say v35; <code>PFPDatabase.kt:106</code> says <code>version = 40</code>. Every other wrong number costs a contributor some setup friction. This one invites someone to write <code>MIGRATION_35_36</code> against a database that is already five versions past it — in a schema the project documents as never-destructive.</p>
+    </div>
+  </article>
+
+  <article class="find warn">
+    <div class="stripe"></div>
+    <div class="find-body">
+      <div class="find-head">
+        <h3>The glossary and its ADR describe a future that already shipped</h3>
+        <span class="chip warn">Stale</span>
+        <span class="chip count">Verified</span>
+      </div>
+      <p><code>CONTEXT.md:36</code> introduces <code>LibraryScanner</code> as “the <strong>planned</strong> deep module that owns the ROM survey”. It is implemented and injected in five places. The matching <code>docs/adr/0001</code> still reads <em>“Accepted for implementation”</em> and describes the pre-refactor state in the present tense.</p>
+      <p class="why">Both are single-word fixes, but they matter more than their size: a glossary that describes shipped code as planned trains readers to distrust it, and that is the one document whose value is entirely trust.</p>
+    </div>
+  </article>
+
+  <article class="find warn">
+    <div class="stripe"></div>
+    <div class="find-body">
+      <div class="find-head">
+        <h3>KDoc coverage is inverted — the shared modules are the least documented</h3>
+        <span class="chip warn">Gap</span>
+        <span class="chip count">Scan</span>
+      </div>
+      <p>Undocumented public top-level declarations, by module:</p>
+      <div class="paths">core-data        136        core-domain       23
+core-ui           33        theme-kit          5
+core-common        0        core-navigation    0</div>
+      <p class="why">These are the modules every feature imports, so their public surface is the app's real API. <code>theme-kit</code>'s five are the sharpest miss — it is the only module shared with the desktop Studio, making it a genuine cross-application contract. And <code>core-common</code> and <code>core-navigation</code> are at full coverage, so the house standard already exists; it just was not applied outward.</p>
+    </div>
+  </article>
+
+  <article class="find info">
+    <div class="stripe"></div>
+    <div class="find-body">
+      <div class="find-head">
+        <h3>Two structural gaps</h3>
+        <span class="chip info">Practice</span>
+      </div>
+      <p><strong>ADRs did not take hold.</strong> <code>docs/adr/</code> holds exactly one record, and it is stale. Meanwhile <code>ARCHITECTURE.md</code> documents several decisions that read exactly like ADRs without being filed as such — never-destructive migrations, the rule that <code>:studio</code> must never take an Android dependency, the flavour split.</p>
+      <p><strong><code>CLAUDE.md</code> is a scratch note.</strong> Fifteen lines containing one hardcoded <code>C:\Users\johnn\</code> path. It carries nothing about the module graph, conventions, or the deliberate heavy-comment style — the things that would actually help a new contributor or an agent.</p>
+      <p>No module-level README exists for any of the 21 modules except <code>discord-native</code>.</p>
+    </div>
+  </article>
+</section>
+
+<!-- ══════════ MERGE ══════════ -->
+<section>
+  <h2 class="sec">Merge drill-down <span>state of the branch</span></h2>
+
+  <article class="find ok">
+    <div class="stripe"></div>
+    <div class="find-body">
+      <div class="find-head">
+        <h3>Clear</h3>
+        <span class="chip ok">Pass</span>
+      </div>
+      <p>Both flavours compile. 1069 tests pass, including 38 new ones covering the controller mapping. Working tree clean, 5 ahead and 0 behind <code>main</code>, so no rebase is needed. CI runs <code>./gradlew test</code> across every module except <code>:app</code> and <code>:discord-native</code>, which means the new <code>core-domain</code> and <code>core-ui</code> suites are covered — the <code>core-ui</code> test source set added this branch is picked up automatically.</p>
+      <p>The asset purge in <code>1ad5945</code> is safe: it removed only the extracted vendor trees under <code>assets/UI</code> and kept the three source ZIPs. All 72 <code>ctl_*</code> drawables under <code>core-ui</code> are intact.</p>
+    </div>
+  </article>
+
+  <article class="find warn">
+    <div class="stripe"></div>
+    <div class="find-body">
+      <div class="find-head">
+        <h3>The art provenance rules live outside the repo</h3>
+        <span class="chip warn">Risk</span>
+        <span class="chip count">Verified</span>
+      </div>
+      <p><code>Controller_Helper_Icon_Mapping.md</code> — which pack variant each of the 72 drawables came from, the <code>Buttons Solid</code> vs <code>Buttons Full Solid</code> distinction, and the Pro D-Pad rule — exists only in your Downloads folder. The repo preserves it as a comment header in <code>ControllerButtonGlyph.kt</code>, which is better than nothing but omits the per-file source paths.</p>
+      <p class="why">That distinction is not recoverable by inspection: the two variants are byte-identical for unlettered art and differ only on lettered buttons. Getting it wrong again would produce a subtly mismatched footer that no test can catch. Committing the mapping doc to <code>docs/</code> is a two-minute hedge against redoing the audit that produced it.</p>
+    </div>
+  </article>
+
+  <article class="find info">
+    <div class="stripe"></div>
+    <div class="find-body">
+      <div class="find-head">
+        <h3>No static analysis, and no UI verification of this branch</h3>
+        <span class="chip info">Gap</span>
+      </div>
+      <p>The repo has no ktlint, detekt, or Android Lint configuration. Given that both blockers in this report came from compiler warnings that a green build hid, the cheapest available guard is failing CI on new warnings in the touched modules — not adding a new tool.</p>
+      <p>Three modules have no test source set at all: <code>:app</code>, <code>:discord:discord-native</code>, <code>:feature:feature-social</code>. Worth noting that <code>ProvideControllerPrompts</code> — the Hilt entry point wiring the whole prompt system — lives in <code>:app</code> and is therefore exercised by nothing in CI.</p>
+      <p>Separately: every visual change on this branch is unverified on a device. The four migrated footers changed layout, and nothing here confirms glyph scale against label baselines or that the wizard's revised footer reads as intended.</p>
+    </div>
+  </article>
+</section>
+
+<footer>
+  <p><strong>On confidence.</strong> Findings marked <em>Verified</em> I confirmed directly — by reading the code, comparing against git history, or reproducing the compiler or Gradle output. Those marked <em>Scan</em> came from a codebase sweep and are reported at the confidence the sweep gives them.</p>
+  <p>Two sweep claims did not survive checking and are corrected here rather than repeated: <code>kotlinOptions</code> is deprecated with removal in AGP <strong>10</strong>, not removed in AGP 9 — the build demonstrably works on 9.3.1; and the <code>EmulatorProfileRepository.initialize()</code> path is <em>not</em> a main-thread hazard, because <code>PFPApplication.appScope</code> is <code>Dispatchers.IO</code>. The real main-thread finding is the non-suspend getter reached from <code>viewModelScope</code>, which is narrower and separately confirmed.</p>
+  <p>No code was changed in producing this report.</p>
+</footer>
+
+</div>
