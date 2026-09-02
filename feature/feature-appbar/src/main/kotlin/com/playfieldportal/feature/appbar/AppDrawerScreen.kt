@@ -561,7 +561,8 @@ private fun AppGrid(
     val gridState = rememberLazyGridState()
 
     LaunchedEffect(selectedIndex, usingTouch) {
-        if (!usingTouch && apps.isNotEmpty()) gridState.animateScrollToItem(selectedIndex)
+        // Clamp: a stale cursor past the end (list shrank mid-scroll) must not crash the grid.
+        if (!usingTouch && apps.isNotEmpty()) gridState.animateScrollToItem(selectedIndex.coerceIn(0, apps.lastIndex))
     }
 
     var fingerScrolled by remember { mutableStateOf(false) }

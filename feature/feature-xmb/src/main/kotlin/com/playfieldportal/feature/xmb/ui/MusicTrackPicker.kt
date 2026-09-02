@@ -54,7 +54,8 @@ fun MusicTrackPicker(
 ) {
     val listState = rememberLazyListState()
     LaunchedEffect(state.selectedIndex) {
-        listState.animateScrollToItem(state.selectedIndex.coerceAtLeast(0))
+        // Confirm row + one row per track; clamp so a stale cursor can't crash the LazyColumn.
+        listState.animateScrollToItem(state.selectedIndex.coerceIn(0, state.tracks.size))
     }
 
     val pfpColors = LocalPFPColors.current

@@ -50,7 +50,9 @@ fun InstalledAppPicker(
 ) {
     val listState = rememberLazyListState()
     LaunchedEffect(state.selectedIndex) {
-        listState.animateScrollToItem(state.selectedIndex.coerceAtLeast(0))
+        // The list has the Confirm row + one row per app; a stale cursor past the end
+        // (e.g. the list shrank underneath it) must not crash the LazyColumn.
+        listState.animateScrollToItem(state.selectedIndex.coerceIn(0, state.apps.size))
     }
 
     val pfpColors = com.playfieldportal.core.ui.theme.LocalPFPColors.current

@@ -425,7 +425,7 @@ private fun AppArtworkPicker(
                     val lazyState = rememberLazyListState()
                     LaunchedEffect(state.artworkPickerFocus) {
                         if (state.artworkPickerItems.isNotEmpty()) {
-                            lazyState.animateScrollToItem(state.artworkPickerFocus.coerceAtLeast(0))
+                            lazyState.animateScrollToItem(state.artworkPickerFocus.coerceIn(0, state.artworkPickerItems.lastIndex))
                         }
                     }
                     LazyRow(

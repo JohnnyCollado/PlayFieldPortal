@@ -242,6 +242,8 @@ class AppDrawerViewModel @Inject constructor(
         // Mini menu captures input while open.
         state.menuApp?.let {
             val actions = state.menuActions
+            // Empty menuActions would make the modulo below divide by zero — park the cursor.
+            if (actions.isEmpty()) return
             when (action) {
                 GamepadAction.NAVIGATE_UP   -> _uiState.update { s -> s.copy(menuIndex = (s.menuIndex - 1 + actions.size) % actions.size) }
                 GamepadAction.NAVIGATE_DOWN -> _uiState.update { s -> s.copy(menuIndex = (s.menuIndex + 1) % actions.size) }

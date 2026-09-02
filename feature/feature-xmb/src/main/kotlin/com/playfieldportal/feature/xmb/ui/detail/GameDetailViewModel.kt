@@ -994,6 +994,9 @@ class GameDetailViewModel @Inject constructor(
     private fun moveCollectionPicker(delta: Int) {
         _uiState.update {
             val cp = it.collectionPicker
+            // rowCount can be 0 while the picker's options load — no-op rather than an
+            // IllegalArgumentException from coercing into the empty range 0..-1.
+            if (cp.rowCount <= 0) return@update it
             it.copy(collectionPicker = cp.copy(
                 selectedIndex = (cp.selectedIndex + delta).coerceIn(0, cp.rowCount - 1),
             ))

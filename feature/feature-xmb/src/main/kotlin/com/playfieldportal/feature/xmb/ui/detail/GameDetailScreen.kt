@@ -398,7 +398,10 @@ fun GameDetailScreen(
                 Spacer(Modifier.height(8.dp))
                 val mediaLazyState = rememberLazyListState()
                 LaunchedEffect(state.mediaFocus) {
-                    if (state.mediaFocus >= 0) mediaLazyState.animateScrollToItem(state.mediaFocus)
+                    // Clamp against the live item count so a stale focus index can't crash.
+                    if (state.mediaFocus >= 0 && state.detailMedia.isNotEmpty()) {
+                        mediaLazyState.animateScrollToItem(state.mediaFocus.coerceIn(0, state.detailMedia.lastIndex))
+                    }
                 }
                 LazyRow(
                     state = mediaLazyState,

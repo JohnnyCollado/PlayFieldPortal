@@ -345,9 +345,10 @@ class AppDetailViewModel @Inject constructor(
 
     private fun handleMenuGamepad(action: GamepadAction, rows: List<AppDetailOption>) {
         when (action) {
-            GamepadAction.NAVIGATE_UP   -> _uiState.update { it.copy(optionsIndex = (it.optionsIndex - 1).coerceIn(0, rows.size - 1)) }
-            GamepadAction.NAVIGATE_DOWN -> _uiState.update { it.copy(optionsIndex = (it.optionsIndex + 1).coerceIn(0, rows.size - 1)) }
-            GamepadAction.SELECT        -> activateOption(rows[_uiState.value.optionsIndex.coerceIn(0, rows.size - 1)])
+            // Empty rows would make coerceIn's upper bound negative — clamp to a no-op instead.
+            GamepadAction.NAVIGATE_UP   -> _uiState.update { it.copy(optionsIndex = (it.optionsIndex - 1).coerceIn(0, rows.lastIndex.coerceAtLeast(0))) }
+            GamepadAction.NAVIGATE_DOWN -> _uiState.update { it.copy(optionsIndex = (it.optionsIndex + 1).coerceIn(0, rows.lastIndex.coerceAtLeast(0))) }
+            GamepadAction.SELECT        -> rows.getOrNull(_uiState.value.optionsIndex)?.let(::activateOption)
             GamepadAction.BACK          -> closeMenus()
             else -> Unit
         }
@@ -442,6 +443,9 @@ class AppDetailViewModel @Inject constructor(
     private fun moveCollectionPicker(delta: Int) {
         _uiState.update {
             val cp = it.collectionPicker
+            // rowCount can be 0 while the picker's options load — no-op rather than an
+            // IllegalArgumentException from coercing into the empty range 0..-1.
+            if (cp.rowCount <= 0) return@update it
             it.copy(collectionPicker = cp.copy(selectedIndex = (cp.selectedIndex + delta).coerceIn(0, cp.rowCount - 1)))
         }
     }

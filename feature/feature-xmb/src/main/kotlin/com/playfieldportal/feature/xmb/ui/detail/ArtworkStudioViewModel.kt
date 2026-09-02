@@ -401,6 +401,8 @@ class ArtworkStudioViewModel @Inject constructor(
 
     fun selectSource(index: Int) {
         val sources = sourcesForTab()
+        // A tab with no sources (empty list) must no-op — coercing into 0..-1 throws.
+        if (sources.isEmpty()) return
         val clamped = index.coerceIn(0, sources.lastIndex)
         _uiState.update { it.copy(sourceIndex = clamped, zone = StudioZone.SOURCES) }
         if (sources[clamped] == StudioSource.LOCAL) {
@@ -408,7 +410,12 @@ class ArtworkStudioViewModel @Inject constructor(
         } else loadResults()
     }
 
-    fun cycleSource(delta: Int) = selectSource((_uiState.value.sourceIndex + delta).mod(sourcesForTab().size))
+    fun cycleSource(delta: Int) {
+        // .mod(0) throws — tabs with no sources cycle nowhere.
+        val count = sourcesForTab().size
+        if (count == 0) return
+        selectSource((_uiState.value.sourceIndex + delta).mod(count))
+    }
 
     fun toggleNsfw() {
         _uiState.update { it.copy(includeNsfw = !it.includeNsfw) }

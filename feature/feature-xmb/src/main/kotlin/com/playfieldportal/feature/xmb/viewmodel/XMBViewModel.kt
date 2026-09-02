@@ -2510,7 +2510,7 @@ class XMBViewModel @Inject constructor(
                 activeContextMenu = XMBContextMenu(
                     title = "Add to Playlist",
                     items = items,
-                    selectedIndex = selectIndex.coerceIn(0, items.size - 1),
+                    selectedIndex = selectIndex.coerceIn(0, items.lastIndex.coerceAtLeast(0)),
                     videoPlaylistPickerVideoId = videoId,
                 )
             )}
@@ -3208,7 +3208,7 @@ class XMBViewModel @Inject constructor(
                 activeContextMenu = XMBContextMenu(
                     title                 = "Add to Playlist",
                     items                 = items,
-                    selectedIndex         = selectIndex.coerceIn(0, items.size - 1),
+                    selectedIndex         = selectIndex.coerceIn(0, items.lastIndex.coerceAtLeast(0)),
                     playlistPickerTrackId = trackId,
                 )
             )}
@@ -4686,7 +4686,7 @@ class XMBViewModel @Inject constructor(
                 activeContextMenu = XMBContextMenu(
                     title            = "Add to Collection",
                     items            = items,
-                    selectedIndex    = selectIndex.coerceIn(0, items.size - 1),
+                    selectedIndex    = selectIndex.coerceIn(0, items.lastIndex.coerceAtLeast(0)),
                     gameId           = gameId,
                     collectionGameId = gameId,
                 )
@@ -4797,6 +4797,9 @@ class XMBViewModel @Inject constructor(
 
     private fun shiftContextMenu(delta: Int) {
         val menu = _uiState.value.activeContextMenu ?: return
+        // An empty menu can flash in during a rebuild — no-op instead of coercing into
+        // the empty range 0..-1 (IllegalArgumentException).
+        if (menu.items.isEmpty()) return
         val next = (menu.selectedIndex + delta).coerceIn(0, menu.items.size - 1)
         _uiState.update { it.copy(activeContextMenu = menu.copy(selectedIndex = next)) }
     }
