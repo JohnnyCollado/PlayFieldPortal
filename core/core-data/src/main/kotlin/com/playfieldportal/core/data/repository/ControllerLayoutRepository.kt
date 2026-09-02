@@ -1,17 +1,13 @@
 package com.playfieldportal.core.data.repository
 
 import android.content.Context
-import android.view.KeyEvent
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.domain.model.ConfirmBackLayout
 import com.playfieldportal.core.domain.model.ControllerDisplayType
 import com.playfieldportal.core.domain.model.ControllerLayoutPrefs
-import com.playfieldportal.core.domain.model.DEFAULT_BINDINGS
-import com.playfieldportal.core.domain.model.GamepadAction
-import com.playfieldportal.core.domain.model.GamepadBinding
-import com.playfieldportal.core.domain.model.GamepadMappings
+import com.playfieldportal.core.domain.model.gamepadMappingsFor
 import com.playfieldportal.core.domain.model.ScrollSpeed
 import com.playfieldportal.core.domain.model.XYLayout
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -68,25 +64,10 @@ class ControllerLayoutRepository @Inject constructor(
 
     // ── Binding rebuild ─────────────────────────────────────────────────────────
     //
-    // Rebuild the full mapping set from DEFAULT_BINDINGS on every change rather than
-    // mutating individual bindings. This is idempotent (toggling back and forth always
-    // lands on a clean default state) and preserves every non-face-button binding —
-    // including the SELECT/BACK aliases (Enter, D-pad center, hardware Back) that the old
-    // per-action remap path stripped away.
+    // The table itself is built by gamepadMappingsFor() in core-domain, so the
+    // rebuild rule is pure and unit-tested rather than living behind DataStore.
     private suspend fun applyLayout(confirmBack: ConfirmBackLayout, xy: XYLayout) {
-        val confirmKey = if (confirmBack == ConfirmBackLayout.STANDARD) KeyEvent.KEYCODE_BUTTON_A else KeyEvent.KEYCODE_BUTTON_B
-        val taskTrayKey = if (xy == XYLayout.STANDARD) KeyEvent.KEYCODE_BUTTON_X else KeyEvent.KEYCODE_BUTTON_Y
-
-        val bindings = DEFAULT_BINDINGS.map { binding ->
-            when (binding.keyCode) {
-                KeyEvent.KEYCODE_BUTTON_A, KeyEvent.KEYCODE_BUTTON_B ->
-                    GamepadBinding(binding.keyCode, if (binding.keyCode == confirmKey) GamepadAction.SELECT else GamepadAction.BACK)
-                KeyEvent.KEYCODE_BUTTON_X, KeyEvent.KEYCODE_BUTTON_Y ->
-                    GamepadBinding(binding.keyCode, if (binding.keyCode == taskTrayKey) GamepadAction.OPEN_TASK_TRAY else GamepadAction.LONG_PRESS)
-                else -> binding
-            }
-        }
-        mappingRepository.saveMappings(GamepadMappings(bindings))
+        mappingRepository.saveMappings(gamepadMappingsFor(confirmBack, xy))
     }
 
     private suspend fun currentConfirmBackLayout(): ConfirmBackLayout =

@@ -9,7 +9,7 @@ import org.junit.Test
 
 /**
  * Pins [hasContextMenu] so the idle hint and the real Y/Triangle trigger stay in sync. Each
- * case mirrors a branch of `XMBViewModel.onItemLongPress` / `dispatchGamepadAction(BUTTON_Y)`.
+ * case mirrors a branch of `XMBViewModel.onItemLongPress` / `dispatchGamepadAction(OPEN_CONTEXT_MENU)`.
  */
 class ContextMenuPredicateTest {
 

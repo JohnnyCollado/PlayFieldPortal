@@ -22,7 +22,7 @@ import timber.log.Timber
 import java.io.File
 import javax.inject.Inject
 
-// A row in the video's Options (△) menu. RESUME is only offered when there's a saved position.
+// A row in the video's Options menu. RESUME is only offered when there's a saved position.
 enum class VideoDetailAction(val label: String) {
     PLAY("Play"),
     RESUME("Resume"),
@@ -170,7 +170,7 @@ class VideoDetailViewModel @Inject constructor(
                     GamepadAction.NAVIGATE_DOWN -> _uiState.update { it.copy(mainFocus = (it.mainFocus + 1) % total) }
                     GamepadAction.SELECT -> s.primaryActions.getOrNull(s.mainFocus)?.let { activate(it) }
                     GamepadAction.BACK -> _uiState.update { it.copy(closed = true) }
-                    GamepadAction.BUTTON_Y, GamepadAction.LONG_PRESS -> openOptions()
+                    GamepadAction.OPEN_CONTEXT_MENU -> openOptions()
                     else -> Unit
                 }
             }

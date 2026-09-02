@@ -74,7 +74,7 @@ fun GamePickerScreen(
                 GamepadAction.NAVIGATE_UP -> viewModel.moveSelection(-1)
                 GamepadAction.NAVIGATE_DOWN -> viewModel.moveSelection(+1)
                 GamepadAction.SELECT -> viewModel.activateSelection()
-                GamepadAction.BUTTON_Y -> viewModel.toggleSelectedPlatform()
+                GamepadAction.OPEN_CONTEXT_MENU -> viewModel.toggleSelectedPlatform()
                 GamepadAction.BACK -> cancelAndClear()
                 GamepadAction.HOME -> confirmAndClear()
                 else -> {} // Other actions handled by parent

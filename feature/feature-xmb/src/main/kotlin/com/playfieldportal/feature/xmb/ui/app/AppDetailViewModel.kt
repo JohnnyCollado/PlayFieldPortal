@@ -337,7 +337,7 @@ class AppDetailViewModel @Inject constructor(
                 else -> openArtworkMenu()
             }
             // Y / Triangle opens the Options menu directly, like Game Detail.
-            GamepadAction.BUTTON_Y, GamepadAction.LONG_PRESS -> openOptions()
+            GamepadAction.OPEN_CONTEXT_MENU -> openOptions()
             GamepadAction.BACK -> close()
             else -> Unit
         }

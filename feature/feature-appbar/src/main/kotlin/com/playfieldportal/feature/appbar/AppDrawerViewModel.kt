@@ -247,9 +247,9 @@ class AppDrawerViewModel @Inject constructor(
                 GamepadAction.NAVIGATE_DOWN -> _uiState.update { s -> s.copy(menuIndex = (s.menuIndex + 1) % actions.size) }
                 GamepadAction.SELECT        -> onMenuAction(actions[state.menuIndex.coerceIn(0, actions.size - 1)])
                 // Hold again, or Y, dismisses the menu (BACK closes the whole drawer via XMBViewModel).
-                GamepadAction.LONG_PRESS, GamepadAction.BUTTON_Y -> closeAppMenu()
+                GamepadAction.OPEN_CONTEXT_MENU -> closeAppMenu()
                 // X in menu context: dismiss menu too
-                GamepadAction.BUTTON_X -> closeAppMenu()
+                GamepadAction.CHANGE_SORT -> closeAppMenu()
                 else -> Unit
             }
             return
@@ -263,7 +263,7 @@ class AppDrawerViewModel @Inject constructor(
         val cur = state.selectedIndex
         when (action) {
             // Hold a button to open the focused app's mini menu (controller equivalent of long-press).
-            GamepadAction.LONG_PRESS -> openAppMenuForSelected()
+            GamepadAction.OPEN_CONTEXT_MENU -> openAppMenuForSelected()
             GamepadAction.NAVIGATE_LEFT  -> {
                 if (cur % GRID_COLUMNS > 0) { _uiState.update { it.copy(selectedIndex = cur - 1) }; menuSound.play(MenuSound.SCROLL) }
             }
@@ -285,7 +285,7 @@ class AppDrawerViewModel @Inject constructor(
                 if (app != null) launchApp(app.packageName)
             }
             // Y / Triangle — open options for the currently focused app
-            GamepadAction.BUTTON_Y -> openAppMenuForSelected()
+            GamepadAction.OPEN_CONTEXT_MENU -> openAppMenuForSelected()
             // L1 / R1 — cycle through filter tabs (App Drawer only)
             GamepadAction.PREV_CATEGORY -> {
                 val filters = AppFilter.values()

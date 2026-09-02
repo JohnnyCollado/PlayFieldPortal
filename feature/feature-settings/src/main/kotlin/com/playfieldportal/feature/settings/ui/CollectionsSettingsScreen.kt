@@ -175,7 +175,7 @@ private fun CollectionListStep(
             if (collections.isEmpty()) {
                 SettingsRow(
                     label    = "No collections yet",
-                    sublabel = "Create one above, or add a game from its options (△) menu.",
+                    sublabel = "Create one above, or add a game from its Options menu.",
                 )
             } else {
                 collections.forEach { collection ->
@@ -224,7 +224,7 @@ private fun CollectionDetailStep(
             if (games.isEmpty()) {
                 SettingsRow(
                     label    = "No games in this collection",
-                    sublabel = "Add games from their options (△) menu.",
+                    sublabel = "Add games from their Options menu.",
                 )
             } else {
                 games.forEach { game ->

@@ -488,9 +488,6 @@ data class XMBUiState(
     // real input event, so the contextual button doesn't flicker.
     val lastInputWasTouch: Boolean = false,
     // The user's chosen controller button-glyph style (Settings ▸ Controller ▸ Display Type).
-    // Drives the idle context-menu hint's face-button icon (△ / Y / X).
-    val controllerDisplayType: com.playfieldportal.core.domain.model.ControllerDisplayType =
-        com.playfieldportal.core.domain.model.ControllerDisplayType.XBOX,
     // True when the user has been idle on an item that has a context menu, while touch controls
     // are active and no overlay is up — drives the small "Options" hint pill. See
     // XMBViewModel's idle-timer loop for the gate conditions.
@@ -541,7 +538,7 @@ data class XMBUiState(
     val activeShibaCoinsTarget: com.playfieldportal.feature.xmb.ui.detail.ShibaCoinsTarget? = null,
     val pendingShibaCoinsAction: GamepadAction? = null,
     // True when the Game Detail screen should fire its Play action as soon as the game loads —
-    // set by direct-launch confirms and the △ "Launch Game" entry; cleared on close.
+    // set by direct-launch confirms and the Options menu's "Launch Game" entry; cleared on close.
     val activeGameAutoLaunch: Boolean = false,
     // The specific disc to open (and auto-launch) when [activeGameId] is set — set by the game
     // context menu's "Choose Disc" so a direct-launch user can pick a non-primary disc. The
@@ -679,7 +676,7 @@ data class XMBUiState(
         get() = currentItems.getOrNull(selectedItemIndex)
 
     // True iff a Y/Triangle press on the focused item would open a context menu — the exact mirror
-    // of XMBViewModel.onItemLongPress / dispatchGamepadAction(BUTTON_Y)'s when-branches, so the
+    // of XMBViewModel.onItemLongPress / dispatchGamepadAction(OPEN_CONTEXT_MENU)'s when-branches, so the
     // idle hint and the real trigger never drift apart. Computed (never stored) so it stays
     // current with the cursor without plumbing at every stepItem call site.
     val focusedItemHasContextMenu: Boolean
@@ -837,7 +834,7 @@ internal fun List<MusicTrack>.trackSorted(mode: XmbSortMode): List<MusicTrack> =
 
 /**
  * True iff a Y/Triangle press on [this] item would open a context menu under [state] — the exact
- * mirror of `XMBViewModel.onItemLongPress` / `dispatchGamepadAction(BUTTON_Y)`'s `when` branches.
+ * mirror of `XMBViewModel.onItemLongPress` / `dispatchGamepadAction(OPEN_CONTEXT_MENU)`'s `when` branches.
  * Pure (no side effects) so the idle hint can read it without opening a menu, and so it is
  * unit-testable. The per-category `openXxxContextMenu` functions start with a category guard that
  * returns false on mismatch; those guards are reproduced here as category-id checks so this never
@@ -1986,7 +1983,7 @@ class XMBViewModel @Inject constructor(
     private fun emptyPlaylistItem(): XMBItem = XMBItem(
         id       = EMPTY_PLAYLIST_ITEM_ID,
         title    = "This playlist is empty",
-        subtitle = "Add tracks below or from a song's options (△) menu.",
+        subtitle = "Add tracks below or from a song's Options menu.",
         type     = XMBItemType.EMPTY,
     )
 
@@ -4061,11 +4058,9 @@ class XMBViewModel @Inject constructor(
         }
         viewModelScope.launch {
             controllerLayoutRepository.prefs.collect { prefs ->
+                // Prompt glyphs are supplied ambiently by ProvideControllerPrompts at the
+                // app root, so the display type no longer needs mirroring into UI state.
                 gamepadInputHandler.scrollSpeed = prefs.scrollSpeed
-                // Surface the display type so the idle context-menu hint can render the
-                // matching face-button glyph (△ / Y / X). Reactive — updates instantly
-                // when the user cycles the setting.
-                _uiState.update { it.copy(controllerDisplayType = prefs.displayType) }
             }
         }
     }
@@ -4114,7 +4109,7 @@ class XMBViewModel @Inject constructor(
                 // Start button confirms the picker (Add apps / Done), regardless of row.
                 GamepadAction.HOME          -> confirmAppPicker()
                 GamepadAction.BACK,
-                GamepadAction.LONG_PRESS    -> closeAppPicker()
+                GamepadAction.OPEN_CONTEXT_MENU    -> closeAppPicker()
                 else -> Unit
             }
             return
@@ -4128,7 +4123,7 @@ class XMBViewModel @Inject constructor(
                 GamepadAction.SELECT        -> activateMusicTrackPicker()
                 GamepadAction.HOME          -> confirmMusicTrackPicker()
                 GamepadAction.BACK,
-                GamepadAction.LONG_PRESS    -> closeMusicTrackPicker()
+                GamepadAction.OPEN_CONTEXT_MENU    -> closeMusicTrackPicker()
                 else -> Unit
             }
             return
@@ -4142,8 +4137,7 @@ class XMBViewModel @Inject constructor(
                 GamepadAction.SELECT,
                 GamepadAction.HOME,
                 GamepadAction.BACK,
-                GamepadAction.BUTTON_Y,
-                GamepadAction.LONG_PRESS -> _uiState.update { it.copy(pendingGamePickerAction = action) }
+                GamepadAction.OPEN_CONTEXT_MENU -> _uiState.update { it.copy(pendingGamePickerAction = action) }
                 else -> Unit
             }
             return
@@ -4156,8 +4150,7 @@ class XMBViewModel @Inject constructor(
                 GamepadAction.NAVIGATE_DOWN -> shiftContextMenu(+1)
                 GamepadAction.SELECT        -> activateContextMenuItem()
                 GamepadAction.BACK,
-                GamepadAction.LONG_PRESS,
-                GamepadAction.BUTTON_Y      -> closeContextMenu()
+                GamepadAction.OPEN_CONTEXT_MENU      -> closeContextMenu()
                 else -> Unit
             }
             return
@@ -4172,8 +4165,8 @@ class XMBViewModel @Inject constructor(
                 GamepadAction.NAVIGATE_DOWN  -> nudgeXmbLayoutVertical(+1)
                 GamepadAction.PREV_CATEGORY  -> nudgeXmbLayoutScale(-1)
                 GamepadAction.NEXT_CATEGORY  -> nudgeXmbLayoutScale(+1)
-                GamepadAction.BUTTON_Y       -> resetXmbLayoutAdjust()
-                GamepadAction.LONG_PRESS     -> toggleXmbLayoutSliders()
+                GamepadAction.OPEN_CONTEXT_MENU       -> resetXmbLayoutAdjust()
+                GamepadAction.OPEN_CONTEXT_MENU     -> toggleXmbLayoutSliders()
                 GamepadAction.SELECT         -> saveXmbLayoutAdjust()
                 GamepadAction.BACK           -> cancelXmbLayoutAdjust()
                 else -> Unit
@@ -4190,8 +4183,7 @@ class XMBViewModel @Inject constructor(
                 GamepadAction.NAVIGATE_RIGHT -> musicNext()
                 GamepadAction.NAVIGATE_UP    -> musicSeekBy(10_000)
                 GamepadAction.NAVIGATE_DOWN  -> musicSeekBy(-10_000)
-                GamepadAction.BUTTON_Y,
-                GamepadAction.LONG_PRESS     -> openMusicPlayerOptions()
+                GamepadAction.OPEN_CONTEXT_MENU     -> openMusicPlayerOptions()
                 GamepadAction.BACK           -> closeMusicPlayer()
                 else -> Unit
             }
@@ -4206,7 +4198,7 @@ class XMBViewModel @Inject constructor(
                 GamepadAction.NAVIGATE_LEFT -> adjustCustomColor(-0.04f)
                 GamepadAction.NAVIGATE_RIGHT -> adjustCustomColor(0.04f)
                 GamepadAction.SELECT -> confirmCustomColor()
-                GamepadAction.BACK, GamepadAction.LONG_PRESS -> cancelCustomColor()
+                GamepadAction.BACK, GamepadAction.OPEN_CONTEXT_MENU -> cancelCustomColor()
                 else -> Unit
             }
             return
@@ -4217,7 +4209,7 @@ class XMBViewModel @Inject constructor(
                 GamepadAction.NAVIGATE_DOWN -> moveColorSchemePicker(+1)
                 GamepadAction.SELECT        -> confirmColorSchemePicker()
                 GamepadAction.BACK,
-                GamepadAction.LONG_PRESS    -> cancelColorSchemePicker()
+                GamepadAction.OPEN_CONTEXT_MENU    -> cancelColorSchemePicker()
                 else -> Unit
             }
             return
@@ -4260,9 +4252,7 @@ class XMBViewModel @Inject constructor(
                 GamepadAction.NAVIGATE_DOWN  -> moveMusicBrowser(+1)
                 GamepadAction.SELECT         -> activateMusicBrowser()
                 GamepadAction.BACK           -> onMusicBrowserBack()
-                GamepadAction.BUTTON_Y,
-                GamepadAction.LONG_PRESS     -> openMusicBrowserContextMenu()
-                GamepadAction.OPEN_TASK_TRAY,
+                GamepadAction.OPEN_CONTEXT_MENU     -> openMusicBrowserContextMenu()
                 GamepadAction.CHANGE_SORT    -> cycleSort()
                 else -> Unit
             }
@@ -4327,12 +4317,12 @@ class XMBViewModel @Inject constructor(
                     // Left/Right and the options button are ignored by the scaffold's default
                     // nav but reachable via onInterceptAction — screens with horizontal strips
                     // or per-row context menus (Themes) consume them there. The options press
-                    // arrives as LONG_PRESS or BUTTON_Y depending on the X/Y layout mapping,
+                    // arrives as OPEN_CONTEXT_MENU whichever face button the X/Y layout binds it to,
                     // so both are forwarded (they're treated identically, as everywhere else).
                     GamepadAction.NAVIGATE_LEFT,
                     GamepadAction.NAVIGATE_RIGHT,
-                    GamepadAction.LONG_PRESS,
-                    GamepadAction.BUTTON_Y,
+                    GamepadAction.OPEN_CONTEXT_MENU,
+                    GamepadAction.OPEN_CONTEXT_MENU,
                     GamepadAction.SELECT -> _uiState.update { it.copy(pendingSettingsAction = action) }
                     else -> Unit
                 }
@@ -4395,8 +4385,7 @@ class XMBViewModel @Inject constructor(
                     else -> onOpenAppDrawer()
                 }
             }
-            GamepadAction.LONG_PRESS,
-            GamepadAction.BUTTON_Y -> {
+            GamepadAction.OPEN_CONTEXT_MENU -> {
                 // Y / Triangle — open context menu for whichever item type has focus
                 val item = state.currentItems.getOrNull(state.selectedItemIndex)
                 when {
@@ -4414,13 +4403,11 @@ class XMBViewModel @Inject constructor(
             }
             // Start button no longer restarts / shows the boot screen.
             GamepadAction.HOME          -> Unit
-            // X / Square — cycle the sort order of the current list (PSP-style). The task tray was
-            // removed, so its old action is repurposed to sort too (covers stale saved mappings
-            // where X is still bound to OPEN_TASK_TRAY).
-            GamepadAction.OPEN_TASK_TRAY,
+            // Cycle the sort order of the current list (PSP-style). Whichever face button
+            // the user's X/Y layout assigns to sort dispatches this.
             GamepadAction.CHANGE_SORT -> cycleSort()
-            GamepadAction.BUTTON_Y,
-            GamepadAction.BUTTON_X,
+            GamepadAction.OPEN_CONTEXT_MENU,
+            GamepadAction.CHANGE_SORT,
             GamepadAction.PREV_CATEGORY,
             GamepadAction.NEXT_CATEGORY -> Unit
         }

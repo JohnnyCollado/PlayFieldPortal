@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="a" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <path d="M223.986,301.285v-97.881h22.609v78.03h47.424v19.852h-70.033Z" fill="#fff"/>
+  <path d="M51.122,171.15h409.756v54.09c0,63.807-51.803,115.61-115.61,115.61H51.122v-169.7h0Z" transform="translate(512 512) rotate(180)" fill="none" stroke="#fff" stroke-miterlimit="10" stroke-width="24"/>
+</svg>

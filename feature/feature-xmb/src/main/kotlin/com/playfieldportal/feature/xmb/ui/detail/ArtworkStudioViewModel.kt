@@ -76,7 +76,7 @@ data class ArtworkStudioUiState(
     val message: String? = null,
     // Set when the user picked "Local File" — the screen launches the SAF picker for it.
     val localPickKind: ArtworkKind? = null,
-    // Actions menu (LONG_PRESS / on-screen ACTIONS) — operates on the active tab's current slot.
+    // Actions menu (OPEN_CONTEXT_MENU / on-screen ACTIONS) — operates on the active tab's current slot.
     val actionsOpen: Boolean = false,
     val actionsIndex: Int = 0,
     val info: StudioArtworkInfo? = null,
@@ -938,10 +938,10 @@ class ArtworkStudioViewModel @Inject constructor(
                 StudioZone.GRID    -> openCandidate(s.gridIndex)
             }
             // X / Square toggles the SGDB NSFW filter while browsing that source.
-            GamepadAction.CHANGE_SORT, GamepadAction.OPEN_TASK_TRAY -> toggleNsfw()
+            GamepadAction.CHANGE_SORT -> toggleNsfw()
             // Y / Triangle opens the per-slot options menu (crop, restore, reset, clear, info) —
             // XMB-style context menu, available at every level.
-            GamepadAction.BUTTON_Y, GamepadAction.LONG_PRESS -> openActions()
+            GamepadAction.OPEN_CONTEXT_MENU -> openActions()
             else -> Unit
         }
     }

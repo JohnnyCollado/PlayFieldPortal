@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="a" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <path d="M222.025,308.359v-109.605h25.317v87.376h53.105v22.229h-78.423Z" fill="#fff"/>
+  <path d="M86.83,145.942l-9.942-7.428L8.358,253.088l68.53,115.51,9.942-8.364c-21.284-29.17-34.062-66.48-34.062-107.146,0-40.666,12.778-77.976,34.062-107.146Z" fill="#fff"/>
+  <path d="M428.202,363.614l9.942,7.428,68.53-114.574-68.53-115.51-9.942,8.364c21.284,29.17,34.062,66.48,34.062,107.146,0,40.666-12.778,77.976-34.062,107.146Z" fill="#fff"/>
+  <g>
+    <circle cx="256" cy="256" r="172.309" fill="none" stroke="#fff" stroke-miterlimit="10" stroke-width="20"/>
+    <circle cx="256" cy="256" r="121.841" fill="none" stroke="#fff" stroke-miterlimit="10" stroke-width="15"/>
+  </g>
+</svg>

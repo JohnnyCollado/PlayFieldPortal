@@ -62,7 +62,7 @@ fun AppVisibilitySettingsScreen(
 
             Text(
                 text = "Apps and games you've hidden, grouped by item with the places each is hidden " +
-                    "from. Hide items from their △ Options menu; unhide them here.",
+                    "from. Hide items from their Options menu; unhide them here.",
                 color = SettingsSubtext,
                 fontSize = 12.sp,
                 modifier = Modifier.padding(start = 48.dp, end = 48.dp, bottom = 8.dp),

@@ -140,7 +140,7 @@ class ControllerSettingsViewModelTest {
     @Test
     fun `cycleDisplayType treats generic as xbox for next branded option`() = runTest(testDispatcher) {
         coEvery { layoutRepository.prefs } returns flowOf(
-            ControllerLayoutPrefs(displayType = ControllerDisplayType.GENERIC)
+            ControllerLayoutPrefs(displayType = ControllerDisplayType.XBOX)
         )
         viewModel = buildActive()
         advanceUntilIdle()

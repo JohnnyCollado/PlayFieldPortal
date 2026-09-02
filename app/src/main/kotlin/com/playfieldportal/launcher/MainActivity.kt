@@ -114,10 +114,14 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             PFPTheme {
-                // AppXmbHost is defined per build variant: the debug source set wraps the shell so
-                // long-pressing Settings opens DebugMenuScreen; the release source set calls
-                // XMBShellContainer directly, keeping debug code out of the APK.
-                AppXmbHost()
+                // Controller prompts are ambient: every footer resolves its glyphs from the
+                // live bindings supplied here, so none of them can contradict the pad.
+                ProvideControllerPrompts {
+                    // AppXmbHost is defined per build variant: the debug source set wraps the shell so
+                    // long-pressing Settings opens DebugMenuScreen; the release source set calls
+                    // XMBShellContainer directly, keeping debug code out of the APK.
+                    AppXmbHost()
+                }
             }
         }
     }

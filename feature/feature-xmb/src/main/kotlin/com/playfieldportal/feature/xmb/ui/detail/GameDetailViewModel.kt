@@ -445,7 +445,7 @@ class GameDetailViewModel @Inject constructor(
                 else -> onManualClicked()
             }
             // Y / Triangle opens the Options context menu directly, from anywhere on the page.
-            GamepadAction.BUTTON_Y, GamepadAction.LONG_PRESS -> openOptions()
+            GamepadAction.OPEN_CONTEXT_MENU -> openOptions()
             GamepadAction.BACK          -> _uiState.update { it.copy(closed = true) }
             else -> Unit
         }

@@ -240,8 +240,8 @@ class ShibaCoinsViewModel @Inject constructor(
             }
             // X / square cycles the sort, Y / triangle cycles the Show filter — from anywhere on
             // the page, matching the fullscreen Shiba library's bindings.
-            GamepadAction.CHANGE_SORT, GamepadAction.OPEN_TASK_TRAY -> cycleSort(1)
-            GamepadAction.BUTTON_Y, GamepadAction.LONG_PRESS -> cycleFilter(1)
+            GamepadAction.CHANGE_SORT -> cycleSort(1)
+            GamepadAction.OPEN_CONTEXT_MENU -> cycleFilter(1)
             GamepadAction.BACK -> close()
             else -> Unit
         }

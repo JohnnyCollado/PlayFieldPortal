@@ -25,4 +25,6 @@ dependencies {
     // The app module's Hilt processor does the code-gen, so no Hilt plugin/KSP needed here.
     implementation(libs.hilt.android)
     implementation(libs.timber)
+
+    testImplementation(libs.bundles.test.unit)
 }

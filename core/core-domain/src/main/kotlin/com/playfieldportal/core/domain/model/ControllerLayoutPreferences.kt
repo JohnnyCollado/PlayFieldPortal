@@ -17,15 +17,15 @@ fun ConfirmBackLayout.displayLabel(): String = when (this) {
 // ── Secondary button (X / Y) layout ───────────────────────────────────────────
 
 enum class XYLayout {
-    /** Default: X = Task Tray, Y = Options */
+    /** Default: Y = Options, X = Sort */
     STANDARD,
-    /** Swapped: X = Options, Y = Task Tray */
+    /** Swapped: X = Options, Y = Sort */
     SWAPPED,
 }
 
 fun XYLayout.displayLabel(): String = when (this) {
-    XYLayout.STANDARD -> "Standard (X = Task Tray, Y = Options)"
-    XYLayout.SWAPPED  -> "Swapped (X = Options, Y = Task Tray)"
+    XYLayout.STANDARD -> "Standard (Y = Options, X = Sort)"
+    XYLayout.SWAPPED  -> "Swapped (X = Options, Y = Sort)"
 }
 
 // ── Controller display / prompt style ─────────────────────────────────────────
@@ -34,14 +34,12 @@ enum class ControllerDisplayType {
     XBOX,
     NINTENDO,
     PLAYSTATION,
-    GENERIC,
 }
 
 fun ControllerDisplayType.displayLabel(): String = when (this) {
     ControllerDisplayType.XBOX        -> "Xbox"
     ControllerDisplayType.NINTENDO    -> "Nintendo"
     ControllerDisplayType.PLAYSTATION -> "PlayStation"
-    ControllerDisplayType.GENERIC     -> "Generic"
 }
 
 // ── Held-navigation scroll speed ──────────────────────────────────────────────

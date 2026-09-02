@@ -47,7 +47,7 @@ data class ArtworkSettingsUiState(
     val confirmRescrapeAll: Boolean = false,
     val diskCacheSizeMb: String = "0 MB",
     // Global default for how game tiles are drawn on the XMB (per-game overrides live in each
-    // game's △ Icon Display menu).
+    // game's Icon Display options menu).
     val iconDisplayMode: com.playfieldportal.core.domain.model.IconDisplayMode =
         com.playfieldportal.core.domain.model.IconDisplayMode.DEFAULT,
     // ICON1 video snaps in the focused icon slot (Custom Icon mode only).

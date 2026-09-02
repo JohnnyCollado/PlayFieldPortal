@@ -688,7 +688,6 @@ fun XMBShell(
                 modifier = Modifier.align(Alignment.BottomEnd),
             ) {
                 ContextMenuHint(
-                    displayType = uiState.controllerDisplayType,
                     modifier = Modifier.padding(bottom = 76.dp, end = 20.dp),
                 )
             }
@@ -748,7 +747,6 @@ fun XMBShell(
                     onBack = onCloseAppDrawer,
                     pendingGamepadAction = uiState.pendingDrawerAction,
                     onGamepadActionConsumed = onDrawerActionConsumed,
-                    displayType = uiState.controllerDisplayType,
                     modifier = Modifier.fillMaxSize(),
                 )
             }

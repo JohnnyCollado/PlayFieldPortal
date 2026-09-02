@@ -39,7 +39,7 @@ private const val PAN_STEP_PX = 160f
 // Longest edge of the saved wallpaper file — plenty for any launcher background.
 private const val WALLPAPER_MAX_DIM = 2560
 
-// A row in the viewer's Options (Y / △) menu.
+// A row in the viewer's Options menu.
 enum class PhotoViewerAction(val label: String) {
     SET_WALLPAPER("Set as Launcher Wallpaper"),
     ROTATE_LEFT("Rotate Left"),
@@ -138,15 +138,14 @@ class PhotoViewerViewModel @Inject constructor(
                     GamepadAction.NAVIGATE_DOWN -> _uiState.update { it.copy(optionsIndex = (it.optionsIndex + 1) % count) }
                     GamepadAction.SELECT        -> activate(PhotoViewerAction.entries[s.optionsIndex.coerceIn(0, count - 1)])
                     GamepadAction.BACK,
-                    GamepadAction.BUTTON_Y      -> _uiState.update { it.copy(showOptions = false) }
+                    GamepadAction.OPEN_CONTEXT_MENU      -> _uiState.update { it.copy(showOptions = false) }
                     else -> Unit
                 }
             }
             else -> when (action) {
                 GamepadAction.SELECT        -> _uiState.update { it.copy(controlsVisible = !it.controlsVisible) }
                 GamepadAction.BACK          -> _uiState.update { it.copy(closed = true) }
-                GamepadAction.BUTTON_Y,
-                GamepadAction.LONG_PRESS    -> openOptions()
+                GamepadAction.OPEN_CONTEXT_MENU    -> openOptions()
                 GamepadAction.PREV_CATEGORY -> step(-1)
                 GamepadAction.NEXT_CATEGORY -> step(+1)
                 GamepadAction.NAVIGATE_LEFT  -> if (s.zoomed) pan(+PAN_STEP_PX, 0f) else step(-1)

@@ -20,11 +20,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.TextStyle
+import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.ui.components.ControllerPrompt
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.feature.settings.ui.LocalSettingsScrollStateRegistrar
@@ -36,10 +40,10 @@ import com.playfieldportal.feature.settings.ui.SettingsScaffold
 /** Green ring of the step badge (④⑤⑥⑧ circles in the reference). */
 internal val WizardRingGreen = Color(0xFF3BCC71)
 
-/** ✕ Enter glyph — PSP's soft blue confirm button. */
+/** Enter label tint — PSP's soft blue confirm button. */
 internal val WizardEnterBlue = Color(0xFF7FB4E8)
 
-/** ○ Back glyph — PSP's soft red back button. */
+/** Back label tint — PSP's soft red back button. */
 internal val WizardBackRed = Color(0xFFEE8A93)
 
 /** Amber status/validation text (the wizard's transient messages). */
@@ -49,10 +53,10 @@ internal val WizardAmber = Color(0xFFFFC857)
  * The first-run wizard's PSP skin, layered on [SettingsScaffold] — the same controller focus
  * engine, focus restoration, touch re-anchoring, and keep-in-view clamping, but with the
  * mockup's chrome: a green-ringed step badge + title header, a centered task heading with an
- * optional constraint hint, and the ✕ Enter / ○ Back footer pinned under the content. The scrim
+ * optional constraint hint, and the Enter / Back prompt footer pinned under the content. The scrim
  * is light so the XMB wave reads through, like the PSP original's rich blue backdrop.
  *
- * Strongly controller driven: ○ (BACK) steps to the previous page, ✕ (SELECT) activates the
+ * Strongly controller driven: BACK steps to the previous page, SELECT activates the
  * focused row to advance/confirm. Touch works everywhere — rows tap, fields tap to edit, and
  * pages may expose their own ▶ affordance.
  */
@@ -66,7 +70,7 @@ fun WizardScaffold(
     /** Centered constraint/hint line under the heading, e.g. "Add one or more root folders." */
     hint: String? = null,
     onBack: () -> Unit,
-    /** Dimmed, inert ○ Back on the first page (no earlier step exists). */
+    /** Dimmed, inert Back on the first page (no earlier step exists). */
     backEnabled: Boolean = true,
     /** Transient wizard message — rendered as an amber row under the heading. */
     message: String? = null,
@@ -190,27 +194,26 @@ private fun WizardFooter(backEnabled: Boolean, note: String?) {
             fontSize = 12.sp,
         )
         Spacer(Modifier.height(6.dp))
+        // The PSP-era colour language survives on the labels; the glyphs themselves
+        // are now the user's own pad, and Back follows a reversed Confirm/Back setting.
         Row(horizontalArrangement = Arrangement.spacedBy(28.dp)) {
-            WizardGlyph("✕", "Enter", WizardEnterBlue, enabled = true)
-            WizardGlyph("○", "Back", WizardBackRed, enabled = backEnabled)
+            ControllerPrompt(
+                action = GamepadAction.SELECT,
+                label = "Enter",
+                labelColor = WizardEnterBlue,
+                labelStyle = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold),
+                glyphSize = 16.dp,
+                spacing = 5.dp,
+            )
+            ControllerPrompt(
+                action = GamepadAction.BACK,
+                label = "Back",
+                labelColor = WizardBackRed.copy(alpha = if (backEnabled) 1f else 0.35f),
+                labelStyle = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold),
+                glyphSize = 16.dp,
+                spacing = 5.dp,
+                modifier = Modifier.alpha(if (backEnabled) 1f else 0.4f),
+            )
         }
-    }
-}
-
-@Composable
-private fun WizardGlyph(glyph: String, word: String, color: Color, enabled: Boolean) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            text = glyph,
-            color = color.copy(alpha = if (enabled) 1f else 0.35f),
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-        )
-        Spacer(Modifier.width(5.dp))
-        Text(
-            text = word,
-            color = Color.White.copy(alpha = if (enabled) 0.9f else 0.4f),
-            fontSize = 12.sp,
-        )
     }
 }

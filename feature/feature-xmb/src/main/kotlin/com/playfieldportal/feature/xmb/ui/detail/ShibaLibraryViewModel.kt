@@ -143,9 +143,9 @@ class ShibaLibraryViewModel @Inject constructor(
             GamepadAction.NAVIGATE_RIGHT -> switchSibling(1)
             GamepadAction.SELECT -> openFocused()
             // Y / triangle cycles the provider filter (All Tracked view only).
-            GamepadAction.BUTTON_Y, GamepadAction.LONG_PRESS -> cycleProviderFilter()
+            GamepadAction.OPEN_CONTEXT_MENU -> cycleProviderFilter()
             // X / square cycles the sort field and direction.
-            GamepadAction.CHANGE_SORT, GamepadAction.OPEN_TASK_TRAY -> cycleSort()
+            GamepadAction.CHANGE_SORT -> cycleSort()
             GamepadAction.BACK -> close()
             else -> Unit
         }

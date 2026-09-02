@@ -182,8 +182,7 @@ private fun ThemesSettingsContent(
                             GamepadAction.NAVIGATE_DOWN -> menuIndex = (menuIndex + 1).coerceAtMost(m.options.size - 1)
                             GamepadAction.SELECT        -> { m.options.getOrNull(menuIndex)?.action?.invoke(); menu = null }
                             GamepadAction.BACK,
-                            GamepadAction.LONG_PRESS,
-                            GamepadAction.BUTTON_Y      -> menu = null
+                            GamepadAction.OPEN_CONTEXT_MENU      -> menu = null
                             else -> Unit
                         }
                         true
@@ -204,7 +203,7 @@ private fun ThemesSettingsContent(
                         runCatching { iconStripRequester.requestFocus() }
                         true
                     }
-                    action == GamepadAction.LONG_PRESS || action == GamepadAction.BUTTON_Y -> {
+                    action == GamepadAction.OPEN_CONTEXT_MENU -> {
                         if (myThemesFocused) {
                             state.savedThemes.getOrNull(cardIndex)?.let { openMenuForSavedTheme(it) }
                         }

@@ -181,7 +181,7 @@ fun VideoPlayerScreen(
                     2 -> cycleTrack(player, C.TRACK_TYPE_AUDIO, allowOff = false)
                     3 -> screenModeIndex = (screenModeIndex + 1) % SCREEN_MODES.size
                 }
-                GamepadAction.BACK, GamepadAction.BUTTON_Y -> optionsOpen = false
+                GamepadAction.BACK, GamepadAction.OPEN_CONTEXT_MENU -> optionsOpen = false
                 else -> Unit
             }
             onGamepadActionConsumed(); return@LaunchedEffect
@@ -197,7 +197,7 @@ fun VideoPlayerScreen(
             GamepadAction.NAVIGATE_UP, GamepadAction.NAVIGATE_DOWN -> poke()
             GamepadAction.PREV_CATEGORY -> switchTo(index - 1)
             GamepadAction.NEXT_CATEGORY -> switchTo(index + 1)
-            GamepadAction.BUTTON_Y, GamepadAction.LONG_PRESS -> { optionsOpen = true; optionsRow = 0 }
+            GamepadAction.OPEN_CONTEXT_MENU -> { optionsOpen = true; optionsRow = 0 }
             else -> Unit
         }
         onGamepadActionConsumed()

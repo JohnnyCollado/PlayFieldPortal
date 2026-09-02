@@ -185,7 +185,7 @@ fun SettingsScaffold(
     showDivider: Boolean = true,
     // Light scrim: the XMB wave reads through instead of sitting behind a dark overlay.
     lightScrim: Boolean = false,
-    // Pinned footer under the content (the wizard's ✕ Enter / ○ Back chrome). When set, the
+    // Pinned footer under the content (the wizard's Enter / Back prompt chrome). When set, the
     // content area becomes a weighted column so the viewport excludes the footer band.
     footer: (@Composable () -> Unit)? = null,
     content: @Composable () -> Unit,
@@ -641,7 +641,7 @@ fun SettingsScaffold(
                 }
 
                 if (footer != null) {
-                    // Footer chrome (✕ Enter / ○ Back) is display-only — never a focus target,
+                    // Footer chrome (Enter / Back prompts) is display-only — never a focus target,
                     // so UP on the first content row cannot land inside it.
                     Column(
                         modifier = Modifier

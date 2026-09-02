@@ -53,11 +53,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.ui.components.ControllerPromptBar
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 
@@ -423,18 +425,35 @@ fun ArtworkStudioScreen(
                 }
             }
 
-            // Footer hints — per-level so the active bindings are always accurate.
-            Text(
-                when (state.zone) {
-                    StudioZone.TABS ->
-                        "◄ ► — artwork type   ·   A — sources   ·   B — close   ·   Y — options"
-                    StudioZone.SOURCES ->
-                        "◄ ► — source   ·   A — browse / pick file   ·   B — back   ·   X — NSFW   ·   Y — options"
-                    StudioZone.GRID ->
-                        "D-Pad — grid   ·   LB / RB — prev / next page   ·   A — preview / apply   ·   B — back   ·   X — NSFW   ·   Y — options"
+            // Footer hints — per-zone, and resolved from the live bindings so the
+            // glyphs follow the user's controller type and any remapped layout.
+            ControllerPromptBar(
+                prompts = when (state.zone) {
+                    StudioZone.TABS -> listOf(
+                        GamepadAction.SELECT to "sources",
+                        GamepadAction.BACK to "close",
+                        GamepadAction.OPEN_CONTEXT_MENU to "options",
+                    )
+                    StudioZone.SOURCES -> listOf(
+                        GamepadAction.SELECT to "browse / pick file",
+                        GamepadAction.BACK to "back",
+                        GamepadAction.CHANGE_SORT to "NSFW",
+                        GamepadAction.OPEN_CONTEXT_MENU to "options",
+                    )
+                    StudioZone.GRID -> listOf(
+                        GamepadAction.PREV_CATEGORY to "prev page",
+                        GamepadAction.NEXT_CATEGORY to "next page",
+                        GamepadAction.SELECT to "preview / apply",
+                        GamepadAction.BACK to "back",
+                        GamepadAction.CHANGE_SORT to "NSFW",
+                        GamepadAction.OPEN_CONTEXT_MENU to "options",
+                    )
                 },
-                color = Color.White.copy(alpha = 0.35f), fontSize = 10.sp,
                 modifier = Modifier.padding(top = 6.dp),
+                labelColor = Color.White.copy(alpha = 0.35f),
+                labelStyle = TextStyle(fontSize = 10.sp),
+                glyphSize = 14.dp,
+                arrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
             )
         }
 

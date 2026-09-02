@@ -491,7 +491,7 @@ fun WizardMessageRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(text = message, color = WizardAmber, fontSize = 13.sp)
             Text(
-                text = "Tap to dismiss — or press ✕ on this row",
+                text = "Tap to dismiss — or confirm on this row",
                 color = SettingsSubtext,
                 fontSize = 11.sp,
             )

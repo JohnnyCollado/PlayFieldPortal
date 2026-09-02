@@ -63,14 +63,13 @@ fun LogsSettingsScreen(
                             menuFor = null
                         }
                         GamepadAction.BACK,
-                        GamepadAction.LONG_PRESS,
-                        GamepadAction.BUTTON_Y      -> menuFor = null
+                        GamepadAction.OPEN_CONTEXT_MENU      -> menuFor = null
                         else -> Unit
                     }
                     true
                 }
-                // Options button (LONG_PRESS or BUTTON_Y, mapping-dependent) on a hovered log.
-                action == GamepadAction.LONG_PRESS || action == GamepadAction.BUTTON_Y -> {
+                // Options button on a hovered log — whichever face button the user's X/Y layout binds.
+                action == GamepadAction.OPEN_CONTEXT_MENU -> {
                     focusedLog?.let { menuFor = it; menuIndex = 0 }
                     true
                 }

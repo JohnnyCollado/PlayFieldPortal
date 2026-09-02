@@ -39,7 +39,7 @@ private enum class AddSlot { ROM, MUSIC, VIDEO, PHOTO }
  * First-run setup wizard, now one task per page (per the approved plan): Welcome → ROM Roots →
  * Music → Video → Photo → Artwork (with import offer) → Online Services → RetroArch* → Finish
  * (* only when RetroArch is installed). Channels the mockup's PSP skin via [WizardScaffold] —
- * strongly controller driven (○ back, ✕ activates the focused row / ▶ or Continue to advance),
+ * strongly controller driven (Back steps out, Confirm activates the focused row / ▶ or Continue to advance),
  * touch everywhere (rows, fields tap to edit). Everything is optional and written through the
  * same stores as Settings, so this is a guided front door, not a second configuration system.
  */
@@ -970,4 +970,4 @@ private fun FinishPagePreview() {
             onFinish = {},
         )
     }
-}
+}
