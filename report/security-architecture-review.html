@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Security architecture review — PlayFieldPortal</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "neutral", securityLevel: "loose" });
+</script>
+<style>
+  .seam { stroke-dasharray: 4 4; }
+  .lbl { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; }
+  .deep { background: linear-gradient(135deg,#0f172a,#1e293b); }
+  pre.mermaid { margin: 0; text-align: center; }
+  pre.mermaid svg { max-height: 320px; height: auto; }
+  body { font-feature-settings: "cv02","cv03","cv04"; }
+</style>
+</head>
+<body class="bg-stone-50 text-slate-900">
+<main class="max-w-5xl mx-auto px-6 py-12 space-y-14">
+
+<header class="border-b-2 border-slate-900 pb-8">
+  <p class="font-mono text-[11px] tracking-[.16em] uppercase text-emerald-700 mb-3">Architecture review · security drill-down</p>
+  <h1 class="font-serif text-4xl md:text-5xl font-bold tracking-tight leading-none mb-4">Where trust leaks across the seams</h1>
+  <p class="text-lg text-slate-600 max-w-2xl">Five deepening opportunities in PlayFieldPortal's ingestion paths. Ranked by what a single hostile file can reach today.</p>
+  <dl class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+    <div><dt class="text-slate-500 text-xs uppercase tracking-wide">Branch</dt><dd class="font-mono">ui-helper-buttons</dd></div>
+    <div><dt class="text-slate-500 text-xs uppercase tracking-wide">Date</dt><dd class="font-mono">2026-09-02</dd></div>
+    <div><dt class="text-slate-500 text-xs uppercase tracking-wide">Candidates</dt><dd class="font-mono">5</dd></div>
+    <div><dt class="text-slate-500 text-xs uppercase tracking-wide">ADR conflicts</dt><dd class="font-mono">none</dd></div>
+  </dl>
+  <div class="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-xs text-slate-500">
+    <span><span class="inline-block w-4 h-0 border-t-2 border-slate-400 align-middle"></span> solid = module</span>
+    <span><span class="inline-block w-4 h-0 border-t-2 border-dashed border-slate-400 align-middle"></span> dashed = seam</span>
+    <span><span class="inline-block w-4 h-0 border-t-2 border-red-600 align-middle"></span> red = leakage</span>
+    <span><span class="inline-block w-3 h-3 bg-slate-900 align-middle rounded-sm"></span> thick dark = deep module</span>
+  </div>
+</header>
+
+<!-- ══════════════ PRE-CANDIDATE: the one thing that isn't architecture ══════════════ -->
+<section class="rounded-lg border-2 border-red-300 bg-red-50 p-6">
+  <div class="flex items-baseline gap-3 flex-wrap mb-3">
+    <h2 class="font-serif text-2xl font-bold text-red-900">Act first: a live credential is in the shipped APK</h2>
+    <span class="px-2 py-0.5 rounded text-[11px] font-mono uppercase tracking-wider bg-red-700 text-white">Not a refactor</span>
+  </div>
+  <div class="font-mono text-sm text-slate-700 mb-3">
+    feature-artwork/build.gradle.kts:31-32 · ScreenScraperApi.kt:225,290 · dist/PlayFieldPortal-1.2.1-lite.apk
+  </div>
+  <p class="text-slate-800 mb-3">The ScreenScraper <strong>developer</strong> account is compiled into <code class="font-mono text-sm">BuildConfig</code> and sent as a plain query parameter. Verified present as a literal in the shipped lite APK. R8 does not obfuscate string literals, so <code class="font-mono text-sm">isMinifyEnabled = true</code> changes nothing.</p>
+  <pre class="bg-white border border-red-200 rounded p-3 text-xs font-mono overflow-x-auto">buildConfigField("String", "SS_DEV_ID",       "String.valueOf(\"${ssProp("screenscraper.devId", "SS_DEV_ID")}\")")
+buildConfigField("String", "SS_DEV_PASSWORD", "String.valueOf(\"${ssProp("screenscraper.devPassword", "SS_DEV_PASSWORD")}\")")</pre>
+  <p class="text-slate-800 mt-3 text-sm"><strong>Rotate the password now.</strong> The <code class="font-mono">String.valueOf(...)</code> wrapper defeats constant inlining only — it does nothing against extraction. Git history is clean; <code class="font-mono">local.properties</code> and <code class="font-mono">keystore.properties</code> are gitignored and untracked. The exposure is the binary alone. Value redacted here because this file is tracked. The durable fix is <a href="#c5" class="underline decoration-red-400">candidate 5</a>.</p>
+</section>
+
+<section id="candidates" class="space-y-14">
+
+<!-- ══════════════ C1 ══════════════ -->
+<article id="c1" class="scroll-mt-8">
+  <div class="flex items-baseline gap-3 flex-wrap mb-3">
+    <h2 class="font-serif text-3xl font-bold">1 · Give backup restore a trust seam</h2>
+    <span class="px-2 py-0.5 rounded text-[11px] font-mono uppercase tracking-wider bg-emerald-600 text-white">Strong</span>
+    <span class="px-2 py-0.5 rounded text-[11px] font-mono uppercase tracking-wider bg-slate-200 text-slate-700">ports &amp; adapters</span>
+  </div>
+  <div class="font-mono text-sm text-slate-600 mb-5">
+    feature-backup/BackupManager.kt:340-383, 470-484<br>
+    feature-launcher/EmulatorProfileRepository.kt:120-124 · EmulatorIntentResolver.kt:175-210
+  </div>
+
+  <div class="grid md:grid-cols-2 gap-4 mb-5">
+    <div class="rounded-lg border border-slate-200 bg-white p-4">
+      <p class="lbl text-slate-500 mb-2">Before — no seam</p>
+      <pre class="mermaid">
+flowchart TD
+  A[".pfpbackup (untrusted)"] --> B[readBackup]
+  B --> C[staging dir]
+  C -.->|"no root check"| D[filesDir/*]
+  D --> E[emulator_profiles]
+  E --> F[EmulatorIntentResolver]
+  F -.->|"ComponentName + extras"| G[grantUriPermission]
+  classDef leak stroke:#dc2626,stroke-width:2px,color:#7f1d1d;
+  class D,F,G leak
+      </pre>
+    </div>
+    <div class="rounded-lg border-2 border-slate-900 bg-white p-4">
+      <p class="lbl text-slate-500 mb-2">After — one deep module</p>
+      <pre class="mermaid">
+flowchart TD
+  A[".pfpbackup (untrusted)"] --> B["RestoreArchive"]
+  B --> C["RestoredBundle<br/>(validated)"]
+  C --> D[filesDir/bundled roots]
+  C --> E["admissible profiles only"]
+  E --> F[EmulatorIntentResolver]
+  classDef deep fill:#0f172a,color:#fff,stroke:#0f172a,stroke-width:3px;
+  class B deep
+      </pre>
+    </div>
+  </div>
+
+  <div class="space-y-3 text-slate-800">
+    <p><span class="lbl text-slate-500 mr-2">Problem</span>The confinement policy exists as a comment and a delete loop, not as an enforced interface — so it does not hold.</p>
+    <p><span class="lbl text-slate-500 mr-2">Evidence</span><code class="font-mono text-sm">BUNDLED_FILE_ROOTS</code> is used only to <em>delete</em>; the copy that follows is unconstrained:</p>
+    <pre class="bg-slate-900 text-slate-100 rounded p-4 text-xs font-mono overflow-x-auto">BUNDLED_FILE_ROOTS.forEach { root -> File(filesDir, root).deleteRecursively() }
+staged.forEach { src -&gt;
+    val rel  = src.relativeTo(staging).invariantSeparatorsPath
+    val dest = File(filesDir, rel)          // &lt;-- rel is never checked against the roots
+    dest.parentFile?.mkdirs()
+    src.copyTo(dest, overwrite = true)
+}</pre>
+    <p class="text-sm text-slate-600">The staging extraction <em>does</em> carry a correct canonical-path zip-slip guard (<code class="font-mono">:352</code>), so nothing escapes the sandbox. But any path under <code class="font-mono">filesDir</code> is writable: <code class="font-mono">datastore/*.preferences_pb</code> (corrupt the live store → crash loop), <code class="font-mono">pfpthemes/</code>, <code class="font-mono">import_plans/</code>, <code class="font-mono">emulator_profiles/custom_profiles.json</code>.</p>
+    <p><span class="lbl text-slate-500 mr-2">Compounding</span>A restored profile decides <code class="font-mono text-sm">ComponentName</code>, arbitrary extras, and <code class="font-mono text-sm">customCommand</code>, then receives <code class="font-mono text-sm">grantUriPermission(profile.packageName, romUri, READ)</code>. With candidate 4's provider root, that grant can cover any file under <code class="font-mono">/storage/</code>.</p>
+    <p><span class="lbl text-slate-500 mr-2">Solution</span>One module owns the archive: confinement, caps, and profile admissibility. Callers receive already-validated values and cannot opt out.</p>
+    <ul class="list-disc list-inside text-sm space-y-1 marker:text-emerald-600">
+      <li>locality: every restore invariant in one module</li>
+      <li>leverage: one interface, three ingestion callers</li>
+      <li>interface shrinks; implementation absorbs the guards</li>
+      <li>tests hit one interface — today <code class="font-mono">BackupManagerTest</code> has nine tests and none for slip, bombs, or non-root paths</li>
+    </ul>
+  </div>
+</article>
+
+<!-- ══════════════ C2 ══════════════ -->
+<article id="c2" class="scroll-mt-8">
+  <div class="flex items-baseline gap-3 flex-wrap mb-3">
+    <h2 class="font-serif text-3xl font-bold">2 · Collapse three zip readers into one</h2>
+    <span class="px-2 py-0.5 rounded text-[11px] font-mono uppercase tracking-wider bg-emerald-600 text-white">Strong</span>
+    <span class="px-2 py-0.5 rounded text-[11px] font-mono uppercase tracking-wider bg-slate-200 text-slate-700">in-process</span>
+  </div>
+  <div class="font-mono text-sm text-slate-600 mb-5">
+    feature-themes/XmbThemeLoader.kt:183-222 · theme-kit/PfpThemeCodec.kt:76-126 · feature-backup/BackupManager.kt:340-364
+  </div>
+
+  <div class="grid md:grid-cols-2 gap-4 mb-5">
+    <div class="rounded-lg border border-slate-200 bg-white p-4">
+      <p class="lbl text-slate-500 mb-3">Before — same policy, three depths</p>
+      <div class="space-y-3">
+        <div class="border-l-4 border-emerald-500 pl-3 py-1">
+          <p class="font-mono text-xs font-semibold">XmbThemeLoader</p>
+          <p class="text-xs text-slate-600">slip guard · entry cap 512 · total 128 MB</p>
+          <div class="mt-1 h-2 bg-emerald-500 rounded" style="width:92%"></div>
+        </div>
+        <div class="border-l-4 border-amber-500 pl-3 py-1">
+          <p class="font-mono text-xs font-semibold">PfpThemeCodec</p>
+          <p class="text-xs text-slate-600">per-entry caps · <span class="text-amber-700">no entry count</span></p>
+          <div class="mt-1 h-2 bg-amber-500 rounded" style="width:55%"></div>
+        </div>
+        <div class="border-l-4 border-red-600 pl-3 py-1">
+          <p class="font-mono text-xs font-semibold">BackupManager.readBackup</p>
+          <p class="text-xs text-slate-600"><span class="text-red-700">no caps at all</span> · <code>zip.readBytes()</code></p>
+          <div class="mt-1 h-2 bg-red-600 rounded" style="width:12%"></div>
+        </div>
+      </div>
+    </div>
+    <div class="rounded-lg border-2 border-slate-900 bg-white p-4">
+      <p class="lbl text-slate-500 mb-3">After — one deep module, three thin callers</p>
+      <div class="deep rounded p-3 mb-3">
+        <p class="font-mono text-xs text-white font-semibold">BoundedZipReader</p>
+        <p class="text-[11px] text-slate-300 mt-1">slip guard · entry count · per-entry · total</p>
+        <div class="mt-2 h-2 bg-emerald-400 rounded"></div>
+      </div>
+      <div class="grid grid-cols-3 gap-2">
+        <div class="border border-slate-300 rounded p-2 text-center"><p class="font-mono text-[10px]">theme</p></div>
+        <div class="border border-slate-300 rounded p-2 text-center"><p class="font-mono text-[10px]">codec</p></div>
+        <div class="border border-slate-300 rounded p-2 text-center"><p class="font-mono text-[10px]">backup</p></div>
+      </div>
+      <p class="text-[11px] text-slate-500 mt-3">Three real call sites justify the seam.</p>
+    </div>
+  </div>
+
+  <div class="space-y-3 text-slate-800">
+    <p><span class="lbl text-slate-500 mr-2">Problem</span>The same ingestion policy is reimplemented three times at three quality levels; a fix to one never reaches the others.</p>
+    <p><span class="lbl text-slate-500 mr-2">Evidence</span><code class="font-mono text-sm">BackupManager.kt:357</code> inflates every non-file entry with an uncapped <code class="font-mono text-sm">zip.readBytes()</code> and retains it for the whole restore. A <code class="font-mono">games.json</code> of 10 GB of one repeated byte deflates to a few MB — guaranteed OOM. <code class="font-mono text-sm">PfpThemeCodec</code> bounds memory per entry but not entry <em>count</em>, so a 64 MB bundle of repeated <code class="font-mono">wallpaper.png</code> entries is an unbounded hang, re-triggered on every <code class="font-mono">PfpThemeStore.scan()</code>.</p>
+    <p><span class="lbl text-slate-500 mr-2">Solution</span>One module with the union of the caps. The three readers become callers that supply a name policy, nothing more.</p>
+    <ul class="list-disc list-inside text-sm space-y-1 marker:text-emerald-600">
+      <li>leverage: one hardening fix reaches three paths</li>
+      <li>locality: bomb and slip policy in one module</li>
+      <li>the strongest reader becomes the floor, not the exception</li>
+    </ul>
+  </div>
+</article>
+
+<!-- ══════════════ C3 ══════════════ -->
+<article id="c3" class="scroll-mt-8">
+  <div class="flex items-baseline gap-3 flex-wrap mb-3">
+    <h2 class="font-serif text-3xl font-bold">3 · Push bounds into the byte-cursor interface</h2>
+    <span class="px-2 py-0.5 rounded text-[11px] font-mono uppercase tracking-wider bg-amber-500 text-white">Worth exploring</span>
+    <span class="px-2 py-0.5 rounded text-[11px] font-mono uppercase tracking-wider bg-slate-200 text-slate-700">in-process</span>
+  </div>
+  <div class="font-mono text-sm text-slate-600 mb-5">
+    theme-kit/PtfParser.kt:101-117, 238 · theme-kit/Gim.kt:47-58 · core-data/PtfThemeImporter.kt:55
+  </div>
+
+  <div class="grid md:grid-cols-2 gap-4 mb-5">
+    <div class="rounded-lg border border-slate-200 bg-white p-4">
+      <p class="lbl text-slate-500 mb-3">Before — each caller re-derives the check</p>
+      <div class="space-y-2 text-xs font-mono">
+        <div class="flex items-center gap-2"><span class="w-24 text-slate-500">Bmp.decode</span><span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded">Long math ✓</span></div>
+        <div class="flex items-center gap-2"><span class="w-24 text-slate-500">Lzr.decompress</span><span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded">validated ✓</span></div>
+        <div class="flex items-center gap-2"><span class="w-24 text-slate-500">extractWallpaper</span><span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded">range ✓</span></div>
+        <div class="flex items-center gap-2"><span class="w-24 text-slate-500">PtfParser:107</span><span class="px-2 py-0.5 bg-red-100 text-red-800 rounded">forgot ✗</span></div>
+        <div class="flex items-center gap-2"><span class="w-24 text-slate-500">Gim.kt:58</span><span class="px-2 py-0.5 bg-red-100 text-red-800 rounded">forgot ✗</span></div>
+      </div>
+      <p class="text-[11px] text-slate-500 mt-3">Interface returns a signed <code>Int</code>; safety is a convention.</p>
+    </div>
+    <div class="rounded-lg border-2 border-slate-900 bg-white p-4">
+      <p class="lbl text-slate-500 mb-3">After — unrepresentable</p>
+      <div class="deep rounded p-3">
+        <p class="font-mono text-xs text-white font-semibold">ByteCursor</p>
+        <p class="text-[11px] text-slate-300 mt-2 font-mono">u32At(off): Int?</p>
+        <p class="text-[11px] text-slate-300 font-mono">sliceAt(off, len): Slice?</p>
+      </div>
+      <p class="text-[11px] text-slate-500 mt-3">A malformed pointer is a <code>null</code>, not an <code>AIOOBE</code>. Callers cannot forget, because there is nothing to remember.</p>
+    </div>
+  </div>
+
+  <div class="space-y-3 text-slate-800">
+    <p><span class="lbl text-slate-500 mr-2">Problem</span><code class="font-mono text-sm">u32</code> returns a signed <code class="font-mono text-sm">Int</code>, so every caller must independently reject negatives. Two forgot.</p>
+    <pre class="bg-slate-900 text-slate-100 rounded p-4 text-xs font-mono overflow-x-auto">val ptr = bytes.u32(ptrOffset)     // 0xFFFFFFFF decodes to -1
+if (ptr == 0) break
+if (ptr + 12 &gt; bytes.size) break   // -1 + 12 = 11, passes the guard
+add(Slot(id = bytes.u16(ptr), ...))  // bytes.u16(-1) throws</pre>
+    <p class="text-sm text-slate-600">Uncaught: <code class="font-mono">PtfThemeImporter.kt:55</code> calls <code class="font-mono">PtfParser.parse</code> bare, inside a bare <code class="font-mono">viewModelScope.launch</code>. A crafted <code class="font-mono">.ptf</code> picked in Settings ▸ Themes crashes the app. Bounded by the fact that there is no <code class="font-mono">ACTION_VIEW</code> filter for theme files, so no other app can push one in.</p>
+    <p><span class="lbl text-slate-500 mr-2">Point fix</span><code class="font-mono text-sm">if (ptr &lt; 0 || ptr.toLong() + 12 &gt; bytes.size) break</code> — plus a malformed-pointer case in <code class="font-mono">HostileInputTest</code>. The deepening is what stops the next one.</p>
+    <ul class="list-disc list-inside text-sm space-y-1 marker:text-amber-600">
+      <li>interface makes the defect unrepresentable</li>
+      <li>locality: bounds in one module, not thirteen call sites</li>
+      <li><code class="font-mono">Gim.kt</code> is desktop-only, so it rides along free</li>
+    </ul>
+  </div>
+</article>
+
+<!-- ══════════════ C4 ══════════════ -->
+<article id="c4" class="scroll-mt-8">
+  <div class="flex items-baseline gap-3 flex-wrap mb-3">
+    <h2 class="font-serif text-3xl font-bold">4 · Mint ROM URIs through a ROM source, not a path</h2>
+    <span class="px-2 py-0.5 rounded text-[11px] font-mono uppercase tracking-wider bg-amber-500 text-white">Worth exploring</span>
+    <span class="px-2 py-0.5 rounded text-[11px] font-mono uppercase tracking-wider bg-slate-200 text-slate-700">local-substitutable</span>
+  </div>
+  <div class="font-mono text-sm text-slate-600 mb-5">
+    app/src/main/res/xml/file_paths.xml:10 · feature-launcher/EmulatorIntentResolver.kt:178,206,234,250 · feature-xmb/GameDetailViewModel.kt:531
+  </div>
+
+  <div class="grid md:grid-cols-2 gap-4 mb-5">
+    <div class="rounded-lg border border-slate-200 bg-white p-4">
+      <p class="lbl text-slate-500 mb-3">Before — provider root vs. actual need</p>
+      <svg viewBox="0 0 320 150" class="w-full">
+        <rect x="8" y="10" width="304" height="60" fill="#fee2e2" stroke="#dc2626" stroke-width="2" rx="3"/>
+        <text x="160" y="36" text-anchor="middle" class="lbl" fill="#7f1d1d">root-path "/storage/"</text>
+        <text x="160" y="54" text-anchor="middle" font-size="9" fill="#7f1d1d" font-family="monospace">every volume · every app's external data</text>
+        <rect x="90" y="95" width="140" height="42" fill="#dcfce7" stroke="#16a34a" stroke-width="2" rx="3"/>
+        <text x="160" y="113" text-anchor="middle" class="lbl" fill="#14532d">what callers need</text>
+        <text x="160" y="128" text-anchor="middle" font-size="9" fill="#14532d" font-family="monospace">configured ROM sources</text>
+        <line x1="160" y1="70" x2="160" y2="95" stroke="#94a3b8" stroke-width="1.5" class="seam"/>
+      </svg>
+    </div>
+    <div class="rounded-lg border-2 border-slate-900 bg-white p-4">
+      <p class="lbl text-slate-500 mb-3">After — the seam is the ROM source</p>
+      <pre class="mermaid">
+flowchart LR
+  A[Game row] --> B["RomUriMinter"]
+  B --> C{"path under a<br/>configured ROM source?"}
+  C -->|yes| D[content:// grant]
+  C -->|no| E[refuse]
+  classDef deep fill:#0f172a,color:#fff,stroke:#0f172a,stroke-width:3px;
+  class B deep
+      </pre>
+    </div>
+  </div>
+
+  <div class="space-y-3 text-slate-800">
+    <p><span class="lbl text-slate-500 mr-2">Problem</span>The provider can mint a URI for any file under <code class="font-mono">/storage/</code>, but callers only ever need files belonging to a configured <strong>ROM source</strong>. Nothing enforces the narrower rule.</p>
+    <p class="text-sm text-slate-600">The provider is correctly <code class="font-mono">exported="false"</code>, so no app can query the authority directly — a grant must be minted by PFP. That caps this at Medium on its own. It stops being self-limiting when combined with candidate 1, where the grantee package comes from a restored profile. The repo's own test already imagines this shape: <code class="font-mono text-xs">ShortcutIntentSanitizerTest.kt:41</code> uses <code class="font-mono text-xs">content://…/storage_volumes/emulated/0/secret</code>.</p>
+    <p><span class="lbl text-slate-500 mr-2">Solution</span>A minter module that resolves a <strong>Memory Card</strong>'s <strong>ROM source</strong> set and refuses any path outside it — then narrow <code class="font-mono">file_paths.xml</code> to the volume prefixes that survive.</p>
+    <ul class="list-disc list-inside text-sm space-y-1 marker:text-amber-600">
+      <li>uses the domain seam that already exists (<code class="font-mono">ScanSourceResolver</code>)</li>
+      <li>locality: one module answers "may this file be shared"</li>
+      <li>no conflict with ADR-0001 — this consumes ROM sources, it does not survey them</li>
+    </ul>
+  </div>
+</article>
+
+<!-- ══════════════ C5 ══════════════ -->
+<article id="c5" class="scroll-mt-8">
+  <div class="flex items-baseline gap-3 flex-wrap mb-3">
+    <h2 class="font-serif text-3xl font-bold">5 · One interface for metadata credentials</h2>
+    <span class="px-2 py-0.5 rounded text-[11px] font-mono uppercase tracking-wider bg-emerald-600 text-white">Strong</span>
+    <span class="px-2 py-0.5 rounded text-[11px] font-mono uppercase tracking-wider bg-slate-200 text-slate-700">ports &amp; adapters</span>
+  </div>
+  <div class="font-mono text-sm text-slate-600 mb-5">
+    feature-artwork/build.gradle.kts:31-32 · feature-artwork/MetadataApiKeyProvider.kt · core-common/security/KeystoreSecretCipher.kt:19-26,50-57
+  </div>
+
+  <div class="grid md:grid-cols-2 gap-4 mb-5">
+    <div class="rounded-lg border border-slate-200 bg-white p-4">
+      <p class="lbl text-slate-500 mb-3">Before — two sources, no shared interface</p>
+      <pre class="mermaid">
+flowchart TD
+  A["local.properties"] --> B[BuildConfig constant]
+  B -.->|"ships in APK"| C[ScreenScraperApi]
+  D["user-entered key"] --> E[MetadataApiKeyProvider]
+  E --> C
+  classDef leak stroke:#dc2626,stroke-width:2px,color:#7f1d1d;
+  class B leak
+      </pre>
+      <p class="text-[11px] text-slate-500 mt-2">The insecure source is the default; the secure one already exists beside it.</p>
+    </div>
+    <div class="rounded-lg border-2 border-slate-900 bg-white p-4">
+      <p class="lbl text-slate-500 mb-3">After — one interface, two adapters</p>
+      <pre class="mermaid">
+flowchart TD
+  A["MetadataCredentialSource"] --> B[ScreenScraperApi]
+  C["user-supplied<br/>(Keystore-sealed)"] --> A
+  D["proxied<br/>(server holds dev cred)"] --> A
+  classDef deep fill:#0f172a,color:#fff,stroke:#0f172a,stroke-width:3px;
+  class A deep
+      </pre>
+      <p class="text-[11px] text-slate-500 mt-2">Two adapters justify the seam. The build stops being a credential input.</p>
+    </div>
+  </div>
+
+  <div class="space-y-3 text-slate-800">
+    <p><span class="lbl text-slate-500 mr-2">Problem</span>The same concept — "a credential for a metadata provider" — has two implementations with no shared interface, and the one that ships in the binary is the default path.</p>
+    <p><span class="lbl text-slate-500 mr-2">Also behind this seam</span><code class="font-mono text-sm">KeystoreSecretCipher</code> silently degrades: on any Keystore failure <code class="font-mono text-sm">encrypt</code> logs a warning and <strong>stores plaintext</strong> (<code class="font-mono">:19-26</code>), and <code class="font-mono text-sm">decryptOrLegacy</code> returns the stored string verbatim on failure (<code class="font-mono">:50-57</code>). The user is never told. A single credential interface is the place to make that outcome explicit rather than silent.</p>
+    <p><span class="lbl text-slate-500 mr-2">Solution</span>One interface; adapters for user-supplied and proxied. Delete the <code class="font-mono">buildConfigField</code> pair entirely — that is the deletion test passing.</p>
+    <ul class="list-disc list-inside text-sm space-y-1 marker:text-emerald-600">
+      <li>locality: one module answers "where did this credential come from"</li>
+      <li>the secret stops being a build input</li>
+      <li>tests hit one interface — today <code class="font-mono">MetadataApiKeyProvider</code> is untested</li>
+    </ul>
+  </div>
+</article>
+
+</section>
+
+<!-- ══════════════ TOP RECOMMENDATION ══════════════ -->
+<section id="top-recommendation" class="rounded-lg border-2 border-slate-900 bg-white p-8">
+  <p class="lbl text-emerald-700 mb-2">Top recommendation</p>
+  <h2 class="font-serif text-3xl font-bold mb-4"><a href="#c1" class="underline decoration-emerald-500 decoration-2 underline-offset-4">Give backup restore a trust seam</a></h2>
+  <p class="text-slate-700 max-w-3xl">It is the only path where one user action — restoring a file — reaches both arbitrary <code class="font-mono text-sm">filesDir</code> writes and an attacker-chosen <code class="font-mono text-sm">ComponentName</code> that then receives a URI grant. Candidates 2 and 4 are its blast radius: the missing caps are on the same reader, and the provider root is what widens the grant. Deepening this one module shrinks all three.</p>
+  <p class="text-sm text-slate-500 mt-4">Rotate the ScreenScraper credential first — that is not a refactor and does not wait for this.</p>
+</section>
+
+<section class="border-t border-slate-300 pt-8 text-sm text-slate-600 space-y-3">
+  <p class="lbl text-slate-500">Checked and holding — no action</p>
+  <p>Discord tokens are sealed with a non-exportable Keystore AES-256-GCM key (StrongBox-preferred, random IV, <code class="font-mono">deleteKey</code> on logout); no client secret exists and the RFC 8628 device grant has no interceptable redirect. <code class="font-mono">allowBackup="false"</code> plus the data-extraction rules block token exfiltration. Cleartext is denied app-wide with user CAs confined to debug overrides; there is no WebView in the repo. Exported components are exactly three and all intentional — <code class="font-mono">PinShortcutActivity</code> goes through <code class="font-mono">getPinItemRequest</code>, so a forged intent is a no-op. Every <code class="font-mono">PendingIntent</code> is <code class="font-mono">FLAG_IMMUTABLE</code>. <code class="font-mono">ShortcutIntentSanitizer</code> strips all four URI-grant flags and pins to a resolved component, re-applied at launch as defense in depth. No <code class="font-mono">@RawQuery</code> or interpolated SQL anywhere. The <code class="font-mono">.pfptheme</code> format is not extracted by entry name at all — icons must match a 58-key registry — so zip-slip does not apply to it. Debug surfaces are confined to the debug source set.</p>
+  <p class="lbl text-slate-500 pt-2">Not covered</p>
+  <p>The vendored Discord AAR was read at manifest level only, not decompiled; it exports <code class="font-mono">AuthenticationActivity</code> with no permission and is the sole declarant of <code class="font-mono">RECORD_AUDIO</code> and three other permissions, which is worth its own pass. Merged manifests from AndroidX/Hilt/Coil were not reviewed. The <code class="font-mono">studio/</code> desktop companion was out of scope. Nothing was exercised on-device — there is no <code class="font-mono">androidTest</code> source set in the repo.</p>
+</section>
+
+</main>
+</body>
+</html>
