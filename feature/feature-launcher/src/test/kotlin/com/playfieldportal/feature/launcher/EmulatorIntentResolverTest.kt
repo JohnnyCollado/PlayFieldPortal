@@ -9,6 +9,8 @@ import androidx.test.core.app.ApplicationProvider
 import com.playfieldportal.core.domain.model.EmulatorProfile
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.IntentType
+import io.mockk.mockk
+import kotlinx.coroutines.runBlocking
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
@@ -26,7 +28,9 @@ import kotlin.test.assertTrue
 class EmulatorIntentResolverTest {
 
     private val context: Context = ApplicationProvider.getApplicationContext()
-    private val resolver = EmulatorIntentResolver(context)
+    // Every game here is SAF-backed (romUri set), so the minter is never consulted — a relaxed
+    // mock keeps these tests about intent shape, which is what they are for.
+    private val resolver = EmulatorIntentResolver(context, mockk(relaxed = true))
 
     private val romUri = "content://com.android.externalstorage.documents/document/roms%2Fgame.bin"
     private fun safGame(platformId: String = "switch") =
@@ -69,7 +73,7 @@ class EmulatorIntentResolverTest {
             attachRomData = true,
         )
 
-        val intent = resolver.resolve(safGame(), profile).getOrThrow()
+        val intent = runBlocking { resolver.resolve(safGame(), profile).getOrThrow() }
 
         assertEquals("android.nfc.action.TECH_DISCOVERED", intent.action)
         assertEquals(
@@ -98,7 +102,7 @@ class EmulatorIntentResolverTest {
             intentFlags = listOf("CLEAR_TASK", "CLEAR_TOP"),
         )
 
-        val intent = resolver.resolve(safGame("psx"), profile).getOrThrow()
+        val intent = runBlocking { resolver.resolve(safGame("psx"), profile).getOrThrow() }
 
         assertEquals(romUri, intent.getStringExtra("bootPath"))
         assertEquals(false, intent.getBooleanExtra("resumeState", true))
@@ -127,7 +131,7 @@ class EmulatorIntentResolverTest {
             intentExtras = mapOf("uri" to "{rom_uri}"),
         )
 
-        val intent = resolver.resolve(safGame("nds"), profile).getOrThrow()
+        val intent = runBlocking { resolver.resolve(safGame("nds"), profile).getOrThrow() }
 
         assertEquals("me.magnum.melonds.LAUNCH_ROM", intent.action)
         assertEquals(romUri, intent.getStringExtra("uri"))
@@ -151,7 +155,7 @@ class EmulatorIntentResolverTest {
             mimeType = "application/octet-stream",
         )
 
-        val intent = resolver.resolve(safGame("gba"), profile).getOrThrow()
+        val intent = runBlocking { resolver.resolve(safGame("gba"), profile).getOrThrow() }
 
         assertEquals(Intent.ACTION_VIEW, intent.action)
         assertEquals(romUri, intent.data.toString())
@@ -186,7 +190,7 @@ class EmulatorIntentResolverTest {
         // No romUri / romPath — a Vita game boots by its installed Title ID.
         val game = Game(title = "Disgaea 3", platformId = "psvita", launchToken = "PCSB00098")
 
-        val intent = resolver.resolve(game, vita3kProfile()).getOrThrow()
+        val intent = runBlocking { resolver.resolve(game, vita3kProfile()).getOrThrow() }
 
         assertEquals("org.vita3k.emulator.Emulator", intent.component?.className)
         assertEquals(
@@ -202,7 +206,7 @@ class EmulatorIntentResolverTest {
         installPackage("org.vita3k.emulator")
         val game = Game(title = "Disgaea 3", platformId = "psvita")  // no launchToken
 
-        val result = resolver.resolve(game, vita3kProfile())
+        val result = runBlocking { resolver.resolve(game, vita3kProfile()) }
 
         assertTrue(result.isFailure)
         assertTrue(
@@ -223,7 +227,7 @@ class EmulatorIntentResolverTest {
             intentExtras = mapOf("bootPath" to "{rom_uri}"),
         )
 
-        val result = resolver.resolve(safGame("psx"), profile)
+        val result = runBlocking { resolver.resolve(safGame("psx"), profile) }
 
         assertTrue(result.isFailure)
         assertTrue(

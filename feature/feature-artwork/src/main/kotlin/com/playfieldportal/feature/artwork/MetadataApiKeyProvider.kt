@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.playfieldportal.core.common.security.KeystoreSecretCipher
+import com.playfieldportal.core.common.security.SecretProtection
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -25,8 +26,10 @@ class MetadataApiKeyProvider @Inject constructor(
 
     suspend fun getTgdbKey(): String? = tgdbKeyFlow.first()
 
-    suspend fun saveTgdbKey(key: String) {
-        context.pfpDataStore.edit { it[KEY_TGDB_API_KEY] = KeystoreSecretCipher.encrypt(key.trim()) }
+    suspend fun saveTgdbKey(key: String): SecretProtection {
+        val sealed = KeystoreSecretCipher.seal(key.trim())
+        context.pfpDataStore.edit { it[KEY_TGDB_API_KEY] = sealed.stored }
+        return SecretProtection.of(sealed)
     }
 
     suspend fun clearTgdbKey() {
@@ -40,11 +43,13 @@ class MetadataApiKeyProvider @Inject constructor(
     suspend fun getIgdbClientSecret(): String? =
         context.pfpDataStore.data.first()[KEY_IGDB_CLIENT_SECRET]?.let { KeystoreSecretCipher.decryptOrLegacy(it) }
 
-    suspend fun saveIgdbCredentials(clientId: String, clientSecret: String) {
+    suspend fun saveIgdbCredentials(clientId: String, clientSecret: String): SecretProtection {
+        val sealed = KeystoreSecretCipher.seal(clientSecret.trim())
         context.pfpDataStore.edit {
             it[KEY_IGDB_CLIENT_ID]     = clientId.trim()
-            it[KEY_IGDB_CLIENT_SECRET] = KeystoreSecretCipher.encrypt(clientSecret.trim())
+            it[KEY_IGDB_CLIENT_SECRET] = sealed.stored
         }
+        return SecretProtection.of(sealed)
     }
 
     suspend fun clearIgdbCredentials() {
@@ -67,11 +72,13 @@ class MetadataApiKeyProvider @Inject constructor(
     suspend fun getSsPassword(): String? =
         context.pfpDataStore.data.first()[KEY_SS_PASSWORD]?.let { KeystoreSecretCipher.decryptOrLegacy(it) }
 
-    suspend fun saveSsCredentials(username: String, password: String) {
+    suspend fun saveSsCredentials(username: String, password: String): SecretProtection {
+        val sealed = KeystoreSecretCipher.seal(password.trim())
         context.pfpDataStore.edit {
             it[KEY_SS_USERNAME] = username.trim()
-            it[KEY_SS_PASSWORD] = KeystoreSecretCipher.encrypt(password.trim())
+            it[KEY_SS_PASSWORD] = sealed.stored
         }
+        return SecretProtection.of(sealed)
     }
 
     suspend fun clearSsCredentials() {
@@ -83,6 +90,11 @@ class MetadataApiKeyProvider @Inject constructor(
 
     suspend fun hasSsCredentials(): Boolean = getSsUsername()?.isNotBlank() == true &&
         getSsPassword()?.isNotBlank() == true
+
+    // Note on the ScreenScraper developer pair: it is required for the API to answer at all, but
+    // it is not user-entered — it ships obfuscated inside the APK (see the buildConfigField byte
+    // arrays in feature-artwork/build.gradle.kts and credentials/DevPairDecoder). Only the
+    // optional user account above is stored here.
 
     companion object {
         private val KEY_TGDB_API_KEY       = stringPreferencesKey("tgdb_api_key")

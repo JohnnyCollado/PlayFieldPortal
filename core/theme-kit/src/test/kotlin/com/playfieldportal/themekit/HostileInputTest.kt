@@ -38,6 +38,77 @@ class HostileInputTest {
         assertNull(theme.wallpaper, "bomb wallpaper must be rejected")
     }
 
+    // ── Malformed resource pointers ───────────────────────────────────────────
+    // u32 returns a signed Int, so 0xFFFFFFFF decodes to -1. The guard was
+    // `if (ptr + 12 > bytes.size) break`, and -1 + 12 = 11 passes it — the next line then calls
+    // bytes.u16(-1) and throws ArrayIndexOutOfBounds. PtfThemeImporter calls parse() bare inside
+    // a viewModelScope launch, so a crafted .ptf picked in Settings > Themes crashed the app.
+
+    private fun ptfWithSlotPointer(pointer: Long): ByteArray {
+        val file = ByteArray(0x140)
+        file[0] = 0; file[1] = 'P'.code.toByte(); file[2] = 'T'.code.toByte(); file[3] = 'F'.code.toByte()
+        val table = 0x100
+        file[table]     = (pointer and 0xFF).toByte()
+        file[table + 1] = (pointer shr 8 and 0xFF).toByte()
+        file[table + 2] = (pointer shr 16 and 0xFF).toByte()
+        file[table + 3] = (pointer shr 24 and 0xFF).toByte()
+        return file
+    }
+
+    @Test
+    fun `a slot pointer of 0xFFFFFFFF does not throw`() {
+        val theme = PtfParser.parse(ptfWithSlotPointer(0xFFFFFFFFL))
+
+        // Parsing may yield a theme with no usable slots, or null — either is fine. Crashing is not.
+        assertNull(theme?.wallpaper)
+    }
+
+    @Test
+    fun `a slot pointer with the high bit set does not throw`() {
+        val theme = PtfParser.parse(ptfWithSlotPointer(0x80000000L))
+
+        assertNull(theme?.wallpaper)
+    }
+
+    @Test
+    fun `a slot pointer past the end of the file is skipped`() {
+        val theme = PtfParser.parse(ptfWithSlotPointer(0x7FFFFFF0L))
+
+        assertNull(theme?.wallpaper)
+    }
+
+    @Test
+    fun `a truncated gim does not throw`() {
+        val gim = ByteArray(40)
+        "MIG.00.1PSP".toByteArray(Charsets.ISO_8859_1).copyInto(gim)
+
+        assertNull(Gim.decode(gim))
+    }
+
+    @Test
+    fun `a gim chunk size that overflows the walk offset does not throw`() {
+        // The chunk walk advanced with `offset += size` where size came from a signed i32. A size
+        // near Int.MAX_VALUE overflows offset to a negative number, and the loop condition
+        // `offset + 16 <= bytes.size` is then satisfied by a negative index.
+        val gim = ByteArray(64)
+        "MIG.00.1PSP".toByteArray(Charsets.ISO_8859_1).copyInto(gim)
+        // Chunk at 16: id = 0x99 (unknown, so the walk just advances), size = 0x7FFFFFF0.
+        gim[16] = 0x99.toByte(); gim[17] = 0
+        gim[20] = 0xF0.toByte(); gim[21] = 0xFF.toByte(); gim[22] = 0xFF.toByte(); gim[23] = 0x7F
+
+        assertNull(Gim.decode(gim))
+    }
+
+    @Test
+    fun `a gim chunk size of zero terminates instead of spinning`() {
+        val gim = ByteArray(64)
+        "MIG.00.1PSP".toByteArray(Charsets.ISO_8859_1).copyInto(gim)
+        gim[16] = 0x99.toByte()
+        // size = 0 — advancing by it would never terminate.
+
+        assertNull(Gim.decode(gim))
+    }
+
     @Test
     fun `bmp with absurd dimensions is rejected before allocation`() {
         // Hand-build a BMP header claiming a ~800M-pixel-wide image (width*3 overflows Int).

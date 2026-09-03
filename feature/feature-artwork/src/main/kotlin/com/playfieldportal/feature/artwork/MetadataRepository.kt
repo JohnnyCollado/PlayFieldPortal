@@ -90,7 +90,7 @@ class MetadataRepository @Inject constructor(
         var romIdentity: RomIdentity? = null
         var usedSsCache = false
         val cachedSsId = gameEntity?.ssId
-        if (screenScraper.isEnabled && !ssStopped) {
+        if (screenScraper.isEnabled() && !ssStopped) {
             // Media-URL cache: a previously matched game whose text metadata is already stored
             // needs no jeuInfos — the cached medias list serves every kind's URL (the response
             // it came from carried URLs for ALL kinds, so coverage equals a live call).

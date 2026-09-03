@@ -52,7 +52,12 @@ class PtfThemeImporter @Inject constructor(
             PtfParser.Kind.OFFICIAL_PTF -> Unit
         }
 
-        val theme = PtfParser.parse(bytes)
+        // parse() is bounds-checked now (see ByteCursor), but it runs on bytes chosen by whoever
+        // handed the user the file, and this call sits behind a plain viewModelScope launch — an
+        // escaping throwable would take the app down rather than fail the import.
+        val theme = runCatching { PtfParser.parse(bytes) }
+            .onFailure { Timber.w(it, "PTF parse threw on a malformed theme") }
+            .getOrNull()
             ?: return@withContext Result.Failed("The theme file could not be parsed")
         val wallpaper = theme.wallpaper ?: return@withContext Result.Failed(
             when (theme.wallpaperStatus) {

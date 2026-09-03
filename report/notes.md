@@ -2,6 +2,14 @@
 
 Branch: `ui-helper-buttons` · Date: 2026-09-01 · Repo: PlayFieldPortal
 
+> **Historical snapshot.** Written before the hardening pass that landed after it.
+> The merge-state section below (§1.7) describes a tree that has since changed:
+> the working tree is no longer clean, several files flagged here as dead
+> (`LibrarySettingsScreen`, `PlatformSdCardRow`, `BuiltInThemes`) have since been
+> deleted, and the dependency findings (`accompanist-systemuicontroller`,
+> `compose-compiler` pin) were already fixed at the time of writing. The evidence
+> sections remain accurate for the commits they describe.
+
 Everything in this session that was delivered as chat output rather than as a file.
 The formatted audit lives beside this as [`merge-audit.html`](merge-audit.html), also
 published at <https://claude.ai/code/artifact/e4e916b5-d6fe-49a6-8243-8d73d79a59a9>.

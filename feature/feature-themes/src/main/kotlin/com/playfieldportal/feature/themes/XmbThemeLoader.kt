@@ -2,6 +2,8 @@ package com.playfieldportal.feature.themes
 
 import android.content.Context
 import android.net.Uri
+import com.playfieldportal.core.archive.BoundedZipReader
+import com.playfieldportal.core.archive.ZipLimits
 import com.playfieldportal.core.data.database.dao.ThemeDao
 import com.playfieldportal.core.data.database.entity.ThemeEntity
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -13,7 +15,6 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
-import java.util.zip.ZipInputStream
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -24,9 +25,12 @@ private val SAFE_THEME_ID = Regex("[A-Za-z0-9._-]{1,64}")
 // Decompression limits — a .xmbtheme is a background image, a short boot clip and a handful of
 // small sounds. These caps stop a hostile/corrupt archive from exhausting memory or disk (zip bomb)
 // while staying well clear of any legitimate pack.
-private const val MAX_ENTRY_BYTES = 64L * 1024 * 1024   // 64 MB per file (generous for a boot mp4)
-private const val MAX_TOTAL_BYTES = 128L * 1024 * 1024  // 128 MB across the whole archive
-private const val MAX_ENTRY_COUNT = 512
+// Theme archives carry a boot video, so the per-entry cap is looser here than the shared default.
+private val THEME_ZIP_LIMITS = ZipLimits(
+    maxEntries    = 512,
+    maxEntryBytes = 64L * 1024 * 1024,   // 64 MB per file (generous for a boot mp4)
+    maxTotalBytes = 128L * 1024 * 1024,  // 128 MB across the whole archive
+)
 
 sealed class ThemeLoadResult {
     data class Success(val themeId: String) : ThemeLoadResult()
@@ -193,43 +197,14 @@ class XmbThemeLoader @Inject constructor(
     }
 
     // Reads all ZIP entries as raw ByteArrays so both text (JSON) and binary (images, audio) can be
-    // handled uniformly. Per-entry, total, and count caps bound memory/disk so a zip bomb or corrupt
-    // archive can't exhaust the device.
+    // handled uniformly. The caps live in BoundedZipReader now — this used to be one of three
+    // hand-rolled readers enforcing the same policy at three different quality levels.
     private fun readZipEntries(stream: InputStream): Map<String, ByteArray> {
         val map = mutableMapOf<String, ByteArray>()
-        var totalBytes = 0L
-        var count = 0
-        ZipInputStream(stream.buffered()).use { zip ->
-            var entry = zip.nextEntry
-            while (entry != null) {
-                if (!entry.isDirectory) {
-                    if (++count > MAX_ENTRY_COUNT) throw IOException("Theme archive has too many entries")
-                    val bytes = zip.readBounded(MAX_ENTRY_BYTES)
-                    totalBytes += bytes.size
-                    if (totalBytes > MAX_TOTAL_BYTES) throw IOException("Theme archive is too large")
-                    map[entry.name] = bytes
-                }
-                zip.closeEntry()
-                entry = zip.nextEntry
-            }
+        BoundedZipReader.read(stream, THEME_ZIP_LIMITS) { entry ->
+            if (!entry.isDirectory) map[entry.name] = entry.readBytes()
         }
         return map
     }
 
-    // Reads the current entry, aborting if it exceeds [limit]. ZipInputStream reports an unreliable
-    // getSize() for streamed archives, so we bound the actual decompressed bytes rather than trust
-    // the header.
-    private fun InputStream.readBounded(limit: Long): ByteArray {
-        val out = ByteArrayOutputStream()
-        val chunk = ByteArray(8192)
-        var total = 0L
-        while (true) {
-            val n = read(chunk)
-            if (n < 0) break
-            total += n
-            if (total > limit) throw IOException("Theme entry exceeds the ${limit / (1024 * 1024)}MB size limit")
-            out.write(chunk, 0, n)
-        }
-        return out.toByteArray()
-    }
 }

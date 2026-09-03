@@ -45,7 +45,7 @@ class SsMediaCatalog @Inject constructor(
 
             // New links: one live lookup. Known id fetches directly; otherwise match by ROM
             // identity (the hasher caps oversized ROMs itself, so this can't stall on a 4 GB iso).
-            if (!screenScraper.isEnabled) return@withContext null
+            if (!screenScraper.isEnabled()) return@withContext null
             val rom = if (game.ssId == null) romHasher.identify(game.romPath, game.romUri) else null
             val info = screenScraper.fetchGameInfo(game.platformId, rom, game.ssId).info
                 ?: return@withContext null

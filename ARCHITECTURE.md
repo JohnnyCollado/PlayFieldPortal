@@ -6,8 +6,8 @@ collections as a horizontal bar of categories with a vertical list of items bene
 selected category, and launches games through external emulator apps.
 
 - **Package:** `com.playfieldportal.launcher` (debug builds use the `.debug` suffix)
-- **Min / Target / Compile SDK:** 29 (Android 10 — Winlator's floor) / 35 / 35
-- **Version:** `1.2.0`
+- **Min / Target / Compile SDK:** 29 (Android 10 — Winlator's floor) / 35 / 37
+- **Version:** `1.2.1`
 - **Stack:** Kotlin, Jetpack Compose, MVVM + Clean Architecture, Hilt DI, Room, DataStore,
   Coil (image loading), Coroutines/Flow.
 - **Entry points:** [`PFPApplication`](app/src/main/kotlin/com/playfieldportal/launcher/PFPApplication.kt)
@@ -29,6 +29,7 @@ app  ──▶ feature:*  ──▶ core:core-ui ──▶ core:core-data ──
 | `app` | DI wiring, manifest, `PFPApplication`, `MainActivity` (HOME launcher) |
 | `studio` | Theme Studio — Compose Multiplatform Desktop companion (Windows/Linux/macOS); must never grow an Android dependency |
 | `core:theme-kit` | Pure-JVM theme core shared with the Theme Studio: PTF/BMP/GIM/LZR parsers, `.pfptheme` codec, color cascade, icon-slot registry, XMB layout spec |
+| `core:core-archive` | Pure-JVM bounded ZIP ingestion (`BoundedZipReader`, `SafeArchivePath`) shared by theme parsing, backup restore, and the theme codec |
 | `core:core-common` | Cross-cutting utilities and extensions (incl. the shared Keystore AES-GCM helper) |
 | `core:core-domain` | Domain models, repository interfaces, use-case-level contracts (no Android deps where avoidable) |
 | `core:core-data` | Room database, DAOs, entities, migrations, DataStore, repository implementations, seeders |

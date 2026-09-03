@@ -28,6 +28,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     ksp(libs.hilt.compiler)
 
+    implementation(project(":core:core-archive"))
     implementation(project(":core:core-common"))
     implementation(project(":core:core-domain"))
     implementation(project(":core:core-data"))

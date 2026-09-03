@@ -18,6 +18,9 @@ kotlin {
 }
 
 dependencies {
+    // Shared bounded/confined ZIP ingestion. Pure JVM like this module, so :studio still
+    // resolves it without touching Android.
+    api(project(":core:core-archive"))
     implementation(libs.kotlinx.serialization.json)
 
     testImplementation(libs.junit)

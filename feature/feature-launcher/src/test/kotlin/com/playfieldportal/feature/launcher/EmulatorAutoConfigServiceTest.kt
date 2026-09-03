@@ -5,6 +5,7 @@ import android.content.pm.PackageInfo
 import androidx.test.core.app.ApplicationProvider
 import com.playfieldportal.core.domain.model.EmulatorProfile
 import com.playfieldportal.core.domain.model.IntentType
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -23,7 +24,7 @@ import kotlin.test.assertTrue
 class EmulatorAutoConfigServiceTest {
 
     private val context: Context = ApplicationProvider.getApplicationContext()
-    private val repository = EmulatorProfileRepository(context)
+    private val repository = EmulatorProfileRepository(context, Dispatchers.Unconfined)
     // Unlinked RetroArch (no stored tree) → installedCoreFiles() is null → curated cores offered.
     private val service = EmulatorAutoConfigService(
         EmulatorDetector(context),
@@ -36,7 +37,7 @@ class EmulatorAutoConfigServiceTest {
             .installPackage(PackageInfo().apply { this.packageName = packageName })
     }
 
-    private fun persistedById(id: String): EmulatorProfile =
+    private suspend fun persistedById(id: String): EmulatorProfile =
         repository.getAllPersistedProfiles().first { it.id == id }
 
     @Test

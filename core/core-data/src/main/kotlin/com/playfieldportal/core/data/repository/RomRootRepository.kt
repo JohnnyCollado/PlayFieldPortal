@@ -120,17 +120,9 @@ class RomRootRepository @Inject constructor(
             }
         }
 
-        /**
-         * Document id of the subfolder a card scans, given a root and the card's raw ROM directory.
-         * Null when the directory is not under the root. e.g. root "primary:Roms"
-         * (`/storage/emulated/0/Roms`) + "/storage/emulated/0/Roms/GBA" → "primary:Roms/GBA".
-         */
-        fun childDocIdFor(rootTreeUri: String, rootRawPath: String, romDirectory: String): String? {
-            val rootDocId = treeDocId(rootTreeUri) ?: return null
-            return childDocIdFrom(rootDocId, rootRawPath, romDirectory)
-        }
-
-        // Pure (no Android) core of [childDocIdFor] — testable on the JVM.
+        // Pure string-math helper, testable on the JVM: maps a root's document id plus a raw
+        // directory path onto the subfolder document id a scan should start from.
+        // e.g. root "primary:Roms" + "/storage/emulated/0/Roms/GBA" → "primary:Roms/GBA".
         fun childDocIdFrom(rootDocId: String, rootRawPath: String, romDirectory: String): String? {
             val normRoot = rootRawPath.trimEnd('/')
             val normDir  = romDirectory.trimEnd('/')

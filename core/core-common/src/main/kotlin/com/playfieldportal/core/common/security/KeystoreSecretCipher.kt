@@ -10,18 +10,34 @@ import timber.log.Timber
  *
  * [decryptOrLegacy] returns the original string when decryption fails, so values written before
  * encryption was introduced (plain text) keep working until they're next saved (and re-encrypted).
+ *
+ * [seal] reports whether sealing actually succeeded. Keystore failure still stores the user's
+ * input rather than losing it, but it comes back as [SealedSecret.Unprotected] so the caller can
+ * tell the user their credential is not encrypted at rest — the previous behaviour returned a bare
+ * String and that outcome was invisible.
  */
 object KeystoreSecretCipher {
 
     private val aesGcm = KeystoreAesGcm("pfp_secret_key_v1")
 
-    fun encrypt(plain: String): String {
+    /**
+     * Seals [plain] for storage. Never throws and never loses the input: on Keystore failure the
+     * result is [SealedSecret.Unprotected] carrying the plaintext and the cause.
+     */
+    fun seal(plain: String): SealedSecret = sealWith(plain, aesGcm::seal)
+
+    /**
+     * [seal] with the sealing step supplied, so the Keystore-failure branch is reachable in a unit
+     * test. Production code calls [seal].
+     */
+    internal fun sealWith(plain: String, seal: (String) -> String): SealedSecret {
         return try {
-            aesGcm.seal(plain)
+            SealedSecret.Sealed(seal(plain))
         } catch (e: Exception) {
-            // Never lose the user's input if the keystore is unavailable — fall back to plaintext.
+            // Never lose the user's input if the keystore is unavailable — fall back to plaintext,
+            // but say so in the return type so the caller can surface it.
             Timber.w(e, "Secret encryption failed; storing as-is")
-            plain
+            SealedSecret.Unprotected(plain, e)
         }
     }
 
@@ -46,7 +62,7 @@ object KeystoreSecretCipher {
         return runCatching { aesGcm.open(stored) }.isSuccess
     }
 
-    /** Decrypts a value produced by [encrypt]; returns [stored] unchanged if it isn't ours. */
+    /** Decrypts a value produced by [seal]; returns [stored] unchanged if it isn't ours. */
     fun decryptOrLegacy(stored: String): String {
         return try {
             aesGcm.open(stored)

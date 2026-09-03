@@ -59,6 +59,10 @@ class ArtworkSettingsViewModelTest {
         every { sgdbKeyProvider.apiKeyFlow }             returns flowOf(null)
         every { metadataKeyProvider.igdbClientIdFlow }   returns flowOf(null)
         every { metadataKeyProvider.ssUsernameFlow }     returns flowOf(null)
+        // ssEnabled comes from the credential source (bundled dev pair), not a build constant,
+        // so it is an extra combine upstream — a relaxed mock returns a Flow that never emits,
+        // which would stall uiState at its initial value.
+        every { screenScraperApi.isEnabledFlow }         returns flowOf(false)
         every { scrapePreferences.preferSteamGridDbHeroesFlow } returns flowOf(false)
         iconDisplayPreferences = mockk(relaxed = true) {
             every { modeFlow } returns flowOf(com.playfieldportal.core.domain.model.IconDisplayMode.DEFAULT)

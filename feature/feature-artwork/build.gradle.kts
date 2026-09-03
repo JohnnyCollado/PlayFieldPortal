@@ -1,6 +1,4 @@
-﻿import java.util.Properties
-
-plugins {
+﻿plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
@@ -8,29 +6,70 @@ plugins {
     alias(libs.plugins.hilt)
 }
 
-// ScreenScraper developer credentials: kept out of git in local.properties (CI injects via env).
-//   screenscraper.devId=xxx
-//   screenscraper.devPassword=yyy
-// Empty values compile fine — the client treats missing dev credentials as "ScreenScraper disabled".
-val localProps = Properties().apply {
+import java.security.MessageDigest
+import java.util.Properties
+
+// ── ScreenScraper developer-pair obfuscation (build-time) ─────────────────────
+// Loads screenscraper.devId / screenscraper.devPassword (or legacy SS_DEV_ID /
+// SS_DEV_PASSWORD, or the SS_DEV_* environment variables for CI) plus the optional
+// screenscraper.obfuscationSalt from local.properties and XOR-encodes each value with
+// SHA-256(salt + propertyName) as the keystream. Encoded as buildConfigField byte arrays;
+// credentials/DevPairDecoder reassembles them at runtime. DevPairDecoderTest mirrors this
+// derivation exactly — change both together or the tests will catch the drift.
+// Precedence: modern prop name → legacy prop name → environment. Absent credentials
+// compile to empty arrays, which the decoder turns into null — the fallback simply disables.
+private val ssProps: Properties = Properties().apply {
     val f = rootProject.file("local.properties")
     if (f.exists()) f.inputStream().use { load(it) }
 }
-fun ssProp(key: String, env: String): String =
-    (localProps.getProperty(key) ?: System.getenv(env) ?: "").replace("\"", "\\\"")
+
+private fun ssEncoded(prop: String, envName: String): Pair<String, String> {
+    val value = ssProps.getProperty(prop)
+        ?: ssProps.getProperty(envName)
+        ?: System.getenv(envName)
+        ?: ""
+    if (value.isEmpty()) return "new byte[]{}" to "new byte[]{}"
+    val salt = (ssProps.getProperty("screenscraper.obfuscationSalt")
+        ?: "playfieldportal-default-salt").toByteArray(Charsets.UTF_8)
+    val key = MessageDigest.getInstance("SHA-256")
+        .digest(salt + prop.toByteArray(Charsets.UTF_8))
+    val plain = value.toByteArray(Charsets.UTF_8)
+    val share = ByteArray(plain.size) { i ->
+        (plain[i].toInt() xor key[i % key.size].toInt()).toByte()
+    }
+    val mask = ByteArray(plain.size) { i -> key[i % key.size] }
+    fun bytesLiteral(b: ByteArray) = "new byte[]{" + b.joinToString(",") { it.toString() } + "}"
+    return bytesLiteral(share) to bytesLiteral(mask)
+}
 
 android {
     namespace  = "com.playfieldportal.feature.artwork"
     compileSdk = 37
     defaultConfig {
         minSdk = 29
-        // String.valueOf(...) keeps these fields NON-constant: plain literals would be
-        // compile-time constants that get inlined into consuming classes, and neither
-        // incremental compilation nor the build cache reliably rebuilds consumers when only a
-        // constant's value changes — editing local.properties then silently ships stale creds.
-        buildConfigField("String", "SS_DEV_ID",       "String.valueOf(\"${ssProp("screenscraper.devId", "SS_DEV_ID")}\")")
-        buildConfigField("String", "SS_DEV_PASSWORD", "String.valueOf(\"${ssProp("screenscraper.devPassword", "SS_DEV_PASSWORD")}\")")
-        buildConfigField("String", "SS_SOFT_NAME",    "\"PlayFieldPortal\"")
+        buildConfigField("String", "SS_SOFT_NAME", "\"PlayFieldPortal\"")
+
+        // ScreenScraper developer pair (devid/devpassword), obfuscated into the APK.
+        //
+        // The WebAPI refuses every call without this pair, so it has to ride along. History:
+        // these used to be plain buildConfigField strings from local.properties, which shipped a
+        // live credential recoverable from the binary with `strings` (R8 does not touch string
+        // literals). They were then moved to per-user entry under Settings ▸ Artwork, which left
+        // every user unable to configure the provider at all. The current compromise ships the
+        // pair XOR-encoded with a key derived from `screenscraper.obfuscationSalt` in
+        // local.properties, split across four buildConfigField byte arrays; DevPairDecoder
+        // reassembles them at runtime. There is no user-entered override — this is the only dev
+        // pair the app has.
+        //
+        // This is obfuscation, not security: dex2jar + a decompiler recovers it. It defeats
+        // `strings` scrapes and automated harvesters only. Rotation = change the values (and
+        // ideally the salt) in local.properties and release; no server round-trip.
+        val (ssDevIdShare, ssDevIdMask)           = ssEncoded("screenscraper.devId", "SS_DEV_ID")
+        val (ssDevPwShare, ssDevPwMask)           = ssEncoded("screenscraper.devPassword", "SS_DEV_PASSWORD")
+        buildConfigField("byte[]", "SS_DEV_ID_SHARE",       ssDevIdShare)
+        buildConfigField("byte[]", "SS_DEV_ID_MASK",        ssDevIdMask)
+        buildConfigField("byte[]", "SS_DEV_PASSWORD_SHARE", ssDevPwShare)
+        buildConfigField("byte[]", "SS_DEV_PASSWORD_MASK",  ssDevPwMask)
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

@@ -8,11 +8,11 @@ Android home screen as a single front end for ROM emulation, Android games, PC-l
 (Winlator), native apps, and your music, video and photo libraries.
 
 <p align="center">
-  <img src="docs/preview.png" alt="Play Field Portal — boot logo over the wave background" width="720">
+  <img src="docs/screenshots/theme-vaporwave-home.jpg" alt="Play Field Portal — a themed crossbar with game covers" width="720">
 </p>
 
 <p align="center">
-  <b>Version 1.2.0</b> &nbsp;·&nbsp; Side-loaded APK (not on the Play Store) &nbsp;·&nbsp;
+  <b>Version 1.2.1</b> &nbsp;·&nbsp; Side-loaded APK (not on the Play Store) &nbsp;·&nbsp;
   <b>Full</b> &amp; <b>Lite</b> editions &nbsp;·&nbsp; Desktop <b>Theme Studio</b> companion
 </p>
 
@@ -186,19 +186,25 @@ Full detail in [Permissions & privacy](#5-permissions--privacy).
 
 ### 2.6 First-run setup
 
-On a fresh install PFP opens a guided **setup wizard** with four pages:
+On a fresh install PFP opens a guided **setup wizard**:
 
 1. **Welcome** — what the wizard will set up.
-2. **Root Folders** — pick your ROM root plus the Music, Video, Photo and Artwork
-   folders (each optional).
-3. **Online Services** — connect SteamGridDB, IGDB, ScreenScraper, RetroAchievements
-   and Steam (each optional; IGDB and ScreenScraper credentials are tested live).
-4. **Finish.**
+2. **ROM Roots** — grant one or more root folders; consoles live in subfolders under them.
+3. **Music / Video / Photo** — one optional root per media section (multi-root supported).
+4. **Artwork** — the artwork library folder, with an embedded import offer.
+5. **Online Services** — connect SteamGridDB and IGDB, plus the ScreenScraper *user*
+   account (each optional; IGDB and ScreenScraper credentials are tested live).
+6. **Achievement Services** — RetroAchievements and Steam accounts.
+7. **Vita Data Folder** & **RetroArch** — offered only when those apps are installed.
+8. **Finish.**
 
 Every step can be skipped and everything it configures is the same setting you can reach
 later in Settings — the wizard is just a shortcut. You can re-run it any time from
 **Settings ▸ Re-Run Setup Wizard**. Upgrading installs that are already configured never
 see it.
+
+> ScreenScraper additionally requires a **developer ID/password** pair. PFP ships with an
+> obfuscated built-in pair, so scraping works out of the box — nothing to enter or configure.
 
 With a ROM root set, the fastest way to load your library is
 **Settings ▸ Library ▸ Library Manager ▸ Auto-Detect from ROM Root** — it walks the
@@ -445,8 +451,8 @@ switchable with **L1 / R1**.
 
 ### 4.10 Music, Video & Photo
 
-Each media section is driven by **one root folder** you set in its Settings screen (SAF folder
-picker — no storage permission):
+Each media section is driven by **one or more root folders** you set in its Settings
+screen (SAF folder picker — no storage permission):
 
 - **Music** — scan folders, browse `[cover] title / artist`, and play in a full-screen player with a
   **background service** and media-notification controls. Create and manage **playlists**.
@@ -641,22 +647,27 @@ Notes:
 ## 5. Permissions & privacy
 
 PFP is a **local-first** launcher: your data stays on your device. There is no analytics, no
-telemetry, and no account. PFP only reaches the network when *you* trigger artwork/metadata
-scraping, and only over HTTPS.
+telemetry, and no account. PFP reaches the network only for the things you connect:
+artwork/metadata scraping (SteamGridDB, ScreenScraper, TheGamesDB, IGDB), achievement
+data (RetroAchievements, Steam), and Discord presence in the Full edition. Everything is
+HTTPS.
 
 **What PFP stores, and how**
 - **On-device only.** Your library, settings and artwork live in app storage. **Backup is disabled**
   (`allowBackup=false`), so nothing is uploaded or transferred automatically — use
   [Backup & restore](#415-backup--restore) to move devices.
 - **Scraper API keys are encrypted at rest** with a hardware-backed Android Keystore key.
+  On the rare devices where the Keystore is unavailable, a key you enter is stored
+  unencrypted and the app tells you so at save time.
 - **Network is HTTPS-only.** Cleartext is blocked, and release builds trust only the system
   certificate store.
 - **Logs are redacted at write time** — credentials, tokens, account names and emails never reach
   disk.
 
 **Why the broad permissions exist (and how they are minimized)**
-- **All-files access** is requested only when you add a **file-based ROM folder** (disc/multi-file
-  games need real paths). Use SAF libraries and you never grant it.
+- **ROM, media, theme and backup folders all use SAF** — you grant exactly the folders
+  PFP reads, and no storage-all permission is ever requested. A handful of legacy raw-path
+  libraries may still ask for media access on older Android versions.
 - **Query installed apps** is required to *be* a launcher.
 - **Usage access** is optional and only powers "Recently Used".
 
@@ -672,7 +683,7 @@ sanitized and require you to **confirm each one** before it appears.
 | Home button doesn't open PFP | Set it as default: *Android Settings ▸ Apps ▸ Default apps ▸ Home app*. |
 | A console shows no games after adding ROMs | Scanning is manual — open the card's **△ ▸ Scan This Console**. |
 | A game won't launch | Confirm the emulator app is installed; check the per-game/console emulator in **△** / Library Manager. |
-| Disc/multi-file game not found | These need real-path access — grant All-Files when prompted in *Settings ▸ Library*. |
+| Disc/multi-file game not found | Open the game's console folder in a file manager and confirm the file is there; if the console uses a legacy raw-path library, re-grant its folder in *Settings ▸ Library*. |
 | Artwork won't download | Add a SteamGridDB (or other) API key in *Settings ▸ Artwork* and check your connection. |
 | Interface too big/small or off-center | Tune it in *Settings ▸ Display ▸ Adjust XMB Layout*. |
 | Which edition am I on? | *Settings ▸ About ▸ Edition* shows **Full** or **Lite**. |

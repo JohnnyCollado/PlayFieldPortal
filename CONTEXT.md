@@ -33,7 +33,7 @@ favorites, collections, or play history.
 
 ## LibraryScanner
 
-The planned deep module that owns the ROM survey, new-game upserts, optional Missing reconciliation,
+The deep module that owns the ROM survey, new-game upserts, optional Missing reconciliation,
 changed-only scan persistence, per-card single-flight, and IO execution for configured Memory Cards.
 The settings interface maps its outcomes to messages; trigger adapters decide when to request a scan.
 

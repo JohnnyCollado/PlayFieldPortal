@@ -41,11 +41,12 @@ object Gim {
     fun decode(bytes: ByteArray): BmpImage? {
         if (!isGim(bytes) || bytes.size < 32) return null
 
+        val cursor = bytes.cursor()
         var palette: IntArray? = null
         var offset = 16
-        while (offset + 16 <= bytes.size) {
-            val id = bytes.u16(offset)
-            val size = bytes.i32(offset + 4)
+        while (cursor.holds(offset, 16)) {
+            val id = cursor.u16At(offset) ?: return null
+            val size = cursor.i32At(offset + 4) ?: return null
             when (id) {
                 CHUNK_ROOT, CHUNK_PICTURE -> {
                     offset += 16 // containers: descend into children
@@ -54,8 +55,13 @@ object Gim {
                 CHUNK_PALETTE -> palette = decodePalette(bytes, offset, size) ?: return null
                 CHUNK_IMAGE -> return decodeImage(bytes, offset, size, palette)
             }
-            if (size < 16) return null // malformed chunk would loop forever
-            offset += size
+            // A malformed chunk would loop forever (size < 16) or wrap the offset into a negative
+            // index (size near Int.MAX_VALUE). Advancing in Long and re-checking the bound covers
+            // both; the old `offset += size` silently overflowed on the second.
+            if (size < 16) return null
+            val next = offset.toLong() + size
+            if (next > bytes.size) return null
+            offset = next.toInt()
         }
         return null // no image block
     }
@@ -66,14 +72,15 @@ object Gim {
     private const val BLOCK_HEADER = 16
 
     private fun dataStart(bytes: ByteArray, chunk: Int): Int {
-        val declared = bytes.u16(chunk + BLOCK_HEADER + 28)
+        val declared = bytes.cursor().u16At(chunk + BLOCK_HEADER + 28) ?: 64
         return chunk + BLOCK_HEADER + if (declared in 16..1024) declared else 64
     }
 
     private fun decodePalette(bytes: ByteArray, chunk: Int, size: Int): IntArray? {
-        if (chunk + BLOCK_HEADER + 32 > bytes.size) return null
-        val format = bytes.u16(chunk + BLOCK_HEADER + 4)
-        val entries = bytes.u16(chunk + BLOCK_HEADER + 8)
+        val cursor = bytes.cursor()
+        if (!cursor.holds(chunk + BLOCK_HEADER, 32)) return null
+        val format = cursor.u16At(chunk + BLOCK_HEADER + 4) ?: return null
+        val entries = cursor.u16At(chunk + BLOCK_HEADER + 8) ?: return null
         if (format !in FORMAT_RGBA5650..FORMAT_RGBA8888 || entries !in 1..MAX_PALETTE_ENTRIES) return null
         val start = dataStart(bytes, chunk)
         val end = minOf(chunk + size, bytes.size)
@@ -83,12 +90,13 @@ object Gim {
     }
 
     private fun decodeImage(bytes: ByteArray, chunk: Int, size: Int, palette: IntArray?): BmpImage? {
-        if (chunk + BLOCK_HEADER + 32 > bytes.size) return null
-        val format = bytes.u16(chunk + BLOCK_HEADER + 4)
-        val swizzled = bytes.u16(chunk + BLOCK_HEADER + 6) == 1
-        val width = bytes.u16(chunk + BLOCK_HEADER + 8)
-        val height = bytes.u16(chunk + BLOCK_HEADER + 10)
-        val bpp = bytes.u16(chunk + BLOCK_HEADER + 12)
+        val cursor = bytes.cursor()
+        if (!cursor.holds(chunk + BLOCK_HEADER, 32)) return null
+        val format = cursor.u16At(chunk + BLOCK_HEADER + 4) ?: return null
+        val swizzled = cursor.u16At(chunk + BLOCK_HEADER + 6) == 1
+        val width = cursor.u16At(chunk + BLOCK_HEADER + 8) ?: return null
+        val height = cursor.u16At(chunk + BLOCK_HEADER + 10) ?: return null
+        val bpp = cursor.u16At(chunk + BLOCK_HEADER + 12) ?: return null
         if (width !in 1..MAX_DIMENSION || height !in 1..MAX_DIMENSION) return null
         val expectedBpp = when (format) {
             FORMAT_RGBA8888 -> 32

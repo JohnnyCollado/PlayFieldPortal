@@ -97,7 +97,7 @@ class GameDetailViewModelTest {
         coEvery { platformDao.getById("psx") }    returns fakePlatform
         coEvery { memoryCardRepository.getById("psx") } returns null
         every { profileRepository.getInstalledProfiles() }         returns emptyList()
-        every { profileRepository.getProfilesForPlatform(any()) }  returns emptyList()
+        coEvery { profileRepository.getProfilesForPlatform(any()) }  returns emptyList()
 
         viewModel = GameDetailViewModel(
             context           = context,
@@ -249,14 +249,14 @@ class GameDetailViewModelTest {
         coEvery { gameRepository.getById(2L) } returns disc2
         coEvery { gameRepository.getDiscSetMembers(setKey) } returns listOf(primary, disc2)
         every { profileRepository.getInstalledProfiles() } returns listOf(fakeProfile)
-        every { intentResolver.resolve(any(), any()) } returns Result.success(fakeLaunchIntent())
+        coEvery { intentResolver.resolve(any(), any()) } returns Result.success(fakeLaunchIntent())
 
         viewModel.loadGame(1L, requestedDiscId = 2L)
         testDispatcher.scheduler.advanceUntilIdle()
         viewModel.launch()
         testDispatcher.scheduler.advanceUntilIdle()
 
-        verify { intentResolver.resolve(disc2, match { it.id == "duckstation" }) }
+        coVerify { intentResolver.resolve(disc2, match { it.id == "duckstation" }) }
     }
 
     @Test
@@ -292,7 +292,7 @@ class GameDetailViewModelTest {
         coEvery { gameRepository.getById(2L) } returns disc2
         coEvery { gameRepository.getDiscSetMembers(setKey) } returns listOf(primary, disc2)
         every { profileRepository.getInstalledProfiles() } returns listOf(fakeProfile)
-        every { intentResolver.resolve(any(), any()) } returns Result.success(fakeLaunchIntent())
+        coEvery { intentResolver.resolve(any(), any()) } returns Result.success(fakeLaunchIntent())
 
         viewModel.loadGame(1L)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -300,7 +300,7 @@ class GameDetailViewModelTest {
         viewModel.launch()
         testDispatcher.scheduler.advanceUntilIdle()
 
-        verify { intentResolver.resolve(disc2, match { it.id == "duckstation" }) }
+        coVerify { intentResolver.resolve(disc2, match { it.id == "duckstation" }) }
     }
 
     // ── toggleFavorite ────────────────────────────────────────────────────
@@ -410,8 +410,8 @@ class GameDetailViewModelTest {
         )
         val fakeIntent = fakeLaunchIntent()
         every { profileRepository.getInstalledProfiles() }        returns listOf(fakeProfile)
-        every { profileRepository.getProfilesForPlatform("psx") } returns listOf(fakeProfile)
-        every { intentResolver.resolve(any(), any()) }            returns Result.success(fakeIntent)
+        coEvery { profileRepository.getProfilesForPlatform("psx") } returns listOf(fakeProfile)
+        coEvery { intentResolver.resolve(any(), any()) }            returns Result.success(fakeIntent)
 
         viewModel.loadGame(1L)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -439,8 +439,8 @@ class GameDetailViewModelTest {
         )
         coEvery { gameRepository.getById(1L) }                    returns missingGame
         every { profileRepository.getInstalledProfiles() }        returns listOf(fakeProfile)
-        every { profileRepository.getProfilesForPlatform("psx") } returns listOf(fakeProfile)
-        every { intentResolver.resolve(any(), any()) }            returns Result.success(fakeLaunchIntent())
+        coEvery { profileRepository.getProfilesForPlatform("psx") } returns listOf(fakeProfile)
+        coEvery { intentResolver.resolve(any(), any()) }            returns Result.success(fakeLaunchIntent())
 
         viewModel.loadGame(1L)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -452,7 +452,7 @@ class GameDetailViewModelTest {
             expectNoEvents()
             cancelAndIgnoreRemainingEvents()
         }
-        verify(exactly = 0) { intentResolver.resolve(any(), any()) }
+        coVerify(exactly = 0) { intentResolver.resolve(any(), any()) }
 
         viewModel.uiState.test {
             val state = awaitItem()
@@ -475,8 +475,8 @@ class GameDetailViewModelTest {
         // isMissing back to false is exactly what markSeen does when the file reappears.
         coEvery { gameRepository.getById(1L) }                    returns fakeGame.copy(isMissing = false)
         every { profileRepository.getInstalledProfiles() }        returns listOf(fakeProfile)
-        every { profileRepository.getProfilesForPlatform("psx") } returns listOf(fakeProfile)
-        every { intentResolver.resolve(any(), any()) }            returns Result.success(fakeIntent)
+        coEvery { profileRepository.getProfilesForPlatform("psx") } returns listOf(fakeProfile)
+        coEvery { intentResolver.resolve(any(), any()) }            returns Result.success(fakeIntent)
 
         viewModel.loadGame(1L)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -511,15 +511,15 @@ class GameDetailViewModelTest {
         coEvery { gameRepository.getById(1L) } returns overrideGame
         coEvery { platformDao.getById("psx") } returns platformDefault
         every { profileRepository.getInstalledProfiles() } returns listOf(retroarch, duckstation)
-        every { profileRepository.getProfilesForPlatform("psx") } returns listOf(retroarch, duckstation)
-        every { intentResolver.resolve(any(), any()) } returns Result.success(fakeIntent)
+        coEvery { profileRepository.getProfilesForPlatform("psx") } returns listOf(retroarch, duckstation)
+        coEvery { intentResolver.resolve(any(), any()) } returns Result.success(fakeIntent)
 
         viewModel.loadGame(1L)
         testDispatcher.scheduler.advanceUntilIdle()
         viewModel.launch()
         testDispatcher.scheduler.advanceUntilIdle()
 
-        verify { intentResolver.resolve(overrideGame, match { it.id == "duckstation" }) }
+        coVerify { intentResolver.resolve(overrideGame, match { it.id == "duckstation" }) }
     }
 
     @Test
@@ -548,15 +548,15 @@ class GameDetailViewModelTest {
         coEvery { platformDao.getById("psx") } returns platformDefault
         coEvery { memoryCardRepository.getById("psx") } returns memoryCard
         every { profileRepository.getInstalledProfiles() } returns listOf(retroarch, duckstation)
-        every { profileRepository.getProfilesForPlatform("psx") } returns listOf(retroarch, duckstation)
-        every { intentResolver.resolve(any(), any()) } returns Result.success(fakeIntent)
+        coEvery { profileRepository.getProfilesForPlatform("psx") } returns listOf(retroarch, duckstation)
+        coEvery { intentResolver.resolve(any(), any()) } returns Result.success(fakeIntent)
 
         viewModel.loadGame(1L)
         testDispatcher.scheduler.advanceUntilIdle()
         viewModel.launch()
         testDispatcher.scheduler.advanceUntilIdle()
 
-        verify { intentResolver.resolve(fakeGame, match { it.id == "duckstation" }) }
+        coVerify { intentResolver.resolve(fakeGame, match { it.id == "duckstation" }) }
     }
 
     @Test
@@ -579,15 +579,15 @@ class GameDetailViewModelTest {
         val fakeIntent = fakeLaunchIntent()
         coEvery { platformDao.getById("psx") } returns platformDefault
         every { profileRepository.getInstalledProfiles() } returns listOf(retroarch, duckstation)
-        every { profileRepository.getProfilesForPlatform("psx") } returns listOf(retroarch, duckstation)
-        every { intentResolver.resolve(any(), any()) } returns Result.success(fakeIntent)
+        coEvery { profileRepository.getProfilesForPlatform("psx") } returns listOf(retroarch, duckstation)
+        coEvery { intentResolver.resolve(any(), any()) } returns Result.success(fakeIntent)
 
         viewModel.loadGame(1L)
         testDispatcher.scheduler.advanceUntilIdle()
         viewModel.launch()
         testDispatcher.scheduler.advanceUntilIdle()
 
-        verify { intentResolver.resolve(fakeGame, match { it.id == "duckstation" }) }
+        coVerify { intentResolver.resolve(fakeGame, match { it.id == "duckstation" }) }
     }
 
     @Test
@@ -600,8 +600,8 @@ class GameDetailViewModelTest {
             supportedPlatformIds = listOf("psx"),
         )
         every { profileRepository.getInstalledProfiles() }        returns listOf(fakeProfile)
-        every { profileRepository.getProfilesForPlatform("psx") } returns listOf(fakeProfile)
-        every { intentResolver.resolve(any(), any()) }            returns Result.failure(
+        coEvery { profileRepository.getProfilesForPlatform("psx") } returns listOf(fakeProfile)
+        coEvery { intentResolver.resolve(any(), any()) }            returns Result.failure(
             IllegalStateException("ROM file not found: /roms/psx/crash.bin")
         )
 
@@ -629,8 +629,8 @@ class GameDetailViewModelTest {
             supportedPlatformIds = listOf("psx"),
         )
         every { profileRepository.getInstalledProfiles() }        returns listOf(fakeProfile)
-        every { profileRepository.getProfilesForPlatform("psx") } returns listOf(fakeProfile)
-        every { intentResolver.resolve(any(), any()) }            returns Result.failure(
+        coEvery { profileRepository.getProfilesForPlatform("psx") } returns listOf(fakeProfile)
+        coEvery { intentResolver.resolve(any(), any()) }            returns Result.failure(
             IllegalStateException("Emulator not installed: RetroArch (64-bit) (com.retroarch.aarch64)")
         )
 
@@ -659,8 +659,8 @@ class GameDetailViewModelTest {
             coreMap              = mapOf("psx" to "/data/data/com.retroarch.aarch64/cores/pcsx_rearmed.so"),
         )
         every { profileRepository.getInstalledProfiles() }        returns listOf(fakeProfile)
-        every { profileRepository.getProfilesForPlatform("psx") } returns listOf(fakeProfile)
-        every { intentResolver.resolve(any(), any()) }            returns Result.failure(
+        coEvery { profileRepository.getProfilesForPlatform("psx") } returns listOf(fakeProfile)
+        coEvery { intentResolver.resolve(any(), any()) }            returns Result.failure(
             IllegalStateException("RetroArch core not found: /data/data/com.retroarch.aarch64/cores/pcsx_rearmed.so")
         )
 

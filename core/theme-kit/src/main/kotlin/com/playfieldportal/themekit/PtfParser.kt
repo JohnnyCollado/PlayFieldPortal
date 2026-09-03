@@ -49,6 +49,9 @@ object PtfParser {
     private const val FIRMWARE_LENGTH = 8
     private const val TABLE_OFFSET = 0x100
     private const val MAX_SLOTS = 16
+
+    // id:u16 | subtype:u16 | size:u32 | dataOffset:u32
+    private const val DESCRIPTOR_SIZE = 12
     private const val WALLPAPER_SLOT_ID = 1
 
     /** What a `\0PTF`-magic file actually is. CXMB `.ctf` files reuse the same magic. */
@@ -95,22 +98,25 @@ object PtfParser {
     fun parse(bytes: ByteArray): PtfTheme? {
         if (detect(bytes) != Kind.OFFICIAL_PTF) return null
 
-        val name = bytes.asciiString(NAME_OFFSET, NAME_LENGTH)
-        val firmware = bytes.asciiString(FIRMWARE_OFFSET, FIRMWARE_LENGTH)
+        val cursor = bytes.cursor()
+        val name = cursor.asciiAt(NAME_OFFSET, NAME_LENGTH)
+        val firmware = cursor.asciiAt(FIRMWARE_OFFSET, FIRMWARE_LENGTH)
 
         val slots = buildList {
             for (i in 0 until MAX_SLOTS) {
-                val ptrOffset = TABLE_OFFSET + i * 4
-                if (ptrOffset + 4 > bytes.size) break
-                val ptr = bytes.u32(ptrOffset)
-                if (ptr == 0) break
-                if (ptr + 12 > bytes.size) break
+                // pointerAt refuses a pointer that is zero, negative once truncated, or that does
+                // not address a whole 12-byte descriptor. The old code compared `ptr + 12` against
+                // the size with ptr already collapsed to a signed Int, so 0xFFFFFFFF became -1 and
+                // sailed through into an out-of-bounds read.
+                val ptr = cursor.pointerAt(TABLE_OFFSET + i * 4, needs = DESCRIPTOR_SIZE) ?: break
                 add(
                     Slot(
-                        id = bytes.u16(ptr),
-                        subtype = bytes.u16(ptr + 2),
-                        size = bytes.u32(ptr + 4),
-                        dataOffset = bytes.u32(ptr + 8),
+                        id = cursor.u16At(ptr) ?: break,
+                        subtype = cursor.u16At(ptr + 2) ?: break,
+                        // Sizes and offsets are u32 on disk but only ever addressable as Int here;
+                        // anything that does not fit is malformed, not merely large.
+                        size = cursor.u32At(ptr + 4)?.toIntOrNullExact() ?: break,
+                        dataOffset = cursor.u32At(ptr + 8)?.toIntOrNullExact() ?: break,
                     ),
                 )
             }
@@ -145,10 +151,13 @@ object PtfParser {
         // Preferred path: the 32-byte payload header tells us the compression method and
         // exactly where/how much to inflate — no scanning, and sizes double as sanity checks.
         if (end - start >= PAYLOAD_HEADER_SIZE) {
-            val type = bytes.u16(start + 4)
-            val method = bytes.u16(start + 6)
-            val compressedSize = bytes.u32(start + 8)
-            val uncompressedSize = bytes.u32(start + 12)
+            val cursor = bytes.cursor()
+            val type = cursor.u16At(start + 4) ?: return null to WallpaperStatus.CORRUPT
+            val method = cursor.u16At(start + 6) ?: return null to WallpaperStatus.CORRUPT
+            val compressedSize = cursor.u32At(start + 8)?.toIntOrNullExact()
+                ?: return null to WallpaperStatus.CORRUPT
+            val uncompressedSize = cursor.u32At(start + 12)?.toIntOrNullExact()
+                ?: return null to WallpaperStatus.CORRUPT
             val headerPlausible = type == RESOURCE_TYPE_WALLPAPER &&
                 compressedSize in 1..(end - start - PAYLOAD_HEADER_SIZE) &&
                 uncompressedSize in 1..MAX_INFLATED_BYTES
@@ -232,21 +241,8 @@ object PtfParser {
         return true
     }
 
-    private fun ByteArray.u16(offset: Int): Int =
-        (this[offset].toInt() and 0xFF) or ((this[offset + 1].toInt() and 0xFF) shl 8)
-
-    private fun ByteArray.u32(offset: Int): Int =
-        (this[offset].toInt() and 0xFF) or
-            ((this[offset + 1].toInt() and 0xFF) shl 8) or
-            ((this[offset + 2].toInt() and 0xFF) shl 16) or
-            ((this[offset + 3].toInt() and 0xFF) shl 24)
-
-    private fun ByteArray.asciiString(offset: Int, maxLength: Int): String {
-        if (offset >= size) return ""
-        val end = (offset + maxLength).coerceAtMost(size)
-        val nul = (offset until end).firstOrNull { this[it] == 0.toByte() } ?: end
-        return String(this, offset, nul - offset, Charsets.ISO_8859_1).trim()
-    }
+    /** A u32 that does not fit in a non-negative Int is malformed, not merely large. */
+    private fun Long.toIntOrNullExact(): Int? = if (this in 0..Int.MAX_VALUE.toLong()) toInt() else null
 
     private fun ByteArray.containsAscii(needle: String): Boolean {
         val n = needle.toByteArray(Charsets.US_ASCII)

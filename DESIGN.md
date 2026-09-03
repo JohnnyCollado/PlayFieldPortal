@@ -1,6 +1,12 @@
 # Play Field Portal — Design Document
 **Version 2.3 · June 2026**
 
+> **Historical document.** This is the original design/build-ticket tracker and is not
+> maintained feature-by-feature. Several sections below describe superseded architecture
+> (the old `LibrarySettingsViewModel` library flow, the SD-card category bar, the
+> single-root ROM model). For current architecture see **ARCHITECTURE.md** and the
+> ADRs under `docs/adr/`; for user-facing behavior see the **README**.
+
 ---
 
 ## 1. Vision
@@ -384,7 +390,7 @@ feature/
 | 75 | XmbThemeLoader — ZIP parsing + asset extraction | ✅ Complete | loadFromUri/loadFromStream, ByteArray entries, asset copy to filesDir/themes/{id}/; test coverage in XmbThemeLoaderTest |
 | 76 | ThemeLoadResult sealed class | ✅ Complete | Success, InvalidFormat, UnsupportedVersion, IoError |
 | 77 | ThemeRepository + ThemeDiModule | ✅ Complete | observeActiveTheme(), observeAll(), installTheme(uri), uninstallTheme(id); Hilt @Binds |
-| 78 | Built-in "Classic PSP Blue" theme seeding | ✅ Complete | BuiltInThemes.CLASSIC_PSP_BLUE; themes_seeded_v1 DataStore guard in DatabaseInitializer |
+| 78 | Built-in "Classic PSP Blue" theme seeding | ✅ Complete | DatabaseInitializer's own BUILTIN_CLASSIC_BLUE (BuiltInThemes.kt was an orphaned duplicate, since deleted); themes_seeded_v1 DataStore guard in DatabaseInitializer |
 | 79 | Theme colors wired into XMB shell | ✅ Complete | themeColors: PFPColors in XMBUiState; ThemeDao observed in XMBViewModel; XMBShell wrapped in PFPTheme(colors) |
 | 80 | ThemesSettingsScreen — install + uninstall UI | ✅ Complete | SAF OpenDocument picker, LinearProgressIndicator, remove button on user themes, installMessage feedback |
 | 81 | Sound pack system | ❌ Incomplete | sounds/ extracted to filesDir; playback via SoundPool/MediaPlayer deferred |

@@ -13,7 +13,7 @@ data class MemoryCard(
     // Persisted SAF document-tree URI (the folder the user granted). When present the card scans
     // via SAF and needs no storage permission; [romDirectory] holds the derived raw path for
     // display and for emulators that take a raw {rom_path}. Legacy cards have treeUri == null and
-    // scan romDirectory directly (requires MANAGE_EXTERNAL_STORAGE).
+    // scan romDirectory directly (media permission on API ≤ 32).
     val treeUri: String? = null,
     val romDirectory: String? = null,       // the single directory this card scans (raw path)
     val supportedExtensions: List<String> = emptyList(), // lowercase, no dots

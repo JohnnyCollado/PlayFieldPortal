@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.playfieldportal.core.common.security.KeystoreSecretCipher
+import com.playfieldportal.core.common.security.SecretProtection
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -26,8 +27,10 @@ class SgdbApiKeyProvider @Inject constructor(
     suspend fun getKey(): String? =
         context.pfpDataStore.data.first()[KEY_SGDB_API_KEY]?.let { KeystoreSecretCipher.decryptOrLegacy(it) }
 
-    suspend fun saveKey(key: String) {
-        context.pfpDataStore.edit { it[KEY_SGDB_API_KEY] = KeystoreSecretCipher.encrypt(key.trim()) }
+    suspend fun saveKey(key: String): SecretProtection {
+        val sealed = KeystoreSecretCipher.seal(key.trim())
+        context.pfpDataStore.edit { it[KEY_SGDB_API_KEY] = sealed.stored }
+        return SecretProtection.of(sealed)
     }
 
     suspend fun clearKey() {

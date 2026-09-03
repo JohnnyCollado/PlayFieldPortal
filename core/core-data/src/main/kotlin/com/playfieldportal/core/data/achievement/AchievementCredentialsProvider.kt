@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.playfieldportal.core.common.security.KeystoreSecretCipher
+import com.playfieldportal.core.common.security.SecretProtection
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -86,18 +87,22 @@ class AchievementCredentialsProvider @Inject constructor(
     suspend fun hasSteam(): Boolean =
         !steamId64().isNullOrBlank() && !steamApiKey().isNullOrBlank()
 
-    suspend fun saveRetroAchievements(username: String, apiKey: String) {
+    suspend fun saveRetroAchievements(username: String, apiKey: String): SecretProtection {
+        val sealed = KeystoreSecretCipher.seal(apiKey.trim())
         context.pfpDataStore.edit {
             it[KEY_RA_USERNAME] = username.trim()
-            it[KEY_RA_API_KEY] = KeystoreSecretCipher.encrypt(apiKey.trim())
+            it[KEY_RA_API_KEY] = sealed.stored
         }
+        return SecretProtection.of(sealed)
     }
 
-    suspend fun saveSteam(steamId64: String, apiKey: String) {
+    suspend fun saveSteam(steamId64: String, apiKey: String): SecretProtection {
+        val sealed = KeystoreSecretCipher.seal(apiKey.trim())
         context.pfpDataStore.edit {
             it[KEY_STEAM_ID64] = steamId64.trim()
-            it[KEY_STEAM_API_KEY] = KeystoreSecretCipher.encrypt(apiKey.trim())
+            it[KEY_STEAM_API_KEY] = sealed.stored
         }
+        return SecretProtection.of(sealed)
     }
 
     suspend fun setEnabled(enabled: Boolean) {

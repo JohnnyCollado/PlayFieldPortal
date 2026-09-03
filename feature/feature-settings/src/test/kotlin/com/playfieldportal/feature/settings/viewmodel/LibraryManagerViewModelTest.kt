@@ -15,6 +15,7 @@ import com.playfieldportal.feature.launcher.EmulatorProfileRepository
 import com.playfieldportal.feature.library.scanner.LibraryScanner
 import com.playfieldportal.feature.library.scanner.PlatformScanOutcome
 import com.playfieldportal.feature.library.scanner.RomScanner
+import com.playfieldportal.feature.library.scanner.scanOutcomeMessage
 import com.playfieldportal.feature.library.scanner.ScanStatus
 import com.playfieldportal.feature.settings.pc.PcGameScanner
 import io.mockk.coEvery

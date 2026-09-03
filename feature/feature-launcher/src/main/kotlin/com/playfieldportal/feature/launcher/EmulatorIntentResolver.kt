@@ -7,7 +7,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
-import androidx.core.content.FileProvider
 import com.playfieldportal.core.domain.model.EmulatorProfile
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.IntentType
@@ -30,6 +29,7 @@ import javax.inject.Singleton
 @Singleton
 class EmulatorIntentResolver @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val romUriMinter: RomUriMinter,
 ) {
 
     /**
@@ -38,7 +38,7 @@ class EmulatorIntentResolver @Inject constructor(
      * Returns [Result.success] with the intent on success, or [Result.failure] with a
      * user-readable message explaining why launch cannot proceed. Never throws.
      */
-    fun resolve(game: Game, profile: EmulatorProfile): Result<Intent> {
+    suspend fun resolve(game: Game, profile: EmulatorProfile): Result<Intent> {
         return runCatching {
             validateBeforeLaunch(game, profile)
             val intent = when (profile.intentType) {
@@ -120,7 +120,7 @@ class EmulatorIntentResolver @Inject constructor(
         profile.intentArrayExtras.values.flatten().any { it.contains(LaunchTemplate.TITLE_ID) } ||
             profile.intentExtras.values.any { it.contains(LaunchTemplate.TITLE_ID) }
 
-    private fun buildViewIntent(game: Game, profile: EmulatorProfile): Intent {
+    private suspend fun buildViewIntent(game: Game, profile: EmulatorProfile): Intent {
         val uri = romLaunchUri(game, profile)
         val activityClass = profile.activityClass
         val mime = profile.mimeType ?: "application/octet-stream"
@@ -164,7 +164,7 @@ class EmulatorIntentResolver @Inject constructor(
         return intent
     }
 
-    private fun buildComponentIntent(game: Game, profile: EmulatorProfile): Intent {
+    private suspend fun buildComponentIntent(game: Game, profile: EmulatorProfile): Intent {
         val activity = profile.activityClass
             ?: error("Activity class required for COMPONENT intent - profile: ${profile.name}")
 
@@ -173,10 +173,7 @@ class EmulatorIntentResolver @Inject constructor(
         val romUri: Uri? = if (needsRomUri) {
             // SAF game → the granted content URI; legacy game → a FileProvider URI from its raw path.
             game.romUri?.takeIf { it.isNotBlank() }?.let { runCatching { Uri.parse(it) }.getOrNull() }
-                ?: runCatching {
-                    val romFile = File(game.romPath ?: error("ROM path required for ${profile.name}"))
-                    FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", romFile)
-                }.getOrNull()
+                ?: romUriMinter.mint(game.romPath ?: error("ROM path required for ${profile.name}"))
         } else null
 
         val action = profile.intentAction ?: Intent.ACTION_MAIN
@@ -219,19 +216,25 @@ class EmulatorIntentResolver @Inject constructor(
     // The URI handed to an ACTION_VIEW emulator. A SAF game uses its granted content:// document URI
     // directly (no FileProvider, no raw-file access by PFP). A legacy raw-path game keeps the prior
     // behaviour: file:// on very old APIs when explicitly requested, else a FileProvider content URI.
-    private fun romLaunchUri(game: Game, profile: EmulatorProfile): Uri {
+    private suspend fun romLaunchUri(game: Game, profile: EmulatorProfile): Uri {
         game.romUri?.takeIf { it.isNotBlank() }?.let { return Uri.parse(it) }
 
-        val romFile = File(game.romPath ?: error("ROM path is required to launch ${game.title}"))
+        val romPath = game.romPath ?: error("ROM path is required to launch ${game.title}")
         if (profile.useFileUri && !profile.useSafUri && Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
-            return Uri.fromFile(romFile)
+            return Uri.fromFile(File(romPath))
         }
         if (profile.useFileUri && !profile.useSafUri) {
             Timber.d(
                 "Profile ${profile.id} requests file:// ROM launch; using granted content:// URI on API ${Build.VERSION.SDK_INT}"
             )
         }
-        return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", romFile)
+        // Minted through RomUriMinter, which refuses any path outside a configured ROM source —
+        // the FileProvider's own root is far wider than a launch ever needs.
+        return romUriMinter.mint(romPath)
+            ?: error(
+                "${game.title} is not inside a configured ROM folder, so it cannot be handed to " +
+                    "${profile.name}. Check the folder set for this Memory Card in Settings."
+            )
     }
 
     private fun Intent.applyProfileFlags(profile: EmulatorProfile) {

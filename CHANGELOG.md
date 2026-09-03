@@ -5,7 +5,38 @@ All notable changes to Play Field Portal are documented here. This project follo
 
 ## [Unreleased]
 
+### Added
+- **Untrusted backup archives get a hardening pass.** `.pfpbackup` restore now routes
+  everything through a bounded, root-confined reader: zip bombs (entry count, per-entry
+  and total inflated size) are refused instead of OOMing, staged files may only land in
+  the folders a backup owns (`artwork/`, `wallpaper/`, `emulator_profiles/` — no more
+  overwriting the live DataStore), and emulator profiles arriving from a backup are
+  screened before they can ever receive a ROM URI grant. The launch path mints ROM
+  `content://` URIs only for files inside a configured Memory Card source, so the
+  FileProvider's broad `/storage/` root is no longer reachable with arbitrary paths.
+- **ScreenScraper developer pair ships obfuscated in the APK.** The
+  `devid`/`devpassword` pair used to compile into every APK as a `BuildConfig` string
+  (recoverable from the binary with `strings` — R8 does not touch string literals), and
+  an interim user-entry-only design stranded users who could not obtain a pair. The
+  build now XOR-encodes the pair from `local.properties` into `BuildConfig` byte arrays
+  (keystream = SHA-256 of an obfuscation salt plus the property name), reassembled at
+  runtime by a pure decoder — defeating casual `strings` scrapes, not a determined
+  decompiler. There is no user-entered override: the bundled pair is the only one, and
+  the optional per-user ScreenScraper account is unaffected.
+
 ### Changed
+- **Emulator profile reads are suspend and screened.** Profile loading declares its IO
+  dispatcher instead of relying on call-site coincidence, and every persisted profile
+  (which chooses an intent target that later receives a ROM grant) passes an admission
+  whitelist — custom commands, malformed package names, self-targeting profiles, and
+  unknown intent flags are refused with a logged reason.
+
+### Fixed
+- **Theme and backup archives share one bounded ZIP reader.** The theme loader, theme
+  codec, and backup restore each hand-rolled part of the same ingestion policy at three
+  quality levels; a crafted archive could hang or OOM depending on which path it rode
+  in on. All three now go through `core-archive`'s `BoundedZipReader`, so the strongest
+  reader is the floor rather than the exception.
 - **PlayStation button glyphs are now the DualSense set, and Zacksly is properly credited.**
   The PlayStation prompts used the PS4 Premium pack at 480px, which read heavier and larger
   than the flat 128px Xbox and Switch art beside it; they are now the PS5 pack's

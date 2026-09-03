@@ -6,7 +6,7 @@ import org.junit.Test
 
 class ScreenScraperApiTest {
 
-    private val api = ScreenScraperApi(httpClient = mockk(relaxed = true), keyProvider = mockk(relaxed = true))
+    private val api = ScreenScraperApi(httpClient = mockk(relaxed = true), credentials = mockk(relaxed = true))
 
     // ScreenScraper serves these as HTTP 200 with a plain-text body — classification is what
     // keeps a batch run from hammering the API after a quota/credential failure.

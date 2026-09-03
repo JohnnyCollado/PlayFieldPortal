@@ -35,14 +35,13 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
 import com.playfieldportal.core.common.security.KeystoreSecretCipher
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.data.repository.BackupFolderRepository
+import com.playfieldportal.feature.backup.restore.RestoreArchive
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.Json
 import timber.log.Timber
 import java.io.File
-import java.io.InputStream
 import java.util.zip.ZipEntry
-import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -56,7 +55,12 @@ sealed class BackupResult {
 data class BackupInfo(val name: String, val uri: Uri, val lastModified: Long)
 
 sealed class RestoreResult {
-    object Success : RestoreResult()
+    /**
+     * [refusals] lists anything the archive carried that was not admissible — an entry outside the
+     * restorable folders, or an emulator profile that failed admission. A restore can succeed and
+     * still have turned something away, and the user is entitled to know which.
+     */
+    data class Success(val refusals: List<String> = emptyList()) : RestoreResult()
     data class Failure(val reason: String, val cause: Throwable? = null) : RestoreResult()
 }
 
@@ -158,23 +162,31 @@ open class BackupManager @Inject constructor(
         val stream = context.contentResolver.openInputStream(uri)
             ?: return RestoreResult.Failure("Could not open backup file")
 
-        // Extract JSON into memory and stage any bundled files into a temp dir. Nothing is committed
-        // to the live filesDir until the manifest is validated below.
+        // Everything untrusted goes through RestoreArchive: it bounds the archive, confines staged
+        // files to the roots a backup owns, and drops inadmissible emulator profiles. Nothing is
+        // committed to the live filesDir until the manifest is validated below.
         val filesDir = context.filesDir
         val staging  = File(filesDir, RESTORE_STAGING_DIR)
-        staging.deleteRecursively()
 
-        val entries = stream.use { readBackup(it, staging) }
+        val bundle = stream.use {
+            RestoreArchive.read(
+                source       = it,
+                staging      = staging,
+                bundledRoots = BUNDLED_FILE_ROOTS,
+                selfPackage  = context.packageName,
+            )
+        }
+        val entries = bundle.jsonEntries
 
         val manifest = entries[BackupEntry.MANIFEST]?.let {
             json.decodeFromString(BackupManifest.serializer(), it)
         } ?: run {
-            staging.deleteRecursively()
+            bundle.discard()
             return RestoreResult.Failure("Backup is missing manifest")
         }
 
         if (manifest.formatVersion > BACKUP_FORMAT_VERSION) {
-            staging.deleteRecursively()
+            bundle.discard()
             return RestoreResult.Failure(
                 "Backup format v${manifest.formatVersion} is newer than this app supports (v$BACKUP_FORMAT_VERSION)"
             )
@@ -209,7 +221,7 @@ open class BackupManager @Inject constructor(
 
         // ── Commit bundled files (only when the backup actually carried some) ─
         val filesDirPath = filesDir.absolutePath
-        commitStagedFiles(staging, filesDir)
+        bundle.commitFiles(filesDir)
 
         // ── Rewrite internal-storage paths onto THIS package's filesDir ──
         val remappedGames = games.map { g ->
@@ -281,8 +293,9 @@ open class BackupManager @Inject constructor(
         // Settings last, with the wallpaper path remapped onto this filesDir.
         if (settings != null) restoreSettingsSnapshot(settings.remapWallpaper(filesDirPath))
 
+        bundle.refusals
     }.fold(
-        onSuccess = { RestoreResult.Success },
+        onSuccess = { RestoreResult.Success(it) },
         onFailure = { RestoreResult.Failure(it.message ?: "Unknown error", it) },
     )
 
@@ -334,52 +347,6 @@ open class BackupManager @Inject constructor(
             }
         }.onFailure { Timber.w(it, "Could not list backups in SAF folder") }
         return out.sortedByDescending { it.lastModified }
-    }
-
-    // Reads the ZIP once: JSON entries are returned as a name→text map; entries under
-    // BACKUP_FILES_PREFIX are streamed into [staging], preserving their relative path.
-    private fun readBackup(stream: InputStream, staging: File): Map<String, String> {
-        val map = mutableMapOf<String, String>()
-        val stagingCanonical = staging.canonicalPath
-        ZipInputStream(stream.buffered()).use { zip ->
-            var entry: ZipEntry? = zip.nextEntry
-            while (entry != null) {
-                val name = entry.name
-                if (!entry.isDirectory) {
-                    if (name.startsWith(BACKUP_FILES_PREFIX)) {
-                        val dest = File(staging, name.removePrefix(BACKUP_FILES_PREFIX))
-                        // Zip-slip guard: never let an entry escape the staging root.
-                        if (dest.canonicalPath.startsWith(stagingCanonical + File.separator)) {
-                            dest.parentFile?.mkdirs()
-                            dest.outputStream().use { out -> zip.copyTo(out) }
-                        }
-                    } else {
-                        map[name] = zip.readBytes().toString(Charsets.UTF_8)
-                    }
-                }
-                zip.closeEntry()
-                entry = zip.nextEntry
-            }
-        }
-        return map
-    }
-
-    // Moves staged files into the live filesDir. When the backup carried bundled assets we first
-    // clear the managed roots so the restore is a true replace, not a merge.
-    private fun commitStagedFiles(staging: File, filesDir: File) {
-        val staged = staging.takeIf { it.exists() }?.walkTopDown()?.filter { it.isFile }?.toList().orEmpty()
-        if (staged.isEmpty()) {
-            staging.deleteRecursively()
-            return
-        }
-        BUNDLED_FILE_ROOTS.forEach { root -> File(filesDir, root).deleteRecursively() }
-        staged.forEach { src ->
-            val rel  = src.relativeTo(staging).invariantSeparatorsPath
-            val dest = File(filesDir, rel)
-            dest.parentFile?.mkdirs()
-            src.copyTo(dest, overwrite = true)
-        }
-        staging.deleteRecursively()
     }
 
     private fun ZipOutputStream.bundleTree(filesDir: File, root: String) {

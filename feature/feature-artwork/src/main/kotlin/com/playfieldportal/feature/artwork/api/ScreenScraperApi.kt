@@ -1,14 +1,18 @@
 package com.playfieldportal.feature.artwork.api
 
 import com.playfieldportal.feature.artwork.BuildConfig
-import com.playfieldportal.feature.artwork.MetadataApiKeyProvider
+import com.playfieldportal.feature.artwork.credentials.MetadataCredentialSource
+import com.playfieldportal.feature.artwork.credentials.ScreenScraperCredentials
 import com.playfieldportal.feature.artwork.rom.RomIdentity
 import io.ktor.client.HttpClient
+import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.SerialName
@@ -121,7 +125,7 @@ data class SsGameInfo(
 // ── Diagnostics ────────────────────────────────────────────────────────────────
 
 enum class SsFailureReason {
-    DISABLED,                 // no dev credentials compiled in — SS is off entirely
+    DISABLED,                 // no developer credentials configured — SS is off entirely
     NO_SYSTEM_ID_MAPPING,
     BAD_DEV_CREDENTIALS,      // 403 — our devid/devpassword rejected
     API_CLOSED,               // 401 — API closed for non-members / inactive account
@@ -169,8 +173,8 @@ data class SsLookupResult(
 /**
  * ScreenScraper WebAPI v2 client (jeuInfos.php).
  *
- * Requires developer credentials compiled in via BuildConfig (local.properties /
- * `screenscraper.devId|devPassword`); without them [isEnabled] is false and every lookup
+ * Requires developer credentials, supplied by [MetadataCredentialSource] from what the user
+ * entered in Settings ▸ Artwork; without them [isEnabled] is false and every lookup
  * short-circuits to [SsFailureReason.DISABLED]. A user account (ssid/sspassword) is optional
  * but raises thread count and daily quota.
  *
@@ -181,7 +185,7 @@ data class SsLookupResult(
 @Singleton
 class ScreenScraperApi @Inject constructor(
     private val httpClient: HttpClient,
-    private val keyProvider: MetadataApiKeyProvider,
+    private val credentials: MetadataCredentialSource,
 ) {
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
@@ -190,7 +194,11 @@ class ScreenScraperApi @Inject constructor(
     private val requestGate = Mutex()
     private var lastRequestAt = 0L
 
-    val isEnabled: Boolean get() = BuildConfig.SS_DEV_ID.isNotBlank() && BuildConfig.SS_DEV_PASSWORD.isNotBlank()
+    /** True once the user has supplied a developer account. Reads storage, hence suspend. */
+    suspend fun isEnabled(): Boolean = credentials.screenScraperNow() != null
+
+    /** [isEnabled] as a stream, for settings screens that mirror it into UI state. */
+    val isEnabledFlow: Flow<Boolean> = credentials.screenScraper.map { it != null }
 
     suspend fun fetchGameInfo(
         platformId: String,
@@ -198,19 +206,19 @@ class ScreenScraperApi @Inject constructor(
         ssGameId: Long? = null,
     ): SsLookupResult {
         val systemId = PLATFORM_IDS[platformId]
-        val username = keyProvider.getSsUsername()
+        val creds = credentials.screenScraperNow()
         val baseDiag = SsLookupDiagnostics(
             fileName   = rom?.fileName,
             platformId = platformId,
             systemId   = systemId,
-            userCredentialsPresent = !username.isNullOrBlank(),
+            userCredentialsPresent = creds?.userId != null,
             sentCrc    = rom?.crc32 != null,
         )
 
-        if (!isEnabled) {
+        if (creds == null) {
             return SsLookupResult(null, baseDiag.copy(
                 failureReason = SsFailureReason.DISABLED,
-                failureDetail = "No developer credentials compiled in",
+                failureDetail = "No ScreenScraper developer account — add one in Settings ▸ Artwork",
             ))
         }
         if (systemId == null && ssGameId == null) {
@@ -222,14 +230,7 @@ class ScreenScraperApi @Inject constructor(
 
         return try {
             val response: HttpResponse = rateLimited { httpClient.get("$BASE/jeuInfos.php") {
-                parameter("devid",       BuildConfig.SS_DEV_ID)
-                parameter("devpassword", BuildConfig.SS_DEV_PASSWORD)
-                parameter("softname",    BuildConfig.SS_SOFT_NAME)
-                parameter("output",      "json")
-                if (!username.isNullOrBlank()) {
-                    parameter("ssid",        username)
-                    parameter("sspassword",  keyProvider.getSsPassword().orEmpty())
-                }
+                credentialParams(creds)
                 if (ssGameId != null) {
                     parameter("gameid", ssGameId)
                 } else {
@@ -284,20 +285,31 @@ class ScreenScraperApi @Inject constructor(
 
     /** Validates user credentials via ssuserInfos.php; returns the quota block, or null. */
     suspend fun fetchUserInfo(username: String, password: String): SsUser? = runCatching {
-        if (!isEnabled) return null
+        val creds = credentials.screenScraperNow() ?: return null
         val response = rateLimited { httpClient.get("$BASE/ssuserInfos.php") {
-            parameter("devid",       BuildConfig.SS_DEV_ID)
-            parameter("devpassword", BuildConfig.SS_DEV_PASSWORD)
-            parameter("softname",    BuildConfig.SS_SOFT_NAME)
-            parameter("output",      "json")
-            parameter("ssid",        username)
-            parameter("sspassword",  password)
+            // The account being tested is the one passed in, not the stored one.
+            credentialParams(creds.copy(userId = username, userPassword = password))
         } }
         if (response.status.value != 200) return null
         json.decodeFromString(SsUserInfoResponse.serializer(), response.bodyAsText()).response?.user
     }.onFailure { Timber.w(it, "ScreenScraper: ssuserInfos failed") }.getOrNull()
 
     // ── Internals ─────────────────────────────────────────────────────────────
+
+    /**
+     * The developer pair every endpoint requires, plus the optional user account. Kept in one
+     * place so a new endpoint cannot forget half of it.
+     */
+    private fun HttpRequestBuilder.credentialParams(creds: ScreenScraperCredentials) {
+        parameter("devid",       creds.devId)
+        parameter("devpassword", creds.devPassword)
+        parameter("softname",    BuildConfig.SS_SOFT_NAME)
+        parameter("output",      "json")
+        creds.userId?.let {
+            parameter("ssid",       it)
+            parameter("sspassword", creds.userPassword.orEmpty())
+        }
+    }
 
     private suspend fun <T> rateLimited(block: suspend () -> T): T = requestGate.withLock {
         val wait = MIN_REQUEST_INTERVAL_MS - (System.currentTimeMillis() - lastRequestAt)

@@ -151,7 +151,9 @@ class InitialSetupViewModel @Inject constructor(
 
     // Wizard-local state (page + transient messages + RetroArch status); the folder/service rows
     // are mirrored from the stores so they never go stale.
-    private val scratch = MutableStateFlow(InitialSetupUiState(ssEnabled = screenScraperApi.isEnabled))
+    // ssEnabled used to be a build constant readable here; it is now stored state, so it starts
+    // false and is filled in by the init block below alongside the other detected values.
+    private val scratch = MutableStateFlow(InitialSetupUiState())
 
     // Detected artwork sources kept beside (not inside) UiState so state carries only display
     // data; aligned by index with artworkSources.
@@ -159,8 +161,10 @@ class InitialSetupViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
+            val ssEnabled = screenScraperApi.isEnabled()
             scratch.update {
                 it.copy(
+                    ssEnabled = ssEnabled,
                     retroArchInstalled = isRetroArchInstalled(),
                     vita3KInstalled = isVita3KInstalled(),
                 )
@@ -564,4 +568,4 @@ class InitialSetupViewModel @Inject constructor(
     }
 
     fun dismissMessage() = scratch.update { it.copy(message = null) }
-}
+}

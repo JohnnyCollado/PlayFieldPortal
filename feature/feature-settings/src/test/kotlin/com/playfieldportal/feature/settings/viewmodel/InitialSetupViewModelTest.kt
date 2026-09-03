@@ -85,7 +85,7 @@ class InitialSetupViewModelTest {
         every { metadataKeys.ssUsernameFlow } returns flowOf(null)
         every { credentials.raUsernameFlow } returns flowOf(null)
         every { credentials.steamId64Flow } returns flowOf(null)
-        every { screenScraperApi.isEnabled } returns true
+        coEvery { screenScraperApi.isEnabled() } returns true
         coEvery { retroArchLink.isLinked() } returns false
         vm = buildVm()
     }
@@ -443,4 +443,4 @@ class InitialSetupViewModelTest {
         coVerify(exactly = 0) { credentials.saveRetroAchievements(any(), any()) }
         coVerify(exactly = 0) { credentials.saveSteam(any(), any()) }
     }
-}
+}

@@ -23,7 +23,12 @@ class RestoreWorker @AssistedInject constructor(
         val uri = Uri.parse(uriString)
 
         return when (val result = backupManager.restoreBackup(uri)) {
-            is RestoreResult.Success -> Result.success()
+            // A restore can succeed having turned something away — an entry outside the folders a
+            // backup owns, or an emulator profile that failed admission. Carrying the list out
+            // means the user is told rather than left with silently missing data.
+            is RestoreResult.Success -> Result.success(
+                workDataOf(KEY_REFUSALS to result.refusals.toTypedArray())
+            )
             is RestoreResult.Failure -> Result.failure(
                 workDataOf(KEY_ERROR to result.reason)
             )
@@ -34,5 +39,6 @@ class RestoreWorker @AssistedInject constructor(
         const val TAG      = "pfp_restore"
         const val KEY_URI  = "backup_uri"
         const val KEY_ERROR = "error"
+        const val KEY_REFUSALS = "refusals"
     }
 }

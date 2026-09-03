@@ -304,18 +304,33 @@ fun ArtworkSettingsScreen(
                 )
             }
 
-            // ── ScreenScraper account (optional) ──────────────────────────────
-            // Always visible: credentials can be entered and are stored encrypted even before the
-            // build carries dev credentials; scraping activates the moment those exist.
-            SettingsGroup("ScreenScraper Account (Optional)")
+            // ── ScreenScraper provider status ────────────────────────────────
+            // The WebAPI rejects every call without a devid/devpassword pair. This build ships an
+            // obfuscated built-in pair (there is no user-entered override), so the provider works
+            // out of the box; the optional user account below only raises the rate limit/quota.
+            SettingsGroup("ScreenScraper")
 
-            if (!state.ssEnabled) {
-                SettingsValueRow(
-                    label    = "Status",
-                    sublabel = "This build has no ScreenScraper developer credentials — hash-based scraping is disabled until they're added",
-                    value    = "Inactive",
+            SettingsValueRow(
+                label    = "Status",
+                sublabel = if (state.ssEnabled) {
+                    "Hash-based scraping is active (built-in developer pair)"
+                } else {
+                    "ScreenScraper is unavailable in this build — no developer pair was bundled"
+                },
+                value    = if (state.ssEnabled) "Active" else "Inactive",
+            )
+
+            state.unprotectedSecretWarning?.let {
+                SettingsRow(
+                    label    = it,
+                    sublabel = "Tap to dismiss",
+                    onClick  = { viewModel.dismissUnprotectedSecretWarning() },
                 )
             }
+
+            // ── ScreenScraper user account (optional) ─────────────────────────
+            // Only raises the rate limit and daily quota; scraping works without it.
+            SettingsGroup("ScreenScraper Account (Optional)")
 
             SettingsTextFieldRow(
                 label         = if (state.hasSsCredentials) "Username (saved: ${state.ssUsername})" else "Username",

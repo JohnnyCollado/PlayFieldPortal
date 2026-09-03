@@ -2,6 +2,7 @@ package com.playfieldportal.feature.settings.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.playfieldportal.core.common.security.SecretProtection
 import com.playfieldportal.feature.artwork.MetadataApiKeyProvider
 import com.playfieldportal.feature.artwork.api.ArtworkRepository
 import com.playfieldportal.feature.artwork.api.ArtworkScrapePreferences
@@ -27,12 +28,16 @@ data class ArtworkSettingsUiState(
     val hasIgdbCredentials: Boolean = false,
     val igdbClientId: String = "",
     val igdbCredentialStatus: String? = null,
-    // ScreenScraper: ssEnabled = dev credentials compiled into this build (feature works at all);
-    // the user account is optional and only raises rate limits/quota.
+    // ScreenScraper: ssEnabled = the bundled developer pair exists and scraping works at all;
+    // the user account is optional and only raises rate limits/quota. There is no user-entered
+    // developer pair — the build ships one (obfuscated) and there is nothing to override it with.
     val ssEnabled: Boolean = false,
     val hasSsCredentials: Boolean = false,
     val ssUsername: String = "",
     val ssCredentialStatus: String? = null,
+    // Set when a credential was saved but the Keystore refused to seal it, so it is on disk in
+    // plaintext. Silently degrading was the old behaviour and the user was never told.
+    val unprotectedSecretWarning: String? = null,
     val status: ArtworkStatus = ArtworkStatus(),
     val isLoadingStatus: Boolean = false,
     val isScraping: Boolean = false,
@@ -155,19 +160,27 @@ class ArtworkSettingsViewModel @Inject constructor(
         refreshStatus()
     }
 
+    // ssEnabled comes from the credential source (bundled dev pair + stored user account), so it
+    // can change while the screen is open — it has to be a flow in the combine, not a one-shot read.
+    private val ssAccounts = combine(
+        metadataKeyProvider.ssUsernameFlow,
+        screenScraperApi.isEnabledFlow,
+    ) { username, enabled -> username to enabled }
+
     val uiState: StateFlow<ArtworkSettingsUiState> = combine(
         sgdbKeyProvider.apiKeyFlow,
         metadataKeyProvider.igdbClientIdFlow,
-        metadataKeyProvider.ssUsernameFlow,
+        ssAccounts,
         scrapePreferences.preferSteamGridDbHeroesFlow,
         _extra,
-    ) { sgdbKey, igdbClientId, ssUsername, preferSgdbHeroes, extra ->
+    ) { sgdbKey, igdbClientId, ss, preferSgdbHeroes, extra ->
+        val (ssUsername, ssEnabled) = ss
         extra.copy(
             hasApiKey             = !sgdbKey.isNullOrBlank(),
             apiKeyMasked          = if (!sgdbKey.isNullOrBlank()) "••••••" else "",
             hasIgdbCredentials    = !igdbClientId.isNullOrBlank(),
             igdbClientId          = igdbClientId ?: "",
-            ssEnabled             = screenScraperApi.isEnabled,
+            ssEnabled             = ssEnabled,
             hasSsCredentials      = !ssUsername.isNullOrBlank(),
             ssUsername            = ssUsername ?: "",
             preferSteamGridDbHeroes = preferSgdbHeroes,
@@ -207,7 +220,7 @@ class ArtworkSettingsViewModel @Inject constructor(
     }
 
     fun saveApiKey(key: String) {
-        viewModelScope.launch { sgdbKeyProvider.saveKey(key.trim()) }
+        viewModelScope.launch { warnIfUnprotected("SteamGridDB key", sgdbKeyProvider.saveKey(key.trim())) }
     }
 
     fun clearApiKey() {
@@ -216,8 +229,9 @@ class ArtworkSettingsViewModel @Inject constructor(
 
     fun saveIgdbCredentials(clientId: String, clientSecret: String) {
         viewModelScope.launch {
-            metadataKeyProvider.saveIgdbCredentials(clientId.trim(), clientSecret.trim())
+            val protection = metadataKeyProvider.saveIgdbCredentials(clientId.trim(), clientSecret.trim())
             _extra.update { it.copy(igdbCredentialStatus = null) }
+            warnIfUnprotected("IGDB client secret", protection)
         }
     }
 
@@ -244,8 +258,9 @@ class ArtworkSettingsViewModel @Inject constructor(
 
     fun saveSsCredentials(username: String, password: String) {
         viewModelScope.launch {
-            metadataKeyProvider.saveSsCredentials(username.trim(), password.trim())
+            val protection = metadataKeyProvider.saveSsCredentials(username.trim(), password.trim())
             _extra.update { it.copy(ssCredentialStatus = null) }
+            warnIfUnprotected("ScreenScraper password", protection)
         }
     }
 
@@ -266,6 +281,29 @@ class ArtworkSettingsViewModel @Inject constructor(
 
     fun dismissSsCredentialStatus() {
         _extra.update { it.copy(ssCredentialStatus = null) }
+    }
+
+    // Note: the ScreenScraper developer pair is not user-entered — it ships obfuscated inside the
+    // APK and is exposed to settings only as the read-only ssEnabled state. See
+    // feature-artwork/credentials/BundledDevPairCredentialSource.kt.
+
+    fun dismissUnprotectedSecretWarning() {
+        _extra.update { it.copy(unprotectedSecretWarning = null) }
+    }
+
+    /**
+     * Surfaces a Keystore seal failure. The value was still saved — losing the user's typing is
+     * worse than storing it unencrypted — but they get to know which of the two happened.
+     */
+    private fun warnIfUnprotected(what: String, protection: SecretProtection) {
+        if (protection == SecretProtection.PROTECTED) return
+        _extra.update {
+            it.copy(
+                unprotectedSecretWarning =
+                    "$what was saved, but this device's secure keystore was unavailable, so it is " +
+                        "stored unencrypted. Clearing and re-entering it later will try again.",
+            )
+        }
     }
 
     fun requestRescrapeAll() = _extra.update { it.copy(confirmRescrapeAll = true) }

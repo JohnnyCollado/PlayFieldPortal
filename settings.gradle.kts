@@ -47,6 +47,7 @@ include(":studio")
 
 // Core modules
 include(":core:theme-kit")   // pure JVM: theme parsing/conversion shared with the desktop companion
+include(":core:core-archive")  // pure JVM: bounded/confined ZIP ingestion shared by themes and backup
 include(":core:core-common")
 include(":core:core-domain")
 include(":core:core-data")

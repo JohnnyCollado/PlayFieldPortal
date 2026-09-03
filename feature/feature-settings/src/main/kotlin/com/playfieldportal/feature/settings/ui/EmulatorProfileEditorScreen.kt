@@ -336,7 +336,7 @@ private fun CustomIntentHelp() {
 
         HelpSection("Tip")
         HelpLine("Prefer {rom_uri} with \"Use SAF URI\" enabled — the emulator gets read access to")
-        HelpLine("that one ROM without needing All-files-access permission.")
+        HelpLine("that one ROM without needing any storage-all permission.")
     }
 }
 

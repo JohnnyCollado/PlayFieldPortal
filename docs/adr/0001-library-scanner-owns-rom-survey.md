@@ -1,6 +1,6 @@
 # ADR-0001: LibraryScanner owns ROM survey and Missing reconciliation
 
-- **Status:** Accepted for implementation
+- **Status:** Implemented
 - **Date:** 2026-08-20
 - **Scope:** `feature:feature-library` scan path and its settings/trigger callers
 

@@ -1,11 +1,13 @@
 package com.playfieldportal.themekit
 
+import com.playfieldportal.core.archive.BoundedZipReader
+import com.playfieldportal.core.archive.ZipLimitExceededException
+import com.playfieldportal.core.archive.ZipLimits
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.zip.ZipEntry
-import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 import kotlinx.serialization.json.Json
 
@@ -31,12 +33,17 @@ object PfpThemeCodec {
     private const val ICONS_PREFIX = "icons/"
     private const val ICONS_SUFFIX = ".png"
 
-    // Bundles are read from untrusted SAF picks; cap each entry so a zip bomb can't OOM us.
-    // Real entries are a few hundred KB to a few MB (a 1080p PNG wallpaper).
-    private const val MAX_ENTRY_BYTES = 32 * 1024 * 1024
+    // Bundles are read from untrusted SAF picks. Real entries are a few hundred KB to a few MB
+    // (a 1080p PNG wallpaper), and a bundle is a manifest, two images and up to a registry's worth
+    // of icons — so the entry count is small and bounded by IconSlots, not by the archive.
+    private val BUNDLE_LIMITS = ZipLimits(
+        maxEntries    = 128,
+        maxEntryBytes = 32L * 1024 * 1024,
+        maxTotalBytes = 128L * 1024 * 1024,
+    )
 
-    // Icons are small glyphs (256px templates); a tighter per-entry cap since a bundle may
-    // carry dozens of them.
+    // Icons are small glyphs (256px templates); a tighter cap than the shared per-entry one, since
+    // a bundle may carry dozens of them.
     private const val MAX_ICON_BYTES = 4 * 1024 * 1024
 
     // Lenient on unknown keys so newer bundles (higher schemaVersion additions) still open.
@@ -73,30 +80,34 @@ object PfpThemeCodec {
         var preview: ByteArray? = null
         val icons = mutableMapOf<String, ByteArray>()
 
-        ZipInputStream(input).use { zip ->
-            while (true) {
-                val entry = zip.nextEntry ?: break
+        // BoundedZipReader supplies the caps. This reader used to bound memory per entry but never
+        // counted entries, so a small bundle of repeated wallpaper entries was an unbounded hang —
+        // re-triggered on every PfpThemeStore.scan().
+        try {
+            BoundedZipReader.read(input, BUNDLE_LIMITS) { entry ->
                 when {
                     entry.name == ENTRY_MANIFEST -> manifest = runCatching {
                         json.decodeFromString(
                             PfpThemeManifest.serializer(),
-                            (zip.readCapped() ?: return null).decodeToString(),
+                            entry.readBytes().decodeToString(),
                         )
                     }.getOrNull()
-                    entry.name == ENTRY_WALLPAPER -> wallpaper = zip.readCapped() ?: return null
-                    entry.name == ENTRY_PREVIEW -> preview = zip.readCapped() ?: return null
+                    entry.name == ENTRY_WALLPAPER -> wallpaper = entry.readBytes()
+                    entry.name == ENTRY_PREVIEW -> preview = entry.readBytes()
                     entry.name.startsWith(ICONS_PREFIX) && entry.name.endsWith(ICONS_SUFFIX) -> {
                         // Only registered slot keys are accepted — an icon entry can never
                         // smuggle a path (`icons/../x`) or an unexpected name into the app.
                         val key = entry.name.removePrefix(ICONS_PREFIX).removeSuffix(ICONS_SUFFIX)
                         if (IconSlots.isValidKey(key)) {
-                            icons[key] = zip.readCapped(MAX_ICON_BYTES) ?: return null
+                            entry.readBytes().takeIf { it.size <= MAX_ICON_BYTES }?.let { icons[key] = it }
                         }
                     }
                     // Unknown entries are ignored for forward compatibility.
                 }
-                zip.closeEntry()
             }
+        } catch (e: ZipLimitExceededException) {
+            // Same contract as before: an unreadable bundle is "not a .pfptheme", not a crash.
+            return null
         }
 
         val m = manifest ?: return null
@@ -112,16 +123,4 @@ object PfpThemeCodec {
         closeEntry()
     }
 
-    /** Reads the current entry, bailing (null) if it exceeds [cap] — zip-bomb guard. */
-    private fun ZipInputStream.readCapped(cap: Int = MAX_ENTRY_BYTES): ByteArray? {
-        val out = ByteArrayOutputStream()
-        val buffer = ByteArray(64 * 1024)
-        while (true) {
-            val n = read(buffer)
-            if (n < 0) break
-            out.write(buffer, 0, n)
-            if (out.size() > cap) return null
-        }
-        return out.toByteArray()
-    }
 }
