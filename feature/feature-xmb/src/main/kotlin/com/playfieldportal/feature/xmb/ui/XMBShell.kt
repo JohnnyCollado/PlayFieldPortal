@@ -18,6 +18,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,6 +30,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -201,6 +205,7 @@ fun XMBShellContainer(
         onOpenPlayerStatus = viewModel::openPlayerStatus,
         onOpenPlayerStatusFromSettings = viewModel::openPlayerStatusFromSettings,
         onOpenLibraryManager = viewModel::openLibraryManager,
+        onGoToLibrary = viewModel::goToLibrary,
         onGameDetailActionConsumed = viewModel::consumeGameDetailAction,
         onCloseVideoDetail = viewModel::onCloseVideoDetail,
         onVideoDetailActionConsumed = viewModel::consumeVideoDetailAction,
@@ -250,6 +255,7 @@ fun XMBShellContainer(
         onDismissInfoDialog = viewModel::dismissInfoDialog,
         onWindowsSetupConfirm = viewModel::confirmWindowsSetupPrompt,
         onWindowsSetupDismiss = viewModel::dismissWindowsSetupPrompt,
+        onLaunchRecoveryAction = viewModel::onLaunchRecoveryAction,
         onMusicPlayPause = viewModel::musicPlayPause,
         onMusicPrev = viewModel::musicPrev,
         onMusicNext = viewModel::musicNext,
@@ -315,6 +321,7 @@ fun XMBShell(
     onOpenPlayerStatus: () -> Unit = {},
     onOpenPlayerStatusFromSettings: () -> Unit = {},
     onOpenLibraryManager: () -> Unit = {},
+    onGoToLibrary: () -> Unit = {},
     onGameDetailActionConsumed: () -> Unit = {},
     onCloseVideoDetail: () -> Unit = {},
     onVideoDetailActionConsumed: () -> Unit = {},
@@ -370,6 +377,7 @@ fun XMBShell(
     onDismissInfoDialog: () -> Unit = {},
     onWindowsSetupConfirm: () -> Unit = {},
     onWindowsSetupDismiss: () -> Unit = {},
+    onLaunchRecoveryAction: (com.playfieldportal.feature.launcher.LaunchRecoveryAction) -> Unit = {},
 ) {
     PFPTheme(colors = uiState.themeColors) {
       // The applied theme's custom icon slots ride alongside the palette: every themeable
@@ -756,6 +764,7 @@ fun XMBShell(
                         onOpenPlayerStatus = onOpenPlayerStatus,
                         onOpenPlayerStatusFromSettings = onOpenPlayerStatusFromSettings,
                         onOpenLibraryManager = onOpenLibraryManager,
+                        onGoToLibrary = onGoToLibrary,
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
@@ -926,6 +935,17 @@ fun XMBShell(
                     },
                     confirmButton = { TextButton(onClick = onWindowsSetupConfirm) { Text("Set Up") } },
                     dismissButton = { TextButton(onClick = onWindowsSetupDismiss) { Text("Later") } },
+                )
+            }
+
+            // Launch recovery sheet (B1): raised by the shared LaunchDispatcher when a game-path
+            // launch failed or the emulator never reached the foreground. Offers a retry, a
+            // different emulator, the per-system defaults screen, and a copyable diagnostic —
+            // a repair surface instead of a dead end.
+            uiState.launchRecovery?.let { recovery ->
+                LaunchRecoverySheet(
+                    recovery = recovery,
+                    onAction = onLaunchRecoveryAction,
                 )
             }
 
@@ -1152,6 +1172,50 @@ private fun InfoDialog(
         title = { Text(title) },
         text = { Text(message) },
         confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
+    )
+}
+
+@Composable
+private fun LaunchRecoverySheet(
+    recovery: com.playfieldportal.feature.launcher.LaunchRecoveryRequest,
+    onAction: (com.playfieldportal.feature.launcher.LaunchRecoveryAction) -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = { onAction(com.playfieldportal.feature.launcher.LaunchRecoveryAction.DISMISS) },
+        title = { Text("Couldn't launch ${recovery.gameTitle}") },
+        text = {
+            Column {
+                Text(recovery.message)
+                recovery.historyLine?.let {
+                    Spacer(Modifier.height(8.dp))
+                    Text(it, style = MaterialTheme.typography.bodySmall)
+                }
+                if (recovery.resolved != null) {
+                    Spacer(Modifier.height(8.dp))
+                    TextButton(
+                        onClick = { onAction(com.playfieldportal.feature.launcher.LaunchRecoveryAction.PER_SYSTEM_DEFAULTS) },
+                    ) { Text("Change per-system default") }
+                }
+                TextButton(
+                    onClick = { onAction(com.playfieldportal.feature.launcher.LaunchRecoveryAction.COPY_DIAGNOSTIC) },
+                ) { Text("Copy diagnostics") }
+            }
+        },
+        confirmButton = {
+            Row {
+                TextButton(
+                    onClick = { onAction(com.playfieldportal.feature.launcher.LaunchRecoveryAction.CHANGE_EMULATOR) },
+                ) { Text("Change Emulator") }
+                TextButton(
+                    onClick = { onAction(com.playfieldportal.feature.launcher.LaunchRecoveryAction.RETRY) },
+                ) { Text("Retry") }
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = { onAction(com.playfieldportal.feature.launcher.LaunchRecoveryAction.DISMISS) },
+            ) { Text("Dismiss") }
+        },
     )
 }
 

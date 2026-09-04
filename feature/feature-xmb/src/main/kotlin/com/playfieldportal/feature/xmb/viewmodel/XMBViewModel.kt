@@ -50,6 +50,11 @@ import com.playfieldportal.core.ui.wave.WaveStyle
 import com.playfieldportal.feature.appbar.AppCategoryRepository
 import com.playfieldportal.feature.appbar.CategorizedApp
 import com.playfieldportal.feature.appbar.LauncherShortcutRepository
+import com.playfieldportal.feature.launcher.LaunchDispatchResult
+import com.playfieldportal.feature.launcher.LaunchRecoveryAction
+import com.playfieldportal.feature.launcher.LaunchSource
+import com.playfieldportal.feature.launcher.ResolvedLaunch
+import com.playfieldportal.feature.launcher.corePathFor
 import com.playfieldportal.feature.artwork.api.ArtworkRepository
 import com.playfieldportal.feature.library.scanner.LibraryScanner
 import com.playfieldportal.feature.library.scanner.ScanStatus
@@ -357,6 +362,9 @@ fun settingsSectionItems(section: SettingsSection): List<XMBItem> = when (sectio
         XMBItem(id = "settings_emulators_installed", title = "Installed",        subtitle = "Detected emulator profiles"),
         XMBItem(id = "settings_emulators_custom",    title = "Custom Emulators", subtitle = "Custom profiles & Add Custom Emulator"),
         XMBItem(id = "settings_emulators_retroarch", title = "RetroArch",        subtitle = "Core detection & linking"),
+        // B4: per-platform assignment screen — which emulator + core each console uses, and how
+        // many of its games override that (with bulk clearing of those overrides).
+        XMBItem(id = "settings_emulators_assign", title = "Per-System Defaults", subtitle = "Default emulator & core per console, and per-game overrides"),
     )
     SettingsSection.INTERFACE -> listOf(
         XMBItem(id = "settings_categories", title = "Categories", subtitle = "Manage XMB categories"),
@@ -632,6 +640,10 @@ data class XMBUiState(
     // (docs/windows-library-refactor-plan.md section 3); consumed on first XMB open.
     val showWindowsSetupPrompt: Boolean = false,
 
+    // ── Launch recovery sheet (B1) ─────────────────────────────────────────
+    // Non-null while the recovery sheet should be drawn over the shell.
+    val launchRecovery: com.playfieldportal.feature.launcher.LaunchRecoveryRequest? = null,
+
     // ── Installed-app picker (Android Library / Video / Music) ─────────────
     val appPicker: AppPickerState? = null,
 
@@ -730,6 +742,7 @@ data class XMBUiState(
             musicBrowser != null ||
             musicPlayerVisible ||
             infoDialog != null ||
+            launchRecovery != null ||
             showWindowsSetupPrompt
 }
 
@@ -1110,6 +1123,8 @@ class XMBViewModel @Inject constructor(
     private val pcGameScanner: com.playfieldportal.feature.settings.pc.PcGameScanner,
     private val localSteamSchemaGenerator: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSchemaGenerator,
     private val localSteamDiscovery: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamDiscovery,
+    private val launchDispatcher: com.playfieldportal.feature.launcher.LaunchDispatcher,
+    private val setupStateProvider: com.playfieldportal.feature.launcher.SetupStateProvider,
 ) : ViewModel() {
 
     // Drives the "convert detected games?" multi-select picker after a Windows-card scan; the same
@@ -1210,9 +1225,56 @@ class XMBViewModel @Inject constructor(
         observeEmulatorProfiles()
         collectGamepadActions()
         consumeWindowsSetupPrompt()
+        observeLaunchRecoveryRequests()
+        observeSetupState()
         // Live pin reconcile: an emulator UPDATING an already-pinned shortcut never fires the
         // confirm activity, so the OS callback is the only signal — import it the moment it lands.
         pcShortcutImporter.watchPinChanges(viewModelScope)
+    }
+
+    // ── Launch recovery sheet (B1) ─────────────────────────────────────────────
+    //
+    // The shared LaunchDispatcher raises a LaunchRecoveryRequest whenever a game-path launch
+    // fails outright or never reaches the emulator's foreground. This shell is its host: the
+    // request lands in XMBUiState so XMBShell can draw the sheet over whatever is on screen,
+    // and the gamepad router gives it SELECT/BACK handling like every other overlay.
+    private fun observeLaunchRecoveryRequests() {
+        viewModelScope.launch {
+            launchDispatcher.recoveryRequests.collect { request ->
+                _uiState.update { it.copy(launchRecovery = request) }
+            }
+        }
+    }
+
+    /** A button on the recovery sheet. */
+    fun onLaunchRecoveryAction(action: LaunchRecoveryAction) {
+        when (action) {
+            LaunchRecoveryAction.DISMISS -> launchDispatcher.dismissRecovery()
+            LaunchRecoveryAction.RETRY   -> {
+                val request = _uiState.value.launchRecovery ?: return
+                launchDispatcher.dismissRecovery()
+                launchGameDirectly(request.gameId)
+            }
+            LaunchRecoveryAction.CHANGE_EMULATOR -> {
+                val gameId = _uiState.value.launchRecovery?.gameId ?: return
+                launchDispatcher.dismissRecovery()
+                openEmulatorPickerMenu(gameId)
+            }
+            LaunchRecoveryAction.PER_SYSTEM_DEFAULTS -> {
+                launchDispatcher.dismissRecovery()
+                _uiState.update { it.copy(activeSettingsScreen = "settings_emulators_assign") }
+            }
+            LaunchRecoveryAction.COPY_DIAGNOSTIC -> {
+                val request = _uiState.value.launchRecovery ?: return
+                val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                cm.setPrimaryClip(android.content.ClipData.newPlainText(
+                    "PFP launch diagnostic", request.diagnostic,
+                ))
+                taskNotifier.complete(
+                    "launch_diag_${request.gameId}", request.gameTitle, "Diagnostic copied to clipboard",
+                )
+            }
+        }
     }
 
     // One-shot: a PC shortcut arrived while the Windows Library was unconfigured, so the pin flow
@@ -3897,12 +3959,25 @@ class XMBViewModel @Inject constructor(
         }
     }
 
-    private fun emptyAllGamesItem(): XMBItem = XMBItem(
-        id       = NO_GAMES_ITEM_ID,
-        title    = "No games imported yet",
-        subtitle = "Open a Memory Card to scan your library.",
-        type     = XMBItemType.EMPTY,
-    )
+    // B3: the empty All Games row names the FIRST unmet setup step and confirms through to the
+    // screen that fixes it. "No games imported yet" told a fresh install nothing actionable.
+    private fun emptyAllGamesItem(): XMBItem {
+        val gap = setupState.firstGap
+        if (gap != com.playfieldportal.feature.launcher.SetupGap.NONE) {
+            return XMBItem(
+                id       = SETUP_GAP_ITEM_ID,
+                title    = gap.message,
+                subtitle = "Press confirm to open Settings and fix it.",
+                type     = XMBItemType.EMPTY,
+            )
+        }
+        return XMBItem(
+            id       = NO_GAMES_ITEM_ID,
+            title    = "No games imported yet",
+            subtitle = "Open a Memory Card to scan your library.",
+            type     = XMBItemType.EMPTY,
+        )
+    }
 
     private fun emptyCollectionItem(): XMBItem = XMBItem(
         id       = EMPTY_COLLECTION_ITEM_ID,
@@ -3940,6 +4015,18 @@ class XMBViewModel @Inject constructor(
             )
         }
         val card = enabledCards.firstOrNull { it.platformId == platformId }
+        // B3: when setup is still incomplete, the card's empty row names the FIRST unmet step
+        // instead of generic folder copy — most often "the root exists but no ROM folder yet".
+        val gap = setupState.firstGap
+        if (gap != com.playfieldportal.feature.launcher.SetupGap.NONE) {
+            return XMBItem(
+                id         = SETUP_GAP_ITEM_ID,
+                title      = gap.message,
+                subtitle   = "Press confirm to open Settings and fix it.",
+                platformId = platformId,
+                type       = XMBItemType.EMPTY,
+            )
+        }
         val subtitle = when {
             card?.romDirectory == null -> "ROM directory not configured"
             else                       -> "Press ▲ to scan this console"
@@ -4307,6 +4394,15 @@ class XMBViewModel @Inject constructor(
         // Read-only info dialog (e.g. file location) — A or B closes it.
         if (state.infoDialog != null) {
             if (action == GamepadAction.BACK || action == GamepadAction.SELECT) dismissInfoDialog()
+            return
+        }
+        // Launch recovery sheet (B1) — A confirms the highlighted action, B dismisses.
+        if (state.launchRecovery != null) {
+            when (action) {
+                GamepadAction.SELECT -> onLaunchRecoveryAction(LaunchRecoveryAction.RETRY)
+                GamepadAction.BACK   -> onLaunchRecoveryAction(LaunchRecoveryAction.DISMISS)
+                else                 -> Unit
+            }
             return
         }
         // Windows Library setup prompt — A sets up (Library Manager), B defers.
@@ -6679,6 +6775,13 @@ class XMBViewModel @Inject constructor(
                 _uiState.update { it.copy(activeSettingsScreen = "settings_library") }
                 return
             }
+            SETUP_GAP_ITEM_ID -> {
+                // B3: the setup-gap row deep-links to the screen that repairs the first gap.
+                _uiState.update {
+                    it.copy(activeSettingsScreen = setupState.firstGap.repairScreenId)
+                }
+                return
+            }
             ALL_GAMES_ITEM_ID -> {
                 openAllGamesFolder()
                 return
@@ -6934,12 +7037,10 @@ class XMBViewModel @Inject constructor(
             val selected = gameRepository.getById(gameId) ?: run {
                 Timber.w("Direct launch requested for missing game id=$gameId")
                 return@launch
-                return@launch
             }
             val game = if (discId != null) gameRepository.getById(discId) ?: selected else selected
             if (game.isMissing) {
                 Timber.i("Direct launch refused for missing game: ${game.title}")
-                return@launch
                 return@launch
             }
             launchResolvedGame(game)
@@ -6947,12 +7048,14 @@ class XMBViewModel @Inject constructor(
     }
 
     private suspend fun launchResolvedGame(game: Game) {
-        val platform = platformDao.getById(game.platformId)
         val shortcutId = game.shortcutId
         val packageName = game.packageName
         if (shortcutId != null && packageName != null) {
             launcherShortcutRepository.launch(packageName, shortcutId)
-                .onFailure { e -> Timber.w(e, "Direct shortcut launch failed") }
+                .onFailure { e ->
+                    Timber.w(e, "Direct shortcut launch failed")
+                    launchDispatcher.recordPreflightFailure(game, null, "Couldn't launch: ${e.message}")
+                }
             return
         }
         if (game.launchIntentUri != null) {
@@ -6960,33 +7063,68 @@ class XMBViewModel @Inject constructor(
                 val parsed = Intent.parseUri(game.launchIntentUri, Intent.URI_INTENT_SCHEME)
                 com.playfieldportal.core.common.security.ShortcutIntentSanitizer.sanitize(parsed, context.packageManager)
                     ?: error("Captured shortcut is not safe to launch")
-            }.onSuccess { intent -> launchIntentFromXmb(intent, game.title) }
-                .onFailure { e -> Timber.w(e, "Direct stored-intent launch failed") }
+            }.onSuccess { intent -> launchIntentFromXmb(intent, game, null) }
+                .onFailure { e ->
+                    Timber.w(e, "Direct stored-intent launch failed")
+                    launchDispatcher.recordPreflightFailure(game, null, "Couldn't launch: ${e.message}")
+                }
             return
         }
         if (game.romPath.isNullOrBlank() && !game.packageName.isNullOrBlank()) {
-            intentResolver.resolveNativeApp(game).onSuccess { launchIntentFromXmb(it, game.title) }
-                .onFailure { e ->            Timber.w(e, "Direct native-app launch failed") }
+            intentResolver.resolveNativeApp(game).fold(
+                onSuccess = { intent -> launchIntentFromXmb(intent, game, null) },
+                onFailure = { e ->
+                    Timber.w(e, "Direct native-app launch failed")
+                    launchDispatcher.recordPreflightFailure(game, null, e.message ?: "Could not launch ${game.title}")
+                },
+            )
             return
         }
         val profile = emulatorProfileRepository.getProfilesForPlatform(game.platformId)
             .firstOrNull { it.isAvailable }
         if (profile == null) {
             Timber.w("No emulator available for direct launch: ${game.platformId}")
+            launchDispatcher.recordPreflightFailure(
+                game, null,
+                "No emulator is set up for ${game.platformId.uppercase()}. " +
+                    "Assign one under Settings ▸ Emulators ▸ Per-System Defaults.",
+            )
             return
         }
-        intentResolver.resolve(game, profile).onSuccess { launchIntentFromXmb(it, game.title) }
-            .onFailure { e -> Timber.w(e, "Direct emulator launch failed: ${profile.name}") }
+        // Preflight the same checks Game Detail's resolver applies, so a stale RetroArch core
+        // mapping (or a dropped launch activity) refuses here with a repair, not at startActivity.
+        val validation = runCatching { intentResolver.validateBeforeLaunch(game, profile) }
+        val resolvedLaunch = ResolvedLaunch(
+            profile  = profile,
+            source   = LaunchSource.CATALOG_DEFAULT,
+            corePath = profile.corePathFor(game.platformId),
+        )
+        if (validation.isFailure) {
+            Timber.w(
+                validation.exceptionOrNull(),
+                "Direct emulator launch blocked by preflight: ${profile.name}",
+            )
+            launchDispatcher.recordPreflightFailure(
+                game, resolvedLaunch, validation.exceptionOrNull()?.message ?: "Could not launch ${profile.name}",
+            )
+            return
+        }
+        intentResolver.resolve(game, profile).fold(
+            onSuccess = { intent -> launchIntentFromXmb(intent, game, resolvedLaunch) },
+            onFailure = { e ->
+                Timber.w(e, "Direct emulator launch failed: ${profile.name}")
+                launchDispatcher.recordPreflightFailure(game, resolvedLaunch, e.message ?: "Could not launch ${profile.name}")
+            },
+        )
     }
 
-    private fun launchIntentFromXmb(intent: Intent, title: String) {
-        runCatching {
-            context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-        }.onSuccess {
-            viewModelScope.launch { discordPresence.setCurrentGame(title) }
-        }.onFailure { e ->
-            Timber.w(e, "Direct launch failed for $title")
-            Timber.w(e, "Could not open $title directly")
+    // B1: the single XMB direct-launch hand-off. All three direct paths (stored intent, native
+    // app, emulator) end here, so every game launch records an outcome and — when the emulator
+    // never comes to the foreground — raises the recovery sheet instead of failing silently.
+    private suspend fun launchIntentFromXmb(intent: Intent, game: Game, resolved: ResolvedLaunch?) {
+        when (val result = launchDispatcher.launch(game, resolved, intent)) {
+            is LaunchDispatchResult.Rejected -> Timber.w("Direct launch rejected: ${result.message}")
+            LaunchDispatchResult.Accepted -> discordPresence.setCurrentGame(game.title)
         }
     }
 
@@ -7481,6 +7619,51 @@ class XMBViewModel @Inject constructor(
         _uiState.update { it.copy(activeSettingsScreen = "settings_library") }
     }
 
+    /**
+     * Wizard FINISH "Go to your library" (B3): close the wizard and land on the All Games folder
+     * — cursor on the first playable game when one exists, so finishing setup ends on something
+     * launchable instead of dropping the user back on a bare category bar.
+     */
+    fun goToLibrary() {
+        markInitialSetupSeen()
+        _uiState.update { it.copy(activeSettingsScreen = null, pendingSettingsAction = null) }
+        openAllGamesFolder()
+        viewModelScope.launch {
+            val first = runCatching { gameRepository.observeGamesOnly().first() }
+                .getOrDefault(emptyList())
+                .filterNot { it.isMissing }
+                .minByOrNull { it.title.lowercase() }
+            if (first != null) {
+                val idx = _uiState.value.currentItems.indexOfFirst { it.gameId == first.id }
+                if (idx > 0) _uiState.update { it.copy(selectedItemIndex = idx) }
+            }
+        }
+    }
+
+    // ── Derived setup state (B3) ──────────────────────────────────────────────
+    //
+    // What's still missing between a fresh install and playing a game, derived from the live
+    // stores (ROM roots, console cards, emulators) instead of the write-only
+    // `library_setup_complete` pref flag — so empty XMB surfaces can name the FIRST unmet step
+    // and deep-link to the screen that fixes it.
+    private var setupState: com.playfieldportal.feature.launcher.SetupState =
+        com.playfieldportal.feature.launcher.SetupState()
+
+    private fun observeSetupState() {
+        viewModelScope.launch {
+            setupStateProvider.observe().collect { fresh ->
+                if (fresh != setupState) {
+                    setupState = fresh
+                    // Re-render visible empty rows so a gap closing (wizard added a root) swaps
+                    // the "Add a ROM folder" prompt for the normal empty-library copy.
+                    if (_uiState.value.currentItems.any { it.type == XMBItemType.EMPTY }) {
+                        loadItemsForCategory(currentCategory())
+                    }
+                }
+            }
+        }
+    }
+
     // ── User interaction ──────────────────────────────────────────────────────
 
     /**
@@ -7732,6 +7915,8 @@ class XMBViewModel @Inject constructor(
         private const val ICON1_LINGER_MS = 1_500L
         private const val SETUP_ITEM_ID = "library_setup"
         private const val NO_CONSOLES_ITEM_ID = "no_consoles"
+        // B3: empty All Games row while setup still has an unmet step (names + fixes the gap).
+        private const val SETUP_GAP_ITEM_ID = "setup_gap"
         private const val NO_GAMES_ITEM_ID    = "no_games"
         private const val EMPTY_COLLECTION_ITEM_ID = "empty_collection"
         private const val EMPTY_FAVORITES_ITEM_ID = "empty_favorites"

@@ -123,6 +123,26 @@ object RetroArchCoreScanner {
     )
 
     /**
+     * Human-readable label for a core [corePath] value, e.g.
+     * `/data/data/com.retroarch.aarch64/cores/mednafen_psx_hw_libretro_android.so` →
+     * "Beetle PSX HW". Curated names win (matching Core Downloader's labels); an unrecognized
+     * `*_libretro*.so` file falls back to a name derived from its file name, and anything else
+     * returns the path unchanged.
+     */
+    fun labelForPath(corePath: String): String {
+        val fileName = corePath.substringAfterLast('/')
+        if (fileName.isBlank()) return corePath
+        CURATED_CORES.firstOrNull { it.fileName == fileName }?.name?.let { return it }
+        val prefix = fileName
+            .removeSuffix("_libretro_android.so")
+            .removeSuffix("_libretro.so")
+        if (prefix != fileName) {
+            return prefix.replace('_', ' ').replaceFirstChar { it.uppercaseChar() }
+        }
+        return fileName
+    }
+
+    /**
      * Cores to offer for an installed RetroArch [packageName].
      *
      * RetroArch loads cores only from its private internal directory (Android blocks dlopen() from

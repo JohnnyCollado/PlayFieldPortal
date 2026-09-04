@@ -147,6 +147,9 @@ class InitialSetupViewModel @Inject constructor(
     private val screenScraperApi: ScreenScraperApi,
     private val wizardMediaScanRunner: com.playfieldportal.feature.settings.media.WizardMediaScanRunner,
     private val romRootScanRunner: RomRootScanRunner,
+    private val romScanner: com.playfieldportal.feature.library.scanner.RomScanner,
+    private val folderHintResolver: com.playfieldportal.core.data.platform.PlatformFolderHintResolver,
+    private val memoryCardRepository: com.playfieldportal.core.data.repository.MemoryCardRepository,
 ) : ViewModel() {
 
     // Wizard-local state (page + transient messages + RetroArch status); the folder/service rows
@@ -314,6 +317,29 @@ class InitialSetupViewModel @Inject constructor(
     }
 
     fun rescanRomRoots() = romRootScanRunner.kickoff()
+
+    /**
+     * B3: offer to scaffold one ES-DE subfolder per supported platform under the first ROM root
+     * ("where do I put my ROMs?"). Same call Library Manager's folder-setup flow makes — the
+     * scanner then auto-creates Memory Cards for any folder that maps to a platform.
+     */
+    fun createStandardRomFolders() {
+        val firstRoot = scratch.value.romRoots.firstOrNull()?.treeUri ?: return
+        viewModelScope.launch {
+            val names = memoryCardRepository.availablePlatformCatalog()
+                .map { folderHintResolver.esDeFolderName(it.id) }
+                .filter { it.isNotBlank() && it != "android" }
+                .distinct()
+            val result = romScanner.createSubfolders(firstRoot, names)
+            scratch.update {
+                it.copy(
+                    message = "Created ${result.created} console folder(s)" +
+                        (if (result.existing > 0) " (${result.existing} already there)" else "") +
+                        ". Copy your games into the matching folders.",
+                )
+            }
+        }
+    }
 
     // ── Music / Video / Photo roots (multi-root) ───────────────────────────────
 

@@ -50,7 +50,12 @@ class SettingsHierarchyTest {
             settingsSectionItems(SettingsSection.MEDIA).map { it.id },
         )
         assertEquals(
-            listOf("settings_emulators_installed", "settings_emulators_custom", "settings_emulators_retroarch"),
+            listOf(
+                "settings_emulators_installed",
+                "settings_emulators_custom",
+                "settings_emulators_retroarch",
+                "settings_emulators_assign",
+            ),
             settingsSectionItems(SettingsSection.EMULATORS).map { it.id },
         )
         assertEquals(

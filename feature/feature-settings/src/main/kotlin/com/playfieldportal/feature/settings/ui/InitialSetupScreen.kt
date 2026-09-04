@@ -50,6 +50,8 @@ fun InitialSetupScreen(
     // First (automatic) run: Back cannot exit — leaving is explicit (Skip Setup or Finish).
     firstRun: Boolean = false,
     onOpenLibraryManager: () -> Unit = {},
+    // B3: FINISH "Go to your library" — lands on the All Games folder, first playable game.
+    onGoToLibrary: () -> Unit = {},
     viewModel: InitialSetupViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -135,6 +137,8 @@ fun InitialSetupScreen(
                 addSublabel = "Grant a root folder with one subfolder per console",
                 rescanLabel = "Rescan ROM Roots",
                 rescanSublabel = "Auto-detect consoles and scan their games",
+                // B3: "where do I put my ROMs?" — scaffold one ES-DE folder per platform.
+                onCreateFolders = viewModel::createStandardRomFolders,
                 onAdd = { pendingAdd = AddSlot.ROM; addPicker.launch(null) },
                 onRelink = { row -> pendingRelinkRom = row.treeUri; relinkRomPicker.launch(runCatching { Uri.parse(row.treeUri) }.getOrNull()) },
                 onRemove = { viewModel.removeRomRoot(it.treeUri) },
@@ -237,6 +241,7 @@ fun InitialSetupScreen(
             SetupStep.FINISH -> FinishPage(
                 state = state,
                 onOpenLibraryManager = onOpenLibraryManager,
+                onGoToLibrary = onGoToLibrary,
                 onFinish = onBack,
             )
         }
@@ -304,6 +309,7 @@ private fun RootsPage(
     addSublabel: String,
     rescanLabel: String,
     rescanSublabel: String,
+    onCreateFolders: () -> Unit,
     onAdd: () -> Unit,
     onRelink: (RootFolderRow) -> Unit,
     onRemove: (RootFolderRow) -> Unit,
@@ -325,6 +331,14 @@ private fun RootsPage(
         }
     }
     WizardRow(label = addLabel, sublabel = addSublabel, onClick = onAdd)
+    if (roots.isNotEmpty()) {
+        // B3: answer "where do I put my ROMs?" — one folder per supported console, ready to fill.
+        WizardRow(
+            label = "Create Standard Folders",
+            sublabel = "One subfolder per console, named for your games",
+            onClick = onCreateFolders,
+        )
+    }
     WizardRow(label = rescanLabel, sublabel = rescanSublabel, onClick = onRescan)
     WizardContinueRow(nextLabel, onContinue)
 }
@@ -641,6 +655,7 @@ private fun RetroArchPage(
 private fun FinishPage(
     state: InitialSetupUiState,
     onOpenLibraryManager: () -> Unit,
+    onGoToLibrary: () -> Unit,
     onFinish: () -> Unit,
 ) {
     if (!state.anyFolderSet) {
@@ -677,6 +692,13 @@ private fun FinishPage(
             label = "Open Library Manager",
             sublabel = "Add consoles and scan the ROM roots you just set",
             onClick = onOpenLibraryManager,
+        )
+        // B3: end on a real launch — All Games with the cursor on the first playable game.
+        WizardRow(
+            label = "Go to your library",
+            sublabel = "Jump straight to All Games",
+            focusKey = "finish_go_library",
+            onClick = onGoToLibrary,
         )
     }
     WizardRow(
@@ -752,6 +774,7 @@ private fun RomRootsPagePreview() {
             addSublabel = "Grant a root folder with one subfolder per console",
             rescanLabel = "Rescan ROM Roots",
             rescanSublabel = "Auto-detect consoles and scan their games",
+            onCreateFolders = {},
             onAdd = {},
             onRelink = {},
             onRemove = {},
@@ -968,6 +991,7 @@ private fun FinishPagePreview() {
                 retroArchCoreCount = 42,
             ),
             onOpenLibraryManager = {},
+            onGoToLibrary = {},
             onFinish = {},
         )
     }

@@ -14,6 +14,7 @@ import com.playfieldportal.core.data.database.dao.BackupDao
 import com.playfieldportal.core.data.database.dao.CategoryDao
 import com.playfieldportal.core.data.database.dao.CollectionDao
 import com.playfieldportal.core.data.database.dao.GameDao
+import com.playfieldportal.core.data.database.dao.LaunchOutcomeDao
 import com.playfieldportal.core.data.database.dao.LibrarySourceDao
 import com.playfieldportal.core.data.database.dao.MemoryCardDao
 import com.playfieldportal.core.data.database.dao.MusicFolderDao
@@ -44,6 +45,7 @@ import com.playfieldportal.core.data.database.entity.CategoryItemEntity
 import com.playfieldportal.core.data.database.entity.CollectionEntity
 import com.playfieldportal.core.data.database.entity.CollectionGameEntity
 import com.playfieldportal.core.data.database.entity.GameEntity
+import com.playfieldportal.core.data.database.entity.LaunchOutcomeEntity
 import com.playfieldportal.core.data.database.entity.LibrarySourceEntity
 import com.playfieldportal.core.data.database.entity.MemoryCardEntity
 import com.playfieldportal.core.data.database.entity.MusicFolderEntity
@@ -70,6 +72,7 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
 @Database(
     entities = [
         GameEntity::class,
+        LaunchOutcomeEntity::class,
         PlatformEntity::class,
         CategoryEntity::class,
         CategoryItemEntity::class,
@@ -103,13 +106,14 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         SteamOwnedGameEntity::class,
         SteamNoAchievementsEntity::class,
     ],
-    version = 40,
+    version = 41,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
 abstract class PFPDatabase : RoomDatabase() {
 
     abstract fun gameDao(): GameDao
+    abstract fun launchOutcomeDao(): LaunchOutcomeDao
     abstract fun platformDao(): PlatformDao
     abstract fun categoryDao(): CategoryDao
     abstract fun playSessionDao(): PlaySessionDao
@@ -1170,6 +1174,41 @@ abstract class PFPDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("DROP INDEX IF EXISTS index_games_one_disc_primary")
                 db.execSQL("ALTER TABLE games ADD COLUMN region TEXT")
+            }
+        }
+
+        // v41 — launch-outcome history (B1 — launch reliability). One row per settled game launch:
+        // SUCCEEDED / NEVER_FOREGROUNDED / INTENT_FAILED with the emulator/core/source snapshot that
+        // WAS launched and the failure reason. Purely additive; the recovery sheet reads it to say
+        // "this failed N of the last M times with core X" and to offer the alternate emulator.
+        // No FK to games: outcomes are a diagnostic log that outlives a deleted game row.
+        val MIGRATION_40_41 = object : Migration(40, 41) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS launch_outcomes (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        game_id INTEGER NOT NULL,
+                        game_title TEXT NOT NULL,
+                        platform_id TEXT,
+                        emulator_id TEXT,
+                        emulator_name TEXT,
+                        core_path TEXT,
+                        core_name TEXT,
+                        source TEXT,
+                        outcome TEXT NOT NULL,
+                        failure_reason TEXT,
+                        launched_at_ms INTEGER NOT NULL,
+                        returned_at_ms INTEGER
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_launch_outcomes_game_id ON launch_outcomes (game_id)"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_launch_outcomes_platform_id ON launch_outcomes (platform_id)"
+                )
             }
         }
     }

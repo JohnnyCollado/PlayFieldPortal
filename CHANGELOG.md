@@ -6,6 +6,27 @@ All notable changes to Play Field Portal are documented here. This project follo
 ## [Unreleased]
 
 ### Added
+- **Launch reliability: every game launch is now verified and recoverable (B1).**
+  All game-path launches funnel through a single `LaunchDispatcher` in feature-launcher,
+  which owns `startActivity` with named failures (the XMB's direct-launch path used to
+  swallow them into a log line), records every attempt to a new `launch_outcomes` table
+  (schema v41), and verifies the emulator actually came to the foreground using the
+  home-launcher lifecycle handshake (a launch that never covers the launcher inside 6 s,
+  or returns before 10 s, is classified as never-foregrounded instead of silently
+  "fine"). Failures raise a recovery sheet — retry, change emulator, per-system defaults,
+  copyable diagnostics — and preflight now also refuses launches with revoked SAF grants
+  or emulator launch activities dropped by an update. Game Detail's error line gains a
+  "Get help" affordance into the same sheet.
+- **Onboarding names the next step instead of generic empty states (B3).** A derived
+  `SetupState` (feature-launcher's `SetupStateProvider`) watches the live stores — ROM
+  roots, console Memory Cards, emulators — and names the FIRST unmet condition in order
+  (add a ROM folder → add a console card → install an emulator). The XMB's empty All
+  Games and empty Memory Card rows render that gap and deep-link to the screen that
+  fixes it when confirmed (replacing the write-only `library_setup_complete` pref).
+  The wizard's FINISH page gains "Go to your library", landing on All Games with the
+  cursor on the first playable game, and the ROM-roots page offers "Create Standard
+  Folders" — one ES-DE-named subfolder per supported console, answering "where do I
+  put my ROMs?" in one tap.
 - **Untrusted backup archives get a hardening pass.** `.pfpbackup` restore now routes
   everything through a bounded, root-confined reader: zip bombs (entry count, per-entry
   and total inflated size) are refused instead of OOMing, staged files may only land in
@@ -23,6 +44,27 @@ All notable changes to Play Field Portal are documented here. This project follo
   runtime by a pure decoder — defeating casual `strings` scrapes, not a determined
   decompiler. There is no user-entered override: the bundled pair is the only one, and
   the optional per-user ScreenScraper account is unaffected.
+- **Game Detail names the emulator and core that will actually run a game — and why.**
+  The info panel's Emulator row now shows the winning profile, the RetroArch core it
+  maps (when one exists, by its curated label), and which configuration level decided
+  the pick (per-game override / memory card default / platform default / recommended),
+  so "launched into the wrong emulator" stops being a mystery. The row is tappable and
+  opens the per-game-only change flow. The resolution ladder is extracted out of
+  GameDetailViewModel into feature-launcher's `EmulatorLaunchResolver` — a typed
+  `ResolvedLaunch(profile, core, source)` with the precedence pinned by
+  `EmulatorLaunchResolverTest` — and the alias/core-path mapping the launch path,
+  profile repository, and UI each carried privately is now one shared
+  `EmulatorPlatformMapping`.
+- **Per-system emulator defaults (Settings ▸ Emulators ▸ Per-System Defaults).**
+  One row per console with games shows the emulator + core its games resolve to
+  today, how many games that covers, and how many override the default — the
+  invisible-override count that used to explain "why does only this one game
+  launch wrong". Drilling in lists every installed emulator that can run the
+  console (the catalog recommendation flagged, the in-use default marked), sets
+  the console default without touching any game, and bulk-clears that console's
+  per-game overrides behind a confirm (real game rows only — app shortcuts are
+  never touched). Rows resolve through the same `EmulatorLaunchResolver` Game
+  Detail uses, so the two screens can never disagree.
 
 ### Changed
 - **Emulator profile reads are suspend and screened.** Profile loading declares its IO

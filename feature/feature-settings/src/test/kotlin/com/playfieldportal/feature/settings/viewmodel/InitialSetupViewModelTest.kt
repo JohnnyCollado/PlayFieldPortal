@@ -68,6 +68,9 @@ class InitialSetupViewModelTest {
         context, romRoots, mediaRoots, artworkImport, retroArchLink, vita3KLibrary, autoConfig,
         sgdbKeys, metadataKeys, credentials, steamApi, igdbApi, screenScraperApi,
         scanRunner, romRootScanRunner,
+        mockk(relaxed = true), // romScanner (B3 create-standard-folders)
+        mockk(relaxed = true), // folderHintResolver
+        mockk(relaxed = true), // memoryCardRepository
     )
 
     @Before fun setUp() {

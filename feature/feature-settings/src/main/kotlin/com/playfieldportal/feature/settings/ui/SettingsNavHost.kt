@@ -33,6 +33,7 @@ val SETTINGS_SCREEN_ROUTES: Set<String> = setOf(
     "settings_emulators_installed",
     "settings_emulators_custom",
     "settings_emulators_retroarch",
+    "settings_emulators_assign",
     "settings_themes",
     "settings_collections",
     "settings_display",
@@ -59,6 +60,7 @@ fun SettingsNavHost(
     onOpenPlayerStatus: () -> Unit = {},
     onOpenPlayerStatusFromSettings: () -> Unit = {},
     onOpenLibraryManager: () -> Unit = {},
+    onGoToLibrary: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     CompositionLocalProvider(
@@ -69,6 +71,7 @@ fun SettingsNavHost(
             "settings_initial_setup" -> InitialSetupScreen(
                 onBack = onBack,
                 onOpenLibraryManager = onOpenLibraryManager,
+                onGoToLibrary = onGoToLibrary,
                 modifier = modifier,
             )
             // The automatic first-run variant: Back cannot exit from the Welcome page.
@@ -76,6 +79,7 @@ fun SettingsNavHost(
                 onBack = onBack,
                 firstRun = true,
                 onOpenLibraryManager = onOpenLibraryManager,
+                onGoToLibrary = onGoToLibrary,
                 modifier = modifier,
             )
             "settings_library"    -> LibraryManagerScreen(onBack = onBack, onAddAndroidApps = onAddAndroidApps, modifier = modifier)
@@ -112,6 +116,7 @@ fun SettingsNavHost(
             "settings_emulators_installed" -> EmulatorsSettingsScreen(onBack = onBack, section = EmulatorSettingsSection.INSTALLED, modifier = modifier)
             "settings_emulators_custom" -> EmulatorsSettingsScreen(onBack = onBack, section = EmulatorSettingsSection.CUSTOM, modifier = modifier)
             "settings_emulators_retroarch" -> EmulatorsSettingsScreen(onBack = onBack, section = EmulatorSettingsSection.RETROARCH, modifier = modifier)
+            "settings_emulators_assign" -> EmulatorAssignmentScreen(onBack = onBack, modifier = modifier)
             "settings_themes"     -> ThemesSettingsScreen(
                 onBack = onBack,
                 onOpenColorSchemePicker = onOpenColorSchemePicker,

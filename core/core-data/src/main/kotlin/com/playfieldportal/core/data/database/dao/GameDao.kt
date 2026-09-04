@@ -238,6 +238,15 @@ interface GameDao {
     )
     suspend fun setPreferredEmulator(id: Long, emulatorPackage: String?)
 
+    // B4 per-platform assignment screen: bulk-clears every per-game emulator override on a
+    // platform so those games fall back to the platform default. Scoped to real game rows
+    // (content_type = 'GAME') — app-shortcut rows can never carry or receive a ROM emulator.
+    @Query(
+        "UPDATE games SET emulator_package = NULL " +
+            "WHERE platform_id = :platformId AND content_type = 'GAME' AND emulator_package IS NOT NULL"
+    )
+    suspend fun clearPreferredEmulatorForPlatform(platformId: String)
+
     // For missing ROM check — returns all games that have a rom_path
     @Query("SELECT id, rom_path FROM games WHERE rom_path IS NOT NULL")
     suspend fun getAllRomPaths(): List<RomPathProjection>

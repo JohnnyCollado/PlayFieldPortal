@@ -22,15 +22,17 @@ import com.playfieldportal.core.data.datastore.pfpDataStore
 import kotlinx.coroutines.flow.first
 import com.playfieldportal.feature.artwork.store.ArtworkStore
 import com.playfieldportal.feature.launcher.EmulatorIntentResolver
+import com.playfieldportal.feature.launcher.EmulatorLaunchResolver
 import com.playfieldportal.feature.launcher.EmulatorProfileRepository
+import com.playfieldportal.feature.launcher.LaunchDispatchResult
+import com.playfieldportal.feature.launcher.ResolvedLaunch
 import com.playfieldportal.feature.launcher.byLaunchPreference
+import com.playfieldportal.feature.launcher.supportsPlatform
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -101,7 +103,9 @@ data class GameDetailUiState(
     val showOptions: Boolean = false,
     val optionsIndex: Int = 0,
     val mediaUris: List<String> = emptyList(),
-    val emulatorName: String? = null,
+    // The resolved emulator + RetroArch core and the ladder level that decided them for the loaded
+    // game; null while nothing resolves (loading / no emulator / package-backed entry).
+    val resolvedLaunch: ResolvedLaunch? = null,
     val confirmRemove: Boolean = false,
     val actionMessage: String? = null,
     val closed: Boolean = false,
@@ -145,11 +149,6 @@ data class GameDetailUiState(
                 else DetailAction.entries
 }
 
-private data class ResolvedLaunchProfile(
-    val profile: EmulatorProfile,
-    val source: String,
-)
-
 // ── Options menu ──────────────────────────────────────────────────────────────
 enum class DetailAction(val label: String) {
     FAVORITE("Favorite"),
@@ -191,13 +190,11 @@ class GameDetailViewModel @Inject constructor(
     private val discordPresence: com.playfieldportal.core.data.discord.DiscordPresenceController,
     private val launcherShortcutRepository: com.playfieldportal.feature.appbar.LauncherShortcutRepository,
     private val achievementRepository: com.playfieldportal.feature.achievements.AchievementController,
+    private val launchDispatcher: com.playfieldportal.feature.launcher.LaunchDispatcher,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GameDetailUiState())
     val uiState: StateFlow<GameDetailUiState> = _uiState.asStateFlow()
-
-    private val _launchEffect = Channel<Intent>(capacity = Channel.BUFFERED)
-    val launchEffect = _launchEffect.receiveAsFlow()
 
     fun prepareForOpen() {
         _uiState.update {
@@ -253,7 +250,7 @@ class GameDetailViewModel @Inject constructor(
                 ?: discMembers.firstOrNull { it.isDiscPrimary }
                 ?: discMembers.firstOrNull()
             val platform = game?.let { platformDao.getById(it.platformId) }
-            val emulator = game?.let { resolveLaunchProfile(it, platform).getOrNull()?.profile?.name }
+            val resolvedLaunch = game?.let { resolveLaunchProfile(it, platform).getOrNull() }
             _uiState.update {
                 it.copy(
                     game              = game,
@@ -262,7 +259,7 @@ class GameDetailViewModel @Inject constructor(
                     selectedDiscId    = selectedDisc?.id,
                     noteText          = game?.userNote ?: "",
                     mediaUris         = mediaOf(game),
-                    emulatorName      = emulator,
+                    resolvedLaunch    = resolvedLaunch,
                     // Media strip plays the full VIDEO; ICON1 (icon snap) is a fallback so a game
                     // that only has a snap still shows a video card.
                     videoUri          = game?.let { g ->
@@ -686,6 +683,13 @@ class GameDetailViewModel @Inject constructor(
                     }
                     .onFailure { e ->
                         Timber.e(e, "Shortcut launch failed: ${game.packageName}/${game.shortcutId}")
+                        // B1: record + offer the recovery sheet (no intent was involved).
+                        launchDispatcher.recordPreflightFailure(
+                            game   = game,
+                            resolved = null,
+                            reason = "Couldn't launch: ${e.message}",
+                            offerRecovery = true,
+                        )
                         _uiState.update {
                             it.copy(actionMessage = null, launchError = "Couldn't launch: ${e.message}")
                         }
@@ -702,9 +706,10 @@ class GameDetailViewModel @Inject constructor(
                         .sanitize(parsed, context.packageManager)
                         ?: error("Captured shortcut is not safe to launch")
                 }.onSuccess { intent ->
-                    sendLaunchIntent(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), game.title)
+                    dispatchLaunch(intent, game, null)
                 }.onFailure { e ->
                     Timber.e(e, "Stored-intent launch failed for gameId=${game.id}")
+                    launchDispatcher.recordPreflightFailure(game, null, "Couldn't launch: ${e.message}", offerRecovery = false)
                     _uiState.update {
                         it.copy(actionMessage = null, launchError = "Couldn't launch: ${e.message}")
                     }
@@ -728,7 +733,7 @@ class GameDetailViewModel @Inject constructor(
                 Timber.i(
                     "Launching native gameId=${game.id}, title=${game.title}, package=${game.packageName}, intent=${nativeIntent.toUri(Intent.URI_INTENT_SCHEME)}"
                 )
-                sendLaunchIntent(nativeIntent, game.title)
+                dispatchLaunch(nativeIntent, game, null)
                 return@launch
             }
 
@@ -738,19 +743,24 @@ class GameDetailViewModel @Inject constructor(
                 Timber.w(
                     "Launch blocked: gameId=${game.id}, title=${game.title}, platform=${game.platformId}, reason=$reason"
                 )
+                launchDispatcher.recordPreflightFailure(game, null, reason, offerRecovery = false)
                 _uiState.update { it.copy(actionMessage = null, launchError = reason) }
                 return@launch
             }
-            val (profile, source) = resolved.getOrThrow()
+            val resolvedLaunch = resolved.getOrThrow()
+            val profile = resolvedLaunch.profile
             Timber.d(
-                "Launch emulator resolved: gameId=${game.id}, platform=${game.platformId}, emulatorId=${profile.id}, emulatorName=${profile.name}, source=$source"
+                "Launch emulator resolved: gameId=${game.id}, platform=${game.platformId}, emulatorId=${profile.id}, emulatorName=${profile.name}, source=${resolvedLaunch.source.name}"
             )
 
             val result = intentResolver.resolve(game, profile)
             result.onFailure { e ->
                 Timber.w(
                     e,
-                    "Launch failed before startActivity: gameId=${game.id}, platform=${game.platformId}, emulatorId=${profile.id}, source=$source"
+                    "Launch failed before startActivity: gameId=${game.id}, platform=${game.platformId}, emulatorId=${profile.id}, source=${resolvedLaunch.source.name}"
+                )
+                launchDispatcher.recordPreflightFailure(
+                    game, resolvedLaunch, e.message ?: "Could not launch ${profile.name}", offerRecovery = false,
                 )
                 _uiState.update {
                     it.copy(
@@ -762,92 +772,78 @@ class GameDetailViewModel @Inject constructor(
             }
             val intent = result.getOrNull() ?: return@launch
             Timber.i(
-                "Launching gameId=${game.id}, title=${game.title}, platform=${game.platformId}, emulatorId=${profile.id}, emulator=${profile.name}, source=$source, core=${profile.corePathFor(game.platformId).orEmpty()}, rom=${game.romPath.orEmpty()}, intent=${intent.toUri(Intent.URI_INTENT_SCHEME)}"
+                "Launching gameId=${game.id}, title=${game.title}, platform=${game.platformId}, emulatorId=${profile.id}, emulator=${profile.name}, source=${resolvedLaunch.source.name}, core=${resolvedLaunch.corePath.orEmpty()}, rom=${game.romPath.orEmpty()}, intent=${intent.toUri(Intent.URI_INTENT_SCHEME)}"
             )
-            sendLaunchIntent(intent, game.title)
+            dispatchLaunch(intent, game, resolvedLaunch)
         }
     }
 
-    private fun sendLaunchIntent(intent: Intent, gameTitle: String) {
-        val result = _launchEffect.trySend(intent)
-        if (result.isSuccess) {
-            Timber.d("Launch intent queued for UI collector")
-            // We're about to background PFP for a game — reflect it in the opt-in Discord presence
-            // (no-op unless the user connected Discord and enabled sharing).
-            viewModelScope.launch { discordPresence.setCurrentGame(gameTitle) }
-        } else {
-            val cause = result.exceptionOrNull()
-            Timber.w(cause, "Could not queue launch intent for UI collector")
-            _uiState.update {
-                it.copy(
-                    actionMessage = null,
-                    launchError = "Could not send launch request",
-                )
+    // ── Launch funnel (B1) ──────────────────────────────────────────────────
+    //
+    // Game Detail no longer touches startActivity itself: the resolved intent goes to the shared
+    // LaunchDispatcher, which performs startActivity with named failures, records the launch
+    // outcome (launch_outcomes), and verifies the emulator actually came to the foreground
+    // (home-launcher lifecycle handshake). Game Detail renders the rejection inline (launchError)
+    // instead of the dispatcher's recovery sheet to avoid double-surfacing the same failure.
+    private suspend fun dispatchLaunch(
+        intent: Intent,
+        game: Game,
+        resolved: ResolvedLaunch?,
+    ) {
+        when (val result = launchDispatcher.launch(game, resolved, intent)) {
+            is LaunchDispatchResult.Rejected -> {
+                _uiState.update {
+                    it.copy(actionMessage = null, launchError = result.message)
+                }
+            }
+            LaunchDispatchResult.Accepted -> {
+                // startActivity succeeded — drop the transient "Launching…" line; the emulator
+                // covers the launcher next. About to background PFP for the game — reflect it in
+                // the opt-in Discord presence (no-op unless the user connected Discord and
+                // enabled sharing).
+                _uiState.update { it.copy(actionMessage = null) }
+                discordPresence.setCurrentGame(game.title)
             }
         }
     }
 
-    fun onLaunchIntentCollected()    { Timber.d("Launch intent collected by GameDetailScreen") }
-    fun onLaunchStartActivityReached() {
-        Timber.d("Calling context.startActivity for launch intent")
-        _uiState.update { it.copy(actionMessage = null) }
-    }
     fun onLaunchFailed(message: String) {
         _uiState.update { it.copy(actionMessage = null, launchError = message) }
     }
 
+    /** "Get help" on the Game Detail launch-error line: opens the shell's recovery sheet. */
+    fun requestLaunchHelp() {
+        val game = _uiState.value.game ?: return
+        val error = _uiState.value.launchError ?: return
+        viewModelScope.launch {
+            launchDispatcher.requestRecovery(game, _uiState.value.resolvedLaunch, error)
+        }
+    }
+
+    /**
+     * Resolves which emulator (and RetroArch core) will launch [game]. This function only gathers
+     * the ladder's inputs from their stores; the precedence itself lives in
+     * [EmulatorLaunchResolver] (feature-launcher) so it is shared, tested logic.
+     */
     private suspend fun resolveLaunchProfile(
         game: Game,
         platform: PlatformEntity? = null,
-    ): Result<ResolvedLaunchProfile> {
+    ): Result<ResolvedLaunch> {
         val platformId = game.platformId
         val installed = profileRepository.getInstalledProfiles()
-        // Ordered so the automatic fallback below picks a standalone emulator over a RetroArch
-        // core when both support the console. Unavailable profiles (e.g. a RetroArch core the SAF
-        // link detected as not installed) are excluded so the fallback never lands on one.
+        // Ordered so the automatic fallback picks a standalone emulator over a RetroArch core when
+        // both support the console. Unavailable profiles (e.g. a RetroArch core the SAF link
+        // detected as not installed) are excluded so the fallback never lands on one.
         val platformProfiles =
             installed.filter { it.isAvailable && it.supportsPlatform(platformId) }.byLaunchPreference()
-
-        fun resolveConfigured(configuredIdOrPackage: String, source: String): Result<ResolvedLaunchProfile> {
-            val profile = installed.firstOrNull { it.id == configuredIdOrPackage }
-                ?: installed.firstOrNull { it.packageName == configuredIdOrPackage && it.supportsPlatform(platformId) }
-                ?: installed.firstOrNull { it.packageName == configuredIdOrPackage }
-                ?: return Result.failure(
-                    IllegalStateException("The $source emulator is not installed or available: $configuredIdOrPackage")
-                )
-
-            if (!profile.supportsPlatform(platformId)) {
-                return Result.failure(
-                    IllegalStateException("${profile.name} is not configured for ${platformId.uppercase()}")
-                )
-            }
-
-            return Result.success(ResolvedLaunchProfile(profile, source))
-        }
-
-        game.emulatorPackage?.takeIf { it.isNotBlank() }?.let {
-            return resolveConfigured(it, "per-game override")
-        }
-
-        val memoryCardEmulator = memoryCardRepository.getById(platformId)
-            ?.emulatorId
-            ?.takeIf { it.isNotBlank() }
-        memoryCardEmulator?.let {
-            return resolveConfigured(it, "memory card emulator")
-        }
-
-        val platformDefault = platform?.preferredEmulatorPackage
-            ?: platformDao.getById(platformId)?.preferredEmulatorPackage
-        platformDefault?.takeIf { it.isNotBlank() }?.let {
-            return resolveConfigured(it, "platform default")
-        }
-
-        platformProfiles.firstOrNull()?.let {
-            return Result.success(ResolvedLaunchProfile(it, "first valid platform emulator"))
-        }
-
-        return Result.failure(
-            IllegalStateException("No emulator configured for ${platformId.uppercase()}. Choose an emulator for this game or set a platform default.")
+        return EmulatorLaunchResolver.resolve(
+            platformId           = platformId,
+            installedProfiles    = installed,
+            platformProfiles     = platformProfiles,
+            perGameOverride      = game.emulatorPackage?.takeIf { it.isNotBlank() },
+            memoryCardEmulatorId = memoryCardRepository.getById(platformId)?.emulatorId?.takeIf { it.isNotBlank() },
+            platformDefault      = (platform?.preferredEmulatorPackage
+                ?: platformDao.getById(platformId)?.preferredEmulatorPackage)?.takeIf { it.isNotBlank() },
         )
     }
 
@@ -880,6 +876,9 @@ class GameDetailViewModel @Inject constructor(
         _uiState.update { it.copy(showEmulatorPicker = false) }
     }
 
+    /** Tap on the Game Detail emulator line — same per-game-only override flow as Options ▸ Emulator. */
+    fun requestChangeEmulator() = openEmulatorPicker()
+
     fun onEmulatorPickerMove(delta: Int) {
         val last = _uiState.value.emulatorPickerOptions.lastIndex
         if (last < 0) return
@@ -892,10 +891,15 @@ class GameDetailViewModel @Inject constructor(
             gameRepository.setPreferredEmulator(game.id, profileId)
             val updated = gameRepository.getById(game.id)
             val profile = profileRepository.getInstalledProfiles().firstOrNull { it.id == profileId }
+            // Re-resolve from the fresh override so the emulator line shows the new winner + core
+            // and reports PER_GAME_OVERRIDE rather than a stale lower-level attribution.
+            val resolved = updated?.let {
+                resolveLaunchProfile(it, _uiState.value.platform).getOrNull()
+            }
             _uiState.update {
                 it.copy(
                     game               = updated ?: it.game,
-                    emulatorName       = profile?.name,
+                    resolvedLaunch     = resolved,
                     showEmulatorPicker = false,
                     actionMessage      = profile?.let { p -> "Emulator set to ${p.name}" },
                 )
@@ -917,49 +921,9 @@ class GameDetailViewModel @Inject constructor(
         }
     }
 
-    private fun EmulatorProfile.supportsPlatform(platformId: String): Boolean {
-        val aliases = platformAliases(platformId)
-        return supportedPlatformIds.any { it in aliases }
-    }
-
-    private fun EmulatorProfile.corePathFor(platformId: String): String? {
-        for (alias in platformAliases(platformId)) {
-            coreMap[alias]?.let { return it }
-        }
-        return null
-    }
-
-    private fun platformAliases(platformId: String): Set<String> = when (platformId) {
-        "psx"          -> setOf("psx", "ps1")
-        "ps1"          -> setOf("ps1", "psx")
-        "n3ds"         -> setOf("n3ds", "3ds")
-        "3ds"          -> setOf("3ds", "n3ds")
-        "gc"           -> setOf("gc", "gamecube")
-        "gamecube"     -> setOf("gamecube", "gc")
-        "nds"          -> setOf("nds", "ds")
-        "ds"           -> setOf("ds", "nds")
-        "pcengine"     -> setOf("pcengine", "pce", "tgfx16")
-        "pce"          -> setOf("pce", "pcengine", "tgfx16")
-        "tgfx16"       -> setOf("tgfx16", "pce", "pcengine")
-        "mastersystem" -> setOf("mastersystem", "sms")
-        "sms"          -> setOf("sms", "mastersystem")
-        "genesis"      -> setOf("genesis", "megadrive", "md")
-        "megadrive"    -> setOf("megadrive", "genesis", "md")
-        "md"           -> setOf("md", "genesis", "megadrive")
-        "dreamcast"    -> setOf("dreamcast", "dc")
-        "dc"           -> setOf("dc", "dreamcast")
-        "virtualboy"   -> setOf("virtualboy", "vb")
-        "vb"           -> setOf("vb", "virtualboy")
-        "atarilynx"    -> setOf("atarilynx", "lynx")
-        "lynx"         -> setOf("lynx", "atarilynx")
-        "wonderswan"   -> setOf("wonderswan", "ws")
-        "ws"           -> setOf("ws", "wonderswan")
-        "wonderswancolor" -> setOf("wonderswancolor", "wsc")
-        "wsc"          -> setOf("wsc", "wonderswancolor")
-        "ngp"          -> setOf("ngp", "ngpc")
-        "ngpc"         -> setOf("ngpc", "ngp")
-        else           -> setOf(platformId)
-    }
+    // supportsPlatform / platformAliases / corePathFor live in feature-launcher's
+    // EmulatorPlatformMapping.kt — shared with EmulatorProfileRepository, EmulatorIntentResolver
+    // and EmulatorLaunchResolver so the launch ladder and the UI can never disagree.
 
     // ── Add-to-collection picker ──────────────────────────────────────────
 

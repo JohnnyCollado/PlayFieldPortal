@@ -165,25 +165,9 @@ fun GameDetailScreen(
             if (state.launchError != null) revealed = true
         }
     }
-    LaunchedEffect(Unit) {
-        viewModel.launchEffect.collect { intent ->
-            viewModel.onLaunchIntentCollected()
-            try {
-                viewModel.onLaunchStartActivityReached()
-                context.startActivity(intent)
-                Timber.i("context.startActivity completed for launch intent")
-            } catch (e: android.content.ActivityNotFoundException) {
-                Timber.w(e, "Launch startActivity failed: emulator activity not found")
-                viewModel.onLaunchFailed("Emulator not found. Is it installed?")
-            } catch (e: SecurityException) {
-                Timber.w(e, "Launch startActivity failed: permission denied")
-                viewModel.onLaunchFailed("Permission denied launching emulator")
-            } catch (e: Exception) {
-                Timber.w(e, "Launch startActivity failed")
-                viewModel.onLaunchFailed("Could not open emulator: ${e.message}")
-            }
-        }
-    }
+    // B1: Game Detail no longer calls startActivity itself — the ViewModel funnels the resolved
+    // intent through the shared LaunchDispatcher (named failures, outcome recording, foreground
+    // verification). Failures land in launchError, revealed by the effect above.
     LaunchedEffect(state.closed) {
         if (state.closed) {
             viewModel.prepareForOpen()
@@ -339,7 +323,19 @@ fun GameDetailScreen(
                                 onClick = viewModel::onManualClicked,
                             )
                     }
-                    (state.launchError ?: state.actionMessage ?: state.artworkMessage)?.let {
+                    if (state.launchError != null) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(state.launchError!!, color = menuCursorEdge(), fontSize = 12.sp)
+                            Spacer(Modifier.width(10.dp))
+                            Text(
+                                "Get help",
+                                color = menuCursorFill(),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.clickable { viewModel.requestLaunchHelp() },
+                            )
+                        }
+                    } else (state.actionMessage ?: state.artworkMessage)?.let {
                         Text(it, color = menuCursorEdge(), fontSize = 12.sp)
                     }
                 }
@@ -380,7 +376,10 @@ fun GameDetailScreen(
                     lastPlayedAt = game.lastPlayedAt,
                     playTimeMillis = game.totalPlayTimeMillis,
                     // Package-backed gaming apps launch by package/shortcut — no emulator meta.
-                    emulator    = if (state.isPackageBacked) null else (state.emulatorName ?: "Not set"),
+                    emulator    = if (state.isPackageBacked) null else (state.resolvedLaunch?.profile?.name ?: "Not set"),
+                    emulatorCore = if (state.isPackageBacked) null else state.resolvedLaunch?.coreName,
+                    emulatorSource = if (state.isPackageBacked) null else state.resolvedLaunch?.source?.label,
+                    onEmulatorClick = if (state.isPackageBacked) null else viewModel::requestChangeEmulator,
                     modifier    = Modifier.weight(0.42f),
                 )
                 DescriptionPanel(
@@ -622,6 +621,11 @@ private fun GameInfoList(
     lastPlayedAt: Long?,
     playTimeMillis: Long,
     emulator: String?,
+    // The resolved RetroArch core name + attribution level (B4) — null for package-backed entries
+    // and for games with no resolvable emulator.
+    emulatorCore: String? = null,
+    emulatorSource: String? = null,
+    onEmulatorClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -638,7 +642,14 @@ private fun GameInfoList(
         if (!genre.isNullOrBlank())     InfoRow(Icons.Filled.SportsEsports, genre)
         lastPlayedAt?.let          { InfoRow(Icons.Filled.Schedule, "Last Played: ${relativeDays(it)}") }
         if (playTimeMillis > 0)         InfoRow(Icons.Filled.Schedule, "Play Time: ${formatPlayTime(playTimeMillis)}")
-        emulator?.let              { InfoRow(Icons.Filled.Monitor, "Emulator: $it") }
+        emulator?.let {
+            EmulatorLaunchRow(
+                emulator = it,
+                core     = emulatorCore,
+                source   = emulatorSource,
+                onClick  = onEmulatorClick,
+            )
+        }
     }
 }
 
@@ -662,6 +673,52 @@ private fun InfoRow(icon: ImageVector, value: String) {
         Icon(icon, contentDescription = null, tint = TextMuted, modifier = Modifier.size(16.dp))
         Spacer(Modifier.width(12.dp))
         Text(value, color = TextPrimary, fontSize = 14.sp, maxLines = 1)
+    }
+}
+
+// The Game Detail emulator line (B4): the emulator that will actually run the game, the RetroArch
+// core it maps (when one exists), and the ladder level that decided both. Tap changes the emulator
+// for THIS game only — the same per-game override flow as Options ▸ Emulator. Package-backed
+// gaming apps don't show this row, so no emulator meta is ever offered for them.
+@Composable
+private fun EmulatorLaunchRow(
+    emulator: String,
+    core: String?,
+    source: String?,
+    onClick: (() -> Unit)?,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            Icons.Filled.Monitor,
+            contentDescription = null,
+            tint = TextMuted,
+            modifier = Modifier.size(16.dp),
+        )
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(emulator, color = TextPrimary, fontSize = 14.sp, maxLines = 1)
+            if (core != null || source != null) {
+                Text(
+                    buildList {
+                        core?.let { add("Core: $it") }
+                        source?.let { add(it.lowercase()) }
+                    }.joinToString("  ·  "),
+                    color = TextMuted,
+                    fontSize = 11.sp,
+                    maxLines = 1,
+                )
+            }
+        }
+        if (onClick != null) {
+            Spacer(Modifier.width(10.dp))
+            Text("Change", color = menuCursorEdge(), fontSize = 12.sp)
+        }
     }
 }
 

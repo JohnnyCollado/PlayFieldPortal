@@ -193,40 +193,6 @@ class EmulatorProfileRepository @Inject constructor(
         }
     }
 
-    private fun EmulatorProfile.supportsPlatform(platformId: String): Boolean {
-        val aliases = platformAliases(platformId)
-        return supportedPlatformIds.any { it in aliases }
-    }
-
-    private fun platformAliases(platformId: String): Set<String> = when (platformId) {
-        "psx"          -> setOf("psx", "ps1")
-        "ps1"          -> setOf("ps1", "psx")
-        "n3ds"         -> setOf("n3ds", "3ds")
-        "3ds"          -> setOf("3ds", "n3ds")
-        "gc"           -> setOf("gc", "gamecube")
-        "gamecube"     -> setOf("gamecube", "gc")
-        "nds"          -> setOf("nds", "ds")
-        "ds"           -> setOf("ds", "nds")
-        "pcengine"     -> setOf("pcengine", "pce", "tgfx16")
-        "pce"          -> setOf("pce", "pcengine", "tgfx16")
-        "tgfx16"       -> setOf("tgfx16", "pce", "pcengine")
-        "mastersystem" -> setOf("mastersystem", "sms")
-        "sms"          -> setOf("sms", "mastersystem")
-        "genesis"      -> setOf("genesis", "megadrive", "md")
-        "megadrive"    -> setOf("megadrive", "genesis", "md")
-        "md"           -> setOf("md", "genesis", "megadrive")
-        "dreamcast"    -> setOf("dreamcast", "dc")
-        "dc"           -> setOf("dc", "dreamcast")
-        "virtualboy"   -> setOf("virtualboy", "vb")
-        "vb"           -> setOf("vb", "virtualboy")
-        "atarilynx"    -> setOf("atarilynx", "lynx")
-        "lynx"         -> setOf("lynx", "atarilynx")
-        "wonderswan"   -> setOf("wonderswan", "ws")
-        "ws"           -> setOf("ws", "wonderswan")
-        "wonderswancolor" -> setOf("wonderswancolor", "wsc")
-        "wsc"          -> setOf("wsc", "wonderswancolor")
-        "ngp"          -> setOf("ngp", "ngpc")
-        "ngpc"         -> setOf("ngpc", "ngp")
-        else           -> setOf(platformId)
-    }
+    // supportsPlatform / platformAliases live in EmulatorPlatformMapping.kt (shared with the
+    // intent resolver and the launch ladder) so no copy can drift.
 }

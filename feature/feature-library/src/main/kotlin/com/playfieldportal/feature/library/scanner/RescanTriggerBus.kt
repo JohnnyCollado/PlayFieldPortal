@@ -9,10 +9,16 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import timber.log.Timber
 
+/** Wall-clock seam so the resume-throttle boundary is drivable from tests (A3). */
+fun interface RescanClock {
+    fun now(): Long
+}
+
 @Singleton
 class RescanTriggerBus @Inject constructor(
     private val libraryScanner: LibraryScanner,
     private val scope: CoroutineScope,
+    private val clock: RescanClock = RescanClock { System.currentTimeMillis() },
 ) {
     private val scanMutex = Mutex()
     private var lastResumeRunAt = Long.MIN_VALUE
@@ -22,7 +28,7 @@ class RescanTriggerBus @Inject constructor(
         when (trigger) {
             RescanTrigger.AppResumed -> {
                 if (lastResumeRunAt != Long.MIN_VALUE &&
-                    System.currentTimeMillis() - lastResumeRunAt < RESUME_THROTTLE_MS
+                    clock.now() - lastResumeRunAt < RESUME_THROTTLE_MS
                 ) return
                 scope.launch { scanNow("resume") }
             }
@@ -39,7 +45,7 @@ class RescanTriggerBus @Inject constructor(
     private suspend fun scanNow(source: String) {
         if (!scanMutex.tryLock()) return
         try {
-            if (source == "resume") lastResumeRunAt = System.currentTimeMillis()
+            if (source == "resume") lastResumeRunAt = clock.now()
             val outcomes = libraryScanner.scanAllEnabled(removeMissing = true)
             Timber.i(
                 "Library Rescan — done: ${outcomes.sumOf { it.added }} new, " +

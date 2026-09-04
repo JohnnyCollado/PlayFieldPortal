@@ -46,6 +46,12 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var libraryRescanCoordinator: LibraryRescanCoordinator
 
+    // B1 launch verification: the home-launcher handshake. A dispatched game launch is only
+    // "real" if another activity covers this launcher (onStop) and the user comes back after a
+    // real session (onResume). Nothing else in the app reports lifecycle to the dispatcher.
+    @Inject
+    lateinit var launchDispatcher: com.playfieldportal.feature.launcher.LaunchDispatcher
+
     // Same activity-scoped instance the shell's hiltViewModel() resolves — used to report when
     // the notification-permission dialog is out of the way so the boot sequence can start.
     private val xmbViewModel: XMBViewModel by viewModels()
@@ -129,6 +135,9 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         hideSystemBars()
+        // B1: PFP is foreground again — classify any pending launch hand-off (success if the
+        // emulator held the foreground for a real session, never-foregrounded otherwise).
+        launchDispatcher.onHostResumed()
         // Foreground again = out of any game, so drop the per-game Discord presence back to idle
         // (full build only; no-op in lite). Cheap unless a game was actually being shared.
         discordBootstrap.onResume()
@@ -139,6 +148,12 @@ class MainActivity : ComponentActivity() {
             runCatching { libraryRescanCoordinator.onResume() }
                 .onFailure { Timber.e(it, "Resume-triggered library rescan failed") }
         }
+    }
+
+    override fun onStop() {
+        // B1: another activity covered the launcher — the dispatched emulator came to front.
+        launchDispatcher.onHostStopped()
+        super.onStop()
     }
 
     override fun onDestroy() {

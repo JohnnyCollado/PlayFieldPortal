@@ -41,6 +41,13 @@ class EmulatorIntentResolverTest {
             .installPackage(PackageInfo().apply { this.packageName = packageName })
     }
 
+    // A COMPONENT launch targets a pinned activity by class name, and the resolver now preflights
+    // that the activity still exists (B1 — an update that drops it is caught before hand-off).
+    private fun registerComponentActivity(packageName: String, activityClass: String) {
+        shadowOf(context.packageManager)
+            .addActivityIfNotPresent(ComponentName(packageName, activityClass))
+    }
+
     private fun registerViewActivity(packageName: String, activityClass: String) {
         val component = ComponentName(packageName, activityClass)
         val shadowPm = shadowOf(context.packageManager)
@@ -62,6 +69,7 @@ class EmulatorIntentResolverTest {
     @Test
     fun `attachRomData component intent carries rom as data uri with read grant`() {
         installPackage("dev.eden.eden_emulator")
+        registerComponentActivity("dev.eden.eden_emulator", "org.yuzu.yuzu_emu.activities.EmulationActivity")
         val profile = EmulatorProfile(
             id = "test_eden",
             name = "Eden",
@@ -90,6 +98,7 @@ class EmulatorIntentResolverTest {
     @Test
     fun `rom_uri extra resolves to the saf uri with bool extras and clear flags`() {
         installPackage("com.github.stenzek.duckstation")
+        registerComponentActivity("com.github.stenzek.duckstation", "com.github.stenzek.duckstation.EmulationActivity")
         val profile = EmulatorProfile(
             id = "test_duckstation",
             name = "DuckStation",
@@ -120,6 +129,7 @@ class EmulatorIntentResolverTest {
     @Test
     fun `custom action component intent keeps rom in extras only`() {
         installPackage("me.magnum.melonds")
+        registerComponentActivity("me.magnum.melonds", "me.magnum.melonds.ui.emulator.EmulatorActivity")
         val profile = EmulatorProfile(
             id = "test_melonds",
             name = "melonDS",
@@ -187,6 +197,7 @@ class EmulatorIntentResolverTest {
     @Test
     fun `vita3k launches installed title by id via string-array extra, no rom data`() {
         installPackage("org.vita3k.emulator")
+        registerComponentActivity("org.vita3k.emulator", "org.vita3k.emulator.Emulator")
         // No romUri / romPath — a Vita game boots by its installed Title ID.
         val game = Game(title = "Disgaea 3", platformId = "psvita", launchToken = "PCSB00098")
 
@@ -204,6 +215,7 @@ class EmulatorIntentResolverTest {
     @Test
     fun `token launch without a launch token fails with a readable message`() {
         installPackage("org.vita3k.emulator")
+        registerComponentActivity("org.vita3k.emulator", "org.vita3k.emulator.Emulator")
         val game = Game(title = "Disgaea 3", platformId = "psvita")  // no launchToken
 
         val result = runBlocking { resolver.resolve(game, vita3kProfile()) }
@@ -235,4 +247,30 @@ class EmulatorIntentResolverTest {
             "Expected a user-readable install hint, got: ${result.exceptionOrNull()!!.message}",
         )
     }
+
+    @Test
+    fun `component profile whose pinned activity vanished fails with a repair hint`() {
+        // Package installed, but the activity the profile targets no longer exists — the shape an
+        // emulator update produces when it renames/drops its launch activity.
+        installPackage("dev.eden.eden_emulator")
+        val profile = EmulatorProfile(
+            id = "test_eden_stale",
+            name = "Eden",
+            packageName = "dev.eden.eden_emulator",
+            activityClass = "org.yuzu.yuzu_emu.activities.GoneActivity",
+            intentType = IntentType.COMPONENT,
+            supportedPlatformIds = listOf("switch"),
+            intentAction = "android.nfc.action.TECH_DISCOVERED",
+            attachRomData = true,
+        )
+
+        val result = runBlocking { resolver.resolve(safGame(), profile) }
+
+        assertTrue(result.isFailure)
+        assertTrue(
+            result.exceptionOrNull()!!.message!!.contains("no longer provides its launch activity"),
+            "Expected a repair hint naming the stale activity, got: ${result.exceptionOrNull()!!.message}",
+        )
+    }
+
 }

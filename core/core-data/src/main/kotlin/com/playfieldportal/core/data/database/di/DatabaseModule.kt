@@ -12,6 +12,7 @@ import com.playfieldportal.core.data.database.dao.BackupDao
 import com.playfieldportal.core.data.database.dao.CategoryDao
 import com.playfieldportal.core.data.database.dao.CollectionDao
 import com.playfieldportal.core.data.database.dao.GameDao
+import com.playfieldportal.core.data.database.dao.LaunchOutcomeDao
 import com.playfieldportal.core.data.database.dao.LibrarySourceDao
 import com.playfieldportal.core.data.database.dao.MemoryCardDao
 import com.playfieldportal.core.data.database.dao.MusicFolderDao
@@ -102,10 +103,12 @@ object DatabaseModule {
             PFPDatabase.MIGRATION_37_38,
             PFPDatabase.MIGRATION_38_39,
             PFPDatabase.MIGRATION_39_40,
+            PFPDatabase.MIGRATION_40_41,
         )
         .build()
 
     @Provides fun provideGameDao(db: PFPDatabase): GameDao = db.gameDao()
+    @Provides fun provideLaunchOutcomeDao(db: PFPDatabase): LaunchOutcomeDao = db.launchOutcomeDao()
     @Provides fun provideSsMediaCacheDao(db: PFPDatabase): com.playfieldportal.core.data.database.dao.SsMediaCacheDao = db.ssMediaCacheDao()
     @Provides fun provideAccountAchievementSetDao(db: PFPDatabase): com.playfieldportal.core.data.database.dao.AccountAchievementSetDao = db.accountAchievementSetDao()
     @Provides fun provideAccountAchievementDao(db: PFPDatabase): com.playfieldportal.core.data.database.dao.AccountAchievementDao = db.accountAchievementDao()

@@ -124,6 +124,9 @@ class GameRepositoryImpl @Inject constructor(
     override suspend fun setPreferredEmulator(id: Long, profileIdOrPackage: String?) =
         gameDao.setPreferredEmulator(id, profileIdOrPackage)
 
+    override suspend fun clearPreferredEmulatorForPlatform(platformId: String) =
+        gameDao.clearPreferredEmulatorForPlatform(platformId)
+
     override suspend fun setPreferredDisc(id: Long, discId: Long) =
         gameDao.setPreferredDisc(id, discId)
 

@@ -78,12 +78,37 @@ class EmulatorIntentResolver @Inject constructor(
         }
     }
 
-    private fun validateBeforeLaunch(game: Game, profile: EmulatorProfile) {
+    /**
+     * Refuses a launch that would hand the emulator a dead handle (B1 preflight): package gone,
+     * COMPONENT activity dropped by an update, or a stale RetroArch core mapping. Public so the
+     * XMB direct-launch path can run the identical checks Game Detail's resolve applies —
+     * failures refuse with a repair message before startActivity instead of at it.
+     */
+    fun validateBeforeLaunch(game: Game, profile: EmulatorProfile) {
         if (profile.intentType != IntentType.CUSTOM_COMMAND) {
             try {
                 context.packageManager.getPackageInfo(profile.packageName, 0)
             } catch (_: PackageManager.NameNotFoundException) {
                 error("Emulator not installed: ${profile.name} (${profile.packageName})")
+            }
+        }
+
+        // A COMPONENT launch targets a pinned activity by class name. If the emulator update
+        // dropped or renamed that activity, startActivity would throw ActivityNotFoundException
+        // at hand-off — catch it here so the failure names the repair instead.
+        if (profile.intentType == IntentType.COMPONENT) {
+            val activityClass = profile.activityClass ?: error("Activity class required for COMPONENT intent - profile: ${profile.name}")
+            try {
+                context.packageManager.getActivityInfo(
+                    ComponentName(profile.packageName, activityClass),
+                    0,
+                )
+            } catch (_: PackageManager.NameNotFoundException) {
+                error(
+                    "${profile.name} no longer provides its launch activity " +
+                        "($activityClass). Update the emulator, or pick another " +
+                        "emulator for this platform."
+                )
             }
         }
 
@@ -95,10 +120,26 @@ class EmulatorIntentResolver @Inject constructor(
             }
         } else if (!game.romUri.isNullOrBlank()) {
             // A SAF game launches from its granted content:// URI — PFP holds no raw path to stat,
-            // so just require the URI is present/parseable; the OS grant + emulator report any lost
-            // access. A legacy raw-path game keeps the on-disk existence check.
-            runCatching { Uri.parse(game.romUri) }.getOrNull()
+            // so just require the URI is present/parseable, then probe whether the grant still
+            // resolves. A revoked grant (volume unmounted, URI permission cleared) reaches the
+            // emulator as an unreadable URI and looks exactly like a black screen — the corpus's
+            // known-bad case. openFileDescriptor is the same handshake the emulator performs;
+            // refusing only on SecurityException keeps ambiguity (a transient I/O error) on the
+            // permissive side so a real failure stays detectable instead of being guessed at.
+            val romUri = runCatching { Uri.parse(game.romUri) }.getOrNull()
                 ?: error("This game's ROM link is invalid. Re-scan its library.")
+            try {
+                context.contentResolver.openFileDescriptor(romUri, "r")?.close()
+            } catch (_: SecurityException) {
+                error(
+                    "Play Field Portal lost access to this game's file. Reconnect the " +
+                        "storage and rescan its library."
+                )
+            } catch (_: Exception) {
+                // Anything else (a provider we cannot see from here, a transient I/O error) is
+                // ambiguous — never guess "broken" when the probe itself may be the problem.
+                // A genuinely revoked grant surfaces as SecurityException above.
+            }
         } else {
             val romPath = game.romPath ?: error("ROM path is required to launch ${game.title}")
             if (!File(romPath).exists()) error("ROM file not found: $romPath")
@@ -308,51 +349,7 @@ class EmulatorIntentResolver @Inject constructor(
         return intent
     }
 
-    private fun EmulatorProfile.corePathFor(platformId: String): String? {
-        for (alias in platformAliases(platformId)) {
-            coreMap[alias]?.let { return normalizeRetroArchCorePath(it) }
-        }
-        return null
-    }
-
-    private fun EmulatorProfile.normalizeRetroArchCorePath(corePath: String): String {
-        if (!packageName.startsWith("com.retroarch")) return corePath
-        return corePath
-            .replace("/data/data/com.retroarch.aarch64/cores/", "/data/data/$packageName/cores/")
-            .replace("/data/data/com.retroarch.ra64/cores/", "/data/data/$packageName/cores/")
-            .replace("/data/data/com.retroarch.ra32/cores/", "/data/data/$packageName/cores/")
-            .replace("/data/data/com.retroarch/cores/", "/data/data/$packageName/cores/")
-    }
-
-    private fun platformAliases(platformId: String): List<String> = when (platformId) {
-        "psx"          -> listOf("psx", "ps1")
-        "ps1"          -> listOf("ps1", "psx")
-        "n3ds"         -> listOf("n3ds", "3ds")
-        "3ds"          -> listOf("3ds", "n3ds")
-        "gc"           -> listOf("gc", "gamecube")
-        "gamecube"     -> listOf("gamecube", "gc")
-        "nds"          -> listOf("nds", "ds")
-        "ds"           -> listOf("ds", "nds")
-        "pcengine"     -> listOf("pcengine", "pce", "tgfx16")
-        "pce"          -> listOf("pce", "pcengine", "tgfx16")
-        "tgfx16"       -> listOf("tgfx16", "pce", "pcengine")
-        "mastersystem" -> listOf("mastersystem", "sms")
-        "sms"          -> listOf("sms", "mastersystem")
-        "genesis"      -> listOf("genesis", "megadrive", "md")
-        "megadrive"    -> listOf("megadrive", "genesis", "md")
-        "md"           -> listOf("md", "genesis", "megadrive")
-        "dreamcast"    -> listOf("dreamcast", "dc")
-        "dc"           -> listOf("dc", "dreamcast")
-        "virtualboy"   -> listOf("virtualboy", "vb")
-        "vb"           -> listOf("vb", "virtualboy")
-        "atarilynx"    -> listOf("atarilynx", "lynx")
-        "lynx"         -> listOf("lynx", "atarilynx")
-        "wonderswan"   -> listOf("wonderswan", "ws")
-        "ws"           -> listOf("ws", "wonderswan")
-        "wonderswancolor" -> listOf("wonderswancolor", "wsc")
-        "wsc"          -> listOf("wsc", "wonderswancolor")
-        "ngp"          -> listOf("ngp", "ngpc")
-        "ngpc"         -> listOf("ngpc", "ngp")
-        else           -> listOf(platformId)
-    }
+    // corePathFor / platformAliases / normalizeRetroArchCorePath live in
+    // EmulatorPlatformMapping.kt (shared with EmulatorProfileRepository and the launch ladder) so
+    // the path shown to users and the path handed to RetroArch can never drift.
 }

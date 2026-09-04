@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -55,12 +56,13 @@ class GameDaoProjectionTest {
         isFavorite: Boolean = false,
         contentType: String = "GAME",
         isMissing: Boolean = false,
+        emulatorPackage: String? = null,
     ) = GameEntity(
         title = title,
         platformId = platformId,
         romPath = romPath,
         packageName = null,
-        emulatorPackage = null,
+        emulatorPackage = emulatorPackage,
         artworkUri = null,
         heroUri = null,
         logoUri = null,
@@ -180,6 +182,38 @@ class GameDaoProjectionTest {
 
         assertEquals(1, collectionDao.getAllWithCounts().single().game_count)
         assertEquals(listOf(primaryId), collectionDao.observeGames(collectionId).first().map { it.id })
+    }
+
+    @Test
+    fun `clearing platform overrides touches only real game rows of that platform`() = runTest {
+        val psxOverride = dao.upsert(
+            game("Crash Bandicoot", "psx", "/roms/psx/crash.cue", emulatorPackage = "duckstation")
+        )
+        dao.upsert(
+            game("Final Fantasy VII", "psx", "/roms/psx/ff7.cue", emulatorPackage = "retroarch")
+        )
+        dao.upsert(game("Chrono Trigger", "psx", "/roms/psx/ct.cue"))   // no override
+        dao.upsert(game("Panzer Dragoon", "saturn", "/roms/saturn/pd.cue", emulatorPackage = "retroarch"))
+        val appRow = dao.upsert(
+            game("Angry Birds", "android", "/app/angry", contentType = "ANDROID_APP", emulatorPackage = "some.app")
+        )
+
+        dao.clearPreferredEmulatorForPlatform("psx")
+
+        // Real psx game rows with an override are reset to the platform default (null override)…
+        assertNull(dao.getById(psxOverride)?.emulatorPackage)
+        assertEquals(
+            null,
+            dao.observeByPlatform("psx").first().first { it.title == "Final Fantasy VII" }.emulatorPackage,
+        )
+        // …a game with no override is untouched (still null)…
+        assertNull(dao.observeByPlatform("psx").first().first { it.title == "Chrono Trigger" }.emulatorPackage)
+        // …and another platform's rows and app rows are never touched.
+        assertEquals(
+            "retroarch",
+            dao.observeByPlatform("saturn").first().single().emulatorPackage,
+        )
+        assertEquals("some.app", dao.getById(appRow)?.emulatorPackage)
     }
 
     @Test

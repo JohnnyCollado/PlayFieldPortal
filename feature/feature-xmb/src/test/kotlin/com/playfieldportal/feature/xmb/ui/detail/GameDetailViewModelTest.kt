@@ -46,6 +46,7 @@ class GameDetailViewModelTest {
     private lateinit var intentResolver: EmulatorIntentResolver
     private lateinit var artworkRepository: ArtworkRepository
     private lateinit var artworkStore: ArtworkStore
+    private lateinit var launchDispatcher: com.playfieldportal.feature.launcher.LaunchDispatcher
     private lateinit var viewModel: GameDetailViewModel
 
     private val fakeGame = Game(
@@ -92,6 +93,11 @@ class GameDetailViewModelTest {
         intentResolver    = mockk(relaxed = true)
         artworkRepository = mockk(relaxed = true)
         artworkStore      = mockk(relaxed = true)
+        launchDispatcher  = mockk(relaxed = true)
+        // Explicit (not relaxed): a sealed-interface return can't be auto-mocked, and the
+        // default launch path for these tests is a successful hand-off.
+        coEvery { launchDispatcher.launch(any(), any(), any()) } returns
+            com.playfieldportal.feature.launcher.LaunchDispatchResult.Accepted
 
         coEvery { gameRepository.getById(1L) }    returns fakeGame
         coEvery { platformDao.getById("psx") }    returns fakePlatform
@@ -114,6 +120,7 @@ class GameDetailViewModelTest {
             discordPresence   = mockk(relaxed = true),
             launcherShortcutRepository = mockk(relaxed = true),
             achievementRepository = mockk(relaxed = true),
+            launchDispatcher  = launchDispatcher,
         )
     }
 
@@ -303,6 +310,88 @@ class GameDetailViewModelTest {
         coVerify { intentResolver.resolve(disc2, match { it.id == "duckstation" }) }
     }
 
+    // ── resolved-launch attribution (B4) ─────────────────────────────────
+
+    @Test
+    fun `loadGame reports the catalog source when nothing is configured`() = runTest {
+        val duckstation = com.playfieldportal.core.domain.model.EmulatorProfile(
+            id                   = "duckstation",
+            name                 = "DuckStation",
+            packageName          = "com.github.stenzek.duckstation",
+            intentType           = com.playfieldportal.core.domain.model.IntentType.ACTION_VIEW,
+            supportedPlatformIds = listOf("ps1"),
+        )
+        every { profileRepository.getInstalledProfiles() } returns listOf(duckstation)
+
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals("duckstation", state.resolvedLaunch?.profile?.id)
+        assertEquals(
+            com.playfieldportal.feature.launcher.LaunchSource.CATALOG_DEFAULT,
+            state.resolvedLaunch?.source,
+        )
+    }
+
+    @Test
+    fun `loadGame attributes a platform default when one is configured`() = runTest {
+        val duckstation = com.playfieldportal.core.domain.model.EmulatorProfile(
+            id                   = "duckstation",
+            name                 = "DuckStation",
+            packageName          = "com.github.stenzek.duckstation",
+            intentType           = com.playfieldportal.core.domain.model.IntentType.ACTION_VIEW,
+            supportedPlatformIds = listOf("ps1"),
+        )
+        val retroarch = com.playfieldportal.core.domain.model.EmulatorProfile(
+            id                   = "retroarch_aarch64",
+            name                 = "RetroArch (64-bit)",
+            packageName          = "com.retroarch.aarch64",
+            intentType           = com.playfieldportal.core.domain.model.IntentType.COMPONENT,
+            supportedPlatformIds = listOf("psx"),
+        )
+        coEvery { platformDao.getById("psx") } returns
+            fakePlatform.copy(preferredEmulatorPackage = "duckstation")
+        every { profileRepository.getInstalledProfiles() } returns listOf(retroarch, duckstation)
+
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals("duckstation", state.resolvedLaunch?.profile?.id)
+        assertEquals(
+            com.playfieldportal.feature.launcher.LaunchSource.PLATFORM_DEFAULT,
+            state.resolvedLaunch?.source,
+        )
+    }
+
+    @Test
+    fun `confirming an emulator pick re-attributes the launch to a per-game override`() = runTest {
+        val duckstation = com.playfieldportal.core.domain.model.EmulatorProfile(
+            id                   = "duckstation",
+            name                 = "DuckStation",
+            packageName          = "com.github.stenzek.duckstation",
+            intentType           = com.playfieldportal.core.domain.model.IntentType.ACTION_VIEW,
+            supportedPlatformIds = listOf("ps1"),
+        )
+        every { profileRepository.getInstalledProfiles() } returns listOf(duckstation)
+
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+        // The DB now carries the override the pick just wrote.
+        coEvery { gameRepository.getById(1L) } returns fakeGame.copy(emulatorPackage = "duckstation")
+        viewModel.confirmEmulatorPick("duckstation")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals("duckstation", state.resolvedLaunch?.profile?.id)
+        assertEquals(
+            com.playfieldportal.feature.launcher.LaunchSource.PER_GAME_OVERRIDE,
+            state.resolvedLaunch?.source,
+        )
+        assertTrue(state.actionMessage!!.contains("Emulator set to DuckStation"))
+    }
+
     // ── toggleFavorite ────────────────────────────────────────────────────
 
     @Test
@@ -416,13 +505,12 @@ class GameDetailViewModelTest {
         viewModel.loadGame(1L)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        viewModel.launchEffect.test {
-            viewModel.launch()
-            testDispatcher.scheduler.advanceUntilIdle()
-            val emitted = awaitItem()
-            assertEquals(fakeIntent, emitted)
-            cancelAndIgnoreRemainingEvents()
-        }
+        viewModel.launch()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // The resolved intent goes through the shared LaunchDispatcher (B1), which performs
+        // startActivity and records the outcome.
+        coVerify(exactly = 1) { launchDispatcher.launch(any(), any(), fakeIntent) }
     }
 
     // The guard has to hold even when launching would otherwise fully succeed — otherwise the test
@@ -445,14 +533,11 @@ class GameDetailViewModelTest {
         viewModel.loadGame(1L)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        viewModel.launchEffect.test {
-            viewModel.launch()
-            testDispatcher.scheduler.advanceUntilIdle()
-            // Refused before the launch channel: no intent must reach the emulator.
-            expectNoEvents()
-            cancelAndIgnoreRemainingEvents()
-        }
+        viewModel.launch()
+        testDispatcher.scheduler.advanceUntilIdle()
+        // Refused before the launch funnel: the resolver must never be asked for an intent.
         coVerify(exactly = 0) { intentResolver.resolve(any(), any()) }
+        coVerify(exactly = 0) { launchDispatcher.launch(any(), any(), any()) }
 
         viewModel.uiState.test {
             val state = awaitItem()
@@ -481,12 +566,10 @@ class GameDetailViewModelTest {
         viewModel.loadGame(1L)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        viewModel.launchEffect.test {
-            viewModel.launch()
-            testDispatcher.scheduler.advanceUntilIdle()
-            assertEquals(fakeIntent, awaitItem())
-            cancelAndIgnoreRemainingEvents()
-        }
+        viewModel.launch()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) { launchDispatcher.launch(any(), any(), fakeIntent) }
     }
 
     @Test
@@ -697,6 +780,37 @@ class GameDetailViewModelTest {
             assertNull(awaitItem().launchError)
             cancelAndIgnoreRemainingEvents()
         }
+    }
+
+    // ── Launch recovery sheet (B1) ───────────────────────────────────────
+
+    @Test
+    fun `requestLaunchHelp raises the recovery sheet through the dispatcher`() = runTest {
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.onLaunchFailed("Emulator not found. Is it installed?")
+
+        viewModel.requestLaunchHelp()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) {
+            launchDispatcher.requestRecovery(
+                match { it.id == 1L },
+                any(),
+                eq("Emulator not found. Is it installed?"),
+            )
+        }
+    }
+
+    @Test
+    fun `requestLaunchHelp is a no-op when there is no launch error`() = runTest {
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.requestLaunchHelp()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 0) { launchDispatcher.requestRecovery(any(), any(), any()) }
     }
 
     // ── artwork ───────────────────────────────────────────────────────────
