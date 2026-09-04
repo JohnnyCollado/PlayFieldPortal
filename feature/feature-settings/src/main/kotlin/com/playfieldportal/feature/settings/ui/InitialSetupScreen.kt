@@ -19,6 +19,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.playfieldportal.core.data.repository.MediaRootKind
 import com.playfieldportal.core.ui.preview.CombinedPreviews
 import com.playfieldportal.core.ui.preview.PfpScreenPreview
+import com.playfieldportal.feature.settings.ui.wizard.WizardCheckboxRow
 import com.playfieldportal.feature.settings.ui.wizard.WizardInfoText
 import com.playfieldportal.feature.settings.ui.wizard.WizardRootRow
 import com.playfieldportal.feature.settings.ui.wizard.WizardRow
@@ -240,9 +241,13 @@ fun InitialSetupScreen(
             )
             SetupStep.FINISH -> FinishPage(
                 state = state,
+                onToggleAutoFit = viewModel::toggleAutoFitXmbLayout,
                 onOpenLibraryManager = onOpenLibraryManager,
                 onGoToLibrary = onGoToLibrary,
-                onFinish = onBack,
+                onFinish = {
+                    viewModel.finishSetup()
+                    onBack()
+                },
             )
         }
     }
@@ -654,6 +659,7 @@ private fun RetroArchPage(
 @Composable
 private fun FinishPage(
     state: InitialSetupUiState,
+    onToggleAutoFit: (Boolean) -> Unit,
     onOpenLibraryManager: () -> Unit,
     onGoToLibrary: () -> Unit,
     onFinish: () -> Unit,
@@ -687,6 +693,16 @@ private fun FinishPage(
     }
 
     Spacer(Modifier.height(4.dp))
+    // OPTIONAL XMB auto-fit — explicitly opt-in, never forced. Sizing the XMB's cross layout to
+    // the PSP-authentic proportions is a preference, not a default; skipping it leaves the
+    // launcher exactly as it renders today. Undoable later in Display settings.
+    WizardSectionHeader("XMB Layout")
+    WizardCheckboxRow(
+        label = "Auto-fit the XMB layout (PSP proportions) — changeable anytime in Settings",
+        checked = state.autoFitXmbLayout,
+        onToggle = onToggleAutoFit,
+        focusKey = "finish_autofit",
+    )
     if (state.romRoots.isNotEmpty()) {
         WizardRow(
             label = "Open Library Manager",
@@ -990,6 +1006,7 @@ private fun FinishPagePreview() {
                 retroArchLinked = true,
                 retroArchCoreCount = 42,
             ),
+            onToggleAutoFit = {},
             onOpenLibraryManager = {},
             onGoToLibrary = {},
             onFinish = {},

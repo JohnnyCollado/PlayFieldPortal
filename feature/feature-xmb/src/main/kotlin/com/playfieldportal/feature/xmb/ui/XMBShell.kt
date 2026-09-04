@@ -161,16 +161,11 @@ fun XMBShellContainer(
         }
     }
 
-    // Display ▸ Scale: one density multiplier over the whole launcher UI (XMB, settings,
-    // overlays alike) so the interface can be sized to fit different screens. Font scale
-    // rides the same factor via density, keeping text and layout proportional.
-    val baseDensity = androidx.compose.ui.platform.LocalDensity.current
-    androidx.compose.runtime.CompositionLocalProvider(
-        androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(
-            density = baseDensity.density * uiState.xmbScale,
-            fontScale = baseDensity.fontScale,
-        ),
-    ) {
+    // Display ▸ Scale: scoped to the XMB ONLY. The factor is applied inside XMBShell's
+    // canvas provider (cross, category bar, item list, status strip), and a matching
+    // base-density reset provider restores the device density for every other screen —
+    // Settings, detail screens, dialogs and overlays are never rescaled when the user
+    // scales the XMB. Font scale rides along via density, keeping text and layout proportional.
 
     XMBShell(
         uiState = uiState,
@@ -282,7 +277,6 @@ fun XMBShellContainer(
         )
     }
 
-    }  // scale CompositionLocalProvider
 }
 
 @OptIn(UnstableApi::class)
@@ -389,13 +383,14 @@ fun XMBShell(
           LocalIconDisplayMode provides uiState.iconDisplayMode,
           LocalFocusedGameVideo provides uiState.focusedGameVideo,
       ) {
-        // Uniform "canvas scale" for the whole app. On screens taller than the handheld baseline
-        // (tablets), override LocalDensity for the entire shell so every dp/sp grows together — the
-        // XMB cross, Settings, detail screens, drawer and dialogs all magnify uniformly, preserving
-        // the tuned proportions and alignment instead of over-packing a big canvas with tiny,
-        // mis-anchored elements. Clamped so the handheld is untouched (scale = 1) and huge screens
-        // don't balloon. Safe because no layout reads LocalConfiguration — everything measures via
-        // BoxWithConstraints/LocalDensity, which this override feeds.
+        // XMB-ONLY canvas scale. On screens taller than the handheld baseline (tablets), the
+        // XMB cross is magnified so the tuned layout fills the screen. The override scope ends
+        // at the cross — see the base-density reset provider further down — so Settings,
+        // detail screens, dialogs and every other overlay keep the device's own density:
+        // scaling the XMB never rescales any other screen. Clamped so the handheld is
+        // untouched (scale = 1) and huge screens don't balloon. Safe because no layout reads
+        // LocalConfiguration — everything measures via BoxWithConstraints/LocalDensity, which
+        // this override feeds.
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val baseDensity = LocalDensity.current
             // Fit to the SMALLER of the two axis ratios so a near-square / foldable screen (e.g. the
@@ -747,6 +742,14 @@ fun XMBShell(
                 )
             }
 
+            // Everything from here down is a separate screen or overlay (Settings, app
+            // drawer, music, pickers, dialogs, detail screens) — not part of the XMB cross.
+            // Reset to the device's base density so the XMB-only canvas scale above stops at
+            // the cross: scaling the XMB never rescales any of these.
+            CompositionLocalProvider(
+                LocalDensity provides Density(baseDensity.density, baseDensity.fontScale),
+            ) {
+
             // The Settings screen is suppressed while the color-scheme picker is open so
             // the live wave preview shows through behind the picker (PSP-style).
             if (uiState.colorSchemePicker == null) {
@@ -1073,8 +1076,9 @@ fun XMBShell(
                     modifier = Modifier.fillMaxSize(),
                 )
             }
-        }
-            } // end: CompositionLocalProvider (uniform canvas scale)
+            } // end: base-density reset — non-XMB screens render unscaled
+        } // end: XMB canvas Box
+            } // end: CompositionLocalProvider (XMB-only canvas scale)
         } // end: BoxWithConstraints (uniform canvas scale)
       } // end: CompositionLocalProvider (LocalXmbIconOverrides)
     }

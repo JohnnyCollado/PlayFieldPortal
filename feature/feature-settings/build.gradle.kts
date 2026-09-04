@@ -58,6 +58,8 @@ dependencies {
     implementation(project(":core:core-common"))
     implementation(project(":core:core-domain"))
     implementation(project(":core:core-data"))
+    // XmbLayoutPreset auto-fit + XmbLayoutAdjustCodec for the wizard's XMB auto-fit opt-in
+    implementation(project(":core:theme-kit"))
     implementation(project(":core:core-ui"))
     implementation(project(":core:core-navigation"))
     implementation(project(":feature:feature-artwork"))

@@ -3,9 +3,13 @@ package com.playfieldportal.feature.settings.viewmodel
 import android.content.Context
 import android.net.Uri
 import androidx.compose.runtime.Immutable
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.achievement.AchievementCredentialsProvider
+import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.data.repository.FolderLinkStatus
 import com.playfieldportal.core.data.repository.MediaRootKind
 import com.playfieldportal.core.data.repository.MediaRootRepository
@@ -73,6 +77,11 @@ data class InitialSetupUiState(
     // Per-service validation results (\"Testing…\" / \"Valid …\" / \"Invalid …\"), shown inline.
     val igdbStatus: String? = null,
     val ssStatus: String? = null,
+    // OPTIONAL XMB auto-fit: when checked on the Finish page, finishing the wizard writes an
+    // XmbLayoutPreset.autoFit() entry into the same per-form-factor pref the "Adjust XMB
+    // Layout" editor uses. Off by default — the feature is never pushed on users, and anything
+    // configured here can be undone in Display settings.
+    val autoFitXmbLayout: Boolean = false,
 ) {
     val hasIgdb: Boolean get() = igdbClientId.isNotBlank()
 
@@ -114,6 +123,11 @@ private data class ServiceIdentities(
     val raUsername: String,
     val steamId64: String,
 )
+
+// Must match XMBViewModel.KEY_XMB_LAYOUT_ADJUST — both read/write the same pref.
+private val KEY_XMB_LAYOUT_ADJUST = stringPreferencesKey("display_xmb_layout_adjust")
+// Must match XMBViewModel.KEY_INITIAL_SETUP_SEEN — both read/write the same pref.
+private val KEY_INITIAL_SETUP_SEEN = booleanPreferencesKey("initial_setup_seen")
 
 private const val RETROARCH_PACKAGE = "com.retroarch"
 
@@ -563,6 +577,44 @@ class InitialSetupViewModel @Inject constructor(
     }
 
     fun dismissSsStatus() = scratch.update { it.copy(ssStatus = null) }
+
+    // ── Optional XMB auto-fit (Finish page) ──────────────────────────────────
+
+    /** Flip the opt-in checkbox on the Finish page. Nothing is written until [finishSetup]. */
+    fun toggleAutoFitXmbLayout(enabled: Boolean) {
+        scratch.update { it.copy(autoFitXmbLayout = enabled) }
+    }
+
+    /** Write the auto-fit preset for the CURRENT form-factor bucket (idempotent). */
+    private suspend fun writeAutoFitPreset() {
+        val sw = context.resources.configuration.smallestScreenWidthDp
+        val bucket = com.playfieldportal.themekit.XmbFormFactor.forSmallestWidthDp(sw).key
+        val preset = com.playfieldportal.themekit.XmbLayoutPreset.computeForWindowDp(
+            widthDp = context.resources.configuration.screenWidthDp.toFloat(),
+            heightDp = context.resources.configuration.screenHeightDp.toFloat(),
+            density = context.resources.displayMetrics.density,
+        )
+        context.pfpDataStore.edit { prefs ->
+            val map = com.playfieldportal.themekit.XmbLayoutAdjustCodec
+                .decode(prefs[KEY_XMB_LAYOUT_ADJUST])
+                .toMutableMap()
+            map[bucket] = preset
+            prefs[KEY_XMB_LAYOUT_ADJUST] = com.playfieldportal.themekit.XmbLayoutAdjustCodec.encode(map)
+        }
+    }
+
+    /**
+     * Finish the wizard. If the user opted in, write the auto-fit preset into the XMB layout
+     * pref (same store the editor writes) before marking setup complete.
+     */
+    fun finishSetup() {
+        viewModelScope.launch {
+            if (scratch.value.autoFitXmbLayout) {
+                writeAutoFitPreset()
+            }
+            context.pfpDataStore.edit { it[KEY_INITIAL_SETUP_SEEN] = true }
+        }
+    }
 
     fun connectScreenScraper(username: String, password: String) {
         if (username.isBlank() || password.isBlank()) return

@@ -19,11 +19,11 @@ DataStore `pfp_prefs`, key `display_xmb_layout_adjust`:
 {"compact":{"scale":1.3199997,"barLeftFraction":-0.09999999,"barTopFraction":0.13}}
 ```
 
-| Field | Value | Slider bounds | Meaning |
-|---|---|---|---|
-| `scale` | **1.32** | `SCALE_MIN 0.6` … `SCALE_MAX 1.8` | extra density multiplier on top of the automatic canvas scale |
+| Field             | Value     | Slider bounds                      | Meaning                                                       |
+| ----------------- | --------- | ---------------------------------- | ------------------------------------------------------------- |
+| `scale`           | **1.32**  | `SCALE_MIN 0.6` … `SCALE_MAX 1.8`  | extra density multiplier on top of the automatic canvas scale |
 | `barLeftFraction` | **-0.10** | `LEFT_MIN -0.25` … `LEFT_MAX 0.35` | horizontal shift of the whole cross, fraction of canvas width |
-| `barTopFraction` | **0.13** | `TOP_MIN 0.05` … `TOP_MAX 0.45` | crossbar vertical position, fraction of canvas height |
+| `barTopFraction`  | **0.13**  | `TOP_MIN 0.05` … `TOP_MAX 0.45`    | crossbar vertical position, fraction of canvas height         |
 
 Only the **`compact`** bucket is tuned. `medium` and `expanded`
 (`XmbFormFactor.forSmallestWidthDp`: `<600` / `<840` / `>=840` dp) are untouched —
@@ -34,23 +34,42 @@ Notably **absent** from prefs, so both are at defaults and currently inert:
 - `display_xmb_scale` (legacy `xmbScale`) -> `1.0`
 - `display_bar_top_fraction` (legacy bar override) -> unset, so `XmbLayoutSpec.DEFAULT.barTopFraction = 0.11`
 
-The adjust-map entry shadows both — see [XMBShell.kt:405](feature/feature-xmb/src/main/kotlin/com/playfieldportal/feature/xmb/ui/XMBShell.kt:405),
+The adjust-map entry shadows both — see [XMBShell.kt:416](feature/feature-xmb/src/main/kotlin/com/playfieldportal/feature/xmb/ui/XMBShell.kt:416),
 where the bucket entry wins and the legacy `scale`/`barTopFraction` pair is only the fallback.
 
 ### 1.2 Thor display characteristics
 
-| Property | Value |
-|---|---|
-| Panel (portrait native) | 1080 x 1920 px |
-| App window (landscape) | **1920 x 1080 px** |
-| Density | 369 dpi -> `density = 2.30625` |
-| Physical dpi | 318.98 x 320.84 |
-| Window in dp | **832.52 x 468.29 dp** |
-| smallestScreenWidthDp | 468 -> bucket **`compact`** |
-| Aspect | 16:9 (1.7778) |
+| Property                | Value                          |
+| ----------------------- | ------------------------------ |
+| Panel (portrait native) | 1080 x 1920 px                 |
+| App window (landscape)  | **1920 x 1080 px**             |
+| Density                 | 369 dpi -> `density = 2.30625` |
+| Physical dpi            | 318.98 x 320.84                |
+| Window in dp            | **832.52 x 468.29 dp**         |
+| smallestScreenWidthDp   | 468 -> bucket **`compact`**    |
+| Aspect                  | 16:9 (1.7778)                  |
 
 > The Thor also exposes a second internal panel (`Screen-2`, 1080 x 1240 @ 369 dpi).
 > The XMB runs on display 0 only; the secondary screen is out of scope here.
+
+### 1.3 Revised hand-tuned values (barLeftFraction = -0.05)
+
+After further tuning, a gentler horizontal shift reads better on the Thor:
+
+```json
+{"compact":{"scale":1.3199997,"barLeftFraction":-0.05,"barTopFraction":0.13}}
+```
+
+| Field             | Old value | New value  | Slider bounds                      |
+| ----------------- | --------- | ---------- | ---------------------------------- |
+| `scale`           | 1.32      | **1.32**   | `SCALE_MIN 0.6` … `SCALE_MAX 1.8`  |
+| `barLeftFraction` | -0.10     | **-0.05**  | `LEFT_MIN -0.25` … `LEFT_MAX 0.35` |
+| `barTopFraction`  | 0.13      | **0.13**   | `TOP_MIN 0.05` … `TOP_MAX 0.45`    |
+
+The vertical and scale values are unchanged; only the horizontal shift was relaxed.
+Both the old and new values are reproduced exactly by the formula below — the only
+constant that changed is the PSP cross-anchor x (`PSP_CROSS_ANCHOR_X_DP`), which the
+formula turns into the per-device `barLeftFraction`.
 
 ---
 
@@ -81,6 +100,11 @@ Fixed dp constants that define the cross itself: `CAT_BAR_HEIGHT = 112`,
 `ROW_HEIGHT = 88`, `CategorySlotWidth = 124`, `XmbLeftAnchor = 130`,
 `contentTopPaddingDp = 20`, `LEADING_ICON_SLOT = 74`.
 
+The tuned **`compact`** bucket was re-checked with `barLeftFraction = -0.05`
+(a gentler left shift than the original -0.10). That changes the PSP reference
+cross-anchor x from 73.97 dp to 105.49 dp (16.74 % of canvas width instead of 11.74 %).
+The formula in §4 inherits the new anchor automatically.
+
 **This is the crux**: the cross is built from *absolute dp*, but positioned by
 *fractions*. So the look is only preserved if the **canvas dp size is preserved** —
 copying the fractions alone is not enough.
@@ -103,19 +127,19 @@ baseline (`468 / 354.55 = 1.3200` exactly).
 
 Resulting invariants to reproduce on every device:
 
-| Invariant | Thor value |
-|---|---|
-| Canvas height `H_REF` | **354.55 dp** |
-| Canvas width (16:9) | 630.30 dp |
-| `barTop` | 46.09 dp |
-| Caticon band centre | **34.44 %** of canvas height |
-| Selected-row top (`contentTop + anchorTop`) | **50.2 %** of height |
-| Selected-row centre | 62.6 % of height |
-| Cross icon-centre line `ANCHOR_X` | **73.97 dp** from left edge (11.74 % of width) |
-| `hShift` | -63.03 dp |
+| Invariant                                   | Thor value                                     |
+| ------------------------------------------- | ---------------------------------------------- |
+| Canvas height `H_REF`                       | **354.55 dp**                                  |
+| Canvas width (16:9)                         | 630.30 dp                                      |
+| `barTop`                                    | 46.09 dp                                       |
+| Caticon band centre                         | **34.44 %** of canvas height                   |
+| Selected-row top (`contentTop + anchorTop`) | **50.2 %** of height                           |
+| Selected-row centre                         | 62.6 % of height                               |
+| Cross icon-centre line `ANCHOR_X`           | **105.49 dp** from left edge (16.74 % of width) |
+| `hShift`                                    | -31.52 dp                                      |
 
 The 50.2 % selected-row line is the tell — that matches the real PSP XMB, and matches
-the intent already documented at [XMBShell.kt:606](feature/feature-xmb/src/main/kotlin/com/playfieldportal/feature/xmb/ui/XMBShell.kt:606).
+the intent already documented at [XMBShell.kt:611](feature/feature-xmb/src/main/kotlin/com/playfieldportal/feature/xmb/ui/XMBShell.kt:611).
 
 ---
 
@@ -141,8 +165,8 @@ canvasW = W_dp / (uiScale * scale)
 barTopFraction  = clamp( 0.34436 - 76.0 / canvasH , 0.05, 0.45 )
                              #  76 = contentTopPadding 20 + CAT_BAR_HEIGHT/2 56
 
-# 3) HORIZONTAL - hold the cross icon-centre line at 73.97 dp from the left edge
-barLeftFraction = clamp( (73.97 - 137.0) / canvasW , -0.25, 0.35 )
+# 3) HORIZONTAL - hold the cross icon-centre line at 105.49 dp from the left edge
+barLeftFraction = clamp( (105.49 - 137.0) / canvasW , -0.25, 0.35 )
                              # 137 = columnBaseInset
 ```
 
@@ -150,9 +174,9 @@ Constants to lift into code (suggest an `XmbLayoutPreset` object in `theme-kit`,
 next to `XmbLayoutAdjust`):
 
 ```kotlin
-const val PSP_CANVAS_HEIGHT_DP = 354.546f   // the tuned reference canvas
+const val PSP_CANVAS_HEIGHT_DP = 354.546f        // the tuned reference canvas
 const val PSP_CATICON_CENTER_FRACTION = 0.34436f
-const val PSP_CROSS_ANCHOR_X_DP = 73.97f
+const val PSP_CROSS_ANCHOR_X_DP = 105.49f
 // derived from existing layout constants, not new magic numbers:
 //   76f  = XmbLayoutSpec.DEFAULT.contentTopPaddingDp + CAT_BAR_HEIGHT / 2
 //   137f = XmbLeftAnchor + CategorySlotWidth / 2 - LEADING_ICON_CENTER
@@ -171,21 +195,23 @@ moving when `SCALE_MAX` clips (see §5.1).
 
 Formula applied to representative screens (`*` = a clamp bound):
 
-| Device | Window dp | uiScale | scale | barTop | barLeft | Canvas dp |
-|---|---|---|---|---|---|---|
-| **AYN Thor (reference)** | 832.5 x 468.3 | 1.001 | **1.320** | **0.1300** | **-0.1000** | 630 x 355 |
-| Odin 2 — 1920x1080 @480dpi | 640.0 x 360.0 | 1.000 | 1.015 | 0.1300 | -0.1000 | 630 x 355 |
-| Retroid Pocket 5 — 1920x1080 @400 | 768.0 x 432.0 | 1.000 | 1.218 | 0.1300 | -0.1000 | 630 x 355 |
-| 1080p phone @440dpi (2400x1080) | 872.7 x 392.7 | 1.000 | 1.108 | 0.1300 | -0.0800 | 788 x 355 |
-| 1080p phone @420dpi (2340x1080) | 891.4 x 411.4 | 1.000 | 1.160 | 0.1300 | -0.0821 | 768 x 355 |
-| 16:10 tablet 2560x1600 @320 | 1280 x 800 | 1.538 | 1.467 | 0.1300 | -0.1111 | 567 x 355 |
-| 4K TV 3840x2160 @320 | 1920 x 1080 | 2.308 | 1.320 | 0.1300 | -0.1000 | 630 x 355 |
-| ⚠️ Z Fold inner 2176x1812 @373 | 933.4 x 777.3 | 1.122 | **1.800\*** | 0.1469 | -0.1364 | 462 x 385 |
+| Device                            | Window dp     | uiScale | scale       | barTop     | barLeft     | Canvas dp |
+| --------------------------------- | ------------- | ------- | ----------- | ---------- | ----------- | --------- |
+| **AYN Thor (reference)**          | 832.5 x 468.3 | 1.001   | **1.320**   | **0.1300** | **-0.0500** | 630 x 355 |
+| Odin 2 — 1920x1080 @480dpi        | 640.0 x 360.0 | 1.000   | 1.015       | 0.1300     | -0.0500     | 630 x 355 |
+| Retroid Pocket 5 — 1920x1080 @400 | 768.0 x 432.0 | 1.000   | 1.218       | 0.1300     | -0.0500     | 630 x 355 |
+| 1080p phone @440dpi (2400x1080)   | 872.7 x 392.7 | 1.000   | 1.108       | 0.1300     | -0.0400     | 788 x 355 |
+| 1080p phone @420dpi (2340x1080)   | 891.4 x 411.4 | 1.000   | 1.160       | 0.1300     | -0.0410     | 768 x 355 |
+| 16:10 tablet 2560x1600 @320       | 1280 x 800    | 1.538   | 1.467       | 0.1300     | -0.0556     | 567 x 355 |
+| 4K TV 3840x2160 @320              | 1920 x 1080   | 2.308   | 1.320       | 0.1300     | -0.0500     | 630 x 355 |
+| ⚠️ Z Fold inner 2176x1812 @373    | 933.4 x 777.3 | 1.122   | **1.800\*** | 0.1469     | -0.0682     | 462 x 385 |
 
 Every 16:9-ish screen lands on the identical 630 x 355 canvas and reproduces the Thor
-look exactly. Taller-aspect phones get a **wider** canvas at the same height — the
-cross is left-anchored, so the surplus width simply becomes label room, which is the
-correct behaviour.
+look exactly (now with `barLeftFraction = -0.05`). Taller-aspect phones get a
+**wider** canvas at the same height — the cross is left-anchored, so the surplus width
+simply becomes label room, which is the correct behaviour. The horizontal shift stays
+at -0.05 on any 16:9 panel; narrower canvases (tablets, foldables) drift slightly more
+negative because the fixed 105.49 dp anchor occupies a larger fraction of a smaller width.
 
 ### 5.1 The one real failure: the `expanded` bucket
 
@@ -214,14 +240,17 @@ to ship sooner.
 
 Suggested integration points:
 
-- **Setup Wizard** — after the display step, compute the three values from the live
-  `LocalConfiguration` + `LocalDensity` and write the bucket entry for the current
-  `XmbFormFactor`. Offer it as "Match PSP layout (recommended)" vs "Leave default".
+- **Setup Wizard** — after the display step, offer an **optional** "Match PSP layout"
+  checkbox. When ticked, compute the three values from the live `LocalConfiguration` +
+  `LocalDensity` and write the bucket entry for the current `XmbFormFactor`. When left
+  unchecked, no layout prefs are written and the XMB keeps its existing (default or
+  previously-tuned) values. This must NOT be applied automatically — the user opts in.
 - **Display ▸ Adjust XMB Layout** ([XmbLayoutAdjustOverlay.kt](feature/feature-xmb/src/main/kotlin/com/playfieldportal/feature/xmb/ui/XmbLayoutAdjustOverlay.kt)) —
   add a third action next to the existing sliders: **"Auto-fit (PSP)"**, seeding the
   draft from the formula so you can still nudge from there. Pair it with the existing reset.
 - **Per-bucket** — run the formula against the *current* window, so a foldable
-  recomputes on unfold and each bucket gets its own correct seed.
+  recomputes on unfold and each bucket gets its own correct seed. Only the bucket the
+  user opted in for is written.
 - Values must still pass through `XmbLayoutAdjustCodec.sanitize`, which re-applies all
   three clamps — the formula clamps defensively, but sanitize stays the gate.
 
@@ -229,8 +258,8 @@ Suggested integration points:
 
 `XmbLayoutPresetTest` — feed the Thor's exact numbers (1920 x 1080 @ 369 dpi) and
 assert the formula returns `scale ~= 1.32`, `barTopFraction ~= 0.13`,
-`barLeftFraction ~= -0.10`, i.e. that it reproduces the hand-tuned state it was
-derived from. That single test pins the whole derivation.
+`barLeftFraction ~= -0.05`, i.e. that it reproduces the revised hand-tuned state it
+was derived from. That single test pins the whole derivation.
 
 ---
 
