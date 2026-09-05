@@ -9,10 +9,14 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RescanTriggerBusTest {
+    // Relaxed mock: discover() is suspend, returning a data class — relaxed auto-answers it.
+    private val discoveryScanner = mockk<RomRootDiscoveryScanner>(relaxed = true)
+
     private val outcome = PlatformScanOutcome(
         platformId = "psx",
         displayName = "PlayStation",
@@ -25,7 +29,7 @@ class RescanTriggerBusTest {
     fun `two mounts inside debounce window produce one scan`() = runTest {
         val scanner = mockk<LibraryScanner>(relaxed = true)
         coEvery { scanner.scanAllEnabled(true) } returns listOf(outcome)
-        val bus = RescanTriggerBus(scanner, this)
+        val bus = RescanTriggerBus(scanner, discoveryScanner, this)
 
         bus.submit(RescanTrigger.MediaMounted)
         advanceTimeBy(1_000)
@@ -44,7 +48,7 @@ class RescanTriggerBusTest {
             delay(1_000)
             listOf(outcome)
         }
-        val bus = RescanTriggerBus(scanner, this)
+        val bus = RescanTriggerBus(scanner, discoveryScanner, this)
 
         bus.submit(RescanTrigger.AppResumed)
         advanceUntilIdle()
@@ -58,7 +62,7 @@ class RescanTriggerBusTest {
     fun `unplug edge is not swallowed by resume throttle`() = runTest {
         val scanner = mockk<LibraryScanner>(relaxed = true)
         coEvery { scanner.scanAllEnabled(true) } returns listOf(outcome)
-        val bus = RescanTriggerBus(scanner, this)
+        val bus = RescanTriggerBus(scanner, discoveryScanner, this)
 
         bus.submit(RescanTrigger.AppResumed)
         advanceUntilIdle()
@@ -73,7 +77,7 @@ class RescanTriggerBusTest {
     fun `scanner exception does not kill the bus`() = runTest {
         val scanner = mockk<LibraryScanner>(relaxed = true)
         coEvery { scanner.scanAllEnabled(true) } throws IllegalStateException("boom")
-        val bus = RescanTriggerBus(scanner, this)
+        val bus = RescanTriggerBus(scanner, discoveryScanner, this)
 
         bus.submit(RescanTrigger.AppResumed)
         advanceUntilIdle()
@@ -90,7 +94,7 @@ class RescanTriggerBusTest {
         val scanner = mockk<LibraryScanner>(relaxed = true)
         coEvery { scanner.scanAllEnabled(true) } returns listOf(outcome)
         var now = 100_000L
-        val bus = RescanTriggerBus(scanner, this) { now }
+        val bus = RescanTriggerBus(scanner, discoveryScanner, this) { now }
 
         bus.submit(RescanTrigger.AppResumed)
         advanceUntilIdle()
@@ -108,7 +112,7 @@ class RescanTriggerBusTest {
         val scanner = mockk<LibraryScanner>(relaxed = true)
         coEvery { scanner.scanAllEnabled(true) } returns listOf(outcome)
         var now = 100_000L
-        val bus = RescanTriggerBus(scanner, this) { now }
+        val bus = RescanTriggerBus(scanner, discoveryScanner, this) { now }
 
         bus.submit(RescanTrigger.AppResumed)
         advanceUntilIdle()
@@ -130,7 +134,7 @@ class RescanTriggerBusTest {
         }
         // TestScheduler is itself a CoroutineContext, so it can back the scope directly.
         val busScope = kotlinx.coroutines.CoroutineScope(testScheduler)
-        val bus = RescanTriggerBus(scanner, busScope)
+        val bus = RescanTriggerBus(scanner, discoveryScanner, busScope)
 
         bus.submit(RescanTrigger.AppResumed)
         advanceTimeBy(1_000)
@@ -143,6 +147,41 @@ class RescanTriggerBusTest {
         // (launch on a cancelled scope is a no-op) nor start a new scan.
         bus.submit(RescanTrigger.AppResumed)
         advanceUntilIdle()
+        coVerify(exactly = 1) { scanner.scanAllEnabled(true) }
+    }
+
+    // ── Console discovery ahead of the incremental scan ───────────────────
+
+    @Test
+    fun `discovery runs before the incremental scan on every trigger`() = runTest {
+        val order = mutableListOf<String>()
+        val scanner = mockk<LibraryScanner>(relaxed = true)
+        coEvery { scanner.scanAllEnabled(true) } coAnswers {
+            order.add("scanAllEnabled")
+            listOf(outcome)
+        }
+        coEvery { discoveryScanner.discover() } coAnswers {
+            order.add("discover")
+            RomRootDiscoveryScanner.Report(0, emptySet(), 0, 0, 0)
+        }
+        val bus = RescanTriggerBus(scanner, discoveryScanner, this)
+
+        bus.submit(RescanTrigger.MediaMounted)
+        advanceUntilIdle()
+
+        assertEquals(listOf("discover", "scanAllEnabled"), order)
+    }
+
+    @Test
+    fun `discovery failure does not block the incremental scan`() = runTest {
+        val scanner = mockk<LibraryScanner>(relaxed = true)
+        coEvery { scanner.scanAllEnabled(true) } returns listOf(outcome)
+        coEvery { discoveryScanner.discover() } throws IllegalStateException("saf revoked")
+        val bus = RescanTriggerBus(scanner, discoveryScanner, this)
+
+        bus.submit(RescanTrigger.AppResumed)
+        advanceUntilIdle()
+
         coVerify(exactly = 1) { scanner.scanAllEnabled(true) }
     }
 }

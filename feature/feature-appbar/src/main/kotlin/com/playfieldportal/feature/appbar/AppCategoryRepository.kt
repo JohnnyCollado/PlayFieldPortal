@@ -58,6 +58,26 @@ class AppCategoryRepository @Inject constructor(
     // Public accessor for the installed-app picker (Android Library / Video / Music "add apps").
     suspend fun allInstalledApps(): List<InstalledApp> = installedApps()
 
+    // Packages that currently live in a category — the picker's pre-check baseline so reopening
+    // "Add Apps" shows current membership checked.
+    //
+    // Membership has TWO sources and both must be read:
+    //   1. explicit rows in category_items (apps the user has customized), and
+    //   2. implicit classification — a non-customized app whose AppClassifier default includes
+    //      this category (e.g. YouTube → "videos") has NO junction row until the user edits it,
+    //      yet it displays in the category and must read as a member in the picker.
+    suspend fun packagesIn(categoryId: String): Set<String> {
+        val explicit = categoryDao.getAppItems()
+            .filter { it.categoryId == categoryId }
+            .map { it.itemId }
+            .toSet()
+        val implicit = installedApps()
+            .filter { app -> appOverrideDao.getByPackage(app.packageName)?.customized != true }
+            .filter { categoryId in classifier.defaultCategories(it) }
+            .map { it.packageName }
+        return explicit + implicit
+    }
+
     private fun appByPackage(pkg: String): InstalledApp? = cache.firstOrNull { it.packageName == pkg }
 
     // ── Resolution ───────────────────────────────────────────────────────────────

@@ -233,15 +233,41 @@ sealed interface AppPickerTarget {
 data class AppPickerEntry(
     val packageName: String,
     val label: String,
+    // Icon resolved once, off the main thread, when the picker opens — never per-tile in
+    // composition (a 7-wide grid would run PackageManager binder calls on the UI thread).
+    val icon: android.graphics.drawable.Drawable? = null,
 )
+
+// Columns of the picker grid — one denser than the App Drawer's 6, and declared beside
+// PICKER_GRID_COLUMNS in AppPickerLogic so the layout and the navigation math can't drift.
+const val PICKER_GRID_COLUMNS = 7
 
 data class AppPickerState(
     val title: String,
     val target: AppPickerTarget,
     val apps: List<AppPickerEntry>,
     val selected: Set<String> = emptySet(),
-    val selectedIndex: Int = 0,   // index 0 = the Confirm row; 1..n = apps
-)
+    /** Membership at open time — the baseline the Apply diff runs against. */
+    val initialSelected: Set<String> = emptySet(),
+    /** Index into `visibleApps()`, NOT into `apps` — the Confirm row is gone (Apply moved to the footer). */
+    val focusedIndex: Int = 0,
+    val query: String = "",
+    val searchActive: Boolean = false,
+    val confirmingRemovals: Boolean = false,
+    /**
+     * Which confirm-panel option the gamepad cursor sits on while [confirmingRemovals] is up.
+     * The modal is a hard input boundary: while it is open, dpad navigation drives THIS cursor,
+     * never the grid behind the scrim.
+     */
+    val confirmFocusedOption: Int = CONFIRM_CANCEL,
+    /** Mirrors AppDrawerUiState.usingTouch — hides the cursor and suppresses auto-scroll. */
+    val usingTouch: Boolean = false,
+) {
+    companion object {
+        const val CONFIRM_CANCEL = 0
+        const val CONFIRM_REMOVE = 1
+    }
+}
 
 // ── Music navigation ───────────────────────────────────────────────────────────
 // Which Music sub-screen is open. The Music root shows the static items (Now Playing / Playlist /
@@ -4263,13 +4289,30 @@ class XMBViewModel @Inject constructor(
         // ── Installed-app picker captures ALL input when open ──────────────────
         if (state.appPicker != null) {
             when (action) {
-                GamepadAction.NAVIGATE_UP   -> moveAppPicker(-1)
-                GamepadAction.NAVIGATE_DOWN -> moveAppPicker(+1)
-                GamepadAction.SELECT        -> activateAppPicker()
-                // Start button confirms the picker (Add apps / Done), regardless of row.
-                GamepadAction.HOME          -> confirmAppPicker()
+                GamepadAction.NAVIGATE_UP,
+                GamepadAction.NAVIGATE_DOWN,
+                GamepadAction.NAVIGATE_LEFT,
+                GamepadAction.NAVIGATE_RIGHT -> moveAppPicker(action)
+                // Confirm toggles the focused tile — never closes anything (§9).
+                // While the removal-confirmation modal is up, SELECT activates the modal's
+                // highlighted option (Cancel or Remove) instead of toggling a grid tile.
+                GamepadAction.SELECT -> {
+                    val picker = state.appPicker
+                    if (picker?.confirmingRemovals == true) {
+                        if (picker.confirmFocusedOption == AppPickerState.CONFIRM_REMOVE) commitAppPicker()
+                        else cancelConfirm()
+                    } else toggleFocusedApp()
+                }
+                // Start applies the diff (with a confirmation pass when removals are pending).
+                GamepadAction.HOME -> requestApplyAppPicker()
+                GamepadAction.CHANGE_SORT -> _uiState.update { s ->
+                    s.copy(appPicker = s.appPicker?.let { p ->
+                        (if (p.searchActive) closeAppPickerSearch(p) else p.copy(searchActive = true)).clampFocus()
+                    })
+                }
+                // Back unwinds one layer: search → removal confirmation → picker.
                 GamepadAction.BACK,
-                GamepadAction.OPEN_CONTEXT_MENU    -> closeAppPicker()
+                GamepadAction.OPEN_CONTEXT_MENU -> handleAppPickerBack()
                 else -> Unit
             }
             return
@@ -5556,66 +5599,205 @@ class XMBViewModel @Inject constructor(
 
     // ── Installed-app picker ────────────────────────────────────────────────────
 
+    // Opens the picker with current membership pre-checked (both `selected` and
+    // `initialSelected`), so Apply diffs against the state the picker opened with.
     private fun openAppPicker(target: AppPickerTarget, title: String) {
         viewModelScope.launch {
-            val entries = appCategoryRepository.allInstalledApps()
-                .map { AppPickerEntry(it.packageName, it.label) }   // already sorted by label
+            val installed = appCategoryRepository.allInstalledApps()
+            // Icons resolve once, here, on IO — never per-tile in composition.
+            val entries = installed.map {
+                AppPickerEntry(packageName = it.packageName, label = it.label, icon = it.icon)
+            }   // already sorted by label
+            val membership: Set<String> = when (target) {
+                is AppPickerTarget.AndroidGames ->
+                    gameRepository.observeByPlatform(target.platformId).first()
+                        .mapNotNull { it.packageName }
+                        .toSet()
+                is AppPickerTarget.CategoryShortcuts ->
+                    appCategoryRepository.packagesIn(target.categoryId)
+            }
             _uiState.update {
-                it.copy(appPicker = AppPickerState(title = title, target = target, apps = entries))
+                it.copy(appPicker = AppPickerState(
+                    title           = title,
+                    target          = target,
+                    apps            = entries,
+                    selected        = membership,
+                    initialSelected = membership,
+                ))
             }
         }
     }
 
-    private fun moveAppPicker(delta: Int) {
-        val picker = _uiState.value.appPicker ?: return
-        val maxIndex = picker.apps.size   // 0 = Confirm row, 1..size = apps
-        val next = (picker.selectedIndex + delta).coerceIn(0, maxIndex)
-        _uiState.update { it.copy(appPicker = picker.copy(selectedIndex = next)) }
-    }
-
-    private fun activateAppPicker() {
-        val picker = _uiState.value.appPicker ?: return
-        if (picker.selectedIndex == 0) {
-            confirmAppPicker()
-        } else {
-            val app = picker.apps.getOrNull(picker.selectedIndex - 1) ?: return
-            val selected = if (app.packageName in picker.selected) {
-                picker.selected - app.packageName
-            } else {
-                picker.selected + app.packageName
-            }
-            _uiState.update { it.copy(appPicker = picker.copy(selected = selected)) }
+    // Touch: a tap on a tile parks the (hidden) cursor there and toggles it.
+    fun onAppPickerTileTapped(index: Int) {
+        markTouchInput()
+        // While the confirmation modal is up, the grid behind the scrim is inert.
+        if (_uiState.value.appPicker?.confirmingRemovals == true) return
+        _uiState.update {
+            val picker = it.appPicker ?: return@update it
+            val visible = picker.visibleApps()
+            val app = visible.getOrNull(index) ?: return@update it
+            it.copy(appPicker = picker.copy(focusedIndex = index, usingTouch = true)
+                .toggle(app.packageName))
         }
     }
 
-    // Touch entry point: toggling an app or pressing Confirm in the overlay.
-    fun onAppPickerActivatedAt(index: Int) {
-        _uiState.update { it.copy(appPicker = it.appPicker?.copy(selectedIndex = index)) }
-        activateAppPicker()
+    // Touch: finger-scroll settled (or drag started) on a tile — park the hidden cursor there.
+    fun onAppPickerTouchBrowse(index: Int) {
+        markTouchInput()
+        if (_uiState.value.appPicker?.confirmingRemovals == true) return
+        _uiState.update {
+            val picker = it.appPicker ?: return@update it
+            val lastIndex = (picker.visibleApps().size - 1).coerceAtLeast(0)
+            it.copy(appPicker = picker.copy(
+                focusedIndex = index.coerceIn(0, lastIndex),
+                usingTouch = true,
+            ))
+        }
     }
 
-    fun onAppPickerConfirm() = confirmAppPicker()
+    // Touch: the header's ‹ / title.
+    fun onAppPickerHeaderBack() {
+        markTouchInput()
+        handleAppPickerBack()
+    }
+
+    // Touch: the confirmation panel's Remove / Cancel rows.
+    fun onAppPickerConfirmRemoval() {
+        markTouchInput()
+        commitAppPicker()
+    }
+
+    fun onAppPickerCancelRemoval() {
+        markTouchInput()
+        cancelConfirm()
+    }
+
+    // Touch: an Apply affordance (footer taps); same two-pass path as gamepad HOME.
+    fun onAppPickerApply() {
+        markTouchInput()
+        requestApplyAppPicker()
+    }
+
+    // Touch: toggling the search field on/off. Clearing the query on close matches the drawer.
+    fun onAppPickerSearchToggle(active: Boolean) {
+        markTouchInput()
+        _uiState.update {
+            val picker = it.appPicker ?: return@update it
+            it.copy(appPicker = (if (active) picker.copy(searchActive = true) else closeAppPickerSearch(picker)).clampFocus())
+        }
+    }
+
+    fun onAppPickerQueryChange(query: String) {
+        _uiState.update {
+            val picker = it.appPicker ?: return@update it
+            // Filtering never moves the cursor by itself, but a shrunken list must not strand it.
+            it.copy(appPicker = picker.copy(query = query).clampFocus())
+        }
+    }
+
+    private fun closeAppPickerSearch(picker: AppPickerState): AppPickerState =
+        picker.copy(searchActive = false, query = "")
+
+    fun onAppPickerSearchDone() {
+        // ImeAction.Search — keep the field open; the query is live. Nothing to commit.
+    }
+
+    private fun moveAppPicker(action: GamepadAction) {
+        _uiState.update { state ->
+            val picker = state.appPicker ?: return@update state
+            // While the removal-confirmation modal is up, the dpad belongs to the modal's
+            // Cancel/Remove cursor — the grid behind the scrim must not move.
+            state.copy(appPicker = if (picker.confirmingRemovals) picker.moveConfirm(action) else picker.move(action))
+        }
+    }
+
+    private fun toggleFocusedApp() {
+        _uiState.update {
+            val picker = it.appPicker ?: return@update it
+            val app = picker.visibleApps().getOrNull(picker.focusedIndex) ?: return@update it
+            it.copy(appPicker = picker.toggle(app.packageName))
+        }
+    }
+
+    private fun cancelConfirm() {
+        _uiState.update {
+            val picker = it.appPicker ?: return@update it
+            it.copy(appPicker = picker.cancelConfirm())
+        }
+    }
 
     fun closeAppPicker() {
         _uiState.update { it.copy(appPicker = null) }
     }
 
-    private fun confirmAppPicker() {
+    // Apply (HOME) — a full sync: adds newly-checked apps, removes newly-unchecked ones.
+    // Removals never run silently: the first pass raises the confirmation panel; the second
+    // (confirmed) pass commits.
+    private fun requestApplyAppPicker() {
         val picker = _uiState.value.appPicker ?: return
-        val packages = picker.selected
+        val adds = picker.pendingAdds()
+        val removals = picker.pendingRemovals()
+        if (adds.isEmpty() && removals.isEmpty()) {
+            closeAppPicker()
+            return
+        }
+        if (removals.isNotEmpty() && !picker.confirmingRemovals) {
+            _uiState.update { state ->
+                state.copy(appPicker = state.appPicker?.openConfirm())
+            }
+            return
+        }
+        commitAppPicker()
+    }
+
+    private fun commitAppPicker() {
+        val picker = _uiState.value.appPicker ?: return
+        val adds = picker.pendingAdds()
+        val removals = picker.pendingRemovals()
+        if (adds.isEmpty() && removals.isEmpty()) {
+            closeAppPicker()
+            return
+        }
         val target = picker.target
         closeAppPicker()
-        if (packages.isEmpty()) return
 
         viewModelScope.launch {
             when (target) {
-                is AppPickerTarget.AndroidGames -> importAndroidGames(target.platformId, packages)
+                is AppPickerTarget.AndroidGames -> {
+                    if (adds.isNotEmpty()) importAndroidGames(target.platformId, adds)
+                    if (removals.isNotEmpty()) removeAndroidGames(target.platformId, removals)
+                    // One recount after the whole batch, whichever half ran.
+                    memoryCardRepository.recountGames(target.platformId)
+                }
                 is AppPickerTarget.CategoryShortcuts -> {
-                    // Targets are real categories (built-in media categories for the Apps sections,
-                    // or a user category) — all already exist, so no pseudo-category seeding needed.
-                    packages.forEach { pkg -> appCategoryRepository.addToCategory(pkg, target.categoryId) }
+                    adds.forEach { pkg -> appCategoryRepository.addToCategory(pkg, target.categoryId) }
+                    removals.forEach { pkg -> appCategoryRepository.removeFromCategory(pkg, target.categoryId) }
                 }
             }
+        }
+    }
+
+    // Reuses the exact path the Library Manager's Remove row uses: getAppEntry then delete.
+    private suspend fun removeAndroidGames(platformId: String, packages: Set<String>) {
+        packages.forEach { pkg ->
+            val entry = gameRepository.getAppEntry(pkg) ?: return@forEach
+            if (entry.platformId != platformId) return@forEach
+            gameRepository.delete(entry.id)
+        }
+        Timber.i("Android library removal: ${packages.size} app(s) removed from $platformId")
+    }
+
+    // BACK / ‹ unwinds one layer at a time: search → confirmation → picker. Backing out of a
+    // dirty picker must never touch the library.
+    private fun handleAppPickerBack() {
+        val picker = _uiState.value.appPicker ?: return
+        when {
+            picker.searchActive -> _uiState.update { state ->
+                state.copy(appPicker = state.appPicker?.let(::closeAppPickerSearch)?.clampFocus())
+            }
+            picker.confirmingRemovals -> cancelConfirm()
+            else -> closeAppPicker()
         }
     }
 

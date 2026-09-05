@@ -37,6 +37,7 @@ Dependency order: A1 -> A3 -> A4. A2 is independent.
 
 | # | Plan | Status | Effort |
 |---|---|---|---|
+| C2 | [Android library and app picker](android-library-app-picker-plan.md) | ✅ Android Memory Card auto-created and re-addable (Add Console excludes Windows, not Android; ROM-root gate off the Android path); picker logic extracted to testable pure functions (`AppPickerLogic` + `gridMove` in core-navigation, 20 unit tests); picker rebuilt as a themed controller-first grid with pre-checked membership, diff-based Apply, and a removal confirmation | M |
 | C1 | [Multi-disc games as one library entry](multi-disc-games-plan.md) | ✅ Fully implemented: set identity (`812ef36`), reconciliation (`6e637d6`), one-primary-per-set invariant + single-row projection (`2c00f66`), plus every follow-up from [multi-disc-next-session.md](multi-disc-next-session.md) — disc picker on game detail, set-level Missing semantics, legacy multi-folder scan reconciliation, schema v39. Remaining items are the optional backlog (disc-count badge, set-level artwork decision, on-device E2E run) | M |
 
 Effort key: S = under a day, M = a few days, L = a week or more.

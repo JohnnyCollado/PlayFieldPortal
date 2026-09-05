@@ -17,6 +17,7 @@ fun interface RescanClock {
 @Singleton
 class RescanTriggerBus @Inject constructor(
     private val libraryScanner: LibraryScanner,
+    private val romRootDiscoveryScanner: RomRootDiscoveryScanner,
     private val scope: CoroutineScope,
     private val clock: RescanClock = RescanClock { System.currentTimeMillis() },
 ) {
@@ -46,6 +47,12 @@ class RescanTriggerBus @Inject constructor(
         if (!scanMutex.tryLock()) return
         try {
             if (source == "resume") lastResumeRunAt = clock.now()
+            // Discovery first: a ROM dropped into a folder for a console with no Memory Card yet
+            // (or a new subfolder under an existing root) is picked up here, so the incremental
+            // scan right after sees the new card too. A failure here is non-fatal — the
+            // incremental pass still runs against the cards that exist.
+            runCatching { romRootDiscoveryScanner.discover() }
+                .onFailure { Timber.w(it, "Library Rescan — console discovery failed ($source)") }
             val outcomes = libraryScanner.scanAllEnabled(removeMissing = true)
             Timber.i(
                 "Library Rescan — done: ${outcomes.sumOf { it.added }} new, " +

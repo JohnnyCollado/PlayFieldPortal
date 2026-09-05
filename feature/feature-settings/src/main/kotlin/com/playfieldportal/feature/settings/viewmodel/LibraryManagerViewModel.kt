@@ -173,6 +173,22 @@ class LibraryManagerViewModel @Inject constructor(
         viewModelScope.launch {
             romRootRepository.roots.distinctUntilChanged().collect { refreshRomRoots() }
         }
+        // The Android library is app-based (no ROM folder), so nothing else ever creates its
+        // card — auto-create it so the Memory Card row and its Apps management UI exist from
+        // the first load. Idempotent: skips when a card already exists. Same self-heal spirit
+        // as openWindowsGamesRoot / ensureWindowsCard.
+        viewModelScope.launch { ensureAndroidCard() }
+    }
+
+    /** Creates the Android Memory Card when missing. One card per platform makes this idempotent. */
+    private suspend fun ensureAndroidCard() {
+        if (memoryCardRepository.unconfiguredPlatforms().none { it.id == ANDROID_PLATFORM_ID }) return
+        memoryCardRepository.addCard(
+            platformId  = ANDROID_PLATFORM_ID,
+            displayName = defaultDisplayName("Android"),
+            romDirectory = null,
+            emulatorId  = null,
+        )
     }
 
     val uiState: StateFlow<LibraryManagerUiState> = combine(
@@ -323,16 +339,13 @@ class LibraryManagerViewModel @Inject constructor(
 
     fun startAddConsole() {
         viewModelScope.launch {
-            // Consoles scan their subfolder under the ROM Root — without a root there is
-            // nothing to add a console against, so setting one up comes first.
-            if (romRootRepository.getAll().isEmpty()) {
-                _scratch.update {
-                    it.copy(message = "Set up a ROM Root first — grant your ROM folder under ROM Root Access, then add consoles.")
-                }
-                return@launch
-            }
             val options = memoryCardRepository.unconfiguredPlatforms()
-                .filter { it.id != ANDROID_PLATFORM_ID }
+                // Android must stay selectable here: it is the only way back when the auto-created
+                // card is removed. Windows must NOT be — LibraryManagerScreen hides the Windows
+                // card from the Consoles list, so an added one would be an entry the user can
+                // never open. (The emulator-assignment exclusion is a separate rule that lives
+                // in EmulatorAssignmentViewModel; the two stay independent on purpose.)
+                .filter { it.id != WINDOWS_PLATFORM_ID }
                 .map { PlatformOption(it.id, it.name, it.shortName) }
             if (options.isEmpty()) {
                 _scratch.update { it.copy(message = "Every supported platform already has a Memory Card.") }
@@ -374,7 +387,8 @@ class LibraryManagerViewModel @Inject constructor(
         // Console folders come from the ROM Root — the subfolder already recognized as this
         // platform under a granted root, else the platform's ES-DE folder name under the first
         // root. No per-console folder picker: one root grant covers every console, so a user
-        // without a root is pointed at ROM Root Access instead.
+        // without a root is pointed at ROM Root Access instead. Android skips all of this
+        // (no ROM root needed), which is why the gate lives here and not in startAddConsole().
         viewModelScope.launch {
             val roots = romRootRepository.getAll()
             if (roots.isEmpty()) {

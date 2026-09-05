@@ -1,26 +1,19 @@
 package com.playfieldportal.feature.settings.viewmodel
 
-import com.playfieldportal.core.data.platform.PlatformFolderHintResolver
 import com.playfieldportal.core.data.repository.MemoryCardRepository
 import com.playfieldportal.core.data.repository.RomRootRepository
-import com.playfieldportal.core.domain.repository.GameRepository
-import com.playfieldportal.feature.library.scanner.DiscSetReconciler
-import com.playfieldportal.feature.library.scanner.ExistingRomPathResolver
 import com.playfieldportal.feature.library.scanner.LibraryScanner
-import com.playfieldportal.feature.library.scanner.RomScanner
-import com.playfieldportal.feature.library.scanner.ScanResult
+import com.playfieldportal.feature.library.scanner.RomRootDiscoveryScanner
 import com.playfieldportal.feature.library.scanner.ScanStatus
 import com.playfieldportal.feature.settings.pc.PcGameScanner
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.coroutines.cancellation.CancellationException
 
 /** Outcome of one ROM-root auto-detect + scan pass, with a ready-made settings/toast message. */
 data class RomRootScanReport(
@@ -49,11 +42,7 @@ data class RomRootScanReport(
 class RomRootScanRunner @Inject constructor(
     private val romRootRepository: RomRootRepository,
     private val memoryCardRepository: MemoryCardRepository,
-    private val romScanner: RomScanner,
-    private val gameRepository: GameRepository,
-    private val folderHintResolver: PlatformFolderHintResolver,
-    private val existingRomPathResolver: ExistingRomPathResolver,
-    private val discSetReconciler: DiscSetReconciler,
+    private val romRootDiscoveryScanner: RomRootDiscoveryScanner,
     private val libraryScanner: LibraryScanner,
     private val pcGameScanner: PcGameScanner,
 ) {
@@ -100,62 +89,15 @@ class RomRootScanRunner @Inject constructor(
         var totalAdded = 0
         var skipped = 0
 
-        // Scan every root's subfolders. A folder only becomes a console if it actually contains
-        // ROMs — empty ES-DE folders (e.g. the ones "Set Up ROM Folders" created) are skipped.
-        for (rootUri in roots) {
-            val rootRaw = RomRootRepository.rawPathOfTree(rootUri)
-            for (name in romScanner.listSubfolderNames(rootUri)) {
-                scannedFolders++
-                val platformId = folderHintResolver.detectFromFolderName(name) ?: continue
-                val platform = catalog[platformId] ?: continue
-                val childDocId = RomRootRepository.childDocIdOf(rootUri, name) ?: continue
-
-                val exts = memoryCardRepository.getById(platformId)?.supportedExtensions
-                    ?.takeIf { it.isNotEmpty() } ?: platform.romExtensions
-                if (exts.isEmpty()) continue   // nothing scannable for this platform
-
-                val baseline = try {
-                    existingRomPathResolver.baselineFor(platformId)
-                } catch (ce: CancellationException) {
-                    throw ce
-                } catch (e: Exception) {
-                    Timber.e(e, "Auto-detect skipped $platformId — could not read its library")
-                    skipped++
-                    continue
-                }
-
-                val found = firstComplete(
-                    romScanner.scanTree(
-                        rootUri,
-                        exts,
-                        platformId,
-                        true,
-                        baseline.romPaths,
-                        startDocId = childDocId,
-                    )
-                )?.newGames.orEmpty()
-
-                if (found.isEmpty()) continue   // empty (or fully-known) folder → no card, no change
-
-                if (platformId !in haveCard) {
-                    memoryCardRepository.addCard(
-                        platformId = platformId,
-                        displayName = "${platform.name} Memory Card",
-                        romDirectory = rootRaw?.let { "${it.trimEnd('/')}/$name" },
-                        emulatorId = null,
-                    )
-                    haveCard.add(platformId)
-                    newCards++
-                }
-                found.forEach { gameRepository.upsert(it) }
-                // Same incremental disc-set join as LibraryScanner: a disc added into an
-                // already-scanned .m3u set is union-reconciled against the pre-scan rows.
-                discSetReconciler.reconcilePlatform(platformId, baseline.games, found)
-                memoryCardRepository.recordScan(platformId, System.currentTimeMillis())
-                platformsWithGames.add(platformId)
-                totalAdded += found.size
-            }
-        }
+        // The discovery pass — auto-creating cards for folders that now contain ROMs — is shared
+        // with the automatic rescan triggers via [RomRootDiscoveryScanner]. Same loop, same
+        // baseline + disc-set reconcile; the report here only feeds the settings/toast message.
+        val discovery = romRootDiscoveryScanner.discover(roots)
+        scannedFolders = discovery.scannedFolders
+        platformsWithGames.addAll(discovery.discoveredPlatforms)
+        newCards = discovery.newCards
+        totalAdded = discovery.totalAdded
+        skipped = discovery.skipped
 
         // The discovery pass above is needed to decide which empty-root folders should create
         // cards. Re-run every discovered/previously configured console through the shared
@@ -211,11 +153,5 @@ class RomRootScanRunner @Inject constructor(
             rootsCount = roots.size,
             message = message,
         )
-    }
-
-    private suspend fun firstComplete(flow: Flow<ScanResult>): ScanResult.Complete? {
-        var complete: ScanResult.Complete? = null
-        flow.collect { if (it is ScanResult.Complete) complete = it }
-        return complete
     }
 }

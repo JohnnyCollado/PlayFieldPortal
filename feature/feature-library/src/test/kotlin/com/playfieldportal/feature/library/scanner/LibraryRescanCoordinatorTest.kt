@@ -12,6 +12,7 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class LibraryRescanCoordinatorTest {
     private lateinit var libraryScanner: LibraryScanner
+    private val romRootDiscoveryScanner = mockk<RomRootDiscoveryScanner>(relaxed = true)
 
     private val outcome = PlatformScanOutcome(
         platformId = "psx",
@@ -28,7 +29,7 @@ class LibraryRescanCoordinatorTest {
     }
 
     private fun coordinator(scope: kotlinx.coroutines.CoroutineScope) =
-        LibraryRescanCoordinator(libraryScanner, scope)
+        LibraryRescanCoordinator(libraryScanner, romRootDiscoveryScanner, scope)
 
     @Test
     fun `onResume scans the first time`() = runTest {
