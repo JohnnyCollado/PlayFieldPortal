@@ -1,7 +1,6 @@
 package com.playfieldportal.feature.xmb.ui.apppicker
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -14,6 +13,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -58,6 +58,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
@@ -80,7 +81,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 // Video / Music / Photo "Add Apps" flows. Reads as a simplified App Drawer: same storefront
 // theming (deriveStorefrontColors — never LocalPFPColors.accentColor, which presets resolve
 // to white), a header with back + live selection count, an inline search, a controller-first
-// tile grid, and a controller prompt footer that overlays (never shifts) the grid.
+// tile grid, and a permanent controller prompt footer row below the grid (always visible, so
+// grid geometry never depends on it).
 //
 // Stateless: driven entirely by [AppPickerState] plus callbacks, so the XMB shell wires it
 // exactly like every other overlay. Focus and selection are independent layers — the check
@@ -121,7 +123,11 @@ fun AppPickerScreen(
             )
             Box(Modifier.fillMaxWidth().height(1.dp).background(sf.chromeDivider))
 
-            Box(modifier = Modifier.weight(1f)) {
+            // BoxWithConstraints puts the viewport height in composition scope, so the adaptive
+            // artwork size is resolved BEFORE the first tile composes — tiles render at their
+            // final size on frame one, no resize jump.
+            BoxWithConstraints(modifier = Modifier.weight(1f)) {
+                val artworkSize = pickerAdaptiveArtworkSize(maxHeight)
                 if (visible.isEmpty()) {
                     Text(
                         text = if (state.query.isBlank()) "No installed apps"
@@ -134,26 +140,22 @@ fun AppPickerScreen(
                     AppPickerGrid(
                         state = state,
                         visible = visible,
+                        artworkSize = artworkSize,
                         onTileTapped = onTileTapped,
                         onTouchBrowse = onTouchBrowse,
                         colors = sf,
                     )
                 }
             }
-        }
 
-        // Footer overlays the grid (BottomCenter) so its fades never shift the geometry —
-        // the same convention AppDrawerScreen uses for its hint bar.
-        AnimatedVisibility(
-            visible = true,
-            enter = fadeIn(tween(200)),
-            exit = ExitTransition.None,
-            modifier = Modifier.align(Alignment.BottomCenter),
-        ) {
+            // ── Permanent footer: controller prompt bar (never fades) ──────
+            Box(Modifier.fillMaxWidth().height(1.dp).background(sf.chromeDivider))
             AppPickerFooter(
                 confirmingRemovals = state.confirmingRemovals,
                 colors = sf,
-                modifier = Modifier.padding(bottom = 14.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp),
             )
         }
 
@@ -312,6 +314,7 @@ private fun AppPickerHeader(
 private fun AppPickerGrid(
     state: AppPickerState,
     visible: List<AppPickerEntry>,
+    artworkSize: Dp,
     onTileTapped: (Int) -> Unit,
     onTouchBrowse: (Int) -> Unit,
     colors: StorefrontColors,
@@ -367,6 +370,7 @@ private fun AppPickerGrid(
                 entry = app,
                 isFocused = !state.usingTouch && index == state.focusedIndex,
                 isChecked = app.packageName in state.selected,
+                artworkSize = artworkSize,
                 onClick = { onTileTapped(index) },
                 colors = colors,
             )
@@ -380,6 +384,22 @@ private val ARTWORK_SIZE = 72.dp
 private val TILE_BORDER = 1.dp
 // Chrome room around the artwork: outer border + 2dp gap + inner hairline on each side.
 private val FRAME_ROOM = 8.dp
+
+// ── Adaptive row sizing (mirrors AppDrawerGridItem.adaptiveArtworkSize) ───────
+//
+// The picker guarantees three full rows are visible with nothing clipped: on a short viewport
+// the artwork shrinks from its 72dp resting size toward the 48dp floor so a row always fits
+// three times between the header and the footer. Tall viewports never inflate past 72dp.
+
+private val MIN_ARTWORK_SIZE = 48.dp
+private val MAX_ARTWORK_SIZE = 72.dp
+
+private fun pickerAdaptiveArtworkSize(viewportHeight: Dp, rows: Int = 3): Dp {
+    // Frame room + label spacer + a 2-line 11sp label block + the tile's vertical padding.
+    val tileFixedHeight = FRAME_ROOM + 6.dp + 30.dp + 8.dp
+    val rowHeight = (viewportHeight - 28.dp - 14.dp * (rows - 1)) / rows
+    return (rowHeight - tileFixedHeight).coerceIn(MIN_ARTWORK_SIZE, MAX_ARTWORK_SIZE)
+}
 private val FOCUS_TWEEN = 120
 private val CHECK_TWEEN = 100
 
@@ -388,6 +408,7 @@ private fun AppPickerTile(
     entry: AppPickerEntry,
     isFocused: Boolean,
     isChecked: Boolean,
+    artworkSize: Dp,
     onClick: () -> Unit,
     colors: StorefrontColors,
 ) {
@@ -408,7 +429,7 @@ private fun AppPickerTile(
             .clickable(onClick = onClick)   // whole tile is the touch target — never just the badge
             .padding(vertical = 4.dp),
     ) {
-        Box(modifier = Modifier.size(ARTWORK_SIZE + FRAME_ROOM)) {
+        Box(modifier = Modifier.size(artworkSize + FRAME_ROOM)) {
             // ── Focus layer (AppDrawerGridItem geometry, alpha-driven only — no scale,
             // no bounce, no elevation, so tile geometry never shifts) ──
             Box(
@@ -441,10 +462,10 @@ private fun AppPickerTile(
                     contentDescription = entry.label,
                     modifier = Modifier
                         .align(Alignment.Center)
-                        .size(ARTWORK_SIZE),
+                        .size(artworkSize),
                 )
             } else {
-                Spacer(Modifier.size(ARTWORK_SIZE))
+                Spacer(Modifier.size(artworkSize))
             }
             // Check badge — upper-right, independent of focus; survives the cursor leaving.
             Box(

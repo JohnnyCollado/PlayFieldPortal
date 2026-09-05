@@ -3,6 +3,8 @@ package com.playfieldportal.feature.achievements.match
 import android.content.Context
 import android.net.Uri
 import android.os.ParcelFileDescriptor
+import com.playfieldportal.core.data.saf.isSafeSiblingName
+import com.playfieldportal.core.data.saf.safSiblingDocumentId
 import com.playfieldportal.core.domain.model.Game
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -143,16 +145,11 @@ class DiscImageOpener @Inject constructor(
         if (!isSafeSiblingName(name)) return null
         val docId = runCatching { android.provider.DocumentsContract.getDocumentId(cueUri) }.getOrNull()
             ?: return null
-        val siblingId = siblingDocumentId(docId, name) ?: return null
+        val siblingId = safSiblingDocumentId(docId, name) ?: return null
         return runCatching {
             android.provider.DocumentsContract.buildDocumentUriUsingTree(cueUri, siblingId)
         }.getOrNull()
     }
-
-    // A referenced track/bin file must be a bare sibling name — no path component may escape the
-    // .cue/.gdi directory (path-traversal guard for untrusted sheet contents).
-    private fun isSafeSiblingName(name: String): Boolean =
-        name.isNotEmpty() && !name.contains('/') && !name.contains('\\') && File(name).name == name
 
     // SAF fallback: open the content URI directly; a .cue is followed to its sibling .bin via
     // the tree grant (see cueSiblingUri).
@@ -262,17 +259,4 @@ class DiscImageOpener @Inject constructor(
         // A .gdi track line: index, start LBA, type, sector size, filename (quoted or bare), byte offset.
         val GDI_LINE = Regex("""^(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(?:"([^"]+)"|(\S+))\s+(\d+)$""")
     }
-}
-
-/**
- * Swaps the last path segment of a SAF document id for [name]:
- * "primary:Roms/psx/Game/d.cue" -> "primary:Roms/psx/Game/name"; a root-level id keeps its
- * "root:" prefix. Pure string logic, shared by [DiscImageOpener.cueSiblingUri] and its tests.
- */
-internal fun siblingDocumentId(docId: String, name: String): String? {
-    val slash = docId.lastIndexOf('/')
-    if (slash >= 0) return docId.substring(0, slash + 1) + name
-    val colon = docId.lastIndexOf(':')
-    if (colon >= 0) return docId.substring(0, colon + 1) + name
-    return null
 }

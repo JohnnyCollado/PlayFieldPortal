@@ -3,6 +3,8 @@ package com.playfieldportal.feature.library.scanner
 import android.content.Context
 import android.net.Uri
 import android.provider.DocumentsContract
+import com.playfieldportal.core.data.saf.isSafeSiblingName
+import com.playfieldportal.core.data.saf.safSiblingDocumentId
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GameRegion
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -84,7 +86,7 @@ class DiscRegionReader @Inject constructor(
                 context.contentResolver.openInputStream(imageUri)?.use { readAtMost(it, maxBytes) }
             }
         } catch (e: Exception) {
-            Timber.w(e, "Region read failed for ${game.romPath}")
+            Timber.w("Region read failed for %s: %s", game.romPath, e.message)
             null
         }
     }
@@ -105,12 +107,16 @@ class DiscRegionReader @Inject constructor(
     private fun resolveRawImageFile(file: File): File? {
         return when (file.extension.lowercase()) {
             "cue" -> {
-                val names = runCatching { cueSheetReferences(file.readLines()) }.getOrNull() ?: return null
-                names.firstOrNull()?.let { File(file.parentFile, it) }
+                val names = runCatching { cueSheetReferencesRaw(file.readLines()) }.getOrNull() ?: return null
+                names.firstOrNull()
+                    ?.takeIf(::isSafeSiblingName)
+                    ?.let { File(file.parentFile, it) }
             }
             "gdi" -> {
                 val lines = runCatching { file.readLines() }.getOrNull() ?: return null
-                gdiSheetTrackNames(lines).firstOrNull()?.let { File(file.parentFile, it) }
+                gdiSheetTrackNamesRaw(lines).firstOrNull()
+                    ?.takeIf(::isSafeSiblingName)
+                    ?.let { File(file.parentFile, it) }
             }
             "m3u" -> null  // playlist — the discs themselves carry the region
             else -> file
@@ -125,12 +131,12 @@ class DiscRegionReader @Inject constructor(
             "cue" -> {
                 val lines = context.contentResolver.openInputStream(sheetUri)
                     ?.bufferedReader()?.readLines() ?: return null
-                cueSheetReferences(lines).firstOrNull()?.let { siblingDocumentUri(sheetUri, it) }
+                cueSheetReferencesRaw(lines).firstOrNull()?.let { siblingDocumentUri(sheetUri, it) }
             }
             "gdi" -> {
                 val lines = context.contentResolver.openInputStream(sheetUri)
                     ?.bufferedReader()?.readLines() ?: return null
-                gdiSheetTrackNames(lines).firstOrNull()?.let { siblingDocumentUri(sheetUri, it) }
+                gdiSheetTrackNamesRaw(lines).firstOrNull()?.let { siblingDocumentUri(sheetUri, it) }
             }
             "m3u" -> null
             else -> sheetUri
@@ -138,13 +144,15 @@ class DiscRegionReader @Inject constructor(
     }
 
     /**
-     * Builds the document URI for a sibling file next to a sheet: document ids are
-     * "volume:dirs/name", so the sibling's id is the sheet's parent plus the sibling name.
+     * Builds the document URI for a sibling file next to a sheet, tree-scoped to the sheet's own
+     * URI so it inherits the ROM root's persisted grant — a bare document URI carries no grant and
+     * the provider throws SecurityException. The sibling's document id is the sheet's parent plus
+     * the sibling name; null for a name that is not a bare sibling or an id with no parent.
      */
     private fun siblingDocumentUri(sheetUri: Uri, siblingName: String): Uri? {
-        val authority = sheetUri.authority ?: return null
+        if (!isSafeSiblingName(siblingName)) return null
         val docId = runCatching { DocumentsContract.getDocumentId(sheetUri) }.getOrNull() ?: return null
-        val parent = docId.substringBeforeLast('/')
-        return DocumentsContract.buildDocumentUri(authority, "$parent/$siblingName")
+        val siblingId = safSiblingDocumentId(docId, siblingName) ?: return null
+        return runCatching { DocumentsContract.buildDocumentUriUsingTree(sheetUri, siblingId) }.getOrNull()
     }
 }

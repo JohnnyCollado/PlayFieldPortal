@@ -103,11 +103,14 @@ class DiscSetBuilder @Inject constructor() {
         if (games.isEmpty()) return games
 
         // Region is detected from the disc image (never the filename), read once per path within
-        // the batch. A fresh detection wins; an unreadable file falls back to the stored value so
-        // a transient read failure never wipes a known region.
+        // the batch — INCLUDING an unknown-region answer: the memo keys on presence, not nullness
+        // (getOrPut re-runs on a cached null, doubling every 256 KB head read for exactly the
+        // discs whose detection is already failing). A fresh detection wins; an unreadable file
+        // falls back to the stored value so a transient read failure never wipes a known region.
         val regionByPath = HashMap<String, GameRegion?>()
         fun regionOf(game: Game): GameRegion? = game.romPath?.let { path ->
-            regionByPath.getOrPut(path) { regionReader.read(game) ?: game.region }
+            if (regionByPath.containsKey(path)) regionByPath[path]
+            else (regionReader.read(game) ?: game.region).also { regionByPath[path] = it }
         }
 
         val candidates = games.mapNotNull { game -> game.candidate() }

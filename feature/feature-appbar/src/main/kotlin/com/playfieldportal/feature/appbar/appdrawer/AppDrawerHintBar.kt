@@ -14,8 +14,9 @@ import com.playfieldportal.core.ui.components.ControllerPromptItem
 // Glyphs are resolved from the action set by GamepadMappings, so they honour the user's
 // controller family and X/Y swap — no hard-coded letters.
 //
-// Rendered as an overlay aligned to the bottom of the drawer's root Box (not a row in the
-// layout), so content geometry never changes when it fades in or out.
+// Rendered as a permanent footer row at the bottom of the drawer's Column (below the grid);
+// visibility is alpha-driven by the caller, so the slot's height is reserved whether or not the
+// pill is showing and content geometry never changes when it fades in or out.
 
 @Composable
 internal fun AppDrawerHintBar(

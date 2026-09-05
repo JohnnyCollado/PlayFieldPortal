@@ -1,13 +1,12 @@
 package com.playfieldportal.feature.appbar
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,6 +27,7 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Brush
@@ -58,14 +58,16 @@ import com.playfieldportal.feature.appbar.appdrawer.AppDrawerHeader
 import com.playfieldportal.feature.appbar.appdrawer.AppDrawerHintBar
 import com.playfieldportal.feature.appbar.appdrawer.AppDrawerOptions
 import com.playfieldportal.feature.appbar.appdrawer.UninstallConfirmDialog
+import com.playfieldportal.feature.appbar.appdrawer.adaptiveArtworkSize
 
 // ── PSP-era grid App Drawer ───────────────────────────────────────────────────
 //
 // Grid-centric and artwork-first: a header/breadcrumb, a horizontal category tab row, and a
 // 6-column application grid over an accent-derived gradient (see deriveStorefrontColors). The
-// controller hint pill floats as an overlay so grid geometry never shifts when it fades in/out;
-// the pre-redesign storefront layout (vertical rail + command bar) is preserved for the future
-// RSS Channels feature in the appbar/storefront package.
+// controller hint pill is a permanent footer row below the grid that fades in/out via alpha, so
+// the slot's height is reserved whether or not the pill is showing and grid geometry never
+// shifts; the pre-redesign storefront layout (vertical rail + command bar) is preserved for the
+// future RSS Channels feature in the appbar/storefront package.
 
 // ── Entry point ─────────────────────────────────────────────────────────────────
 
@@ -174,9 +176,11 @@ fun AppDrawerScreen(
 
 // ── Main content layout ─────────────────────────────────────────────────────────
 
+// Internal (not private) so Robolectric Compose UI tests can render the content directly with a
+// synthesized state — the screen entry point needs a hiltViewModel.
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-private fun AppDrawerContent(
+internal fun AppDrawerContent(
     state: AppDrawerUiState,
     searchActive: Boolean,
     showControllerHint: Boolean,
@@ -252,7 +256,11 @@ private fun AppDrawerContent(
             )
 
             // ── Grid area ───────────────────────────────────────────────
-            Box(modifier = Modifier.weight(1f)) {
+            // BoxWithConstraints puts the viewport height in composition scope, so the adaptive
+            // artwork size is resolved BEFORE the first tile composes — tiles render at their
+            // final size on frame one, no resize jump.
+            BoxWithConstraints(modifier = Modifier.weight(1f)) {
+                val artworkSize = adaptiveArtworkSize(maxHeight)
                 when {
                     state.isLoading -> {
                         CircularProgressIndicator(
@@ -277,6 +285,7 @@ private fun AppDrawerContent(
                             apps = state.visibleApps,
                             selectedIndex = state.selectedIndex,
                             usingTouch = state.usingTouch,
+                            artworkSize = artworkSize,
                             onAppTapped = onAppTapped,
                             onAppLaunched = onAppLaunched,
                             onAppMenu = onAppMenu,
@@ -286,21 +295,26 @@ private fun AppDrawerContent(
                     }
                 }
             }
-        }
 
-        // ── Controller hint pill (overlay — content geometry never shifts) ──
-        // Same fade-in timing and ExitTransition.None convention as the XMB's own hint
-        // (XMBShell.kt): the pill cuts out instantly on any input and fades in after the idle
-        // delay. Suppressed while a drawer-level overlay (options menu / confirm) is up.
-        AnimatedVisibility(
-            visible = showControllerHint && state.menuApp == null && state.confirmUninstall == null,
-            enter = fadeIn(tween(200)),
-            exit = ExitTransition.None,
-            modifier = Modifier.align(Alignment.BottomCenter),
-        ) {
-            AppDrawerHintBar(
-                modifier = Modifier.padding(bottom = 20.dp),
+            // ── Permanent footer: controller hint pill, alpha-faded in/out on the
+            // idle-controller gate. Alpha (not AnimatedVisibility) keeps the bar measured at
+            // its natural height in both states, so the slot never changes size and the grid
+            // never shifts. The pill has no clickables, so a fully transparent bar swallowing
+            // touches is not a concern. Fade-out is symmetric (unlike the XMB's instant cut-out)
+            // but still short; fallback if device testing disagrees is a ~90 ms fade-out.
+            val hintAlpha by animateFloatAsState(
+                targetValue = if (showControllerHint && state.menuApp == null && state.confirmUninstall == null) 1f else 0f,
+                animationSpec = tween(200),
+                label = "appDrawerHint",
             )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                AppDrawerHintBar(modifier = Modifier.alpha(hintAlpha))
+            }
         }
 
         // ── Overlays ──────────────────────────────────────────────────────

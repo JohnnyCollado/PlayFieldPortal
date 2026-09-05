@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.accompanist.drawablepainter.DrawablePainter
@@ -37,9 +38,34 @@ import com.playfieldportal.feature.appbar.InstalledApp
 // shifts when the cursor moves.
 
 private val ARTWORK_SIZE = 72.dp
-private val TILE_BORDER = 1.dp
+
+// ── Adaptive row sizing ───────────────────────────────────────────────────────
+//
+// The drawer guarantees three full rows are visible with nothing clipped: on a short viewport the
+// artwork shrinks from its 72dp resting size toward the 48dp floor so a row (artwork frame +
+// label) always fits three times between the tab row and the footer. Tall viewports never
+// inflate past 72dp.
+
+internal val MIN_ARTWORK_SIZE = 48.dp
+internal val MAX_ARTWORK_SIZE = 72.dp
+
 // Chrome room around the artwork: outer border + 2dp gap + inner hairline on each side.
-private val FRAME_ROOM = 8.dp
+internal val FRAME_ROOM = 8.dp
+
+// Everything in a tile that is not artwork: the frame room around it, the label spacer, a
+// 2-line 11sp label block, and the tile's own vertical padding (4dp × 2).
+internal val TILE_FIXED_HEIGHT = FRAME_ROOM + 6.dp + 30.dp + 8.dp
+
+internal fun adaptiveArtworkSize(
+    viewportHeight: Dp,
+    rows: Int = 3,
+    rowSpacing: Dp = 14.dp,
+    gridVerticalPadding: Dp = 28.dp,
+): Dp {
+    val rowHeight = (viewportHeight - gridVerticalPadding - rowSpacing * (rows - 1)) / rows
+    return (rowHeight - TILE_FIXED_HEIGHT).coerceIn(MIN_ARTWORK_SIZE, MAX_ARTWORK_SIZE)
+}
+private val TILE_BORDER = 1.dp
 private val SELECTION_TWEEN = 120
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -47,6 +73,7 @@ private val SELECTION_TWEEN = 120
 internal fun AppDrawerGridItem(
     app: InstalledApp,
     isSelected: Boolean,
+    artworkSize: Dp,
     onClick: () -> Unit,
     onMenu: () -> Unit,
     colors: StorefrontColors,
@@ -70,7 +97,7 @@ internal fun AppDrawerGridItem(
             .combinedClickable(onClick = onClick, onLongClick = onMenu)
             .padding(vertical = 4.dp),
     ) {
-        Box(modifier = Modifier.size(ARTWORK_SIZE + FRAME_ROOM)) {
+        Box(modifier = Modifier.size(artworkSize + FRAME_ROOM)) {
             // Very low-alpha accent plate behind the artwork.
             Box(
                 Modifier
@@ -95,7 +122,7 @@ internal fun AppDrawerGridItem(
                 contentDescription = app.label,
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .size(ARTWORK_SIZE),
+                    .size(artworkSize),
             )
         }
         Spacer(Modifier.height(6.dp))

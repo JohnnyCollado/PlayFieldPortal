@@ -17,6 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.playfieldportal.core.ui.theme.StorefrontColors
 import com.playfieldportal.feature.appbar.GRID_COLUMNS
@@ -38,6 +39,7 @@ internal fun AppDrawerGrid(
     apps: List<InstalledApp>,
     selectedIndex: Int,
     usingTouch: Boolean,
+    artworkSize: Dp,
     onAppTapped: (Int) -> Unit,
     onAppLaunched: (String) -> Unit,
     onAppMenu: (InstalledApp) -> Unit,
@@ -93,6 +95,7 @@ internal fun AppDrawerGrid(
             AppDrawerGridItem(
                 app = app,
                 isSelected = !usingTouch && index == selectedIndex,
+                artworkSize = artworkSize,
                 onClick = { onAppTapped(index); onAppLaunched(app.packageName) },
                 onMenu = { onAppTapped(index); onAppMenu(app) },
                 colors = colors,

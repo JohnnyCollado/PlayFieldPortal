@@ -504,4 +504,93 @@ class DiscSetBuilderTest {
         assertEquals(2, assigned.single { it.romPath == "/roms/psx/Resident Evil (Disc 2).cue" }.discNumber)
         assertEquals(1, assigned.mapNotNull { it.discSetKey }.distinct().size)
     }
+
+    // ── region read memoisation ──────────────────────────────────────────────────
+    // derive calls regionOf from two places: the region-split step and the row-enrichment step.
+    // Reading a disc head costs up to 256 KB per game, so the batch memoises by path — but the memo
+    // must hold a NULL answer too. A map keyed by nullness cannot tell "cached, undetectable" from
+    // "not cached", so every disc whose region cannot be read is re-read once per call site,
+    // for exactly the population where detection is already failing.
+
+    /** A [DiscSetBuilder.RegionReader] that records how often each path was actually read. */
+    private class CountingRegionReader(
+        private val answer: (Game) -> GameRegion? = { null },
+    ) : DiscSetBuilder.RegionReader {
+        val calls = mutableMapOf<String, Int>()
+
+        override fun read(game: Game): GameRegion? {
+            calls.merge(game.romPath.orEmpty(), 1, Int::plus)
+            return answer(game)
+        }
+    }
+
+    @Test
+    fun `an undetectable region is read once per path, not once per call site`() {
+        val disc1 = "/roms/psx/Parasite Eve II (USA) (Disc 1)/Parasite Eve II (USA) (Disc 1).cue"
+        val disc2 = "/roms/psx/Parasite Eve II (Disc 2)/Parasite Eve II (Disc 2).cue"
+        val reader = CountingRegionReader { null }
+
+        builder.assign(listOf(game(disc1), game(disc2)), reader) { null }
+
+        assertEquals(mapOf(disc1 to 1, disc2 to 1), reader.calls)
+    }
+
+    @Test
+    fun `an undetectable region is still read only once when reconciling`() {
+        val disc1 = "/roms/psx/Parasite Eve II (USA) (Disc 1)/Parasite Eve II (USA) (Disc 1).cue"
+        val disc2 = "/roms/psx/Parasite Eve II (Disc 2)/Parasite Eve II (Disc 2).cue"
+        val reader = CountingRegionReader { null }
+
+        builder.reconcile(listOf(game(disc1), game(disc2)), reader) { null }
+
+        assertEquals(mapOf(disc1 to 1, disc2 to 1), reader.calls)
+    }
+
+    @Test
+    fun `a detected region is read once per path`() {
+        // Guard on the working path: a non-null answer already memoises, and must keep doing so.
+        val disc1 = "/roms/psx/Parasite Eve II (USA) (Disc 1)/Parasite Eve II (USA) (Disc 1).cue"
+        val disc2 = "/roms/psx/Parasite Eve II (Disc 2)/Parasite Eve II (Disc 2).cue"
+        val reader = CountingRegionReader { GameRegion.NTSC_U }
+
+        val assigned = builder.assign(listOf(game(disc1), game(disc2)), reader) { null }
+
+        assertEquals(mapOf(disc1 to 1, disc2 to 1), reader.calls)
+        assertEquals(2, assigned.count { it.region == GameRegion.NTSC_U })
+    }
+
+    @Test
+    fun `a region split does not re-read the images it splits on`() {
+        // The split step consults regionOf twice — once to collect the regions, once to build the
+        // per-region key. Both must come from the memo.
+        val usa1 = "/roms/psx/Final Fantasy VII (USA) (Disc 1)/Final Fantasy VII (Disc 1).cue"
+        val usa2 = "/roms/psx/Final Fantasy VII (USA) (Disc 2)/Final Fantasy VII (Disc 2).cue"
+        val eu1 = "/roms/psx/Final Fantasy VII (Europe) (Disc 1)/Final Fantasy VII (Disc 1).cue"
+        val eu2 = "/roms/psx/Final Fantasy VII (Europe) (Disc 2)/Final Fantasy VII (Disc 2).cue"
+        val reader = CountingRegionReader { g ->
+            if (g.romPath.orEmpty().contains("(USA)")) GameRegion.NTSC_U else GameRegion.PAL
+        }
+
+        val assigned = builder.assign(
+            listOf(game(usa1), game(usa2), game(eu1), game(eu2)),
+            reader,
+        ) { null }
+
+        assertEquals(mapOf(usa1 to 1, usa2 to 1, eu1 to 1, eu2 to 1), reader.calls)
+        assertEquals(2, assigned.mapNotNull { it.discSetKey }.distinct().size)
+    }
+
+    @Test
+    fun `a stored region survives an undetectable read and is not re-read`() {
+        // The `?: game.region` fallback is what stops a transient read failure wiping a known
+        // region. Memoising a null must not defeat it.
+        val path = "/roms/psx/Final Fantasy VII (Disc 1)/Final Fantasy VII (Disc 1).cue"
+        val stored = game(path).copy(region = GameRegion.NTSC_U)
+        val reader = CountingRegionReader { null }
+
+        val assigned = builder.assign(listOf(stored), reader) { null }
+
+        assertEquals(mapOf(path to 1), reader.calls)
+        assertEquals(GameRegion.NTSC_U, assigned.single().region)
+    }
 }

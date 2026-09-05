@@ -15,6 +15,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     buildFeatures { compose = true }
+    // Robolectric Compose UI tests need the merged manifest (ComponentActivity registration).
+    testOptions {
+        unitTests { isIncludeAndroidResources = true }
+    }
 }
 
 dependencies {
@@ -54,4 +58,10 @@ dependencies {
 
     testImplementation(libs.bundles.test.unit)
     testImplementation(libs.hilt.android.testing)
+    // Compose UI tests run on the JVM via Robolectric (same pattern as feature-settings)
+    testImplementation(libs.compose.ui.test.junit4)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+    // Registers ComponentActivity in the debug manifest so createAndroidComposeRule works
+    debugImplementation(libs.compose.ui.test.manifest)
 }

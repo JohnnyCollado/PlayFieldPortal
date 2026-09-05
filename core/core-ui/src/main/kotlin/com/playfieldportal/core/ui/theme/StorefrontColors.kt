@@ -183,9 +183,9 @@ fun deriveStorefrontColors(): StorefrontColors {
     val bgBottom = pfp.backgroundBottom
 
     // ── Background ── deep upper (header) region easing into a rich midtone (grid) region, at
-    // ~0.94 alpha so the XMB wave still reads through. No blur, no frosted glass, no blobs.
-    val backgroundDeep = bgTop.copy(alpha = 0.94f)
-    val backgroundMid = lerp(bgTop, bgBottom, 0.55f).copy(alpha = 0.94f)
+    // ~0.88 alpha so the XMB wave reads through more strongly. No blur, no frosted glass, no blobs.
+    val backgroundDeep = bgTop.copy(alpha = 0.88f)
+    val backgroundMid = lerp(bgTop, bgBottom, 0.55f).copy(alpha = 0.88f)
 
     // ── Header chrome (preserved storefront) ──────────────────────────────
     val chromeTop = bgTop.copy(alpha = 0.96f)

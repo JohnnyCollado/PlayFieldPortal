@@ -4,6 +4,7 @@ import android.content.ContentResolver
 import android.net.Uri
 import android.provider.DocumentsContract
 import timber.log.Timber
+import java.io.File
 
 // One row of a SAF directory's child listing — everything a scanner needs, from a single cursor.
 // DocumentFile issues a separate ContentResolver IPC query per property per file (name, type,
@@ -34,6 +35,34 @@ fun SafChild.isIgnoredDir(): Boolean = isDirectory && name.startsWith(".")
 fun safScanStartDocId(context: android.content.Context, uri: Uri): String =
     if (DocumentsContract.isDocumentUri(context, uri)) DocumentsContract.getDocumentId(uri)
     else DocumentsContract.getTreeDocumentId(uri)
+
+// ── document-id surgery ───────────────────────────────────────────────────────
+// Reaching a file that sits NEXT to one you already hold a grant for: a .cue/.gdi sheet naming its
+// .bin/track siblings. Shared by the library region reader and the achievements disc opener, which
+// live in sibling feature modules and so cannot borrow it from each other.
+
+/**
+ * The document id of a file sitting next to [documentId]. Ids are "volume:dirs/name", so the
+ * sibling's id is the sheet's parent plus [siblingName] — the last path segment swapped, or the
+ * volume prefix kept for a file directly under the root. Null when the id has no `/` or `:` to
+ * anchor on.
+ */
+fun safSiblingDocumentId(documentId: String, siblingName: String): String? {
+    val slash = documentId.lastIndexOf('/')
+    if (slash >= 0) return documentId.substring(0, slash + 1) + siblingName
+    val colon = documentId.lastIndexOf(':')
+    if (colon >= 0) return documentId.substring(0, colon + 1) + siblingName
+    return null
+}
+
+/**
+ * A sheet-referenced name must be a bare sibling: no path component may escape the sheet's own
+ * directory. Path-traversal guard for untrusted .cue/.gdi contents.
+ */
+fun isSafeSiblingName(name: String): Boolean =
+    name.isNotEmpty() && name != "." && name != ".." &&
+        !name.contains('/') && !name.contains('\\') &&
+        File(name).name == name
 
 // One ContentResolver query per directory. Child document ids are resolved through
 // buildChildDocumentsUriUsingTree, so every returned uri stays scoped to the tree permission the
