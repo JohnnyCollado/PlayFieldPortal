@@ -56,6 +56,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalFocusManager
@@ -170,6 +171,17 @@ val SettingsBg = Color(0xE6000000)
 val SettingsAccent = com.playfieldportal.core.ui.theme.PfpPalette.Accent
 val SettingsText = Color.White
 val SettingsSubtext = com.playfieldportal.core.ui.theme.PfpPalette.Subtext
+
+// Directional drop shadow for text over the translucent backdrop: the settings scrim is a
+// translucent theme gradient (the wallpaper reads through BY DESIGN), so flat gray helper text
+// washes out wherever the wallpaper is bright. The repo's standard black drop shadow
+// (PspContextMenu, ControllerHintBar, DetailContextMenu) restores separation without hiding
+// the wallpaper behind a heavier scrim.
+val SettingsTextShadow = Shadow(
+    color = Color.Black.copy(alpha = 0.75f),
+    offset = Offset(0f, 2f),
+    blurRadius = 4f,
+)
 val SettingsDivider = com.playfieldportal.core.ui.theme.PfpPalette.Divider
 val SettingsSelectedBg = com.playfieldportal.core.ui.theme.PfpPalette.Accent.copy(alpha = 0.14f)
 
@@ -656,6 +668,7 @@ fun SettingsScaffold(
                             text = "◀",
                             color = SettingsSubtext,
                             fontSize = 18.sp,
+                            style = TextStyle(shadow = SettingsTextShadow),
                             modifier = Modifier.padding(end = 20.dp),
                         )
                         Column {
@@ -665,12 +678,14 @@ fun SettingsScaffold(
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 letterSpacing = 2.sp,
+                                style = TextStyle(shadow = SettingsTextShadow),
                             )
                             Text(
                                 text = subtitle,
                                 color = SettingsText,
                                 fontSize = 22.sp,
                                 fontWeight = FontWeight.Light,
+                                style = TextStyle(shadow = SettingsTextShadow),
                             )
                         }
                     }
@@ -749,6 +764,7 @@ fun SettingsGroup(title: String) {
         fontSize = 15.sp,
         fontWeight = FontWeight.Bold,
         letterSpacing = 1.8.sp,
+        style = TextStyle(shadow = SettingsTextShadow),
     )
 }
 
@@ -863,10 +879,19 @@ fun SettingsRow(
                 text = label,
                 color = if (isFocused && cursorVisible && !(hideRowHighlightOnActionFocus && anyActionFocused)) Color.White else SettingsText,
                 fontSize = 15.sp,
+                style = TextStyle(shadow = SettingsTextShadow),
             )
             if (!sublabel.isNullOrBlank()) {
                 Spacer(Modifier.height(2.dp))
-                Text(sublabel, color = SettingsSubtext, fontSize = 12.sp)
+                Text(
+                    sublabel,
+                    color = SettingsSubtext,
+                    fontSize = 12.sp,
+                    // The helper line is the least legible text on screen over a bright
+                    // wallpaper — small, gray, and lowest in the row. The shadow is what keeps
+                    // it readable without a heavier scrim.
+                    style = TextStyle(shadow = SettingsTextShadow),
+                )
             }
         }
         if (trailing != null) {
@@ -996,6 +1021,7 @@ fun SettingsValueRow(
                 text = value,
                 color = SettingsAccent,
                 fontSize = 13.sp,
+                style = TextStyle(shadow = SettingsTextShadow),
             )
         },
     )
@@ -1063,6 +1089,7 @@ fun SettingsTextFieldRow(
             text = label,
             color = SettingsSubtext,
             fontSize = 12.sp,
+            style = TextStyle(shadow = SettingsTextShadow),
             modifier = Modifier.padding(bottom = 4.dp)
         )
         Box {
@@ -1120,7 +1147,12 @@ fun SettingsTextFieldRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 if (!helper.isNullOrBlank()) {
-                    Text(text = helper, color = SettingsSubtext.copy(alpha = 0.6f), fontSize = 11.sp)
+                    Text(
+                        text = helper,
+                        color = SettingsSubtext.copy(alpha = 0.6f),
+                        fontSize = 11.sp,
+                        style = TextStyle(shadow = SettingsTextShadow),
+                    )
                 }
                 if (helperPrompt != null) {
                     ControllerPromptBar(

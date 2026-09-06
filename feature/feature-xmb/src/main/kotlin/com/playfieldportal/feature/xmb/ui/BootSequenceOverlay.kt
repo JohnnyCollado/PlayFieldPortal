@@ -63,6 +63,10 @@ fun BootSequenceOverlay(
     ) {
         // Same background the XMB uses — the classic blue "Original" gradient with the soft wave folds,
         // tinted by whatever theme is active (LocalPFPColors), so boot and menu are visually identical.
+        // Deliberately no wallpaper args: boot NEVER plays the user's motion wallpaper (defaults
+        // leave motionWallpaperPath = null, so no decoder is ever spun up here). Boot is the single
+        // most contended moment on the device — "boot plays the user's video" is a tempting-but-wrong
+        // future edit.
         XmbBackground(waveStyle = WaveStyle.ANIMATED, modifier = Modifier.fillMaxSize())
 
         // PFP logo (transparent mark, sits on the wave).

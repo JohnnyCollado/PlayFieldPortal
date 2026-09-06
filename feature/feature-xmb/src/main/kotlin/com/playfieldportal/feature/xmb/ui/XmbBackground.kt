@@ -31,6 +31,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.ContentScale
 import coil3.compose.AsyncImage
+import com.playfieldportal.core.ui.motion.MotionWallpaperBackground
+import com.playfieldportal.core.ui.motion.MotionWallpaperPolicy
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.wave.WaveStyle
 import kotlin.math.sin
@@ -42,9 +44,18 @@ private const val TAU = 6.2831853f
 /**
  * Root background behind the XMB UI. The wallpaper automatically replaces the wave:
  *
- *  - When [customWallpaperPath] is set, the wallpaper is rendered alone — no wave is drawn
- *    or animated, and no wave resources are allocated.
+ *  - When [motionWallpaperPath] is set, the looping motion wallpaper renders over its poster —
+ *    but ONLY while [motionDecision] says PLAY/PLAY_REDUCED; a POSTER decision renders the poster
+ *    still alone and never constructs an ExoPlayer. (When the wave would be frozen, the motion
+ *    wallpaper is not merely paused — no decoder exists.)
+ *  - Otherwise, when [customWallpaperPath] is set, the still wallpaper renders alone — no wave
+ *    is drawn or animated, and no wave resources are allocated. A POSTER decision with a motion
+ *    file set lands here too: the frozen path is literally the existing still-wallpaper composable.
  *  - When no wallpaper is set, the XMB wave is rendered, honoring [waveStyle].
+ *
+ * The motion decision itself is computed ONCE by the shell through [MotionWallpaperPolicy] (the
+ * single definition of "the device is busy or conserving" that both the shader and the decoder
+ * obey) and passed down; callers that render only a wave (boot) can ignore it entirely.
  *
  * The wave itself is the authentic PSP XMB "heavenly" flow: a soft, luminous ribbon low on the
  * screen built from several summed sine waves, with a glowing crest and a scatter of sparkles over
@@ -55,12 +66,20 @@ private const val TAU = 6.2831853f
 fun XmbBackground(
     waveStyle: WaveStyle,
     customWallpaperPath: String? = null,
+    motionWallpaperPath: String? = null,
+    motionDecision: MotionWallpaperPolicy.Decision = MotionWallpaperPolicy.Decision.PLAY,
     modifier: Modifier = Modifier,
 ) {
-    if (customWallpaperPath != null) {
-        WallpaperBackground(customWallpaperPath, modifier)
-    } else {
-        WaveBackground(waveStyle, modifier)
+    when {
+        customWallpaperPath != null && motionWallpaperPath != null && motionDecision != MotionWallpaperPolicy.Decision.POSTER ->
+            MotionWallpaperBackground(
+                posterPath = customWallpaperPath,
+                motionPath = motionWallpaperPath,
+                decision = motionDecision,
+                modifier = modifier,
+            )
+        customWallpaperPath != null -> WallpaperBackground(customWallpaperPath, modifier)
+        else -> WaveBackground(waveStyle, modifier)
     }
 }
 

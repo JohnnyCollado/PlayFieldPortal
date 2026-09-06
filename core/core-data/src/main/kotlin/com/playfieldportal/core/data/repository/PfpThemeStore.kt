@@ -137,7 +137,11 @@ class PfpThemeStore @Inject constructor(
             prefs[KEY_WAVE_STYLE] = waveStyle
             // Wave-only themes carry no wallpaper: clear any previous theme's wallpaper so the
             // look reverts to the live wave background instead of lingering — same set-or-remove
-            // contract as the accent, icon-color and layout overrides below.
+            // contract as the accent, icon-color and layout overrides below. The MOTION key
+            // clears with it: applying a wave-only theme must never leave the previous theme's
+            // video looping behind it. (Bundles carry no motion wallpaper — that's out of scope
+            // for the bundle format.)
+            prefs.remove(KEY_MOTION_WALLPAPER)
             if (wallpaperOk) prefs[KEY_CUSTOM_WALLPAPER] = dest.absolutePath else prefs.remove(KEY_CUSTOM_WALLPAPER)
             if (accent != null) prefs[KEY_ACCENT_OVERRIDE] = accent else prefs.remove(KEY_ACCENT_OVERRIDE)
             if (iconColor != null) prefs[KEY_ICON_COLOR] = iconColor else prefs.remove(KEY_ICON_COLOR)
@@ -160,6 +164,7 @@ class PfpThemeStore @Inject constructor(
     suspend fun resetApplied(): Unit = withContext(Dispatchers.IO) {
         context.pfpDataStore.edit { prefs ->
             prefs.remove(KEY_CUSTOM_WALLPAPER)
+            prefs.remove(KEY_MOTION_WALLPAPER)
             prefs.remove(KEY_ACCENT_OVERRIDE)
             prefs.remove(KEY_ICON_COLOR)
             prefs.remove(KEY_WAVE_STYLE)
@@ -317,6 +322,9 @@ class PfpThemeStore @Inject constructor(
     companion object {
         // Must match XMBViewModel / ThemesSettingsViewModel — shared cascade prefs contract.
         private val KEY_CUSTOM_WALLPAPER = stringPreferencesKey("display_custom_wallpaper")
+        // Cleared (never set) by this store: theme bundles carry no motion wallpaper, so any
+        // previously-applied one must not survive a theme apply/reset.
+        private val KEY_MOTION_WALLPAPER = stringPreferencesKey("display_motion_wallpaper")
         private val KEY_WAVE_STYLE = stringPreferencesKey("display_wave_style")
         private val KEY_ACCENT_OVERRIDE = longPreferencesKey("theme_accent_override")
         private val KEY_ICON_COLOR = longPreferencesKey("theme_icon_color")

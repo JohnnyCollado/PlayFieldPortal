@@ -75,6 +75,10 @@ fun XMBCategoryBar(
     // When drilled into a sub-item, the XMB hides every category to the RIGHT of the active one so
     // the focus collapses onto the active column (PSP second-level behaviour).
     drilledIn: Boolean = false,
+    // "Solid Unfocused Icons" (Display ▸ Appearance): when true, unselected category icons skip
+    // the unfocused dim — selection still reads by icon size and the label fade. Default false
+    // = today's dimming. (IconLegibility rides LocalIconLegibility, no parameter needed.)
+    solidUnfocusedIcons: Boolean = false,
 ) {
     val listState = rememberLazyListState()
 
@@ -111,14 +115,14 @@ fun XMBCategoryBar(
         ) {
             itemsIndexed(categories, key = { _, category -> category.id }) { index, category ->
                 // While drilled in, categories to the right of the active one are hidden.
-                if (!(drilledIn && index > selectedIndex)) {
-                    XMBCategoryItem(
-                        category = category,
-                        isSelected = index == selectedIndex,
-                        onClick = { onCategorySelected(index) },
-                        onLongPress = { onCategoryLongPress(index) },
-                        modifier = Modifier.width(ItemSlotWidth),
-                    )
+                if (!(drilledIn && index > selectedIndex)) {                        XMBCategoryItem(
+                            category = category,
+                            isSelected = index == selectedIndex,
+                            onClick = { onCategorySelected(index) },
+                            onLongPress = { onCategoryLongPress(index) },
+                            solidUnfocusedIcons = solidUnfocusedIcons,
+                            modifier = Modifier.width(ItemSlotWidth),
+                        )
                 }
             }
         }
@@ -132,6 +136,7 @@ private fun XMBCategoryItem(
     isSelected: Boolean,
     onClick: () -> Unit,
     onLongPress: () -> Unit,
+    solidUnfocusedIcons: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val iconSize by animateDpAsState(
@@ -141,7 +146,8 @@ private fun XMBCategoryItem(
         label = "xmbCategoryIconSize",
     )
     val itemAlpha by animateFloatAsState(
-        targetValue = if (isSelected) 1f else 0.58f,
+        // "Solid Unfocused Icons": skip the unfocused dim; selection still reads by size + label.
+        targetValue = if (isSelected || solidUnfocusedIcons) 1f else 0.58f,
         animationSpec = spring(stiffness = Spring.StiffnessMedium),
         label = "xmbCategoryAlpha",
     )

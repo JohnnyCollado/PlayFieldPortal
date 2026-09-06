@@ -77,7 +77,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -95,6 +97,7 @@ import com.playfieldportal.core.ui.achievement.BoneGlyph
 import com.playfieldportal.core.ui.components.ControllerPromptGlyphs
 import com.playfieldportal.core.ui.icons.GameIconStyle
 import com.playfieldportal.core.ui.icons.LocalXmbIconOverrides
+import com.playfieldportal.core.ui.icons.OverrideGlyphSurface
 import com.playfieldportal.core.ui.icons.PortalIcon
 import com.playfieldportal.core.ui.icons.ThemedGlyph
 import com.playfieldportal.core.ui.icons.categoryIconFor
@@ -149,6 +152,16 @@ private val SelectedTextShadow = Shadow(
 // A row's inner content padding. Shared so anything that needs to land next to a row's artwork
 // (e.g. the flyout cursor) can derive its position from the same number the row lays out with.
 private val ROW_HORIZONTAL_PADDING = 18.dp
+
+// "Text Shadow" (Display ▸ Appearance): the repo's standard directional drop shadow — the same
+// values PspContextMenu / ControllerHintBar / DetailContextMenu use — applied to XMB row
+// subtitles. The settings scaffold's SettingsTextShadow is feature-internal, so the same idiom is
+// restated here for the shell (the XMB draws over the raw wallpaper, no scrim at all).
+val XmbTextShadow = Shadow(
+    color = Color.Black.copy(alpha = 0.75f),
+    offset = Offset(0f, 2f),
+    blurRadius = 4f,
+)
 
 // Physical-media memory-card art for rows that should read as a memory card but have no console icon
 // of their own (collections). Mirrors the ViewModel's MEMORY_CARD_ASSET_URI.
@@ -278,8 +291,9 @@ private fun XmbGameColumn(
 
 // One sibling icon — plain glyph (no tile/shadow), dimmed when not the active sibling. Video
 // sections use vector glyphs (folder / library / movie); everything else uses console art.
+// solidUnfocusedIcons = the Display ▸ Appearance toggle: full-opacity unselected glyphs.
 @Composable
-private fun SiblingIcon(item: XMBItem, selected: Boolean) {
+private fun SiblingIcon(item: XMBItem, selected: Boolean, solidUnfocusedIcons: Boolean = false) {
     val chip = if (selected) 56.dp else 40.dp
     val videoGlyph = when (item.type) {
         // Missing takes the vector path rather than console art: there is no sysicon for it, and
@@ -310,13 +324,13 @@ private fun SiblingIcon(item: XMBItem, selected: Boolean) {
                 contentDescription = item.title,
                 tint = LocalPFPColors.current.iconColor,
                 // Layer alpha (not tint alpha) so custom untinted icons dim identically.
-                modifier = Modifier.size(chip).alpha(if (selected) 1f else 0.5f),
+                modifier = Modifier.size(chip).alpha(if (selected || solidUnfocusedIcons) 1f else 0.5f),
             )
         } else {
             PortalIcon(
                 painter = painterResource(systemIconRes(consoleIconKeyFor(item))),
                 contentDescription = item.title,
-                modifier = Modifier.size(chip).alpha(if (selected) 1f else 0.5f),
+                modifier = Modifier.size(chip).alpha(if (selected || solidUnfocusedIcons) 1f else 0.5f),
             )
         }
     }
@@ -479,6 +493,14 @@ fun XMBItemList(
     drillCursorOnSelected: Boolean = false,
     // How far the dissolving previous item rises above the bar, in row heights (theme layout spec).
     previousRiseRows: Float = XmbLayoutSpec.DEFAULT.previousItemRiseRows,
+    // "Solid Unfocused Icons" (Display ▸ Appearance): when true, unselected rows skip the
+    // unfocused dim — selection still reads by the row's scale and the bright label. Default
+    // false = today's dimming.
+    solidUnfocusedIcons: Boolean = false,
+    // "Text Shadow" (Display ▸ Appearance): directional drop shadow behind row labels and
+    // subtitles, so helper text stays readable over bright wallpaper regions. Default true —
+    // without it the flat gray subtitle is the one label that washes out.
+    textShadow: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     // The XMB cross, exactly as the hardware does it:
@@ -517,6 +539,8 @@ fun XMBItemList(
                         onLongPress = { onItemLongPress(i) },
                         showIcon = showIcons,
                         trailingCursor = drillCursorOnSelected && i == selectedIndex,
+                        solidUnfocusedIcons = solidUnfocusedIcons,
+                        textShadow = textShadow,
                         modifier = Modifier.fillMaxWidth().height(ROW_HEIGHT),
                     )
                 }
@@ -551,6 +575,8 @@ fun XMBItemList(
                     onClick = { onItemSelected(selectedIndex - 1) },
                     onLongPress = { onItemLongPress(selectedIndex - 1) },
                     showIcon = showIcons,
+                    solidUnfocusedIcons = solidUnfocusedIcons,
+                    textShadow = textShadow,
                     modifier = Modifier
                         .fillMaxWidth()
                         .requiredHeight(ROW_HEIGHT),
@@ -575,6 +601,10 @@ private fun XmbVerticalListRow(
     showIcon: Boolean = true,
     // When true, a ◀ drill cursor is drawn directly to the right of this row's content.
     trailingCursor: Boolean = false,
+    // "Solid Unfocused Icons": when true, this unselected row skips the unfocused dim.
+    solidUnfocusedIcons: Boolean = false,
+    // "Text Shadow" (Display ▸ Appearance): drop shadow behind row helper text (subtitle).
+    textShadow: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     // Strong size delta between the locked selection and the rows scrolling past it — the PSP
@@ -586,13 +616,19 @@ private fun XmbVerticalListRow(
     )
     val rowAlpha by animateFloatAsState(
         targetValue = when {
-            isSelected -> 1f
+            // "Solid Unfocused Icons": skip the unfocused dim; selection still reads by scale + label.
+            isSelected || solidUnfocusedIcons -> 1f
             item.type == XMBItemType.EMPTY -> 0.5f
             else -> 0.68f
         },
         animationSpec = spring(stiffness = Spring.StiffnessMedium),
         label = "xmbListRowAlpha",
     )
+    // Shadow for row helper text: the subtitle is the only label with no separation treatment
+    // (the title brightens + shadows when selected), so it's the text that washes out over the
+    // bright half of a wallpaper. Same directional shadow idiom as PspContextMenu/ControllerHintBar.
+    val subtitleStyle = if (textShadow) TextStyle(shadow = XmbTextShadow) else TextStyle.Default
+
     // Pivot the grow/shrink scale at the leading icon's centre (not the row centre) so the icon
     // never drifts horizontally as it scales — every row's icon stays on the caticon's vertical line.
     val density = LocalDensity.current
@@ -702,6 +738,7 @@ private fun XmbVerticalListRow(
                                     color = SecondaryText,
                                     fontSize = if (isSelected) 12.sp else 11.sp,
                                     fontWeight = FontWeight.Normal,
+                                    style = subtitleStyle,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                 )
@@ -1080,8 +1117,9 @@ private fun XmbItemLeadingIcon(
                     null
                 }
                 if (memcardOverride != null) {
-                    // Custom theme icons render as authored (untinted), like every slot.
-                    Image(
+                    // Custom theme icons render as authored (untinted), like every slot — but
+                    // the configured icon-legibility matte still draws behind them.
+                    OverrideGlyphSurface(
                         bitmap = memcardOverride,
                         contentDescription = null,
                         modifier = Modifier.size(LEADING_ICON_SIZE),
@@ -1094,21 +1132,23 @@ private fun XmbItemLeadingIcon(
                     )
                 } else if (memoryCardArt != null) {
                     // The bundled physical-media memory-card art is a white silhouette — it
-                    // follows the unified icon color like every other glyph. Real user/content
-                    // artwork (custom collection covers) stays untinted.
+                    // follows the unified icon color like every other glyph (PortalIcon applies
+                    // the SrcIn tint AND the icon-legibility matte). Real user/content artwork
+                    // (custom collection covers) stays untinted and matte-free.
                     val isBundledSilhouette =
                         memoryCardArt.startsWith("file:///android_asset/systems/physical-media/")
-                    AsyncImage(
-                        model = memoryCardArt,
-                        contentDescription = null,
-                        colorFilter = if (isBundledSilhouette) {
-                            androidx.compose.ui.graphics.ColorFilter.tint(
-                                LocalPFPColors.current.iconColor,
-                                androidx.compose.ui.graphics.BlendMode.SrcIn,
-                            )
-                        } else null,
-                        modifier = Modifier.size(LEADING_ICON_SIZE),
-                    )
+                    if (isBundledSilhouette) {
+                        BundledSilhouetteIcon(
+                            assetUri = memoryCardArt,
+                            modifier = Modifier.size(LEADING_ICON_SIZE),
+                        )
+                    } else {
+                        AsyncImage(
+                            model = memoryCardArt,
+                            contentDescription = null,
+                            modifier = Modifier.size(LEADING_ICON_SIZE),
+                        )
+                    }
                 } else {
                     // Memory-card rows show their matching console icon. All Games gets the generic
                     // cartridge art (sysicon_allgames) and Favorites the star (sysicon_favorites),
@@ -1170,7 +1210,7 @@ private fun XmbItemLeadingIcon(
             ) {
                 val settingsOverride = LocalXmbIconOverrides.current["item_settings"]
                 if (settingsOverride != null) {
-                    Image(
+                    OverrideGlyphSurface(
                         bitmap = settingsOverride,
                         contentDescription = null,
                         modifier = Modifier.size(LEADING_ICON_SIZE),
@@ -1206,16 +1246,12 @@ private fun XmbItemLeadingIcon(
             }
         }
         // "All Tracked Games" reads as a memory card (its list is the tracked games), using the
-        // bundled physical-media card art tinted with the theme icon color.
+        // bundled physical-media card art tinted with the theme icon color — and the matte,
+        // like every other silhouette glyph.
         item.id == "ach_all" -> {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.width(LEADING_ICON_SLOT)) {
-                AsyncImage(
-                    model = MEMORY_CARD_DEFAULT_ART,
-                    contentDescription = null,
-                    colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(
-                        iconTint,
-                        androidx.compose.ui.graphics.BlendMode.SrcIn,
-                    ),
+                BundledSilhouetteIcon(
+                    assetUri = MEMORY_CARD_DEFAULT_ART,
                     modifier = Modifier.size(LEADING_ICON_SIZE),
                 )
             }
@@ -1228,6 +1264,34 @@ private fun XmbItemLeadingIcon(
             }
         }
         else -> Spacer(modifier = Modifier.width(12.dp))
+    }
+}
+
+// The bundled physical-media silhouettes (collections without a picked icon, the ach_all
+// card, memory cards falling back to the default card art), decoded to a bitmap once and
+// rendered through PortalIcon so they get the theme tint AND the icon-legibility matte like
+// every other silhouette glyph. AsyncImage cannot host the matte — its intrinsic size is
+// unknown until the image loads, which would desync the matte geometry. A decode failure
+// degrades to the plain untinted image rather than dropping the row's icon.
+@Composable
+private fun BundledSilhouetteIcon(assetUri: String, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val bitmap = remember(assetUri) {
+        runCatching {
+            val assetPath = assetUri.removePrefix("file:///android_asset/")
+            context.assets.open(assetPath).use { stream ->
+                android.graphics.BitmapFactory.decodeStream(stream).asImageBitmap()
+            }
+        }.getOrNull()
+    }
+    if (bitmap != null) {
+        PortalIcon(
+            painter = BitmapPainter(bitmap),
+            contentDescription = null,
+            modifier = modifier,
+        )
+    } else {
+        AsyncImage(model = assetUri, contentDescription = null, modifier = modifier)
     }
 }
 

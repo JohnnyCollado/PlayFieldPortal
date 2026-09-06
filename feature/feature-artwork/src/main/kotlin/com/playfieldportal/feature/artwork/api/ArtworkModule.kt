@@ -79,5 +79,13 @@ object ArtworkModule {
                     .build()
             }
             .crossfade(true)
+            // Animated GIF / animated WebP support (user-supplied motion wallpapers route
+            // GIF/animated-WebP through AsyncImage). AnimatedImageDecoder is the API 28+
+            // ImageDecoder-backed factory — fine, minSdk is 29; the slower GifDecoder fallback
+            // for older APIs is unnecessary here. Registered so the ImageLoader "automatically
+            // detects any GIFs using their file headers"; stills are unaffected.
+            .components {
+                add(coil3.gif.AnimatedImageDecoder.Factory())
+            }
             .build()
 }

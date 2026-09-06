@@ -59,7 +59,7 @@ class SettingsHierarchyTest {
             settingsSectionItems(SettingsSection.EMULATORS).map { it.id },
         )
         assertEquals(
-            listOf("settings_categories", "settings_themes", "settings_display", "settings_controller"),
+            listOf("settings_display", "settings_categories", "settings_themes", "settings_controller"),
             settingsSectionItems(SettingsSection.INTERFACE).map { it.id },
         )
         assertEquals(

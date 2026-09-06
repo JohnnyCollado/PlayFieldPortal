@@ -132,6 +132,38 @@ class PfpThemeStoreTest {
     }
 
     @Test
+    fun `applying a wave-only theme clears a previous motion wallpaper too`() = runTest {
+        val store = PfpThemeStore(context)
+        // Stand in for a previously-applied motion wallpaper (poster + video pair).
+        context.pfpDataStore.edit {
+            it[KEY_CUSTOM_WALLPAPER] = "/old/wallpaper.jpg"
+            it[KEY_MOTION_WALLPAPER] = "/old/wallpaper.mp4"
+        }
+        val saved = requireNotNull(store.importBundle(register(bundleBytes("Red", "#FF0000"))))
+
+        assertTrue(store.apply(saved.id))
+
+        val prefs = context.pfpDataStore.data.first()
+        assertNull(prefs[KEY_CUSTOM_WALLPAPER])
+        assertNull(prefs[KEY_MOTION_WALLPAPER], "wave-only apply must not leave the previous theme's video looping behind it")
+    }
+
+    @Test
+    fun `resetApplied clears both wallpaper keys`() = runTest {
+        val store = PfpThemeStore(context)
+        context.pfpDataStore.edit {
+            it[KEY_CUSTOM_WALLPAPER] = "/old/wallpaper.jpg"
+            it[KEY_MOTION_WALLPAPER] = "/old/wallpaper.mp4"
+        }
+
+        store.resetApplied()
+
+        val prefs = context.pfpDataStore.data.first()
+        assertNull(prefs[KEY_CUSTOM_WALLPAPER])
+        assertNull(prefs[KEY_MOTION_WALLPAPER], "a leftover motion path with a cleared poster is the invalid state")
+    }
+
+    @Test
     fun `applying a theme applies its wave style and reset clears the override`() = runTest {
         val store = PfpThemeStore(context)
         val saved = requireNotNull(
@@ -182,6 +214,7 @@ class PfpThemeStoreTest {
     private companion object {
         // Mirror PfpThemeStore's private cascade-pref keys by their string contract.
         val KEY_CUSTOM_WALLPAPER = stringPreferencesKey("display_custom_wallpaper")
+        val KEY_MOTION_WALLPAPER = stringPreferencesKey("display_motion_wallpaper")
         val KEY_WAVE_STYLE = stringPreferencesKey("display_wave_style")
         val KEY_ACCENT_OVERRIDE = longPreferencesKey("theme_accent_override")
     }

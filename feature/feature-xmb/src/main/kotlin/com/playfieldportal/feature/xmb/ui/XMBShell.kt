@@ -66,6 +66,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import coil3.compose.AsyncImage
 import com.playfieldportal.core.domain.model.BuiltInCategory
+import com.playfieldportal.core.ui.motion.MotionWallpaperPolicy
+import com.playfieldportal.core.ui.motion.rememberAppVisible
 import com.playfieldportal.core.ui.components.XmbTouchButton
 import com.playfieldportal.core.ui.preview.DevicePreviews
 import com.playfieldportal.core.ui.preview.PfpPreview
@@ -396,6 +398,9 @@ fun XMBShell(
           // the deeply nested tile composables never need them plumbed through params.
           LocalIconDisplayMode provides uiState.iconDisplayMode,
           LocalFocusedGameVideo provides uiState.focusedGameVideo,
+          // The icon-legibility treatment: PortalIcon + the theme-override glyph branches read
+          // it ambiently, so every XMB silhouette glyph gets the matte from one provider.
+          com.playfieldportal.core.ui.icons.LocalIconLegibility provides uiState.iconLegibility,
       ) {
         // XMB-ONLY canvas scale. On screens taller than the handheld baseline (tablets), the
         // XMB cross is magnified so the tuned layout fills the screen. The override scope ends
@@ -443,20 +448,41 @@ fun XMBShell(
                 uiState.activePhotoViewer != null ||
                 uiState.activeAppId != null || uiState.activeAppDrawerFilter != null ||
                 uiState.musicPlayerVisible
-            // Freeze the wave when it's hidden anyway, when the device is conserving power
-            // (battery saver / thermal throttle, unless opted out), or when a wallpaper is set
-            // (Display-picked or theme-applied — both write the same pref): the wallpaper is
-            // the background, so animating the wave underneath would only burn battery.
+            // Freeze the wave when it's hidden anyway, or when the device is conserving power
+            // (battery saver / thermal throttle, unless opted out). This is ONE motion budget
+            // that BOTH background layers read: with a wallpaper set the wave branch isn't
+            // composed at all (nothing allocates), and the motion wallpaper obeys the same
+            // inputs — covered, throttled, app-visible — releasing its decoder outright rather
+            // than pausing it.
             val powerThrottled = rememberWavePowerThrottle(
                 respectBatterySaver  = uiState.respectBatterySaver,
                 thermalThrottleAware = uiState.thermalThrottleAware,
             )
-            val effectiveWaveStyle = if (waveCovered || powerThrottled || uiState.customWallpaperPath != null) {
+            // The app-visible leg: the composition survives ON_STOP (every game launch), and a
+            // decoder running behind the emulator is the worst possible outcome for the motion
+            // wallpaper. Folded into the same motion budget the wave obeys.
+            val appVisible = rememberAppVisible()
+            val motionDecision = MotionWallpaperPolicy.decide(
+                MotionWallpaperPolicy.Inputs(
+                    hasMotion = uiState.motionWallpaperPath != null,
+                    hasPoster = uiState.customWallpaperPath != null,
+                    style = uiState.waveStyle,
+                    covered = waveCovered,
+                    throttled = powerThrottled,
+                    appVisible = appVisible,
+                )
+            )
+            // Wave keeps its existing freeze semantics exactly: covered/throttled freezes it,
+            // and with a wallpaper set the wave branch is simply not composed (so the old
+            // "wallpaper set → frozen wave" clause is no longer needed as such).
+            val effectiveWaveStyle = if (waveCovered || powerThrottled) {
                 uiState.waveStyle.frozen
             } else uiState.waveStyle
             XmbBackground(
                 waveStyle           = effectiveWaveStyle,
                 customWallpaperPath = uiState.customWallpaperPath,
+                motionWallpaperPath = uiState.motionWallpaperPath,
+                motionDecision      = motionDecision,
                 modifier            = Modifier.fillMaxSize(),
             )
 
@@ -678,6 +704,8 @@ fun XMBShell(
                                 barTopY = barTop,
                                 belowTopY = anchorTop,
                                 previousRiseRows = layoutSpec.previousItemRiseRows,
+                                solidUnfocusedIcons = uiState.solidUnfocusedIcons,
+                                textShadow = uiState.textShadow,
                                 modifier = Modifier.fillMaxSize(),
                             )
                         }
@@ -696,6 +724,7 @@ fun XMBShell(
                                 if (id == BuiltInCategory.SETTINGS) onSettingsLongPress()
                             },
                             drilledIn = uiState.drillTitle != null,
+                            solidUnfocusedIcons = uiState.solidUnfocusedIcons,
                             modifier = Modifier
                                 .align(Alignment.TopStart)
                                 .offset(y = barTop)

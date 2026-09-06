@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.round
@@ -132,10 +133,18 @@ fun SettingsSliderRow(
                     text = label,
                     color = if (isFocused && cursorVisible) Color.White else SettingsText,
                     fontSize = 15.sp,
+                    style = TextStyle(shadow = SettingsTextShadow),
                 )
                 if (!sublabel.isNullOrBlank()) {
                     Spacer(Modifier.height(2.dp))
-                    Text(sublabel, color = SettingsSubtext, fontSize = 12.sp)
+                    Text(
+                        sublabel,
+                        color = SettingsSubtext,
+                        fontSize = 12.sp,
+                        // Same helper-line shadow as SettingsRow — the slider sublabels are
+                        // equally washed out over a bright wallpaper.
+                        style = TextStyle(shadow = SettingsTextShadow),
+                    )
                 }
             }
             Spacer(Modifier.width(16.dp))
@@ -143,6 +152,7 @@ fun SettingsSliderRow(
                 text = valueFormatter(value),
                 color = if (adjusting) SettingsAccent else SettingsSubtext,
                 fontSize = 13.sp,
+                style = TextStyle(shadow = SettingsTextShadow),
             )
         }
         Spacer(Modifier.height(8.dp))

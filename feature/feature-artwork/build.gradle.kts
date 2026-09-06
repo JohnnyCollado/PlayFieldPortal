@@ -95,6 +95,8 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.bundles.ktor)
+    // Animated GIF/WebP decoding (motion wallpaper) — registered on the app-wide ImageLoader.
+    implementation(libs.coil.gif)
     // api, not implementation: ArtworkImageCache exposes coil3.ImageLoader in its constructor,
     // so :app needs the type on its compile classpath for Hilt to construct it.
     api(libs.coil.compose)

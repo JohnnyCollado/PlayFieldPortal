@@ -24,7 +24,11 @@ val LocalXmbIconOverrides = staticCompositionLocalOf<Map<String, ImageBitmap>> {
  * theme carries one, else the built-in Material [defaultVector] tinted as today.
  *
  * Custom icons draw as-authored (untinted) — like PSP themes, their colors are baked by
- * the theme author; the unified icon tint keeps applying to non-overridden defaults.
+ * the theme author; the unified icon tint keeps applying to non-overridden defaults. When
+ * an icon-legibility style is configured, a matte drawn from the bitmap's own alpha sits
+ * BEHIND the as-authored art (override branch, [OverrideGlyphSurface]), and the default
+ * vector branch carries the same matte ([VectorGlyphSurface]) — which is how the setting
+ * reaches the main XMB item column's Material-glyph rows.
  */
 @Composable
 fun ThemedGlyph(
@@ -36,9 +40,9 @@ fun ThemedGlyph(
 ) {
     val override = LocalXmbIconOverrides.current[slotKey]
     if (override != null) {
-        Image(bitmap = override, contentDescription = contentDescription, modifier = modifier)
+        OverrideGlyphSurface(bitmap = override, contentDescription = contentDescription, modifier = modifier)
     } else {
-        Icon(defaultVector, contentDescription = contentDescription, tint = tint, modifier = modifier)
+        VectorGlyphSurface(vector = defaultVector, contentDescription = contentDescription, tint = tint, modifier = modifier)
     }
 }
 

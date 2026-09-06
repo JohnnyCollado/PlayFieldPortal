@@ -379,10 +379,14 @@ open class BackupManager @Inject constructor(
     }
 
     private fun SettingsSnapshot.remapWallpaper(filesDirPath: String): SettingsSnapshot {
-        val current = entries[KEY_CUSTOM_WALLPAPER] ?: return this
-        val remapped = rewriteFilesPath(current, filesDirPath) ?: return this
-        if (remapped == current) return this
-        return copy(entries = entries + (KEY_CUSTOM_WALLPAPER to remapped))
+        var entries = this.entries
+        // Repoint both members of the (poster, motion) pair onto this install's filesDir.
+        for (key in listOf(KEY_CUSTOM_WALLPAPER, KEY_MOTION_WALLPAPER)) {
+            val current = entries[key] ?: continue
+            val remapped = rewriteFilesPath(current, filesDirPath) ?: continue
+            if (remapped != current) entries = entries + (key to remapped)
+        }
+        return if (entries != this.entries) copy(entries = entries) else this
     }
 
     protected open suspend fun readSettingsSnapshot(): SettingsSnapshot {
@@ -440,8 +444,12 @@ open class BackupManager @Inject constructor(
         private const val RESTORE_STAGING_DIR = ".pfp_restore_tmp"
         // Generic binary so the SAF provider keeps our ".pfpbackup" name verbatim (no appended ext).
         private const val MIME_BACKUP = "application/octet-stream"
-        private const val FILES_MARKER = "/files/"
-        private const val KEY_CUSTOM_WALLPAPER = "display_custom_wallpaper"
+    private const val FILES_MARKER = "/files/"
+    private const val KEY_CUSTOM_WALLPAPER = "display_custom_wallpaper"
+    // Motion wallpaper travels with the same "wallpaper" file bundle. Restored onto a device
+    // without its video file, the poster still renders (the freeze/failure fallback) and the
+    // motion path is simply dead weight — degraded, never broken.
+    private const val KEY_MOTION_WALLPAPER = "display_motion_wallpaper"
 
         // filesDir sub-trees bundled into the backup and replaced wholesale on restore.
         private val BUNDLED_FILE_ROOTS = listOf(
@@ -450,13 +458,14 @@ open class BackupManager @Inject constructor(
             "emulator_profiles",  // user-defined / user-modified emulator profiles
         )
 
-        private val BACKED_UP_STRING_KEYS = listOf(
-            // Display
-            stringPreferencesKey("display_wave_mode"),
-            stringPreferencesKey("display_wave_style"),
-            stringPreferencesKey("display_icon_style"),
-            stringPreferencesKey("display_color_scheme"),
-            stringPreferencesKey("display_custom_wallpaper"),
+    private val BACKED_UP_STRING_KEYS = listOf(
+        // Display
+        stringPreferencesKey("display_wave_mode"),
+        stringPreferencesKey("display_wave_style"),
+        stringPreferencesKey("display_icon_style"),
+        stringPreferencesKey("display_color_scheme"),
+        stringPreferencesKey("display_custom_wallpaper"),
+        stringPreferencesKey("display_motion_wallpaper"),
             // Controller
             stringPreferencesKey("controller_mappings_v1"),
             stringPreferencesKey("controller_confirm_back_layout"),

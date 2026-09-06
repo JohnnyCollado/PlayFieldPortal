@@ -393,9 +393,9 @@ fun settingsSectionItems(section: SettingsSection): List<XMBItem> = when (sectio
         XMBItem(id = "settings_emulators_assign", title = "Per-System Defaults", subtitle = "Default emulator & core per console, and per-game overrides"),
     )
     SettingsSection.INTERFACE -> listOf(
+        XMBItem(id = "settings_display",    title = "Display",    subtitle = "Wave, wallpaper, boot & icons"),
         XMBItem(id = "settings_categories", title = "Categories", subtitle = "Manage XMB categories"),
         XMBItem(id = "settings_themes",     title = "Themes",     subtitle = "XMB appearance & color scheme"),
-        XMBItem(id = "settings_display",    title = "Display",    subtitle = "Wave, wallpaper, boot & icons"),
         XMBItem(id = "settings_controller", title = "Controller", subtitle = "Button mapping"),
     )
     SettingsSection.ACHIEVEMENTS -> listOf(
@@ -551,6 +551,10 @@ data class XMBUiState(
     val respectBatterySaver: Boolean = true,
     val thermalThrottleAware: Boolean = true,
     val customWallpaperPath: String? = null,
+    // Looping motion wallpaper (MP4/WebM/GIF) behind the XMB. Only meaningful together with
+    // [customWallpaperPath] — the poster is the freeze/failure fallback, so on read "motion set,
+    // poster missing" degrades to "no motion" rather than trying to recover.
+    val motionWallpaperPath: String? = null,
 
     val showBootSequence: Boolean = true,
     // Startup choreography: the boot sequence holds on a black frame until MainActivity reports
@@ -682,6 +686,17 @@ data class XMBUiState(
     // Global icon display mode (Custom ICON0 / Box Art / Physical Media / 3D Box). Per-game
     // overrides ride on each XMBItem; resolution happens at render via [resolveIconDisplay].
     val iconDisplayMode: IconDisplayMode = IconDisplayMode.DEFAULT,
+    // Icon legibility treatment (PSP-style matte behind XMB silhouette glyphs), Display ▸
+    // Appearance. Provided as LocalIconLegibility; NONE renders today's glyph exactly.
+    val iconLegibility: com.playfieldportal.core.domain.model.IconLegibilityStyle =
+        com.playfieldportal.core.domain.model.IconLegibilityStyle.DEFAULT,
+    // "Solid Unfocused Icons": when true, unselected XMB icons skip the unfocused alpha dim
+    // (selection still reads by icon size and label). Default false = today's dimming.
+    val solidUnfocusedIcons: Boolean = false,
+    // "Text Shadow": directional drop shadow behind XMB row subtitles (the faded gray helper
+    // text), so it stays readable over bright wallpaper regions. Default on — without it the
+    // subtitle is the only row label with no separation treatment.
+    val textShadow: Boolean = true,
     // The focused game's ICON1 video snap — set only after the linger + battery gates pass.
     val focusedGameVideo: com.playfieldportal.feature.xmb.ui.FocusedGameVideo? = null,
     val librarySetupComplete: Boolean = false,
@@ -7984,12 +7999,19 @@ class XMBViewModel @Inject constructor(
                 val hintEnabled = prefs[KEY_CONTEXT_MENU_HINT] ?: true
                 val hintDelaySeconds =
                     (prefs[KEY_CONTEXT_MENU_HINT_DELAY_SECONDS] ?: 2.5f).coerceIn(1f, 5f)
+                val legibility = com.playfieldportal.core.domain.model.IconLegibilityStyle
+                    .fromName(prefs[KEY_ICON_LEGIBILITY])
+                val solidUnfocused = prefs[KEY_SOLID_UNFOCUSED_ICONS] ?: false
+                val textShadow = prefs[KEY_TEXT_SHADOW] ?: true
                 _uiState.update {
                     it.copy(
                         touchNavButtonMode = mode,
                         touchSensitivity = sensitivity,
                         contextMenuHintEnabled = hintEnabled,
                         contextMenuHintDelaySeconds = hintDelaySeconds,
+                        iconLegibility = legibility,
+                        solidUnfocusedIcons = solidUnfocused,
+                        textShadow = textShadow,
                     )
                 }
             }
@@ -8023,7 +8045,11 @@ class XMBViewModel @Inject constructor(
                 val path = prefs[KEY_CUSTOM_WALLPAPER]
                 // Validate the file still exists before surfacing it to the UI.
                 val validPath = if (path != null && java.io.File(path).exists()) path else null
-                _uiState.update { it.copy(customWallpaperPath = validPath) }
+                // Motion is valid only with its poster (the freeze/failure fallback). Reading
+                // the invalid state as "no motion" — never trying to recover it.
+                val motionPath = prefs[KEY_MOTION_WALLPAPER]
+                    ?.takeIf { validPath != null && java.io.File(it).exists() }
+                _uiState.update { it.copy(customWallpaperPath = validPath, motionWallpaperPath = motionPath) }
             }
         }
     }
@@ -8082,6 +8108,9 @@ class XMBViewModel @Inject constructor(
             prefs[KEY_SETUP_COMPLETE] == true ||
                 EXISTING_CONFIG_STRING_KEYS.any { !prefs[it].isNullOrBlank() }
         private val KEY_CUSTOM_WALLPAPER  = stringPreferencesKey("display_custom_wallpaper")
+        // Must match DisplaySettingsViewModel — shared wallpaper cascade prefs. Motion is never
+        // set without the poster key (invariant enforced at the write sites).
+        private val KEY_MOTION_WALLPAPER = stringPreferencesKey("display_motion_wallpaper")
         private val KEY_MENU_SOUND_ENABLED = booleanPreferencesKey("sound_menu_enabled")
         // Must match DisplaySettingsViewModel.KEY_TOUCH_NAV_BUTTON — both read/write this pref.
         private val KEY_TOUCH_NAV_BUTTON  = stringPreferencesKey("interface_touch_nav_button")
@@ -8091,6 +8120,12 @@ class XMBViewModel @Inject constructor(
             floatPreferencesKey("interface_context_menu_hint_delay_seconds")
         // Must match DisplaySettingsViewModel.KEY_TOUCH_SENSITIVITY — both read/write this pref.
         private val KEY_TOUCH_SENSITIVITY = stringPreferencesKey("interface_touch_sensitivity")
+        // Must match DisplaySettingsViewModel.KEY_ICON_LEGIBILITY — both read/write this pref.
+        private val KEY_ICON_LEGIBILITY = stringPreferencesKey("display_icon_legibility")
+        // Must match DisplaySettingsViewModel.KEY_SOLID_UNFOCUSED_ICONS — both read/write this pref.
+        private val KEY_SOLID_UNFOCUSED_ICONS = booleanPreferencesKey("display_solid_unfocused_icons")
+        // Must match DisplaySettingsViewModel.KEY_TEXT_SHADOW — both read/write this pref.
+        private val KEY_TEXT_SHADOW = booleanPreferencesKey("display_text_shadow")
         // ICON1 linger default (1.5 s) — the user can adjust the delay under Artwork ▸ Art
         // Preferences ▸ Video Snap Delay. Rest-then-animate matches the PSP's choreography and
         // guarantees scrolling through the row never spins up a video decoder.

@@ -19,6 +19,13 @@ dependencies {
     implementation(platform(libs.compose.bom))
     implementation(libs.bundles.compose)
     implementation(libs.coil.compose)
+    // MotionWallpaperBackground builds GIF/WebP ImageRequests with an explicit repeatCount
+    // (the decoder itself is registered on the app-wide ImageLoader in feature-artwork).
+    implementation(libs.coil.gif)
+    // MotionWallpaperBackground: the looping video surface behind the XMB (user-supplied
+    // MP4/WebM motion wallpapers, released — not paused — on every freeze path).
+    implementation(libs.media3.exoplayer)
+    implementation(libs.media3.common)
     // For MenuSoundPlayer: @Inject/@Singleton + @ApplicationContext annotations on the classpath.
     // The app module's Hilt processor does the code-gen, so no Hilt plugin/KSP needed here.
     implementation(libs.hilt.android)

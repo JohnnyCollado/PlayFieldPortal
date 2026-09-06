@@ -24,6 +24,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
+import com.playfieldportal.core.ui.motion.MotionWallpaperBackground
+import com.playfieldportal.core.ui.motion.MotionWallpaperPolicy
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.feature.settings.viewmodel.DisplaySettingsViewModel
 
@@ -41,6 +43,18 @@ fun DisplaySettingsScreen(
     val wallpaperPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri -> uri?.let { viewModel.onWallpaperPicked(it) } }
+
+    fun launchWallpaperPicker() {
+        // ONE picker, not two: the user's mental model is "my background". Still images land on
+        // the existing still path; MP4/WebM/GIF route to the motion importer (onWallpaperPicked
+        // branches on MIME).
+        wallpaperPicker.launch(
+            arrayOf(
+                "image/png", "image/jpeg", "image/webp",
+                "video/mp4", "video/webm", "image/gif",
+            )
+        )
+    }
 
     SettingsScaffold(
         title    = "Settings",
@@ -81,13 +95,10 @@ fun DisplaySettingsScreen(
             } else {
                 SettingsRow(
                     label    = "Choose Wallpaper",
-                    sublabel = if (state.customWallpaperPath != null) "Custom wallpaper set — replaces the wave"
-                               else "Pick an image (PNG, JPG, WEBP) — replaces the wave",
-                    onClick  = {
-                        wallpaperPicker.launch(
-                            arrayOf("image/png", "image/jpeg", "image/webp")
-                        )
-                    },
+                    sublabel = if (state.motionWallpaperPath != null) "Motion wallpaper set — a looping video replaces the wave"
+                               else if (state.customWallpaperPath != null) "Custom wallpaper set — replaces the wave"
+                               else "Pick an image or a short video (PNG, JPG, WEBP, MP4, WEBM, GIF) — replaces the wave",
+                    onClick  = ::launchWallpaperPicker,
                 )
 
                 SettingsRow(
@@ -105,7 +116,11 @@ fun DisplaySettingsScreen(
                 }
             }
 
-            // ── Wave Style — only relevant when no wallpaper is set ───────
+            // ── Wave Style — only relevant when no wallpaper is set. When a MOTION wallpaper
+            // is set, the same cycle shows as "Background Motion" (one setting governs "how
+            // lively is my background" regardless of which background is active — both write
+            // KEY_WAVE_STYLE, so a user who set Static for the wave gets a still poster the
+            // moment they pick a video).
             if (state.customWallpaperPath == null) {
                 SettingsValueRow(
                     label    = "Wave Style",
@@ -113,7 +128,40 @@ fun DisplaySettingsScreen(
                     value    = state.waveStyleLabel,
                     onClick  = { viewModel.cycleWaveStyle() },
                 )
+            } else if (state.motionWallpaperPath != null) {
+                SettingsValueRow(
+                    label    = "Background Motion",
+                    sublabel = "Animated   |   Reduced (slower, calmer)   |   Static (still image)",
+                    value    = state.waveStyleLabel,
+                    onClick  = { viewModel.cycleWaveStyle() },
+                )
             }
+
+            // Icon legibility is an appearance choice, NOT gated on a wallpaper being set —
+            // it matters most over a wallpaper, but still applies over the wave.
+            SettingsValueRow(
+                label    = "Icon Legibility",
+                sublabel = "How XMB icons separate from the background.  " +
+                    "None  |  Offset Shadow  |  Contour (Dark)  |  Contour (Light)  |  Contour (Auto — follows the icon color)",
+                value    = state.iconLegibility.label,
+                onClick  = { viewModel.cycleIconLegibility() },
+            )
+
+            SettingsToggleRow(
+                label    = "Solid Unfocused Icons",
+                sublabel = "Draw unselected icons at full opacity — selection still reads by size and label",
+                checked  = state.solidUnfocusedIcons,
+                onToggle = { viewModel.setSolidUnfocusedIcons(it) },
+            )
+
+            // Default on: the shadow is subtle and helper text over bright wallpaper reads far
+            // better with it. Users on static dark wallpapers can turn it off.
+            SettingsToggleRow(
+                label    = "Text Shadow",
+                sublabel = "Drop shadow behind row helper text — keeps it readable over bright wallpaper regions",
+                checked  = state.textShadow,
+                onToggle = { viewModel.setTextShadow(it) },
+            )
 
             SettingsGroup("Scale & Layout")
             Text(
@@ -122,6 +170,9 @@ fun DisplaySettingsScreen(
                     "foldable, tablet) keeps its own tuning.",
                 color    = SettingsSubtext,
                 fontSize = 12.sp,
+                // Same helper-text shadow as the row family — this paragraph sits directly
+                // over the translucent backdrop too.
+                style    = androidx.compose.ui.text.TextStyle(shadow = SettingsTextShadow),
                 modifier = Modifier.padding(horizontal = 48.dp, vertical = 4.dp),
             )
 
@@ -197,14 +248,14 @@ fun DisplaySettingsScreen(
 
             SettingsToggleRow(
                 label    = "Thermal Throttle Awareness",
-                sublabel = "Automatically reduce wave quality when device runs hot",
+                sublabel = "Automatically reduce background quality when device runs hot",
                 checked  = state.thermalThrottleAware,
                 onToggle = { viewModel.setThermalThrottleAware(it) },
             )
 
             SettingsToggleRow(
                 label    = "Battery Saver Mode",
-                sublabel = "Force static wave when Battery Saver is active",
+                sublabel = "Freeze the background (wave or motion wallpaper) when Battery Saver is active",
                 checked  = state.respectBatterySaver,
                 onToggle = { viewModel.setRespectBatterySaver(it) },
             )
@@ -237,12 +288,28 @@ fun DisplaySettingsScreen(
                 .background(Color.Black)
                 .clickable { viewModel.hideWallpaperPreview() },
         ) {
-            AsyncImage(
-                model              = state.customWallpaperPath,
-                contentDescription = "Wallpaper preview",
-                contentScale       = ContentScale.Fit,
-                modifier           = Modifier.fillMaxSize(),
-            )
+            val posterPath = state.customWallpaperPath
+            val motionPath = state.motionWallpaperPath
+            if (motionPath != null && posterPath != null) {
+                // A preview that shows a frozen frame of a video is a bug report waiting to
+                // happen — the full-screen preview PLAYS the motion file. The Settings overlay
+                // covers the shell, so the shell's own motion decision doesn't apply here; this
+                // preview plays unconditionally while visible (it lives and dies with this
+                // screen, and dismissing it disposes the player).
+                MotionWallpaperBackground(
+                    posterPath = posterPath,
+                    motionPath = motionPath,
+                    decision   = MotionWallpaperPolicy.Decision.PLAY,
+                    modifier   = Modifier.fillMaxSize(),
+                )
+            } else {
+                AsyncImage(
+                    model              = state.customWallpaperPath,
+                    contentDescription = "Wallpaper preview",
+                    contentScale       = ContentScale.Fit,
+                    modifier           = Modifier.fillMaxSize(),
+                )
+            }
         }
     }
 

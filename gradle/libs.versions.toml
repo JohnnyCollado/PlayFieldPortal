@@ -95,6 +95,10 @@ hilt-work-compiler              = { group = "androidx.hilt",          name = "hi
 # artifact is required for any remote URL (artwork prewarm); it is service-loaded at runtime.
 coil-compose                    = { group = "io.coil-kt.coil3",       name = "coil-compose",                version.ref = "coil" }
 coil-network-okhttp             = { group = "io.coil-kt.coil3",       name = "coil-network-okhttp",         version.ref = "coil" }
+# Animated GIF / animated WebP decoding for the motion wallpaper (ImageDecoder on API 28+;
+# minSdk here is 29, so the slower GifDecoder fallback is unnecessary). Registered on the
+# app-wide ImageLoader in ArtworkModule.
+coil-gif                        = { group = "io.coil-kt.coil3",       name = "coil-gif",                    version.ref = "coil" }
 
 # Discord Social integration
 zxing-core                      = { group = "com.google.zxing",       name = "core",                        version.ref = "zxing" }
