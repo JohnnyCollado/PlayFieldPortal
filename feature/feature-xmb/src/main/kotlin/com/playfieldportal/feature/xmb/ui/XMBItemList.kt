@@ -165,7 +165,7 @@ val XmbTextShadow = Shadow(
 
 // Physical-media memory-card art for rows that should read as a memory card but have no console icon
 // of their own (collections). Mirrors the ViewModel's MEMORY_CARD_ASSET_URI.
-private const val MEMORY_CARD_DEFAULT_ART = "file:///android_asset/systems/physical-media/_default.png"
+internal const val MEMORY_CARD_DEFAULT_ART = "file:///android_asset/systems/physical-media/_default.png"
 
 // ── Drill flyout layout ──────────────────────────────────────────────────────
 // Left inset of the game-card column, measured from the flyout's left edge (which the caller has
@@ -1309,7 +1309,7 @@ private fun XmbItemLeadingIcon(
 // unknown until the image loads, which would desync the matte geometry. A decode failure
 // degrades to the plain untinted image rather than dropping the row's icon.
 @Composable
-private fun BundledSilhouetteIcon(assetUri: String, modifier: Modifier = Modifier) {
+internal fun BundledSilhouetteIcon(assetUri: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val bitmap = remember(assetUri) {
         runCatching {

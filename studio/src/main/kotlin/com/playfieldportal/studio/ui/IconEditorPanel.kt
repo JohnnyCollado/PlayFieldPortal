@@ -59,6 +59,11 @@ fun IconEditorPanel(
             fontSize = 12.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        Text(
+            "Multi-frame GIFs are supported: they animate on the launcher when their row/column is focused. The editor shows frame 1; GIFs must stay within 512px, 120 frames, and 10 seconds.",
+            fontSize = 11.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedButton(onClick = onExportTemplates) { Text("Export icon templates…") }
             if (state.iconOverrides.isNotEmpty()) {

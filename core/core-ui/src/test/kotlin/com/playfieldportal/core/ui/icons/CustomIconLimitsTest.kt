@@ -5,7 +5,7 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 /**
- * Pins the import gate for user-picked custom XMB icons, mirroring MotionWallpaperLimitsTest:
+ * Pins the import gate for user-picked custom XMB icons, mirroring MotionLimitsTest:
  * every rejection names its reason, and the boundary at each cap lands on the accepting side
  * exactly at the limit.
  *

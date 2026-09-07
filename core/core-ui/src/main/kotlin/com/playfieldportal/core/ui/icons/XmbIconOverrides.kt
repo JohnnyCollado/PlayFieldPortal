@@ -54,6 +54,14 @@ fun ThemedGlyph(
 /** Category-bar slot key for a category iconKey — null for console art (not themeable). */
 fun catbarSlotKeyFor(iconKey: String): String? = CATBAR_SLOT_KEYS[categoryIconFor(iconKey).key]
 
+/**
+ * The inverse of [catbarSlotKeyFor]: the catalog iconKey whose art is a slot's built-in
+ * default (`catbar_settings` → `ic_settings`), or null when [slotKey] is not a crossbar slot.
+ * Lets the icon customizer preview a catbar slot's default without duplicating the mapping —
+ * [CATBAR_SLOT_KEYS] stays the one place the pairing is written down.
+ */
+fun catbarIconKeyFor(slotKey: String): String? = CATBAR_ICON_KEYS[slotKey]
+
 private val CATBAR_SLOT_KEYS: Map<String, String> = mapOf(
     "ic_settings" to "catbar_settings",
     "ic_photos" to "catbar_photos",
@@ -66,3 +74,6 @@ private val CATBAR_SLOT_KEYS: Map<String, String> = mapOf(
     "ic_favorites" to "catbar_favorites",
     "ic_achievements" to "catbar_achievements",
 )
+
+private val CATBAR_ICON_KEYS: Map<String, String> =
+    CATBAR_SLOT_KEYS.entries.associate { (iconKey, slotKey) -> slotKey to iconKey }

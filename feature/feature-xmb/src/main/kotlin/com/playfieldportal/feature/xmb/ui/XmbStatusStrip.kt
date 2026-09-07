@@ -64,13 +64,15 @@ private val StripSep     = Color(0x55FFFFFF)
 object XmbStatusIcons {
     @DrawableRes val bluetooth: Int = R.drawable.ic_status_bluetooth
 
-    @DrawableRes fun battery(level: Int, charging: Boolean): Int = when {
-        charging       -> R.drawable.ic_status_battery_charging
-        level >= 76    -> R.drawable.ic_status_battery_full
-        level >= 51    -> R.drawable.ic_status_battery_high
-        level >= 26    -> R.drawable.ic_status_battery_medium
-        else           -> R.drawable.ic_status_battery_low
-    }
+    /**
+     * Tier thresholds live in [batterySlotKey] and the key→drawable table in [forSlotKey];
+     * delegating through both keeps the mapping single-sourced — [forSlotKey]'s
+     * compile-time-checked drawable refs plus DefaultSlotGlyphTest guard the pair.
+     */
+    @DrawableRes fun battery(level: Int, charging: Boolean): Int =
+        requireNotNull(forSlotKey(batterySlotKey(level, charging))) {
+            "batterySlotKey produced a key outside the status strip"
+        }
 
     /** Themeable icon slot (theme-kit IconSlots key) matching [battery]'s tiers. */
     fun batterySlotKey(level: Int, charging: Boolean): String = when {
@@ -79,6 +81,21 @@ object XmbStatusIcons {
         level >= 51    -> "status_battery_high"
         level >= 26    -> "status_battery_medium"
         else           -> "status_battery_low"
+    }
+
+    /**
+     * Built-in drawable behind a `status_*` slot key, or null when [slotKey] is not a status
+     * slot. The icon customizer previews slot defaults through this rather than reaching for
+     * the resource IDs directly, which stay private to this file.
+     */
+    @DrawableRes fun forSlotKey(slotKey: String): Int? = when (slotKey) {
+        "status_bluetooth"         -> R.drawable.ic_status_bluetooth
+        "status_battery_charging"  -> R.drawable.ic_status_battery_charging
+        "status_battery_full"      -> R.drawable.ic_status_battery_full
+        "status_battery_high"      -> R.drawable.ic_status_battery_high
+        "status_battery_medium"    -> R.drawable.ic_status_battery_medium
+        "status_battery_low"       -> R.drawable.ic_status_battery_low
+        else                       -> null
     }
 }
 

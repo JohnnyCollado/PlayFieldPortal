@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      User-facing outcome messages for the Customize XMB Icons overlay (Reset / Reset All).
+      Resolved by XMBViewModel via its injected application context; the silent-success branch
+      of both flows intentionally has no string. Every codepoint is attribute-escaped so the
+      XML stays punctuation-faithful (em dashes, ellipsis, apostrophes). Apostrophes are
+      backslash-escaped per AAPT convention; em dashes stay as literal UTF-8 — this AGP's
+      resource compiler fails to extract strings that use numeric character references.
+    -->
+    <string name="xmb_icons_reset_removed_themed">Pick removed — the applied theme\'s icon is showing now.</string>
+    <string name="xmb_icons_reset_themed_slot">Nothing to reset — this icon comes from the applied theme.</string>
+    <string name="xmb_icons_reset_builtin_slot">Nothing to reset — this slot already uses the built-in icon.</string>
+    <string name="xmb_icons_reset_all_none">Nothing to reset — you haven\'t picked any icons.</string>
+    <string name="xmb_icons_reset_all_themed">Picks cleared — the applied theme\'s icons are showing now.</string>
+</resources>

@@ -14,7 +14,7 @@ import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.Photo
 import com.playfieldportal.core.domain.repository.PhotoRepository
-import com.playfieldportal.core.ui.motion.MotionWallpaperLimits
+import com.playfieldportal.themekit.MotionLimits
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -323,7 +323,7 @@ class PhotoViewerViewModel @Inject constructor(
     /**
      * GIF / animated WebP: copy the file verbatim — its animation IS the wallpaper — and extract
      * a poster still for the freeze paths. Same pair-write + import-gate contract as the
-     * Display-settings motion importer ([MotionWallpaperLimits]), so a wallpaper set from either
+     * Display-settings motion importer ([MotionLimits]), so a wallpaper set from either
      * entry point behaves identically behind the XMB. Null on any gate rejection or decode
      * failure; the caller's generic message covers all of them.
      */
@@ -338,7 +338,7 @@ class PhotoViewerViewModel @Inject constructor(
         val knownSize = runCatching {
             context.contentResolver.openAssetFileDescriptor(Uri.parse(photo.uri), "r")?.use { it.length }
         }.getOrNull()?.takeIf { it > 0 }
-        if (knownSize != null && knownSize > MotionWallpaperLimits.MAX_BYTES) return null
+        if (knownSize != null && knownSize > MotionLimits.MAX_BYTES) return null
 
         val copied = runCatching {
             context.contentResolver.openInputStream(Uri.parse(photo.uri))?.use { input ->
@@ -354,7 +354,7 @@ class PhotoViewerViewModel @Inject constructor(
         val probe = runCatching {
             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
             BitmapFactory.decodeFile(motionDest.absolutePath, bounds)
-            MotionWallpaperLimits.Probe(
+            MotionLimits.Probe(
                 mime = mime,
                 width = bounds.outWidth,
                 height = bounds.outHeight,
@@ -362,7 +362,7 @@ class PhotoViewerViewModel @Inject constructor(
                 bytes = motionDest.length(),
             )
         }.getOrNull()
-        val rejection = probe?.let { MotionWallpaperLimits.validate(it) }
+        val rejection = probe?.let { MotionLimits.validate(it) }
         if (probe == null || rejection != null) {
             runCatching { motionDest.delete() }
             return null
@@ -373,7 +373,7 @@ class PhotoViewerViewModel @Inject constructor(
         val poster = runCatching {
             ImageDecoder.decodeBitmap(ImageDecoder.createSource(motionDest)) { decoder, info, _ ->
                 decoder.setTargetSampleSize(
-                    maxOf(1, maxOf(info.size.width, info.size.height) / MotionWallpaperLimits.MAX_HEIGHT),
+                    maxOf(1, maxOf(info.size.width, info.size.height) / MotionLimits.MAX_HEIGHT),
                 )
             }
         }.getOrNull()

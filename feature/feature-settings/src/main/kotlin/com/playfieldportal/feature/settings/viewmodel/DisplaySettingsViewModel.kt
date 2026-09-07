@@ -15,8 +15,8 @@ import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.domain.model.IconLegibilityStyle
 import com.playfieldportal.core.domain.model.TouchNavButtonMode
 import com.playfieldportal.core.domain.model.TouchSensitivity
-import com.playfieldportal.core.ui.motion.MotionWallpaperLimits
 import com.playfieldportal.core.ui.wave.WaveStyle
+import com.playfieldportal.themekit.MotionLimits
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -65,10 +65,10 @@ private val KEY_MENU_SOUND         = booleanPreferencesKey("sound_menu_enabled")
 // Scale & Layout now live in the XMB's on-screen "Adjust XMB Layout" editor (see XMBViewModel);
 // this screen only launches it, so the old scale/bar prefs and steppers were removed here.
 
-private val SUPPORTED_WALLPAPER_MIME = setOf("image/png", "image/jpeg", "image/webp") + MotionWallpaperLimits.SUPPORTED_MIME
+private val SUPPORTED_WALLPAPER_MIME = setOf("image/png", "image/jpeg", "image/webp") + MotionLimits.SUPPORTED_MIME
 
 /** Mimes routed to the motion (looping) path rather than the plain still path. */
-private val MOTION_WALLPAPER_MIME = MotionWallpaperLimits.SUPPORTED_MIME
+private val MOTION_WALLPAPER_MIME = MotionLimits.SUPPORTED_MIME
 
 private val TOUCH_NAV_BUTTON_LABELS = mapOf(
     TouchNavButtonMode.AUTO        to "Auto",
@@ -289,8 +289,8 @@ class DisplaySettingsViewModel @Inject constructor(
         val knownSize = runCatching {
             context.contentResolver.openAssetFileDescriptor(uri, "r")?.use { it.length }
         }.getOrNull()?.takeIf { it > 0 }
-        if (knownSize != null && knownSize > MotionWallpaperLimits.MAX_BYTES) {
-            _wallpaperMessage.value = MotionWallpaperLimits.MSG_TOO_LARGE_BYTES
+        if (knownSize != null && knownSize > MotionLimits.MAX_BYTES) {
+            _wallpaperMessage.value = MotionLimits.MSG_TOO_LARGE_BYTES
             return
         }
 
@@ -301,16 +301,16 @@ class DisplaySettingsViewModel @Inject constructor(
         }.getOrDefault(false)
         if (!copied) {
             runCatching { motionDest.delete() }
-            _wallpaperMessage.value = MotionWallpaperLimits.MSG_UNDECODABLE
+            _wallpaperMessage.value = MotionLimits.MSG_UNDECODABLE
             return
         }
 
         // Probe the copied file (authoritative size even when the provider hid it).
         val probe = probeMotionFile(motionDest, mime)
-        val rejection = probe?.let { MotionWallpaperLimits.validate(it) }
+        val rejection = probe?.let { MotionLimits.validate(it) }
         if (probe == null || rejection != null) {
             runCatching { motionDest.delete() }
-            _wallpaperMessage.value = rejection ?: MotionWallpaperLimits.MSG_UNDECODABLE
+            _wallpaperMessage.value = rejection ?: MotionLimits.MSG_UNDECODABLE
             return
         }
 
@@ -321,7 +321,7 @@ class DisplaySettingsViewModel @Inject constructor(
         val poster = extractPoster(motionDest, mime)
         if (poster == null) {
             runCatching { motionDest.delete() }
-            _wallpaperMessage.value = MotionWallpaperLimits.MSG_UNDECODABLE
+            _wallpaperMessage.value = MotionLimits.MSG_UNDECODABLE
             return
         }
         val posterOk = runCatching {
@@ -331,7 +331,7 @@ class DisplaySettingsViewModel @Inject constructor(
         poster.recycle()
         if (!posterOk) {
             runCatching { motionDest.delete() }
-            _wallpaperMessage.value = MotionWallpaperLimits.MSG_UNDECODABLE
+            _wallpaperMessage.value = MotionLimits.MSG_UNDECODABLE
             return
         }
 
@@ -350,11 +350,11 @@ class DisplaySettingsViewModel @Inject constructor(
      * animated images are looped short-form content by nature — the size and resolution caps
      * are doing the guarding).
      */
-    private fun probeMotionFile(file: File, mime: String): MotionWallpaperLimits.Probe? = runCatching {
+    private fun probeMotionFile(file: File, mime: String): MotionLimits.Probe? = runCatching {
         if (mime == "image/gif" || mime == "image/webp") {
             val bounds = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
             android.graphics.BitmapFactory.decodeFile(file.absolutePath, bounds)
-            MotionWallpaperLimits.Probe(
+            MotionLimits.Probe(
                 mime = mime,
                 width = bounds.outWidth,
                 height = bounds.outHeight,
@@ -364,7 +364,7 @@ class DisplaySettingsViewModel @Inject constructor(
         } else {
             MediaMetadataRetriever().use { retriever ->
                 retriever.setDataSource(file.absolutePath)
-                MotionWallpaperLimits.Probe(
+                MotionLimits.Probe(
                     mime = mime,
                     width = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toIntOrNull() ?: 0,
                     height = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toIntOrNull() ?: 0,
@@ -385,7 +385,7 @@ class DisplaySettingsViewModel @Inject constructor(
             val source = ImageDecoder.createSource(motionFile)
             ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
                 decoder.setTargetSampleSize(
-                    maxOf(1, maxOf(info.size.width, info.size.height) / MotionWallpaperLimits.MAX_HEIGHT),
+                    maxOf(1, maxOf(info.size.width, info.size.height) / MotionLimits.MAX_HEIGHT),
                 )
             }
         } else {

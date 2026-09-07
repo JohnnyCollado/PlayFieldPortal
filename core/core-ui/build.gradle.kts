@@ -16,6 +16,10 @@ android {
 
 dependencies {
     api(project(":core:core-domain"))
+    // Pure JVM, no Android weight. Motion-wallpaper caps (MotionLimits) live here because the
+    // desktop Theme Studio authors motion wallpapers too and must validate against the same
+    // numbers — a second copy would drift into themes the launcher silently refuses.
+    api(project(":core:theme-kit"))
     implementation(platform(libs.compose.bom))
     implementation(libs.bundles.compose)
     implementation(libs.coil.compose)
@@ -32,7 +36,4 @@ dependencies {
     implementation(libs.timber)
 
     testImplementation(libs.bundles.test.unit)
-    // SystemIconsTest pins the SYSICON_PLATFORM_IDS registry (theme-kit, pure JVM) against
-    // the R8-safe static when — test-only, so the module graph stays Android-first.
-    testImplementation(project(":core:theme-kit"))
 }

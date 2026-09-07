@@ -1,7 +1,7 @@
 package com.playfieldportal.core.ui.icons
 
 /**
- * Import gate for user-picked custom XMB icons, mirroring MotionWallpaperLimits: the gate runs
+ * Import gate for user-picked custom XMB icons, mirroring MotionLimits: the gate runs
  * BEFORE anything is copied, and every rejection names its reason. Every number is a judgment
  * call living in one object so tuning later is a one-file change.
  *

@@ -149,7 +149,7 @@ class PfpThemeCodecV3Test {
 
     @Test
     fun `limits are raised for v3`() {
-        // A motion wallpaper is capped at 60 MB by MotionWallpaperLimits, so the per-entry
+        // A motion wallpaper is capped at 60 MB by MotionLimits, so the per-entry
         // cap must clear it; 98 icons + sysicons + manifest + wallpaper + motion + preview
         // clears 128 entries.
         assertEquals(256, PfpThemeCodec.BUNDLE_LIMITS.maxEntries)

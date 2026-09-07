@@ -58,8 +58,10 @@ fun StudioApp(viewModel: StudioViewModel, window: Frame) {
                             ?.let(viewModel::openFile)
                     }) { Text("Open…") }
                     OutlinedButton(onClick = {
-                        FileDialogs.openFile(window, "Import wallpaper", setOf("png", "jpg", "jpeg", "bmp", "webp"))
-                            ?.let(viewModel::stageWallpaper)
+                        // Same file set the launcher's Display settings invite: image OR short
+                        // video. onWallpaperPicked routes video formats into the motion gate.
+                        FileDialogs.openFile(window, "Import wallpaper or video", setOf("png", "jpg", "jpeg", "bmp", "webp", "mp4", "m4v", "webm", "gif"))
+                            ?.let(viewModel::onWallpaperPicked)
                     }) { Text("Wallpaper…") }
                     OutlinedButton(onClick = {
                         FileDialogs.saveFile(
@@ -131,8 +133,14 @@ fun StudioApp(viewModel: StudioViewModel, window: Frame) {
                                 state = state,
                                 viewModel = viewModel,
                                 onChooseWallpaper = {
-                                    FileDialogs.openFile(window, "Import wallpaper", setOf("png", "jpg", "jpeg", "bmp", "webp"))
-                                        ?.let(viewModel::stageWallpaper)
+                                    // Mirrors the launcher: one pick dialog for image-or-video,
+                                    // dispatched by extension inside the ViewModel.
+                                    FileDialogs.openFile(window, "Import wallpaper or video", setOf("png", "jpg", "jpeg", "bmp", "webp", "mp4", "m4v", "webm", "gif"))
+                                        ?.let(viewModel::onWallpaperPicked)
+                                },
+                                onChooseVideo = {
+                                    FileDialogs.openFile(window, "Import video", setOf("mp4", "m4v"))
+                                        ?.let(viewModel::importVideo)
                                 },
                             )
                             1 -> IconEditorPanel(

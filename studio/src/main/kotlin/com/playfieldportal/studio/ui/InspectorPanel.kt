@@ -38,12 +38,13 @@ import com.playfieldportal.studio.io.PtfConversion
 import com.playfieldportal.themekit.PfpThemeManifest
 import com.playfieldportal.themekit.PfpThemeSource
 
-/** Theme tab: name, accent, icon color, wave style, wallpaper, provenance. */
+/** Theme tab: name, accent, icon color, wave style, wallpaper, motion, provenance. */
 @Composable
 fun InspectorPanel(
     state: StudioState,
     viewModel: StudioViewModel,
     onChooseWallpaper: () -> Unit,
+    onChooseVideo: () -> Unit,
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -141,6 +142,30 @@ fun InspectorPanel(
         )
         if (state.wallpaperBusy) {
             HintText("Busy wallpaper — labels may be hard to read. Softer, low-contrast images work best.")
+        }
+
+        HorizontalDivider()
+
+        SectionLabel("Motion wallpaper")
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            OutlinedButton(onClick = onChooseVideo) { Text("Choose…") }
+            if (state.motionFile != null) {
+                OutlinedButton(onClick = viewModel::clearMotion) { Text("Clear") }
+            }
+        }
+        Text(
+            state.motionFileName ?: "None — still wallpaper only",
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (state.motionFile != null) {
+            // The still IS the video's poster: whenever playback is frozen on device — battery
+            // saver, a game launching, or a Static wave style — the launcher shows it instead.
+            // Without the hint, authors read the frozen poster as the video being broken.
+            HintText("The still wallpaper above is the video's poster — it shows whenever playback is frozen (battery saver, a game, or a Static wave).")
+        }
+        if (state.motionFile != null && state.wallpaperPng == null) {
+            HintText("No still wallpaper set — the motion entry will not be exported until one is.")
         }
 
         HorizontalDivider()

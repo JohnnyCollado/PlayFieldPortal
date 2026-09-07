@@ -21,6 +21,14 @@ dependencies {
     // rendering and the editable template export.
     implementation(libs.compose.mp.icons.extended)
     implementation(libs.kotlinx.coroutines.swing)
+    // Video -> GIF motion wallpapers (VideoCodecs). Pure Java, ~1.5 MB, no native libraries:
+    // it keeps this module's pure-JVM rule intact and keeps the jpackage installer small.
+    // The trade-off is deliberate and narrow — MP4/H.264 only, no WebM/HEVC/AV1 — and it buys
+    // a decoder that cannot be exploited the way a native one can (see VideoTranscodeLimits).
+    implementation(libs.jcodec)
+    // AWTUtil (Picture -> BufferedImage) ships separately from the codec core, because the core
+    // itself is AWT-free. Both artifacts share the jcodec version.
+    implementation(libs.jcodec.javase)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlin.test.junit)
@@ -38,7 +46,10 @@ compose.desktop {
             isEnabled.set(false)
         }
         nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+            // Exe is the Windows default we ship (build-theme-studio-installer.bat drives it);
+            // Msi stays for managed/silent deployment. Both come out of the same jpackage run
+            // and both need the WiX Toolset on PATH.
+            targetFormats(TargetFormat.Dmg, TargetFormat.Exe, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "PlayField Theme Studio"
             packageVersion = "1.2.0"
             description = "Create, convert, and share PlayFieldPortal XMB themes"
@@ -64,7 +75,11 @@ compose.desktop {
 val distDir = rootProject.layout.projectDirectory.dir("dist")
 val copyInstallerToDist = tasks.register<Copy>("copyReleaseInstallerToDist") {
     from(layout.buildDirectory.dir("compose/binaries/main-release")) {
-        include("**/*.msi", "**/*.exe", "**/*.deb", "**/*.dmg", "**/*.pkg")
+        // Scoped to the per-format subdirs, NOT "**/*.exe": the app-image that jpackage builds
+        // first lands in main-release/app/ and contains the application LAUNCHER
+        // "PlayField Theme Studio.exe". Flattened into dist next to the installer that would be
+        // an easy exe to hand someone by mistake — it only runs from its own install tree.
+        include("exe/**/*.exe", "msi/**/*.msi", "deb/**/*.deb", "dmg/**/*.dmg", "pkg/**/*.pkg")
     }
     // Flatten out of the format subdir and normalize spaces to hyphens, matching the launcher
     // APK naming in dist (e.g. "PlayField Theme Studio-1.1.0.msi" -> PlayField-Theme-Studio-1.1.0.msi).
@@ -75,5 +90,7 @@ val copyInstallerToDist = tasks.register<Copy>("copyReleaseInstallerToDist") {
     outputs.upToDateWhen { false }
 }
 tasks.matching {
-    it.name == "packageReleaseDistributionForCurrentOS" || it.name == "packageReleaseMsi"
+    it.name == "packageReleaseDistributionForCurrentOS" ||
+        it.name == "packageReleaseExe" ||
+        it.name == "packageReleaseMsi"
 }.configureEach { finalizedBy(copyInstallerToDist) }

@@ -146,11 +146,20 @@ class CustomIconStoreTest {
         store.import("status_bluetooth", register(pngBytes()), "image/png")
         store.import("catbar_games", register(pngBytes()), "image/png")
 
-        store.clear("status_bluetooth")
+        assertTrue(store.clear("status_bluetooth"), "a stored pick reports as removed")
 
         val loaded = store.load()
         assertNull(loaded["status_bluetooth"])
         assertNotNull(loaded["catbar_games"], "clear is per-slot — other slots untouched")
+    }
+
+    // The overlay greys its Reset control and explains itself off these two returns: this tier
+    // holds only user picks, so a slot the user never picked has nothing to clear even when an
+    // icon is plainly on screen (the applied theme's, or the built-in).
+    @Test
+    fun `clear reports false when the slot has no user pick`() = runTest {
+        assertFalse(store.clear("catbar_games"), "no pick stored — nothing was removed")
+        assertFalse(store.clear("not_a_slot"), "an unknown key removes nothing")
     }
 
     @Test
@@ -158,10 +167,15 @@ class CustomIconStoreTest {
         store.import("catbar_games", register(pngBytes()), "image/png")
         store.import("sysicon_snes", register(pngBytes()), "image/png")
 
-        store.clearAll()
+        assertTrue(store.clearAll(), "stored picks report as cleared")
 
         assertTrue(store.load().isEmpty())
         assertTrue(iconDir().listFiles().isNullOrEmpty())
+    }
+
+    @Test
+    fun `clearAll reports false when nothing was stored`() = runTest {
+        assertFalse(store.clearAll(), "no picks stored — nothing was cleared")
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────

@@ -38,7 +38,6 @@ import com.playfieldportal.core.domain.model.ControllerIcon
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.components.ControllerPromptBar
 import com.playfieldportal.core.ui.components.ControllerPromptItem
-import com.playfieldportal.core.ui.icons.ConsoleIcon
 import com.playfieldportal.core.ui.icons.CustomIcon
 import com.playfieldportal.core.ui.icons.CustomIconSurface
 import com.playfieldportal.core.ui.icons.LocalIconAnimating
@@ -255,8 +254,16 @@ fun CustomIconsOverlay(
                     onClick = launchPicker,
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3A82F6)),
                 ) { Text("Pick") }
-                OutlinedButton(onClick = { focused?.let { onResetSlot(it.key) } }) { Text("Reset") }
-                OutlinedButton(onClick = onResetAll) { Text("Reset All") }
+                // Reset clears the USER tier only, so it can act only on a slot the user has
+                // picked — greying it everywhere else is what stops "Reset" reading as broken
+                // on a slot whose icon comes from the theme (or from the built-in set). The
+                // pad's OPTIONS stays live and answers with a message instead, so the reason
+                // is available on controller too.
+                OutlinedButton(
+                    onClick = { focused?.let { onResetSlot(it.key) } },
+                    enabled = focused != null && customIcons.containsKey(focused.key),
+                ) { Text("Reset") }
+                OutlinedButton(onClick = onResetAll, enabled = customIcons.isNotEmpty()) { Text("Reset All") }
                 OutlinedButton(onClick = onSaveAsTheme) { Text("Save as Theme…") }
                 Box(Modifier.width(1.dp)) // spacer flex
                 OutlinedButton(onClick = onDone) { Text("Done") }
@@ -283,31 +290,27 @@ private fun groupLabel(group: IconSlot.Group): String = when (group) {
 }
 
 /**
- * Draws a slot's current icon through the real pipeline: user pick > theme icon > the built-in
- * slot glyph via ThemedGlyph. Because the strip sits inside the shell's CompositionLocalProvider
- * tree, LocalIconLegibility and the theme's icon tint apply exactly as on the XMB itself.
+ * Draws a slot's current icon through the real pipeline: user pick > theme icon > the slot's
+ * built-in glyph via [DefaultSlotGlyph]. Because the strip sits inside the shell's
+ * CompositionLocalProvider tree, LocalIconLegibility and the theme's icon tint apply exactly
+ * as on the XMB itself — so an untouched slot previews as the row it will replace, not as a
+ * placeholder.
  */
 @Composable
 private fun SlotPreview(slot: IconSlot, icon: CustomIcon?, modifier: Modifier = Modifier) {
     if (icon != null) {
         CustomIconSurface(icon = icon, contentDescription = slot.displayName, modifier = modifier)
-    } else if (slot.group == IconSlot.Group.CONSOLE) {
-        // Console slots have a real built-in — the sysicon art.
-        ConsoleIcon(
-            platformId = slot.key.removePrefix("sysicon_"),
-            contentDescription = slot.displayName,
-            modifier = modifier,
-        )
-    } else {
-        // Theme slots have no generic built-in in this layer (their default vectors live at
-        // the individual render sites); a neutral plate keeps the strip readable.
-        Box(
-            modifier = modifier
-                .border(1.dp, Color(0x66B9C6DC), RoundedCornerShape(6.dp))
-                .padding(2.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(text = slot.displayName.take(1), color = Color(0xFFB9C6DC), fontSize = 18.sp)
-        }
+        return
+    }
+    if (DefaultSlotGlyph(slot = slot, contentDescription = slot.displayName, modifier = modifier)) return
+    // Unreachable for a registered slot (DefaultSlotGlyphTest is the guard), but a slot added
+    // without built-in art still gets a readable plate rather than an empty cell.
+    Box(
+        modifier = modifier
+            .border(1.dp, Color(0x66B9C6DC), RoundedCornerShape(6.dp))
+            .padding(2.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(text = slot.displayName.take(1), color = Color(0xFFB9C6DC), fontSize = 18.sp)
     }
 }

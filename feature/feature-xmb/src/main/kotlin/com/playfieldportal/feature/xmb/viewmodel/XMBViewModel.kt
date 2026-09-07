@@ -64,6 +64,7 @@ import com.playfieldportal.feature.artwork.api.ArtworkRepository
 import com.playfieldportal.feature.library.scanner.LibraryScanner
 import com.playfieldportal.feature.library.scanner.ScanStatus
 import com.playfieldportal.feature.library.scanner.scanOutcomeMessage
+import com.playfieldportal.feature.xmb.R
 import com.playfieldportal.feature.xmb.gamepad.GamepadInputHandler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -7845,12 +7846,16 @@ class XMBViewModel @Inject constructor(
         _uiState.update { it.copy(customIconSession = null) }
     }
 
+    // Every cursor move drops [CustomIconSession.message]: it always describes what just
+    // happened to ONE slot, so carrying it to the next one would attribute the outcome to a
+    // slot it was never about.
+
     /** Moves the group cursor (L/R); wraps so the ends loop. */
     fun onCustomIconGroupMove(dir: Int) {
         val session = _uiState.value.customIconSession ?: return
         val next = (session.groupIndex + dir).mod(session.groups.size)
         _uiState.update {
-            it.copy(customIconSession = session.copy(groupIndex = next, slotIndex = 0))
+            it.copy(customIconSession = session.copy(groupIndex = next, slotIndex = 0, message = null))
         }
     }
 
@@ -7859,13 +7864,13 @@ class XMBViewModel @Inject constructor(
         val session = _uiState.value.customIconSession ?: return
         val count = CustomizableIcons.group(session.group).size
         val next = (session.slotIndex + dir).coerceIn(0, (count - 1).coerceAtLeast(0))
-        _uiState.update { it.copy(customIconSession = session.copy(slotIndex = next)) }
+        _uiState.update { it.copy(customIconSession = session.copy(slotIndex = next, message = null)) }
     }
 
     /** Touch: focus a strip slot directly (same cursor as the pad moves). */
     fun onCustomIconSlotFocused(index: Int) {
         val session = _uiState.value.customIconSession ?: return
-        _uiState.update { it.copy(customIconSession = session.copy(slotIndex = index)) }
+        _uiState.update { it.copy(customIconSession = session.copy(slotIndex = index, message = null)) }
     }
 
     /** SAF result: replace [slotKey]'s icon. The message lands in the session. */
@@ -7881,24 +7886,44 @@ class XMBViewModel @Inject constructor(
         }
     }
 
-    /** Per-slot Reset: the built-in returns immediately; the theme icon returns on theme re-apply. */
+    /**
+     * Per-slot Reset: the user's pick goes; the built-in returns immediately UNLESS the
+     * applied theme supplies this slot, in which case the theme's icon surfaces instead.
+     *
+     * Reset only ever clears the user tier, so on a themed slot — or one that was never
+     * picked — it legitimately changes nothing on screen. That is precisely when it reads as
+     * a dead button, so every outcome says what happened; only the unambiguous one (the
+     * built-in visibly returns) stays silent.
+     */
     fun onResetSlot(slotKey: String) {
         viewModelScope.launch {
-            customIconStore.clear(slotKey)
+            val removed = customIconStore.clear(slotKey)
             _uiState.update {
                 val s = it.customIconSession ?: return@update it
-                it.copy(customIconSession = s.copy(message = null, revision = s.revision + 1))
+                val themed = it.iconOverrides.containsKey(slotKey)
+                val message = when {
+                    removed && themed -> context.getString(R.string.xmb_icons_reset_removed_themed)
+                    removed -> null
+                    themed -> context.getString(R.string.xmb_icons_reset_themed_slot)
+                    else -> context.getString(R.string.xmb_icons_reset_builtin_slot)
+                }
+                it.copy(customIconSession = s.copy(message = message, revision = s.revision + 1))
             }
         }
     }
 
-    /** Reset All: every user pick goes; the built-ins return immediately. */
+    /** Reset All: every user pick goes; the built-ins return except where the theme supplies a slot. */
     fun onResetAll() {
         viewModelScope.launch {
-            customIconStore.clearAll()
+            val removed = customIconStore.clearAll()
             _uiState.update {
                 val s = it.customIconSession ?: return@update it
-                it.copy(customIconSession = s.copy(message = null, revision = s.revision + 1))
+                val message = when {
+                    !removed -> context.getString(R.string.xmb_icons_reset_all_none)
+                    it.iconOverrides.isNotEmpty() -> context.getString(R.string.xmb_icons_reset_all_themed)
+                    else -> null
+                }
+                it.copy(customIconSession = s.copy(message = message, revision = s.revision + 1))
             }
         }
     }

@@ -1,10 +1,11 @@
 package com.playfieldportal.core.ui.motion
 
+import com.playfieldportal.themekit.MotionLimits
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
- * Pins the render-time format classification ([MotionWallpaperLimits.formatOf]) that routes a
+ * Pins the render-time format classification ([formatOf]) that routes a
  * motion wallpaper between the ExoPlayer surface and the Coil animated-image surface. The
  * importer names files `wallpaper_<stamp>.<ext>` from the validated MIME, so the extension is
  * authoritative — these tests guard the mapping and its deliberate fallback.
@@ -55,7 +56,7 @@ class MotionWallpaperFormatTest {
             "image/gif" to MotionFormat.ANIMATED_IMAGE,
             "image/webp" to MotionFormat.ANIMATED_IMAGE,
         )
-        assertEquals(expected.keys, MotionWallpaperLimits.SUPPORTED_MIME)
+        assertEquals(expected.keys, MotionLimits.SUPPORTED_MIME)
         expected.forEach { (mime, format) ->
             val ext = mime.substringAfter('/')
             assertEquals(

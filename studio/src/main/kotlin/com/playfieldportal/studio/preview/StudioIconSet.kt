@@ -1,10 +1,6 @@
 package com.playfieldportal.studio.preview
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.HelpOutline
-// Non-mirrored variant: matches the launcher's item_missing / ach_untracked glyph exactly. The
-// existing item_shiba_untracked above uses the auto-mirrored one, so both are imported here.
-import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
@@ -13,6 +9,7 @@ import androidx.compose.material.icons.filled.CallEnd
 import androidx.compose.material.icons.filled.Collections
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Headset
+import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.LibraryMusic
@@ -46,8 +43,8 @@ import androidx.compose.ui.res.painterResource
  */
 object StudioIconSet {
 
-    /** Classpath resources for the raster/XML-vector slots. */
-    private val RESOURCE_SLOTS: Map<String, String> = mapOf(
+    /** Classpath resources for the raster/XML-vector slots. StudioIconSetTest covers keys. */
+    internal val RESOURCE_SLOTS: Map<String, String> = mapOf(
         "catbar_games" to "xmb/catbar_games.png",
         "catbar_music" to "xmb/catbar_music.png",
         "catbar_video" to "xmb/catbar_video.png",
@@ -111,7 +108,7 @@ object StudioIconSet {
         "item_social_signout" to Icons.AutoMirrored.Filled.Logout,
         // Shiba Coins (achievements) hub rows.
         "item_shiba_connect" to Icons.Filled.Link,
-        "item_shiba_untracked" to Icons.AutoMirrored.Filled.HelpOutline,
+        "item_shiba_untracked" to Icons.Filled.HelpOutline,
     )
 
     /** Default painter for a slot key, or a play-arrow stand-in for unknown keys. */

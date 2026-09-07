@@ -124,20 +124,36 @@ class CustomIconStore @Inject constructor(
         ImportResult(true)
     }
 
-    /** Clears one slot: the file first, then a stamp bump so observers reload — nothing
-     *  references the file while it's being removed, and no bump without a real removal. */
-    suspend fun clear(slotKey: String): Unit = withContext(Dispatchers.IO) {
-        if (!CustomizableIcons.isValidKey(slotKey)) return@withContext
+    /**
+     * Clears one slot: the file first, then a stamp bump so observers reload — nothing
+     * references the file while it's being removed, and no bump without a real removal.
+     *
+     * Returns whether a pick was actually removed. The caller needs this to tell the user
+     * WHY nothing changed: this tier holds only user picks, so clearing a slot the user
+     * never picked is a no-op, and a cleared slot can still show the applied theme's icon
+     * underneath. Silence there reads as a broken button.
+     */
+    suspend fun clear(slotKey: String): Boolean = withContext(Dispatchers.IO) {
+        if (!CustomizableIcons.isValidKey(slotKey)) return@withContext false
         val removed = mimeForExtension.keys.any { ext -> File(dir, "$slotKey.$ext").delete() }
         if (removed) {
             context.pfpDataStore.edit { prefs -> prefs[KEY_CUSTOM_ICONS_STAMP] = System.currentTimeMillis() }
         }
+        removed
     }
 
-    /** Clears every user pick and the stamp. The directory itself is removed. */
-    suspend fun clearAll(): Unit = withContext(Dispatchers.IO) {
+    /**
+     * Clears every user pick and the stamp. The directory itself is removed.
+     *
+     * Returns whether there was anything to clear, for the same reason [clear] does — with no
+     * picks stored this is a no-op, and the user deserves to be told that rather than left
+     * pressing a button that appears dead.
+     */
+    suspend fun clearAll(): Boolean = withContext(Dispatchers.IO) {
+        val had = dir.listFiles { f -> f.isFile }.orEmpty().isNotEmpty()
         context.pfpDataStore.edit { prefs -> prefs.remove(KEY_CUSTOM_ICONS_STAMP) }
         dir.deleteRecursively()
+        had
     }
 
     /**

@@ -39,6 +39,10 @@ compose-multiplatform   = "1.12.0"
 compose-mp-material3    = "1.9.0"
 # Same story as material-icons above: frozen upstream, no releases past 1.7.3.
 compose-mp-icons        = "1.7.3"
+# Pure-Java MP4/H.264 reader for the Theme Studio's video -> GIF motion-wallpaper import.
+# Deliberately NOT ffmpeg/JavaCV: :studio must stay pure JVM (no natives in the jpackage
+# installer), and a pure-Java parser cannot be exploited the way a native decoder can.
+jcodec                  = "0.2.5"
 
 [libraries]
 # AndroidX Core
@@ -139,6 +143,8 @@ accompanist-drawablepainter     = { group = "com.google.accompanist",  name = "a
 # `compose.material3` / `compose.materialIconsExtended` shorthand, which CMP deprecated.
 compose-mp-material3            = { group = "org.jetbrains.compose.material3", name = "material3",              version.ref = "compose-mp-material3" }
 compose-mp-icons-extended       = { group = "org.jetbrains.compose.material",  name = "material-icons-extended", version.ref = "compose-mp-icons" }
+jcodec                          = { group = "org.jcodec",                    name = "jcodec",                  version.ref = "jcodec" }
+jcodec-javase                   = { group = "org.jcodec",                    name = "jcodec-javase",           version.ref = "jcodec" }
 
 # Testing
 junit                           = { group = "junit",                      name = "junit",                           version.ref = "junit" }

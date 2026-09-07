@@ -1,4 +1,4 @@
-package com.playfieldportal.core.ui.motion
+package com.playfieldportal.themekit
 
 /**
  * Import gate for user-picked motion wallpapers. Playback discipline cannot rescue a file that
@@ -6,12 +6,17 @@ package com.playfieldportal.core.ui.motion
  * rejection names its reason.
  *
  * Every number here is a judgment call rather than a hardware fact — which is why they live in
- * one object the tests point at: tuning a limit later is a one-file change. (Transcoding
- * oversized picks instead of rejecting them is deliberately out of scope for the first pass.)
+ * one object the tests point at: tuning a limit later is a one-file change.
  *
- * Tested by MotionWallpaperLimitsTest, including the boundary at each cap.
+ * Lives in theme-kit (pure JVM), not core-ui, because BOTH sides of the feature need the same
+ * numbers: the launcher's Android importer probes with MediaMetadataRetriever, and the desktop
+ * Theme Studio validates the GIF it transcodes against exactly these caps before embedding it.
+ * Two copies would drift, and the drift would show up as a Studio-authored theme the launcher
+ * silently refuses.
+ *
+ * Tested by MotionLimitsTest, including the boundary at each cap.
  */
-object MotionWallpaperLimits {
+object MotionLimits {
 
     // Accepted containers. GIF/animated WebP ride Coil's animated-image decoder; MP4/WebM go to
     // ExoPlayer. Still-image formats belong to the plain wallpaper path, not this gate.
@@ -33,6 +38,13 @@ object MotionWallpaperLimits {
     const val MSG_TOO_LONG = "Clip is too long — 60 seconds or less"
     const val MSG_TOO_LARGE_BYTES = "File is too large — under 60 MB"
     const val MSG_UNDECODABLE = "Couldn't read that video — try a different file"
+
+    /**
+     * Every extension [mimeForExtension] knows — the canonical list the drift tests iterate.
+     * Adding a key to the mappings without adding it here means those tests silently stop
+     * covering it, so an unknown-container regression would land exactly where they look.
+     */
+    val knownExtensions = setOf("mp4", "m4v", "webm", "gif", "webp")
 
     /**
      * The probed media facts, collected by MediaMetadataRetriever at import time. [mime] may be
@@ -63,23 +75,38 @@ object MotionWallpaperLimits {
         probe.bytes > MAX_BYTES -> MSG_TOO_LARGE_BYTES
         else -> null
     }
-}
 
-/**
- * Which decoder a stored motion file needs. The extension is authoritative: the importer names
- * every file `wallpaper_<stamp>.<ext>` from the validated MIME (DisplaySettingsViewModel), so the
- * suffix IS the MIME by construction and no probe is needed at render time.
- */
-enum class MotionFormat { VIDEO, ANIMATED_IMAGE }
-
-/**
- * Classifies a stored motion path by suffix. VIDEO stays the else-branch deliberately: an
- * unexpected suffix goes to ExoPlayer, which fails loudly, rather than to Coil, which would fail
- * silently.
- */
-fun formatOf(path: String): MotionFormat =
-    if (path.endsWith(".gif", ignoreCase = true) || path.endsWith(".webp", ignoreCase = true)) {
-        MotionFormat.ANIMATED_IMAGE
-    } else {
-        MotionFormat.VIDEO
+    /**
+     * File extension (no dot, any case) to the MIME [validate] expects, or null when the
+     * extension is not a motion container at all.
+     *
+     * The launcher never needs this — Android's content resolver reports a real MIME for a picked
+     * Uri. The desktop Theme Studio has only a filename, and validating there is not optional:
+     * `PfpThemeStore.apply()` installs a bundle's motion entry WITHOUT re-running [validate], so
+     * for a Studio-authored theme this gate is the only one there is.
+     *
+     * Keys are deliberately the same set as `PfpThemeCodec.MOTION_EXTENSIONS` plus the aliases
+     * that are the same container under another name, so an extension that survives this mapping
+     * is one the bundle writer will actually store.
+     */
+    fun mimeForExtension(extension: String): String? = when (extension.lowercase()) {
+        // m4v is an MP4 container; both are written into the bundle as "mp4".
+        "mp4", "m4v" -> "video/mp4"
+        "webm" -> "video/webm"
+        "gif" -> "image/gif"
+        "webp" -> "image/webp"
+        else -> null
     }
+
+    /**
+     * The extension a file of [extension] is stored under inside a theme bundle. Collapses the
+     * aliases: `PfpThemeCodec` accepts only mp4/webm/gif, and silently drops a motion entry whose
+     * extension is outside that set, so `motion.m4v` would vanish from the zip without a word.
+     */
+    fun bundleExtensionFor(extension: String): String? = when (extension.lowercase()) {
+        "mp4", "m4v" -> "mp4"
+        "webm" -> "webm"
+        "gif" -> "gif"
+        else -> null
+    }
+}

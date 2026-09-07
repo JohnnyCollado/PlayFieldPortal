@@ -33,6 +33,11 @@ keystore.properties
 /dist/
 /debug/
 
+# Portable WiX v3 toolchain (wix314-binaries.zip), used by
+# build-theme-studio-installer.bat so packaging needs no admin install.
+# ~40MB of third-party binaries — fetched, never committed.
+/tools/wix3/
+
 # Google Services (Firebase)
 google-services.json
 
