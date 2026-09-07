@@ -14,6 +14,8 @@ import com.playfieldportal.themekit.PfpThemeManifest
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.IOException
+import java.io.InputStream
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -24,6 +26,7 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -99,6 +102,51 @@ class PfpThemeStoreTest {
         val store = PfpThemeStore(context)
 
         assertNull(store.importBundle(register("not a zip".toByteArray())))
+    }
+
+    /**
+     * The import failures the UI is allowed to distinguish.
+     *
+     * These exist because every one of them used to be a bare null rendered as "not a valid
+     * .pfptheme file" — which is a lie for four of the six, and sent at least one debugging
+     * session hunting a corrupt bundle that was byte-for-byte fine.
+     *
+     * Coverage note: TooLarge and OutOfMemory are deliberately not unit-tested. Both are
+     * defined by allocation size (a 64 MB read cap, and exhausting the device heap), so
+     * reproducing them here would mean allocating ~96 MB inside the test JVM to assert a
+     * branch that is two lines long. They are pinned by the Timber lines they emit instead.
+     */
+    @Test
+    fun `a successful import reports Success carrying the theme`() = runTest {
+        val store = PfpThemeStore(context)
+
+        val result = store.importBundleDetailed(register(bundleBytes("Red", "#FF0000")))
+
+        val success = assertIs<PfpThemeStore.ImportResult.Success>(result)
+        assertEquals("Red", success.theme.name)
+    }
+
+    @Test
+    fun `non-bundle bytes report NotABundle specifically`() = runTest {
+        val store = PfpThemeStore(context)
+
+        val result = store.importBundleDetailed(register("not a zip".toByteArray()))
+
+        assertEquals(PfpThemeStore.ImportResult.NotABundle, result)
+    }
+
+    @Test
+    fun `a stream that fails mid-read reports Unreadable, not a bad bundle`() = runTest {
+        val store = PfpThemeStore(context)
+        // A truncated download or a revoked SAF grant fails here, and the file it points at may
+        // be a perfectly good theme — reporting it as invalid blames the wrong thing.
+        val uri = Uri.parse("content://test/broken.pfptheme")
+        shadowOf(context.contentResolver).registerInputStream(uri, failingStream())
+
+        val result = store.importBundleDetailed(uri)
+
+        val unreadable = assertIs<PfpThemeStore.ImportResult.Unreadable>(result)
+        assertNotNull(unreadable.cause, "the I/O failure is carried, not discarded")
     }
 
     @Test
@@ -202,6 +250,12 @@ class PfpThemeStoreTest {
     }
 
     /** Exposes [bytes] to the store through the SAF ContentResolver, as a picked file would arrive. */
+    /** An input stream that opens fine and then fails, like a dropped SAF descriptor. */
+    private fun failingStream(): InputStream = object : InputStream() {
+        override fun read(): Int = throw IOException("descriptor went away")
+        override fun read(b: ByteArray, off: Int, len: Int): Int = throw IOException("descriptor went away")
+    }
+
     private fun register(bytes: ByteArray): Uri {
         val uri = Uri.parse("content://test/${System.nanoTime()}.pfptheme")
         shadowOf(context.contentResolver).registerInputStream(uri, ByteArrayInputStream(bytes))

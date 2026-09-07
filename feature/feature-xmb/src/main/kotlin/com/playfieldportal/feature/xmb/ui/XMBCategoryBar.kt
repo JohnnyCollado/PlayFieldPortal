@@ -79,6 +79,8 @@ fun XMBCategoryBar(
     // the unfocused dim — selection still reads by icon size and the label fade. Default false
     // = today's dimming. (IconLegibility rides LocalIconLegibility, no parameter needed.)
     solidUnfocusedIcons: Boolean = false,
+    // Whether the selected category's GIF icon may animate (battery saver / overlays gate it).
+    iconAnimatingAllowed: Boolean = false,
 ) {
     val listState = rememberLazyListState()
 
@@ -121,6 +123,7 @@ fun XMBCategoryBar(
                             onClick = { onCategorySelected(index) },
                             onLongPress = { onCategoryLongPress(index) },
                             solidUnfocusedIcons = solidUnfocusedIcons,
+                            iconAnimatingAllowed = iconAnimatingAllowed,
                             modifier = Modifier.width(ItemSlotWidth),
                         )
                 }
@@ -137,6 +140,7 @@ private fun XMBCategoryItem(
     onClick: () -> Unit,
     onLongPress: () -> Unit,
     solidUnfocusedIcons: Boolean,
+    iconAnimatingAllowed: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val iconSize by animateDpAsState(
@@ -179,6 +183,12 @@ private fun XMBCategoryItem(
                 .size(82.dp)
                 .alpha(itemAlpha),
         ) {
+            // The selected category's GIF (if the slot holds one) animates exactly while it is
+            // the focused column — the same gate the item rows obey.
+            androidx.compose.runtime.CompositionLocalProvider(
+                com.playfieldportal.core.ui.icons.LocalIconAnimating provides
+                    (isSelected && iconAnimatingAllowed),
+            ) {
             // All category icons resolve through the shared core-ui catalog (catbar_* column
             // glyphs and sysicon_* console art) — selection is conveyed by size and alpha (no halo).
             CategoryIconGlyph(
@@ -186,6 +196,7 @@ private fun XMBCategoryItem(
                 contentDescription = category.name,
                 modifier = Modifier.size(iconSize),
             )
+            }
         }
 
         Text(

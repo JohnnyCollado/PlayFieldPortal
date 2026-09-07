@@ -3,6 +3,7 @@ package com.playfieldportal.studio
 import com.playfieldportal.themekit.PfpThemeBundle
 import com.playfieldportal.themekit.PfpThemeCodec
 import com.playfieldportal.themekit.PfpThemeManifest
+import com.playfieldportal.themekit.ThemeImage
 import java.time.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -33,7 +34,7 @@ class RoundTripTest {
             manifest = manifest,
             wallpaper = state.wallpaperPng,
             preview = ByteArray(32) { 3 }, // stand-in for the rendered frame
-            icons = state.iconOverrides,
+            icons = state.iconOverrides.mapValues { (_, png) -> ThemeImage(png, "png") },
         )
 
         val decoded = assertNotNull(PfpThemeCodec.read(PfpThemeCodec.write(bundle)))
@@ -41,11 +42,11 @@ class RoundTripTest {
         assertEquals("#E87FB0", decoded.manifest.accentColor)
         assertEquals("#FFD700", decoded.manifest.iconColor)
         assertEquals(PfpThemeManifest.WAVE_REDUCED, decoded.manifest.waveStyle)
-        assertEquals(2, decoded.manifest.schemaVersion)
+        assertEquals(PfpThemeManifest.SCHEMA_VERSION, decoded.manifest.schemaVersion)
         assertEquals("2026-07-07", decoded.manifest.created)
         assertContentEquals(state.wallpaperPng, decoded.wallpaper)
         assertEquals(setOf("catbar_games", "item_playlist"), decoded.icons.keys)
-        assertContentEquals(state.iconOverrides["catbar_games"], decoded.icons["catbar_games"])
+        assertContentEquals(state.iconOverrides["catbar_games"], decoded.icons["catbar_games"]?.bytes)
     }
 
     @Test

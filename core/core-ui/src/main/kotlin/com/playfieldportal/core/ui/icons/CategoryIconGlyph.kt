@@ -16,23 +16,33 @@ import com.playfieldportal.core.domain.model.IconLegibilityStyle
  *  the theme's unified icon color applies (white default = visually unchanged). Unknown keys
  *  fall back to the games glyph. Size via [modifier].
  *
- *  Crossbar glyphs are themeable icon slots: when the applied theme carries a custom icon
- *  for this slot, that art renders as-authored instead (console art has no slot) — but the
- *  configured icon-legibility matte still draws behind it, built from the bitmap's own
- *  alpha, via [OverrideGlyphSurface]. */
+ *  Crossbar glyphs are themeable icon slots: two-tier lookup — the user's pick wins, then the
+ *  applied theme's custom icon for the slot, drawn as-authored through [CustomIconSurface]
+ *  (which carries the legibility matte on the still frame). Console-art categories (no slot)
+ *  route through [ConsoleIcon], which runs the same two-tier check on their sysicon key. */
 @Composable
 fun CategoryIconGlyph(
     iconKey: String,
     contentDescription: String? = null,
     modifier: Modifier = Modifier,
 ) {
-    val override = catbarSlotKeyFor(iconKey)?.let { LocalXmbIconOverrides.current[it] }
-    if (override != null) {
-        OverrideGlyphSurface(
-            bitmap = override,
-            contentDescription = contentDescription,
-            modifier = modifier,
-        )
+    val slotKey = catbarSlotKeyFor(iconKey)
+    if (slotKey == null) {
+        // Console art (not a themeable slot): same two-tier check on its sysicon key.
+        // Unknown keys keep today's fallback — the games glyph, via the fall-through below.
+        val platformId = consolePlatformIdFor(iconKey)
+        if (platformId != null) {
+            ConsoleIcon(
+                platformId = platformId,
+                contentDescription = contentDescription,
+                modifier = modifier,
+            )
+            return
+        }
+    }
+    val icon = LocalCustomIcons.current[slotKey] ?: LocalXmbIconOverrides.current[slotKey]
+    if (icon != null) {
+        CustomIconSurface(icon, contentDescription, modifier)
         return
     }
     PortalIcon(

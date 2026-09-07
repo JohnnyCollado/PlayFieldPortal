@@ -8,16 +8,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
-
 /**
- * Custom icon overrides carried by the applied `.pfptheme` (schema v2): theme-kit IconSlots
- * key → decoded bitmap. Empty when the active theme has no custom icons — every consumer
- * falls back to the built-in glyph, so pre-icon themes and presets render exactly as before.
+ * Custom icon overrides carried by the applied `.pfptheme` (schema v3, extracted to the
+ * theme-icons dir): theme-kit slot key → icon — a [CustomIcon.Still] for png art, a
+ * [CustomIcon.Animated] for gif. Empty when the active theme has no custom icons — every
+ * consumer falls back to the built-in glyph, so pre-icon themes and presets render exactly
+ * as before.
  *
  * Provided by XMBShell alongside LocalPFPColors; loaded by XMBViewModel from the extracted
- * theme-icons dir (see PfpThemeStore.apply).
+ * theme-icons dir (see PfpThemeStore.apply). Deliberately a separate composition local from
+ * [LocalCustomIcons] (precedence, and the theme-icons wipe on apply, are different concerns),
+ * but the same value type — a v3 theme can carry a GIF just as a user pick can.
  */
-val LocalXmbIconOverrides = staticCompositionLocalOf<Map<String, ImageBitmap>> { emptyMap() }
+val LocalXmbIconOverrides = staticCompositionLocalOf<Map<String, CustomIcon>> { emptyMap() }
 
 /**
  * A themeable UI glyph: renders the theme's custom icon for [slotKey] when the applied
@@ -38,12 +41,14 @@ fun ThemedGlyph(
     tint: Color,
     modifier: Modifier = Modifier,
 ) {
-    val override = LocalXmbIconOverrides.current[slotKey]
-    if (override != null) {
-        OverrideGlyphSurface(bitmap = override, contentDescription = contentDescription, modifier = modifier)
-    } else {
-        VectorGlyphSurface(vector = defaultVector, contentDescription = contentDescription, tint = tint, modifier = modifier)
+    // Two-tier precedence: the user's pick wins and survives theme switches; the applied
+    // theme's icon is next; the built-in tinted vector is last.
+    val icon = LocalCustomIcons.current[slotKey] ?: LocalXmbIconOverrides.current[slotKey]
+    if (icon != null) {
+        CustomIconSurface(icon, contentDescription, modifier)
+        return
     }
+    VectorGlyphSurface(vector = defaultVector, contentDescription = contentDescription, tint = tint, modifier = modifier)
 }
 
 /** Category-bar slot key for a category iconKey — null for console art (not themeable). */

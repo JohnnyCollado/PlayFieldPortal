@@ -129,7 +129,8 @@ class HostileInputTest {
 
     @Test
     fun `pfptheme zip bomb entry is rejected`() {
-        // A bundle whose wallpaper entry deflates ~64MB of zeros from a tiny file.
+        // A bundle whose wallpaper entry deflates ~96MB of zeros from a tiny file — comfortably
+        // over the v3 per-entry cap (64 MB, sized for a 60 MB motion wallpaper).
         val zip = ByteArrayOutputStream().also { baos ->
             ZipOutputStream(baos).use { z ->
                 z.putNextEntry(ZipEntry("manifest.json"))
@@ -137,7 +138,7 @@ class HostileInputTest {
                 z.closeEntry()
                 z.putNextEntry(ZipEntry("wallpaper.png"))
                 val chunk = ByteArray(1024 * 1024)
-                repeat(64) { z.write(chunk) }
+                repeat(96) { z.write(chunk) }
                 z.closeEntry()
             }
         }.toByteArray()

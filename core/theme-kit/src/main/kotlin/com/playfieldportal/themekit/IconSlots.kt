@@ -20,7 +20,13 @@ data class IconSlot(
     /** Square canvas size (px) for exported editable templates. */
     val templateSizePx: Int,
 ) {
-    enum class Group { CATEGORY_BAR, ITEMS, STATUS }
+    /**
+     * Bucket a slot renders in. CONSOLE is not an `IconSlots` bucket in the bundle contract
+     * (`icons/` entries stay gated by [IconSlots.isValidKey]) — it exists for the app-side
+     * superset registry [CustomizableIcons], whose console slots travel under the separate
+     * `sysicons/` bundle directory (schema v3).
+     */
+    enum class Group { CATEGORY_BAR, ITEMS, STATUS, CONSOLE }
 }
 
 object IconSlots {

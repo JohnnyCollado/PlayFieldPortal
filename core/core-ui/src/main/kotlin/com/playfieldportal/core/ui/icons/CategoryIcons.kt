@@ -93,6 +93,20 @@ private val LEGACY_ALIASES: Map<String, String> = mapOf(
 /** The games glyph — used whenever an iconKey can't be resolved. */
 val FALLBACK_CATEGORY_ICON: CategoryIcon = CATALOG_BY_KEY.getValue("ic_games")
 
+/**
+ * Platform id for a console-art catalog key (`ic_nes` → `nes`), resolved through the legacy
+ * aliases, or null when [iconKey] is an XMB column glyph or unknown. This is what routes
+ * console-art categories through [ConsoleIcon]'s override lookup; only the exceptions where
+ * the catalog key diverges from the asset id need spelling out.
+ */
+fun consolePlatformIdFor(iconKey: String): String? {
+    val resolved = CATALOG_BY_KEY[iconKey]?.key ?: LEGACY_ALIASES[iconKey] ?: return null
+    return when (resolved) {
+        "ic_xbox360" -> "x360"
+        else -> resolved.removePrefix("ic_").takeIf { it != resolved }
+    }
+}
+
 /** Resolves any stored iconKey (current or legacy) to a catalog icon, falling back to the
  *  games glyph for unknown keys. */
 fun categoryIconFor(iconKey: String): CategoryIcon =

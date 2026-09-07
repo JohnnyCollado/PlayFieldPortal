@@ -34,6 +34,7 @@ fun DisplaySettingsScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     onOpenXmbLayoutAdjust: () -> Unit = {},
+    onOpenCustomIcons: () -> Unit = {},
     viewModel: DisplaySettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -180,6 +181,12 @@ fun DisplaySettingsScreen(
                 label    = "Adjust XMB Layout",
                 sublabel = "Live editor — scale + reposition the crossbar with the D-pad or sliders",
                 onClick  = onOpenXmbLayoutAdjust,
+            )
+
+            SettingsRow(
+                label    = "Customize XMB Icons",
+                sublabel = "Replace any icon with your own image or GIF — live over the XMB",
+                onClick  = onOpenCustomIcons,
             )
 
             SettingsGroup("Boot Sequence")

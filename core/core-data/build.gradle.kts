@@ -56,6 +56,13 @@ dependencies {
     implementation(project(":core:theme-kit"))
     implementation(project(":core:core-domain"))
     implementation(project(":core:core-common"))
+    // CustomIconStore decodes user-picked icons into core-ui's CustomIcon type and gates
+    // them through CustomIconLimits. core-ui does not depend on core-data, so no cycle.
+    implementation(project(":core:core-ui"))
+    // CustomIcon.firstFrame is a compose-ui-graphics ImageBitmap; core-ui exposes it via
+    // `implementation`, so the artifact needs its own line here for asImageBitmap() etc.
+    implementation(platform(libs.compose.bom))
+    implementation(libs.compose.ui)
 
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)

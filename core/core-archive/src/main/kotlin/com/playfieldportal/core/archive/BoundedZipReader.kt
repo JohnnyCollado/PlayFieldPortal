@@ -53,6 +53,21 @@ class BoundedZipEntry internal constructor(
     private val budget: ArchiveBudget,
 ) {
     private var consumed = false
+    internal var stopped = false
+        private set
+
+    /**
+     * Ends the read after this entry, leaving the rest of the archive untouched.
+     *
+     * For a visitor that wants one named entry, the alternative is streaming every remaining
+     * byte through [drain] to reach the end of the archive. That costs no heap, but on a
+     * bundle carrying a 50 MB video it is 50 MB of file I/O to answer a question the first
+     * entry already answered — which is what made listing the saved-theme library O(size of
+     * every theme) instead of O(number of themes).
+     */
+    fun stop() {
+        stopped = true
+    }
 
     /** Inflates this entry into memory, refusing anything past the per-entry cap. */
     fun readBytes(): ByteArray {
@@ -141,6 +156,10 @@ object BoundedZipReader {
                     budget = budget,
                 )
                 onEntry(entry)
+                // A visitor that asked to stop is taken at its word: nothing further is read,
+                // so the remaining entries are neither inflated nor counted. That is safe
+                // precisely because they are not read — an un-inflated bomb is inert.
+                if (entry.stopped) break
                 // An entry the visitor ignored still has to be paid for, so a bomb cannot hide
                 // behind a name filter.
                 if (!raw.isDirectory) entry.drain()

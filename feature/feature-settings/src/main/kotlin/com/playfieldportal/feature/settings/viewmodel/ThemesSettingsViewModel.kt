@@ -137,6 +137,23 @@ class ThemesSettingsViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Exports the device's current look (icons, wallpaper, colors, motion, geometry) into the
+     * library as a user-created theme — the Themes-side entry point beside the icon editor's
+     * "Save as Theme…". One implementation: PfpThemeStore.saveCurrentLook.
+     */
+    fun saveCurrentLookAsTheme(name: String) {
+        viewModelScope.launch {
+            val saved = themeStore.saveCurrentLook(name)
+            _extra.update {
+                it.copy(
+                    installMessage = if (saved != null) "Saved \"${saved.name}\""
+                    else "Could not save the theme",
+                )
+            }
+        }
+    }
+
     fun deleteSavedTheme(id: String) {
         viewModelScope.launch { themeStore.delete(id) }
     }
@@ -165,13 +182,30 @@ class ThemesSettingsViewModel @Inject constructor(
     fun importPfpTheme(uri: Uri) {
         viewModelScope.launch {
             _extra.update { it.copy(isInstalling = true, installMessage = null) }
-            val saved = themeStore.importBundle(uri)
-            val message = if (saved != null) {
-                themeStore.apply(saved.id)
-                "Imported \"${saved.name}\""
-            } else "Not a valid .pfptheme file"
-            _extra.update { it.copy(isInstalling = false, installMessage = message) }
+            val result = themeStore.importBundleDetailed(uri)
+            if (result is PfpThemeStore.ImportResult.Success) themeStore.apply(result.theme.id)
+            _extra.update { it.copy(isInstalling = false, installMessage = messageFor(result)) }
         }
+    }
+
+    /**
+     * User-facing copy for each import outcome.
+     *
+     * The store deliberately does not carry these strings — it reports what happened, the UI
+     * decides how to say it. Note that "too large" and "out of memory" are different failures
+     * and must not be merged: the first is a file this build refuses outright, the second is a
+     * legitimate bundle this device could not hold, which is fixable by shrinking the motion
+     * wallpaper rather than by re-exporting.
+     */
+    private fun messageFor(result: PfpThemeStore.ImportResult): String = when (result) {
+        is PfpThemeStore.ImportResult.Success -> "Imported \"${result.theme.name}\""
+        is PfpThemeStore.ImportResult.Unreadable -> "Could not open that file"
+        PfpThemeStore.ImportResult.TooLarge -> "That theme is too large to import"
+        PfpThemeStore.ImportResult.OutOfMemory ->
+            "Not enough memory to import that theme — its motion wallpaper is too big"
+        PfpThemeStore.ImportResult.NotABundle -> "Not a valid .pfptheme file"
+        PfpThemeStore.ImportResult.DamagedWallpaper -> "That theme's wallpaper is damaged"
+        is PfpThemeStore.ImportResult.NotSaved -> "Could not save the imported theme"
     }
 
     private companion object {

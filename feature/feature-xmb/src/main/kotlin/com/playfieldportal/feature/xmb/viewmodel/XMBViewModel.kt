@@ -20,7 +20,12 @@ import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.data.repository.CategoryRepositoryImpl
 import com.playfieldportal.core.data.repository.CollectionRepository
 import com.playfieldportal.core.data.repository.ControllerMappingRepository
+import com.playfieldportal.core.data.repository.CustomIconStore
 import com.playfieldportal.core.data.repository.MemoryCardRepository
+import com.playfieldportal.core.data.repository.PfpThemeStore
+import com.playfieldportal.core.ui.icons.CustomIcon
+import com.playfieldportal.core.ui.icons.GifFrameProbe
+import com.playfieldportal.themekit.CustomizableIcons
 import com.playfieldportal.core.domain.discord.DiscordFriend
 import com.playfieldportal.core.domain.discord.DiscordPresence
 import com.playfieldportal.core.domain.model.BuiltInCategory
@@ -216,6 +221,28 @@ data class XmbLayoutAdjustSession(
     val bucketKey: String,
     val slidersVisible: Boolean = false,
 )
+
+// ── Live "Customize XMB Icons" editor ─────────────────────────────────────────
+// A translucent editor rendered OVER the real XMB (settings closed), shaped after
+// XmbLayoutAdjustSession. There is deliberately NO draft/commit pair: picks apply to the
+// CustomIconStore immediately (the XMB behind updates as each lands — the whole point of a
+// live editor), and Reset / Reset All are the undo. [groups] is the editable tab order;
+// [groupIndex]/[slotIndex] place the gamepad cursor; [message] is the last import outcome.
+data class CustomIconSession(
+    val groups: List<com.playfieldportal.themekit.IconSlot.Group>,
+    val groupIndex: Int = 0,
+    val slotIndex: Int = 0,
+    val message: String? = null,
+    /** Bumped when the store's contents change, so the overlay re-reads the icons map. */
+    val revision: Int = 0,
+) {
+    /** The group the cursor is currently on. */
+    val group: com.playfieldportal.themekit.IconSlot.Group get() = groups[groupIndex]
+
+    /** The focused slot, or null when the group has no slots. */
+    val focusedSlot: com.playfieldportal.themekit.IconSlot?
+        get() = CustomizableIcons.group(group).getOrNull(slotIndex)
+}
 
 
 // ── Installed-app picker ───────────────────────────────────────────────────────
@@ -701,9 +728,22 @@ data class XMBUiState(
     val focusedGameVideo: com.playfieldportal.feature.xmb.ui.FocusedGameVideo? = null,
     val librarySetupComplete: Boolean = false,
     val themeColors: PFPColors = DefaultPFPColors,
-    // Custom icon slots of the applied theme (theme-kit IconSlots key → decoded art);
-    // empty = every glyph renders its built-in default. Provided as LocalXmbIconOverrides.
-    val iconOverrides: Map<String, androidx.compose.ui.graphics.ImageBitmap> = emptyMap(),
+    // Custom icon slots of the applied theme (theme slot key → CustomIcon); empty = the
+    // theme tier contributes nothing. Provided as LocalXmbIconOverrides.
+    val iconOverrides: Map<String, CustomIcon> = emptyMap(),
+    // The user's per-slot picks (custom-icons dir), ABOVE the theme tier at every render
+    // site. Empty = nothing customized; user picks survive theme switches by design.
+    val customIcons: Map<String, CustomIcon> = emptyMap(),
+    // Non-null while the live "Customize XMB Icons" editor is open (rendered over the real XMB).
+    val customIconSession: CustomIconSession? = null,
+    // One-shot: a saved-theme bundle awaiting the share sheet (Save as Theme… flow). Consumed
+    // by XMBShell via onThemeShareConsumed once ACTION_SEND has fired.
+    val pendingThemeShareFile: java.io.File? = null,
+    // One-shot forwarded pad action for the icon editor (SELECT / OPTIONS / BACK); the overlay
+    // consumes it via onCustomIconsActionConsumed.
+    val pendingCustomIconsAction: GamepadAction? = null,
+    // Non-null while the "Save as Theme…" name dialog is up over the icon editor.
+    val saveThemeNameDialog: PlaylistNameDialogState? = null,
     // Per-theme XMB geometry (crossbar line, headroom, previous-item rise). DEFAULT holds the
     // pixel-tuned authentic-PSP values; imported themes may override (theme-kit XmbLayoutSpec).
     val layoutSpec: com.playfieldportal.themekit.XmbLayoutSpec = com.playfieldportal.themekit.XmbLayoutSpec.DEFAULT,
@@ -774,6 +814,8 @@ data class XMBUiState(
             colorSchemePicker != null ||
             customColorPicker != null ||
             xmbLayoutAdjust != null ||
+            customIconSession != null ||
+            saveThemeNameDialog != null ||
             appPicker != null ||
             gamePickerCategoryId != null ||
             renameAppTarget != null ||
@@ -1166,6 +1208,8 @@ class XMBViewModel @Inject constructor(
     private val localSteamDiscovery: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamDiscovery,
     private val launchDispatcher: com.playfieldportal.feature.launcher.LaunchDispatcher,
     private val setupStateProvider: com.playfieldportal.feature.launcher.SetupStateProvider,
+    private val customIconStore: CustomIconStore,
+    private val pfpThemeStore: PfpThemeStore,
 ) : ViewModel() {
 
     // Drives the "convert detected games?" multi-select picker after a Windows-card scan; the same
@@ -1425,6 +1469,9 @@ class XMBViewModel @Inject constructor(
         val barTopOverride: Float?,
         // Per-form-factor "Adjust XMB Layout" tunings (JSON map, one prefs string).
         val layoutAdjustJson: String?,
+        // User-tier icon stamp (custom-icons dir) — separate from the theme's icons stamp so
+        // a theme apply/revert never reloads (or drops) the user's picks.
+        val customIconsStamp: Long?,
     )
 
     private fun observeColorScheme() {
@@ -1440,10 +1487,11 @@ class XMBViewModel @Inject constructor(
                         xmbScale = prefs[KEY_XMB_SCALE],
                         barTopOverride = prefs[KEY_BAR_TOP_FRACTION],
                         layoutAdjustJson = prefs[KEY_XMB_LAYOUT_ADJUST],
+                        customIconsStamp = prefs[CustomIconStore.KEY_CUSTOM_ICONS_STAMP],
                     )
                 }
                 .distinctUntilChanged()
-                .collect { (name, accentOverride, iconColorArgb, iconsStamp, layoutJson, xmbScale, barTopOverride, layoutAdjustJson) ->
+                .collect { (name, accentOverride, iconColorArgb, iconsStamp, layoutJson, xmbScale, barTopOverride, layoutAdjustJson, customIconsStamp) ->
                     val base = if (accentOverride != null) {
                         // One accent drives everything: wave color + re-derived gradient.
                         DefaultPFPColors.withWaveTint(
@@ -1461,8 +1509,12 @@ class XMBViewModel @Inject constructor(
                             ?: androidx.compose.ui.graphics.Color.White,
                     )
                     // Custom icon slots of the applied theme (stamp present = extracted dir
-                    // has icons; the stamp value only bumps to trigger reloads).
+                    // has icons; the stamp value only bumps to trigger reloads), plus the
+                    // user's per-slot picks (custom-icons dir, its own stamp). Two tiers by
+                    // design: user picks survive theme switches, theme icons don't.
                     val iconOverrides = if (iconsStamp != null) loadThemeIconOverrides() else emptyMap()
+                    val customIcons =
+                        if (customIconsStamp != null) customIconStore.load() else emptyMap()
                     // Per-theme XMB geometry — lenient + sanitized, so a mangled pref can
                     // never wedge the crossbar offscreen. The user's Display ▸ bar-position
                     // override wins over the theme's value; the codec clamp still applies.
@@ -1479,6 +1531,7 @@ class XMBViewModel @Inject constructor(
                         it.copy(
                             themeColors = baseThemeColors,
                             iconOverrides = iconOverrides,
+                            customIcons = customIcons,
                             layoutSpec = layoutSpec,
                             xmbScale = (xmbScale ?: 1f).coerceIn(0.75f, 1.3f),
                             xmbLayoutAdjustMap = adjustMap,
@@ -1488,21 +1541,35 @@ class XMBViewModel @Inject constructor(
         }
     }
 
-    /** Decodes filesDir/theme-icons/<key>.png into slot-key → bitmap, ignoring stray files. */
-    private suspend fun loadThemeIconOverrides(): Map<String, androidx.compose.ui.graphics.ImageBitmap> =
+    /**
+     * Loads the THEME tier (filesDir/theme-icons/) as slot key → CustomIcon, mirroring
+     * CustomIconStore.load's extension handling: png loads as Still, gif as Animated (or
+     * Still when it carries a single frame). Ignoring stray files, never crashing.
+     */
+    private suspend fun loadThemeIconOverrides(): Map<String, CustomIcon> =
         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            val iconsDir = java.io.File(
-                context.filesDir,
-                com.playfieldportal.core.data.repository.PfpThemeStore.THEME_ICONS_DIR,
-            )
-            iconsDir.listFiles { f -> f.isFile && f.extension == "png" }.orEmpty().mapNotNull { file ->
+            val iconsDir = java.io.File(context.filesDir, PfpThemeStore.THEME_ICONS_DIR)
+            iconsDir.listFiles { f -> f.isFile }.orEmpty().mapNotNull { file ->
                 val key = file.nameWithoutExtension
-                if (!com.playfieldportal.themekit.IconSlots.isValidKey(key)) return@mapNotNull null
+                if (!CustomizableIcons.isValidKey(key)) return@mapNotNull null
+                val ext = file.extension.lowercase()
                 // Bounds-checked decode: the extraction dir is ours, but the bundle author
                 // isn't — a 20k×20k "icon" must never reach a pixel allocation.
-                com.playfieldportal.core.data.repository.SafeMedia
-                    .decodeFileCapped(file.absolutePath, maxDimension = 2048)
-                    ?.let { key to it.asImageBitmap() }
+                val bitmap = com.playfieldportal.core.data.repository.SafeMedia
+                    .decodeFileCapped(file.absolutePath, maxDimension = 2048, targetDimension = 2048)
+                    ?: return@mapNotNull null
+                val firstFrame = bitmap.asImageBitmap()
+                if (ext == "gif") {
+                    // Frame-count probe: 1 frame = Still, no decoder started (same rule as
+                    // the user tier's store).
+                    if (GifFrameProbe.countFrames(file) > 1) {
+                        key to CustomIcon.Animated(path = file.absolutePath, firstFrame = firstFrame)
+                    } else {
+                        key to CustomIcon.Still(firstFrame)
+                    }
+                } else {
+                    key to CustomIcon.Still(firstFrame)
+                }
             }.toMap()
         }
 
@@ -4568,6 +4635,25 @@ class XMBViewModel @Inject constructor(
             state.activeDiscordLogin -> {
                 // Back cancels the QR overlay; its own Compose UI handles taps/buttons.
                 if (action == GamepadAction.BACK) onDiscordLoginClosed()
+                return
+            }
+            state.customIconSession != null -> {
+                // The icon editor owns the pad: LEFT/RIGHT (and UP/DOWN, mirrored) step the
+                // slot cursor through the group's list — the strip is horizontal, so left and
+                // right read naturally — while the L/R shoulders cycle the group tabs
+                // [Categories, Items, Status, Consoles]. SELECT opens the SAF picker (the
+                // overlay observes the forwarded action), OPTIONS resets the focused slot,
+                // BACK exits.
+                when (action) {
+                    GamepadAction.NAVIGATE_LEFT, GamepadAction.NAVIGATE_UP -> onCustomIconSlotMove(-1)
+                    GamepadAction.NAVIGATE_RIGHT, GamepadAction.NAVIGATE_DOWN -> onCustomIconSlotMove(+1)
+                    GamepadAction.PREV_CATEGORY -> onCustomIconGroupMove(-1)
+                    GamepadAction.NEXT_CATEGORY -> onCustomIconGroupMove(+1)
+                    GamepadAction.SELECT,
+                    GamepadAction.OPEN_CONTEXT_MENU,
+                    GamepadAction.BACK -> _uiState.update { it.copy(pendingCustomIconsAction = action) }
+                    else -> Unit
+                }
                 return
             }
         }
@@ -7730,6 +7816,142 @@ class XMBViewModel @Inject constructor(
     fun cancelXmbLayoutAdjust() {
         _uiState.update { it.copy(xmbLayoutAdjust = null) }
     }
+
+    // ── Live "Customize XMB Icons" editor ────────────────────────────────────
+    // Opens over the real XMB (settings closed, so the cross and columns are visible). Edits
+    // apply immediately through CustomIconStore — there is no draft to discard; Reset /
+    // Reset All are the undo. The session carries only cursor + message state.
+
+    private val customIconGroups: List<com.playfieldportal.themekit.IconSlot.Group> =
+    listOf(
+        com.playfieldportal.themekit.IconSlot.Group.CATEGORY_BAR,
+        com.playfieldportal.themekit.IconSlot.Group.ITEMS,
+        com.playfieldportal.themekit.IconSlot.Group.STATUS,
+        com.playfieldportal.themekit.IconSlot.Group.CONSOLE,
+    )
+
+    fun openCustomIcons() {
+        _uiState.update {
+            it.copy(
+                // Close any settings screen so the live XMB shows behind the editor.
+                activeSettingsScreen = null,
+                pendingSettingsAction = null,
+                customIconSession = CustomIconSession(groups = customIconGroups),
+            )
+        }
+    }
+
+    fun closeCustomIcons() {
+        _uiState.update { it.copy(customIconSession = null) }
+    }
+
+    /** Moves the group cursor (L/R); wraps so the ends loop. */
+    fun onCustomIconGroupMove(dir: Int) {
+        val session = _uiState.value.customIconSession ?: return
+        val next = (session.groupIndex + dir).mod(session.groups.size)
+        _uiState.update {
+            it.copy(customIconSession = session.copy(groupIndex = next, slotIndex = 0))
+        }
+    }
+
+    /** Moves the slot cursor within the current group (UP/DOWN); clamps at the ends. */
+    fun onCustomIconSlotMove(dir: Int) {
+        val session = _uiState.value.customIconSession ?: return
+        val count = CustomizableIcons.group(session.group).size
+        val next = (session.slotIndex + dir).coerceIn(0, (count - 1).coerceAtLeast(0))
+        _uiState.update { it.copy(customIconSession = session.copy(slotIndex = next)) }
+    }
+
+    /** Touch: focus a strip slot directly (same cursor as the pad moves). */
+    fun onCustomIconSlotFocused(index: Int) {
+        val session = _uiState.value.customIconSession ?: return
+        _uiState.update { it.copy(customIconSession = session.copy(slotIndex = index)) }
+    }
+
+    /** SAF result: replace [slotKey]'s icon. The message lands in the session. */
+    fun onIconPicked(slotKey: String, uri: android.net.Uri) {
+        val session = _uiState.value.customIconSession ?: return
+        viewModelScope.launch {
+            val mime = context.contentResolver.getType(uri)
+            val result = customIconStore.import(slotKey, uri, mime)
+            _uiState.update {
+                val s = it.customIconSession ?: return@update it
+                it.copy(customIconSession = s.copy(message = result.message, revision = s.revision + 1))
+            }
+        }
+    }
+
+    /** Per-slot Reset: the built-in returns immediately; the theme icon returns on theme re-apply. */
+    fun onResetSlot(slotKey: String) {
+        viewModelScope.launch {
+            customIconStore.clear(slotKey)
+            _uiState.update {
+                val s = it.customIconSession ?: return@update it
+                it.copy(customIconSession = s.copy(message = null, revision = s.revision + 1))
+            }
+        }
+    }
+
+    /** Reset All: every user pick goes; the built-ins return immediately. */
+    fun onResetAll() {
+        viewModelScope.launch {
+            customIconStore.clearAll()
+            _uiState.update {
+                val s = it.customIconSession ?: return@update it
+                it.copy(customIconSession = s.copy(message = null, revision = s.revision + 1))
+            }
+        }
+    }
+
+    /** XMBShell calls once the share sheet has fired (or failed) for [pendingThemeShareFile]. */
+    fun onThemeShareConsumed() {
+        _uiState.update { it.copy(pendingThemeShareFile = null) }
+    }
+
+    /** "Save as Theme…" — opens the name dialog (reusing the playlist-dialog pattern). */
+    fun requestSaveCurrentLookAsTheme() {
+        _uiState.update {
+            it.copy(saveThemeNameDialog = PlaylistNameDialogState(title = "Save Current Look as Theme"))
+        }
+    }
+
+    fun confirmSaveCurrentLookAsTheme(name: String) {
+        _uiState.update { it.copy(saveThemeNameDialog = null) }
+        saveCurrentLookAsTheme(name)
+    }
+
+    fun dismissSaveThemeNameDialog() {
+        _uiState.update { it.copy(saveThemeNameDialog = null) }
+    }
+
+    /** The overlay calls once it has handled a forwarded [pendingCustomIconsAction]. */
+    fun onCustomIconsActionConsumed() {
+        _uiState.update { it.copy(pendingCustomIconsAction = null) }
+    }
+
+    /**
+     * Save as Theme…: writes the whole current look (picks + theme icons + wallpaper + colors
+     * + motion) into the theme library, then opens the share sheet for the saved bundle.
+     * Reuses PfpThemeStore.exportForShare — no new share plumbing.
+     */
+    fun saveCurrentLookAsTheme(name: String) {
+        viewModelScope.launch {
+            val saved = pfpThemeStore.saveCurrentLook(name)
+            val message = when {
+                saved == null -> "Couldn't save the theme"
+                else -> "Theme saved — ${saved.name}"
+            }
+            val shareFile = saved?.let { pfpThemeStore.exportForShare(it.id) }
+            _uiState.update {
+                val s = it.customIconSession ?: return@update it
+                it.copy(
+                    customIconSession = s.copy(message = message, revision = s.revision + 1),
+                    pendingThemeShareFile = shareFile,
+                )
+            }
+        }
+    }
+
 
     // ── Boot sequence ─────────────────────────────────────────────────────────
 

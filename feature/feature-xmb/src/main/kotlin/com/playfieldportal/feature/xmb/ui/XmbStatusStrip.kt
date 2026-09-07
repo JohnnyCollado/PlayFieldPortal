@@ -278,9 +278,16 @@ private fun StatusIcon(
     // every other icon slot. Null = not themeable (meters drawn on Canvas have no slot).
     slotKey: String? = null,
 ) {
-    val override = slotKey?.let { com.playfieldportal.core.ui.icons.LocalXmbIconOverrides.current[it] }
+    val override = slotKey?.let { key ->
+        com.playfieldportal.core.ui.icons.LocalCustomIcons.current[key]
+            ?: com.playfieldportal.core.ui.icons.LocalXmbIconOverrides.current[key]
+    }
     if (override != null) {
-        Image(bitmap = override, contentDescription = description, modifier = modifier)
+        com.playfieldportal.core.ui.icons.CustomIconSurface(
+            icon = override,
+            contentDescription = description,
+            modifier = modifier,
+        )
         return
     }
     Image(

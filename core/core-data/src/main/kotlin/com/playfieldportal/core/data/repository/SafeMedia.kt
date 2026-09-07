@@ -3,6 +3,7 @@ package com.playfieldportal.core.data.repository
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import java.io.InputStream
+import java.io.OutputStream
 
 /**
  * Bounded reads/decodes for untrusted theme media (SAF picks, extracted bundle entries).
@@ -17,6 +18,27 @@ object SafeMedia {
 
     /** Matches theme-kit Bmp.kt's dimension cap. */
     const val MAX_IMAGE_DIMENSION = 8192
+
+    /**
+     * Streams [this] to [out], or returns null once more than [cap] bytes arrive.
+     *
+     * The counterpart to [readCapped] for content that has no business being on the heap. A
+     * theme bundle carrying a motion wallpaper is routinely 50 MB; [readCapped] would hold that
+     * plus the doubling buffer that inflated it, against a 256 MB heap shared with a live UI.
+     * Callers that only need the bytes to land somewhere should land them here instead.
+     */
+    fun InputStream.copyCappedTo(out: OutputStream, cap: Long = MAX_THEME_FILE_BYTES): Long? {
+        val buffer = ByteArray(64 * 1024)
+        var total = 0L
+        while (true) {
+            val n = read(buffer)
+            if (n < 0) break
+            total += n
+            if (total > cap) return null
+            out.write(buffer, 0, n)
+        }
+        return total
+    }
 
     /** Reads [this] fully, or null once more than [cap] bytes arrive. */
     fun InputStream.readCapped(cap: Long = MAX_THEME_FILE_BYTES): ByteArray? {

@@ -56,6 +56,7 @@ fun SettingsNavHost(
     onGamepadActionConsumed: () -> Unit = {},
     onOpenColorSchemePicker: () -> Unit = {},
     onOpenXmbLayoutAdjust: () -> Unit = {},
+    onOpenCustomIcons: () -> Unit = {},
     onAddAndroidApps: () -> Unit = {},
     onOpenPlayerStatus: () -> Unit = {},
     onOpenPlayerStatusFromSettings: () -> Unit = {},
@@ -126,6 +127,7 @@ fun SettingsNavHost(
             "settings_display"    -> DisplaySettingsScreen(
                 onBack = onBack,
                 onOpenXmbLayoutAdjust = onOpenXmbLayoutAdjust,
+                onOpenCustomIcons = onOpenCustomIcons,
                 modifier = modifier,
             )
             "settings_controller" -> ControllerSettingsScreen(onBack = onBack, modifier = modifier)

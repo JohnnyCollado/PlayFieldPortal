@@ -207,6 +207,8 @@ fun XmbDrillFlyout(
     // so the drill is laid out identically: active row under the caticon, previous half-clipped above.
     barTopY: Dp = 40.dp,
     belowTopY: Dp = 152.dp,
+    // Whether focused-row GIF icons may animate (see XMBItemList).
+    iconAnimatingAllowed: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
@@ -224,6 +226,7 @@ fun XmbDrillFlyout(
             belowTopY = belowTopY,
             showLabels = false,
             drillCursorOnSelected = true,
+            iconAnimatingAllowed = iconAnimatingAllowed,
             modifier = Modifier.fillMaxHeight().width(DRILL_GAME_COLUMN_LEFT - 10.dp),
         )
 
@@ -238,6 +241,7 @@ fun XmbDrillFlyout(
             belowTopY = belowTopY,
             onItemSelected = onItemSelected,
             onItemLongPress = onItemLongPress,
+            iconAnimatingAllowed = iconAnimatingAllowed,
             modifier = Modifier.fillMaxSize().padding(start = DRILL_GAME_COLUMN_LEFT),
         )
     }
@@ -256,6 +260,7 @@ private fun XmbGameColumn(
     belowTopY: Dp,
     onItemSelected: (Int) -> Unit,
     onItemLongPress: (Int) -> Unit,
+    iconAnimatingAllowed: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     BoxWithConstraints(modifier = modifier.fillMaxSize().clipToBounds()) {
@@ -279,6 +284,8 @@ private fun XmbGameColumn(
                 onClick = { onItemSelected(i) },
                 onLongPress = { onItemLongPress(i) },
                 showIcon = true,
+                // Only the active card animates (its rows funnel through the same per-row gate).
+                iconAnimatingAllowed = iconAnimatingAllowed,
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .fillMaxWidth()
@@ -327,8 +334,8 @@ private fun SiblingIcon(item: XMBItem, selected: Boolean, solidUnfocusedIcons: B
                 modifier = Modifier.size(chip).alpha(if (selected || solidUnfocusedIcons) 1f else 0.5f),
             )
         } else {
-            PortalIcon(
-                painter = painterResource(systemIconRes(consoleIconKeyFor(item))),
+            com.playfieldportal.core.ui.icons.ConsoleIcon(
+                platformId = consoleIconKeyFor(item),
                 contentDescription = item.title,
                 modifier = Modifier.size(chip).alpha(if (selected || solidUnfocusedIcons) 1f else 0.5f),
             )
@@ -501,6 +508,9 @@ fun XMBItemList(
     // subtitles, so helper text stays readable over bright wallpaper regions. Default true —
     // without it the flat gray subtitle is the one label that washes out.
     textShadow: Boolean = true,
+    // Whether focused-row GIF icons may animate (battery saver / blocking overlays gate it).
+    // ANDed with per-row selection at the LocalIconAnimating provider.
+    iconAnimatingAllowed: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     // The XMB cross, exactly as the hardware does it:
@@ -541,6 +551,7 @@ fun XMBItemList(
                         trailingCursor = drillCursorOnSelected && i == selectedIndex,
                         solidUnfocusedIcons = solidUnfocusedIcons,
                         textShadow = textShadow,
+                        iconAnimatingAllowed = iconAnimatingAllowed,
                         modifier = Modifier.fillMaxWidth().height(ROW_HEIGHT),
                     )
                 }
@@ -605,6 +616,9 @@ private fun XmbVerticalListRow(
     solidUnfocusedIcons: Boolean = false,
     // "Text Shadow" (Display ▸ Appearance): drop shadow behind row helper text (subtitle).
     textShadow: Boolean = true,
+    // Whether THIS row may animate its GIF icon — true only for the focused row, so exactly
+    // one decoder runs at a time (decision 3). Provided per-row around the icon.
+    iconAnimatingAllowed: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     // Strong size delta between the locked selection and the rows scrolling past it — the PSP
@@ -668,11 +682,18 @@ private fun XmbVerticalListRow(
                 .padding(horizontal = ROW_HORIZONTAL_PADDING),
         ) {
             if (showIcon && !item.textOnly) {
+                // Per-row animation gate: the provider scope covers just this row's icon, so a
+                // GIF plays ONLY while its row is the selected one (decision 3).
+                androidx.compose.runtime.CompositionLocalProvider(
+                    com.playfieldportal.core.ui.icons.LocalIconAnimating provides
+                        (isSelected && iconAnimatingAllowed),
+                ) {
                 XmbItemLeadingIcon(
                     item = item,
                     iconStyle = iconStyle,
                     isSelected = isSelected,
                 )
+                }
             }
 
             // Game entities are icon-first: NO text on any game row except the ACTIVE row of
@@ -1107,20 +1128,24 @@ private fun XmbItemLeadingIcon(
                 val memoryCardArt = item.coverUri
                     ?: MEMORY_CARD_DEFAULT_ART.takeIf { item.type == XMBItemType.COLLECTION && collectionIconKey == null }
                 // Themes can replace the DEFAULT memory-card art per category — never a
-                // user-picked collection glyph or real cover artwork.
+                // user-picked collection glyph or real cover artwork. Two-tier: user pick,
+                // then the applied theme's icon.
                 val memcardOverride = if (
                     collectionIconKey == null &&
                     (memoryCardArt == null || memoryCardArt.startsWith("file:///android_asset/systems/physical-media/"))
                 ) {
-                    memoryCardSlotKeyFor(item)?.let { LocalXmbIconOverrides.current[it] }
+                    memoryCardSlotKeyFor(item)?.let { key ->
+                        com.playfieldportal.core.ui.icons.LocalCustomIcons.current[key]
+                            ?: LocalXmbIconOverrides.current[key]
+                    }
                 } else {
                     null
                 }
                 if (memcardOverride != null) {
-                    // Custom theme icons render as authored (untinted), like every slot — but
-                    // the configured icon-legibility matte still draws behind them.
-                    OverrideGlyphSurface(
-                        bitmap = memcardOverride,
+                    // Custom icons render as authored (untinted), like every slot — but the
+                    // configured icon-legibility matte still draws behind the still frame.
+                    com.playfieldportal.core.ui.icons.CustomIconSurface(
+                        icon = memcardOverride,
                         contentDescription = null,
                         modifier = Modifier.size(LEADING_ICON_SIZE),
                     )
@@ -1159,11 +1184,20 @@ private fun XmbItemLeadingIcon(
                         XMBItemType.FAVORITES   -> "favorites"
                         else                    -> null
                     }
-                    PortalIcon(
-                        painter = painterResource(systemIconRes(iconKey)),
-                        contentDescription = null,
-                        modifier = Modifier.size(LEADING_ICON_SIZE),
-                    )
+                    // Override-aware console icon: user pick > theme sysicon > built-in art.
+                    if (iconKey != null) {
+                        com.playfieldportal.core.ui.icons.ConsoleIcon(
+                            platformId = iconKey,
+                            contentDescription = null,
+                            modifier = Modifier.size(LEADING_ICON_SIZE),
+                        )
+                    } else {
+                        PortalIcon(
+                            painter = painterResource(systemIconRes(iconKey)),
+                            contentDescription = null,
+                            modifier = Modifier.size(LEADING_ICON_SIZE),
+                        )
+                    }
                 }
               }
             }
@@ -1208,10 +1242,11 @@ private fun XmbItemLeadingIcon(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier.width(LEADING_ICON_SLOT),
             ) {
-                val settingsOverride = LocalXmbIconOverrides.current["item_settings"]
+                val settingsOverride = com.playfieldportal.core.ui.icons.LocalCustomIcons.current["item_settings"]
+                    ?: LocalXmbIconOverrides.current["item_settings"]
                 if (settingsOverride != null) {
-                    OverrideGlyphSurface(
-                        bitmap = settingsOverride,
+                    com.playfieldportal.core.ui.icons.CustomIconSurface(
+                        icon = settingsOverride,
                         contentDescription = null,
                         modifier = Modifier.size(LEADING_ICON_SIZE),
                     )

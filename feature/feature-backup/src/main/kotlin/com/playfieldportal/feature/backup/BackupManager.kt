@@ -5,6 +5,7 @@ import android.net.Uri
 import android.provider.DocumentsContract
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.playfieldportal.core.data.database.dao.BackupDao
@@ -402,6 +403,9 @@ open class BackupManager @Inject constructor(
         BACKED_UP_FLOAT_KEYS.forEach { key ->
             prefs[key]?.let { entries[key.name] = it.toString() }
         }
+        BACKED_UP_LONG_KEYS.forEach { key ->
+            prefs[key]?.let { entries[key.name] = it.toString() }
+        }
 
         return SettingsSnapshot(entries)
     }
@@ -431,6 +435,9 @@ open class BackupManager @Inject constructor(
             BACKED_UP_FLOAT_KEYS.forEach { key ->
                 snapshot.entries[key.name]?.toFloatOrNull()?.let { prefs[key] = it }
             }
+            BACKED_UP_LONG_KEYS.forEach { key ->
+                snapshot.entries[key.name]?.toLongOrNull()?.let { prefs[key] = it }
+            }
         }
     }
 
@@ -456,6 +463,7 @@ open class BackupManager @Inject constructor(
             "artwork",            // game hero/logo/icon/box art
             "wallpaper",          // custom XMB wallpaper
             "emulator_profiles",  // user-defined / user-modified emulator profiles
+            "custom-icons",       // user's per-slot custom XMB icons (slot-keyed files)
         )
 
     private val BACKED_UP_STRING_KEYS = listOf(
@@ -540,6 +548,12 @@ open class BackupManager @Inject constructor(
 
         private val BACKED_UP_FLOAT_KEYS = listOf(
             floatPreferencesKey("interface_context_menu_hint_delay_seconds"),
+        )
+
+        // Long-valued stamps whose PRESENCE (not value) tells observers to load. Without it the
+        // custom-icons files restore but nothing ever reloads them.
+        private val BACKED_UP_LONG_KEYS = listOf(
+            longPreferencesKey("custom_icons_stamp"),
         )
 
 

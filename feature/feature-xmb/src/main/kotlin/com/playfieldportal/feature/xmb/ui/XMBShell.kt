@@ -163,6 +163,31 @@ fun XMBShellContainer(
         }
     }
 
+    // "Save as Theme…" share hop: when the VM has a saved bundle waiting (icon editor flow),
+    // fire ACTION_SEND through the FileProvider — the same contract ThemesSettingsViewModel's
+    // share uses — then let the VM drop the one-shot.
+    val shareContext = androidx.compose.ui.platform.LocalContext.current
+    androidx.compose.runtime.LaunchedEffect(uiState.pendingThemeShareFile) {
+        val file = uiState.pendingThemeShareFile ?: return@LaunchedEffect
+        runCatching {
+            val uri = androidx.core.content.FileProvider.getUriForFile(
+                shareContext,
+                "${shareContext.packageName}.fileprovider",
+                file,
+            )
+            val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                type = "application/zip"
+                putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            shareContext.startActivity(
+                android.content.Intent.createChooser(send, "Share theme")
+                    .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
+            )
+        }
+        viewModel.onThemeShareConsumed()
+    }
+
     // Display ▸ Scale: scoped to the XMB ONLY. The factor is applied inside XMBShell's
     // canvas provider (cross, category bar, item list, status strip), and a matching
     // base-density reset provider restores the device density for every other screen —
@@ -186,6 +211,18 @@ fun XMBShellContainer(
         onSettingsLongPress = onSettingsLongPress,
         onCloseSettingsScreen = viewModel::onCloseSettingsScreen,
         onOpenXmbLayoutAdjust = viewModel::openXmbLayoutAdjust,
+        onOpenCustomIcons = viewModel::openCustomIcons,
+        onCloseCustomIcons = viewModel::closeCustomIcons,
+        onCustomIconsActionConsumed = viewModel::onCustomIconsActionConsumed,
+        onCustomIconsSlotFocused = viewModel::onCustomIconSlotFocused,
+        onCustomIconGroupMove = viewModel::onCustomIconGroupMove,
+        onCustomIconPicked = viewModel::onIconPicked,
+        onCustomResetSlot = viewModel::onResetSlot,
+        onCustomResetAll = viewModel::onResetAll,
+        onSaveAsThemeRequested = viewModel::requestSaveCurrentLookAsTheme,
+        onConfirmSaveAsTheme = viewModel::confirmSaveCurrentLookAsTheme,
+        onDismissSaveAsTheme = viewModel::dismissSaveThemeNameDialog,
+        onThemeShareConsumed = viewModel::onThemeShareConsumed,
         onDiscordLoginClosed = viewModel::onDiscordLoginClosed,
         onSettingsActionConsumed = viewModel::consumeSettingsAction,
         onCloseAppDrawer = viewModel::onCloseAppDrawer,
@@ -308,6 +345,18 @@ fun XMBShell(
     onSettingsLongPress: () -> Unit = {},
     onCloseSettingsScreen: () -> Unit = {},
     onOpenXmbLayoutAdjust: () -> Unit = {},
+    onOpenCustomIcons: () -> Unit = {},
+    onCloseCustomIcons: () -> Unit = {},
+    onCustomIconsActionConsumed: () -> Unit = {},
+    onCustomIconsSlotFocused: (Int) -> Unit = {},
+    onCustomIconGroupMove: (Int) -> Unit = {},
+    onCustomIconPicked: (String, android.net.Uri) -> Unit = { _, _ -> },
+    onCustomResetSlot: (String) -> Unit = {},
+    onCustomResetAll: () -> Unit = {},
+    onSaveAsThemeRequested: () -> Unit = {},
+    onConfirmSaveAsTheme: (String) -> Unit = {},
+    onDismissSaveAsTheme: () -> Unit = {},
+    onThemeShareConsumed: () -> Unit = {},
     onDiscordLoginClosed: () -> Unit = {},
     onSettingsActionConsumed: () -> Unit = {},
     onCloseAppDrawer: () -> Unit = {},
@@ -394,6 +443,9 @@ fun XMBShell(
       // glyph (crossbar, item rows, status strip) checks this map before its built-in art.
       CompositionLocalProvider(
           com.playfieldportal.core.ui.icons.LocalXmbIconOverrides provides uiState.iconOverrides,
+          // The user's per-slot picks ride the same rail — the tier ABOVE the theme's icons
+          // (user pick > theme icon > built-in, at every render site).
+          com.playfieldportal.core.ui.icons.LocalCustomIcons provides uiState.customIcons,
           // Icon display mode + the focused game's approved ICON1 snap ride the same rail so
           // the deeply nested tile composables never need them plumbed through params.
           LocalIconDisplayMode provides uiState.iconDisplayMode,
@@ -447,7 +499,10 @@ fun XMBShell(
                 uiState.activePlayerStatus ||
                 uiState.activePhotoViewer != null ||
                 uiState.activeAppId != null || uiState.activeAppDrawerFilter != null ||
-                uiState.musicPlayerVisible
+                uiState.musicPlayerVisible ||
+                // The icon editor is translucent (like Settings), so the wave stays alive
+                // behind it — listed here to document that; layout adjust reads the same.
+                false
             // Freeze the wave when it's hidden anyway, or when the device is conserving power
             // (battery saver / thermal throttle, unless opted out). This is ONE motion budget
             // that BOTH background layers read: with a wallpaper set the wave branch isn't
@@ -458,6 +513,11 @@ fun XMBShell(
                 respectBatterySaver  = uiState.respectBatterySaver,
                 thermalThrottleAware = uiState.thermalThrottleAware,
             )
+            // The icon-animation budget: focused-row GIFs play only when the wave isn't
+            // throttled (battery saver / thermal — the same budget the background obeys) and
+            // no blocking overlay covers the XMB (reuses hasBlockingOverlay rather than
+            // inventing a second condition). One motion budget, three consumers.
+            val iconAnimatingAllowed = !powerThrottled && !uiState.hasBlockingOverlay
             // The app-visible leg: the composition survives ON_STOP (every game launch), and a
             // decoder running behind the emulator is the worst possible outcome for the motion
             // wallpaper. Folded into the same motion budget the wave obeys.
@@ -531,7 +591,10 @@ fun XMBShell(
                 !uiState.activePlayerStatus &&
                 uiState.activeVideoId == null &&
                 uiState.activeAppId == null &&
-                uiState.activePhotoViewer == null
+                uiState.activePhotoViewer == null &&
+                // The icon editor is translucent — the live XMB (with the custom look
+                // applying behind it) IS the point, so the foreground stays composed.
+                uiState.customIconSession == null
             ) {
 
             // PIC0-style logo overlay — the focused game's clear logo fades in center-right
@@ -669,6 +732,7 @@ fun XMBShell(
                             iconStyle = uiState.iconStyle,
                             barTopY = barTop,
                             belowTopY = anchorTop,
+                            iconAnimatingAllowed = iconAnimatingAllowed,
                             modifier = Modifier
                                 .align(Alignment.TopStart)
                                 .fillMaxSize()
@@ -706,6 +770,7 @@ fun XMBShell(
                                 previousRiseRows = layoutSpec.previousItemRiseRows,
                                 solidUnfocusedIcons = uiState.solidUnfocusedIcons,
                                 textShadow = uiState.textShadow,
+                                iconAnimatingAllowed = iconAnimatingAllowed,
                                 modifier = Modifier.fillMaxSize(),
                             )
                         }
@@ -725,6 +790,7 @@ fun XMBShell(
                             },
                             drilledIn = uiState.drillTitle != null,
                             solidUnfocusedIcons = uiState.solidUnfocusedIcons,
+                            iconAnimatingAllowed = iconAnimatingAllowed,
                             modifier = Modifier
                                 .align(Alignment.TopStart)
                                 .offset(y = barTop)
@@ -806,6 +872,7 @@ fun XMBShell(
                         onGamepadActionConsumed = onSettingsActionConsumed,
                         onOpenColorSchemePicker = onOpenColorSchemePicker,
                         onOpenXmbLayoutAdjust = onOpenXmbLayoutAdjust,
+                        onOpenCustomIcons = onOpenCustomIcons,
                         onAddAndroidApps = onOpenAndroidLibraryPicker,
                         onOpenPlayerStatus = onOpenPlayerStatus,
                         onOpenPlayerStatusFromSettings = onOpenPlayerStatusFromSettings,
@@ -929,6 +996,38 @@ fun XMBShell(
                     onSave = onXmbLayoutSave,
                     onCancel = onXmbLayoutCancel,
                     modifier = Modifier.fillMaxSize(),
+                )
+            }
+
+            // Live "Customize XMB Icons" editor — rendered beside the layout editor, over the
+            // real XMB. The foreground stays composed (see the guard above) so the columns and
+            // the crossbar keep reflecting each pick as it lands.
+            uiState.customIconSession?.let { session ->
+                CustomIconsOverlay(
+                    session = session,
+                    customIcons = uiState.customIcons,
+                    themeIcons = uiState.iconOverrides,
+                    onSlotFocused = onCustomIconsSlotFocused,
+                    onIconPicked = onCustomIconPicked,
+                    onResetSlot = onCustomResetSlot,
+                    onResetAll = onCustomResetAll,
+                    onSaveAsTheme = onSaveAsThemeRequested,
+                    onGroupMove = onCustomIconGroupMove,
+                    onSlotMove = onCustomIconsSlotFocused, // touch fallback routes through the VM cursor
+                    onDone = onCloseCustomIcons,
+                    forwardedAction = uiState.pendingCustomIconsAction,
+                    onActionConsumed = onCustomIconsActionConsumed,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+
+            // Save-as-theme name dialog — reuses the shell's rename-dialog pattern.
+            uiState.saveThemeNameDialog?.let { dialog ->
+                CollectionNameDialog(
+                    title = dialog.title,
+                    initialText = dialog.initialText,
+                    onConfirm = onConfirmSaveAsTheme,
+                    onCancel = onDismissSaveAsTheme,
                 )
             }
 

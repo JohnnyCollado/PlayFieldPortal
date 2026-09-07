@@ -78,9 +78,9 @@ class PfpThemeCodecTest {
             wallpaper = null,
             preview = null,
             icons = mapOf(
-                "catbar_games" to ByteArray(128) { it.toByte() },
-                "item_playlist" to ByteArray(96) { (it * 7).toByte() },
-                "status_bluetooth" to ByteArray(32),
+                "catbar_games" to ThemeImage(ByteArray(128) { it.toByte() }, "png"),
+                "item_playlist" to ThemeImage(ByteArray(96) { (it * 7).toByte() }, "png"),
+                "status_bluetooth" to ThemeImage(ByteArray(32), "png"),
             ),
         )
         val decoded = assertNotNull(PfpThemeCodec.read(PfpThemeCodec.write(bundle)))
@@ -92,7 +92,7 @@ class PfpThemeCodecTest {
     fun `drops icon entries with unregistered keys on read and write`() {
         // Write path: unknown keys in the map are silently skipped.
         val written = PfpThemeCodec.write(
-            PfpThemeBundle(manifest, null, null, icons = mapOf("not_a_slot" to ByteArray(8))),
+            PfpThemeBundle(manifest, null, null, icons = mapOf("not_a_slot" to ThemeImage(ByteArray(8), "png"))),
         )
         assertEquals(emptyMap(), assertNotNull(PfpThemeCodec.read(written)).icons)
 
@@ -114,7 +114,7 @@ class PfpThemeCodecTest {
 
     @Test
     fun `every registry key survives an icon round-trip`() {
-        val icons = IconSlots.ALL.associate { it.key to byteArrayOf(1, 2, 3) }
+        val icons = IconSlots.ALL.associate { it.key to ThemeImage(byteArrayOf(1, 2, 3), "png") }
         val decoded = assertNotNull(PfpThemeCodec.read(PfpThemeCodec.write(PfpThemeBundle(manifest, null, null, icons))))
         assertEquals(icons.keys, decoded.icons.keys)
     }

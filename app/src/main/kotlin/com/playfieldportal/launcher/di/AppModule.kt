@@ -9,7 +9,9 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import com.playfieldportal.feature.artwork.api.ArtworkImageCache
 import com.playfieldportal.feature.library.scanner.RescanApplicationScope
+import com.playfieldportal.core.data.repository.CustomIconCacheEvictor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -35,4 +37,12 @@ object AppModule {
     @RescanApplicationScope
     fun provideRescanApplicationScope(): CoroutineScope =
         CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    // CustomIconStore (core-data) must evict Coil's path-keyed cache when a replaced GIF lands
+    // at a stable path — but core-data can't see feature-artwork's ArtworkImageCache. The app
+    // module is the one place that sees both, so the seam is bound here.
+    @Provides
+    @Singleton
+    fun provideCustomIconCacheEvictor(imageCache: ArtworkImageCache): CustomIconCacheEvictor =
+        CustomIconCacheEvictor { path -> imageCache.evict(path) }
 }

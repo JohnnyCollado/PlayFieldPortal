@@ -87,6 +87,7 @@ fun ThemesSettingsScreen(
         onClearAccentOverride = { viewModel.clearAccentOverride() },
         onResetTheme = { viewModel.resetTheme() },
         onDismissMessage = { viewModel.dismissMessage() },
+        onSaveCurrentLook = { viewModel.saveCurrentLookAsTheme(it) },
         modifier = modifier
     )
 }
@@ -106,11 +107,44 @@ private fun ThemesSettingsContent(
     onClearAccentOverride: () -> Unit,
     onResetTheme: () -> Unit,
     onDismissMessage: () -> Unit,
+    onSaveCurrentLook: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val ptfPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let { onImportPtfTheme(it) } }
     val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let { onCreateThemeFromPhoto(it) } }
     val pfpPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let { onImportPfpTheme(it) } }
+
+    // "Save Current Look as Theme" name entry (reuses the app's rename-dialog pattern).
+    var showSaveNameDialog by remember { mutableStateOf(false) }
+    var saveName by remember { mutableStateOf("") }
+    if (showSaveNameDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showSaveNameDialog = false },
+            title = { androidx.compose.material3.Text("Save Current Look as Theme") },
+            text = {
+                androidx.compose.material3.OutlinedTextField(
+                    value = saveName,
+                    onValueChange = { saveName = it },
+                    singleLine = true,
+                    placeholder = { androidx.compose.material3.Text("Theme name") },
+                )
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(
+                    onClick = {
+                        showSaveNameDialog = false
+                        onSaveCurrentLook(saveName)
+                        saveName = ""
+                    },
+                ) { androidx.compose.material3.Text("Save") }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { showSaveNameDialog = false }) {
+                    androidx.compose.material3.Text("Cancel")
+                }
+            },
+        )
+    }
 
     var menu by remember { mutableStateOf<ThemeMenu?>(null) }
     var menuIndex by remember { mutableStateOf(0) }
@@ -294,6 +328,11 @@ private fun ThemesSettingsContent(
                 )
 
                 SettingsGroup("Install")
+                SettingsRow(
+                    label    = "Save Current Look as Theme",
+                    sublabel = "Bundle your icons, wallpaper, colors and motion into a shareable .pfptheme",
+                    onClick  = { showSaveNameDialog = true },
+                )
                 SettingsRow(
                     label    = "Import PSP Theme (.ptf)",
                     sublabel = "Uses the theme's wallpaper and color — icons stay ours",

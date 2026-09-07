@@ -10,6 +10,7 @@ import com.playfieldportal.themekit.PfpThemeBundle
 import com.playfieldportal.themekit.PfpThemeCodec
 import com.playfieldportal.themekit.PfpThemeManifest
 import com.playfieldportal.themekit.PfpThemeSource
+import com.playfieldportal.themekit.ThemeImage
 import java.io.File
 import java.time.LocalDate
 import kotlinx.coroutines.CoroutineScope
@@ -198,7 +199,7 @@ class StudioViewModel(private val scope: CoroutineScope) {
     private fun hydrate(bundle: PfpThemeBundle, status: String) {
         val manifest = bundle.manifest
         val iconBitmaps = bundle.icons.mapNotNull { (key, png) ->
-            ImageCodecs.toImageBitmap(png)?.let { key to it }
+            ImageCodecs.toImageBitmap(png.bytes)?.let { key to it }
         }.toMap()
         val wallpaperBusy = bundle.wallpaper
             ?.let(ImageCodecs::decodeImage)
@@ -218,8 +219,10 @@ class StudioViewModel(private val scope: CoroutineScope) {
                 wallpaperBitmap = bundle.wallpaper?.let(ImageCodecs::toImageBitmap),
                 wallpaperFileName = manifest.source?.file,
                 // Keep ALL icon bytes even when a thumbnail fails to decode — a bad preview
-                // must not silently strip the icon from the theme on re-export.
-                iconOverrides = bundle.icons,
+                // must not silently strip the icon from the theme on re-export. (A v3 gif
+                // entry re-exports labeled png — the Studio authors stills; teaching it gif
+                // is a follow-up.)
+                iconOverrides = bundle.icons.mapValues { (_, image) -> image.bytes },
                 iconBitmaps = iconBitmaps,
                 wallpaperBusy = wallpaperBusy,
                 layout = manifest.layout?.let(XmbLayoutSpecCodec::sanitize)
@@ -343,7 +346,7 @@ class StudioViewModel(private val scope: CoroutineScope) {
             manifest = buildManifest(snapshot),
             wallpaper = snapshot.wallpaperPng,
             preview = runCatching { renderPreview(snapshot) }.getOrNull(),
-            icons = snapshot.iconOverrides,
+            icons = snapshot.iconOverrides.mapValues { (_, png) -> ThemeImage(png, "png") },
         )
         runCatching { file.outputStream().use { PfpThemeCodec.write(bundle, it) } }
             .onSuccess { _state.update { it.copy(statusMessage = "Exported ${file.name}") } }

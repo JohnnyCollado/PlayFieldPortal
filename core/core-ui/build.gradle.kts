@@ -32,4 +32,7 @@ dependencies {
     implementation(libs.timber)
 
     testImplementation(libs.bundles.test.unit)
+    // SystemIconsTest pins the SYSICON_PLATFORM_IDS registry (theme-kit, pure JVM) against
+    // the R8-safe static when — test-only, so the module graph stays Android-first.
+    testImplementation(project(":core:theme-kit"))
 }
