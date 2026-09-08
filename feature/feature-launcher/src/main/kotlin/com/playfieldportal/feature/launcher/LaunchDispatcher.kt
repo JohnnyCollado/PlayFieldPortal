@@ -61,6 +61,10 @@ class LaunchDispatcher @Inject constructor(
     private val outcomeRecorder: LaunchOutcomeRecorder,
     @LaunchDispatcherScope private val scope: CoroutineScope,
     @LaunchRealtimeClock private val clock: LaunchClock,
+    private val gameBootGate: GameBootGate,
+    // A refused launch is the ERROR event's flagship home — the custom-vs-default decision
+    // lives in MenuSoundPlayer; the dispatcher only says "this launch did not happen".
+    private val menuSound: com.playfieldportal.core.ui.sound.MenuSoundPlayer,
 ) {
     private val _recoveryRequests = MutableStateFlow<LaunchRecoveryRequest?>(null)
     /** Non-null while a recovery sheet should be shown; cleared by [dismissRecovery]. */
@@ -78,6 +82,11 @@ class LaunchDispatcher @Inject constructor(
      * Failure messages mirror the historic Game Detail copy so screens can keep their wording.
      */
     suspend fun launch(game: Game, resolved: ResolvedLaunch?, intent: Intent): LaunchDispatchResult {
+        // The ONE GameBoot seam. Here, and not at the confirm moment, because everything above
+        // this line is preflight: a game that cannot launch must never show a presentation. Both
+        // game-launch call sites (Game Detail and the XMB's direct launch) get it for free.
+        // No-op when GameBoot is disabled, and bounded by its own watchdog — see GameBootGate.
+        gameBootGate.awaitPresentation(game.title)
         return try {
             // Every dispatcher launch comes from an app-graph context (ViewModel/Activity via the
             // shared singleton), so NEW_TASK is required to start outside our own task. Idempotent.
@@ -119,6 +128,7 @@ class LaunchDispatcher @Inject constructor(
         outcomeRecorder.record(
             outcomeFor(game, resolved, LaunchOutcomeStatus.INTENT_FAILED, reason)
         )
+        menuSound.play(com.playfieldportal.core.ui.sound.MenuSound.ERROR)
         if (offerRecovery) emitRecovery(game, resolved, reason)
     }
 
@@ -212,6 +222,7 @@ class LaunchDispatcher @Inject constructor(
         outcomeRecorder.record(
             outcomeFor(game, resolved, LaunchOutcomeStatus.INTENT_FAILED, message)
         )
+        menuSound.play(com.playfieldportal.core.ui.sound.MenuSound.ERROR)
         emitRecovery(game, resolved, message)
         return LaunchDispatchResult.Rejected(message)
     }

@@ -59,7 +59,7 @@ class SettingsHierarchyTest {
             settingsSectionItems(SettingsSection.EMULATORS).map { it.id },
         )
         assertEquals(
-            listOf("settings_display", "settings_categories", "settings_themes", "settings_controller"),
+            listOf("settings_display", "settings_audio", "settings_categories", "settings_themes", "settings_controller"),
             settingsSectionItems(SettingsSection.INTERFACE).map { it.id },
         )
         assertEquals(
@@ -136,5 +136,22 @@ class SettingsHierarchyTest {
         // which is the app-visibility route.
         val interfaceIds = settingsSectionItems(SettingsSection.INTERFACE).map { it.id }
         assertFalse(interfaceIds.contains("settings_app_visibility"))
+    }
+
+    // ── Audio screen ─────────────────────────────────────────────────────────
+
+    @Test fun `Audio is present under Interface via its own route`() {
+        val interfaceIds = settingsSectionItems(SettingsSection.INTERFACE).map { it.id }
+        assertTrue("Sound missing from Interface", interfaceIds.contains("settings_audio"))
+        assertTrue("settings_audio route missing", SETTINGS_SCREEN_ROUTES.contains("settings_audio"))
+    }
+
+    @Test fun `the Interface audio row is titled Sound with a menu-and-boot subtitle`() {
+        // Phase 3 of sfx-seven-sounds-plan: the screen is renamed Audio → Sound and now owns the
+        // boot sound too. The route id deliberately stays settings_audio — renaming it would
+        // break cursor restore and every focus key under it.
+        val row = settingsSectionItems(SettingsSection.INTERFACE).first { it.id == "settings_audio" }
+        assertEquals("Sound", row.title)
+        assertEquals("Menu & boot sounds", row.subtitle)
     }
 }

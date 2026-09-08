@@ -1,0 +1,218 @@
+package com.playfieldportal.feature.settings.viewmodel
+
+import android.content.Context
+import android.net.Uri
+import androidx.datastore.preferences.core.edit
+import androidx.test.core.app.ApplicationProvider
+import com.playfieldportal.core.data.datastore.pfpDataStore
+import com.playfieldportal.core.data.repository.MediaDisplayNames
+import com.playfieldportal.core.data.repository.UiMediaStore
+import com.playfieldportal.core.domain.model.UiMediaSlot
+import com.playfieldportal.core.ui.sound.MenuSound
+import com.playfieldportal.core.ui.sound.MenuSoundPlayer
+import io.mockk.mockk
+import io.mockk.verify
+import java.io.File
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
+import org.junit.After
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+
+/**
+ * The Interface ▸ Sound screen's contract (docs/plans/sfx-seven-sounds-plan.md Phase 2c): seven
+ * rows — the six menu sounds plus Boot Sound — with Boot Sound behaving like any other row
+ * (label, Use Default, reset) except for Preview, which it must NOT have (there is no
+ * [MenuSound] for boot, and Display ▸ Boot Sequence already previews the full presentation).
+ */
+@OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
+class AudioSettingsViewModelTest {
+
+    private val dispatcher = StandardTestDispatcher()
+    private val context: Context = ApplicationProvider.getApplicationContext()
+    private val menuSound: MenuSoundPlayer = mockk(relaxed = true)
+    private lateinit var store: UiMediaStore
+    private lateinit var vm: AudioSettingsViewModel
+
+    @Before fun setUp() {
+        Dispatchers.setMain(dispatcher)
+        runBlocking { context.pfpDataStore.edit { it.clear() } }
+        File(context.filesDir, UiMediaStore.UI_MEDIA_DIR).deleteRecursively()
+        MediaDisplayNames.clearCache()
+        store = UiMediaStore(context)
+        vm = AudioSettingsViewModel(context, store, menuSound)
+    }
+
+    @After fun tearDown() {
+        Dispatchers.resetMain()
+    }
+
+    /** stateIn(WhileSubscribed) only computes with a live collector. */
+    private fun kotlinx.coroutines.test.TestScope.collectUiState() {
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+    }
+
+    /**
+     * Real-time wait, mirroring DisplaySettingsViewModelWallpaperTest: DataStore writes and the
+     * uiState pipeline's flowOn(Dispatchers.IO) complete on REAL threads, which
+     * advanceUntilIdle() cannot drive. Alternating a real sleep (lets those threads progress)
+     * with advanceUntilIdle() (drains whatever they queued on the scheduler) is the only honest
+     * way to observe their effects.
+     */
+    private fun kotlinx.coroutines.test.TestScope.eventually(
+        what: String,
+        timeoutMs: Long = 5_000,
+        condition: () -> Boolean,
+    ) {
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (!condition()) {
+            if (System.currentTimeMillis() > deadline) {
+                throw AssertionError("Timed out waiting for: $what")
+            }
+            Thread.sleep(50)
+            testScheduler.advanceUntilIdle()
+        }
+    }
+
+    /** Drops a file straight into `ui-media/` — assignments() is the directory. */
+    private fun seedAssignment(slot: UiMediaSlot, ext: String = "wav") {
+        val dir = File(context.filesDir, UiMediaStore.UI_MEDIA_DIR)
+        dir.mkdirs()
+        File(dir, "${slot.key}.$ext").writeBytes(ByteArray(64))
+    }
+
+    private fun seedDisplayName(slot: UiMediaSlot, name: String) {
+        runBlocking {
+            context.pfpDataStore.edit { it[UiMediaStore.displayNameKey(slot)] = name }
+        }
+    }
+
+    private fun mediaFile(slot: UiMediaSlot, ext: String) =
+        File(File(context.filesDir, UiMediaStore.UI_MEDIA_DIR), "${slot.key}.$ext")
+
+    // ── the roster ───────────────────────────────────────────────────────────
+
+    @Test fun `the Sound screen lists the seven rows with boot last`() = runTest(dispatcher) {
+        assertEquals(
+            listOf(
+                "sound_scroll", "sound_back", "sound_confirm", "sound_error",
+                "sound_launch", "sound_notification", "boot_audio",
+            ),
+            AudioSettingsViewModel.SOUND_SLOTS.map { it.key },
+        )
+    }
+
+    // ── Boot Sound as an ordinary row ────────────────────────────────────────
+
+    @Test fun `an assigned boot audio row gets its name and the use-default affordance`() =
+        runTest(dispatcher) {
+            seedAssignment(UiMediaSlot.BOOT_AUDIO)
+            seedDisplayName(UiMediaSlot.BOOT_AUDIO, "opening.wav")
+            collectUiState()
+
+            eventually("the Boot row surfaces its name and Use Default") {
+                val state = vm.uiState.value
+                state.soundLabels[UiMediaSlot.BOOT_AUDIO] == "opening.wav" &&
+                    UiMediaSlot.BOOT_AUDIO in state.assignedSlots
+            }
+        }
+
+    @Test fun `only rows on this screen can be assigned slots`() = runTest(dispatcher) {
+        seedAssignment(UiMediaSlot.BOOT_VIDEO, ext = "mp4")
+        seedAssignment(UiMediaSlot.GAMEBOOT_AUDIO)
+        collectUiState()
+
+        eventually("assignments surface in the ui state") {
+            vm.uiState.value.soundLabels.isNotEmpty()
+        }
+
+        val state = vm.uiState.value
+        assertFalse(UiMediaSlot.BOOT_VIDEO in state.soundLabels.keys, "boot video is not a sound row")
+        assertFalse(UiMediaSlot.BOOT_VIDEO in state.assignedSlots)
+        assertFalse(UiMediaSlot.GAMEBOOT_AUDIO in state.assignedSlots, "GameBoot has its own screen")
+    }
+
+    @Test fun `preview on the boot row is a silent no-op`() = runTest(dispatcher) {
+        vm.preview(UiMediaSlot.BOOT_AUDIO)
+        advanceUntilIdle()
+        verify(exactly = 0) { menuSound.play(any(), any()) }
+    }
+
+    // ── reset semantics ──────────────────────────────────────────────────────
+
+    @Test fun `confirmReset clears the seven sounds including boot audio and never touches video media`() =
+        runTest(dispatcher) {
+            seedAssignment(UiMediaSlot.SOUND_SCROLL)
+            seedAssignment(UiMediaSlot.SOUND_NOTIFICATION)
+            seedAssignment(UiMediaSlot.BOOT_AUDIO)
+            seedAssignment(UiMediaSlot.BOOT_VIDEO, ext = "mp4")
+            seedAssignment(UiMediaSlot.GAMEBOOT_AUDIO)
+            collectUiState()
+            advanceUntilIdle()
+
+            vm.requestReset()
+            vm.confirmReset()
+
+            eventually("the seven sounds are cleared") {
+                !mediaFile(UiMediaSlot.SOUND_SCROLL, "wav").isFile &&
+                    !mediaFile(UiMediaSlot.SOUND_NOTIFICATION, "wav").isFile &&
+                    !mediaFile(UiMediaSlot.BOOT_AUDIO, "wav").isFile
+            }
+
+            // The negatives are as load-bearing as the positives, and time can't prove a
+            // negative — assert them only after the deletions have observably landed.
+            assertTrue(mediaFile(UiMediaSlot.BOOT_VIDEO, "mp4").isFile, "reset must never touch the boot video")
+            assertTrue(mediaFile(UiMediaSlot.GAMEBOOT_AUDIO, "wav").isFile, "reset must never touch GameBoot media")
+        }
+
+    @Test fun `useDefault drops the boot audio assignment`() = runTest(dispatcher) {
+        seedAssignment(UiMediaSlot.BOOT_AUDIO)
+
+        vm.useDefault(UiMediaSlot.BOOT_AUDIO)
+
+        eventually("the boot audio file is removed") {
+            !mediaFile(UiMediaSlot.BOOT_AUDIO, "wav").isFile
+        }
+    }
+
+    // ── the wired sounds (Phase 4) ───────────────────────────────────────────
+
+    @Test fun `a rejected import surfaces the reason and plays the error sound`() = runTest(dispatcher) {
+        // Registered as .mp4 while the bytes are a WAV: the resolver reports video/mp4, which the
+        // sound gate refuses before anything is copied.
+        val uri = Uri.parse("content://test/rejected.mp4")
+        org.robolectric.Shadows.shadowOf(context.contentResolver)
+            .registerInputStream(uri, java.io.ByteArrayInputStream(ByteArray(64)))
+        vm.onPickerLaunchedFor(UiMediaSlot.SOUND_SCROLL)
+        collectUiState()
+        vm.onSoundPicked(uri)
+
+        // The import runs the gate on Dispatchers.IO — wait for the message channel, which is
+        // set AFTER the error sound plays, so the verify below can never race.
+        eventually("the rejection dialog surfaces") { vm.uiState.value.message != null }
+
+        assertNotNull(vm.uiState.value.message, "the rejection dialog must surface")
+        verify { menuSound.play(MenuSound.ERROR) }
+    }
+
+    @Test fun `a confirmed reset plays the confirm sound`() = runTest(dispatcher) {
+        vm.confirmReset()
+        advanceUntilIdle()
+        verify { menuSound.play(MenuSound.CONFIRM) }
+    }
+}

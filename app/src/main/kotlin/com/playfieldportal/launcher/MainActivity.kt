@@ -46,6 +46,11 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var libraryRescanCoordinator: LibraryRescanCoordinator
 
+    // Owns the user's ui-media assignments; a cold start prunes anything left by slots the
+    // current build no longer has (removed sound slots, crashed-import staging files).
+    @Inject
+    lateinit var uiMediaStore: com.playfieldportal.core.data.repository.UiMediaStore
+
     // B1 launch verification: the home-launcher handshake. A dispatched game launch is only
     // "real" if another activity covers this launcher (onStop) and the user comes back after a
     // real session (onResume). Nothing else in the app reports lifecycle to the dispatcher.
@@ -55,6 +60,10 @@ class MainActivity : ComponentActivity() {
     // Same activity-scoped instance the shell's hiltViewModel() resolves — used to report when
     // the notification-permission dialog is out of the way so the boot sequence can start.
     private val xmbViewModel: XMBViewModel by viewModels()
+
+    // True once the launcher has actually been stopped, so onResume can tell "back from a game"
+    // apart from the cold start's own first onResume.
+    private var wasStopped = false
 
     // Runtime-registered so it actually fires on Android 8+ (manifest receivers are blocked for
     // this implicit broadcast). Lives for the activity's lifetime.
@@ -118,6 +127,13 @@ class MainActivity : ComponentActivity() {
         // or does nothing in the lite build (SDK excluded). Wired per flavor via Hilt.
         discordBootstrap.onCreate(this)
 
+        // Orphan sweep for the user's ui-media directory (removed slots, stale staging files).
+        // Off the main thread; cheap (one directory listing) when there is nothing to remove.
+        lifecycleScope.launch {
+            runCatching { uiMediaStore.pruneOrphans() }
+                .onFailure { Timber.w(it, "Startup UI-media prune failed") }
+        }
+
         setContent {
             PFPTheme {
                 // Controller prompts are ambient: every footer resolves its glyphs from the
@@ -138,6 +154,12 @@ class MainActivity : ComponentActivity() {
         // B1: PFP is foreground again — classify any pending launch hand-off (success if the
         // emulator held the foreground for a real session, never-foregrounded otherwise).
         launchDispatcher.onHostResumed()
+        // Only a RETURN counts for "Show Boot Sequence on Resume" — the very first onResume after
+        // onCreate is the cold start, which already plays its own boot.
+        if (wasStopped) {
+            wasStopped = false
+            xmbViewModel.onHostResumed()
+        }
         // Foreground again = out of any game, so drop the per-game Discord presence back to idle
         // (full build only; no-op in lite). Cheap unless a game was actually being shared.
         discordBootstrap.onResume()
@@ -153,6 +175,7 @@ class MainActivity : ComponentActivity() {
     override fun onStop() {
         // B1: another activity covered the launcher — the dispatched emulator came to front.
         launchDispatcher.onHostStopped()
+        wasStopped = true
         super.onStop()
     }
 

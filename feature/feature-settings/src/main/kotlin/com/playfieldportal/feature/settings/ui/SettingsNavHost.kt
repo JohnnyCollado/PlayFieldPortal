@@ -37,6 +37,7 @@ val SETTINGS_SCREEN_ROUTES: Set<String> = setOf(
     "settings_themes",
     "settings_collections",
     "settings_display",
+    "settings_audio",
     "settings_controller",
     "settings_backup",
     "settings_logs",
@@ -57,6 +58,8 @@ fun SettingsNavHost(
     onOpenColorSchemePicker: () -> Unit = {},
     onOpenXmbLayoutAdjust: () -> Unit = {},
     onOpenCustomIcons: () -> Unit = {},
+    onPreviewBootSequence: () -> Unit = {},
+    onPreviewGameBoot: () -> Unit = {},
     onAddAndroidApps: () -> Unit = {},
     onOpenPlayerStatus: () -> Unit = {},
     onOpenPlayerStatusFromSettings: () -> Unit = {},
@@ -128,8 +131,11 @@ fun SettingsNavHost(
                 onBack = onBack,
                 onOpenXmbLayoutAdjust = onOpenXmbLayoutAdjust,
                 onOpenCustomIcons = onOpenCustomIcons,
+                onPreviewBootSequence = onPreviewBootSequence,
+                onPreviewGameBoot = onPreviewGameBoot,
                 modifier = modifier,
             )
+            "settings_audio"      -> AudioSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_controller" -> ControllerSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_backup"     -> BackupSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_logs"       -> LogsSettingsScreen(onBack = onBack, modifier = modifier)

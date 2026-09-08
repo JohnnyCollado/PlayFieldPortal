@@ -94,6 +94,7 @@ class LibraryScannerTest {
         // the actual union derivation while playlist reads stay context-free.
         DiscSetReconciler(discSetBuilder, m3uPlaylistReader, discRegionReader, gameRepository),
         ioDispatcher = StandardTestDispatcher(testScheduler),
+        menuSound = io.mockk.mockk(relaxed = true),
     )
 
     @Test

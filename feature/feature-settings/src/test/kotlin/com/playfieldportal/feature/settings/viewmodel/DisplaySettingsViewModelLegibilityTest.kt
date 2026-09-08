@@ -6,6 +6,8 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.test.core.app.ApplicationProvider
 import com.playfieldportal.core.data.datastore.pfpDataStore
+import com.playfieldportal.core.data.repository.GameBootPreferences
+import com.playfieldportal.core.data.repository.UiMediaStore
 import com.playfieldportal.core.domain.model.IconLegibilityStyle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -43,7 +45,12 @@ class DisplaySettingsViewModelLegibilityTest {
     fun setUp() {
         Dispatchers.setMain(dispatcher)
         runBlocking { context.pfpDataStore.edit { it.clear() } }
-        vm = DisplaySettingsViewModel(context)
+        vm = DisplaySettingsViewModel(
+            context,
+            UiMediaStore(context),
+            GameBootPreferences(context),
+            io.mockk.mockk(relaxed = true),
+        )
     }
 
     @After

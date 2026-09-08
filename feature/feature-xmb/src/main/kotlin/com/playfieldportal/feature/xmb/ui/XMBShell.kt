@@ -212,6 +212,9 @@ fun XMBShellContainer(
         onCloseSettingsScreen = viewModel::onCloseSettingsScreen,
         onOpenXmbLayoutAdjust = viewModel::openXmbLayoutAdjust,
         onOpenCustomIcons = viewModel::openCustomIcons,
+        onPreviewBootSequence = viewModel::previewBootSequence,
+        onPreviewGameBoot = viewModel::previewGameBoot,
+        onGameBootComplete = viewModel::onGameBootComplete,
         onCloseCustomIcons = viewModel::closeCustomIcons,
         onCustomIconsActionConsumed = viewModel::onCustomIconsActionConsumed,
         onCustomIconsSlotFocused = viewModel::onCustomIconSlotFocused,
@@ -346,6 +349,9 @@ fun XMBShell(
     onCloseSettingsScreen: () -> Unit = {},
     onOpenXmbLayoutAdjust: () -> Unit = {},
     onOpenCustomIcons: () -> Unit = {},
+    onPreviewBootSequence: () -> Unit = {},
+    onPreviewGameBoot: () -> Unit = {},
+    onGameBootComplete: () -> Unit = {},
     onCloseCustomIcons: () -> Unit = {},
     onCustomIconsActionConsumed: () -> Unit = {},
     onCustomIconsSlotFocused: (Int) -> Unit = {},
@@ -873,6 +879,8 @@ fun XMBShell(
                         onOpenColorSchemePicker = onOpenColorSchemePicker,
                         onOpenXmbLayoutAdjust = onOpenXmbLayoutAdjust,
                         onOpenCustomIcons = onOpenCustomIcons,
+                        onPreviewBootSequence = onPreviewBootSequence,
+                        onPreviewGameBoot = onPreviewGameBoot,
                         onAddAndroidApps = onOpenAndroidLibraryPicker,
                         onOpenPlayerStatus = onOpenPlayerStatus,
                         onOpenPlayerStatusFromSettings = onOpenPlayerStatusFromSettings,
@@ -891,10 +899,27 @@ fun XMBShell(
             // Startup order: permission dialog (black hold) -> boot animation -> wizard or XMB.
             if (uiState.showBootSequence) {
                 if (uiState.startupPermissionsSettled && uiState.initialSetupDecided) {
-                    BootSequenceOverlay(onComplete = onBootComplete)
+                    BootSequenceOverlay(
+                        onComplete = onBootComplete,
+                        bootVideoPath = uiState.bootVideoPath,
+                        bootAudioPath = uiState.bootAudioPath,
+                    )
                 } else {
                     Box(modifier = Modifier.fillMaxSize().background(Color.Black))
                 }
+            }
+
+            // GameBoot draws above everything, like the boot sequence: while it is on screen the
+            // launch is suspended on the gate (or, for a settings preview, nothing is launching at
+            // all). Leaving composition releases its players before the emulator gets the screen.
+            uiState.activeGameBoot?.let { request ->
+                GameBootOverlay(
+                    gameTitle = request.gameTitle,
+                    onComplete = onGameBootComplete,
+                    videoPath = request.videoPath,
+                    audioPath = request.audioPath,
+                    modifier = Modifier.fillMaxSize(),
+                )
             }
 
             // Discord QR login overlay. The SDK engine is attached at app start (MainActivity, full

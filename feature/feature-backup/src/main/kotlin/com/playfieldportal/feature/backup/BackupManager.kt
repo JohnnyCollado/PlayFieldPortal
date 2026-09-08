@@ -36,6 +36,8 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
 import com.playfieldportal.core.common.security.KeystoreSecretCipher
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.data.repository.BackupFolderRepository
+import com.playfieldportal.core.data.repository.UiMediaStore
+import com.playfieldportal.core.domain.model.UiMediaSlot
 import com.playfieldportal.feature.backup.restore.RestoreArchive
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
@@ -73,6 +75,9 @@ open class BackupManager @Inject constructor(
     private val playSessionDao: PlaySessionDao,
     private val backupDao: BackupDao,
     private val backupFolderRepository: BackupFolderRepository,
+    private val uiMediaStore: UiMediaStore,
+    // A finished backup/restore is a background task completing — the NOTIFICATION event.
+    private val menuSound: com.playfieldportal.core.ui.sound.MenuSoundPlayer,
 ) {
     private val json = Json { prettyPrint = false; ignoreUnknownKeys = true }
 
@@ -152,7 +157,10 @@ open class BackupManager @Inject constructor(
         }
         fileName
     }.fold(
-        onSuccess = { BackupResult.Success(it) },
+        onSuccess = {
+            menuSound.play(com.playfieldportal.core.ui.sound.MenuSound.NOTIFICATION)
+            BackupResult.Success(it)
+        },
         onFailure = { BackupResult.Failure(it.message ?: "Unknown error", it) },
     )
     }
@@ -296,7 +304,15 @@ open class BackupManager @Inject constructor(
 
         bundle.refusals
     }.fold(
-        onSuccess = { RestoreResult.Success(it) },
+        onSuccess = { refusals ->
+            // An old archive can still CARRY files for slots the current build removed
+            // (sound_select, sound_systembrowse); restore wrote what it knew, so sweep the
+            // leftovers — same sweep every cold start runs, just brought forward.
+            runCatching { uiMediaStore.pruneOrphans() }
+                .onFailure { Timber.w(it, "Post-restore UI-media prune failed") }
+            menuSound.play(com.playfieldportal.core.ui.sound.MenuSound.NOTIFICATION)
+            RestoreResult.Success(refusals)
+        },
         onFailure = { RestoreResult.Failure(it.message ?: "Unknown error", it) },
     )
 
@@ -464,6 +480,7 @@ open class BackupManager @Inject constructor(
             "wallpaper",          // custom XMB wallpaper
             "emulator_profiles",  // user-defined / user-modified emulator profiles
             "custom-icons",       // user's per-slot custom XMB icons (slot-keyed files)
+            "ui-media",           // user's menu sounds + boot/GameBoot media (slot-keyed files)
         )
 
     private val BACKED_UP_STRING_KEYS = listOf(
@@ -511,7 +528,10 @@ open class BackupManager @Inject constructor(
             stringPreferencesKey("tgdb_api_key"),
             stringPreferencesKey("ss_username"),
             stringPreferencesKey("ss_password"),
-        )
+        ) +
+            // Cosmetic names for the user's UI media, one per slot. Derived from the enum rather
+            // than listed, so a slot added later is backed up without a second edit here.
+            UiMediaSlot.entries.map { UiMediaStore.displayNameKey(it) }
 
         // Keystore-encrypted, device-bound credentials — dropped on restore if they can't be
         // decrypted on this device (see restoreSettingsSnapshot). igdb_client_id is a public
@@ -531,6 +551,8 @@ open class BackupManager @Inject constructor(
             booleanPreferencesKey("display_thermal_aware"),
             booleanPreferencesKey("display_battery_saver"),
             booleanPreferencesKey("interface_context_menu_hint"),
+            // GameBoot presentation (Display ▸ GameBoot)
+            booleanPreferencesKey("display_gameboot_enabled"),
             // Sound
             booleanPreferencesKey("sound_menu_enabled"),
             // Artwork download preferences
@@ -551,9 +573,11 @@ open class BackupManager @Inject constructor(
         )
 
         // Long-valued stamps whose PRESENCE (not value) tells observers to load. Without it the
-        // custom-icons files restore but nothing ever reloads them.
+        // custom-icons files restore but nothing ever reloads them — and the same is true of the
+        // ui-media stamp: restored sounds must actually reload into the player.
         private val BACKED_UP_LONG_KEYS = listOf(
             longPreferencesKey("custom_icons_stamp"),
+            longPreferencesKey("ui_media_stamp"),
         )
 
 

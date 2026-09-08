@@ -12,11 +12,16 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.datastore.pfpDataStore
+import com.playfieldportal.core.data.repository.GameBootPreferences
+import com.playfieldportal.core.data.repository.UiMediaStore
+import com.playfieldportal.core.domain.model.UiMediaKind
+import com.playfieldportal.core.domain.model.UiMediaSlot
 import com.playfieldportal.core.domain.model.IconLegibilityStyle
 import com.playfieldportal.core.domain.model.TouchNavButtonMode
 import com.playfieldportal.core.domain.model.TouchSensitivity
 import com.playfieldportal.core.ui.wave.WaveStyle
 import com.playfieldportal.themekit.MotionLimits
+import com.playfieldportal.themekit.UiMediaLimits
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -25,6 +30,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -47,6 +53,8 @@ private val KEY_CONTEXT_MENU_HINT_DELAY_SECONDS = floatPreferencesKey("interface
 private val KEY_TOUCH_SENSITIVITY  = stringPreferencesKey("interface_touch_sensitivity")
 // Must match GameLaunchPreferences.KEY_DIRECT_LAUNCH — both read/write this same pref.
 private val KEY_DIRECT_LAUNCH      = booleanPreferencesKey("pref_direct_game_launch")
+// Must match GameBootPreferences — that class owns the write, this screen renders the row.
+private val KEY_GAMEBOOT_ENABLED   = booleanPreferencesKey("display_gameboot_enabled")
 // Must match XMBViewModel.KEY_ICON_LEGIBILITY — both read/write this same pref.
 private val KEY_ICON_LEGIBILITY    = stringPreferencesKey("display_icon_legibility")
 // Must match XMBViewModel.KEY_SOLID_UNFOCUSED_ICONS — both read/write this same pref.
@@ -60,8 +68,6 @@ internal val KEY_CUSTOM_WALLPAPER  = stringPreferencesKey("display_custom_wallpa
 // Enforced at the two write sites (import, clear) and on read ("motion set, poster missing"
 // degrades to "no motion").
 internal val KEY_MOTION_WALLPAPER  = stringPreferencesKey("display_motion_wallpaper")
-// Must match XMBViewModel.KEY_MENU_SOUND_ENABLED — both read/write this same pref.
-private val KEY_MENU_SOUND         = booleanPreferencesKey("sound_menu_enabled")
 // Scale & Layout now live in the XMB's on-screen "Adjust XMB Layout" editor (see XMBViewModel);
 // this screen only launches it, so the old scale/bar prefs and steppers were removed here.
 
@@ -107,7 +113,6 @@ data class DisplaySettingsUiState(
     // Show the idle "Options" hint pill over XMB items with a context menu. Default on.
     val contextMenuHintDelaySeconds: Float = 2.5f,
     val touchSensitivity: TouchSensitivity = TouchSensitivity.NORMAL,
-    val menuSoundEnabled: Boolean = true,
     // Confirm on a game launches it directly (true) or opens Game Detail first (false).
     val directLaunch: Boolean = false,
     val customWallpaperPath: String? = null,
@@ -117,25 +122,63 @@ data class DisplaySettingsUiState(
     val contextMenuHintEnabled: Boolean = true,
     val wallpaperImporting: Boolean = false,
     val wallpaperPreviewVisible: Boolean = false,
+    // ── Boot Sequence media (Display ▸ Boot Sequence) ────────────────────────
+    val bootVideoLabel: String = UI_MEDIA_DEFAULT_LABEL,
+    val bootAudioLabel: String = UI_MEDIA_DEFAULT_LABEL,
+    val bootVideoAssigned: Boolean = false,
+    val bootAudioAssigned: Boolean = false,
+    val bootPreviewVisible: Boolean = false,
+    // ── GameBoot (Display ▸ GameBoot) ────────────────────────────────────────
+    val gameBootEnabled: Boolean = false,
+    val gameBootVideoLabel: String = UI_MEDIA_DEFAULT_LABEL,
+    val gameBootAudioLabel: String = UI_MEDIA_DEFAULT_LABEL,
+    val gameBootVideoAssigned: Boolean = false,
+    val gameBootAudioAssigned: Boolean = false,
+    val gameBootPreviewVisible: Boolean = false,
+    /** Absolute paths for the two previews — read once so the overlay never touches the store. */
+    val bootVideoPath: String? = null,
+    val bootAudioPath: String? = null,
+    val gameBootVideoPath: String? = null,
+    val gameBootAudioPath: String? = null,
 ) {
     val waveStyleLabel: String get() = WAVE_STYLE_LABELS[waveStyle] ?: waveStyle.name
 }
 
+/** Row summary for a UI-media slot with no user assignment. */
+const val UI_MEDIA_DEFAULT_LABEL = "PFP Default"
+
 @HiltViewModel
 class DisplaySettingsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val uiMediaStore: UiMediaStore,
+    private val gameBootPreferences: GameBootPreferences,
+    private val menuSound: com.playfieldportal.core.ui.sound.MenuSoundPlayer,
 ) : ViewModel() {
 
     private val _wallpaperMessage  = MutableStateFlow<String?>(null)
     private val _wallpaperImporting = MutableStateFlow(false)
     private val _wallpaperPreviewVisible = MutableStateFlow(false)
+    private val _bootPreviewVisible = MutableStateFlow(false)
+    private val _gameBootPreviewVisible = MutableStateFlow(false)
+
+    /** The slot the UI-media picker was launched for, read back when the Uri arrives. */
+    private var pendingUiMediaSlot: UiMediaSlot? = null
 
     val uiState: StateFlow<DisplaySettingsUiState> = combine(
         context.pfpDataStore.data,
         _wallpaperMessage,
         _wallpaperImporting,
         _wallpaperPreviewVisible,
-    ) { prefs, msg, importing, previewVisible ->
+        combine(_bootPreviewVisible, _gameBootPreviewVisible) { boot, gameBoot -> boot to gameBoot },
+    ) { prefs, msg, importing, previewVisible, (bootPreview, gameBootPreview) ->
+        // Every UI-media fact below comes from the same DataStore emission plus one directory
+        // listing, so the rows follow an import or a clear without a second flow.
+        val assigned = uiMediaStore.assignments()
+        fun label(slot: UiMediaSlot): String = when {
+            slot !in assigned -> UI_MEDIA_DEFAULT_LABEL
+            else -> prefs[UiMediaStore.displayNameKey(slot)]
+                ?: if (slot.kind == UiMediaKind.VIDEO) "Custom video" else "Custom sound"
+        }
         DisplaySettingsUiState(
             waveStyle            = runCatching {
                 WaveStyle.valueOf(prefs[KEY_WAVE_STYLE] ?: WaveStyle.ANIMATED.name)
@@ -151,16 +194,91 @@ class DisplaySettingsViewModel @Inject constructor(
             contextMenuHintEnabled = prefs[KEY_CONTEXT_MENU_HINT] ?: true,
             contextMenuHintDelaySeconds = (prefs[KEY_CONTEXT_MENU_HINT_DELAY_SECONDS] ?: 2.5f).coerceIn(1f, 5f),
             touchSensitivity     = TouchSensitivity.fromName(prefs[KEY_TOUCH_SENSITIVITY]),
-            menuSoundEnabled     = prefs[KEY_MENU_SOUND]      ?: true,
             directLaunch         = prefs[KEY_DIRECT_LAUNCH]   ?: false,
             customWallpaperPath  = prefs[KEY_CUSTOM_WALLPAPER],
             motionWallpaperPath  = prefs[KEY_MOTION_WALLPAPER],
             wallpaperMessage     = msg,
             wallpaperImporting   = importing,
             wallpaperPreviewVisible = previewVisible,
+            bootVideoLabel       = label(UiMediaSlot.BOOT_VIDEO),
+            bootAudioLabel       = label(UiMediaSlot.BOOT_AUDIO),
+            bootVideoAssigned    = UiMediaSlot.BOOT_VIDEO in assigned,
+            bootAudioAssigned    = UiMediaSlot.BOOT_AUDIO in assigned,
+            bootPreviewVisible   = bootPreview,
+            gameBootEnabled      = prefs[KEY_GAMEBOOT_ENABLED] ?: false,
+            gameBootVideoLabel   = label(UiMediaSlot.GAMEBOOT_VIDEO),
+            gameBootAudioLabel   = label(UiMediaSlot.GAMEBOOT_AUDIO),
+            gameBootVideoAssigned = UiMediaSlot.GAMEBOOT_VIDEO in assigned,
+            gameBootAudioAssigned = UiMediaSlot.GAMEBOOT_AUDIO in assigned,
+            gameBootPreviewVisible = gameBootPreview,
+            bootVideoPath        = assigned[UiMediaSlot.BOOT_VIDEO],
+            bootAudioPath        = assigned[UiMediaSlot.BOOT_AUDIO],
+            gameBootVideoPath    = assigned[UiMediaSlot.GAMEBOOT_VIDEO],
+            gameBootAudioPath    = assigned[UiMediaSlot.GAMEBOOT_AUDIO],
         )
     }
+        // uiMediaStore.assignments() is a directory listing — cheap, but still file IO.
+        .flowOn(Dispatchers.IO)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DisplaySettingsUiState())
+
+    // ── Boot / GameBoot media ─────────────────────────────────────────────────
+
+    /** Records which media row the picker was launched for. Called just before launching it. */
+    fun onUiMediaPickerLaunchedFor(slot: UiMediaSlot) {
+        pendingUiMediaSlot = slot
+    }
+
+    /**
+     * Imports the picked file for the pending boot/GameBoot slot. A rejection surfaces its reason
+     * through the same message channel the wallpaper uses and leaves the previous assignment
+     * playing — the store stages the copy and only commits it once the gate passes.
+     */
+    fun onUiMediaPicked(uri: Uri) {
+        val slot = pendingUiMediaSlot ?: return
+        pendingUiMediaSlot = null
+        viewModelScope.launch {
+            _wallpaperImporting.value = true
+            val result = try {
+                uiMediaStore.import(slot, uri)
+            } finally {
+                _wallpaperImporting.value = false
+            }
+            if (!result.ok) {
+                // A refused import is an ERROR event, not just a dialog — the user did
+                // something and the launcher said no.
+                menuSound.play(com.playfieldportal.core.ui.sound.MenuSound.ERROR)
+                _wallpaperMessage.value = result.message
+            }
+        }
+    }
+
+    fun clearUiMedia(slot: UiMediaSlot) = viewModelScope.launch { uiMediaStore.clear(slot) }
+
+    /** Display ▸ Boot Sequence ▸ Reset to Default — boot's two slots only. */
+    fun resetBootMedia() = viewModelScope.launch {
+        uiMediaStore.clear(UiMediaSlot.BOOT_VIDEO)
+        uiMediaStore.clear(UiMediaSlot.BOOT_AUDIO)
+    }
+
+    /** Display ▸ GameBoot ▸ Reset to Default — GameBoot's two slots only. */
+    fun resetGameBootMedia() = viewModelScope.launch {
+        uiMediaStore.clear(UiMediaSlot.GAMEBOOT_VIDEO)
+        uiMediaStore.clear(UiMediaSlot.GAMEBOOT_AUDIO)
+    }
+
+    fun setGameBootEnabled(enabled: Boolean) = viewModelScope.launch {
+        gameBootPreferences.setGameBootEnabled(enabled)
+    }
+
+    fun showBootPreview() { _bootPreviewVisible.value = true }
+    fun hideBootPreview() { _bootPreviewVisible.value = false }
+    fun showGameBootPreview() { _gameBootPreviewVisible.value = true }
+    fun hideGameBootPreview() { _gameBootPreviewVisible.value = false }
+
+    /** MIME arrays for the two pickers, straight off the import gate so they cannot disagree. */
+    fun uiMediaPickerMime(slot: UiMediaSlot): Array<String> =
+        if (slot.kind == UiMediaKind.VIDEO) UiMediaLimits.VIDEO_MIME.toTypedArray()
+        else UiMediaLimits.AUDIO_MIME.toTypedArray()
 
     fun cycleWaveStyle() {
         val styles = WaveStyle.values()
@@ -184,7 +302,6 @@ class DisplaySettingsViewModel @Inject constructor(
     fun setShowBootOnResume(v: Boolean)      = save { it[KEY_BOOT_ON_RESUME]  = v }
     fun setThermalThrottleAware(v: Boolean)  = save { it[KEY_THERMAL_AWARE]   = v }
     fun setRespectBatterySaver(v: Boolean)   = save { it[KEY_RESPECT_BATTERY] = v }
-    fun setMenuSoundEnabled(v: Boolean)      = save { it[KEY_MENU_SOUND]      = v }
     fun setDirectLaunch(v: Boolean)          = save { it[KEY_DIRECT_LAUNCH]   = v }
     fun setContextMenuHintEnabled(v: Boolean) = save { it[KEY_CONTEXT_MENU_HINT] = v }
     fun setContextMenuHintDelaySeconds(v: Float) = save {

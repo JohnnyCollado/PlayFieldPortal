@@ -76,6 +76,9 @@ class LibraryScanner @Inject constructor(
     private val libraryReconciler: LibraryReconciler,
     private val discSetReconciler: DiscSetReconciler,
     @ScannerIoDispatcher private val ioDispatcher: CoroutineDispatcher,
+    // A whole-library scan is a background task completing — the NOTIFICATION chime, fired on
+    // completion only, never per platform or on progress.
+    private val menuSound: com.playfieldportal.core.ui.sound.MenuSoundPlayer,
 ) {
     // Per-card single-flight, shared across every caller (manual scans, resume, mount, unplug).
     // A card already mid-survey returns SKIPPED_BUSY rather than queuing or racing a second walk
@@ -117,7 +120,9 @@ class LibraryScanner @Inject constructor(
      */
     suspend fun scanAllEnabled(removeMissing: Boolean): List<PlatformScanOutcome> {
         val eligible = memoryCardRepository.getAll().filter { it.isScannable() }
-        return eligible.map { scanPlatform(it.platformId, removeMissing) }
+        val outcomes = eligible.map { scanPlatform(it.platformId, removeMissing) }
+        menuSound.play(com.playfieldportal.core.ui.sound.MenuSound.NOTIFICATION)
+        return outcomes
     }
 
     private suspend fun scanLocked(card: MemoryCard, removeMissing: Boolean): PlatformScanOutcome {

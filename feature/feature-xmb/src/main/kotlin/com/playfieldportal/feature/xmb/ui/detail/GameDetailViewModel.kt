@@ -191,10 +191,24 @@ class GameDetailViewModel @Inject constructor(
     private val launcherShortcutRepository: com.playfieldportal.feature.appbar.LauncherShortcutRepository,
     private val achievementRepository: com.playfieldportal.feature.achievements.AchievementController,
     private val launchDispatcher: com.playfieldportal.feature.launcher.LaunchDispatcher,
+    private val gameBootPreferences: com.playfieldportal.core.data.repository.GameBootPreferences,
 ) : ViewModel() {
+
+    // GameBoot's own audio replaces the App Launch sfx (design rule: the two never stack). One of
+    // only two sites in the whole feature that branches on this — everywhere else plays blind.
+    @Volatile
+    private var gameBootEnabled: Boolean = false
 
     private val _uiState = MutableStateFlow(GameDetailUiState())
     val uiState: StateFlow<GameDetailUiState> = _uiState.asStateFlow()
+
+    init {
+        // Read from the same source GameBootGate uses, so the sound decision and the presentation
+        // can never disagree about whether GameBoot is on.
+        viewModelScope.launch {
+            gameBootPreferences.gameBootEnabledFlow.collect { gameBootEnabled = it }
+        }
+    }
 
     fun prepareForOpen() {
         _uiState.update {
@@ -659,7 +673,9 @@ class GameDetailViewModel @Inject constructor(
             }
             return
         }
-        if (playSound) menuSound.play(com.playfieldportal.core.ui.sound.MenuSound.LAUNCH)
+        if (playSound && !gameBootEnabled) {
+            menuSound.play(com.playfieldportal.core.ui.sound.MenuSound.LAUNCH)
+        }
         _uiState.update {
             it.copy(
                 launchError = null,

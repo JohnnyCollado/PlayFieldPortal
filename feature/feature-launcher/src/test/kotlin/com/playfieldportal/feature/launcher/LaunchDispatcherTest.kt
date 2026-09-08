@@ -9,6 +9,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
@@ -54,11 +55,23 @@ class LaunchDispatcherTest {
         val intent: Intent = mockk(relaxed = true)
         var now = 0L
 
+        // GameBoot disabled in every existing case: awaitPresentation returns immediately, so
+        // these tests keep pinning the dispatcher's own behaviour rather than the gate's.
+        val gameBootPreferences: com.playfieldportal.core.data.repository.GameBootPreferences =
+            mockk(relaxed = true) {
+                every { gameBootEnabledFlow } returns kotlinx.coroutines.flow.flowOf(false)
+            }
+        val uiMediaStore: com.playfieldportal.core.data.repository.UiMediaStore = mockk(relaxed = true)
+        val gameBootGate = GameBootGate(gameBootPreferences, uiMediaStore)
+        val menuSound: com.playfieldportal.core.ui.sound.MenuSoundPlayer = mockk(relaxed = true)
+
         val dispatcher = LaunchDispatcher(
             context = context,
             outcomeRecorder = recorder,
             scope = scope,
             clock = LaunchClock { now },
+            gameBootGate = gameBootGate,
+            menuSound = menuSound,
         )
     }
 
@@ -88,6 +101,25 @@ class LaunchDispatcherTest {
                 it.failureReason == "Emulator not found. Is it installed?"
         }) }
         assertIs<LaunchRecoveryRequest>(h.dispatcher.recoveryRequests.value)
+    }
+
+    @Test
+    fun `a failed dispatch plays the error sound and offers recovery`() = runTest {
+        val h = harness()
+        every { h.context.startActivity(any()) } throws android.content.ActivityNotFoundException("nope")
+
+        val result = h.dispatcher.launch(game, resolved, h.intent)
+
+        assertIs<LaunchDispatchResult.Rejected>(result)
+        verify { h.menuSound.play(com.playfieldportal.core.ui.sound.MenuSound.ERROR) }
+        assertIs<LaunchRecoveryRequest>(h.dispatcher.recoveryRequests.value)
+    }
+
+    @Test
+    fun `an accepted dispatch does not play the error sound`() = runTest {
+        val h = harness()
+        h.launchAccepted()
+        verify(exactly = 0) { h.menuSound.play(any(), any()) }
     }
 
     @Test

@@ -121,6 +121,7 @@ class GameDetailViewModelTest {
             launcherShortcutRepository = mockk(relaxed = true),
             achievementRepository = mockk(relaxed = true),
             launchDispatcher  = launchDispatcher,
+            gameBootPreferences = mockk(relaxed = true),
         )
     }
 

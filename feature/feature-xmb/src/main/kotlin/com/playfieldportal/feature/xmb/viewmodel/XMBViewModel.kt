@@ -25,6 +25,8 @@ import com.playfieldportal.core.data.repository.MemoryCardRepository
 import com.playfieldportal.core.data.repository.PfpThemeStore
 import com.playfieldportal.core.ui.icons.CustomIcon
 import com.playfieldportal.core.ui.icons.GifFrameProbe
+import com.playfieldportal.core.ui.media.bundledDefaultUri
+import com.playfieldportal.core.ui.media.resolveBootAudio
 import com.playfieldportal.themekit.CustomizableIcons
 import com.playfieldportal.core.domain.discord.DiscordFriend
 import com.playfieldportal.core.domain.discord.DiscordPresence
@@ -70,6 +72,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlin.math.roundToInt
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -84,6 +87,7 @@ import kotlinx.coroutines.flow.transformWhile
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 
 private fun XmbPalette.toPFPColors() = PFPColors(
@@ -422,6 +426,10 @@ fun settingsSectionItems(section: SettingsSection): List<XMBItem> = when (sectio
     )
     SettingsSection.INTERFACE -> listOf(
         XMBItem(id = "settings_display",    title = "Display",    subtitle = "Wave, wallpaper, boot & icons"),
+        // Phase 3 of the seven-sounds plan: renamed Audio → Sound (it owns the boot sound now).
+        // The id deliberately stays settings_audio — the route, SETTINGS_SCREEN_ROUTES, the row
+        // focus keys (audio_<slot>) and SettingsHierarchyTest all key off it.
+        XMBItem(id = "settings_audio",      title = "Sound",      subtitle = "Menu & boot sounds"),
         XMBItem(id = "settings_categories", title = "Categories", subtitle = "Manage XMB categories"),
         XMBItem(id = "settings_themes",     title = "Themes",     subtitle = "XMB appearance & color scheme"),
         XMBItem(id = "settings_controller", title = "Controller", subtitle = "Button mapping"),
@@ -585,6 +593,16 @@ data class XMBUiState(
     val motionWallpaperPath: String? = null,
 
     val showBootSequence: Boolean = true,
+    // The user's boot media, when assigned (Settings ▸ Display ▸ Boot Sequence). Null means the
+    // built-in logo animation / silence — both are supported, in any combination.
+    val bootVideoPath: String? = null,
+    val bootAudioPath: String? = null,
+    // The GameBoot presentation currently on screen, from the launch gate or from the settings
+    // preview. Null the rest of the time.
+    val activeGameBoot: com.playfieldportal.feature.launcher.GameBootRequest? = null,
+    // True when [activeGameBoot] came from Settings ▸ Display ▸ GameBoot ▸ Preview, which must
+    // never touch the gate — nothing is launching.
+    val gameBootIsPreview: Boolean = false,
     // Startup choreography: the boot sequence holds on a black frame until MainActivity reports
     // the notification-permission dialog is out of the way, so the order on a fresh install is
     // permission dialog -> boot animation -> first-run setup wizard.
@@ -801,6 +819,7 @@ data class XMBUiState(
     // as a final guard so D-Pad/A never drives the category bar or item list behind an overlay.
     val hasBlockingOverlay: Boolean
         get() = showBootSequence ||
+            activeGameBoot != null ||
             activeSettingsScreen != null ||
             activeAppDrawerFilter != null ||
             activeGameId != null ||
@@ -1211,6 +1230,9 @@ class XMBViewModel @Inject constructor(
     private val setupStateProvider: com.playfieldportal.feature.launcher.SetupStateProvider,
     private val customIconStore: CustomIconStore,
     private val pfpThemeStore: PfpThemeStore,
+    private val uiMediaStore: com.playfieldportal.core.data.repository.UiMediaStore,
+    private val gameBootPreferences: com.playfieldportal.core.data.repository.GameBootPreferences,
+    private val gameBootGate: com.playfieldportal.feature.launcher.GameBootGate,
 ) : ViewModel() {
 
     // Drives the "convert detected games?" multi-select picker after a Windows-card scan; the same
@@ -1302,7 +1324,8 @@ class XMBViewModel @Inject constructor(
         observeMissingGames()
         observeAppChanges()
         observeGamepadMappings()
-        observeSoundSetting()
+        observeBootPreferences()
+        observeGameBoot()
         observeMusic()
         observeVideo()
         observePhoto()
@@ -1438,16 +1461,6 @@ class XMBViewModel @Inject constructor(
                     }
                 }
             }
-        }
-    }
-
-    // Menu sounds default on; the Display settings toggle persists the override.
-    private fun observeSoundSetting() {
-        viewModelScope.launch {
-            context.pfpDataStore.data
-                .map { it[KEY_MENU_SOUND_ENABLED] ?: true }
-                .distinctUntilChanged()
-                .collect { menuSound.enabled = it }
         }
     }
 
@@ -4556,8 +4569,27 @@ class XMBViewModel @Inject constructor(
             return
         }
 
-        // ── Boot sequence overlay swallows input until it finishes/auto-completes ──
-        if (state.showBootSequence) return
+        // ── Boot sequence overlay swallows input, except the skip ──────────────
+        // Confirm or Back ends the presentation through the SAME completion path the animation,
+        // the watchdog, and a player error use — so a user who does not want to watch a 10-second
+        // custom boot video is never held by it. (There is no START action in this app's mapping
+        // vocabulary; Back is the other button a user reaches for to get out of something.)
+        if (state.showBootSequence) {
+            if (action == GamepadAction.SELECT || action == GamepadAction.BACK) {
+                onBootSequenceComplete()
+            }
+            return
+        }
+
+        // ── GameBoot presentation: same deal, and mashing Confirm must not launch twice ────
+        // Every press lands here rather than on the game row underneath, so the extra presses a
+        // user makes while the transition plays are absorbed, not queued into a second launch.
+        if (state.activeGameBoot != null) {
+            if (action == GamepadAction.SELECT || action == GamepadAction.BACK) {
+                onGameBootComplete()
+            }
+            return
+        }
 
         // ── Overlays (innermost wins) ──────────────────────────────────────────
         when {
@@ -5861,6 +5893,9 @@ class XMBViewModel @Inject constructor(
             closeAppPicker()
             return
         }
+        // A committed Apply — the point of no return, distinct from SELECT's descent into the
+        // picker. closeAppPicker plays nothing, so this is a single chime.
+        menuSound.play(MenuSound.CONFIRM)
         val target = picker.target
         closeAppPicker()
 
@@ -5919,6 +5954,7 @@ class XMBViewModel @Inject constructor(
 
     fun confirmGamePicker(selectedGameIds: Set<Long>, selectedCollectionIds: Set<Long>) {
         val categoryId = _uiState.value.gamePickerCategoryId ?: return
+        menuSound.play(MenuSound.CONFIRM)
         closeGamePicker()
 
         viewModelScope.launch {
@@ -6126,8 +6162,8 @@ class XMBViewModel @Inject constructor(
 
     // ── Game actions ──────────────────────────────────────────────────────────
 
+    // Silent by decision: favouriting is an operational toggle, not an event worth sonifying.
     private fun toggleGameFavorite(gameId: Long, isFavorite: Boolean) {
-        if (isFavorite) menuSound.play(MenuSound.FAVORITE)
         viewModelScope.launch {
             gameRepository.setFavorite(gameId, isFavorite)
         }
@@ -7051,7 +7087,16 @@ class XMBViewModel @Inject constructor(
                 (item?.shortcutId != null && item.packageName != null) ||
                 item?.packageName != null
         }
-        if (!silentRow) menuSound.play(if (launches) MenuSound.LAUNCH else MenuSound.SELECT)
+        // A real game booting immediately is the only case GameBoot covers; plain app launches
+        // keep their sound (funnelling those is a separate refactor, explicitly out of scope).
+        val launchesGame = opensGameDetail && _uiState.value.directLaunch
+        val event = when {
+            silentRow -> null
+            launchesGame && gameBootEnabled -> null   // GameBoot's own audio replaces it
+            launches -> MenuSound.LAUNCH
+            else -> MenuSound.SELECT
+        }
+        event?.let { menuSound.play(it) }
 
         // Empty-state rows
         when (item?.id) {
@@ -7473,8 +7518,8 @@ class XMBViewModel @Inject constructor(
         )
     }
 
+    // Silent, same as toggleGameFavorite.
     private fun addAppToFavorites(packageName: String, label: String) {
-        menuSound.play(MenuSound.FAVORITE)
         viewModelScope.launch {
             runCatching {
                 val id = ensureAppShortcut(packageName)
@@ -7879,6 +7924,8 @@ class XMBViewModel @Inject constructor(
         viewModelScope.launch {
             val mime = context.contentResolver.getType(uri)
             val result = customIconStore.import(slotKey, uri, mime)
+            // Committed (or refused) import: the same confirm/error pairing the sound pickers use.
+            menuSound.play(if (result.ok) MenuSound.CONFIRM else MenuSound.ERROR)
             _uiState.update {
                 val s = it.customIconSession ?: return@update it
                 it.copy(customIconSession = s.copy(message = result.message, revision = s.revision + 1))
@@ -7942,6 +7989,7 @@ class XMBViewModel @Inject constructor(
 
     fun confirmSaveCurrentLookAsTheme(name: String) {
         _uiState.update { it.copy(saveThemeNameDialog = null) }
+        menuSound.play(MenuSound.CONFIRM)
         saveCurrentLookAsTheme(name)
     }
 
@@ -7977,6 +8025,144 @@ class XMBViewModel @Inject constructor(
         }
     }
 
+
+    // The two Boot Sequence prefs, kept as fields rather than in UiState: nothing renders them,
+    // and they are only read at the resume moment. Both were previously written by settings and
+    // read by nothing at all — the animation always played.
+    @Volatile
+    private var bootEnabled: Boolean = true
+
+    @Volatile
+    private var bootOnResume: Boolean = false
+
+    /**
+     * Seeds [XMBUiState.showBootSequence] from `display_show_boot` and tracks both boot prefs.
+     * The overlay holds on a black frame until startup permissions and the first-run check
+     * resolve (see XMBShell), so this read lands well before anything animates — a boot the user
+     * turned off never becomes visible.
+     */
+    private fun observeBootPreferences() {
+        viewModelScope.launch {
+            val prefs = context.pfpDataStore.data.first()
+            bootEnabled = prefs[KEY_SHOW_BOOT] ?: true
+            bootOnResume = prefs[KEY_BOOT_ON_RESUME] ?: false
+            if (!bootEnabled) {
+                _uiState.update { it.copy(showBootSequence = false) }
+            }
+        }
+        viewModelScope.launch {
+            context.pfpDataStore.data
+                .map { (it[KEY_SHOW_BOOT] ?: true) to (it[KEY_BOOT_ON_RESUME] ?: false) }
+                .distinctUntilChanged()
+                .collect { (enabled, onResume) ->
+                    bootEnabled = enabled
+                    bootOnResume = onResume
+                }
+        }
+        // Resolve the user's boot media here rather than in the overlay: the store's lookup is
+        // file IO, and it must not run on the composition that is trying to draw the first frame.
+        // Re-resolved on every stamp bump, so an import or a restored backup is picked up.
+        //
+        // Audio falls back to the bundled opening chime ONLY when there is no custom boot video:
+        // a custom video keeps its own audio track unless the user explicitly assigned a boot
+        // sound — see resolveBootAudio, which pins that rule in one tested place.
+        viewModelScope.launch {
+            uiMediaStore.stamp
+                .distinctUntilChanged()
+                .collect {
+                    val (video, audio) = withContext(Dispatchers.IO) {
+                        val video = uiMediaStore.pathFor(com.playfieldportal.core.domain.model.UiMediaSlot.BOOT_VIDEO)
+                        val audio = resolveBootAudio(
+                            customVideoPath = video,
+                            customAudioPath = uiMediaStore.pathFor(com.playfieldportal.core.domain.model.UiMediaSlot.BOOT_AUDIO),
+                            bundledDefaultUri = com.playfieldportal.core.domain.model.UiMediaSlot.BOOT_AUDIO
+                                .bundledDefaultUri(context.packageName),
+                        )
+                        video to audio
+                    }
+                    _uiState.update { it.copy(bootVideoPath = video, bootAudioPath = audio) }
+                }
+        }
+    }
+
+    /**
+     * PFP is in the foreground again after having been stopped — in practice, back from a game.
+     * Replays the boot sequence when the user asked for it. Show Boot Sequence gates this too:
+     * turning boot off skips BOTH of its media components, resume included (design rule 7).
+     */
+    fun onHostResumed() {
+        if (!bootEnabled || !bootOnResume) return
+        _uiState.update { it.copy(showBootSequence = true) }
+    }
+
+    // ── GameBoot ──────────────────────────────────────────────────────────────
+
+    // The GameBoot enable flag, read from the same source GameBootGate uses so the launch-sound
+    // decision and the presentation can never disagree.
+    @Volatile
+    private var gameBootEnabled: Boolean = false
+
+    private fun observeGameBoot() {
+        viewModelScope.launch {
+            gameBootPreferences.gameBootEnabledFlow
+                .distinctUntilChanged()
+                .collect { gameBootEnabled = it }
+        }
+        // The gate raises a request from inside LaunchDispatcher and suspends the launch until the
+        // overlay reports back. A preview is never overwritten by one: previews are only reachable
+        // from Settings, where no launch is in flight.
+        viewModelScope.launch {
+            gameBootGate.active.collect { request ->
+                _uiState.update {
+                    if (request == null && it.gameBootIsPreview) it
+                    else it.copy(activeGameBoot = request, gameBootIsPreview = false)
+                }
+            }
+        }
+    }
+
+    /**
+     * The overlay's presentation is over — naturally, skipped, failed, or watchdogged. A preview
+     * just closes; a real one releases the launch that is waiting on the gate.
+     */
+    fun onGameBootComplete() {
+        val wasPreview = _uiState.value.gameBootIsPreview
+        _uiState.update { it.copy(activeGameBoot = null, gameBootIsPreview = false) }
+        if (!wasPreview) gameBootGate.onPresentationFinished()
+    }
+
+    // ── Settings previews ─────────────────────────────────────────────────────
+
+    /**
+     * Settings ▸ Display ▸ Boot Sequence ▸ Preview. Re-shows the real overlay over the settings
+     * screen (boot already draws above that layer); its normal completion path returns here.
+     */
+    fun previewBootSequence() {
+        _uiState.update { it.copy(showBootSequence = true) }
+    }
+
+    /**
+     * Settings ▸ Display ▸ GameBoot ▸ Preview. Composes the overlay directly and NEVER touches the
+     * gate — a preview must not be able to launch anything.
+     */
+    fun previewGameBoot() {
+        viewModelScope.launch {
+            val (video, audio) = withContext(Dispatchers.IO) {
+                uiMediaStore.pathFor(com.playfieldportal.core.domain.model.UiMediaSlot.GAMEBOOT_VIDEO) to
+                    uiMediaStore.pathFor(com.playfieldportal.core.domain.model.UiMediaSlot.GAMEBOOT_AUDIO)
+            }
+            _uiState.update {
+                it.copy(
+                    activeGameBoot = com.playfieldportal.feature.launcher.GameBootRequest(
+                        gameTitle = "Preview",
+                        videoPath = video,
+                        audioPath = audio,
+                    ),
+                    gameBootIsPreview = true,
+                )
+            }
+        }
+    }
 
     // ── Boot sequence ─────────────────────────────────────────────────────────
 
@@ -8358,7 +8544,10 @@ class XMBViewModel @Inject constructor(
         // Must match DisplaySettingsViewModel — shared wallpaper cascade prefs. Motion is never
         // set without the poster key (invariant enforced at the write sites).
         private val KEY_MOTION_WALLPAPER = stringPreferencesKey("display_motion_wallpaper")
-        private val KEY_MENU_SOUND_ENABLED = booleanPreferencesKey("sound_menu_enabled")
+        // Must match DisplaySettingsViewModel — the Boot Sequence toggles. Before this both keys
+        // were written by settings and read by nothing: the boot animation always played.
+        private val KEY_SHOW_BOOT       = booleanPreferencesKey("display_show_boot")
+        private val KEY_BOOT_ON_RESUME  = booleanPreferencesKey("display_boot_on_resume")
         // Must match DisplaySettingsViewModel.KEY_TOUCH_NAV_BUTTON — both read/write this pref.
         private val KEY_TOUCH_NAV_BUTTON  = stringPreferencesKey("interface_touch_nav_button")
         // Must match DisplaySettingsViewModel.KEY_CONTEXT_MENU_HINT — both read/write this pref.

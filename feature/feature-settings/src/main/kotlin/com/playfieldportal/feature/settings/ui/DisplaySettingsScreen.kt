@@ -27,6 +27,7 @@ import coil3.compose.AsyncImage
 import com.playfieldportal.core.ui.motion.MotionWallpaperBackground
 import com.playfieldportal.core.ui.motion.MotionWallpaperPolicy
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.domain.model.UiMediaSlot
 import com.playfieldportal.feature.settings.viewmodel.DisplaySettingsViewModel
 
 @Composable
@@ -35,6 +36,8 @@ fun DisplaySettingsScreen(
     modifier: Modifier = Modifier,
     onOpenXmbLayoutAdjust: () -> Unit = {},
     onOpenCustomIcons: () -> Unit = {},
+    onPreviewBootSequence: () -> Unit = {},
+    onPreviewGameBoot: () -> Unit = {},
     viewModel: DisplaySettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -44,6 +47,16 @@ fun DisplaySettingsScreen(
     val wallpaperPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri -> uri?.let { viewModel.onWallpaperPicked(it) } }
+
+    // ONE picker for all four boot/GameBoot media rows; the pending slot lives on the ViewModel.
+    val uiMediaPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri -> uri?.let { viewModel.onUiMediaPicked(it) } }
+
+    fun pickUiMedia(slot: UiMediaSlot) {
+        viewModel.onUiMediaPickerLaunchedFor(slot)
+        uiMediaPicker.launch(viewModel.uiMediaPickerMime(slot))
+    }
 
     fun launchWallpaperPicker() {
         // ONE picker, not two: the user's mental model is "my background". Still images land on
@@ -205,6 +218,75 @@ fun DisplaySettingsScreen(
                 onToggle = { viewModel.setShowBootOnResume(it) },
             )
 
+            // Custom boot media. Both are optional and independent: the built-in logo animation
+            // and silence are perfectly valid halves, so all four combinations work.
+            SettingsValueRow(
+                label    = "Boot Animation",
+                sublabel = "Play your own video instead of the PFP logo (MP4 or WebM, up to 10 seconds)",
+                value    = state.bootVideoLabel,
+                onClick  = { pickUiMedia(UiMediaSlot.BOOT_VIDEO) },
+            )
+
+            SettingsValueRow(
+                label    = "Boot Sound",
+                sublabel = "Play your own sound with the boot sequence (MP3, WAV, OGG, or M4A, up to 10 seconds)",
+                value    = state.bootAudioLabel,
+                onClick  = { pickUiMedia(UiMediaSlot.BOOT_AUDIO) },
+            )
+
+            SettingsRow(
+                label    = "Preview Boot Sequence",
+                sublabel = "Play the boot sequence now, exactly as it plays at startup",
+                onClick  = onPreviewBootSequence,
+            )
+
+            if (state.bootVideoAssigned || state.bootAudioAssigned) {
+                SettingsRow(
+                    label    = "Reset Boot Sequence to Default",
+                    sublabel = "Remove your boot video and sound, restoring the PFP logo animation",
+                    onClick  = { viewModel.resetBootMedia() },
+                )
+            }
+
+            SettingsGroup("GameBoot")
+
+            SettingsToggleRow(
+                label    = "GameBoot",
+                sublabel = "Short presentation between confirming a game and the emulator opening. " +
+                    "Off by default — turning it on adds a moment to every game launch.",
+                checked  = state.gameBootEnabled,
+                onToggle = { viewModel.setGameBootEnabled(it) },
+            )
+
+            SettingsValueRow(
+                label    = "GameBoot Animation",
+                sublabel = "Your own video for the transition (MP4 or WebM, up to 5 seconds)",
+                value    = state.gameBootVideoLabel,
+                onClick  = { pickUiMedia(UiMediaSlot.GAMEBOOT_VIDEO) },
+            )
+
+            SettingsValueRow(
+                label    = "GameBoot Sound",
+                sublabel = "Your own sound for the transition — plays even with Menu Sounds off " +
+                    "(MP3, WAV, OGG, or M4A, up to 5 seconds)",
+                value    = state.gameBootAudioLabel,
+                onClick  = { pickUiMedia(UiMediaSlot.GAMEBOOT_AUDIO) },
+            )
+
+            SettingsRow(
+                label    = "Preview GameBoot",
+                sublabel = "Play the transition now — nothing is launched",
+                onClick  = onPreviewGameBoot,
+            )
+
+            if (state.gameBootVideoAssigned || state.gameBootAudioAssigned) {
+                SettingsRow(
+                    label    = "Reset GameBoot to Default",
+                    sublabel = "Remove your GameBoot video and sound",
+                    onClick  = { viewModel.resetGameBootMedia() },
+                )
+            }
+
             SettingsGroup("Orientation")
 
             SettingsValueRow(
@@ -267,14 +349,9 @@ fun DisplaySettingsScreen(
                 onToggle = { viewModel.setRespectBatterySaver(it) },
             )
 
-            SettingsGroup("Sound")
-
-            SettingsToggleRow(
-                label    = "Menu Sounds",
-                sublabel = "Play navigation, select, and launch sound effects",
-                checked  = state.menuSoundEnabled,
-                onToggle = { viewModel.setMenuSoundEnabled(it) },
-            )
+            // (The old "Sound" group lived here — Menu Sounds moved to Settings ▸ Interface ▸
+            // Audio, which owns the same `sound_menu_enabled` pref plus the per-event sound
+            // assignments. No duplicate row may remain.)
 
             SettingsGroup("Games")
 

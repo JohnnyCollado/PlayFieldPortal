@@ -24,6 +24,8 @@ import org.junit.After
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import com.playfieldportal.core.data.repository.GameBootPreferences
+import com.playfieldportal.core.data.repository.UiMediaStore
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
@@ -60,7 +62,12 @@ class DisplaySettingsViewModelWallpaperTest {
         // Synchronous clear — DataStore edits complete on real threads, no scheduler needed.
         runBlocking { context.pfpDataStore.edit { it.clear() } }
         File(context.filesDir, "wallpaper").deleteRecursively()
-        vm = DisplaySettingsViewModel(context)
+        vm = DisplaySettingsViewModel(
+            context,
+            UiMediaStore(context),
+            GameBootPreferences(context),
+            io.mockk.mockk(relaxed = true),
+        )
     }
 
     @After
