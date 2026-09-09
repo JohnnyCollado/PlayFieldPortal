@@ -2,7 +2,6 @@
 
 **A controller-first Android game launcher inspired by the PSP's XMB (Cross Media Bar).**
 
-> **Known issue — Settings controller navigation:** Settings section headers must be reachable with Up/Down but must not activate on Select. The expected order is `header → first row → second row`; the current implementation can skip the first row after leaving a header, and repeated Up presses can leave the relevant header visually hidden. Investigation details and regression scenarios are tracked in [docs/plans/settings-controller-navigation-issue.md](docs/plans/settings-controller-navigation-issue.md).
 A horizontal category bar crosses a vertical item list — the **crossbar** — and replaces your
 Android home screen as a single front end for ROM emulation, Android games, PC-layer titles
 (Winlator), native apps, and your music, video and photo libraries.
@@ -69,9 +68,9 @@ Android home screen as a single front end for ROM emulation, Android games, PC-l
    - [2.1 Requirements](#21-requirements)
    - [2.2 Choose an edition (Full vs Lite)](#22-choose-an-edition-full-vs-lite)
    - [2.3 Install the APK](#23-install-the-apk)
-   - [2.4 Set PFP as your home screen](#24-set-pfp-as-your-home-screen)
+   - [2.4 Set PFP as your home screen (Optional)](#24-set-pfp-as-your-home-screen-optional)
    - [2.5 Grant permissions](#25-grant-permissions)
-   - [2.6 Add your first console](#26-add-your-first-console)
+   - [2.6 First-run setup](#26-first-run-setup)
 3. [Navigation & controls](#3-navigation--controls)
 4. [Feature guide](#4-feature-guide)
    - [4.1 The Game library](#41-the-game-library)
@@ -86,12 +85,15 @@ Android home screen as a single front end for ROM emulation, Android games, PC-l
    - [4.10 Music, Video & Photo](#410-music-video--photo)
    - [4.11 Categories](#411-categories)
    - [4.12 Themes & personalization](#412-themes--personalization)
-   - [4.13 Discord Social (Full edition)](#413-discord-social-full-edition)
-   - [4.14 Adjusting the layout for your screen](#414-adjusting-the-layout-for-your-screen)
-   - [4.15 Backup & restore](#415-backup--restore)
-   - [4.16 Shiba Coins (achievements)](#416-shiba-coins-achievements)
-   - [4.17 Tracking local (Steam-emulated) PC games](#417-tracking-local-steam-emulated-pc-games)
-   - [4.18 Settings reference](#418-settings-reference)
+   - [4.13 Custom XMB icons](#413-custom-xmb-icons)
+   - [4.14 Motion wallpapers](#414-motion-wallpapers)
+   - [4.15 Interface sounds & boot videos](#415-interface-sounds--boot-videos)
+   - [4.16 Discord Social (Full edition)](#416-discord-social-full-edition)
+   - [4.17 Adjusting the layout for your screen](#417-adjusting-the-layout-for-your-screen)
+   - [4.18 Backup & restore](#418-backup--restore)
+   - [4.19 Shiba Coins (achievements)](#419-shiba-coins-achievements)
+   - [4.20 Tracking local (Steam-emulated) PC games](#420-tracking-local-steam-emulated-pc-games)
+   - [4.21 Settings reference](#421-settings-reference)
 5. [Permissions & privacy](#5-permissions--privacy)
 6. [Troubleshooting](#6-troubleshooting)
 7. [For Developers](#for-developers)
@@ -113,7 +115,9 @@ Android home screen as a single front end for ROM emulation, Android games, PC-l
 ## 1. What is Play Field Portal?
 
 Play Field Portal is a **home-screen replacement** for Android handhelds, tablets and phones that
-gives your whole library the look and feel of a PlayStation Portable. Everything is one crossbar
+gives your whole library the look and feel of a PlayStation Portable. It is a unified game
+frontend: ROM emulation, Android games, PC-layer titles and native apps brought together under one
+cohesive interface that feels like the golden era of handheld gaming. Everything is one crossbar
 away and fully controller-navigable:
 
 - **Games** — ROMs launched through the emulators you already have installed, Android games, and
@@ -121,7 +125,7 @@ away and fully controller-navigable:
 - **Media** — Music, Video and Photo sections that scan folders you choose.
 - **Apps** — your installed apps, organized into categories you design.
 - **Personalization** — a deep theme system (custom wallpapers, one-color palettes, imported PSP
-  themes) plus a desktop **Theme Studio** for authoring.
+  themes), replaceable icons, sounds and boot videos, plus a desktop **Theme Studio** for authoring.
 
 It is **local-first**: no account, no telemetry, and the network is only touched when *you* ask it
 to fetch artwork. See [Permissions & privacy](#5-permissions--privacy).
@@ -309,6 +313,22 @@ detects them automatically on startup from a curated catalog, plus one profile p
 **per-game override → Memory Card emulator → the platform default → first available.** Set a
 per-game emulator from a game's **△** options; set a console default in *Library Manager*.
 
+You never have to guess which of those won. A game's detail screen shows the emulator, the core,
+and *where the choice came from* — with a tap to change it right there.
+
+**Per-System Defaults** (*Settings ▸ Emulators ▸ Per-System Defaults*) is the overview: every
+console with its default emulator and core, how many games it covers, and badges for the two states
+that break launches — **NO EMULATOR** (nothing installed can run this system) and **CORE MISSING**
+(the emulator is there, but the RetroArch core it needs is not). You can also clear per-game
+overrides in bulk for one console from here.
+
+**When a launch fails**, PFP tells you instead of dropping you back at the crossbar. It checks
+before launching that the emulator still exists and that PFP still has permission to read the ROM —
+both of which an OS or emulator update can quietly revoke — and it verifies afterwards that the
+emulator actually came to the foreground. If something goes wrong you get a recovery sheet: retry,
+switch emulator or core, jump to Per-System Defaults, or copy a diagnostic you can paste into a bug
+report.
+
 **Custom Emulator Wizard** — for anything not in the catalog, *Settings ▸ Emulators ▸ Add Custom
 Emulator* walks you through it: pick an installed app, let PFP auto-detect its launch settings,
 edit any field, **Test Launch** with a real ROM, then **Save**. The result is usable as a platform,
@@ -493,7 +513,104 @@ color — the whole crossbar follows* (wave, gradient, cursor and icons all deri
 crossbar preview, an icon editor, wallpaper crop presets, crossbar alignment assist, and batch
 `.ptf → .pfptheme` conversion. See [7.8](#78-the-theme-studio-desktop-app).
 
-### 4.13 Discord Social (Full edition)
+### 4.13 Custom XMB icons
+
+> **Not in 1.2.1.** Ships in the next release.
+
+Every glyph on the crossbar can be replaced with your own image — the category-bar icons, the menu
+glyphs, and the per-console art on your Memory Cards. Around 55 theme slots plus one slot per
+console.
+
+Open **Settings ▸ Themes ▸ Custom Icons**. The editor runs *live over your real crossbar*, so you
+are always looking at the actual result rather than a preview pane:
+
+- Move with the D-pad to the icon you want to change, press **✕** to pick an image.
+- **△** clears the selected slot back to whatever the theme (or the built-in art) provides.
+- Changes apply instantly. Back out when you are happy.
+
+**What you can use**
+
+| | |
+|---|---|
+| **Formats** | PNG, JPG, WEBP, BMP, HEIC, and animated **GIF** |
+| **Size limit** | 8 MB per icon |
+| **Animated GIFs** | 512 px or smaller, up to 120 frames, 10 seconds |
+
+Animated icons only play on the row or column you are currently on, and stop entirely when battery
+saver is on or a dialog is open — so a set of animated icons does not cost you frame rate while you
+browse.
+
+**Custom icons survive theme changes.** Applying a different theme swaps the theme's icons
+underneath, but anything *you* picked stays on top. The order is always **your pick → the theme's
+icon → the built-in art**. To get a theme's icon back, clear your pick for that slot with **△**.
+
+**Saving your look** — *Settings ▸ Themes ▸ Save Current Look* bundles everything as it currently
+draws (your picks already flattened in) into a shareable `.pfptheme`. Your screen-layout
+adjustments are deliberately left out, since those are specific to your device.
+
+### 4.14 Motion wallpapers
+
+> **Not in 1.2.1.** Ships in the next release.
+
+The crossbar background can be a looping video or animated image instead of a still.
+
+Pick one from **Settings ▸ Themes ▸ Wallpaper** the same way you pick a photo — choose a video file
+and PFP takes it from there, grabbing the first frame as a poster still at import.
+
+| | |
+|---|---|
+| **Formats** | MP4, WebM, and animated GIF |
+| **Resolution** | 1080p or smaller |
+| **Length** | Up to 60 seconds |
+| **File size** | Under 60 MB |
+| **Frame rate** | 30 fps or lower recommended |
+
+The clip pauses to its poster still whenever motion would be wasteful or distracting — during
+video playback, behind fullscreen overlays, and on battery saver. It is fully released rather than
+left paused in the background, so a motion wallpaper does not quietly drain your handheld while you
+are doing something else.
+
+Motion wallpapers can be authored into a shareable theme with the desktop **Theme Studio**, and
+ride along inside the `.pfptheme` file.
+
+### 4.15 Interface sounds & boot videos
+
+> **Not in 1.2.1.** Ships in the next release.
+
+**Settings ▸ Interface ▸ Sound** lets you replace PFP's interface audio and its startup sequence
+with your own files. Each row has a **Preview** button (it plays even if menu sounds are muted) and
+**Use Default** to revert.
+
+**The seven sounds**
+
+| Row | Plays when | Max length |
+|---|---|---|
+| **Navigation** | Moving the cursor around the crossbar | 0.5 s |
+| **Back / Cancel** | Backing out of anything | 1 s |
+| **Confirm / Apply** | Committing a choice — picking apps or games, importing an icon, saving a theme | 1 s |
+| **Error / Invalid** | A refused launch or a rejected import | 1 s |
+| **Launch Sound** | Starting a game or app | 3 s |
+| **Notification** | Backup and restore, library rescans | 2 s |
+| **Boot Sound** | The startup sequence | 10 s |
+
+Audio can be MP3, WAV, OGG or M4A. Each sound's max length keeps playback snappy — SoundPool
+holds a menu sound fully in memory, and the boot presentation must still end on time.
+
+**Boot and GameBoot videos**
+
+- **Boot Sequence** (*Settings ▸ Interface ▸ Boot*) — an optional video that plays when PFP starts,
+  up to 8 seconds. Press **✕** or **○** to skip it. If you supply a boot *video* with its own audio
+  track, that audio is used and the Boot Sound row steps aside.
+- **GameBoot** — an optional short clip that plays as a game launches, up to 5 seconds. It has its
+  own audio independent of your menu-sound setting, so muting menu sounds does not silence it. If
+  it has not finished within a few seconds the game launches anyway — GameBoot can never hold your
+  game hostage.
+
+Video can be MP4 or WebM, up to 25 MB.
+
+Everything you assign here is included in **Backup & restore**.
+
+### 4.16 Discord Social (Full edition)
 
 **Full edition only.** A **Social** column adds Discord integration:
 
@@ -506,7 +623,7 @@ crossbar preview, an icon editor, wallpaper crop presets, crossbar alignment ass
 
 Everything is inert until you connect, and presence is limited to this app.
 
-### 4.14 Adjusting the layout for your screen
+### 4.17 Adjusting the layout for your screen
 
 PFP scales itself to fit your device automatically, including near-square foldable inner displays.
 To fine-tune it, open **Settings ▸ Display ▸ Adjust XMB Layout** — a live editor over the real
@@ -518,14 +635,14 @@ crossbar:
 - Each screen size keeps its **own** tuning, so a handheld and a foldable never share (and distort)
   one layout.
 
-### 4.15 Backup & restore
+### 4.18 Backup & restore
 
 *Settings ▸ Backup & Restore* writes a `.pfpbackup` archive (library + settings) into a folder you
 pick, and restores from one. Because on-device cloud backup is disabled for privacy, this is how you
 move your setup to a new device or recover after a reinstall. Restoring re-links your ROM/media
 folders via *Library ▸ Root Access*.
 
-### 4.16 Shiba Coins (achievements)
+### 4.19 Shiba Coins (achievements)
 
 **Shiba Coins** turn achievements into a coin economy across your whole library. Enable it
 under **Settings ▸ Shiba Coins** and connect one or more providers:
@@ -534,7 +651,7 @@ under **Settings ▸ Shiba Coins** and connect one or more providers:
 |---|---|---|
 | **RetroAchievements** | Retro console games with RA sets | RA username + Web API key |
 | **Steam** | Games on your own Steam account | SteamID64 (or vanity name) + Steam Web API key |
-| **Local Steam** | Steam-emulated PC games run through Wine emulators | Steam Web API key (see [4.17](#417-tracking-local-steam-emulated-pc-games)) |
+| **Local Steam** | Steam-emulated PC games run through Wine emulators | Steam Web API key (see [4.20](#420-tracking-local-steam-emulated-pc-games)) |
 
 Each achievement earns a **bronze, silver, gold or platinum** coin by rarity; coins feed an
 account-wide wallet with **levels and ranks** shown on the **Player Card**.
@@ -556,7 +673,7 @@ account-wide wallet with **levels and ranks** shown on the **Player Card**.
   sort by Title / Progress / Console with **X**) and an **Untracked** view of games you
   could still link. Android games are excluded — they can never have achievements.
 
-### 4.17 Tracking local (Steam-emulated) PC games
+### 4.20 Tracking local (Steam-emulated) PC games
 
 PFP can track achievements for Windows games run through Wine emulators (GameHub, Winlator,
 GameNative and friends) whose bundled Steam emulator (GSE / Goldberg) records unlocks in local
@@ -624,7 +741,7 @@ Notes:
   installs the bundled emulator over the game's original `steam_api` DLL (backed up alongside
   it). This is the step the Warning Note's backup protects against.
 
-### 4.18 Settings reference
+### 4.21 Settings reference
 
 | Section | What it covers |
 |---|---|
@@ -655,7 +772,7 @@ HTTPS.
 **What PFP stores, and how**
 - **On-device only.** Your library, settings and artwork live in app storage. **Backup is disabled**
   (`allowBackup=false`), so nothing is uploaded or transferred automatically — use
-  [Backup & restore](#415-backup--restore) to move devices.
+  [Backup & restore](#418-backup--restore) to move devices.
 - **Scraper API keys are encrypted at rest** with a hardware-backed Android Keystore key.
   On the rare devices where the Keystore is unavailable, a key you enter is stored
   unencrypted and the app tells you so at save time.
@@ -831,17 +948,22 @@ app/                      MainActivity (HOME launcher), PFPApplication, Hilt app
 studio/                   Theme Studio — Compose Desktop companion (Win/Linux/macOS)
 core/
   theme-kit/              Pure-JVM theme core shared with Theme Studio: PTF/BMP/GIM/LZR parsers,
-                          .pfptheme codec, color cascade, icon-slot registry, layout spec + adjust
+                          .pfptheme codec, color cascade, icon-slot registry, layout spec + adjust,
+                          and the shared limits (UiMediaLimits, MotionLimits, IconGifSupport)
+  core-archive/           Pure-JVM bounded ZIP ingestion shared by themes, backup and the codec
   core-common/            Shared utilities and extensions
   core-domain/            Domain models, repository interfaces
-  core-data/              Room DB (v40), DAOs, DataStore, repository impls, migrations
-  core-ui/                PFPTheme/PFPColors, WaveStyle, PortalIcon, category-icon catalog
+  core-data/              Room DB (v41), DAOs, DataStore, repository impls, migrations,
+                          and the user-asset stores (CustomIconStore, UiMediaStore, PfpThemeStore)
+  core-navigation/        Pure navigation logic, no Android dependency — NavigationEngine, gridMove
+  core-ui/                PFPTheme/PFPColors, WaveStyle, PortalIcon, category-icon catalog,
+                          motion-wallpaper surfaces, MenuSoundPlayer
 discord/
   discord-native/         NDK/CMake bridge to the Discord Social SDK (full flavor only)
 feature/
   feature-xmb/            Crossbar shell, XMBViewModel, game/app detail, Artwork Studio, boot
-  feature-library/        ROM scanner, disc-image resolver, platform map
-  feature-launcher/       Emulator detection + intent resolution
+  feature-library/        ROM scanner, rescan triggers, disc-image resolver, platform map
+  feature-launcher/       Emulator detection, the launch-resolution ladder, LaunchDispatcher
   feature-artwork/        Scraper clients, portable artwork library, ES-DE import/export
   feature-achievements/   Shiba Coins: RA / Steam / Local Steam providers, wallet, sync
   feature-themes/         Theme loader/repository, built-in themes
@@ -874,9 +996,16 @@ background, navigation model and options-menu behaviour are homages to Sony's or
 
 **"XrossMediaBar", "XMB", "PSP", "PlayStation" and related marks are trademarks of Sony Interactive
 Entertainment Inc.** Play Field Portal is an independent, non-commercial fan project. It is **not
-affiliated with, endorsed by, or sponsored by Sony**, and ships none of Sony's code, firmware or
-fonts. The bundled UI artwork and menu sounds come from the community *XMB Menu for ES-DE* theme
-(see below) and remain the property of their respective authors.
+affiliated with, endorsed by, or sponsored by Sony**, and ships none of Sony's code, firmware,
+fonts or audio. The bundled UI artwork comes from the community *XMB Menu for ES-DE* theme (see
+below) and remains the property of its respective authors; the menu sounds are original to this
+project.
+
+**On the name.** *PFP* is a deliberate double entendre — *Play Field Portal* as the product name,
+and the affectionate shorthand from anime and gaming communities. The trademarks above cover the
+*names* "XMB" and "Cross Media Bar", not the visual style itself, which is not protectable as trade
+dress in a non-competing product category. That reading is why the homage is drawn as openly as it
+is, while the marks themselves are left alone.
 
 ### App icon & logo
 The Play Field Portal **app icon and logo** were created by **johakovi**
@@ -913,13 +1042,15 @@ bumpers, triggers, sticks and system buttons — is drawn from **Zacksly's** but
 > Licensed under CC BY 3.0 - https://zacksly.itch.io"
 
 ### Menu sounds
-The navigation, select, back and launch **sound effects** are bundled from the same
-**[XMB Menu for ES-DE](https://github.com/anthonycaccese/xmb-menu-es-de)** theme and remain the
-property of their respective authors. Used here with gratitude.
+The seven bundled **sound effects** — navigation, back, confirm, error, launch, notification and
+the boot sound — are **original, authored for this project**. They aim for the *feel* of the XMB
+without being derived from it: each one is cross-correlated against reference material and has to
+score below a fixed similarity threshold to ship. No Sony firmware audio is bundled, and none is
+committed to this repository.
 
-- Project: XMB Menu for ES-DE
-- Source: https://github.com/anthonycaccese/xmb-menu-es-de
-- Used for: the crossbar menu sound effects (scroll, select, back, launch, favorite, system browse)
+Earlier builds bundled menu sounds from the community *XMB Menu for ES-DE* theme; those were
+replaced by the original set. You can replace any of the seven with your own audio — see
+[4.15](#415-interface-sounds--boot-videos).
 
 ### Game artwork & metadata
 Fetched at the user's request from third-party providers and remaining the property of their owners:
@@ -937,7 +1068,7 @@ Fetched at the user's request from third-party providers and remaining the prope
   not affiliated with or endorsed by Valve. https://steampowered.com
 
 ### Goldberg Steam Emulator (gbe_fork)
-Local achievement tracking for Steam-emulated PC games ([4.17](#417-tracking-local-steam-emulated-pc-games))
+Local achievement tracking for Steam-emulated PC games ([4.20](#420-tracking-local-steam-emulated-pc-games))
 bundles the **Goldberg Steam Emulator** — specifically **gbe_fork**, the community fork
 maintained by **Detanup01** and contributors, building on the original **Goldberg Emulator**
 by **Mr. Goldberg**.
@@ -948,7 +1079,7 @@ by **Mr. Goldberg**.
   [full text](https://www.gnu.org/licenses/lgpl-3.0.html)
 - What PFP ships: an **unmodified** build of the emulator's `steam_api64.dll`, bundled as an
   app asset and installed into a game folder only when you opt in and confirm (see the
-  Warning Note in [4.17](#417-tracking-local-steam-emulated-pc-games)). The original DLL is
+  Warning Note in [4.20](#420-tracking-local-steam-emulated-pc-games)). The original DLL is
   always backed up alongside, so the emulator build can be freely replaced with your own —
   as the LGPL requires. The complete corresponding source code is available from the
   project links above.

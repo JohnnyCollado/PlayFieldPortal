@@ -206,7 +206,7 @@ class LibraryScanner @Inject constructor(
             )
         }
 
-        // Disc-set reconcile (docs/plans/multi-disc-games-plan.md follow-up): the scanner only
+        // Disc-set reconcile (docs/plans/README.md (C1)): the scanner only
         // enriched the newly added rows against themselves, so a disc arriving into an
         // already-scanned .m3u set (or a new .m3u adopting existing discs) needs the union
         // re-derived. Deterministic and idempotent — only rows whose disc fields changed are

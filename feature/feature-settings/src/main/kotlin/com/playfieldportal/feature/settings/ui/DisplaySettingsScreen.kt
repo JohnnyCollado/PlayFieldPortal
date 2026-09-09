@@ -42,7 +42,7 @@ fun DisplaySettingsScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     // The "Hidden Items" manager moved to Settings ▸ Library ▸ Hidden Games
-    // (settings_app_visibility) — see docs/plans/settings-hierarchy-plan.md § 6.
+    // (settings_app_visibility) — see docs/plans/README.md (Settings hierarchy).
 
     val wallpaperPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()

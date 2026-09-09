@@ -59,8 +59,9 @@ fun CreditsSettingsScreen(
                 "\"XrossMediaBar\", \"XMB\", \"PSP\" and \"PlayStation\" are trademarks of Sony " +
                     "Interactive Entertainment Inc. Play Field Portal is an independent, non-commercial " +
                     "fan project — not affiliated with, endorsed by, or sponsored by Sony. Bundled UI " +
-                    "artwork and menu sounds come from the community \"XMB Menu for ES-DE\" theme " +
-                    "(credited below) and remain the property of their respective authors."
+                    "artwork comes from the community \"XMB Menu for ES-DE\" theme (credited below) " +
+                    "and remains the property of its respective authors. No Sony audio is bundled: " +
+                    "every menu sound is credited separately below."
             )
 
             Spacer(Modifier.height(16.dp))
@@ -115,13 +116,22 @@ fun CreditsSettingsScreen(
             SettingsGroup("Menu Sounds")
 
             CreditParagraph(
-                "The navigation, select, back and launch sound effects are bundled from the same " +
-                    "\"XMB Menu for ES-DE\" theme and remain the property of their respective authors. " +
-                    "If they are your work, or you hold the rights, please reach out for attribution " +
-                    "or removal."
+                "The bundled menu sounds — navigation, back, confirm, error, launch, notification " +
+                    "and the boot chime — are built from royalty-free audio published on Pixabay, " +
+                    "edited for the launcher: trimmed, re-pitched, re-levelled and converted. Thanks " +
+                    "to the creators whose work the set is built from."
             )
-            CreditLine("Project", "XMB Menu for ES-DE")
-            CreditLine("Source", "github.com/anthonycaccese/xmb-menu-es-de")
+            CreditParagraph(
+                "The Pixabay Content License does not require attribution; it is given here with " +
+                    "thanks anyway. If you are one of these creators and would like the credit " +
+                    "changed or an asset removed, please reach out."
+            )
+            CreditLine("Source", "Pixabay — pixabay.com")
+            CreditLine("License", "Pixabay Content License — pixabay.com/service/license-summary")
+            CreditLine("Luca di Alessandro", "pixabay.com/users/lucadialessandro-25927643")
+            CreditLine("SoundReality", "pixabay.com/users/soundreality-31074404")
+            CreditLine("Musheran", "pixabay.com/users/musheran-40634446")
+            CreditLine("Universfield", "pixabay.com/users/universfield-28281460")
 
             Spacer(Modifier.height(16.dp))
             SettingsGroup("Game Artwork & Metadata")

@@ -7,9 +7,12 @@ import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.datastore.pfpDataStore
+import com.playfieldportal.core.data.repository.ControllerLayoutRepository
 import com.playfieldportal.core.data.repository.UiMediaStore
 import com.playfieldportal.core.domain.model.UiMediaKind
 import com.playfieldportal.core.domain.model.UiMediaSlot
+import com.playfieldportal.core.domain.model.XYLayout
+import com.playfieldportal.core.ui.media.BootSoundPreviewer
 import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.core.ui.sound.MenuSoundPlayer
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -41,12 +44,21 @@ data class AudioSettingsUiState(
     val message: String? = null,
     val importing: Boolean = false,
     val confirmResetVisible: Boolean = false,
+    /**
+     * The user's X/Y face-button layout. The screen's controller shortcuts are bound to
+     * PHYSICAL positions (north face = Use Default, west face = Preview) so they survive the
+     * X/Y swap setting; this is what maps those positions onto the actions that arrive.
+     */
+    val xyLayout: XYLayout = XYLayout.STANDARD,
 )
 
 /**
  * Interface ▸ Sound. Owns the Menu Sounds toggle (moved here from Display ▸ Sound) and the
  * SEVEN sound assignments — the six menu sounds plus Boot Sound, which lives here as its
  * seventh row while staying an AUDIO_TRACK slot (Display ▸ Boot Sequence reaches the same slot).
+ *
+ * Every row previews: the six menu sounds through [MenuSoundPlayer], Boot Sound through
+ * [BootSoundPreviewer] (no [MenuSound] exists for it — it is boot music, not a UI tick).
  *
  * Boot VIDEO and GameBoot media are deliberately NOT reachable from here — they live with their
  * own presentations under Display, and [confirmReset] must never touch them.
@@ -56,6 +68,8 @@ class AudioSettingsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val store: UiMediaStore,
     private val menuSound: MenuSoundPlayer,
+    private val bootSoundPreviewer: BootSoundPreviewer,
+    private val controllerLayout: ControllerLayoutRepository,
 ) : ViewModel() {
 
     private val _message = MutableStateFlow<String?>(null)
@@ -67,10 +81,11 @@ class AudioSettingsViewModel @Inject constructor(
 
     val uiState: StateFlow<AudioSettingsUiState> = combine(
         context.pfpDataStore.data,
+        controllerLayout.prefs,
         _message,
         _importing,
         _confirmResetVisible,
-    ) { prefs, message, importing, confirmReset ->
+    ) { prefs, layout, message, importing, confirmReset ->
         // Re-read on every prefs emission: the stamp bumps inside the same store, so an import
         // or a clear re-runs this and the row summaries follow the directory.
         val assigned = store.assignments().keys
@@ -89,6 +104,7 @@ class AudioSettingsViewModel @Inject constructor(
             message = message,
             importing = importing,
             confirmResetVisible = confirmReset,
+            xyLayout = layout.xyLayout,
         )
     }
         // store.assignments() is a directory listing — cheap, but still file IO.
@@ -129,14 +145,18 @@ class AudioSettingsViewModel @Inject constructor(
     }
 
     /**
-     * Auditions [slot]'s current sound, custom or default, even while Menu Sounds is off. Boot
-     * Sound has no [MenuSound] and is a 3-second ExoPlayer track — it deliberately gets no
-     * Preview here (Display ▸ Boot Sequence previews the whole presentation), and this no-ops
-     * for it as the cheapest possible enforcement of that.
+     * Auditions [slot]'s current sound, custom or default, even while Menu Sounds is off. The six
+     * menu sounds play through [MenuSoundPlayer]; Boot Sound plays through [BootSoundPreviewer]
+     * — custom assignment first, bundled default otherwise — so its row previews like every
+     * other one.
      */
     fun preview(slot: UiMediaSlot) {
-        val event = MenuSound.entries.firstOrNull { it.slot == slot } ?: return
-        menuSound.play(event, ignoreMute = true)
+        val event = MenuSound.entries.firstOrNull { it.slot == slot }
+        if (event != null) {
+            menuSound.play(event, ignoreMute = true)
+        } else {
+            bootSoundPreviewer.play(store.pathFor(slot))
+        }
     }
 
     /** Drops [slot]'s custom file, returning that event to its bundled sample. */
@@ -161,6 +181,14 @@ class AudioSettingsViewModel @Inject constructor(
     }
 
     fun dismissMessage() { _message.value = null }
+
+    /** Stops a running Boot Sound preview (a no-op when none is playing). */
+    fun stopBootPreview() = bootSoundPreviewer.stop()
+
+    /** A leaving screen must not leave a boot preview sounding behind it. */
+    override fun onCleared() {
+        stopBootPreview()
+    }
 
     companion object {
         /**

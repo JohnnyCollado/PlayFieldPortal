@@ -11,7 +11,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * Pins the bundled-default seam (docs/plans/sfx-seven-sounds-plan.md): every playable event
+ * Pins the bundled-default seam (docs/plans/README.md (C10)): every playable event
  * falls back to a bundled sample, Navigation's three events share one slot and one sample, boot
  * audio's default resolves to a URI ExoPlayer can open, and the presentation rule that a custom
  * boot video keeps its own audio track unless the user explicitly assigned a boot sound.

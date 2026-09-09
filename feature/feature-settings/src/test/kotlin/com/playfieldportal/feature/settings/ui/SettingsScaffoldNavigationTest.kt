@@ -323,14 +323,15 @@ class SettingsScaffoldNavigationTest {
         // Opens focused on the first row.
         assertFocusedRow("Row 1")
 
-        // Measure the geometry the scaffold re-anchors against. The content box starts at the
-        // root Y of the first row and extends to the bottom of the root — that measured span,
-        // NOT the configured screen height, is what the scaffold treats as the viewport.
-        val rootHeight = composeRule.onRoot().fetchSemanticsNode().boundsInRoot.height
+        // Measure the geometry the scaffold re-anchors against. The content box ends above the
+        // reserved helper footer, so derive the viewport from the footer prompt rather than the
+        // full root height.
         val firstRowNode = composeRule.onNode(isFocused()).fetchSemanticsNode()
         val contentTop = firstRowNode.boundsInRoot.top
         val rowHeight = firstRowNode.boundsInRoot.height
-        val viewportCenter = contentTop + (rootHeight - contentTop) / 2f
+        val footerPromptTop = composeRule.onNodeWithText("Enter").fetchSemanticsNode().boundsInRoot.top
+        val contentBottom = footerPromptTop - with(composeRule.density) { 20.dp.toPx() }
+        val viewportCenter = contentTop + (contentBottom - contentTop) / 2f
 
         // A real touch drag: the contact itself flags the screen as touch-scrolled (the scaffold
         // hides the cursor on any pointer activity); the small move keeps the list from scrolling.
@@ -372,18 +373,17 @@ class SettingsScaffoldNavigationTest {
         }
         assertFocusedRow("Row 1")
         val contentTop = composeRule.onNode(isFocused()).fetchSemanticsNode().boundsInRoot.top
-        val rootHeight = composeRule.onRoot().fetchSemanticsNode().boundsInRoot.height
+        // The content box ends above the reserved helper footer, so use its prompt position to
+        // derive the actual visible content bottom and catch a clipped final row.
+        val footerPromptTop = composeRule.onNodeWithText("Enter").fetchSemanticsNode().boundsInRoot.top
+        val contentBottom = footerPromptTop - with(composeRule.density) { 20.dp.toPx() }
         var rowHeight = 0f
-
-        // Walk far past the fold; after every step the ENTIRE focused row must stay on screen.
-        // A clipped row reports bounds that ride the fold's bottom edge (a sliver), so asserting
-        // the bottom stays clear of the edge and the height stays full catches the regression.
         repeat(30) { step ->
             press(GamepadAction.NAVIGATE_DOWN)
             val bounds = composeRule.onNode(isFocused()).fetchSemanticsNode().boundsInRoot
             if (step == 0) rowHeight = bounds.height
             assertTrue("step $step: row top ${bounds.top} drifted above viewport top $contentTop", bounds.top >= contentTop - 0.5f)
-            assertTrue("step $step: row bottom ${bounds.bottom} hit the viewport bottom $rootHeight", bounds.bottom <= rootHeight - 1f)
+            assertTrue("step $step: row bottom ${bounds.bottom} hit the viewport bottom $contentBottom", bounds.bottom <= contentBottom - 1f)
             assertTrue("step $step: row clipped to height ${bounds.height}", abs(bounds.height - rowHeight) < 1f)
         }
     }

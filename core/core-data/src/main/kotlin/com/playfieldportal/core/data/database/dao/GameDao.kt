@@ -33,7 +33,7 @@ interface GameDao {
     @Query("SELECT * FROM games WHERE content_type = 'GAME'  AND is_missing = 0 ORDER BY title ASC")
     fun observeGamesOnly(): Flow<List<GameEntity>>
 
-    // Multi-disc projection (docs/plans/multi-disc-games-plan.md step 5): one row per disc set —
+    // Multi-disc projection (docs/plans/README.md (C1)): one row per disc set —
     // the primary — for the All Games surface. The unprojected [observeGamesOnly] above stays
     // untouched for per-disc achievement matching.
     @Query(
@@ -83,7 +83,7 @@ interface GameDao {
     @Query("SELECT * FROM games WHERE platform_id = :platformId AND is_missing = 0 ORDER BY title ASC")
     fun observeByPlatform(platformId: String): Flow<List<GameEntity>>
 
-    // Multi-disc projection (docs/plans/multi-disc-games-plan.md step 5): one row per disc set —
+    // Multi-disc projection (docs/plans/README.md (C1)): one row per disc set —
     // the primary — for the Memory Card game list. The unprojected [observeByPlatform] above stays
     // untouched for scan baselines (existing-path resolution must see every disc).
     @Query(

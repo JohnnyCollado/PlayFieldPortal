@@ -18,7 +18,7 @@ interface GameRepository {
     // Real games only (content_type = GAME) — drives the "All Games" aggregate so app-style
     // entries never appear there automatically.
     fun observeGamesOnly(): Flow<List<Game>>
-    // Multi-disc projection (docs/plans/multi-disc-games-plan.md step 5): one row per disc set —
+    // Multi-disc projection (docs/plans/README.md (C1)): one row per disc set —
     // the primary — for the All Games surface. The unprojected [observeGamesOnly] stays available
     // for per-disc achievement matching.
     fun observeAllGames(): Flow<List<Game>>

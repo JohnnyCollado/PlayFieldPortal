@@ -1,17 +1,26 @@
 package com.playfieldportal.themekit
 
 /**
- * Import gate for user-picked UI media — menu sounds (Interface ▸ Audio), the boot sequence's
+ * Import gate for user-picked UI media — menu sounds (Interface ▸ Sound), the boot sequence's
  * video/audio, and GameBoot's video/audio. Same contract as [MotionLimits]: playback discipline
  * cannot rescue a file that should never have been accepted, so the gate runs BEFORE anything is
  * committed, and every rejection names its reason.
  *
  * Every number here is a judgment call rather than a hardware fact — which is why they live in
- * one object the tests point at: tuning a limit later is a one-file change. The byte caps
- * (2 MB per sound, 25 MB per video) are NEW judgment calls introduced with this feature — there
- * is no design-doc number behind them, only the same reasoning as [MotionLimits.MAX_BYTES]:
- * enough headroom for any sane sound/clip, small enough that a mistyped pick can't stall the
- * import on a low-memory handheld.
+ * one object the tests point at: tuning a limit later is a one-file change.
+ *
+ * AUDIO policy (owner decision, 2026-09-08): **no floor and no user-facing byte cap.** The
+ * recommended range is advisory only and every audio spec's floor is zero — a 0.2 s click is a
+ * legitimate Navigation sound. The lag/abuse protection is [Spec.hardMaxMs]: SoundPool decodes a
+ * custom menu sound fully into memory, so the per-event duration ceilings (0.5–3 s) are what
+ * bound the decoded footprint, and a boot track streams through ExoPlayer where its 10 s cap
+ * bounds the presentation instead. The audio [Spec.maxBytes] values are NOT a quality limit —
+ * they are the staging-copy ceiling (see [AUDIO_STAGE_MAX_BYTES]) that stops a malicious picker
+ * from streaming gigabytes into app storage before the duration gate can reject the file.
+ *
+ * VIDEO keeps both a floor and a real byte cap: a clip feeds a timed presentation and is probed
+ * with MediaMetadataRetriever, and 25 MB comfortably covers any sane MP4/WebM of the allowed
+ * lengths.
  *
  * Lives in theme-kit (pure JVM), not core-data, because BOTH sides of the feature need the same
  * numbers: the launcher's Android importer probes with MediaMetadataRetriever, and the desktop
@@ -27,9 +36,10 @@ object UiMediaLimits {
     enum class Kind { SOUND, VIDEO, AUDIO_TRACK }
 
     /**
-     * The per-slot caps, from the design doc's table. [recommendedMinMs]..[recommendedMaxMs] is
-     * advisory only (surfaced in the picker's helper text, never enforced); [hardMaxMs] and
-     * [maxBytes] are the enforced caps. Durations are milliseconds.
+     * The per-slot caps. [recommendedMinMs]..[recommendedMaxMs] is advisory only (surfaced in
+     * the picker's helper text, never enforced; audio specs carry a zero floor — no minimum);
+     * [hardMaxMs] and [maxBytes] are the enforced caps. For audio, [maxBytes] is the staging
+     * anti-DoS ceiling, not a user-facing limit — see the class KDoc. Durations are milliseconds.
      */
     data class Spec(
         val kind: Kind,
@@ -42,32 +52,44 @@ object UiMediaLimits {
     // ── Duration caps (hard max) ─────────────────────────────────────────────
     const val SOUND_MAX_MS          = 500L     // Navigation / Category Change
     const val CONFIRM_MAX_MS        = 1_000L   // Confirm / Back / Error
-    const val LAUNCH_MAX_MS         = 3_000L   // App Launch
+    const val LAUNCH_MAX_MS         = 3_000L   // Launch Sound
     /**
      * Notification gets its own, looser cap rather than joining the Confirm family. It is not
      * navigation feedback: it fires at most a few times an hour, nothing is waiting on it, and a
-     * chime with a tail is normal for the kind. The bundled default is exactly 1.00 s, so putting
-     * it on the Confirm cap would leave the shipped sample sitting on the boundary — a file that
+     * chime with a tail is normal for the kind. The bundled default is 1.056 s (1.00 s before the
+     * 2026-09-08 sound-set swap), so putting it on the Confirm cap would leave the shipped sample
+     * over the boundary outright — and even at exactly 1.00 s it would have sat on it, a file that
      * passes today and fails on a re-import the moment a decoder rounds 1000 up to 1001.
      */
     const val NOTIFICATION_MAX_MS   = 2_000L
     const val GAMEBOOT_MAX_MS       = 5_000L
     const val BOOT_MAX_MS           = 10_000L
 
-    // ── Byte caps — NEW judgment calls, see the class KDoc ───────────────────
-    const val SOUND_MAX_BYTES = 2L * 1024 * 1024
+    // ── Byte caps ────────────────────────────────────────────────────────────
+    /**
+     * VIDEO_MAX_BYTES is a real cap: video bytes are never held in memory (the staging copy
+     * streams) and 25 MB covers any sane clip of the allowed lengths.
+     *
+     * AUDIO_STAGE_MAX_BYTES is NOT a quality bar — it is how much of a picked audio file the
+     * staged copy will accept before giving up, so a crafted pick cannot stream gigabytes into
+     * app storage (or hold the import coroutine forever) before the duration gate rejects it.
+     * 128 MB is roughly two hours of 160 kbps audio — far beyond anything the duration ceilings
+     * let through, and streamed to disk in 64 KB chunks, never held on the heap.
+     */
+    const val AUDIO_STAGE_MAX_BYTES = 128L * 1024 * 1024
     const val VIDEO_MAX_BYTES = 25L * 1024 * 1024
 
     // ── Per-slot specs ───────────────────────────────────────────────────────
-    val NAVIGATION   = Spec(Kind.SOUND,       50L,    250L,   SOUND_MAX_MS,   SOUND_MAX_BYTES)
-    val CONFIRM      = Spec(Kind.SOUND,       100L,   500L,   CONFIRM_MAX_MS, SOUND_MAX_BYTES)
-    val BACK         = Spec(Kind.SOUND,       100L,   500L,   CONFIRM_MAX_MS, SOUND_MAX_BYTES)
-    val LAUNCH       = Spec(Kind.SOUND,       300L, 2_000L,   LAUNCH_MAX_MS,  SOUND_MAX_BYTES)
-    val NOTIFICATION = Spec(Kind.SOUND,       200L, 1_500L,   NOTIFICATION_MAX_MS, SOUND_MAX_BYTES)
-    val ERROR        = Spec(Kind.SOUND,       100L,   500L,   CONFIRM_MAX_MS, SOUND_MAX_BYTES)
-    val GAMEBOOT     = Spec(Kind.AUDIO_TRACK, 1_000L, 5_000L, GAMEBOOT_MAX_MS, VIDEO_MAX_BYTES)
+    // Every AUDIO spec: zero floor (no minimum length), maxBytes = the staging ceiling.
+    val NAVIGATION   = Spec(Kind.SOUND,       0L,    250L,   SOUND_MAX_MS,   AUDIO_STAGE_MAX_BYTES)
+    val CONFIRM      = Spec(Kind.SOUND,       0L,   500L,   CONFIRM_MAX_MS, AUDIO_STAGE_MAX_BYTES)
+    val BACK         = Spec(Kind.SOUND,       0L,   500L,   CONFIRM_MAX_MS, AUDIO_STAGE_MAX_BYTES)
+    val LAUNCH       = Spec(Kind.SOUND,       0L, 2_000L,   LAUNCH_MAX_MS,  AUDIO_STAGE_MAX_BYTES)
+    val NOTIFICATION = Spec(Kind.SOUND,       0L, 1_500L,   NOTIFICATION_MAX_MS, AUDIO_STAGE_MAX_BYTES)
+    val ERROR        = Spec(Kind.SOUND,       0L,   500L,   CONFIRM_MAX_MS, AUDIO_STAGE_MAX_BYTES)
+    val GAMEBOOT     = Spec(Kind.AUDIO_TRACK, 0L, 5_000L, GAMEBOOT_MAX_MS, AUDIO_STAGE_MAX_BYTES)
     val GAMEBOOT_CLIP = Spec(Kind.VIDEO,      1_000L, 5_000L, GAMEBOOT_MAX_MS, VIDEO_MAX_BYTES)
-    val BOOT         = Spec(Kind.AUDIO_TRACK, 1_000L, 8_000L, BOOT_MAX_MS,    VIDEO_MAX_BYTES)
+    val BOOT         = Spec(Kind.AUDIO_TRACK, 0L, 8_000L, BOOT_MAX_MS,    AUDIO_STAGE_MAX_BYTES)
     val BOOT_CLIP    = Spec(Kind.VIDEO,       1_000L, 8_000L, BOOT_MAX_MS,    VIDEO_MAX_BYTES)
 
     /** Accepted audio containers. Audio MIME arrays come from this set verbatim. */
@@ -85,7 +107,7 @@ object UiMediaLimits {
     /** Rejection strings, surfaced verbatim through the importers' message channels. */
     const val MSG_UNSUPPORTED_FORMAT_AUDIO = "Unsupported format — use MP3, WAV, OGG, or M4A audio"
     const val MSG_UNSUPPORTED_FORMAT_VIDEO = "Unsupported format — use MP4 or WebM video"
-    const val MSG_TOO_LARGE_BYTES_SOUND = "File is too large — sounds must be under 2 MB"
+    const val MSG_TOO_LARGE_BYTES_SOUND = "File is too large"
     const val MSG_TOO_LARGE_BYTES_VIDEO = "File is too large — videos must be under 25 MB"
     const val MSG_UNDECODABLE = "Couldn't read that file — try a different one"
 
@@ -132,7 +154,11 @@ object UiMediaLimits {
     /** The user-facing "too long" message, naming the slot's cap (e.g. "0.5 s or less"). */
     fun tooLong(spec: Spec): String = "That clip is too long — ${formatSeconds(spec.hardMaxMs)} or less"
 
-    /** The user-facing "too large" message, naming the slot's byte cap. */
+    /**
+     * The user-facing "too large" message. For audio this is the unreachable-in-practice staging
+     * ceiling (a file that big is rejected by the duration gate first); for video it is the real
+     * cap.
+     */
     fun tooLarge(spec: Spec): String =
         if (spec.kind == Kind.VIDEO) MSG_TOO_LARGE_BYTES_VIDEO else MSG_TOO_LARGE_BYTES_SOUND
 

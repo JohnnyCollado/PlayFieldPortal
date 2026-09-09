@@ -22,7 +22,7 @@ enum class UiMediaKind { SOUND, VIDEO, AUDIO_TRACK }
  *
  * The menu-sound roster is the seven-sound plan's: Navigation covers SCROLL, SELECT and
  * SYSTEM_BROWSE (one sample, three events — see [UiMediaSlot] docs in
- * docs/plans/sfx-seven-sounds-plan.md), and Boot Sound is the seventh row of the Sound screen
+ * docs/plans/README.md (C10)), and Boot Sound is the seventh row of the Sound screen
  * while staying an AUDIO_TRACK slot. Slots removed from this enum are swept from user installs
  * and restored backups by `UiMediaStore.pruneOrphans()`; their keys are deliberately NOT reused.
  */
@@ -37,7 +37,7 @@ enum class UiMediaSlot(
     SOUND_BACK("sound_back", UiMediaKind.SOUND, "Back / Cancel", UiMediaLimits.BACK),
     SOUND_CONFIRM("sound_confirm", UiMediaKind.SOUND, "Confirm / Apply", UiMediaLimits.CONFIRM),
     SOUND_ERROR("sound_error", UiMediaKind.SOUND, "Error / Invalid", UiMediaLimits.ERROR),
-    SOUND_LAUNCH("sound_launch", UiMediaKind.SOUND, "App Launch", UiMediaLimits.LAUNCH),
+    SOUND_LAUNCH("sound_launch", UiMediaKind.SOUND, "Launch Sound", UiMediaLimits.LAUNCH),
     SOUND_NOTIFICATION("sound_notification", UiMediaKind.SOUND, "Notification", UiMediaLimits.NOTIFICATION),
 
     // ── Boot sequence (Display ▸ Boot Sequence) ──────────────────────────────

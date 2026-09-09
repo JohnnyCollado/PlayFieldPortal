@@ -568,6 +568,10 @@ data class XMBUiState(
     // showContextMenuHint: the drawer is a blocking overlay, so the XMB pill's gate is false
     // exactly while the drawer is open; AppDrawerScreen renders its own pill from this flag.
     val showAppDrawerHint: Boolean = false,
+    // True when the user has been idle on the Sound settings screen with a controller. Settings
+    // overlays are blocking by design, so this needs its own idle flag rather than reusing the XMB
+    // context-menu hint (whose blocking-overlay gate would always suppress it).
+    val showSettingsHint: Boolean = false,
     // User setting (Display ▸ Context Menu Hint). When false the idle hint never shows.
     val contextMenuHintEnabled: Boolean = true,
     // User-configured idle delay in seconds, clamped to 1..5 and defaulting to the original 2.5s.
@@ -1074,6 +1078,18 @@ fun shouldShowAppDrawerHint(state: XMBUiState, idleMs: Long): Boolean =
         !state.lastInputWasTouch &&
         state.activeAppDrawerFilter != null &&
         state.activeContextMenu == null &&
+        idleMs >= (state.contextMenuHintDelaySeconds * 1_000f).toLong()
+
+/**
+ * Pure decision for the Sound settings helper footer. It deliberately does not use
+ * [XMBUiState.hasBlockingOverlay], because the settings screen itself is the overlay that owns
+ * this footer. Keeping the same delay and enable setting as the XMB/App Drawer makes all helper
+ * chrome appear on one timing contract.
+ */
+fun shouldShowSettingsHint(state: XMBUiState, idleMs: Long): Boolean =
+    state.contextMenuHintEnabled &&
+        !state.lastInputWasTouch &&
+        state.activeSettingsScreen == "settings_audio" &&
         idleMs >= (state.contextMenuHintDelaySeconds * 1_000f).toLong()
 
 data class XMBItem(
@@ -4366,11 +4382,19 @@ class XMBViewModel @Inject constructor(
                     state = s,
                     idleMs = idleMs,
                 )
-                if (shouldShow != s.showContextMenuHint || shouldShowDrawer != s.showAppDrawerHint) {
+                val shouldShowSettings = com.playfieldportal.feature.xmb.viewmodel.shouldShowSettingsHint(
+                    state = s,
+                    idleMs = idleMs,
+                )
+                if (shouldShow != s.showContextMenuHint ||
+                    shouldShowDrawer != s.showAppDrawerHint ||
+                    shouldShowSettings != s.showSettingsHint
+                ) {
                     _uiState.update {
                         it.copy(
                             showContextMenuHint = shouldShow,
                             showAppDrawerHint = shouldShowDrawer,
+                            showSettingsHint = shouldShowSettings,
                         )
                     }
                 }
@@ -4643,15 +4667,16 @@ class XMBViewModel @Inject constructor(
                     GamepadAction.BACK,
                     GamepadAction.NAVIGATE_UP,
                     GamepadAction.NAVIGATE_DOWN,
-                    // Left/Right and the options button are ignored by the scaffold's default
-                    // nav but reachable via onInterceptAction — screens with horizontal strips
-                    // or per-row context menus (Themes) consume them there. The options press
-                    // arrives as OPEN_CONTEXT_MENU whichever face button the X/Y layout binds it to,
-                    // so both are forwarded (they're treated identically, as everywhere else).
+                    // Left/Right and the two secondary face buttons are ignored by the
+                    // scaffold's default nav but reachable via onInterceptAction — screens with
+                    // horizontal strips, per-row context menus or per-row shortcuts (Themes,
+                    // Sound) consume them there. Both presses arrive whichever way the X/Y
+                    // layout binds them, so both are forwarded (they're treated identically,
+                    // as everywhere else).
                     GamepadAction.NAVIGATE_LEFT,
                     GamepadAction.NAVIGATE_RIGHT,
                     GamepadAction.OPEN_CONTEXT_MENU,
-                    GamepadAction.OPEN_CONTEXT_MENU,
+                    GamepadAction.CHANGE_SORT,
                     GamepadAction.SELECT -> _uiState.update { it.copy(pendingSettingsAction = action) }
                     else -> Unit
                 }
@@ -6303,16 +6328,34 @@ class XMBViewModel @Inject constructor(
         // One write for both flags: the hints must clear on the SAME frame as the input (see
         // noteInteraction), and a second update() here would cost an extra recomposition.
         _uiState.update {
-            if (it.lastInputWasTouch && !it.showContextMenuHint && !it.showAppDrawerHint) it
-            else it.copy(lastInputWasTouch = true, showContextMenuHint = false, showAppDrawerHint = false)
+            if (it.lastInputWasTouch &&
+                !it.showContextMenuHint &&
+                !it.showAppDrawerHint &&
+                !it.showSettingsHint
+            ) it
+            else it.copy(
+                lastInputWasTouch = true,
+                showContextMenuHint = false,
+                showAppDrawerHint = false,
+                showSettingsHint = false,
+            )
         }
     }
 
     private fun markControllerInput() {
         lastInteractionMs = SystemClock.elapsedRealtime()
         _uiState.update {
-            if (!it.lastInputWasTouch && !it.showContextMenuHint && !it.showAppDrawerHint) it
-            else it.copy(lastInputWasTouch = false, showContextMenuHint = false, showAppDrawerHint = false)
+            if (!it.lastInputWasTouch &&
+                !it.showContextMenuHint &&
+                !it.showAppDrawerHint &&
+                !it.showSettingsHint
+            ) it
+            else it.copy(
+                lastInputWasTouch = false,
+                showContextMenuHint = false,
+                showAppDrawerHint = false,
+                showSettingsHint = false,
+            )
         }
     }
 
@@ -8307,8 +8350,17 @@ class XMBViewModel @Inject constructor(
      */
     fun onUserInteraction() {
         lastInteractionMs = SystemClock.elapsedRealtime()
-        if (_uiState.value.showContextMenuHint) {
-            _uiState.update { it.copy(showContextMenuHint = false) }
+        if (_uiState.value.showContextMenuHint ||
+            _uiState.value.showAppDrawerHint ||
+            _uiState.value.showSettingsHint
+        ) {
+            _uiState.update {
+                it.copy(
+                    showContextMenuHint = false,
+                    showAppDrawerHint = false,
+                    showSettingsHint = false,
+                )
+            }
         }
     }
 

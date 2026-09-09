@@ -199,4 +199,52 @@ class ContextMenuHintStateTest {
         assertTrue(shouldShowAppDrawerHint(open, XMBViewModel.IDLE_HINT_DELAY_MS))
         assertFalse(shouldShowContextMenuHint(open, XMBViewModel.IDLE_HINT_DELAY_MS))
     }
+
+    // ── Sound settings hint branch ─────────────────────────────────────────
+
+    private fun soundSettingsEligibleState() = XMBUiState(
+        activeSettingsScreen = "settings_audio",
+        lastInputWasTouch = false,
+        showBootSequence = false,
+    ).let { it.copy(showSettingsHint = false) }
+
+    @Test
+    fun `sound settings hint shows after the shared idle delay`() {
+        assertTrue(shouldShowSettingsHint(soundSettingsEligibleState(), XMBViewModel.IDLE_HINT_DELAY_MS))
+    }
+
+    @Test
+    fun `sound settings hint does not show before the shared idle delay`() {
+        assertFalse(shouldShowSettingsHint(soundSettingsEligibleState(), XMBViewModel.IDLE_HINT_DELAY_MS - 1))
+    }
+
+    @Test
+    fun `sound settings hint does not show after touch input`() {
+        assertFalse(
+            shouldShowSettingsHint(
+                soundSettingsEligibleState().copy(lastInputWasTouch = true),
+                XMBViewModel.IDLE_HINT_DELAY_MS,
+            )
+        )
+    }
+
+    @Test
+    fun `sound settings hint is limited to the Sound screen`() {
+        assertFalse(
+            shouldShowSettingsHint(
+                soundSettingsEligibleState().copy(activeSettingsScreen = "settings_display"),
+                XMBViewModel.IDLE_HINT_DELAY_MS,
+            )
+        )
+    }
+
+    @Test
+    fun `sound settings hint respects the shared setting and configured delay`() {
+        val disabled = soundSettingsEligibleState().copy(contextMenuHintEnabled = false)
+        assertFalse(shouldShowSettingsHint(disabled, XMBViewModel.IDLE_HINT_DELAY_MS))
+
+        val delayed = soundSettingsEligibleState().copy(contextMenuHintDelaySeconds = 4.5f)
+        assertFalse(shouldShowSettingsHint(delayed, 4_499))
+        assertTrue(shouldShowSettingsHint(delayed, 4_500))
+    }
 }

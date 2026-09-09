@@ -20,7 +20,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
-/** UI sound effects for XMB menu interactions (sourced from the XMB/ES-DE sound set). */
+/** UI sound effects for XMB menu interactions (see `assets/SFX/active/README.md` for the set). */
 enum class MenuSound {
     SCROLL,         // item navigate up/down
     SYSTEM_BROWSE,  // category / filter change
@@ -37,12 +37,12 @@ enum class MenuSound {
     /**
      * A background task finished, or something worth surfacing arrived — a library rescan, a
      * backup, an achievement sync. Fired on completion, never on progress.
-     * `sfx_notification.wav` is the file that used to be mis-registered as the Favorite sound, and
+     * `sfx_notification` is the slot that used to be mis-registered as the Favorite sound, and
      * naming it correctly here is what stops it being customized under the wrong label.
      */
     NOTIFICATION,
     /**
-     * A refused action — an invalid pick, a launch that cannot proceed. `sfx_error.wav` is the
+     * A refused action — an invalid pick, a launch that cannot proceed. `sfx_error` is the
      * file that used to be registered as the Back sound.
      */
     ERROR,

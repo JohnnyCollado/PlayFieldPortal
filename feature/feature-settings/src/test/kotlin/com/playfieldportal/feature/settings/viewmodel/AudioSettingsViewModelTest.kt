@@ -5,9 +5,12 @@ import android.net.Uri
 import androidx.datastore.preferences.core.edit
 import androidx.test.core.app.ApplicationProvider
 import com.playfieldportal.core.data.datastore.pfpDataStore
+import com.playfieldportal.core.data.repository.ControllerLayoutRepository
+import com.playfieldportal.core.data.repository.ControllerMappingRepository
 import com.playfieldportal.core.data.repository.MediaDisplayNames
 import com.playfieldportal.core.data.repository.UiMediaStore
 import com.playfieldportal.core.domain.model.UiMediaSlot
+import com.playfieldportal.core.ui.media.BootSoundPreviewer
 import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.core.ui.sound.MenuSoundPlayer
 import io.mockk.mockk
@@ -34,10 +37,10 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
 /**
- * The Interface ▸ Sound screen's contract (docs/plans/sfx-seven-sounds-plan.md Phase 2c): seven
+ * The Interface ▸ Sound screen's contract (docs/plans/README.md (C10) Phase 2c): seven
  * rows — the six menu sounds plus Boot Sound — with Boot Sound behaving like any other row
- * (label, Use Default, reset) except for Preview, which it must NOT have (there is no
- * [MenuSound] for boot, and Display ▸ Boot Sequence already previews the full presentation).
+ * (label, Preview, Use Default, reset), while its Preview uses the dedicated boot player rather
+ * than [MenuSound] (Display ▸ Boot Sequence remains the full-presentation preview).
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -46,6 +49,7 @@ class AudioSettingsViewModelTest {
     private val dispatcher = StandardTestDispatcher()
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val menuSound: MenuSoundPlayer = mockk(relaxed = true)
+    private val bootPreviewer: BootSoundPreviewer = mockk(relaxed = true)
     private lateinit var store: UiMediaStore
     private lateinit var vm: AudioSettingsViewModel
 
@@ -55,7 +59,13 @@ class AudioSettingsViewModelTest {
         File(context.filesDir, UiMediaStore.UI_MEDIA_DIR).deleteRecursively()
         MediaDisplayNames.clearCache()
         store = UiMediaStore(context)
-        vm = AudioSettingsViewModel(context, store, menuSound)
+        vm = AudioSettingsViewModel(
+            context,
+            store,
+            menuSound,
+            bootPreviewer,
+            ControllerLayoutRepository(context, ControllerMappingRepository(context)),
+        )
     }
 
     @After fun tearDown() {
@@ -147,10 +157,45 @@ class AudioSettingsViewModelTest {
         assertFalse(UiMediaSlot.GAMEBOOT_AUDIO in state.assignedSlots, "GameBoot has its own screen")
     }
 
-    @Test fun `preview on the boot row is a silent no-op`() = runTest(dispatcher) {
-        vm.preview(UiMediaSlot.BOOT_AUDIO)
-        advanceUntilIdle()
-        verify(exactly = 0) { menuSound.play(any(), any()) }
+    @Test fun `preview on the boot row plays through the boot previewer, not SoundPool`() =
+        runTest(dispatcher) {
+            vm.preview(UiMediaSlot.BOOT_AUDIO)
+            advanceUntilIdle()
+            // Bundled default (no custom assignment): the previewer gets null and resolves the
+            // resource URI itself.
+            verify(exactly = 1) { bootPreviewer.play(null) }
+            verify(exactly = 0) { menuSound.play(any(), any()) }
+        }
+
+    @Test fun `preview on the boot row hands the custom assignment to the previewer`() =
+        runTest(dispatcher) {
+            seedAssignment(UiMediaSlot.BOOT_AUDIO, ext = "mp3")
+            collectUiState()
+            eventually("the assignment is visible") {
+                UiMediaSlot.BOOT_AUDIO in vm.uiState.value.assignedSlots
+            }
+
+            vm.preview(UiMediaSlot.BOOT_AUDIO)
+            advanceUntilIdle()
+
+            verify(exactly = 1) {
+                bootPreviewer.play(mediaFile(UiMediaSlot.BOOT_AUDIO, "mp3").absolutePath)
+            }
+        }
+
+    @Test fun `menu sound rows still preview through SoundPool, never the boot previewer`() =
+        runTest(dispatcher) {
+            vm.preview(UiMediaSlot.SOUND_SCROLL)
+            advanceUntilIdle()
+            verify(exactly = 1) { menuSound.play(any(), any()) }
+            verify(exactly = 0) { bootPreviewer.play(any()) }
+        }
+
+    @Test fun `tearing the screen down stops any running boot preview`() = runTest(dispatcher) {
+        // onCleared() delegates here (it is protected, so the test drives the public seam);
+        // the override is a one-liner covered by review.
+        vm.stopBootPreview()
+        verify(exactly = 1) { bootPreviewer.stop() }
     }
 
     // ── reset semantics ──────────────────────────────────────────────────────

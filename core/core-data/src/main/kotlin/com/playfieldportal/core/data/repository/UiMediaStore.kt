@@ -46,10 +46,9 @@ import kotlinx.coroutines.withContext
  * extension derived from the VALIDATED MIME so the suffix names the container by construction.
  * No DataStore key per slot: the file's presence IS the assignment (matches `custom-icons`,
  * deliberately unlike the wallpaper, which needs a prefs path because two files form a pair).
- *
- * The user's original picked file is copied into our own private storage and the content URI is
- * discarded — a URI grant can be revoked at any time, and a `SoundPool` sample (loaded once,
- * held for the app's lifetime) or a boot-time ExoPlayer must never depend on one.
+ *     * The user's original picked file is streamed into our own private storage and the content URI
+     * is discarded — a URI grant can be revoked at any time, and a `SoundPool` sample (loaded once,
+     * held for the app's lifetime) or a boot-time ExoPlayer must never depend on one.
  */
 @Singleton
 class UiMediaStore @Inject constructor(
@@ -101,7 +100,8 @@ class UiMediaStore @Inject constructor(
 
     /**
      * Imports [uri] as [slot]'s media: validate the MIME against the slot's caps up front, size
-     * pre-check via the SAF descriptor, copy capped, probe the COPY, then swap the file in.
+     * pre-check via the SAF descriptor, stream into a capped staging file, probe the COPY, then
+     * swap the file in.
      * On any rejection the staged file is deleted and the previous assignment keeps playing.
      */
     suspend fun import(slot: UiMediaSlot, uri: Uri): ImportResult = withContext(Dispatchers.IO) {
@@ -132,13 +132,10 @@ class UiMediaStore @Inject constructor(
         val staged = File(dir, "staging_${System.currentTimeMillis()}.$ext")
         val copied = runCatching {
             context.contentResolver.openInputStream(uri)?.use { input ->
-                // Capped read: the descriptor can lie; this is the real backstop.
-                val bytes = with(SafeMedia) { input.readCapped(spec.maxBytes) }
-                if (bytes == null) {
-                    null
-                } else {
-                    staged.writeBytes(bytes)
-                    bytes.size.toLong()
+                // Stream to the staged file: the descriptor can lie, but a crafted pick must
+                // never make us allocate the entire untrusted audio file on the heap.
+                staged.outputStream().use { output ->
+                    with(SafeMedia) { input.copyCappedTo(output, spec.maxBytes) }
                 }
             }
         }.getOrNull()

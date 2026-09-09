@@ -8,29 +8,47 @@ exist only for local A/B listening.
 
 ## Status of what we ship today
 
-**Six of the seven shipped samples are original; the seventh is a deliberate
-exception.** The old Sony-derived set was replaced wholesale by the authored
-set in `assets/SFX/active/` (copied verbatim into `core/core-ui/src/main/res/raw/`),
-and every sample except one scores below the 0.30 admission bar. The exception:
-**`sfx_opening` is Sony's `snd_opening` (5.70 rip) shipped as the bundled Boot
-Sound by explicit project-owner decision on 2026-09-07** (xcorr 1.000 — it is
-the reference itself; see `assets/SFX/active/README.md`). The current `res/raw`
-roster is pinned by `UiMediaDefaults.bundledDefaultRes` and tested in
-`UiMediaDefaultsTest`:
+**No shipped sample is Sony-derived.** The old Sony-derived set was replaced
+wholesale on 2026-09-07 by the authored set in `assets/SFX/active/` (copied
+verbatim into `core/core-ui/src/main/res/raw/`). On 2026-09-08 four of those
+slots were replaced again, this time by royalty-free Pixabay audio edited for
+the launcher; `sfx_confirm` and `sfx_error` remain authored and `sfx_opening` is
+unchanged. Contributor links are in `assets/SFX/resources/original/credits.txt`
+and render in-app under Settings ▸ Credits ▸ Menu Sounds. For one day (owner
+decision 2026-09-07) `sfx_opening` shipped as Sony's `snd_opening` 5.70 rip —
+the one deliberate exception — before that decision was reversed on 2026-09-08
+and the owner-designated authored `sfx_opening.mp3` (xcorr 0.202, verified
+directly against the rip) became the bundled Boot Sound (see
+`assets/SFX/active/README.md`). The current `res/raw` roster is pinned by
+`UiMediaDefaults.bundledDefaultRes` and tested in `UiMediaDefaultsTest`:
 
-| slot | `res/raw` file | max xcorr vs references |
-|---|---|---|
-| `sound_scroll` (Navigation) | `sfx_cursor.wav` | 0.226 |
-| `sound_back` | `sfx_back.wav` | 0.190 |
-| `sound_confirm` | `sfx_confirm.wav` | 0.094 |
-| `sound_error` | `sfx_error.wav` | 0.185 |
-| `sound_launch` | `sfx_launch.wav` | 0.130 |
-| `sound_notification` | `sfx_notification.wav` | 0.047 |
-| `boot_audio` (Boot Sound) | `sfx_opening.mp3` | **1.000 — Sony `snd_opening`, by owner decision** |
+| slot | `res/raw` file | origin | max xcorr vs references |
+|---|---|---|---|
+| `sound_scroll` (Navigation) | `sfx_cursor.mp3` | Pixabay, edited | 0.071 |
+| `sound_back` | `sfx_back.mp3` | Pixabay, edited (cursor -1 semitone) | 0.037 |
+| `sound_confirm` | `sfx_confirm.wav` | authored | 0.094 |
+| `sound_error` | `sfx_error.wav` | authored | 0.185 |
+| `sound_launch` | `sfx_launch.wav` | Pixabay, edited | 0.085 |
+| `sound_notification` | `sfx_notification.mp3` | Pixabay, edited | **0.396** |
+| `boot_audio` (Boot Sound) | `sfx_opening.mp3` | authored | 0.202 |
 
-This overrides the standing rule that firmware audio must never reach a build
-or a commit, for this one slot only. If the decision is revisited, the authored
-`sfx_opening.wav` variant remains in git history.
+`res/raw` resolves by resource name, not extension, so the `.wav` -> `.mp3`
+switch on three of these needed no Kotlin change — but the superseded `.wav`
+files had to be deleted in the same pass, since two files sharing one resource
+name is a duplicate-resource build failure.
+
+**`sfx_notification` is above the 0.30 admission bar at 0.396**, against Sony's
+`SE13_System_NG` (stable under silence-trimming, and the same score against all
+three copies of that cue in the reference folders). It is Pixabay stock with no
+Sony lineage — the score reflects one short two-tone buzz correlating with
+another, the construction-not-content effect the pitch-offset rule exists to
+avoid — but it exceeds the documented bar and needs either an explicit
+exception or a re-pitch clear of `System_NG`'s 974-1039 Hz region. See
+`assets/SFX/active/README.md`.
+
+The standing rule that firmware audio must never reach a build or a commit
+holds for the whole set. If the boot-audio decision is revisited again, the Sony
+rip remains reachable from git history.
 
 ### Historical: what used to ship
 

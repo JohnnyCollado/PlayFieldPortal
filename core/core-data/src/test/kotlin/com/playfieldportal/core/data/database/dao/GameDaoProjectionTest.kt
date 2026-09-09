@@ -18,7 +18,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Multi-disc projection (docs/plans/multi-disc-games-plan.md step 5): the display queries show one
+ * Multi-disc projection (docs/plans/README.md (C1)): the display queries show one
  * row per disc set — the primary — so platform lists, All Games, Favorites and platform counts
  * count a set once, while the unprojected queries still return every row for scan baselines and
  * per-disc achievement matching.

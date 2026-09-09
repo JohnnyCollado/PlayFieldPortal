@@ -7,7 +7,7 @@ import org.junit.Test
 /**
  * The shared sheet parsers: .cue FILE references and Dreamcast .gdi track names, normalised to
  * lowercase basenames so the raw-path resolver and the SAF suppressor match companions the same
- * way. See docs/plans/multi-disc-games-plan.md step 4.
+ * way. See docs/plans/README.md (C1).
  */
 class DiscSheetsTest {
 

@@ -1094,7 +1094,7 @@ abstract class PFPDatabase : RoomDatabase() {
             }
         }
 
-        // v38 — multi-disc set identity (docs/plans/multi-disc-games-plan.md step 2). Adds the
+        // v38 — multi-disc set identity (docs/plans/README.md (C1)). Adds the
         // disc-set columns to games: disc_set_key (platform + containing folder + disc-stripped,
         // region/revision-stripped title), disc_number (position within the set; NULL for an .m3u
         // primary), is_disc_primary (the row a set projects to — the .m3u when present, else disc

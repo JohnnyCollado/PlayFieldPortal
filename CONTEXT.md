@@ -42,3 +42,48 @@ The settings interface maps its outcomes to messages; trigger adapters decide wh
 A ROM survey requested by an app-resume or strong Android signal such as media mount or USB unplug.
 Trigger timing, debounce, throttle, and single-flight behavior are scheduling concerns rather than
 ROM survey policy.
+
+## Icon slot
+
+One named, replaceable position in the XMB's icon set. Slots come from `CustomizableIcons` and
+cover both theme slots (the category-bar and menu glyphs) and `sysicon_*` console slots. A slot key
+is used verbatim as a filename, so key validation is what keeps a crafted key inside its directory.
+
+## Render tier
+
+The precedence that decides which image a given icon slot draws: **user pick > theme icon >
+built-in**. A user pick lives in `custom-icons/`, a theme icon in the applied bundle's extracted
+`theme-icons/`, and the built-in is the bundled drawable from `CategoryIcons`. Applying a theme
+never clears user picks — it changes only the middle tier.
+
+## Applied look
+
+The flattened result of the render tiers as they currently draw — what the user actually sees,
+after user picks have won over theme icons. `saveCurrentLook()` captures this as a new bundle.
+It deliberately excludes device-specific state such as the XMB layout adjustment.
+
+## Theme bundle
+
+A `.pfptheme` archive: a manifest plus wallpaper, icons, console art, and an optional motion
+wallpaper. Schema v3 is additive over v2 — readers never gate on `schemaVersion`, so a v3 bundle
+still opens on a v2-era build, which simply sees the v2 subset.
+
+## Motion wallpaper
+
+A looping video or animated image used as the XMB background, paired with a poster still captured
+at import. Video decodes through a player; animated GIF/WebP decode as animated images and never
+construct one. Every freeze condition releases the decoder outright and falls back to the poster,
+rather than holding a paused player.
+
+## UI media slot
+
+One named, replaceable position in the interface's sound and boot media — the six menu sounds plus
+the boot and GameBoot video/audio pairs. Each slot carries its own duration and byte caps
+(`UiMediaLimits`); duration is always bounded. Import is staged, so a rejected pick cannot disturb
+a working assignment.
+
+## Bundled default
+
+The sample or clip a UI media slot falls back to when the user has assigned nothing. Resolution
+happens inside the player, so a custom assignment replaces the default with no change at the
+roughly ninety call sites that fire these events.

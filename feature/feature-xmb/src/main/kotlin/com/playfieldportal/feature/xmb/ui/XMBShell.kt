@@ -876,6 +876,8 @@ fun XMBShell(
                         onBack = onCloseSettingsScreen,
                         pendingGamepadAction = uiState.pendingSettingsAction,
                         onGamepadActionConsumed = onSettingsActionConsumed,
+                        showControllerHint = uiState.showSettingsHint,
+                        onTouchInteraction = onTouchInput,
                         onOpenColorSchemePicker = onOpenColorSchemePicker,
                         onOpenXmbLayoutAdjust = onOpenXmbLayoutAdjust,
                         onOpenCustomIcons = onOpenCustomIcons,

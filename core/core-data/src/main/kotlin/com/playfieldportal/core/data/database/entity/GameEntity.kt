@@ -37,7 +37,7 @@ data class GameEntity(
     @ColumnInfo(name = "rom_uri")
     val romUri: String? = null,
 
-    // Multi-disc set identity (docs/plans/multi-disc-games-plan.md). Null for single-ROM games;
+    // Multi-disc set identity (docs/plans/README.md (C1)). Null for single-ROM games;
     // populated by DiscSetBuilder at scan time. Downstream projection (step 5) shows one row per
     // set — the primary — while paths, play sessions and achievements stay per-disc.
     @ColumnInfo(name = "disc_set_key")

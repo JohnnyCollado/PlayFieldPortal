@@ -55,6 +55,8 @@ fun SettingsNavHost(
     onBack: () -> Unit,
     pendingGamepadAction: GamepadAction? = null,
     onGamepadActionConsumed: () -> Unit = {},
+    showControllerHint: Boolean = false,
+    onTouchInteraction: () -> Unit = {},
     onOpenColorSchemePicker: () -> Unit = {},
     onOpenXmbLayoutAdjust: () -> Unit = {},
     onOpenCustomIcons: () -> Unit = {},
@@ -70,6 +72,8 @@ fun SettingsNavHost(
     CompositionLocalProvider(
         LocalSettingsPendingAction provides pendingGamepadAction,
         LocalSettingsActionConsumed provides onGamepadActionConsumed,
+        LocalSettingsShowControllerHint provides showControllerHint,
+        LocalSettingsHostTouchInput provides onTouchInteraction,
     ) {
         when (screenId) {
             "settings_initial_setup" -> InitialSetupScreen(
@@ -135,7 +139,10 @@ fun SettingsNavHost(
                 onPreviewGameBoot = onPreviewGameBoot,
                 modifier = modifier,
             )
-            "settings_audio"      -> AudioSettingsScreen(onBack = onBack, modifier = modifier)
+            "settings_audio"      -> AudioSettingsScreen(
+                onBack = onBack,
+                modifier = modifier,
+            )
             "settings_controller" -> ControllerSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_backup"     -> BackupSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_logs"       -> LogsSettingsScreen(onBack = onBack, modifier = modifier)

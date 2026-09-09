@@ -67,9 +67,16 @@ class UiMediaLimitsTest {
 
     // ── byte caps ────────────────────────────────────────────────────────────
 
-    @Test fun `sound byte cap boundary`() {
-        assertNull(UiMediaLimits.validate(UiMediaLimits.NAVIGATION, probe(bytes = UiMediaLimits.SOUND_MAX_BYTES)))
-        assertNotNull(UiMediaLimits.validate(UiMediaLimits.NAVIGATION, probe(bytes = UiMediaLimits.SOUND_MAX_BYTES + 1)))
+    @Test fun `audio staging ceiling boundary - not a user-facing cap`() {
+        // A sane, far-under-the-duration-caps file always passes regardless of size ranking
+        // against the staging ceiling: there is no user-facing audio byte cap.
+        assertNull(UiMediaLimits.validate(UiMediaLimits.NAVIGATION, probe(bytes = 8L * 1024 * 1024)))
+        // The ceiling itself still bounds what the staged copy will accept.
+        assertNull(UiMediaLimits.validate(UiMediaLimits.NAVIGATION, probe(bytes = UiMediaLimits.AUDIO_STAGE_MAX_BYTES)))
+        assertNotNull(
+            UiMediaLimits.validate(UiMediaLimits.NAVIGATION, probe(bytes = UiMediaLimits.AUDIO_STAGE_MAX_BYTES + 1)),
+            "a pick bigger than the staging ceiling must be refused",
+        )
     }
 
     @Test fun `video byte cap boundary`() {
@@ -118,11 +125,38 @@ class UiMediaLimitsTest {
         }
     }
 
-    @Test fun `rejection messages name the cap`() {
+    @Test fun `rejection messages name the duration cap`() {
         val tooLong = assertNotNull(UiMediaLimits.validate(UiMediaLimits.NAVIGATION, probe(durationMs = 600L)))
         assertTrue(tooLong.contains("0.5 s"), "must name the cap: $tooLong")
-        val tooBig = assertNotNull(UiMediaLimits.validate(UiMediaLimits.LAUNCH, probe(bytes = 3L * 1024 * 1024)))
-        assertTrue(tooBig.contains("2 MB"), "must name the byte cap: $tooBig")
+    }
+
+    @Test fun `audio has no floor - a zero-duration probe passes the range check`() {
+        // The recommended minimum is advisory and zero for audio: no minimum-length rejection
+        // exists anywhere in the gate (a 0.2 s click is a legitimate Navigation sound).
+        assertNull(UiMediaLimits.validate(UiMediaLimits.NAVIGATION, probe(durationMs = 0L)))
+        for (spec in listOf(
+            UiMediaLimits.NAVIGATION, UiMediaLimits.CONFIRM,
+            UiMediaLimits.BACK, UiMediaLimits.ERROR, UiMediaLimits.NOTIFICATION, UiMediaLimits.LAUNCH,
+        )) {
+            assertEquals(0L, spec.recommendedMinMs, "$spec: audio must carry no floor")
+        }
+    }
+
+    @Test fun `audio byte ceiling far exceeds every duration cap - it is not the real limit`() {
+        // The staging ceiling exists only to bound untrusted input before the duration gate;
+        // the real lag/abuse protection is hardMaxMs. Pin that relationship so the two can
+        // never quietly swap roles.
+        for (spec in listOf(
+            UiMediaLimits.NAVIGATION, UiMediaLimits.CONFIRM,
+            UiMediaLimits.BACK, UiMediaLimits.ERROR, UiMediaLimits.NOTIFICATION, UiMediaLimits.LAUNCH,
+            UiMediaLimits.BOOT, UiMediaLimits.GAMEBOOT,
+        )) {
+            assertTrue(
+                spec.maxBytes >= UiMediaLimits.AUDIO_STAGE_MAX_BYTES,
+                "$spec: audio byte ceiling drifted below the staging constant",
+            )
+            assertTrue(spec.hardMaxMs > 0, "$spec: the duration cap is the real ceiling")
+        }
     }
 
     // ── extension mappings ───────────────────────────────────────────────────
@@ -151,7 +185,7 @@ class UiMediaLimitsTest {
             UiMediaLimits.BACK, UiMediaLimits.ERROR, UiMediaLimits.NOTIFICATION, UiMediaLimits.LAUNCH,
             UiMediaLimits.GAMEBOOT, UiMediaLimits.GAMEBOOT_CLIP, UiMediaLimits.BOOT, UiMediaLimits.BOOT_CLIP,
         )) {
-            assertTrue(spec.recommendedMinMs > 0, "$spec: min must be positive")
+            assertTrue(spec.recommendedMinMs >= 0, "$spec: min must not be negative")
             assertTrue(spec.recommendedMaxMs >= spec.recommendedMinMs, "$spec: range inverted")
             assertTrue(spec.hardMaxMs >= spec.recommendedMaxMs, "$spec: hard cap below the recommended range")
             assertTrue(spec.maxBytes > 0, "$spec: byte cap must be positive")

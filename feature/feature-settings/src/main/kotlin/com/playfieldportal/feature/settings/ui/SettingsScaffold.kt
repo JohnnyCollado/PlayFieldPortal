@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -48,6 +47,7 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
@@ -71,6 +71,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.isDirectional
+import com.playfieldportal.core.ui.components.ControllerHintBar
 import com.playfieldportal.core.ui.components.ControllerPromptBar
 import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.theme.LocalPFPColors
@@ -84,6 +85,9 @@ val LocalSettingsActionConsumed = compositionLocalOf<() -> Unit> { {} }
 
 /** Reports pointer input so the host can hide controller-only cursor decoration. */
 val LocalSettingsTouchInput = compositionLocalOf<() -> Unit> { {} }
+/** Host-level touch callback used by the fullscreen settings hint gate. */
+val LocalSettingsHostTouchInput = compositionLocalOf<() -> Unit> { {} }
+val LocalSettingsShowControllerHint = compositionLocalOf { false }
 val LocalSettingsCursorVisible = compositionLocalOf { true }
 
 // Internal tracker: rows register their onClick when they gain focus so the scaffold
@@ -185,6 +189,48 @@ val SettingsTextShadow = Shadow(
 val SettingsDivider = com.playfieldportal.core.ui.theme.PfpPalette.Divider
 val SettingsSelectedBg = com.playfieldportal.core.ui.theme.PfpPalette.Accent.copy(alpha = 0.14f)
 
+// ── Standard helper footer ────────────────────────────────────────────────────
+
+val SettingsDefaultHelperItems = listOf(
+    ControllerPromptItem(GamepadAction.SELECT, "Enter"),
+    ControllerPromptItem(GamepadAction.BACK, "Back"),
+)
+
+/**
+ * The shared controller-helper section is present on every ordinary fullscreen settings screen.
+ * Alpha keeps the section measured while the idle hint is hidden, so the content viewport and
+ * row geometry never change when the helper appears or disappears. The wizard may still provide
+ * its own themed footer through the scaffold's chrome override.
+ */
+@Composable
+private fun SettingsHelperFooter(items: List<ControllerPromptItem>) {
+    val showHint = LocalSettingsShowControllerHint.current
+    val alpha by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (showHint) 1f else 0f,
+        animationSpec = androidx.compose.animation.core.tween(200),
+        label = "settingsHelperFooter",
+    )
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .focusProperties { canFocus = false },
+    ) {
+        HorizontalDivider(color = SettingsDivider)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            ControllerHintBar(
+                items = items.ifEmpty { SettingsDefaultHelperItems },
+                background = Color.Black.copy(alpha = 0.70f),
+                modifier = Modifier.alpha(alpha),
+            )
+        }
+    }
+}
+
 // ── Scaffold ──────────────────────────────────────────────────────────────────
 
 @Composable
@@ -208,9 +254,12 @@ fun SettingsScaffold(
     showDivider: Boolean = true,
     // Light scrim: the XMB wave reads through instead of sitting behind a dark overlay.
     lightScrim: Boolean = false,
-    // Pinned footer under the content (the wizard's Enter / Back prompt chrome). When set, the
-    // content area becomes a weighted column so the viewport excludes the footer band.
+    // Pinned footer override for the first-run wizard's themed Enter/Back chrome. Ordinary
+    // fullscreen settings screens leave this null and receive the standard helper section.
     footer: (@Composable () -> Unit)? = null,
+    // Contextual prompts may replace the standard Enter/Back pair (Audio uses this for the
+    // focused sound assignment); the footer section and its reserved height remain shared.
+    helperFooterItems: List<ControllerPromptItem> = SettingsDefaultHelperItems,
     // Identity of what [content] currently shows. Ordinary settings screens leave this null —
     // their content is fixed for the life of the scaffold, so mount-time focus is the whole story.
     // The wizard passes its SetupStep: each page is a fresh screen inside one scaffold, and a
@@ -226,6 +275,13 @@ fun SettingsScaffold(
     val bootstrapFR = remember { FocusRequester() }
     val pendingAction = LocalSettingsPendingAction.current
     val onConsumed = LocalSettingsActionConsumed.current
+    // The host callback is provided once by SettingsNavHost so every screen reports touch input;
+    // an explicit callback remains available for direct previews/tests and specialized screens.
+    val hostTouchInput = LocalSettingsHostTouchInput.current
+    val notifyTouchInput = {
+        onTouchInput()
+        hostTouchInput()
+    }
     // Menu backdrop is tinted by the user's chosen color scheme (the same background anchors
     // the XMB wave uses), so settings screens match the theme instead of a flat black panel.
     val pfpColors = LocalPFPColors.current
@@ -565,7 +621,7 @@ fun SettingsScaffold(
             // Any pointer activity hands control back to touch: a finger on the slider (or
             // anywhere else) ends controller adjust mode.
             sliderNodeState.value = null
-            onTouchInput()
+            notifyTouchInput()
         },
         LocalSettingsFocusRegistry provides focusRegistry,
         // First clickable row to compose wins the initial-focus slot.
@@ -606,7 +662,7 @@ fun SettingsScaffold(
                                 cursorVisible.value = false
                                 touchScrolled.value = true
                                 navigationState.markTouchInput()
-                                onTouchInput()
+                                notifyTouchInput()
                             }
                             event.changes.forEach { change ->
                                 if (change.position != change.previousPosition) {
@@ -637,8 +693,7 @@ fun SettingsScaffold(
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .heightIn(min = 720.dp),
+                    .fillMaxSize(),
             ) {
                 if (header != null) {
                     header()
@@ -720,7 +775,7 @@ fun SettingsScaffold(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .then(if (footer != null) Modifier.weight(1f) else Modifier)
+                        .weight(1f)
                         .onGloballyPositioned {
                             firstVisibleContentY.value = it.localToRoot(Offset.Zero).y
                             contentViewportHeight.value = it.size.height.toFloat()
@@ -739,6 +794,8 @@ fun SettingsScaffold(
                     ) {
                         footer()
                     }
+                } else {
+                    SettingsHelperFooter(helperFooterItems)
                 }
             }
         }
@@ -976,6 +1033,7 @@ fun SettingsToggleRow(
     sublabel: String? = null,
     focusKey: String? = null,
     leading: @Composable (() -> Unit)? = null,
+    onFocusChangedExternal: ((Boolean) -> Unit)? = null,
     checked: Boolean,
     onToggle: (Boolean) -> Unit,
 ) {
@@ -984,6 +1042,7 @@ fun SettingsToggleRow(
         sublabel = sublabel,
         focusKey = focusKey,
         leading = leading,
+        onFocusChangedExternal = onFocusChangedExternal,
         // Row-level click so controller SELECT can toggle it
         onClick = { onToggle(!checked) },
         trailing = {
@@ -1082,9 +1141,12 @@ fun SettingsTextFieldRow(
         }
     }
 
-    Column(modifier = Modifier
-        .fillMaxWidth()
-        .padding(horizontal = 48.dp, vertical = 8.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 48.dp, vertical = 8.dp)
+            .then(row.positionReporting),
+    ) {
         Text(
             text = label,
             color = SettingsSubtext,
@@ -1118,7 +1180,6 @@ fun SettingsTextFieldRow(
                 modifier = Modifier
                     .fillMaxWidth()
                     .focusRequester(fr)
-                    .then(row.positionReporting)
                     .onFocusChanged { state ->
                         if (state.isFocused) {
                             // Controller SELECT over the field starts editing (opens the keyboard).

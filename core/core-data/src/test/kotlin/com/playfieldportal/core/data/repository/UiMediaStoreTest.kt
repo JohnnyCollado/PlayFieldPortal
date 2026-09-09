@@ -257,7 +257,7 @@ class UiMediaStoreTest {
      * screen's SEVENTH row and IS cleared by that screen's reset — but by the ViewModel, not by
      * the store: BOOT_AUDIO is AUDIO_TRACK kind, so clearAll(SOUND) structurally cannot see it
      * (see AudioSettingsViewModel.confirmReset and its test). Videos are never touched either —
-     * the Phase 2c rule from docs/plans/sfx-seven-sounds-plan.md.
+     * the Phase 2c rule from docs/plans/README.md (C10).
      */
     @Test
     fun `clearAll of SOUND clears the six sound rows and never touches boot or gameboot media`() = runTest {

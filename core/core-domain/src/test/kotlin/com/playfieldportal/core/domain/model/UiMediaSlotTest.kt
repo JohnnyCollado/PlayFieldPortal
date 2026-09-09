@@ -7,7 +7,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * Pins the seven-sound roster (docs/plans/sfx-seven-sounds-plan.md): six SOUND-kind rows in the
+ * Pins the seven-sound roster (docs/plans/README.md (C10)): six SOUND-kind rows in the
  * plan table's order, Boot Sound as the seventh row on the Sound screen, and the storage-key
  * decisions that keep old installs and backups from breaking — `sound_scroll` survives its
  * rename to "Navigation" with no migration, and the two collapsed slots' keys become invalid so
@@ -24,7 +24,7 @@ class UiMediaSlotTest {
                 "sound_back" to "Back / Cancel",
                 "sound_confirm" to "Confirm / Apply",
                 "sound_error" to "Error / Invalid",
-                "sound_launch" to "App Launch",
+                "sound_launch" to "Launch Sound",
                 "sound_notification" to "Notification",
             ),
             UiMediaSlot.ofKind(UiMediaKind.SOUND).map { it.key to it.displayName },

@@ -12,7 +12,7 @@ data class ScannedDiscFile(
 /**
  * Computes which scanned files are companions of a disc set — a .bin listed in a sibling .cue, or
  * a track file referenced by a Dreamcast .gdi — so the Memory Card SAF scan path never makes them
- * game rows (docs/plans/multi-disc-games-plan.md step 4). The raw-path counterpart lives in
+ * game rows (docs/plans/README.md (C1)). The raw-path counterpart lives in
  * [DiscImageResolver]; this one is SAF-friendly because sheet contents must be read over the
  * granted tree's document URIs, which only the caller knows how to open.
  *

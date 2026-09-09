@@ -7,7 +7,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Structure tests for the Settings hierarchy (docs/plans/settings-hierarchy-plan.md): the root
+ * Structure tests for the Settings hierarchy (docs/plans/README.md (Settings hierarchy)): the root
  * list, every L1 section's L2 rows, route resolution, and migration compatibility. Back behavior
  * itself is exercised through the shared drill plumbing (same path as Music/Video/Photo/Social).
  */
@@ -147,7 +147,7 @@ class SettingsHierarchyTest {
     }
 
     @Test fun `the Interface audio row is titled Sound with a menu-and-boot subtitle`() {
-        // Phase 3 of sfx-seven-sounds-plan: the screen is renamed Audio → Sound and now owns the
+        // Phase 3 of the seven-sound work (docs/plans/README.md C10): the screen is renamed Audio → Sound and now owns the
         // boot sound too. The route id deliberately stays settings_audio — renaming it would
         // break cursor restore and every focus key under it.
         val row = settingsSectionItems(SettingsSection.INTERFACE).first { it.id == "settings_audio" }
