@@ -14,13 +14,16 @@ import kotlinx.coroutines.flow.map
 
 /**
  * The GameBoot switch — one boolean for the one presentation shown between confirming a game and
- * the emulator taking the screen. On means the GameBoot sequence plays; off means it does not and
- * the ordinary App Launch sound handles the launch as it always has.
+ * the emulator taking the screen. On means the GameBoot sequence plays, sound and all; off means
+ * nothing plays at all — the animation and its sound both stay down, and the launch is silent by
+ * decision (a game boot is never scored by the menu's App Launch sound, which is the same
+ * sfx_launch sample the built-in sequence is timed to).
  *
  * Lives in core-data (not feature-launcher) because THREE feature modules read the same key and
  * must never disagree: the [com.playfieldportal.feature.launcher.GameBootGate] gates the launch
- * on it, the XMB confirm paths suppress the regular App Launch sound with it, and the Display
- * settings screen renders and toggles it.
+ * on it, the XMB and Game Detail confirm paths keep their launch-sound suppression keyed on the
+ * fact that a game boot is a GameBoot boot (on or off), and the Display settings screen renders
+ * and toggles it.
  *
  * **Migration is read-time** — there is no one-shot pass to miss, and [resolve] IS the migration.
  * The short-lived three-way `display_gameboot_mode` key (never released) reads back as on/off, and

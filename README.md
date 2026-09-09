@@ -589,8 +589,8 @@ with your own files. Each row has a **Preview** button (it plays even if menu so
 | **Back / Cancel** | Backing out of anything | 1 s |
 | **Confirm / Apply** | Committing a choice — picking apps or games, importing an icon, saving a theme | 1 s |
 | **Error / Invalid** | A refused launch or a rejected import | 1 s |
-| **Launch Sound** | Starting a game or app | 3 s |
-| **Notification** | Backup and restore, library rescans | 2 s |
+| **Launch Sound** | Starting an app (games boot silently — see GameBoot above) | 3 s |
+| **Notification** | Reserved — not played in this build (it used to chime on background scans and backups) | 2 s |
 | **Boot Sound** | The startup sequence | 10 s |
 
 Audio can be MP3, WAV, OGG or M4A. Each sound's max length keeps playback snappy — SoundPool
@@ -605,8 +605,10 @@ holds a menu sound fully in memory, and the boot presentation must still end on 
 - **GameBoot** — the short presentation that plays as a game launches. Built in, it is a
   five-second light sweep timed to the launch sound; supply your own clip (up to 10 seconds) and it
   replaces the whole thing, its own audio included. That audio is independent of your menu-sound
-  setting, so muting menu sounds does not silence it. If the presentation has not finished in time
-  the game launches anyway — GameBoot can never hold your game hostage.
+  setting, so muting menu sounds does not silence it. Switching GameBoot off gives a silent
+  launch — no animation and no sound; games never fall back to the menu's launch chime. If the
+  presentation has not finished in time the game launches anyway — GameBoot can never hold your
+  game hostage.
 
 Video can be MP4 or WebM, up to 25 MB.
 

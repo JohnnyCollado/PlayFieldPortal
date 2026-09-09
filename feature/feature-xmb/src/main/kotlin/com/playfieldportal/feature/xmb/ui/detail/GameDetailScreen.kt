@@ -141,7 +141,7 @@ fun GameDetailScreen(
     if (autoLaunch) {
         val loadedGameId = state.game?.id
         LaunchedEffect(loadedGameId) {
-            // Direct-launch auto-fire: the XMB icon confirm already played the launch sfx.
+            // Direct-launch auto-fire: the XMB icon confirm already handled the launch sound.
             if (loadedGameId == gameId) viewModel.launch(playSound = false)
         }
     }

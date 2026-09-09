@@ -195,9 +195,12 @@ roughly ninety call sites needed no change; `BOOT_AUDIO` resolves through `bundl
 `resolveBootAudio`. GameBoot is deliberately ONE thing: one on/off switch, one built-in
 Compose-drawn sequence with its own bundled sound (`gameBootDefaultAudioUri`, `sfx_launch`), and one
 slot the user can replace it with — a clip that brings its own audio, which is why
-`resolveGameBootAudio` has two branches and no GameBoot audio slot exists. `pruneOrphans()` sweeps
-files and preferences for retired slots on cold start and after a backup restore (including the
-retired `gameboot_audio`).
+`resolveGameBootAudio` has two branches and no GameBoot audio slot exists. The switch fully owns the
+transition: on plays the presentation with its sound, off plays nothing, and a game boot is never
+scored by the menu's App Launch sound (the same `sfx_launch` sample) in either state — confirm
+sites suppress it for games unconditionally, so GameBoot off is a silent launch.
+`pruneOrphans()` sweeps files and preferences for retired slots on cold start and after a backup
+restore (including the retired `gameboot_audio`).
 
 **Motion wallpapers.** `MotionWallpaperBackground` composites a looping clip over an import-time
 poster still. Video decodes through ExoPlayer; **GIF and animated WebP never construct a player at

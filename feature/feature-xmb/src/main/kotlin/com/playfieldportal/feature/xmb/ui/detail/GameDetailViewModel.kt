@@ -193,25 +193,10 @@ class GameDetailViewModel @Inject constructor(
     private val launcherShortcutRepository: com.playfieldportal.feature.appbar.LauncherShortcutRepository,
     private val achievementRepository: com.playfieldportal.feature.achievements.AchievementController,
     private val launchDispatcher: com.playfieldportal.feature.launcher.LaunchDispatcher,
-    private val gameBootPreferences: com.playfieldportal.core.data.repository.GameBootPreferences,
 ) : ViewModel() {
-
-    // GameBoot's own audio replaces the App Launch sfx (design rule: the two never stack). One
-    // of only two sites in the whole feature that branches on this — everywhere else plays blind.
-    // Initialised false (no suppression) until the flow settles.
-    @Volatile
-    private var gameBootEnabled: Boolean = false
 
     private val _uiState = MutableStateFlow(GameDetailUiState())
     val uiState: StateFlow<GameDetailUiState> = _uiState.asStateFlow()
-
-    init {
-        // Read from the same source GameBootGate uses, so the sound decision and the presentation
-        // can never disagree about whether GameBoot is on.
-        viewModelScope.launch {
-            gameBootPreferences.gameBootEnabledFlow.collect { gameBootEnabled = it }
-        }
-    }
 
     fun prepareForOpen() {
         _uiState.update {
@@ -648,9 +633,10 @@ class GameDetailViewModel @Inject constructor(
 
     // ── Launch ────────────────────────────────────────────────────────────
 
-    // playSound is false for direct-launch auto-fire: the XMB icon confirm already played the
-    // launch sfx, so replaying it here would double it. Manual Play (button / controller SELECT)
-    // leaves it true.
+    // playSound is false for direct-launch auto-fire: the XMB icon confirm already handled the
+    // launch sound, so replaying it here would double it. Manual Play (button / controller
+    // SELECT) leaves it true. Either way, a game boot never scores the App Launch sfx — GameBoot
+    // owns sfx_launch when it is on, and with GameBoot off the launch is silent by decision.
     fun launch(playSound: Boolean = true) {
         val selectedGame = _uiState.value.selectedDisc ?: run {
             Timber.w("Play requested before game detail state was loaded")
@@ -676,9 +662,11 @@ class GameDetailViewModel @Inject constructor(
             }
             return
         }
-        // GameBoot brings its own sound, so the menu Launch Sound must not stack with it.
-        if (playSound && !gameBootEnabled) {
-            menuSound.play(com.playfieldportal.core.ui.sound.MenuSound.LAUNCH)
+        // No launch sound on a game boot: GameBoot brings its own when it is on, and with
+        // GameBoot off the launch stays silent — never the App Launch sfx, which is the same
+        // sfx_launch sample the built-in sequence is timed to.
+        if (playSound) {
+            menuSound.play(com.playfieldportal.core.ui.sound.MenuSound.SELECT)
         }
         _uiState.update {
             it.copy(

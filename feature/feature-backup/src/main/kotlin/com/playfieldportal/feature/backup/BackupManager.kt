@@ -78,6 +78,8 @@ open class BackupManager @Inject constructor(
     private val backupFolderRepository: BackupFolderRepository,
     private val uiMediaStore: UiMediaStore,
     // A finished backup/restore is a background task completing — the NOTIFICATION event.
+    // The event is currently parked at the player (it read as a random chime); this injection
+    // and both plays stay so lifting the park re-arms backup/restore automatically.
     private val menuSound: com.playfieldportal.core.ui.sound.MenuSoundPlayer,
 ) {
     private val json = Json { prettyPrint = false; ignoreUnknownKeys = true }

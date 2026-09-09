@@ -48,6 +48,7 @@ class GameDetailViewModelTest {
     private lateinit var artworkRepository: ArtworkRepository
     private lateinit var artworkStore: ArtworkStore
     private lateinit var launchDispatcher: com.playfieldportal.feature.launcher.LaunchDispatcher
+    private lateinit var menuSound: com.playfieldportal.core.ui.sound.MenuSoundPlayer
     private lateinit var viewModel: GameDetailViewModel
 
     private val fakeGame = Game(
@@ -96,6 +97,7 @@ class GameDetailViewModelTest {
         artworkRepository = mockk(relaxed = true)
         artworkStore      = mockk(relaxed = true)
         launchDispatcher  = mockk(relaxed = true)
+        menuSound         = mockk(relaxed = true)
         // Explicit (not relaxed): a sealed-interface return can't be auto-mocked, and the
         // default launch path for these tests is a successful hand-off.
         coEvery { launchDispatcher.launch(any(), any(), any()) } returns
@@ -119,12 +121,11 @@ class GameDetailViewModelTest {
             artworkRepository = artworkRepository,
             artworkStore      = artworkStore,
             artworkRecordDao  = mockk(relaxed = true),
-            menuSound         = mockk(relaxed = true),
+            menuSound         = menuSound,
             discordPresence   = mockk(relaxed = true),
             launcherShortcutRepository = mockk(relaxed = true),
             achievementRepository = mockk(relaxed = true),
             launchDispatcher  = launchDispatcher,
-            gameBootPreferences = mockk(relaxed = true),
         )
     }
 
@@ -595,6 +596,59 @@ class GameDetailViewModelTest {
             assertNull(state.actionMessage)
             cancelAndIgnoreRemainingEvents()
         }
+    }
+
+    // ── launch sound: a game boot is never scored by the menu launch chime ────────────
+
+    // GameBoot off means a silent launch — no animation, no sound. The menu launch chime is the
+    // same bundled sfx_launch sample GameBoot's sequence is timed to, so letting it through when
+    // the toggle is off made "off" sound exactly like "on". The ViewModel owns the decision for
+    // manual Play, so the chime must never fire here — the select sound stands in.
+    @Test
+    fun `launch never plays the menu launch chime even with GameBoot off`() = runTest {
+        val fakeProfile = com.playfieldportal.core.domain.model.EmulatorProfile(
+            id                   = "ppsspp",
+            name                 = "PPSSPP",
+            packageName          = "org.ppsspp.ppsspp",
+            intentType           = com.playfieldportal.core.domain.model.IntentType.ACTION_VIEW,
+            supportedPlatformIds = listOf("psx"),
+        )
+        every { profileRepository.getInstalledProfiles() }         returns listOf(fakeProfile)
+        coEvery { profileRepository.getProfilesForPlatform("psx") } returns listOf(fakeProfile)
+        coEvery { intentResolver.resolve(any(), any()) }            returns Result.success(fakeLaunchIntent())
+
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.launch(playSound = true)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) { launchDispatcher.launch(any(), any(), any()) }
+        verify(exactly = 0) { menuSound.play(com.playfieldportal.core.ui.sound.MenuSound.LAUNCH, any()) }
+        verify(exactly = 1) { menuSound.play(com.playfieldportal.core.ui.sound.MenuSound.SELECT, any()) }
+    }
+
+    // The auto-fire path hands sound responsibility to the XMB confirm entirely, so Game Detail
+    // itself must stay silent on it.
+    @Test
+    fun `direct-launch auto-fire plays no menu sound`() = runTest {
+        val fakeProfile = com.playfieldportal.core.domain.model.EmulatorProfile(
+            id                   = "ppsspp",
+            name                 = "PPSSPP",
+            packageName          = "org.ppsspp.ppsspp",
+            intentType           = com.playfieldportal.core.domain.model.IntentType.ACTION_VIEW,
+            supportedPlatformIds = listOf("psx"),
+        )
+        every { profileRepository.getInstalledProfiles() }         returns listOf(fakeProfile)
+        coEvery { profileRepository.getProfilesForPlatform("psx") } returns listOf(fakeProfile)
+        coEvery { intentResolver.resolve(any(), any()) }            returns Result.success(fakeLaunchIntent())
+
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.launch(playSound = false)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) { launchDispatcher.launch(any(), any(), any()) }
+        verify(exactly = 0) { menuSound.play(any(), any()) }
     }
 
     @Test

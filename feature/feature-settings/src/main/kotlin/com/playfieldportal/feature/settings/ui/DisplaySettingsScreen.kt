@@ -388,8 +388,7 @@ fun DisplaySettingsScreen(
                 label    = "GameBoot",
                 sublabel = "A short presentation between confirming a game and the emulator " +
                     "opening — five seconds built in, up to ten with your own clip — skippable " +
-                    "with Confirm or Back.  Off launches straight into the game with the " +
-                    "ordinary Launch Sound.",
+                    "with Confirm or Back.  Off is a silent launch — no animation, no sound.",
                 onFocusChangedExternal = { if (it) focusedSlot = null },
                 checked  = state.gameBootEnabled,
                 onToggle = { viewModel.setGameBootEnabled(it) },

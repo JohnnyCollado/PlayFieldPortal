@@ -1254,7 +1254,6 @@ class XMBViewModel @Inject constructor(
     private val customIconStore: CustomIconStore,
     private val pfpThemeStore: PfpThemeStore,
     private val uiMediaStore: com.playfieldportal.core.data.repository.UiMediaStore,
-    private val gameBootPreferences: com.playfieldportal.core.data.repository.GameBootPreferences,
     private val gameBootGate: com.playfieldportal.feature.launcher.GameBootGate,
     // The preview plays its own audio: the gate owns playback for a real launch, and a preview
     // must never touch the gate. Same singleton player, so the two can never sound different.
@@ -7141,10 +7140,8 @@ class XMBViewModel @Inject constructor(
         // Sound: launch for items that boot something immediately; select for opening a folder,
         // detail, picker, or settings; silent for non-selectable placeholder rows.
         val silentRow = item?.id in setOf(NO_GAMES_ITEM_ID, EMPTY_COLLECTION_ITEM_ID, EMPTY_CATEGORY_ITEM_ID)
-        // A real game opens the Game Detail page, which only boots the game immediately (earning
-        // the launch sfx on confirm) when direct launch is on. Without it, confirm just opens the
-        // detail "menu" (select) and the launch sfx fires from its Play button instead — otherwise
-        // the sfx double-plays (confirm + Play).
+        // A real game opens the Game Detail page — which only boots the game immediately when
+        // direct launch is on; without it, confirm just opens the detail "menu" (select).
         val opensGameDetail = item?.gameId != null && item.isRealGame
         val launches = if (opensGameDetail) {
             _uiState.value.directLaunch
@@ -7153,13 +7150,15 @@ class XMBViewModel @Inject constructor(
                 (item?.shortcutId != null && item.packageName != null) ||
                 item?.packageName != null
         }
-        // A real game booting immediately is the only case GameBoot covers; plain app launches
-        // keep their sound (funnelling those is a separate refactor, explicitly out of scope).
+        // A real game booting immediately is the only case GameBoot covers. A game boot is never
+        // scored by the menu's launch sound: GameBoot owns sfx_launch when it is on, and with
+        // GameBoot off the launch is silent by decision — a silent launch, not the sfx wearing a
+        // different hat. Plain app launches keep their sound (funnelling those is a separate
+        // refactor, explicitly out of scope).
         val launchesGame = opensGameDetail && _uiState.value.directLaunch
         val event = when {
             silentRow -> null
-            // GameBoot brings its own sound, so the menu Launch Sound must not stack with it.
-            launchesGame && gameBootEnabled -> null
+            launchesGame -> null
             launches -> MenuSound.LAUNCH
             else -> MenuSound.SELECT
         }
@@ -8164,18 +8163,7 @@ class XMBViewModel @Inject constructor(
 
     // ── GameBoot ──────────────────────────────────────────────────────────────
 
-    // Whether GameBoot is on, read from the same source GameBootGate uses so the launch-sound
-    // decision and the presentation can never disagree. Initialised false (no suppression) until
-    // the flow settles.
-    @Volatile
-    private var gameBootEnabled: Boolean = false
-
     private fun observeGameBoot() {
-        viewModelScope.launch {
-            gameBootPreferences.gameBootEnabledFlow
-                .distinctUntilChanged()
-                .collect { gameBootEnabled = it }
-        }
         // The gate raises a request from inside LaunchDispatcher and suspends the launch until the
         // overlay reports back. A preview is never overwritten by one: previews are only reachable
         // from Settings, where no launch is in flight.

@@ -121,6 +121,9 @@ class LibraryScanner @Inject constructor(
     suspend fun scanAllEnabled(removeMissing: Boolean): List<PlatformScanOutcome> {
         val eligible = memoryCardRepository.getAll().filter { it.isScannable() }
         val outcomes = eligible.map { scanPlatform(it.platformId, removeMissing) }
+        // The rescan bus runs this on app resume, media mount and USB unplug, so this chime read
+        // as random. The Notification event is parked at the player until the trigger model gets
+        // redesigned — this call stays so lifting the park re-arms it here automatically.
         menuSound.play(com.playfieldportal.core.ui.sound.MenuSound.NOTIFICATION)
         return outcomes
     }

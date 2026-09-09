@@ -120,6 +120,21 @@ All notable changes to Play Field Portal are documented here. This project follo
   unknown intent flags are refused with a logged reason.
 
 ### Fixed
+- **The Notification sound is cut until it gets real triggers.** It fired at the end of every
+  full-library rescan — which the rescan bus runs on app resume, media mount and USB unplug —
+  plus backup and restore completion, so the chime landed at seemingly random moments. The event
+  is parked at the player: ordinary playback drops it, while the bundled sample, the Sound screen
+  row and every call site stay untouched (Preview still auditions it), so re-enabling later is a
+  one-line change. This is an interim hold; the event returns with deliberate triggers.
+- **GameBoot off is now a silent launch.** The toggle stopped the animation and the gate's own
+  audio, but the confirm sites' launch-sound suppression was keyed on GameBoot being ON, so with
+  the toggle off the menu's Launch Sound fired instead — the same bundled `sfx_launch` sample the
+  built-in sequence is timed to, just from a different player. A game boot is never scored by the
+  menu launch chime: the XMB direct-launch confirm and Game Detail's Play now suppress the App
+  Launch sound for game launches unconditionally (GameBoot owns `sfx_launch` when it is on, and
+  with GameBoot off the launch is silent by decision), the now-dead `gameBootEnabled` flag is gone
+  from both view models, Game Detail's manual Play falls back to the select chime instead, and the
+  Display ▸ GameBoot sublabel no longer promises the old stacking behavior.
 - **The controller helper footer now appears on every settings screen, not just Sound.**
   `shouldShowSettingsHint` was gated on `activeSettingsScreen == "settings_audio"`, but
   `SettingsScaffold` reserves and draws the footer band on every non-wizard screen — so on Display,
