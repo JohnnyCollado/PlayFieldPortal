@@ -495,6 +495,11 @@ open class BackupManager @Inject constructor(
         stringPreferencesKey("display_wave_mode"),
         stringPreferencesKey("display_wave_style"),
         stringPreferencesKey("display_icon_style"),
+        // The retired GameBoot three-way mode key. GameBoot is a boolean again
+        // (display_gameboot_enabled, in the boolean list below), but this stays here so an
+        // archive written during the mode era restores and migrates through GameBootPreferences'
+        // read-time rule instead of silently reverting to the default.
+        stringPreferencesKey("display_gameboot_mode"),
         stringPreferencesKey("display_color_scheme"),
         stringPreferencesKey("display_custom_wallpaper"),
         stringPreferencesKey("display_motion_wallpaper"),
@@ -599,7 +604,7 @@ open class BackupManager @Inject constructor(
             booleanPreferencesKey("discord_voice_noise_cancellation"),
             booleanPreferencesKey("discord_voice_ptt_overlay"),
             booleanPreferencesKey("discord_voice_push_to_talk"),
-            // GameBoot presentation (Display ▸ GameBoot)
+            // GameBoot presentation (Display ▸ GameBoot) — the live key.
             booleanPreferencesKey("display_gameboot_enabled"),
             // Sound
             booleanPreferencesKey("sound_menu_enabled"),

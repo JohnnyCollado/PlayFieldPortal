@@ -1,8 +1,14 @@
 package com.playfieldportal.feature.launcher
 
+import android.content.Context
 import com.playfieldportal.core.data.repository.GameBootPreferences
 import com.playfieldportal.core.data.repository.UiMediaStore
 import com.playfieldportal.core.domain.model.UiMediaSlot
+import com.playfieldportal.core.ui.media.UiMediaAudioPlayer
+import com.playfieldportal.core.ui.media.gameBootDefaultAudioUri
+import com.playfieldportal.core.ui.media.resolveGameBootAudio
+import com.playfieldportal.themekit.UiMediaLimits
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CompletableDeferred
@@ -33,12 +39,27 @@ data class GameBootRequest(
  *
  * **The user can never be trapped here.** [awaitPresentation] is bounded by [TIMEOUT_MS] and a
  * timeout PROCEEDS with the launch rather than throwing — a stuck presentation costs the user
- * seven seconds, not their game.
+ * eight seconds, not their game.
+ *
+ * **One GameBoot, one switch, one asset.** GameBoot is either on or off ([GameBootPreferences]),
+ * and when it is on the user either keeps the built-in five-second sequence or replaces the whole
+ * thing with a clip of their own — there is no separate sound to assign, which is why
+ * [resolveGameBootAudio] has only two branches: the built-in sound plays under the built-in
+ * sequence, and a custom clip is left to its own track.
+ *
+ * **The launch waits for the whole presentation.** [awaitPresentation] does not return until the
+ * overlay reports back, and the built-in sequence runs its full five seconds in every case — the
+ * motion budget drops its motion, not its length — so the emulator never takes the screen partway
+ * through. The audio is started here rather than by the overlay only so it begins before the first
+ * frame is drawn and stays in sync with a timeline that was measured against it; the overlay is
+ * draw-only and can never release the player mid-clip.
  */
 @Singleton
 class GameBootGate @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val preferences: GameBootPreferences,
     private val uiMedia: UiMediaStore,
+    private val audioPlayer: UiMediaAudioPlayer,
 ) {
     private val _active = MutableStateFlow<GameBootRequest?>(null)
 
@@ -53,9 +74,12 @@ class GameBootGate @Inject constructor(
     val isActive: Boolean get() = _active.value != null
 
     /**
-     * Suspends until the presentation finishes, is skipped, or times out. A no-op — returning
-     * immediately — when GameBoot is disabled, or when one is already on screen (a second launch
-     * request must be dropped, not queued).
+     * Runs the GameBoot presentation when it is switched on, and returns immediately when it is
+     * not — in which case nothing plays and the ordinary Launch Sound handles the launch (subject
+     * to the Menu Sounds mute).
+     *
+     * When on, this suspends until the presentation finishes, is skipped, or times out. A second
+     * request while one is already on screen is dropped, not queued.
      */
     suspend fun awaitPresentation(gameTitle: String) {
         if (!preferences.gameBootEnabledFlow.first()) return
@@ -66,7 +90,18 @@ class GameBootGate @Inject constructor(
         val done = CompletableDeferred<Unit>()
         completion = done
         val (video, audio) = withContext(Dispatchers.IO) {
-            uiMedia.pathFor(UiMediaSlot.GAMEBOOT_VIDEO) to uiMedia.pathFor(UiMediaSlot.GAMEBOOT_AUDIO)
+            val customVideo = uiMedia.pathFor(UiMediaSlot.GAMEBOOT_VIDEO)
+            customVideo to resolveGameBootAudio(
+                customVideoPath = customVideo,
+                defaultUri = gameBootDefaultAudioUri(context),
+            )
+        }
+        // Started before the request is raised so the sound is already going when the first
+        // frame lands — the sequence's timeline is measured against this sample. The overlay only
+        // draws, so it can never release the player mid-clip. A custom clip resolves to null here
+        // and keeps its own track.
+        audio?.let {
+            audioPlayer.play(uri = it, clipEndMs = UiMediaLimits.GAMEBOOT_SEQUENCE_MS, label = "gameboot")
         }
         _active.value = GameBootRequest(gameTitle = gameTitle, videoPath = video, audioPath = audio)
         try {
@@ -91,7 +126,15 @@ class GameBootGate @Inject constructor(
     }
 
     companion object {
-        /** Hard cap on the whole presentation — the 5 s media cap plus room for the fade. */
-        const val TIMEOUT_MS = 7_000L
+        /**
+         * Hard cap on the whole presentation, sized from the LONGEST one a user can produce: a
+         * 10 s custom clip ([UiMediaLimits.GAMEBOOT_CLIP_MAX_MS]) plus the overlay's fade and a
+         * slow first frame. Deliberately longer than either of GameBootOverlay's caps so the
+         * overlay normally resolves itself and this watchdog stays the last resort.
+         *
+         * The built-in sequence is bounded far more tightly by the overlay's own sequence cap;
+         * this number exists for the clip path, which is the only one that can genuinely stall.
+         */
+        const val TIMEOUT_MS = 13_000L
     }
 }

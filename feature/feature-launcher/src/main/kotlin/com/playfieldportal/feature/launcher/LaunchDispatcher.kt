@@ -47,10 +47,11 @@ sealed interface LaunchDispatchResult {
  *     `INTENT_FAILED` immediately when startActivity throws, and `SUCCEEDED` / `NEVER_FOREGROUNDED`
  *     when the host lifecycle classifies the pending hand-off.
  *  3. **Post-launch verification** — PFP is a HOME launcher, so no usage-stats permission is needed:
- *     a successful game dispatch backgrounds it. If [onHostStopped] never arrives inside the stop
- *     window, the emulator never took the foreground; if the user is back before [MIN_SESSION_MS],
- *     the launch is treated as an instant crash/refusal. Both are conservative: a real session
- *     (>= [MIN_SESSION_MS] away) records [LaunchOutcomeStatus.SUCCEEDED] silently and never pops UI.
+ *     a successful game dispatch backgrounds it. The verdict is lifecycle-driven, not timer-driven:
+ *     [onHostStopped] proves the emulator actually covered the launcher, which records the session
+ *     as success no matter how short it was (closing the emulator right after it opens is the
+ *     user's choice, not a failure). If [onHostStopped] never arrives inside the stop window, the
+ *     launch is treated as never-foregrounded.
  *
  * Failures emit a [LaunchRecoveryRequest] (via [recoveryRequests]) so the shell can offer force-stop,
  * a different emulator/core, and a copyable diagnostic instead of a dead end.
@@ -162,29 +163,39 @@ class LaunchDispatcher @Inject constructor(
     fun onHostResumed() {
         val p = pending ?: return
         pending = null
+        val emulatorTookForeground = hostStopped
         hostStopped = false
         watchdog?.cancel()
         watchdog = null
 
-        val sessionMs = clock.now() - p.dispatchedAtMs
-        if (sessionMs < MIN_SESSION_MS) {
-            Timber.w("Launch returned too quickly (${sessionMs}ms) — treating as never foregrounded")
-            scope.launch {
-                outcomeRecorder.record(
-                    outcomeFor(
-                        p.game, p.resolved, LaunchOutcomeStatus.NEVER_FOREGROUNDED,
-                        "The emulator closed almost immediately (${sessionMs}ms). It may have crashed or failed to open.",
-                    )
-                )
-                emitRecovery(p.game, p.resolved, "The game closed almost immediately — it may not have opened correctly.")
-            }
-        } else {
-            Timber.i("Launch session ${sessionMs}ms — recording success")
+        if (emulatorTookForeground) {
+            // The emulator demonstrably covered the launcher, so the user was inside it. Coming back
+            // — even instantly — is a choice, not a failure: closing the emulator right after it
+            // opens is a legitimate session and must never pop recovery UI. Duration is irrelevant.
+            Timber.i("Launch session ${clock.now() - p.dispatchedAtMs}ms — emulator covered the launcher — recording success")
             scope.launch {
                 outcomeRecorder.record(
                     outcomeFor(
                         p.game, p.resolved, LaunchOutcomeStatus.SUCCEEDED, reason = null,
                     ).copy(returnedAtMs = clock.now())
+                )
+            }
+        } else {
+            // The launcher was never covered, so the emulator never demonstrably took the foreground
+            // even though startActivity succeeded (the user is back before the stop window without
+            // having seen the emulator). Same verdict the watchdog would reach — never-foregrounded.
+            Timber.w("Launch returned without the emulator covering the launcher (${clock.now() - p.dispatchedAtMs}ms)")
+            scope.launch {
+                outcomeRecorder.record(
+                    outcomeFor(
+                        p.game, p.resolved, LaunchOutcomeStatus.NEVER_FOREGROUNDED,
+                        "The emulator never came to the foreground after launch.",
+                    )
+                )
+                emitRecovery(
+                    p.game, p.resolved,
+                    "The emulator never appeared. Check that it is installed and up to date, " +
+                        "then try launching again.",
                 )
             }
         }
@@ -294,8 +305,6 @@ class LaunchDispatcher @Inject constructor(
     companion object {
         /** How long a successfully dispatched launch may take to cover the launcher. */
         const val STOP_WINDOW_MS = 6_000L
-        /** A session shorter than this after dispatch is treated as an instant crash/refusal. */
-        const val MIN_SESSION_MS = 10_000L
         private const val RECENT_LIMIT = 5
     }
 }

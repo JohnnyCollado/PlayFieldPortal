@@ -68,7 +68,7 @@ fun DisplaySettingsScreen(
         ActivityResultContracts.OpenDocument()
     ) { uri -> uri?.let { viewModel.onWallpaperPicked(it) } }
 
-    // ONE picker for all four boot/GameBoot media rows; the pending slot lives on the ViewModel.
+    // ONE picker for every boot/GameBoot media row; the pending slot lives on the ViewModel.
     val uiMediaPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri -> uri?.let { viewModel.onUiMediaPicked(it) } }
@@ -315,39 +315,38 @@ fun DisplaySettingsScreen(
 
             SettingsToggleRow(
                 label    = "GameBoot",
-                sublabel = "Short presentation between confirming a game and the emulator opening. " +
-                    "Off by default — turning it on adds a moment to every game launch.",
+                sublabel = "A short presentation between confirming a game and the emulator " +
+                    "opening — five seconds built in, up to ten with your own clip — skippable " +
+                    "with Confirm or Back.  Off launches straight into the game with the " +
+                    "ordinary Launch Sound.",
                 checked  = state.gameBootEnabled,
                 onToggle = { viewModel.setGameBootEnabled(it) },
             )
 
-            SettingsValueRow(
-                label    = "GameBoot Animation",
-                sublabel = "Your own video for the transition (MP4 or WebM, up to 5 seconds)",
-                value    = state.gameBootVideoLabel,
-                onClick  = { pickUiMedia(UiMediaSlot.GAMEBOOT_VIDEO) },
-            )
-
-            SettingsValueRow(
-                label    = "GameBoot Sound",
-                sublabel = "Your own sound for the transition — plays even with Menu Sounds off " +
-                    "(MP3, WAV, OGG, or M4A, up to 5 seconds)",
-                value    = state.gameBootAudioLabel,
-                onClick  = { pickUiMedia(UiMediaSlot.GAMEBOOT_AUDIO) },
-            )
-
-            SettingsRow(
-                label    = "Preview GameBoot",
-                sublabel = "Play the transition now — nothing is launched",
-                onClick  = onPreviewGameBoot,
-            )
-
-            if (state.gameBootVideoAssigned || state.gameBootAudioAssigned) {
-                SettingsRow(
-                    label    = "Reset GameBoot to Default",
-                    sublabel = "Remove your GameBoot video and sound",
-                    onClick  = { viewModel.resetGameBootMedia() },
+            // The rest of the group only means anything while GameBoot is on — replacing or
+            // previewing a presentation that never plays is a row that lies about what it does.
+            if (state.gameBootEnabled) {
+                SettingsValueRow(
+                    label    = "GameBoot Video",
+                    sublabel = "Replace the built-in sequence with your own clip, which plays with " +
+                        "its own sound — even with Menu Sounds off (MP4 or WebM, up to 10 seconds)",
+                    value    = state.gameBootVideoLabel,
+                    onClick  = { pickUiMedia(UiMediaSlot.GAMEBOOT_VIDEO) },
                 )
+
+                SettingsRow(
+                    label    = "Preview GameBoot",
+                    sublabel = "Play the presentation now — nothing is launched",
+                    onClick  = onPreviewGameBoot,
+                )
+
+                if (state.gameBootVideoAssigned) {
+                    SettingsRow(
+                        label    = "Reset GameBoot to Default",
+                        sublabel = "Remove your clip and bring back the built-in sequence",
+                        onClick  = { viewModel.resetGameBootMedia() },
+                    )
+                }
             }
 
             SettingsGroup("Orientation")

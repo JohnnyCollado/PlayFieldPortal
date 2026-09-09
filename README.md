@@ -601,10 +601,11 @@ holds a menu sound fully in memory, and the boot presentation must still end on 
 - **Boot Sequence** (*Settings ▸ Interface ▸ Boot*) — an optional video that plays when PFP starts,
   up to 8 seconds. Press **✕** or **○** to skip it. If you supply a boot *video* with its own audio
   track, that audio is used and the Boot Sound row steps aside.
-- **GameBoot** — an optional short clip that plays as a game launches, up to 5 seconds. It has its
-  own audio independent of your menu-sound setting, so muting menu sounds does not silence it. If
-  it has not finished within a few seconds the game launches anyway — GameBoot can never hold your
-  game hostage.
+- **GameBoot** — the short presentation that plays as a game launches. Built in, it is a
+  five-second light sweep timed to the launch sound; supply your own clip (up to 10 seconds) and it
+  replaces the whole thing, its own audio included. That audio is independent of your menu-sound
+  setting, so muting menu sounds does not silence it. If the presentation has not finished in time
+  the game launches anyway — GameBoot can never hold your game hostage.
 
 Video can be MP4 or WebM, up to 25 MB.
 

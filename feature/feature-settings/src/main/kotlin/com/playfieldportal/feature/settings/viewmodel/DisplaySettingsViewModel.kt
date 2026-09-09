@@ -65,8 +65,6 @@ private val KEY_CONTEXT_MENU_HINT_DELAY_SECONDS = floatPreferencesKey("interface
 private val KEY_TOUCH_SENSITIVITY  = stringPreferencesKey("interface_touch_sensitivity")
 // Must match GameLaunchPreferences.KEY_DIRECT_LAUNCH — both read/write this same pref.
 private val KEY_DIRECT_LAUNCH      = booleanPreferencesKey("pref_direct_game_launch")
-// Must match GameBootPreferences — that class owns the write, this screen renders the row.
-private val KEY_GAMEBOOT_ENABLED   = booleanPreferencesKey("display_gameboot_enabled")
 // Must match XMBViewModel.KEY_ICON_LEGIBILITY — both read/write this same pref.
 private val KEY_ICON_LEGIBILITY    = stringPreferencesKey("display_icon_legibility")
 // Must match XMBViewModel.KEY_SOLID_UNFOCUSED_ICONS — both read/write this same pref.
@@ -165,17 +163,15 @@ data class DisplaySettingsUiState(
     val bootAudioAssigned: Boolean = false,
     val bootPreviewVisible: Boolean = false,
     // ── GameBoot (Display ▸ GameBoot) ────────────────────────────────────────
-    val gameBootEnabled: Boolean = false,
+    // One switch and one replaceable asset: on/off, plus the user's own clip when they have one.
+    val gameBootEnabled: Boolean = true,
     val gameBootVideoLabel: String = UI_MEDIA_DEFAULT_LABEL,
-    val gameBootAudioLabel: String = UI_MEDIA_DEFAULT_LABEL,
     val gameBootVideoAssigned: Boolean = false,
-    val gameBootAudioAssigned: Boolean = false,
     val gameBootPreviewVisible: Boolean = false,
     /** Absolute paths for the two previews — read once so the overlay never touches the store. */
     val bootVideoPath: String? = null,
     val bootAudioPath: String? = null,
     val gameBootVideoPath: String? = null,
-    val gameBootAudioPath: String? = null,
 ) {
     val waveStyleLabel: String get() = WAVE_STYLE_LABELS[waveStyle] ?: waveStyle.name
 }
@@ -255,16 +251,15 @@ class DisplaySettingsViewModel @Inject constructor(
             bootVideoAssigned    = UiMediaSlot.BOOT_VIDEO in assigned,
             bootAudioAssigned    = UiMediaSlot.BOOT_AUDIO in assigned,
             bootPreviewVisible   = bootPreview,
-            gameBootEnabled      = prefs[KEY_GAMEBOOT_ENABLED] ?: false,
+            // Same read-time migration the gate uses, so the row can never disagree with what
+            // will actually play at launch.
+            gameBootEnabled      = GameBootPreferences.resolve(prefs),
             gameBootVideoLabel   = label(UiMediaSlot.GAMEBOOT_VIDEO),
-            gameBootAudioLabel   = label(UiMediaSlot.GAMEBOOT_AUDIO),
             gameBootVideoAssigned = UiMediaSlot.GAMEBOOT_VIDEO in assigned,
-            gameBootAudioAssigned = UiMediaSlot.GAMEBOOT_AUDIO in assigned,
             gameBootPreviewVisible = gameBootPreview,
             bootVideoPath        = assigned[UiMediaSlot.BOOT_VIDEO],
             bootAudioPath        = assigned[UiMediaSlot.BOOT_AUDIO],
             gameBootVideoPath    = assigned[UiMediaSlot.GAMEBOOT_VIDEO],
-            gameBootAudioPath    = assigned[UiMediaSlot.GAMEBOOT_AUDIO],
         )
     }
         // uiMediaStore.assignments() is a directory listing — cheap, but still file IO.
@@ -310,12 +305,15 @@ class DisplaySettingsViewModel @Inject constructor(
         uiMediaStore.clear(UiMediaSlot.BOOT_AUDIO)
     }
 
-    /** Display ▸ GameBoot ▸ Reset to Default — GameBoot's two slots only. */
+    /**
+     * Display ▸ GameBoot ▸ Reset to Default — drops the user's clip so the built-in sequence
+     * comes back. Exactly the same shape as clearing a sound assignment: one slot, one clear.
+     */
     fun resetGameBootMedia() = viewModelScope.launch {
         uiMediaStore.clear(UiMediaSlot.GAMEBOOT_VIDEO)
-        uiMediaStore.clear(UiMediaSlot.GAMEBOOT_AUDIO)
     }
 
+    /** Display ▸ GameBoot — the one switch for the whole presentation. */
     fun setGameBootEnabled(enabled: Boolean) = viewModelScope.launch {
         gameBootPreferences.setGameBootEnabled(enabled)
     }

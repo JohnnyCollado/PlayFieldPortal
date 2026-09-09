@@ -10,8 +10,9 @@ import kotlin.test.assertTrue
  * Pins the seven-sound roster (docs/plans/README.md (C10)): six SOUND-kind rows in the
  * plan table's order, Boot Sound as the seventh row on the Sound screen, and the storage-key
  * decisions that keep old installs and backups from breaking — `sound_scroll` survives its
- * rename to "Navigation" with no migration, and the two collapsed slots' keys become invalid so
- * `pruneOrphans` can sweep their leftovers.
+ * rename to "Navigation" with no migration, and the collapsed slots' keys (the two merged menu
+ * sounds, and GameBoot's retired audio slot) become invalid so `pruneOrphans` can sweep their
+ * leftovers.
  */
 class UiMediaSlotTest {
 
@@ -46,6 +47,16 @@ class UiMediaSlotTest {
         assertNull(UiMediaSlot.fromKey("sound_systembrowse"), "SOUND_SYSTEM_BROWSE was merged into Navigation")
         assertFalse(UiMediaSlot.isValidKey("sound_select"))
         assertFalse(UiMediaSlot.isValidKey("sound_systembrowse"))
+    }
+
+    @Test fun `gameboot is one slot - the replaceable clip, with no separate sound`() {
+        // GameBoot is ONE thing: the built-in sequence with its own bundled sound, or a user clip
+        // that replaces the whole presentation. An invalid gameboot_audio key is what lets
+        // pruneOrphans sweep the retired slot's file and display name.
+        assertEquals(UiMediaSlot.GAMEBOOT_VIDEO, UiMediaSlot.fromKey("gameboot_video"))
+        assertEquals(UiMediaKind.VIDEO, UiMediaSlot.GAMEBOOT_VIDEO.kind)
+        assertNull(UiMediaSlot.fromKey("gameboot_audio"), "GAMEBOOT_AUDIO was retired")
+        assertFalse(UiMediaSlot.isValidKey("gameboot_audio"))
     }
 
     @Test fun `sound_scroll keeps its storage key through the rename to Navigation`() {

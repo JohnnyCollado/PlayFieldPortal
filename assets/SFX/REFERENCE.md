@@ -32,6 +32,19 @@ directly against the rip) became the bundled Boot Sound (see
 | `sound_notification` | `sfx_notification.mp3` | Pixabay, edited | **0.396** |
 | `boot_audio` (Boot Sound) | `sfx_opening.mp3` | authored | 0.202 |
 
+`sfx_launch.wav` serves a second, non-slot purpose: it is the sound the
+built-in GameBoot sequence is drawn against (`gameBootDefaultAudioUri`). One
+sample, two uses — the same one-sample-many-events construction Navigation
+already uses (`sfx_cursor` for scroll/select/system-browse). GameBoot plays it
+in full, 5.000 s (220 500 frames at 44.1 kHz), which is exactly the length of
+`GameBootSequence`'s timeline and exactly `UiMediaLimits.GAMEBOOT_SEQUENCE_MS`
+(a user's own clip is capped separately, at `GAMEBOOT_CLIP_MAX_MS` = 10 s).
+
+**If this sample is ever swapped, re-measure it.** `GameBootSequence.LOUDNESS`
+is a table of the file's 50 ms-window RMS normalized to its own peak, and the
+sequence's light rides that curve — a new sample with the same name would leave
+the visual peaking where the old sound used to.
+
 `res/raw` resolves by resource name, not extension, so the `.wav` -> `.mp3`
 switch on three of these needed no Kotlin change — but the superseded `.wav`
 files had to be deleted in the same pass, since two files sharing one resource

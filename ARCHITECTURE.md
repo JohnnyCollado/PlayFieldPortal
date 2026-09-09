@@ -187,12 +187,17 @@ replaced path from the image cache through the `CustomIconCacheEvictor` seam or 
 keeps playing. Editing happens in a live fullscreen overlay above the XMB, and only the focused
 row/column animates (gated on battery saver and `hasBlockingOverlay`).
 
-**UI media.** `UiMediaStore` keeps `filesDir/ui-media/<slot>.<ext>` for ten slots: six menu sounds
-plus the boot and GameBoot video/audio pairs (`UiMediaSlot`). Per-slot duration and byte caps come
-from `UiMediaLimits`, and a duration bound is always mandatory. `MenuSoundPlayer` resolves a custom
-sample over its bundled `R.raw` default *inside the player*, so roughly ninety call sites needed no
-change. `pruneOrphans()` sweeps files and preferences for retired slots on cold start and after a
-backup restore.
+**UI media.** `UiMediaStore` keeps `filesDir/ui-media/<slot>.<ext>` for nine slots: six menu
+sounds, the boot video/audio pair, and GameBoot's one replaceable clip (`UiMediaSlot`). Per-slot
+duration and byte caps come from `UiMediaLimits`, and a duration bound is always mandatory.
+`MenuSoundPlayer` resolves a custom sample over its bundled `R.raw` default *inside the player*, so
+roughly ninety call sites needed no change; `BOOT_AUDIO` resolves through `bundledDefaultRes` /
+`resolveBootAudio`. GameBoot is deliberately ONE thing: one on/off switch, one built-in
+Compose-drawn sequence with its own bundled sound (`gameBootDefaultAudioUri`, `sfx_launch`), and one
+slot the user can replace it with — a clip that brings its own audio, which is why
+`resolveGameBootAudio` has two branches and no GameBoot audio slot exists. `pruneOrphans()` sweeps
+files and preferences for retired slots on cold start and after a backup restore (including the
+retired `gameboot_audio`).
 
 **Motion wallpapers.** `MotionWallpaperBackground` composites a looping clip over an import-time
 poster still. Video decodes through ExoPlayer; **GIF and animated WebP never construct a player at

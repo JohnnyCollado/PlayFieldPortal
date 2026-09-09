@@ -1,5 +1,27 @@
 # GameBoot: default PSP-style sequence, default sound, and a three-way mode
 
+> **Superseded in part — read this first.** Everything below is the plan as written, kept for the
+> reasoning. Two of its decisions were reversed after the feature was built and used:
+>
+> 1. **The three-way `GameBootMode` is gone.** GameBoot is a plain on/off boolean again
+>    (`display_gameboot_enabled`). `SOUND_ONLY` earned its place only through mute-immunity, which
+>    the presentation has structurally anyway; `OFF` plus the ordinary Launch Sound already covered
+>    the same need with one fewer state to explain. Migration is still read-time: a surviving
+>    `display_gameboot_mode` value reads as on unless it is `OFF`, and `setGameBootEnabled` retires
+>    the key on write so it cannot outrank a later toggle.
+> 2. **The separate `GAMEBOOT_AUDIO` slot is gone.** GameBoot is ONE thing: the built-in sequence
+>    with its own bundled sound, or a clip of the user's own that replaces the whole presentation,
+>    audio included. `resolveGameBootAudio` is down to two branches, the built-in sound is a plain
+>    `gameBootDefaultAudioUri` rather than a slot default, the dead `UiMediaLimits.GAMEBOOT` audio
+>    spec was deleted, and `pruneOrphans()` sweeps the retired slot's files and display names.
+>
+> Also changed: `GameBootFlash` is now `GameBootSequence`, and its timeline was rebuilt against the
+> sample's **measured** envelope rather than the "2535 ms attack" figure quoted below — the real
+> first hit is at ~2 050 ms, the loudest body is 2 850–3 300 ms, and there is a late lift at
+> ~4 250 ms the original timeline was already decaying through. The sequence now drives its bloom
+> off a `LOUDNESS` table of 50 ms-window RMS, so the light rides the sound instead of approximating
+> it. Re-measure that table if `sfx_launch.wav` is ever swapped.
+
 ## Context
 
 PlayFieldPortal already has a GameBoot seam — the short presentation between confirming a game and
@@ -150,7 +172,9 @@ gradient rects per frame, well inside the Canvas fallback's budget.
 **Honor the motion budget.** `BootSequenceOverlay` hardcodes `WaveStyle.ANIMATED` because it runs
 once per app start. GameBoot runs on *every launch*, so plumb `uiState.waveStyle` (already computed
 as `effectiveWaveStyle` in `XMBShell.kt:502-546`) into the overlay: when frozen or reduced, draw a
-single static bloom + title and cut the sequence to ~1 400 ms. This is a deliberate deviation from
+single static bloom + title and cut the sequence to ~1 400 ms [SUPERSEDED: the still frame stayed,
+the shortening did not — see the header note; the sequence now runs its full length under every
+wave style so the launch always waits for the whole presentation]. This is a deliberate deviation from
 `BootSequenceOverlay`'s stance and should be noted in the new file's KDoc.
 
 **Widen the two watchdogs.** The sequence is now 5 000 ms plus the existing 500 ms

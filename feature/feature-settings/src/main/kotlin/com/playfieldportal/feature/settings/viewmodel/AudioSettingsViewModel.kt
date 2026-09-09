@@ -12,7 +12,7 @@ import com.playfieldportal.core.data.repository.UiMediaStore
 import com.playfieldportal.core.domain.model.UiMediaKind
 import com.playfieldportal.core.domain.model.UiMediaSlot
 import com.playfieldportal.core.domain.model.XYLayout
-import com.playfieldportal.core.ui.media.BootSoundPreviewer
+import com.playfieldportal.core.ui.media.UiMediaAudioPlayer
 import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.core.ui.sound.MenuSoundPlayer
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -58,9 +58,9 @@ data class AudioSettingsUiState(
  * seventh row while staying an AUDIO_TRACK slot (Display ▸ Boot Sequence reaches the same slot).
  *
  * Every row previews: the six menu sounds through [MenuSoundPlayer], Boot Sound through
- * [BootSoundPreviewer] (no [MenuSound] exists for it — it is boot music, not a UI tick).
+ * [UiMediaAudioPlayer] (no [MenuSound] exists for it — it is boot music, not a UI tick).
  *
- * Boot VIDEO and GameBoot media are deliberately NOT reachable from here — they live with their
+ * Boot VIDEO and GameBoot's clip are deliberately NOT reachable from here — they live with their
  * own presentations under Display, and [confirmReset] must never touch them.
  */
 @HiltViewModel
@@ -68,7 +68,7 @@ class AudioSettingsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val store: UiMediaStore,
     private val menuSound: MenuSoundPlayer,
-    private val bootSoundPreviewer: BootSoundPreviewer,
+    private val bootSoundPreviewer: UiMediaAudioPlayer,
     private val controllerLayout: ControllerLayoutRepository,
 ) : ViewModel() {
 
@@ -97,7 +97,7 @@ class AudioSettingsViewModel @Inject constructor(
             menuSoundEnabled = prefs[KEY_MENU_SOUND] ?: true,
             soundLabels = labels,
             // Not a kind filter anymore: BOOT_AUDIO is AUDIO_TRACK but IS a row on this screen,
-            // while BOOT_VIDEO / GAMEBOOT_* are assignments on other screens' concerns. Filter
+            // while BOOT_VIDEO / GAMEBOOT_VIDEO are assignments on other screens' concerns. Filter
             // by "on this screen" so the Use Default action appears on the Boot row and nowhere
             // it should not.
             assignedSlots = assigned.filterTo(HashSet()) { it in SCREEN_SLOTS },
@@ -146,7 +146,7 @@ class AudioSettingsViewModel @Inject constructor(
 
     /**
      * Auditions [slot]'s current sound, custom or default, even while Menu Sounds is off. The six
-     * menu sounds play through [MenuSoundPlayer]; Boot Sound plays through [BootSoundPreviewer]
+     * menu sounds play through [MenuSoundPlayer]; Boot Sound plays through [UiMediaAudioPlayer]
      * — custom assignment first, bundled default otherwise — so its row previews like every
      * other one.
      */
@@ -155,7 +155,7 @@ class AudioSettingsViewModel @Inject constructor(
         if (event != null) {
             menuSound.play(event, ignoreMute = true)
         } else {
-            bootSoundPreviewer.play(store.pathFor(slot))
+            bootSoundPreviewer.play(customPath = store.pathFor(slot))
         }
     }
 
@@ -169,8 +169,8 @@ class AudioSettingsViewModel @Inject constructor(
 
     /**
      * "Reset Sound to Defaults": clears every SOUND slot PLUS Boot Sound (it is a row on this
-     * screen) and restores the Menu Sounds toggle. Never touches the boot video or GameBoot
-     * media — those belong to their own screens' resets.
+     * screen) and restores the Menu Sounds toggle. Never touches the boot video or GameBoot's
+     * clip — those belong to their own screens' resets.
      */
     fun confirmReset() = viewModelScope.launch {
         _confirmResetVisible.value = false

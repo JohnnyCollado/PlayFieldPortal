@@ -283,8 +283,7 @@ class UiMediaStoreTest {
         store.import(UiMediaSlot.BOOT_AUDIO, register(wavBytes(), name = "boot.wav"))
         probeReturns(100L, mime = "video/mp4")
         store.import(UiMediaSlot.BOOT_VIDEO, register(wavBytes(), name = "boot.mp4"))
-        probeReturns(100L)
-        store.import(UiMediaSlot.GAMEBOOT_AUDIO, register(wavBytes()))
+        store.import(UiMediaSlot.GAMEBOOT_VIDEO, register(wavBytes(), name = "gameboot.mp4"))
 
         assertTrue(store.clearAll(UiMediaKind.SOUND))
 
@@ -292,7 +291,7 @@ class UiMediaStoreTest {
         assertNull(store.pathFor(UiMediaSlot.SOUND_BACK))
         assertNotNull(store.pathFor(UiMediaSlot.BOOT_AUDIO), "clearAll(SOUND) must not clear boot audio — its screen's ViewModel owns that")
         assertNotNull(store.pathFor(UiMediaSlot.BOOT_VIDEO), "reset audio must never touch the boot video")
-        assertNotNull(store.pathFor(UiMediaSlot.GAMEBOOT_AUDIO), "reset audio must never touch GameBoot media")
+        assertNotNull(store.pathFor(UiMediaSlot.GAMEBOOT_VIDEO), "reset audio must never touch GameBoot media")
     }
 
     // ── pruneOrphans ─────────────────────────────────────────────────────────

@@ -2,7 +2,7 @@ package com.playfieldportal.themekit
 
 /**
  * Import gate for user-picked UI media — menu sounds (Interface ▸ Sound), the boot sequence's
- * video/audio, and GameBoot's video/audio. Same contract as [MotionLimits]: playback discipline
+ * video/audio, and GameBoot's one replaceable clip. Same contract as [MotionLimits]: playback discipline
  * cannot rescue a file that should never have been accepted, so the gate runs BEFORE anything is
  * committed, and every rejection names its reason.
  *
@@ -62,7 +62,19 @@ object UiMediaLimits {
      * passes today and fails on a re-import the moment a decoder rounds 1000 up to 1001.
      */
     const val NOTIFICATION_MAX_MS   = 2_000L
-    const val GAMEBOOT_MAX_MS       = 5_000L
+    /**
+     * The built-in GameBoot sequence and the sample it is beat-matched to (`sfx_launch`, exactly
+     * 5.000 s). NOT a user-facing import cap — nothing is imported against this; it is what the
+     * gate clips the bundled sound to. See [GAMEBOOT_CLIP_MAX_MS] for what a user may assign.
+     */
+    const val GAMEBOOT_SEQUENCE_MS  = 5_000L
+    /**
+     * A user's own GameBoot clip may run twice the built-in sequence, matching the boot clip's
+     * ceiling: the presentation is theirs to author, and 5 s was too tight for anything with a
+     * build and a payoff. The launch waits for the whole thing either way, so this is the number
+     * the two watchdogs behind it are sized from (GameBootOverlay's video cap, GameBootGate's).
+     */
+    const val GAMEBOOT_CLIP_MAX_MS  = 10_000L
     const val BOOT_MAX_MS           = 10_000L
 
     // ── Byte caps ────────────────────────────────────────────────────────────
@@ -87,8 +99,10 @@ object UiMediaLimits {
     val LAUNCH       = Spec(Kind.SOUND,       0L, 2_000L,   LAUNCH_MAX_MS,  AUDIO_STAGE_MAX_BYTES)
     val NOTIFICATION = Spec(Kind.SOUND,       0L, 1_500L,   NOTIFICATION_MAX_MS, AUDIO_STAGE_MAX_BYTES)
     val ERROR        = Spec(Kind.SOUND,       0L,   500L,   CONFIRM_MAX_MS, AUDIO_STAGE_MAX_BYTES)
-    val GAMEBOOT     = Spec(Kind.AUDIO_TRACK, 0L, 5_000L, GAMEBOOT_MAX_MS, AUDIO_STAGE_MAX_BYTES)
-    val GAMEBOOT_CLIP = Spec(Kind.VIDEO,      1_000L, 5_000L, GAMEBOOT_MAX_MS, VIDEO_MAX_BYTES)
+    // GameBoot has ONE slot: the user's replaceable clip. There is no GameBoot audio spec
+    // because there is no GameBoot audio slot — the built-in sequence's own sound is bundled,
+    // not imported, and GAMEBOOT_SEQUENCE_MS is what the gate clips it to.
+    val GAMEBOOT_CLIP = Spec(Kind.VIDEO,      1_000L, 8_000L, GAMEBOOT_CLIP_MAX_MS, VIDEO_MAX_BYTES)
     val BOOT         = Spec(Kind.AUDIO_TRACK, 0L, 8_000L, BOOT_MAX_MS,    AUDIO_STAGE_MAX_BYTES)
     val BOOT_CLIP    = Spec(Kind.VIDEO,       1_000L, 8_000L, BOOT_MAX_MS,    VIDEO_MAX_BYTES)
 

@@ -6,14 +6,46 @@ All notable changes to Play Field Portal are documented here. This project follo
 ## [Unreleased]
 
 ### Added
+- **GameBoot is one thing you can switch off or swap out (C13).** The GameBoot transition
+  between confirming a game and the emulator opening used to be an off-by-default boolean with
+  nothing to show or play — a fading title over black, in silence. It now ships a real default:
+  `GameBootSequence`, a Compose-drawn PSP-style light sweep running the full 5.000 s of the
+  bundled `sfx_launch` sample, with its bloom riding a table of that file's measured loudness so
+  the light lands on the sound's own hits rather than near them. The sequence is drawn, not a
+  bundled video, so it costs no decoder warm-up at the moment the user is waiting for their game,
+  picks up custom themes, and honors the wave-style motion budget (a frozen or reduced style
+  draws one still frame instead of the sweeps — at the same full length, because the budget drops
+  motion, not duration). The budget it reads is the user's style plus power throttling, NOT the
+  wave's `effectiveWaveStyle`: that value is frozen whenever an opaque layer covers the wave, and
+  during a launch the layer covering it is GameBoot itself, which froze the sequence on every real
+  launch while the settings preview animated normally. The timeline is driven by wall-clock frame deltas rather than a tween, so
+  a reduced system animator scale cannot cut the presentation short and let the emulator take the
+  screen while the sound is still playing.
+
+  The setting is a plain **on/off toggle**, and there is now exactly ONE thing to replace: assign
+  your own MP4 or WebM and it takes over the whole presentation, its own audio included; Reset
+  GameBoot to Default brings the built-in sequence back, the same shape as resetting a sound. The
+  clip may run up to **10 seconds** — twice the built-in sequence, matching the boot clip's
+  ceiling, because five seconds is too tight to author anything with a build and a payoff. The
+  earlier three-way mode (Full Sequence / Sound Only / Off) and the separate GameBoot Sound slot
+  are gone — an install carrying either migrates read-time, and the retired `gameboot_audio` slot
+  is swept by `pruneOrphans()`. Fresh installs get GameBoot on; established installs keep the old
+  silent default. The audio is gate-owned and fire-and-forget, so the full clip always plays out —
+  even when the motion-budget path tears the visual down early, the sound finishes over the
+  emulator's silent boot instead of being chopped at the launch, and the launch itself waits for
+  the whole presentation in every case. **Preview GameBoot now plays its sound**: it previously
+  resolved an audio path and handed it to a draw-only overlay, so the preview was a silent light
+  show whose timing was matched to a sample the user could not hear. It runs through the same
+  singleton player the gate uses, and silences itself when a preview is skipped (nothing is
+  launching, so nothing would take audio focus and cut the clip).
 - **Launch reliability: every game launch is now verified and recoverable (B1).**
   All game-path launches funnel through a single `LaunchDispatcher` in feature-launcher,
   which owns `startActivity` with named failures (the XMB's direct-launch path used to
   swallow them into a log line), records every attempt to a new `launch_outcomes` table
   (schema v41), and verifies the emulator actually came to the foreground using the
-  home-launcher lifecycle handshake (a launch that never covers the launcher inside 6 s,
-  or returns before 10 s, is classified as never-foregrounded instead of silently
-  "fine"). Failures raise a recovery sheet — retry, change emulator, per-system defaults,
+  home-launcher lifecycle handshake (a launch that never covers the launcher inside 6 s is
+  classified as never-foregrounded instead of silently "fine"). Failures raise a recovery
+  sheet — retry, change emulator, per-system defaults,
   copyable diagnostics — and preflight now also refuses launches with revoked SAF grants
   or emulator launch activities dropped by an update. Game Detail's error line gains a
   "Get help" affordance into the same sheet.
@@ -74,6 +106,13 @@ All notable changes to Play Field Portal are documented here. This project follo
   unknown intent flags are refused with a logged reason.
 
 ### Fixed
+- **Closing an emulator on purpose no longer pops a "closed almost immediately" warning.**
+  The old verdict ran on a 10-second session timer, so deliberately closing an emulator right
+  after it opened was reported as a crash and raised the recovery sheet. The dispatcher now
+  classifies purely from the lifecycle handshake: the emulator covering the launcher proves a
+  real session, however short (an instant close is the user's choice, and the session records
+  as a success), and only a launch that never demonstrably covers the launcher inside the 6 s
+  stop window is treated as never-foregrounded.
 - **A console's RetroArch core can no longer silently change between sessions.** RetroArch
   scopes saved configs per core, so "configs saved for a console" stopped applying to other
   games whenever the automatic pick flipped cores — e.g. Game Boy/GBC games jumping between

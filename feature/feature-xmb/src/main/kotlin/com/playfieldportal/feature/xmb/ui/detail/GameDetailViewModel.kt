@@ -196,8 +196,9 @@ class GameDetailViewModel @Inject constructor(
     private val gameBootPreferences: com.playfieldportal.core.data.repository.GameBootPreferences,
 ) : ViewModel() {
 
-    // GameBoot's own audio replaces the App Launch sfx (design rule: the two never stack). One of
-    // only two sites in the whole feature that branches on this — everywhere else plays blind.
+    // GameBoot's own audio replaces the App Launch sfx (design rule: the two never stack). One
+    // of only two sites in the whole feature that branches on this — everywhere else plays blind.
+    // Initialised false (no suppression) until the flow settles.
     @Volatile
     private var gameBootEnabled: Boolean = false
 
@@ -675,6 +676,7 @@ class GameDetailViewModel @Inject constructor(
             }
             return
         }
+        // GameBoot brings its own sound, so the menu Launch Sound must not stack with it.
         if (playSound && !gameBootEnabled) {
             menuSound.play(com.playfieldportal.core.ui.sound.MenuSound.LAUNCH)
         }

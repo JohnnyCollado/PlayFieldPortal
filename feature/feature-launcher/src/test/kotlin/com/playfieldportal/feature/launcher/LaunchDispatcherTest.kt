@@ -23,10 +23,11 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * Pins the B1 launch funnel: outcomes recorded per settled launch and the conservative
- * foreground-verification windows ([LaunchDispatcher.STOP_WINDOW_MS] / [MIN_SESSION_MS]).
- * The clock is injected and shares the runTest scheduler, so every window is driven by
- * [advanceTimeBy] — no real sleeps.
+ * Pins the B1 launch funnel: outcomes recorded per settled launch and the lifecycle-driven
+ * foreground verification ([LaunchDispatcher.STOP_WINDOW_MS]). The verdict comes from whether the
+ * emulator actually covered the launcher, never from a session-duration threshold. The clock is
+ * injected and shares the runTest scheduler, so the watchdog window is driven by [advanceTimeBy]
+ * — no real sleeps.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class LaunchDispatcherTest {
@@ -55,14 +56,15 @@ class LaunchDispatcherTest {
         val intent: Intent = mockk(relaxed = true)
         var now = 0L
 
-        // GameBoot disabled in every existing case: awaitPresentation returns immediately, so
-        // these tests keep pinning the dispatcher's own behaviour rather than the gate's.
+        // GameBoot switched off in every existing case: awaitPresentation returns immediately,
+        // so these tests keep pinning the dispatcher's own behaviour rather than the gate's.
         val gameBootPreferences: com.playfieldportal.core.data.repository.GameBootPreferences =
             mockk(relaxed = true) {
                 every { gameBootEnabledFlow } returns kotlinx.coroutines.flow.flowOf(false)
             }
         val uiMediaStore: com.playfieldportal.core.data.repository.UiMediaStore = mockk(relaxed = true)
-        val gameBootGate = GameBootGate(gameBootPreferences, uiMediaStore)
+        val gameBootAudioPlayer: com.playfieldportal.core.ui.media.UiMediaAudioPlayer = mockk(relaxed = true)
+        val gameBootGate = GameBootGate(context, gameBootPreferences, uiMediaStore, gameBootAudioPlayer)
         val menuSound: com.playfieldportal.core.ui.sound.MenuSoundPlayer = mockk(relaxed = true)
         val autoCoreMemory: AutoCoreMemory = mockk(relaxed = true)
 
@@ -187,19 +189,38 @@ class LaunchDispatcherTest {
     }
 
     @Test
-    fun `resuming within the minimum session records never-foregrounded`() = runTest {
+    fun `returning instantly after the emulator covered the launcher records SUCCEEDED`() = runTest {
         val h = harness()
         h.launchAccepted()
 
-        // Emulator covered the launcher, then the user was back almost immediately.
+        // The emulator took the foreground and the user chose to close it right away. That is a
+        // deliberate decision, not a crash — an instant close must record success and never pop
+        // recovery UI, however short the session was.
         h.dispatcher.onHostStopped()
-        h.now = LaunchDispatcher.MIN_SESSION_MS - 1
+        h.now = 1_000
+        h.dispatcher.onHostResumed()
+        advanceUntilIdle()
+
+        coVerify { h.recorder.record(match {
+            it.status == LaunchOutcomeStatus.SUCCEEDED && it.failureReason == null
+        }) }
+        assertNull(h.dispatcher.recoveryRequests.value, "an instant deliberate close is a success")
+    }
+
+    @Test
+    fun `returning before the emulator covered the launcher records never-foregrounded`() = runTest {
+        val h = harness()
+        h.launchAccepted()
+
+        // startActivity succeeded, but the launcher was never covered and the user is back almost
+        // immediately (before the stop window): the emulator never demonstrably ran.
+        h.now = 1_000
         h.dispatcher.onHostResumed()
         advanceUntilIdle()
 
         coVerify { h.recorder.record(match {
             it.status == LaunchOutcomeStatus.NEVER_FOREGROUNDED &&
-                it.failureReason!!.contains("closed almost immediately")
+                it.failureReason!!.contains("never came to the foreground")
         }) }
         assertIs<LaunchRecoveryRequest>(h.dispatcher.recoveryRequests.value)
     }
@@ -210,7 +231,7 @@ class LaunchDispatcherTest {
         h.launchAccepted()
 
         h.dispatcher.onHostStopped()
-        h.now = LaunchDispatcher.MIN_SESSION_MS + 60_000
+        h.now = 60_000
         h.dispatcher.onHostResumed()
         advanceUntilIdle()
 
@@ -236,7 +257,7 @@ class LaunchDispatcherTest {
         assertNull(h.dispatcher.recoveryRequests.value)
 
         // And the eventual return (a real session) settles it as a success.
-        h.now = LaunchDispatcher.MIN_SESSION_MS + 60_000
+        h.now = 60_000
         h.dispatcher.onHostResumed()
         advanceUntilIdle()
         coVerify { h.recorder.record(match { it.status == LaunchOutcomeStatus.SUCCEEDED }) }

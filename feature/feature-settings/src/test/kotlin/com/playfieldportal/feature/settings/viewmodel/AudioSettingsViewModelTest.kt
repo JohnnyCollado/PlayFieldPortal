@@ -10,7 +10,7 @@ import com.playfieldportal.core.data.repository.ControllerMappingRepository
 import com.playfieldportal.core.data.repository.MediaDisplayNames
 import com.playfieldportal.core.data.repository.UiMediaStore
 import com.playfieldportal.core.domain.model.UiMediaSlot
-import com.playfieldportal.core.ui.media.BootSoundPreviewer
+import com.playfieldportal.core.ui.media.UiMediaAudioPlayer
 import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.core.ui.sound.MenuSoundPlayer
 import io.mockk.mockk
@@ -71,7 +71,7 @@ class AudioSettingsViewModelTest {
 
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val menuSound: MenuSoundPlayer = mockk(relaxed = true)
-    private val bootPreviewer: BootSoundPreviewer = mockk(relaxed = true)
+    private val bootPreviewer: UiMediaAudioPlayer = mockk(relaxed = true)
     private lateinit var store: UiMediaStore
     private lateinit var vm: AudioSettingsViewModel
 
@@ -169,7 +169,7 @@ class AudioSettingsViewModelTest {
 
     @Test fun `only rows on this screen can be assigned slots`() = runTest(dispatcher) {
         seedAssignment(UiMediaSlot.BOOT_VIDEO, ext = "mp4")
-        seedAssignment(UiMediaSlot.GAMEBOOT_AUDIO)
+        seedAssignment(UiMediaSlot.GAMEBOOT_VIDEO, ext = "mp4")
         collectUiState()
 
         eventually("assignments surface in the ui state") {
@@ -179,7 +179,7 @@ class AudioSettingsViewModelTest {
         val state = vm.uiState.value
         assertFalse(UiMediaSlot.BOOT_VIDEO in state.soundLabels.keys, "boot video is not a sound row")
         assertFalse(UiMediaSlot.BOOT_VIDEO in state.assignedSlots)
-        assertFalse(UiMediaSlot.GAMEBOOT_AUDIO in state.assignedSlots, "GameBoot has its own screen")
+        assertFalse(UiMediaSlot.GAMEBOOT_VIDEO in state.assignedSlots, "GameBoot has its own screen")
     }
 
     @Test fun `preview on the boot row plays through the boot previewer, not SoundPool`() =
@@ -188,7 +188,7 @@ class AudioSettingsViewModelTest {
             advanceUntilIdle()
             // Bundled default (no custom assignment): the previewer gets null and resolves the
             // resource URI itself.
-            verify(exactly = 1) { bootPreviewer.play(null) }
+            verify(exactly = 1) { bootPreviewer.play(UiMediaSlot.BOOT_AUDIO, null) }
             verify(exactly = 0) { menuSound.play(any(), any()) }
         }
 
@@ -204,7 +204,7 @@ class AudioSettingsViewModelTest {
             advanceUntilIdle()
 
             verify(exactly = 1) {
-                bootPreviewer.play(mediaFile(UiMediaSlot.BOOT_AUDIO, "mp3").absolutePath)
+                bootPreviewer.play(UiMediaSlot.BOOT_AUDIO, mediaFile(UiMediaSlot.BOOT_AUDIO, "mp3").absolutePath)
             }
         }
 
@@ -213,7 +213,7 @@ class AudioSettingsViewModelTest {
             vm.preview(UiMediaSlot.SOUND_SCROLL)
             advanceUntilIdle()
             verify(exactly = 1) { menuSound.play(any(), any()) }
-            verify(exactly = 0) { bootPreviewer.play(any()) }
+            verify(exactly = 0) { bootPreviewer.play(UiMediaSlot.BOOT_AUDIO, any()) }
         }
 
     @Test fun `tearing the screen down stops any running boot preview`() = runTest(dispatcher) {
@@ -231,7 +231,7 @@ class AudioSettingsViewModelTest {
             seedAssignment(UiMediaSlot.SOUND_NOTIFICATION)
             seedAssignment(UiMediaSlot.BOOT_AUDIO)
             seedAssignment(UiMediaSlot.BOOT_VIDEO, ext = "mp4")
-            seedAssignment(UiMediaSlot.GAMEBOOT_AUDIO)
+            seedAssignment(UiMediaSlot.GAMEBOOT_VIDEO, ext = "mp4")
             collectUiState()
             advanceUntilIdle()
 
@@ -247,7 +247,7 @@ class AudioSettingsViewModelTest {
             // The negatives are as load-bearing as the positives, and time can't prove a
             // negative — assert them only after the deletions have observably landed.
             assertTrue(mediaFile(UiMediaSlot.BOOT_VIDEO, "mp4").isFile, "reset must never touch the boot video")
-            assertTrue(mediaFile(UiMediaSlot.GAMEBOOT_AUDIO, "wav").isFile, "reset must never touch GameBoot media")
+            assertTrue(mediaFile(UiMediaSlot.GAMEBOOT_VIDEO, "mp4").isFile, "reset must never touch GameBoot media")
         }
 
     @Test fun `useDefault drops the boot audio assignment`() = runTest(dispatcher) {

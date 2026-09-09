@@ -60,6 +60,21 @@ class UiMediaDefaultsTest {
         assertEquals(R.raw.sfx_opening, UiMediaSlot.BOOT_AUDIO.bundledDefaultRes())
     }
 
+    @Test fun `gameboot has no media slot of its own beyond the replaceable video`() {
+        // The whole point of the one-GameBoot shape: there is nothing to assign but the clip.
+        assertNull(UiMediaSlot.GAMEBOOT_VIDEO.bundledDefaultRes())
+        assertNull(UiMediaSlot.GAMEBOOT_VIDEO.bundledDefaultUri("com.playfieldportal.launcher"))
+        assertNull(
+            UiMediaSlot.fromKey("gameboot_audio"),
+            "the retired GameBoot audio slot must not come back",
+        )
+    }
+
+    @Test fun `the built-in gameboot sound resolves to the bundled launch sample`() {
+        val uri = gameBootDefaultAudioUri("com.playfieldportal.launcher")
+        assertEquals("android.resource://com.playfieldportal.launcher/${R.raw.sfx_launch}", uri)
+    }
+
     @Test fun `video slots have no bundled default - none should ever be added`() {
         for (slot in UiMediaSlot.entries) {
             if (slot.kind == UiMediaKind.VIDEO) {
@@ -93,5 +108,17 @@ class UiMediaDefaultsTest {
 
     @Test fun `no custom media falls back to the bundled opening chime`() {
         assertEquals("/bundled", resolveBootAudio(null, null, "/bundled"))
+    }
+
+    // ── GameBoot presentation resolution ─────────────────────────────────────
+
+    @Test fun `a custom gameboot clip keeps its own track`() {
+        // Do NOT play the built-in sound under someone's clip: it would score their video with
+        // audio they never asked for. Null means "the clip's own track".
+        assertNull(resolveGameBootAudio("/video.mp4", "/bundled"))
+    }
+
+    @Test fun `no custom clip plays the built-in sound the sequence is timed to`() {
+        assertEquals("/bundled", resolveGameBootAudio(null, "/bundled"))
     }
 }

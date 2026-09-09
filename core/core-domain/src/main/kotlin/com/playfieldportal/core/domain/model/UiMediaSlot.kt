@@ -45,8 +45,10 @@ enum class UiMediaSlot(
     BOOT_AUDIO("boot_audio", UiMediaKind.AUDIO_TRACK, "Boot Sound", UiMediaLimits.BOOT),
 
     // ── GameBoot (Display ▸ GameBoot) ────────────────────────────────────────
+    // ONE slot: the GameBoot presentation is a single thing the user either keeps or replaces
+    // wholesale with their own clip, which brings its own audio. The retired `gameboot_audio`
+    // AUDIO_TRACK slot is swept from installs and restored backups by pruneOrphans().
     GAMEBOOT_VIDEO("gameboot_video", UiMediaKind.VIDEO, "GameBoot Animation", UiMediaLimits.GAMEBOOT_CLIP),
-    GAMEBOOT_AUDIO("gameboot_audio", UiMediaKind.AUDIO_TRACK, "GameBoot Sound", UiMediaLimits.GAMEBOOT),
     ;
 
     val isSound: Boolean get() = kind == UiMediaKind.SOUND

@@ -77,10 +77,13 @@ rather than holding a paused player.
 
 ## UI media slot
 
-One named, replaceable position in the interface's sound and boot media — the six menu sounds plus
-the boot and GameBoot video/audio pairs. Each slot carries its own duration and byte caps
-(`UiMediaLimits`); duration is always bounded. Import is staged, so a rejected pick cannot disturb
-a working assignment.
+One named, replaceable position in the interface's sound and boot media — the six menu sounds, the
+boot video/audio pair, and GameBoot's single replaceable clip. Each slot carries its own duration
+and byte caps (`UiMediaLimits`); duration is always bounded. Import is staged, so a rejected pick
+cannot disturb a working assignment. `BOOT_AUDIO` ships a bundled default too (`sfx_opening`), so
+the boot sequence is audible out of the box. GameBoot has no audio slot: its built-in sequence
+carries its own bundled sound (`sfx_launch`), and assigning a clip replaces the whole presentation,
+audio included.
 
 ## Bundled default
 

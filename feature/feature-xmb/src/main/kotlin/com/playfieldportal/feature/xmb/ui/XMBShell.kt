@@ -544,6 +544,17 @@ fun XMBShell(
             val effectiveWaveStyle = if (waveCovered || powerThrottled) {
                 uiState.waveStyle.frozen
             } else uiState.waveStyle
+            // GameBoot must NOT read effectiveWaveStyle. `waveCovered` means "something opaque is
+            // covering the wave, so don't burn a frame rate nothing can see" — and during a
+            // launch the thing covering it IS GameBoot (activeGameId is set on every Game Detail
+            // launch). Feeding that back in tells GameBoot not to animate because GameBoot is on
+            // screen, which froze the sequence on every real launch while the settings preview —
+            // reached from a screen that is not in `waveCovered` — animated normally.
+            //
+            // The honest input is the motion BUDGET: the user's chosen style, frozen only when
+            // the device is conserving power. Same value feeds the launch and the preview, so the
+            // two can never diverge again.
+            val gameBootWaveStyle = if (powerThrottled) uiState.waveStyle.frozen else uiState.waveStyle
             XmbBackground(
                 waveStyle           = effectiveWaveStyle,
                 customWallpaperPath = uiState.customWallpaperPath,
@@ -911,19 +922,6 @@ fun XMBShell(
                 }
             }
 
-            // GameBoot draws above everything, like the boot sequence: while it is on screen the
-            // launch is suspended on the gate (or, for a settings preview, nothing is launching at
-            // all). Leaving composition releases its players before the emulator gets the screen.
-            uiState.activeGameBoot?.let { request ->
-                GameBootOverlay(
-                    gameTitle = request.gameTitle,
-                    onComplete = onGameBootComplete,
-                    videoPath = request.videoPath,
-                    audioPath = request.audioPath,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            }
-
             // Discord QR login overlay. The SDK engine is attached at app start (MainActivity, full
             // flavor only), so this stays UI-only and carries no native dependency.
             if (uiState.activeDiscordLogin) {
@@ -1248,6 +1246,27 @@ fun XMBShell(
                     onGamepadActionConsumed = onPhotoViewerActionConsumed,
                     showTouchControls = uiState.resolvedShowTouchButton,
                     onTouchInput = onTouchInput,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+
+            // GameBoot draws ABOVE every screen and overlay — the Game Detail page it launches
+            // from, the settings screen it previews from, the app drawer, everything: while it is
+            // on screen the launch is suspended on the gate (or, for a settings preview, nothing is
+            // launching at all). It must be the last child of this Box; any screen composed after
+            // it (the old position sat below GameDetailScreen) covers the sequence. Leaving
+            // composition releases its players before the emulator gets the screen.
+            uiState.activeGameBoot?.let { request ->
+                GameBootOverlay(
+                    gameTitle = request.gameTitle,
+                    onComplete = onGameBootComplete,
+                    videoPath = request.videoPath,
+                    audioPath = request.audioPath,
+                    // The motion budget, NOT effectiveWaveStyle — see gameBootWaveStyle above.
+                    // A frozen or reduced style draws one still frame instead of the sweeps
+                    // (GameBoot runs on every launch, unlike the once-per-start boot sequence),
+                    // still at full length, so the launch waits for the whole presentation.
+                    waveStyle = gameBootWaveStyle,
                     modifier = Modifier.fillMaxSize(),
                 )
             }

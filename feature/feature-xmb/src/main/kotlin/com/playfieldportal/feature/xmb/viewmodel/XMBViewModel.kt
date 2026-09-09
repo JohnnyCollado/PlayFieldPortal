@@ -27,6 +27,7 @@ import com.playfieldportal.core.ui.icons.CustomIcon
 import com.playfieldportal.core.ui.icons.GifFrameProbe
 import com.playfieldportal.core.ui.media.bundledDefaultUri
 import com.playfieldportal.core.ui.media.resolveBootAudio
+import com.playfieldportal.core.ui.media.resolveGameBootAudio
 import com.playfieldportal.themekit.CustomizableIcons
 import com.playfieldportal.core.domain.discord.DiscordFriend
 import com.playfieldportal.core.domain.discord.DiscordPresence
@@ -1249,6 +1250,9 @@ class XMBViewModel @Inject constructor(
     private val uiMediaStore: com.playfieldportal.core.data.repository.UiMediaStore,
     private val gameBootPreferences: com.playfieldportal.core.data.repository.GameBootPreferences,
     private val gameBootGate: com.playfieldportal.feature.launcher.GameBootGate,
+    // The preview plays its own audio: the gate owns playback for a real launch, and a preview
+    // must never touch the gate. Same singleton player, so the two can never sound different.
+    private val uiMediaAudioPlayer: com.playfieldportal.core.ui.media.UiMediaAudioPlayer,
 ) : ViewModel() {
 
     // Drives the "convert detected games?" multi-select picker after a Windows-card scan; the same
@@ -7148,7 +7152,8 @@ class XMBViewModel @Inject constructor(
         val launchesGame = opensGameDetail && _uiState.value.directLaunch
         val event = when {
             silentRow -> null
-            launchesGame && gameBootEnabled -> null   // GameBoot's own audio replaces it
+            // GameBoot brings its own sound, so the menu Launch Sound must not stack with it.
+            launchesGame && gameBootEnabled -> null
             launches -> MenuSound.LAUNCH
             else -> MenuSound.SELECT
         }
@@ -8153,8 +8158,9 @@ class XMBViewModel @Inject constructor(
 
     // ── GameBoot ──────────────────────────────────────────────────────────────
 
-    // The GameBoot enable flag, read from the same source GameBootGate uses so the launch-sound
-    // decision and the presentation can never disagree.
+    // Whether GameBoot is on, read from the same source GameBootGate uses so the launch-sound
+    // decision and the presentation can never disagree. Initialised false (no suppression) until
+    // the flow settles.
     @Volatile
     private var gameBootEnabled: Boolean = false
 
@@ -8184,7 +8190,13 @@ class XMBViewModel @Inject constructor(
     fun onGameBootComplete() {
         val wasPreview = _uiState.value.gameBootIsPreview
         _uiState.update { it.copy(activeGameBoot = null, gameBootIsPreview = false) }
-        if (!wasPreview) gameBootGate.onPresentationFinished()
+        if (wasPreview) {
+            // Nothing is launching, so nothing will take audio focus and cut the clip: a skipped
+            // preview has to silence itself, or the sound plays on over the settings screen.
+            uiMediaAudioPlayer.stop()
+        } else {
+            gameBootGate.onPresentationFinished()
+        }
     }
 
     // ── Settings previews ─────────────────────────────────────────────────────
@@ -8200,12 +8212,33 @@ class XMBViewModel @Inject constructor(
     /**
      * Settings ▸ Display ▸ GameBoot ▸ Preview. Composes the overlay directly and NEVER touches the
      * gate — a preview must not be able to launch anything.
+     *
+     * It does everything else the gate does, though, and that is the point: same media resolution,
+     * same audio player, started at the same moment relative to the first frame. The preview and
+     * the real presentation differ only in what is waiting on the other side.
      */
     fun previewGameBoot() {
         viewModelScope.launch {
+            // The preview plays regardless of the switch, so the user can audition the
+            // presentation before turning it on. Audio resolves exactly as the gate resolves it
+            // — the built-in sound, or nothing when a custom clip carries its own track — so the
+            // preview sounds like the real thing.
             val (video, audio) = withContext(Dispatchers.IO) {
-                uiMediaStore.pathFor(com.playfieldportal.core.domain.model.UiMediaSlot.GAMEBOOT_VIDEO) to
-                    uiMediaStore.pathFor(com.playfieldportal.core.domain.model.UiMediaSlot.GAMEBOOT_AUDIO)
+                val customVideo = uiMediaStore.pathFor(com.playfieldportal.core.domain.model.UiMediaSlot.GAMEBOOT_VIDEO)
+                customVideo to resolveGameBootAudio(
+                    customVideoPath = customVideo,
+                    defaultUri = com.playfieldportal.core.ui.media.gameBootDefaultAudioUri(context.packageName),
+                )
+            }
+            // Started here, immediately before the overlay composes, exactly as GameBootGate
+            // starts it before a real presentation — the sequence is beat-matched to this sound,
+            // so a silent preview would show light landing on nothing.
+            audio?.let {
+                uiMediaAudioPlayer.play(
+                    uri = it,
+                    clipEndMs = com.playfieldportal.themekit.UiMediaLimits.GAMEBOOT_SEQUENCE_MS,
+                    label = "gameboot-preview",
+                )
             }
             _uiState.update {
                 it.copy(
