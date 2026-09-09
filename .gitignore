@@ -86,6 +86,11 @@ emu-pack-links/test-roms/240pSuite-N64-RC.zip
 emu-pack-links/test-roms/240pSuite-GameCube-1.20.zip
 emu-pack-links/test-roms/240p-DC-PVR-2.03.zip
 
+# Local FX clips used to test the boot sequence and GameBoot presentations. Working
+# media, not app assets — the shipped GameBoot default is drawn in Compose
+# (GameBootSequence) and the boot sequence's default is the PFP logo animation.
+assets/FX/
+
 # Sony PSP firmware audio: local reference only, must never be committed or shipped.
 # Measurements derived from it live in assets/SFX/REFERENCE.md, which is safe to track.
 assets/SFX/sony_firmware/*.wav
