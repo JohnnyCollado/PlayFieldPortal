@@ -61,7 +61,11 @@ class SettingsScaffoldNavigationTest {
     // snapshot reads there may not observe composition-side writes.
     private var consumedPlain = false
 
-    private fun showScreen(onBack: () -> Unit = {}, body: @Composable () -> Unit) {
+    private fun showScreen(
+        onBack: () -> Unit = {},
+        leftBacksOut: Boolean = true,
+        body: @Composable () -> Unit,
+    ) {
         composeRule.setContent {
             PFPTheme {
                 LaunchedEffect(Unit) {
@@ -70,6 +74,7 @@ class SettingsScaffoldNavigationTest {
                 CompositionLocalProvider(
                     LocalSettingsPendingAction provides pendingAction.value,
                     LocalSettingsActionConsumed provides { consumedPlain = true },
+                    LocalSettingsLeftBacksOut provides leftBacksOut,
                 ) {
                     SettingsScaffold(
                         title = "Settings",
@@ -165,6 +170,53 @@ class SettingsScaffoldNavigationTest {
         // BACK exits through the scaffold's back handler.
         press(GamepadAction.BACK)
         assertEquals(1, backCount)
+    }
+
+    @Test
+    fun `LEFT leaves the screen only where LEFT has nothing else to do`() {
+        var backCount = 0
+        var deleteSelects = 0
+        showScreen(onBack = { backCount++ }) {
+            SettingsRow(
+                label = "Theme",
+                onClick = {},
+                actions = listOf(
+                    SettingsRowAction(label = "Delete theme", onClick = { deleteSelects++ }) {
+                        Icon(Icons.Default.Delete, contentDescription = "Delete theme")
+                    },
+                ),
+            )
+            SettingsValueRow(label = "Version", value = "1.0")
+        }
+
+        // A row WITH inline actions: LEFT still steps into them, and back out of them, as before —
+        // the fallthrough must never outrank an existing consumer.
+        assertFocusedRow("Theme")
+        press(GamepadAction.NAVIGATE_RIGHT)
+        composeRule.onNode(isFocused()).assert(hasContentDescription("Delete theme"))
+        press(GamepadAction.NAVIGATE_LEFT)
+        assertFocusedRow("Theme")
+        assertEquals(0, backCount)
+
+        // A row WITHOUT them: LEFT used to be a silent no-op; now it leaves the screen.
+        press(GamepadAction.NAVIGATE_DOWN)
+        assertFocusedRow("Version")
+        press(GamepadAction.NAVIGATE_LEFT)
+        assertEquals(1, backCount)
+        assertEquals(0, deleteSelects)
+    }
+
+    @Test
+    fun `with the preference off LEFT is the no-op it always was`() {
+        var backCount = 0
+        showScreen(onBack = { backCount++ }, leftBacksOut = false) {
+            SettingsRow(label = "Theme", onClick = {})
+        }
+
+        assertFocusedRow("Theme")
+        press(GamepadAction.NAVIGATE_LEFT)
+        assertEquals(0, backCount)
+        assertFocusedRow("Theme")
     }
 
     @Test

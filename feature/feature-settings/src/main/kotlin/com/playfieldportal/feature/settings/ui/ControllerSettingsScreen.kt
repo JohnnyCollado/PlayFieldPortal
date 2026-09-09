@@ -110,6 +110,15 @@ fun ControllerSettingsScreen(
                 onClick  = { viewModel.cycleScrollSpeed() },
             )
 
+            SettingsGroup("Navigation")
+            SettingsToggleRow(
+                label    = "Left Backs Out",
+                sublabel = "Press LEFT to leave a folder, flyout or settings screen — " +
+                    "only where LEFT does nothing else",
+                checked  = state.layoutPrefs.leftBacksOut,
+                onToggle = { viewModel.setLeftBacksOut(it) },
+            )
+
             SettingsGroup("Reset")
             SettingsRow(
                 label    = "Reset All Controller Settings",

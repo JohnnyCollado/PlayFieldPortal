@@ -88,6 +88,11 @@ class GamepadInputHandler @Inject constructor(
     // so pushing to full tilt speeds up mid-hold without restarting the repeat. 0 for D-pad holds.
     @Volatile private var stickMagnitude: Float = 0f
 
+    // Previous frame's HAT deflection, so [hatDirectionNewestFirst] can tell which axis JUST
+    // became deflected. Updated on every motion event that reaches the axis read below.
+    private var prevHatX: Float = 0f
+    private var prevHatY: Float = 0f
+
     // Last emit time per directional action, for same-source duplicate suppression. Stamped by
     // emit(); read by isDuplicateDirection() before a new edge is emitted.
     private val lastDirectionalEmitAt = mutableMapOf<GamepadAction, Long>()
@@ -145,12 +150,14 @@ class GamepadInputHandler @Inject constructor(
                     // navigation never double-steps.
                     if (action.isDirectional() && isDuplicateDirection(action)) return true
 
-                    emit(action)
-
-                    // Start repeat for navigation actions
+                    // Armed BEFORE emitting. emit() reaches the ViewModel's collector
+                    // synchronously (Dispatchers.Main.immediate), and at a navigation boundary
+                    // that collector calls cancelRepeat() — which, if we armed afterwards, would
+                    // be cancelling a job that did not exist yet, leaving one running behind it.
                     if (action.isDirectional()) {
                         startRepeat(action)
                     }
+                    emit(action, physical = true)
                 }
                 true
             }
@@ -190,19 +197,32 @@ class GamepadInputHandler @Inject constructor(
             cancelRepeat()
             lastStickAction = motionAction
             if (motionAction != null && !isDuplicateDirection(motionAction)) {
-                emit(motionAction)
+                // Arm before emitting — see the note in onKeyEvent above.
                 startRepeat(motionAction)
+                emit(motionAction, physical = true)
             }
         }
 
+        prevHatX = hatX
+        prevHatY = hatY
         return motionAction != null
     }
 
     // Used to inject actions from the ViewModel for button remapping preview
     fun emitAction(action: GamepadAction) = emit(action)
 
-    private fun emit(action: GamepadAction) {
-        if (action.isDirectional()) lastDirectionalEmitAt[action] = clock()
+    /**
+     * [physical] marks an emission caused by the user actually pressing something, which is the
+     * only kind that may stamp the duplicate-suppression window.
+     *
+     * That window exists to swallow ONE physical press arriving twice (HAT axis + the DPAD keycode
+     * Android synthesizes from it). Auto-repeat ticks are not presses, and while a hold was
+     * scrolling they re-stamped the window every ~50-80ms — so every genuine press made during a
+     * scroll looked like a redundant duplicate and was silently dropped, exactly when the user was
+     * pressing hardest.
+     */
+    private fun emit(action: GamepadAction, physical: Boolean = false) {
+        if (physical && action.isDirectional()) lastDirectionalEmitAt[action] = clock()
         _actions.tryEmit(action)
         Timber.v("Gamepad action: $action")
     }
@@ -232,11 +252,26 @@ class GamepadInputHandler @Inject constructor(
         }
     }
 
+    /**
+     * Stops auto-repeat. Deliberately does NOT forget which direction is physically held.
+     *
+     * [lastStickAction] is the *edge detector* for the analog/HAT path: [onMotionEvent] only acts
+     * when the reported direction differs from it, so clearing it while a finger is still on the
+     * D-pad makes the eventual release look like "no change" — the release is then skipped, the
+     * repeat job is never cancelled, and one tap emits a second action 250ms later.
+     *
+     * That is not hypothetical: the ViewModel calls this at every navigation boundary, and the
+     * actions SharedFlow is collected on Dispatchers.Main.immediate, so the collector runs
+     * RE-ENTRANTLY inside emit() — mid-press, between this handler setting [lastStickAction] and
+     * arming the repeat. Roughly one press in five was landing twice.
+     *
+     * So: the repeat job is this function's business; the held direction belongs to
+     * [onMotionEvent], which owns it from press to release. [stickMagnitude] is likewise
+     * recomputed on every motion event and needs no clearing here.
+     */
     fun cancelRepeat() {
         repeatJob?.cancel()
         repeatJob = null
-        lastStickAction = null
-        stickMagnitude = 0f
     }
 
     // ── Normalization helpers ──────────────────────────────────────────────────────────────
@@ -270,13 +305,8 @@ class GamepadInputHandler @Inject constructor(
         return if (stillEngaged) engaged else null
     }
 
-    private fun hatDirection(hatX: Float, hatY: Float): GamepadAction? = when {
-        hatY < -HAT_DEAD_ZONE -> GamepadAction.NAVIGATE_UP
-        hatY >  HAT_DEAD_ZONE -> GamepadAction.NAVIGATE_DOWN
-        hatX < -HAT_DEAD_ZONE -> GamepadAction.NAVIGATE_LEFT
-        hatX >  HAT_DEAD_ZONE -> GamepadAction.NAVIGATE_RIGHT
-        else -> null
-    }
+    private fun hatDirection(hatX: Float, hatY: Float): GamepadAction? =
+        hatDirectionNewestFirst(hatX, hatY, prevHatX, prevHatY, lastStickAction)
 
     /** Device-reported neutral flat for the left stick; 0 when unavailable (JVM tests, odd devices). */
     private fun stickFlatFor(deviceId: Int): Float =
@@ -300,4 +330,55 @@ class GamepadInputHandler @Inject constructor(
         GamepadAction.NAVIGATE_LEFT,
         GamepadAction.NAVIGATE_RIGHT,
     )
+}
+
+/**
+ * Which single direction a D-pad reports when both axes are deflected — "the axis you just pressed
+ * wins".
+ *
+ * The XMB cursor is discrete and never moves diagonally, so exactly one direction has to come out
+ * of a diagonal. Priority used to be fixed (Y before X), which meant a horizontal press was
+ * unreachable for as long as a vertical was held: rolling through a diagonal, a LEFT tap went
+ * unheard for 274ms until UP was released. Since a D-pad is rolled through diagonals constantly,
+ * that read as input lag.
+ *
+ * The rule, in order:
+ *  1. Only one axis deflected — that axis, unchanged from before.
+ *  2. Both deflected, one of them only as of THIS event — the new one. This is the fix: the press
+ *     the user just made outranks the one they are still holding.
+ *  3. Both deflected and neither is new — whichever the user is already navigating with ([held]),
+ *     so a hold keeps repeating in its own direction instead of flapping.
+ *  4. Both became deflected in the same event (a true simultaneous diagonal) — Y, the old
+ *     tie-break, kept so a genuinely ambiguous press behaves as it always did.
+ */
+internal fun hatDirectionNewestFirst(
+    hatX: Float,
+    hatY: Float,
+    prevHatX: Float,
+    prevHatY: Float,
+    held: GamepadAction?,
+    deadZone: Float = HAT_DEAD_ZONE,
+): GamepadAction? {
+    val xDir = when {
+        hatX < -deadZone -> GamepadAction.NAVIGATE_LEFT
+        hatX >  deadZone -> GamepadAction.NAVIGATE_RIGHT
+        else -> null
+    }
+    val yDir = when {
+        hatY < -deadZone -> GamepadAction.NAVIGATE_UP
+        hatY >  deadZone -> GamepadAction.NAVIGATE_DOWN
+        else -> null
+    }
+    if (xDir == null) return yDir
+    if (yDir == null) return xDir
+
+    val xIsNew = abs(prevHatX) <= deadZone
+    val yIsNew = abs(prevHatY) <= deadZone
+    if (xIsNew != yIsNew) return if (xIsNew) xDir else yDir
+
+    return when (held) {
+        yDir -> yDir
+        xDir -> xDir
+        else -> yDir
+    }
 }

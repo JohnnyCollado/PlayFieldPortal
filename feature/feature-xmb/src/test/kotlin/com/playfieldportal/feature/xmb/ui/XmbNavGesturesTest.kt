@@ -1,6 +1,8 @@
 package com.playfieldportal.feature.xmb.ui
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /** Unit coverage for the pure scrub/fling step math (see [consumeWholeSteps] / [flingBonusSteps]). */
@@ -8,6 +10,7 @@ class XmbNavGesturesTest {
 
     private val stepPx = 64f
     private val flingPx = 420f
+    private val backCommitPx = 72f
 
     // ── Live scrubbing: whole steps per accumulated travel ─────────────────────
 
@@ -57,5 +60,22 @@ class XmbNavGesturesTest {
     @Test fun `fast down-flick grants upward bonus`() {
         assertEquals(-1, flingBonusSteps(800f, flingPx))
         assertEquals(-2, flingBonusSteps(1500f, flingPx))
+    }
+
+    // ── Swipe-back commit (drilled in) ──────────────────────────────────────────
+
+    @Test fun `a long enough leftward drag backs out`() {
+        assertTrue(commitsSwipeBack(-72f, backCommitPx))     // exactly at the threshold
+        assertTrue(commitsSwipeBack(-300f, backCommitPx))
+    }
+
+    @Test fun `a short leftward drag does not back out`() {
+        assertFalse(commitsSwipeBack(-71f, backCommitPx))
+        assertFalse(commitsSwipeBack(0f, backCommitPx))
+    }
+
+    @Test fun `a rightward drag never backs out, however far`() {
+        assertFalse(commitsSwipeBack(72f, backCommitPx))
+        assertFalse(commitsSwipeBack(9999f, backCommitPx))
     }
 }

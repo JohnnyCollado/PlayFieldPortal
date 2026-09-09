@@ -1,6 +1,7 @@
 # Touch controls — dead scroll zones, and backing out with LEFT
 
-> Implementation handoff, approved 2026-09-09, not yet started. Indexed as `C15` in
+> Implementation handoff, approved 2026-09-09; all seven tasks implemented 2026-09-09, pending the
+> owner's on-device pass and a build. Indexed as `C15` in
 > [the plan index](README.md). Work the Execution Task Index in dependency order, one bounded task
 > per helper.
 
@@ -130,10 +131,20 @@ requireUnconsumed = false); … }` probe. It keeps setting `cursorVisible=false`
 ordering around the new `dragToScroll` becomes load-bearing and fragile.
 
 **D3 — Chrome drags scroll the content; content keeps its own scroll.**
-`dragToScroll` is attached to the scaffold's header slot, footer slot and the content `Box`, keyed
-on `contentScrollState.value`. When the finger is over the content's own `verticalScroll`, that
-child wins on the Main pass (child-first), so behaviour there is unchanged. The chrome path only
-fires where nothing else claims the drag — which is exactly the dead zone.
+`dragToScroll` is attached to the scaffold's header slot and footer slot, keyed on
+`contentScrollState.value`. Those are **siblings** of the scrolling body, which is what makes
+sharing its `ScrollState` safe.
+
+> **Corrected during implementation.** This decision originally also attached the modifier to the
+> content `Box`, on the reasoning that the body's own `verticalScroll` would win the drag child-first
+> on the Main pass. That reasoning was wrong: the content `Box` is an *ancestor* of the body, and
+> `Modifier.scrollable` takes part in nested scrolling, so it became a second owner of the same
+> `ScrollState`. The two then contend for that state's `MutatorMutex`, and the owner reported it on
+> device: swipe to scroll, then tap-and-drag while it is still flinging, and the second drag is
+> swallowed instead of catching the fling. Instrumentation confirmed it — 92 `scrollBy` events
+> attributed to the content band that should have been zero. The content attachment is removed; it
+> was never load-bearing, since the body fills that box. The constraint (*attach to siblings, never
+> to an ancestor of the scroll container*) is recorded in `DragToScroll`'s KDoc.
 
 **D4 — `LEFT = back` is a fallthrough, never an override.**
 Two insertion points, both after every existing LEFT consumer:
@@ -220,6 +231,88 @@ Recorded as follow-ups, not implemented (workflow §5):
   wholesale, so BACK dismisses the entire menu instead of returning to the parent. Real, unrelated.
 - **Dead imports** of `detectTapGestures` / `pointerInput` in `ThemesSettingsScreen.kt:47,55`.
 
+## Audit record (Task 0.1) — where a drag is dead
+
+Source-derived, 2026-09-09. Every Settings surface routes through `SettingsScaffold`; the Setup
+Wizard routes through `WizardScaffold`, which is itself a `SettingsScaffold` with the PSP chrome in
+the `header`/`footer` slots. `SettingsScaffold` is not used outside `feature-settings` (only its two
+test files), so the two scaffolds really are the whole Phase 1 surface.
+
+### Finding A — the dead zones are structural, not consumed
+
+The scaffold's root `Box` pointer loop (`SettingsScaffold.kt:690-707`) reads `awaitPointerEvent()`
+with the default `PointerEventPass.Main`, and Main dispatches **child-first**. Every scrolling body
+therefore sees and consumes the drag before the root loop ever gets it, so today's blanket
+`change.consume()` is **not** the cause of any dead zone. It is still worth removing per D2 — once
+`dragToScroll` is attached to sibling chrome, "who consumed what on which pass" stops being
+academic — but Task 1.1 should not expect removing it to change any observed behaviour, and Task
+1.2's fix list is decided entirely by Finding B.
+
+Every reported dead zone is structural: chrome laid out as a **sibling** of the scroll container.
+
+### Finding B — chrome outside the scroll container
+
+Per surface, the chrome outside the scroll owner is identical, because it is all the same scaffold:
+
+| Region | `SettingsScaffold.kt` | Dead today |
+|---|---|---|
+| Header (breadcrumb `Row`, or the injected `header()` slot) | 743-793 | yes |
+| `HorizontalDivider` | 795 | yes |
+| 0dp focus-bootstrap `Box` | 801 | yes (0dp — no drag area in practice) |
+| Content `Box(weight(1f))` **not** covered by the body | 807-857 | yes — see Finding C |
+| Footer (`SettingsHelperFooter`, or the injected `footer()` slot) | 859-871 | yes |
+
+Side gutters are **not** dead: every screen body is a `Column(Modifier.fillMaxSize()
+.verticalScroll(...))`, so it fills the content `Box` edge to edge and the row padding lives inside
+the scrollable. A drag in the gutter already scrolls.
+
+### Finding C — screens whose scroll state is never registered
+
+`dragToScroll` will be keyed on `contentScrollState`, which is only set by
+`LocalSettingsScrollStateRegistrar`. These bodies own a `rememberScrollState()` that they never
+register, so on them the scaffold holds **null** and chrome drags would stay dead even after 1.2 —
+and controller keep-in-view is already degraded there for the same reason:
+
+| Screen / sub-screen | Line |
+|---|---|
+| `CreditsSettingsScreen` (the whole screen) | `:48` |
+| `EmulatorsSettingsScreen` ▸ `WizardPickAppStep` | `:284` |
+| `EmulatorsSettingsScreen` ▸ `TestLaunchFlow` (pick ROM / result) | `:315`, `:337` |
+| `EmulatorsSettingsScreen` ▸ "Detecting…" | `:109` (no scroll container at all) |
+| `LibraryManagerScreen` ▸ `PickPlatformContent` | `:349` |
+| `LibraryManagerScreen` ▸ `PickEmulatorContent` | `:372` |
+| `LibraryManagerScreen` ▸ `ScanPromptContent` | `:394` |
+| `LibraryManagerScreen` ▸ `CardDetailContent` | `:452` |
+| `LibraryManagerScreen` ▸ `ImportPcGamesContent` | `:659` |
+| `CategoryManagerScreen` ▸ `PickIconContent` | `:123` |
+| `CategoryManagerScreen` ▸ `PickTypeContent` | `:146` |
+| `CategoryManagerScreen` ▸ `CategoryDetailContent` | `:177` |
+
+Each is a **one-line** fix (`LocalSettingsScrollStateRegistrar.current(scrollState)` next to the
+existing `rememberScrollState()`), not a restructure, so they are folded into Task 1.2 rather than
+deferred. `CardDetailContent` is the one the owner is most likely to hit day to day.
+
+The registered screens — About, Achievements, App Visibility, Artwork Import, Artwork, Audio,
+Backup, Category Manager (list), Collections (list + detail), Controller, Display, Emulator
+Assignment (list + detail), Emulator Profile Editor, Emulators (list), Library Manager (list), Logs,
+Music, Photo, Themes, Video — need nothing beyond the scaffold change.
+
+### Finding D — the Setup Wizard needs no `WizardScaffold` edit
+
+`WizardScaffold.kt:96-98` registers one `ScrollState` shared by all eleven `SetupStep` pages, and no
+page body opens a scrollable of its own (`InitialSetupScreen.kt`). Its header and footer reach the
+layout through the scaffold's own `header`/`footer` slots, so wiring `dragToScroll` into those slots
+in `SettingsScaffold` covers the wizard for free. Task 1.2's "2 modified files" budget is therefore
+likely to be 1 file plus the Finding C one-liners.
+
+### Deferred (unchanged from *Discovered, deliberately out of scope*)
+
+The picker/drawer/overlay surfaces (`AppDrawerScreen`, `StorefrontAppDrawer`, `AppPickerScreen`,
+`GamePickerScreen`, `MusicBrowserScreen`, `ShibaLibraryScreen`, `DetailContextMenu`,
+`PspContextMenu`, `ColorSchemePickerOverlay`) plus the settings dialogs
+(`CollectionCategoryPickerDialog:282`, `CollectionIconPickerDialog:328`, `EmulatorPickerDialog`,
+`AddPcGameDialog`, `ClearOverridesDialog`) keep the same shape and stay out of Phase 1.
+
 ## Verification strategy
 
 - **Unit (JVM):** the `isInSubItem` ⟺ `onHomeBack`-branch invariant; the swipe-back commit
@@ -240,13 +333,53 @@ Recorded as follow-ups, not implemented (workflow §5):
 
 | ID | Task | Depends On | Status |
 |---|---|---|---|
-| 0.1 | Audit and record every touch dead zone in Screens and the Wizard | None | READY |
-| 1.1 | Add the shared `dragToScroll` modifier and make the scaffold's touch probe non-consuming | 0.1 | READY |
-| 1.2 | Wire `dragToScroll` into `SettingsScaffold` + `WizardScaffold` chrome | 1.1 | READY |
-| 2.1 | Extract `backOutOfDrill()` and bind D-pad LEFT to it on the XMB | None | READY |
-| 2.2 | Add the swipe-back branch to `xmbNavGestures` and wire it in `XMBShell` | 2.1 | READY |
-| 3.1 | Add the `controller_left_backs_out` preference end-to-end (repo, prefs model, Settings row, reset, backup) | None | READY |
-| 3.2 | Make LEFT fall through to Back in `SettingsScaffold`, gated on 3.1, and update the docs | 3.1, 2.1 | READY |
+| 0.1 | Audit and record every touch dead zone in Screens and the Wizard | None | DONE — see *Audit record* above |
+| 1.1 | Add the shared `dragToScroll` modifier and make the scaffold's touch probe non-consuming | 0.1 | DONE |
+| 1.2 | Wire `dragToScroll` into `SettingsScaffold` + `WizardScaffold` chrome | 1.1 | DONE |
+| 2.1 | Extract `backOutOfDrill()` and bind D-pad LEFT to it on the XMB | None | DONE |
+| 2.2 | Add the swipe-back branch to `xmbNavGestures` and wire it in `XMBShell` | 2.1 | DONE |
+| 3.1 | Add the `controller_left_backs_out` preference end-to-end (repo, prefs model, Settings row, reset, backup) | None | DONE |
+| 3.2 | Make LEFT fall through to Back in `SettingsScaffold`, gated on 3.1, and update the docs | 3.1, 2.1 | DONE |
+
+### Deviations from the plan as written
+
+Each is a deliberate choice made while implementing, recorded so the diff reads as decisions:
+
+1. **`isInSubItem` is now *defined* as the ladder, not tested against it.** D7 asked for a
+   `backOutOfDrill()` extraction pinned by an `isInSubItem` invariant test. The stronger form was
+   available: `XMBUiState.drillOutStep` picks the rung, `isInSubItem` is `drillOutStep != null`, and
+   `backOutOfDrill()` performs it. The two lists cannot drift because there is only one list, and
+   the ladder's *precedence* — the part a test can still get wrong — is pinned by
+   `DrillOutLadderTest` with no ViewModel to build.
+2. **`WizardScaffold` needed no edit** (Finding D). Its chrome reaches the layout through
+   `SettingsScaffold`'s own `header`/`footer` slots, so the header/footer bands cover it already.
+3. **Twelve one-line scroll-state registrations** were folded into 1.2 rather than deferred
+   (Finding C) — without them `dragToScroll` is a no-op on those sub-screens.
+4. **`core-ui` gained Compose test dependencies** (over 1.1's "1 new file, 1 modified, 1 test"
+   budget). `dragToScroll`'s direction sign is only observable by dragging a composed node, and the
+   test belongs with the modifier; the module had no Compose test infrastructure.
+5. **The preference gates the XMB's LEFT too**, not only the Settings one — D5 says it gates the
+   D-pad behaviour, and D4's D-pad behaviour has two insertion points. It is mirrored into
+   `XMBUiState.leftBacksOut` (fed by the existing `controllerLayoutRepository.prefs` collector) and
+   handed to Settings through `SettingsNavHost` → `LocalSettingsLeftBacksOut`. Task 3.2's file list
+   grew by `XMBViewModel`, `XMBShell` and `SettingsNavHost` accordingly.
+6. **The content-`Box` attachment from D3 was removed** after on-device testing — see the
+   correction note under D3. Header and footer only.
+7. **`cursorVisible` is now seeded from the host's `lastInputWasTouch`** (`SettingsNavHost` →
+   `LocalSettingsLastInputWasTouch`). Every scaffold previously started its cursor visible and only
+   cleared it on the next touch-down, so a touch-only user saw the controller cursor flash onto
+   every screen they opened. Pre-existing, found by the owner while testing Phase 1.
+8. **Removing the root pointer-loop consume changes one small behaviour** (1.1's stop condition
+   asked for this to be reported): the old loop also fired on *hover* movement with no button
+   pressed, so a mouse moving across a settings screen hid the controller cursor. The documented
+   probe reacts to a real touch-down only. Nothing else changed — see Finding A for why the consume
+   was never load-bearing.
+
+### Still outstanding
+
+- **The owner's on-device pass** (the verification strategy's third bullet) — nothing here has been
+  run on hardware.
+- **No Gradle build has been run** (house rule). The code is unverified by the compiler.
 
 ---
 

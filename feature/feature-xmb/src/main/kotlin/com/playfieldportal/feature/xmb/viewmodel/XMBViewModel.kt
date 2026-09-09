@@ -504,6 +504,29 @@ data class MusicTrackPickerState(
 
 // ── Main XMB state ────────────────────────────────────────────────────────────
 
+/**
+ * One rung of the home screen's drill-out ladder — what a single Back (button, left-edge pull,
+ * leftward swipe, or D-pad LEFT) unwinds next. [XMBUiState.drillOutStep] picks the rung from state
+ * and [XMBViewModel.backOutOfDrill] performs it; keeping the choice separate from the doing is what
+ * lets the ladder's precedence be pinned by a plain state test, with no ViewModel to build.
+ */
+enum class DrillOutStep {
+    SETTINGS_SECTION,
+    MUSIC,
+    /** A video Library backs out to the Libraries list before leaving Video. */
+    VIDEO_LIBRARY,
+    VIDEO_PLAYLIST,
+    VIDEO_COLLECTION_CHILD,
+    VIDEO,
+    /** A photo album backs out to the Albums list before leaving Photo. */
+    PHOTO_LIBRARY,
+    PHOTO,
+    SOCIAL,
+    ACHIEVEMENTS,
+    /** A Games platform folder, collection, All Games or Favorites. */
+    PLATFORM_FOLDER,
+}
+
 data class XMBUiState(
     // ── Horizontal axis: platforms (SD cards) + utility tabs ──────────────
     val categories: List<Category> = emptyList(),
@@ -623,6 +646,9 @@ data class XMBUiState(
     // null at the flat section root. Deliberately NOT part of hasBlockingOverlay: the flyout is
     // XMB foreground, so input keeps driving the item list exactly like every other drill.
     val settingsSectionNav: SettingsSection? = null,
+    // Settings ▸ Controller ▸ Left Backs Out. Mirrored from ControllerLayoutRepository so both the
+    // XMB's own LEFT and the Settings overlay's read one value. Default true matches the pref's.
+    val leftBacksOut: Boolean = true,
     val pendingSettingsAction: GamepadAction? = null,
     val activeAppDrawerFilter: String? = null,
     val pendingDrawerAction: GamepadAction? = null,
@@ -784,15 +810,31 @@ data class XMBUiState(
     // True when the user has drilled into a sub-item on the home screen (a Games platform/collection/
     // All Games/Favorites, or a Music sub-view). Drives the floating Back button and locks Left/Right
     // category switching until the user backs out.
+    //
+    // Defined as "there is a level to back out of" rather than as its own list of conditions: the
+    // ladder below and this flag used to be two hand-written lists that had to agree, and three
+    // callers (gamepad BACK, touch Back, and now D-pad LEFT) is exactly where they would drift.
     val isInSubItem: Boolean
-        get() = musicNav != MusicNav.Root ||
-            videoNav != VideoNav.Root ||
-            photoNav != PhotoNav.Root ||
-            socialNav != SocialNav.Root ||
-            achievementsNav != AchievementsNav.Root ||
-            settingsSectionNav != null ||
-            selectedPlatformId != null ||
-            selectedCollectionId != null
+        get() = drillOutStep != null
+
+    // The single rung [XMBViewModel.backOutOfDrill] would unwind next, or null at the category
+    // root. Order IS the precedence: two-level video/photo paths back out through their list
+    // before leaving the section, so each press climbs exactly one level.
+    val drillOutStep: DrillOutStep?
+        get() = when {
+            settingsSectionNav != null -> DrillOutStep.SETTINGS_SECTION
+            musicNav != MusicNav.Root -> DrillOutStep.MUSIC
+            videoNav is VideoNav.Library -> DrillOutStep.VIDEO_LIBRARY
+            videoNav is VideoNav.Playlist -> DrillOutStep.VIDEO_PLAYLIST
+            videoNav.isVideoCollectionChild -> DrillOutStep.VIDEO_COLLECTION_CHILD
+            videoNav != VideoNav.Root -> DrillOutStep.VIDEO
+            photoNav is PhotoNav.Library -> DrillOutStep.PHOTO_LIBRARY
+            photoNav != PhotoNav.Root -> DrillOutStep.PHOTO
+            socialNav != SocialNav.Root -> DrillOutStep.SOCIAL
+            achievementsNav != AchievementsNav.Root -> DrillOutStep.ACHIEVEMENTS
+            selectedPlatformId != null || selectedCollectionId != null -> DrillOutStep.PLATFORM_FOLDER
+            else -> null
+        }
 
     // The item currently under the XMB cursor, or null.
     val focusedItem: XMBItem?
@@ -4361,6 +4403,7 @@ class XMBViewModel @Inject constructor(
                 // Prompt glyphs are supplied ambiently by ProvideControllerPrompts at the
                 // app root, so the display type no longer needs mirroring into UI state.
                 gamepadInputHandler.scrollSpeed = prefs.scrollSpeed
+                _uiState.update { it.copy(leftBacksOut = prefs.leftBacksOut) }
             }
         }
     }
@@ -4749,9 +4792,18 @@ class XMBViewModel @Inject constructor(
             GamepadAction.NAVIGATE_UP   -> if (!moveItemCursor(-1)) gamepadInputHandler.cancelRepeat()
             GamepadAction.NAVIGATE_DOWN -> if (!moveItemCursor(+1)) gamepadInputHandler.cancelRepeat()
             GamepadAction.NAVIGATE_LEFT -> {
-                // While drilled into a sub-item, Left/Right no longer escape to other categories —
-                // the user must Back out first.
-                if (state.isInSubItem) { gamepadInputHandler.cancelRepeat(); return }
+                // While drilled into a sub-item, LEFT does not escape to another category — it
+                // backs out one level, the direction the XMB's own drill-in metaphor implies. It
+                // deliberately does NOT fall through to the App Drawer the way BACK does (that is
+                // BACK's job, and LEFT would reach it by surprise), and it does not markTouchInput:
+                // a controller press must not flip the contextual App Drawer button to touch mode.
+                if (state.isInSubItem) {
+                    gamepadInputHandler.cancelRepeat()
+                    if (!state.leftBacksOut) return
+                    menuSound.play(MenuSound.BACK)
+                    backOutOfDrill(state)
+                    return
+                }
                 val next = (state.selectedCategoryIndex - 1).coerceAtLeast(0)
                 if (next != state.selectedCategoryIndex) onCategorySelected(next)
                 else gamepadInputHandler.cancelRepeat()
@@ -4766,22 +4818,8 @@ class XMBViewModel @Inject constructor(
             GamepadAction.SELECT     -> onItemSelected(state.selectedItemIndex)
             GamepadAction.BACK       -> {
                 menuSound.play(MenuSound.BACK)
-                when {
-                    state.settingsSectionNav != null -> closeSettingsSection()
-                    state.musicNav != MusicNav.Root -> closeMusicView()
-                    // Two-level video paths back out one level first.
-                    state.videoNav is VideoNav.Library -> openVideoView(VideoNav.Libraries)
-                    state.videoNav is VideoNav.Playlist -> openVideoView(VideoNav.Playlists)
-                    state.videoNav.isVideoCollectionChild -> openVideoView(VideoNav.Collections)
-                    state.videoNav != VideoNav.Root -> closeVideoView()
-                    // Album drill-in backs out via the Albums list first.
-                    state.photoNav is PhotoNav.Library -> openPhotoView(PhotoNav.Albums)
-                    state.photoNav != PhotoNav.Root -> closePhotoView()
-                    state.socialNav != SocialNav.Root -> socialBack()
-                    state.achievementsNav != AchievementsNav.Root -> closeAchievementsView()
-                    state.selectedPlatformId != null || state.selectedCollectionId != null -> closePlatformFolder()
-                    else -> onOpenAppDrawer()
-                }
+                // One level up, or the App Drawer when there is no level left to leave.
+                if (!backOutOfDrill(state)) onOpenAppDrawer()
             }
             GamepadAction.OPEN_CONTEXT_MENU -> {
                 // Y / Triangle — open context menu for whichever item type has focus
@@ -6381,6 +6419,36 @@ class XMBViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Unwinds exactly ONE level of home-screen drill-in, and reports whether it did. False means
+     * the cursor was already at a category root — there was nothing to back out of.
+     *
+     * The single implementation of the ladder. It was written out twice (gamepad BACK and the
+     * touch [onHomeBack]) before D-pad LEFT became a third caller, and each caller wants a
+     * different thing at the root: BACK opens the App Drawer, LEFT steps the category bar. So the
+     * ladder returns the fact and lets the caller decide — it plays no sound, marks no input
+     * source, and has no fallback of its own.
+     */
+    private fun backOutOfDrill(s: XMBUiState): Boolean {
+        when (s.drillOutStep) {
+            DrillOutStep.SETTINGS_SECTION -> closeSettingsSection()
+            DrillOutStep.MUSIC -> closeMusicView()
+            // Two-level video paths back out through their own list first.
+            DrillOutStep.VIDEO_LIBRARY -> openVideoView(VideoNav.Libraries)
+            DrillOutStep.VIDEO_PLAYLIST -> openVideoView(VideoNav.Playlists)
+            DrillOutStep.VIDEO_COLLECTION_CHILD -> openVideoView(VideoNav.Collections)
+            DrillOutStep.VIDEO -> closeVideoView()
+            // An album drill-in backs out via the Albums list first.
+            DrillOutStep.PHOTO_LIBRARY -> openPhotoView(PhotoNav.Albums)
+            DrillOutStep.PHOTO -> closePhotoView()
+            DrillOutStep.SOCIAL -> socialBack()
+            DrillOutStep.ACHIEVEMENTS -> closeAchievementsView()
+            DrillOutStep.PLATFORM_FOLDER -> closePlatformFolder()
+            null -> return false
+        }
+        return true
+    }
+
     /** Touch: the left-edge-swipe Back — exit an open folder, or open the app drawer at the root
      *  (mirrors the gamepad BACK behaviour on the home screen). No-op while an overlay is up. */
     fun onHomeBack() {
@@ -6388,20 +6456,7 @@ class XMBViewModel @Inject constructor(
         val s = _uiState.value
         if (s.hasBlockingOverlay) return
         menuSound.play(MenuSound.BACK)
-        when {
-            s.settingsSectionNav != null -> closeSettingsSection()
-            s.musicNav != MusicNav.Root -> closeMusicView()
-            s.videoNav is VideoNav.Library -> openVideoView(VideoNav.Libraries)
-            s.videoNav is VideoNav.Playlist -> openVideoView(VideoNav.Playlists)
-            s.videoNav.isVideoCollectionChild -> openVideoView(VideoNav.Collections)
-            s.videoNav != VideoNav.Root -> closeVideoView()
-            s.photoNav is PhotoNav.Library -> openPhotoView(PhotoNav.Albums)
-            s.photoNav != PhotoNav.Root -> closePhotoView()
-            s.socialNav != SocialNav.Root -> socialBack()
-            s.achievementsNav != AchievementsNav.Root -> closeAchievementsView()
-            s.selectedPlatformId != null || s.selectedCollectionId != null -> closePlatformFolder()
-            else -> onOpenAppDrawer()
-        }
+        if (!backOutOfDrill(s)) onOpenAppDrawer()
     }
 
     // ── Item selection ────────────────────────────────────────────────────────

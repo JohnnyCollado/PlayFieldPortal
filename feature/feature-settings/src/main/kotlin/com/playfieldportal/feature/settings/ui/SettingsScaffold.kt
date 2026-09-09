@@ -4,6 +4,8 @@ import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -79,6 +81,7 @@ import com.playfieldportal.core.domain.model.isDirectional
 import com.playfieldportal.core.ui.components.ControllerHintBar
 import com.playfieldportal.core.ui.components.ControllerPromptBar
 import com.playfieldportal.core.ui.components.ControllerPromptItem
+import com.playfieldportal.core.ui.gesture.dragToScroll
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.LocalPfpTextColors
 import com.playfieldportal.core.ui.theme.solveScrimColor
@@ -95,6 +98,24 @@ val LocalSettingsTouchInput = compositionLocalOf<() -> Unit> { {} }
 /** Host-level touch callback used by the fullscreen settings hint gate. */
 val LocalSettingsHostTouchInput = compositionLocalOf<() -> Unit> { {} }
 val LocalSettingsShowControllerHint = compositionLocalOf { false }
+/**
+ * Settings ▸ Controller ▸ Left Backs Out. When on, D-pad LEFT on a row that has no inline actions
+ * leaves the screen instead of doing nothing. Defaults to true, matching the stored preference, so
+ * previews and tests behave like the app.
+ */
+val LocalSettingsLeftBacksOut = compositionLocalOf { true }
+
+/**
+ * Whether the user's most recent input anywhere in the app was touch (mirrored from
+ * `XMBUiState.lastInputWasTouch`).
+ *
+ * A settings screen used to open with the controller cursor showing no matter how it was reached,
+ * because each scaffold starts its own [cursorVisible] at true and only clears it on the NEXT touch
+ * down — so a touch user saw the cursor flash onto every screen they opened, having never touched a
+ * controller. Seeding from the host's input mode is what makes "I have always been in touch mode"
+ * actually hold across a screen change.
+ */
+val LocalSettingsLastInputWasTouch = compositionLocalOf { false }
 val LocalSettingsCursorVisible = compositionLocalOf { true }
 
 // Internal tracker: rows register their onClick when they gain focus so the scaffold
@@ -292,11 +313,14 @@ fun SettingsScaffold(
     contentKey: Any? = null,
     content: @Composable () -> Unit,
 ) {
+    // Settings ▸ Controller ▸ Left Backs Out, supplied by SettingsNavHost from the XMB's state.
+    val leftBacksOut = LocalSettingsLeftBacksOut.current
     val focusManager = LocalFocusManager.current
     // The screen content owns the actual verticalScroll state. All focus visibility and boundary
     // operations use this registered state so touch scrolling and controller navigation share one
     // scroll owner.
     val contentScrollState = remember { mutableStateOf<ScrollState?>(null) }
+
     val bootstrapFR = remember { FocusRequester() }
     val pendingAction = LocalSettingsPendingAction.current
     val onConsumed = LocalSettingsActionConsumed.current
@@ -328,7 +352,9 @@ fun SettingsScaffold(
     // focused row's SELECT and read by the action handler below + the adjusting flag provided
     // down to rows so the active slider can paint itself.
     val sliderNodeState = remember { mutableStateOf<SettingsSliderNode?>(null) }
-    val cursorVisible = remember { mutableStateOf(true) }
+    // Seeded from the host's input mode: opening a screen by touch must not summon the cursor.
+    val lastInputWasTouch = LocalSettingsLastInputWasTouch.current
+    val cursorVisible = remember { mutableStateOf(!lastInputWasTouch) }
     // Root-space centre of the visible content viewport. Touch scrolling hides the cursor;
     // the next controller action reanchors focus to the closest visible node instead of resuming
     // the previously focused (possibly off-screen) row.
@@ -613,9 +639,16 @@ fun SettingsScaffold(
                 requestFocusFor(navigationState.move(1))
             }
             // Inline trailing actions (e.g. a root row's Replace/Remove buttons) are reached
-            // horizontally; LEFT/RIGHT is a no-op on rows without them.
+            // horizontally. On a row without them moveHorizontal returns null — LEFT was a silent
+            // no-op there — so that null is the signal the fallthrough wants: LEFT leaves the
+            // screen (or, in the wizard, steps back a page), the direction the drill-in implies.
+            //
+            // Everything that already uses LEFT runs EARLIER and never reaches here: slider adjust
+            // mode above, and a screen's own onInterceptAction (remap capture, Themes, Sound).
             GamepadAction.NAVIGATE_LEFT -> {
-                navigationState.moveHorizontal(-1)?.let { requestFocusFor(it) }
+                val target = navigationState.moveHorizontal(-1)
+                if (target != null) requestFocusFor(target)
+                else if (leftBacksOut) onBack()
             }
 
             GamepadAction.NAVIGATE_RIGHT -> {
@@ -687,22 +720,24 @@ fun SettingsScaffold(
     ) {
         Box(
             modifier = modifier
+                // Any touch anywhere on the screen marks the input source as touch (hides the
+                // controller cursor, re-anchors focus) — a pure probe, consuming nothing, in the
+                // same form the detail screens use (GameDetailScreen / VideoDetailScreen /
+                // AppDetailScreen).
+                //
+                // This used to consume every moved change. That never actually killed a drag —
+                // PointerEventPass.Main dispatches child-first, so the scrolling bodies had already
+                // claimed their drags before this loop saw them — but with dragToScroll now
+                // attached to the scaffold's chrome, "who consumed what on which pass" stops being
+                // academic, and a root-level blanket consume is the kind of thing that makes
+                // modifier ordering load-bearing later.
                 .pointerInput(Unit) {
-                    awaitPointerEventScope {
-                        while (true) {
-                            val event = awaitPointerEvent()
-                            if (event.changes.any { it.pressed || it.position != it.previousPosition }) {
-                                cursorVisible.value = false
-                                touchScrolled.value = true
-                                navigationState.markTouchInput()
-                                notifyTouchInput()
-                            }
-                            event.changes.forEach { change ->
-                                if (change.position != change.previousPosition) {
-                                    change.consume()
-                                }
-                            }
-                        }
+                    awaitEachGesture {
+                        awaitFirstDown(requireUnconsumed = false)
+                        cursorVisible.value = false
+                        touchScrolled.value = true
+                        navigationState.markTouchInput()
+                        notifyTouchInput()
                     }
                 }
                 .fillMaxSize()
@@ -740,6 +775,17 @@ fun SettingsScaffold(
                 modifier = Modifier
                     .fillMaxSize(),
             ) {
+                // Header band — chrome, and therefore a SIBLING of the scrolling body, which is
+                // why a drag here used to die. dragToScroll hands it the body's own scroll state
+                // (the one the screen registered for keep-in-view), so the band drags the list.
+                // The ◀ breadcrumb inside still taps: a clickable child claims the tap, and the
+                // drag past touch slop belongs to this scrollable ancestor — the same division of
+                // labour a Button inside a LazyColumn already has.
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .dragToScroll(contentScrollState.value),
+                ) {
                 if (header != null) {
                     header()
                 } else {
@@ -793,6 +839,7 @@ fun SettingsScaffold(
                 }
 
                 if (showDivider) HorizontalDivider(color = SettingsDivider)
+                } // end of the header band
 
                 // Invisible 0dp focus bootstrap element. requestFocus() lands here first;
                 // onFocusChanged immediately redirects to the first real interactive row via
@@ -821,6 +868,13 @@ fun SettingsScaffold(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
+                        // NOTE: deliberately NOT dragToScroll'd. This Box is an ANCESTOR of the
+                        // body's own verticalScroll, and both would drive the SAME ScrollState.
+                        // Modifier.scrollable takes part in nested scrolling, so the two contend
+                        // for that state's MutatorMutex: after a fling, the next touch landed
+                        // between the two owners and the drag was swallowed instead of catching
+                        // the fling. The header and footer bands are SIBLINGS of the body, which
+                        // is why they can share the state safely and this cannot.
                         .onGloballyPositioned {
                             firstVisibleContentY.value = it.localToRoot(Offset.Zero).y
                             contentViewportHeight.value = it.size.height.toFloat()
@@ -856,18 +910,27 @@ fun SettingsScaffold(
                     content()
                 }
 
-                if (footer != null) {
-                    // Footer chrome (Enter / Back prompts) is display-only — never a focus target,
-                    // so UP on the first content row cannot land inside it.
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .focusProperties { canFocus = false },
-                    ) {
-                        footer()
+                // Footer band — the other half of the dead zone, wired to the same scroll owner
+                // as the header. The wizard's Enter/Back chrome arrives through the [footer] slot,
+                // so it is covered here too and WizardScaffold needs no change of its own.
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .dragToScroll(contentScrollState.value),
+                ) {
+                    if (footer != null) {
+                        // Footer chrome (Enter / Back prompts) is display-only — never a focus
+                        // target, so UP on the first content row cannot land inside it.
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .focusProperties { canFocus = false },
+                        ) {
+                            footer()
+                        }
+                    } else {
+                        SettingsHelperFooter(helperFooterItems)
                     }
-                } else {
-                    SettingsHelperFooter(helperFooterItems)
                 }
             }
         }

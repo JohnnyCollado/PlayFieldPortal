@@ -346,7 +346,12 @@ private fun PickPlatformContent(
     modifier: Modifier,
 ) {
     SettingsScaffold(title = "Add Console", subtitle = "Choose Platform", onBack = onBack, modifier = modifier) {
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        // Registered like the list screens: the scaffold needs a scroll owner here for its
+        // chrome drag-to-scroll and for controller keep-in-view. Registering is the whole fix;
+        // the body itself is unchanged.
+        val scrollState = rememberScrollState()
+        LocalSettingsScrollStateRegistrar.current(scrollState)
+        Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
             SettingsGroup("Supported Platforms")
             state.platformOptions.forEach { option ->
                 SettingsRow(
@@ -369,7 +374,12 @@ private fun PickEmulatorContent(
     modifier: Modifier,
 ) {
     SettingsScaffold(title = "Add Console", subtitle = "Assign Emulator", onBack = onBack, modifier = modifier) {
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        // Registered like the list screens: the scaffold needs a scroll owner here for its
+        // chrome drag-to-scroll and for controller keep-in-view. Registering is the whole fix;
+        // the body itself is unchanged.
+        val scrollState = rememberScrollState()
+        LocalSettingsScrollStateRegistrar.current(scrollState)
+        Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
             SettingsGroup(state.pendingPlatformName ?: "Emulator")
             if (state.emulatorOptions.all { it.id == null }) {
                 Hint("No installed emulators detected for this platform. You can assign one later from the console's detail screen.")
@@ -391,7 +401,12 @@ private fun ScanPromptContent(
     modifier: Modifier,
 ) {
     SettingsScaffold(title = "Add Console", subtitle = "Scan Now?", onBack = onBack, modifier = modifier) {
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        // Registered like the list screens: the scaffold needs a scroll owner here for its
+        // chrome drag-to-scroll and for controller keep-in-view. Registering is the whole fix;
+        // the body itself is unchanged.
+        val scrollState = rememberScrollState()
+        LocalSettingsScrollStateRegistrar.current(scrollState)
+        Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
             SettingsGroup(state.pendingPlatformName ?: "New Console")
             SettingsValueRow(
                 label = "ROM Directory",
@@ -449,7 +464,12 @@ private fun CardDetailContent(
     ) { uri -> uri?.let { onSetVita3KFolder(it) } }
 
     SettingsScaffold(title = "Library Manager", subtitle = card.displayName, onBack = onBack, modifier = modifier) {
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        // Registered like the list screens: the scaffold needs a scroll owner here for its
+        // chrome drag-to-scroll and for controller keep-in-view. Registering is the whole fix;
+        // the body itself is unchanged.
+        val scrollState = rememberScrollState()
+        LocalSettingsScrollStateRegistrar.current(scrollState)
+        Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
 
             if (isWindows) {
                 SettingsGroup("Library")
@@ -656,7 +676,12 @@ private fun ImportPcGamesContent(
     ) { onRefreshHomeStatus() }
 
     SettingsScaffold(title = "Library", subtitle = "Import PC Games", onBack = onBack, modifier = modifier) {
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        // Registered like the list screens: the scaffold needs a scroll owner here for its
+        // chrome drag-to-scroll and for controller keep-in-view. Registering is the whole fix;
+        // the body itself is unchanged.
+        val scrollState = rememberScrollState()
+        LocalSettingsScrollStateRegistrar.current(scrollState)
+        Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
 
             state.message?.let { MessageRow(it) { onDismissMessage() } }
 

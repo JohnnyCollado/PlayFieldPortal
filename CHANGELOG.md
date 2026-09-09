@@ -6,6 +6,25 @@ All notable changes to Play Field Portal are documented here. This project follo
 ## [Unreleased]
 
 ### Added
+- **Drag anywhere to scroll, and back out by going left (C15).** Two input-model gaps on the same
+  surfaces. A drag on a Settings header, on the helper footer or on the Setup Wizard's chrome did
+  nothing, because every one of those screens lays its chrome out as a *sibling* of its scrolling
+  body — there was simply nothing under the finger to scroll. A new shared
+  `Modifier.dragToScroll(ScrollableState?)` hands those regions the body's own scroll state, the
+  one the scaffold already held for controller keep-in-view, so the dead bands now drag the list
+  while taps on the ◀ breadcrumb and on rows keep working. Twelve sub-screens (Credits, the Library
+  Manager's and Category Manager's detail pages, the Emulator wizard's steps) owned a scroll state
+  they never registered, so they were dead in both directions; they register it now.
+  The second gap: backing out cost a button press. D-pad **LEFT** now leaves a folder, a flyout, a
+  settings screen or a wizard page — but strictly as a *fallthrough*, only where LEFT was already a
+  documented no-op, so stepping into a row's inline buttons and adjusting a slider are untouched.
+  It ships on by default and can be switched off in *Settings ▸ Controller ▸ Left Backs Out*. In
+  touch mode a **leftward swipe** does the same inside a flyout or folder, committing on release
+  past a fixed threshold, mirroring the existing left-edge pull rather than adding a second
+  gesture detector to race it. The drill-out ladder itself — which used to be written out twice,
+  identically, in the gamepad BACK branch and the touch one — is now one `backOutOfDrill()`, and
+  `isInSubItem` is *defined* as "there is a level to back out of" rather than as its own parallel
+  list of conditions, so the three callers cannot drift apart.
 - **GameBoot is one thing you can switch off or swap out (C13).** The GameBoot transition
   between confirming a game and the emulator opening used to be an off-by-default boolean with
   nothing to show or play — a fading title over black, in silence. It now ships a real default:

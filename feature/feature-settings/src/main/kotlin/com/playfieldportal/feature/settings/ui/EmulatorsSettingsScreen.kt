@@ -278,10 +278,14 @@ private fun WizardPickAppStep(
         onBack   = onBack,
         modifier = modifier,
     ) {
+        // Registered like the list screen above: the scaffold needs a scroll owner here for its
+        // chrome drag-to-scroll and for controller keep-in-view.
+        val scrollState = rememberScrollState()
+        LocalSettingsScrollStateRegistrar.current(scrollState)
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(scrollState),
         ) {
             SettingsGroup("Installed Apps")
             if (apps.isEmpty()) {
@@ -311,8 +315,12 @@ private fun TestLaunchFlow(
     // Step A — pick a ROM from the scanned library.
     if (test.selectedRom == null) {
         SettingsScaffold(title = "Test Launch", subtitle = "Pick a ROM", onBack = onBack, modifier = modifier) {
+            // Registered like the list screen above: the scaffold needs a scroll owner here for its
+            // chrome drag-to-scroll and for controller keep-in-view.
+            val scrollState = rememberScrollState()
+            LocalSettingsScrollStateRegistrar.current(scrollState)
             Column(
-                modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+                modifier = Modifier.fillMaxSize().verticalScroll(scrollState),
             ) {
                 SettingsGroup("Your ROMs")
                 if (test.roms.isEmpty()) {
@@ -333,8 +341,12 @@ private fun TestLaunchFlow(
 
     // Step B — intent preview + launch + result.
     SettingsScaffold(title = "Test Launch", subtitle = test.selectedRom.title, onBack = onBack, modifier = modifier) {
+        // Registered like the list screen above: the scaffold needs a scroll owner here for its
+        // chrome drag-to-scroll and for controller keep-in-view.
+        val scrollState = rememberScrollState()
+        LocalSettingsScrollStateRegistrar.current(scrollState)
         Column(
-            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+            modifier = Modifier.fillMaxSize().verticalScroll(scrollState),
         ) {
             test.preview?.let { p ->
                 SettingsGroup("Intent Preview")

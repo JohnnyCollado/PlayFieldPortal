@@ -92,6 +92,20 @@ class BackupKeyCoverageTest {
     }
 
     @Test
+    fun `controller preferences are backed up`() {
+        // Every controller preference rides backup; a new one that misses this list silently
+        // reverts to its default on a restored device.
+        assertCovered(
+            "controller_confirm_back_layout",
+            "controller_xy_layout",
+            "controller_display_type",
+            "controller_scroll_speed",
+            "controller_left_backs_out",
+            "controller_mappings_v1",
+        )
+    }
+
+    @Test
     fun `the wallpaper and scheme the font colour is measured against are backed up`() {
         // A picked colour is only meaningful against the backdrop it was chosen for, so a restore
         // that carries one without the other is a half-restore.

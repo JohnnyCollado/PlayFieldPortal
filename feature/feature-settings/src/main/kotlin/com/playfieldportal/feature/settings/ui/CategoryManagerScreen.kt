@@ -120,7 +120,12 @@ private fun PickIconContent(
 ) {
     val subtitle = if (state.pickingIconForCreate) "Choose Icon" else "Change Icon"
     SettingsScaffold(title = "Category", subtitle = subtitle, onBack = onBack, modifier = modifier) {
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        // Registered like the list screens: the scaffold needs a scroll owner here for its
+        // chrome drag-to-scroll and for controller keep-in-view. Registering is the whole fix;
+        // the body itself is unchanged.
+        val scrollState = rememberScrollState()
+        LocalSettingsScrollStateRegistrar.current(scrollState)
+        Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
             SettingsGroup(state.pendingName ?: state.detail?.name ?: "Icon")
             state.iconOptions.forEach { option ->
                 SettingsRow(
@@ -143,7 +148,12 @@ private fun PickTypeContent(
     modifier: Modifier,
 ) {
     SettingsScaffold(title = "Category", subtitle = "Content Type", onBack = onBack, modifier = modifier) {
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        // Registered like the list screens: the scaffold needs a scroll owner here for its
+        // chrome drag-to-scroll and for controller keep-in-view. Registering is the whole fix;
+        // the body itself is unchanged.
+        val scrollState = rememberScrollState()
+        LocalSettingsScrollStateRegistrar.current(scrollState)
+        Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
             SettingsGroup(state.pendingName ?: "Category Type")
             SettingsRow(
                 label    = "Gaming",
@@ -174,7 +184,12 @@ private fun CategoryDetailContent(
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
     SettingsScaffold(title = "Categories", subtitle = cat.name, onBack = onBack, modifier = modifier) {
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        // Registered like the list screens: the scaffold needs a scroll owner here for its
+        // chrome drag-to-scroll and for controller keep-in-view. Registering is the whole fix;
+        // the body itself is unchanged.
+        val scrollState = rememberScrollState()
+        LocalSettingsScrollStateRegistrar.current(scrollState)
+        Column(Modifier.fillMaxSize().verticalScroll(scrollState)) {
             SettingsGroup("Edit")
             SettingsRow(label = "Rename Category", onClick = { vm.beginRename(cat.id) })
             SettingsValueRow(label = "Change Icon", value = cat.iconKey, onClick = { vm.startChangeIcon() })

@@ -227,10 +227,17 @@ PFP is built for a controller but works fully with touch.
 | Move between items | D-Pad / Left Stick | Tap an item |
 | Switch category (left / right) | D-Pad ◀ ▶ | Tap the category |
 | Select / launch / open | **A / ✕** | Tap |
-| Back / close / exit a folder | **B / ◯** | On-screen Back / left-edge swipe |
+| Back / close / exit a folder | **B / ◯**, or D-Pad ◀ (see below) | On-screen Back / left-edge swipe / swipe left |
 | Options (context) menu | **Y / △** (or long-press) | Long-press |
 | Switch App-Drawer tabs | **L1 / R1** | Tap a tab |
 | Confirm in pickers | **Start** | Confirm button |
+
+**D-Pad ◀ backs you out.** Inside a folder, a flyout or a settings screen, LEFT leaves one level —
+but only where LEFT is not already doing something (stepping into a row's inline buttons, or
+adjusting a slider), so nothing it used to do is taken away. Turn it off in
+*Settings ▸ Controller ▸ Left Backs Out*. The touch equivalent — a leftward swipe inside a folder or
+flyout — is always on, like the left-edge pull. On a Settings screen or a wizard page, a drag
+anywhere scrolls the page, including on the header and the footer.
 
 The **horizontal bar** is your categories — by default **Settings, Photo, Music, Video, Game,
 Network, App Store**, plus any custom ones. The **vertical list** under the selected category is its

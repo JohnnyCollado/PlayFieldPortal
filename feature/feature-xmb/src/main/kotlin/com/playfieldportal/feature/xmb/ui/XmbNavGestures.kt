@@ -18,6 +18,11 @@ private val CATEGORY_STEP_DP = 100.dp
 // Left-edge band where a rightward drag means Back (matches the prior edge-swipe behaviour).
 private val EDGE_DP = 32.dp
 private val EDGE_COMMIT_DP = 48.dp
+// Leftward travel that commits a swipe-back while drilled in. Larger than [EDGE_COMMIT_DP] because
+// this gesture may start anywhere on the screen rather than in a reserved 32dp band, so it has to
+// out-argue an idle finger. Like edge-Back, it is deliberately NOT scaled by TouchSensitivity: the
+// sensitivity slider tunes how far a finger travels per *step*, and a back-out has no steps.
+private val SWIPE_BACK_COMMIT_DP = 72.dp
 // Fling speed (dp/s) that earns bonus item steps on release, so a quick flick travels further than
 // the finger did. Deliberately small (max +2) — momentum, not Android free-scroll.
 private val FLING_DP_PER_S = 420f
@@ -32,6 +37,9 @@ private val FLING_DP_PER_S = 420f
  * notch per gesture. A quick vertical flick adds a small bonus (see [flingBonusSteps]) on release.
  *
  * A drag that STARTS in the left-edge band is reserved for Back ([onEdgeBack]) and never steps.
+ * While [swipeBackEnabled] (i.e. drilled into a flyout or folder, where category stepping is locked
+ * anyway) a leftward drag from anywhere backs out one level on release ([onSwipeBack]) and likewise
+ * never steps — the same commit-on-release shape as the edge band, not a second detector.
  * Taps never exceed touch-slop and fall through to the rows' own click handlers. Multi-touch is
  * ignored (the XMB is a single cursor). Guarding (overlays, drill-lock) lives in the ViewModel
  * intents this calls.
@@ -44,12 +52,18 @@ fun Modifier.xmbNavGestures(
     // finger travel per step, <1 = less. Scales both axes; edge-Back and fling stay fixed. The
     // pointerInput is keyed on it so a preference change re-arms the detector with the new scale.
     stepScale: Float = 1f,
-): Modifier = pointerInput(stepScale) {
+    // True while the user is drilled in (XMBUiState.isInSubItem). Category stepping is locked in
+    // that state, so the horizontal axis is free to mean "back out" instead.
+    swipeBackEnabled: Boolean = false,
+    onSwipeBack: () -> Unit = {},
+    // Keyed on swipeBackEnabled too: the detector captures it, so drilling in or out must re-arm it.
+): Modifier = pointerInput(stepScale, swipeBackEnabled) {
     val slop = viewConfiguration.touchSlop
     val itemStepPx = ITEM_STEP_DP.toPx() * stepScale
     val categoryStepPx = CATEGORY_STEP_DP.toPx() * stepScale
     val edgePx = EDGE_DP.toPx()
     val edgeCommitPx = EDGE_COMMIT_DP.toPx()
+    val backCommitPx = SWIPE_BACK_COMMIT_DP.toPx()
     val flingPx = FLING_DP_PER_S * density   // dp/s → px/s
 
     awaitPointerEventScope {
@@ -86,8 +100,11 @@ fun Modifier.xmbNavGestures(
                     Axis.HORIZONTAL -> {
                         acc += d.x
                         change.consume()
-                        // Edge gestures are Back-only — no live stepping, committed on release.
-                        if (!fromEdge) {
+                        // Edge gestures — and, while drilled in, every horizontal drag — are
+                        // Back-only: no live stepping, committed on release. (The ViewModel also
+                        // ignores stepCategory while drilled in; suppressing here keeps the intent
+                        // in the gesture layer instead of relying on the far end to say no.)
+                        if (!fromEdge && !swipeBackEnabled) {
                             val whole = consumeWholeSteps(acc, categoryStepPx)
                             if (whole != 0) {
                                 // Drag left (negative) → next category (+1) — content follows finger.
@@ -113,6 +130,8 @@ fun Modifier.xmbNavGestures(
             // Release: commit the edge-Back, or grant a small vertical fling bonus.
             when {
                 axis == Axis.HORIZONTAL && fromEdge && acc > edgeCommitPx -> onEdgeBack()
+                axis == Axis.HORIZONTAL && swipeBackEnabled && commitsSwipeBack(acc, backCommitPx) ->
+                    onSwipeBack()
                 axis == Axis.VERTICAL -> {
                     val vy = tracker.calculateVelocity().y
                     val bonus = flingBonusSteps(vy, flingPx)
@@ -147,3 +166,10 @@ fun flingBonusSteps(velocityPxPerS: Float, flingPx: Float): Int {
     }
     return if (velocityPxPerS < 0) magnitude else -magnitude
 }
+
+/**
+ * Whether horizontal travel [accumulatedX] commits a swipe-back (pure — unit-tested). Leftward is
+ * negative, matching the drill-in metaphor: content came in from the right, so it leaves to the
+ * left. A rightward drag never backs out, however far it goes.
+ */
+fun commitsSwipeBack(accumulatedX: Float, commitPx: Float): Boolean = accumulatedX <= -commitPx

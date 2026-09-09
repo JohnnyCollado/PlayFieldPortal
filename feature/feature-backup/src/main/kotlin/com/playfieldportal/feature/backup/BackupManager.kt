@@ -608,6 +608,8 @@ open class BackupManager @Inject constructor(
             booleanPreferencesKey("discord_voice_push_to_talk"),
             // GameBoot presentation (Display ▸ GameBoot) — the live key.
             booleanPreferencesKey("display_gameboot_enabled"),
+            // Controller — D-pad LEFT as "back out" (Settings ▸ Controller).
+            booleanPreferencesKey("controller_left_backs_out"),
             // Sound
             booleanPreferencesKey("sound_menu_enabled"),
             // Artwork download preferences

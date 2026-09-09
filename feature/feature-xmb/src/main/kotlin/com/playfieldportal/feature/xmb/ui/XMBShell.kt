@@ -688,13 +688,19 @@ fun XMBShell(
                     // this to keep the crossbar on the same screen line). From the theme layout spec.
                     .padding(top = uiState.layoutSpec.contentTopPaddingDp.dp)
                     // Touch gestures on the home screen, each mapped to a discrete D-pad action (see
-                    // xmbNavGestures): horizontal swipe steps the category (left-edge → Back); vertical
-                    // swipe steps the item list/flyout. Taps still pass through to the rows.
+                    // xmbNavGestures): horizontal swipe steps the category (left-edge → Back, and
+                    // once drilled in, leftward → back out); vertical swipe steps the item
+                    // list/flyout. Taps still pass through to the rows.
                     .xmbNavGestures(
                         onStepCategory = onStepCategory,
                         onStepItem = onStepItem,
                         onEdgeBack = onTouchBack,
                         stepScale = uiState.touchSensitivity.stepScale,
+                        // Drilled in, the horizontal axis has nothing else to do — category
+                        // stepping is locked — so a leftward swipe backs out one level, the same
+                        // drill-out onTouchBack performs from the left edge.
+                        swipeBackEnabled = uiState.isInSubItem,
+                        onSwipeBack = onTouchBack,
                     ),
             ) {
                 BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
@@ -888,6 +894,8 @@ fun XMBShell(
                         pendingGamepadAction = uiState.pendingSettingsAction,
                         onGamepadActionConsumed = onSettingsActionConsumed,
                         showControllerHint = uiState.showSettingsHint,
+                        leftBacksOut = uiState.leftBacksOut,
+                        lastInputWasTouch = uiState.lastInputWasTouch,
                         onTouchInteraction = onTouchInput,
                         onOpenColorSchemePicker = onOpenColorSchemePicker,
                         onOpenXmbLayoutAdjust = onOpenXmbLayoutAdjust,

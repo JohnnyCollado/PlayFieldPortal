@@ -58,6 +58,10 @@ class ControllerSettingsViewModel @Inject constructor(
         viewModelScope.launch { layoutRepository.setScrollSpeed(next) }
     }
 
+    fun setLeftBacksOut(enabled: Boolean) {
+        viewModelScope.launch { layoutRepository.setLeftBacksOut(enabled) }
+    }
+
     fun cycleDisplayType() {
         val types = listOf(
             ControllerDisplayType.XBOX,

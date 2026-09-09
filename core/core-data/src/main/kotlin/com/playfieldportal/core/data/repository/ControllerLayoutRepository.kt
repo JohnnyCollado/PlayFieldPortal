@@ -1,6 +1,7 @@
 package com.playfieldportal.core.data.repository
 
 import android.content.Context
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.playfieldportal.core.data.datastore.pfpDataStore
@@ -22,6 +23,7 @@ private val KEY_CONFIRM_BACK = stringPreferencesKey("controller_confirm_back_lay
 private val KEY_XY_LAYOUT    = stringPreferencesKey("controller_xy_layout")
 private val KEY_DISPLAY_TYPE = stringPreferencesKey("controller_display_type")
 private val KEY_SCROLL_SPEED = stringPreferencesKey("controller_scroll_speed")
+private val KEY_LEFT_BACKS_OUT = booleanPreferencesKey("controller_left_backs_out")
 
 @Singleton
 class ControllerLayoutRepository @Inject constructor(
@@ -43,6 +45,8 @@ class ControllerLayoutRepository @Inject constructor(
             scrollSpeed = store[KEY_SCROLL_SPEED]
                 ?.let { runCatching { ScrollSpeed.valueOf(it) }.getOrNull() }
                 ?: ScrollSpeed.STANDARD,
+            // Absent key reads as the default (on) — no migration needed for existing installs.
+            leftBacksOut = store[KEY_LEFT_BACKS_OUT] ?: true,
         )
     }
 
@@ -94,6 +98,13 @@ class ControllerLayoutRepository @Inject constructor(
         Timber.i("ScrollSpeed set: $speed")
     }
 
+    // ── LEFT backs out ────────────────────────────────────────────────────────
+
+    suspend fun setLeftBacksOut(enabled: Boolean) {
+        context.pfpDataStore.edit { it[KEY_LEFT_BACKS_OUT] = enabled }
+        Timber.i("LeftBacksOut set: $enabled")
+    }
+
     // ── Reset ─────────────────────────────────────────────────────────────────
 
     suspend fun resetAllPrefs() {
@@ -102,6 +113,7 @@ class ControllerLayoutRepository @Inject constructor(
             store.remove(KEY_XY_LAYOUT)
             store.remove(KEY_DISPLAY_TYPE)
             store.remove(KEY_SCROLL_SPEED)
+            store.remove(KEY_LEFT_BACKS_OUT)
         }
         mappingRepository.resetToDefaults()
         Timber.i("Controller layout prefs reset to defaults")

@@ -56,6 +56,10 @@ fun SettingsNavHost(
     pendingGamepadAction: GamepadAction? = null,
     onGamepadActionConsumed: () -> Unit = {},
     showControllerHint: Boolean = false,
+    // Settings ▸ Controller ▸ Left Backs Out, mirrored in the XMB's state (see XMBUiState).
+    leftBacksOut: Boolean = true,
+    // Whether the last input was touch — seeds each screen's cursor visibility.
+    lastInputWasTouch: Boolean = false,
     onTouchInteraction: () -> Unit = {},
     onOpenColorSchemePicker: () -> Unit = {},
     onOpenXmbLayoutAdjust: () -> Unit = {},
@@ -73,6 +77,8 @@ fun SettingsNavHost(
         LocalSettingsPendingAction provides pendingGamepadAction,
         LocalSettingsActionConsumed provides onGamepadActionConsumed,
         LocalSettingsShowControllerHint provides showControllerHint,
+        LocalSettingsLeftBacksOut provides leftBacksOut,
+        LocalSettingsLastInputWasTouch provides lastInputWasTouch,
         LocalSettingsHostTouchInput provides onTouchInteraction,
     ) {
         when (screenId) {

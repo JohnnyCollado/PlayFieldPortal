@@ -64,4 +64,9 @@ data class ControllerLayoutPrefs(
     val xyLayout: XYLayout                     = XYLayout.STANDARD,
     val displayType: ControllerDisplayType     = ControllerDisplayType.XBOX,
     val scrollSpeed: ScrollSpeed               = ScrollSpeed.STANDARD,
+    // D-pad LEFT backs out of a flyout, folder or settings screen wherever LEFT is not already
+    // doing something on the focused element. Defaults ON: every press it claims is a documented
+    // no-op today, and it is what was asked for. Gates the D-pad only — the leftward touch swipe
+    // is unconditional, the way the left-edge pull always has been.
+    val leftBacksOut: Boolean                  = true,
 )
