@@ -200,50 +200,73 @@ class ContextMenuHintStateTest {
         assertFalse(shouldShowContextMenuHint(open, XMBViewModel.IDLE_HINT_DELAY_MS))
     }
 
-    // ── Sound settings hint branch ─────────────────────────────────────────
+    // ── Settings helper-footer hint branch ─────────────────────────────────
 
-    private fun soundSettingsEligibleState() = XMBUiState(
-        activeSettingsScreen = "settings_audio",
+    private fun settingsEligibleState(screenId: String = "settings_audio") = XMBUiState(
+        activeSettingsScreen = screenId,
         lastInputWasTouch = false,
         showBootSequence = false,
     ).let { it.copy(showSettingsHint = false) }
 
     @Test
-    fun `sound settings hint shows after the shared idle delay`() {
-        assertTrue(shouldShowSettingsHint(soundSettingsEligibleState(), XMBViewModel.IDLE_HINT_DELAY_MS))
+    fun `settings hint shows after the shared idle delay`() {
+        assertTrue(shouldShowSettingsHint(settingsEligibleState(), XMBViewModel.IDLE_HINT_DELAY_MS))
     }
 
     @Test
-    fun `sound settings hint does not show before the shared idle delay`() {
-        assertFalse(shouldShowSettingsHint(soundSettingsEligibleState(), XMBViewModel.IDLE_HINT_DELAY_MS - 1))
+    fun `settings hint does not show before the shared idle delay`() {
+        assertFalse(shouldShowSettingsHint(settingsEligibleState(), XMBViewModel.IDLE_HINT_DELAY_MS - 1))
     }
 
     @Test
-    fun `sound settings hint does not show after touch input`() {
+    fun `settings hint does not show after touch input`() {
         assertFalse(
             shouldShowSettingsHint(
-                soundSettingsEligibleState().copy(lastInputWasTouch = true),
+                settingsEligibleState().copy(lastInputWasTouch = true),
+                XMBViewModel.IDLE_HINT_DELAY_MS,
+            )
+        )
+    }
+
+    // The gate used to be `activeSettingsScreen == "settings_audio"`, which left every other
+    // screen with a reserved footer band that could never fill in. Display supplies its own
+    // media-row prompts, so it is the concrete regression guard.
+    @Test
+    fun `settings hint shows on the Display screen too`() {
+        assertTrue(
+            shouldShowSettingsHint(
+                settingsEligibleState("settings_display"),
                 XMBViewModel.IDLE_HINT_DELAY_MS,
             )
         )
     }
 
     @Test
-    fun `sound settings hint is limited to the Sound screen`() {
-        assertFalse(
+    fun `settings hint shows on a screen with no prompts of its own`() {
+        assertTrue(
             shouldShowSettingsHint(
-                soundSettingsEligibleState().copy(activeSettingsScreen = "settings_display"),
+                settingsEligibleState("settings_about"),
                 XMBViewModel.IDLE_HINT_DELAY_MS,
             )
         )
     }
 
     @Test
-    fun `sound settings hint respects the shared setting and configured delay`() {
-        val disabled = soundSettingsEligibleState().copy(contextMenuHintEnabled = false)
+    fun `settings hint does not show when no settings screen is open`() {
+        assertFalse(
+            shouldShowSettingsHint(
+                settingsEligibleState().copy(activeSettingsScreen = null),
+                XMBViewModel.IDLE_HINT_DELAY_MS,
+            )
+        )
+    }
+
+    @Test
+    fun `settings hint respects the shared setting and configured delay`() {
+        val disabled = settingsEligibleState().copy(contextMenuHintEnabled = false)
         assertFalse(shouldShowSettingsHint(disabled, XMBViewModel.IDLE_HINT_DELAY_MS))
 
-        val delayed = soundSettingsEligibleState().copy(contextMenuHintDelaySeconds = 4.5f)
+        val delayed = settingsEligibleState().copy(contextMenuHintDelaySeconds = 4.5f)
         assertFalse(shouldShowSettingsHint(delayed, 4_499))
         assertTrue(shouldShowSettingsHint(delayed, 4_500))
     }

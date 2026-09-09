@@ -598,9 +598,10 @@ holds a menu sound fully in memory, and the boot presentation must still end on 
 
 **Boot and GameBoot videos**
 
-- **Boot Sequence** (*Settings ▸ Interface ▸ Boot*) — an optional video that plays when PFP starts,
-  up to 8 seconds. Press **✕** or **○** to skip it. If you supply a boot *video* with its own audio
-  track, that audio is used and the Boot Sound row steps aside.
+- **Boot Sequence** (*Settings ▸ Display ▸ Boot Sequence*) — one field: supply your own video (up
+  to 10 seconds) and it replaces the PFP logo animation. Press **✕** or **○** to skip it. If your
+  video has its own audio track that audio is used, and the Boot Sound row on the Sound screen
+  steps aside.
 - **GameBoot** — the short presentation that plays as a game launches. Built in, it is a
   five-second light sweep timed to the launch sound; supply your own clip (up to 10 seconds) and it
   replaces the whole thing, its own audio included. That audio is independent of your menu-sound
@@ -608,6 +609,11 @@ holds a menu sound fully in memory, and the boot presentation must still end on 
   the game launches anyway — GameBoot can never hold your game hostage.
 
 Video can be MP4 or WebM, up to 25 MB.
+
+Boot Video, GameBoot Video and every sound row work the same way and carry the same two controller
+shortcuts on the focused row, bound to physical buttons so an X/Y swap cannot move them: the
+**north** button (Y on Xbox/PlayStation pads, X on Nintendo) restores the PFP default, and the
+**west** button (X on Xbox/PlayStation, Y on Nintendo) plays a preview.
 
 Everything you assign here is included in **Backup & restore**.
 

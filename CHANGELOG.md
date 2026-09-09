@@ -38,6 +38,20 @@ All notable changes to Play Field Portal are documented here. This project follo
   show whose timing was matched to a sample the user could not hear. It runs through the same
   singleton player the gate uses, and silences itself when a preview is skipped (nothing is
   launching, so nothing would take audio focus and cut the clip).
+- **Boot Sequence is one field, and media rows share one shape everywhere.** Display ▸ Boot
+  Sequence had four rows for its media — Boot Animation, Boot Sound, a Preview row and a Reset row
+  — while Boot Sound was already the seventh row of Interface ▸ Sound. It is now a single Boot
+  Video field, the same shape GameBoot has: the built-in logo animation until your own clip
+  replaces it, with Boot Sound left to the screen that owns every sound in the app.
+
+  Both Display media fields are now the same `MediaAssignmentRow` the Sound screen uses, rather
+  than a copy of it, so preview and reset are inline actions on the row instead of separate rows
+  underneath, and the two controller shortcuts work identically on all three screens: the
+  north-facing face button restores the PFP default (only offered while something custom is
+  assigned) and the west-facing one previews. Both are bound to physical positions, so an X/Y
+  layout swap moves the glyph in the prompt bar and never the binding. Focus returns to the row
+  after a pick, a cancelled pick, or a reset, so the cursor no longer jumps away when a row's
+  inline action disappears.
 - **Launch reliability: every game launch is now verified and recoverable (B1).**
   All game-path launches funnel through a single `LaunchDispatcher` in feature-launcher,
   which owns `startActivity` with named failures (the XMB's direct-launch path used to
@@ -106,6 +120,20 @@ All notable changes to Play Field Portal are documented here. This project follo
   unknown intent flags are refused with a logged reason.
 
 ### Fixed
+- **The controller helper footer now appears on every settings screen, not just Sound.**
+  `shouldShowSettingsHint` was gated on `activeSettingsScreen == "settings_audio"`, but
+  `SettingsScaffold` reserves and draws the footer band on every non-wizard screen — so on Display,
+  Controller, Backup and the rest the band sat permanently empty behind a divider, and the idle
+  delay the user had configured could never fire. The gate is now simply "a settings screen is
+  open"; screens that supply their own prompts (Display's media-row shortcuts, Sound's) show those,
+  and the rest fall back to Enter/Back as the scaffold already intended. The Context Menu Hint
+  toggle and the shared 1-5 s delay still govern it.
+- **Settings content no longer looks guillotined at the bottom edge.** The scrollable content sat
+  flush against the helper footer's divider, so a section header scrolled under the fold was cut
+  mid-glyph by a hard rule and read as clipping rather than "there is more below". The content
+  viewport now fades out over its last 16 dp, dissolving a partial row into the same background the
+  footer band already shows. The fade shares its constant with keep-in-view clamping, so a focused
+  row's bottom edge lands exactly where the fade begins and the cursor is never dimmed.
 - **Closing an emulator on purpose no longer pops a "closed almost immediately" warning.**
   The old verdict ran on a 10-second session timer, so deliberately closing an emulator right
   after it opened was reported as a crash and raised the recovery sheet. The dispatcher now

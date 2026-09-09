@@ -15,6 +15,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.foundation.layout.Row
 import androidx.compose.runtime.getValue
@@ -23,6 +24,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -40,6 +42,7 @@ import com.playfieldportal.core.domain.model.UiMediaSlot
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.composite
 import com.playfieldportal.core.ui.theme.solveScrimColor
+import com.playfieldportal.feature.settings.viewmodel.DisplaySettingsUiState
 import com.playfieldportal.feature.settings.viewmodel.DisplaySettingsViewModel
 
 @Composable
@@ -64,6 +67,23 @@ fun DisplaySettingsScreen(
     // The "Hidden Items" manager moved to Settings ▸ Library ▸ Hidden Games
     // (settings_app_visibility) — see docs/plans/README.md (Settings hierarchy).
 
+    // Which media row the cursor is on right now — the north/west face-button shortcuts act on
+    // it. Every other row clears it (a media row clears itself when it loses focus; the toggles
+    // beside them clear it on gain, which covers the gain-before-loss ordering), so the shortcuts
+    // are inert everywhere else on this screen.
+    var focusedSlot by remember { mutableStateOf<UiMediaSlot?>(null) }
+
+    // Restoring focus after the picker or a reset removes the row's inline action — without this
+    // the navigation fallback lands somewhere else entirely. Same machinery as the Sound screen.
+    var focusTargetSlot by remember { mutableStateOf<UiMediaSlot?>(null) }
+    var focusRequestToken by remember { mutableIntStateOf(0) }
+    var importWasActive by remember { mutableStateOf(false) }
+
+    fun requestMediaFocus(slot: UiMediaSlot) {
+        focusTargetSlot = slot
+        focusRequestToken++
+    }
+
     val wallpaperPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri -> uri?.let { viewModel.onWallpaperPicked(it) } }
@@ -71,14 +91,37 @@ fun DisplaySettingsScreen(
     // ONE picker for every boot/GameBoot media row; the pending slot lives on the ViewModel.
     val uiMediaPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
-    ) { uri -> uri?.let { viewModel.onUiMediaPicked(it) } }
+    ) { uri ->
+        if (uri != null) {
+            viewModel.onUiMediaPicked(uri)
+        } else {
+            // Cancellation does not change import state, so restore immediately.
+            focusTargetSlot?.let(::requestMediaFocus)
+        }
+    }
 
     fun pickUiMedia(slot: UiMediaSlot) {
+        requestMediaFocus(slot)
         viewModel.onUiMediaPickerLaunchedFor(slot)
         uiMediaPicker.launch(viewModel.uiMediaPickerMime(slot))
     }
 
+    // A rejected import leaves the assignment set unchanged, so "importing went false" is the
+    // reliable completion signal rather than waiting for the row's value to differ.
+    LaunchedEffect(state.wallpaperImporting) {
+        if (state.wallpaperImporting) {
+            importWasActive = true
+        } else if (importWasActive) {
+            importWasActive = false
+            focusTargetSlot?.let(::requestMediaFocus)
+        }
+    }
+
     fun launchWallpaperPicker() {
+        // The wallpaper import shares the importing flag with the media rows, so clear any
+        // pending media focus target first: otherwise finishing a wallpaper import would drag
+        // the cursor back to whichever media row was picked last.
+        focusTargetSlot = null
         // ONE picker, not two: the user's mental model is "my background". Still images land on
         // the existing still path; MP4/WebM/GIF route to the motion importer (onWallpaperPicked
         // branches on MIME).
@@ -95,6 +138,12 @@ fun DisplaySettingsScreen(
         subtitle = "Display",
         onBack   = onBack,
         modifier = modifier,
+        // Empty, not SettingsDefaultHelperItems: SettingsHelperFooter already falls back with
+        // `items.ifEmpty { SettingsDefaultHelperItems }`, so restating the default here would be
+        // a second copy of the same rule. Same expression the Sound screen uses.
+        helperFooterItems = focusedSlot?.let { slot ->
+            MediaRowShortcuts.promptsFor(state.xyLayout, isAssigned = slot.isAssignedIn(state))
+        } ?: emptyList(),
         onInterceptAction = { action ->
             // Fullscreen wallpaper preview swallows Confirm/Back — either dismisses it, same
             // as tapping, and the focused row underneath can never be activated through it.
@@ -104,9 +153,42 @@ fun DisplaySettingsScreen(
                 }
                 return@SettingsScaffold true
             }
-            false
+            // North resets the focused media row, west previews it — the same physical buttons
+            // doing the same jobs as on the Sound screen. Only consumed over a media row.
+            val slot = focusedSlot ?: return@SettingsScaffold false
+            when {
+                MediaRowShortcuts.isNorthFace(action, state.xyLayout) && slot.isAssignedIn(state) -> {
+                    // Advertised only while the row has a custom assignment, so this is consumed
+                    // only when it has real work to do. Restore focus after the action vanishes.
+                    requestMediaFocus(slot)
+                    viewModel.clearUiMedia(slot)
+                    true
+                }
+                MediaRowShortcuts.isWestFace(action, state.xyLayout) -> {
+                    when (slot) {
+                        UiMediaSlot.BOOT_VIDEO -> onPreviewBootSequence()
+                        UiMediaSlot.GAMEBOOT_VIDEO -> onPreviewGameBoot()
+                        else -> return@SettingsScaffold false
+                    }
+                    true
+                }
+                else -> false
+            }
         },
     ) {
+        val focusRegistry = LocalSettingsFocusRegistry.current
+        LaunchedEffect(focusRequestToken) {
+            if (focusRequestToken > 0) {
+                // Wait until the removed inline action has left composition and the scaffold has
+                // finished its own focus-recovery pass.
+                withFrameNanos { }
+                withFrameNanos { }
+                focusTargetSlot?.let { slot ->
+                    runCatching { focusRegistry["display_${slot.key}"]?.requestFocus() }
+                }
+            }
+        }
+
         val scrollState = rememberScrollState()
         LocalSettingsScrollStateRegistrar.current(scrollState)
         Column(
@@ -270,6 +352,7 @@ fun DisplaySettingsScreen(
             SettingsToggleRow(
                 label    = "Show Boot Sequence",
                 sublabel = "PSP-style boot animation on every launch",
+                onFocusChangedExternal = { if (it) focusedSlot = null },
                 checked  = state.showBootSequence,
                 onToggle = { viewModel.setShowBootSequence(it) },
             )
@@ -277,39 +360,27 @@ fun DisplaySettingsScreen(
             SettingsToggleRow(
                 label    = "Show Boot Sequence on Resume",
                 sublabel = "Also play when returning from a game",
+                onFocusChangedExternal = { if (it) focusedSlot = null },
                 checked  = state.showBootOnResume,
                 onToggle = { viewModel.setShowBootOnResume(it) },
             )
 
-            // Custom boot media. Both are optional and independent: the built-in logo animation
-            // and silence are perfectly valid halves, so all four combinations work.
-            SettingsValueRow(
-                label    = "Boot Animation",
-                sublabel = "Play your own video instead of the PFP logo (MP4 or WebM, up to 10 seconds)",
+            // ONE field, the same shape as GameBoot below and as every row on the Sound screen:
+            // the boot sequence is the built-in logo animation until a clip replaces the whole
+            // thing. Boot SOUND is deliberately not here — it is the seventh row of
+            // Interface ▸ Sound, which owns every sound in the app.
+            MediaAssignmentRow(
+                label    = "Boot Video",
+                focusKey = "display_${UiMediaSlot.BOOT_VIDEO.key}",
+                sublabel = "Play your own video instead of the PFP logo animation " +
+                    "(MP4 or WebM, up to 10 seconds)",
                 value    = state.bootVideoLabel,
-                onClick  = { pickUiMedia(UiMediaSlot.BOOT_VIDEO) },
+                isAssigned = state.bootVideoAssigned,
+                onPick   = { pickUiMedia(UiMediaSlot.BOOT_VIDEO) },
+                onPreview = onPreviewBootSequence,
+                onUseDefault = { viewModel.clearUiMedia(UiMediaSlot.BOOT_VIDEO) },
+                onFocusChanged = { focusedSlot = if (it) UiMediaSlot.BOOT_VIDEO else null },
             )
-
-            SettingsValueRow(
-                label    = "Boot Sound",
-                sublabel = "Play your own sound with the boot sequence (MP3, WAV, OGG, or M4A, up to 10 seconds)",
-                value    = state.bootAudioLabel,
-                onClick  = { pickUiMedia(UiMediaSlot.BOOT_AUDIO) },
-            )
-
-            SettingsRow(
-                label    = "Preview Boot Sequence",
-                sublabel = "Play the boot sequence now, exactly as it plays at startup",
-                onClick  = onPreviewBootSequence,
-            )
-
-            if (state.bootVideoAssigned || state.bootAudioAssigned) {
-                SettingsRow(
-                    label    = "Reset Boot Sequence to Default",
-                    sublabel = "Remove your boot video and sound, restoring the PFP logo animation",
-                    onClick  = { viewModel.resetBootMedia() },
-                )
-            }
 
             SettingsGroup("GameBoot")
 
@@ -319,34 +390,26 @@ fun DisplaySettingsScreen(
                     "opening — five seconds built in, up to ten with your own clip — skippable " +
                     "with Confirm or Back.  Off launches straight into the game with the " +
                     "ordinary Launch Sound.",
+                onFocusChangedExternal = { if (it) focusedSlot = null },
                 checked  = state.gameBootEnabled,
                 onToggle = { viewModel.setGameBootEnabled(it) },
             )
 
-            // The rest of the group only means anything while GameBoot is on — replacing or
-            // previewing a presentation that never plays is a row that lies about what it does.
+            // The field only means anything while GameBoot is on — replacing or previewing a
+            // presentation that never plays is a row that lies about what it does.
             if (state.gameBootEnabled) {
-                SettingsValueRow(
+                MediaAssignmentRow(
                     label    = "GameBoot Video",
+                    focusKey = "display_${UiMediaSlot.GAMEBOOT_VIDEO.key}",
                     sublabel = "Replace the built-in sequence with your own clip, which plays with " +
                         "its own sound — even with Menu Sounds off (MP4 or WebM, up to 10 seconds)",
                     value    = state.gameBootVideoLabel,
-                    onClick  = { pickUiMedia(UiMediaSlot.GAMEBOOT_VIDEO) },
+                    isAssigned = state.gameBootVideoAssigned,
+                    onPick   = { pickUiMedia(UiMediaSlot.GAMEBOOT_VIDEO) },
+                    onPreview = onPreviewGameBoot,
+                    onUseDefault = { viewModel.clearUiMedia(UiMediaSlot.GAMEBOOT_VIDEO) },
+                    onFocusChanged = { focusedSlot = if (it) UiMediaSlot.GAMEBOOT_VIDEO else null },
                 )
-
-                SettingsRow(
-                    label    = "Preview GameBoot",
-                    sublabel = "Play the presentation now — nothing is launched",
-                    onClick  = onPreviewGameBoot,
-                )
-
-                if (state.gameBootVideoAssigned) {
-                    SettingsRow(
-                        label    = "Reset GameBoot to Default",
-                        sublabel = "Remove your clip and bring back the built-in sequence",
-                        onClick  = { viewModel.resetGameBootMedia() },
-                    )
-                }
             }
 
             SettingsGroup("Orientation")
@@ -530,3 +593,14 @@ fun DisplaySettingsScreen(
 
 private fun formatHintDelay(seconds: Float): String =
     if (seconds % 1f == 0f) "${seconds.toInt()}s" else "${seconds}s"
+
+/**
+ * Whether [this] media row currently has a custom assignment — what gates the reset shortcut and
+ * its prompt. A local extension rather than a state field so the two media rows on this screen
+ * cannot answer it differently from the rows themselves.
+ */
+private fun UiMediaSlot.isAssignedIn(state: DisplaySettingsUiState): Boolean = when (this) {
+    UiMediaSlot.BOOT_VIDEO -> state.bootVideoAssigned
+    UiMediaSlot.GAMEBOOT_VIDEO -> state.gameBootVideoAssigned
+    else -> false
+}

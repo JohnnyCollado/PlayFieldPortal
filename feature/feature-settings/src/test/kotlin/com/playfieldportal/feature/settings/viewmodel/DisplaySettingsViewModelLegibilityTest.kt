@@ -50,6 +50,13 @@ class DisplaySettingsViewModelLegibilityTest {
             UiMediaStore(context),
             GameBootPreferences(context),
             io.mockk.mockk(relaxed = true),
+            // The layout repo only feeds the media rows' face-button shortcuts. A relaxed mock
+            // would hand the combine a flow that never emits, so the state would never build.
+            io.mockk.mockk(relaxed = true) {
+                io.mockk.every { prefs } returns kotlinx.coroutines.flow.flowOf(
+                    com.playfieldportal.core.domain.model.ControllerLayoutPrefs()
+                )
+            },
         )
     }
 

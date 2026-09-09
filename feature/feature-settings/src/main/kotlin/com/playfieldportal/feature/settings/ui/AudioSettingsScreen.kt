@@ -2,19 +2,13 @@ package com.playfieldportal.feature.settings.ui
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -28,16 +22,10 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.UiMediaSlot
-import com.playfieldportal.core.domain.model.XYLayout
-import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.feature.settings.viewmodel.AudioSettingsViewModel
 import com.playfieldportal.feature.settings.viewmodel.PFP_DEFAULT_LABEL
 import com.playfieldportal.themekit.UiMediaLimits
@@ -51,24 +39,15 @@ private val AUDIO_PICKER_MIME = UiMediaLimits.AUDIO_MIME.toTypedArray()
 /**
  * Interface ▸ Sound — the Menu Sounds toggle plus the seven sound assignments: the six menu
  * sounds and Boot Sound, which previews through its own ExoPlayer path
- * ([com.playfieldportal.core.ui.media.BootSoundPreviewer]) instead of SoundPool.
+ * ([com.playfieldportal.core.ui.media.UiMediaAudioPlayer]) instead of SoundPool.
  *
  * There is no editor sub-screen: selecting a row opens the system picker directly, and the row's
  * own inline actions carry Preview and Use Default. That is how every other media assignment in
  * this app works (wallpaper, custom icons), and it keeps the whole feature on one screen.
  *
- * ## Controller shortcuts on the assignment rows
- *
- * Two face buttons act on the focused row, bound to PHYSICAL positions so they survive the
- * user's X/Y layout setting: the north-facing button (Y on Xbox/PS pads, X on Nintendo) resets
- * the row to the PFP default, and the west-facing button (X on Xbox/PS, Y on Nintendo) plays its
- * preview. Neither button has any other role on this screen, so no layout can collide with one.
- *
- * Mechanically: XMBViewModel forwards both presses into the settings layer as
- * OPEN_CONTEXT_MENU / CHANGE_SORT ("treated identically", per its own comment); the interceptor
- * below maps them back to physical positions through [AudioSettingsUiState.xyLayout]. The prompt
- * bar shows FIXED position glyphs ([ControllerPromptItem.fixed]) rather than semantic ones —
- * resolving through the layout mapping again would show the wrong buttons after an X/Y swap.
+ * The rows, and the north/west face-button shortcuts that act on the focused one, are
+ * [MediaAssignmentRow] and [MediaRowShortcuts] — shared with Display ▸ Boot Sequence and
+ * Display ▸ GameBoot so a user who learns them here already knows them there.
  */
 @Composable
 fun AudioSettingsScreen(
@@ -125,56 +104,19 @@ fun AudioSettingsScreen(
     // operate on it. Toggle and reset rows never set it, so shortcuts are inert over them.
     var focusedSlot by remember { mutableStateOf<UiMediaSlot?>(null) }
 
-    // True when [action] arrived from the NORTH-facing face button (Y on Xbox/PS pads, X on
-    // Nintendo), resolved through the user's X/Y layout: under STANDARD the north button emits
-    // OPEN_CONTEXT_MENU; under SWAPPED it emits CHANGE_SORT.
-    fun isNorthFace(action: GamepadAction): Boolean = when (state.xyLayout) {
-        XYLayout.STANDARD -> action == GamepadAction.OPEN_CONTEXT_MENU
-        XYLayout.SWAPPED -> action == GamepadAction.CHANGE_SORT
-    }
-
-    // Same, for the WEST-facing face button (X on Xbox/PS, Y on Nintendo).
-    fun isWestFace(action: GamepadAction): Boolean = when (state.xyLayout) {
-        XYLayout.STANDARD -> action == GamepadAction.CHANGE_SORT
-        XYLayout.SWAPPED -> action == GamepadAction.OPEN_CONTEXT_MENU
-    }
-
     Box(modifier = modifier) {
         SettingsScaffold(
             title = "Settings",
             subtitle = "Sound",
             onBack = onBack,
-            helperFooterItems = buildList {
-                val focusedSound = focusedSlot
-                if (focusedSound != null && focusedSound in state.assignedSlots) {
-                    add(
-                        ControllerPromptItem(
-                            action = if (state.xyLayout == XYLayout.STANDARD) {
-                                GamepadAction.OPEN_CONTEXT_MENU
-                            } else {
-                                GamepadAction.CHANGE_SORT
-                            },
-                            label = "Use Default",
-                        )
-                    )
-                }
-                if (focusedSound != null) {
-                    add(
-                        ControllerPromptItem(
-                            action = if (state.xyLayout == XYLayout.STANDARD) {
-                                GamepadAction.CHANGE_SORT
-                            } else {
-                                GamepadAction.OPEN_CONTEXT_MENU
-                            },
-                            label = "Preview",
-                        )
-                    )
-                }
-            },
+            helperFooterItems = focusedSlot?.let { slot ->
+                MediaRowShortcuts.promptsFor(state.xyLayout, isAssigned = slot in state.assignedSlots)
+            } ?: emptyList(),
             onInterceptAction = { action ->
                 val slot = focusedSlot ?: return@SettingsScaffold false
                 when {
-                    isNorthFace(action) && slot in state.assignedSlots -> {
+                    MediaRowShortcuts.isNorthFace(action, state.xyLayout) &&
+                        slot in state.assignedSlots -> {
                         // The helper is only advertised while this row has a custom assignment,
                         // so the north-face shortcut is consumed only when it has real work to do.
                         // Restore the row after Use Default removes its inline action.
@@ -182,7 +124,7 @@ fun AudioSettingsScreen(
                         viewModel.useDefault(slot)
                         true
                     }
-                    isWestFace(action) -> {
+                    MediaRowShortcuts.isWestFace(action, state.xyLayout) -> {
                         viewModel.preview(slot)
                         true
                     }
@@ -237,11 +179,11 @@ fun AudioSettingsScreen(
                 }
                 AudioSettingsViewModel.SOUND_SLOTS.forEach { slot ->
                     val label = state.soundLabels[slot] ?: PFP_DEFAULT_LABEL
-                    SoundAssignmentRow(
-                        slot = slot,
+                    MediaAssignmentRow(
+                        label = slot.displayName,
+                        focusKey = "audio_${slot.key}",
                         value = label,
                         isAssigned = slot in state.assignedSlots,
-                        showPreview = true,
                         onPick = { pickFor(slot) },
                         onPreview = { viewModel.preview(slot) },
                         onUseDefault = {
@@ -296,72 +238,4 @@ fun AudioSettingsScreen(
             },
         )
     }
-}
-
-/**
- * One assignment row: the event's name, its current source, and its controller-reachable actions.
- * "Use Default" only appears while a custom sound is assigned — an action that would do nothing
- * is worse than no action for controller navigation, which has to step through every one.
- */
-@Composable
-private fun SoundAssignmentRow(
-    slot: UiMediaSlot,
-    value: String,
-    isAssigned: Boolean,
-    showPreview: Boolean,
-    onPick: () -> Unit,
-    onPreview: () -> Unit,
-    onUseDefault: () -> Unit,
-    onFocusChanged: (Boolean) -> Unit,
-) {
-    SettingsRow(
-        label = slot.displayName,
-        focusKey = "audio_${slot.key}",
-        onClick = onPick,
-        onFocusChangedExternal = onFocusChanged,
-        trailing = {
-            Text(
-                text = value,
-                color = SettingsAccent,
-                fontSize = 13.sp,
-                style = TextStyle(shadow = SettingsTextShadow),
-            )
-        },
-        actions = buildList {
-            if (showPreview) {
-                add(
-                    SettingsRowAction(
-                        "Preview ${slot.displayName}", onPreview,
-                        actionFocusBackgroundColor = lerp(SettingsAccent, Color.Black, 0.50f),
-                    ) {
-                        Icon(
-                            Icons.Default.PlayArrow,
-                            contentDescription = "Preview ${slot.displayName}",
-                            tint = SettingsAccent,
-                            modifier = Modifier
-                                .background(Color.Black.copy(alpha = 0.1f), RoundedCornerShape(6.dp))
-                                .padding(4.dp),
-                        )
-                    }
-                )
-            }
-            if (isAssigned) {
-                add(
-                    SettingsRowAction(
-                        "Use the PFP default for ${slot.displayName}", onUseDefault,
-                        actionFocusBackgroundColor = lerp(Color(0xFFE55353), Color.Black, 0.50f),
-                    ) {
-                        Icon(
-                            Icons.Default.Refresh,
-                            contentDescription = "Use the PFP default for ${slot.displayName}",
-                            tint = Color(0xFFE55353),
-                            modifier = Modifier
-                                .background(Color.Black.copy(alpha = 0.1f), RoundedCornerShape(6.dp))
-                                .padding(4.dp),
-                        )
-                    }
-                )
-            }
-        },
-    )
 }

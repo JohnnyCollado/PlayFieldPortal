@@ -48,15 +48,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalFocusManager
@@ -199,6 +204,15 @@ val SettingsTextShadow = Shadow(
 )
 val SettingsDivider = com.playfieldportal.core.ui.theme.PfpPalette.Divider
 val SettingsSelectedBg = com.playfieldportal.core.ui.theme.PfpPalette.Accent.copy(alpha = 0.14f)
+
+/**
+ * Margin kept between a focused row and either edge of the content viewport, and — the same value
+ * on purpose — the height of the fade at the bottom of that viewport. Tying them together is what
+ * makes the fade safe: keep-in-view parks a focused row's bottom edge exactly where the fade
+ * starts, so a row the cursor is on is never dimmed, while a row scrolled under the fold dissolves
+ * instead of being sliced by the helper footer's divider.
+ */
+private val CONTENT_EDGE_MARGIN = 16.dp
 
 // ── Standard helper footer ────────────────────────────────────────────────────
 
@@ -471,7 +485,7 @@ fun SettingsScaffold(
         val viewportHeight = contentViewportHeight.value ?: return@LaunchedEffect
         val activeScrollState = contentScrollState.value ?: return@LaunchedEffect
         val rowHeight = rowSizes[focused] ?: return@LaunchedEffect
-        val margin = 16f * density.density
+        val margin = with(density) { CONTENT_EDGE_MARGIN.toPx() }
         val viewportBottom = viewportTop + viewportHeight
         // Bring the WHOLE focused row inside the visible area, symmetric for both edges: the
         // row's TOP clears the top margin and its BOTTOM clears the bottom margin. Aligning by
@@ -810,6 +824,33 @@ fun SettingsScaffold(
                         .onGloballyPositioned {
                             firstVisibleContentY.value = it.localToRoot(Offset.Zero).y
                             contentViewportHeight.value = it.size.height.toFloat()
+                        }
+                        // Bottom edge fade. Content is flush against the helper footer's divider,
+                        // so a row straddling the fold was sliced mid-glyph by a hard rule and read
+                        // as deliberate clipping rather than "there is more below". Fading the
+                        // content's own alpha (DstIn over an offscreen layer, NOT an opaque
+                        // gradient) is what keeps this correct over the scaffold's semi-transparent
+                        // scrim: the partial row dissolves into the same wallpaper the footer band
+                        // already shows, instead of into a painted band that would only match on
+                        // one theme.
+                        //
+                        // Draw-only, so the measured viewport above is untouched. The fade shares
+                        // [CONTENT_EDGE_MARGIN] with keep-in-view, which is what guarantees a
+                        // focused row's bottom edge lands exactly where the fade starts.
+                        .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                        .drawWithContent {
+                            drawContent()
+                            val fade = CONTENT_EDGE_MARGIN.toPx().coerceAtMost(size.height)
+                            drawRect(
+                                brush = Brush.verticalGradient(
+                                    colors = listOf(Color.Black, Color.Transparent),
+                                    startY = size.height - fade,
+                                    endY = size.height,
+                                ),
+                                topLeft = Offset(0f, size.height - fade),
+                                size = Size(size.width, fade),
+                                blendMode = BlendMode.DstIn,
+                            )
                         },
                 ) {
                     content()

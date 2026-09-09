@@ -13,6 +13,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.datastore.pfpDataStore
+import com.playfieldportal.core.data.repository.ControllerLayoutRepository
 import com.playfieldportal.core.data.repository.GameBootPreferences
 import com.playfieldportal.core.data.repository.UiMediaStore
 import com.playfieldportal.core.data.wallpaper.WallpaperLuminanceProbe
@@ -27,6 +28,7 @@ import com.playfieldportal.core.domain.model.lightBackgroundAnchors
 import com.playfieldportal.core.domain.model.resolve
 import com.playfieldportal.core.domain.model.TouchNavButtonMode
 import com.playfieldportal.core.domain.model.TouchSensitivity
+import com.playfieldportal.core.domain.model.XYLayout
 import com.playfieldportal.core.ui.theme.TextContrastRole
 import com.playfieldportal.core.ui.theme.clampLightnessForContrast
 import com.playfieldportal.core.ui.theme.composite
@@ -120,6 +122,17 @@ private val WAVE_STYLE_LABELS = mapOf(
     WaveStyle.REDUCED_STATIC to "Reduced + Static",
 )
 
+/**
+ * The four transient facts that ride together through the nested [combine] — [combine] takes at
+ * most five typed sources, and the outer one is already full of DataStore and import state.
+ */
+private data class Transient(
+    val bootPreviewVisible: Boolean,
+    val gameBootPreviewVisible: Boolean,
+    val textContrastNotice: String?,
+    val xyLayout: XYLayout,
+)
+
 data class DisplaySettingsUiState(
     val waveStyle: WaveStyle = WaveStyle.ANIMATED,
     val showBootSequence: Boolean = true,
@@ -157,10 +170,11 @@ data class DisplaySettingsUiState(
     val wallpaperImporting: Boolean = false,
     val wallpaperPreviewVisible: Boolean = false,
     // ── Boot Sequence media (Display ▸ Boot Sequence) ────────────────────────
+    // ONE field, exactly like GameBoot: the boot sequence is the built-in logo animation until
+    // the user replaces the whole thing with a clip of their own. Boot SOUND is not here — it is
+    // the seventh row of Interface ▸ Sound, which owns every sound in the app.
     val bootVideoLabel: String = UI_MEDIA_DEFAULT_LABEL,
-    val bootAudioLabel: String = UI_MEDIA_DEFAULT_LABEL,
     val bootVideoAssigned: Boolean = false,
-    val bootAudioAssigned: Boolean = false,
     val bootPreviewVisible: Boolean = false,
     // ── GameBoot (Display ▸ GameBoot) ────────────────────────────────────────
     // One switch and one replaceable asset: on/off, plus the user's own clip when they have one.
@@ -168,10 +182,11 @@ data class DisplaySettingsUiState(
     val gameBootVideoLabel: String = UI_MEDIA_DEFAULT_LABEL,
     val gameBootVideoAssigned: Boolean = false,
     val gameBootPreviewVisible: Boolean = false,
-    /** Absolute paths for the two previews — read once so the overlay never touches the store. */
-    val bootVideoPath: String? = null,
-    val bootAudioPath: String? = null,
-    val gameBootVideoPath: String? = null,
+    /**
+     * Which physical face button does what on a focused media row — the north/west shortcuts are
+     * bound to positions, so they need the user's X/Y layout to resolve. See MediaRowShortcuts.
+     */
+    val xyLayout: XYLayout = XYLayout.STANDARD,
 ) {
     val waveStyleLabel: String get() = WAVE_STYLE_LABELS[waveStyle] ?: waveStyle.name
 }
@@ -185,6 +200,7 @@ class DisplaySettingsViewModel @Inject constructor(
     private val uiMediaStore: UiMediaStore,
     private val gameBootPreferences: GameBootPreferences,
     private val menuSound: com.playfieldportal.core.ui.sound.MenuSoundPlayer,
+    private val controllerLayout: ControllerLayoutRepository,
 ) : ViewModel() {
 
     private val _wallpaperMessage  = MutableStateFlow<String?>(null)
@@ -206,12 +222,18 @@ class DisplaySettingsViewModel @Inject constructor(
         _wallpaperMessage,
         _wallpaperImporting,
         _wallpaperPreviewVisible,
-        // combine tops out at five typed sources, so the transient flags ride together — the same
-        // nesting the two boot previews already use.
-        combine(_bootPreviewVisible, _gameBootPreviewVisible, _textContrastNotice) { boot, gameBoot, notice ->
-            Triple(boot, gameBoot, notice)
+        // combine tops out at five typed sources, so everything transient rides together — the
+        // same nesting the two boot previews already used, now carrying the controller layout as
+        // well (it maps over the same DataStore, so this costs no extra read).
+        combine(
+            _bootPreviewVisible,
+            _gameBootPreviewVisible,
+            _textContrastNotice,
+            controllerLayout.prefs,
+        ) { boot, gameBoot, notice, layout ->
+            Transient(boot, gameBoot, notice, layout.xyLayout)
         },
-    ) { prefs, msg, importing, previewVisible, (bootPreview, gameBootPreview, textNotice) ->
+    ) { prefs, msg, importing, previewVisible, transient ->
         // Every UI-media fact below comes from the same DataStore emission plus one directory
         // listing, so the rows follow an import or a clear without a second flow.
         val assigned = uiMediaStore.assignments()
@@ -236,7 +258,7 @@ class DisplaySettingsViewModel @Inject constructor(
             textColorExact       = prefs[KEY_TEXT_COLOR_EXACT] ?: false,
             textLegibility       = TextLegibilityStyle.fromName(prefs[KEY_TEXT_LEGIBILITY]),
             textContrastNoticeSuppressed = prefs[KEY_TEXT_NOTICE_SUPPRESSED] ?: false,
-            textContrastNotice   = textNotice,
+            textContrastNotice   = transient.textContrastNotice,
             contextMenuHintEnabled = prefs[KEY_CONTEXT_MENU_HINT] ?: true,
             contextMenuHintDelaySeconds = (prefs[KEY_CONTEXT_MENU_HINT_DELAY_SECONDS] ?: 2.5f).coerceIn(1f, 5f),
             touchSensitivity     = TouchSensitivity.fromName(prefs[KEY_TOUCH_SENSITIVITY]),
@@ -247,19 +269,15 @@ class DisplaySettingsViewModel @Inject constructor(
             wallpaperImporting   = importing,
             wallpaperPreviewVisible = previewVisible,
             bootVideoLabel       = label(UiMediaSlot.BOOT_VIDEO),
-            bootAudioLabel       = label(UiMediaSlot.BOOT_AUDIO),
             bootVideoAssigned    = UiMediaSlot.BOOT_VIDEO in assigned,
-            bootAudioAssigned    = UiMediaSlot.BOOT_AUDIO in assigned,
-            bootPreviewVisible   = bootPreview,
+            bootPreviewVisible   = transient.bootPreviewVisible,
             // Same read-time migration the gate uses, so the row can never disagree with what
             // will actually play at launch.
             gameBootEnabled      = GameBootPreferences.resolve(prefs),
             gameBootVideoLabel   = label(UiMediaSlot.GAMEBOOT_VIDEO),
             gameBootVideoAssigned = UiMediaSlot.GAMEBOOT_VIDEO in assigned,
-            gameBootPreviewVisible = gameBootPreview,
-            bootVideoPath        = assigned[UiMediaSlot.BOOT_VIDEO],
-            bootAudioPath        = assigned[UiMediaSlot.BOOT_AUDIO],
-            gameBootVideoPath    = assigned[UiMediaSlot.GAMEBOOT_VIDEO],
+            gameBootPreviewVisible = transient.gameBootPreviewVisible,
+            xyLayout             = transient.xyLayout,
         )
     }
         // uiMediaStore.assignments() is a directory listing — cheap, but still file IO.
@@ -298,20 +316,6 @@ class DisplaySettingsViewModel @Inject constructor(
     }
 
     fun clearUiMedia(slot: UiMediaSlot) = viewModelScope.launch { uiMediaStore.clear(slot) }
-
-    /** Display ▸ Boot Sequence ▸ Reset to Default — boot's two slots only. */
-    fun resetBootMedia() = viewModelScope.launch {
-        uiMediaStore.clear(UiMediaSlot.BOOT_VIDEO)
-        uiMediaStore.clear(UiMediaSlot.BOOT_AUDIO)
-    }
-
-    /**
-     * Display ▸ GameBoot ▸ Reset to Default — drops the user's clip so the built-in sequence
-     * comes back. Exactly the same shape as clearing a sound assignment: one slot, one clear.
-     */
-    fun resetGameBootMedia() = viewModelScope.launch {
-        uiMediaStore.clear(UiMediaSlot.GAMEBOOT_VIDEO)
-    }
 
     /** Display ▸ GameBoot — the one switch for the whole presentation. */
     fun setGameBootEnabled(enabled: Boolean) = viewModelScope.launch {

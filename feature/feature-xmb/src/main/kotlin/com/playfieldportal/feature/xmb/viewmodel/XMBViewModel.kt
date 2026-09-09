@@ -1082,15 +1082,21 @@ fun shouldShowAppDrawerHint(state: XMBUiState, idleMs: Long): Boolean =
         idleMs >= (state.contextMenuHintDelaySeconds * 1_000f).toLong()
 
 /**
- * Pure decision for the Sound settings helper footer. It deliberately does not use
+ * Pure decision for the settings helper footer. It deliberately does not use
  * [XMBUiState.hasBlockingOverlay], because the settings screen itself is the overlay that owns
  * this footer. Keeping the same delay and enable setting as the XMB/App Drawer makes all helper
  * chrome appear on one timing contract.
+ *
+ * Any open settings screen qualifies — the gate is simply "a settings screen is up". SettingsScaffold
+ * already renders the footer band on every non-wizard screen and falls back to the Enter/Back
+ * prompts when the screen supplies no items of its own, so restricting this to a named screen only
+ * ever left the other screens with a reserved band that could never fill in. The wizard passes its
+ * own themed footer and never consults this flag.
  */
 fun shouldShowSettingsHint(state: XMBUiState, idleMs: Long): Boolean =
     state.contextMenuHintEnabled &&
         !state.lastInputWasTouch &&
-        state.activeSettingsScreen == "settings_audio" &&
+        state.activeSettingsScreen != null &&
         idleMs >= (state.contextMenuHintDelaySeconds * 1_000f).toLong()
 
 data class XMBItem(
