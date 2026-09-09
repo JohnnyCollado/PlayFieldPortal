@@ -8,17 +8,29 @@ import android.net.Uri
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.data.repository.GameBootPreferences
 import com.playfieldportal.core.data.repository.UiMediaStore
+import com.playfieldportal.core.data.wallpaper.WallpaperLuminanceProbe
+import com.playfieldportal.core.data.wallpaper.WallpaperLuminanceProbe.clearWallpaperLuma
+import com.playfieldportal.core.data.wallpaper.WallpaperLuminanceProbe.setWallpaperLuma
 import com.playfieldportal.core.domain.model.UiMediaKind
 import com.playfieldportal.core.domain.model.UiMediaSlot
 import com.playfieldportal.core.domain.model.IconLegibilityStyle
+import com.playfieldportal.core.domain.model.TextLegibilityStyle
+import com.playfieldportal.core.domain.model.XmbColorScheme
+import com.playfieldportal.core.domain.model.lightBackgroundAnchors
+import com.playfieldportal.core.domain.model.resolve
 import com.playfieldportal.core.domain.model.TouchNavButtonMode
 import com.playfieldportal.core.domain.model.TouchSensitivity
+import com.playfieldportal.core.ui.theme.TextContrastRole
+import com.playfieldportal.core.ui.theme.clampLightnessForContrast
+import com.playfieldportal.core.ui.theme.composite
+import com.playfieldportal.core.ui.theme.solveScrimColor
 import com.playfieldportal.core.ui.wave.WaveStyle
 import com.playfieldportal.themekit.MotionLimits
 import com.playfieldportal.themekit.UiMediaLimits
@@ -61,6 +73,21 @@ private val KEY_ICON_LEGIBILITY    = stringPreferencesKey("display_icon_legibili
 private val KEY_SOLID_UNFOCUSED_ICONS = booleanPreferencesKey("display_solid_unfocused_icons")
 // Must match XMBViewModel.KEY_TEXT_SHADOW — both read/write this same pref.
 private val KEY_TEXT_SHADOW = booleanPreferencesKey("display_text_shadow")
+// ── Font colour (Display ▸ Font Colour) ──────────────────────────────────────
+// Must match XMBViewModel.KEY_TEXT_COLOR — both read/write this same pref.
+// Absent = inherit the theme's own text colour (white on every preset).
+private val KEY_TEXT_COLOR = longPreferencesKey("display_text_color")
+// "Use my exact colour": skip the lightness clamp. Protection still applies — a plate can rescue
+// a colour without repainting it, which is the whole reason the two are separate settings.
+private val KEY_TEXT_COLOR_EXACT = booleanPreferencesKey("display_text_color_exact")
+// Must match XMBViewModel — the resolved text-protection instrument (AUTO by default).
+private val KEY_TEXT_LEGIBILITY = stringPreferencesKey("display_text_legibility")
+// "Don't warn again": adjustment continues silently, only the notice stops.
+private val KEY_TEXT_NOTICE_SUPPRESSED = booleanPreferencesKey("display_text_contrast_notice_suppressed")
+// Read-only here: the theme owns these, this screen only needs them to know which backdrop the
+// picked font colour will land on. Must match ThemesSettingsViewModel / XMBViewModel.
+private val KEY_ACCENT_OVERRIDE = longPreferencesKey("theme_accent_override")
+private val KEY_COLOR_SCHEME    = stringPreferencesKey("display_color_scheme")
 internal val KEY_CUSTOM_WALLPAPER  = stringPreferencesKey("display_custom_wallpaper")
 // Motion wallpaper (looping MP4/WebM/GIF). Must match XMBViewModel — shared cascade pref.
 // INVARIANT: never set without KEY_CUSTOM_WALLPAPER — the poster is the fallback for both the
@@ -110,6 +137,15 @@ data class DisplaySettingsUiState(
     // bright wallpaper regions. Default on — the shadow is subtle; without it the flat gray
     // subtitle is the one label that washes out.
     val textShadow: Boolean = true,
+    // ── Font colour ──────────────────────────────────────────────────────────
+    /** User-picked text colour, or null to inherit the theme's. */
+    val textColorArgb: Long? = null,
+    /** Render the pick verbatim, skipping the lightness clamp (protection still applies). */
+    val textColorExact: Boolean = false,
+    val textLegibility: TextLegibilityStyle = TextLegibilityStyle.DEFAULT,
+    val textContrastNoticeSuppressed: Boolean = false,
+    /** Transient "we adjusted your colour" notice; null when there is nothing to say. */
+    val textContrastNotice: String? = null,
     // Show the idle "Options" hint pill over XMB items with a context menu. Default on.
     val contextMenuHintDelaySeconds: Float = 2.5f,
     val touchSensitivity: TouchSensitivity = TouchSensitivity.NORMAL,
@@ -160,6 +196,11 @@ class DisplaySettingsViewModel @Inject constructor(
     private val _wallpaperPreviewVisible = MutableStateFlow(false)
     private val _bootPreviewVisible = MutableStateFlow(false)
     private val _gameBootPreviewVisible = MutableStateFlow(false)
+    /**
+     * Transient font-colour notice, on the same channel idiom as [_wallpaperMessage]: raised by a
+     * pick that had to be adjusted, cleared by Dismiss or by "Don't warn again".
+     */
+    private val _textContrastNotice = MutableStateFlow<String?>(null)
 
     /** The slot the UI-media picker was launched for, read back when the Uri arrives. */
     private var pendingUiMediaSlot: UiMediaSlot? = null
@@ -169,8 +210,12 @@ class DisplaySettingsViewModel @Inject constructor(
         _wallpaperMessage,
         _wallpaperImporting,
         _wallpaperPreviewVisible,
-        combine(_bootPreviewVisible, _gameBootPreviewVisible) { boot, gameBoot -> boot to gameBoot },
-    ) { prefs, msg, importing, previewVisible, (bootPreview, gameBootPreview) ->
+        // combine tops out at five typed sources, so the transient flags ride together — the same
+        // nesting the two boot previews already use.
+        combine(_bootPreviewVisible, _gameBootPreviewVisible, _textContrastNotice) { boot, gameBoot, notice ->
+            Triple(boot, gameBoot, notice)
+        },
+    ) { prefs, msg, importing, previewVisible, (bootPreview, gameBootPreview, textNotice) ->
         // Every UI-media fact below comes from the same DataStore emission plus one directory
         // listing, so the rows follow an import or a clear without a second flow.
         val assigned = uiMediaStore.assignments()
@@ -191,6 +236,11 @@ class DisplaySettingsViewModel @Inject constructor(
             iconLegibility       = IconLegibilityStyle.fromName(prefs[KEY_ICON_LEGIBILITY]),
             solidUnfocusedIcons  = prefs[KEY_SOLID_UNFOCUSED_ICONS] ?: false,
             textShadow           = prefs[KEY_TEXT_SHADOW] ?: true,
+            textColorArgb        = prefs[KEY_TEXT_COLOR],
+            textColorExact       = prefs[KEY_TEXT_COLOR_EXACT] ?: false,
+            textLegibility       = TextLegibilityStyle.fromName(prefs[KEY_TEXT_LEGIBILITY]),
+            textContrastNoticeSuppressed = prefs[KEY_TEXT_NOTICE_SUPPRESSED] ?: false,
+            textContrastNotice   = textNotice,
             contextMenuHintEnabled = prefs[KEY_CONTEXT_MENU_HINT] ?: true,
             contextMenuHintDelaySeconds = (prefs[KEY_CONTEXT_MENU_HINT_DELAY_SECONDS] ?: 2.5f).coerceIn(1f, 5f),
             touchSensitivity     = TouchSensitivity.fromName(prefs[KEY_TOUCH_SENSITIVITY]),
@@ -298,6 +348,108 @@ class DisplaySettingsViewModel @Inject constructor(
 
     fun setTextShadow(v: Boolean) = save { it[KEY_TEXT_SHADOW] = v }
 
+    // ── Font colour ───────────────────────────────────────────────────────────
+
+    /**
+     * Persist the picked colour (null clears back to the theme's own), then measure it against the
+     * backdrop it will actually land on and raise the notice if it had to be adjusted.
+     *
+     * The measurement happens here rather than at render time because this is where the user is
+     * looking: telling them at the moment of the pick is an explanation, telling them later is a
+     * mystery.
+     */
+    fun setTextColor(argb: Long?) {
+        viewModelScope.launch {
+            context.pfpDataStore.edit { prefs ->
+                if (argb != null) prefs[KEY_TEXT_COLOR] = argb else prefs.remove(KEY_TEXT_COLOR)
+            }
+            _textContrastNotice.value = noticeFor(argb)
+        }
+    }
+
+    /** Render the pick verbatim. Protection (shadow/plate) still applies — the dialog says so. */
+    fun setTextColorExact(v: Boolean) {
+        viewModelScope.launch {
+            context.pfpDataStore.edit { it[KEY_TEXT_COLOR_EXACT] = v }
+            // The standing notice described a clamp that no longer happens.
+            if (v) _textContrastNotice.value = null
+        }
+    }
+
+    fun cycleTextLegibility() {
+        val styles = TextLegibilityStyle.entries
+        val next = styles[(styles.indexOf(uiState.value.textLegibility) + 1) % styles.size]
+        save { it[KEY_TEXT_LEGIBILITY] = next.name }
+    }
+
+    /** Transient dismiss — the notice comes back on the next pick that needs it. */
+    fun dismissTextContrastNotice() {
+        _textContrastNotice.value = null
+    }
+
+    /** Permanent: adjustment carries on, the user just stops hearing about it. */
+    fun suppressTextContrastNotice() {
+        _textContrastNotice.value = null
+        save { it[KEY_TEXT_NOTICE_SUPPRESSED] = true }
+    }
+
+    /**
+     * The notice text for [argb], or null when there is nothing to say — no pick, "use my exact
+     * colour", the notice suppressed, or the colour simply passes.
+     */
+    private suspend fun noticeFor(argb: Long?): String? {
+        if (argb == null) return null
+        val prefs = context.pfpDataStore.data.first()
+        if (prefs[KEY_TEXT_COLOR_EXACT] == true) return null
+        if (prefs[KEY_TEXT_NOTICE_SUPPRESSED] == true) return null
+
+        val picked = androidx.compose.ui.graphics.Color(argb and 0xFFFFFFFFL)
+        val worst = settingsBackdropAnchors(prefs)
+            .minByOrNull { clampLightnessForContrast(picked, it).achievedRatio } ?: return null
+        val resolved = clampLightnessForContrast(picked, worst, TextContrastRole.BODY.threshold)
+
+        return when {
+            !resolved.adjusted && resolved.meetsTarget -> null
+            resolved.adjusted -> "Adjusted for readability — the colour you picked reads at " +
+                String.format("%.1f:1", contrastOf(picked, worst)) + " here, below the 4.5:1 bar."
+            else -> "That colour can't reach 4.5:1 on this background, so text will get a " +
+                "contrast plate behind it."
+        }
+    }
+
+    /**
+     * The two backdrops Settings actually paints — the solved scrim anchors over a worst-case
+     * bright wallpaper. Reading the live theme (rather than assuming the default) is what keeps
+     * the reported ratio honest on a custom accent.
+     */
+    private fun settingsBackdropAnchors(
+        prefs: androidx.datastore.preferences.core.Preferences,
+    ): List<androidx.compose.ui.graphics.Color> {
+        val accentOverride = prefs[KEY_ACCENT_OVERRIDE]
+        val anchors: Pair<Long, Long> = if (accentOverride != null) {
+            lightBackgroundAnchors(accentOverride and 0xFFFFFFFFL)
+        } else {
+            val scheme = runCatching {
+                XmbColorScheme.valueOf(
+                    prefs[KEY_COLOR_SCHEME] ?: XmbColorScheme.CLASSIC_BLUE.name,
+                )
+            }.getOrDefault(XmbColorScheme.CLASSIC_BLUE)
+            val palette = scheme.resolve(java.time.LocalDate.now().monthValue)
+            palette.backgroundTop to palette.backgroundBottom
+        }
+        fun backdrop(argb: Long, alpha: Float) = composite(
+            solveScrimColor(androidx.compose.ui.graphics.Color(argb and 0xFFFFFFFFL), alpha)
+                .copy(alpha = alpha),
+            androidx.compose.ui.graphics.Color.White,
+        )
+        return listOf(backdrop(anchors.first, 0.72f), backdrop(anchors.second, 0.90f))
+    }
+
+    private fun contrastOf(
+        fg: androidx.compose.ui.graphics.Color,
+        bg: androidx.compose.ui.graphics.Color,
+    ): Float = com.playfieldportal.core.ui.theme.contrastRatio(fg, bg).toFloat()
+
     fun setShowBootSequence(v: Boolean)      = save { it[KEY_SHOW_BOOT]       = v }
     fun setShowBootOnResume(v: Boolean)      = save { it[KEY_BOOT_ON_RESUME]  = v }
     fun setThermalThrottleAware(v: Boolean)  = save { it[KEY_THERMAL_AWARE]   = v }
@@ -366,11 +518,19 @@ class DisplaySettingsViewModel @Inject constructor(
             } != null && isDecodableImage(dest)
         }.getOrDefault(false)
         if (ok) {
-            // Both keys together — even though a still import never sets the motion key, a
-            // previous motion file must go when its poster is replaced.
+            // Survey the new wallpaper BEFORE opening the transaction: edit{}'s transform may be
+            // re-run under contention, and a bitmap decode is not something to repeat under a lock.
+            // Free here — we are already off the main thread behind the import spinner.
+            val luma = withContext(Dispatchers.IO) {
+                WallpaperLuminanceProbe.survey(dest.absolutePath)
+            }
+            // All three keys together — even though a still import never sets the motion key, a
+            // previous motion file must go when its poster is replaced, and a survey of the old
+            // wallpaper must never outlive the wallpaper it describes.
             save {
                 it[KEY_CUSTOM_WALLPAPER] = dest.absolutePath
                 it.remove(KEY_MOTION_WALLPAPER)
+                it.setWallpaperLuma(luma)
             }
             pruneWallpaperDir(keep = listOf(dest))
             _wallpaperMessage.value = "Wallpaper applied"
@@ -452,10 +612,20 @@ class DisplaySettingsViewModel @Inject constructor(
             return
         }
 
+        // Surveyed from the written poster rather than the in-memory bitmap above: that one is
+        // full-size, so getPixels() on it would cost more than re-decoding the poster at
+        // inSampleSize. The poster is what the XMB paints under its text while a motion wallpaper
+        // loads, and live frames drift from it — protection is biased one step stronger at render
+        // time when KEY_MOTION_WALLPAPER is set, rather than by fudging the numbers here.
+        val luma = withContext(Dispatchers.IO) {
+            WallpaperLuminanceProbe.survey(posterDest.absolutePath)
+        }
+
         // THE invariant, enforced at the write site: motion is never set without its poster.
         save {
             it[KEY_CUSTOM_WALLPAPER] = posterDest.absolutePath
             it[KEY_MOTION_WALLPAPER] = motionDest.absolutePath
+            it.setWallpaperLuma(luma)
         }
         pruneWallpaperDir(keep = listOf(motionDest, posterDest))
         _wallpaperMessage.value = "Motion wallpaper applied"
@@ -539,10 +709,12 @@ class DisplaySettingsViewModel @Inject constructor(
             val poster = current[KEY_CUSTOM_WALLPAPER]
             val motion = current[KEY_MOTION_WALLPAPER]
             // Clear BOTH keys — a leftover motion path with a cleared poster is the invalid
-            // state the poster invariant exists to prevent.
+            // state the poster invariant exists to prevent — and the survey with them, since a
+            // map describing a deleted wallpaper is worse than no map at all.
             save {
                 it.remove(KEY_CUSTOM_WALLPAPER)
                 it.remove(KEY_MOTION_WALLPAPER)
+                it.clearWallpaperLuma()
             }
             // Then the files (prefs gone first, so nothing references them while they delete).
             withContext(Dispatchers.IO) {

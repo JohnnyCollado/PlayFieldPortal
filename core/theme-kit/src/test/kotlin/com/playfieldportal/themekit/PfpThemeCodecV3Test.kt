@@ -198,6 +198,39 @@ class PfpThemeCodecV3Test {
     }
 
     @Test
+    fun `textColor round-trips and the schema version does not move`() {
+        // Additive by the same argument the v3 note makes: a reader that predates textColor
+        // ignores it and applies the rest, so bumping the version would only make older builds
+        // refuse bundles they can in fact render.
+        assertEquals(3, PfpThemeManifest.SCHEMA_VERSION, "textColor is additive — v3 stands")
+
+        val written = PfpThemeCodec.write(
+            PfpThemeBundle(
+                manifest = PfpThemeManifest(
+                    name = "Tinted",
+                    accentColor = "#0055AA",
+                    textColor = "#FF8800",
+                ),
+                wallpaper = null,
+                preview = null,
+            ),
+        )
+        val decoded = assertNotNull(PfpThemeCodec.read(written))
+        assertEquals("#FF8800", decoded.manifest.textColor)
+        assertEquals(3, decoded.manifest.schemaVersion)
+    }
+
+    @Test
+    fun `a manifest predating textColor reads as auto`() {
+        val older = zip(
+            "manifest.json" to
+                """{"manifest":"pfptheme","schemaVersion":3,"name":"Old","accentColor":"#FF0000"}""".toByteArray(),
+        )
+        val decoded = assertNotNull(PfpThemeCodec.read(older))
+        assertEquals(PfpThemeManifest.ICON_COLOR_AUTO, decoded.manifest.textColor)
+    }
+
+    @Test
     fun `manifest without schemaVersion still reads (older writer)`() {
         val v1 = zip("manifest.json" to """{"manifest":"pfptheme","name":"Ancient","accentColor":"#FF0000"}""".toByteArray())
         val decoded = assertNotNull(PfpThemeCodec.read(v1))

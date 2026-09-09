@@ -16,7 +16,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.foundation.layout.Row
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -24,10 +30,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
+import com.playfieldportal.core.ui.components.HsvColorPickerDialog
+import com.playfieldportal.core.ui.components.hexOf
+import com.playfieldportal.core.ui.components.hsvToArgbLong
 import com.playfieldportal.core.ui.motion.MotionWallpaperBackground
 import com.playfieldportal.core.ui.motion.MotionWallpaperPolicy
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.UiMediaSlot
+import com.playfieldportal.core.ui.theme.LocalPFPColors
+import com.playfieldportal.core.ui.theme.composite
+import com.playfieldportal.core.ui.theme.solveScrimColor
 import com.playfieldportal.feature.settings.viewmodel.DisplaySettingsViewModel
 
 @Composable
@@ -41,6 +53,14 @@ fun DisplaySettingsScreen(
     viewModel: DisplaySettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
+
+    // Font-colour picker state. Held here rather than in the ViewModel for the same reason the
+    // Themes screen holds its icon picker locally: nothing is persisted until Apply.
+    var fontPickerOpen by remember { mutableStateOf(false) }
+    var pickerHue by remember { mutableFloatStateOf(0f) }
+    var pickerSat by remember { mutableFloatStateOf(0f) }
+    var pickerVal by remember { mutableFloatStateOf(1f) }
+    var pickerChannel by remember { mutableIntStateOf(0) }
     // The "Hidden Items" manager moved to Settings ▸ Library ▸ Hidden Games
     // (settings_app_visibility) — see docs/plans/README.md (Settings hierarchy).
 
@@ -175,6 +195,49 @@ fun DisplaySettingsScreen(
                 sublabel = "Drop shadow behind row helper text — keeps it readable over bright wallpaper regions",
                 checked  = state.textShadow,
                 onToggle = { viewModel.setTextShadow(it) },
+            )
+
+            // ── Font Colour ──────────────────────────────────────────────────
+            // Deliberately next to Text Shadow: the two answer the same question (how does text
+            // survive the wallpaper), and AUTO reads the shadow toggle as "may I use a shadow?".
+            SettingsValueRow(
+                label    = "Font Colour",
+                sublabel = "Colour for labels and body text across the interface",
+                value    = state.textColorArgb
+                    ?.let { hexOf(Color(it and 0xFFFFFFFFL)) }
+                    ?: "Theme Default",
+                onClick  = {
+                    val seed = state.textColorArgb ?: 0xFFFFFFFFL
+                    val hsv = FloatArray(3)
+                    android.graphics.Color.colorToHSV((seed and 0xFFFFFF).toInt(), hsv)
+                    pickerHue = hsv[0]; pickerSat = hsv[1]; pickerVal = hsv[2]
+                    pickerChannel = 0
+                    fontPickerOpen = true
+                },
+            )
+
+            if (state.textColorArgb != null) {
+                SettingsRow(
+                    label    = "Reset Font Colour",
+                    sublabel = "Go back to the colour the current theme supplies",
+                    onClick  = { viewModel.setTextColor(null) },
+                )
+
+                SettingsToggleRow(
+                    label    = "Use My Exact Colour",
+                    sublabel = "Render the colour exactly as picked. Legibility protection still " +
+                        "applies — text may get a shadow or a plate behind it",
+                    checked  = state.textColorExact,
+                    onToggle = { viewModel.setTextColorExact(it) },
+                )
+            }
+
+            SettingsValueRow(
+                label    = "Text Legibility",
+                sublabel = "How text separates from what is behind it.  " +
+                    "Automatic  |  None  |  Drop Shadow  |  Outline  |  Contrast Plate",
+                value    = state.textLegibility.label,
+                onClick  = { viewModel.cycleTextLegibility() },
             )
 
             SettingsGroup("Scale & Layout")
@@ -395,6 +458,62 @@ fun DisplaySettingsScreen(
                 )
             }
         }
+    }
+
+    if (fontPickerOpen) {
+        // The strip's two anchors are the real painted backdrop — the solved settings scrim over a
+        // worst-case bright wallpaper — so the ratios shown are the ratios the user will get.
+        val pfp = LocalPFPColors.current
+        val anchors = remember(pfp.backgroundTop, pfp.backgroundBottom) {
+            composite(solveScrimColor(pfp.backgroundTop, 0.72f).copy(alpha = 0.72f), Color.White) to
+                composite(solveScrimColor(pfp.backgroundBottom, 0.90f).copy(alpha = 0.90f), Color.White)
+        }
+        HsvColorPickerDialog(
+            title           = "Font Colour",
+            hue             = pickerHue,
+            saturation      = pickerSat,
+            brightness      = pickerVal,
+            selectedChannel = pickerChannel,
+            accent          = SettingsAccent,
+            subtext         = SettingsSubtext,
+            contrastAnchors = anchors,
+            onChannelFraction = { channel, fraction ->
+                pickerChannel = channel
+                when (channel) {
+                    0 -> pickerHue = (fraction * 360f).coerceIn(0f, 360f)
+                    1 -> pickerSat = fraction.coerceIn(0f, 1f)
+                    else -> pickerVal = fraction.coerceIn(0f, 1f)
+                }
+            },
+            onConfirm = {
+                viewModel.setTextColor(hsvToArgbLong(pickerHue, pickerSat, pickerVal))
+                fontPickerOpen = false
+            },
+            onCancel = { fontPickerOpen = false },
+        )
+    }
+
+    // Three actions, matching the decision: transient dismiss, a permanent opt-out of the clamp,
+    // and a permanent opt-out of the notice (adjustment carries on).
+    if (state.textContrastNotice != null) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissTextContrastNotice() },
+            title = { Text("Font colour adjusted") },
+            text = { Text(state.textContrastNotice!!) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.dismissTextContrastNotice() }) { Text("OK") }
+            },
+            dismissButton = {
+                Row {
+                    TextButton(onClick = { viewModel.setTextColorExact(true) }) {
+                        Text("Use my exact colour")
+                    }
+                    TextButton(onClick = { viewModel.suppressTextContrastNotice() }) {
+                        Text("Don't warn again")
+                    }
+                }
+            },
+        )
     }
 
     if (state.wallpaperMessage != null) {

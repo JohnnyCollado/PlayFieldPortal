@@ -6,6 +6,9 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.data.datastore.pfpDataStore
+import com.playfieldportal.core.data.wallpaper.WallpaperLuminanceProbe
+import com.playfieldportal.core.data.wallpaper.WallpaperLuminanceProbe.clearWallpaperLuma
+import com.playfieldportal.core.data.wallpaper.WallpaperLuminanceProbe.setWallpaperLuma
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
 import timber.log.Timber
@@ -36,13 +39,22 @@ class StartupDataPrep @Inject constructor(
 ) {
     suspend fun run(currentVersionCode: Int) {
         val prefs = context.pfpDataStore.data.first()
-        if (prefs[KEY_DATA_PREP_VERSION] == currentVersionCode) return
+        val alreadyPrepped = prefs[KEY_DATA_PREP_VERSION] == currentVersionCode
 
         runCatching {
-            normalizeGameArtwork()
-            normalizeWallpaper()
+            if (!alreadyPrepped) {
+                normalizeGameArtwork()
+                normalizeWallpaper()
+            }
+            // Deliberately OUTSIDE the version gate. The wallpaper luminance survey is a derived
+            // cache, not a one-shot migration: a backup restore re-homes the wallpaper path
+            // (BackupManager.remapWallpaper) while data_prep_version is NOT restored, so the
+            // marker still matches this install and gating on it would skip the one event most
+            // likely to have invalidated the survey.
+            healWallpaperLuma()
         }.onFailure { Timber.e(it, "Startup data prep failed") }
 
+        if (alreadyPrepped) return
         context.pfpDataStore.edit { it[KEY_DATA_PREP_VERSION] = currentVersionCode }
         Timber.i("Startup data prep complete for versionCode=$currentVersionCode")
     }
@@ -77,6 +89,33 @@ class StartupDataPrep @Inject constructor(
             if (resolved == null) prefs.remove(KEY_CUSTOM_WALLPAPER)
             else prefs[KEY_CUSTOM_WALLPAPER] = resolved
         }
+    }
+
+    /**
+     * Brings the wallpaper's luminance survey back in step with the wallpaper itself.
+     *
+     * Three ways it drifts, none of which a write site can catch: an OS update re-homes filesDir
+     * (so the map's embedded source path no longer matches), a backup restore repoints the
+     * wallpaper onto this install, and a restore can leave a survey behind with no wallpaper at
+     * all. All three surface as [WallpaperLuminanceProbe.describes] returning false.
+     *
+     * Runs on every cold start, so the happy path is deliberately cheap: a valid survey costs one
+     * parse to confirm and writes nothing. Only an actually-unusable one pays for a decode.
+     */
+    private suspend fun healWallpaperLuma() {
+        val prefs = context.pfpDataStore.data.first()
+        val wallpaper = prefs[KEY_CUSTOM_WALLPAPER]
+        val stored = prefs[WallpaperLuminanceProbe.KEY_WALLPAPER_LUMA]
+
+        if (wallpaper == null) {
+            if (stored != null) context.pfpDataStore.edit { it.clearWallpaperLuma() }
+            return
+        }
+        if (WallpaperLuminanceProbe.describes(stored, wallpaper)) return
+
+        val fresh = WallpaperLuminanceProbe.survey(wallpaper)
+        if (fresh == stored) return
+        context.pfpDataStore.edit { it.setWallpaperLuma(fresh) }
     }
 
     // Returns the usable value for an internal-storage path: repointed onto filesDir, or null when

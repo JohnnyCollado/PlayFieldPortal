@@ -7,6 +7,9 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.playfieldportal.core.data.datastore.pfpDataStore
+import com.playfieldportal.core.data.wallpaper.WallpaperLuminanceProbe
+import com.playfieldportal.core.data.wallpaper.WallpaperLuminanceProbe.clearWallpaperLuma
+import com.playfieldportal.core.data.wallpaper.WallpaperLuminanceProbe.setWallpaperLuma
 import com.playfieldportal.themekit.AccentDeriver
 import com.playfieldportal.themekit.BmpImage
 import com.playfieldportal.themekit.CustomizableIcons
@@ -150,6 +153,12 @@ class PfpThemeStore @Inject constructor(
         val iconColor = bundle.manifest.iconColor
             .takeIf { it != PfpThemeManifest.ICON_COLOR_AUTO }
             ?.toAccentArgbOrNull()
+        // Same wholesale-look contract for text: an explicit hex applies, "auto" (or malformed)
+        // REMOVES the pref rather than inheriting the previous theme's — a theme that says
+        // nothing about text must not leave the last theme's colour behind.
+        val textColor = bundle.manifest.textColor
+            .takeIf { it != PfpThemeManifest.ICON_COLOR_AUTO }
+            ?.toAccentArgbOrNull()
         // Per-theme XMB geometry (Theme Studio alignment assist). Sanitized here AND on
         // read so a hostile manifest can never wedge the crossbar offscreen.
         val layoutJson = bundle.manifest.layout
@@ -164,6 +173,10 @@ class PfpThemeStore @Inject constructor(
             else -> WAVE_STYLE_ANIMATED
         }
         val appliedName = _themes.value.firstOrNull { it.id == id }?.name ?: "Custom Theme"
+        // Surveyed before the transaction opens — edit{}'s transform can be re-run, and a bitmap
+        // decode must not repeat under the lock. Null when the theme carries no wallpaper, which
+        // correctly removes any previous theme's survey below.
+        val luma = if (wallpaperOk) WallpaperLuminanceProbe.survey(dest.absolutePath) else null
         context.pfpDataStore.edit { prefs ->
             prefs[KEY_APPLIED_THEME_NAME] = appliedName
             prefs[KEY_WAVE_STYLE] = waveStyle
@@ -175,8 +188,10 @@ class PfpThemeStore @Inject constructor(
             // motion — the write branch below.)
             if (motionDest != null) prefs[KEY_MOTION_WALLPAPER] = motionDest.absolutePath else prefs.remove(KEY_MOTION_WALLPAPER)
             if (wallpaperOk) prefs[KEY_CUSTOM_WALLPAPER] = dest.absolutePath else prefs.remove(KEY_CUSTOM_WALLPAPER)
+            prefs.setWallpaperLuma(luma)
             if (accent != null) prefs[KEY_ACCENT_OVERRIDE] = accent else prefs.remove(KEY_ACCENT_OVERRIDE)
             if (iconColor != null) prefs[KEY_ICON_COLOR] = iconColor else prefs.remove(KEY_ICON_COLOR)
+            if (textColor != null) prefs[KEY_TEXT_COLOR] = textColor else prefs.remove(KEY_TEXT_COLOR)
             if (layoutJson != null) prefs[KEY_THEME_LAYOUT] = layoutJson else prefs.remove(KEY_THEME_LAYOUT)
             if (iconEntries.isNotEmpty()) {
                 prefs[KEY_THEME_ICONS_STAMP] = System.currentTimeMillis()
@@ -197,8 +212,10 @@ class PfpThemeStore @Inject constructor(
         context.pfpDataStore.edit { prefs ->
             prefs.remove(KEY_CUSTOM_WALLPAPER)
             prefs.remove(KEY_MOTION_WALLPAPER)
+            prefs.clearWallpaperLuma()
             prefs.remove(KEY_ACCENT_OVERRIDE)
             prefs.remove(KEY_ICON_COLOR)
+            prefs.remove(KEY_TEXT_COLOR)
             prefs.remove(KEY_WAVE_STYLE)
             prefs.remove(KEY_THEME_LAYOUT)
             prefs.remove(KEY_THEME_ICONS_STAMP)
@@ -451,6 +468,8 @@ class PfpThemeStore @Inject constructor(
             accentColor = prefs[KEY_ACCENT_OVERRIDE]?.let { "#%06X".format(it and 0xFFFFFF) } ?: "",
             iconColor = prefs[KEY_ICON_COLOR]?.let { "#%06X".format(it and 0xFFFFFF) }
                 ?: PfpThemeManifest.ICON_COLOR_AUTO,
+            textColor = prefs[KEY_TEXT_COLOR]?.let { "#%06X".format(it and 0xFFFFFF) }
+                ?: PfpThemeManifest.ICON_COLOR_AUTO,
             waveStyle = when (prefs[KEY_WAVE_STYLE]) {
                 WAVE_STYLE_STATIC -> PfpThemeManifest.WAVE_STATIC
                 WAVE_STYLE_REDUCED -> PfpThemeManifest.WAVE_REDUCED
@@ -615,6 +634,9 @@ class PfpThemeStore @Inject constructor(
         private val KEY_WAVE_STYLE = stringPreferencesKey("display_wave_style")
         private val KEY_ACCENT_OVERRIDE = longPreferencesKey("theme_accent_override")
         private val KEY_ICON_COLOR = longPreferencesKey("theme_icon_color")
+        // Must match DisplaySettingsViewModel / XMBViewModel — the user's font colour, which a
+        // theme bundle can also carry.
+        private val KEY_TEXT_COLOR = longPreferencesKey("display_text_color")
 
         private const val WAVE_STYLE_ANIMATED = "ANIMATED"
         private const val WAVE_STYLE_REDUCED = "REDUCED"

@@ -11,6 +11,8 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.datastore.pfpDataStore
+import com.playfieldportal.core.data.wallpaper.WallpaperLuminanceProbe
+import com.playfieldportal.core.data.wallpaper.WallpaperLuminanceProbe.setWallpaperLuma
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.Photo
 import com.playfieldportal.core.domain.repository.PhotoRepository
@@ -257,13 +259,20 @@ class PhotoViewerViewModel @Inject constructor(
                 return@launch
             }
             val (poster, motion) = imported
-            // Both keys together, matching Display settings: motion is never set without its
-            // poster (the freeze/failure fallback), and a still import clears any previous
-            // motion file so no orphaned video/GIF survives the replacement.
+            // Surveyed off the main thread and before the transaction opens, matching the other
+            // three write sites — edit{}'s transform can be re-run and must not redo a decode.
+            val luma = withContext(Dispatchers.IO) {
+                WallpaperLuminanceProbe.survey(poster.absolutePath)
+            }
+            // All three keys together, matching Display settings: motion is never set without its
+            // poster (the freeze/failure fallback), a still import clears any previous motion file
+            // so no orphaned video/GIF survives the replacement, and the luminance survey is
+            // replaced with the wallpaper it describes.
             context.pfpDataStore.edit {
                 it[KEY_CUSTOM_WALLPAPER] = poster.absolutePath
                 if (motion != null) it[KEY_MOTION_WALLPAPER] = motion.absolutePath
                 else it.remove(KEY_MOTION_WALLPAPER)
+                it.setWallpaperLuma(luma)
             }
             val keepNames = listOfNotNull(poster, motion).map { it.name }.toSet()
             withContext(Dispatchers.IO) {

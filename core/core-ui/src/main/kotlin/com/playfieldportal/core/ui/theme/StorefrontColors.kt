@@ -100,42 +100,10 @@ private val DefaultStorefrontColors = StorefrontColors(
 
 val LocalStorefrontColors = staticCompositionLocalOf { DefaultStorefrontColors }
 
-// ── Contrast helpers ──────────────────────────────────────────────────────────
-// WCAG-style relative-luminance math (no android dependency — pure channel arithmetic on the
-// sRGB values Compose stores), used by deriveStorefrontColors as a floor so pale themes (Silver
-// Mono, Golden Amber) never wash out. Internal so core-ui's unit tests can pin them.
-
-/** WCAG relative luminance of [c]: 0 (black) .. 1 (white). */
-internal fun relativeLuminance(c: Color): Double {
-    fun linearize(channel: Float): Double {
-        val v = channel.toDouble()
-        return if (v <= 0.04045) v / 12.92
-        else Math.pow((v + 0.055) / 1.055, 2.4)
-    }
-    return 0.2126 * linearize(c.red) + 0.7152 * linearize(c.green) + 0.0722 * linearize(c.blue)
-}
-
-/** WCAG contrast ratio between [a] and [b]: 1 .. 21. */
-internal fun contrastRatio(a: Color, b: Color): Double {
-    val la = relativeLuminance(a)
-    val lb = relativeLuminance(b)
-    val lighter = maxOf(la, lb)
-    val darker = minOf(la, lb)
-    return (lighter + 0.05) / (darker + 0.05)
-}
-
-/**
- * Contrast floor: return [fg] unchanged when it clears [minContrast] against [bg]; otherwise pick
- * whichever pole (black/white) actually reads on [bg]. Defaults to WCAG AA (4.5); the App Drawer
- * passes a lower 3.0 floor because its preset gradient is mid-tone by design (white on the classic
- * PSP blue is ~3.9:1) and only genuinely pale washes should flip.
- */
-internal fun ensureReadable(fg: Color, bg: Color, minContrast: Float = 4.5f): Color {
-    if (contrastRatio(fg, bg) >= minContrast) return fg
-    val black = contrastRatio(Color.Black, bg)
-    val white = contrastRatio(Color.White, bg)
-    return if (black >= white) Color.Black else Color.White
-}
+// ── Contrast helpers ───────────────────────────────────────────────────────────
+// relativeLuminance / contrastRatio / ensureReadable now live in TextLegibility.kt (same package,
+// so every call site below is unchanged): Settings, the XMB and the font-color picker need the
+// same math, and one engine is the only way they can agree.
 
 /**
  * Resolve the hue the drawer should theme itself around.

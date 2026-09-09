@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.studio.IconColorChoice
+import com.playfieldportal.studio.TextColorChoice
 import com.playfieldportal.studio.StudioState
 import com.playfieldportal.studio.StudioViewModel
 import com.playfieldportal.studio.io.PtfConversion
@@ -97,6 +98,38 @@ fun InspectorPanel(
             ) {
                 HintText("Dark icon color — icons may be hard to see over the wallpaper scrim.")
             }
+        }
+
+        HorizontalDivider()
+
+        SectionLabel("Text color")
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            RadioButton(
+                selected = state.textColor is TextColorChoice.Auto,
+                onClick = { viewModel.setTextColor(TextColorChoice.Auto) },
+            )
+            Text("Auto (follows the theme)", fontSize = 13.sp)
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            RadioButton(
+                selected = state.textColor is TextColorChoice.Custom,
+                onClick = { viewModel.setTextColor(TextColorChoice.Custom(0xFFFFFFFF.toInt())) },
+            )
+            Text("Custom", fontSize = 13.sp)
+        }
+        if (state.textColor is TextColorChoice.Custom) {
+            val customArgb = (state.textColor as TextColorChoice.Custom).argb
+            HexField(
+                label = "Text color",
+                argb = customArgb,
+                onValid = { viewModel.setTextColor(TextColorChoice.Custom(it)) },
+            )
+            ExpandablePicker(argb = customArgb, onChange = { viewModel.setTextColor(TextColorChoice.Custom(it)) })
+            // The preview renders this colour AS PICKED. The launcher may lightness-clamp it at
+            // apply time when it fails 4.5:1 on the real backdrop — the contrast engine that
+            // decides is Android-side today, so the desktop preview cannot show the adjusted
+            // colour yet. See docs/plans/text-legibility-font-color-plan.md.
+            HintText("Preview shows this colour as picked; the launcher may adjust it for contrast.")
         }
 
         HorizontalDivider()

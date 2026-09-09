@@ -1,9 +1,11 @@
 package com.playfieldportal.core.ui.theme
 
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
@@ -88,7 +90,30 @@ fun PFPTheme(
     colors: PFPColors = DefaultPFPColors,
     content: @Composable () -> Unit,
 ) {
-    CompositionLocalProvider(LocalPFPColors provides colors) {
+    // The theme's text roles, resolved once per theme change. Today [colors.textPrimary] is white
+    // on every path (XmbPalette.textColor is hardcoded white, DefaultPFPColors matches), so this
+    // is a no-op seam — which is the point: it lands with no visible change, and the user's font
+    // colour and the measured-backdrop clamp arrive through it later without touching call sites.
+    //
+    // Only `primary` is taken from the theme. `secondary` deliberately stays PfpPalette.Subtext:
+    // PFPColors.textSecondary is textPrimary at 0.7 alpha, so adopting it here would repaint every
+    // sublabel in the app from #AAAAAA to translucent white — a real visual change, smuggled in
+    // under a refactor. Deriving secondary from the user's picked colour is Phase 3's job, where
+    // it is a deliberate decision rather than a side effect.
+    val textColors = remember(colors.textPrimary) {
+        DefaultPfpTextColors.copy(
+            primary = colors.textPrimary,
+            requested = colors.textPrimary,
+        )
+    }
+
+    CompositionLocalProvider(
+        LocalPFPColors provides colors,
+        LocalPfpTextColors provides textColors,
+        // Every Text() that does not pass an explicit color= reads LocalContentColor, so providing
+        // it here is the one line that reaches the long tail of call sites without touching them.
+        LocalContentColor provides textColors.primary,
+    ) {
         MaterialTheme(colorScheme = PfpDarkColorScheme, content = content)
     }
 }

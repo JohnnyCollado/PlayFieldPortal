@@ -26,6 +26,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.withTimeout
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -47,6 +48,27 @@ import org.robolectric.RobolectricTestRunner
 class AudioSettingsViewModelTest {
 
     private val dispatcher = StandardTestDispatcher()
+
+    /**
+     * Main is UNCONFINED — sharing [dispatcher]'s scheduler, so `runTest(dispatcher)` and
+     * `advanceUntilIdle()` still drive everything — and that is load-bearing, not a style choice.
+     *
+     * DataStore runs each queued update on the CALLER's dispatcher
+     * (`DataStoreImpl.handleUpdate`: `withContext(update.callerContext + coroutineContext)`,
+     * caller context first, so its dispatcher wins). A `viewModelScope` write therefore drags
+     * whatever Main is into DataStore's write actor. With a StandardTestDispatcher, a write that
+     * is still in flight when the test body ends parks a continuation on a scheduler that
+     * `resetMain()` leaves undriven forever — and because that actor is strictly serial, the
+     * process-global `pfpDataStore` wedges for the rest of the JVM. The next `@Before` then
+     * blocks in `runBlocking` with no timeout, which is what made this whole module unrunnable.
+     * (Whether a given write loses that race is timing, so subsets of this class could pass while
+     * the full class hung.)
+     *
+     * Unconfined dispatches inline instead of queueing, so the continuation resumes on whatever
+     * thread completes the write and nothing is ever stranded.
+     */
+    private val mainDispatcher = UnconfinedTestDispatcher(dispatcher.scheduler)
+
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val menuSound: MenuSoundPlayer = mockk(relaxed = true)
     private val bootPreviewer: BootSoundPreviewer = mockk(relaxed = true)
@@ -54,8 +76,11 @@ class AudioSettingsViewModelTest {
     private lateinit var vm: AudioSettingsViewModel
 
     @Before fun setUp() {
-        Dispatchers.setMain(dispatcher)
-        runBlocking { context.pfpDataStore.edit { it.clear() } }
+        Dispatchers.setMain(mainDispatcher)
+        // Bounded on purpose. This runBlocking is the one unbounded, uncancellable wait in the
+        // class, so a wedged DataStore actor used to stall the suite silently and forever rather
+        // than failing. If it ever wedges again, one test fails loudly in five seconds.
+        runBlocking { withTimeout(5_000) { context.pfpDataStore.edit { it.clear() } } }
         File(context.filesDir, UiMediaStore.UI_MEDIA_DIR).deleteRecursively()
         MediaDisplayNames.clearCache()
         store = UiMediaStore(context)

@@ -5,6 +5,7 @@ import android.net.Uri
 import android.provider.DocumentsContract
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -422,6 +423,9 @@ open class BackupManager @Inject constructor(
         BACKED_UP_LONG_KEYS.forEach { key ->
             prefs[key]?.let { entries[key.name] = it.toString() }
         }
+        BACKED_UP_INT_KEYS.forEach { key ->
+            prefs[key]?.let { entries[key.name] = it.toString() }
+        }
 
         return SettingsSnapshot(entries)
     }
@@ -453,6 +457,9 @@ open class BackupManager @Inject constructor(
             }
             BACKED_UP_LONG_KEYS.forEach { key ->
                 snapshot.entries[key.name]?.toLongOrNull()?.let { prefs[key] = it }
+            }
+            BACKED_UP_INT_KEYS.forEach { key ->
+                snapshot.entries[key.name]?.toIntOrNull()?.let { prefs[key] = it }
             }
         }
     }
@@ -491,6 +498,22 @@ open class BackupManager @Inject constructor(
         stringPreferencesKey("display_color_scheme"),
         stringPreferencesKey("display_custom_wallpaper"),
         stringPreferencesKey("display_motion_wallpaper"),
+        // Font colour / text legibility. This list is explicit, so a key that is not named here
+        // silently fails to survive a restore — see BackupKeyCoverageTest.
+        stringPreferencesKey("display_text_legibility"),
+        // Icon appearance + XMB geometry. These had been missing since they were added: all four
+        // are cosmetic settings the user chose, with no file or grant behind them, so they
+        // restore cleanly onto any device.
+        stringPreferencesKey("display_icon_legibility"),
+        stringPreferencesKey("display_xmb_layout_adjust"),
+        stringPreferencesKey("pref_icon_display_mode"),
+        // Theme cascade values. The applied theme's NAME and layout are plain data; the theme's
+        // extracted icon files are not bundled, so theme_icons_stamp is deliberately absent —
+        // restoring it would point observers at a directory that isn't there.
+        stringPreferencesKey("theme_applied_name"),
+        stringPreferencesKey("theme_layout_spec"),
+            // Controller
+            stringPreferencesKey("controller_scroll_speed"),
             // Controller
             stringPreferencesKey("controller_mappings_v1"),
             stringPreferencesKey("controller_confirm_back_layout"),
@@ -551,6 +574,31 @@ open class BackupManager @Inject constructor(
             booleanPreferencesKey("display_thermal_aware"),
             booleanPreferencesKey("display_battery_saver"),
             booleanPreferencesKey("interface_context_menu_hint"),
+            // Font colour opt-outs — see the string list above for why these are spelled out.
+            booleanPreferencesKey("display_text_color_exact"),
+            booleanPreferencesKey("display_text_contrast_notice_suppressed"),
+            // Icon + text appearance toggles, missing since they were introduced.
+            booleanPreferencesKey("display_solid_unfocused_icons"),
+            booleanPreferencesKey("display_text_shadow"),
+            booleanPreferencesKey("pref_animated_icons"),
+            // Launch behaviour
+            booleanPreferencesKey("pref_direct_game_launch"),
+            // Achievements + artwork behaviour
+            booleanPreferencesKey("achievements_enabled"),
+            booleanPreferencesKey("artwork_import_move_files"),
+            booleanPreferencesKey("pref_dl_manuals"),
+            booleanPreferencesKey("pref_dl_video_snaps"),
+            // "Don't ask again" for the Windows library prompt — same reasoning as
+            // initial_setup_seen below: a restore must not re-open a prompt the user dismissed.
+            booleanPreferencesKey("windows_library_setup_prompt"),
+            // Discord presence + voice preferences (the account/session itself is NOT carried).
+            booleanPreferencesKey("discord_generic_activity"),
+            booleanPreferencesKey("discord_share_activity"),
+            booleanPreferencesKey("discord_voice_agc"),
+            booleanPreferencesKey("discord_voice_echo_cancellation"),
+            booleanPreferencesKey("discord_voice_noise_cancellation"),
+            booleanPreferencesKey("discord_voice_ptt_overlay"),
+            booleanPreferencesKey("discord_voice_push_to_talk"),
             // GameBoot presentation (Display ▸ GameBoot)
             booleanPreferencesKey("display_gameboot_enabled"),
             // Sound
@@ -570,12 +618,49 @@ open class BackupManager @Inject constructor(
 
         private val BACKED_UP_FLOAT_KEYS = listOf(
             floatPreferencesKey("interface_context_menu_hint_delay_seconds"),
+            // XMB scale + crossbar position (Display ▸ Adjust XMB Layout).
+            floatPreferencesKey("display_xmb_scale"),
+            floatPreferencesKey("display_bar_top_fraction"),
+            floatPreferencesKey("pref_icon1_linger_delay_seconds"),
         )
 
         // Long-valued stamps whose PRESENCE (not value) tells observers to load. Without it the
         // custom-icons files restore but nothing ever reloads them — and the same is true of the
         // ui-media stamp: restored sounds must actually reload into the player.
+        /**
+         * Every preference name this manager carries, for the key-coverage test.
+         *
+         * The four lists are explicit by design, which means a new preference silently fails to
+         * survive a restore until someone remembers to add it here — a bug that is invisible
+         * right up until a user restores onto a new device and finds a setting missing. Exposing
+         * the names lets a test assert coverage instead of trusting memory.
+         */
+        internal val BACKED_UP_KEY_NAMES: Set<String>
+            get() = (
+                BACKED_UP_STRING_KEYS.map { it.name } +
+                    BACKED_UP_BOOLEAN_KEYS.map { it.name } +
+                    BACKED_UP_FLOAT_KEYS.map { it.name } +
+                    BACKED_UP_LONG_KEYS.map { it.name } +
+                    BACKED_UP_INT_KEYS.map { it.name }
+                ).toSet()
+
+        // Int-valued settings. This list is new: there was no int tier at all, so every
+        // int-typed preference was unbackupable by construction rather than by omission.
+        private val BACKED_UP_INT_KEYS = listOf(
+            // Discord voice tuning — user preferences, not credentials.
+            intPreferencesKey("discord_voice_audio_balance"),
+            intPreferencesKey("discord_voice_input_volume"),
+            intPreferencesKey("discord_voice_mic_sensitivity"),
+            intPreferencesKey("discord_voice_ptt_keycode"),
+        )
+
         private val BACKED_UP_LONG_KEYS = listOf(
+            // The user's picked font colour (absent = the theme's own).
+            longPreferencesKey("display_text_color"),
+            // The one-colour cascade: accent override and unified icon tint. Pure values — no
+            // file behind either, unlike theme_icons_stamp.
+            longPreferencesKey("theme_accent_override"),
+            longPreferencesKey("theme_icon_color"),
             longPreferencesKey("custom_icons_stamp"),
             longPreferencesKey("ui_media_stamp"),
         )

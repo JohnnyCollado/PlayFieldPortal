@@ -1502,6 +1502,8 @@ class XMBViewModel @Inject constructor(
         // User-tier icon stamp (custom-icons dir) — separate from the theme's icons stamp so
         // a theme apply/revert never reloads (or drops) the user's picks.
         val customIconsStamp: Long?,
+        // Display ▸ Font Colour. null = the theme's own text colour (white on every preset).
+        val textColor: Long?,
     )
 
     private fun observeColorScheme() {
@@ -1518,10 +1520,11 @@ class XMBViewModel @Inject constructor(
                         barTopOverride = prefs[KEY_BAR_TOP_FRACTION],
                         layoutAdjustJson = prefs[KEY_XMB_LAYOUT_ADJUST],
                         customIconsStamp = prefs[CustomIconStore.KEY_CUSTOM_ICONS_STAMP],
+                        textColor = prefs[KEY_TEXT_COLOR],
                     )
                 }
                 .distinctUntilChanged()
-                .collect { (name, accentOverride, iconColorArgb, iconsStamp, layoutJson, xmbScale, barTopOverride, layoutAdjustJson, customIconsStamp) ->
+                .collect { (name, accentOverride, iconColorArgb, iconsStamp, layoutJson, xmbScale, barTopOverride, layoutAdjustJson, customIconsStamp, textColorArgb) ->
                     val base = if (accentOverride != null) {
                         // One accent drives everything: wave color + re-derived gradient.
                         DefaultPFPColors.withWaveTint(
@@ -1533,10 +1536,20 @@ class XMBViewModel @Inject constructor(
                         val month = java.time.LocalDate.now().monthValue
                         scheme.resolve(month).toPFPColors()
                     }
+                    // The user's font colour joins here, beside iconColor and by the same rule:
+                    // absent = inherit the theme's own value, which is white on every preset, so
+                    // this is a no-op until Display ▸ Font Colour is set. Secondary keeps the 0.7
+                    // alpha relationship toPFPColors already establishes, so a picked colour
+                    // carries its own sublabels rather than stranding them on white.
+                    val textColor = textColorArgb
+                        ?.let { androidx.compose.ui.graphics.Color(it and 0xFFFFFFFFL) }
+                        ?: base.textPrimary
                     baseThemeColors = base.copy(
                         iconColor = iconColorArgb
                             ?.let { androidx.compose.ui.graphics.Color(it and 0xFFFFFFFFL) }
                             ?: androidx.compose.ui.graphics.Color.White,
+                        textPrimary = textColor,
+                        textSecondary = textColor.copy(alpha = 0.7f),
                     )
                     // Custom icon slots of the applied theme (stamp present = extracted dir
                     // has icons; the stamp value only bumps to trigger reloads), plus the
@@ -8552,6 +8565,9 @@ class XMBViewModel @Inject constructor(
         private val KEY_ACCENT_OVERRIDE   = longPreferencesKey("theme_accent_override")
         // Unified icon tint (ARGB); unset = white = the icon art's native color.
         private val KEY_ICON_COLOR        = longPreferencesKey("theme_icon_color")
+        // display_-prefixed, matching DisplaySettingsViewModel's keys: the font colour is a
+        // Display setting the user owns, not a property a theme bundle silently overwrites.
+        private val KEY_TEXT_COLOR        = longPreferencesKey("display_text_color")
         // Display ▸ Scale & Layout — must match DisplaySettingsViewModel (shared prefs contract).
         private val KEY_XMB_SCALE         = androidx.datastore.preferences.core.floatPreferencesKey("display_xmb_scale")
         private val KEY_BAR_TOP_FRACTION  = androidx.datastore.preferences.core.floatPreferencesKey("display_bar_top_fraction")

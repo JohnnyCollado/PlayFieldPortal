@@ -21,6 +21,12 @@ data class PfpThemeManifest(
     val accentColor: String,
     /** `#RRGGBB`, or [ICON_COLOR_AUTO] to derive from the accent at apply time. */
     val iconColor: String = ICON_COLOR_AUTO,
+    /**
+     * Text colour, `#RRGGBB`, or [ICON_COLOR_AUTO] to inherit the theme's own (white on every
+     * preset). Additive: SCHEMA_VERSION stays 3 by the same argument the v3 note below makes —
+     * a reader that predates this field ignores it and applies the rest.
+     */
+    val textColor: String = ICON_COLOR_AUTO,
     val waveStyle: String = WAVE_ANIMATED,
     /** Per-theme XMB geometry override; null = the app's default layout. */
     val layout: XmbLayoutSpec? = null,

@@ -75,6 +75,8 @@ import com.playfieldportal.core.ui.components.ControllerHintBar
 import com.playfieldportal.core.ui.components.ControllerPromptBar
 import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.theme.LocalPFPColors
+import com.playfieldportal.core.ui.theme.LocalPfpTextColors
+import com.playfieldportal.core.ui.theme.solveScrimColor
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
@@ -173,8 +175,17 @@ private fun reseedFocus(
 // dark scheme) can never drift apart on a rebrand.
 val SettingsBg = Color(0xE6000000)
 val SettingsAccent = com.playfieldportal.core.ui.theme.PfpPalette.Accent
-val SettingsText = Color.White
-val SettingsSubtext = com.playfieldportal.core.ui.theme.PfpPalette.Subtext
+
+// The two text roles are composable GETTERS, not constants: they read the resolved palette out of
+// LocalPfpTextColors, so a user font colour (or a backdrop-driven clamp) repaints ~60 call sites
+// with no edit at any of them. Both still carry white / PfpPalette.Subtext today.
+//
+// A read from outside composition will not compile. That is the feature — the compiler enumerates
+// the sites that need an explicit parameter instead of leaving us to grep for them.
+val SettingsText: Color
+    @Composable get() = LocalPfpTextColors.current.primary
+val SettingsSubtext: Color
+    @Composable get() = LocalPfpTextColors.current.secondary
 
 // Directional drop shadow for text over the translucent backdrop: the settings scrim is a
 // translucent theme gradient (the wallpaper reads through BY DESIGN), so flat gray helper text
@@ -285,6 +296,14 @@ fun SettingsScaffold(
     // Menu backdrop is tinted by the user's chosen color scheme (the same background anchors
     // the XMB wave uses), so settings screens match the theme instead of a flat black panel.
     val pfpColors = LocalPFPColors.current
+
+    // Solved once per theme, not per recomposition: each anchor is bisected 12 times.
+    val scrimTop = remember(pfpColors.backgroundTop) {
+        solveScrimColor(pfpColors.backgroundTop, alpha = 0.72f)
+    }
+    val scrimBottom = remember(pfpColors.backgroundBottom) {
+        solveScrimColor(pfpColors.backgroundBottom, alpha = 0.90f)
+    }
 
     // Tracks the onclick of whichever row currently has controller focus
     val focusedRowClick = remember { mutableStateOf<(() -> Unit)?>(null) }
@@ -675,8 +694,20 @@ fun SettingsScaffold(
                 .fillMaxSize()
                 // Semi-transparent scrim so the XMB wave/wallpaper background stays visible behind
                 // Settings (the XMB foreground is hidden by XMBShell while a Settings screen is up).
-                // The wizard skin uses a much lighter scrim so the wave reads through like the
-                // PSP original's rich blue background while white text stays readable.
+                //
+                // The anchors are SOLVED, not chosen. The bright band that made "Reset Sound to
+                // Defaults" measure 1.82:1 was mostly this scrim, not the wallpaper: at ~0.90 alpha
+                // only ~11% of the wallpaper reaches the eye, and the theme's own
+                // backgroundBottom = lighten(wave, 0.28) is light enough that white text on it
+                // fails AA. solveScrimColor darkens each anchor along its own hue by the least
+                // amount that keeps white above 4.5:1 even over a pure-white wallpaper — so the
+                // gradient stays the theme's colour and the failure cannot come back if
+                // ColorCascade.lighten is retuned later (TextLegibilityTest pins both anchors).
+                //
+                // The wizard skin's lighter scrim is left alone: at 0.45/0.55 alpha no colour can
+                // reach white's 0.183 luminance ceiling over a bright wallpaper, so darkening the
+                // anchors would only mute the wave without fixing anything. Per-text protection
+                // (TextLegibilityStyle) is the instrument for that surface.
                 .background(
                     if (lightScrim) {
                         Brush.verticalGradient(
@@ -685,8 +716,8 @@ fun SettingsScaffold(
                         )
                     } else {
                         Brush.verticalGradient(
-                            0f to pfpColors.backgroundTop.copy(alpha = 0.72f),
-                            1f to pfpColors.backgroundBottom.copy(alpha = 0.90f),
+                            0f to scrimTop.copy(alpha = 0.72f),
+                            1f to scrimBottom.copy(alpha = 0.90f),
                         )
                     }
                 ),
@@ -1077,8 +1108,13 @@ fun SettingsValueRow(
         onClick = onClick,
         trailing = {
             Text(
+                // Not SettingsAccent. PfpPalette.Accent (#4A90D9) has relative luminance 0.264,
+                // which caps it at 3.34:1 on pure white and 6.28:1 on pure black — so on this
+                // screen's mid-tone band every "PFP Default" measured 1.05–1.84:1. Accent is a
+                // fill/ring/border colour and is structurally incapable of carrying body text; no
+                // shadow fixes that, because a shadow changes the edge and not the fill.
                 text = value,
-                color = SettingsAccent,
+                color = SettingsText,
                 fontSize = 13.sp,
                 style = TextStyle(shadow = SettingsTextShadow),
             )

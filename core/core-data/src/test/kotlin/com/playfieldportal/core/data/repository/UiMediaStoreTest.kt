@@ -1,6 +1,7 @@
 package com.playfieldportal.core.data.repository
 
 import android.content.Context
+import android.content.res.AssetFileDescriptor
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import androidx.datastore.preferences.core.edit
@@ -10,6 +11,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.domain.model.UiMediaKind
 import com.playfieldportal.core.domain.model.UiMediaSlot
+import com.playfieldportal.themekit.UiMediaLimits
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkConstructor
@@ -174,14 +176,28 @@ class UiMediaStoreTest {
     }
 
     @Test
-    fun `oversized pick is rejected without keeping a copy`() = runTest {
+    fun `oversized pick is rejected off the descriptor without transferring a byte`() = runTest {
         probeReturns(100L)
-        // 3 MB of bytes against the 2 MB sound cap: the capped read backstops the descriptor.
-        val big = ByteArray(3 * 1024 * 1024)
-        val result = store.import(UiMediaSlot.SOUND_SCROLL, register(big, name = "big.wav"))
+        // This case used to push 3 MB against a 2 MB sound cap. That cap is gone: the AUDIO
+        // policy (owner decision 2026-09-08, UiMediaLimits KDoc) is no user-facing byte limit,
+        // and every audio spec's maxBytes is now AUDIO_STAGE_MAX_BYTES — a 128 MB anti-DoS
+        // staging ceiling. A few spare megabytes are simply a legal pick now, so "oversized"
+        // has to be provoked at the gate that still enforces it.
+        //
+        // That gate is the SAF descriptor pre-check, and faking the length is the honest way to
+        // test it: its whole contract is that an oversized pick costs zero transferred bytes, so
+        // a test that actually allocated 128 MB would be testing the opposite of the claim.
+        every { context.contentResolver.openAssetFileDescriptor(any(), any()) } returns
+            mockk<AssetFileDescriptor>(relaxed = true) {
+                every { length } returns UiMediaLimits.AUDIO_STAGE_MAX_BYTES + 1
+            }
 
-        assertFalse(result.ok)
-        assertTrue(mediaDir().listFiles().isNullOrEmpty())
+        val result = store.import(UiMediaSlot.SOUND_SCROLL, register(wavBytes(), name = "huge.wav"))
+
+        assertFalse(result.ok, "a pick past the staging ceiling must be refused")
+        assertEquals(UiMediaLimits.MSG_TOO_LARGE_BYTES_SOUND, result.message)
+        assertTrue(mediaDir().listFiles().isNullOrEmpty(), "a refused pick must not leave a staged copy")
+        assertNull(stampPref(), "no stamp bump without a successful import")
     }
 
     @Test

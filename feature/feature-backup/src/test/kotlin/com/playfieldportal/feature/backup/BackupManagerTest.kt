@@ -77,7 +77,12 @@ class BackupManagerTest {
     // Test double: exports the built ZIP into a real temp dir instead of a SAF tree, so the tests
     // can read the resulting file back. Records the last exported file.
     private open inner class ExportingBackupManager :
-        BackupManager(context, gameDao, categoryDao, playSessionDao, backupDao, backupFolderRepository) {
+        BackupManager(
+            context, gameDao, categoryDao, playSessionDao, backupDao, backupFolderRepository,
+            // Added to BackupManager's constructor after this test was written; relaxed mocks
+            // because neither participates in the export paths exercised here.
+            mockk(relaxed = true), mockk(relaxed = true),
+        ) {
         var lastExported: File? = null
         override suspend fun exportToBackupFolder(treeUri: String, source: File, name: String): Uri {
             val dest = File(exportDir, name)

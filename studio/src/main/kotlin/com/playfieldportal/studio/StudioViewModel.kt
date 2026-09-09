@@ -32,6 +32,12 @@ sealed interface IconColorChoice {
     data class Custom(val argb: Int) : IconColorChoice
 }
 
+/** Text colour, mirroring [IconColorChoice]: Auto = inherit the theme's own (white). */
+sealed interface TextColorChoice {
+    data object Auto : TextColorChoice
+    data class Custom(val argb: Int) : TextColorChoice
+}
+
 /** Which XMB surface the preview canvas renders. */
 enum class PreviewMode(val label: String) {
     HOME("Home"),
@@ -69,6 +75,7 @@ data class StudioState(
     val name: String = "Untitled Theme",
     val accentArgb: Int = PtfConversion.DEFAULT_ACCENT,
     val iconColor: IconColorChoice = IconColorChoice.Auto,
+    val textColor: TextColorChoice = TextColorChoice.Auto,
     val waveStyle: String = PfpThemeManifest.WAVE_ANIMATED,
     val wallpaperPng: ByteArray? = null,
     val wallpaperBitmap: ImageBitmap? = null,
@@ -163,6 +170,7 @@ class StudioViewModel(private val scope: CoroutineScope) {
     fun setName(name: String) = _state.update { it.copy(name = name) }
     fun setAccent(argb: Int) = _state.update { it.copy(accentArgb = argb) }
     fun setIconColor(choice: IconColorChoice) = _state.update { it.copy(iconColor = choice) }
+    fun setTextColor(choice: TextColorChoice) = _state.update { it.copy(textColor = choice) }
     fun setWaveStyle(style: String) = _state.update { it.copy(waveStyle = style) }
     fun setPreviewMode(mode: PreviewMode) = _state.update { it.copy(previewMode = mode) }
     fun dismissDialog() = _state.update { it.copy(dialog = null) }
@@ -281,6 +289,11 @@ class StudioViewModel(private val scope: CoroutineScope) {
                     ?.let { c -> PtfConversion.parseHexRgb(c) }
                     ?.let { argb -> IconColorChoice.Custom(argb) }
                     ?: IconColorChoice.Auto,
+                textColor = manifest.textColor
+                    .takeIf { c -> c != PfpThemeManifest.ICON_COLOR_AUTO }
+                    ?.let { c -> PtfConversion.parseHexRgb(c) }
+                    ?.let { argb -> TextColorChoice.Custom(argb) }
+                    ?: TextColorChoice.Auto,
                 waveStyle = manifest.waveStyle,
                 wallpaperPng = bundle.wallpaper,
                 wallpaperBitmap = bundle.wallpaper?.let(ImageCodecs::toImageBitmap),
@@ -552,6 +565,10 @@ class StudioViewModel(private val scope: CoroutineScope) {
             iconColor = when (val c = state.iconColor) {
                 IconColorChoice.Auto -> PfpThemeManifest.ICON_COLOR_AUTO
                 is IconColorChoice.Custom -> PtfConversion.toHexRgb(c.argb)
+            },
+            textColor = when (val c = state.textColor) {
+                TextColorChoice.Auto -> PfpThemeManifest.ICON_COLOR_AUTO
+                is TextColorChoice.Custom -> PtfConversion.toHexRgb(c.argb)
             },
             waveStyle = state.waveStyle,
             // Only carry a layout when the user actually moved something off the default.

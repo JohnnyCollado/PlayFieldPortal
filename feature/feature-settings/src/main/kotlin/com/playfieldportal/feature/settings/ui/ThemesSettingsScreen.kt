@@ -7,18 +7,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -32,10 +28,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,20 +37,30 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.offset
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.ui.components.ColorSwatchRow
+import com.playfieldportal.core.ui.components.HsvColorPickerDialog
+import com.playfieldportal.core.ui.components.PfpColorChoices
 import com.playfieldportal.core.ui.components.PspContextMenuOverlay
+import com.playfieldportal.core.ui.components.hsvToArgbLong
 import com.playfieldportal.core.ui.components.PspMenuRow
 import com.playfieldportal.core.data.repository.PfpThemeStore
 import com.playfieldportal.core.ui.preview.CombinedPreviews
@@ -159,7 +163,7 @@ private fun ThemesSettingsContent(
     var pickerSat by remember { mutableStateOf(0f) }
     var pickerVal by remember { mutableStateOf(1f) }
     var pickerChannel by remember { mutableStateOf(0) }
-    val customIndex = IconColorChoices.size
+    val customIndex = PfpColorChoices.size
 
     fun openIconPicker() {
         val argb = state.iconColorArgb ?: 0xFFFFFFFFL
@@ -281,12 +285,14 @@ private fun ThemesSettingsContent(
                     },
                     onSelect = {
                         if (iconIndex == customIndex) openIconPicker()
-                        else onSetIconColor(IconColorChoices[iconIndex].second)
+                        else onSetIconColor(PfpColorChoices[iconIndex].second)
                     },
                 ) { stripFocused ->
-                    IconColorSwatchRow(
+                    ColorSwatchRow(
                         selectedArgb   = state.iconColorArgb,
                         focusedIndex   = if (stripFocused) iconIndex else null,
+                        accent         = SettingsAccent,
+                        subtext        = SettingsSubtext,
                         onSelectPreset = onSetIconColor,
                         onSelectCustom = { openIconPicker() },
                     )
@@ -371,12 +377,14 @@ private fun ThemesSettingsContent(
         }
 
         if (customPicker) {
-            IconColorCustomPicker(
+            HsvColorPickerDialog(
+                title = "Custom Icon Color",
                 hue             = pickerHue,
                 saturation      = pickerSat,
                 brightness      = pickerVal,
                 selectedChannel = pickerChannel,
-                onSelectChannel = { pickerChannel = it },
+                accent = SettingsAccent,
+                subtext = SettingsSubtext,
                 onChannelFraction = { channel, fraction ->
                     pickerChannel = channel
                     when (channel) {
@@ -459,168 +467,6 @@ private fun FocusableStrip(
     ) { content(isFocused) }
 }
 
-private val IconColorChoices: List<Pair<String, Long?>> = listOf(
-    "Default"  to null,
-    "Pink"     to 0xFFFFD6E8L,
-    "Gold"     to 0xFFE8C64AL,
-    "Aqua"     to 0xFF7FD8D8L,
-    "Sky Blue" to 0xFF9DBEF5L,
-    "Green"    to 0xFF9FDB9FL,
-    "Coral"    to 0xFFE88A8AL,
-    "Slate"    to 0xFFAAB2BFL,
-)
-
-@Composable
-private fun IconColorSwatchRow(
-    selectedArgb: Long?,
-    focusedIndex: Int?,
-    onSelectPreset: (Long?) -> Unit,
-    onSelectCustom: () -> Unit,
-) {
-    val presetArgbs = IconColorChoices.map { it.second }
-    val customActive = selectedArgb != null && selectedArgb !in presetArgbs
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .padding(horizontal = 48.dp, vertical = 10.dp),
-    ) {
-        IconColorChoices.forEachIndexed { index, (label, argb) ->
-            IconSwatch(
-                label = label,
-                fill = Color(argb ?: 0xFFFFFFFFL),
-                brush = null,
-                selected = selectedArgb == argb,
-                focused = focusedIndex == index,
-                onClick = { onSelectPreset(argb) },
-            )
-        }
-        IconSwatch(
-            label = "Custom",
-            fill = selectedArgb?.takeIf { customActive }?.let { Color(it and 0xFFFFFFFFL) },
-            brush = if (customActive) null else rainbowBrush(),
-            selected = customActive,
-            focused = focusedIndex == IconColorChoices.size,
-            onClick = onSelectCustom,
-        )
-    }
-}
-
-@Composable
-private fun IconSwatch(
-    label: String,
-    fill: Color?,
-    brush: Brush?,
-    selected: Boolean,
-    focused: Boolean,
-    onClick: () -> Unit,
-) {
-    val ringColor = if (focused || selected) SettingsAccent else Color(0x66FFFFFF)
-    val ringWidth = if (focused) 3.dp else if (selected) 2.dp else 1.dp
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(
-            modifier = Modifier
-                .size(34.dp)
-                .clip(CircleShape)
-                .then(
-                    when {
-                        fill != null -> Modifier.background(fill)
-                        brush != null -> Modifier.background(brush)
-                        else -> Modifier.background(Color.Transparent)
-                    }
-                )
-                .border(ringWidth, ringColor, CircleShape)
-                .clickable(onClick = onClick),
-        )
-        Text(
-            text = label,
-            color = if (focused || selected) SettingsAccent else SettingsSubtext,
-            fontSize = 11.sp,
-            modifier = Modifier.padding(top = 4.dp),
-        )
-    }
-}
-
-@Composable
-private fun IconColorCustomPicker(
-    hue: Float,
-    saturation: Float,
-    brightness: Float,
-    selectedChannel: Int,
-    onSelectChannel: (Int) -> Unit,
-    onChannelFraction: (channel: Int, fraction: Float) -> Unit,
-    onConfirm: () -> Unit,
-    onCancel: () -> Unit,
-) {
-    val preview = hsvColor(hue, saturation, brightness)
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xCC000000))
-            .clickable(onClick = onCancel),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            modifier = Modifier
-                .width(440.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(Color(0xFF15151F))
-                .clickable(onClick = {})
-                .padding(24.dp),
-        ) {
-            Text("Custom Icon Color", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(16.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .clip(CircleShape)
-                        .background(preview)
-                        .border(1.dp, Color(0x66FFFFFF), CircleShape),
-                )
-                Spacer(Modifier.width(16.dp))
-                Text(hexOf(preview), color = SettingsSubtext, fontSize = 14.sp, fontFamily = FontFamily.Monospace)
-            }
-            Spacer(Modifier.height(20.dp))
-            ChannelBar("Hue", hue / 360f, rainbowBrush(), selectedChannel == 0, onFraction = { onChannelFraction(0, it) })
-            Spacer(Modifier.height(14.dp))
-            ChannelBar("Saturation", saturation, Brush.horizontalGradient(listOf(hsvColor(hue, 0f, brightness), hsvColor(hue, 1f, brightness))), selectedChannel == 1, onFraction = { onChannelFraction(1, it) })
-            Spacer(Modifier.height(14.dp))
-            ChannelBar("Brightness", brightness, Brush.horizontalGradient(listOf(hsvColor(hue, saturation, 0f), hsvColor(hue, saturation, 1f))), selectedChannel == 2, onFraction = { onChannelFraction(2, it) })
-            Spacer(Modifier.height(20.dp))
-            Text("◄ ► adjust    ▲ ▼ channel    Ⓐ apply    Ⓑ cancel", color = SettingsSubtext, fontSize = 12.sp)
-            Spacer(Modifier.height(16.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text("Apply", color = SettingsAccent, fontSize = 15.sp, modifier = Modifier.clickable(onClick = onConfirm).padding(vertical = 6.dp, horizontal = 10.dp))
-                Text("Cancel", color = SettingsSubtext, fontSize = 15.sp, modifier = Modifier.clickable(onClick = onCancel).padding(vertical = 6.dp, horizontal = 10.dp))
-            }
-        }
-    }
-}
-
-@Composable
-private fun ChannelBar(label: String, fraction: Float, brush: Brush, selected: Boolean, onFraction: (Float) -> Unit) {
-    Text(label, color = if (selected) SettingsAccent else SettingsSubtext, fontSize = 12.sp)
-    Spacer(Modifier.height(6.dp))
-    BoxWithConstraints(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(28.dp)
-            .clip(RoundedCornerShape(14.dp))
-            .background(brush)
-            .border(width = if (selected) 2.dp else 1.dp, color = if (selected) SettingsAccent else Color(0x55FFFFFF), shape = RoundedCornerShape(14.dp))
-            .pointerInput(Unit) { detectTapGestures { pos -> onFraction((pos.x / size.width).coerceIn(0f, 1f)) } },
-    ) {
-        val knobX = maxWidth * fraction.coerceIn(0f, 1f)
-        Box(modifier = Modifier.offset(x = knobX - 9.dp).align(Alignment.CenterStart).size(18.dp).clip(CircleShape).background(Color.White).border(2.dp, Color(0x99000000), CircleShape))
-    }
-}
-
-private fun rainbowBrush(): Brush = Brush.horizontalGradient(listOf(Color.Red, Color.Yellow, Color.Green, Color.Cyan, Color.Blue, Color.Magenta, Color.Red))
-private fun hsvColor(hue: Float, saturation: Float, brightness: Float): Color = Color(android.graphics.Color.HSVToColor(floatArrayOf(hue, saturation.coerceIn(0f, 1f), brightness.coerceIn(0f, 1f))))
-private fun hsvToArgbLong(hue: Float, saturation: Float, brightness: Float): Long = android.graphics.Color.HSVToColor(floatArrayOf(hue, saturation, brightness)).toLong() and 0xFFFFFFFFL
-private fun hexOf(color: Color): String = String.format("#%06X", 0xFFFFFF and color.toArgb())
 
 @Composable
 private fun SavedThemeCardRow(themes: List<PfpThemeStore.SavedTheme>, focusedIndex: Int? = null, onApply: (String) -> Unit, onDelete: (String) -> Unit, onShare: (String) -> Unit) {
