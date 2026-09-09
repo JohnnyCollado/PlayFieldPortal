@@ -65,6 +65,7 @@ class LaunchDispatcher @Inject constructor(
     // A refused launch is the ERROR event's flagship home — the custom-vs-default decision
     // lives in MenuSoundPlayer; the dispatcher only says "this launch did not happen".
     private val menuSound: com.playfieldportal.core.ui.sound.MenuSoundPlayer,
+    private val autoCoreMemory: AutoCoreMemory,
 ) {
     private val _recoveryRequests = MutableStateFlow<LaunchRecoveryRequest?>(null)
     /** Non-null while a recovery sheet should be shown; cleared by [dismissRecovery]. */
@@ -91,6 +92,14 @@ class LaunchDispatcher @Inject constructor(
             // Every dispatcher launch comes from an app-graph context (ViewModel/Activity via the
             // shared singleton), so NEW_TASK is required to start outside our own task. Idempotent.
             context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            // A RetroArch core launch pins the console to that core (see AutoCoreMemory), so the
+            // console's automatic pick — and its RetroArch configs — stay stable across detection
+            // passes. Written only once the intent actually reached the emulator, so a launch that
+            // never happened can never pin a broken core. Every game-launch call site (Game Detail
+            // and the XMB's direct launch) funnels through here, so one write covers both.
+            resolved?.profile?.takeIf { it.isRetroArchProfile() }?.let { profile ->
+                autoCoreMemory.remember(game.platformId, profile.id)
+            }
             acceptPending(
                 PendingLaunch(
                     game         = game,

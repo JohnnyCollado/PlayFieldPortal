@@ -55,6 +55,7 @@ object EmulatorProfileModule {
 class EmulatorProfileRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     @ProfileIoDispatcher private val io: CoroutineDispatcher,
+    private val autoCoreMemory: AutoCoreMemory,
 ) {
     private val _profiles = MutableStateFlow<List<EmulatorProfile>>(emptyList())
     val profiles: Flow<List<EmulatorProfile>> = _profiles.asStateFlow()
@@ -86,6 +87,9 @@ class EmulatorProfileRepository @Inject constructor(
     // with RetroArch cores after it (see EmulatorLaunchPreference). Unavailable profiles — e.g. a
     // RetroArch core detected as NOT installed via the SAF link — are excluded so they can never be
     // launched into a black screen.
+    // The console's remembered RetroArch core (AutoCoreMemory) is lifted to the front of the core
+    // tier, so every consumer of this list — the XMB's direct-launch path included — agrees on the
+    // same stable core for the console.
     // Suspend even though the current implementation reads memory: the profile set is loaded from
     // disk, and callers reach this during a game launch. Declaring it here keeps a future change
     // that re-reads the file from silently reintroducing a main-thread parse.
@@ -93,6 +97,7 @@ class EmulatorProfileRepository @Inject constructor(
         getInstalledProfiles()
             .filter { it.isAvailable && it.supportsPlatform(platformId) }
             .byLaunchPreference()
+            .stabilizeCore(autoCoreMemory.rememberedProfileId(platformId))
     }
 
     fun getInstalledVersionCode(packageName: String): Long {

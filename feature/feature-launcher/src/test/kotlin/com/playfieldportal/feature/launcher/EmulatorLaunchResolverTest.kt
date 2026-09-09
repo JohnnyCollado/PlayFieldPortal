@@ -148,7 +148,7 @@ class EmulatorLaunchResolverTest {
         ).exceptionOrNull()
 
         assertTrue(resolved != null, "An unavailable-only platform must not resolve")
-        assertTrue(resolved!!.message!!.contains("No emulator configured for PSX"))
+        assertTrue(resolved.message!!.contains("No emulator configured for PSX"))
     }
 
     // ── Failures ───────────────────────────────────────────────────────────
@@ -163,7 +163,63 @@ class EmulatorLaunchResolverTest {
         ).exceptionOrNull()
 
         assertTrue(failure != null)
-        assertTrue(failure!!.message!!.contains("per-game override emulator is not installed or available: ghost_emulator"))
+        assertTrue(failure.message!!.contains("per-game override emulator is not installed or available: ghost_emulator"))
+    }
+
+    // Regression: availability was filtered only into [platformProfiles], the automatic fallback
+    // pool. A platform default or memory card pointing at an unavailable RetroArch core walked
+    // straight past that filter and launched anyway — the exact black screen the filter existed to
+    // prevent, on the rung that decides most launches.
+    @Test
+    fun `a configured emulator that is unavailable is refused with an actionable message`() {
+        val deadCore = profile(
+            "auto_retroarch_snes9x_libretro_android",
+            packageName = "com.retroarch",
+            platforms = listOf("snes"),
+            intentType = IntentType.COMPONENT,
+            coreMap = mapOf("snes" to "/data/data/com.retroarch/cores/snes9x_libretro_android.so"),
+            available = false,
+            autoSource = "retroarch-core",
+        )
+
+        val failure = EmulatorLaunchResolver.resolve(
+            platformId = "snes",
+            installedProfiles = listOf(deadCore),
+            platformProfiles = emptyList(),
+            platformDefault = deadCore.id,
+        ).exceptionOrNull()
+
+        assertTrue(failure != null, "An unavailable platform default must not resolve")
+        assertTrue(
+            failure.message!!.contains("not installed in RetroArch"),
+            "Message should name the real problem, was: ${failure.message}",
+        )
+    }
+
+    // The filter must narrow the pool, not break package-level resolution: a stored package name
+    // should still find a live profile for that package rather than failing on a dead sibling.
+    @Test
+    fun `a configured package resolves past an unavailable profile to an available one`() {
+        val dead = profile(
+            "auto_retroarch_snes9x_libretro_android",
+            packageName = "com.retroarch", platforms = listOf("snes"), available = false,
+            autoSource = "retroarch-core",
+        )
+        val live = profile(
+            "auto_retroarch_bsnes_libretro_android",
+            packageName = "com.retroarch", platforms = listOf("snes"), available = true,
+            autoSource = "retroarch-core",
+        )
+
+        val resolved = EmulatorLaunchResolver.resolve(
+            platformId = "snes",
+            installedProfiles = listOf(dead, live),
+            platformProfiles = listOf(live),
+            platformDefault = "com.retroarch",
+        ).getOrThrow()
+
+        assertEquals("auto_retroarch_bsnes_libretro_android", resolved.profile.id)
+        assertEquals(LaunchSource.PLATFORM_DEFAULT, resolved.source)
     }
 
     @Test
@@ -177,7 +233,7 @@ class EmulatorLaunchResolverTest {
         ).exceptionOrNull()
 
         assertTrue(failure != null)
-        assertTrue(failure!!.message!!.contains("melonds is not configured for PSX"))
+        assertTrue(failure.message!!.contains("melonds is not configured for PSX"))
     }
 
     @Test
@@ -189,7 +245,7 @@ class EmulatorLaunchResolverTest {
         ).exceptionOrNull()
 
         assertTrue(failure != null)
-        assertTrue(failure!!.message!!.contains("No emulator configured for PSX"))
+        assertTrue(failure.message!!.contains("No emulator configured for PSX"))
     }
 
     // ── Core visibility ────────────────────────────────────────────────────

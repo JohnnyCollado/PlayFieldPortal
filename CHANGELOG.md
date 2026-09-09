@@ -74,6 +74,18 @@ All notable changes to Play Field Portal are documented here. This project follo
   unknown intent flags are refused with a logged reason.
 
 ### Fixed
+- **A console's RetroArch core can no longer silently change between sessions.** RetroArch
+  scopes saved configs per core, so "configs saved for a console" stopped applying to other
+  games whenever the automatic pick flipped cores — e.g. Game Boy/GBC games jumping between
+  Gambatte and mGBA as cores were installed or removed, or PFP and RetroArch's own menu
+  disagreeing on the core for the same console. The launch ladder now remembers the RetroArch
+  core each console last launched with (DataStore-backed `AutoCoreMemory`, written by the
+  shared `LaunchDispatcher` once a core launch actually reached the emulator) and keeps
+  preferring it while that core is still installed — standalones still win the automatic pick
+  when present, explicit per-game / memory-card / platform choices are untouched, and a core
+  that is genuinely gone falls back normally. Game Detail, the Per-System Defaults screen, and
+  the XMB's direct-launch path all resolve through the same stabilized pool, so they can never
+  disagree about which core a console's games use.
 - **Theme and backup archives share one bounded ZIP reader.** The theme loader, theme
   codec, and backup restore each hand-rolled part of the same ingestion policy at three
   quality levels; a crafted archive could hang or OOM depending on which path it rode

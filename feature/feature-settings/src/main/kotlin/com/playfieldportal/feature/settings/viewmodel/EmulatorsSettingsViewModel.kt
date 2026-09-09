@@ -16,6 +16,7 @@ import com.playfieldportal.feature.launcher.EmulatorAutoConfigService
 import com.playfieldportal.feature.launcher.EmulatorIntentResolver
 import com.playfieldportal.feature.launcher.EmulatorProfileRepository
 import com.playfieldportal.feature.launcher.RetroArchCoreScanner
+import com.playfieldportal.core.data.repository.CoreInventory
 import com.playfieldportal.core.data.repository.RetroArchLink
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -154,11 +155,24 @@ class EmulatorsSettingsViewModel @Inject constructor(
     // ── RetroArch core detection (SAF link) ────────────────────────────────────
 
     private fun refreshRetroArchStatus() {
-        viewModelScope.launch {
-            val linked = retroArchLink.isLinked()
-            val installed = if (linked) retroArchLink.installedCoreFiles() else null
-            val cores = RetroArchCoreScanner.coresFor("com.retroarch", installed).map { it.name }
-            _uiState.update { it.copy(retroArchLinked = linked, retroArchCoreCount = installed?.size, retroArchCores = cores) }
+        viewModelScope.launch { readRetroArchState() }
+    }
+
+    /**
+     * Publishes what PFP actually knows about the installed cores. `retroArchLinked` tracks a live
+     * grant specifically, so a [CoreInventory.Remembered] read still lists the user's cores while
+     * reporting unlinked — which is what prompts the re-link without wiping the list first.
+     */
+    private suspend fun readRetroArchState() {
+        val inventory = retroArchLink.inventory()
+        val cores = RetroArchCoreScanner.coresFor("com.retroarch", inventory.coreFiles).map { it.name }
+        _uiState.update {
+            it.copy(
+                isDetectingCores   = false,
+                retroArchLinked    = inventory is CoreInventory.Verified || inventory is CoreInventory.EmptyTree,
+                retroArchCoreCount = if (inventory is CoreInventory.Unlinked) null else inventory.coreFiles.size,
+                retroArchCores     = cores,
+            )
         }
     }
 
@@ -169,9 +183,7 @@ class EmulatorsSettingsViewModel @Inject constructor(
         viewModelScope.launch {
             retroArchLink.save(treeUri)
             autoConfig.runOnStartup()
-            val installed = retroArchLink.installedCoreFiles()
-            val cores = RetroArchCoreScanner.coresFor("com.retroarch", installed).map { it.name }
-            _uiState.update { it.copy(isDetectingCores = false, retroArchLinked = true, retroArchCoreCount = installed?.size, retroArchCores = cores) }
+            readRetroArchState()
         }
     }
 
@@ -181,9 +193,7 @@ class EmulatorsSettingsViewModel @Inject constructor(
         _uiState.update { it.copy(isDetectingCores = true) }
         viewModelScope.launch {
             autoConfig.runOnStartup()
-            val installed = retroArchLink.installedCoreFiles()
-            val cores = RetroArchCoreScanner.coresFor("com.retroarch", installed).map { it.name }
-            _uiState.update { it.copy(isDetectingCores = false, retroArchCoreCount = installed?.size, retroArchCores = cores) }
+            readRetroArchState()
         }
     }
 

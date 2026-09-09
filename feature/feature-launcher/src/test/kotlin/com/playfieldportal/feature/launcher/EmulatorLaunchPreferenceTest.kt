@@ -67,4 +67,70 @@ class EmulatorLaunchPreferenceTest {
         val ordered = listOf(profile("ra_snes9x", "com.retroarch", "retroarch-core")).byLaunchPreference()
         assertEquals("ra_snes9x", ordered.first().id)
     }
+
+    // ── stabilizeCore: a console's remembered RetroArch core stays the automatic pick ──────
+
+    @Test
+    fun `remembered core moves to the front of the retroarch tier`() {
+        val pool = listOf(
+            profile("ra_mgba", "com.retroarch", "retroarch-core"),
+            profile("ra_gambatte", "com.retroarch", "retroarch-core"),
+            profile("snes9x_ex", "com.explusalpha.Snes9xPlus"),
+        )
+
+        val stabilized = pool.stabilizeCore("ra_gambatte")
+
+        // A standalone still wins the automatic pick; among RetroArch cores the remembered one
+        // leads, so installing a new core can never silently swap the console's core.
+        assertEquals(
+            listOf("snes9x_ex", "ra_gambatte", "ra_mgba"),
+            stabilized.map { it.id },
+        )
+    }
+
+    @Test
+    fun `remembered core keeps its place among retroarch cores with no standalone`() {
+        val pool = listOf(
+            profile("ra_mgba", "com.retroarch", "retroarch-core"),
+            profile("ra_gambatte", "com.retroarch", "retroarch-core"),
+        )
+
+        assertEquals(
+            listOf("ra_gambatte", "ra_mgba"),
+            pool.stabilizeCore("ra_gambatte").map { it.id },
+        )
+    }
+
+    @Test
+    fun `remembered core missing from the pool is ignored`() {
+        // ra_gambatte left the pool (uninstalled or marked unavailable) — the pool keeps its
+        // default order and the next successful launch refreshes the record.
+        val pool = listOf(
+            profile("ra_mgba", "com.retroarch", "retroarch-core"),
+            profile("snes9x_ex", "com.explusalpha.Snes9xPlus"),
+        )
+
+        assertEquals(pool.map { it.id }, pool.stabilizeCore("ra_gambatte").map { it.id })
+    }
+
+    @Test
+    fun `null remembered core leaves the pool untouched`() {
+        val pool = listOf(
+            profile("ra_mgba", "com.retroarch", "retroarch-core"),
+            profile("snes9x_ex", "com.explusalpha.Snes9xPlus"),
+        )
+
+        assertEquals(pool.map { it.id }, pool.stabilizeCore(null).map { it.id })
+    }
+
+    @Test
+    fun `remembered standalone does not reorder the pool`() {
+        // Only RetroArch core launches write the memory, but the guard belongs here anyway.
+        val pool = listOf(
+            profile("ra_mgba", "com.retroarch", "retroarch-core"),
+            profile("snes9x_ex", "com.explusalpha.Snes9xPlus"),
+        )
+
+        assertEquals(pool.map { it.id }, pool.stabilizeCore("snes9x_ex").map { it.id })
+    }
 }

@@ -76,7 +76,8 @@ object EmulatorLaunchResolver {
     /**
      * @param platformId the game's canonical platform id (e.g. "psx").
      * @param installedProfiles every installed profile, in catalog/detection order; the pool a
-     *   configured id may resolve to.
+     *   configured id may resolve to. Unavailable entries are filtered out here too — a stored
+     *   choice must clear the same bar as an automatic one (see [resolve]'s availability note).
      * @param platformProfiles the profiles that can run [platformId], already filtered to
      *   available+installed and ordered by [byLaunchPreference] — the automatic fallback pool.
      * @param perGameOverride the game's stored override id/package, or null.
@@ -94,20 +95,43 @@ object EmulatorLaunchResolver {
         platformDefault: String? = null,
     ): Result<ResolvedLaunch> {
 
+        // Why a configured choice is explained, not silently replaced: the ladder's whole job is
+        // to be attributable, so a dead platform default surfaces as "this is broken, here's why"
+        // and routes to recovery, rather than quietly launching something the user did not pick.
+        fun unresolvableMessage(configuredIdOrPackage: String, source: LaunchSource): String {
+            val shelved = installedProfiles.firstOrNull {
+                it.id == configuredIdOrPackage || it.packageName == configuredIdOrPackage
+            }
+            return when {
+                shelved == null ->
+                    "The ${source.configuredErrorPhrase} emulator is not installed or " +
+                        "available: $configuredIdOrPackage"
+                shelved.isRetroArchProfile() ->
+                    "${shelved.name} is set as the ${source.label.lowercase()}, but that core is " +
+                        "not installed in RetroArch. Install it, or choose another emulator."
+                else ->
+                    "${shelved.name} is set as the ${source.label.lowercase()}, but is no longer " +
+                        "available. Choose another emulator."
+            }
+        }
+
         fun resolveConfigured(
             configuredIdOrPackage: String,
             source: LaunchSource,
         ): Result<ResolvedLaunch> {
-            val profile = installedProfiles.firstOrNull { it.id == configuredIdOrPackage }
-                ?: installedProfiles.firstOrNull {
+            // Availability is checked on the configured rungs too, not just the automatic pool.
+            // It was once filtered only into [platformProfiles], so a platform default or memory
+            // card pointing at an unavailable RetroArch core still resolved and still launched —
+            // the profile was excluded from the fallback list it would never have reached anyway,
+            // while the stored id that actually decided the launch sailed past unchecked.
+            val available = installedProfiles.filter { it.isAvailable }
+            val profile = available.firstOrNull { it.id == configuredIdOrPackage }
+                ?: available.firstOrNull {
                     it.packageName == configuredIdOrPackage && it.supportsPlatform(platformId)
                 }
-                ?: installedProfiles.firstOrNull { it.packageName == configuredIdOrPackage }
+                ?: available.firstOrNull { it.packageName == configuredIdOrPackage }
                 ?: return Result.failure(
-                    IllegalStateException(
-                        "The ${source.configuredErrorPhrase} emulator is not installed or " +
-                            "available: $configuredIdOrPackage"
-                    )
+                    IllegalStateException(unresolvableMessage(configuredIdOrPackage, source))
                 )
 
             if (!profile.supportsPlatform(platformId)) {

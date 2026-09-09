@@ -7,10 +7,12 @@ import com.playfieldportal.core.data.repository.MemoryCardRepository
 import com.playfieldportal.core.domain.model.EmulatorProfile
 import com.playfieldportal.core.domain.model.MemoryCard
 import com.playfieldportal.core.domain.repository.GameRepository
+import com.playfieldportal.feature.launcher.AutoCoreMemory
 import com.playfieldportal.feature.launcher.EmulatorLaunchResolver
 import com.playfieldportal.feature.launcher.EmulatorProfileRepository
 import com.playfieldportal.feature.launcher.LaunchSource
 import com.playfieldportal.feature.launcher.byLaunchPreference
+import com.playfieldportal.feature.launcher.stabilizeCore
 import com.playfieldportal.feature.launcher.supportsPlatform
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -92,6 +94,7 @@ class EmulatorAssignmentViewModel @Inject constructor(
     private val platformDao: PlatformDao,
     private val gameRepository: GameRepository,
     private val profileRepository: EmulatorProfileRepository,
+    private val autoCoreMemory: AutoCoreMemory,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(EmulatorAssignmentUiState())
@@ -190,12 +193,14 @@ class EmulatorAssignmentViewModel @Inject constructor(
 
     // ── Row derivation ────────────────────────────────────────────────────────
 
-    private fun buildRows(
+    private suspend fun buildRows(
         cards: List<MemoryCard>,
         platforms: List<com.playfieldportal.core.data.database.entity.PlatformEntity>,
         games: List<com.playfieldportal.core.domain.model.Game>,
         allProfiles: List<EmulatorProfile>,
     ): List<PlatformAssignRow> {
+        // The console's remembered RetroArch core per platform, read once for the whole pass.
+        val rememberedCores = autoCoreMemory.rememberedIds()
         // The pool the ladder resolves against must match Game Detail exactly, so the attribution
         // here can never disagree with a launch. profiles flow still supplies names for stored
         // defaults whose profile is currently uninstalled.
@@ -218,7 +223,10 @@ class EmulatorAssignmentViewModel @Inject constructor(
 
                 val installedForPlatform =
                     installed.filter { it.isAvailable && it.supportsPlatform(platformId) }
-                val platformProfiles = installedForPlatform.byLaunchPreference()
+                // Same stabilization as a launch: the console's remembered core leads the core
+                // tier, so this screen can never disagree with what actually launches.
+                val platformProfiles =
+                    installedForPlatform.byLaunchPreference().stabilizeCore(rememberedCores[platformId])
                 val stored = card?.emulatorId?.takeIf { it.isNotBlank() }
                 val platformPref =
                     platformEntity?.preferredEmulatorPackage?.takeIf { it.isNotBlank() }

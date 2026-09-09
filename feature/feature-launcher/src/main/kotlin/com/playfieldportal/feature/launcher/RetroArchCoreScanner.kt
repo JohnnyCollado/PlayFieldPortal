@@ -1,7 +1,6 @@
 package com.playfieldportal.feature.launcher
 
 import timber.log.Timber
-import java.io.File
 
 data class RetroArchCore(
     val name: String,           // human-readable label derived from filename
@@ -19,47 +18,41 @@ object RetroArchCoreScanner {
         "com.retroarch.ra32",
     )
 
-    // Legacy/custom setups only. Modern RetroArch keeps cores in its private internal dir
-    // (/data/user/0/<pkg>/cores), which no other app can enumerate — and Android blocks
-    // dlopen() of a .so from shared storage, so cores can never actually live here on a
-    // working install. Scanned purely to discover EXTRA core filenames; see [coresFor].
-    private val CORE_DIRS = listOf(
-        "/storage/emulated/0/RetroArch/cores",
-        "/sdcard/RetroArch/cores",
-    )
-
-    private data class CuratedCore(
+    private data class RecommendedCore(
         val fileName: String,
         val name: String,
         val platformIds: List<String>,
     )
 
     /**
-     * One recommended core per system, matching RetroArch's Core Downloader names. PFP cannot
-     * verify a core is installed (private storage), so these are offered unconditionally and
-     * RetroArch reports the failure itself if the core is missing — the profile's `notes` tells
-     * the user which core to download.
+     * One recommended core per system, matching RetroArch's Core Downloader names.
+     *
+     * This is a *reference* table, not a source of profiles. It once was the latter: when the cores
+     * folder was unlinked every entry here became a launchable profile marked available, which is
+     * how users ended up defaulted onto cores they had never downloaded. Profiles now come only from
+     * a real inventory ([coresFor]); these names survive to label a core path ([labelForPath]) and
+     * to tell a user which core to install for a system ([recommendedCoreNameFor]).
      */
-    private val CURATED_CORES = listOf(
-        CuratedCore("mesen_libretro_android.so",            "Mesen (NES)",              listOf("nes", "fam")),
-        CuratedCore("snes9x_libretro_android.so",           "Snes9x (SNES)",            listOf("snes")),
-        CuratedCore("mupen64plus_next_libretro_android.so", "Mupen64Plus-Next (N64)",   listOf("n64")),
-        CuratedCore("gambatte_libretro_android.so",         "Gambatte (GB/GBC)",        listOf("gb", "gbc")),
-        CuratedCore("mgba_libretro_android.so",             "mGBA (GBA)",               listOf("gba", "gb", "gbc")),
-        CuratedCore("genesis_plus_gx_libretro_android.so",  "Genesis Plus GX",          listOf("megadrive", "genesis", "mastersystem", "sms", "gamegear", "segacd")),
-        CuratedCore("picodrive_libretro_android.so",        "PicoDrive (32X)",          listOf("sega32x", "megadrive", "genesis")),
-        CuratedCore("mednafen_saturn_libretro_android.so",  "Beetle Saturn",            listOf("saturn")),
-        CuratedCore("mednafen_psx_hw_libretro_android.so",  "Beetle PSX HW",            listOf("psx", "ps1")),
-        CuratedCore("mednafen_pce_libretro_android.so",     "Beetle PCE",               listOf("pcengine", "pce", "tgfx16")),
-        CuratedCore("fbneo_libretro_android.so",            "FinalBurn Neo (Arcade)",   listOf("arcade", "neogeo", "mame", "cps1", "cps2", "cps3")),
-        CuratedCore("mednafen_ngp_libretro_android.so",     "Beetle NeoPop (NGP)",      listOf("ngp", "ngpc")),
-        CuratedCore("mednafen_wswan_libretro_android.so",   "Beetle Cygne (WonderSwan)", listOf("wonderswan", "wonderswancolor", "ws", "wsc")),
-        CuratedCore("stella_libretro_android.so",           "Stella (Atari 2600)",      listOf("atari2600")),
-        CuratedCore("a5200_libretro_android.so",            "a5200 (Atari 5200)",       listOf("atari5200")),
-        CuratedCore("prosystem_libretro_android.so",        "ProSystem (Atari 7800)",   listOf("atari7800")),
-        CuratedCore("handy_libretro_android.so",            "Handy (Lynx)",             listOf("atarilynx", "lynx")),
-        CuratedCore("mednafen_vb_libretro_android.so",      "Beetle VB (Virtual Boy)",  listOf("virtualboy", "vb")),
-        CuratedCore("vice_x64_libretro_android.so",         "VICE x64 (C64)",           listOf("c64")),
+    private val RECOMMENDED_CORES = listOf(
+        RecommendedCore("mesen_libretro_android.so",            "Mesen (NES)",              listOf("nes", "fam")),
+        RecommendedCore("snes9x_libretro_android.so",           "Snes9x (SNES)",            listOf("snes")),
+        RecommendedCore("mupen64plus_next_libretro_android.so", "Mupen64Plus-Next (N64)",   listOf("n64")),
+        RecommendedCore("gambatte_libretro_android.so",         "Gambatte (GB/GBC)",        listOf("gb", "gbc")),
+        RecommendedCore("mgba_libretro_android.so",             "mGBA (GBA)",               listOf("gba", "gb", "gbc")),
+        RecommendedCore("genesis_plus_gx_libretro_android.so",  "Genesis Plus GX",          listOf("megadrive", "genesis", "mastersystem", "sms", "gamegear", "segacd")),
+        RecommendedCore("picodrive_libretro_android.so",        "PicoDrive (32X)",          listOf("sega32x", "megadrive", "genesis")),
+        RecommendedCore("mednafen_saturn_libretro_android.so",  "Beetle Saturn",            listOf("saturn")),
+        RecommendedCore("mednafen_psx_hw_libretro_android.so",  "Beetle PSX HW",            listOf("psx", "ps1")),
+        RecommendedCore("mednafen_pce_libretro_android.so",     "Beetle PCE",               listOf("pcengine", "pce", "tgfx16")),
+        RecommendedCore("fbneo_libretro_android.so",            "FinalBurn Neo (Arcade)",   listOf("arcade", "neogeo", "mame", "cps1", "cps2", "cps3")),
+        RecommendedCore("mednafen_ngp_libretro_android.so",     "Beetle NeoPop (NGP)",      listOf("ngp", "ngpc")),
+        RecommendedCore("mednafen_wswan_libretro_android.so",   "Beetle Cygne (WonderSwan)", listOf("wonderswan", "wonderswancolor", "ws", "wsc")),
+        RecommendedCore("stella_libretro_android.so",           "Stella (Atari 2600)",      listOf("atari2600")),
+        RecommendedCore("a5200_libretro_android.so",            "a5200 (Atari 5200)",       listOf("atari5200")),
+        RecommendedCore("prosystem_libretro_android.so",        "ProSystem (Atari 7800)",   listOf("atari7800")),
+        RecommendedCore("handy_libretro_android.so",            "Handy (Lynx)",             listOf("atarilynx", "lynx")),
+        RecommendedCore("mednafen_vb_libretro_android.so",      "Beetle VB (Virtual Boy)",  listOf("virtualboy", "vb")),
+        RecommendedCore("vice_x64_libretro_android.so",         "VICE x64 (C64)",           listOf("c64")),
     )
 
     // Core filename prefix (strip _libretro_android.so) → platform IDs
@@ -132,7 +125,7 @@ object RetroArchCoreScanner {
     fun labelForPath(corePath: String): String {
         val fileName = corePath.substringAfterLast('/')
         if (fileName.isBlank()) return corePath
-        CURATED_CORES.firstOrNull { it.fileName == fileName }?.name?.let { return it }
+        RECOMMENDED_CORES.firstOrNull { it.fileName == fileName }?.name?.let { return it }
         val prefix = fileName
             .removeSuffix("_libretro_android.so")
             .removeSuffix("_libretro.so")
@@ -143,84 +136,46 @@ object RetroArchCoreScanner {
     }
 
     /**
-     * Cores to offer for an installed RetroArch [packageName].
+     * Profiles for the cores actually present in [installedCoreFiles], for an installed RetroArch
+     * [packageName]. Entries with no [CORE_PLATFORM_MAP] entry are skipped — PFP would not know
+     * which console to offer them for.
      *
-     * RetroArch loads cores only from its private internal directory (Android blocks dlopen() from
-     * shared storage), and no other app can enumerate that directory directly. Two modes:
+     * The set is the authority and an empty set yields no profiles. There is deliberately no
+     * fallback: PFP previously answered "unknown" by offering [RECOMMENDED_CORES] wholesale, so a
+     * user with two cores installed was shown nineteen, and any console lacking a standalone
+     * emulator defaulted onto a core that was never on the device — RetroArch launched, failed to
+     * load it, and showed a black screen. Offering nothing is recoverable (the user links their
+     * cores folder); offering fiction is not, because it looks like it worked.
      *
-     *  - [installedCoreFiles] == null → **not linked**: PFP cannot verify what's installed, so it
-     *    offers the [CURATED_CORES] defaults (one per system) unverified. A core the user hasn't
-     *    downloaded fails silently inside RetroArch — the profile notes say which to install.
-     *  - [installedCoreFiles] non-null → **linked** (via [RetroArchLink]'s SAF grant, the
-     *    authoritative list): PFP offers exactly one profile per actually-installed, platform-mapped
-     *    core. Systems with no installed core get no RetroArch profile, so the user is never dropped
-     *    into a black screen for a missing core.
-     *
-     * [RetroArchCore.absolutePath] always points at RetroArch's internal core path — PFP only names
-     * the core in the LIBRETRO extra; RetroArch opens it itself.
+     * [RetroArchCore.absolutePath] points at RetroArch's internal core path — PFP only names the
+     * core in the LIBRETRO extra; RetroArch opens it itself.
      */
-    fun coresFor(packageName: String, installedCoreFiles: Set<String>? = null): List<RetroArchCore> {
+    fun coresFor(packageName: String, installedCoreFiles: Set<String>): List<RetroArchCore> {
         val internalDir = "/data/data/$packageName/cores"
-
-        if (installedCoreFiles != null) {
-            val cores = installedCoreFiles.mapNotNull { fileName ->
-                val prefix = fileName
-                    .removeSuffix("_libretro_android.so")
-                    .removeSuffix("_libretro.so")
-                val platforms = CORE_PLATFORM_MAP[prefix] ?: return@mapNotNull null
-                RetroArchCore(
-                    name         = CURATED_CORES.firstOrNull { it.fileName == fileName }?.name
-                                   ?: prefix.replace('_', ' ').replaceFirstChar { it.uppercaseChar() },
-                    fileName     = fileName,
-                    absolutePath = "$internalDir/$fileName",
-                    platformIds  = platforms,
-                )
-            }.sortedBy { it.name }
-            Timber.i("RetroArch cores (linked, $packageName): ${cores.size} installed & mapped of ${installedCoreFiles.size} present")
-            return cores
-        }
-
-        val curated = CURATED_CORES.map { c ->
+        val cores = installedCoreFiles.mapNotNull { fileName ->
+            val prefix = fileName
+                .removeSuffix("_libretro_android.so")
+                .removeSuffix("_libretro.so")
+            val platforms = CORE_PLATFORM_MAP[prefix] ?: return@mapNotNull null
             RetroArchCore(
-                name         = c.name,
-                fileName     = c.fileName,
-                absolutePath = "$internalDir/${c.fileName}",
-                platformIds  = c.platformIds,
+                name         = RECOMMENDED_CORES.firstOrNull { it.fileName == fileName }?.name
+                               ?: prefix.replace('_', ' ').replaceFirstChar { it.uppercaseChar() },
+                fileName     = fileName,
+                absolutePath = "$internalDir/$fileName",
+                platformIds  = platforms,
             )
-        }
-        val curatedNames = curated.mapTo(mutableSetOf()) { it.fileName }
-        val extra = legacyCoreFileNames()
-            .asSequence()
-            .filterNot { it in curatedNames }
-            .mapNotNull { fileName ->
-                val prefix = fileName
-                    .removeSuffix("_libretro_android.so")
-                    .removeSuffix("_libretro.so")
-                val platforms = CORE_PLATFORM_MAP[prefix] ?: return@mapNotNull null
-                RetroArchCore(
-                    name         = prefix.replace('_', ' ').replaceFirstChar { it.uppercaseChar() },
-                    fileName     = fileName,
-                    absolutePath = "$internalDir/$fileName",
-                    platformIds  = platforms,
-                )
-            }
-            .toList()
-
-        Timber.i("RetroArch cores (unlinked, $packageName): ${curated.size} curated + ${extra.size} discovered")
-        return curated + extra
+        }.sortedBy { it.name }
+        Timber.i(
+            "RetroArch cores ($packageName): ${cores.size} mapped of ${installedCoreFiles.size} installed"
+        )
+        return cores
     }
 
-    // Extra core filenames staged in the legacy shared-storage dirs, if any exist.
-    private fun legacyCoreFileNames(): List<String> {
-        val coresDir = CORE_DIRS.map(::File).firstOrNull { it.isDirectory } ?: return emptyList()
-        return try {
-            coresDir.listFiles()
-                ?.filter { it.isFile && it.name.contains("_libretro") && it.extension == "so" }
-                ?.map { it.name }
-                ?: emptyList()
-        } catch (e: Exception) {
-            Timber.w(e, "RetroArch legacy core scan failed")
-            emptyList()
-        }
-    }
+    /**
+     * The core RetroArch's Core Downloader offers for [platformId], e.g. "Beetle PSX HW" for `psx`.
+     * Used to turn "no emulator for this console" into an actionable instruction, which is the job
+     * the fabricated profiles' `notes` field used to do badly.
+     */
+    fun recommendedCoreNameFor(platformId: String): String? =
+        RECOMMENDED_CORES.firstOrNull { platformId in it.platformIds }?.name
 }

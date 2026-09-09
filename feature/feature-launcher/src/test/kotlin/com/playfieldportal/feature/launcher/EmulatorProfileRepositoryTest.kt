@@ -2,6 +2,8 @@ package com.playfieldportal.feature.launcher
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import io.mockk.coEvery
+import io.mockk.mockk
 import kotlinx.coroutines.CoroutineDispatcher
 import com.playfieldportal.core.domain.model.EmulatorProfile
 import com.playfieldportal.core.domain.model.IntentType
@@ -66,8 +68,10 @@ class EmulatorProfileRepositoryTest {
         )
     }
 
-    private fun repository(dispatcher: CoroutineDispatcher) =
-        EmulatorProfileRepository(context, dispatcher)
+    private fun repository(
+        dispatcher: CoroutineDispatcher,
+        autoCoreMemory: AutoCoreMemory = mockk(relaxed = true),
+    ) = EmulatorProfileRepository(context, dispatcher, autoCoreMemory)
 
     // ── Dispatcher ────────────────────────────────────────────────────────────
 
@@ -94,6 +98,45 @@ class EmulatorProfileRepositoryTest {
         // Compiles only because the function is suspend — the regression guard is the signature.
         val result: List<EmulatorProfile> = repo.getProfilesForPlatform("psx")
         assertTrue(result.all { "psx" in it.supportedPlatformIds })
+    }
+
+    @Test
+    fun `getProfilesForPlatform leads with the console's remembered core`() = runTest {
+        // Make com.retroarch appear installed so the profiles survive the package filter.
+        val pm = context.packageManager
+        org.robolectric.Shadows.shadowOf(pm).installPackage(
+            android.content.pm.PackageInfo().apply {
+                packageName = "com.retroarch"
+                applicationInfo = android.content.pm.ApplicationInfo().apply {
+                    this.packageName = "com.retroarch"
+                    sourceDir = "/data/app/com.retroarch/base.apk"
+                    dataDir = "/data/data/com.retroarch"
+                }
+            }
+        )
+        // mgba persisted BEFORE gambatte on purpose — without stabilization the pool would lead
+        // with mgba, so the test proves the remembered core really moves to the front.
+        writePersisted(
+            EmulatorProfile(
+                id = "mgba", name = "mGBA", packageName = "com.retroarch",
+                activityClass = "com.retroarch.browser.retroactivity.RetroActivityFuture",
+                intentType = IntentType.COMPONENT, supportedPlatformIds = listOf("gb", "gba"),
+            ),
+            EmulatorProfile(
+                id = "gambatte", name = "Gambatte", packageName = "com.retroarch",
+                activityClass = "com.retroarch.browser.retroactivity.RetroActivityFuture",
+                intentType = IntentType.COMPONENT, supportedPlatformIds = listOf("gb"),
+            ),
+        )
+        val memory = mockk<AutoCoreMemory>(relaxed = true)
+        coEvery { memory.rememberedProfileId("gb") } returns "gambatte"
+        val repo = repository(StandardTestDispatcher(testScheduler), memory)
+
+        repo.initialize()
+
+        val pool = repo.getProfilesForPlatform("gb")
+        assertEquals("The remembered core must stay the automatic pick", "gambatte", pool.first().id)
+        assertEquals(setOf("gambatte", "mgba"), pool.map { it.id }.toSet())
     }
 
     // ── Admission ─────────────────────────────────────────────────────────────

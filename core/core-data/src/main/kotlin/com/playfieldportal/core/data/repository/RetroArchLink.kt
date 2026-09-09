@@ -6,6 +6,7 @@ import android.net.Uri
 import android.provider.DocumentsContract
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.data.saf.querySafChildren
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -22,7 +23,11 @@ import javax.inject.Singleton
  * so PFP otherwise cannot tell an installed core from a missing one and drops the user into a
  * silent black screen. RetroArch exposes its directories through a DocumentsProvider; a one-time
  * `ACTION_OPEN_DOCUMENT_TREE` grant lets PFP enumerate the `cores` folder and know exactly what's
- * installed. Without a link, detection falls back to offering every curated core (unverified).
+ * installed.
+ *
+ * Without a link PFP offers no RetroArch cores at all. It used to fall back to offering a curated
+ * guess, which is what produced the black screens; see [CoreInventory] for why that state is now
+ * named rather than papered over.
  */
 @Singleton
 class RetroArchLink @Inject constructor(
@@ -31,20 +36,18 @@ class RetroArchLink @Inject constructor(
     suspend fun linkedTreeUri(): String? =
         context.pfpDataStore.data.first()[KEY].takeIf { !it.isNullOrBlank() }
 
-    /** True when a tree is stored AND its read grant is still live (grants are lost on reinstall). */
-    suspend fun isLinked(): Boolean {
-        val uri = linkedTreeUri() ?: return false
-        return uri in SafGrants.persistedReadUris(context.contentResolver)
-    }
-
     suspend fun save(treeUri: Uri) {
         persist(treeUri)
         context.pfpDataStore.edit { it[KEY] = treeUri.toString() }
         Timber.i("RetroArch linked: $treeUri")
     }
 
+    /** Forgets the tree AND the remembered inventory — an explicit unlink means "know nothing". */
     suspend fun clear() {
-        context.pfpDataStore.edit { it.remove(KEY) }
+        context.pfpDataStore.edit {
+            it.remove(KEY)
+            it.remove(KEY_CACHED_CORES)
+        }
     }
 
     private fun persist(uri: Uri) {
@@ -54,32 +57,64 @@ class RetroArchLink @Inject constructor(
     }
 
     /**
-     * The set of installed libretro core file names (e.g. `snes9x_libretro_android.so`), discovered
-     * by walking the linked tree to a `cores` folder. Returns null when not linked or the grant is
-     * gone (caller then falls back to offering unverified cores); an empty set means linked but no
-     * cores found.
+     * What PFP knows about the installed cores right now — see [CoreInventory] for the states and
+     * the rule about which of them may drive a deletion.
+     *
+     * A successful read is cached, so a later loss of the SAF grant degrades to
+     * [CoreInventory.Remembered] instead of silently erasing the user's RetroArch setup. Every
+     * failure path below degrades the same way, deliberately: an inventory we could not read is
+     * never evidence that a core is gone.
      */
-    suspend fun installedCoreFiles(): Set<String>? {
-        val treeUriStr = linkedTreeUri() ?: return null
+    suspend fun inventory(): CoreInventory {
+        val treeUriStr = linkedTreeUri() ?: return CoreInventory.Unlinked
+
         if (treeUriStr !in SafGrants.persistedReadUris(context.contentResolver)) {
             Timber.w("RetroArch link present but grant lost — needs re-linking")
-            return null
+            return remembered()
         }
-        val treeUri = runCatching { Uri.parse(treeUriStr) }.getOrNull() ?: return null
-        val rootDocId = runCatching { DocumentsContract.getTreeDocumentId(treeUri) }.getOrNull() ?: return null
-        val cr = context.contentResolver
+        val treeUri = runCatching { Uri.parse(treeUriStr) }.getOrNull() ?: return remembered()
+        val rootDocId = runCatching { DocumentsContract.getTreeDocumentId(treeUri) }.getOrNull()
+            ?: return remembered()
 
         // The linked folder may itself be the cores dir, or contain it one or two levels down
         // (RetroArch's base dir → cores/). Search a shallow tree for a folder named "cores"; if
         // none is found, treat the linked folder's own .so files as the core set.
-        val coresDocId = findCoresDocId(treeUri, rootDocId) ?: rootDocId
-        val cores = cr.querySafChildren(treeUri, coresDocId)
-            .asSequence()
-            .filter { !it.isDirectory && it.name.endsWith(".so") && it.name.contains("_libretro") }
-            .map { it.name }
-            .toSet()
-        Timber.i("RetroArch installed cores detected: ${cores.size} (${cores.take(6).joinToString()}${if (cores.size > 6) "…" else ""})")
-        return cores
+        val cores = runCatching {
+            val coresDocId = findCoresDocId(treeUri, rootDocId) ?: rootDocId
+            context.contentResolver.querySafChildren(treeUri, coresDocId)
+                .asSequence()
+                .filter { !it.isDirectory && it.name.endsWith(".so") && it.name.contains("_libretro") }
+                .map { it.name }
+                .toSet()
+        }.getOrElse {
+            Timber.w(it, "RetroArch core enumeration failed — keeping the last known inventory")
+            return remembered()
+        }
+
+        if (cores.isEmpty()) {
+            Timber.w("RetroArch linked but no libretro cores found under the granted folder")
+            return CoreInventory.EmptyTree
+        }
+
+        cacheCores(cores)
+        Timber.i(
+            "RetroArch installed cores detected: ${cores.size} " +
+                "(${cores.take(6).joinToString()}${if (cores.size > 6) "…" else ""})"
+        )
+        return CoreInventory.Verified(cores)
+    }
+
+    /** The last successfully-read inventory, or [CoreInventory.Unlinked] if there has never been one. */
+    private suspend fun remembered(): CoreInventory {
+        val cached = context.pfpDataStore.data.first()[KEY_CACHED_CORES].orEmpty()
+        if (cached.isEmpty()) return CoreInventory.Unlinked
+        Timber.i("RetroArch inventory unreadable — using ${cached.size} remembered core(s)")
+        return CoreInventory.Remembered(cached)
+    }
+
+    private suspend fun cacheCores(cores: Set<String>) {
+        runCatching { context.pfpDataStore.edit { it[KEY_CACHED_CORES] = cores } }
+            .onFailure { Timber.w(it, "Could not cache RetroArch core inventory") }
     }
 
     // Breadth-first, depth-limited search for a child directory named "cores".
@@ -102,5 +137,6 @@ class RetroArchLink @Inject constructor(
     companion object {
         const val RETROARCH_DOCUMENTS_AUTHORITY = "com.retroarch.documents"
         private val KEY = stringPreferencesKey("retroarch_documents_tree_uri")
+        private val KEY_CACHED_CORES = stringSetPreferencesKey("retroarch_cached_core_files")
     }
 }

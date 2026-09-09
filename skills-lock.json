@@ -25,6 +25,12 @@
       "skillPath": "skills/compose-multiplatform-patterns/SKILL.md",
       "computedHash": "d42483b2fcf3d9aec758a9605aab0041d1cdd1fe2813fe23b13c95c4dbe36fed"
     },
+    "debugging-strategies": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "skillPath": "plugins/developer-essentials/skills/debugging-strategies/SKILL.md",
+      "computedHash": "d7d8542d2205ebdb547d14dab24f467e334f73cfb30c4458888f5431713ca82d"
+    },
     "frontend-design": {
       "source": "anthropics/skills",
       "sourceType": "github",

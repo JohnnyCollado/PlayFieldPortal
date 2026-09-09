@@ -22,3 +22,27 @@ fun EmulatorProfile.isRetroArchProfile(): Boolean =
  */
 fun List<EmulatorProfile>.byLaunchPreference(): List<EmulatorProfile> =
     sortedBy { if (it.isRetroArchProfile()) 1 else 0 }
+
+/**
+ * Orders a console's launch pool so its remembered RetroArch core stays the automatic pick.
+ *
+ * [rememberedProfileId] is the profile id [AutoCoreMemory] last recorded for the console. When
+ * that profile is present in the pool (installed, available, and mapped for the platform — the
+ * pool is already filtered for all three by its callers) it moves to the front of the RetroArch
+ * tier, so a core can never overtake a console's core just because detection order changed when
+ * another core was installed or removed. Standalones stay preferred ahead of it, and every other
+ * profile keeps its relative order.
+ *
+ * A remembered profile that is missing from the pool is ignored and the pool is returned
+ * unchanged — the core is genuinely gone, so the fallback picks normally and the record is
+ * refreshed on the next successful launch.
+ */
+fun List<EmulatorProfile>.stabilizeCore(rememberedProfileId: String?): List<EmulatorProfile> {
+    val remembered = rememberedProfileId?.let { id -> firstOrNull { it.id == id } } ?: return this
+    if (!remembered.isRetroArchProfile()) return this
+    return buildList {
+        addAll(this@stabilizeCore.filter { !it.isRetroArchProfile() })
+        add(remembered)
+        addAll(this@stabilizeCore.filter { it.isRetroArchProfile() && it.id != remembered.id })
+    }
+}

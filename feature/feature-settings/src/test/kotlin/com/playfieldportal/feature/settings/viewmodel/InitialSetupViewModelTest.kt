@@ -6,6 +6,7 @@ import android.net.Uri
 import com.playfieldportal.core.data.achievement.AchievementCredentialsProvider
 import com.playfieldportal.core.data.repository.MediaRootKind
 import com.playfieldportal.core.data.repository.MediaRootRepository
+import com.playfieldportal.core.data.repository.CoreInventory
 import com.playfieldportal.core.data.repository.RetroArchLink
 import com.playfieldportal.core.data.repository.RomRootRepository
 import com.playfieldportal.core.data.repository.Vita3KLibrary
@@ -89,7 +90,7 @@ class InitialSetupViewModelTest {
         every { credentials.raUsernameFlow } returns flowOf(null)
         every { credentials.steamId64Flow } returns flowOf(null)
         coEvery { screenScraperApi.isEnabled() } returns true
-        coEvery { retroArchLink.isLinked() } returns false
+        coEvery { retroArchLink.inventory() } returns CoreInventory.Unlinked
         vm = buildVm()
     }
 
@@ -327,9 +328,9 @@ class InitialSetupViewModelTest {
     // ── RetroArch ───────────────────────────────────────────────────────────────
 
     @Test fun `linkRetroArch saves the tree and reports installed cores`() = runTest(dispatcher) {
-        coEvery { retroArchLink.isLinked() } returns true
-        coEvery { retroArchLink.installedCoreFiles() } returns
-            setOf("snes9x_libretro_android.so", "gba_libretro_android.so")
+        coEvery { retroArchLink.inventory() } returns CoreInventory.Verified(
+            setOf("snes9x_libretro_android.so", "mgba_libretro_android.so")
+        )
         val uri = mockk<Uri>()
         val job = collectState()
 

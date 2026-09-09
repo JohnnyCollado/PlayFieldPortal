@@ -64,6 +64,7 @@ class LaunchDispatcherTest {
         val uiMediaStore: com.playfieldportal.core.data.repository.UiMediaStore = mockk(relaxed = true)
         val gameBootGate = GameBootGate(gameBootPreferences, uiMediaStore)
         val menuSound: com.playfieldportal.core.ui.sound.MenuSoundPlayer = mockk(relaxed = true)
+        val autoCoreMemory: AutoCoreMemory = mockk(relaxed = true)
 
         val dispatcher = LaunchDispatcher(
             context = context,
@@ -72,6 +73,7 @@ class LaunchDispatcherTest {
             clock = LaunchClock { now },
             gameBootGate = gameBootGate,
             menuSound = menuSound,
+            autoCoreMemory = autoCoreMemory,
         )
     }
 
@@ -84,6 +86,43 @@ class LaunchDispatcherTest {
         coEvery { recorder.record(any()) } returns Unit
         val result = dispatcher.launch(game, resolved, intent)
         assertIs<LaunchDispatchResult.Accepted>(result)
+    }
+
+    // A RetroArch core hand-off: the launch that must pin the console to its core.
+    private val retroarchResolved = ResolvedLaunch(
+        profile = EmulatorProfile(
+            id = "auto_retroarch_gambatte_libretro_android",
+            name = "RetroArch · Gambatte (GB/GBC)",
+            packageName = "com.retroarch",
+            intentType = IntentType.COMPONENT,
+            supportedPlatformIds = listOf("gb", "gbc"),
+            autoSource = "retroarch-core",
+        ),
+        source = LaunchSource.CATALOG_DEFAULT,
+    )
+
+    @Test
+    fun `accepted retroarch core launch remembers the console's core`() = runTest {
+        val h = harness()
+        coEvery { h.recorder.record(any()) } returns Unit
+
+        h.dispatcher.launch(game, retroarchResolved, h.intent)
+
+        // One write per successful core launch: Game Detail and the XMB direct-launch path both
+        // funnel here, so the record stays consistent for both entry points.
+        coVerify(exactly = 1) {
+            h.autoCoreMemory.remember("psx", "auto_retroarch_gambatte_libretro_android")
+        }
+    }
+
+    @Test
+    fun `standalone launch does not write core memory`() = runTest {
+        val h = harness()
+        coEvery { h.recorder.record(any()) } returns Unit
+
+        h.dispatcher.launch(game, resolved, h.intent)
+
+        coVerify(exactly = 0) { h.autoCoreMemory.remember(any(), any()) }
     }
 
     @Test

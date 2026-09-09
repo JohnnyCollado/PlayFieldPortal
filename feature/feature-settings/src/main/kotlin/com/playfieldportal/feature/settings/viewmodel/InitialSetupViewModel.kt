@@ -13,6 +13,7 @@ import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.data.repository.FolderLinkStatus
 import com.playfieldportal.core.data.repository.MediaRootKind
 import com.playfieldportal.core.data.repository.MediaRootRepository
+import com.playfieldportal.core.data.repository.CoreInventory
 import com.playfieldportal.core.data.repository.RetroArchLink
 import com.playfieldportal.core.data.repository.RomRootRepository
 import com.playfieldportal.core.data.repository.Vita3KLibrary
@@ -492,20 +493,19 @@ class InitialSetupViewModel @Inject constructor(
                     retroArchLinked = false,
                     retroArchCoreCount = null,
                     retroArchDetecting = false,
-                    message = "RetroArch link removed — all curated cores will be offered (unverified).",
+                    message = "RetroArch link removed — no RetroArch cores will be offered until you link again.",
                 )
             }
         }
     }
 
     private suspend fun readRetroArchState(doneMessage: String? = null) {
-        val linked = retroArchLink.isLinked()
-        val installed = if (linked) retroArchLink.installedCoreFiles() else null
+        val inventory = retroArchLink.inventory()
         scratch.update {
             it.copy(
                 retroArchDetecting = false,
-                retroArchLinked = linked,
-                retroArchCoreCount = installed?.size,
+                retroArchLinked = inventory is CoreInventory.Verified || inventory is CoreInventory.EmptyTree,
+                retroArchCoreCount = if (inventory is CoreInventory.Unlinked) null else inventory.coreFiles.size,
                 message = doneMessage ?: it.message,
             )
         }

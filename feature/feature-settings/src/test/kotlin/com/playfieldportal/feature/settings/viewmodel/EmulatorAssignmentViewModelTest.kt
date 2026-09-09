@@ -10,6 +10,7 @@ import com.playfieldportal.core.domain.model.MemoryCard
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.feature.launcher.EmulatorProfileRepository
 import com.playfieldportal.feature.launcher.LaunchSource
+import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
@@ -39,6 +40,7 @@ class EmulatorAssignmentViewModelTest {
     private val platformDao = mockk<PlatformDao>(relaxed = true)
     private val gameRepository = mockk<GameRepository>(relaxed = true)
     private val profileRepository = mockk<EmulatorProfileRepository>(relaxed = true)
+    private val autoCoreMemory = mockk<com.playfieldportal.feature.launcher.AutoCoreMemory>(relaxed = true)
 
     private lateinit var vm: EmulatorAssignmentViewModel
 
@@ -94,7 +96,13 @@ class EmulatorAssignmentViewModelTest {
     // The ViewModel subscribes to its flows at construction, so it must be built AFTER the test's
     // stubs are in place (a stub changed later is invisible to the already-started collector).
     private fun createVm() {
-        vm = EmulatorAssignmentViewModel(memoryCardRepository, platformDao, gameRepository, profileRepository)
+        vm = EmulatorAssignmentViewModel(
+            memoryCardRepository,
+            platformDao,
+            gameRepository,
+            profileRepository,
+            autoCoreMemory,
+        )
     }
 
     private fun row(platformId: String) =
@@ -170,6 +178,30 @@ class EmulatorAssignmentViewModelTest {
         assertEquals("duckstation", psx!!.resolvedProfile?.id)
         assertEquals(LaunchSource.PLATFORM_DEFAULT, psx.source)
         assertEquals("DuckStation", psx.resolvedProfileName)
+    }
+
+    @Test
+    fun `automatic pick follows the console's remembered core`() = runTest(dispatcher) {
+        val gambatte = profile(
+            "gambatte", "com.retroarch.aarch64", name = "Gambatte", intentType = IntentType.COMPONENT,
+            coreMap = mapOf("psx" to "/data/data/com.retroarch.aarch64/cores/gambatte_libretro_android.so"),
+        )
+        val mGba = profile(
+            "mgba", "com.retroarch.aarch64", name = "mGBA", intentType = IntentType.COMPONENT,
+            coreMap = mapOf("psx" to "/data/data/com.retroarch.aarch64/cores/mgba_libretro_android.so"),
+        )
+        every { gameRepository.observeAllGames() } returns flowOf(listOf(game("Crash Bandicoot", "psx")))
+        every { profileRepository.getInstalledProfiles() } returns listOf(gambatte, mGba)
+        coEvery { autoCoreMemory.rememberedIds() } returns mapOf("psx" to "mgba")
+        createVm()
+        advanceUntilIdle()
+
+        val psx = row("psx")
+        assertEquals("mgba", psx!!.resolvedProfile?.id)
+        assertEquals(LaunchSource.CATALOG_DEFAULT, psx.source)
+        // The remembered core leads the candidate list and is what the console resolves to.
+        assertEquals("mgba", psx.candidates.first().profile.id)
+        assertTrue(psx.candidates.first { it.profile.id == "mgba" }.isDefault)
     }
 
     @Test

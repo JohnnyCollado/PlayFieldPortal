@@ -27,6 +27,7 @@ import com.playfieldportal.feature.launcher.EmulatorProfileRepository
 import com.playfieldportal.feature.launcher.LaunchDispatchResult
 import com.playfieldportal.feature.launcher.ResolvedLaunch
 import com.playfieldportal.feature.launcher.byLaunchPreference
+import com.playfieldportal.feature.launcher.stabilizeCore
 import com.playfieldportal.feature.launcher.supportsPlatform
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -182,6 +183,7 @@ class GameDetailViewModel @Inject constructor(
     private val memoryCardRepository: MemoryCardRepository,
     private val collectionRepository: CollectionRepository,
     private val profileRepository: EmulatorProfileRepository,
+    private val autoCoreMemory: com.playfieldportal.feature.launcher.AutoCoreMemory,
     private val intentResolver: EmulatorIntentResolver,
     private val artworkRepository: ArtworkRepository,
     private val artworkStore: ArtworkStore,
@@ -849,9 +851,13 @@ class GameDetailViewModel @Inject constructor(
         val installed = profileRepository.getInstalledProfiles()
         // Ordered so the automatic fallback picks a standalone emulator over a RetroArch core when
         // both support the console. Unavailable profiles (e.g. a RetroArch core the SAF link
-        // detected as not installed) are excluded so the fallback never lands on one.
+        // detected as not installed) are excluded so the fallback never lands on one. The console's
+        // remembered RetroArch core is then lifted to the front of the core tier, so the core (and
+        // its RetroArch configs) stays stable even as the detected core set changes.
         val platformProfiles =
-            installed.filter { it.isAvailable && it.supportsPlatform(platformId) }.byLaunchPreference()
+            installed.filter { it.isAvailable && it.supportsPlatform(platformId) }
+                .byLaunchPreference()
+                .stabilizeCore(autoCoreMemory.rememberedProfileId(platformId))
         return EmulatorLaunchResolver.resolve(
             platformId           = platformId,
             installedProfiles    = installed,

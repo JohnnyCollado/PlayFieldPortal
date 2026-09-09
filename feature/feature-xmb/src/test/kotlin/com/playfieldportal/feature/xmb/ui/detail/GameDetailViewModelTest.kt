@@ -43,6 +43,7 @@ class GameDetailViewModelTest {
     private lateinit var platformDao: PlatformDao
     private lateinit var memoryCardRepository: MemoryCardRepository
     private lateinit var profileRepository: EmulatorProfileRepository
+    private lateinit var autoCoreMemory: com.playfieldportal.feature.launcher.AutoCoreMemory
     private lateinit var intentResolver: EmulatorIntentResolver
     private lateinit var artworkRepository: ArtworkRepository
     private lateinit var artworkStore: ArtworkStore
@@ -90,6 +91,7 @@ class GameDetailViewModelTest {
         platformDao       = mockk(relaxed = true)
         memoryCardRepository = mockk(relaxed = true)
         profileRepository = mockk(relaxed = true)
+        autoCoreMemory    = mockk(relaxed = true)
         intentResolver    = mockk(relaxed = true)
         artworkRepository = mockk(relaxed = true)
         artworkStore      = mockk(relaxed = true)
@@ -112,6 +114,7 @@ class GameDetailViewModelTest {
             memoryCardRepository = memoryCardRepository,
             collectionRepository = mockk(relaxed = true),
             profileRepository = profileRepository,
+            autoCoreMemory    = autoCoreMemory,
             intentResolver    = intentResolver,
             artworkRepository = artworkRepository,
             artworkStore      = artworkStore,
@@ -512,6 +515,52 @@ class GameDetailViewModelTest {
         // The resolved intent goes through the shared LaunchDispatcher (B1), which performs
         // startActivity and records the outcome.
         coVerify(exactly = 1) { launchDispatcher.launch(any(), any(), fakeIntent) }
+    }
+
+    @Test
+    fun `launch resolves to the console's remembered retroarch core`() = runTest {
+        // Two RetroArch cores cover the same console; the console remembers gambatte, so the
+        // automatic pick must be gambatte even though mgba sorts first in the detected pool.
+        val mgba = com.playfieldportal.core.domain.model.EmulatorProfile(
+            id = "auto_retroarch_mgba_libretro_android",
+            name = "RetroArch · mGBA (GBA)",
+            packageName = "com.retroarch",
+            intentType = com.playfieldportal.core.domain.model.IntentType.COMPONENT,
+            supportedPlatformIds = listOf("gb", "gbc", "gba"),
+            autoSource = "retroarch-core",
+            coreMap = mapOf("gb" to "/data/data/com.retroarch/cores/mgba_libretro_android.so"),
+        )
+        val gambatte = com.playfieldportal.core.domain.model.EmulatorProfile(
+            id = "auto_retroarch_gambatte_libretro_android",
+            name = "RetroArch · Gambatte (GB/GBC)",
+            packageName = "com.retroarch",
+            intentType = com.playfieldportal.core.domain.model.IntentType.COMPONENT,
+            supportedPlatformIds = listOf("gb", "gbc"),
+            autoSource = "retroarch-core",
+            coreMap = mapOf("gb" to "/data/data/com.retroarch/cores/gambatte_libretro_android.so"),
+        )
+        val gbGame = fakeGame.copy(platformId = "gb", romPath = "/roms/gb/tetris.gb")
+        val fakeIntent = fakeLaunchIntent()
+        coEvery { gameRepository.getById(1L) } returns gbGame
+        every { profileRepository.getInstalledProfiles() } returns listOf(mgba, gambatte)
+        coEvery { autoCoreMemory.rememberedProfileId("gb") } returns gambatte.id
+        coEvery { intentResolver.resolve(any(), any()) } returns Result.success(fakeIntent)
+
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.launch()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // The remembered core wins the automatic pick, and the resolver handed that profile's
+        // intent to the shared launch funnel.
+        coVerify(exactly = 1) {
+            launchDispatcher.launch(
+                any(),
+                match { it?.profile?.id == gambatte.id },
+                fakeIntent,
+            )
+        }
     }
 
     // The guard has to hold even when launching would otherwise fully succeed — otherwise the test
