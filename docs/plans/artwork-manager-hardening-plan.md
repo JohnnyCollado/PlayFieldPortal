@@ -276,16 +276,16 @@ Note: there is **zero existing coverage** for `ArtworkStudioViewModel`, the crop
 | 1.2 | Replace `allResults` with per-key caches behind an immutable request key and a monotonic generation guard; delete the optimistic pre-clear | 1.1 | DONE |
 | 1.3 | Isolate SteamGridDB mature state into the SGDB cache key only; move it off Square onto the SGDB context menu | 1.2 | DONE |
 | 1.4 | Client paging at one-gridful pages with range/position display and skeletons for uncached pages | 1.2 | DONE |
-| 2.1 | Provider capability/candidate/preset models that return data without persisting | None | READY |
-| 2.2 | The tiered matcher at Tiers 1–3 (saved provider ID → ROM CRC32 / storefront **pair** → unique exact normalized title on the expected platform), with provider IDs never crossed between providers | 2.1, 0.6 | READY |
-| 2.3 | `Matched as …` status, Change Match (backed by `SteamGridDbApi.searchGame`) and Forget Match, neither deleting local artwork or metadata; feed the confirmed match into the existing `StudioRequestKey.matchId` | 2.2 | READY |
-| 3.1 | Extract `MetadataRepository.fetchForGame`'s four provider steps into a write-free `fetchCandidates`, splitting at the existing "nothing found" return (AD-12) | 2.1 | READY |
-| 3.2 | Current-vs-Incoming preview with the four apply policies, reusing `GameDao.updateMetadataIfMissing` for Fill Missing Only | 3.1 | READY |
+| 2.1 | Provider capability/candidate/preset models that return data without persisting | None | DONE |
+| 2.2 | The tiered matcher at Tiers 1–3 (saved provider ID → ROM CRC32 / storefront **pair** → unique exact normalized title on the expected platform), with provider IDs never crossed between providers | 2.1, 0.6 | DONE |
+| 2.3 | `Matched as …` status, Change Match (backed by `SteamGridDbApi.searchGame`) and Forget Match, neither deleting local artwork or metadata; feed the confirmed match into the existing `StudioRequestKey.matchId` | 2.2 | DONE |
+| 3.1 | Extract `MetadataRepository.fetchForGame`'s four provider steps into a write-free `fetchCandidates`, splitting at the existing "nothing found" return (AD-12) | 2.1 | DONE |
+| 3.2 | Current-vs-Incoming preview with the four apply policies, reusing `GameDao.updateMetadataIfMissing` for Fill Missing Only | 3.1 | DONE |
 | 4.1 | ~~Replace `StudioZone` with spatial focus~~ — split out as its own plan | — | MOVED to [C17](artwork-studio-navigation-plan.md) |
 | 4.2 | ~~Rebind Square to search and Triangle to context; delete the stale L2/R2 KDoc~~ | — | DONE (in 1.3) |
 | 4.3 | Thread `showTouchControls` from `GameDetailScreen.kt:206` into the Studio; touch-sized targets and hit-target separation | C17 | READY |
 | 4.4 | Pending-change and pending-exit prompts (Apply / Discard / Stay) on context switch and exit | C17 | READY |
-| 5.0 | **Render what Phase 0 can already store**: `GameDetailViewModel.kt:265-273` builds the media strip from `find` (one screenshot, one video) — switch it to `findAll` so extra assets are visible at all (AD-13) | 0.3 | READY |
+| 5.0 | **Render what Phase 0 can already store**: `GameDetailViewModel.kt:265-273` builds the media strip from `find` (one screenshot, one video) — switch it to `findAll` so extra assets are visible at all (AD-13) | 0.3 | DONE |
 | 5.1 | Give `StudioArt` a provider asset id and key cross-page selection on `provider + (providerAssetId ?: url)`, never grid index — SGDB supplies a real `SgdbArtItem.id`, ScreenScraper/TGDB/IGDB do not | 1.4, 0.3 | READY |
 | 5.2 | Sequential download queue over the shipped `studioAppendFromUrl`, with per-item states, partial-failure retention, Retry/Remove Failed | 5.1 | READY |
 | 5.3 | Duplicate detection through the shipped `findByProviderAssetId` / `findByOriginUrl` / `findByChecksum`, offering View Existing or Replace Existing | 5.1 | READY |
@@ -413,14 +413,173 @@ merge independently reviewable:
 - The manual on-device checks in Verification Strategy have not been run: the rapid-source-switch
   repro, a Windows game's storefront match, and the ICON0 live crop.
 
+## Merge 2 landed (5.0, 2.1, 2.2, 2.3)
+
+Implemented on `artwork-revisions`, in the suggested order. Decisions taken while landing it:
+
+- **The media strip reads `findAll` for VIDEO and SCREENSHOT only** (5.0). They are exactly
+  `ArtworkFileNaming.MULTI_ASSET_KINDS`; TITLESCREEN stays a single `find`, and ICON1 stays the
+  single-art fallback for a game with no full video. `videoUri` — what the player opens — is the
+  FIRST video, so a game with five videos still has one default.
+- **`TitleKey` replaced `StudioQuery`'s private regexes** and `StudioQuery` now delegates to it.
+  The query that addresses a result cache and the title that resolves a match must be the same
+  function, or a match and its cached page can disagree about what the user asked for.
+- **The capability table is the matcher's only source of provider truth** (2.1). `supportsTitleSearch`
+  is true for SteamGridDB alone — which is AD-4 stated as data instead of prose, and is what makes
+  Tiers 4-6 a flag flip plus a branch rather than a rewrite.
+- **A user-confirmed match is stored as `MatchTier.SAVED_PROVIDER_ID`** (2.3). It is about to be
+  written to the game row, so the next resolve genuinely reads it back at Tier 1; inventing a
+  fourth tier for it would have made the enum describe UI provenance instead of evidence strength.
+- **`GameDao.updateProviderMatch` writes exactly one provider column** via a `CASE WHEN :provider`
+  guard, and is deliberately NOT COALESCE-guarded — Forget Match has to actually clear the column.
+  It touches no artwork and no metadata column, which is the plan's "neither deleting local
+  artwork or metadata" made structural rather than promised.
+- **`SteamGridDbApi.getGameBySteamAppId`** was added: `/games/steam/{appid}` is the one direct
+  storefront lookup the API offers, and without it Phase 0's captured storefront pair had no Tier 2
+  consumer at all. Only the Steam half of a pair resolves; an Epic or GOG id is never retried as a
+  Steam id.
+- **Change Match is disabled, not hidden, on single-result providers.** The mockup shows CHANGE
+  MATCH while ScreenScraper is the active source, and the button stays there for every provider so
+  the row does not change shape as the user walks the sources. On a provider that returns one game
+  per title there is nothing to pick FROM, so the button renders inert and pressing it says why —
+  silence on a press reads as broken. It becomes live for any provider whose
+  `ProviderCapabilities` row gains `supportsTitleSearch`, which is what the deferred IGDB/TGDB
+  multi-result search would do.
+- **The approved mockup is `docs/mockups/artwork_image_mockup.png`** (supplied as a PNG, not HTML).
+  The match row was built to it: check glyph, "Matched as <title>", a green `Confirmed` chip, and
+  right-aligned FORGET / CHANGE MATCH, sitting between the source row and the grid. Its SAVED
+  SCREENSHOTS panel, per-tile checkboxes, ADDED badge and "n selected · size" apply bar are Phase
+  5's (tasks 5.1-5.4), not this merge's.
+
+Net-new coverage: `GameMatcherTest` (tier ordering and short-circuiting, no cross-provider id
+reads, the storefront pair, ambiguity as a miss, title keying) and six match cases added to
+`ArtworkStudioViewModelTest`; the two media-strip cases live in `GameDetailViewModelTest`.
+
+## Merge 3 landed (3.1, 3.2)
+
+Implemented on `artwork-revisions`, in the suggested order. Decisions taken while landing it:
+
+- **`fetchCandidates` is a move, as AD-12 promised** (3.1). Everything above the "nothing found"
+  return became `MetadataRepository.fetchCandidates`, returning `MetadataCandidates`; `fetchForGame`
+  calls it, checks `isEmpty` at the same seam, and runs its application half unchanged. Two pieces
+  of provider bookkeeping stayed on the retrieval side because moving them would change what the
+  batch scraper asks next: a live ScreenScraper response still refreshes `ss_media_cache` (a
+  response cache, never game state), and SS quota/credential failures still trip the batch guards.
+  Retrieval writes no `games` column and saves no artwork file — pinned by `confirmVerified`.
+- **The four apply policies were not named anywhere** — not in this plan, the index, or the tree,
+  and the external spec is not on disk. Only Fill Missing Only was. Chosen with the user on
+  2026-09-10: **Replace All** (every differing incoming value overwrites; blank never clears),
+  **Fill Missing Only**, **Choose Fields** (Replace All restricted to ticked rows) and **Keep
+  Current** (close, write nothing).
+- **One function decides what is written** (`MetadataApply.plan`). The preview's green "will
+  change" markers and `ArtworkRepository.applyMetadata`'s SQL both read it, so the overlay cannot
+  promise a change the database does not make. Fill Missing Only therefore treats NULL — and only
+  NULL — as missing, mirroring the reversed COALESCE it runs through.
+- **`updateMetadataIfMissing` grew four columns** (`age_rating`, `franchise`, `community_rating`,
+  `release_date`) so Fill Missing Only covers every field a preset carries. Every new parameter
+  defaults to null and `COALESCE(x, NULL) = x`, so the gamelist.xml importer's call is unchanged.
+  Replace All / Choose Fields go through the existing `updateMetadata` with text columns only.
+- **TITLE is `scraped_title`, never `user_title_override`.** A preset can refresh the scraped name;
+  nothing in this path can write the override, which still wins on screen.
+- **The preview bypasses the ScreenScraper media-URL cache.** A cache hit is URL-only
+  (`SsMediaSelection.infoFromCache` nulls every text field), so honouring it would silently offer
+  no ScreenScraper preset for exactly the games that were scraped before. Cost: one jeuInfos call
+  per explicit open, never per batch scrape.
+- **Presets come from ScreenScraper and TheGamesDB only.** `IgdbGameInfo` carries cover/hero URLs
+  and no text (its Apicalypse query requests `name,cover,artworks` and nothing else), so IGDB never
+  yields a preset. 2.1's `ProviderCapabilities` had marked IGDB `suppliesMetadata = true`; that was
+  wrong against the API and is corrected here. Nothing read the flag, so no behaviour changed.
+  TheGamesDB is still only asked when ScreenScraper left a gap (the retrieval
+  order is `fetchForGame`'s, unchanged by 3.1), so a fully-populated SS answer shows one source.
+- **The overlay lives on Game Detail** (Options ▸ Update Metadata), not in the Studio, which stays
+  artwork-only. Focus opens on Apply with Fill Missing Only selected — the non-destructive default.
+  Up/Down rows, Left/Right policy, L1/R1 source, Select toggles a row (which switches the policy to
+  Choose Fields) or applies, Back closes without a write. A generation token drops a retrieval that
+  finishes after the overlay was closed (AD-6's rule, applied here). Apply re-reads the game row,
+  so a preview left open never writes against stale values.
+
+**Fixed while landing Merge 3, from on-device use (2026-09-10).** Final Fantasy VI Advance read
+"No IGDB match" although IGDB has the game — and the device log showed IGDB answering the query.
+Two defects, both from earlier merges:
+
+- **IGDB could never match anything.** Tier 1 needs a saved `igdb_id`, which only a confirmed
+  Change Match writes; Tier 2 does not cover IGDB; Tier 3 and Change Match were both gated off by
+  `supportsTitleSearch = false`. So every game in the library read "No IGDB match", with no way
+  out. With the user's go-ahead, **part of AD-4's deferred work landed here**: `IgdbApi.searchGames`
+  (`search …; fields name,first_release_date,cover.image_id; limit 10;`), an IGDB branch in
+  `ProviderMatchEvidence.searchByTitle`, and IGDB `supportsTitleSearch = true`. Tier 3 now resolves a
+  unique exact normalized title on IGDB and Change Match opens a real list. A matched IGDB game is
+  browsed by id (`fetchGameInfoById`, `where id = …;`), so the art comes from the game the user
+  picked, not whatever ranks first. IGDB search is not platform-scoped — there is no IGDB
+  platform-id table in the tree — so uniqueness rests on normalized title alone, and ambiguity is
+  still a miss. A batch scrape still does NOT save `igdb_id`: its `limit 1` hit is a guess, and
+  persisting it would promote a guess to Tier 1 evidence. The ranked picker and Tiers 4–6 stay
+  deferred.
+- **TheGamesDB had the same dead end**, reported on-device right after. `Games/ByGameName` always
+  returned a list; `fetchGameInfo` just kept `firstOrNull()`. Same shape of fix:
+  `TheGamesDbApi.searchGames` (every hit, still `filter[platform]`-scoped when the platform is in
+  `PLATFORM_IDS`, which makes TheGamesDB the one title-searchable provider that honours 2.2's "on the
+  expected platform"), `fetchGameInfoById` over `Games/ByGameID`, a TheGamesDB branch in
+  `ProviderMatchEvidence`, `supportsTitleSearch = true`, and the Studio browsing a matched game by id.
+  Images are parsed per game id (`TheGamesDbApi.infoFrom`), since one ByGameName response carries
+  every hit's images. Unlike IGDB, a batch scrape DOES save `tgdb_id` — pre-existing behaviour from
+  `fetchForGame`, left unchanged — so a game scraped against a wrong first hit resolves that wrong id
+  at Tier 1; Change Match is now the way to correct it. ScreenScraper is the only provider left
+  without title search, and its Change Match message now says it can't be searched by title rather
+  than claiming it returns one game.
+- **TheGamesDB could never run at all.** The device log showed every lookup stopping at "no API
+  key configured": `MetadataApiKeyProvider` has stored and read `tgdb_api_key` since `1b7da7e1`, but
+  no screen ever called `saveTgdbKey`, so only a backup restore could supply one. Settings ▸ Artwork
+  now has a TheGamesDB API key field (encrypted like the others; setup wizard not yet). In the
+  Studio a keyless provider — SteamGridDB, TheGamesDB or IGDB — is **disabled, not hidden** (user
+  decision, 2026-09-10): it keeps its place in the source row marked "no key", source cycling skips
+  it, selecting it explains what it needs, and it is never asked. Previously SteamGridDB and IGDB
+  were silently removed from the row. Availability is re-read on every open, including reopening
+  the same game: the Studio VM outlives the screen and used to read keys once per game, which is
+  why a key saved in Settings did not take effect.
+- **The Change Match picker could not be navigated with a controller.** It focused its query field
+  on open, which raised the IME; an open IME receives key events before
+  `MainActivity.dispatchKeyEvent`, so `GamepadInputHandler` and the Studio never saw the D-pad, A or
+  B. Rebuilt on the `WizardTextField` model: the field is cursor stop -1 above the candidates, the
+  keyboard opens only when A (or Square) starts editing, the keyboard's Search ends editing, any pad
+  press that reaches the ViewModel while editing ends editing first, and the list scrolls to the
+  cursor. The Studio's own search overlay still focuses its field on open and has the same exposure;
+  it only needs A and B, so it was left for a separate change.
+- **ScreenScraper had two matching failures of its own** (device log, 2026-09-10):
+  - *The grid matched but the row did not.* `SsMediaCatalog`'s live `jeuInfos` identified an `.nds`
+    by ROM name + size + CRC and saved `ss_id`/`rom_crc32` to the row, but the match row had
+    resolved against the game as first loaded (no id, no CRC) and never looked again. After a
+    ScreenScraper browse the Studio now re-reads the game and re-resolves when either changed
+    (`refreshSsIdentityAfterBrowse`) — no extra request, since the next browse is a media-cache hit.
+  - *A Windows game could never match.* With no ROM, `jeuInfos` was sent a bare `systemeid` and
+    answered HTTP 400 on every open. `fetchGameInfo` now refuses a lookup with no id and no ROM
+    checksum or file name (`canLookUp`), and ScreenScraper gained name search —
+    `ScreenScraperApi.searchGames` over `jeuRecherche.php`, `systemeid`-scoped when mapped — so
+    `supportsTitleSearch` is now true for **every** provider. A title-matched ScreenScraper game is
+    browsed by id through `SsMediaCatalog.mediasFor(gameId, matchedSsId)`, which caches its medias
+    but never writes that id to the row: only a ROM identity or a confirmed Change Match sets
+    `ss_id`. Cost: an unmatched game spends one `jeuRecherche` request per Studio open.
+- **A cancelled browse was cached as "No results"** (a Phase 1 race-safety hole). `IgdbApi` caught
+  `Exception` and the ViewModel's `runCatching` wrappers caught everything, so a source switch
+  mid-load turned the `CancellationException` into an empty list — and `loadResults` then stored it
+  under the request's own key. `loadResults` now calls `ensureActive()` before caching, and
+  `IgdbApi` rethrows cancellation. Repro test: `a browse cancelled by a source switch is never
+  cached as No results`.
+
+Change budget: over `PLANNING_WORKFLOW.md` §4 by one modified file and one test file —
+`GameDao`, `ArtworkRepository`, `GameDetailViewModel`, `GameDetailScreen`, `MetadataRepository`
+modified; `MetadataApply.kt` and `MetadataPreviewPanel.kt` new; `MetadataApplyTest` and
+`MetadataRepositoryCandidatesTest` new, `GameDetailViewModelTest` extended. 3.1 and 3.2 landed
+together, which is where the overrun comes from.
+
 ## Deferred to a follow-up plan
 
 Written down so the next session does not re-derive them, and so nothing here silently absorbs them:
 
-- **Ranked suggestion picker (spec §9) and match Tiers 4–6.** Requires multi-result search on
-  `IgdbApi` (currently `limit 1;`) and `TheGamesDbApi` (currently returns one `TgdbGameInfo`) —
-  new query bodies, response models and tests. The Phase 2 matcher is written so these are extra
-  branches, not a rewrite.
+- **Ranked suggestion picker (spec §9) and match Tiers 4–6.** The multi-result search they need
+  landed with Merge 3 for IGDB and TheGamesDB (`searchGames` on both). Still open: the ranked,
+  edition-distinguishing picker UI itself, and an IGDB platform-id table so IGDB search can be
+  scoped like TheGamesDB's. The Phase 2 matcher is written so these are extra branches, not a rewrite.
 - **The remainder of the crop profile table.** Data edits against the AD-11 registry; no code change.
 - **Plan B2's bounded scrape concurrency and failures screen.** Only B2's `ScrapeFailure` type is
   consumed here (task 7.1).
@@ -431,8 +590,9 @@ Written down so the next session does not re-derive them, and so nothing here si
   against the new source list's length elsewhere.
 - `ArtworkStudioScreen.kt:70` and `ArtworkStudioViewModel.kt:173` both claim L2/R2 switch sources; no
   such binding exists in `GamepadBinding.kt:52-59`. Fixed opportunistically in task 4.2.
-- The approved HTML mockup is not in `docs/mockups/`; until it lands, the source spec's precedence
-  clause points at nothing.
+- ~~The approved HTML mockup is not in `docs/mockups/`~~ — landed as
+  `docs/mockups/artwork_image_mockup.png` (2026-09-10). It is a PNG, so the source spec's
+  precedence clause resolves against an image rather than markup.
 
 ## Hand-off notes
 

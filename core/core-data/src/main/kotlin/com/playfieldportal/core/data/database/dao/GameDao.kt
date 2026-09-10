@@ -365,22 +365,45 @@ interface GameDao {
     )
     suspend fun updateStorefrontIdentity(id: Long, storefront: String?, storefrontGameId: String?)
 
+    // ── Confirmed provider match (C16 task 2.3) ──────────────────────────────
+    // Sets EXACTLY ONE provider id and leaves the other three untouched, so a match confirmed on
+    // SteamGridDB can never be read back as an IGDB id. Unlike updateMetadata this is not
+    // COALESCE-guarded: a null :providerGameId is Forget Match and must actually clear the column.
+    // It touches no artwork column and no metadata column — forgetting a match never costs the
+    // user a downloaded asset or a scraped description.
+    @Query(
+        """
+        UPDATE games SET
+            ss_id            = CASE WHEN :provider = 'SCREENSCRAPER' THEN :providerGameId ELSE ss_id            END,
+            tgdb_id          = CASE WHEN :provider = 'THEGAMESDB'    THEN :providerGameId ELSE tgdb_id          END,
+            igdb_id          = CASE WHEN :provider = 'IGDB'          THEN :providerGameId ELSE igdb_id          END,
+            steam_grid_db_id = CASE WHEN :provider = 'STEAMGRIDDB'   THEN :providerGameId ELSE steam_grid_db_id END
+        WHERE id = :id
+    """
+    )
+    suspend fun updateProviderMatch(id: Long, provider: String, providerGameId: Long?)
+
     /** Games claiming one storefront id. Matched as a PAIR — an app id is unique per store only. */
     @Query("SELECT * FROM games WHERE storefront = :storefront AND storefront_game_id = :storefrontGameId")
     suspend fun getByStorefront(storefront: String, storefrontGameId: String): List<GameEntity>
 
     // Fill-missing-only metadata write (reversed COALESCE — the EXISTING value always wins).
-    // Used by the artwork importer's gamelist.xml pass: imported metadata never overwrites
-    // anything a scraper or the user already set.
+    // Used by the artwork importer's gamelist.xml pass (imported metadata never overwrites anything
+    // a scraper or the user already set) and by C16 task 3.2's Fill Missing Only policy, which is
+    // why it covers every field a metadata preset can carry. A null argument is a no-op per column.
     @Query(
         """
         UPDATE games SET
-            description   = COALESCE(description,   :description),
-            developer     = COALESCE(developer,     :developer),
-            publisher     = COALESCE(publisher,     :publisher),
-            release_year  = COALESCE(release_year,  :releaseYear),
-            genre         = COALESCE(genre,         :genre),
-            scraped_title = COALESCE(scraped_title, :scrapedTitle)
+            description      = COALESCE(description,      :description),
+            developer        = COALESCE(developer,        :developer),
+            publisher        = COALESCE(publisher,        :publisher),
+            release_year     = COALESCE(release_year,     :releaseYear),
+            genre            = COALESCE(genre,            :genre),
+            scraped_title    = COALESCE(scraped_title,    :scrapedTitle),
+            age_rating       = COALESCE(age_rating,       :ageRating),
+            franchise        = COALESCE(franchise,        :franchise),
+            community_rating = COALESCE(community_rating, :communityRating),
+            release_date     = COALESCE(release_date,     :releaseDate)
         WHERE id = :id
     """
     )
@@ -392,6 +415,10 @@ interface GameDao {
         releaseYear: Int? = null,
         genre: String? = null,
         scrapedTitle: String? = null,
+        ageRating: String? = null,
+        franchise: String? = null,
+        communityRating: Float? = null,
+        releaseDate: String? = null,
     )
 
     // Stores the user-chosen display name. Pass null to clear and fall back to scrapedTitle/title.

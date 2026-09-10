@@ -16,9 +16,11 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.itemsIndexed as lazyItemsIndexed
@@ -48,6 +50,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.isImeVisible
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.graphics.asImageBitmap
@@ -81,7 +91,7 @@ import com.playfieldportal.core.ui.theme.menuCursorEdge
  * (L2/R2 are unbound: no GamepadAction maps to KEYCODE_BUTTON_L2/R2 in GamepadBinding, so the
  * old "L2/R2 switch sources" line here described a binding that never existed.)
  */
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
 fun ArtworkStudioScreen(
     gameId: Long,
@@ -337,9 +347,15 @@ fun ArtworkStudioScreen(
                         sources.forEachIndexed { index, source ->
                             val selected = state.sourceIndex == index
                             val focusedZone = state.zone == StudioZone.SOURCES && selected
+                            // Disabled, not hidden: a keyless provider keeps its place and says why.
+                            val available = source !in state.unavailableSources
                             Text(
-                                source.label,
-                                color = if (selected) Color.White else Color.White.copy(alpha = 0.5f),
+                                if (available) source.label else "${source.label} · no key",
+                                color = when {
+                                    !available -> Color.White.copy(alpha = 0.25f)
+                                    selected   -> Color.White
+                                    else       -> Color.White.copy(alpha = 0.5f)
+                                },
                                 fontSize = 11.sp,
                                 modifier = Modifier
                                     .padding(end = 6.dp)
@@ -372,6 +388,92 @@ fun ArtworkStudioScreen(
                                 "${state.rangeStart}–${state.rangeEnd} of ${state.totalResults}" +
                                     if (state.pageCount > 1) "   ·   page ${state.page + 1}/${state.pageCount}" else "",
                                 color = Color.White.copy(alpha = 0.45f), fontSize = 10.sp,
+                            )
+                        }
+                    }
+
+                    // ── Match row (task 2.3) ──────────────────────────────────
+                    // Who the active source thinks this game is. Only shown for a source that HAS
+                    // an identity: Local files are the user's own and nothing identifies them.
+                    if (state.matchProvider != null) {
+                        Spacer(Modifier.height(8.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(9.dp))
+                                .background(Color.White.copy(alpha = 0.05f))
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                        ) {
+                            val matched = state.matchTitle
+                            Text(
+                                when {
+                                    state.matchResolving -> "◌"
+                                    matched != null      -> "✓"
+                                    else                 -> "!"
+                                },
+                                color = when {
+                                    state.matchResolving -> Color.White.copy(alpha = 0.4f)
+                                    matched != null      -> Color(0xFF66BB6A)
+                                    else                 -> Color(0xFFE0A030)
+                                },
+                                fontSize = 13.sp, fontWeight = FontWeight.Bold,
+                            )
+                            Spacer(Modifier.width(9.dp))
+                            Text(
+                                when {
+                                    state.matchResolving -> "Matching on ${state.matchProvider?.label}…"
+                                    matched != null      -> "Matched as $matched"
+                                    // A dead end is stated plainly rather than left blank — it is
+                                    // the exact case Change Match exists to rescue.
+                                    else                 -> "No ${state.matchProvider?.label} match"
+                                },
+                                color = Color.White.copy(alpha = if (matched != null) 0.95f else 0.6f),
+                                fontSize = 12.sp,
+                                fontWeight = if (matched != null) FontWeight.SemiBold else FontWeight.Normal,
+                            )
+                            if (state.matchIsConfirmed) {
+                                Spacer(Modifier.width(9.dp))
+                                Text(
+                                    "Confirmed",
+                                    color = Color(0xFF66BB6A), fontSize = 10.sp,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(Color(0xFF66BB6A).copy(alpha = 0.15f))
+                                        .padding(horizontal = 7.dp, vertical = 3.dp),
+                                )
+                            }
+                            Spacer(Modifier.weight(1f))
+                            // Forget Match only means anything once something was confirmed, and
+                            // it costs the user nothing: no artwork, no metadata is removed.
+                            if (state.matchIsConfirmed) {
+                                Text(
+                                    "FORGET",
+                                    color = Color.White.copy(alpha = 0.55f), fontSize = 10.sp,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(7.dp))
+                                        .clickable(onClick = viewModel::forgetMatch)
+                                        .padding(horizontal = 10.dp, vertical = 5.dp),
+                                )
+                                Spacer(Modifier.width(6.dp))
+                            }
+                            // Always present, so the row keeps its shape across sources — but a
+                            // provider that returns one game has nothing to pick FROM, so there
+                            // the button is inert and says why rather than opening an empty list.
+                            val canChange = state.canChangeMatch
+                            Text(
+                                "CHANGE MATCH",
+                                color = if (canChange) Color.White else Color.White.copy(alpha = 0.35f),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(7.dp))
+                                    .background(
+                                        if (canChange) accent.copy(alpha = 0.28f)
+                                        else Color.White.copy(alpha = 0.05f),
+                                    )
+                                    .clickable { viewModel.onChangeMatchPressed() }
+                                    .padding(horizontal = 12.dp, vertical = 5.dp),
                             )
                         }
                     }
@@ -616,6 +718,184 @@ fun ArtworkStudioScreen(
                                 .padding(horizontal = 18.dp, vertical = 9.dp),
                         )
                     }
+                }
+            }
+        }
+
+        // ── Change Match overlay (task 2.3) ───────────────────────────────────
+        // The one place a wrong or absent match stops being a dead end. Backed by each provider's
+        // multi-result title search (SteamGridDB, IGDB, TheGamesDB).
+        //
+        // Controller-first, the WizardTextField way: the query field is a cursor stop, and the
+        // keyboard opens only when Select starts editing it. This overlay used to focus the field
+        // on open, which raised the IME — and an open IME receives key events before
+        // MainActivity.dispatchKeyEvent, so the D-pad, A and B never reached the ViewModel.
+        if (state.changeMatchOpen) {
+            val matchFocus = remember { FocusRequester() }
+            val keyboard = LocalSoftwareKeyboardController.current
+            val focusManager = LocalFocusManager.current
+            val editing by rememberUpdatedState(state.changeMatchEditing)
+            LaunchedEffect(state.changeMatchEditing) {
+                if (state.changeMatchEditing) {
+                    // Settle a frame around the readOnly→editable flip before showing the keyboard —
+                    // the same sequence as WizardTextField / SettingsTextFieldRow.
+                    withFrameNanos { }
+                    runCatching { matchFocus.requestFocus() }
+                    withFrameNanos { }
+                    keyboard?.show()
+                } else {
+                    keyboard?.hide()
+                    focusManager.clearFocus()
+                }
+            }
+            // The keyboard dismissed by its own Back key ends editing, so the pad drives the picker
+            // again. (If the insets never report it, the next pad press ends editing in the VM.)
+            val imeVisible = WindowInsets.isImeVisible
+            var imeWasShown by remember { mutableStateOf(false) }
+            LaunchedEffect(imeVisible) {
+                if (imeVisible) {
+                    imeWasShown = true
+                } else if (imeWasShown && editing) {
+                    imeWasShown = false
+                    viewModel.stopChangeMatchEdit()
+                }
+            }
+            val resultsState = rememberLazyListState()
+            LaunchedEffect(state.changeMatchIndex, state.changeMatchResults) {
+                if (state.changeMatchIndex >= 0) {
+                    runCatching { resultsState.animateScrollToItem(state.changeMatchIndex) }
+                }
+            }
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(Color(0xC0000000))
+                    .clickable(onClick = viewModel::cancelChangeMatch),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(
+                    Modifier
+                        .width(520.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(pfpColors.backgroundBottom)
+                        .border(1.dp, accent.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                        .padding(18.dp),
+                ) {
+                    Text(
+                        "Change match on ${state.matchProvider?.label.orEmpty()}",
+                        color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "Tells the provider which game this is. Your artwork and metadata are left alone.",
+                        color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    BasicTextField(
+                        value = state.changeMatchDraft,
+                        readOnly = !state.changeMatchEditing,
+                        onValueChange = viewModel::onChangeMatchDraftChanged,
+                        singleLine = true,
+                        textStyle = TextStyle(color = Color.White, fontSize = 15.sp),
+                        cursorBrush = SolidColor(accent),
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        keyboardActions = KeyboardActions(
+                            onSearch = { viewModel.submitChangeMatch() },
+                            onDone = { viewModel.submitChangeMatch() },
+                        ),
+                        decorationBox = { inner ->
+                            Box(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(
+                                        if (state.changeMatchIndex < 0) accent.copy(alpha = 0.22f)
+                                        else Color.White.copy(alpha = 0.08f)
+                                    )
+                                    .then(
+                                        if (state.changeMatchIndex < 0) Modifier.border(1.dp, accent, RoundedCornerShape(8.dp))
+                                        else Modifier
+                                    )
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                            ) {
+                                if (state.changeMatchDraft.isEmpty()) Text(
+                                    state.game?.displayTitle ?: "Game title",
+                                    color = Color.White.copy(alpha = 0.35f), fontSize = 15.sp,
+                                )
+                                inner()
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .focusRequester(matchFocus)
+                            // A tap focuses the field; that is touch asking to type, so enter edit mode.
+                            .onFocusChanged { if (it.isFocused && !editing) viewModel.startChangeMatchEdit() },
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    when {
+                        state.changeMatchLoading -> Text(
+                            "Searching…",
+                            color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp,
+                        )
+                        state.changeMatchResults.isEmpty() -> Text(
+                            "No games found. Try a shorter title, or the title without its edition.",
+                            color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp,
+                        )
+                        else -> LazyColumn(Modifier.fillMaxWidth().heightIn(max = 260.dp), state = resultsState) {
+                            lazyItemsIndexed(state.changeMatchResults) { index, candidate ->
+                                val focused = index == state.changeMatchIndex
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 2.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(if (focused) accent.copy(alpha = 0.22f) else Color.Transparent)
+                                        .clickable { viewModel.confirmMatch(index) }
+                                        .padding(horizontal = 12.dp, vertical = 9.dp),
+                                ) {
+                                    Text(
+                                        candidate.title,
+                                        color = Color.White, fontSize = 13.sp,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                    candidate.releaseYear?.let {
+                                        Text(
+                                            it.toString(),
+                                            color = Color.White.copy(alpha = 0.45f), fontSize = 11.sp,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(14.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            "Search",
+                            color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(accent.copy(alpha = 0.30f))
+                                .clickable(onClick = viewModel::submitChangeMatch)
+                                .padding(horizontal = 16.dp, vertical = 7.dp),
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            "Cancel",
+                            color = Color.White.copy(alpha = 0.65f), fontSize = 12.sp,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color.White.copy(alpha = 0.07f))
+                                .clickable(onClick = viewModel::cancelChangeMatch)
+                                .padding(horizontal = 14.dp, vertical = 7.dp),
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Up/Down  Move  •  A  Select  •  X  Edit title  •  B  Back",
+                        color = Color.White.copy(alpha = 0.4f), fontSize = 10.sp,
+                    )
                 }
             }
         }

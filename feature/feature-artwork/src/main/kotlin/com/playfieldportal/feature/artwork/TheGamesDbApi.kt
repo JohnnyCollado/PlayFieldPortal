@@ -2,6 +2,7 @@ package com.playfieldportal.feature.artwork
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import kotlinx.serialization.SerialName
@@ -9,6 +10,7 @@ import kotlinx.serialization.Serializable
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.coroutines.cancellation.CancellationException
 
 // ── Response models ────────────────────────────────────────────────────────────
 
@@ -125,56 +127,99 @@ class TheGamesDbApi @Inject constructor(
             "wonderswancolor" to 58,
             "c64"            to 40,
         )
-    }
 
-    suspend fun fetchGameInfo(
-        platformId: String,
-        title: String,
-    ): TgdbGameInfo? {
-        val apiKey = keyProvider.getTgdbKey() ?: run {
-            Timber.d("TheGamesDB: no API key configured")
-            return null
-        }
-        val tgdbPlatformId = PLATFORM_IDS[platformId]
-
-        return try {
-            val response: TgdbGamesResponse = httpClient.get("$BASE/Games/ByGameName") {
-                parameter("apikey", apiKey)
-                parameter("name", title)
-                parameter("fields", "overview,release_date,rating")
-                parameter("include", "boxart")
-                if (tgdbPlatformId != null) parameter("filter[platform]", tgdbPlatformId)
-            }.body()
-
-            if (response.code != 200) {
-                Timber.w("TheGamesDB returned code ${response.code} for '$title'")
-                return null
-            }
-
-            val game = response.data?.games?.firstOrNull() ?: return null
+        /**
+         * One game's text and art out of a Games response. Pure, so parsing is testable without a
+         * network client. Images are read for [game]'s own id: a ByGameName response carries every
+         * hit's images in one include block, and a matched game must never show another hit's box.
+         */
+        internal fun infoFrom(response: TgdbGamesResponse, game: TgdbGame): TgdbGameInfo {
             val baseUrl = response.include?.boxart?.baseUrl?.large
                 ?: response.include?.boxart?.baseUrl?.original
                 ?: ""
             val images = response.include?.boxart?.data?.get(game.id.toString()) ?: emptyList()
 
-            val artworkUrl = images.firstOrNull { it.type == "boxart" && it.side == "front" }
-                ?.filename?.let { "$baseUrl$it" }
-            val heroUrl = images.firstOrNull { it.type == "fanart" }
-                ?.filename?.let { "$baseUrl$it" }
-            val logoUrl = images.firstOrNull { it.type == "clearlogo" }
-                ?.filename?.let { "$baseUrl$it" }
-
-            TgdbGameInfo(
+            return TgdbGameInfo(
                 tgdbId      = game.id,
                 title       = game.gameTitle,
                 description = game.overview,
                 releaseYear = game.releaseDate?.take(4)?.toIntOrNull(),
-                artworkUrl  = artworkUrl,
-                heroUrl     = heroUrl,
-                logoUrl     = logoUrl,
+                artworkUrl  = images.firstOrNull { it.type == "boxart" && it.side == "front" }
+                    ?.filename?.let { "$baseUrl$it" },
+                heroUrl     = images.firstOrNull { it.type == "fanart" }
+                    ?.filename?.let { "$baseUrl$it" },
+                logoUrl     = images.firstOrNull { it.type == "clearlogo" }
+                    ?.filename?.let { "$baseUrl$it" },
             )
+        }
+    }
+
+    /** False until the user enters a key in Settings ▸ Artwork; every lookup returns nothing without one. */
+    suspend fun hasApiKey(): Boolean = keyProvider.hasTgdbKey()
+
+    /** The single best title hit on [platformId] — the batch scraper's and the unmatched Studio browse's call. */
+    suspend fun fetchGameInfo(
+        platformId: String,
+        title: String,
+    ): TgdbGameInfo? {
+        val response = byGameName(platformId, title, withImages = true) ?: return null
+        val game = response.data?.games?.firstOrNull() ?: return null
+        return infoFrom(response, game)
+    }
+
+    /**
+     * Every game TheGamesDB returns for [title] (C16) — what Tier 3 and Change Match need.
+     * Filtered to [platformId] when it is in [PLATFORM_IDS]; an unmapped platform searches all.
+     */
+    suspend fun searchGames(platformId: String, title: String): List<TgdbGame> =
+        byGameName(platformId, title, withImages = false)?.data?.games.orEmpty()
+
+    /** One known game's text and art — the Studio's browse once a match exists. */
+    suspend fun fetchGameInfoById(tgdbId: Long): TgdbGameInfo? {
+        val response = request("Games/ByGameID", "id $tgdbId") {
+            parameter("id", tgdbId)
+            parameter("fields", "overview,release_date,rating")
+            parameter("include", "boxart")
+        } ?: return null
+        val game = response.data?.games?.firstOrNull { it.id == tgdbId } ?: return null
+        return infoFrom(response, game)
+    }
+
+    private suspend fun byGameName(platformId: String, title: String, withImages: Boolean): TgdbGamesResponse? {
+        val tgdbPlatformId = PLATFORM_IDS[platformId]
+        return request("Games/ByGameName", "'$title'") {
+            parameter("name", title)
+            parameter("fields", "overview,release_date,rating")
+            if (withImages) parameter("include", "boxart")
+            if (tgdbPlatformId != null) parameter("filter[platform]", tgdbPlatformId)
+        }
+    }
+
+    private suspend fun request(
+        path: String,
+        what: String,
+        params: HttpRequestBuilder.() -> Unit,
+    ): TgdbGamesResponse? {
+        val apiKey = keyProvider.getTgdbKey() ?: run {
+            Timber.d("TheGamesDB: no API key configured")
+            return null
+        }
+        return try {
+            val response: TgdbGamesResponse = httpClient.get("$BASE/$path") {
+                parameter("apikey", apiKey)
+                params()
+            }.body()
+            if (response.code != 200) {
+                Timber.w("TheGamesDB returned code ${response.code} for $what")
+                null
+            } else {
+                response
+            }
+        } catch (e: CancellationException) {
+            // A cancelled browse is not "TheGamesDB has nothing" — see ArtworkStudioViewModel.loadResults.
+            throw e
         } catch (e: Exception) {
-            Timber.w(e, "TheGamesDB fetch failed for '$title'")
+            Timber.w(e, "TheGamesDB request failed for $what")
             null
         }
     }

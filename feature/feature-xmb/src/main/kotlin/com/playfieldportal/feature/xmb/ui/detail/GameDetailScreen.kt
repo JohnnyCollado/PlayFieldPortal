@@ -503,6 +503,21 @@ fun GameDetailScreen(
             )
         }
 
+        AnimatedVisibility(state.metadataPreview != null, enter = fadeIn(), exit = fadeOut()) {
+            state.metadataPreview?.let { preview ->
+                MetadataPreviewPanel(
+                    ui             = preview,
+                    focusFill      = menuCursorFill(),
+                    focusEdge      = menuCursorEdge(),
+                    onSelectPolicy = viewModel::selectMetadataPolicy,
+                    onCycleSource  = viewModel::cycleMetadataSource,
+                    onToggleField  = viewModel::toggleMetadataField,
+                    onApply        = viewModel::applyMetadataPreview,
+                    onClose        = viewModel::closeMetadataPreview,
+                )
+            }
+        }
+
         AnimatedVisibility(state.collectionPicker.visible, enter = fadeIn(), exit = fadeOut()) {
             CollectionPickerPanel(
                 ui                  = state.collectionPicker,

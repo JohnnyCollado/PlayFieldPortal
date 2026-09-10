@@ -21,6 +21,7 @@ import kotlinx.serialization.json.Json
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.coroutines.cancellation.CancellationException
 
 // ── Response models (JSON output of jeuInfos.php) ─────────────────────────────
 
@@ -33,6 +34,26 @@ data class SsResponse(
 data class SsGameResponse(
     @SerialName("jeu") val game: SsGame? = null,
     @SerialName("ssuser") val user: SsUser? = null,
+)
+
+// jeuRecherche.php: up to 30 games ranked by likelihood. A miss is often padded with an empty
+// object, so every entry is parsed leniently and id-less ones are dropped.
+@Serializable
+data class SsSearchResponse(
+    val response: SsSearchBody? = null,
+)
+
+@Serializable
+data class SsSearchBody(
+    @SerialName("jeux") val games: List<SsGame> = emptyList(),
+    @SerialName("ssuser") val user: SsUser? = null,
+)
+
+/** One jeuRecherche hit, reduced to what a match needs. */
+data class SsSearchHit(
+    val ssId: Long,
+    val title: String,
+    val releaseYear: Int?,
 )
 
 // Account/quota block returned with every authenticated response. All values arrive as strings.
@@ -227,6 +248,14 @@ class ScreenScraperApi @Inject constructor(
                 failureDetail = "No ScreenScraper system id for platform '$platformId'",
             ))
         }
+        if (!canLookUp(rom, ssGameId)) {
+            // A Windows install (or any game with no ROM file) has nothing jeuInfos can match on.
+            // Sending the bare systemeid only earned an HTTP 400 and spent a request of the quota.
+            return SsLookupResult(null, baseDiag.copy(
+                failureReason = SsFailureReason.NO_MATCH,
+                failureDetail = "No ScreenScraper id and no ROM file to identify '$platformId' game by — match it by title",
+            ))
+        }
 
         return try {
             val response: HttpResponse = rateLimited { httpClient.get("$BASE/jeuInfos.php") {
@@ -280,6 +309,50 @@ class ScreenScraperApi @Inject constructor(
                 failureReason = SsFailureReason.NETWORK_ERROR,
                 failureDetail = e.message ?: "Network error",
             ))
+        }
+    }
+
+    /**
+     * ScreenScraper's name search (`jeuRecherche.php`, up to 30 games ranked by likelihood) — the
+     * matcher's Tier 3 and Change Match, and the only way to identify a game with no ROM file, such
+     * as a Windows install. Scoped to [platformId]'s system when it is mapped. Provider failures
+     * return an empty list; a cancelled request still propagates.
+     */
+    suspend fun searchGames(platformId: String, title: String): List<SsSearchHit> {
+        val creds = credentials.screenScraperNow() ?: return emptyList()
+        if (title.isBlank()) return emptyList()
+        val systemId = PLATFORM_IDS[platformId]
+        return try {
+            val response: HttpResponse = rateLimited { httpClient.get("$BASE/jeuRecherche.php") {
+                credentialParams(creds)
+                parameter("recherche", title)
+                systemId?.let { parameter("systemeid", it) }
+            } }
+            failureForStatus(response.status.value)?.let { (_, detail) ->
+                Timber.w("ScreenScraper search: $detail for '$title' (platform=$platformId)")
+                return emptyList()
+            }
+            parseSearch(response.bodyAsText())
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.w(e, "ScreenScraper search failed for '$title'")
+            emptyList()
+        }
+    }
+
+    /** A jeuRecherche body → hits. Pure, so the lenient parsing is testable without a network. */
+    internal fun parseSearch(body: String): List<SsSearchHit> {
+        val parsed = runCatching { json.decodeFromString(SsSearchResponse.serializer(), body) }
+            .getOrElse {
+                Timber.w("ScreenScraper search: non-JSON body '${body.take(160)}'")
+                return emptyList()
+            }
+        return parsed.response?.games.orEmpty().mapNotNull { game ->
+            val info = game.toInfo()
+            val id = info.ssId ?: return@mapNotNull null
+            val title = info.title?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            SsSearchHit(ssId = id, title = title, releaseYear = info.releaseYear)
         }
     }
 
@@ -409,6 +482,10 @@ class ScreenScraperApi @Inject constructor(
     companion object {
         private const val BASE = "https://api.screenscraper.fr/api2"
         private const val MIN_REQUEST_INTERVAL_MS = 1_100L
+
+        /** jeuInfos needs a known game id, or at least a ROM checksum or file name to match on. */
+        internal fun canLookUp(rom: RomIdentity?, ssGameId: Long?): Boolean =
+            ssGameId != null || rom?.crc32 != null || rom?.fileName != null
 
         // ScreenScraper system ids → PFP platform ids.
         val PLATFORM_IDS = mapOf(

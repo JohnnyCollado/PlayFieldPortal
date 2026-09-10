@@ -15,6 +15,11 @@ import com.playfieldportal.feature.xmb.ui.collection.CollectionPickerUi
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.feature.artwork.api.ArtworkRepository
+import com.playfieldportal.feature.artwork.match.MetadataApply
+import com.playfieldportal.feature.artwork.match.MetadataApplyPolicy
+import com.playfieldportal.feature.artwork.match.MetadataField
+import com.playfieldportal.feature.artwork.match.MetadataFieldRow
+import com.playfieldportal.feature.artwork.match.MetadataPreset
 import com.playfieldportal.core.domain.model.EmulatorProfile
 import com.playfieldportal.feature.artwork.store.ArtworkKind
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -124,6 +129,9 @@ data class GameDetailUiState(
     // Fullscreen Artwork Studio (replaces the old in-detail artwork manager UI).
     val showArtworkStudio: Boolean = false,
 
+    // Current-vs-Incoming metadata overlay (C16 task 3.2); null = closed.
+    val metadataPreview: MetadataPreviewUi? = null,
+
     // ── Emulator picker ───────────────────────────────────────────────────
     val showEmulatorPicker: Boolean = false,
     val emulatorPickerOptions: List<EmulatorProfile> = emptyList(),
@@ -150,6 +158,33 @@ data class GameDetailUiState(
                 else DetailAction.entries
 }
 
+// ── Metadata preview ──────────────────────────────────────────────────────────
+
+/**
+ * C16 task 3.2 — the Current-vs-Incoming overlay. Retrieval fills it and nothing is written until
+ * [GameDetailViewModel.applyMetadataPreview] runs; Back always closes without a write.
+ *
+ * The "will change" markers ([willWrite]) come from the same `MetadataApply.plan` the repository
+ * writes with, so the preview can never promise a change the SQL does not make.
+ */
+data class MetadataPreviewUi(
+    val loading: Boolean = true,
+    val applying: Boolean = false,
+    val current: Map<MetadataField, Any?> = emptyMap(),
+    val presets: List<MetadataPreset> = emptyList(),
+    val presetIndex: Int = 0,
+    val policy: MetadataApplyPolicy = MetadataApplyPolicy.FILL_MISSING_ONLY,
+    val chosen: Set<MetadataField> = emptySet(),
+    /** `0..rows.lastIndex` is a field row; [applyIndex] is the Apply button. */
+    val focus: Int = 0,
+) {
+    val preset: MetadataPreset? get() = presets.getOrNull(presetIndex)
+    val rows: List<MetadataFieldRow> get() = preset?.let { MetadataApply.rows(current, it) }.orEmpty()
+    val willWrite: Set<MetadataField>
+        get() = preset?.let { MetadataApply.plan(current, it, policy, chosen).keys }.orEmpty()
+    val applyIndex: Int get() = rows.size
+}
+
 // ── Options menu ──────────────────────────────────────────────────────────────
 enum class DetailAction(val label: String) {
     FAVORITE("Favorite"),
@@ -159,6 +194,7 @@ enum class DetailAction(val label: String) {
     EMULATOR("Emulator"),
     MANUAL("Manual"),
     REFRESH("Refresh"),
+    METADATA("Update Metadata"),
     RENAME("Edit Title"),
     EDIT("Edit Note"),
     LOCATION("Open Location"),
@@ -253,6 +289,16 @@ class GameDetailViewModel @Inject constructor(
                 ?: discMembers.firstOrNull()
             val platform = game?.let { platformDao.getById(it.platformId) }
             val resolvedLaunch = game?.let { resolveLaunchProfile(it, platform).getOrNull() }
+            // VIDEO and SCREENSHOT are multi-asset kinds (ArtworkFileNaming.MULTI_ASSET_KINDS), so
+            // the strip reads the whole ordered set rather than position 0 alone. ICON1 (the icon
+            // snap) is a single-art fallback for a game that has no full video at all.
+            val videoUris = game
+                ?.let { g ->
+                    artworkStore.findAll(g.id, ArtworkKind.VIDEO)
+                        .ifEmpty { listOfNotNull(artworkStore.find(g.id, ArtworkKind.ICON1)) }
+                }
+                ?: emptyList()
+            val screenshotUris = game?.let { artworkStore.findAll(it.id, ArtworkKind.SCREENSHOT) } ?: emptyList()
             _uiState.update {
                 it.copy(
                     game              = game,
@@ -264,13 +310,10 @@ class GameDetailViewModel @Inject constructor(
                     resolvedLaunch    = resolvedLaunch,
                     // Media strip plays the full VIDEO; ICON1 (icon snap) is a fallback so a game
                     // that only has a snap still shows a video card.
-                    videoUri          = game?.let { g ->
-                        artworkStore.find(g.id, ArtworkKind.VIDEO) ?: artworkStore.find(g.id, ArtworkKind.ICON1)
-                    },
+                    videoUri          = videoUris.firstOrNull(),
                     detailMedia       = if (game == null) emptyList() else buildList {
-                        val vid = artworkStore.find(game.id, ArtworkKind.VIDEO) ?: artworkStore.find(game.id, ArtworkKind.ICON1)
-                        vid?.let { add(DetailMedia(it, isVideo = true)) }
-                        artworkStore.find(game.id, ArtworkKind.SCREENSHOT)?.let { add(DetailMedia(it, isVideo = false)) }
+                        videoUris.forEach { add(DetailMedia(it, isVideo = true)) }
+                        screenshotUris.forEach { add(DetailMedia(it, isVideo = false)) }
                         artworkStore.find(game.id, ArtworkKind.TITLESCREEN)?.let { add(DetailMedia(it, isVideo = false)) }
                     },
                     hasManual         = game?.let { g -> artworkStore.find(g.id, ArtworkKind.MANUAL) } != null,
@@ -356,6 +399,11 @@ class GameDetailViewModel @Inject constructor(
 
         if (s.isEditingTitle) {
             if (action == GamepadAction.BACK) cancelTitleEdit()
+            return
+        }
+
+        if (s.metadataPreview != null) {
+            handleMetadataPreviewInput(action)
             return
         }
 
@@ -492,6 +540,7 @@ class GameDetailViewModel @Inject constructor(
             DetailAction.EMULATOR  -> openEmulatorPicker()
             DetailAction.MANUAL    -> openManual()
             DetailAction.REFRESH   -> fetchArtwork()
+            DetailAction.METADATA  -> openMetadataPreview()
             DetailAction.RENAME    -> startEditTitle()
             DetailAction.EDIT      -> startEditNote()
             DetailAction.LOCATION  -> showActionMessage(
@@ -1142,6 +1191,125 @@ class GameDetailViewModel @Inject constructor(
 
     fun dismissArtworkMessage() = _uiState.update { it.copy(artworkMessage = null) }
     fun dismissLaunchError()    = _uiState.update { it.copy(launchError = null) }
+
+    // ── Metadata presets — Current vs Incoming (C16 task 3.2) ─────────────
+
+    // Bumped on every open and close: a retrieval that finishes after the overlay was closed (or
+    // closed and reopened) is dropped rather than repainting a preview the user already left.
+    private var metadataPreviewGeneration = 0L
+
+    fun openMetadataPreview() {
+        val game = _uiState.value.game ?: return
+        if (_uiState.value.metadataPreview != null) return
+        val generation = ++metadataPreviewGeneration
+        _uiState.update { it.copy(showOptions = false, metadataPreview = MetadataPreviewUi(), actionMessage = null) }
+        viewModelScope.launch {
+            val preview = runCatching { artworkRepository.fetchMetadataPreview(game.id) }
+                .onFailure { Timber.w(it, "Metadata preview failed for game ${game.id}") }
+                .getOrNull()
+            if (generation != metadataPreviewGeneration) return@launch
+            _uiState.update { s ->
+                if (s.metadataPreview == null) return@update s
+                if (preview == null || preview.presets.isEmpty()) {
+                    return@update s.copy(metadataPreview = null, actionMessage = "No metadata found on any source")
+                }
+                val loaded = MetadataPreviewUi(
+                    loading = false,
+                    current = preview.current,
+                    presets = preview.presets,
+                    chosen  = MetadataApply.changedFields(preview.current, preview.presets.first()),
+                )
+                // Focus starts on Apply: the default policy is the non-destructive one.
+                s.copy(metadataPreview = loaded.copy(focus = loaded.applyIndex))
+            }
+        }
+    }
+
+    fun closeMetadataPreview() {
+        metadataPreviewGeneration++
+        _uiState.update { it.copy(metadataPreview = null) }
+    }
+
+    fun selectMetadataPolicy(policy: MetadataApplyPolicy) = updateMetadataPreview { it.copy(policy = policy) }
+
+    fun cycleMetadataPolicy(delta: Int) = updateMetadataPreview { p ->
+        val all = MetadataApplyPolicy.entries
+        p.copy(policy = all[(p.policy.ordinal + delta).mod(all.size)])
+    }
+
+    /** Switches the incoming provider; Choose Fields re-ticks what THAT provider would change. */
+    fun cycleMetadataSource(delta: Int) = updateMetadataPreview { p ->
+        if (p.presets.size < 2) return@updateMetadataPreview p
+        val index = (p.presetIndex + delta).mod(p.presets.size)
+        val next = p.copy(presetIndex = index, chosen = MetadataApply.changedFields(p.current, p.presets[index]))
+        next.copy(focus = next.focus.coerceIn(0, next.applyIndex))
+    }
+
+    /** Toggling a row IS choosing fields, so the policy follows to Choose Fields. */
+    fun toggleMetadataField(field: MetadataField) = updateMetadataPreview { p ->
+        p.copy(
+            policy = MetadataApplyPolicy.CHOOSE_FIELDS,
+            chosen = if (field in p.chosen) p.chosen - field else p.chosen + field,
+        )
+    }
+
+    fun applyMetadataPreview() {
+        val game = _uiState.value.game ?: return
+        val p = _uiState.value.metadataPreview ?: return
+        if (p.loading || p.applying) return
+        val preset = p.preset ?: return
+        if (p.policy == MetadataApplyPolicy.KEEP_CURRENT) {
+            closeMetadataPreview()
+            showActionMessage("Kept current metadata")
+            return
+        }
+        _uiState.update { it.copy(metadataPreview = p.copy(applying = true)) }
+        viewModelScope.launch {
+            val written = runCatching { artworkRepository.applyMetadata(game.id, preset, p.policy, p.chosen) }
+                .onFailure { Timber.w(it, "Metadata apply failed for game ${game.id}") }
+            val updated = gameRepository.getById(game.id)
+            metadataPreviewGeneration++
+            _uiState.update {
+                it.copy(
+                    game = updated ?: it.game,
+                    metadataPreview = null,
+                    actionMessage = written.fold(
+                        onSuccess = { fields ->
+                            when (fields.size) {
+                                0    -> "Nothing to change"
+                                1    -> "Updated 1 field from ${preset.provider.label}"
+                                else -> "Updated ${fields.size} fields from ${preset.provider.label}"
+                            }
+                        },
+                        onFailure = { "Metadata update failed" },
+                    ),
+                )
+            }
+        }
+    }
+
+    private fun updateMetadataPreview(transform: (MetadataPreviewUi) -> MetadataPreviewUi) = _uiState.update { s ->
+        val p = s.metadataPreview ?: return@update s
+        if (p.loading || p.applying) s else s.copy(metadataPreview = transform(p))
+    }
+
+    private fun handleMetadataPreviewInput(action: GamepadAction) {
+        val p = _uiState.value.metadataPreview ?: return
+        if (p.applying) return   // the write is already committed to; let it finish
+        when (action) {
+            GamepadAction.BACK           -> closeMetadataPreview()
+            GamepadAction.NAVIGATE_UP    -> updateMetadataPreview { it.copy(focus = (it.focus - 1).coerceIn(0, it.applyIndex)) }
+            GamepadAction.NAVIGATE_DOWN  -> updateMetadataPreview { it.copy(focus = (it.focus + 1).coerceIn(0, it.applyIndex)) }
+            GamepadAction.NAVIGATE_LEFT  -> cycleMetadataPolicy(-1)
+            GamepadAction.NAVIGATE_RIGHT -> cycleMetadataPolicy(+1)
+            GamepadAction.PREV_CATEGORY  -> cycleMetadataSource(-1)
+            GamepadAction.NEXT_CATEGORY  -> cycleMetadataSource(+1)
+            GamepadAction.SELECT         ->
+                if (p.focus >= p.applyIndex) applyMetadataPreview()
+                else p.rows.getOrNull(p.focus)?.let { toggleMetadataField(it.field) }
+            else -> Unit
+        }
+    }
 
     private fun mediaOf(game: Game?): List<String> =
         listOfNotNull(game?.heroUri, game?.artworkUri, game?.logoUri).distinct()

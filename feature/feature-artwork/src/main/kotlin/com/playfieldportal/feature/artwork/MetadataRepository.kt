@@ -5,6 +5,7 @@ import coil3.ImageLoader
 import coil3.request.ImageRequest
 import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.data.database.dao.SsMediaCacheDao
+import com.playfieldportal.core.data.database.entity.GameEntity
 import com.playfieldportal.core.data.database.entity.SsMediaCacheEntity
 import com.playfieldportal.feature.artwork.api.SsMediaSelection
 import com.playfieldportal.feature.artwork.api.IgdbApi
@@ -33,6 +34,32 @@ data class MetadataFetchResult(
     val message: String,
     val scrapedTitle: String? = null,
 )
+
+/**
+ * What the four providers said about one game, before anything is chosen or written (C16 task
+ * 3.1, AD-7). [fetchForGame][MetadataRepository.fetchForGame] picks winners from this and persists
+ * them; a preview can show it and write nothing.
+ */
+data class MetadataCandidates(
+    val gameEntity: GameEntity?,
+    /** The query the title-addressed providers were asked: user override → scraped → raw title. */
+    val bestTitle: String,
+    val ssInfo: SsGameInfo?,
+    val romIdentity: RomIdentity?,
+    /** ScreenScraper was served from `ss_media_cache` rather than a live jeuInfos call. */
+    val usedSsCache: Boolean,
+    val cachedSsId: Long?,
+    val tgdbInfo: TgdbGameInfo?,
+    val igdbInfo: IgdbGameInfo?,
+    val sgdbGameId: Long?,
+    val sgdbGridUrl: String?,
+    val sgdbHeroUrl: String?,
+    val sgdbLogoUrl: String?,
+) {
+    /** No provider returned anything — the seam where [MetadataRepository.fetchForGame] stops. */
+    val isEmpty: Boolean
+        get() = ssInfo == null && tgdbInfo == null && igdbInfo == null && sgdbGridUrl == null
+}
 
 // Fetches metadata + artwork from multiple sources in priority order.
 //
@@ -67,14 +94,24 @@ class MetadataRepository @Inject constructor(
         ssStopped = false
         ssUnhashedStopped = false
     }
-    suspend fun fetchForGame(
+    /**
+     * The retrieval half of [fetchForGame] (C16 task 3.1, AD-12): asks the four providers in
+     * priority order and returns what they said.
+     *
+     * Writes no `games` column and saves no artwork file. It does keep two pieces of provider
+     * bookkeeping that were always part of asking: a live ScreenScraper response refreshes
+     * `ss_media_cache` (a response cache, never game state), and ScreenScraper's quota/credential
+     * failures still trip this run's batch guards. Moving either out would change what the batch
+     * scraper asks on the next game.
+     */
+    suspend fun fetchCandidates(
         gameId: Long,
         title: String,
         platformId: String,
         romPath: String?,
         options: ScrapeOptions = ScrapeOptions(),
         onAssetProgress: ((source: String, asset: String) -> Unit)? = null,
-    ): MetadataFetchResult {
+    ): MetadataCandidates {
         // Resolve best search title: user override → scraped title → caller-supplied title.
         val gameEntity = gameDao.getById(gameId)
         val bestTitle = gameEntity?.userTitleOverride?.takeIf { it.isNotBlank() }
@@ -172,11 +209,50 @@ class MetadataRepository @Inject constructor(
             }.onFailure { Timber.w(it, "SteamGridDB error for '$bestTitle'") }
         }
 
+        return MetadataCandidates(
+            gameEntity  = gameEntity,
+            bestTitle   = bestTitle,
+            ssInfo      = ssInfo,
+            romIdentity = romIdentity,
+            usedSsCache = usedSsCache,
+            cachedSsId  = cachedSsId,
+            tgdbInfo    = tgdbInfo,
+            igdbInfo    = igdbInfo,
+            sgdbGameId  = sgdbGameId,
+            sgdbGridUrl = sgdbGridUrl,
+            sgdbHeroUrl = sgdbHeroUrl,
+            sgdbLogoUrl = sgdbLogoUrl,
+        )
+    }
+
+    suspend fun fetchForGame(
+        gameId: Long,
+        title: String,
+        platformId: String,
+        romPath: String?,
+        options: ScrapeOptions = ScrapeOptions(),
+        onAssetProgress: ((source: String, asset: String) -> Unit)? = null,
+    ): MetadataFetchResult {
+        val candidates = fetchCandidates(gameId, title, platformId, romPath, options, onAssetProgress)
+
         // ── Nothing found ──────────────────────────────────────────────────────
-        if (ssInfo == null && tgdbInfo == null && igdbInfo == null && sgdbGridUrl == null) {
-            Timber.i("No metadata found for '$bestTitle'")
+        if (candidates.isEmpty) {
+            Timber.i("No metadata found for '${candidates.bestTitle}'")
             return MetadataFetchResult(false, "none", "Not found on any source")
         }
+
+        val gameEntity  = candidates.gameEntity
+        val bestTitle   = candidates.bestTitle
+        val ssInfo      = candidates.ssInfo
+        val romIdentity = candidates.romIdentity
+        val usedSsCache = candidates.usedSsCache
+        val cachedSsId  = candidates.cachedSsId
+        val tgdbInfo    = candidates.tgdbInfo
+        val igdbInfo    = candidates.igdbInfo
+        val sgdbGameId  = candidates.sgdbGameId
+        val sgdbGridUrl = candidates.sgdbGridUrl
+        val sgdbHeroUrl = candidates.sgdbHeroUrl
+        val sgdbLogoUrl = candidates.sgdbLogoUrl
 
         // ── Assemble per-asset winners ─────────────────────────────────────────
         val finalBoxArtUrl = ssInfo?.artworkUrl ?: tgdbInfo?.artworkUrl ?: igdbInfo?.artworkUrl ?: sgdbGridUrl

@@ -25,6 +25,8 @@ import javax.inject.Inject
 data class ArtworkSettingsUiState(
     val hasApiKey: Boolean = false,
     val apiKeyMasked: String = "",
+    // TheGamesDB has no free anonymous access: without a key every lookup is skipped.
+    val hasTgdbKey: Boolean = false,
     val hasIgdbCredentials: Boolean = false,
     val igdbClientId: String = "",
     val igdbCredentialStatus: String? = null,
@@ -167,17 +169,25 @@ class ArtworkSettingsViewModel @Inject constructor(
         screenScraperApi.isEnabledFlow,
     ) { username, enabled -> username to enabled }
 
-    val uiState: StateFlow<ArtworkSettingsUiState> = combine(
+    // SteamGridDB + TheGamesDB keys as one upstream: combine's typed overloads stop at five flows.
+    private val apiKeys = combine(
         sgdbKeyProvider.apiKeyFlow,
+        metadataKeyProvider.tgdbKeyFlow,
+    ) { sgdb, tgdb -> sgdb to tgdb }
+
+    val uiState: StateFlow<ArtworkSettingsUiState> = combine(
+        apiKeys,
         metadataKeyProvider.igdbClientIdFlow,
         ssAccounts,
         scrapePreferences.preferSteamGridDbHeroesFlow,
         _extra,
-    ) { sgdbKey, igdbClientId, ss, preferSgdbHeroes, extra ->
+    ) { keys, igdbClientId, ss, preferSgdbHeroes, extra ->
+        val (sgdbKey, tgdbKey) = keys
         val (ssUsername, ssEnabled) = ss
         extra.copy(
             hasApiKey             = !sgdbKey.isNullOrBlank(),
             apiKeyMasked          = if (!sgdbKey.isNullOrBlank()) "••••••" else "",
+            hasTgdbKey            = !tgdbKey.isNullOrBlank(),
             hasIgdbCredentials    = !igdbClientId.isNullOrBlank(),
             igdbClientId          = igdbClientId ?: "",
             ssEnabled             = ssEnabled,
@@ -225,6 +235,16 @@ class ArtworkSettingsViewModel @Inject constructor(
 
     fun clearApiKey() {
         viewModelScope.launch { sgdbKeyProvider.clearKey() }
+    }
+
+    // TheGamesDB key. MetadataApiKeyProvider has stored and read this since TheGamesDB was added,
+    // but nothing ever wrote it — so TheGamesDB was silently disabled for everyone.
+    fun saveTgdbKey(key: String) {
+        viewModelScope.launch { warnIfUnprotected("TheGamesDB key", metadataKeyProvider.saveTgdbKey(key.trim())) }
+    }
+
+    fun clearTgdbKey() {
+        viewModelScope.launch { metadataKeyProvider.clearTgdbKey() }
     }
 
     fun saveIgdbCredentials(clientId: String, clientSecret: String) {

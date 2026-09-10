@@ -2,6 +2,11 @@ package com.playfieldportal.feature.artwork.api
 
 import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.feature.artwork.MetadataRepository
+import com.playfieldportal.feature.artwork.match.MetadataApply
+import com.playfieldportal.feature.artwork.match.MetadataApplyPolicy
+import com.playfieldportal.feature.artwork.match.MetadataField
+import com.playfieldportal.feature.artwork.match.MetadataPreset
+import com.playfieldportal.feature.artwork.match.MetadataPreview
 import com.playfieldportal.feature.artwork.store.ArtworkStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -85,6 +90,74 @@ class ArtworkRepository @Inject constructor(
             romPath    = game.romPath,
         )
         return ArtworkFetchResult(gameId, title, result.success, errorMessage = result.message.takeIf { !result.success })
+    }
+
+    // ── Metadata presets (C16 task 3.2) ──────────────────────────────────────────
+
+    /**
+     * Current-vs-Incoming for one game. Writes no `games` column (AD-7).
+     *
+     * Bypasses the ScreenScraper media-URL cache on purpose: a cache hit is URL-only
+     * (`SsMediaSelection.infoFromCache`), so it would never offer a ScreenScraper preset. That costs
+     * one jeuInfos call per explicit open, never per scrape.
+     */
+    suspend fun fetchMetadataPreview(gameId: Long): MetadataPreview? = withContext(Dispatchers.IO) {
+        val game = gameDao.getById(gameId) ?: return@withContext null
+        val candidates = metadataRepository.fetchCandidates(
+            gameId     = gameId,
+            title      = game.title,
+            platformId = game.platformId,
+            romPath    = game.romPath,
+            options    = ScrapeOptions(metadataOnly = true, bypassSsCache = true),
+        )
+        MetadataPreview(MetadataApply.currentOf(game), MetadataApply.presetsFrom(candidates))
+    }
+
+    /**
+     * Applies [incoming] under [policy] against the game's CURRENT row (re-read here, so a preview
+     * left open never writes against stale values). Returns the fields written; empty means the
+     * table was not touched. Only text columns are passed — no artwork column, provider id or
+     * user title override can change through this path.
+     */
+    suspend fun applyMetadata(
+        gameId: Long,
+        incoming: MetadataPreset,
+        policy: MetadataApplyPolicy,
+        chosen: Set<MetadataField> = emptySet(),
+    ): Set<MetadataField> = withContext(Dispatchers.IO) {
+        val game = gameDao.getById(gameId) ?: return@withContext emptySet()
+        val plan = MetadataApply.plan(MetadataApply.currentOf(game), incoming, policy, chosen)
+        if (plan.isEmpty()) return@withContext emptySet()
+
+        val description     = plan[MetadataField.DESCRIPTION] as String?
+        val developer       = plan[MetadataField.DEVELOPER] as String?
+        val publisher       = plan[MetadataField.PUBLISHER] as String?
+        val releaseYear     = plan[MetadataField.RELEASE_YEAR] as Int?
+        val genre           = plan[MetadataField.GENRE] as String?
+        val scrapedTitle    = plan[MetadataField.TITLE] as String?
+        val ageRating       = plan[MetadataField.AGE_RATING] as String?
+        val franchise       = plan[MetadataField.FRANCHISE] as String?
+        val communityRating = plan[MetadataField.COMMUNITY_RATING] as Float?
+        val releaseDate     = plan[MetadataField.RELEASE_DATE] as String?
+
+        if (policy == MetadataApplyPolicy.FILL_MISSING_ONLY) {
+            gameDao.updateMetadataIfMissing(
+                id = gameId, description = description, developer = developer, publisher = publisher,
+                releaseYear = releaseYear, genre = genre, scrapedTitle = scrapedTitle,
+                ageRating = ageRating, franchise = franchise, communityRating = communityRating,
+                releaseDate = releaseDate,
+            )
+        } else {
+            // COALESCE(:new, old): the plan holds only non-blank incoming values, so this overwrites
+            // exactly the planned fields and leaves every other column as it is.
+            gameDao.updateMetadata(
+                id = gameId, description = description, developer = developer, publisher = publisher,
+                releaseYear = releaseYear, genre = genre, scrapedTitle = scrapedTitle,
+                ageRating = ageRating, franchise = franchise, communityRating = communityRating,
+                releaseDate = releaseDate,
+            )
+        }
+        plan.keys
     }
 
     /** Drops every cached ScreenScraper media-URL list — next scrape refreshes per game. */

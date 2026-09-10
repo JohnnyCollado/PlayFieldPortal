@@ -87,6 +87,28 @@ class SteamGridDbApi @Inject constructor(
         }.getOrNull()
     }
 
+    /**
+     * The SteamGridDB game for a Steam App ID, or null when SGDB does not know it.
+     *
+     * The direct `/games/steam/{appid}` lookup — identity evidence rather than a title guess, and
+     * the reason a Windows game's captured storefront pair (C16 phase 0) can resolve a match at
+     * Tier 2 instead of falling through to a title search. Only ever called with the Steam half of
+     * a (storefront, id) pair: an app id means nothing outside its own store.
+     */
+    suspend fun getGameBySteamAppId(appId: String): SgdbGame? {
+        val key = apiKeyProvider.getKey() ?: return null
+        if (appId.isBlank() || !appId.all(Char::isDigit)) return null
+        return runCatching {
+            val json: JsonElement = httpClient.get("$BASE_URL/games/steam/$appId") {
+                header("Authorization", "Bearer $key")
+            }.body()
+            val data = json.jsonObject["data"]?.jsonObject ?: return@runCatching null
+            val id = data["id"]?.jsonPrimitive?.content?.toLongOrNull() ?: return@runCatching null
+            val name = data["name"]?.jsonPrimitive?.content ?: return@runCatching null
+            SgdbGame(id = id, name = name)
+        }.onFailure { Timber.d(it, "SGDB steam appid lookup failed for %s", appId) }.getOrNull()
+    }
+
     // Search for a game by name — returns best matches
     suspend fun searchGame(name: String): Result<List<SgdbGame>> = runCatching {
         val key = apiKeyProvider.getKey()

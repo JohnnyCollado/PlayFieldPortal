@@ -66,6 +66,17 @@ interface GameRepository {
      */
     suspend fun updateStorefrontIdentity(id: Long, storefront: String?, storefrontGameId: String?)
 
+    /**
+     * Records (or, with a null [providerGameId], forgets) the confirmed match for ONE provider.
+     *
+     * Exactly one of `ss_id` / `tgdb_id` / `igdb_id` / `steam_grid_db_id` is written and the other
+     * three are left alone — provider ids are never crossed. Forgetting a match clears the id and
+     * nothing else: no artwork file and no metadata column is touched (C16 task 2.3).
+     *
+     * [provider] is a `MatchProvider` name.
+     */
+    suspend fun updateProviderMatch(id: Long, provider: String, providerGameId: Long?)
+
     /** Games claiming one (storefront, id) pair — the identity match for PC games. */
     suspend fun getByStorefront(storefront: String, storefrontGameId: String): List<Game>
     // Pass null to clear the override and fall back to scrapedTitle / title.

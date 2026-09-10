@@ -58,6 +58,7 @@ class ArtworkSettingsViewModelTest {
 
         every { sgdbKeyProvider.apiKeyFlow }             returns flowOf(null)
         every { metadataKeyProvider.igdbClientIdFlow }   returns flowOf(null)
+        every { metadataKeyProvider.tgdbKeyFlow }        returns flowOf(null)
         every { metadataKeyProvider.ssUsernameFlow }     returns flowOf(null)
         // ssEnabled comes from the credential source (bundled dev pair), not a build constant,
         // so it is an extra combine upstream — a relaxed mock returns a Flow that never emits,
@@ -127,6 +128,47 @@ class ArtworkSettingsViewModelTest {
         viewModel = activeViewModel()
         advanceUntilIdle()
         assertTrue(viewModel.uiState.value.hasIgdbCredentials)
+    }
+
+    // TheGamesDB's key was stored and read by MetadataApiKeyProvider but never writable from the UI.
+
+    @Test
+    fun `hasTgdbKey is false when the TheGamesDB key flow emits null`() = runTest(testDispatcher) {
+        viewModel = activeViewModel()
+        advanceUntilIdle()
+        assertFalse(viewModel.uiState.value.hasTgdbKey)
+    }
+
+    @Test
+    fun `hasTgdbKey is true when the TheGamesDB key flow emits a key`() = runTest(testDispatcher) {
+        every { metadataKeyProvider.tgdbKeyFlow } returns flowOf("tgdb-key")
+        viewModel = activeViewModel()
+        advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.hasTgdbKey)
+    }
+
+    @Test
+    fun `saving a TheGamesDB key trims it and stores it through the provider`() = runTest(testDispatcher) {
+        coEvery { metadataKeyProvider.saveTgdbKey(any()) } returns
+            com.playfieldportal.core.common.security.SecretProtection.PROTECTED
+        viewModel = activeViewModel()
+        advanceUntilIdle()
+
+        viewModel.saveTgdbKey("  tgdb-key  ")
+        advanceUntilIdle()
+
+        coVerify { metadataKeyProvider.saveTgdbKey("tgdb-key") }
+    }
+
+    @Test
+    fun `removing the TheGamesDB key clears it through the provider`() = runTest(testDispatcher) {
+        viewModel = activeViewModel()
+        advanceUntilIdle()
+
+        viewModel.clearTgdbKey()
+        advanceUntilIdle()
+
+        coVerify { metadataKeyProvider.clearTgdbKey() }
     }
 
     // ── Scrape modes ──────────────────────────────────────────────────────────

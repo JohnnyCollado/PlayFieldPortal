@@ -31,10 +31,33 @@ class SsMediaCatalog @Inject constructor(
 ) {
     private val inFlight = Mutex()
 
-    /** The game's full SS media list, from cache or one live lookup. Null = no match/SS off. */
-    suspend fun mediasFor(gameId: Long): List<SsCachedMedia>? = inFlight.withLock {
+    /**
+     * The game's full SS media list, from cache or one live lookup. Null = no match/SS off.
+     *
+     * [matchedSsId] browses a game the Studio's matcher resolved by TITLE. That game's medias are
+     * fetched and cached, but its id is never written to the game row: a title match is not an
+     * identity, and persisting it would turn a guess into Tier 1 evidence. Only the ROM-identity
+     * lookup below — or a Change Match the user confirms — sets `ss_id`.
+     */
+    suspend fun mediasFor(gameId: Long, matchedSsId: Long? = null): List<SsCachedMedia>? = inFlight.withLock {
         withContext(Dispatchers.IO) {
             val game = gameDao.getById(gameId) ?: return@withContext null
+
+            if (matchedSsId != null && matchedSsId != game.ssId) {
+                ssMediaCacheDao.get(matchedSsId)?.let { row ->
+                    SsMediaSelection.decode(row.mediasJson)?.let { return@withContext it }
+                }
+                if (!screenScraper.isEnabled()) return@withContext null
+                val info = screenScraper.fetchGameInfo(game.platformId, rom = null, ssGameId = matchedSsId).info
+                    ?: return@withContext null
+                if (info.medias.isNotEmpty()) {
+                    ssMediaCacheDao.upsert(
+                        SsMediaCacheEntity(matchedSsId, SsMediaSelection.encode(info.medias), System.currentTimeMillis())
+                    )
+                }
+                Timber.i("SS catalog lookup for title-matched ssId=$matchedSsId (gameId=$gameId, not persisted) → ${info.medias.size} medias")
+                return@withContext info.medias
+            }
 
             // Old links: straight from cache.
             game.ssId?.let { id ->

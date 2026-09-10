@@ -45,6 +45,7 @@ fun ArtworkSettingsScreen(
     }
 
     var sgdbKeyDraft by remember(state.apiKeyMasked) { mutableStateOf("") }
+    var tgdbKeyDraft by remember(state.hasTgdbKey) { mutableStateOf("") }
     var igdbClientIdDraft by remember(state.igdbClientId) { mutableStateOf("") }
     var igdbClientSecretDraft by remember { mutableStateOf("") }
     var ssUsernameDraft by remember(state.ssUsername) { mutableStateOf("") }
@@ -256,6 +257,38 @@ fun ArtworkSettingsScreen(
                     label    = "Remove API Key",
                     sublabel = "SteamGridDB artwork will be disabled",
                     onClick  = { viewModel.clearApiKey() },
+                )
+            }
+
+            // ── TheGamesDB API key ────────────────────────────────────────────
+            // Stored encrypted like the SteamGridDB key. Without one TheGamesDB is skipped by the
+            // scraper and not offered in the Artwork Studio.
+            SettingsGroup("TheGamesDB API")
+
+            SettingsTextFieldRow(
+                label         = if (state.hasTgdbKey) "API Key (saved)" else "API Key",
+                value         = tgdbKeyDraft,
+                onValueChange = { tgdbKeyDraft = it },
+                placeholder   = if (state.hasTgdbKey) "••••••••  (tap to replace)" else "Paste your TheGamesDB key",
+                isPassword    = true,
+                helper        = "Request a key from TheGamesDB at thegamesdb.net",
+            )
+
+            if (tgdbKeyDraft.isNotBlank()) {
+                SettingsRow(
+                    label   = "Save TheGamesDB Key",
+                    onClick = {
+                        viewModel.saveTgdbKey(tgdbKeyDraft)
+                        tgdbKeyDraft = ""
+                    },
+                )
+            }
+
+            if (state.hasTgdbKey) {
+                SettingsRow(
+                    label    = "Remove TheGamesDB Key",
+                    sublabel = "TheGamesDB will be skipped as a source",
+                    onClick  = { viewModel.clearTgdbKey() },
                 )
             }
 

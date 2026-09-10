@@ -1,7 +1,7 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
+import com.playfieldportal.feature.artwork.match.TitleKey
 import com.playfieldportal.feature.artwork.store.ArtworkKind
-import java.util.Locale
 
 /**
  * The Artwork Studio's search model — pure, so the whole of C16 Phase 1's correctness (what a
@@ -18,32 +18,14 @@ import java.util.Locale
  */
 object StudioQuery {
 
-    private val WHITESPACE = Regex("\\s+")
-
-    /** Bracketed release tags — "(USA)", "[!]", "(Disc 1)", "(Rev A)" — as ROM filenames carry them. */
-    private val TAGS = Regex("[\\(\\[][^\\)\\]]*[\\)\\]]")
-
-    /** Punctuation that never distinguishes two titles. Digits and letters are kept as-is. */
-    private val NOISE = Regex("[\\p{Punct}&&[^&]]")
-
     /**
-     * The key form of [raw]: tags dropped, punctuation flattened, whitespace collapsed, lowercased.
-     * A query that normalizes to nothing (only tags or punctuation) keeps its trimmed raw form, so
-     * a deliberate search for "[BIOS]" still addresses its own cache entry rather than the empty one.
+     * The key form of [raw]. Delegates to [TitleKey] so the query that addresses a result cache
+     * and the title that resolves a Phase 2 match can never drift apart (task 2.2).
      */
-    fun normalize(raw: String): String {
-        val trimmed = raw.trim()
-        val stripped = trimmed
-            .replace(TAGS, " ")
-            .replace(NOISE, " ")
-            .replace(WHITESPACE, " ")
-            .trim()
-            .lowercase(Locale.US)
-        return stripped.ifBlank { trimmed.lowercase(Locale.US) }
-    }
+    fun normalize(raw: String): String = TitleKey.of(raw)
 
     /** True when [a] and [b] address the same results — the test behind "do I need to refetch?". */
-    fun sameQuery(a: String, b: String): Boolean = normalize(a) == normalize(b)
+    fun sameQuery(a: String, b: String): Boolean = TitleKey.same(a, b)
 }
 
 /**

@@ -10,6 +10,12 @@ import com.playfieldportal.core.domain.model.MemoryCard
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.feature.artwork.api.ArtworkFetchResult
 import com.playfieldportal.feature.artwork.api.ArtworkRepository
+import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.feature.artwork.match.MatchProvider
+import com.playfieldportal.feature.artwork.match.MetadataApplyPolicy
+import com.playfieldportal.feature.artwork.match.MetadataField
+import com.playfieldportal.feature.artwork.match.MetadataPreset
+import com.playfieldportal.feature.artwork.match.MetadataPreview
 import com.playfieldportal.feature.artwork.store.ArtworkStore
 import com.playfieldportal.feature.launcher.EmulatorIntentResolver
 import com.playfieldportal.feature.launcher.EmulatorProfileRepository
@@ -166,6 +172,52 @@ class GameDetailViewModelTest {
             val state = awaitItem()
             assertFalse(state.isLoading)
             assertNull(state.game)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    // ── media strip ───────────────────────────────────────────────────────
+
+    @Test
+    fun `loadGame shows every stored video and screenshot in the strip`() = runTest {
+        coEvery { artworkStore.findAll(1L, com.playfieldportal.feature.artwork.store.ArtworkKind.VIDEO) } returns
+            listOf("vid0", "vid1")
+        coEvery { artworkStore.findAll(1L, com.playfieldportal.feature.artwork.store.ArtworkKind.SCREENSHOT) } returns
+            listOf("shot0", "shot1", "shot2")
+        coEvery { artworkStore.find(1L, com.playfieldportal.feature.artwork.store.ArtworkKind.TITLESCREEN, any()) } returns "title"
+        coEvery { artworkStore.find(1L, com.playfieldportal.feature.artwork.store.ArtworkKind.ICON1, any()) } returns null
+
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.uiState.test {
+            val state = awaitItem()
+            assertEquals(
+                listOf("vid0", "vid1", "shot0", "shot1", "shot2", "title"),
+                state.detailMedia.map { it.uri },
+            )
+            assertEquals(listOf(true, true, false, false, false, false), state.detailMedia.map { it.isVideo })
+            // The player still opens on the first video, not on a later one.
+            assertEquals("vid0", state.videoUri)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `loadGame falls back to the icon snap when the game has no full video`() = runTest {
+        coEvery { artworkStore.findAll(1L, com.playfieldportal.feature.artwork.store.ArtworkKind.VIDEO) } returns emptyList()
+        coEvery { artworkStore.find(1L, com.playfieldportal.feature.artwork.store.ArtworkKind.ICON1, any()) } returns "snap"
+        coEvery { artworkStore.findAll(1L, com.playfieldportal.feature.artwork.store.ArtworkKind.SCREENSHOT) } returns listOf("shot0")
+        coEvery { artworkStore.find(1L, com.playfieldportal.feature.artwork.store.ArtworkKind.TITLESCREEN, any()) } returns null
+
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.uiState.test {
+            val state = awaitItem()
+            assertEquals(listOf("snap", "shot0"), state.detailMedia.map { it.uri })
+            assertEquals(listOf(true, false), state.detailMedia.map { it.isVideo })
+            assertEquals("snap", state.videoUri)
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -981,5 +1033,126 @@ class GameDetailViewModelTest {
             assertNull(awaitItem().artworkMessage)
             cancelAndIgnoreRemainingEvents()
         }
+    }
+
+    // ── Metadata presets — Current vs Incoming (C16 task 3.2) ─────────────
+
+    private val metadataCurrent = mapOf<MetadataField, Any?>(
+        MetadataField.DESCRIPTION to "A classic platformer.",
+        MetadataField.DEVELOPER to null,
+    )
+    private val ssPreset = MetadataPreset(
+        provider = MatchProvider.SCREENSCRAPER,
+        description = "Bandicoot jumps.",
+        developer = "Naughty Dog",
+    )
+    private val tgdbPreset = MetadataPreset(provider = MatchProvider.THEGAMESDB, description = "TGDB text")
+
+    private fun openLoadedPreview(presets: List<MetadataPreset> = listOf(ssPreset, tgdbPreset)) {
+        coEvery { artworkRepository.fetchMetadataPreview(1L) } returns MetadataPreview(metadataCurrent, presets)
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.activateAction(DetailAction.METADATA)
+        testDispatcher.scheduler.advanceUntilIdle()
+    }
+
+    @Test
+    fun `Update Metadata previews Current vs Incoming and writes nothing until applied`() = runTest {
+        openLoadedPreview()
+
+        val preview = viewModel.uiState.value.metadataPreview!!
+        assertFalse(preview.loading)
+        assertEquals(MatchProvider.SCREENSCRAPER, preview.preset?.provider)
+        // Non-destructive by default: only the empty Developer would be written.
+        assertEquals(MetadataApplyPolicy.FILL_MISSING_ONLY, preview.policy)
+        assertEquals(setOf(MetadataField.DEVELOPER), preview.willWrite)
+        assertEquals(preview.applyIndex, preview.focus)
+        coVerify(exactly = 0) { artworkRepository.applyMetadata(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `Back closes the metadata preview, not the page, and writes nothing`() = runTest {
+        openLoadedPreview()
+
+        viewModel.handleGamepadAction(GamepadAction.BACK)
+
+        assertNull(viewModel.uiState.value.metadataPreview)
+        assertFalse(viewModel.uiState.value.closed)
+        coVerify(exactly = 0) { artworkRepository.applyMetadata(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `a metadata preview closed while loading is not reopened by the late answer`() = runTest {
+        coEvery { artworkRepository.fetchMetadataPreview(1L) } returns MetadataPreview(metadataCurrent, listOf(ssPreset))
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.openMetadataPreview()
+        viewModel.closeMetadataPreview()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.metadataPreview)
+    }
+
+    @Test
+    fun `no provider metadata closes the preview with a reason`() = runTest {
+        openLoadedPreview(presets = emptyList())
+
+        assertNull(viewModel.uiState.value.metadataPreview)
+        assertEquals("No metadata found on any source", viewModel.uiState.value.actionMessage)
+    }
+
+    @Test
+    fun `Apply writes under the selected policy and reloads the game`() = runTest {
+        openLoadedPreview()
+        coEvery { artworkRepository.applyMetadata(any(), any(), any(), any()) } returns
+            setOf(MetadataField.DESCRIPTION, MetadataField.DEVELOPER)
+
+        viewModel.handleGamepadAction(GamepadAction.NAVIGATE_LEFT)   // Fill Missing Only → Replace All
+        assertEquals(MetadataApplyPolicy.REPLACE_ALL, viewModel.uiState.value.metadataPreview?.policy)
+        viewModel.handleGamepadAction(GamepadAction.SELECT)          // focus starts on Apply
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify {
+            artworkRepository.applyMetadata(
+                1L, ssPreset, MetadataApplyPolicy.REPLACE_ALL,
+                setOf(MetadataField.DESCRIPTION, MetadataField.DEVELOPER),
+            )
+        }
+        coVerify(atLeast = 2) { gameRepository.getById(1L) }
+        assertNull(viewModel.uiState.value.metadataPreview)
+        assertEquals("Updated 2 fields from ScreenScraper", viewModel.uiState.value.actionMessage)
+    }
+
+    @Test
+    fun `Keep Current closes without calling the writer`() = runTest {
+        openLoadedPreview()
+
+        viewModel.selectMetadataPolicy(MetadataApplyPolicy.KEEP_CURRENT)
+        viewModel.applyMetadataPreview()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.metadataPreview)
+        assertEquals("Kept current metadata", viewModel.uiState.value.actionMessage)
+        coVerify(exactly = 0) { artworkRepository.applyMetadata(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `switching source re-ticks its changes and toggling a row chooses fields`() = runTest {
+        openLoadedPreview()
+
+        viewModel.handleGamepadAction(GamepadAction.NEXT_CATEGORY)   // ScreenScraper → TheGamesDB
+        var preview = viewModel.uiState.value.metadataPreview!!
+        assertEquals(MatchProvider.THEGAMESDB, preview.preset?.provider)
+        assertEquals(setOf(MetadataField.DESCRIPTION), preview.chosen)
+        assertEquals(preview.applyIndex, preview.focus)
+
+        viewModel.handleGamepadAction(GamepadAction.NAVIGATE_UP)     // the Description row
+        viewModel.handleGamepadAction(GamepadAction.SELECT)          // untick it
+
+        preview = viewModel.uiState.value.metadataPreview!!
+        assertEquals(MetadataApplyPolicy.CHOOSE_FIELDS, preview.policy)
+        assertTrue(preview.chosen.isEmpty())
+        assertTrue(preview.willWrite.isEmpty())
     }
 }
