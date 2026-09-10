@@ -12,7 +12,9 @@ import androidx.room.PrimaryKey
 @Entity(
     tableName = "artwork_records",
     indices = [
-        Index("game_id", "artwork_type", unique = true),
+        // Position-aware: multi-asset kinds (screenshots, videos) hold several rows per slot,
+        // each at its own sort_order. Single-art kinds only ever occupy position 0.
+        Index("game_id", "artwork_type", "sort_order", unique = true),
         // Collision checks at write time (FAT is case-insensitive; enforced in code via NOCASE).
         Index("platform_id", "artwork_type", "portable_name"),
     ],
@@ -30,6 +32,12 @@ data class ArtworkRecordEntity(
     // ArtworkKind name (ICON, HERO, BACKGROUND, LOGO, SCREENSHOT, …, MANUAL).
     @ColumnInfo(name = "artwork_type")
     val artworkType: String,
+
+    // Position within the slot. 0 is the primary (and the only position single-art kinds use);
+    // screenshots and videos append at 1, 2, … The ordinal is mirrored in the filename and the
+    // portable name (ArtworkFileNaming.withOrdinal) so Relink/Scan can rebuild this from disk.
+    @ColumnInfo(name = "sort_order")
+    val sortOrder: Int = 0,
 
     // Filename stem inside the media dir ("Final Fantasy X (USA)").
     @ColumnInfo(name = "portable_name")
@@ -71,6 +79,11 @@ data class ArtworkRecordEntity(
     @ColumnInfo(name = "provider")
     val provider: String? = null,
 
+    // The provider's own id for this asset (SteamGridDB art id, ScreenScraper media key, …).
+    // With origin_url and checksum it is how a duplicate apply is recognized before it lands.
+    @ColumnInfo(name = "provider_asset_id")
+    val providerAssetId: String? = null,
+
     // ── One-previous version retention (Studio pass 2, "Restore Previous") ──────
     // When a save overwrites a stable portable name, the outgoing file is copied to pfp/versions/
     // first; these point at it so a single undo is possible without stockpiling N copies.
@@ -92,6 +105,11 @@ data class ArtworkRecordEntity(
     // An untouched pre-crop copy exists under pfp/originals/ — lets the editor re-crop losslessly.
     @ColumnInfo(name = "has_original")
     val hasOriginal: Boolean = false,
+
+    // The crop profile this asset was framed with (registry key; null = platform default).
+    // Written by the Phase 6 crop registry; carried here so a per-game override survives a rescan.
+    @ColumnInfo(name = "crop_profile_key")
+    val cropProfileKey: String? = null,
 
     @ColumnInfo(name = "created_at")
     val createdAt: Long = System.currentTimeMillis(),

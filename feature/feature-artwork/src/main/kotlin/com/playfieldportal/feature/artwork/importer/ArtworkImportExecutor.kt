@@ -175,7 +175,11 @@ class ArtworkImportExecutor @Inject constructor(
         onItem: (PlannedItem, ItemOutcome) -> Unit,
     ) {
         // Provenance guard: user-picked or locked assets are never overwritten by an import.
-        val existingRecords = artworkRecordDao.getForGame(game.gameId).associateBy { it.artworkType }
+        // An import always writes the PRIMARY of a slot, so the guard reads position 0 — a
+        // multi-asset kind's later positions must not decide whether the primary is protected.
+        val existingRecords = artworkRecordDao.getForGame(game.gameId)
+            .filter { it.sortOrder == 0 }
+            .associateBy { it.artworkType }
         val basePortableName = game.portableName.ifBlank {
             game.romFileName?.let { PortableNameResolver.fromRomFileName(it) }
                 ?: PortableNameResolver.fromTitle(game.title)

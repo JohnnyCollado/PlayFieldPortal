@@ -36,10 +36,10 @@ class InternalArtworkStore @Inject constructor(
 
     // ── Saves ─────────────────────────────────────────────────────────────────
 
-    override suspend fun saveFromUrl(gameId: Long, kind: ArtworkKind, url: String): String? =
+    override suspend fun saveFromUrl(gameId: Long, kind: ArtworkKind, url: String, sortOrder: Int): String? =
         withContext(Dispatchers.IO) {
             val tmp = downloadToTemp(url, kind) ?: return@withContext null
-            commit(tmp, gameId, ArtworkFileNaming.fixedName(kind))
+            commit(tmp, gameId, ArtworkFileNaming.fixedName(kind, sortOrder))
         }
 
     override suspend fun saveVersionedFromUrl(gameId: Long, kind: ArtworkKind, url: String): String? =
@@ -65,14 +65,19 @@ class InternalArtworkStore @Inject constructor(
                 ?.also { prune(gameId, kind, keepPath = it) }
         }
 
-    override suspend fun saveFromFile(gameId: Long, kind: ArtworkKind, tempFile: java.io.File): String? =
+    override suspend fun saveFromFile(
+        gameId: Long,
+        kind: ArtworkKind,
+        tempFile: java.io.File,
+        sortOrder: Int,
+    ): String? =
         withContext(Dispatchers.IO) {
             if (!PayloadCheck.accepts(kind, ArtworkTempIO.headerOf(tempFile))) {
                 Timber.w("Local save rejected — wrong payload for ${kind.name}")
                 tempFile.delete()
                 return@withContext null
             }
-            commit(tempFile, gameId, ArtworkFileNaming.fixedName(kind))
+            commit(tempFile, gameId, ArtworkFileNaming.fixedName(kind, sortOrder))
         }
 
     // ── Validation / deletion ─────────────────────────────────────────────────
@@ -92,9 +97,31 @@ class InternalArtworkStore @Inject constructor(
         return runCatching { File(ref).let { it.exists() && it.length() > 0 } }.getOrDefault(false)
     }
 
-    override suspend fun find(gameId: Long, kind: ArtworkKind): String? = withContext(Dispatchers.IO) {
-        File(File(root, gameId.toString()), ArtworkFileNaming.fixedName(kind))
+    override suspend fun find(gameId: Long, kind: ArtworkKind, sortOrder: Int): String? = withContext(Dispatchers.IO) {
+        File(File(root, gameId.toString()), ArtworkFileNaming.fixedName(kind, sortOrder))
             .takeIf { it.exists() && it.length() > 0 }?.absolutePath
+    }
+
+    /**
+     * Every internal file of [kind] for this game, ordered by the ordinal its name carries —
+     * the on-disk recovery of `sort_order` (C16 AD-1). Versioned user picks resolve to the
+     * primary slot and are listed first when the bare fixed name is absent.
+     */
+    override suspend fun findAll(gameId: Long, kind: ArtworkKind): List<String> = withContext(Dispatchers.IO) {
+        val dir = File(root, gameId.toString())
+        val files = dir.listFiles()?.filter { it.isFile && it.length() > 0 }.orEmpty()
+        val byOrder = sortedMapOf<Int, File>()
+        for (file in files) {
+            val order = ArtworkFileNaming.sortOrderFromFileName(kind, file.name) ?: continue
+            byOrder[order] = file
+        }
+        // A user pick versioned under the primary slot stands in for a missing bare fixed file.
+        if (0 !in byOrder) {
+            files.filter { ArtworkFileNaming.isPruneCandidate(kind, it.name, sortOrder = 0) }
+                .maxByOrNull { it.name }
+                ?.let { byOrder[0] = it }
+        }
+        byOrder.values.map { it.absolutePath }
     }
 
     override suspend fun deleteAll() {
@@ -139,7 +166,9 @@ class InternalArtworkStore @Inject constructor(
     suspend fun deleteKind(gameId: Long, kind: ArtworkKind) = withContext(Dispatchers.IO) {
         val dir = File(root, gameId.toString())
         dir.listFiles()?.forEach { f ->
-            if (ArtworkFileNaming.isPruneCandidate(kind, f.name)) f.delete()
+            if (ArtworkFileNaming.sortOrderFromFileName(kind, f.name) != null ||
+                ArtworkFileNaming.isPruneCandidate(kind, f.name)
+            ) f.delete()
         }
         if (dir.listFiles()?.isEmpty() == true) dir.delete()
     }

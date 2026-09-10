@@ -39,6 +39,8 @@ class PcShortcutImporterTest {
 
     private fun ready() {
         coEvery { windowsLibrary.ensure() } returns WindowsSetupState.Ready("/storage/emulated/0/Roms/windows")
+        // Storefront capture (C16 task 0.5) rides every import path that has a store id.
+        coEvery { gameRepository.updateStorefrontIdentity(any(), any(), any()) } returns Unit
     }
 
     private fun windowsGame(id: Long, title: String) = Game(
@@ -64,6 +66,7 @@ class PcShortcutImporterTest {
         assertEquals("windows", stored.captured.platformId)
         assertEquals("game_1984270", stored.captured.shortcutId)
         coVerify { linker.linkSteam(42L, "1984270") }
+        coVerify { gameRepository.updateStorefrontIdentity(42L, "STEAM", "1984270") }
     }
 
     @Test
@@ -141,6 +144,7 @@ class PcShortcutImporterTest {
         assertEquals(11L, result.gameId)
         assertTrue(result.added)
         coVerify { linker.linkSteam(11L, "1451090") }
+        coVerify { gameRepository.updateStorefrontIdentity(11L, "STEAM", "1451090") }
     }
 
     @Test
@@ -155,6 +159,8 @@ class PcShortcutImporterTest {
         importer().importLegacyShortcut("com.xiaoji.egggame", "Resonance of Fate", uri)
 
         coVerify(exactly = 0) { linker.linkSteam(any(), any()) }
+        // A localGameId is the launcher's internal id, so there is no storefront identity to record.
+        coVerify(exactly = 0) { gameRepository.updateStorefrontIdentity(any(), any(), any()) }
     }
 
     @Test

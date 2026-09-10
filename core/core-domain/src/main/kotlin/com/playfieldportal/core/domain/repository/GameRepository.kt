@@ -58,6 +58,16 @@ interface GameRepository {
     suspend fun recordPlaySession(session: PlaySession)
     suspend fun getMissingRoms(): List<Game>
     suspend fun updateScrapedTitle(id: Long, scrapedTitle: String?)
+
+    /**
+     * Records the storefront a Windows game came from and its id there. Fill-only: a null
+     * argument leaves the stored value alone, so a later import that cannot determine the store
+     * never erases an identity an earlier one captured.
+     */
+    suspend fun updateStorefrontIdentity(id: Long, storefront: String?, storefrontGameId: String?)
+
+    /** Games claiming one (storefront, id) pair — the identity match for PC games. */
+    suspend fun getByStorefront(storefront: String, storefrontGameId: String): List<Game>
     // Pass null to clear the override and fall back to scrapedTitle / title.
     suspend fun updateUserTitleOverride(id: Long, override: String?)
     // Display-mode tile columns (Artwork Studio apply path). updateBoxArt above is legacy

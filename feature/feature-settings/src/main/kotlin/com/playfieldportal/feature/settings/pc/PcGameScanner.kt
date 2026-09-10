@@ -7,6 +7,7 @@ import android.net.Uri
 import com.playfieldportal.core.data.repository.RomRootRepository
 import com.playfieldportal.core.data.repository.WindowsLibrarySetup
 import com.playfieldportal.core.data.repository.WindowsSetupState
+import com.playfieldportal.core.data.model.StorefrontIdentity
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GameContentType
 import com.playfieldportal.core.domain.repository.GameRepository
@@ -91,20 +92,30 @@ class PcGameScanner @Inject constructor(
             romScanner.scanPcFolder(rootUri, importDocId).forEach { file ->
                 val launch = buildPcLaunch(file, pm, gameNativePkg, gameHubPkg, winlatorPkg)
                 if (launch == null) { skipped++; return@forEach }
-                val (intent, _, launcherPkg) = launch
-                val intentUri = intent.toUri(Intent.URI_INTENT_SCHEME)
-                if (gameRepository.getByIntentUri(intentUri) == null &&
-                    findWindowsGame(launcherPkg, file.title) == null
-                ) {
+                val intentUri = launch.intent.toUri(Intent.URI_INTENT_SCHEME)
+                val existing = gameRepository.getByIntentUri(intentUri)
+                    ?: findWindowsGame(launch.packageName, file.title)
+                if (existing == null) {
                     gameRepository.upsert(
                         Game(
                             title           = file.title,
                             platformId      = WINDOWS_PLATFORM_ID,
-                            packageName     = launcherPkg,
+                            packageName     = launch.packageName,
                             isManualEntry   = true,
                             contentType     = GameContentType.GAME,
                             launchIntentUri = intentUri,
+                            // The storefront is computed here anyway to build the intent — keeping
+                            // it is what lets a Steam or GOG game be matched by id instead of by
+                            // an imperfect filename (C16 task 0.5).
+                            storefront       = launch.storefront,
+                            storefrontGameId = launch.storefrontGameId,
                         ),
+                    )
+                } else {
+                    // Fill-only: an already-imported game gains the identity without a re-scan,
+                    // and never loses one this pass could not determine.
+                    gameRepository.updateStorefrontIdentity(
+                        existing.id, launch.storefront, launch.storefrontGameId,
                     )
                 }
                 added++
@@ -138,16 +149,29 @@ class PcGameScanner @Inject constructor(
         return PcScanReport(setup, added, skipped, pins, emu, message)
     }
 
+    /**
+     * One resolved PC launch: how to start the game, and — for store exports — which storefront
+     * it came from and its id there. That identity used to be a local val discarded once the
+     * intent was built; it is carried out now so the imported row can keep it (C16 task 0.5).
+     */
+    private data class PcLaunch(
+        val intent: Intent,
+        val launcherName: String,
+        val packageName: String,
+        val storefront: String? = null,
+        val storefrontGameId: String? = null,
+    )
+
     // Chooses the launcher + builds the launch intent for one export file. Prefers GameNative (it
     // handles every store); a .steam file falls back to a GameHub-family launcher; a .desktop file
-    // uses Winlator's package launch + a shortcut_path extra. Returns (intent, launcherName, pkg).
+    // uses Winlator's package launch + a shortcut_path extra.
     private fun buildPcLaunch(
         file: PcExportFile,
         pm: PackageManager,
         gameNativePkg: String?,
         gameHubPkg: String?,
         winlatorPkg: String?,
-    ): Triple<Intent, String, String>? {
+    ): PcLaunch? {
         if (file.extension == "desktop") {
             val path = file.rawPath ?: return null
             val pkg  = winlatorPkg ?: return null
@@ -155,22 +179,25 @@ class PcGameScanner @Inject constructor(
                 putExtra("shortcut_path", path)
                 addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             } ?: return null
-            return Triple(intent, "Winlator", pkg)
+            // A .desktop shortcut is a path into a Wine prefix — it names no storefront.
+            return PcLaunch(intent, "Winlator", pkg)
         }
 
         val id = file.idContent?.trim()?.takeIf { it.toIntOrNull()?.let { n -> n > 0 } == true } ?: return null
         val source = PcLauncherAdapters.gameSourceForExtension(file.extension) ?: return null
+        val storefront = StorefrontIdentity.normalizeStore(source)
+        val storefrontId = id.takeIf { StorefrontIdentity.isPlausibleAppId(it) }
 
         gameNativePkg?.let { pkg ->
             val intent = PcLauncherAdapters.forType(PcLauncherType.GAMENATIVE)?.buildLaunchIntent(pkg, id, source) ?: return null
-            return Triple(intent, "GameNative", pkg)
+            return PcLaunch(intent, "GameNative", pkg, storefront, storefrontId)
         }
         // Only Steam titles are launchable by the GameHub family; other stores need GameNative.
         if (file.extension == "steam" && gameHubPkg != null) {
             val type = if (gameHubPkg == "gamehub.lite") PcLauncherType.GAMEHUB_LITE else PcLauncherType.BANNERHUB_V6
             val name = if (gameHubPkg == "gamehub.lite") "GameHub Lite" else "BannerHub"
             val intent = PcLauncherAdapters.forType(type, pm)?.buildLaunchIntent(gameHubPkg, id, "STEAM") ?: return null
-            return Triple(intent, name, gameHubPkg)
+            return PcLaunch(intent, name, gameHubPkg, storefront = "STEAM", storefrontGameId = storefrontId)
         }
         return null
     }

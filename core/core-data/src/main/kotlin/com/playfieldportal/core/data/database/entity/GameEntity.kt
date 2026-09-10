@@ -18,6 +18,11 @@ import kotlinx.serialization.Serializable
         Index("last_played_at"),
         Index("rom_path", unique = true),
         Index("artwork_key"),
+        // Duplicate lookup for PC games, on the PAIR — an app id is unique within its store, so
+        // ("STEAM","620") and ("GOG","620") are different games. Not unique: two library entries
+        // can legitimately point at one installed title (a pin and a folder import) until they
+        // are reconciled.
+        Index("storefront", "storefront_game_id"),
     ]
 )
 data class GameEntity(
@@ -186,6 +191,15 @@ data class GameEntity(
     @ColumnInfo(name = "launch_token")
     val launchToken: String? = null,
 
+    // Windows storefront identity (C16 phase 0) — the store an imported PC game came from
+    // (STEAM/EPIC/GOG/AMAZON/CUSTOM_GAME) and its id on that store. Captured at import and
+    // backfilled from launch_intent_uri in v43. Always used as a PAIR: an app id is unique
+    // within its store, never across stores.
+    val storefront: String? = null,
+
+    @ColumnInfo(name = "storefront_game_id")
+    val storefrontGameId: String? = null,
+
     @ColumnInfo(name = "is_missing")
     val isMissing: Boolean = false,
 
@@ -241,6 +255,8 @@ fun GameEntity.toDomain() = Game(
     shortcutId = launchShortcutId,
     launchIntentUri = launchIntentUri,
     launchToken = launchToken,
+    storefront = storefront,
+    storefrontGameId = storefrontGameId,
     isMissing = isMissing,
     lastSeenAt = lastSeenAt,
 )
@@ -293,6 +309,8 @@ fun Game.toEntity() = GameEntity(
     launchShortcutId = shortcutId,
     launchIntentUri = launchIntentUri,
     launchToken = launchToken,
+    storefront = storefront,
+    storefrontGameId = storefrontGameId,
     isMissing   = isMissing,
     lastSeenAt  = lastSeenAt,
 )

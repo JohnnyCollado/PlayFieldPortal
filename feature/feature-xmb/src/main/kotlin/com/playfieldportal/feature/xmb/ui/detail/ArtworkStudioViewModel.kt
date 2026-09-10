@@ -55,9 +55,22 @@ data class ArtworkStudioUiState(
     val zone: StudioZone = StudioZone.TABS,
     val gridIndex: Int = 0,
     val page: Int = 0,
+    val pageCount: Int = 0,
+    // 1-based inclusive range of the visible page within the whole result list ("21–40 of 137").
+    val rangeStart: Int = 0,
+    val rangeEnd: Int = 0,
     val results: List<StudioArt> = emptyList(),
     val totalResults: Int = 0,
     val resultsLoading: Boolean = false,
+    // ── Search (C16 task 1.1) ────────────────────────────────────────────────
+    // The query the visible results were fetched for. Seeded from the game's title and freely
+    // editable; editing it NEVER renames the game — it only changes what the providers are asked.
+    val query: String = "",
+    // What is in the text field while the search overlay is open, before it is submitted.
+    val queryDraft: String = "",
+    val searchOpen: Boolean = false,
+    // True while the active query differs from the game's own title — drives the "Reset" affordance.
+    val queryIsCustom: Boolean = false,
     // Current asset of the active tab (what the game uses right now).
     val currentUri: String? = null,
     // Bumped on every apply/clear so the preview reloads even when the portable library reuses
@@ -79,6 +92,8 @@ data class ArtworkStudioUiState(
     // Actions menu (OPEN_CONTEXT_MENU / on-screen ACTIONS) — operates on the active tab's current slot.
     val actionsOpen: Boolean = false,
     val actionsIndex: Int = 0,
+    // Whether the menu was opened over a SteamGridDB browse — gates the mature-content entry.
+    val sgdbSourceActive: Boolean = false,
     val info: StudioArtworkInfo? = null,
     val showFileInfo: Boolean = false,
     // Crop editor (task: crop/position) — non-null path = editing the untouched original.
@@ -99,6 +114,16 @@ data class ArtworkStudioUiState(
     val cropB: Float = 1f,
     val closed: Boolean = false,
 ) {
+    /**
+     * Placeholder tiles to draw while an uncached page is in flight. A full gridful whenever
+     * loading — the screen renders skeletons instead of the grid in that state, so tying this to
+     * `results.isEmpty()` would draw an empty panel if the two ever disagreed.
+     */
+    val skeletonCount: Int get() = if (resultsLoading) PAGE_SIZE else 0
+
+    val hasPreviousPage: Boolean get() = page > 0
+    val hasNextPage: Boolean get() = page < pageCount - 1
+
     /** Actions that make sense for the current slot, in menu order. Empty entries are hidden. */
     val availableActions: List<StudioAction>
         get() = buildList {
@@ -109,6 +134,9 @@ data class ArtworkStudioUiState(
             if (info?.originUrl != null) add(StudioAction.RESET_DEFAULT)
             if (hasCurrent) add(StudioAction.CLEAR)
             if (hasCurrent) add(StudioAction.FILE_INFO)
+            // Mature content is a SteamGridDB browse filter, so it belongs to that source's
+            // context menu — not to a global button that used to fire on every screen (task 1.3).
+            if (sgdbSourceActive) add(StudioAction.TOGGLE_MATURE)
         }
 }
 
@@ -118,6 +146,7 @@ enum class StudioAction(val label: String) {
     RESET_DEFAULT("Reset to Scraped Default"),
     CLEAR("Clear Artwork"),
     FILE_INFO("View File Information"),
+    TOGGLE_MATURE("Mature Content (SteamGridDB)"),
 }
 
 // Kinds where a crop frame is meaningful. ICON1 (icon-slot video snap) is included — its crop
@@ -133,8 +162,12 @@ typealias StudioArtworkInfo = com.playfieldportal.feature.artwork.store.StudioAr
 const val STUDIO_GRID_COLUMNS = 4
 const val STUDIO_GRID_ROWS = 5   // fixed 4x5 page; PAGE_SIZE matches columns x rows
 
-private const val PAGE_SIZE = STUDIO_GRID_COLUMNS * STUDIO_GRID_ROWS
+internal const val PAGE_SIZE = STUDIO_GRID_COLUMNS * STUDIO_GRID_ROWS
 private const val CROP_PAN_STEP = 0.03f
+
+// Long enough for any real title with edition and subtitle; short enough that a pasted wall of
+// text can never become a provider query.
+private const val MAX_QUERY_LENGTH = 120
 
 // SS media types browsable per destination (order = preference; all variants are listed).
 // ICON0 has no exact SS equivalent — the landscape "mix" composites and screen-marquee come
@@ -169,11 +202,18 @@ val STUDIO_TABS = listOf(
 
 /**
  * Fullscreen Artwork Studio (controller-first) — the single place a game's artwork is browsed
- * and changed. LB/RB switch destination tabs, L2/R2 switch sources, D-pad drives the grid,
- * A previews→applies, B backs out. Replaces the old in-detail artwork manager.
+ * and changed. LB/RB switch destination tabs, Left/Right act on the current level, D-pad drives
+ * the grid, A previews→applies, B backs out, X opens search, Y opens the per-slot options.
+ * Replaces the old in-detail artwork manager.
+ *
+ * (L2/R2 are unbound: no GamepadAction maps to KEYCODE_BUTTON_L2/R2 in GamepadBinding, so the
+ * old "L2/R2 switch sources" line here described a binding that never existed.)
  *
  * ScreenScraper results come straight from ss_media_cache (zero API calls when cached);
- * SteamGridDB pages through the full result list with the web version's NSFW filter.
+ * SteamGridDB pages through the full result list with the web version's mature filter.
+ *
+ * Every browse goes through one keyed, generation-guarded path (see [loadResults]) — that is
+ * what stops a slow response from an old source repainting the grid of a new one.
  */
 @HiltViewModel
 class ArtworkStudioViewModel @Inject constructor(
@@ -195,15 +235,25 @@ class ArtworkStudioViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ArtworkStudioUiState())
     val uiState: StateFlow<ArtworkStudioUiState> = _uiState.asStateFlow()
 
-    // Full (unpaged) result list for the active tab+source; the state carries one page.
-    private var allResults: List<StudioArt> = emptyList()
-    private var gameId: Long = -1
+    // One finished result list per request key. Replaces the single `allResults` field, whose
+    // sharing was the disappearing-artwork bug: any late response overwrote whatever was on
+    // screen. A response can now only ever be stored under its OWN key (AD-6).
+    private val resultCache = StudioResultCache()
 
-    // One-shot per-open caches for the single-result sources (null until first browse).
-    private var tgdbInfo: com.playfieldportal.feature.artwork.TgdbGameInfo? = null
-    private var tgdbFetched = false
-    private var igdbInfo: com.playfieldportal.feature.artwork.api.IgdbGameInfo? = null
-    private var igdbFetched = false
+    /** The key the visible grid belongs to. A response for any other key is dropped. */
+    private var activeKey: StudioRequestKey? = null
+
+    /**
+     * Monotonic request token. Incremented on every browse; a response may reduce into state only
+     * if its token is still the current one AND its key still matches. Two independent checks,
+     * because a user can return to a key while its first request is still in flight.
+     */
+    private var generation: Long = 0
+
+    /** The in-flight browse, cancelled the moment another one starts. */
+    private var loadJob: kotlinx.coroutines.Job? = null
+
+    private var gameId: Long = -1
     private var hasIgdbCreds = false
 
     fun load(gameId: Long) {
@@ -217,13 +267,22 @@ class ArtworkStudioViewModel @Inject constructor(
             val game = gameRepository.getById(gameId)
             val hasSgdb = !sgdbKeyProvider.getKey().isNullOrBlank()
             hasIgdbCreds = igdbApi.hasCredentials()
-            tgdbFetched = false; tgdbInfo = null
-            igdbFetched = false; igdbInfo = null
-            _uiState.update { it.copy(game = game, isLoading = false, hasSgdbKey = hasSgdb) }
+            resultCache.clear()
+            // The query starts as the game's title and is the user's from then on.
+            val seed = game?.displayTitle.orEmpty()
+            _uiState.update {
+                it.copy(
+                    game = game, isLoading = false, hasSgdbKey = hasSgdb,
+                    query = seed, queryDraft = seed, queryIsCustom = false,
+                )
+            }
             refreshCurrent()
             loadResults()
         }
     }
+
+    /** The game's own title — what Reset returns the query to, and what "custom" is measured against. */
+    private fun gameTitle(): String = _uiState.value.game?.displayTitle.orEmpty()
 
     private fun tab() = STUDIO_TABS[_uiState.value.tabIndex]
 
@@ -271,31 +330,84 @@ class ArtworkStudioViewModel @Inject constructor(
         _uiState.update { it.copy(currentUri = current) }
     }
 
+    /**
+     * Browses the active category + source for the active query.
+     *
+     * Race safety is coroutine ownership, never a delay (AD-6):
+     *  1. the previous browse is cancelled outright;
+     *  2. the request carries an immutable key and a monotonic token;
+     *  3. the response may write to state only while BOTH still match.
+     *
+     * A cache hit renders immediately with no loading state at all; a miss clears the grid and
+     * shows skeletons, so a source switch can never leave another provider's tiles on screen.
+     */
     private fun loadResults() {
-        val source = sourcesForTab().getOrNull(_uiState.value.sourceIndex) ?: StudioSource.LOCAL
+        val state = _uiState.value
+        val source = sourcesForTab().getOrNull(state.sourceIndex) ?: StudioSource.LOCAL
         val kind = tab().kind
-        _uiState.update { it.copy(resultsLoading = true, results = emptyList(), gridIndex = 0, page = 0) }
-        viewModelScope.launch {
-            allResults = when (source) {
+        val key = StudioRequestKey.of(state.query, source, kind, state.includeNsfw)
+
+        loadJob?.cancel()
+        activeKey = key
+        val token = ++generation
+
+        resultCache[key]?.let { cached ->
+            showPage(cached, pageIndex = 0, key = key, token = token)
+            return
+        }
+        if (source == StudioSource.LOCAL) {
+            // Local never browses — the grid shows the device-picker action instead.
+            resultCache[key] = emptyList()
+            showPage(emptyList(), pageIndex = 0, key = key, token = token)
+            return
+        }
+
+        _uiState.update {
+            it.copy(resultsLoading = true, results = emptyList(), gridIndex = 0, page = 0,
+                pageCount = 0, rangeStart = 0, rangeEnd = 0, totalResults = 0)
+        }
+        loadJob = viewModelScope.launch {
+            val fetched = when (source) {
                 StudioSource.SCREENSCRAPER -> ssResults(kind)
-                StudioSource.STEAMGRIDDB   -> sgdbResults(kind)
-                StudioSource.THEGAMESDB    -> tgdbResults(kind)
-                StudioSource.IGDB          -> igdbResults(kind)
-                StudioSource.LOCAL         -> emptyList()   // grid shows the pick action instead
+                StudioSource.STEAMGRIDDB   -> sgdbResults(kind, state.query)
+                StudioSource.THEGAMESDB    -> tgdbResults(kind, state.query)
+                StudioSource.IGDB          -> igdbResults(kind, state.query)
+                StudioSource.LOCAL         -> emptyList()
             }
-            _uiState.update {
-                it.copy(
-                    resultsLoading = false,
-                    totalResults = allResults.size,
-                    results = allResults.take(PAGE_SIZE),
-                    page = 0,
-                )
-            }
+            // Store under the request's OWN key regardless of what is on screen now — a late
+            // response still warms its cache entry, it just may not be shown.
+            resultCache[key] = fetched
+            showPage(fetched, pageIndex = 0, key = key, token = token)
+        }
+    }
+
+    /**
+     * The single reducer boundary for results. Rejects any response whose key or token has been
+     * superseded — the guard that makes a slow provider unable to overwrite a fast one.
+     */
+    private fun showPage(all: List<StudioArt>, pageIndex: Int, key: StudioRequestKey, token: Long) {
+        if (token != generation || key != activeKey) return
+        val page = StudioPage.of(all, pageIndex, PAGE_SIZE)
+        _uiState.update {
+            it.copy(
+                resultsLoading = false,
+                results = page.items,
+                totalResults = page.totalResults,
+                page = page.pageIndex,
+                pageCount = page.pageCount,
+                rangeStart = page.rangeStart,
+                rangeEnd = page.rangeEnd,
+                gridIndex = 0,
+            )
         }
     }
 
     // Every SS media of the kind's types — cached lists load free; a game never scraped
     // gets one live scrape-as-you-go lookup (cached + ssId persisted for next time).
+    //
+    // ScreenScraper is addressed by the game's ss_id, not by a title, so it is the one source the
+    // editable query cannot steer: a different query returns the same media list. Re-pointing SS
+    // at another game is Phase 2's Change Match, not a search.
     private suspend fun ssResults(kind: ArtworkKind): List<StudioArt> {
         val types = SS_TYPES_FOR_KIND[kind] ?: return emptyList()
         val medias = ssMediaCatalog.mediasFor(gameId) ?: return emptyList()
@@ -312,11 +424,14 @@ class ArtworkStudioViewModel @Inject constructor(
         }
     }
 
-    private suspend fun sgdbResults(kind: ArtworkKind): List<StudioArt> {
+    private suspend fun sgdbResults(kind: ArtworkKind, query: String): List<StudioArt> {
         val type = sgdbTypeFor(kind) ?: return emptyList()
         val game = _uiState.value.game ?: return emptyList()
-        val sgdbId = game.steamGridDbId
-            ?: steamGridDb.searchGame(game.displayTitle).getOrNull()?.firstOrNull()?.id
+        // A saved id is the strongest evidence, but only while the user is still searching for
+        // THIS game: the moment they type something else, the typed title wins.
+        val savedId = game.steamGridDbId?.takeIf { StudioQuery.sameQuery(query, game.displayTitle) }
+        val sgdbId = savedId
+            ?: steamGridDb.searchGame(query).getOrNull()?.firstOrNull()?.id
             ?: return emptyList()
         // No dimension filter, ICON0 included: every grid shape is a valid candidate now
         // that pass 2's crop editor will shape it to the tile.
@@ -339,14 +454,13 @@ class ArtworkStudioViewModel @Inject constructor(
         }
     }
 
-    private suspend fun tgdbResults(kind: ArtworkKind): List<StudioArt> {
+    private suspend fun tgdbResults(kind: ArtworkKind, query: String): List<StudioArt> {
         val game = _uiState.value.game ?: return emptyList()
-        if (!tgdbFetched) {
-            tgdbFetched = true
-            tgdbInfo = runCatching { theGamesDb.fetchGameInfo(game.platformId, game.displayTitle) }
-                .onFailure { Timber.w(it, "TGDB browse failed") }.getOrNull()
-        }
-        val info = tgdbInfo ?: return emptyList()
+        // No per-open memo any more — the result cache is keyed on the query, so it already
+        // collapses repeat browses AND keeps a second query from serving the first one's art.
+        val info = runCatching { theGamesDb.fetchGameInfo(game.platformId, query) }
+            .onFailure { Timber.w(it, "TGDB browse failed") }.getOrNull()
+            ?: return emptyList()
         if (kind == ArtworkKind.ICON) {
             return listOfNotNull(
                 info.artworkUrl?.let { StudioArt(it, null, "TheGamesDB", "box art · crop to tile") },
@@ -362,14 +476,11 @@ class ArtworkStudioViewModel @Inject constructor(
         return listOf(StudioArt(url = url, thumb = null, provider = "TheGamesDB", label = "best title match"))
     }
 
-    private suspend fun igdbResults(kind: ArtworkKind): List<StudioArt> {
+    private suspend fun igdbResults(kind: ArtworkKind, query: String): List<StudioArt> {
         val game = _uiState.value.game ?: return emptyList()
-        if (!igdbFetched) {
-            igdbFetched = true
-            igdbInfo = runCatching { igdbApi.fetchGameInfo(game.platformId, game.displayTitle) }
-                .onFailure { Timber.w(it, "IGDB browse failed") }.getOrNull()
-        }
-        val info = igdbInfo ?: return emptyList()
+        val info = runCatching { igdbApi.fetchGameInfo(game.platformId, query) }
+            .onFailure { Timber.w(it, "IGDB browse failed") }.getOrNull()
+            ?: return emptyList()
         if (kind == ArtworkKind.ICON) {
             return listOfNotNull(
                 info.artworkUrl?.let { StudioArt(it, null, "IGDB", "cover · crop to tile") },
@@ -393,6 +504,8 @@ class ArtworkStudioViewModel @Inject constructor(
         _uiState.update {
             it.copy(tabIndex = index.coerceIn(0, STUDIO_TABS.lastIndex), sourceIndex = 0, zone = StudioZone.TABS)
         }
+        // The query persists across categories: a title the user corrected once should not have
+        // to be retyped for every artwork kind.
         viewModelScope.launch { refreshCurrent() }
         loadResults()
     }
@@ -405,9 +518,9 @@ class ArtworkStudioViewModel @Inject constructor(
         if (sources.isEmpty()) return
         val clamped = index.coerceIn(0, sources.lastIndex)
         _uiState.update { it.copy(sourceIndex = clamped, zone = StudioZone.SOURCES) }
-        if (sources[clamped] == StudioSource.LOCAL) {
-            _uiState.update { it.copy(results = emptyList(), totalResults = 0) }
-        } else loadResults()
+        // Every source — Local included — goes through loadResults so the request key, the
+        // generation token and the cache stay the single description of what is on screen.
+        loadResults()
     }
 
     fun cycleSource(delta: Int) {
@@ -417,25 +530,80 @@ class ArtworkStudioViewModel @Inject constructor(
         selectSource((_uiState.value.sourceIndex + delta).mod(count))
     }
 
+    /**
+     * Flips SteamGridDB's mature filter — START, or the SteamGridDB context menu.
+     *
+     * A no-op unless SteamGridDB is the active source. The filter is only ever part of a
+     * SteamGridDB request key (task 1.3), so flipping it anywhere else would silently change
+     * hidden state that nothing on screen reflects and no provider would act on.
+     */
     fun toggleNsfw() {
-        _uiState.update { it.copy(includeNsfw = !it.includeNsfw) }
-        if (sourcesForTab().getOrNull(_uiState.value.sourceIndex) == StudioSource.STEAMGRIDDB) loadResults()
+        if (!sgdbActive()) return
+        _uiState.update { it.copy(includeNsfw = !it.includeNsfw, actionsOpen = false) }
+        loadResults()
     }
 
-    fun nextPage() {
-        val next = _uiState.value.page + 1
-        if (next * PAGE_SIZE >= allResults.size) return
-        _uiState.update {
-            it.copy(page = next, gridIndex = 0, results = allResults.drop(next * PAGE_SIZE).take(PAGE_SIZE))
-        }
+    private fun sgdbActive(): Boolean =
+        sourcesForTab().getOrNull(_uiState.value.sourceIndex) == StudioSource.STEAMGRIDDB
+
+    // ── Search (task 1.1) ─────────────────────────────────────────────────────
+
+    /** Opens the search field, pre-filled with the active query and fully selectable. */
+    fun openSearch() = _uiState.update {
+        it.copy(searchOpen = true, queryDraft = it.query, actionsOpen = false, showFileInfo = false)
     }
 
-    fun previousPage() {
-        val prev = _uiState.value.page - 1
-        if (prev < 0) return
+    fun onQueryDraftChanged(text: String) = _uiState.update { it.copy(queryDraft = text.take(MAX_QUERY_LENGTH)) }
+
+    fun cancelSearch() = _uiState.update { it.copy(searchOpen = false, queryDraft = it.query) }
+
+    /**
+     * Applies the typed query and re-browses.
+     *
+     * Submit-only: typing does not fire requests, so a provider is never hit per keystroke. A
+     * blank draft falls back to the game's title rather than searching for nothing, and an
+     * unchanged query closes the field without discarding the results already on screen.
+     */
+    fun submitSearch() {
+        val state = _uiState.value
+        val submitted = state.queryDraft.trim().ifBlank { gameTitle() }
+        val unchanged = StudioQuery.sameQuery(submitted, state.query)
         _uiState.update {
-            it.copy(page = prev, gridIndex = 0, results = allResults.drop(prev * PAGE_SIZE).take(PAGE_SIZE))
+            it.copy(
+                searchOpen = false,
+                query = submitted,
+                queryDraft = submitted,
+                queryIsCustom = !StudioQuery.sameQuery(submitted, gameTitle()),
+            )
         }
+        if (!unchanged) loadResults()
+    }
+
+    /** Returns the query to the game's own title. The game row is never touched either way. */
+    fun resetSearchToTitle() {
+        val title = gameTitle()
+        if (StudioQuery.sameQuery(title, _uiState.value.query)) {
+            _uiState.update { it.copy(searchOpen = false, queryDraft = title, query = title, queryIsCustom = false) }
+            return
+        }
+        _uiState.update {
+            it.copy(searchOpen = false, query = title, queryDraft = title, queryIsCustom = false)
+        }
+        loadResults()
+    }
+
+    /** All results for the grid currently on screen, or empty if its key is no longer cached. */
+    private fun activeResults(): List<StudioArt> = activeKey?.let { resultCache[it] }.orEmpty()
+
+    fun nextPage() = goToPage(_uiState.value.page + 1)
+
+    fun previousPage() = goToPage(_uiState.value.page - 1)
+
+    private fun goToPage(index: Int) {
+        val key = activeKey ?: return
+        val all = activeResults()
+        if (index < 0 || index * PAGE_SIZE >= all.size) return
+        showPage(all, index, key, generation)
     }
 
     fun openCandidate(index: Int) {
@@ -534,12 +702,23 @@ class ArtworkStudioViewModel @Inject constructor(
 
     // ── Actions menu (pass 2) ───────────────────────────────────────────────────
 
-    /** Opens the per-slot actions menu, loading the record so availability is accurate. */
+    /**
+     * Opens the per-slot actions menu, loading the record so availability is accurate.
+     *
+     * Opens for a SteamGridDB browse even with no current artwork, because the mature filter
+     * lives here now and has to be reachable before anything has been applied (task 1.3).
+     */
     fun openActions() {
-        if (_uiState.value.currentUri == null) return
+        val sgdb = sgdbActive()
+        if (_uiState.value.currentUri == null && !sgdb) return
         viewModelScope.launch {
             val info = routingStore.studioInfo(gameId, tab().kind)
-            _uiState.update { it.copy(info = info, actionsOpen = true, actionsIndex = 0, showFileInfo = false) }
+            _uiState.update {
+                it.copy(
+                    info = info, actionsOpen = true, actionsIndex = 0, showFileInfo = false,
+                    sgdbSourceActive = sgdb,
+                )
+            }
         }
     }
 
@@ -557,6 +736,7 @@ class ArtworkStudioViewModel @Inject constructor(
             StudioAction.RESET_DEFAULT    -> resetToScrapedDefault()
             StudioAction.CLEAR            -> { closeActions(); clearCurrent() }
             StudioAction.FILE_INFO        -> _uiState.update { it.copy(showFileInfo = true) }
+            StudioAction.TOGGLE_MATURE    -> toggleNsfw()
         }
     }
 
@@ -858,6 +1038,15 @@ class ArtworkStudioViewModel @Inject constructor(
 
     fun handleGamepadAction(action: GamepadAction) {
         val s = _uiState.value
+        // Search field: the IME owns typing; the pad only confirms or cancels.
+        if (s.searchOpen) {
+            when (action) {
+                GamepadAction.SELECT -> submitSearch()
+                GamepadAction.BACK   -> cancelSearch()
+                else -> Unit
+            }
+            return
+        }
         // Crop editor: D-pad pans, LB/RB zoom out/in, A bakes, B cancels.
         if (s.cropEditorPath != null) {
             when (action) {
@@ -944,8 +1133,12 @@ class ArtworkStudioViewModel @Inject constructor(
                     else _uiState.update { it.copy(zone = StudioZone.GRID) }
                 StudioZone.GRID    -> openCandidate(s.gridIndex)
             }
-            // X / Square toggles the SGDB NSFW filter while browsing that source.
-            GamepadAction.CHANGE_SORT -> toggleNsfw()
+            // X / Square focuses the search field, from any level.
+            GamepadAction.CHANGE_SORT -> openSearch()
+            // START toggles SteamGridDB's mature filter — a screen-local repurposing, which is
+            // how START is already used elsewhere (the pickers bind it to Add/Apply; it has no
+            // global behaviour of its own). Silently ignored on every other source.
+            GamepadAction.HOME -> toggleNsfw()
             // Y / Triangle opens the per-slot options menu (crop, restore, reset, clear, info) —
             // XMB-style context menu, available at every level.
             GamepadAction.OPEN_CONTEXT_MENU -> openActions()

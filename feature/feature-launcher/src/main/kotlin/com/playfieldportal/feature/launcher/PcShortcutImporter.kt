@@ -9,6 +9,7 @@ import android.os.Process
 import com.playfieldportal.core.data.repository.MemoryCardRepository
 import com.playfieldportal.core.data.repository.WindowsLibrarySetup
 import com.playfieldportal.core.data.repository.WindowsSetupState
+import com.playfieldportal.core.data.model.StorefrontIdentity
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GameContentType
 import com.playfieldportal.core.domain.repository.GameRepository
@@ -169,6 +170,9 @@ class PcShortcutImporter @Inject constructor(
             ),
         )
         gameNativeAppId(hostPackage, shortcutId)?.let { appId ->
+            // GameNative's shortcut ids are Steam appids, so a pin carries a real storefront
+            // identity — kept so the game is matchable by id, not only by its label (C16 0.5).
+            gameRepository.updateStorefrontIdentity(gameId, "STEAM", appId)
             runCatching { achievementLinker.linkSteam(gameId, appId) }
                 .onFailure { Timber.e(it, "STEAM link failed for appid $appId") }
         }
@@ -198,6 +202,11 @@ class PcShortcutImporter @Inject constructor(
                 contentType     = GameContentType.GAME,
             ),
         )
+        // The captured intent names the store and the id it launches by — the same evidence
+        // the v43 backfill reads, recorded here at import time instead (C16 task 0.5).
+        StorefrontIdentity.fromLaunchIntentUri(intentUri)?.let { (store, storeId) ->
+            gameRepository.updateStorefrontIdentity(gameId, store, storeId)
+        }
         steamAppIdFromIntentUri(intentUri)?.let { appId ->
             runCatching { achievementLinker.linkSteam(gameId, appId) }
                 .onFailure { Timber.e(it, "STEAM link failed for appid $appId") }

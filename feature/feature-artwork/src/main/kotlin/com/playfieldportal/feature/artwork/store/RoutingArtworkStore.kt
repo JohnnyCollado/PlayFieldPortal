@@ -47,19 +47,21 @@ class RoutingArtworkStore @Inject constructor(
     private val imageCache: ArtworkImageCache,
 ) : ArtworkStore {
 
-    override suspend fun saveFromUrl(gameId: Long, kind: ArtworkKind, url: String): String? {
-        val target = portableTarget(gameId) ?: return internal.saveFromUrl(gameId, kind, url)
+    override suspend fun saveFromUrl(gameId: Long, kind: ArtworkKind, url: String, sortOrder: Int): String? {
+        val target = portableTarget(gameId) ?: return internal.saveFromUrl(gameId, kind, url, sortOrder)
         val (tree, game) = target
 
         // Existing portable artwork outranks a new auto-scrape (§22) — including locked and
         // user-assigned assets. Dead files fall through and are replaced.
-        artworkRecordDao.get(gameId, kind.name)?.let { record ->
+        artworkRecordDao.getAt(gameId, kind.name, sortOrder)?.let { record ->
             if (record.locked || record.userAssigned || internal.isValidRef(record.documentUri)) {
                 return record.documentUri
             }
         }
         val tmp = ArtworkTempIO.downloadToTemp(httpClient, context.cacheDir, kind, url) ?: return null
-        return persistPortable(tree, game, kind, tmp, source = SOURCE_SCRAPE, userAssigned = false)
+        return persistPortable(
+            tree, game, kind, tmp, source = SOURCE_SCRAPE, userAssigned = false, sortOrder = sortOrder,
+        )
     }
 
     override suspend fun saveVersionedFromUrl(gameId: Long, kind: ArtworkKind, url: String): String? {
@@ -82,17 +84,37 @@ class RoutingArtworkStore @Inject constructor(
         return persistPortable(tree, game, kind, tmp, source = SOURCE_USER, userAssigned = true)
     }
 
-    override suspend fun saveFromFile(gameId: Long, kind: ArtworkKind, tempFile: java.io.File): String? {
-        val target = portableTarget(gameId) ?: return internal.saveFromFile(gameId, kind, tempFile)
+    override suspend fun saveFromFile(
+        gameId: Long,
+        kind: ArtworkKind,
+        tempFile: java.io.File,
+        sortOrder: Int,
+    ): String? {
+        val target = portableTarget(gameId) ?: return internal.saveFromFile(gameId, kind, tempFile, sortOrder)
         val (tree, game) = target
-        return persistPortable(tree, game, kind, tempFile, source = SOURCE_SCRAPE, userAssigned = false)
+        return persistPortable(
+            tree, game, kind, tempFile, source = SOURCE_SCRAPE, userAssigned = false, sortOrder = sortOrder,
+        )
     }
 
     override fun isValidRef(ref: String?): Boolean = internal.isValidRef(ref)
 
-    override suspend fun find(gameId: Long, kind: ArtworkKind): String? =
-        internal.find(gameId, kind)
-            ?: artworkRecordDao.get(gameId, kind.name)?.documentUri?.takeIf { internal.isValidRef(it) }
+    override suspend fun find(gameId: Long, kind: ArtworkKind, sortOrder: Int): String? =
+        internal.find(gameId, kind, sortOrder)
+            ?: artworkRecordDao.getAt(gameId, kind.name, sortOrder)?.documentUri?.takeIf { internal.isValidRef(it) }
+
+    /**
+     * Every reference for [kind] in position order. Internal files come first (they are what
+     * [find] prefers), then any recorded position the internal layout does not cover — a game is
+     * normally in one mode or the other, so in practice one of the two lists is empty.
+     */
+    override suspend fun findAll(gameId: Long, kind: ArtworkKind): List<String> {
+        val out = internal.findAll(gameId, kind).toMutableList()
+        artworkRecordDao.findAll(gameId, kind.name)
+            .mapNotNull { it.documentUri.takeIf { uri -> internal.isValidRef(uri) } }
+            .forEach { if (it !in out) out += it }
+        return out
+    }
 
     override suspend fun deleteAll() {
         internal.deleteAll()
@@ -111,9 +133,10 @@ class RoutingArtworkStore @Inject constructor(
         tempFile: java.io.File,
         source: String,
         userAssigned: Boolean,
+        sortOrder: Int = 0,
     ): String? {
         val (tree, game) = portableTarget(gameId) ?: run { tempFile.delete(); return null }
-        return persistPortable(tree, game, kind, tempFile, source, userAssigned)
+        return persistPortable(tree, game, kind, tempFile, source, userAssigned, sortOrder = sortOrder)
     }
 
     // ── Studio pass 2 ───────────────────────────────────────────────────────────
@@ -122,8 +145,8 @@ class RoutingArtworkStore @Inject constructor(
     // offers only Apply + Clear in that mode). Clear itself always works.
 
     /** Everything the Studio's file-info panel and actions menu need, or null (no record). */
-    suspend fun studioInfo(gameId: Long, kind: ArtworkKind): StudioArtworkInfo? {
-        val rec = artworkRecordDao.get(gameId, kind.name) ?: return null
+    suspend fun studioInfo(gameId: Long, kind: ArtworkKind, sortOrder: Int = 0): StudioArtworkInfo? {
+        val rec = artworkRecordDao.getAt(gameId, kind.name, sortOrder) ?: return null
         return StudioArtworkInfo(
             provider = rec.provider,
             originUrl = rec.originUrl,
@@ -137,36 +160,108 @@ class RoutingArtworkStore @Inject constructor(
             hasOriginal = rec.hasOriginal,
             cropRect = rec.cropRect,
             updatedAt = rec.updatedAt,
+            sortOrder = rec.sortOrder,
         )
     }
 
+    /** Ordered references for a multi-asset slot, newest position last. */
+    suspend fun studioAssets(gameId: Long, kind: ArtworkKind): List<StudioArtworkSlot> =
+        artworkRecordDao.findAll(gameId, kind.name).map {
+            StudioArtworkSlot(
+                sortOrder = it.sortOrder,
+                documentUri = it.documentUri,
+                provider = it.provider,
+                originUrl = it.originUrl,
+                providerAssetId = it.providerAssetId,
+                sizeBytes = it.sizeBytes,
+            )
+        }
+
+    /** The position an append would write to — one past the highest in use, or 0 for an empty slot. */
+    suspend fun nextSortOrder(gameId: Long, kind: ArtworkKind): Int =
+        if (!ArtworkFileNaming.supportsMultiple(kind)) 0
+        else (artworkRecordDao.maxSortOrder(gameId, kind.name) + 1)
+            .coerceAtMost(ArtworkFileNaming.MAX_SORT_ORDER)
+
     /** Studio Apply from a browse URL: versioned write, provenance recorded, previous backed up. */
-    suspend fun studioApplyFromUrl(gameId: Long, kind: ArtworkKind, url: String, provider: String?): String? {
+    suspend fun studioApplyFromUrl(
+        gameId: Long,
+        kind: ArtworkKind,
+        url: String,
+        provider: String?,
+        sortOrder: Int = 0,
+        providerAssetId: String? = null,
+    ): String? {
         val target = portableTarget(gameId) ?: return internal.saveVersionedFromUrl(gameId, kind, url)
         val (tree, game) = target
         val tmp = ArtworkTempIO.downloadToTemp(httpClient, context.cacheDir, kind, url) ?: return null
         return persistPortable(
             tree, game, kind, tmp, source = SOURCE_USER, userAssigned = true,
             originUrl = url, provider = provider, backupPrevious = true,
+            sortOrder = sortOrder, providerAssetId = providerAssetId,
         )
+    }
+
+    /**
+     * Adds another asset to a multi-asset slot instead of replacing its primary — the write
+     * behind "add a screenshot" / "add a video". Single-art kinds fall back to a plain apply, so
+     * a caller never has to branch on the kind.
+     */
+    suspend fun studioAppendFromUrl(
+        gameId: Long,
+        kind: ArtworkKind,
+        url: String,
+        provider: String?,
+        providerAssetId: String? = null,
+    ): String? = studioApplyFromUrl(
+        gameId, kind, url, provider,
+        sortOrder = nextSortOrder(gameId, kind),
+        providerAssetId = providerAssetId,
+    )
+
+    /**
+     * Removes one position of a multi-asset slot, deleting its file and closing the ordering gap
+     * so the remaining assets stay 0..n-1 with the primary at 0.
+     */
+    suspend fun deleteAssetAt(gameId: Long, kind: ArtworkKind, sortOrder: Int): Boolean {
+        val rec = artworkRecordDao.getAt(gameId, kind.name, sortOrder) ?: return false
+        val target = portableTarget(gameId)
+        if (target != null) {
+            runCatching { library.deleteUri(Uri.parse(rec.documentUri)) }
+            rec.prevDocumentUri?.let { runCatching { library.deleteUri(Uri.parse(it)) } }
+        }
+        artworkRecordDao.deleteAtAndCompact(gameId, kind.name, sortOrder)
+        return true
+    }
+
+    /**
+     * Rewrites a slot's order. Only the records move — the files keep their ordinal names, which
+     * would otherwise have to be renamed one by one with no way to make that atomic. Relink
+     * rebuilds order from those names, so a reorder is re-applied by a later explicit reorder,
+     * not silently reverted mid-session.
+     */
+    suspend fun reorderAssets(gameId: Long, kind: ArtworkKind, orderedSortOrders: List<Int>) {
+        val rows = artworkRecordDao.findAll(gameId, kind.name).associateBy { it.sortOrder }
+        artworkRecordDao.reorder(gameId, kind.name, orderedSortOrders.mapNotNull { rows[it]?.id })
     }
 
     /** Studio Apply from a locally-produced file (manual download, cropped bake, local pick copy). */
     suspend fun studioApplyFromFile(
         gameId: Long, kind: ArtworkKind, tempFile: java.io.File, provider: String?, originUrl: String?,
+        sortOrder: Int = 0,
     ): String? {
-        val target = portableTarget(gameId) ?: return internal.saveFromFile(gameId, kind, tempFile)
+        val target = portableTarget(gameId) ?: return internal.saveFromFile(gameId, kind, tempFile, sortOrder)
         val (tree, game) = target
         return persistPortable(
             tree, game, kind, tempFile, source = SOURCE_USER, userAssigned = true,
-            originUrl = originUrl, provider = provider, backupPrevious = true,
+            originUrl = originUrl, provider = provider, backupPrevious = true, sortOrder = sortOrder,
         )
     }
 
     /** Brings the one backed-up previous version back, swapping it with the current (toggle-able). */
-    suspend fun restorePrevious(gameId: Long, kind: ArtworkKind): String? {
+    suspend fun restorePrevious(gameId: Long, kind: ArtworkKind, sortOrder: Int = 0): String? {
         val (tree, game) = portableTarget(gameId) ?: return null
-        val rec = artworkRecordDao.get(gameId, kind.name) ?: return null
+        val rec = artworkRecordDao.getAt(gameId, kind.name, sortOrder) ?: return null
         val prevUri = rec.prevDocumentUri?.let { Uri.parse(it) } ?: return null
         if (!internal.isValidRef(rec.prevDocumentUri)) return null
         val curUri = Uri.parse(rec.documentUri)
@@ -206,15 +301,16 @@ class RoutingArtworkStore @Inject constructor(
     }
 
     /** Re-download the scraped default from the recorded provenance URL (backs up the current). */
-    suspend fun resetToScrapedDefault(gameId: Long, kind: ArtworkKind): String? {
-        val rec = artworkRecordDao.get(gameId, kind.name) ?: return null
+    suspend fun resetToScrapedDefault(gameId: Long, kind: ArtworkKind, sortOrder: Int = 0): String? {
+        val rec = artworkRecordDao.getAt(gameId, kind.name, sortOrder) ?: return null
         val url = rec.originUrl ?: return null
         val (tree, game) = portableTarget(gameId) ?: return null
         val tmp = ArtworkTempIO.downloadToTemp(httpClient, context.cacheDir, kind, url) ?: return null
         // source=scrape, unpinned: a reset returns the slot to scraper control.
         return persistPortable(
             tree, game, kind, tmp, source = SOURCE_SCRAPE, userAssigned = false,
-            originUrl = url, provider = rec.provider, backupPrevious = true,
+            originUrl = url, provider = rec.provider, backupPrevious = true, sortOrder = sortOrder,
+            providerAssetId = rec.providerAssetId,
         )
     }
 
@@ -226,8 +322,10 @@ class RoutingArtworkStore @Inject constructor(
             return true
         }
         val (tree, game) = target
-        val rec = artworkRecordDao.get(gameId, kind.name)
-        if (rec != null) {
+        // Every position of the slot goes: clearing "the screenshot" when a game has five of
+        // them must not leave four orphaned files behind.
+        val records = artworkRecordDao.findAll(gameId, kind.name)
+        for (rec in records) {
             runCatching { library.deleteUri(Uri.parse(rec.documentUri)) }
             rec.prevDocumentUri?.let { runCatching { library.deleteUri(Uri.parse(it)) } }
             library.findInPath(tree, ArtworkPathResolver.originalsDirSegments(game.platformId, kind), rec.portableName)
@@ -235,14 +333,14 @@ class RoutingArtworkStore @Inject constructor(
             artworkRecordDao.deleteById(rec.id)
         }
         internal.deleteKind(gameId, kind)
-        return rec != null
+        return records.isNotEmpty()
     }
 
     /** The untouched original for re-cropping — the stashed pre-crop copy, or the current file
      *  if nothing has been cropped yet. Caller owns and deletes the returned temp. */
-    suspend fun originalToTemp(gameId: Long, kind: ArtworkKind): java.io.File? {
+    suspend fun originalToTemp(gameId: Long, kind: ArtworkKind, sortOrder: Int = 0): java.io.File? {
         val (tree, game) = portableTarget(gameId) ?: return null
-        val rec = artworkRecordDao.get(gameId, kind.name) ?: return null
+        val rec = artworkRecordDao.getAt(gameId, kind.name, sortOrder) ?: return null
         val src = if (rec.hasOriginal) {
             library.findInPath(tree, ArtworkPathResolver.originalsDirSegments(game.platformId, kind), rec.portableName)?.uri
                 ?: Uri.parse(rec.documentUri)
@@ -257,10 +355,16 @@ class RoutingArtworkStore @Inject constructor(
      * backs up the pre-crop current as the previous version, and records the normalized rect.
      * [bakedTempFile] is consumed.
      */
-    suspend fun saveCropBaked(gameId: Long, kind: ArtworkKind, bakedTempFile: java.io.File, cropRect: String): String? {
+    suspend fun saveCropBaked(
+        gameId: Long,
+        kind: ArtworkKind,
+        bakedTempFile: java.io.File,
+        cropRect: String,
+        sortOrder: Int = 0,
+    ): String? {
         val target = portableTarget(gameId) ?: run { bakedTempFile.delete(); return null }
         val (tree, game) = target
-        val rec = artworkRecordDao.get(gameId, kind.name)
+        val rec = artworkRecordDao.getAt(gameId, kind.name, sortOrder)
         // Stash the pre-crop current as the untouched original — only the FIRST time, so repeated
         // re-crops always frame from the true original rather than a previously-cropped file.
         if (rec != null && !rec.hasOriginal && internal.isValidRef(rec.documentUri)) {
@@ -276,7 +380,8 @@ class RoutingArtworkStore @Inject constructor(
             tree, game, kind, bakedTempFile, source = rec?.source ?: SOURCE_USER,
             userAssigned = rec?.userAssigned ?: true,
             originUrl = rec?.originUrl, provider = rec?.provider, backupPrevious = true,
-            cropRect = cropRect, hasOriginal = true,
+            cropRect = cropRect, hasOriginal = true, sortOrder = sortOrder,
+            providerAssetId = rec?.providerAssetId,
         )
     }
 
@@ -301,17 +406,30 @@ class RoutingArtworkStore @Inject constructor(
         backupPrevious: Boolean = false,
         cropRect: String? = null,
         hasOriginal: Boolean = false,
+        sortOrder: Int = 0,
+        providerAssetId: String? = null,
     ): String? {
-        val existing = artworkRecordDao.get(game.id, kind.name)
+        val existing = artworkRecordDao.getAt(game.id, kind.name, sortOrder)
         val romFileName = game.romPath?.replace('\\', '/')?.substringAfterLast('/')
         // Keep the established portable name for this slot; only compute a fresh one for a new slot.
-        var portableName = existing?.portableName
+        // For multi-asset kinds the stored name carries the ordinal, so the base is recovered from
+        // whichever position already exists and every position shares one base + collision suffix.
+        val multi = ArtworkFileNaming.supportsMultiple(kind)
+        val establishedBase = if (multi) {
+            (existing ?: artworkRecordDao.get(game.id, kind.name))
+                ?.portableName?.let { ArtworkFileNaming.stripOrdinal(it) }
+        } else {
+            existing?.portableName
+        }
+        var portableName = establishedBase
             ?: romFileName?.let { PortableNameResolver.fromRomFileName(it) }
             ?: PortableNameResolver.fromTitle(game.userTitleOverride ?: game.scrapedTitle ?: game.title)
-        if (existing == null &&
+        if (establishedBase == null &&
             artworkRecordDao.findNameCollisions(game.platformId, kind.name, portableName, game.id).isNotEmpty()) {
             portableName = "$portableName (2)"
         }
+        // Position 0 keeps the bare name, so single-art kinds and existing installs are untouched.
+        if (multi) portableName = ArtworkFileNaming.withOrdinal(portableName, sortOrder)
 
         // Back up the current file (before saveFromFile deletes the same-stem occupant) so a single
         // "Restore Previous" is possible. Only user/reset/crop writes back up; scrapes never do.
@@ -340,6 +458,7 @@ class RoutingArtworkStore @Inject constructor(
                 gameId = game.id,
                 platformId = game.platformId,
                 artworkType = kind.name,
+                sortOrder = sortOrder,
                 portableName = portableName,
                 relativePath = ArtworkPathResolver.relativePath(game.platformId, kind, saved.fileName),
                 documentUri = saved.uriString,
@@ -349,11 +468,13 @@ class RoutingArtworkStore @Inject constructor(
                 locked = userAssigned,
                 originUrl = originUrl ?: existing?.originUrl,
                 provider = provider ?: existing?.provider,
+                providerAssetId = providerAssetId ?: existing?.providerAssetId,
                 prevDocumentUri = prevDocumentUri,
                 prevRelativePath = prevRelativePath,
                 prevSizeBytes = prevSizeBytes,
                 cropRect = cropRect,
                 hasOriginal = hasOriginal,
+                cropProfileKey = existing?.cropProfileKey,
                 createdAt = existing?.createdAt ?: System.currentTimeMillis(),
                 updatedAt = System.currentTimeMillis(),
             )
@@ -403,4 +524,15 @@ data class StudioArtworkInfo(
     val hasOriginal: Boolean,
     val cropRect: String?,
     val updatedAt: Long,
+    val sortOrder: Int = 0,
+)
+
+/** One asset of a multi-asset slot, as the Studio's media strip lists them. */
+data class StudioArtworkSlot(
+    val sortOrder: Int,
+    val documentUri: String,
+    val provider: String?,
+    val originUrl: String?,
+    val providerAssetId: String?,
+    val sizeBytes: Long,
 )

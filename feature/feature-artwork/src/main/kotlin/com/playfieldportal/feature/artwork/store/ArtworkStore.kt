@@ -55,8 +55,8 @@ enum class ArtworkKind {
  */
 interface ArtworkStore {
 
-    /** Downloads [url] and stores it under [kind]'s fixed name. Returns the reference, or null. */
-    suspend fun saveFromUrl(gameId: Long, kind: ArtworkKind, url: String): String?
+    /** Downloads [url] and stores it under [kind]'s fixed name at [sortOrder]. Returns the reference, or null. */
+    suspend fun saveFromUrl(gameId: Long, kind: ArtworkKind, url: String, sortOrder: Int = 0): String?
 
     /** Downloads [url] to a fresh versioned name for [kind], pruning older versions. */
     suspend fun saveVersionedFromUrl(gameId: Long, kind: ArtworkKind, url: String): String?
@@ -65,16 +65,23 @@ interface ArtworkStore {
     suspend fun saveVersionedFromUri(gameId: Long, kind: ArtworkKind, uri: Uri): String?
 
     /**
-     * Stores a locally produced file (e.g. a transcoded video snap) under [kind]'s fixed name,
-     * riding the same validation/naming path as a scrape. Consumes [tempFile] either way.
+     * Stores a locally produced file (e.g. a transcoded video snap) under [kind]'s fixed name at
+     * [sortOrder], riding the same validation/naming path as a scrape. Consumes [tempFile] either way.
      */
-    suspend fun saveFromFile(gameId: Long, kind: ArtworkKind, tempFile: java.io.File): String?
+    suspend fun saveFromFile(gameId: Long, kind: ArtworkKind, tempFile: java.io.File, sortOrder: Int = 0): String?
 
     /** True if [ref] still resolves to real bytes (remote URLs are trusted as-is). */
     fun isValidRef(ref: String?): Boolean
 
-    /** The stored reference for [kind] of this game under its fixed name, or null if absent. */
-    suspend fun find(gameId: Long, kind: ArtworkKind): String?
+    /** The stored reference for [kind] of this game at [sortOrder], or null if absent. */
+    suspend fun find(gameId: Long, kind: ArtworkKind, sortOrder: Int = 0): String?
+
+    /**
+     * Every stored reference for [kind], in sort order. Single-art kinds return at most one
+     * entry — the same value [find] would give. Multi-asset kinds (screenshots, videos) return
+     * the whole ordered set.
+     */
+    suspend fun findAll(gameId: Long, kind: ArtworkKind): List<String>
 
     /** Deletes every stored artwork file. DB references are the caller's responsibility. */
     suspend fun deleteAll()

@@ -29,6 +29,9 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -43,6 +46,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.ui.input.pointer.pointerInput
@@ -67,8 +74,12 @@ import com.playfieldportal.core.ui.theme.menuCursorEdge
 /**
  * Fullscreen Artwork Studio — controller-first artwork browser/editor for one game.
  * Layout follows the approved mock: destination tabs (LB/RB) → current-artwork panel +
- * available-artwork grid, source row (L2/R2 — here Left/Right in the SOURCES zone),
- * A = candidate preview → Apply, B = back, X = SGDB NSFW filter toggle.
+ * available-artwork grid, source row (Left/Right in the SOURCES zone),
+ * A = candidate preview → Apply, B = back, X = search, Y = per-slot options,
+ * START = SteamGridDB's mature filter while that source is active.
+ *
+ * (L2/R2 are unbound: no GamepadAction maps to KEYCODE_BUTTON_L2/R2 in GamepadBinding, so the
+ * old "L2/R2 switch sources" line here described a binding that never existed.)
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -140,6 +151,50 @@ fun ArtworkStudioScreen(
                 },
                 onBack = { viewModel.handleGamepadAction(GamepadAction.BACK) },
             )
+
+            // ── Search (X / tap) — the query the providers are actually asked for ──
+            // Editable and non-destructive: it never renames the game, and Reset puts the game's
+            // own title back. Submit-only, so no provider is hit per keystroke.
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+            ) {
+                Text(
+                    "SEARCH",
+                    color = Color.White.copy(alpha = 0.35f), fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(end = 8.dp),
+                )
+                Text(
+                    state.query.ifBlank { "—" },
+                    color = if (state.queryIsCustom) accent else Color.White.copy(alpha = 0.75f),
+                    fontSize = 12.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .weight(1f, fill = false)
+                        .clip(RoundedCornerShape(7.dp))
+                        .background(Color.White.copy(alpha = 0.06f))
+                        .border(
+                            1.dp,
+                            if (state.queryIsCustom) accent.copy(alpha = 0.6f) else Color.Transparent,
+                            RoundedCornerShape(7.dp),
+                        )
+                        .clickable(onClick = viewModel::openSearch)
+                        .padding(horizontal = 10.dp, vertical = 5.dp),
+                )
+                if (state.queryIsCustom) {
+                    Text(
+                        "Reset",
+                        color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp,
+                        modifier = Modifier
+                            .padding(start = 8.dp)
+                            .clip(RoundedCornerShape(7.dp))
+                            .clickable(onClick = viewModel::resetSearchToTitle)
+                            .padding(horizontal = 8.dp, vertical = 5.dp),
+                    )
+                }
+            }
 
             // ── Destination tabs (LB/RB) — scrollable, selected tab kept in view ──
             val tabListState = rememberLazyListState()
@@ -313,10 +368,9 @@ fun ArtworkStudioScreen(
                         Spacer(Modifier.weight(1f))
                         // Status only — the Prev/Next pill buttons live in the left column.
                         if (state.totalResults > 0) {
-                            val first = state.page * 20 + 1
-                            val last = (state.page * 20 + state.results.size)
                             Text(
-                                "$first–$last of ${state.totalResults}",
+                                "${state.rangeStart}–${state.rangeEnd} of ${state.totalResults}" +
+                                    if (state.pageCount > 1) "   ·   page ${state.page + 1}/${state.pageCount}" else "",
                                 color = Color.White.copy(alpha = 0.45f), fontSize = 10.sp,
                             )
                         }
@@ -325,8 +379,24 @@ fun ArtworkStudioScreen(
 
                     val activeSource = viewModel.sourcesForTab().getOrNull(state.sourceIndex)
                     when {
-                        state.resultsLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = accent)
+                        // Skeleton tiles, not a bare spinner: the grid keeps its shape while an
+                        // uncached page loads, so a source switch never flashes an empty panel.
+                        state.resultsLoading -> LazyVerticalGrid(
+                            columns = GridCells.Fixed(STUDIO_GRID_COLUMNS),
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            userScrollEnabled = false,
+                        ) {
+                            items(state.skeletonCount) {
+                                Box(
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .height(84.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(Color.White.copy(alpha = 0.06f)),
+                                )
+                            }
                         }
                         activeSource == StudioSource.LOCAL -> Box(
                             Modifier
@@ -428,27 +498,33 @@ fun ArtworkStudioScreen(
 
             // Footer hints — per-zone, and resolved from the live bindings so the
             // glyphs follow the user's controller type and any remapped layout.
+            //
+            // Search and mature are appended from ONE place rather than repeated per zone: they
+            // apply at every level, and the three hand-written lists are exactly how the old
+            // "NSFW" label for X survived it being rebound to search.
+            val sgdbPrompts = viewModel.sourcesForTab().getOrNull(state.sourceIndex) ==
+                StudioSource.STEAMGRIDDB
             ControllerPromptBar(
-                items = when (state.zone) {
-                    StudioZone.TABS -> listOf(
-                        ControllerPromptItem(GamepadAction.SELECT, "sources"),
-                        ControllerPromptItem(GamepadAction.BACK, "close"),
-                        ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "options"),
-                    )
-                    StudioZone.SOURCES -> listOf(
-                        ControllerPromptItem(GamepadAction.SELECT, "browse / pick file"),
-                        ControllerPromptItem(GamepadAction.BACK, "back"),
-                        ControllerPromptItem(GamepadAction.CHANGE_SORT, "NSFW"),
-                        ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "options"),
-                    )
-                    StudioZone.GRID -> listOf(
-                        ControllerPromptItem(GamepadAction.PREV_CATEGORY, "prev page"),
-                        ControllerPromptItem(GamepadAction.NEXT_CATEGORY, "next page"),
-                        ControllerPromptItem(GamepadAction.SELECT, "preview / apply"),
-                        ControllerPromptItem(GamepadAction.BACK, "back"),
-                        ControllerPromptItem(GamepadAction.CHANGE_SORT, "NSFW"),
-                        ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "options"),
-                    )
+                items = buildList {
+                    when (state.zone) {
+                        StudioZone.TABS -> {
+                            add(ControllerPromptItem(GamepadAction.SELECT, "sources"))
+                            add(ControllerPromptItem(GamepadAction.BACK, "close"))
+                        }
+                        StudioZone.SOURCES -> {
+                            add(ControllerPromptItem(GamepadAction.SELECT, "browse / pick file"))
+                            add(ControllerPromptItem(GamepadAction.BACK, "back"))
+                        }
+                        StudioZone.GRID -> {
+                            add(ControllerPromptItem(GamepadAction.PREV_CATEGORY, "prev page"))
+                            add(ControllerPromptItem(GamepadAction.NEXT_CATEGORY, "next page"))
+                            add(ControllerPromptItem(GamepadAction.SELECT, "preview / apply"))
+                            add(ControllerPromptItem(GamepadAction.BACK, "back"))
+                        }
+                    }
+                    add(ControllerPromptItem(GamepadAction.CHANGE_SORT, "search"))
+                    if (sgdbPrompts) add(ControllerPromptItem(GamepadAction.HOME, "mature"))
+                    add(ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "options"))
                 },
                 modifier = Modifier.padding(top = 6.dp),
                 labelColor = Color.White.copy(alpha = 0.35f),
@@ -538,6 +614,98 @@ fun ArtworkStudioScreen(
                                 .background(Color.White.copy(alpha = 0.08f))
                                 .clickable(onClick = viewModel::dismissCandidate)
                                 .padding(horizontal = 18.dp, vertical = 9.dp),
+                        )
+                    }
+                }
+            }
+        }
+
+        // ── Search overlay (X / tap) ──────────────────────────────────────────
+        if (state.searchOpen) {
+            val focusRequester = remember { FocusRequester() }
+            LaunchedEffect(Unit) { runCatching { focusRequester.requestFocus() } }
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(Color(0xC0000000))
+                    .clickable(onClick = viewModel::cancelSearch),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(
+                    Modifier
+                        .width(460.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(pfpColors.backgroundBottom)
+                        .border(1.dp, accent.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                        .padding(18.dp),
+                ) {
+                    Text(
+                        "Search artwork providers",
+                        color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "Changes what the providers are asked for. It never renames the game.",
+                        color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    BasicTextField(
+                        value = state.queryDraft,
+                        onValueChange = viewModel::onQueryDraftChanged,
+                        singleLine = true,
+                        textStyle = TextStyle(color = Color.White, fontSize = 15.sp),
+                        cursorBrush = SolidColor(accent),
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        keyboardActions = KeyboardActions(
+                            onSearch = { viewModel.submitSearch() },
+                            onDone = { viewModel.submitSearch() },
+                        ),
+                        decorationBox = { inner ->
+                            Box(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color.White.copy(alpha = 0.08f))
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                            ) {
+                                if (state.queryDraft.isEmpty()) Text(
+                                    state.game?.displayTitle ?: "Game title",
+                                    color = Color.White.copy(alpha = 0.35f), fontSize = 15.sp,
+                                )
+                                inner()
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
+                    )
+                    Spacer(Modifier.height(14.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            "Search",
+                            color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(accent.copy(alpha = 0.30f))
+                                .clickable(onClick = viewModel::submitSearch)
+                                .padding(horizontal = 16.dp, vertical = 7.dp),
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            "Use game title",
+                            color = Color.White.copy(alpha = 0.65f), fontSize = 12.sp,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color.White.copy(alpha = 0.07f))
+                                .clickable(onClick = viewModel::resetSearchToTitle)
+                                .padding(horizontal = 14.dp, vertical = 7.dp),
+                        )
+                        Spacer(Modifier.weight(1f))
+                        Text(
+                            "Cancel",
+                            color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable(onClick = viewModel::cancelSearch)
+                                .padding(horizontal = 12.dp, vertical = 7.dp),
                         )
                     }
                 }

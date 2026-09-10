@@ -352,6 +352,23 @@ interface GameDao {
     @Query("UPDATE games SET scraped_title = :scrapedTitle WHERE id = :id")
     suspend fun updateScrapedTitle(id: Long, scrapedTitle: String?)
 
+    // ── Windows storefront identity (C16 phase 0) ─────────────────────────────
+    // Fill-only: a null argument keeps whatever is already stored, so a re-import that could not
+    // determine the store never erases an identity an earlier one captured.
+    @Query(
+        """
+        UPDATE games SET
+            storefront         = COALESCE(:storefront,       storefront),
+            storefront_game_id = COALESCE(:storefrontGameId, storefront_game_id)
+        WHERE id = :id
+    """
+    )
+    suspend fun updateStorefrontIdentity(id: Long, storefront: String?, storefrontGameId: String?)
+
+    /** Games claiming one storefront id. Matched as a PAIR — an app id is unique per store only. */
+    @Query("SELECT * FROM games WHERE storefront = :storefront AND storefront_game_id = :storefrontGameId")
+    suspend fun getByStorefront(storefront: String, storefrontGameId: String): List<GameEntity>
+
     // Fill-missing-only metadata write (reversed COALESCE — the EXISTING value always wins).
     // Used by the artwork importer's gamelist.xml pass: imported metadata never overwrites
     // anything a scraper or the user already set.

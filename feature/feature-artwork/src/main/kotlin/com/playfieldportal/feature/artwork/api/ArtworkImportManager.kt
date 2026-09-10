@@ -316,7 +316,10 @@ class ArtworkImportManager @Inject constructor(
             )
         }
         // One snapshot of all records: provenance preservation, locked lookups, missing sweep.
-        val priorRecords = artworkRecordDao.getAll().associateBy { it.gameId to it.artworkType }
+        // Keyed by POSITION as well as kind — a game with five screenshots has five records, and
+        // a (gameId, type) key would collapse them to one and let the missing sweep delete four.
+        val priorRecords = artworkRecordDao.getAll()
+            .associateBy { Triple(it.gameId, it.artworkType, it.sortOrder) }
         fun lockedTypes(gameId: Long): Set<String> = priorRecords.values
             .filter { it.gameId == gameId && (it.locked || it.userAssigned) }
             .map { it.artworkType }.toSet()
@@ -328,7 +331,7 @@ class ArtworkImportManager @Inject constructor(
             ownersByName.getOrPut(Triple(r.platformId, r.artworkType, r.portableName.lowercase())) { mutableSetOf() }
                 .add(r.gameId)
         }
-        val upsertedKeys = HashSet<Pair<Long, String>>()
+        val upsertedKeys = HashSet<Triple<Long, String, Int>>()
 
         var scanned = 0
         var linkedGames = 0
@@ -367,21 +370,39 @@ class ArtworkImportManager @Inject constructor(
                         orphans++
                         continue
                     }
-                    val stemLower = ArtworkNaming.fileStem(file.name).lowercase()
+                    val fileStem = ArtworkNaming.fileStem(file.name)
+                    val stemLower = fileStem.lowercase()
                     if (!stemsInDir.add(stemLower)) duplicateNames++
                     // Own records first (exact portable-name hit), fuzzy matcher for foreign files.
+                    // The FULL stem is always tried first, so a ROM whose own name ends in "_07"
+                    // can never be mistaken for another game's seventh screenshot; only when that
+                    // finds nothing is an ordinal suffix considered (C16 task 0.4).
+                    val multi = ArtworkFileNaming.supportsMultiple(kind)
+                    val baseStem = if (multi) ArtworkFileNaming.stripOrdinal(fileStem) else fileStem
                     val ids = ownersByName[Triple(platformId, kind.name, stemLower)]?.toList()
                         ?: (indexFor(platformId).match(file.name) as? ArtworkImportMatcher.Result.Matched)?.gameIds
+                        ?: baseStem.takeIf { it != fileStem }?.let { base ->
+                            ownersByName[Triple(platformId, kind.name, base.lowercase())]?.toList()
+                                ?: (indexFor(platformId).match("$base.${file.name.substringAfterLast('.')}")
+                                    as? ArtworkImportMatcher.Result.Matched)?.gameIds
+                        }
                     if (ids.isNullOrEmpty()) { orphans++; continue }
+                    // The position the filename encodes — this is how sort_order survives a
+                    // database rebuild, the folder staying the source of truth.
+                    val sortOrder = if (multi) ArtworkFileNaming.ordinalOf(fileStem) else 0
                     for (gameId in ids) {
                         val game = games.firstOrNull { it.id == gameId } ?: continue
                         val uri = file.uri.toString()
                         val size = file.sizeBytes ?: 0L
                         // Column-backed kinds: fill when missing or dead; locked slots untouched.
-                        val isColumnKind = kind == ArtworkKind.ICON || kind == ArtworkKind.HERO ||
-                            kind == ArtworkKind.BACKGROUND || kind == ArtworkKind.LOGO ||
-                            kind == ArtworkKind.BOX_ART || kind == ArtworkKind.PHYSICAL_MEDIA ||
-                            kind == ArtworkKind.BOX_3D
+                        // Column kinds are all single-art, so this only ever sees position 0 —
+                        // the guard states the invariant rather than relying on it.
+                        val isColumnKind = sortOrder == 0 && (
+                            kind == ArtworkKind.ICON || kind == ArtworkKind.HERO ||
+                                kind == ArtworkKind.BACKGROUND || kind == ArtworkKind.LOGO ||
+                                kind == ArtworkKind.BOX_ART || kind == ArtworkKind.PHYSICAL_MEDIA ||
+                                kind == ArtworkKind.BOX_3D
+                            )
                         if (isColumnKind && kind.name !in lockedTypes(gameId)) {
                             val current = when (kind) {
                                 ArtworkKind.ICON -> game.iconUri
@@ -415,7 +436,9 @@ class ArtworkImportManager @Inject constructor(
                         // fanart/ file of their own — after a wipe there is nothing under
                         // BACKGROUND for the walk to refill artworkUri from. Mirror the scrape's
                         // rule: a HERO file also repoints a missing/dead background column.
-                        if (kind == ArtworkKind.HERO && ArtworkKind.BACKGROUND.name !in lockedTypes(gameId)) {
+                        if (kind == ArtworkKind.HERO && sortOrder == 0 &&
+                            ArtworkKind.BACKGROUND.name !in lockedTypes(gameId)
+                        ) {
                             val bg = game.artworkUri
                             if (!artworkStore.isValidRef(bg) || bg?.startsWith("http", ignoreCase = true) == true) {
                                 gameDao.updateArtwork(gameId, uri)
@@ -424,20 +447,27 @@ class ArtworkImportManager @Inject constructor(
                         }
                         // Refresh the record but PRESERVE provenance — a scan must never launder
                         // a user-assigned/locked asset into a plain "relink" row.
-                        val prior = priorRecords[gameId to kind.name]
+                        val prior = priorRecords[Triple(gameId, kind.name, sortOrder)]
                         if (prior != null && prior.sizeBytes != size) changedFiles++
-                        upsertedKeys.add(gameId to kind.name)
+                        upsertedKeys.add(Triple(gameId, kind.name, sortOrder))
                         records += ArtworkRecordEntity(
                             gameId = gameId,
                             platformId = platformId,
                             artworkType = kind.name,
-                            portableName = ArtworkNaming.fileStem(file.name),
+                            sortOrder = sortOrder,
+                            portableName = fileStem,
                             relativePath = ArtworkPathResolver.relativePath(platformId, kind, file.name),
                             documentUri = uri,
                             source = prior?.source ?: "relink",
                             sizeBytes = size,
                             userAssigned = prior?.userAssigned ?: false,
                             locked = prior?.locked ?: false,
+                            originUrl = prior?.originUrl,
+                            provider = prior?.provider,
+                            providerAssetId = prior?.providerAssetId,
+                            cropRect = prior?.cropRect,
+                            hasOriginal = prior?.hasOriginal ?: false,
+                            cropProfileKey = prior?.cropProfileKey,
                             createdAt = prior?.createdAt ?: System.currentTimeMillis(),
                         )
                     }
@@ -451,10 +481,13 @@ class ArtworkImportManager @Inject constructor(
         // live grant, so a disconnected folder can never trigger this.
         var missingFiles = 0
         for (prior in priorRecords.values) {
-            if ((prior.gameId to prior.artworkType) in upsertedKeys) continue
+            if (Triple(prior.gameId, prior.artworkType, prior.sortOrder) in upsertedKeys) continue
             missingFiles++
             artworkRecordDao.deleteById(prior.id)
             val game = games.firstOrNull { it.id == prior.gameId } ?: continue
+            // Only the primary is ever wired to a game column; a vanished extra screenshot must
+            // not clear a column it never owned.
+            if (prior.sortOrder != 0) continue
             when (prior.artworkType) {
                 ArtworkKind.ICON.name -> if (game.iconUri == prior.documentUri) gameDao.updateIconUri(game.id, null)
                 ArtworkKind.HERO.name -> if (game.heroUri == prior.documentUri) gameDao.updateHero(game.id, null)

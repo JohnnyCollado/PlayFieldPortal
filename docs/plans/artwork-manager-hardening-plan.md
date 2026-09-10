@@ -1,0 +1,452 @@
+# Artwork Manager Hardening
+
+> Implementation handoff, approved 2026-09-09. Indexed as `C16` in [the plan index](README.md).
+> Work the Execution Task Index in dependency order, one bounded task per helper.
+>
+> Source: `PFP_Artwork_Manager_Hardening_Design.md` (external design spec), analysed and corrected
+> against the working tree on `more-customization` (DB v41). Every file and symbol below was
+> verified read-only; nothing here is assumed.
+
+## Context
+
+The Artwork Studio is the single screen where a game's artwork is browsed and changed
+(`ArtworkStudioScreen` + `ArtworkStudioViewModel`, ~950 lines each). It works, but it fails in ways
+users notice: artwork vanishes when you switch source, you cannot search for anything other than the
+game's existing title, and a ROM or Windows game with an imperfect filename simply finds nothing.
+
+A design spec was produced externally to harden it. Its factual claims about the repository are
+**accurate** — I verified all fourteen. Its problem is omission: three gaps that would each sink a
+feature if they reached implementation unnoticed, plus a dependency on API surface that does not
+exist. This plan is that spec, corrected and sequenced against the real code.
+
+Decisions taken during analysis and folded in:
+
+- A result page stays **one gridful** (page == screen). The spec's literal "50 per page" is dropped.
+- **ICON1 stays its own single-art category.** Only `VIDEO` becomes multi-select.
+- **MANUAL keeps its tab** but sits outside the grid-preview and crop model; **TITLESCREEN stays
+  import-only** with no tab.
+- Plan **B2's `ScrapeFailure` taxonomy is a dependency**, not something to reinvent.
+- **Identity-tier matching ships first; the ranked suggestion picker is deferred** to its own plan
+  (see Non-Goals and AD-4).
+- **Crop ships a starter profile set** with Original Image as the universal fallback, not the full
+  40-platform table.
+- **Phases 0 and 1 are the first merge**; Phases 2–6 are replanned afterward with real feedback.
+- The approved HTML mockup will be added to `docs/mockups/` (it is not in the repo today).
+
+## Problem
+
+Five distinct defects, currently conflated as "the artwork manager is flaky":
+
+1. **Artwork disappears when switching source.** An asynchronous state bug, not a UI quirk.
+2. **Search is not editable.** The query is always `game.displayTitle`; a bad filename is a dead end.
+3. **No game-match step.** There is no way to say "this ROM is actually *that* game", so a wrong or
+   absent match cannot be corrected.
+4. **Screenshots and videos are limited to one each**, at both the database and the filesystem layer.
+5. **Crop is generic.** One hardcoded ratio per artwork kind, no sense of physical packaging, and no
+   live preview of the actual ICON0/box/disc result.
+
+Plus one identity gap: **Windows games lose their storefront identity at import**, so a Steam or GOG
+game can only ever be matched by title.
+
+## Current Behavior
+
+Verified against the tree. All line references checked.
+
+**Search and results** — `ArtworkStudioViewModel.kt`
+- Query is always `game.displayTitle`: [`:319`](feature/feature-xmb/src/main/kotlin/com/playfieldportal/feature/xmb/ui/detail/ArtworkStudioViewModel.kt:319) (SGDB), `:346` (TGDB), `:369` (IGDB). `ArtworkStudioUiState` (`:50-113`) has no query field; no `onQueryChanged` exists.
+- Results live in `private var allResults: List<StudioArt>` ([`:199`](feature/feature-xmb/src/main/kotlin/com/playfieldportal/feature/xmb/ui/detail/ArtworkStudioViewModel.kt:199)) — a plain `var`, not state.
+- `loadResults()` (`:274-295`) clears visible state first, then reassigns `allResults` inside a bare `viewModelScope.launch`. No `Job` handle, no cancellation, no request id compared after the suspend.
+- Page size is **20** (`STUDIO_GRID_COLUMNS=4 × STUDIO_GRID_ROWS=5`, `:133-136`), sliced client-side (`nextPage :425`).
+- `sourceIndex` is reset on `selectTab` (`:394`) but never re-validated against the new source list's length elsewhere.
+
+**Navigation** — `enum class StudioZone { TABS, SOURCES, GRID }` (`:48`); BACK/LEFT/RIGHT/L1/R1 all branch on `when (s.zone)` (`:904-938`). There is **no Compose focus system in the screen at all** — no `FocusRequester`, no `onKeyEvent`. Selection is index-in-state; input arrives as a hoisted `pendingGamepadAction` forwarded from [`GameDetailScreen.kt:186-206`](feature/feature-xmb/src/main/kotlin/com/playfieldportal/feature/xmb/ui/detail/GameDetailScreen.kt:186). Square/X toggles NSFW (`:947`); Triangle/Y opens the actions menu (`:951`).
+
+**L2/R2 are already unbound.** The KDoc at `ArtworkStudioScreen.kt:70` and `ArtworkStudioViewModel.kt:173` claims "L2/R2 switch sources", but no `GamepadAction` maps to `KEYCODE_BUTTON_L2/R2` in [`GamepadBinding.kt:52-59`](core/core-domain/src/main/kotlin/com/playfieldportal/core/domain/model/GamepadBinding.kt:52). Stale comments.
+
+**Storage** — `ArtworkRecordEntity` has a unique `(game_id, artwork_type)` index ([`:15`](core/core-data/src/main/kotlin/com/playfieldportal/core/data/database/entity/ArtworkRecordEntity.kt:15)) and already carries `origin_url`, `provider`, `prev_document_uri`, `prev_relative_path`, `prev_size_bytes`, `crop_rect`, `has_original`, `width/height/checksum`, `user_assigned`, `locked`. `ArtworkRecordDao` has `get(gameId,type)` returning one row, upsert-REPLACE riding that index, and no paged or ordered query.
+
+**Metadata** — `MetadataRepository` picks winners itself (`finalBoxArtUrl = ss ?: tgdb ?: igdb ?: sgdb`, [`:182-189`](feature/feature-artwork/src/main/kotlin/com/playfieldportal/feature/artwork/MetadataRepository.kt:182)) and persists through `gameDao.updateMetadata`, COALESCE-per-column at [`GameDao.kt:299-321`](core/core-data/src/main/kotlin/com/playfieldportal/core/data/database/dao/GameDao.kt:299). There is no candidate-retrieval-without-write path.
+
+**Crop** — target aspect is a hardcoded `when (kind)` at [`:641-647`](feature/feature-xmb/src/main/kotlin/com/playfieldportal/feature/xmb/ui/detail/ArtworkStudioViewModel.kt:641): `ICON/ICON1 → 144:80`, `HERO → 920:430`, `BACKGROUND → 16:9`, else free crop. No platform or region registry exists anywhere.
+
+**Windows import** — `source` (STEAM/EPIC/GOG/AMAZON/CUSTOM_GAME) and the numeric app id are computed in `buildPcLaunch` ([`PcGameScanner.kt:162-165`](feature/feature-settings/src/main/kotlin/com/playfieldportal/feature/settings/pc/PcGameScanner.kt:162)) and discarded — the persisted `Game` keeps only `launchIntentUri` and `packageName`. `storefront` / `storefront_game_id` do not exist on `GameEntity` (zero hits in schema `41.json`).
+
+**Coverage** — `ArtworkStudioViewModel`, the crop math, and `ArtworkRecordDao` have **zero tests**. `grep -rln ArtworkStudio` matches only the four main-source files.
+
+## Root Cause
+
+- **Disappearing artwork** — one shared mutable `allResults` written by uncancelled, unkeyed jobs, with visible state cleared optimistically before the await. Any slower earlier request wins.
+- **Dead-end search** — the query was never modelled as state; it is read from the game row at each call site.
+- **Single screenshot** — enforced at *two* layers, and the spec only saw one: the unique DB index, **and** `ArtworkFileNaming.fixedName(kind)` returning one constant filename per kind.
+- **Generic crop** — crop geometry is keyed on artwork kind alone; platform and region were never inputs.
+- **No Windows identity** — storefront is a local val in a function that returns an Intent.
+
+## Goals
+
+1. Editable, non-destructive search that never renames the game.
+2. Identity-first matching (saved provider ID, ROM hash, storefront ID) with suggestions only as a fallback.
+3. Race-safe source/category switching — a stale response can never mutate visible state.
+4. Multiple ordered screenshots and videos, on disk and in the database, surviving Relink/Scan.
+5. Metadata presets previewed Current-vs-Incoming and applied only by explicit user action.
+6. Windows storefront identity captured at import, backfilled for existing installs, used in matching.
+7. Crop that renders the final ICON0/box/disc result live, resolved from platform, region and media form.
+8. Every control reachable by D-pad + Confirm + Back + Square + Triangle; touch as a first-class peer.
+
+## Non-Goals
+
+Carried from the spec, plus two added:
+
+- Player count in the redesigned metadata workflow (`players` column stays; it is not surfaced).
+- Permanent or multi-level undo history — one session-level Undo Last Apply only.
+- A dedicated asset-provenance screen.
+- Rejecting artwork because its dimensions do not match a crop profile.
+- Uploading a Windows executable or treating a binary hash as a public game identifier.
+- SteamGridDB text metadata — SGDB stays artwork-only.
+- **Added:** bounded scrape concurrency and the failures screen. Those are plan B2's scope; this plan
+  consumes only B2's `ScrapeFailure` type.
+- **Added:** server-side provider pagination. No provider supports it (see Architectural Decisions).
+- **Added:** the ranked suggestion picker and match Tiers 4–6, and the IGDB/TGDB multi-result search
+  they require. Deferred to a follow-up plan (AD-4).
+- **Added:** exhaustive per-platform crop profiles. This plan ships a starter set; the rest of the
+  table is data, added later without code changes (AD-11).
+
+## Existing Systems to Reuse
+
+| Need | Reuse | Location |
+|---|---|---|
+| Fill-missing metadata semantics | reversed-COALESCE update already written | `GameDao.kt:355-365` |
+| Persistent ScreenScraper media cache (zero API calls when cached) | `SsMediaCacheDao` + `SsMediaCatalog.mediasFor()` | `feature-artwork/api/` |
+| Controller-vs-touch presentation mode | `TouchNavButtonMode { AUTO, ALWAYS_SHOW, ALWAYS_HIDE }` resolved against `lastInputWasTouch` | [`TouchNavButtonMode.kt:10-19`](core/core-domain/src/main/kotlin/com/playfieldportal/core/domain/model/TouchNavButtonMode.kt:10), `XMBViewModel.kt:857-864`, pinned by `TouchNavButtonResolutionTest` |
+| Drag-to-scroll on chrome; LEFT-backs-out | shipped by plan C15 (2026-09-09) | `Modifier.dragToScroll` in core-ui; `controller_left_backs_out` pref |
+| Typed provider failure reasons | `ScrapeFailure` (`NoMatch`, `QuotaExceeded`, `AuthFailed`, `NetworkError`, `RateLimited`, `AssetMissing`, `WriteFailed`) | plan B2, `docs/plans/scraper-reliability-plan.md` |
+| One-previous-version undo for files | `prev_document_uri` / `prev_relative_path` / `prev_size_bytes` | `ArtworkRecordEntity` |
+| Lossless re-crop | `has_original` + `pfp/originals/`, `RoutingArtworkStore.saveCropBaked` | `feature-artwork/store/` |
+| Existing provider IDs | `ss_id`, `tgdb_id`, `igdb_id`, `steam_grid_db_id` | `GameEntity` |
+| Storefront backfill source | store + app id already encoded in `launch_intent_uri` | `GameEntity.launchIntentUri` |
+| Compose UI tests on the JVM | Robolectric, already wired in feature-xmb | [`build.gradle.kts:62-66`](feature/feature-xmb/build.gradle.kts:62) |
+| Migration test harness | `migrationTestHelper(DB)`, exported schemas 32–41 | `Migration40To41Test`, `core/core-data/schemas/` |
+
+## Architectural Decisions
+
+**AD-1. Multi-media is a filename change first, a schema change second.**
+`ArtworkFileNaming.fixedName(kind)` returns one constant name per kind — `SCREENSHOT -> "screenshot.jpg"` ([`:16-31`](feature/feature-artwork/src/main/kotlin/com/playfieldportal/feature/artwork/store/ArtworkFileNaming.kt:16)) — and `saveVersionedFromUrl` *prunes* every prior file of that kind before writing (`isPruneCandidate`). Ten screenshots would overwrite each other, and saving #2 would delete #1's bytes. `portableName` collides too, under the `(platform_id, artwork_type, portable_name)` index. The entity header states the contract everything rests on: *"the folder stays the source of truth and Relink/Scan can rebuild rows"* — so **`sortOrder` must be derivable from the filename**, not only from a DB column. Ordinal naming (`screenshot_01.jpg`) lands before the migration.
+
+**AD-2. Every `ArtworkKind` gets an explicit selection model.**
+There are 12 kinds and 11 tabs (`STUDIO_TABS`, `:155-167`). `VIDEO` becomes multi-select. **`ICON1` stays single-art** — it is the XMB icon-slot snap, transcoded from a full `VIDEO` by `VideoSnapTranscoder`, and folding it into a multi-select Video category would break the icon animation. `MANUAL` (PDF) is excluded from the grid/preview/crop model entirely. `TITLESCREEN` stays import-only, no tab.
+
+**AD-3. All paging is client-side. Delete the server-paging branch.**
+No provider supports it: IGDB hardcodes `limit 1;` ([`IgdbApi.kt:66-77`](feature/feature-artwork/src/main/kotlin/com/playfieldportal/feature/artwork/api/IgdbApi.kt:66)), TGDB returns a single `TgdbGameInfo` ([`TheGamesDbApi.kt:130`](feature/feature-artwork/src/main/kotlin/com/playfieldportal/feature/artwork/TheGamesDbApi.kt:130)), ScreenScraper returns the whole `medias` list from one `jeuInfos` call, and SGDB's `getArt` takes styles/dimensions/nsfw filters but **no `page` or `limit`** ([`SteamGridDbApi.kt:104-125`](feature/feature-artwork/src/main/kotlin/com/playfieldportal/feature/artwork/api/SteamGridDbApi.kt:104)). Fetch once, cache, page client-side — which is what the Studio already does. This is a simplification, not a compromise.
+
+**AD-4. Identity tiers ship now; the ranked suggestion picker is deferred.**
+Because of AD-3's findings, Tiers 4–6 ("show ranked suggestions") have **no data source** — IGDB and TGDB, the two providers designated as metadata-preset providers, each return exactly one game. Building multi-result search for both is net-new API work (query bodies, response models, tests) sitting on the critical path of an already-large plan.
+
+So Phase 2 delivers **Tiers 1–3 only**: saved provider ID → ROM hash / storefront ID → unique exact normalized title on the expected platform. That is where the identity evidence actually exists today, and it is what turns a dead-end match into a working one. For everything below Tier 3, the user gets the editable search field (Phase 1) plus a **manual Change Match** backed by `SteamGridDbApi.searchGame`, which already returns a list. `Matched as …` / **Change Match** / **Forget Match** all ship; the *ranked, edition-distinguishing, lazily-asset-counted* picker of spec §9 does not.
+
+The deferred follow-up plan owns: IGDB/TGDB multi-result search, Tiers 4–6, and the suggestion-card UI. Nothing in this plan blocks it — the tiered matcher is written so Tiers 4–6 are additional branches, not a rewrite.
+
+**AD-5. A page is one gridful.** Page == screen, no in-page scrolling, paging is the only navigation model. Density is changed by adjusting rows/columns, never by decoupling page size from the grid.
+
+**AD-6. Race safety is coroutine ownership, never delays.** An immutable request key (`normalizedQuery + provider + category + confirmedMatchId + providerOptions`) plus a monotonic generation token; a response may reduce into state only if both still match. Per-key caches replace the single `allResults`. `flatMapLatest` is allowed but does not remove the equality guard at the reducer boundary.
+
+**AD-7. Candidate retrieval and application are separate operations.** `MetadataRepository`'s auto-winner + COALESCE-write path stays for the batch scraper, but the preview screen gets a retrieval API that writes nothing. `GameDao.kt:355-365` backs **Fill Missing Only**.
+
+**AD-8. MVVM, not MVI.** `ARCHITECTURE.md` says MVVM and the repo has zero `UiEvent`/`UiEffect` in production code. State stays `StateFlow<UiState>` with plain public ViewModel functions. The spec's "reduced by explicit events" is honoured in spirit — one immutable state, explicit reducers — without importing an MVI vocabulary.
+
+**AD-9. Reuse `TouchNavButtonMode`; do not add an "Input Display Mode" setting.** It is already `AUTO/ALWAYS_SHOW/ALWAYS_HIDE`, already resolved against `lastInputWasTouch`, already tested. The only gap is that `ArtworkStudioScreen` is not passed `showTouchControls` — every other detail screen is.
+
+**AD-10. LEFT moves spatially, and only falls through to back-out at the left edge.** C15 made LEFT a back-out fallthrough under `controller_left_backs_out`. Mirroring its fallthrough-never-override rule keeps both behaviours.
+
+**AD-11. The crop registry is a data table with a universal fallback.** Ship the registry plus profiles for the platforms with real libraries; every unlisted platform resolves to **Original Image**, which is already the spec's own fallback for `windows`, `android`, `c64` and the arcade families. Adding a platform later is a data edit, never a UI change — which is what the spec's "centralize in a profile registry so corrections do not require UI changes" line asks for. This also disposes of the `vpk` gap: it falls back like anything else until someone supplies a real profile.
+
+**AD-12. `MetadataRepository` splits at a seam that already exists.**
+`fetchForGame` ([`:70`](feature/feature-artwork/src/main/kotlin/com/playfieldportal/feature/artwork/MetadataRepository.kt:70))
+runs four provider steps, then hits an explicit `if (ssInfo == null && tgdbInfo == null && igdbInfo
+== null && sgdbGridUrl == null) return` before it assembles winners, downloads a single byte, or
+writes a single column. That check is the seam: everything above it is retrieval, everything below
+it is application. Task 3.1 extracts the top half as `fetchCandidates` and has `fetchForGame` call
+it — a move, not a rewrite, and the batch scraper's behaviour is unchanged by construction.
+
+**AD-13. Multi-media needs a consumer, or it is invisible.**
+`GameDetailViewModel` builds the media strip with `artworkStore.find(...)` — one video and one
+screenshot ([`:265-273`](feature/feature-xmb/src/main/kotlin/com/playfieldportal/feature/xmb/ui/detail/GameDetailViewModel.kt:265)).
+Phase 0 shipped ordered storage and `findAll`, but nothing reads it, so a user who applies five
+screenshots today still sees one. The original Phase 5 was entirely Studio-side and never mentioned
+the strip. Task 5.0 fixes that first: it is small, it is the only part of Phase 5 with visible
+payoff on its own, and it makes every later Phase 5 task demonstrable.
+
+**AD-14. Crop resolves on GAME region, not artwork region — for now.**
+The spec's order was kind → platform → artwork region → game region → default. Game region is
+available (`games.region`, `GameRegion { NTSC_U, PAL, NTSC_J }`, added in v40). Artwork region is
+not: ScreenScraper exposes `region` on each `SsCachedMedia`, but that value is never persisted —
+`media_region` was deliberately left out of migration 41→42 under the plan's own "only if providers
+expose structured values" condition, and SGDB/TGDB/IGDB expose nothing equivalent. Rather than add
+a column for one provider, 6.1 resolves kind → platform → game region → default → source ratio.
+Artwork-region keying joins the rest of the profile table in the deferred follow-up, where it is a
+data-and-one-column change with a real use case behind it.
+
+## Rejected Alternatives
+
+- **Literal 50 results per page.** Rejected: 50 in a 4-wide grid is 13 scrolling rows *plus* explicit page controls — two stacked navigation models on a screen that currently has none. Page == screen instead (AD-5).
+- **Folding ICON1 into a multi-select Video category.** Rejected: changes how the XMB icon animation resolves, for no user-visible gain (AD-2).
+- **Dropping the MANUAL tab from the Studio.** Rejected: it is a shipped feature and removing it buys only a tidier category model.
+- **Promoting TITLESCREEN to a browsable tab.** Rejected for now: more surface to build and test for a kind nothing renders yet. It stays import-only, exactly as today.
+- **Building IGDB/TGDB multi-result search on this plan's critical path.** Rejected: it is net-new API work gating a picker that only helps below Tier 3, while Tiers 1–3 plus an editable query already resolve the reported pain (AD-4).
+- **Populating all ~40 crop profiles up front.** Rejected: a large table of ratios where every wrong entry is a visible bad crop, and none of it is needed to prove the mechanism (AD-11).
+- **A second provider-error taxonomy.** Rejected: B2 already specifies one; two vocabularies in one feature is worse than waiting for B2's typed-reasons slice.
+- **Fixing the disappearing-artwork bug with debounces or delays.** Rejected explicitly — it is coroutine ownership and stale-result acceptance (AD-6).
+- **Rebuilding the Studio from scratch.** Rejected: provenance, previous-version, crop and originals support already exist in `ArtworkRecordEntity` and `RoutingArtworkStore`.
+- **Overloading `ProviderGameLinkEntity` for artwork identity.** Rejected: its ownership and provider semantics are achievement-specific.
+- **Filtering artwork by dimensions.** Rejected: dimensions inform preview and crop framing, never search eligibility.
+
+## Data / Persistence
+
+**Migration 41 → 42 — artwork multi-media**
+- Add `sort_order INTEGER NOT NULL DEFAULT 0`, `provider_asset_id TEXT`, `crop_profile_key TEXT`, and (only if providers expose structured values) `media_region TEXT` / `media_form TEXT`.
+- Rebuild the unique index `(game_id, artwork_type)` → `(game_id, artwork_type, sort_order)`. Existing rows migrate at `sort_order = 0`.
+- Keep the `(platform_id, artwork_type, portable_name)` collision index; portable names now carry the ordinal.
+
+**Migration 42 → 43 — Windows storefront identity**
+- Add `storefront TEXT` and `storefront_game_id TEXT` to `games`. Index for duplicate lookup on the **pair** — a cross-store id is not globally unique.
+- **Backfill in the same migration** by parsing store + app id out of `launch_intent_uri` for existing Windows rows. No re-scan, no user action.
+
+**Store rules.** Single-art kinds replace position `0` explicitly. `VIDEO` and `SCREENSHOT` append at the next ordinal. `saveVersionedFrom*`'s prune must become ordinal-aware so it can no longer delete siblings.
+
+**Compatibility.** Never destructive — `fallbackToDestructiveMigration` is never called in this repo and must stay that way. Existing artwork rows survive at order 0; Relink, Scan, backup, restore, delete-game and portable-name collision handling all continue to work with multiple rows. `userTitleOverride`, `userNote`, `locked` and `user_assigned` artwork are never overwritten without an explicit user decision. A blank incoming metadata value never clears a populated one.
+
+## Implementation Phases
+
+**Phase 0 — Foundation.** Ordinal naming, the two migrations, DAO/store list+reorder ops, storefront capture and backfill. Ships invisible; unblocks everything.
+
+**Phase 1 — Race-safe search.** Request keys, generation guard, per-key caches, editable/submitted query, paging — inside the existing zone-based shell. Highest pain-to-effort ratio in the document and needs none of the UI rewrite.
+
+**Phases 0 and 1 are the first merge** and are reviewed on their own. Phases 2–6 are replanned after
+that lands, with real feedback from it. Do not treat the phases below as one continuous effort.
+
+**Phase 2 — Identity matching.** Provider capability/candidate models, the tiered matcher at Tiers
+1–3, `Matched as …` / Change Match / Forget Match, with Change Match backed by
+`SteamGridDbApi.searchGame`. No ranked suggestion picker (AD-4). Cheaper than first planned:
+`StudioRequestKey.matchId` already exists and is already part of the cache key, so confirming a
+match invalidates the right entries without touching the key, the cache or the guard.
+
+**Phase 3 — Metadata presets.** Retrieval without writes, Current-vs-Incoming preview, the four
+apply policies. The split has a clean seam (see AD-12).
+
+**Phase 4 — Input layer.** Touch mode via `showTouchControls`, and pending-change prompts.
+Square-to-search, Triangle-to-context and the stale L2/R2 KDoc all landed inside Phase 1 — task 4.2
+is retired, not deferred. **Spatial navigation moved out of this plan entirely**: it is now
+[`C17`](artwork-studio-navigation-plan.md), because the work turned out to be an adapter onto the
+existing `core-navigation` engine rather than a new focus system, and nothing in Phases 2, 3, 5 or
+6 depends on it. Tasks `4.3` and `4.4` depend on C17 landing.
+
+**Phase 5 — Multi-media, starting with a consumer.** Phase 0 made multiple screenshots and videos
+*storable*; nothing yet makes them *visible* (AD-13). So Phase 5 now opens with the Game Detail
+media strip and only then builds the Studio-side queue: cross-page selection, sequential download
+states, duplicate handling, ordering, primary screenshot, partial retry/cancel, storage warnings.
+
+**Phase 6 — Crop profiles.** Registry keyed on kind → platform → game region → default → source
+ratio, with Original Image as the universal fallback, a starter profile set, live final-result
+preview, per-game override, session undo. Artwork-region keying is dropped from the resolution
+order for now (AD-14).
+
+**No further migrations.** Phases 2–6 as replanned need no schema change: `provider_asset_id` and
+`crop_profile_key` already shipped in 41→42, and the storefront pair in 42→43. The database is
+expected to stay at v43 for the rest of this plan.
+
+## Verification Strategy
+
+- **Unit (JVM):** title normalization, tier resolution, cache-key isolation (SGDB mature must not affect other providers' keys), stale-request rejection, client paging, cross-page selection, duplicate detection, metadata apply policies, crop-profile resolution order, physical-media fit never clipping detected bounds.
+- **Room migration (Robolectric, `migrationTestHelper`):** one asset of every type survives at `sortOrder = 0`; multiple screenshots/videos insert after migration; single-art replacement still yields one active record; reorder is atomic; game deletion still cascades; storefront + id store without cross-store collision; the intent-URI backfill produces the right pairs.
+- **Compose (Robolectric, already wired in feature-xmb):** Square focuses search from every region; Triangle opens context and never toggles mature; every control reachable without L2/R2; Back closes the top overlay then exits; touch checkbox vs artwork hit targets; presentation switch preserves page/focus/overlay/selection/crop; source change shows cache or skeletons, never another provider's grid.
+- **Integration (fake adapters / MockWebServer):** assert call counts, assert no prefetch, assert full-list providers are called once, slow-A-then-fast-B never regresses, partial download failure retries only failed assets.
+- **Manual, on device:** the disappearing-artwork repro (rapidly switch source mid-load), a Windows game's storefront match, and the ICON0 live crop.
+
+Note: there is **zero existing coverage** for `ArtworkStudioViewModel`, the crop math, or `ArtworkRecordDao`. Every test here is net-new with no harness to build on — budget accordingly.
+
+## Execution Task Index
+
+| ID | Task | Depends On | Status |
+|---|---|---|---|
+| 0.1 | Give artwork filenames and portable names an ordinal, so multiple assets of one kind coexist and `sortOrder` is recoverable from disk | None | DONE |
+| 0.2 | Migration 41→42: multi-media columns, rebuilt unique index, ordinal-aware store rules | 0.1 | DONE |
+| 0.3 | Ordered list / append / delete / atomic-reorder / duplicate-lookup operations on `ArtworkRecordDao` and `ArtworkStore`, with `findAll` alongside `find` | 0.2 | DONE |
+| 0.4 | Make Relink/Scan rebuild all rows of a multi-asset kind instead of collapsing to one | 0.3 | DONE |
+| 0.5 | Capture storefront + app id in `PcGameScanner` **and** `PcShortcutImporter.reconcilePinnedShortcuts()` | None | DONE |
+| 0.6 | Migration 42→43: storefront columns plus intent-URI backfill for existing Windows games | 0.5 | DONE |
+| 1.1 | Model the search query as state: editable + submitted, submit-only execution, normalization that never alters the typed form | None | DONE |
+| 1.2 | Replace `allResults` with per-key caches behind an immutable request key and a monotonic generation guard; delete the optimistic pre-clear | 1.1 | DONE |
+| 1.3 | Isolate SteamGridDB mature state into the SGDB cache key only; move it off Square onto the SGDB context menu | 1.2 | DONE |
+| 1.4 | Client paging at one-gridful pages with range/position display and skeletons for uncached pages | 1.2 | DONE |
+| 2.1 | Provider capability/candidate/preset models that return data without persisting | None | READY |
+| 2.2 | The tiered matcher at Tiers 1–3 (saved provider ID → ROM CRC32 / storefront **pair** → unique exact normalized title on the expected platform), with provider IDs never crossed between providers | 2.1, 0.6 | READY |
+| 2.3 | `Matched as …` status, Change Match (backed by `SteamGridDbApi.searchGame`) and Forget Match, neither deleting local artwork or metadata; feed the confirmed match into the existing `StudioRequestKey.matchId` | 2.2 | READY |
+| 3.1 | Extract `MetadataRepository.fetchForGame`'s four provider steps into a write-free `fetchCandidates`, splitting at the existing "nothing found" return (AD-12) | 2.1 | READY |
+| 3.2 | Current-vs-Incoming preview with the four apply policies, reusing `GameDao.updateMetadataIfMissing` for Fill Missing Only | 3.1 | READY |
+| 4.1 | ~~Replace `StudioZone` with spatial focus~~ — split out as its own plan | — | MOVED to [C17](artwork-studio-navigation-plan.md) |
+| 4.2 | ~~Rebind Square to search and Triangle to context; delete the stale L2/R2 KDoc~~ | — | DONE (in 1.3) |
+| 4.3 | Thread `showTouchControls` from `GameDetailScreen.kt:206` into the Studio; touch-sized targets and hit-target separation | C17 | READY |
+| 4.4 | Pending-change and pending-exit prompts (Apply / Discard / Stay) on context switch and exit | C17 | READY |
+| 5.0 | **Render what Phase 0 can already store**: `GameDetailViewModel.kt:265-273` builds the media strip from `find` (one screenshot, one video) — switch it to `findAll` so extra assets are visible at all (AD-13) | 0.3 | READY |
+| 5.1 | Give `StudioArt` a provider asset id and key cross-page selection on `provider + (providerAssetId ?: url)`, never grid index — SGDB supplies a real `SgdbArtItem.id`, ScreenScraper/TGDB/IGDB do not | 1.4, 0.3 | READY |
+| 5.2 | Sequential download queue over the shipped `studioAppendFromUrl`, with per-item states, partial-failure retention, Retry/Remove Failed | 5.1 | READY |
+| 5.3 | Duplicate detection through the shipped `findByProviderAssetId` / `findByOriginUrl` / `findByChecksum`, offering View Existing or Replace Existing | 5.1 | READY |
+| 5.4 | Reordering via the shipped `reorderAssets`, primary screenshot (position 0), and storage/size warnings before a large apply | 5.2, 5.0 | READY |
+| 6.1 | Crop profile registry keyed on kind → platform → **game** region → default → source ratio, with Original Image as the universal fallback and a starter profile set (AD-14) | None | READY |
+| 6.2 | Live final-result preview for ICON0, box art and physical media from the same crop state | 6.1 | READY |
+| 6.3 | Per-game/category profile override persisted in the shipped `crop_profile_key` column, with Reset to Platform Default | 6.1 | READY |
+| 6.4 | Session Undo Last Apply over metadata, artwork replacement, ordering and crop | 3.2, 5.4, 6.2 | READY |
+| 7.1 | Adopt B2's `ScrapeFailure` for inline provider errors with Retry / Choose Another Source | B2 typed-reasons slice | BLOCKED |
+
+`7.1` is BLOCKED on plan B2 landing its typed-reasons slice.
+
+**First merge landed (Phases 0 and 1).** Tasks `0.1`–`0.6` and `1.1`–`1.4` are implemented on
+`artwork-revisions`. Phase 2 is not open yet: review and ship this first, then replan Phases 2–6
+against what it teaches.
+
+### What landed, and the decisions taken while landing it
+
+- **Ordinal rule (0.1).** `_NN`, exactly two digits, applied to BOTH the internal fixed name and
+  the portable name (`ArtworkFileNaming.withOrdinal`). Position 0 keeps the historic bare name, so
+  no existing install's files move. Two digits is what keeps the ordinal namespace disjoint from
+  `versionedName`'s 13-digit timestamps, and ordinals are only ever PARSED for
+  `MULTI_ASSET_KINDS` (`SCREENSHOT`, `VIDEO`) — a ROM stem that genuinely ends in `_07` can never
+  be misread as another game's seventh screenshot.
+- **Only one schema export exists for the pair of migrations.** Room exports the schema of the
+  version the database currently declares, and 41→42→43 landed together, so there is no `42.json`.
+  `Migration41To42Test` therefore runs both migrations and validates at 43; its assertions are all
+  about what 41→42 does. If 42 ever needs auditing on its own, it has to be re-exported by
+  compiling at that version.
+- **The storefront index is declared on `GameEntity`, not only created in SQL.** Creating it in the
+  migration alone reproduced exactly the `index_games_one_disc_primary` failure this repo already
+  documents — Room's post-migration validation saw an index its schema did not expect and refused
+  to open the database.
+- **Relink matches on the FULL stem first** and only falls back to an ordinal-stripped base when
+  that finds nothing (0.4), so ordinal recovery can never re-route a file that already matches a
+  real game name. Known cosmetic limit: a game whose own portable name ends in `_NN` will have its
+  single screenshot recovered at that position rather than 0. Nothing resolves by position 0
+  specifically — `get()` returns the LOWEST position — so this affects ordering only.
+- **Square now opens search (1.1/1.3).** Task 1.3 frees Square by moving the SteamGridDB mature
+  filter onto that source's context menu; leaving it dead until task 4.2 would have shipped a
+  search field no controller could reach. The full spatial-focus rework is still 4.1/4.2's.
+- **ScreenScraper ignores the query.** It is addressed by `ss_id`, not by a title, so a different
+  query returns the same media list. Re-pointing SS at another game is Phase 2's Change Match, not
+  a search. Documented on `ssResults`.
+- **`matchId` is already in `StudioRequestKey`** (always null today) so Phase 2's tiered matcher
+  invalidates exactly the right cache entries without touching the key class.
+
+### Verification actually run
+
+`:core:core-data`, `:feature:feature-artwork`, `:feature:feature-launcher`,
+`:feature:feature-settings` and `:feature:feature-xmb` unit tests pass, and `:app:assembleDebug`
+succeeds. `DisplaySettingsViewModelGameBootTest > toggling retires the unreleased mode key` fails,
+but it fails identically on the clean tree — it is C13's, not this plan's.
+
+Net-new coverage (there was none for any of this before): `ArtworkFileNamingTest` (ordinals,
+sibling-safe pruning), `StorefrontIdentityTest`, `Migration41To42Test`, `Migration42To43Test`,
+`StudioSearchTest` (normalization, key isolation, LRU cache, paging) and
+`ArtworkStudioViewModelTest` — including a direct repro of the disappearing-artwork bug: a slow
+SteamGridDB response completing after the user has switched to TheGamesDB must not repaint the grid.
+
+## Replan of Phases 2–6 (after the first merge)
+
+The plan said Phases 2–6 would be replanned once Phases 0 and 1 landed. They have. Seven things
+changed, all verified against the tree rather than assumed:
+
+1. **Task 4.2 is done, not pending.** Task 1.3 had to free Square to move the mature filter onto
+   the SteamGridDB context menu, so Square was rebound to search in the same change; Triangle
+   already opened the context menu before this plan started; and both stale "L2/R2 switch sources"
+   KDocs were deleted. Nothing of 4.2 is left. Retired rather than carried.
+2. **Multi-media is storable but invisible** — new task 5.0, and it goes first (AD-13).
+3. **`StudioArt` has no provider asset id**, so task 5.1's "keyed on `provider + providerAssetId`"
+   cannot be implemented as written. Only SteamGridDB exposes a real per-asset id
+   (`SgdbArtItem.id`); `SsCachedMedia` carries only `(type, region, url, format)`, and TGDB/IGDB
+   return a single asset with no id at all. The key becomes
+   `provider + (providerAssetId ?: url)`.
+4. **Phase 2 got cheaper.** `StudioRequestKey.matchId` shipped in Phase 1 and is already part of
+   the cache key and the generation guard, so 2.3 wires the confirmed match in without touching
+   the key class, the cache or the reducer.
+5. **Phase 3 has a clean seam** rather than an open-ended refactor (AD-12).
+6. **Phase 6 loses artwork-region keying** for now, because it is the one input with no persisted
+   source (AD-14).
+7. **Phases 2–6 need no migration.** `provider_asset_id` and `crop_profile_key` shipped in 41→42,
+   the storefront pair in 42→43, and the DAO/store operations 5.2/5.3/5.4/6.3 depend on
+   (`findAll`, `getAt`, `maxSortOrder`, `deleteAtAndCompact`, `reorder`, `findByProviderAssetId`,
+   `findByOriginUrl`, `findByChecksum`, `studioAppendFromUrl`, `deleteAssetAt`, `reorderAssets`,
+   `nextSortOrder`) are all in place. The database should stay at v43 for the rest of this plan.
+
+`7.1` stays BLOCKED: plan B2 is still `❌` in the index and `ScrapeFailure` has zero hits in the
+tree, so there is nothing to adopt yet.
+
+### Task 4.1 is now plan C17
+
+Sizing `4.1` turned up something that changes its shape: this repository already has
+`core-navigation`, a 613-line pure-JVM navigation engine with 670 lines of tests —
+`NavigationNode`, a modal context stack, component-owned edit mode, nearest-survivor focus
+recovery, and a `gridMove` helper for exactly this kind of tile grid. `feature-settings` is an
+adapter onto it, and `feature-xmb` **already depends on it** and already uses `gridMove` in
+`AppPickerLogic`.
+
+So `4.1` is not "build a focus system for the Studio" — it is "write the Studio's adapter onto a
+tested core another surface already proved out", with the results grid as a single edit-mode node.
+That is a smaller and much better-understood job than it looked from inside this plan, and it is
+still large enough, and independent enough, to be its own plan:
+[`C17` — Artwork Studio spatial navigation](artwork-studio-navigation-plan.md).
+
+Nothing in Phases 2, 3, 5 or 6 depends on C17. Tasks `4.3` and `4.4` do.
+
+### Suggested merge order
+
+Dependency order permits several sequences; this one front-loads visible payoff and keeps each
+merge independently reviewable:
+
+| Merge | Tasks | Why here |
+|---|---|---|
+| 2 | `5.0` → `2.1` → `2.2` → `2.3` | Makes Phase 0's storage visible, then fixes the reported "wrong match is a dead end" pain. No dependency on the input rework. |
+| 3 | `3.1` → `3.2` | Metadata presets ride Phase 2's candidate models; the seam (AD-12) is already located. |
+| 4 | `5.1` → `5.2` → `5.3` → `5.4` | The Studio-side multi-media queue, on top of a strip that already renders it. |
+| 5 | `6.1` → `6.2` → `6.3` | Crop, entirely self-contained. |
+| 6 | [C17](artwork-studio-navigation-plan.md), then `4.3` → `4.4`, then `6.4` | The input rework, now its own plan; `6.4`'s session undo spans metadata, ordering and crop, so it wants all three landed. |
+
+### Still open from Phase 1's own goals
+
+- Task 1.4's "skeletons for uncached pages" is per-REQUEST, not per-page. Because all paging is
+  client-side (AD-3), a page is never individually uncached — only a whole request key is.
+- The manual on-device checks in Verification Strategy have not been run: the rapid-source-switch
+  repro, a Windows game's storefront match, and the ICON0 live crop.
+
+## Deferred to a follow-up plan
+
+Written down so the next session does not re-derive them, and so nothing here silently absorbs them:
+
+- **Ranked suggestion picker (spec §9) and match Tiers 4–6.** Requires multi-result search on
+  `IgdbApi` (currently `limit 1;`) and `TheGamesDbApi` (currently returns one `TgdbGameInfo`) —
+  new query bodies, response models and tests. The Phase 2 matcher is written so these are extra
+  branches, not a rewrite.
+- **The remainder of the crop profile table.** Data edits against the AD-11 registry; no code change.
+- **Plan B2's bounded scrape concurrency and failures screen.** Only B2's `ScrapeFailure` type is
+  consumed here (task 7.1).
+
+## Follow-ups (documented, not implemented)
+
+- `sourceIndex` is reset on `selectTab` (`ArtworkStudioViewModel.kt:394`) but never re-validated
+  against the new source list's length elsewhere.
+- `ArtworkStudioScreen.kt:70` and `ArtworkStudioViewModel.kt:173` both claim L2/R2 switch sources; no
+  such binding exists in `GamepadBinding.kt:52-59`. Fixed opportunistically in task 4.2.
+- The approved HTML mockup is not in `docs/mockups/`; until it lands, the source spec's precedence
+  clause points at nothing.
+
+## Hand-off notes
+
+This plan is written to be executed without the conversation that produced it. Every line reference
+was verified against the working tree on `more-customization` on 2026-09-09 — re-check any that has
+drifted, but do not assume a helper exists that is not named here.
+
+- Repository is the source of truth, above this plan. If implementation contradicts something
+  written above, stop and report rather than inventing architecture (`PLANNING_WORKFLOW.md` §6, §12).
+- Work **one bounded task per helper**, in dependency order, with the change budget from
+  `PLANNING_WORKFLOW.md` §4: 2–4 existing files modified, 1–2 new files, 1 test file, no new
+  dependencies without approval.
+- This plan is indexed as `C16` in `docs/plans/README.md`. Keep that row's Status cell current as
+  phases land — the index is the record, and implemented plans are deleted once their row tells the
+  full story.
+- The originating design spec is `PFP_Artwork_Manager_Hardening_Design.md`. Where the two disagree,
+  **this plan wins** — its corrections are the result of verifying that spec against the code.

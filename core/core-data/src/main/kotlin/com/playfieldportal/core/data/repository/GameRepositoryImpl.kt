@@ -143,6 +143,12 @@ class GameRepositoryImpl @Inject constructor(
     override suspend fun updateScrapedTitle(id: Long, scrapedTitle: String?) =
         gameDao.updateScrapedTitle(id, scrapedTitle)
 
+    override suspend fun updateStorefrontIdentity(id: Long, storefront: String?, storefrontGameId: String?) =
+        gameDao.updateStorefrontIdentity(id, storefront, storefrontGameId)
+
+    override suspend fun getByStorefront(storefront: String, storefrontGameId: String): List<Game> =
+        gameDao.getByStorefront(storefront, storefrontGameId).map { it.toDomain() }
+
     override suspend fun updateUserTitleOverride(id: Long, override: String?) =
         gameDao.updateUserTitleOverride(id, override)
 

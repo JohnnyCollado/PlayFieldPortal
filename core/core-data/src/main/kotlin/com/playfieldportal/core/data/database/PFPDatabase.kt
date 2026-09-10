@@ -5,6 +5,7 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.playfieldportal.core.data.model.StorefrontIdentity
 import com.playfieldportal.core.data.database.dao.AccountAchievementDao
 import com.playfieldportal.core.data.database.dao.AccountAchievementSetDao
 import com.playfieldportal.core.data.database.dao.AppOverrideDao
@@ -106,7 +107,7 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         SteamOwnedGameEntity::class,
         SteamNoAchievementsEntity::class,
     ],
-    version = 41,
+    version = 43,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -1209,6 +1210,67 @@ abstract class PFPDatabase : RoomDatabase() {
                 db.execSQL(
                     "CREATE INDEX IF NOT EXISTS index_launch_outcomes_platform_id ON launch_outcomes (platform_id)"
                 )
+            }
+        }
+
+        // v42 — artwork multi-media (C16 phase 0). A game may now hold several screenshots and
+        // videos at once, so artwork_records gains a position and the one-row-per-(game,type)
+        // unique index is rebuilt to include it. Purely additive: every existing row keeps its
+        // asset at sort_order 0, which is exactly the slot the single-art code path still uses.
+        //
+        // provider_asset_id and crop_profile_key land in the same migration so the later phases
+        // (duplicate detection, crop profiles) are data-only changes rather than more upgrades.
+        val MIGRATION_41_42 = object : Migration(41, 42) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE artwork_records ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE artwork_records ADD COLUMN provider_asset_id TEXT")
+                db.execSQL("ALTER TABLE artwork_records ADD COLUMN crop_profile_key TEXT")
+                // (game_id, artwork_type) → (game_id, artwork_type, sort_order). Existing rows are
+                // all at 0, so the new index is satisfied by the data already present.
+                db.execSQL("DROP INDEX IF EXISTS index_artwork_records_game_id_artwork_type")
+                db.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS " +
+                        "index_artwork_records_game_id_artwork_type_sort_order " +
+                        "ON artwork_records (game_id, artwork_type, sort_order)"
+                )
+            }
+        }
+
+        // v43 — Windows storefront identity (C16 phase 0). PcGameScanner computed the store and
+        // app id for every imported PC game and discarded both, leaving a Steam or GOG title
+        // matchable only by title. games.storefront / games.storefront_game_id keep that
+        // evidence, and the pair is indexed together — an app id is unique within a store, never
+        // across stores, so ("STEAM","620") and ("GOG","620") must not collide.
+        //
+        // Backfilled in place from launch_intent_uri, so existing libraries gain the identity
+        // without a re-scan or any user action. Rows whose intent carries no trustworthy store
+        // id (Winlator .desktop launches, GameHub localGameId) are left null rather than guessed.
+        val MIGRATION_42_43 = object : Migration(42, 43) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE games ADD COLUMN storefront TEXT")
+                db.execSQL("ALTER TABLE games ADD COLUMN storefront_game_id TEXT")
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_games_storefront_storefront_game_id " +
+                        "ON games (storefront, storefront_game_id)"
+                )
+
+                val pending = mutableListOf<Triple<Long, String, String>>()
+                db.query(
+                    "SELECT id, launch_intent_uri FROM games WHERE launch_intent_uri IS NOT NULL"
+                ).use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val id = cursor.getLong(0)
+                        val uri = cursor.getString(1) ?: continue
+                        val (store, storeId) = StorefrontIdentity.fromLaunchIntentUri(uri) ?: continue
+                        pending += Triple(id, store, storeId)
+                    }
+                }
+                for ((id, store, storeId) in pending) {
+                    db.execSQL(
+                        "UPDATE games SET storefront = ?, storefront_game_id = ? WHERE id = ?",
+                        arrayOf<Any>(store, storeId, id),
+                    )
+                }
             }
         }
     }

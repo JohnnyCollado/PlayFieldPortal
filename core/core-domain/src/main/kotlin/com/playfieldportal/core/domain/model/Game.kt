@@ -84,6 +84,12 @@ data class Game(
     // {title_id} in the emulator profile; null for ordinary ROM/app games.
     val launchToken: String? = null,
 
+    // Windows storefront identity: the store this PC game was imported from
+    // (STEAM/EPIC/GOG/AMAZON/CUSTOM_GAME) and its id there. Matching uses the two together —
+    // an app id only identifies a game within its own store.
+    val storefront: String? = null,
+    val storefrontGameId: String? = null,
+
     val isMissing: Boolean = false,
 
     val lastSeenAt: Long? = null,
