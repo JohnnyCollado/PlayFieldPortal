@@ -9,6 +9,7 @@ import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import coil3.imageLoader
 import coil3.memory.MemoryCache
+import com.playfieldportal.core.ui.image.ArtworkRevisions
 import org.junit.After
 import org.junit.Before
 import org.junit.runner.RunWith
@@ -16,6 +17,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import javax.inject.Provider
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertSame
@@ -102,6 +104,19 @@ class ArtworkImageCacheTest {
         cache.evict(listOf(URI))
 
         assertNull(context.imageLoader.diskCache!!.openSnapshot(URI))
+    }
+
+    @Test
+    fun `evict bumps each uri's revision, so images already on screen reload`() {
+        // A stable URI rewritten in place leaves every AsyncImage showing it with an unchanged
+        // model; the revision is the only thing that tells those composables to load again.
+        val uri = "content://artwork/revision-probe.png"
+        val before = ArtworkRevisions.of(uri)
+
+        cache.evict(listOf(uri))
+
+        assertEquals(before + 1, ArtworkRevisions.of(uri))
+        assertEquals(0, ArtworkRevisions.of("content://artwork/never-evicted.png"))
     }
 
     @Test

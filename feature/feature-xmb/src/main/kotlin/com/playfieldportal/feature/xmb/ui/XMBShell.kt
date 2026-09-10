@@ -65,6 +65,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import coil3.compose.AsyncImage
+import com.playfieldportal.core.ui.image.rememberArtworkModel
 import com.playfieldportal.core.domain.model.BuiltInCategory
 import com.playfieldportal.core.ui.motion.MotionWallpaperPolicy
 import com.playfieldportal.core.ui.motion.rememberAppVisible
@@ -571,7 +572,7 @@ fun XMBShell(
                 if (bg != null) {
                     Box(Modifier.fillMaxSize()) {
                         AsyncImage(
-                            model = bg,
+                            model = rememberArtworkModel(bg),
                             contentDescription = null,
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize(),
@@ -660,7 +661,7 @@ fun XMBShell(
                         0.dp
                     }
                     AsyncImage(
-                        model = selectedLogo,
+                        model = rememberArtworkModel(selectedLogo),
                         contentDescription = null,
                         contentScale = ContentScale.Fit,
                         modifier = Modifier

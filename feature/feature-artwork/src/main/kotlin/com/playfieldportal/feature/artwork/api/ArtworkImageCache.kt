@@ -3,6 +3,7 @@ package com.playfieldportal.feature.artwork.api
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import coil3.memory.MemoryCache
+import com.playfieldportal.core.ui.image.ArtworkRevisions
 import javax.inject.Inject
 import javax.inject.Provider
 import javax.inject.Singleton
@@ -39,15 +40,18 @@ class ArtworkImageCache @Inject constructor(
     }
 
     /**
-     * Drops [uris] from the memory and disk caches. Scraped files reuse stable filenames, so a
-     * re-scraped image must be evicted or the path-keyed cache keeps serving the old bytes.
-     * Nothing on disk or in the database is touched — this is display cache only.
+     * Drops [uris] from the memory and disk caches, and bumps each one's [ArtworkRevisions] entry.
+     * Scraped files reuse stable filenames, so a re-scraped image must be evicted or the path-keyed
+     * cache keeps serving the old bytes. The revision is what makes images already on screen reload:
+     * their URI string did not change, so without it they never ask Coil again.
+     * Nothing on disk or in the database is touched — this is display state only.
      */
     fun evict(uris: Collection<String>) {
         val loader = imageLoader.get()
         uris.forEach { uri ->
             loader.memoryCache?.remove(MemoryCache.Key(uri))
             loader.diskCache?.remove(uri)
+            ArtworkRevisions.bump(uri)
         }
     }
 

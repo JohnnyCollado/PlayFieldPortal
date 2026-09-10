@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import com.playfieldportal.core.ui.image.rememberArtworkModel
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 
 // The hero-card detail design system, shared by the Game Detail page (ROMs, game apps, PC
@@ -103,7 +104,7 @@ internal fun HeroCard(
         contentAlignment = Alignment.BottomStart,
     ) {
         if (uri != null) {
-            AsyncImage(uri, title, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+            AsyncImage(rememberArtworkModel(uri), title, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
         }
         Box(
             Modifier
@@ -136,7 +137,7 @@ internal fun IconTile(
     ) {
         when {
             content != null -> content()
-            uri != null -> AsyncImage(uri, title, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+            uri != null -> AsyncImage(rememberArtworkModel(uri), title, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
             else -> Text(title.take(1).uppercase(), color = TextMuted, fontSize = 34.sp, fontWeight = FontWeight.Bold)
         }
     }

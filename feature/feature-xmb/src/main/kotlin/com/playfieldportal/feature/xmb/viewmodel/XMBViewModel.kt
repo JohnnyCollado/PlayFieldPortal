@@ -974,6 +974,18 @@ internal fun List<Game>.gameSorted(mode: XmbSortMode): List<Game> = when (mode) 
     else                      -> sortedBy { it.displayTitle.lowercase() }
 }
 
+/**
+ * Where the cursor belongs after the list it is on is refreshed: on the same row, found by id.
+ * Game lists sort by display title, so a rename re-sorts the list under the cursor. Keeping the
+ * INDEX would leave it on whichever game moved into that slot. A row that is gone falls back to
+ * the old index, clamped to the new list.
+ */
+internal fun cursorAfterRefresh(previous: List<XMBItem>, previousIndex: Int, next: List<XMBItem>): Int {
+    val selectedId = previous.getOrNull(previousIndex)?.id
+    val kept = selectedId?.let { id -> next.indexOfFirst { it.id == id } } ?: -1
+    return if (kept >= 0) kept else previousIndex.coerceIn(0, (next.size - 1).coerceAtLeast(0))
+}
+
 // Projects a raw game snapshot for display-only counts. DAO-backed list flows already apply the
 // same rule, but the category collector also drives card subtitles and must not count every disc.
 internal fun List<Game>.projectGamesForDisplay(): List<Game> {
@@ -1776,7 +1788,10 @@ class XMBViewModel @Inject constructor(
                     // AND non-gaming app categories (Network / App Store / custom) must re-render
                     // when the collection list changes.
                     if (categoryShowsCollections(currentCategory())) {
-                        loadItemsForCategory(currentCategory())
+                        // Same list, reloaded — and any games-table write lands here, a rename
+                        // included. Restarting the list job would otherwise publish it as a fresh
+                        // list and leave the cursor on the renamed game's old slot.
+                        loadItemsForCategory(currentCategory(), keepCursorOnRow = true)
                     }
                 }
         }
@@ -1830,7 +1845,12 @@ class XMBViewModel @Inject constructor(
         return if (categoryShowsCollections(cat)) cat.id else BuiltInCategory.GAMES
     }
 
-    private fun loadItemsForCategory(category: Category?) {
+    /**
+     * @param keepCursorOnRow when true, even the FIRST game list this load publishes keeps the
+     *   cursor on the row it was on, by id. Later emissions of a live game list always do; this is
+     *   for a caller that reloads the list already on screen, like Edit Title.
+     */
+    private fun loadItemsForCategory(category: Category?, keepCursorOnRow: Boolean = false) {
         currentItemsJob?.cancel()
         if (category == null) { _uiState.update { it.copy(currentItems = emptyList(), sortLabel = null, drillTitle = null, drillSiblings = emptyList(), drillSiblingIndex = 0) }; return }
         val drill = computeDrillTitle()
@@ -1840,8 +1860,10 @@ class XMBViewModel @Inject constructor(
         currentItemsJob = viewModelScope.launch {
             when (category.id) {
                 BuiltInCategory.FAVORITES -> {
+                    var keepCursor = keepCursorOnRow
                     gameRepository.observeFavorites().collect { games ->
-                        _uiState.update { it.copy(currentItems = games.notHiddenAt(HideLocationType.FAVORITES).gameSorted(_uiState.value.gameSortMode).toXmbItems()) }
+                        publishGameItems(games.notHiddenAt(HideLocationType.FAVORITES).gameSorted(_uiState.value.gameSortMode).toXmbItems(), keepCursor)
+                        keepCursor = true
                     }
                 }
                 BuiltInCategory.ANDROID -> {
@@ -1902,34 +1924,41 @@ class XMBViewModel @Inject constructor(
                     if (collectionId != null) {
                         // A user collection — games from any platform, app entries allowed only
                         // because they were explicitly added by the user.
+                        var keepCursor = keepCursorOnRow
                         collectionRepository.observeGames(collectionId).collect { games ->
                             val visible = games.notHiddenAt(HideLocationType.COLLECTION, collectionId.toString())
                             val items = if (visible.isEmpty()) listOf(emptyCollectionItem())
                                         else visible.gameSorted(_uiState.value.gameSortMode).toXmbItems()
-                            _uiState.update { it.copy(currentItems = items) }
+                            publishGameItems(items, keepCursor)
+                            keepCursor = true
                         }
                     } else if (platformId == ALL_GAMES_PLATFORM_ID) {
                         // All Games aggregates real games only (content_type = GAME), minus any
                         // the user hid from this card (recoverable in Settings > Hidden Items).
                         // Multi-disc sets project one row (the primary) — see observeAllGames.
+                        var keepCursor = keepCursorOnRow
                         gameRepository.observeAllGames().collect { games ->
                             val visible = games.notHiddenAt(HideLocationType.ALL_GAMES)
                             val items = if (visible.isEmpty()) listOf(emptyAllGamesItem())
                                         else visible.gameSorted(_uiState.value.gameSortMode).toXmbItems()
-                            _uiState.update { it.copy(currentItems = items) }
+                            publishGameItems(items, keepCursor)
+                            keepCursor = true
                         }
                     } else if (platformId == FAVORITES_PLATFORM_ID) {
                         // Favorites folder — every favorited entry (games and app shortcuts).
+                        var keepCursor = keepCursorOnRow
                         gameRepository.observeFavorites().collect { games ->
                             val visible = games.notHiddenAt(HideLocationType.FAVORITES)
                             val items = if (visible.isEmpty()) listOf(emptyFavoritesItem())
                                         else visible.gameSorted(_uiState.value.gameSortMode).toXmbItems()
-                            _uiState.update { it.copy(currentItems = items) }
+                            publishGameItems(items, keepCursor)
+                            keepCursor = true
                         }
                     } else if (platformId == MISSING_PLATFORM_ID) {
                         // The Missing bucket. Deliberately NOT filtered by notHiddenAt: a game the
                         // user hid from a normal view still needs to be reachable here, since this
                         // is the only place "Remove permanently" is offered.
+                        var keepCursor = keepCursorOnRow
                         gameRepository.observeMissing().collect { games ->
                             val items = if (games.isEmpty()) listOf(emptyMissingItem())
                                         else games.gameSorted(_uiState.value.gameSortMode)
@@ -1938,10 +1967,12 @@ class XMBViewModel @Inject constructor(
                                             // subtitle would otherwise carry play stats that are
                                             // meaningless for a file that isn't there.
                                             .map { it.copy(subtitle = MISSING_REASON) }
-                            _uiState.update { it.copy(currentItems = items) }
+                            publishGameItems(items, keepCursor)
+                            keepCursor = true
                         }
                     } else if (platformId != null) {
                         // Multi-disc sets project one row (the primary) — see observePlatformGames.
+                        var keepCursor = keepCursorOnRow
                         gameRepository.observePlatformGames(platformId).collect { all ->
                             // Memory Cards show real games only — a standard (unmarked) app row on
                             // this platform stays in the table for art/collections but not here.
@@ -1954,7 +1985,8 @@ class XMBViewModel @Inject constructor(
                                 games.notHiddenAt(HideLocationType.PLATFORM, platformId)
                             val items = if (visible.isEmpty()) listOf(emptyFolderItem(platformId))
                                         else visible.gameSorted(_uiState.value.gameSortMode).toXmbItems()
-                            _uiState.update { it.copy(currentItems = items) }
+                            publishGameItems(items, keepCursor)
+                            keepCursor = true
                         }
                     } else {
                         // The Games root re-renders live: a pin/scan can create a card or change
@@ -2048,11 +2080,13 @@ class XMBViewModel @Inject constructor(
                     // launch by package like anywhere else.
                     val openCollectionId = _uiState.value.selectedCollectionId
                     if (openCollectionId != null) {
+                        var keepCursor = keepCursorOnRow
                         collectionRepository.observeGames(openCollectionId).collect { games ->
                             val visible = games.notHiddenAt(HideLocationType.COLLECTION, openCollectionId.toString())
                             val items = if (visible.isEmpty()) listOf(emptyCollectionItem())
                                         else visible.gameSorted(_uiState.value.gameSortMode).toXmbItems()
-                            _uiState.update { it.copy(currentItems = items) }
+                            publishGameItems(items, keepCursor)
+                            keepCursor = true
                         }
                         return@launch
                     }
@@ -2086,7 +2120,8 @@ class XMBViewModel @Inject constructor(
                             }
                         val combined = collectionItems + gameItems
                         val items = if (combined.isEmpty()) listOf(emptyCategoryItem(category)) else combined
-                        _uiState.update { it.copy(currentItems = items + addGamesItem()) }
+                        // A one-shot read: it re-runs only when something reloads the category.
+                        publishGameItems(items + addGamesItem(), keepCursorOnRow)
                     } else {
                         // Non-gaming categories show apps (Photo / Music / Video / Network / App Store / custom).
                         // Apps the user has given artwork (via Edit App Details → a games-table row keyed
@@ -4242,6 +4277,19 @@ class XMBViewModel @Inject constructor(
         )
     }
 
+    /**
+     * Publishes a game list. With [keepCursorOnRow] the cursor follows its row by id
+     * ([cursorAfterRefresh]); without it the cursor keeps its index, which is what a fresh drill-in
+     * needs, since navigateRememberingCursor has already set the index it should land on.
+     */
+    private fun publishGameItems(items: List<XMBItem>, keepCursorOnRow: Boolean) = _uiState.update {
+        if (!keepCursorOnRow) it.copy(currentItems = items)
+        else it.copy(
+            currentItems = items,
+            selectedItemIndex = cursorAfterRefresh(it.currentItems, it.selectedItemIndex, items),
+        )
+    }
+
     private fun List<com.playfieldportal.core.domain.model.Game>.toXmbItems() = map { g ->
         XMBItem(
             id           = g.id.toString(),
@@ -5720,7 +5768,8 @@ class XMBViewModel @Inject constructor(
         if (dialog.editTitleGameId != null) {
             viewModelScope.launch {
                 gameRepository.updateUserTitleOverride(dialog.editTitleGameId, name.trim().ifBlank { null })
-                loadItemsForCategory(currentCategory())
+                // The new title re-sorts the list: follow the renamed game, not its old slot.
+                loadItemsForCategory(currentCategory(), keepCursorOnRow = true)
             }
             return
         }
@@ -7589,7 +7638,8 @@ class XMBViewModel @Inject constructor(
         }
         // Rebuild the visible list: title/artwork edits made in the detail screen must show the
         // moment the overlay closes (the item build is one-shot, not reactive to those tables).
-        loadItemsForCategory(currentCategory())
+        // A rename re-sorts that list, so the cursor follows the game rather than its old slot.
+        loadItemsForCategory(currentCategory(), keepCursorOnRow = true)
     }
 
     fun consumeGameDetailAction() {
@@ -7695,7 +7745,8 @@ class XMBViewModel @Inject constructor(
         _uiState.update { it.copy(activeAppId = null, pendingAppDetailAction = null) }
         // Rebuild the visible list so a freshly assigned background/icon (games-table row keyed by
         // package) reaches the XMB rows immediately — this is what puts artworkUri on app items.
-        loadItemsForCategory(currentCategory())
+        // App renames re-sort too, so the cursor follows the row by id.
+        loadItemsForCategory(currentCategory(), keepCursorOnRow = true)
     }
 
     fun consumeAppDetailAction() {

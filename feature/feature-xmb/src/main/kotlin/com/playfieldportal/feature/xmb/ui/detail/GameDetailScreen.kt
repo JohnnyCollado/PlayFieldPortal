@@ -86,6 +86,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import coil3.compose.AsyncImage
+import com.playfieldportal.core.ui.image.rememberArtworkModel
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.menuCursorEdge
@@ -425,8 +426,10 @@ fun GameDetailScreen(
                                 // Poster: fall back to the hero/screenshot look — a dark tile
                                 // with a play glyph, like a store trailer card.
                                 AsyncImage(
-                                    model = state.detailMedia.firstOrNull { !it.isVideo }?.uri
-                                        ?: game.heroUri ?: game.artworkUri,
+                                    model = rememberArtworkModel(
+                                        state.detailMedia.firstOrNull { !it.isVideo }?.uri
+                                            ?: game.heroUri ?: game.artworkUri,
+                                    ),
                                     contentDescription = null,
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier.fillMaxSize(),
@@ -440,7 +443,7 @@ fun GameDetailScreen(
                                 )
                             } else {
                                 AsyncImage(
-                                    model = media.uri,
+                                    model = rememberArtworkModel(media.uri),
                                     contentDescription = "Screenshot",
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier.fillMaxSize(),
@@ -461,7 +464,7 @@ fun GameDetailScreen(
                     .clickable(onClick = viewModel::closeImageViewer),
             ) {
                 AsyncImage(
-                    model = imageUri,
+                    model = rememberArtworkModel(imageUri),
                     contentDescription = "Media preview",
                     contentScale = ContentScale.Fit,
                     modifier = Modifier.fillMaxSize().padding(12.dp),

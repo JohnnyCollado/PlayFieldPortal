@@ -10,9 +10,11 @@ import com.playfieldportal.feature.artwork.api.IgdbApi
 import com.playfieldportal.feature.artwork.api.IgdbGameInfo
 import com.playfieldportal.feature.artwork.api.SgdbApiKeyProvider
 import com.playfieldportal.feature.artwork.api.SgdbArtItem
+import com.playfieldportal.feature.artwork.api.SgdbArtType
 import com.playfieldportal.feature.artwork.api.SgdbGame
 import com.playfieldportal.feature.artwork.api.SsMediaCatalog
 import com.playfieldportal.feature.artwork.api.SteamGridDbApi
+import com.playfieldportal.feature.artwork.store.ArtworkKind
 import com.playfieldportal.feature.artwork.store.ArtworkStore
 import com.playfieldportal.feature.artwork.store.RoutingArtworkStore
 import com.playfieldportal.feature.artwork.video.VideoSnapTranscoder
@@ -781,7 +783,160 @@ class ArtworkStudioViewModelTest {
         assertEquals(0, vm.uiState.value.changeMatchIndex)
     }
 
+    // ── Reaching Change Match / Forget Match with a controller (task 2.4) ─────
+    //
+    // Every test here drives the ViewModel ONLY through handleGamepadAction. The picker tests above
+    // open it by calling openChangeMatch() directly, which is how the row's buttons shipped
+    // touch-only without a single test failing.
+
+    @Test
+    fun `an unmatched game with no artwork reaches Change Match from Triangle`() = runTest(testDispatcher) {
+        val vm = loadedOn(StudioSource.IGDB)
+        assertEquals(null, vm.uiState.value.matchTitle)
+        assertEquals(null, vm.uiState.value.currentUri)
+
+        vm.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
+        advanceUntilIdle()
+
+        assertTrue("Triangle must open even with no artwork", vm.uiState.value.actionsOpen)
+        pickFromMenu(vm, StudioAction.CHANGE_MATCH)
+
+        assertTrue(vm.uiState.value.changeMatchOpen)
+        assertFalse("the picker replaces the menu", vm.uiState.value.actionsOpen)
+    }
+
+    @Test
+    fun `Forget Match is offered only once a match is confirmed, and clears it`() = runTest(testDispatcher) {
+        coEvery { matchEvidence.searchByTitle(any(), any(), any()) } returns twoCandidates()
+        val vm = loadedOn(StudioSource.STEAMGRIDDB)
+
+        vm.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
+        advanceUntilIdle()
+        assertFalse(StudioAction.FORGET_MATCH in vm.uiState.value.availableActions)
+
+        // Confirm the top candidate: Change Match from the menu, then A on the first result.
+        pickFromMenu(vm, StudioAction.CHANGE_MATCH)
+        vm.handleGamepadAction(GamepadAction.SELECT)
+        advanceUntilIdle()
+        coVerify { gameRepository.updateProviderMatch(1L, "STEAMGRIDDB", 9001L) }
+
+        vm.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
+        advanceUntilIdle()
+        pickFromMenu(vm, StudioAction.FORGET_MATCH)
+
+        coVerify { gameRepository.updateProviderMatch(1L, "STEAMGRIDDB", null) }
+        assertFalse(vm.uiState.value.matchIsConfirmed)
+        assertFalse(vm.uiState.value.actionsOpen)
+    }
+
+    @Test
+    fun `on SteamGridDB the menu lists the mature filter, then Change Match`() = runTest(testDispatcher) {
+        val vm = loadedOn(StudioSource.STEAMGRIDDB)
+
+        vm.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
+        advanceUntilIdle()
+
+        val actions = vm.uiState.value.availableActions
+        assertTrue(StudioAction.TOGGLE_MATURE in actions)
+        assertEquals(actions.indexOf(StudioAction.TOGGLE_MATURE) + 1, actions.indexOf(StudioAction.CHANGE_MATCH))
+    }
+
+    @Test
+    fun `a source with no match provider and no artwork still opens no menu`() = runTest(testDispatcher) {
+        val vm = loadedOn(StudioSource.LOCAL)
+        assertEquals(null, vm.uiState.value.matchProvider)
+
+        vm.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
+        advanceUntilIdle()
+
+        assertFalse(vm.uiState.value.actionsOpen)
+    }
+
+    // ── Every source on every tab ─────────────────────────────────────────────
+
+    @Test
+    fun `every tab lists every source, with the image providers disabled on ICON1, Manual and Video`() =
+        runTest(testDispatcher) {
+            val vm = viewModel()
+            vm.load(1L)
+            advanceUntilIdle()
+            val imageProviders = listOf(StudioSource.STEAMGRIDDB, StudioSource.THEGAMESDB, StudioSource.IGDB)
+            val noImageTabs = setOf(ArtworkKind.ICON1, ArtworkKind.MANUAL, ArtworkKind.VIDEO)
+
+            STUDIO_TABS.forEachIndexed { index, tab ->
+                vm.selectTab(index)
+                advanceUntilIdle()
+                assertEquals(StudioSource.entries, vm.sourcesForTab())
+                imageProviders.forEach { source ->
+                    assertEquals("$source on ${tab.label}", tab.kind !in noImageTabs, vm.isSourceAvailable(source))
+                }
+                assertTrue(vm.isSourceAvailable(StudioSource.SCREENSCRAPER))
+                assertTrue(vm.isSourceAvailable(StudioSource.LOCAL))
+            }
+        }
+
+    @Test
+    fun `an image provider on the Video tab says why, is skipped, and is never asked`() = runTest(testDispatcher) {
+        val vm = loadedOnTab(ArtworkKind.VIDEO)
+        assertEquals("n/a", vm.sourceBadge(StudioSource.STEAMGRIDDB))
+
+        vm.selectSource(vm.sourcesForTab().indexOf(StudioSource.STEAMGRIDDB))
+        advanceUntilIdle()
+        assertEquals("SteamGridDB has no VIDEO artwork", vm.uiState.value.message)
+        assertEquals(StudioSource.SCREENSCRAPER, vm.sourcesForTab()[vm.uiState.value.sourceIndex])
+
+        // From ScreenScraper, cycling right steps over all three image providers to Local.
+        vm.cycleSource(+1)
+        advanceUntilIdle()
+        assertEquals(StudioSource.LOCAL, vm.sourcesForTab()[vm.uiState.value.sourceIndex])
+        coVerify(exactly = 0) { steamGridDb.getArt(any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `on the 3D Box tab SteamGridDB offers every art type it has`() = runTest(testDispatcher) {
+        val vm = loadedOnTab(ArtworkKind.BOX_3D)
+
+        vm.selectSource(vm.sourcesForTab().indexOf(StudioSource.STEAMGRIDDB))
+        advanceUntilIdle()
+
+        SgdbArtType.entries.forEach { type ->
+            coVerify { steamGridDb.getArt(77L, type, any(), any(), any()) }
+        }
+    }
+
+    @Test
+    fun `on the Screenshot tab TheGamesDB offers its box art, fanart and logo`() = runTest(testDispatcher) {
+        coEvery { theGamesDb.fetchGameInfo(any(), any()) } returns TgdbGameInfo(
+            tgdbId = 1L, title = "Crash", description = null, releaseYear = null,
+            artworkUrl = "tgdb-box", heroUrl = "tgdb-fanart", logoUrl = "tgdb-logo",
+        )
+        val vm = loadedOnTab(ArtworkKind.SCREENSHOT)
+
+        vm.selectSource(vm.sourcesForTab().indexOf(StudioSource.THEGAMESDB))
+        advanceUntilIdle()
+
+        assertEquals(listOf("tgdb-box", "tgdb-fanart", "tgdb-logo"), vm.uiState.value.results.map { it.url })
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private suspend fun kotlinx.coroutines.test.TestScope.loadedOnTab(kind: ArtworkKind): ArtworkStudioViewModel {
+        val vm = viewModel()
+        vm.load(1L)
+        advanceUntilIdle()
+        vm.selectTab(STUDIO_TABS.indexOfFirst { it.kind == kind })
+        advanceUntilIdle()
+        return vm
+    }
+
+    /** With the actions menu open, walks the cursor to [action] with the D-pad and presses A. */
+    private fun kotlinx.coroutines.test.TestScope.pickFromMenu(vm: ArtworkStudioViewModel, action: StudioAction) {
+        val index = vm.uiState.value.availableActions.indexOf(action)
+        check(index >= 0) { "$action is not in the menu: ${vm.uiState.value.availableActions}" }
+        repeat(index - vm.uiState.value.actionsIndex) { vm.handleGamepadAction(GamepadAction.NAVIGATE_DOWN) }
+        vm.handleGamepadAction(GamepadAction.SELECT)
+        advanceUntilIdle()
+    }
 
     private suspend fun kotlinx.coroutines.test.TestScope.loadedOn(
         source: StudioSource,

@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
+import com.playfieldportal.core.ui.image.rememberArtworkModel
 import com.playfieldportal.core.domain.achievement.ShibaTier
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.theme.LocalPFPColors
@@ -325,7 +326,7 @@ private fun DetailPanel(state: ShibaLibraryUiState, accent: Color, modifier: Mod
 
         // Logo (falls back to the title) + platform.
         if (row.logoUri != null) {
-            AsyncImage(model = row.logoUri, contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxWidth().height(64.dp))
+            AsyncImage(model = rememberArtworkModel(row.logoUri), contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxWidth().height(64.dp))
         } else {
             Text(row.title, color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
@@ -401,7 +402,7 @@ private fun TotalScoreCard(state: ShibaLibraryUiState) {
 private fun BoxArt(uri: String?, modifier: Modifier) {
     Box(modifier = modifier.clip(RoundedCornerShape(8.dp)).background(Color(0xFF1B1B27)), contentAlignment = Alignment.Center) {
         if (uri != null) {
-            AsyncImage(model = uri, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+            AsyncImage(model = rememberArtworkModel(uri), contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
         }
     }
 }

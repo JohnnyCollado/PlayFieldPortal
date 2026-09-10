@@ -155,9 +155,9 @@ data class ArtworkStudioUiState(
     val matchIsConfirmed: Boolean get() = match?.userConfirmed == true
 
     /**
-     * Whether a Change Match picker can be offered at all. Only a provider that returns MORE THAN
-     * ONE game for a title has anything to pick FROM, and today that is SteamGridDB alone — the
-     * rest are single-result APIs (AD-4), so offering the button there would open an empty list.
+     * Whether a Change Match picker can be offered at all. Only a provider with a multi-result
+     * title search has anything to pick FROM. Since C16 Merge 3 that is every provider, but
+     * [ProviderCapabilities] stays the switch rather than this property assuming it.
      */
     val canChangeMatch: Boolean
         get() = matchProvider?.let { ProviderCapabilities[it].supportsTitleSearch } == true
@@ -165,7 +165,10 @@ data class ArtworkStudioUiState(
     val hasPreviousPage: Boolean get() = page > 0
     val hasNextPage: Boolean get() = page < pageCount - 1
 
-    /** Actions that make sense for the current slot, in menu order. Empty entries are hidden. */
+    /**
+     * Actions for the current slot and then the active source, in menu order. Entries that do not
+     * apply are hidden.
+     */
     val availableActions: List<StudioAction>
         get() = buildList {
             val kind = STUDIO_TABS.getOrNull(tabIndex)?.kind
@@ -178,6 +181,10 @@ data class ArtworkStudioUiState(
             // Mature content is a SteamGridDB browse filter, so it belongs to that source's
             // context menu — not to a global button that used to fire on every screen (task 1.3).
             if (sgdbSourceActive) add(StudioAction.TOGGLE_MATURE)
+            // The match row's two buttons are touch targets with no controller path, so they are
+            // offered here too (task 2.4), under exactly the row's own visibility rules.
+            if (matchProvider != null) add(StudioAction.CHANGE_MATCH)
+            if (matchIsConfirmed) add(StudioAction.FORGET_MATCH)
         }
 }
 
@@ -188,6 +195,8 @@ enum class StudioAction(val label: String) {
     CLEAR("Clear Artwork"),
     FILE_INFO("View File Information"),
     TOGGLE_MATURE("Mature Content (SteamGridDB)"),
+    CHANGE_MATCH("Change Match"),
+    FORGET_MATCH("Forget Match"),
 }
 
 // Kinds where a crop frame is meaningful. ICON1 (icon-slot video snap) is included — its crop
@@ -226,6 +235,14 @@ private val SS_TYPES_FOR_KIND: Map<ArtworkKind, List<String>> = mapOf(
     ArtworkKind.VIDEO          to listOf("video"),              // full gameplay video
     ArtworkKind.ICON1          to listOf("video-normalized", "video"),  // icon-slot snap
 )
+
+// Tabs SteamGridDB, TheGamesDB and IGDB have nothing for: all three are image providers, and none
+// offers an icon-slot snap, a PDF manual or a gameplay video. Listed but disabled there.
+private val NO_IMAGE_PROVIDER_KINDS = setOf(ArtworkKind.ICON1, ArtworkKind.MANUAL, ArtworkKind.VIDEO)
+
+// Tabs with no provider art type of their own. Rather than hide a provider there, it offers every
+// image it has for the game and the crop editor shapes the pick (user decision, 2026-09-10).
+private val SHOW_ALL_ART_KINDS = setOf(ArtworkKind.BOX_3D, ArtworkKind.PHYSICAL_MEDIA, ArtworkKind.SCREENSHOT)
 
 val STUDIO_TABS = listOf(
     StudioTab(ArtworkKind.ICON,           "ICON0",       "XMB tile · 144×80 · crop"),
@@ -346,34 +363,32 @@ class ArtworkStudioViewModel @Inject constructor(
     private fun tab() = STUDIO_TABS[_uiState.value.tabIndex]
 
     /**
-     * Sources that can serve the active tab's kind — keyless ones included. Those are listed in
-     * [ArtworkStudioUiState.unavailableSources]: drawn disabled and skipped, never removed, so the
-     * row keeps its shape and says what is missing instead of silently hiding a provider.
+     * Every source, on every tab (user decision, 2026-09-10), so the row keeps one shape as the
+     * user walks the categories. A source that has nothing for the tab ([servesKind]) or has no
+     * key ([ArtworkStudioUiState.unavailableSources]) is drawn disabled and skipped, never removed.
      */
-    fun sourcesForTab(): List<StudioSource> = buildList {
-        val kind = tab().kind
-        if (SS_TYPES_FOR_KIND.containsKey(kind)) add(StudioSource.SCREENSCRAPER)
-        if (sgdbTypeFor(kind) != null) add(StudioSource.STEAMGRIDDB)
-        // Title-searched sources (each browses its best hit, or the matched game by id). ICON0 is included so the tile can be built
-        // from ANY provider's art (cropped to 144:80) — maximum customization.
-        val titleMatchKinds = setOf(
-            ArtworkKind.ICON, ArtworkKind.BOX_ART, ArtworkKind.HERO,
-            ArtworkKind.BACKGROUND, ArtworkKind.LOGO,
-        )
-        if (kind in titleMatchKinds) {
-            add(StudioSource.THEGAMESDB)
-            add(StudioSource.IGDB)
-        }
-        add(StudioSource.LOCAL)
+    fun sourcesForTab(): List<StudioSource> = StudioSource.entries
+
+    /**
+     * Whether [source] has anything at all for [kind]. SteamGridDB, TheGamesDB and IGDB are image
+     * providers with no icon-slot snap, manual or gameplay video; ScreenScraper covers every tab.
+     */
+    private fun servesKind(source: StudioSource, kind: ArtworkKind): Boolean = when (source) {
+        StudioSource.SCREENSCRAPER -> SS_TYPES_FOR_KIND.containsKey(kind)
+        StudioSource.STEAMGRIDDB,
+        StudioSource.THEGAMESDB,
+        StudioSource.IGDB          -> kind !in NO_IMAGE_PROVIDER_KINDS
+        StudioSource.LOCAL         -> true
     }
 
-    private fun sgdbTypeFor(kind: ArtworkKind): SgdbArtType? = when (kind) {
-        ArtworkKind.ICON    -> SgdbArtType.GRID   // all grid dimensions — pass-2 crop shapes the tile
-        ArtworkKind.BOX_ART -> SgdbArtType.GRID   // 600×900 portrait grids
+    private fun sgdbTypesFor(kind: ArtworkKind): List<SgdbArtType> = when (kind) {
+        ArtworkKind.ICON    -> listOf(SgdbArtType.GRID)   // all grid dimensions — pass-2 crop shapes the tile
+        ArtworkKind.BOX_ART -> listOf(SgdbArtType.GRID)   // 600×900 portrait grids
         ArtworkKind.HERO,
-        ArtworkKind.BACKGROUND -> SgdbArtType.HERO
-        ArtworkKind.LOGO    -> SgdbArtType.LOGO
-        else                -> null
+        ArtworkKind.BACKGROUND -> listOf(SgdbArtType.HERO)
+        ArtworkKind.LOGO    -> listOf(SgdbArtType.LOGO)
+        in SHOW_ALL_ART_KINDS -> SgdbArtType.entries
+        else                -> emptyList()
     }
 
     private suspend fun refreshCurrent() {
@@ -498,7 +513,7 @@ class ArtworkStudioViewModel @Inject constructor(
     }
 
     private suspend fun sgdbResults(kind: ArtworkKind, query: String): List<StudioArt> {
-        val type = sgdbTypeFor(kind) ?: return emptyList()
+        val types = sgdbTypesFor(kind).ifEmpty { return emptyList() }
         val game = _uiState.value.game ?: return emptyList()
         // A saved id is the strongest evidence, but only while the user is still searching for
         // THIS game: the moment they type something else, the typed title wins.
@@ -513,23 +528,29 @@ class ArtworkStudioViewModel @Inject constructor(
             ?: steamGridDb.searchGame(query).getOrNull()?.firstOrNull()?.id
             ?: return emptyList()
         // No dimension filter, ICON0 included: every grid shape is a valid candidate now
-        // that pass 2's crop editor will shape it to the tile.
-        return steamGridDb.getArt(
-            gameId = sgdbId,
-            type = type,
-            dimensions = emptyList(),
-            includeNsfw = _uiState.value.includeNsfw,
-        ).getOrElse {
-            Timber.w(it, "SGDB browse failed")
-            emptyList()
-        }.map { art ->
-            StudioArt(
-                url = art.url,
-                thumb = art.thumb,
-                provider = "SteamGridDB",
-                label = listOfNotNull(art.style, art.width?.let { w -> "${w}×${art.height}" })
-                    .joinToString(" · "),
-            )
+        // that pass 2's crop editor will shape it to the tile. One request per art type; when a
+        // tab shows several, each tile's label names its type.
+        return types.flatMap { type ->
+            steamGridDb.getArt(
+                gameId = sgdbId,
+                type = type,
+                dimensions = emptyList(),
+                includeNsfw = _uiState.value.includeNsfw,
+            ).getOrElse {
+                Timber.w(it, "SGDB browse failed")
+                emptyList()
+            }.map { art ->
+                StudioArt(
+                    url = art.url,
+                    thumb = art.thumb,
+                    provider = "SteamGridDB",
+                    label = listOfNotNull(
+                        type.endpoint.takeIf { types.size > 1 },
+                        art.style,
+                        art.width?.let { w -> "${w}×${art.height}" },
+                    ).joinToString(" · "),
+                )
+            }
         }
     }
 
@@ -547,6 +568,13 @@ class ArtworkStudioViewModel @Inject constructor(
         }
             .onFailure { Timber.w(it, "TGDB browse failed") }.getOrNull()
             ?: return emptyList()
+        if (kind in SHOW_ALL_ART_KINDS) {
+            return listOfNotNull(
+                info.artworkUrl?.let { StudioArt(it, null, "TheGamesDB", "box art") },
+                info.heroUrl?.let { StudioArt(it, null, "TheGamesDB", "fanart") },
+                info.logoUrl?.let { StudioArt(it, null, "TheGamesDB", "clear logo") },
+            )
+        }
         if (kind == ArtworkKind.ICON) {
             return listOfNotNull(
                 info.artworkUrl?.let { StudioArt(it, null, "TheGamesDB", "box art · crop to tile") },
@@ -579,6 +607,13 @@ class ArtworkStudioViewModel @Inject constructor(
         }
             .onFailure { Timber.w(it, "IGDB browse failed") }.getOrNull()
             ?: return emptyList()
+        if (kind in SHOW_ALL_ART_KINDS) {
+            // IGDB has no clear logos, so its whole offer is the cover and the first artwork.
+            return listOfNotNull(
+                info.artworkUrl?.let { StudioArt(it, null, "IGDB", "cover") },
+                info.heroUrl?.let { StudioArt(it, null, "IGDB", "artwork") },
+            )
+        }
         if (kind == ArtworkKind.ICON) {
             return listOfNotNull(
                 info.artworkUrl?.let { StudioArt(it, null, "IGDB", "cover · crop to tile") },
@@ -676,11 +711,22 @@ class ArtworkStudioViewModel @Inject constructor(
         }
     }
 
-    fun isSourceAvailable(source: StudioSource): Boolean = source !in _uiState.value.unavailableSources
+    fun isSourceAvailable(source: StudioSource): Boolean = sourceBadge(source) == null
 
-    private fun unavailableReason(source: StudioSource): String = when (source) {
-        StudioSource.IGDB -> "IGDB needs a Client ID and Secret — add them in Settings ▸ Artwork"
-        else              -> "${source.label} needs an API key — add one in Settings ▸ Artwork"
+    /**
+     * Why [source] is disabled on the active tab, as the source row's short suffix, or null when it
+     * can be asked. "Nothing for this tab" outranks "no key": adding a key would not help there.
+     */
+    fun sourceBadge(source: StudioSource): String? = when {
+        !servesKind(source, tab().kind)                -> "n/a"
+        source in _uiState.value.unavailableSources    -> "no key"
+        else                                           -> null
+    }
+
+    private fun unavailableReason(source: StudioSource): String = when {
+        !servesKind(source, tab().kind) -> "${source.label} has no ${tab().label} artwork"
+        source == StudioSource.IGDB     -> "IGDB needs a Client ID and Secret — add them in Settings ▸ Artwork"
+        else                            -> "${source.label} needs an API key — add one in Settings ▸ Artwork"
     }
 
     /** Keeps the cursor off a disabled source after a tab change or a key being removed. */
@@ -774,11 +820,14 @@ class ArtworkStudioViewModel @Inject constructor(
     }
 
     /**
-     * What the CHANGE MATCH button does — including when it cannot do anything.
+     * What the CHANGE MATCH button and the Change Match menu entry do, including when they can't
+     * do anything.
      *
      * The button stays on the row for every provider so the row does not change shape as the user
-     * walks the sources, but a single-result provider has nothing to pick FROM. Pressing it there
-     * says so instead of opening an empty list: silence on a press reads as a broken button.
+     * walks the sources. A provider without title search would have nothing to pick FROM, and
+     * pressing there says so instead of opening an empty list: silence on a press reads as a
+     * broken button. No provider takes that branch today (every [ProviderCapabilities] row supports
+     * title search), but the capability table decides that, not this function.
      */
     fun onChangeMatchPressed() {
         val state = _uiState.value
@@ -788,7 +837,12 @@ class ArtworkStudioViewModel @Inject constructor(
         }
         val label = state.matchProvider?.label ?: return
         _uiState.update {
-            it.copy(message = "$label can't be searched by title — there are no alternatives to choose from.")
+            // Close the menu first when this came from it, or the message would sit under the overlay.
+            it.copy(
+                message = "$label can't be searched by title — there are no alternatives to choose from.",
+                actionsOpen = false,
+                showFileInfo = false,
+            )
         }
     }
 
@@ -1077,14 +1131,18 @@ class ArtworkStudioViewModel @Inject constructor(
     // ── Actions menu (pass 2) ───────────────────────────────────────────────────
 
     /**
-     * Opens the per-slot actions menu, loading the record so availability is accurate.
+     * Opens the actions menu (slot actions, then source actions), loading the record so
+     * availability is accurate.
      *
-     * Opens for a SteamGridDB browse even with no current artwork, because the mature filter
-     * lives here now and has to be reachable before anything has been applied (task 1.3).
+     * Opens even with no current artwork when the source has an entry of its own: SteamGridDB's
+     * mature filter (task 1.3), or Change Match on any provider (task 2.4). The unmatched game with
+     * no artwork is exactly the one Change Match exists to rescue. Only a source with neither, i.e.
+     * Local, still refuses, so the menu never opens empty.
      */
     fun openActions() {
         val sgdb = sgdbActive()
-        if (_uiState.value.currentUri == null && !sgdb) return
+        val s = _uiState.value
+        if (s.currentUri == null && !sgdb && s.matchProvider == null) return
         viewModelScope.launch {
             val info = routingStore.studioInfo(gameId, tab().kind)
             _uiState.update {
@@ -1111,6 +1169,9 @@ class ArtworkStudioViewModel @Inject constructor(
             StudioAction.CLEAR            -> { closeActions(); clearCurrent() }
             StudioAction.FILE_INFO        -> _uiState.update { it.copy(showFileInfo = true) }
             StudioAction.TOGGLE_MATURE    -> toggleNsfw()
+            // Through the button's own entry point, so an inert provider explains itself the same way.
+            StudioAction.CHANGE_MATCH     -> onChangeMatchPressed()
+            StudioAction.FORGET_MATCH     -> forgetMatch()
         }
     }
 

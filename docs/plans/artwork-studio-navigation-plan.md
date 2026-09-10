@@ -5,17 +5,27 @@
 >
 > Every file, symbol and line reference below was verified read-only against the working tree on
 > `artwork-revisions` after C16's Phases 0–1 landed. Nothing here is assumed.
+>
+> **Re-checked 2026-09-10 against `49ae052` (C16 Merges 2–3).** Line references are refreshed. Two
+> things changed the scope: Merge 2 added a **match row** whose buttons are touch-only, and
+> Merge 3 added a **sixth** overlay input block, the Change Match picker. Both are folded in below.
+>
+> **Waits on C16's layout rework (added 2026-09-10).** C16 tasks `L.1`–`L.6` move the Studio to the
+> approved target mockup (`docs/mockups/artwork_studio_layout.html`). The regions this plan navigates
+> are that layout's: header (back and search field), categories, current-artwork rail, sources, match
+> line, grid, page line, prompts. The breadcrumb region is gone, and the grid's column count is
+> measured (C16 AD-17). Line references here predate the rework and must be re-verified.
 
 ## Context
 
-`ArtworkStudioScreen` + `ArtworkStudioViewModel` (1,115 + 1,142 lines) are navigated by a
+`ArtworkStudioScreen` + `ArtworkStudioViewModel` (1,402 + 1,545 lines at `49ae052`) are navigated by a
 three-rung ladder, not by focus:
 
 ```kotlin
 enum class StudioZone { TABS, SOURCES, GRID }
 ```
 
-[`ArtworkStudioViewModel.kt:48`](../../feature/feature-xmb/src/main/kotlin/com/playfieldportal/feature/xmb/ui/detail/ArtworkStudioViewModel.kt:48)
+[`ArtworkStudioViewModel.kt:56`](../../feature/feature-xmb/src/main/kotlin/com/playfieldportal/feature/xmb/ui/detail/ArtworkStudioViewModel.kt:56)
 
 "Where the cursor is" is `zone` plus an index into it (`tabIndex` / `sourceIndex` / `gridIndex`).
 Confirm descends a rung, Back ascends one and closes from the top, Left/Right act only on the
@@ -27,6 +37,8 @@ breadcrumb, search, categories, sources, grid, paging, actions — and a three-r
 nowhere to put a control that is not a rung on it. C16's own Phase 1 already hit the wall: the
 search field shipped as a **modal overlay bound to Square** rather than a focusable row, and the
 SteamGridDB mature filter went into the context menu, both because there was no rung to give them.
+C16's Merge 2 then added an eighth region, the **match row** ("Matched as …" with FORGET and CHANGE
+MATCH, between sources and grid). It hit the same wall harder: its buttons shipped touch-only.
 
 ## Problem
 
@@ -36,12 +48,15 @@ Adding a region means a new enum case *plus* a new branch in all six `when (s.zo
 ViewModel and all four `state.zone` reads in the screen — and the result still cannot be navigated
 spatially, only up and down the same ladder.
 
-Three concrete consequences today:
+Four concrete consequences today:
 
 1. **Search is unreachable except by a dedicated button.** It is a modal overlay on Square.
 2. **Paging is unreachable by D-pad.** Up/Down are clamped inside the grid; paging is LB/RB or the
-   on-screen pills only ([`:1107-1123`](../../feature/feature-xmb/src/main/kotlin/com/playfieldportal/feature/xmb/ui/detail/ArtworkStudioViewModel.kt:1107)).
-3. **The prompt bar is hand-maintained per zone, and it has drifted once already.** After C16
+   on-screen pills only ([`:1507-1514`](../../feature/feature-xmb/src/main/kotlin/com/playfieldportal/feature/xmb/ui/detail/ArtworkStudioViewModel.kt:1507)).
+3. **The match row is unreachable by D-pad.** FORGET and CHANGE MATCH are `clickable` only
+   (`ArtworkStudioScreen.kt:450-477`). C16 task `2.4` bridges them onto the Triangle menu so a
+   controller can reach them before this plan lands; this plan gives the row its real place.
+4. **The prompt bar is hand-maintained per zone, and it has drifted once already.** After C16
    task 1.3 rebound `CHANGE_SORT` from the mature filter to search, two of the three per-zone
    lists still advertised it as "NSFW". Fixed in place — the shared prompts are appended from one
    `buildList` now, and mature moved to `HOME` (START) — but the structure that hid it is intact:
@@ -56,10 +71,11 @@ Verified against the tree.
   `focusable()`; there is no `onKeyEvent` anywhere in the file.
 - **Input is hoisted.** `pendingGamepadAction` is forwarded from
   [`GameDetailScreen.kt:186-206`](../../feature/feature-xmb/src/main/kotlin/com/playfieldportal/feature/xmb/ui/detail/GameDetailScreen.kt:186)
-  and dispatched by `handleGamepadAction`, which branches overlay-first (search → crop → actions →
-  candidate) before reaching the zone ladder.
-- **Five overlays already behave like modal contexts** — search, crop editor, actions menu,
-  file-info panel, candidate preview — each with its own early-return input block.
+  and dispatched by `handleGamepadAction`, which branches overlay-first (search → Change Match →
+  crop → actions → candidate) before reaching the zone ladder.
+- **Six overlays already behave like modal contexts** — search, the Change Match picker (C16
+  Merge 3), crop editor, actions menu, file-info panel, candidate preview — each with its own
+  early-return input block.
 - **`showTouchControls` is not passed in.** `GameDetailScreen` has the parameter
   ([`:117`](../../feature/feature-xmb/src/main/kotlin/com/playfieldportal/feature/xmb/ui/detail/GameDetailScreen.kt:117))
   and does not forward it at the call site
@@ -93,7 +109,7 @@ another surface already proved out** — which is a materially smaller and bette
 2. Search becomes a focusable field in the layout, not a button-summoned modal.
 3. Paging reachable without LB/RB.
 4. One source of truth for the controller prompt bar, derived from the focused node.
-5. Overlays become modal contexts on the engine's stack instead of five hand-rolled early returns.
+5. Overlays become modal contexts on the engine's stack instead of six hand-rolled early returns.
 6. Touch stays a first-class peer, including `showTouchControls`.
 7. `StudioZone` deleted.
 
@@ -102,7 +118,8 @@ another surface already proved out** — which is a materially smaller and bette
 - **Generalizing `feature-settings`' registration plumbing into `core-ui`.** Tempting, and wrong
   for this plan (AD-4).
 - Changing what any control *does* — this plan moves how controls are reached, not their behavior.
-- Redesigning the layout. Regions keep their current positions.
+- Redesigning the layout. C16's layout rework (`L.1`–`L.6`) moves the regions to the target mockup
+  (`docs/mockups/artwork_studio_layout.html`) first; this plan navigates that layout.
 - The crop editor's internal pan/zoom semantics. It becomes an edit-mode/modal owner, unchanged.
 - Migrating any other `feature-xmb` screen onto the core.
 - C16's Phase 4 tasks `4.3` (touch) and `4.4` (pending-change prompts) — they depend on this plan
@@ -133,7 +150,7 @@ preservation, nearest-survivor recovery, clamping and modal stacking are inherit
 Registering twenty tiles as twenty nodes would put twenty entries into a vertical list model whose
 geometry is a single Y float per key — it cannot express rows and columns. Instead the grid is
 **one** node whose `onEditStart` returns an `EditModeHandler` driving `gridMove(gridIndex,
-direction, STUDIO_GRID_COLUMNS, results.size)`.
+direction, gridColumns, results.size)`, where `gridColumns` is the measured column count from C16 AD-17.
 
 This is what the core's edit mode is for, and it lands three behaviours for free: Confirm enters
 the grid, **Back always exits the grid before any screen navigation** (the engine guarantees it),
@@ -141,8 +158,10 @@ and directional input inside the grid is the component's own business. `gridMove
 an edge is the seam where LEFT falls through to back-out and RIGHT/UP/DOWN move between regions.
 
 **AD-3. Overlays become modal contexts.**
-Search, crop, actions, file-info and candidate preview each `pushModal(...)` and `popContext()`.
-The five hand-rolled early-return blocks in `handleGamepadAction` collapse into the engine's stack,
+Search, Change Match, crop, actions, file-info and candidate preview each `pushModal(...)` and
+`popContext()`. The Change Match picker's query field is already a cursor stop that owns an edit
+state (`changeMatchEditing`), which is exactly the core's edit mode. The six hand-rolled early-return
+blocks in `handleGamepadAction` collapse into the engine's stack,
 which already guarantees only the top context receives input and that paused contexts restore their
 focused node. This is the part of the change that removes code rather than adding it.
 
@@ -193,7 +212,7 @@ model, driven by the current `zone` state so nothing changes on screen yet. Ship
 **Phase B — Regions take over.** Nodes become the source of truth for focus; `StudioZone` is
 deleted; search and paging join the layout as real regions; the prompt bar derives.
 
-**Phase C — Overlays become modal contexts.** The five early-return blocks collapse onto the stack.
+**Phase C — Overlays become modal contexts.** The six early-return blocks collapse onto the stack.
 
 Phase A is separately reviewable and reversible. Phase B is the behavioural change.
 
@@ -206,8 +225,9 @@ Phase A is separately reviewable and reversible. Phase B is the behavioural chan
   refresh; focus recovering when the focused region disappears (a source list that shrinks, a tab
   with no sources).
 - **Compose (Robolectric, already wired)** — every control reachable by D-pad alone; the search
-  field focusable in the layout without Square; paging reachable without LB/RB; Back closing the
-  top overlay then exiting; touch targets still hit the right nodes.
+  field focusable in the layout without Square; paging reachable without LB/RB; FORGET and CHANGE
+  MATCH reachable as match-row children without Triangle; Back closing the top overlay then
+  exiting; touch targets still hit the right nodes.
 - **Regression** — C16 Phase 1's `ArtworkStudioViewModelTest` must keep passing untouched. It
   asserts race safety, caching and paging, none of which this plan may disturb; if a test there
   needs editing, that is the signal something outside this plan's scope moved.
@@ -218,15 +238,15 @@ Phase A is separately reviewable and reversible. Phase B is the behavioural chan
 
 | ID | Task | Depends On | Status |
 |---|---|---|---|
-| 1.1 | `StudioNavigationState` adapter over `NavigationEngine("artwork-studio")`, mirroring `ControllerNavigationState`'s shape, plus the Studio-local registration seam (AD-4) | None | READY |
-| 1.2 | Region node model: breadcrumb, search, categories, sources, grid, paging, actions — with categories/sources/paging exposing their items as `children` (LEFT/RIGHT), driven by the existing `zone` state so behaviour is unchanged | 1.1 | READY |
+| 1.1 | `StudioNavigationState` adapter over `NavigationEngine("artwork-studio")`, mirroring `ControllerNavigationState`'s shape, plus the Studio-local registration seam (AD-4) | C16 L.6 | READY |
+| 1.2 | Region node model: header (back and search field), categories, current-artwork rail, sources, match line, grid, page line, actions — with categories/sources/paging exposing their items as `children` (LEFT/RIGHT), and the match row exposing FORGET (only while a match is confirmed) and CHANGE MATCH the same way — driven by the existing `zone` state so behaviour is unchanged | 1.1 | READY |
 | 2.1 | Grid as a single edit-mode node over `gridMove`, with `Back` exiting to the region stack and a null move at an edge as the region-exit seam (AD-2) | 1.2 | READY |
 | 2.2 | Cut focus over to the nodes and **delete `StudioZone`**, its six `when` blocks and its four screen reads | 2.1 | READY |
-| 2.3 | Promote search and paging to real focusable regions in the layout; keep Square as a shortcut to the search field | 2.2 | READY |
+| 2.3 | Promote the header's search field, the page line and the match line to real focusable regions; keep Square as a shortcut to the search field, and C16 `2.4`'s Change Match / Forget Match menu entries as a shortcut to the row | 2.2 | READY |
 | 2.4 | Derive the controller prompt bar from the focused node, replacing the three hand-written per-zone lists so a rebinding cannot silently leave a stale label again | 2.2 | READY |
 | 2.5 | LEFT falls through to back-out only at a region's left edge, under `controller_left_backs_out` (AD-5) | 2.2 | READY |
 | 2.6 | Keep the focused region framed with `BringIntoViewRequester` rather than scroll math | 2.2 | READY |
-| 3.1 | Search, crop, actions, file-info and candidate preview become modal contexts; delete the five early-return blocks in `handleGamepadAction` (AD-3) | 2.2 | READY |
+| 3.1 | Search, Change Match, crop, actions, file-info and candidate preview become modal contexts; delete the six early-return blocks in `handleGamepadAction` (AD-3) | 2.2 | READY |
 
 **Start here:** `1.1` → `1.2`, which change no on-screen behaviour and are reviewable on their own.
 
@@ -235,7 +255,7 @@ Phase A is separately reviewable and reversible. Phase B is the behavioural chan
 - **Generalize the registration seam into `core-ui`** once a third surface wants it, driven by two
   real consumers rather than one plus a guess (AD-4).
 - **`sourceIndex` is reset on `selectTab` but never re-validated against the new source list's
-  length** (`ArtworkStudioViewModel.kt:505`) — carried from C16's follow-ups; task 2.2's
+  length** (`ArtworkStudioViewModel.kt:603`) — carried from C16's follow-ups; task 2.2's
   nearest-survivor recovery is the natural place it stops mattering.
 - `AppPickerScreen` is a second `feature-xmb` grid navigated by index-in-state. If this adapter
   works out, it is the obvious next candidate.
@@ -250,4 +270,6 @@ Phase A is separately reviewable and reversible. Phase B is the behavioural chan
   behaviour being inherited — readiness, geometry, list behaviour, modal, edit mode and touch — and
   they document guarantees this plan leans on rather than re-testing.
 - `C16` task `4.1` is retired in favour of this plan; `C16` tasks `4.3` and `4.4` depend on it.
+- `C16` tasks `L.1`–`L.6` (the layout rework to `docs/mockups/artwork_studio_layout.html`) land
+  before task 1.1 here.
 - This plan is indexed as `C17` in `docs/plans/README.md`. Keep that row current as phases land.

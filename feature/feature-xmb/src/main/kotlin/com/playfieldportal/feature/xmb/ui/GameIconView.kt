@@ -45,6 +45,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.aspectRatio
 import coil3.compose.AsyncImage
+import com.playfieldportal.core.ui.image.ArtworkRevisions
+import com.playfieldportal.core.ui.image.rememberArtworkModel
 import com.playfieldportal.core.domain.model.IconDisplayMode
 import com.playfieldportal.core.ui.icons.GameIconStyle
 import com.playfieldportal.feature.xmb.R
@@ -237,6 +239,8 @@ private fun NaturalAspectArtIcon(
         model = coil3.request.ImageRequest.Builder(LocalContext.current)
             .data(artworkUri)
             .size(coil3.size.Size.ORIGINAL)
+            // Changes when the bytes behind artworkUri are replaced in place, so the tile reloads.
+            .memoryCacheKey(ArtworkRevisions.cacheKey(artworkUri))
             .build()
     )
     // Coil 3 exposes the painter state as a StateFlow rather than a plain value.
@@ -298,7 +302,7 @@ fun PspIcon0Icon(
         if (artworkUri != null) {
             // Crop fills the 144:80 tile edge-to-edge with the (landscape) hero art.
             AsyncImage(
-                model              = artworkUri,
+                model              = rememberArtworkModel(artworkUri),
                 contentDescription = null,
                 contentScale       = ContentScale.Crop,
                 modifier           = Modifier.fillMaxSize(),
@@ -352,7 +356,7 @@ fun PspRectangleIcon(
     ) {
         if (artworkUri != null) {
             AsyncImage(
-                model              = artworkUri,
+                model              = rememberArtworkModel(artworkUri),
                 contentDescription = null,
                 contentScale       = ContentScale.Crop,
                 modifier           = Modifier.fillMaxSize(),
@@ -443,7 +447,7 @@ fun CartridgeIcon(
         ) {
             if (artworkUri != null) {
                 AsyncImage(
-                    model              = artworkUri,
+                    model              = rememberArtworkModel(artworkUri),
                     contentDescription = null,
                     contentScale       = ContentScale.Crop,
                     modifier           = Modifier.fillMaxSize(),

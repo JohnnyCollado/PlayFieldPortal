@@ -347,10 +347,12 @@ fun ArtworkStudioScreen(
                         sources.forEachIndexed { index, source ->
                             val selected = state.sourceIndex == index
                             val focusedZone = state.zone == StudioZone.SOURCES && selected
-                            // Disabled, not hidden: a keyless provider keeps its place and says why.
-                            val available = source !in state.unavailableSources
+                            // Disabled, not hidden: a keyless provider, or one with nothing for this
+                            // category, keeps its place and says why.
+                            val badge = viewModel.sourceBadge(source)
+                            val available = badge == null
                             Text(
-                                if (available) source.label else "${source.label} · no key",
+                                if (badge == null) source.label else "${source.label} · $badge",
                                 color = when {
                                     !available -> Color.White.copy(alpha = 0.25f)
                                     selected   -> Color.White

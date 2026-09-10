@@ -144,7 +144,13 @@ So Phase 2 delivers **Tiers 1–3 only**: saved provider ID → ROM hash / store
 
 The deferred follow-up plan owns: IGDB/TGDB multi-result search, Tiers 4–6, and the suggestion-card UI. Nothing in this plan blocks it — the tiered matcher is written so Tiers 4–6 are additional branches, not a rewrite.
 
-**AD-5. A page is one gridful.** Page == screen, no in-page scrolling, paging is the only navigation model. Density is changed by adjusting rows/columns, never by decoupling page size from the grid.
+> **Superseded in part by Merge 3 (2026-09-10).** On-device use showed IGDB and TheGamesDB could
+> never match anything under this decision, so their multi-result search landed early, and
+> ScreenScraper gained `jeuRecherche` name search with them. Every provider now has
+> `supportsTitleSearch = true` and backs Change Match, not SteamGridDB alone. Tiers 4–6 and the
+> ranked picker are still deferred. See "Merge 3 landed" below.
+
+**AD-5. A page is one gridful.** Page == screen, no in-page scrolling, paging is the only navigation model. Density is changed by adjusting rows/columns, never by decoupling page size from the grid. *(Refined by AD-17: the gridful is measured from the screen, not a fixed 4×5.)*
 
 **AD-6. Race safety is coroutine ownership, never delays.** An immutable request key (`normalizedQuery + provider + category + confirmedMatchId + providerOptions`) plus a monotonic generation token; a response may reduce into state only if both still match. Per-key caches replace the single `allResults`. `flatMapLatest` is allowed but does not remove the equality guard at the reducer boundary.
 
@@ -226,7 +232,9 @@ that lands, with real feedback from it. Do not treat the phases below as one con
 1–3, `Matched as …` / Change Match / Forget Match, with Change Match backed by
 `SteamGridDbApi.searchGame`. No ranked suggestion picker (AD-4). Cheaper than first planned:
 `StudioRequestKey.matchId` already exists and is already part of the cache key, so confirming a
-match invalidates the right entries without touching the key, the cache or the guard.
+match invalidates the right entries without touching the key, the cache or the guard. *(Landed in
+Merge 2; Merge 3 widened Change Match to every provider — see the note under AD-4. Task 2.4 makes
+it reachable by controller.)*
 
 **Phase 3 — Metadata presets.** Retrieval without writes, Current-vs-Incoming preview, the four
 apply policies. The split has a clean seam (see AD-12).
@@ -279,6 +287,7 @@ Note: there is **zero existing coverage** for `ArtworkStudioViewModel`, the crop
 | 2.1 | Provider capability/candidate/preset models that return data without persisting | None | DONE |
 | 2.2 | The tiered matcher at Tiers 1–3 (saved provider ID → ROM CRC32 / storefront **pair** → unique exact normalized title on the expected platform), with provider IDs never crossed between providers | 2.1, 0.6 | DONE |
 | 2.3 | `Matched as …` status, Change Match (backed by `SteamGridDbApi.searchGame`) and Forget Match, neither deleting local artwork or metadata; feed the confirmed match into the existing `StudioRequestKey.matchId` | 2.2 | DONE |
+| 2.4 | Make Change Match and Forget Match reachable by controller: add both to the Triangle menu with the row's own visibility rules, and let `openActions()` open whenever a match provider is set (see "Controller gap found after Merge 3") | 2.3 | DONE |
 | 3.1 | Extract `MetadataRepository.fetchForGame`'s four provider steps into a write-free `fetchCandidates`, splitting at the existing "nothing found" return (AD-12) | 2.1 | DONE |
 | 3.2 | Current-vs-Incoming preview with the four apply policies, reusing `GameDao.updateMetadataIfMissing` for Fill Missing Only | 3.1 | DONE |
 | 4.1 | ~~Replace `StudioZone` with spatial focus~~ — split out as its own plan | — | MOVED to [C17](artwork-studio-navigation-plan.md) |
@@ -294,13 +303,20 @@ Note: there is **zero existing coverage** for `ArtworkStudioViewModel`, the crop
 | 6.2 | Live final-result preview for ICON0, box art and physical media from the same crop state | 6.1 | READY |
 | 6.3 | Per-game/category profile override persisted in the shipped `crop_profile_key` column, with Reset to Platform Default | 6.1 | READY |
 | 6.4 | Session Undo Last Apply over metadata, artwork replacement, ordering and crop | 3.2, 5.4, 6.2 | READY |
+| L.1 | Measured grid capacity in the ViewModel: a pure `StudioGridCapacity` plus per-tab tile class replaces the fixed 4×5 constants; re-paging keeps the focused result (AD-17) | None | READY |
+| L.2 | Render exactly one measured page: the grid slot reports its size and draws `gridColumns` × `gridRows` with no scrolling | L.1 | READY |
+| L.3 | Title line and flat tabs: search joins the header, breadcrumb trail and SEARCH label go, eleven compact chips with LB/RB glyphs | None | READY |
+| L.4 | Current-artwork rail: 150 dp (200 dp at ≥1000 dp wide), caption moved in, true-aspect thumbnail, Y hint | L.3 | READY |
+| L.5 | Sources row, match line, page line and prompt bar: NSFW becomes a START badge, PREV/NEXT move under the grid, prompts drop to four | L.2, L.4 | READY |
+| L.6 | Verify the layout on the Thor and at least two other screen sizes against the capacity table | L.5 | READY |
 | 7.1 | Adopt B2's `ScrapeFailure` for inline provider errors with Retry / Choose Another Source | B2 typed-reasons slice | BLOCKED |
 
 `7.1` is BLOCKED on plan B2 landing its typed-reasons slice.
 
-**First merge landed (Phases 0 and 1).** Tasks `0.1`–`0.6` and `1.1`–`1.4` are implemented on
-`artwork-revisions`. Phase 2 is not open yet: review and ship this first, then replan Phases 2–6
-against what it teaches.
+**Merges 1–3 landed (Phases 0–3, plus 5.0).** Tasks `0.1`–`0.6`, `1.1`–`1.4`, `5.0`, `2.1`–`2.3`
+and `3.1`–`3.2` are implemented on `artwork-revisions` (`0677011`, `49ae052`). Phases 2–6 were
+replanned after Merge 1, as promised; that replan is below. Task `2.4` landed next. Next up: the Studio
+layout rework (`L.1`–`L.6`), then Merge 4.
 
 ### What landed, and the decisions taken while landing it
 
@@ -402,6 +418,8 @@ merge independently reviewable:
 |---|---|---|
 | 2 | `5.0` → `2.1` → `2.2` → `2.3` | Makes Phase 0's storage visible, then fixes the reported "wrong match is a dead end" pain. No dependency on the input rework. |
 | 3 | `3.1` → `3.2` | Metadata presets ride Phase 2's candidate models; the seam (AD-12) is already located. |
+| 3b | `2.4` | *Added 2026-09-10.* Merge 2 shipped Change Match and Forget Match touch-only. One ViewModel file and its test; it should not wait for C17. |
+| 3c | `L.1` → `L.2` → `L.3` → `L.4` → `L.5` → `L.6` | *Added 2026-09-10.* The approved target layout (see "Studio layout rework"). Lands before Merge 4 so Phase 5's queue UI is built into the final layout, and before C17 so C17's regions match it. |
 | 4 | `5.1` → `5.2` → `5.3` → `5.4` | The Studio-side multi-media queue, on top of a strip that already renders it. |
 | 5 | `6.1` → `6.2` → `6.3` | Crop, entirely self-contained. |
 | 6 | [C17](artwork-studio-navigation-plan.md), then `4.3` → `4.4`, then `6.4` | The input rework, now its own plan; `6.4`'s session undo spans metadata, ordering and crop, so it wants all three landed. |
@@ -572,6 +590,325 @@ modified; `MetadataApply.kt` and `MetadataPreviewPanel.kt` new; `MetadataApplyTe
 `MetadataRepositoryCandidatesTest` new, `GameDetailViewModelTest` extended. 3.1 and 3.2 landed
 together, which is where the overrun comes from.
 
+## Controller gap found after Merge 3 — task 2.4
+
+**Change Match and Forget Match can't be reached with a controller** (found 2026-09-10). This breaks
+Goal 8 ("every control reachable by D-pad + Confirm + Back + Square + Triangle"), and it breaks
+it on the one row Merges 2 and 3 were about.
+
+Verified against `49ae052`:
+
+- **The row's buttons are touch-only.** `FORGET` and `CHANGE MATCH` are `Modifier.clickable`
+  text and nothing more (`ArtworkStudioScreen.kt:450-477`). No `GamepadAction` path reaches
+  `onChangeMatchPressed()` or `forgetMatch()`. The zone ladder (`ArtworkStudioViewModel.kt:1489-1543`)
+  has no rung for the match row, and `StudioAction` (`:184-191`) has no entry for either.
+- **Triangle can't serve as a workaround yet.** `openActions()` returns early when the slot has no
+  artwork and SteamGridDB is not the active source (`:1087`). That describes the unmatched game on
+  IGDB, TheGamesDB or ScreenScraper, which is exactly the case Change Match exists to rescue. The
+  menu wouldn't open there even with an entry in it.
+- **No free button.** All eleven `GamepadAction`s are already bound in the Studio: D-pad, A, B,
+  Square (search), Triangle (options), LB/RB, START (mature, SteamGridDB only).
+- **Why the tests missed it.** Every match test enters through a ViewModel function
+  (`vm.onChangeMatchPressed()`, `changeMatchOpenWithResults()`), never through
+  `handleGamepadAction`. `the Change Match picker can be walked and confirmed with the controller
+  alone` is true once the picker is open; nothing proves a controller can open it.
+
+**Fix: both entries go on the Triangle menu.** Only `ArtworkStudioViewModel.kt` changes. The
+overlay already renders `availableActions` generically (`ArtworkStudioScreen.kt:996-1009`), so
+the screen needs no edit.
+
+1. `StudioAction` gains `CHANGE_MATCH("Change Match")` and `FORGET_MATCH("Forget Match")`.
+2. `availableActions` lists `CHANGE_MATCH` whenever `matchProvider != null`, and `FORGET_MATCH` only
+   when `matchIsConfirmed`. These are the row's own visibility rules
+   (`ArtworkStudioScreen.kt:449`, `:463`), so the menu and the row can never disagree about what
+   is on offer. Both go after `TOGGLE_MATURE`, since all three concern the active source rather
+   than the slot.
+3. `runAction` routes `CHANGE_MATCH` through `onChangeMatchPressed()`, not `openChangeMatch()`, so
+   a provider without title search explains itself exactly as the button does. That branch must
+   close the menu before posting its message, or the message lands under the overlay.
+   (`openChangeMatch()` and `forgetMatch()` already clear `actionsOpen`, at `:806` and `:909`.)
+4. `openActions()` also opens when a match provider is set, alongside current artwork and an active
+   SteamGridDB. A source with no match provider (`resolveMatch` nulls it at `:752`) and no artwork
+   still opens nothing, so the menu is never empty.
+5. Fix the doc comments this contradicts, all in the same file. `canChangeMatch` (`:157-161`) still
+   says SteamGridDB alone, and `availableActions` and `openActions` still say "per-slot". The
+   `onChangeMatchPressed` inert branch stays, because `ProviderCapabilities` is the switch, but no
+   provider reaches it today, and its doc comment should say so.
+
+**Tests** go in `ArtworkStudioViewModelTest`. Each one is driven **only** through
+`handleGamepadAction`, which is the point of the task:
+
+- On IGDB with no artwork and no match, Triangle opens the menu, `CHANGE_MATCH` is listed, and
+  moving to it and pressing Select opens the picker and searches.
+- `FORGET_MATCH` is absent until a match is confirmed and present after. Selecting it writes
+  `updateProviderMatch(…, null)`.
+- On SteamGridDB, `TOGGLE_MATURE` and `CHANGE_MATCH` are listed together, in that order.
+- On a source with no match provider and no artwork, Triangle still opens nothing.
+
+**Rejected:**
+
+- **A fourth `StudioZone` rung** (MATCH, between SOURCES and GRID). This is exactly what C17 exists
+  to stop: a new enum case plus a branch in all six `when (s.zone)` blocks, which C17's task 2.2
+  would then delete.
+- **Rebinding a button.** None is free, and giving START a second, source-dependent meaning would
+  make it mean two things on one screen.
+- **Waiting for C17.** C17 is Merge 6 in the suggested order. Change Match would stay touch-only
+  through Merges 4 and 5 in a controller-first app.
+
+**Relationship to C17.** This is the bridge, not the destination. In C17 the match row becomes a
+real region between sources and grid, with `FORGET` and `CHANGE MATCH` as its `children`. The menu
+entries survive as a shortcut, the same way Square survives as a shortcut to the search field.
+Recorded in C17's task 1.2 and task 2.3.
+
+## Landed with task 2.4 (2026-09-10)
+
+Task 2.4 landed as specified above; its four tests drive the ViewModel only through
+`handleGamepadAction`. Three more fixes came out of on-device use in the same session. None is a
+task in this plan, so they are recorded here instead of silently widening one.
+
+- **Every source is listed on every Studio tab** (user decision). `sourcesForTab()` is now
+  `StudioSource.entries`. SteamGridDB, TheGamesDB and IGDB are drawn "· n/a" and skipped by
+  cycling on ICON1, Manual and Video, the tabs no image provider has anything for; "n/a" outranks
+  "no key", since a key would not help there. On 3D Box, Physical Media and Screenshots, which have
+  no provider art type of their own, each provider offers everything it returns: SteamGridDB
+  grids, heroes, logos and icons (one request per type, labelled by type), TheGamesDB box art,
+  fanart and clear logo, IGDB cover and artwork. The five type-matched tabs are unchanged. Real
+  TheGamesDB/IGDB screenshots are not fetched by either client today; adding them is follow-up work.
+- **A renamed game kept its title "stale" in the XMB flyout.** It did not: game lists sort by
+  display title, and every refresh replaced `currentItems` while keeping `selectedItemIndex`, so
+  after a rename the cursor sat on whichever game moved into that slot. `cursorAfterRefresh`
+  re-finds the row by id. Live game lists apply it on every emission after their first, and the
+  three callers that reload the list already on screen (closing Game Detail or App Detail, Edit
+  Title, and `observeCategories` reacting to any games-table write) pass `keepCursorOnRow = true`.
+  A fresh drill-in still lands on its remembered cursor.
+- **Artwork applied at a stable URI never refreshed on screen.** A portable-library write keeps its
+  file name, so its document URI and the game column are unchanged: every `AsyncImage` already
+  showing it had an equal model and never asked again, and evicting Coil did nothing for them.
+  `ArtworkRevisions` (core-ui) keeps a per-URI revision in snapshot state, bumped by
+  `ArtworkImageCache.evict`; `rememberArtworkModel` / `ArtworkRevisions.cacheKey` put the revision
+  into the memory-cache key, so the model changes and the image reloads. Wired into the game art
+  surfaces only: XMB icons in every tile style, hover background and logo, Game Detail media and
+  hero/icon, App Detail's custom icon, and the Shiba Coins library.
+
+Tests: 2.4's four controller tests and four source-visibility tests in `ArtworkStudioViewModelTest`,
+`CursorAfterRefreshTest`, and a revision case in `ArtworkImageCacheTest`. All pass. Not yet checked
+on device: the rename cursor, and a portable-folder art apply refreshing the XMB tile.
+
+## Studio layout rework: target mockup (2026-09-10)
+
+**Target:** [`docs/mockups/artwork_studio_layout.html`](../mockups/artwork_studio_layout.html), with flat
+tabs (user decision, 2026-09-10). It replaces `artwork_image_mockup.png` as the layout target for the
+Studio's main screen. The PNG stays the reference for what this layout does not place yet: Phase 5's
+saved-screenshots panel, per-tile checkboxes and apply bar.
+
+### Problem, as measured
+
+AYN Thor main screen, 2026-09-10: 1920 × 1080 px at 369 dpi, font scale 1.0, which is **833 × 468 dp**.
+
+- **The grid gets about 87 dp of 468: one row.** `STUDIO_GRID_ROWS = 5`
+  (`ArtworkStudioViewModel.kt:213`), so a page holds 20 results but 4 are visible, and D-pad down walks
+  the cursor off screen. That breaks AD-5.
+- **The tabs don't fit.** The `LazyRow` of 12 sp pills (`ArtworkStudioScreen.kt:209-237`) scrolls the
+  selected ICON0 out of view and clips ICON1 to "1".
+- **Three bands repeat or float.** The breadcrumb subtitle (`:153-163`) repeats the tab and source; the
+  SEARCH row (`:168-207`) and the tab caption (`:238-243`) each take a band of their own.
+- **The Current panel is as big as the grid.** A fixed 230 dp column with a 150 dp box (`:248-257`). It
+  also holds the PREV/NEXT pills (`:297-329`), which the prompt bar clips, and which page with a
+  hardcoded `20` (`:298-299`) rather than `PAGE_SIZE`.
+- **Status and controls crowd the sources.** The page range wraps beside them (`:386-394`), the ☐ NSFW
+  checkbox (`:374-385`) duplicates START and the SteamGridDB menu entry, and the prompt bar lists seven
+  prompts (`:607-630`).
+
+### Decisions
+
+**AD-15. The Thor's 833 × 468 dp is the reference canvas.** The mockup draws every size in dp at that
+canvas; when a size in this section is quoted, it is dp at that canvas.
+
+**AD-16. Chrome is fixed in dp and type never scales with the screen.** Every band except the grid has
+a fixed height: header 36, tabs 28, sources 24, match 22, page line 16, prompts 22. A larger or longer
+screen gives all its extra width and height to the grid as more columns and rows, never as bigger
+tiles or bigger text.
+
+**AD-17. A page is one measured gridful (refines AD-5).** Capacity comes from the grid slot's measured
+size and the active tab's tile class, and is recomputed when either changes. `STUDIO_GRID_COLUMNS`,
+`STUDIO_GRID_ROWS` and `PAGE_SIZE` go. After a capacity change the focused result stays focused, on
+whichever page now contains it.
+
+**AD-18. Flat tabs.** All eleven categories stay one press apart, with LB/RB glyphs at both ends of the
+row (user decision).
+
+**AD-19. The rail is 150 dp wide below a 1000 dp-wide window and 200 dp at or above it.**
+
+### Rejected
+
+- **Grouped tabs** (Icons / Box / Scene / Media): larger targets and a calmer row, but one more level
+  for LB/RB to walk. The user chose flat.
+- **Scaling chrome and type with the screen.** A tablet would show the Thor layout enlarged, with no
+  more results per page.
+- **A grid that scrolls inside a page.** Two navigation models on one screen, the reason AD-5 exists.
+- **Keeping 4×5 and shrinking tiles to fit.** 20 tiles in 259 dp are about 52 dp tall on the Thor, too
+  small to judge artwork.
+
+### Grid capacity rules
+
+Inputs: the grid slot's width W and height H in dp, and the active tab's tile class. Gap g = 8 dp.
+
+| Tile class | Tabs | Aspect (w : h) | Minimum tile width |
+|---|---|---|---|
+| Landscape | ICON0, ICON1, HERO, BACKGROUND, SCREENSHOT, VIDEO | 1.5 | 112 dp |
+| Portrait | BOX ART, 3D BOX, MANUAL | 0.7 | 80 dp |
+| Square | PHYS. MEDIA | 1.0 | 96 dp |
+| Wide | LOGO | 2.0 | 140 dp |
+
+- columns = clamp(⌊(W + g) ÷ (minimum width + g)⌋, 3, 8)
+- tile width = (W − g × (columns − 1)) ÷ columns, and tile height = tile width ÷ aspect
+- rows = clamp(⌊(H + g) ÷ (tile height + g)⌋, 1, 6)
+
+Worked examples, which L.1's unit tests pin by slot size. Slot sizes assume the band heights above,
+32 dp of side padding and a 16 dp rail gap (209 dp of vertical chrome and spacing); on a device the
+slot is measured, not assumed.
+
+| Screen (dp) | Slot W × H | Landscape | Portrait |
+|---|---|---|---|
+| AYN Thor, 833 × 468 (reference) | 635 × 259 | 5 × 3 = 15 | 7 × 2 = 14 |
+| 16:9 small handheld, 768 × 432 | 570 × 223 | 4 × 2 = 8 | 6 × 1 = 6 |
+| 20:9 phone in landscape, 915 × 412 | 717 × 203 | 6 × 2 = 12 | 8 × 1 = 8 |
+| TV, 960 × 540 | 762 × 331 | 6 × 3 = 18 | 8 × 2 = 16 |
+| 4:3 tablet, 1024 × 768 (200 dp rail) | 776 × 559 | 6 × 6 = 36 | 8 × 4 = 32 |
+| 16:10 tablet, 1280 × 800 (200 dp rail) | 1032 × 591 | 8 × 6 = 48 | 8 × 3 = 24 |
+
+The Thor's landscape row count is ⌊3.02⌋: compare with a small epsilon so floating point cannot drop
+it to 2.
+
+### Execution tasks
+
+All six touch `ArtworkStudioScreen.kt` or its ViewModel, so they land one at a time in index order.
+Line references are against the tree after task 2.4 (uncommitted at the time of writing); re-verify
+before editing.
+
+**L.1: Measured grid capacity in the ViewModel**
+- **Objective:** page size and D-pad grid movement come from a measured capacity instead of the fixed
+  4×5 constants.
+- **Scope:** a pure capacity function, the per-tab tile class, ViewModel state and re-paging, tests.
+  No screen changes.
+- **Existing code:** `STUDIO_GRID_COLUMNS` / `STUDIO_GRID_ROWS` / `PAGE_SIZE`
+  (`ArtworkStudioViewModel.kt:212-215`), read by `skeletonCount` (`:149`), `showPage` → `StudioPage.of`
+  (`:475`), `goToPage` (`:1033`) and D-pad up/down (`:1568-1574`); `StudioPage` in `StudioSearch.kt`;
+  `STUDIO_TABS` (`:239-251`); the constants in `ArtworkStudioViewModelTest.kt:269` and `:364`.
+- **Requirements:**
+  - `StudioGridCapacity.of(widthDp, heightDp, tileClass)` implements the rules above in pure Kotlin.
+  - Each `StudioTab` carries its tile class.
+  - ViewModel state `gridColumns` and `gridRows` starts at 4 × 5, so behaviour is unchanged until the
+    screen reports a size.
+  - `onGridMeasured(widthDp, heightDp)` recomputes for the active tab; a tab change recomputes from
+    the last measured size.
+  - After a capacity change the focused result (page × old page size + `gridIndex`) lands on the page
+    that contains it, still focused.
+  - `skeletonCount`, `showPage`, `goToPage` and D-pad up/down read the state.
+- **Do not change:** request keys, the result cache, the generation guard, providers,
+  `ArtworkStudioScreen.kt`.
+- **Expected files:** `ArtworkStudioViewModel.kt`; new `StudioGridCapacity.kt` (feature-xmb
+  `ui/detail`); new `StudioGridCapacityTest.kt`; `ArtworkStudioViewModelTest.kt`. Two test files,
+  because the capacity table is pure and deserves its own.
+- **Acceptance:** every worked example passes by slot size; a capacity change keeps the focused result
+  focused; D-pad up/down moves by the measured column count; the existing Studio tests pass.
+- **Dependencies:** none.
+- **Verification:** `:feature:feature-xmb:testDebugUnitTest` for the Studio tests.
+- **Stop:** when acceptance is met. The screen still draws four columns; that is L.2.
+
+**L.2: Render exactly one measured page**
+- **Objective:** the grid shows one measured page with no scrolling, and reports its size.
+- **Existing code:** both `LazyVerticalGrid`s use `GridCells.Fixed(STUDIO_GRID_COLUMNS)`
+  (`ArtworkStudioScreen.kt:489` skeletons, `:538` results); the PREV/NEXT pills hardcode `20`
+  (`:298-299`).
+- **Requirements:** measure the grid slot (for example `BoxWithConstraints`) and call `onGridMeasured`
+  only when its size changes; lay out `gridColumns` × `gridRows` tiles at the computed tile height so
+  they fill the slot without scrolling; the skeleton count matches; the pills' `20` becomes the
+  ViewModel's page size (the pills themselves move in L.5).
+- **Do not change:** any other band.
+- **Expected files:** `ArtworkStudioScreen.kt`; `ArtworkStudioViewModel.kt` only to expose the page
+  size.
+- **Acceptance:** on the Thor every tile of a page is visible and the D-pad cursor never leaves the
+  screen; resizing (split screen, or an emulator rotation) re-pages without losing focus.
+- **Dependencies:** L.1.
+- **Verification:** build; manual on the Thor and one emulator at another size.
+
+**L.3: Title line and flat tabs**
+- **Objective:** the header and search share one 36 dp line, and all eleven tabs fit as compact chips.
+- **Existing code:** `DetailBreadcrumb` (`DetailComponents.kt:54`) is shared with other detail
+  screens, pads 16 dp vertically and has no trailing slot; the Studio calls it at
+  `ArtworkStudioScreen.kt:153-163`; the search row is `:168-207`; the tab `LazyRow` is `:209-237`;
+  `ControllerPrompt(action, label)` (`core-ui` `ControllerPrompt.kt:61`) draws binding-aware glyphs.
+- **Requirements:**
+  - One row: back arrow, game title, "Artwork Studio · <platform>", then the query field on the right
+    (about 300 dp at most). Tapping it or pressing X opens search; "Reset" still appears while
+    `queryIsCustom`.
+  - The zone trail and the SEARCH label are removed.
+  - Tabs become 24 dp chips (about 10.5 sp, 8 dp horizontal padding, 4 dp gaps) between LB and RB
+    glyphs drawn through `ControllerPrompt`, so they follow the user's controller.
+  - `LazyRow` and scroll-to-selected stay, so a narrower screen still keeps the selected tab visible.
+- **Do not change:** `DetailBreadcrumb` for its other callers. Build a Studio-local header row, or add
+  only defaulted parameters that leave every other caller identical. Tab order and `STUDIO_TABS`.
+- **Expected files:** `ArtworkStudioScreen.kt`; `DetailComponents.kt` only on the defaulted-parameter
+  route.
+- **Acceptance:** at 833 dp wide all eleven tabs are visible with ICON0 selected; the header band is
+  36 dp; the back arrow still acts like B.
+- **Dependencies:** none (lands after L.2 because it edits the same file).
+- **Verification:** build; manual on the Thor against the mockup.
+
+**L.4: Current-artwork rail**
+- **Objective:** the Current panel becomes a narrow rail.
+- **Existing code:** `ArtworkStudioScreen.kt:248-296` (230 dp column, 150 dp box, "Ⓨ · OPTIONS"
+  pill); tab caption `:238-243`; message text `:331-336`.
+- **Requirements:** rail width per AD-19; the kind label with the tab's `contract` caption under it
+  (moved from under the tabs, whose line is deleted); a thumbnail at the tab's tile aspect instead of a
+  fixed 150 dp box, keeping `key(previewVersion)` and the MANUAL / VIDEO / ICON1 text states; a Y hint
+  row ("Crop, restore, clear") that calls `openActions` on tap; the message stays at the rail's
+  bottom. PREV/NEXT stay put until L.5.
+- **Do not change:** the actions menu, the preview reload.
+- **Expected files:** `ArtworkStudioScreen.kt`.
+- **Acceptance:** the rail matches the mockup at 833 × 468 with nothing clipped.
+- **Dependencies:** L.3.
+- **Verification:** build; manual on the Thor.
+
+**L.5: Sources row, match line, page line and prompt bar**
+- **Objective:** finish the mockup's lower half.
+- **Existing code:** source row, NSFW checkbox and range text `ArtworkStudioScreen.kt:345-395`; match
+  row `:397-479`; PREV/NEXT pills `:297-329`; prompt bar `:601-635`.
+- **Requirements:**
+  - Source chips are 24 dp.
+  - The ☐ NSFW checkbox becomes a "START · Mature off / on" badge, shown only while SteamGridDB is the
+    source and still tappable.
+  - The match row becomes one 22 dp line with the same content and buttons.
+  - A 16 dp page line sits under the grid: "1–15 of 50" on the left, and LB ‹ Page x / y › RB on the
+    right with arrows that call `previousPage` / `nextPage`.
+  - The rail's PREV/NEXT pills and the range text beside the sources are deleted.
+  - The prompt bar drops "prev page", "next page" and "mature"; the per-zone select/back prompts,
+    search and options stay.
+- **Do not change:** `sourceBadge`, the match row's visibility rules (task 2.4's menu entries mirror
+  them), the per-zone structure of the prompt bar (C17 task 2.4 replaces it).
+- **Expected files:** `ArtworkStudioScreen.kt`.
+- **Acceptance:** side by side with the mockup at 833 × 468, band heights within ±2 dp; touch paging
+  still works.
+- **Dependencies:** L.2, L.4.
+- **Verification:** build; manual on the Thor.
+
+**L.6: Verify across screen sizes**
+- **Objective:** show the layout scales per AD-16 and AD-17.
+- **Scope:** verification, plus fixes limited to clipping it finds.
+- **Requirements:** screenshots on the Thor and on at least two of the worked-example sizes, a 20:9
+  phone in landscape and a 16:10 tablet at minimum, visiting one tab of each tile class. Reported
+  capacity matches the table within one row or column (a device's measured chrome can differ from the
+  assumed 209 dp); no text clipped; the D-pad cursor never leaves the page. feature-xmb has no Compose
+  UI tests today, so a Robolectric screen test is optional: if composing `ArtworkStudioScreen` needs
+  more than passing its `viewModel` parameter, stop and report rather than building a harness.
+- **Expected files:** screenshots referenced from this plan; small fixes in `ArtworkStudioScreen.kt`.
+- **Dependencies:** L.5.
+
+Every task: **if blocked** (missing architecture, unexpected coupling, a needed out-of-scope change),
+stop and report what was attempted, what blocked it, which file caused it and what decision is needed
+(`PLANNING_WORKFLOW.md` §4).
+
 ## Deferred to a follow-up plan
 
 Written down so the next session does not re-derive them, and so nothing here silently absorbs them:
@@ -588,8 +925,14 @@ Written down so the next session does not re-derive them, and so nothing here si
 
 - `sourceIndex` is reset on `selectTab` (`ArtworkStudioViewModel.kt:394`) but never re-validated
   against the new source list's length elsewhere.
-- `ArtworkStudioScreen.kt:70` and `ArtworkStudioViewModel.kt:173` both claim L2/R2 switch sources; no
-  such binding exists in `GamepadBinding.kt:52-59`. Fixed opportunistically in task 4.2.
+- ~~`ArtworkStudioScreen.kt:70` and `ArtworkStudioViewModel.kt:173` both claim L2/R2 switch sources~~
+  — both doc comments deleted in task 1.3 (which absorbed 4.2).
+- **The Studio's own search overlay has the IME exposure the Change Match picker had.** It focuses
+  its field on open, and an open IME receives key events before `MainActivity.dispatchKeyEvent`.
+  The pad's Select and Back therefore never reach `handleGamepadAction`'s `searchOpen` branch
+  (`ArtworkStudioViewModel.kt:1416-1423`). Left out of Merge 3 on purpose; the fix is the picker's
+  `WizardTextField` model (a cursor stop, with the keyboard opening only when editing starts). It
+  becomes a real focusable field in C17's task 2.3 either way.
 - ~~The approved HTML mockup is not in `docs/mockups/`~~ — landed as
   `docs/mockups/artwork_image_mockup.png` (2026-09-10). It is a PNG, so the source spec's
   precedence clause resolves against an image rather than markup.
