@@ -118,6 +118,9 @@ data class GameCandidate(
     val platformName: String? = null,
     val releaseYear: Int? = null,
     val thumbUrl: String? = null,
+    // How many media of the game's own this release has, where the provider says (ScreenScraper);
+    // null when unknown. Zero warns the picker that confirming this release brings no artwork.
+    val gameArtCount: Int? = null,
 )
 
 /**

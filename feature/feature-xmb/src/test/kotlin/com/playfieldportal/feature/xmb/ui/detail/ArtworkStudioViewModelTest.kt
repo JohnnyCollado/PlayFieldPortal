@@ -20,10 +20,13 @@ import com.playfieldportal.feature.artwork.store.RoutingArtworkStore
 import com.playfieldportal.feature.artwork.video.VideoSnapTranscoder
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -84,6 +87,7 @@ class ArtworkStudioViewModelTest {
         videoSnapTranscoder = mockk(relaxed = true)
         matchEvidence = mockk(relaxed = true)
         coEvery { matchEvidence.searchByTitle(any(), any(), any()) } returns emptyList()
+        coEvery { matchEvidence.searchScreenScraperOnAnyPlatform(any(), any()) } returns emptyList()
         coEvery { matchEvidence.candidateByRomHash(any(), any(), any()) } returns null
         coEvery { matchEvidence.candidateByStorefront(any(), any(), any()) } returns null
 
@@ -266,7 +270,7 @@ class ArtworkStudioViewModelTest {
             // Skeletons, not TheGamesDB's art.
             assertTrue(vm.uiState.value.resultsLoading)
             assertTrue(vm.uiState.value.results.isEmpty())
-            assertEquals(STUDIO_GRID_COLUMNS * STUDIO_GRID_ROWS, vm.uiState.value.skeletonCount)
+            assertEquals(StudioGridCapacity.UNMEASURED.pageSize, vm.uiState.value.skeletonCount)
 
             slow.complete(emptyList())
             advanceUntilIdle()
@@ -361,7 +365,7 @@ class ArtworkStudioViewModelTest {
 
     @Test
     fun `paging walks one gridful at a time and reports the range`() = runTest(testDispatcher) {
-        val pageSize = STUDIO_GRID_COLUMNS * STUDIO_GRID_ROWS
+        val pageSize = StudioGridCapacity.UNMEASURED.pageSize
         coEvery { steamGridDb.getArt(any(), any(), any(), any(), any()) } returns
             Result.success((1..(pageSize + 5)).map { SgdbArtItem(id = it.toLong(), url = "art$it") })
 
@@ -387,6 +391,82 @@ class ArtworkStudioViewModelTest {
         vm.previousPage()
         advanceUntilIdle()
         assertEquals(1, vm.uiState.value.rangeStart)
+    }
+
+    // ── Measured grid capacity (task L.1) ─────────────────────────────────────
+
+    @Test
+    fun `a capacity change keeps the focused result focused, on the page that now holds it`() =
+        runTest(testDispatcher) {
+            coEvery { steamGridDb.getArt(any(), any(), any(), any(), any()) } returns
+                Result.success((1..30).map { SgdbArtItem(id = it.toLong(), url = "art$it") })
+            val vm = loadedOn(StudioSource.STEAMGRIDDB)
+            vm.handleGamepadAction(GamepadAction.SELECT)   // into the grid
+
+            // 4 × 5 page 2 holds results 21–30; three steps right focuses art24 (absolute index 23).
+            vm.nextPage()
+            repeat(3) { vm.handleGamepadAction(GamepadAction.NAVIGATE_RIGHT) }
+            assertEquals("art24", vm.uiState.value.let { it.results[it.gridIndex].url })
+
+            vm.onGridMeasured(635f, 259f)   // Thor, landscape: 5 × 3 = 15 per page
+
+            val state = vm.uiState.value
+            assertEquals(5, state.gridColumns)
+            assertEquals(3, state.gridRows)
+            assertEquals(1, state.page)
+            assertEquals(16, state.rangeStart)
+            assertEquals(8, state.gridIndex)
+            assertEquals("art24", state.results[state.gridIndex].url)
+            assertEquals(StudioZone.GRID, state.zone)
+        }
+
+    @Test
+    fun `D-pad up and down move by the measured column count`() = runTest(testDispatcher) {
+        coEvery { steamGridDb.getArt(any(), any(), any(), any(), any()) } returns
+            Result.success((1..30).map { SgdbArtItem(id = it.toLong(), url = "art$it") })
+        val vm = loadedOn(StudioSource.STEAMGRIDDB)
+        vm.onGridMeasured(635f, 259f)
+        vm.handleGamepadAction(GamepadAction.SELECT)
+
+        vm.handleGamepadAction(GamepadAction.NAVIGATE_DOWN)
+        assertEquals(5, vm.uiState.value.gridIndex)
+        vm.handleGamepadAction(GamepadAction.NAVIGATE_DOWN)
+        assertEquals(10, vm.uiState.value.gridIndex)
+        vm.handleGamepadAction(GamepadAction.NAVIGATE_DOWN)
+        assertEquals("clamped at the page's last row", 10, vm.uiState.value.gridIndex)
+
+        vm.handleGamepadAction(GamepadAction.NAVIGATE_UP)
+        assertEquals(5, vm.uiState.value.gridIndex)
+    }
+
+    @Test
+    fun `a tab change recomputes capacity from the last measured size`() = runTest(testDispatcher) {
+        val vm = loadedOn(StudioSource.STEAMGRIDDB)
+        vm.onGridMeasured(635f, 259f)
+
+        vm.selectTab(STUDIO_TABS.indexOfFirst { it.kind == ArtworkKind.BOX_ART })
+        advanceUntilIdle()
+
+        assertEquals(7, vm.uiState.value.gridColumns)
+        assertEquals(2, vm.uiState.value.gridRows)
+    }
+
+    @Test
+    fun `skeletons fill the measured page`() = runTest(testDispatcher) {
+        val slow = CompletableDeferred<List<SgdbArtItem>>()
+        coEvery { theGamesDb.fetchGameInfo(any(), any()) } returns tgdb("tgdb-hero")
+        coEvery { steamGridDb.getArt(any(), any(), any(), any(), any()) } coAnswers {
+            Result.success(slow.await())
+        }
+        val vm = loadedOn(StudioSource.THEGAMESDB)
+        vm.onGridMeasured(635f, 259f)
+
+        vm.selectSource(vm.sourcesForTab().indexOf(StudioSource.STEAMGRIDDB))
+        advanceUntilIdle()
+
+        assertEquals(15, vm.uiState.value.skeletonCount)
+        slow.complete(emptyList())
+        advanceUntilIdle()
     }
 
     // ── Game match (task 2.3) ─────────────────────────────────────────────────
@@ -418,6 +498,35 @@ class ArtworkStudioViewModelTest {
         // No saved id, no crc, no storefront, and the title search returns nothing.
         assertEquals(null, vm.uiState.value.match)
         assertFalse(vm.uiState.value.matchResolving)
+        assertFalse(vm.uiState.value.matchFailed)
+    }
+
+    @Test
+    fun `a match search that fails says the provider didn't answer, not that there is no match`() = runTest(testDispatcher) {
+        coEvery {
+            matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.SCREENSCRAPER, any(), any())
+        } throws com.playfieldportal.feature.artwork.api.SsSearchFailedException("No answer from ScreenScraper")
+
+        val vm = loadedOn(StudioSource.SCREENSCRAPER)
+
+        assertEquals(null, vm.uiState.value.match)
+        assertTrue(vm.uiState.value.matchFailed)
+        assertFalse(vm.uiState.value.matchResolving)
+    }
+
+    @Test
+    fun `a provider that answers after a failed one clears the failure`() = runTest(testDispatcher) {
+        coEvery {
+            matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.SCREENSCRAPER, any(), any())
+        } throws com.playfieldportal.feature.artwork.api.SsSearchFailedException("No answer from ScreenScraper")
+        val vm = loadedOn(StudioSource.SCREENSCRAPER)
+        assertTrue(vm.uiState.value.matchFailed)
+
+        // SteamGridDB answers, with nothing: that is a plain "no match".
+        vm.selectSource(vm.sourcesForTab().indexOf(StudioSource.STEAMGRIDDB))
+        advanceUntilIdle()
+
+        assertFalse(vm.uiState.value.matchFailed)
     }
 
     @Test
@@ -578,6 +687,204 @@ class ArtworkStudioViewModelTest {
     }
 
     /**
+     * The reported case: a Windows install of Tactics Ogre. ScreenScraper's Windows-scoped search found
+     * nothing, so the row said no match and Change Match said "No games found" whatever was typed.
+     */
+    @Test
+    fun `an empty ScreenScraper platform search widens Change Match to every platform`() = runTest(testDispatcher) {
+        coEvery { matchEvidence.searchScreenScraperOnAnyPlatform(any(), any()) } returns listOf(
+            com.playfieldportal.feature.artwork.match.GameCandidate(
+                provider = com.playfieldportal.feature.artwork.match.MatchProvider.SCREENSCRAPER,
+                providerGameId = "1001",
+                title = "Tactics Ogre: Reborn",
+                platformName = "Switch",
+            ),
+        )
+        val vm = loadedOn(StudioSource.SCREENSCRAPER)
+
+        // The matcher itself never looks beyond the game's platform.
+        assertEquals(null, vm.uiState.value.match)
+        coVerify(exactly = 0) { matchEvidence.searchScreenScraperOnAnyPlatform(any(), any()) }
+
+        vm.openChangeMatch()
+        advanceUntilIdle()
+
+        val state = vm.uiState.value
+        assertEquals(listOf("Switch"), state.changeMatchResults.map { it.platformName })
+        assertTrue(state.changeMatchAcrossPlatforms)
+        assertEquals(0, state.changeMatchIndex)
+    }
+
+    @Test
+    fun `a ScreenScraper platform hit keeps Change Match on the game's own platform`() = runTest(testDispatcher) {
+        coEvery {
+            matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.SCREENSCRAPER, any(), any())
+        } returns listOf(
+            com.playfieldportal.feature.artwork.match.GameCandidate(
+                provider = com.playfieldportal.feature.artwork.match.MatchProvider.SCREENSCRAPER,
+                providerGameId = "555",
+                title = "Crash Bandicoot",
+            ),
+        )
+        val vm = loadedOn(StudioSource.SCREENSCRAPER)
+
+        vm.openChangeMatch()
+        advanceUntilIdle()
+
+        assertEquals(1, vm.uiState.value.changeMatchResults.size)
+        assertFalse(vm.uiState.value.changeMatchAcrossPlatforms)
+        coVerify(exactly = 0) { matchEvidence.searchScreenScraperOnAnyPlatform(any(), any()) }
+    }
+
+    @Test
+    fun `other providers never widen Change Match beyond the platform`() = runTest(testDispatcher) {
+        val vm = loadedOn(StudioSource.IGDB)
+
+        vm.openChangeMatch()
+        advanceUntilIdle()
+
+        assertFalse(vm.uiState.value.changeMatchAcrossPlatforms)
+        coVerify(exactly = 0) { matchEvidence.searchScreenScraperOnAnyPlatform(any(), any()) }
+    }
+
+    /** The device log showed ten identical ScreenScraper searches in four minutes. */
+    @Test
+    fun `re-resolving a match reuses the title search, and so does the picker`() = runTest(testDispatcher) {
+        val vm = loadedOn(StudioSource.IGDB)
+        val sources = vm.sourcesForTab()
+
+        vm.selectSource(sources.indexOf(StudioSource.THEGAMESDB))
+        advanceUntilIdle()
+        vm.selectSource(sources.indexOf(StudioSource.IGDB))
+        advanceUntilIdle()
+        vm.openChangeMatch()
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) {
+            matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.IGDB, any(), any())
+        }
+    }
+
+    private fun ssCandidate(id: String, title: String, platformName: String? = null) =
+        com.playfieldportal.feature.artwork.match.GameCandidate(
+            provider = com.playfieldportal.feature.artwork.match.MatchProvider.SCREENSCRAPER,
+            providerGameId = id,
+            title = title,
+            platformName = platformName,
+        )
+
+    /** A Windows platform search has found nothing for any title, so the picker skips it. */
+    @Test
+    fun `a Windows game's Change Match asks every platform once, with no Windows-only search first`() =
+        runTest(testDispatcher) {
+            coEvery { gameRepository.getById(1L) } returns game.copy(platformId = "windows")
+            every { matchEvidence.searchesEveryPlatformFirst(any(), "windows") } returns true
+            coEvery { matchEvidence.searchScreenScraperOnAnyPlatform(any(), "windows") } returns
+                listOf(ssCandidate("478505", "Tactics Ogre: Reborn", "Playstation 5"))
+            val vm = loadedOn(StudioSource.SCREENSCRAPER)
+
+            vm.openChangeMatch()
+            advanceUntilIdle()
+
+            // The matcher's own Windows search is the only one; the picker added none.
+            coVerify(exactly = 1) {
+                matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.SCREENSCRAPER, any(), "windows")
+            }
+            coVerify(exactly = 1) { matchEvidence.searchScreenScraperOnAnyPlatform(any(), "windows") }
+            assertEquals(1, vm.uiState.value.changeMatchResults.size)
+            assertTrue(vm.uiState.value.changeMatchAcrossPlatforms)
+        }
+
+    @Test
+    fun `searching the same title again in the picker is answered from memory`() = runTest(testDispatcher) {
+        coEvery { matchEvidence.searchScreenScraperOnAnyPlatform(any(), any()) } returns
+            listOf(ssCandidate("425726", "Tactics Ogre - Reborn", "Switch"))
+        val vm = loadedOn(StudioSource.SCREENSCRAPER)
+
+        vm.openChangeMatch()
+        advanceUntilIdle()
+        vm.submitChangeMatch()
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) {
+            matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.SCREENSCRAPER, any(), any())
+        }
+        coVerify(exactly = 1) { matchEvidence.searchScreenScraperOnAnyPlatform(any(), any()) }
+        assertEquals(1, vm.uiState.value.changeMatchResults.size)
+    }
+
+    /** On device a timeout read "No games found", which was not true. */
+    @Test
+    fun `a failed picker search says so, and Search asks again`() = runTest(testDispatcher) {
+        var calls = 0
+        coEvery { matchEvidence.searchScreenScraperOnAnyPlatform(any(), any()) } coAnswers {
+            if (++calls == 1) throw com.playfieldportal.feature.artwork.api.SsSearchFailedException("No answer from ScreenScraper")
+            listOf(ssCandidate("425726", "Tactics Ogre - Reborn", "Switch"))
+        }
+        val vm = loadedOn(StudioSource.SCREENSCRAPER)
+
+        vm.openChangeMatch()
+        advanceUntilIdle()
+        assertTrue(vm.uiState.value.changeMatchError != null)
+        assertTrue(vm.uiState.value.changeMatchResults.isEmpty())
+
+        vm.submitChangeMatch()
+        advanceUntilIdle()
+
+        assertEquals(null, vm.uiState.value.changeMatchError)
+        assertEquals(1, vm.uiState.value.changeMatchResults.size)
+        assertEquals(2, calls)
+    }
+
+    /** On device a typed search waited behind two older ones for ScreenScraper's single slot. */
+    @Test
+    fun `a new picker search cancels the one it replaces`() = runTest(testDispatcher) {
+        var firstCancelled = false
+        coEvery { matchEvidence.searchScreenScraperOnAnyPlatform("cr4sh bandicoot (u) [!]", any()) } coAnswers {
+            try {
+                awaitCancellation()
+            } catch (e: CancellationException) {
+                firstCancelled = true
+                throw e
+            }
+        }
+        coEvery { matchEvidence.searchScreenScraperOnAnyPlatform("Crash", any()) } returns
+            listOf(ssCandidate("1", "Crash Bandicoot", "Playstation"))
+        val vm = loadedOn(StudioSource.SCREENSCRAPER)
+
+        vm.openChangeMatch()
+        advanceUntilIdle()
+        vm.onChangeMatchDraftChanged("Crash")
+        vm.submitChangeMatch()
+        advanceUntilIdle()
+
+        assertTrue(firstCancelled)
+        assertEquals(listOf("Crash Bandicoot"), vm.uiState.value.changeMatchResults.map { it.title })
+    }
+
+    @Test
+    fun `closing the picker cancels its search`() = runTest(testDispatcher) {
+        var cancelled = false
+        coEvery { matchEvidence.searchScreenScraperOnAnyPlatform(any(), any()) } coAnswers {
+            try {
+                awaitCancellation()
+            } catch (e: CancellationException) {
+                cancelled = true
+                throw e
+            }
+        }
+        val vm = loadedOn(StudioSource.SCREENSCRAPER)
+        vm.openChangeMatch()
+        advanceUntilIdle()
+
+        vm.cancelChangeMatch()
+        advanceUntilIdle()
+
+        assertTrue(cancelled)
+        assertFalse(vm.uiState.value.changeMatchLoading)
+    }
+
+    /**
      * A browse cancelled by a source switch used to be cached as an empty page: the provider call
      * swallowed the CancellationException and returned null, loadResults stored that under the
      * request's key, and coming back showed "No results" without ever asking again.
@@ -682,6 +989,61 @@ class ArtworkStudioViewModelTest {
 
         assertEquals("STEAMGRIDDB:9001", vm.uiState.value.match?.matchKey)
         assertTrue(before != vm.uiState.value.match?.matchKey)
+    }
+
+    /** Opening the picker used to drop the in-flight resolution without clearing its flag. */
+    @Test
+    fun `opening Change Match while a match resolves never leaves the row on Matching`() = runTest(testDispatcher) {
+        val gate = CompletableDeferred<Unit>()
+        var calls = 0
+        coEvery {
+            matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.IGDB, any(), any())
+        } coAnswers {
+            if (++calls == 1) gate.await()
+            emptyList()
+        }
+        val vm = loadedOn(StudioSource.IGDB)
+        assertTrue("the first resolution is still out", vm.uiState.value.matchResolving)
+
+        vm.openChangeMatch()
+        advanceUntilIdle()
+        gate.complete(Unit)
+        advanceUntilIdle()
+
+        assertFalse(vm.uiState.value.matchResolving)
+    }
+
+    @Test
+    fun `confirming a match mid-resolution clears the spinner and keeps the user's choice`() = runTest(testDispatcher) {
+        val gate = CompletableDeferred<Unit>()
+        var calls = 0
+        coEvery {
+            matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.STEAMGRIDDB, any(), any())
+        } coAnswers {
+            if (++calls == 1) {
+                gate.await()
+                emptyList()
+            } else {
+                twoCandidates()
+            }
+        }
+        val vm = loadedOn(StudioSource.STEAMGRIDDB)
+        // The seeded search would share the resolution's own request, still out, so pick from
+        // another title's search instead.
+        vm.openChangeMatch()
+        vm.onChangeMatchDraftChanged("Crash")
+        vm.submitChangeMatch()
+        advanceUntilIdle()
+
+        vm.confirmMatch(0)
+        advanceUntilIdle()
+        assertFalse(vm.uiState.value.matchResolving)
+
+        gate.complete(Unit)
+        advanceUntilIdle()
+
+        assertTrue("the stale resolution must not replace the choice", vm.uiState.value.matchIsConfirmed)
+        assertEquals("STEAMGRIDDB:9001", vm.uiState.value.match?.matchKey)
     }
 
     // ── Change Match with a controller ────────────────────────────────────────

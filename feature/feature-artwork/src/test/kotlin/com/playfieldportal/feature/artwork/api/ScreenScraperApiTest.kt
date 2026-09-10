@@ -2,11 +2,18 @@ package com.playfieldportal.feature.artwork.api
 
 import io.mockk.mockk
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ScreenScraperApiTest {
 
-    private val api = ScreenScraperApi(httpClient = mockk(relaxed = true), credentials = mockk(relaxed = true))
+    private val api = ScreenScraperApi(
+        appContext = mockk(relaxed = true),
+        httpClient = mockk(relaxed = true),
+        credentials = mockk(relaxed = true),
+    )
 
     // ScreenScraper serves these as HTTP 200 with a plain-text body — classification is what
     // keeps a batch run from hammering the API after a quota/credential failure.
@@ -44,9 +51,64 @@ class ScreenScraperApiTest {
         )
     }
 
+    // ── Real jeuRecherche responses, captured on device 2026-09-10 (account ids redacted) ─────
+
+    private fun fixture(name: String): String =
+        checkNotNull(javaClass.getResource("/screenscraper/$name")) { "missing fixture $name" }.readText()
+
     @Test
-    fun `a plain-text search error is no hits, not a crash`() {
-        assertEquals(emptyList<SsSearchHit>(), api.parseSearch("API closed for non-registered members"))
+    fun `a real empty answer, padding entry and all, is no hits rather than a failure`() {
+        assertEquals(emptyList<SsSearchHit>(), api.parseSearch(fixture("jeuRecherche-windows-no-hits.json")))
+    }
+
+    @Test
+    fun `a real single-hit answer gives the game and its system`() {
+        val hits = api.parseSearch(fixture("jeuRecherche-every-platform-tactics-ogre-reborn.json"))
+
+        assertEquals(
+            listOf(SsSearchHit(ssId = 478505L, title = "Tactics Ogre: Reborn", releaseYear = null, systemId = 284, systemName = "Playstation 5")),
+            hits,
+        )
+    }
+
+    @Test
+    fun `a real every-platform answer keeps each hit's system, in ScreenScraper's order`() {
+        val hits = checkNotNull(api.parseSearch(fixture("jeuRecherche-every-platform-tactics-ogre.json")))
+
+        assertEquals(listOf(2293L, 27874L, 425726L, 478505L), hits.map { it.ssId })
+        assertEquals(listOf("Super Nintendo", "PSP", "Switch", "Playstation 5"), hits.map { it.systemName })
+        assertEquals(284, hits.last().systemId)
+        // The PS5 release lists only publisher pictograms: no art of its own.
+        assertEquals(listOf(2, 2, 2, 0), hits.map { it.gameArtCount })
+    }
+
+    @Test
+    fun `a capture keeps the games and drops the account block and the echoed request`() {
+        val body = """
+            {"header":{"APIversion":"2.0","commandRequested":"https://x/jeuRecherche.php?ssid=someone"},
+             "response":{"ssuser":{"id":"someone","numid":"42"},"jeux":[{"id":"478505"}]}}
+        """.trimIndent()
+
+        val scrubbed = ScreenScraperApi.scrubCapture(body)
+
+        assertFalse(scrubbed.contains("someone"))
+        assertFalse(scrubbed.contains("commandRequested"))
+        assertFalse(scrubbed.contains("ssuser"))
+        assertTrue(scrubbed.contains("\"APIversion\""))
+        assertTrue(scrubbed.contains("\"478505\""))
+    }
+
+    @Test
+    fun `a plain-text body is captured as it is`() {
+        assertEquals(
+            "API closed for non-registered members",
+            ScreenScraperApi.scrubCapture("API closed for non-registered members"),
+        )
+    }
+
+    @Test
+    fun `a plain-text search error is not a search response`() {
+        assertNull(api.parseSearch("API closed for non-registered members"))
     }
 
     /** The HTTP 400 on a Windows game: jeuInfos was sent a bare systemeid with nothing to match. */

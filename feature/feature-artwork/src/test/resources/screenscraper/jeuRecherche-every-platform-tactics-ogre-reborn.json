@@ -1,0 +1,39 @@
+{
+	"header" : {
+		"APIversion" : "2.0",
+		"dateTime" : "2026-09-10 23:17:31",
+		"success": "true",
+		"error": ""
+	},
+	"response" : {
+		"serveurs" : {
+			"cpu1": "0",
+			"cpu2": "0",
+			"cpu3": "0",
+			"cpu4": "0",
+			"threadsmin": "4599",
+			"nbscrapeurs": "500",
+			"apiacces": "33718791",
+			"closefornomember": "0",
+			"closeforleecher": "0",
+			"maxthreadfornonmember": "256",
+			"threadfornonmember": "44",
+			"maxthreadformember": "4096",
+			"threadformember": "250"
+		},
+		"jeux" : [{
+			"id": "478505",
+			"noms": [
+				{"region": "ss", "text": "Tactics Ogre: Reborn"}
+			],
+			"systeme": {"id": "284", "text": "Playstation 5"},
+			"topstaff": null,
+			"rotation": "0",
+			"controles": "0",
+			"couleurs": "0",
+			"medias": [
+			]
+
+			}]
+		}
+	}

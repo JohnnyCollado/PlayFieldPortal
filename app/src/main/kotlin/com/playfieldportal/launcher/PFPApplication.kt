@@ -63,7 +63,13 @@ class PFPApplication : Application(), Configuration.Provider {
 
     private fun initLogging() {
         if (BuildConfig.DEBUG) {
-            Timber.plant(Timber.DebugTree())
+            // Logcat gets the same redaction as the file log. A throwable's message can carry the
+            // request URL (a ScreenScraper timeout printed both passwords), and Timber has already
+            // appended the stack trace to the message by the time log() runs.
+            Timber.plant(object : Timber.DebugTree() {
+                override fun log(priority: Int, tag: String?, message: String, t: Throwable?) =
+                    super.log(priority, tag, com.playfieldportal.core.common.logging.LogRedaction.redact(message), t)
+            })
         }
         // File log (Settings ▸ Logs) on every build: INFO+ only, redacted (credentials,
         // account names, emails never reach disk), size-capped — users can share these

@@ -1,24 +1,34 @@
 package com.playfieldportal.feature.artwork.api
 
+import android.content.Context
+import com.playfieldportal.core.common.logging.LogRedaction
 import com.playfieldportal.feature.artwork.BuildConfig
 import com.playfieldportal.feature.artwork.credentials.MetadataCredentialSource
 import com.playfieldportal.feature.artwork.credentials.ScreenScraperCredentials
 import com.playfieldportal.feature.artwork.rom.RomIdentity
+import dagger.hilt.android.qualifiers.ApplicationContext
 import io.ktor.client.HttpClient
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 import timber.log.Timber
+import java.io.File
+import java.io.IOException
+import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.cancellation.CancellationException
@@ -54,7 +64,15 @@ data class SsSearchHit(
     val ssId: Long,
     val title: String,
     val releaseYear: Int?,
+    val systemId: Int? = null,
+    val systemName: String? = null,
+    // Media of the game itself (`parent: jeu`). A hit's other media are publisher, genre and rating
+    // pictograms, so a release can list a hundred media and still have no artwork at all.
+    val gameArtCount: Int = 0,
 )
+
+/** A ScreenScraper name search that failed, as opposed to one that found nothing. */
+class SsSearchFailedException(message: String, cause: Throwable? = null) : Exception(message, cause)
 
 // Account/quota block returned with every authenticated response. All values arrive as strings.
 @Serializable
@@ -80,7 +98,13 @@ data class SsGame(
     @SerialName("joueurs") val players: SsText? = null,
     @SerialName("note") val rating: SsRating? = null,
     @SerialName("medias") val medias: List<SsMedia> = emptyList(),
+    // The release's system, {"id","text"}. Read only from name-search hits: a search across every
+    // system has to say which release each hit is.
+    @SerialName("systeme") val system: SsSystem? = null,
 )
+
+@Serializable
+data class SsSystem(val id: String? = null, val text: String? = null)
 
 // Age classification: type is the rating board ("ESRB", "PEGI", …), text the grade ("E10+", "12").
 @Serializable
@@ -108,6 +132,8 @@ data class SsGenre(
 @Serializable
 data class SsMedia(
     val type: String,
+    // What the media belongs to: "jeu" for the game's own art, else "editeur", "genre", "classification"…
+    val parent: String? = null,
     val region: String? = null,
     val url: String? = null,
     val format: String? = null,
@@ -205,6 +231,7 @@ data class SsLookupResult(
  */
 @Singleton
 class ScreenScraperApi @Inject constructor(
+    @ApplicationContext private val appContext: Context,
     private val httpClient: HttpClient,
     private val credentials: MetadataCredentialSource,
 ) {
@@ -280,6 +307,7 @@ class ScreenScraperApi @Inject constructor(
             // Parse from text — SS serves error strings with 200s often enough that a typed
             // body{} call would turn quota messages into opaque parse crashes.
             val bodyText = response.bodyAsText()
+            captureBodyInDebug("jeuInfos-${ssGameId ?: slugOf(rom?.fileName ?: "rom")}", bodyText)
             val parsed = runCatching { json.decodeFromString(SsResponse.serializer(), bodyText) }
                 .getOrElse { e ->
                     val prefix = bodyText.take(160)
@@ -315,44 +343,89 @@ class ScreenScraperApi @Inject constructor(
     /**
      * ScreenScraper's name search (`jeuRecherche.php`, up to 30 games ranked by likelihood) — the
      * matcher's Tier 3 and Change Match, and the only way to identify a game with no ROM file, such
-     * as a Windows install. Scoped to [platformId]'s system when it is mapped. Provider failures
-     * return an empty list; a cancelled request still propagates.
+     * as a Windows install. Scoped to [platformId]'s system when it is mapped; a null [platformId]
+     * searches every system.
+     *
+     * A search that fails — no answer, an HTTP error, or an error message instead of JSON — throws
+     * [SsSearchFailedException] rather than returning no hits, so a caller never remembers a failure
+     * as "nothing found". ScreenScraper's genuine empty answer (`"jeux":[{}]`) is an empty list, as
+     * is having no account to ask with. A cancelled request still propagates.
      */
-    suspend fun searchGames(platformId: String, title: String): List<SsSearchHit> {
+    suspend fun searchGames(platformId: String?, title: String): List<SsSearchHit> {
         val creds = credentials.screenScraperNow() ?: return emptyList()
         if (title.isBlank()) return emptyList()
-        val systemId = PLATFORM_IDS[platformId]
-        return try {
-            val response: HttpResponse = rateLimited { httpClient.get("$BASE/jeuRecherche.php") {
+        val systemId = platformId?.let { PLATFORM_IDS[it] }
+        val (status, body) = try {
+            rateLimited { httpClient.get("$BASE/jeuRecherche.php") {
                 credentialParams(creds)
                 parameter("recherche", title)
                 systemId?.let { parameter("systemeid", it) }
-            } }
-            failureForStatus(response.status.value)?.let { (_, detail) ->
-                Timber.w("ScreenScraper search: $detail for '$title' (platform=$platformId)")
-                return emptyList()
-            }
-            parseSearch(response.bodyAsText())
+            } }.let { it.status.value to it.bodyAsText() }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             Timber.w(e, "ScreenScraper search failed for '$title'")
-            emptyList()
+            throw SsSearchFailedException("No answer from ScreenScraper", e)
+        }
+        failureForStatus(status)?.let { (_, detail) ->
+            Timber.w("ScreenScraper search: $detail for '$title' (platform=$platformId)")
+            throw SsSearchFailedException(detail)
+        }
+        captureBodyInDebug("jeuRecherche-${systemId ?: "any"}-${slugOf(title)}", body)
+        val hits = parseSearch(body)
+            ?: throw SsSearchFailedException("ScreenScraper answered with an error instead of results")
+        Timber.d("ScreenScraper search '$title' (system ${systemId ?: "any"}) → ${hits.size} hits")
+        return hits
+    }
+
+    /**
+     * Debug builds only: saves a ScreenScraper response body to the app cache as [name].json, so a
+     * real response can be pulled off the device and pinned as a test fixture. Scrubbed first
+     * ([scrubCapture]): the body names the account and echoes the request URL, and the media URLs
+     * that remain carry credentials for [LogRedaction] to blank. Only the
+     * newest [MAX_CAPTURES] files are kept, so a batch scrape cannot fill the cache.
+     */
+    private suspend fun captureBodyInDebug(name: String, body: String) {
+        if (!BuildConfig.DEBUG) return
+        withContext(Dispatchers.IO) {
+            try {
+                val dir = File(appContext.cacheDir, "ss-captures").apply { mkdirs() }
+                val file = File(dir, "$name.json")
+                file.writeText(LogRedaction.redact(scrubCapture(body)))
+                dir.listFiles()?.sortedByDescending { it.lastModified() }?.drop(MAX_CAPTURES)?.forEach { it.delete() }
+                Timber.d("ScreenScraper body (${body.length} chars) saved to ${file.absolutePath}")
+            } catch (e: IOException) {
+                Timber.w("ScreenScraper body not saved: ${e.message}")
+            }
         }
     }
 
-    /** A jeuRecherche body → hits. Pure, so the lenient parsing is testable without a network. */
-    internal fun parseSearch(body: String): List<SsSearchHit> {
+    private fun slugOf(text: String): String =
+        text.lowercase(Locale.ROOT).replace(NON_SLUG, "-").trim('-').take(40)
+
+    /**
+     * A jeuRecherche body → hits, or null when the body is not a search response at all:
+     * ScreenScraper serves error messages as plain text, often with HTTP 200. Pure, so parsing is
+     * testable without a network.
+     */
+    internal fun parseSearch(body: String): List<SsSearchHit>? {
         val parsed = runCatching { json.decodeFromString(SsSearchResponse.serializer(), body) }
             .getOrElse {
                 Timber.w("ScreenScraper search: non-JSON body '${body.take(160)}'")
-                return emptyList()
+                return null
             }
         return parsed.response?.games.orEmpty().mapNotNull { game ->
             val info = game.toInfo()
             val id = info.ssId ?: return@mapNotNull null
             val title = info.title?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
-            SsSearchHit(ssId = id, title = title, releaseYear = info.releaseYear)
+            SsSearchHit(
+                ssId = id,
+                title = title,
+                releaseYear = info.releaseYear,
+                systemId = game.system?.id?.toIntOrNull(),
+                systemName = game.system?.text?.takeIf { it.isNotBlank() },
+                gameArtCount = game.medias.count { it.parent == "jeu" },
+            )
         }
     }
 
@@ -482,6 +555,30 @@ class ScreenScraperApi @Inject constructor(
     companion object {
         private const val BASE = "https://api.screenscraper.fr/api2"
         private const val MIN_REQUEST_INTERVAL_MS = 1_100L
+
+        private val NON_SLUG = Regex("[^a-z0-9]+")
+        private const val MAX_CAPTURES = 20
+        private val CAPTURE_JSON = Json { prettyPrint = true }
+
+        /**
+         * [body] without the parts that name the account: `response.ssuser` holds the account name
+         * as a plain JSON value, which [LogRedaction] cannot recognise, and `header.commandRequested`
+         * echoes the whole request URL. A body that is not a JSON object (ScreenScraper's plain-text
+         * errors) comes back unchanged.
+         */
+        internal fun scrubCapture(body: String): String {
+            val root = runCatching { Json.parseToJsonElement(body) }.getOrNull() as? JsonObject ?: return body
+            val scrubbed = JsonObject(
+                root.mapValues { (key, value) ->
+                    when {
+                        key == "header" && value is JsonObject -> JsonObject(value - "commandRequested")
+                        key == "response" && value is JsonObject -> JsonObject(value - "ssuser")
+                        else -> value
+                    }
+                },
+            )
+            return CAPTURE_JSON.encodeToString(JsonElement.serializer(), scrubbed)
+        }
 
         /** jeuInfos needs a known game id, or at least a ROM checksum or file name to match on. */
         internal fun canLookUp(rom: RomIdentity?, ssGameId: Long?): Boolean =

@@ -2,9 +2,9 @@ package com.playfieldportal.core.common.logging
 
 /**
  * Scrubs sensitive values out of a log line before it is persisted to disk (see
- * [PfpFileLoggingTree]). Log FILES leave the device — users share them for support — so the
- * bar is stricter than logcat: credentials, tokens, account names, and email addresses must
- * never survive into a file a user might send.
+ * [PfpFileLoggingTree]) or, in debug builds, printed to logcat. Log FILES leave the device —
+ * users share them for support — and logcat captures get pasted around just the same:
+ * credentials, tokens, account names, and email addresses must never survive into either.
  *
  * Kept dependency-free and pure so it's trivially unit-testable.
  */
@@ -12,10 +12,13 @@ object LogRedaction {
 
     // Credential/token-style query params and key=value pairs. Matches URL query strings and
     // plain "password=..." text alike. The value is replaced, the key kept for debuggability.
-    // ssid is ScreenScraper's USERNAME param — an account identity, so it goes too.
+    // The value stops at a quote, so a URL echoed inside JSON loses only its secret.
+    // key is the Steam Web API key; client_id is IGDB's.
+    // ssid is ScreenScraper's USERNAME param — an account identity, so it goes too. It is matched
+    // lowercase only, as ScreenScraper sends it: the app's own "ssId=555" lines log a game id.
     private val SECRET_PARAMS = Regex(
-        "(?i)\\b(devpassword|sspassword|password|passwd|pwd|apikey|api_key|client_secret|" +
-            "clientsecret|access_token|refresh_token|token|secret|ssid|sspass|auth)=([^&\\s\"']+)"
+        "\\b((?i:devpassword|sspassword|password|passwd|pwd|apikey|api_key|key|client_id|client_secret|" +
+            "clientsecret|access_token|refresh_token|token|secret|sspass|auth)|ssid)=([^&\\s\"']+)"
     )
 
     // Authorization-style headers: "Authorization: Bearer xyz", "Client-ID: xyz", "X-Api-Key: xyz".

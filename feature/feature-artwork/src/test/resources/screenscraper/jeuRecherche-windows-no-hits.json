@@ -1,0 +1,27 @@
+{
+	"header" : {
+		"APIversion" : "2.0",
+		"dateTime" : "2026-09-10 23:17:42",
+		"success": "true",
+		"error": ""
+	},
+	"response" : {
+		"serveurs" : {
+			"cpu1": "0",
+			"cpu2": "0",
+			"cpu3": "0",
+			"cpu4": "0",
+			"threadsmin": "4606",
+			"nbscrapeurs": "505",
+			"apiacces": "33718791",
+			"closefornomember": "0",
+			"closeforleecher": "0",
+			"maxthreadfornonmember": "256",
+			"threadfornonmember": "47",
+			"maxthreadformember": "4096",
+			"threadformember": "236"
+		},
+		"jeux" : [{
+			}]
+		}
+	}

@@ -3,6 +3,7 @@ package com.playfieldportal.feature.artwork.match
 import com.playfieldportal.feature.artwork.TheGamesDbApi
 import com.playfieldportal.feature.artwork.api.IgdbApi
 import com.playfieldportal.feature.artwork.api.ScreenScraperApi
+import com.playfieldportal.feature.artwork.api.SsSearchHit
 import com.playfieldportal.feature.artwork.api.SteamGridDbApi
 import com.playfieldportal.feature.artwork.rom.RomIdentity
 import timber.log.Timber
@@ -89,6 +90,9 @@ class ProviderMatchEvidence @Inject constructor(
      * platform is mapped. SGDB indexes games rather than platform releases, and the tree has no IGDB
      * platform-id table, so those two search every platform. The matcher establishes uniqueness on
      * the returned list.
+     *
+     * A failed ScreenScraper search throws `SsSearchFailedException`, never an empty list, so it is
+     * not remembered as "nothing found". The other providers still report failures as empty lists.
      */
     override suspend fun searchByTitle(
         provider: MatchProvider,
@@ -128,17 +132,50 @@ class ProviderMatchEvidence @Inject constructor(
             )
         }
         // The only route to a ScreenScraper identity for a game with no ROM file (a Windows install).
-        MatchProvider.SCREENSCRAPER -> screenScraper.searchGames(platformId, query).map { hit ->
-            GameCandidate(
-                provider = MatchProvider.SCREENSCRAPER,
-                providerGameId = hit.ssId.toString(),
-                title = hit.title,
-                releaseYear = hit.releaseYear,
-            )
-        }
+        MatchProvider.SCREENSCRAPER -> screenScraper.searchGames(platformId, query).map(::ssCandidate)
     }
+
+    /**
+     * ScreenScraper's name search across every system, for Change Match only.
+     *
+     * ScreenScraper catalogues few Windows releases, so a Windows install's platform-scoped search
+     * can find nothing while the same game exists on its console releases. Only the user may pick
+     * across platforms: the matcher never calls this, because an automatic cross-platform match is a
+     * guess. Each candidate names its system so the picker can show which release it is.
+     *
+     * Hits on [preferredPlatformId]'s own system come first; the rest keep ScreenScraper's ranking.
+     */
+    suspend fun searchScreenScraperOnAnyPlatform(query: String, preferredPlatformId: String): List<GameCandidate> {
+        val preferredSystem = ScreenScraperApi.PLATFORM_IDS[preferredPlatformId]
+        return screenScraper.searchGames(platformId = null, title = query)
+            .sortedByDescending { preferredSystem != null && it.systemId == preferredSystem }
+            .map(::ssCandidate)
+    }
+
+    /**
+     * Whether Change Match should skip the platform search and ask every system straight away.
+     *
+     * True for ScreenScraper on platforms whose games have no ROM file. It catalogues few of those
+     * releases: on device the Windows search for Tactics Ogre found nothing under any title, yet
+     * cost three to four seconds of ScreenScraper's single request slot before the search that did.
+     */
+    fun searchesEveryPlatformFirst(provider: MatchProvider, platformId: String): Boolean =
+        provider == MatchProvider.SCREENSCRAPER && platformId in PLATFORMS_WITHOUT_ROMS
+
+    private fun ssCandidate(hit: SsSearchHit) = GameCandidate(
+        provider = MatchProvider.SCREENSCRAPER,
+        providerGameId = hit.ssId.toString(),
+        title = hit.title,
+        platformName = hit.systemName,
+        releaseYear = hit.releaseYear,
+        gameArtCount = hit.gameArtCount,
+    )
 
     /** Both SGDB and IGDB serve release dates as unix timestamps in seconds. */
     private fun yearOf(epochSeconds: Long): Int =
         java.time.Instant.ofEpochSecond(epochSeconds).atZone(java.time.ZoneOffset.UTC).year
+
+    private companion object {
+        val PLATFORMS_WITHOUT_ROMS = setOf("windows")
+    }
 }

@@ -1,0 +1,671 @@
+{
+	"header": {
+		"APIversion": "2.0",
+		"dateTime": "2026-09-10 23:17:46",
+		"success": "true",
+		"error": ""
+	},
+	"response": {
+		"serveurs": {
+			"cpu1": "0",
+			"cpu2": "0",
+			"cpu3": "0",
+			"cpu4": "0",
+			"threadsmin": "4561",
+			"nbscrapeurs": "508",
+			"apiacces": "33718791",
+			"closefornomember": "0",
+			"closeforleecher": "0",
+			"maxthreadfornonmember": "256",
+			"threadfornonmember": "50",
+			"maxthreadformember": "4096",
+			"threadformember": "248"
+		},
+		"jeux": [
+			{
+				"id": "2293",
+				"noms": [
+					{
+						"region": "ss",
+						"text": "Tactics Ogre - Let Us Cling Together"
+					},
+					{
+						"region": "jp",
+						"text": "Tactics Ogre : Let Us Cling Together"
+					}
+				],
+				"systeme": {
+					"id": "4",
+					"text": "Super Nintendo"
+				},
+				"editeur": {
+					"id": "517",
+					"text": "Quest"
+				},
+				"developpeur": {
+					"id": "517",
+					"text": "Quest"
+				},
+				"joueurs": {
+					"text": "1-2"
+				},
+				"note": {
+					"text": "17"
+				},
+				"topstaff": null,
+				"rotation": "0",
+				"controles": "0",
+				"couleurs": "0",
+				"synopsis": [
+					{
+						"langue": "de",
+						"text": "Tactics Ogre ist eine sehr detaillierte isometrische 3-D-Kriegssimulation. Du beginnst mit einer Gruppe von Truppen, baust eine kleine Armee auf und kämpfst in vielen Schlachten, wobei du zwischen den Schlachten Entscheidungen triffst, die den Ausgang der 8 möglichen Enden in einer nicht-linearen Geschichte bestimmen.\r\n\r\nDu hast die Möglichkeit, Charaktere zu rekrutieren, die individuelle Ausrüstung jedes Charakters zu kontrollieren, mit über 6 männlichen Charakterklassen, 6 weiblichen Charakterklassen, 3 halb-menschlichen Klassen und mehr. Sie können auch an sicheren Orten trainieren, um Ihre Armee vor der nächsten Schlacht/dem nächsten Handlungsstrang voranzubringen."
+					},
+					{
+						"langue": "en",
+						"text": "Tactics Ogre is a very detailed 3-D isometric turn based war / rpg sim. You start out with a band of troops and build a small army and fight many battles with choices to make in between battles that will determine which one of the 8 possible endings in a non-linear storyline. \n\nYou have the option to recruit characters, control individual equipment of each character, with over 6 male character classes, 6 female character classes, 3 demi-human classes, and more. You can also train at safe locations to advance your army before the next battle / storyline advancement.\r"
+					},
+					{
+						"langue": "es",
+						"text": "Tactics Ogre es un simulador de guerra / rpg basado en turnos isométricos muy detallados en 3D. Comienzas con una banda de tropas y construyes un pequeño ejército y luchas muchas batallas con elecciones entre batallas que determinarán con cuál de los 8 finales posibles terminaras el juego en una historia no lineal. Tienes la opción de reclutar personajes, controlar el equipo individual de cada personaje, con más de 6 clases de personajes masculinos, 6 clases de personajes femeninos, 3 clases demi-humanas y más. También puedes entrenar en lugares seguros para avanzar tu ejército antes del próximo avance de batalla / historia."
+					},
+					{
+						"langue": "fr",
+						"text": "Tactics Ogre est un jeu de rôle tactique sur Super Nintendo. Basé sur une stratégie au tour par tour avec une vue en 3D isométrique, Tactics Ogre vous met au commande d'une troupe d'aventuriers et de guerriers. Vos tactiques de guerre se reflèteront sur le scénario car ce sont 8 fins différentes qui s'offrent à vous."
+					},
+					{
+						"langue": "it",
+						"text": "Tactics Ogre è un gioco di ruolo tattico per Super Nintendo. Basato sulla strategia a turni con una vista 3D isometrica, Tactics Ogre ti mette al comando di una truppa di avventurieri e guerrieri. Le tue tattiche di guerra si rifletteranno sullo scenario perché ci sono 8 diversi finali disponibili."
+					},
+					{
+						"langue": "pt",
+						"text": "Tactics Ogre é um simulador de guerra / RPG isométrico 3D muito detalhado. Você começa com um bando de tropas e constrói um pequeno exército e trava muitas batalhas com escolhas a fazer entre as batalhas que irão determinar qual dos 8 finais possíveis em um enredo não linear.\r\n\r\nVocê tem a opção de recrutar personagens, controlar o equipamento individual de cada personagem, com mais de 6 classes de personagens masculinos, 6 classes de personagens femininos, 3 classes demi-humanas e muito mais. Você também pode treinar em locais seguros para avançar seu exército antes do próximo avanço de batalha / enredo."
+					}
+				],
+				"dates": [
+					{
+						"region": "jp",
+						"text": "1995-10-06"
+					}
+				],
+				"genres": [
+					{
+						"id": "8",
+						"nomcourt": "0300",
+						"principale": "1",
+						"parentid": "0",
+						"noms": [
+							{
+								"langue": "de",
+								"text": "Rollenspiele"
+							},
+							{
+								"langue": "en",
+								"text": "Role Playing Game"
+							},
+							{
+								"langue": "es",
+								"text": "Juego de Rol"
+							},
+							{
+								"langue": "fr",
+								"text": "Jeu de rôles"
+							},
+							{
+								"langue": "it",
+								"text": "Gioco di Ruolo"
+							},
+							{
+								"langue": "pt",
+								"text": "Jogos de RPG"
+							}
+						]
+					},
+					{
+						"id": "27",
+						"nomcourt": "0500",
+						"principale": "1",
+						"parentid": "0",
+						"noms": [
+							{
+								"langue": "de",
+								"text": "Strategie"
+							},
+							{
+								"langue": "en",
+								"text": "Strategy"
+							},
+							{
+								"langue": "es",
+								"text": "Estrategia"
+							},
+							{
+								"langue": "fr",
+								"text": "Stratégie"
+							},
+							{
+								"langue": "it",
+								"text": "Strategia"
+							},
+							{
+								"langue": "pt",
+								"text": "Estratégia"
+							}
+						]
+					}
+				],
+				"familles": [
+					{
+						"id": "26450",
+						"nomcourt": "",
+						"principale": "0",
+						"parentid": "0",
+						"noms": [
+							{
+								"langue": "fr",
+								"text": "Tactics Ogre"
+							}
+						]
+					}
+				],
+				"medias": [
+					{
+						"type": "sstitle",
+						"parent": "jeu",
+						"url": "https://neoclone.screenscraper.fr/api2/mediaJeu.php?devid=REDACTED&devpassword=REDACTED&softname=REDACTED&ssid=REDACTED&sspassword=REDACTED&systemeid=4&jeuid=2293&media=sstitle(wor)",
+						"region": "wor",
+						"crc": "7909e525",
+						"md5": "8a2c40b846b3abef048ff18ea720b21a",
+						"sha1": "d2cc8bf957d145c7cd90351854071d3426dbaaec",
+						"size": "15080",
+						"format": "png"
+					},
+					{
+						"type": "ss",
+						"parent": "jeu",
+						"url": "https://neoclone.screenscraper.fr/api2/mediaJeu.php?devid=REDACTED&devpassword=REDACTED&softname=REDACTED&ssid=REDACTED&sspassword=REDACTED&systemeid=4&jeuid=2293&media=ss(wor)",
+						"region": "wor",
+						"crc": "9383c59a",
+						"md5": "f066352d375580d8b54193bc8a59d173",
+						"sha1": "a626f80cc9c258d52fe43399fa48f9d53011be70",
+						"size": "5024",
+						"format": "png"
+					}
+				]
+			},
+			{
+				"id": "27874",
+				"noms": [
+					{
+						"region": "ss",
+						"text": "Tactics Ogre - Let Us Cling Together"
+					},
+					{
+						"region": "us",
+						"text": "Tactics Ogre : Let Us Cling Together"
+					},
+					{
+						"region": "jp",
+						"text": "Tactics Ogre : Unmei no Wa"
+					},
+					{
+						"region": "eu",
+						"text": "Tactics Ogre : Let Us Cling Together"
+					}
+				],
+				"systeme": {
+					"id": "61",
+					"text": "PSP"
+				},
+				"editeur": {
+					"id": "794",
+					"text": "Square Enix"
+				},
+				"developpeur": {
+					"id": "794",
+					"text": "Square Enix"
+				},
+				"joueurs": {
+					"text": "2"
+				},
+				"note": {
+					"text": "17"
+				},
+				"topstaff": null,
+				"rotation": "0",
+				"controles": "0",
+				"couleurs": "0",
+				"synopsis": [
+					{
+						"langue": "de",
+						"text": "„Tactics Ogre: Let Us Cling Together“ ist das Remake eines berühmten taktischen Rollenspiels für die PSP. Angeführt von einer kleinen Armee muss der Spieler nicht nur auf den Schlachtfeldern seinen Willen durchsetzen, sondern auch wichtige Entscheidungen treffen, die den Verlauf der Handlung beeinflussen. Die spannenden rundenbasierten Kämpfe sowie die äußerst detaillierte Verwaltung der Charaktere machen dieses Spiel zu einer unverzichtbaren Referenz des Genres."
+					},
+					{
+						"langue": "en",
+						"text": "The creators of Final Fantasy Tactics bring you the next evolution in Tactics games from Square Enix in Tactics Ogre: Let Us Cling Together! A dream team lead by Yasumi Matsuno has reunited to bring a perfect vision of their lost tale of political intrigue, conquest, and rebellion to vivid life. Experience an epic story where your choices determine the fate of the Walister Resistance."
+					},
+					{
+						"langue": "es",
+						"text": "Los creadores de Final Fantasy Tactics nos traen la siguiente etapa de evolucion en juegos de tacticas. Square Enix en Tactics Ogre: Let Us Cling Together! Un equipo de ensueño liderado por Yasumi Matsuno se ha reunido para traer la vision perfecta de su historia perdida donde viviras intriga politica, conquista y rebelion. Experimenta una historia epica donde tus decisiones determinan el destino de las tropas de la Resistencia de Walister."
+					},
+					{
+						"langue": "fr",
+						"text": "Tactics Ogre : Let Us Cling Together est le remake d'un célèbre jeu de rôle tactique sur PSP. A la tête d'une petite armée, le joueur devra non seulement imposer sa loi sur les champs de bataille mais aussi prendre des décisions importantes qui influent sur le déroulement du scénario. Les combats au tour par tour passionnants mais aussi la gestion extrêmement détaillé des personnages font de ce titre une référence incontournable du genre."
+					}
+				],
+				"classifications": [
+					{
+						"type": "SS",
+						"text": "12"
+					},
+					{
+						"type": "CERO",
+						"text": "B"
+					}
+				],
+				"dates": [
+					{
+						"region": "fr",
+						"text": "2011-02-25"
+					},
+					{
+						"region": "us",
+						"text": "2011-02-15"
+					},
+					{
+						"region": "jp",
+						"text": "2010-11-11"
+					}
+				],
+				"genres": [
+					{
+						"id": "8",
+						"nomcourt": "0300",
+						"principale": "1",
+						"parentid": "0",
+						"noms": [
+							{
+								"langue": "de",
+								"text": "Rollenspiele"
+							},
+							{
+								"langue": "en",
+								"text": "Role Playing Game"
+							},
+							{
+								"langue": "es",
+								"text": "Juego de Rol"
+							},
+							{
+								"langue": "fr",
+								"text": "Jeu de rôles"
+							},
+							{
+								"langue": "it",
+								"text": "Gioco di Ruolo"
+							},
+							{
+								"langue": "pt",
+								"text": "Jogos de RPG"
+							}
+						]
+					},
+					{
+						"id": "27",
+						"nomcourt": "0500",
+						"principale": "1",
+						"parentid": "0",
+						"noms": [
+							{
+								"langue": "de",
+								"text": "Strategie"
+							},
+							{
+								"langue": "en",
+								"text": "Strategy"
+							},
+							{
+								"langue": "es",
+								"text": "Estrategia"
+							},
+							{
+								"langue": "fr",
+								"text": "Stratégie"
+							},
+							{
+								"langue": "it",
+								"text": "Strategia"
+							},
+							{
+								"langue": "pt",
+								"text": "Estratégia"
+							}
+						]
+					}
+				],
+				"familles": [
+					{
+						"id": "26450",
+						"nomcourt": "",
+						"principale": "0",
+						"parentid": "0",
+						"noms": [
+							{
+								"langue": "fr",
+								"text": "Tactics Ogre"
+							}
+						]
+					}
+				],
+				"medias": [
+					{
+						"type": "sstitle",
+						"parent": "jeu",
+						"url": "https://neoclone.screenscraper.fr/api2/mediaJeu.php?devid=REDACTED&devpassword=REDACTED&softname=REDACTED&ssid=REDACTED&sspassword=REDACTED&systemeid=61&jeuid=27874&media=sstitle(eu)",
+						"region": "eu",
+						"crc": "090a2bec",
+						"md5": "b91f31d41081f881e8d19723dddcd204",
+						"sha1": "e214823e0dd9d8a289ffcccf51bb527912680b15",
+						"size": "177336",
+						"format": "png"
+					},
+					{
+						"type": "sstitle",
+						"parent": "jeu",
+						"url": "https://neoclone.screenscraper.fr/api2/mediaJeu.php?devid=REDACTED&devpassword=REDACTED&softname=REDACTED&ssid=REDACTED&sspassword=REDACTED&systemeid=61&jeuid=27874&media=sstitle(jp)",
+						"region": "jp",
+						"crc": "6b98aa84",
+						"md5": "10d3c872aaf00635a2189b57f4d951a9",
+						"sha1": "387c3d59f44e82377df96d8e7fa8777fbb96878f",
+						"size": "191400",
+						"format": "png"
+					}
+				]
+			},
+			{
+				"id": "425726",
+				"noms": [
+					{
+						"region": "ss",
+						"text": "Tactics Ogre - Reborn"
+					},
+					{
+						"region": "us",
+						"text": "Tactics Ogre : Reborn"
+					},
+					{
+						"region": "jp",
+						"text": "Tactics Ogre : Unmei no Wa"
+					},
+					{
+						"region": "eu",
+						"text": "Tactics Ogre : Reborn"
+					}
+				],
+				"systeme": {
+					"id": "225",
+					"text": "Switch"
+				},
+				"editeur": {
+					"id": "794",
+					"text": "Square Enix"
+				},
+				"developpeur": {
+					"id": "794",
+					"text": "Square Enix"
+				},
+				"joueurs": {
+					"text": "1"
+				},
+				"note": {
+					"text": "17"
+				},
+				"topstaff": null,
+				"rotation": "0",
+				"controles": "0",
+				"couleurs": "0",
+				"synopsis": [
+					{
+						"langue": "de",
+						"text": "Tactics Ogre, das Glanzstück des Taktik-Rollenspiel-Genres, erlebt seine Wiedergeburt!\r\nBasierend auf der Version von 2010 bietet das Spiel verbesserte Grafik und Sound sowie ein überarbeitetes Spieldesign, so entsteht ein neues Tactics Ogre, das seinen Wurzeln treu bleibt. Veteranen der Reihe erleben ein Spiel, das ihre schönsten Erinnerungen noch übertrifft, während Neulinge einen Titel entdecken, der seinesgleichen sucht. In dieser neu aufgelegten und tiefgründigeren Fassung können Spieler wie nie zuvor in die Welt und die Intrigen von Tactics Ogre eintauchen."
+					},
+					{
+						"langue": "en",
+						"text": "Tactics Ogre, crown jewel of the tactical role-playing genre, is reborn!\r\nBased on the 2010 release, the game features improved graphics and sound, as well as updated game design, bringing to life a new Tactics Ogre that remains true to its roots. Tactics Ogre veterans will experience a game that surpasses their fondest memories, while players new to Tactics Ogre will discover a game unlike any they've ever played. Reborn and deeper than ever, the game enables players to immerse themselves in the world and intrigue of Tactics Ogre like never before."
+					},
+					{
+						"langue": "es",
+						"text": "El rey de los juegos de rol de simulación, Tactics Ogre, renace con nuevos cambios que lo catapultan a otro nivel.\r\nEl rey de los juegos de rol de simulación, Tactics Ogre, renace con nuevos cambios que lo catapultan a otro nivel. El juego de 2010 recibe retoques gráficos y sonoros, así como un remozado diseño de juego que lo devuelve a la actualidad. Aquellos que jugaron en su día a Tactics Ogre verán como sus recuerdos quedan sobrepasados, y quienes lo descubren por vez primera sentirán no haber experimentado nada igual. Prepárate para embarcarte en una aventura que te adentrará en el corazón de la historia de Valeria."
+					},
+					{
+						"langue": "fr",
+						"text": "Basé sur le jeu de 2010, Tactics Ogre bénéficie d'améliorations graphiques et sonores ainsi que d'une importante mise à jour grâce à une refonte en profondeur de son game design. Il dispose également pour la première fois d'une traduction en français. &quot;&quot;Tactics Ogre: Reborn&quot;&quot; s'adresse aux joueurs désireux de découvrir ou de redécouvrir avec des sensations nouvelles l'univers et l'histoire uniques de ce jeu légendaire.\r\n\r\n- Jeu de rôle tactique décrivant le conflit qui déchire l'archipel de la Valeria, au large du continent de la Xytegenia.\r\n\r\n- Un scénario au développement et à la fin variables en fonction des choix du joueur. L'histoire est racontée du point de vue du jeune héros Denam, dont les décisions au cours des événements du jeu pèsent sur la destinée de la Valeria et de ses habitants.\r\n\r\n- Des combats stratégiques ayant lieu sur des champs de bataille en relief. Grâce à un remaniement de l'IA, les batailles sont encore plus palpitantes, forçant le joueur à réfléchir à la meilleure tactique à adopter face à des ennemis dont les actions varient en fonction de la situation."
+					}
+				],
+				"classifications": [
+					{
+						"type": "SS",
+						"text": "13"
+					},
+					{
+						"type": "CERO",
+						"text": "B"
+					},
+					{
+						"type": "PEGI",
+						"text": "12"
+					},
+					{
+						"type": "ESRB",
+						"text": "T"
+					}
+				],
+				"dates": [
+					{
+						"region": "us",
+						"text": "2022-11-11"
+					},
+					{
+						"region": "jp",
+						"text": "2022-11-11"
+					},
+					{
+						"region": "eu",
+						"text": "2022-11-11"
+					}
+				],
+				"genres": [
+					{
+						"id": "20694",
+						"nomcourt": "0304",
+						"principale": "0",
+						"parentid": "8",
+						"noms": [
+							{
+								"langue": "de",
+								"text": "Taktisches Rollenspiel"
+							},
+							{
+								"langue": "en",
+								"text": "Tactical RPG"
+							},
+							{
+								"langue": "es",
+								"text": "RPG Táctico"
+							},
+							{
+								"langue": "fr",
+								"text": "Jeu de Rôle Tactique"
+							},
+							{
+								"langue": "it",
+								"text": "Gioco di Ruolo Tattico"
+							},
+							{
+								"langue": "pt",
+								"text": "RPG Táctico"
+							}
+						]
+					},
+					{
+						"id": "8",
+						"nomcourt": "0300",
+						"principale": "1",
+						"parentid": "0",
+						"noms": [
+							{
+								"langue": "de",
+								"text": "Rollenspiele"
+							},
+							{
+								"langue": "en",
+								"text": "Role Playing Game"
+							},
+							{
+								"langue": "es",
+								"text": "Juego de Rol"
+							},
+							{
+								"langue": "fr",
+								"text": "Jeu de rôles"
+							},
+							{
+								"langue": "it",
+								"text": "Gioco di Ruolo"
+							},
+							{
+								"langue": "pt",
+								"text": "Jogos de RPG"
+							}
+						]
+					}
+				],
+				"modes": [
+					{
+						"id": "4",
+						"nomcourt": "",
+						"principale": "1",
+						"parentid": "0",
+						"noms": [
+							{
+								"langue": "de",
+								"text": "Einzelspieler"
+							},
+							{
+								"langue": "en",
+								"text": "Single-player"
+							},
+							{
+								"langue": "es",
+								"text": "Jugador individual"
+							},
+							{
+								"langue": "fr",
+								"text": "Jouable en solo"
+							},
+							{
+								"langue": "it",
+								"text": "Giocatore singolo"
+							},
+							{
+								"langue": "pt",
+								"text": "Jogador individual"
+							}
+						]
+					}
+				],
+				"familles": [
+					{
+						"id": "26450",
+						"nomcourt": "",
+						"principale": "0",
+						"parentid": "0",
+						"noms": [
+							{
+								"langue": "fr",
+								"text": "Tactics Ogre"
+							}
+						]
+					}
+				],
+				"styles": [
+					{
+						"id": "20371",
+						"nomcourt": "",
+						"principale": "0",
+						"parentid": "0",
+						"noms": [
+							{
+								"langue": "fr",
+								"text": "Turn-based"
+							}
+						]
+					}
+				],
+				"medias": [
+					{
+						"type": "sstitle",
+						"parent": "jeu",
+						"url": "https://neoclone.screenscraper.fr/api2/mediaJeu.php?devid=REDACTED&devpassword=REDACTED&softname=REDACTED&ssid=REDACTED&sspassword=REDACTED&systemeid=225&jeuid=425726&media=sstitle(jp)",
+						"region": "jp",
+						"crc": "ee5e13bd",
+						"md5": "b65fba1ccf1c3281f08bdd3339398991",
+						"sha1": "f245137587c9b24bd58321a64345824f295e44de",
+						"size": "176202",
+						"format": "jpg"
+					},
+					{
+						"type": "sstitle",
+						"parent": "jeu",
+						"url": "https://neoclone.screenscraper.fr/api2/mediaJeu.php?devid=REDACTED&devpassword=REDACTED&softname=REDACTED&ssid=REDACTED&sspassword=REDACTED&systemeid=225&jeuid=425726&media=sstitle(wor)",
+						"region": "wor",
+						"crc": "6ef1bb55",
+						"md5": "ddaf3c986fc212536b3c1ae96d271525",
+						"sha1": "28e92e20e8751fbfe53b73ec01baa9585e8fe277",
+						"size": "228341",
+						"format": "jpg"
+					}
+				]
+			},
+			{
+				"id": "478505",
+				"noms": [
+					{
+						"region": "ss",
+						"text": "Tactics Ogre: Reborn"
+					}
+				],
+				"systeme": {
+					"id": "284",
+					"text": "Playstation 5"
+				},
+				"topstaff": null,
+				"rotation": "0",
+				"controles": "0",
+				"couleurs": "0",
+				"medias": [
+					{
+						"type": "pictomonochrome",
+						"parent": "editeur",
+						"url": "https://neoclone.screenscraper.fr/api2/mediaCompagnie.php?devid=REDACTED&devpassword=REDACTED&softname=REDACTED&ssid=REDACTED&sspassword=REDACTED&groupid=517&media=logo-monochrome",
+						"crc": "4cb1266b",
+						"md5": "39ec9739b8be37368ba843fa29940faf",
+						"sha1": "6251cff53514a448d7faa681b08c544a3e55b28d",
+						"size": "3805",
+						"format": "png"
+					},
+					{
+						"type": "pictocouleur",
+						"parent": "editeur",
+						"url": "https://neoclone.screenscraper.fr/api2/mediaCompagnie.php?devid=REDACTED&devpassword=REDACTED&softname=REDACTED&ssid=REDACTED&sspassword=REDACTED&groupid=517&media=wheel",
+						"crc": "f1de2fb3",
+						"md5": "ed7ffc8b9ac608da982ee9c7873bdda5",
+						"sha1": "bd215748794e7900ab97edbdaf40c51f4b103629",
+						"size": "11722",
+						"format": "png"
+					}
+				]
+			}
+		]
+	}
+}

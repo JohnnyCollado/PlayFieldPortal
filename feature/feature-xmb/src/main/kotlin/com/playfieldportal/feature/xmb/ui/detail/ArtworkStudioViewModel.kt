@@ -9,6 +9,7 @@ import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.feature.artwork.api.SgdbApiKeyProvider
 import com.playfieldportal.feature.artwork.api.SgdbArtType
 import com.playfieldportal.feature.artwork.api.SteamGridDbApi
+import com.playfieldportal.feature.artwork.match.CachingMatchEvidence
 import com.playfieldportal.feature.artwork.match.GameCandidate
 import com.playfieldportal.feature.artwork.match.GameMatch
 import com.playfieldportal.feature.artwork.match.GameMatcher
@@ -31,8 +32,16 @@ import javax.inject.Inject
 
 // ── Studio model ──────────────────────────────────────────────────────────────
 
-/** One artwork destination tab. [contract] is the display rule shown under the tab bar. */
-data class StudioTab(val kind: ArtworkKind, val label: String, val contract: String)
+/**
+ * One artwork destination tab. [contract] is the display rule shown under the tab bar; [tileClass]
+ * is the shape its results are judged at, which decides how many fit on a page.
+ */
+data class StudioTab(
+    val kind: ArtworkKind,
+    val label: String,
+    val contract: String,
+    val tileClass: StudioTileClass,
+)
 
 enum class StudioSource(val label: String) {
     SCREENSCRAPER("ScreenScraper"),
@@ -62,6 +71,9 @@ data class ArtworkStudioUiState(
     val sourceIndex: Int = 0,
     val zone: StudioZone = StudioZone.TABS,
     val gridIndex: Int = 0,
+    // One page is one measured gridful (AD-17). 4 × 5 until the screen reports the slot's size.
+    val gridColumns: Int = StudioGridCapacity.UNMEASURED.columns,
+    val gridRows: Int = StudioGridCapacity.UNMEASURED.rows,
     val page: Int = 0,
     val pageCount: Int = 0,
     // 1-based inclusive range of the visible page within the whole result list ("21–40 of 137").
@@ -86,6 +98,8 @@ data class ArtworkStudioUiState(
     val match: GameMatch? = null,
     val matchProvider: MatchProvider? = null,
     val matchResolving: Boolean = false,
+    // The last resolution failed because the provider didn't answer, as opposed to finding no match.
+    val matchFailed: Boolean = false,
     // Change Match picker, backed by each provider's multi-result title search.
     val changeMatchOpen: Boolean = false,
     val changeMatchDraft: String = "",
@@ -95,6 +109,12 @@ data class ArtworkStudioUiState(
     val changeMatchIndex: Int = -1,
     // True only while the query field is being typed into — the one time the keyboard is open.
     val changeMatchEditing: Boolean = false,
+    // The candidates include platforms other than the game's own.
+    val changeMatchAcrossPlatforms: Boolean = false,
+    // The picker is waiting on ScreenScraper's every-platform search, which takes about ten seconds.
+    val changeMatchSearchingEveryPlatform: Boolean = false,
+    // Set when the picker's search failed, as opposed to finding nothing.
+    val changeMatchError: String? = null,
     // Current asset of the active tab (what the game uses right now).
     val currentUri: String? = null,
     // Bumped on every apply/clear so the preview reloads even when the portable library reuses
@@ -146,7 +166,9 @@ data class ArtworkStudioUiState(
      * loading — the screen renders skeletons instead of the grid in that state, so tying this to
      * `results.isEmpty()` would draw an empty panel if the two ever disagreed.
      */
-    val skeletonCount: Int get() = if (resultsLoading) PAGE_SIZE else 0
+    val skeletonCount: Int get() = if (resultsLoading) pageSize else 0
+
+    val pageSize: Int get() = gridColumns * gridRows
 
     /** "Matched as <title>" — the game the active source is actually being asked about. */
     val matchTitle: String? get() = match?.candidate?.title
@@ -209,10 +231,6 @@ val CROPPABLE_KINDS = setOf(
 
 typealias StudioArtworkInfo = com.playfieldportal.feature.artwork.store.StudioArtworkInfo
 
-const val STUDIO_GRID_COLUMNS = 4
-const val STUDIO_GRID_ROWS = 5   // fixed 4x5 page; PAGE_SIZE matches columns x rows
-
-internal const val PAGE_SIZE = STUDIO_GRID_COLUMNS * STUDIO_GRID_ROWS
 private const val CROP_PAN_STEP = 0.03f
 
 // Long enough for any real title with edition and subtitle; short enough that a pasted wall of
@@ -245,17 +263,17 @@ private val NO_IMAGE_PROVIDER_KINDS = setOf(ArtworkKind.ICON1, ArtworkKind.MANUA
 private val SHOW_ALL_ART_KINDS = setOf(ArtworkKind.BOX_3D, ArtworkKind.PHYSICAL_MEDIA, ArtworkKind.SCREENSHOT)
 
 val STUDIO_TABS = listOf(
-    StudioTab(ArtworkKind.ICON,           "ICON0",       "XMB tile · 144×80 · crop"),
-    StudioTab(ArtworkKind.ICON1,          "ICON1",       "XMB icon animation · 60 s muted snap"),
-    StudioTab(ArtworkKind.BOX_ART,        "BOX ART",     "XMB tile (Box Art mode) · natural aspect"),
-    StudioTab(ArtworkKind.BOX_3D,         "3D BOX",      "XMB tile (3D Box mode) · natural aspect"),
-    StudioTab(ArtworkKind.PHYSICAL_MEDIA, "PHYS. MEDIA", "XMB tile (Physical Media mode) · natural aspect"),
-    StudioTab(ArtworkKind.HERO,           "HERO",        "Game Details banner · wide · crop"),
-    StudioTab(ArtworkKind.BACKGROUND,     "BACKGROUND",  "XMB hover background · full screen"),
-    StudioTab(ArtworkKind.LOGO,           "LOGO",        "PIC0 overlay · transparent PNG · fit"),
-    StudioTab(ArtworkKind.SCREENSHOT,     "SCREENSHOT",  "Game Details media strip"),
-    StudioTab(ArtworkKind.MANUAL,         "MANUAL",      "In-app PDF manual"),
-    StudioTab(ArtworkKind.VIDEO,          "VIDEO",       "Game Details media strip · full video"),
+    StudioTab(ArtworkKind.ICON,           "ICON0",       "XMB tile · 144×80 · crop",                       StudioTileClass.LANDSCAPE),
+    StudioTab(ArtworkKind.ICON1,          "ICON1",       "XMB icon animation · 60 s muted snap",           StudioTileClass.LANDSCAPE),
+    StudioTab(ArtworkKind.BOX_ART,        "BOX ART",     "XMB tile (Box Art mode) · natural aspect",       StudioTileClass.PORTRAIT),
+    StudioTab(ArtworkKind.BOX_3D,         "3D BOX",      "XMB tile (3D Box mode) · natural aspect",        StudioTileClass.PORTRAIT),
+    StudioTab(ArtworkKind.PHYSICAL_MEDIA, "PHYS. MEDIA", "XMB tile (Physical Media mode) · natural aspect", StudioTileClass.SQUARE),
+    StudioTab(ArtworkKind.HERO,           "HERO",        "Game Details banner · wide · crop",              StudioTileClass.LANDSCAPE),
+    StudioTab(ArtworkKind.BACKGROUND,     "BACKGROUND",  "XMB hover background · full screen",             StudioTileClass.LANDSCAPE),
+    StudioTab(ArtworkKind.LOGO,           "LOGO",        "PIC0 overlay · transparent PNG · fit",           StudioTileClass.WIDE),
+    StudioTab(ArtworkKind.SCREENSHOT,     "SCREENSHOT",  "Game Details media strip",                       StudioTileClass.LANDSCAPE),
+    StudioTab(ArtworkKind.MANUAL,         "MANUAL",      "In-app PDF manual",                              StudioTileClass.PORTRAIT),
+    StudioTab(ArtworkKind.VIDEO,          "VIDEO",       "Game Details media strip · full video",          StudioTileClass.LANDSCAPE),
 )
 
 /**
@@ -289,8 +307,14 @@ class ArtworkStudioViewModel @Inject constructor(
     private val matchEvidence: ProviderMatchEvidence,
 ) : ViewModel() {
 
+    /**
+     * Title searches remembered for this open. The matcher re-resolves on every source switch, tab
+     * switch and search, and without this each one asked the provider again.
+     */
+    private val titleSearches = CachingMatchEvidence(matchEvidence)
+
     /** Tiers 1-3 only; the ranked picker below Tier 3 is deferred (AD-4). */
-    private val matcher = GameMatcher(matchEvidence)
+    private val matcher = GameMatcher(titleSearches)
 
     private val appCacheDir: java.io.File get() = appContext.cacheDir
 
@@ -317,11 +341,17 @@ class ArtworkStudioViewModel @Inject constructor(
 
     private var gameId: Long = -1
 
+    /** The grid slot's last reported size in dp; null until the screen has measured it. */
+    private var gridSlotDp: Pair<Float, Float>? = null
+
     fun load(gameId: Long) {
         // Always clear the closed flag: the VM survives across open/close (host-scoped), so a
         // stale closed=true from a prior B-press would otherwise slam the screen shut on reopen.
         // Every open starts at Level 1 (categories).
         _uiState.update { it.copy(closed = false, zone = StudioZone.TABS) }
+        // Each open asks the providers afresh: a search that failed last time (providers report a
+        // failure as no hits) must not keep the game unmatched for good.
+        titleSearches.clear()
         if (this.gameId == gameId && _uiState.value.game != null) {
             // Same game reopened. The VM outlives the screen, so a key added or removed in Settings
             // since the last open has to be re-read here — reading it once per game is what kept a
@@ -470,10 +500,16 @@ class ArtworkStudioViewModel @Inject constructor(
      * The single reducer boundary for results. Rejects any response whose key or token has been
      * superseded — the guard that makes a slow provider unable to overwrite a fast one.
      */
-    private fun showPage(all: List<StudioArt>, pageIndex: Int, key: StudioRequestKey, token: Long) {
+    private fun showPage(
+        all: List<StudioArt>,
+        pageIndex: Int,
+        key: StudioRequestKey,
+        token: Long,
+        gridIndex: Int = 0,
+    ) {
         if (token != generation || key != activeKey) return
-        val page = StudioPage.of(all, pageIndex, PAGE_SIZE)
         _uiState.update {
+            val page = StudioPage.of(all, pageIndex, it.pageSize)
             it.copy(
                 resultsLoading = false,
                 results = page.items,
@@ -482,9 +518,39 @@ class ArtworkStudioViewModel @Inject constructor(
                 pageCount = page.pageCount,
                 rangeStart = page.rangeStart,
                 rangeEnd = page.rangeEnd,
-                gridIndex = 0,
+                gridIndex = gridIndex.coerceIn(0, page.items.lastIndex.coerceAtLeast(0)),
             )
         }
+    }
+
+    /**
+     * The grid slot's measured size in dp. Recomputes the page for the active tab and, if it
+     * changed, re-pages so the focused result stays focused (AD-17). The screen should call this
+     * only when the size actually changes; an unchanged capacity is a no-op either way.
+     */
+    fun onGridMeasured(widthDp: Float, heightDp: Float) {
+        gridSlotDp = widthDp to heightDp
+        val capacity = capacityFor(_uiState.value.tabIndex) ?: return
+        applyCapacity(capacity)
+    }
+
+    /** Capacity for [tabIndex] at the last measured slot, or null before the first measurement. */
+    private fun capacityFor(tabIndex: Int): StudioGridCapacity? =
+        gridSlotDp?.let { (width, height) -> StudioGridCapacity.of(width, height, STUDIO_TABS[tabIndex].tileClass) }
+
+    private fun applyCapacity(capacity: StudioGridCapacity) {
+        val before = _uiState.value
+        if (capacity.columns == before.gridColumns && capacity.rows == before.gridRows) return
+        // Absolute position of the focused result in the whole list, under the OLD page size.
+        val focused = before.page * before.pageSize + before.gridIndex
+        _uiState.update { it.copy(gridColumns = capacity.columns, gridRows = capacity.rows) }
+        // Mid-load there is no page to move: the response pages at the new size when it lands, and
+        // skeletonCount already reads it.
+        if (before.resultsLoading) return
+        val key = activeKey ?: return
+        val all = activeResults()
+        if (all.isEmpty()) return
+        showPage(all, focused / capacity.pageSize, key, generation, gridIndex = focused % capacity.pageSize)
     }
 
     // Every SS media of the kind's types — cached lists load free; a game never scraped
@@ -634,8 +700,16 @@ class ArtworkStudioViewModel @Inject constructor(
     // Selecting a category or source (controller cycle OR touch tap) also lands navigation on
     // that level, so a tap jumps straight to the section and the grid refreshes underneath.
     fun selectTab(index: Int) {
+        val tabIndex = index.coerceIn(0, STUDIO_TABS.lastIndex)
+        // Another tab can mean another tile class, so the page size follows it from the last
+        // measured slot. No re-page here: the load below starts the new tab at page 0 anyway.
+        val capacity = capacityFor(tabIndex)
         _uiState.update {
-            it.copy(tabIndex = index.coerceIn(0, STUDIO_TABS.lastIndex), sourceIndex = 0, zone = StudioZone.TABS)
+            it.copy(
+                tabIndex = tabIndex, sourceIndex = 0, zone = StudioZone.TABS,
+                gridColumns = capacity?.columns ?: it.gridColumns,
+                gridRows = capacity?.rows ?: it.gridRows,
+            )
         }
         landOnAvailableSource()
         // The query persists across categories: a title the user corrected once should not have
@@ -777,10 +851,23 @@ class ArtworkStudioViewModel @Inject constructor(
      */
     private var matchGeneration: Long = 0
 
-    /** Drops any in-flight match resolution — used when a confirmed match makes it moot. */
+    /**
+     * Drops any in-flight match resolution — used when a confirmed match makes it moot. Clears the
+     * resolving flag too: the dropped resolution never lands to clear it, and the match row checks
+     * that flag first, so it would keep saying "Matching…" over a confirmed match.
+     */
     private fun invalidateMatch() {
         matchGeneration++
+        _uiState.update { it.copy(matchResolving = false) }
     }
+
+    /**
+     * The Change Match picker's running search. It is cancelled, not just ignored, when the user
+     * moves past it: ScreenScraper serves this account one request at a time, so on device a typed
+     * search waited behind two older ones for the only slot. It is also kept apart from the match
+     * resolution's token, which it once shared, leaving the row on "Matching…".
+     */
+    private var changeMatchJob: kotlinx.coroutines.Job? = null
 
     /**
      * Resolves who the active source thinks this game is, then re-browses if the answer changed
@@ -795,7 +882,7 @@ class ArtworkStudioViewModel @Inject constructor(
         val provider = providerFor(sourcesForTab().getOrNull(state.sourceIndex))
         if (provider == null) {
             invalidateMatch()
-            _uiState.update { it.copy(match = null, matchProvider = null, matchResolving = false) }
+            _uiState.update { it.copy(match = null, matchProvider = null, matchResolving = false, matchFailed = false) }
             return
         }
         val existing = state.match
@@ -805,16 +892,18 @@ class ArtworkStudioViewModel @Inject constructor(
         }
 
         val token = ++matchGeneration
-        _uiState.update { it.copy(matchProvider = provider, matchResolving = true, match = null) }
+        _uiState.update { it.copy(matchProvider = provider, matchResolving = true, match = null, matchFailed = false) }
         viewModelScope.launch {
-            val resolved = runCatching { matcher.resolve(game, provider, state.query) }
+            val outcome = runCatching { matcher.resolve(game, provider, state.query) }
                 .onFailure { Timber.w(it, "Match resolution failed for %s", provider) }
-                .getOrNull()
             // Same two-check reducer discipline as showPage: a superseded answer is dropped, not
             // reconciled.
             if (token != matchGeneration) return@launch
+            val resolved = outcome.getOrNull()
             val changed = resolved?.matchKey != _uiState.value.match?.matchKey
-            _uiState.update { it.copy(match = resolved, matchResolving = false) }
+            // A provider that didn't answer is said as such, never as "no match": the failure is not
+            // remembered, so the next resolution or a Change Match search asks again.
+            _uiState.update { it.copy(match = resolved, matchResolving = false, matchFailed = outcome.isFailure) }
             if (changed) loadResults()
         }
     }
@@ -867,13 +956,19 @@ class ArtworkStudioViewModel @Inject constructor(
     fun onChangeMatchDraftChanged(text: String) =
         _uiState.update { it.copy(changeMatchDraft = text.take(MAX_QUERY_LENGTH)) }
 
-    fun cancelChangeMatch() = _uiState.update {
-        it.copy(
-            changeMatchOpen = false,
-            changeMatchResults = emptyList(),
-            changeMatchIndex = -1,
-            changeMatchEditing = false,
-        )
+    fun cancelChangeMatch() {
+        changeMatchJob?.cancel()
+        _uiState.update {
+            it.copy(
+                changeMatchOpen = false,
+                changeMatchResults = emptyList(),
+                changeMatchIndex = -1,
+                changeMatchEditing = false,
+                changeMatchLoading = false,
+                changeMatchSearchingEveryPlatform = false,
+                changeMatchError = null,
+            )
+        }
     }
 
     /** Select (or Square) on the query field: the screen focuses it and opens the keyboard. */
@@ -888,38 +983,75 @@ class ArtworkStudioViewModel @Inject constructor(
         it.copy(changeMatchIndex = (it.changeMatchIndex + delta).coerceIn(-1, it.changeMatchResults.lastIndex))
     }
 
-    /** Runs the picker's own search. Submit-only, like the artwork query — never per keystroke. */
+    /**
+     * Runs the picker's own search. Submit-only, like the artwork query — never per keystroke.
+     * A new submit cancels the search before it.
+     */
     fun submitChangeMatch() {
         val state = _uiState.value
         val provider = state.matchProvider ?: return
         val game = state.game ?: return
         val query = state.changeMatchDraft.trim().ifBlank { gameTitle() }
-        val token = ++matchGeneration
+        changeMatchJob?.cancel()
         _uiState.update {
-            it.copy(changeMatchLoading = true, changeMatchResults = emptyList(), changeMatchIndex = -1, changeMatchEditing = false)
+            it.copy(
+                changeMatchLoading = true, changeMatchResults = emptyList(), changeMatchIndex = -1,
+                changeMatchEditing = false, changeMatchAcrossPlatforms = false,
+                changeMatchSearchingEveryPlatform = false, changeMatchError = null,
+            )
         }
-        viewModelScope.launch {
-            val results = runCatching { matchEvidenceSearch(provider, query, game.platformId) }
-                .onFailure { Timber.w(it, "Change Match search failed") }
-                .getOrDefault(emptyList())
-            if (token != matchGeneration) return@launch
+        changeMatchJob = viewModelScope.launch {
+            val outcome = runCatching { changeMatchCandidates(provider, query, game.platformId) }
+            // A cancelled search is not an answer: a newer search, or the closed picker, owns the
+            // picker's state now.
+            ensureActive()
+            outcome.onFailure { Timber.w(it, "Change Match search failed") }
+            val (results, acrossPlatforms) = outcome.getOrDefault(emptyList<GameCandidate>() to false)
             // The cursor lands on the first candidate, so A confirms the top hit straight away; with
             // nothing found it stays on the field, where A edits the title instead.
             _uiState.update {
                 it.copy(
                     changeMatchLoading = false,
+                    changeMatchSearchingEveryPlatform = false,
                     changeMatchResults = results,
+                    changeMatchAcrossPlatforms = acrossPlatforms,
+                    // A failure is said as one, never shown as "No games found". It is not
+                    // remembered, so Search asks again.
+                    changeMatchError = outcome.exceptionOrNull()
+                        ?.let { "${provider.label} didn't answer. Press Search to try again." },
                     changeMatchIndex = if (results.isEmpty()) -1 else 0,
                 )
             }
         }
     }
 
-    private suspend fun matchEvidenceSearch(
+    /**
+     * The picker's candidates, and whether they include other platforms.
+     *
+     * Every search is remembered for this open (see [titleSearches]), so the same title again is
+     * instant, and one still running is shared rather than sent twice.
+     *
+     * Only ScreenScraper widens, and only here, where the user picks and every candidate names its
+     * system; the matcher never does. For a Windows game the platform search has found nothing, so
+     * the picker asks every platform straight away, the game's own first. Elsewhere it widens only
+     * when the platform search comes back empty.
+     */
+    private suspend fun changeMatchCandidates(
         provider: MatchProvider,
         query: String,
         platformId: String,
-    ): List<GameCandidate> = matchEvidence.searchByTitle(provider, query, platformId)
+    ): Pair<List<GameCandidate>, Boolean> {
+        if (provider != MatchProvider.SCREENSCRAPER) return titleSearches.searchByTitle(provider, query, platformId) to false
+        if (!matchEvidence.searchesEveryPlatformFirst(provider, platformId)) {
+            val onPlatform = titleSearches.searchByTitle(provider, query, platformId)
+            if (onPlatform.isNotEmpty()) return onPlatform to false
+        }
+        _uiState.update { it.copy(changeMatchSearchingEveryPlatform = true) }
+        val everyPlatform = titleSearches.remember(provider, query, scope = "every-platform:$platformId") {
+            matchEvidence.searchScreenScraperOnAnyPlatform(query, preferredPlatformId = platformId)
+        }
+        return everyPlatform to everyPlatform.isNotEmpty()
+    }
 
     /**
      * Accepts one candidate as THE match for the active provider.
@@ -932,12 +1064,14 @@ class ArtworkStudioViewModel @Inject constructor(
         val state = _uiState.value
         val provider = state.matchProvider ?: return
         val candidate = state.changeMatchResults.getOrNull(index) ?: return
+        changeMatchJob?.cancel()
         invalidateMatch()
         _uiState.update {
             it.copy(
                 // Tier 1 is exactly what this becomes: the id is about to be written to the game
                 // row, so the next resolve reads it straight back as a saved provider id.
                 match = GameMatch(candidate, MatchTier.SAVED_PROVIDER_ID, userConfirmed = true),
+                matchFailed = false,
                 changeMatchOpen = false,
                 changeMatchResults = emptyList(),
                 changeMatchIndex = 0,
@@ -1030,7 +1164,7 @@ class ArtworkStudioViewModel @Inject constructor(
     private fun goToPage(index: Int) {
         val key = activeKey ?: return
         val all = activeResults()
-        if (index < 0 || index * PAGE_SIZE >= all.size) return
+        if (index < 0 || index * _uiState.value.pageSize >= all.size) return
         showPage(all, index, key, generation)
     }
 
@@ -1565,13 +1699,13 @@ class ArtworkStudioViewModel @Inject constructor(
                 StudioZone.GRID    ->
                     if (s.gridIndex < s.results.lastIndex) _uiState.update { it.copy(gridIndex = s.gridIndex + 1) }
             }
-            GamepadAction.NAVIGATE_UP -> if (s.zone == StudioZone.GRID && s.gridIndex >= STUDIO_GRID_COLUMNS) {
-                _uiState.update { it.copy(gridIndex = s.gridIndex - STUDIO_GRID_COLUMNS) }
+            GamepadAction.NAVIGATE_UP -> if (s.zone == StudioZone.GRID && s.gridIndex >= s.gridColumns) {
+                _uiState.update { it.copy(gridIndex = s.gridIndex - s.gridColumns) }
             }
             GamepadAction.NAVIGATE_DOWN -> if (s.zone == StudioZone.GRID &&
-                s.gridIndex + STUDIO_GRID_COLUMNS <= s.results.lastIndex
+                s.gridIndex + s.gridColumns <= s.results.lastIndex
             ) {
-                _uiState.update { it.copy(gridIndex = s.gridIndex + STUDIO_GRID_COLUMNS) }
+                _uiState.update { it.copy(gridIndex = s.gridIndex + s.gridColumns) }
             }
             GamepadAction.PREV_CATEGORY -> when (s.zone) {   // LB
                 StudioZone.TABS    -> cycleTab(-1)

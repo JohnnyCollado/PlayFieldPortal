@@ -9,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -27,7 +28,6 @@ import androidx.compose.foundation.lazy.itemsIndexed as lazyItemsIndexed
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -80,6 +80,10 @@ import com.playfieldportal.core.ui.components.ControllerPromptBar
 import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.menuCursorEdge
+
+// The gap between grid tiles. Must equal StudioGridCapacity's GAP_DP, or the tiles drawn here stop
+// matching the capacity the ViewModel paged for.
+private val STUDIO_GRID_GAP = 8.dp
 
 /**
  * Fullscreen Artwork Studio — controller-first artwork browser/editor for one game.
@@ -295,8 +299,8 @@ fun ArtworkStudioScreen(
                         )
                     }
                     // Grid paging pills — shown only when the grid actually has more than a page.
-                    if (state.totalResults > 20) {
-                        val hasMore = state.page * 20 + state.results.size < state.totalResults
+                    if (state.totalResults > state.pageSize) {
+                        val hasMore = state.page * state.pageSize + state.results.size < state.totalResults
                         Spacer(Modifier.height(8.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(
@@ -426,6 +430,7 @@ fun ArtworkStudioScreen(
                                 when {
                                     state.matchResolving -> "Matching on ${state.matchProvider?.label}…"
                                     matched != null      -> "Matched as $matched"
+                                    state.matchFailed    -> "${state.matchProvider?.label} didn't answer"
                                     // A dead end is stated plainly rather than left blank — it is
                                     // the exact case Change Match exists to rescue.
                                     else                 -> "No ${state.matchProvider?.label} match"
@@ -481,72 +486,97 @@ fun ArtworkStudioScreen(
                     }
                     Spacer(Modifier.height(8.dp))
 
-                    val activeSource = viewModel.sourcesForTab().getOrNull(state.sourceIndex)
-                    when {
-                        // Skeleton tiles, not a bare spinner: the grid keeps its shape while an
-                        // uncached page loads, so a source switch never flashes an empty panel.
-                        state.resultsLoading -> LazyVerticalGrid(
-                            columns = GridCells.Fixed(STUDIO_GRID_COLUMNS),
-                            modifier = Modifier.fillMaxSize(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            userScrollEnabled = false,
-                        ) {
-                            items(state.skeletonCount) {
-                                Box(
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .height(84.dp)
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(Color.White.copy(alpha = 0.06f)),
-                                )
-                            }
+                    // ── Grid slot ─────────────────────────────────────────────
+                    // Whatever height is left belongs to the grid. Its measured size decides how many
+                    // tiles one page holds (AD-17); the ViewModel hears about it only when it changes.
+                    BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
+                        val slotWidth = maxWidth
+                        val slotHeight = maxHeight
+                        LaunchedEffect(slotWidth, slotHeight) {
+                            viewModel.onGridMeasured(slotWidth.value, slotHeight.value)
                         }
-                        activeSource == StudioSource.LOCAL -> Box(
-                            Modifier
-                                .fillMaxSize()
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(Color.White.copy(alpha = 0.05f))
-                                .clickable(onClick = viewModel::requestLocalPick),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                "Press Confirm to choose a file from this device",
-                                color = Color.White.copy(alpha = 0.6f), fontSize = 13.sp,
-                            )
-                        }
-                        state.results.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text(
-                                if (activeSource == StudioSource.SCREENSCRAPER)
-                                    "ScreenScraper has nothing of this type for this game"
-                                else "No results",
-                                color = Color.White.copy(alpha = 0.45f), fontSize = 12.sp,
-                            )
-                        }
-                        else -> {
-                            val gridState = rememberLazyGridState()
-                            LaunchedEffect(state.gridIndex, state.zone) {
-                                if (state.zone == StudioZone.GRID && state.results.isNotEmpty()) {
-                                    gridState.animateScrollToItem(state.gridIndex.coerceIn(0, state.results.lastIndex))
+                        val columns = state.gridColumns
+                        val rows = state.gridRows
+                        // The tab's true aspect at the measured width, so art is judged in the shape it is
+                        // used at. Capped at an even share of the height: the row clamp can keep one row
+                        // taller than a short slot, and the first frame still draws the unmeasured 4 × 5.
+                        val tileWidth = (slotWidth - STUDIO_GRID_GAP * (columns - 1)) / columns
+                        val tileHeight = maxOf(
+                            0.dp,
+                            minOf(
+                                tileWidth / STUDIO_TABS[state.tabIndex].tileClass.aspect.toFloat(),
+                                (slotHeight - STUDIO_GRID_GAP * (rows - 1)) / rows,
+                            ),
+                        )
+
+                        val activeSource = viewModel.sourcesForTab().getOrNull(state.sourceIndex)
+                        when {
+                            // Skeleton tiles, not a bare spinner: the grid keeps its shape while an
+                            // uncached page loads, so a source switch never flashes an empty panel.
+                            state.resultsLoading -> LazyVerticalGrid(
+                                columns = GridCells.Fixed(columns),
+                                modifier = Modifier.fillMaxSize(),
+                                horizontalArrangement = Arrangement.spacedBy(STUDIO_GRID_GAP),
+                                verticalArrangement = Arrangement.spacedBy(STUDIO_GRID_GAP),
+                                userScrollEnabled = false,
+                            ) {
+                                items(state.skeletonCount) {
+                                    Box(
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .height(tileHeight)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(Color.White.copy(alpha = 0.06f)),
+                                    )
                                 }
                             }
-                            // Touch long-press toggles a tile's live video preview; controller
-                            // focus previews automatically (one player at a time, ever).
-                            var touchPreviewIndex by remember(state.results) { mutableStateOf(-1) }
-                            LazyVerticalGrid(
-                                state = gridState,
-                                columns = GridCells.Fixed(STUDIO_GRID_COLUMNS),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                verticalArrangement = Arrangement.spacedBy(10.dp),
+                            activeSource == StudioSource.LOCAL -> Box(
+                                Modifier
+                                    .fillMaxSize()
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(Color.White.copy(alpha = 0.05f))
+                                    .clickable(onClick = viewModel::requestLocalPick),
+                                contentAlignment = Alignment.Center,
                             ) {
-                                itemsIndexed(state.results) { index, art ->
-                                    val focused = state.zone == StudioZone.GRID && state.gridIndex == index
-                                    val previewing = art.isVideo && (focused || touchPreviewIndex == index)
-                                    Column {
+                                Text(
+                                    "Press Confirm to choose a file from this device",
+                                    color = Color.White.copy(alpha = 0.6f), fontSize = 13.sp,
+                                )
+                            }
+                            state.results.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text(
+                                    when {
+                                        activeSource != StudioSource.SCREENSCRAPER -> "No results"
+                                        // ScreenScraper art is fetched per game, so with no match there
+                                        // was nothing to ask for, which is not the same as having none.
+                                        state.matchResolving -> "Looking for this game on ScreenScraper…"
+                                        state.matchFailed    -> "ScreenScraper didn't answer. Use Change Match to search again."
+                                        state.match == null  -> "No ScreenScraper match for this game. Use Change Match to pick one."
+                                        else                 -> "ScreenScraper has nothing of this type for this game"
+                                    },
+                                    color = Color.White.copy(alpha = 0.45f), fontSize = 12.sp,
+                                )
+                            }
+                            else -> {
+                                // Touch long-press toggles a tile's live video preview; controller
+                                // focus previews automatically (one player at a time, ever).
+                                var touchPreviewIndex by remember(state.results) { mutableStateOf(-1) }
+                                // A page is exactly one gridful that fits the slot, so there is nothing to
+                                // scroll to: the focused tile is always on screen (AD-5).
+                                LazyVerticalGrid(
+                                    columns = GridCells.Fixed(columns),
+                                    modifier = Modifier.fillMaxSize(),
+                                    horizontalArrangement = Arrangement.spacedBy(STUDIO_GRID_GAP),
+                                    verticalArrangement = Arrangement.spacedBy(STUDIO_GRID_GAP),
+                                    userScrollEnabled = false,
+                                ) {
+                                    itemsIndexed(state.results) { index, art ->
+                                        val focused = state.zone == StudioZone.GRID && state.gridIndex == index
+                                        val previewing = art.isVideo && (focused || touchPreviewIndex == index)
                                         Box(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .height(92.dp)
+                                                .height(tileHeight)
                                                 .clip(RoundedCornerShape(8.dp))
                                                 .background(Color(0xFF10101A))
                                                 .border(
@@ -585,12 +615,24 @@ fun ArtworkStudioScreen(
                                                     modifier = Modifier.fillMaxSize(),
                                                 )
                                             }
-                                        }
-                                        art.label?.let {
-                                            Text(
-                                                it, color = Color.White.copy(alpha = 0.4f), fontSize = 9.sp,
-                                                maxLines = 1, overflow = TextOverflow.Ellipsis,
-                                            )
+                                            // Over the art, not under it: a line below each tile would
+                                            // push the last row out of the slot. Hidden while a video
+                                            // plays so it never covers the preview.
+                                            if (!previewing) art.label?.let {
+                                                Text(
+                                                    it, color = Color.White.copy(alpha = 0.85f), fontSize = 9.sp,
+                                                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                                    modifier = Modifier
+                                                        .align(Alignment.BottomStart)
+                                                        .fillMaxWidth()
+                                                        .background(
+                                                            Brush.verticalGradient(
+                                                                listOf(Color.Transparent, Color.Black.copy(alpha = 0.55f)),
+                                                            ),
+                                                        )
+                                                        .padding(horizontal = 5.dp, vertical = 3.dp),
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -834,10 +876,25 @@ fun ArtworkStudioScreen(
                             .onFocusChanged { if (it.isFocused && !editing) viewModel.startChangeMatchEdit() },
                     )
                     Spacer(Modifier.height(12.dp))
+                    // A cross-platform list is offered, never assumed: another release's artwork may
+                    // not be what this game uses, so say where the list came from.
+                    if (state.changeMatchAcrossPlatforms && !state.changeMatchLoading) {
+                        Text(
+                            "Includes other platforms. Check the platform before you pick.",
+                            color = Color(0xFFE0A030), fontSize = 11.sp,
+                        )
+                        Spacer(Modifier.height(8.dp))
+                    }
                     when {
                         state.changeMatchLoading -> Text(
-                            "Searching…",
+                            if (state.changeMatchSearchingEveryPlatform)
+                                "Searching every platform. ScreenScraper can take about 10 seconds…"
+                            else "Searching…",
                             color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp,
+                        )
+                        state.changeMatchError != null -> Text(
+                            state.changeMatchError.orEmpty(),
+                            color = Color(0xFFE0A030), fontSize = 12.sp,
                         )
                         state.changeMatchResults.isEmpty() -> Text(
                             "No games found. Try a shorter title, or the title without its edition.",
@@ -861,12 +918,21 @@ fun ArtworkStudioScreen(
                                         color = Color.White, fontSize = 13.sp,
                                         modifier = Modifier.weight(1f),
                                     )
-                                    candidate.releaseYear?.let {
-                                        Text(
-                                            it.toString(),
-                                            color = Color.White.copy(alpha = 0.45f), fontSize = 11.sp,
-                                        )
-                                    }
+                                    // Which release this is, and whether it has art of its own: once the list
+                                    // spans every platform, a release with none is a dead end to confirm.
+                                    listOfNotNull(
+                                        candidate.platformName,
+                                        candidate.releaseYear?.toString(),
+                                        candidate.gameArtCount?.let { if (it == 0) "no media" else "$it media" },
+                                    )
+                                        .joinToString(" · ")
+                                        .takeIf { it.isNotEmpty() }
+                                        ?.let {
+                                            Text(
+                                                it,
+                                                color = Color.White.copy(alpha = 0.45f), fontSize = 11.sp,
+                                            )
+                                        }
                                 }
                             }
                         }

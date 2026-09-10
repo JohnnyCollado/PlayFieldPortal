@@ -303,7 +303,7 @@ Note: there is **zero existing coverage** for `ArtworkStudioViewModel`, the crop
 | 6.2 | Live final-result preview for ICON0, box art and physical media from the same crop state | 6.1 | READY |
 | 6.3 | Per-game/category profile override persisted in the shipped `crop_profile_key` column, with Reset to Platform Default | 6.1 | READY |
 | 6.4 | Session Undo Last Apply over metadata, artwork replacement, ordering and crop | 3.2, 5.4, 6.2 | READY |
-| L.1 | Measured grid capacity in the ViewModel: a pure `StudioGridCapacity` plus per-tab tile class replaces the fixed 4×5 constants; re-paging keeps the focused result (AD-17) | None | READY |
+| L.1 | Measured grid capacity in the ViewModel: a pure `StudioGridCapacity` plus per-tab tile class replaces the fixed 4×5 constants; re-paging keeps the focused result (AD-17) | None | DONE |
 | L.2 | Render exactly one measured page: the grid slot reports its size and draws `gridColumns` × `gridRows` with no scrolling | L.1 | READY |
 | L.3 | Title line and flat tabs: search joins the header, breadcrumb trail and SEARCH label go, eleven compact chips with LB/RB glyphs | None | READY |
 | L.4 | Current-artwork rail: 150 dp (200 dp at ≥1000 dp wide), caption moved in, true-aspect thumbnail, Y hint | L.3 | READY |
@@ -315,8 +315,11 @@ Note: there is **zero existing coverage** for `ArtworkStudioViewModel`, the crop
 
 **Merges 1–3 landed (Phases 0–3, plus 5.0).** Tasks `0.1`–`0.6`, `1.1`–`1.4`, `5.0`, `2.1`–`2.3`
 and `3.1`–`3.2` are implemented on `artwork-revisions` (`0677011`, `49ae052`). Phases 2–6 were
-replanned after Merge 1, as promised; that replan is below. Task `2.4` landed next. Next up: the Studio
-layout rework (`L.1`–`L.6`), then Merge 4.
+replanned after Merge 1, as promised; that replan is below. Task `2.4` landed next (`40fc03e`), and
+`L.1` is done (uncommitted at the time of writing; the Studio unit tests pass, 74 across
+`StudioGridCapacityTest`, `ArtworkStudioViewModelTest` and `StudioSearchTest`). `STUDIO_GRID_COLUMNS`
+survives `L.1` as the screen's constant only, since the ViewModel pages from `gridColumns` × `gridRows`;
+`L.2` deletes it. Next up: `L.2`–`L.6`, then Merge 4.
 
 ### What landed, and the decisions taken while landing it
 
@@ -576,7 +579,8 @@ Two defects, both from earlier merges:
     `supportsTitleSearch` is now true for **every** provider. A title-matched ScreenScraper game is
     browsed by id through `SsMediaCatalog.mediasFor(gameId, matchedSsId)`, which caches its medias
     but never writes that id to the row: only a ROM identity or a confirmed Change Match sets
-    `ss_id`. Cost: an unmatched game spends one `jeuRecherche` request per Studio open.
+    `ss_id`. Cost: an unmatched game spends one `jeuRecherche` request per Studio open. *(Wrong in practice:
+    it was one per match resolution. See "ScreenScraper Change Match dead end".)*
 - **A cancelled browse was cached as "No results"** (a Phase 1 race-safety hole). `IgdbApi` caught
   `Exception` and the ViewModel's `runCatching` wrappers caught everything, so a source switch
   mid-load turned the `CancellationException` into an empty list — and `loadResults` then stored it
@@ -693,6 +697,70 @@ task in this plan, so they are recorded here instead of silently widening one.
 Tests: 2.4's four controller tests and four source-visibility tests in `ArtworkStudioViewModelTest`,
 `CursorAfterRefreshTest`, and a revision case in `ArtworkImageCacheTest`. All pass. Not yet checked
 on device: the rename cursor, and a portable-folder art apply refreshing the XMB tile.
+
+## ScreenScraper Change Match dead end (2026-09-10)
+
+**Found on device** with a Windows install of Tactics Ogre. Every ScreenScraper name search went out
+with `systemeid=138` (PC Windows) and came back HTTP 200, and no `jeuInfos` ever followed: nothing
+matched. The Windows-scoped search most likely finds nothing because ScreenScraper files the game
+under its console releases (response bodies are not logged, so this is inferred). Every way out ran
+that same search: the row said no match, the grid said ScreenScraper had nothing, and Change Match
+said "No games found" whatever was typed. The log also showed ten identical searches in four minutes,
+because the matcher searched again on every source switch, tab switch and search.
+
+Fixes (user-approved; implemented, not yet built or verified on device):
+- **Change Match widens, for ScreenScraper only.** When the platform search is empty the picker
+  searches every system (`ProviderMatchEvidence.searchScreenScraperOnAnyPlatform`), shows each hit's
+  system, and says the list spans every platform. The matcher never widens: an automatic
+  cross-platform match would be a guess. A picked id is browsed by `gameid`, which needs no system.
+- **Title searches are remembered per Studio open** (`CachingMatchEvidence`), empty answers
+  included, since providers report failures as empty. A picker search always asks again and
+  refreshes the entry.
+- **The picker has its own request token.** Sharing the matcher's left the row on "Matching…" when
+  the picker opened mid-resolution; confirming a match mid-resolution now clears the flag too.
+- **The ScreenScraper empty grid says why:** still looking, no match (use Change Match), or no media
+  of this type.
+- **`ScreenScraperApi.searchGames` logs its hit count**, as the SteamGridDB client already does.
+
+Not done: TheGamesDB's search is platform-scoped the same way and can reach the same dead end.
+
+**Device result (same day): the widening did not work.** The Windows search was confirmed empty
+(`→ 0 hits`). The all-platforms search for "Tactics Ogre" hit the 15 s socket timeout and was shown
+as "No games found"; for "Tactics Ogre Reborn" it answered after 13 s with 0 hits. The unit tests
+stayed green because they mock `ProviderMatchEvidence` and use a hand-written `jeuRecherche`
+fixture, so they never saw a real body, a slow reply or a failure. The same timeout's warning also
+printed both ScreenScraper passwords to logcat: the debug `DebugTree` was not redacted.
+Next, in order (user-approved 2026-09-10): (1) ground truth — the user checks screenscraper.fr, and
+debug builds save each redacted `jeuRecherche` body to `cache/ss-captures/` for a real fixture;
+(2) logcat now goes through `LogRedaction` (which also gained Steam `key` and IGDB `client_id`, and
+no longer blanks the app's own `ssId=` lines). Then: failure distinct from "no hits", tests over
+`ktor-client-mock` with the captured body, and keep or remove the widening based on (1).
+
+**Captured, second device run:** parsing works on real bodies. "Tactics Ogre: Reborn" across every
+platform returns one hit (PS5, id 478505); "Tactics Ogre" returns nine, including Switch "Tactics
+Ogre - Reborn". The account allows one request at a time (`maxthreads` 1), a Windows-scoped search
+takes 3–4 s and has found nothing for any title, and an every-platform search takes 9–11 s of
+ScreenScraper's own time whatever the body size. Most of the wait users saw was queueing: old picker
+searches were never cancelled and held the single slot. **Search optimizations** (user-approved;
+implemented, not yet built or verified): a new submit, closing the picker or confirming cancels the
+running search; every title search, every-platform included, is remembered per open and shared while
+in flight, and a failure (now `SsSearchFailedException`) is never remembered and shows as an error,
+not "No games found"; a Windows game's picker asks every platform once, Windows hits first; the
+picker says when it is on the slow every-platform search. Tests now parse three real captured
+bodies.
+
+**Resolved: the PS5 entry's "104 media" were never artwork.** In the captured nine-hit body every one
+of 478505's media has `parent` `editeur`, `developpeur`, `genre`, `classification`, `joueurs` or `note`
+(publisher, genre and rating pictograms: `pictoliste`, `pictomonochrome`, `pictocouleur`), and none
+has `parent: jeu`. ScreenScraper has no game art for the PS5 release, so "nothing of this type" was
+correct; `SsMediaSelection` picks by type and never shows pictograms. The Switch release (425726)
+carries the box, screenshot and title art (37 `parent: jeu` media). No `jeuInfos` capture was on the
+device, so the installed build likely predates that capture. Also found: the captures redacted URL
+credentials but not `ssuser.id`, the account name, inside the JSON; captures now drop `ssuser` and
+`header.commandRequested` before writing (`ScreenScraperApi.scrubCapture`). Follow-ups (user-approved,
+not yet built): a failed automatic match says the provider didn't answer (`matchFailed`) instead of
+"no match", and each Change Match candidate shows how many media of its own (`parent: jeu`) its
+release has, so a release with no art reads "no media" before it is confirmed.
 
 ## Studio layout rework: target mockup (2026-09-10)
 
