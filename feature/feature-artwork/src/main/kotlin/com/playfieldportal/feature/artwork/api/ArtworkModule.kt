@@ -11,7 +11,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import io.ktor.client.HttpClient
-import io.ktor.client.engine.android.Android
+import io.ktor.client.engine.okhttp.OkHttp
 import com.playfieldportal.feature.artwork.BuildConfig
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.LogLevel
@@ -22,6 +22,7 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import okio.Path.Companion.toOkioPath
 import timber.log.Timber
+import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
 // ScreenScraper authenticates via query parameters, so a logged request line would expose the
@@ -35,9 +36,12 @@ internal fun redactSecretQueryParams(message: String): String =
 @InstallIn(SingletonComponent::class)
 object ArtworkModule {
 
+    // OkHttp engine, not Android's: cancelling a browse while its body is still downloading used
+    // to abort through the Android engine's HttpURLConnection stream, which threw from
+    // Job.cancel() on the main thread. OkHttp cancels via Call.cancel(), which is thread-safe.
     @Provides
     @Singleton
-    fun provideHttpClient(): HttpClient = HttpClient(Android) {
+    fun provideHttpClient(): HttpClient = HttpClient(OkHttp) {
         expectSuccess = false
         install(ContentNegotiation) {
             json(Json {
@@ -56,8 +60,16 @@ object ArtworkModule {
             sanitizeHeader { header -> header.equals(HttpHeaders.Authorization, ignoreCase = true) }
         }
         engine {
-            connectTimeout = 15_000
-            socketTimeout  = 15_000
+            // OkHttp's engine config has no connectTimeout/socketTimeout properties (unlike the
+            // Android engine's), so the same 15 s ceiling is set on the OkHttp client builder.
+            // config {} appends to Ktor's defaults, which already keep OkHttp's own redirect
+            // handling off (HttpRedirect drives that) and retryOnConnectionFailure on.
+            config {
+                connectTimeout(15, TimeUnit.SECONDS)
+                // The read timeout is the socket-inactivity equivalent of the Android engine's
+                // socketTimeout: ScreenScraper's single request slot is freed by a failed request.
+                readTimeout(15, TimeUnit.SECONDS)
+            }
         }
     }
 

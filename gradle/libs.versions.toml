@@ -29,6 +29,12 @@ splashscreen            = "1.2.0"
 accompanist             = "0.37.3"
 media3                  = "1.11.0"
 zxing                   = "3.5.4"
+# OkHttp is never declared directly: it arrives transitively through Coil's network fetcher,
+# Retrofit (Steam) and ktor-client-okhttp, which resolves it to 5.3.2. The version is pinned here
+# only so the one OkHttp artifact that would otherwise stay on 4.12.0 — RetroAchievements'
+# logging-interceptor — moves with the rest of the stack instead of calling 5.x internals it
+# was not built against.
+okhttp                          = "5.3.2"
 browser                 = "1.10.0"
 # Frozen artifact: the Compose BOM stopped managing it and upstream ships no further updates.
 # Successor is Material Symbols vector resources; pinned explicitly until that migration happens.
@@ -109,7 +115,16 @@ zxing-core                      = { group = "com.google.zxing",       name = "co
 androidx-browser                = { group = "androidx.browser",       name = "browser",                     version.ref = "browser" }
 
 # Ktor (networking)
-ktor-client-android             = { group = "io.ktor",                name = "ktor-client-android",         version.ref = "ktor" }
+# The OkHttp engine, not the Android one: Ktor's Android engine aborts a request by closing its
+# HttpURLConnection stream from whichever thread called cancel(). Cancelling a browse mid-download
+# (a source switch, a Change Match submit, the ViewModel scope being cleared) therefore threw
+# "Unbalanced enter/exit" out of Job.cancel() on the main thread and killed the app. The OkHttp
+# engine cancels through Call.cancel(), which is safe from any thread.
+#
+# This pulls com.squareup.okhttp3:okhttp 5.3.2 (and okio 3.17.0) app-wide over the 4.12.0 that
+# Coil and Retrofit previously resolved. Pinning back to 4.12.0 is not possible: Ktor 3.5.2's
+# Protocol.fromOkHttp() references Protocol.HTTP_3, which only exists in OkHttp 5.
+ktor-client-okhttp              = { group = "io.ktor",                name = "ktor-client-okhttp",          version.ref = "ktor" }
 ktor-client-content-negotiation = { group = "io.ktor",                name = "ktor-client-content-negotiation", version.ref = "ktor" }
 ktor-serialization-json         = { group = "io.ktor",                name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
 ktor-client-logging             = { group = "io.ktor",                name = "ktor-client-logging",         version.ref = "ktor" }
@@ -118,6 +133,7 @@ ktor-client-mock                = { group = "io.ktor",                name = "kt
 # Retrofit (Steam Web API client in feature-achievements' provider/steam island). The
 # kotlinx-serialization converter keeps our own DTOs on kotlinx, matching the rest of the app.
 retrofit                        = { group = "com.squareup.retrofit2",  name = "retrofit",                    version.ref = "retrofit" }
+okhttp-logging-interceptor      = { group = "com.squareup.okhttp3",     name = "logging-interceptor",         version.ref = "okhttp" }
 retrofit-kotlinx-serialization  = { group = "com.squareup.retrofit2",  name = "converter-kotlinx-serialization", version.ref = "retrofit" }
 
 # RetroAchievements official Kotlin client (Retrofit/OkHttp/Gson under the hood; JitPack).
@@ -160,7 +176,7 @@ work-testing                    = { group = "androidx.work",               name 
 
 [bundles]
 compose                 = ["compose-ui", "compose-ui-tooling-preview", "compose-material3", "compose-animation", "compose-foundation", "compose-graphics"]
-ktor                    = ["ktor-client-android", "ktor-client-content-negotiation", "ktor-serialization-json", "ktor-client-logging"]
+ktor                    = ["ktor-client-okhttp", "ktor-client-content-negotiation", "ktor-serialization-json", "ktor-client-logging"]
 lifecycle               = ["lifecycle-viewmodel-compose", "lifecycle-runtime-compose"]
 test-unit               = ["junit", "kotlin-test-junit", "mockk", "kotlinx-coroutines-test", "turbine"]
 test-android            = ["junit", "kotlin-test-junit", "mockk-android", "kotlinx-coroutines-test", "turbine", "robolectric", "androidx-test-core"]

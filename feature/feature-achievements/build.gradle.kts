@@ -47,6 +47,11 @@ dependencies {
     // Official RetroAchievements Kotlin client. Pulls Retrofit/OkHttp/Gson transitively; kept
     // strictly inside the provider/retro island (RaRemoteDataSource). Never used outside it.
     implementation(libs.retroachievements.api)
+    // api-kotlin 2.0.0 requests logging-interceptor 4.12.0, which calls OkHttp internals that the
+    // rest of the app no longer resolves to (ktor-client-okhttp 3.5.2 lifts OkHttp to 5.3.2).
+    // Its only use is the `debugging = true` branch RaClientFactory keeps off, but a 4.x
+    // interceptor against a 5.x core is a NoSuchMethodError waiting for whoever flips that flag.
+    implementation(libs.okhttp.logging.interceptor)
 
     implementation(project(":core:core-common"))
     implementation(project(":core:core-ui")) // BackgroundTaskNotifier for the import worker

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,6 +22,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -51,6 +53,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -76,6 +79,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.ui.components.ControllerPrompt
 import com.playfieldportal.core.ui.components.ControllerPromptBar
 import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.theme.LocalPFPColors
@@ -84,6 +88,10 @@ import com.playfieldportal.core.ui.theme.menuCursorEdge
 // The gap between grid tiles. Must equal StudioGridCapacity's GAP_DP, or the tiles drawn here stop
 // matching the capacity the ViewModel paged for.
 private val STUDIO_GRID_GAP = 8.dp
+
+// AD-19: the Current rail widens on a large window. Every other band is fixed in dp (AD-16), so a
+// bigger screen spends its extra width on grid columns, not on chrome.
+private const val STUDIO_WIDE_WINDOW_DP = 1000
 
 /**
  * Fullscreen Artwork Studio — controller-first artwork browser/editor for one game.
@@ -151,114 +159,186 @@ fun ArtworkStudioScreen(
     ) {
         Column(Modifier.fillMaxSize().padding(horizontal = 26.dp, vertical = 14.dp)) {
 
-            // ── Header — the shared breadcrumb every detail menu uses. The back arrow walks the
-            // level ladder exactly like the B button (grid → sources → categories → close), and
-            // the subtitle spells out where you are in it.
-            DetailBreadcrumb(
-                title = state.game?.displayTitle ?: "Artwork Studio",
-                subtitle = buildString {
-                    append("Artwork Studio")
-                    if (state.zone != StudioZone.TABS) append("  ›  ${STUDIO_TABS[state.tabIndex].label}")
-                    if (state.zone == StudioZone.GRID) {
-                        viewModel.sourcesForTab().getOrNull(state.sourceIndex)?.let { append("  ›  ${it.label}") }
-                    }
-                },
-                onBack = { viewModel.handleGamepadAction(GamepadAction.BACK) },
-            )
-
-            // ── Search (X / tap) — the query the providers are actually asked for ──
-            // Editable and non-destructive: it never renames the game, and Reset puts the game's
-            // own title back. Submit-only, so no provider is hit per keystroke.
+            // ── Header row (36 dp) — back, game title, and the query the providers are asked for ──
+            // Studio-local rather than the shared DetailBreadcrumb: this row carries a trailing
+            // query field (L.3), and the breadcrumb's "Artwork Studio › category › source" trail
+            // is what the approved mock replaces with flat tabs. The back arrow still walks the
+            // level ladder exactly like B (grid → sources → categories → close).
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                modifier = Modifier.fillMaxWidth().height(36.dp),
             ) {
-                Text(
-                    "SEARCH",
-                    color = Color.White.copy(alpha = 0.35f), fontSize = 9.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(end = 8.dp),
-                )
-                Text(
-                    state.query.ifBlank { "—" },
-                    color = if (state.queryIsCustom) accent else Color.White.copy(alpha = 0.75f),
-                    fontSize = 12.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.clickable { viewModel.handleGamepadAction(GamepadAction.BACK) },
+                ) {
+                    Text(
+                        "◀",
+                        color = Color.White.copy(alpha = 0.55f),
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(end = 12.dp),
+                    )
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text(
+                            state.game?.displayTitle ?: "Artwork Studio",
+                            color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold,
+                            maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.widthIn(max = 320.dp),
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            buildString {
+                                append("Artwork Studio")
+                                state.game?.platformId?.takeIf { it.isNotBlank() }
+                                    ?.let { append(" · ${it.uppercase()}") }
+                            },
+                            color = Color.White.copy(alpha = 0.55f), fontSize = 11.sp,
+                            maxLines = 1,
+                        )
+                    }
+                }
+                Spacer(Modifier.weight(1f))
+                // ── Query field (Square / tap) — the query the providers are actually asked for ──
+                // Editable and non-destructive: it never renames the game, and Reset puts the
+                // game's own title back. Submit-only, so no provider is hit per keystroke.
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
-                        .weight(1f, fill = false)
-                        .clip(RoundedCornerShape(7.dp))
-                        .background(Color.White.copy(alpha = 0.06f))
+                        .widthIn(max = 300.dp)
+                        .height(28.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.White.copy(alpha = 0.10f))
                         .border(
                             1.dp,
                             if (state.queryIsCustom) accent.copy(alpha = 0.6f) else Color.Transparent,
-                            RoundedCornerShape(7.dp),
+                            RoundedCornerShape(8.dp),
                         )
                         .clickable(onClick = viewModel::openSearch)
-                        .padding(horizontal = 10.dp, vertical = 5.dp),
-                )
-                if (state.queryIsCustom) {
-                    Text(
-                        "Reset",
-                        color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp,
-                        modifier = Modifier
-                            .padding(start = 8.dp)
-                            .clip(RoundedCornerShape(7.dp))
-                            .clickable(onClick = viewModel::resetSearchToTitle)
-                            .padding(horizontal = 8.dp, vertical = 5.dp),
+                        .padding(horizontal = 10.dp),
+                ) {
+                    // The glyph follows the user's controller, which is why it is drawn through
+                    // the same mapping table the input handler reads.
+                    ControllerPrompt(
+                        action = GamepadAction.CHANGE_SORT,
+                        label = "",
+                        glyphSize = 13.dp,
+                        labelColor = Color.White.copy(alpha = 0.45f),
                     )
+                    Text(
+                        state.query.ifBlank { "—" },
+                        color = if (state.queryIsCustom) accent else Color.White.copy(alpha = 0.92f),
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false).padding(start = 4.dp),
+                    )
+                    Spacer(Modifier.weight(1f))
+                    if (state.queryIsCustom) {
+                        Text(
+                            "Reset",
+                            color = Color.White.copy(alpha = 0.6f), fontSize = 10.sp,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .clickable(onClick = viewModel::resetSearchToTitle)
+                                .padding(horizontal = 6.dp, vertical = 3.dp),
+                        )
+                    } else {
+                        Text(
+                            "game title",
+                            color = Color.White.copy(alpha = 0.45f), fontSize = 9.sp,
+                        )
+                    }
                 }
             }
 
-            // ── Destination tabs (LB/RB) — scrollable, selected tab kept in view ──
+            // ── Destination tabs (AD-18: flat, one press apart) — the LB/RB glyphs sit at both
+            // ends of the scrolling chip row, so a narrower screen keeps the selected chip visible.
+
             val tabListState = rememberLazyListState()
             LaunchedEffect(state.tabIndex) { tabListState.animateScrollToItem(state.tabIndex) }
-            LazyRow(
-                state = tabListState,
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().height(28.dp),
             ) {
-                lazyItemsIndexed(STUDIO_TABS) { index, tab ->
-                    val selected = state.tabIndex == index
-                    val focusedZone = state.zone == StudioZone.TABS && selected
-                    Text(
-                        tab.label,
-                        color = if (selected) Color.White else Color.White.copy(alpha = 0.5f),
-                        fontSize = 12.sp,
-                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(if (selected) accent.copy(alpha = 0.28f) else Color.White.copy(alpha = 0.06f))
-                            .border(
-                                1.dp,
-                                if (focusedZone) accent else Color.Transparent,
-                                RoundedCornerShape(8.dp),
+                ControllerPrompt(
+                    action = GamepadAction.PREV_CATEGORY,
+                    label = "",
+                    glyphSize = 14.dp,
+                    labelColor = Color.White.copy(alpha = 0.45f),
+                    modifier = Modifier.padding(end = 6.dp),
+                )
+                LazyRow(
+                    state = tabListState,
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    lazyItemsIndexed(STUDIO_TABS) { index, tab ->
+                        val selected = state.tabIndex == index
+                        val focusedZone = state.zone == StudioZone.TABS && selected
+                        Box(
+                            modifier = Modifier
+                                .height(24.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(if (selected) accent.copy(alpha = 0.28f) else Color.White.copy(alpha = 0.07f))
+                                .border(
+                                    1.dp,
+                                    if (focusedZone) accent else Color.Transparent,
+                                    RoundedCornerShape(6.dp),
+                                )
+                                .clickable { viewModel.selectTab(index) }
+                                .padding(horizontal = 8.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                tab.label,
+                                color = if (selected) Color.White else Color.White.copy(alpha = 0.62f),
+                                fontSize = 10.5.sp,
+                                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+                                maxLines = 1,
                             )
-                            .clickable { viewModel.selectTab(index) }
-                            .padding(horizontal = 12.dp, vertical = 7.dp),
-                    )
+                        }
+                    }
                 }
+                ControllerPrompt(
+                    action = GamepadAction.NEXT_CATEGORY,
+                    label = "",
+                    glyphSize = 14.dp,
+                    labelColor = Color.White.copy(alpha = 0.45f),
+                    modifier = Modifier.padding(start = 6.dp),
+                )
             }
-            Text(
-                STUDIO_TABS[state.tabIndex].contract,
-                color = Color.White.copy(alpha = 0.45f),
-                fontSize = 10.sp,
-                modifier = Modifier.padding(top = 4.dp, bottom = 8.dp),
-            )
+
+            // L.4: the tab's contract caption moved into the rail, so the tabs band is one line.
+            // The wide-window rail width is read once here rather than re-derived inside the rail.
+            val railWidth =
+                if (LocalConfiguration.current.screenWidthDp >= STUDIO_WIDE_WINDOW_DP) 200.dp else 150.dp
 
             Row(Modifier.weight(1f)) {
 
-                // ── Current artwork panel ─────────────────────────────────────
-                Column(Modifier.width(230.dp).fillMaxHeight()) {
-                    Text("CURRENT", color = Color.White.copy(alpha = 0.55f), fontSize = 10.sp)
+                // ── Current artwork rail (AD-19: narrow on a handheld, wider on a tablet) ──
+                Column(Modifier.width(railWidth).fillMaxHeight()) {
+                    // The category and its display rule both live here now, so the header and tab
+                    // bands stay one line each (AD-16).
+                    Text(
+                        STUDIO_TABS[state.tabIndex].label,
+                        color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        STUDIO_TABS[state.tabIndex].contract,
+                        color = Color.White.copy(alpha = 0.55f), fontSize = 9.5.sp,
+                    )
                     Spacer(Modifier.height(6.dp))
+                    // The thumbnail is drawn in the ACTIVE TAB's tile shape rather than a fixed
+                    // 150 dp box, so the preview is judged the way the grid judges it. (The
+                    // mockup's 144×80 is ICON0's own crop target, which is that tab's data, not
+                    // its tile shape.)
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(150.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(Color(0xFF10101A))
-                            .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(10.dp)),
+                            .aspectRatio(STUDIO_TABS[state.tabIndex].tileClass.aspect.toFloat())
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(Color(0xFF080E1E).copy(alpha = 0.55f))
+                            .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(6.dp)),
                         contentAlignment = Alignment.Center,
                     ) {
                         val curKindName = STUDIO_TABS[state.tabIndex].kind.name
@@ -284,20 +364,20 @@ fun ArtworkStudioScreen(
                             else -> Text("No artwork set", color = Color.White.copy(alpha = 0.4f), fontSize = 12.sp)
                         }
                     }
-                    Spacer(Modifier.height(8.dp))
-                    if (state.currentUri != null) {
-                        Text(
-                            "Ⓨ  ·  OPTIONS",
-                            color = Color.White.copy(alpha = 0.7f),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(accent.copy(alpha = 0.18f))
-                                .clickable(onClick = viewModel::openActions)
-                                .padding(horizontal = 10.dp, vertical = 6.dp),
-                        )
-                    }
+                    Spacer(Modifier.height(6.dp))
+                    // The Y hint replaces the old "Ⓨ · OPTIONS" pill: same tap target, but the glyph
+                    // is resolved from the live bindings, so it follows the user's controller.
+                    ControllerPrompt(
+                        action = GamepadAction.OPEN_CONTEXT_MENU,
+                        label = "Crop, restore, clear",
+                        glyphSize = 13.dp,
+                        labelColor = Color.White.copy(alpha = 0.6f),
+                        labelStyle = TextStyle(fontSize = 9.5.sp),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .clickable(onClick = viewModel::openActions)
+                            .padding(vertical = 4.dp),
+                    )
                     // Grid paging pills — shown only when the grid actually has more than a page.
                     if (state.totalResults > state.pageSize) {
                         val hasMore = state.page * state.pageSize + state.results.size < state.totalResults

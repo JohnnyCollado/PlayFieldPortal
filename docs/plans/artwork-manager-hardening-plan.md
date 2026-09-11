@@ -304,9 +304,9 @@ Note: there is **zero existing coverage** for `ArtworkStudioViewModel`, the crop
 | 6.3 | Per-game/category profile override persisted in the shipped `crop_profile_key` column, with Reset to Platform Default | 6.1 | READY |
 | 6.4 | Session Undo Last Apply over metadata, artwork replacement, ordering and crop | 3.2, 5.4, 6.2 | READY |
 | L.1 | Measured grid capacity in the ViewModel: a pure `StudioGridCapacity` plus per-tab tile class replaces the fixed 4×5 constants; re-paging keeps the focused result (AD-17) | None | DONE |
-| L.2 | Render exactly one measured page: the grid slot reports its size and draws `gridColumns` × `gridRows` with no scrolling | L.1 | READY |
-| L.3 | Title line and flat tabs: search joins the header, breadcrumb trail and SEARCH label go, eleven compact chips with LB/RB glyphs | None | READY |
-| L.4 | Current-artwork rail: 150 dp (200 dp at ≥1000 dp wide), caption moved in, true-aspect thumbnail, Y hint | L.3 | READY |
+| L.2 | Render exactly one measured page: the grid slot reports its size and draws `gridColumns` × `gridRows` with no scrolling | L.1 | DONE |
+| L.3 | Title line and flat tabs: search joins the header, breadcrumb trail and SEARCH label go, eleven compact chips with LB/RB glyphs | None | DONE (uncommitted) |
+| L.4 | Current-artwork rail: 150 dp (200 dp at ≥1000 dp wide), caption moved in, true-aspect thumbnail, Y hint | L.3 | DONE (uncommitted) |
 | L.5 | Sources row, match line, page line and prompt bar: NSFW becomes a START badge, PREV/NEXT move under the grid, prompts drop to four | L.2, L.4 | READY |
 | L.6 | Verify the layout on the Thor and at least two other screen sizes against the capacity table | L.5 | READY |
 | 7.1 | Adopt B2's `ScrapeFailure` for inline provider errors with Retry / Choose Another Source | B2 typed-reasons slice | BLOCKED |
@@ -316,10 +316,12 @@ Note: there is **zero existing coverage** for `ArtworkStudioViewModel`, the crop
 **Merges 1–3 landed (Phases 0–3, plus 5.0).** Tasks `0.1`–`0.6`, `1.1`–`1.4`, `5.0`, `2.1`–`2.3`
 and `3.1`–`3.2` are implemented on `artwork-revisions` (`0677011`, `49ae052`). Phases 2–6 were
 replanned after Merge 1, as promised; that replan is below. Task `2.4` landed next (`40fc03e`), and
-`L.1` is done (uncommitted at the time of writing; the Studio unit tests pass, 74 across
-`StudioGridCapacityTest`, `ArtworkStudioViewModelTest` and `StudioSearchTest`). `STUDIO_GRID_COLUMNS`
-survives `L.1` as the screen's constant only, since the ViewModel pages from `gridColumns` × `gridRows`;
-`L.2` deletes it. Next up: `L.2`–`L.6`, then Merge 4.
+`L.1` is done, and `L.2` landed with it (`4f162ed`, which also carries the ScreenScraper search
+rework): the screen measures the grid slot and draws exactly one measured page with
+`userScrollEnabled = false`, `STUDIO_GRID_COLUMNS` is gone, and the paging pills read the
+ViewModel's page size instead of a hardcoded `20`. L.1's Studio tests still pass, 74 across
+`StudioGridCapacityTest`, `ArtworkStudioViewModelTest` and `StudioSearchTest`. `L.3` is implemented
+and uncommitted at the time of writing. Next up: `L.4`–`L.6`, then Merge 4.
 
 ### What landed, and the decisions taken while landing it
 
@@ -433,6 +435,12 @@ merge independently reviewable:
   client-side (AD-3), a page is never individually uncached — only a whole request key is.
 - The manual on-device checks in Verification Strategy have not been run: the rapid-source-switch
   repro, a Windows game's storefront match, and the ICON0 live crop.
+- `L.2`, `L.3` and `L.4` are built and unit-tested but have never been seen on the Thor, and every
+  one of their acceptance criteria is visual: one measured gridful with the D-pad cursor always on
+  screen, eleven chips visible at 833 dp inside a 36 dp header, and a rail that matches the mockup
+  with nothing clipped. `L.6` is the task that checks them across screen sizes; until then the chip
+  row has only an arithmetic argument behind it (11 chips at 10.5 sp plus 16 dp of padding and ten
+  4 dp gaps is roughly 680 dp of the Thor's 833 dp of width).
 
 ## Merge 2 landed (5.0, 2.1, 2.2, 2.3)
 
@@ -762,6 +770,50 @@ not yet built): a failed automatic match says the provider didn't answer (`match
 "no match", and each Change Match candidate shows how many media of its own (`parent: jeu`) its
 release has, so a release with no art reads "no media" before it is confirmed.
 
+## The browse-cancel crash: both Ktor clients moved to OkHttp (2026-09-10)
+
+**Found on device, not by a test.** Cancelling a browse while its response body was still
+downloading killed the app, and the exception came back out of `Job.cancel()` on the main thread —
+so it was never one call site but *every* cancel path: the browse cancel, the new Change Match
+cancel (which lands mid-download on a 10 s every-platform search), and the ViewModel's scope being
+cleared on close.
+
+**Cause, read out of Ktor 3.5.2's own sources rather than inferred.** `attachToUserJob` passes a
+cancel to the request's job and then to the body reader (`RawSourceChannel`), whose cancel handler
+calls `source.close()` with no try/catch, on the thread that called `cancel()`. With
+`HttpClient(Android)` that source is the platform's `HttpURLConnection` stream, and closing it from
+the main thread while the IO thread is still reading it throws from inside the platform's
+networking stack. No unit test could see it: they mock the network layer, so no response body is
+ever downloaded and then cancelled.
+
+**Fix: both Ktor clients use the OkHttp engine** (`ArtworkModule.kt`, `DiscordNetworkModule.kt` —
+Discord's device-grant polling is cancellable too). `ktor-client-okhttp` 3.5.2 cancels through
+`callContext[Job]!!.invokeOnCompletion { call.cancel() }` — `Call.cancel()`, documented as safe
+from any thread — instead of a blocking stream close. OkHttp's engine config has no
+`connectTimeout`/`socketTimeout` properties (unlike the Android engine's), so the 15 s ceiling
+moved into `engine { config { connectTimeout(...); readTimeout(...) } }`. The engine's
+`error("OkHttpClient can't be constructed because HttpTimeout plugin is not installed")` line is
+dead code rather than a trap: `createLRUCache`'s `get()` memoizes through its supplier, so
+`HttpTimeout` never has to be installed for the engine to build a client.
+
+**Cost, checked against the actual resolution rather than the POM in isolation.** The engine lifts
+`com.squareup.okhttp3:okhttp` from 4.12.0 to 5.3.2 app-wide — Coil's network fetcher (every artwork
+image) and Retrofit (Steam) included — and `logging-interceptor`, which only RetroAchievements'
+api-kotlin asks for and only at 4.12.0, is pinned to 5.3.2 in the version catalog so the one
+artifact that would otherwise stay behind cannot call 5.x internals it was not built against.
+Pinning OkHttp back to 4.12.0 is not an option: Ktor 3.5.2's `Protocol.fromOkHttp()` references
+`Protocol.HTTP_3`, which does not exist before OkHttp 5 (`NoSuchFieldError` at class init).
+
+**Not verified:** ktor-client-okhttp was not in the Gradle cache, so its cancel path was read from
+the 3.5.2 tag on GitHub instead of from the artifact that will ship, and nobody has run the new
+engine on a device yet. The repro is one run: switch source while a ScreenScraper page is loading,
+and re-submit a Change Match search during the every-platform wait. That same run should confirm
+Coil image loading and Steam requests still behave on OkHttp 5.
+
+**Rejected:** wrapping our own `cancel()` calls in try/catch. It covers the call sites this feature
+owns, not the ViewModel's scope being cleared on close, and it leaves the half-closed connection
+behind for the next canceller to trip over.
+
 ## Studio layout rework: target mockup (2026-09-10)
 
 **Target:** [`docs/mockups/artwork_studio_layout.html`](../mockups/artwork_studio_layout.html), with flat
@@ -976,6 +1028,36 @@ before editing.
 Every task: **if blocked** (missing architecture, unexpected coupling, a needed out-of-scope change),
 stop and report what was attempted, what blocked it, which file caused it and what decision is needed
 (`PLANNING_WORKFLOW.md` §4).
+
+### Landed: L.1–L.4 (2026-09-10)
+
+`L.1` and `L.2` are part of `4f162ed`; `L.3` and `L.4` are uncommitted at the time of writing.
+Decisions taken while landing the last two:
+
+- **The header is Studio-local, not `DetailBreadcrumb`.** The shared breadcrumb pads 16 dp vertically
+  and has no trailing slot, and adding one would have changed a component four other detail screens
+  use. The Studio's row carries the query field itself, and the trail it used to print
+  ("Artwork Studio › category › source") is exactly what the flat tabs replace.
+- **The platform in the subtitle is `platformId.uppercase()`, not the platform row's `name`.** It
+  matches the mockup's "Artwork Studio · PSP", and it adds no dependency to the ViewModel —
+  `platformDao` is not one of its constructor arguments today.
+- **The LB/RB glyphs are `ControllerPrompt`s for `PREV_CATEGORY`/`NEXT_CATEGORY`,** so they follow
+  the user's controller exactly as the footer prompts do, and a chip row that overflows still
+  scrolls to the selected chip.
+- **The rail thumbnail uses the tab's `StudioTileClass.aspect`, not the mockup's 144:80.** 144:80 is
+  ICON0's own crop target — that tab's data — while the rail previews in the shape the grid judges
+  the same art in, which is what this task asked for. Cost: on ICON0 the rail thumbnail is a little
+  wider than the drawing shows.
+- **The Y hint is unconditional and replaced the "Ⓨ · OPTIONS" pill,** which only appeared once a
+  slot had artwork. The mockup draws the hint beside "No artwork set", it is the rail's half of the
+  footer's always-present `options` prompt, and `openActions()` still decides for itself whether
+  anything can open.
+- **`railWidth` reads `LocalConfiguration.current.screenWidthDp`, i.e. the window,** which is what
+  AD-19 is stated against and what the worked examples assume. Deriving it from the rail's parent
+  would have measured the window minus the screen's 26 dp of side padding, moving the threshold.
+
+Still open from this group: `L.5` and `L.6`, and no part of `L.2`–`L.4` has yet been seen on a
+screen.
 
 ## Deferred to a follow-up plan
 

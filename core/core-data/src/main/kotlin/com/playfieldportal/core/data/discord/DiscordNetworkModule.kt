@@ -5,7 +5,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import io.ktor.client.HttpClient
-import io.ktor.client.engine.android.Android
+import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
@@ -25,10 +25,13 @@ annotation class DiscordHttpClient
 @InstallIn(SingletonComponent::class)
 object DiscordNetworkModule {
 
+    // OkHttp engine, not Android's: device-grant polling is cancellable too (leaving the screen
+    // mid-login cancels the poll), and the Android engine's cancel path closes its
+    // HttpURLConnection stream from the calling thread, which throws on a mid-read cancel.
     @Provides
     @Singleton
     @DiscordHttpClient
-    fun provideDiscordHttpClient(): HttpClient = HttpClient(Android) {
+    fun provideDiscordHttpClient(): HttpClient = HttpClient(OkHttp) {
         // Fail-soft on non-2xx: the device grant uses 400 + { "error": ... } for pending/slow_down,
         // which we inspect by hand rather than treating as thrown failures.
         expectSuccess = false
