@@ -26,10 +26,12 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import timber.log.Timber
 import java.io.File
 import java.io.IOException
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.cancellation.CancellationException
@@ -80,6 +82,7 @@ class SsSearchFailedException(message: String, cause: Throwable? = null) : Excep
 data class SsUser(
     val id: String? = null,
     @SerialName("maxthreads")        val maxThreads: String? = null,
+    @SerialName("maxrequestspermin") val maxRequestsPerMinute: String? = null,
     @SerialName("requeststoday")     val requestsToday: String? = null,
     @SerialName("maxrequestsperday") val maxRequestsPerDay: String? = null,
 )
@@ -238,10 +241,14 @@ class ScreenScraperApi @Inject constructor(
 ) {
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
-    // Single-flight + 1.1 s spacing: ScreenScraper enforces per-account thread and per-minute
-    // limits; serializing our requests keeps a batch scrape inside the free-account allowance.
+    // Single-flight + spacing: ScreenScraper enforces per-account thread and per-minute limits.
+    // The mutex keeps to the one thread an account has (maxthreads 1); starts at least
+    // [requestIntervalMs] apart keep to the per-minute limit, with 1.1 s as the floor.
     private val requestGate = Mutex()
-    private var lastRequestAt = 0L
+    private var lastRequestStartedAt = 0L
+
+    // The account's `maxrequestspermin`, from the latest response that carried one. Null until then.
+    @Volatile private var maxRequestsPerMinute: Int? = null
 
     /** True once the user has supplied a developer account. Reads storage, hence suspend. */
     suspend fun isEnabled(): Boolean = credentials.screenScraperNow() != null
@@ -286,7 +293,7 @@ class ScreenScraperApi @Inject constructor(
         }
 
         return try {
-            val response: HttpResponse = rateLimited { httpClient.get("$BASE/jeuInfos.php") {
+            val response: HttpResponse = rateLimited("jeuInfos") { httpClient.get("$BASE/jeuInfos.php") {
                 credentialParams(creds)
                 if (ssGameId != null) {
                     parameter("gameid", ssGameId)
@@ -308,6 +315,7 @@ class ScreenScraperApi @Inject constructor(
             // Parse from text — SS serves error strings with 200s often enough that a typed
             // body{} call would turn quota messages into opaque parse crashes.
             val bodyText = response.bodyAsText()
+            logAccountLimitsOnce(bodyText)
             captureBodyInDebug("jeuInfos-${ssGameId ?: slugOf(rom?.fileName ?: "rom")}", bodyText)
             val parsed = runCatching { json.decodeFromString(SsResponse.serializer(), bodyText) }
                 .getOrElse { e ->
@@ -320,6 +328,7 @@ class ScreenScraperApi @Inject constructor(
                 }
 
             val quota = parsed.response?.user
+            rememberRequestLimit(quota)
             val game  = parsed.response?.game
             if (game == null) {
                 return SsLookupResult(null, diag.copy(
@@ -357,7 +366,7 @@ class ScreenScraperApi @Inject constructor(
         if (title.isBlank()) return emptyList()
         val systemId = platformId?.let { PLATFORM_IDS[it] }
         val (status, body) = try {
-            rateLimited { httpClient.get("$BASE/jeuRecherche.php") {
+            rateLimited("jeuRecherche") { httpClient.get("$BASE/jeuRecherche.php") {
                 credentialParams(creds)
                 parameter("recherche", title)
                 systemId?.let { parameter("systemeid", it) }
@@ -376,9 +385,12 @@ class ScreenScraperApi @Inject constructor(
             Timber.w("ScreenScraper search: $detail for '$title' (platform=$platformId)")
             throw SsSearchFailedException(detail)
         }
+        logAccountLimitsOnce(body)
         captureBodyInDebug("jeuRecherche-${systemId ?: "any"}-${slugOf(title)}", body)
-        val hits = parseSearch(body)
+        val parsed = decodeSearch(body)
             ?: throw SsSearchFailedException("ScreenScraper answered with an error instead of results")
+        rememberRequestLimit(parsed.response?.user)
+        val hits = hitsOf(parsed)
         Timber.d("ScreenScraper search '$title' (system ${systemId ?: "any"}) → ${hits.size} hits")
         return hits
     }
@@ -413,13 +425,15 @@ class ScreenScraperApi @Inject constructor(
      * ScreenScraper serves error messages as plain text, often with HTTP 200. Pure, so parsing is
      * testable without a network.
      */
-    internal fun parseSearch(body: String): List<SsSearchHit>? {
-        val parsed = runCatching { json.decodeFromString(SsSearchResponse.serializer(), body) }
-            .getOrElse {
-                Timber.w("ScreenScraper search: non-JSON body '${body.take(160)}'")
-                return null
-            }
-        return parsed.response?.games.orEmpty().mapNotNull { game ->
+    internal fun parseSearch(body: String): List<SsSearchHit>? = decodeSearch(body)?.let(::hitsOf)
+
+    private fun decodeSearch(body: String): SsSearchResponse? =
+        runCatching { json.decodeFromString(SsSearchResponse.serializer(), body) }
+            .onFailure { Timber.w("ScreenScraper search: non-JSON body '${body.take(160)}'") }
+            .getOrNull()
+
+    private fun hitsOf(parsed: SsSearchResponse): List<SsSearchHit> =
+        parsed.response?.games.orEmpty().mapNotNull { game ->
             val info = game.toInfo()
             val id = info.ssId ?: return@mapNotNull null
             val title = info.title?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
@@ -432,12 +446,11 @@ class ScreenScraperApi @Inject constructor(
                 gameArtCount = game.medias.count { it.parent == "jeu" },
             )
         }
-    }
 
     /** Validates user credentials via ssuserInfos.php; returns the quota block, or null. */
     suspend fun fetchUserInfo(username: String, password: String): SsUser? = runCatching {
         val creds = credentials.screenScraperNow() ?: return null
-        val response = rateLimited { httpClient.get("$BASE/ssuserInfos.php") {
+        val response = rateLimited("ssuserInfos") { httpClient.get("$BASE/ssuserInfos.php") {
             // The account being tested is the one passed in, not the stored one.
             credentialParams(creds.copy(userId = username, userPassword = password))
         } }
@@ -462,14 +475,49 @@ class ScreenScraperApi @Inject constructor(
         }
     }
 
-    private suspend fun <T> rateLimited(block: suspend () -> T): T = requestGate.withLock {
-        val wait = MIN_REQUEST_INTERVAL_MS - (System.currentTimeMillis() - lastRequestAt)
-        if (wait > 0) delay(wait)
-        try {
-            block()
-        } finally {
-            lastRequestAt = System.currentTimeMillis()
+    /**
+     * Runs [block] through the single-flight gate, starting it no sooner than the account's
+     * interval after the previous request STARTED. Spacing from the previous request's end made a
+     * request wait 1.1 s even after a 10 s search had already used up far more than the interval.
+     *
+     * Logs, per [endpoint], how long the request waited — queued behind another request for the
+     * lock, then spaced — and how long ScreenScraper took, so queueing can be told apart from
+     * server time on a device.
+     */
+    private suspend fun <T> rateLimited(endpoint: String, block: suspend () -> T): T {
+        val askedAt = System.currentTimeMillis()
+        return requestGate.withLock {
+            val lockedAt = System.currentTimeMillis()
+            val wait = waitBeforeNextRequest(lockedAt, lastRequestStartedAt, requestIntervalMs(maxRequestsPerMinute))
+            if (wait > 0) delay(wait)
+            val startedAt = System.currentTimeMillis()
+            lastRequestStartedAt = startedAt
+            try {
+                block()
+            } finally {
+                Timber.d(
+                    "ScreenScraper gate %s: waited %d ms (queued %d, spaced %d), request %d ms",
+                    endpoint, startedAt - askedAt, lockedAt - askedAt, startedAt - lockedAt,
+                    System.currentTimeMillis() - startedAt,
+                )
+            }
         }
+    }
+
+    /** Keeps the account's per-minute limit from a response's `ssuser` block, when it has one. */
+    private fun rememberRequestLimit(user: SsUser?) {
+        user?.maxRequestsPerMinute?.toIntOrNull()?.let { maxRequestsPerMinute = it }
+    }
+
+    /**
+     * Logs the account's numeric limits the first time a response carries them. The field that
+     * holds the per-minute limit has not been confirmed on a real body, so every numeric field is
+     * logged rather than a guessed name. A body with no `ssuser` block does not use up the one log.
+     */
+    private fun logAccountLimitsOnce(body: String) {
+        if (accountLimitsLogged.get()) return
+        val limits = accountLimits(body) ?: return
+        if (accountLimitsLogged.compareAndSet(false, true)) Timber.d("ScreenScraper account limits: %s", limits)
     }
 
     private fun failureForStatus(status: Int): Pair<SsFailureReason, String>? = when (status) {
@@ -561,6 +609,41 @@ class ScreenScraperApi @Inject constructor(
         private const val BASE = "https://api.screenscraper.fr/api2"
         private const val MIN_REQUEST_INTERVAL_MS = 1_100L
         private const val SEARCH_SOCKET_TIMEOUT_MS = 40_000L
+
+        /**
+         * The gap between request starts for an account allowed [maxRequestsPerMinute]: an even
+         * spread across the minute, never below [MIN_REQUEST_INTERVAL_MS]. A generous account is
+         * therefore never faster than 1.1 s apart, and a strict one never goes over its limit. An
+         * unknown or nonsensical limit keeps the floor.
+         */
+        internal fun requestIntervalMs(maxRequestsPerMinute: Int?): Long {
+            val perMinute = maxRequestsPerMinute?.takeIf { it > 0 } ?: return MIN_REQUEST_INTERVAL_MS
+            return maxOf(MIN_REQUEST_INTERVAL_MS, (60_000L + perMinute - 1) / perMinute)
+        }
+
+        /** How long a request must wait at [nowMs] when the previous one started at [lastStartMs]. */
+        internal fun waitBeforeNextRequest(nowMs: Long, lastStartMs: Long, intervalMs: Long): Long =
+            (intervalMs - (nowMs - lastStartMs)).coerceAtLeast(0L)
+
+        private val accountLimitsLogged = AtomicBoolean(false)
+
+        // `id` is the account name and `numid` its number; either one identifies the user.
+        private val ACCOUNT_IDENTIFIERS = setOf("id", "numid")
+
+        /**
+         * The numeric fields of [body]'s `response.ssuser` block, without the ones that identify the
+         * account. Null when the body has no such block (a plain-text error, or no account).
+         */
+        internal fun accountLimits(body: String): Map<String, String>? {
+            val root = runCatching { Json.parseToJsonElement(body) }.getOrNull() as? JsonObject ?: return null
+            val user = (root["response"] as? JsonObject)?.get("ssuser") as? JsonObject ?: return null
+            return user
+                .filterKeys { it !in ACCOUNT_IDENTIFIERS }
+                .mapNotNull { (key, value) ->
+                    (value as? JsonPrimitive)?.content?.takeIf { it.toLongOrNull() != null }?.let { key to it }
+                }
+                .toMap()
+        }
 
         private val NON_SLUG = Regex("[^a-z0-9]+")
         private const val MAX_CAPTURES = 20

@@ -4,6 +4,7 @@ import com.playfieldportal.feature.artwork.api.ScreenScraperApi
 import com.playfieldportal.feature.artwork.api.SsSearchFailedException
 import com.playfieldportal.feature.artwork.api.SsSearchHit
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -50,9 +51,29 @@ class ProviderMatchEvidenceScreenScraperTest {
     fun `a failed ScreenScraper search reaches the caller as a failure, not as no hits`() = runTest {
         coEvery { screenScraper.searchGames(any(), any()) } throws SsSearchFailedException("HTTP 429")
 
-        val result = runCatching { evidence.searchByTitle(MatchProvider.SCREENSCRAPER, "Tactics Ogre", "windows") }
+        val result = runCatching { evidence.searchByTitle(MatchProvider.SCREENSCRAPER, "Tactics Ogre", "psp") }
 
         assertTrue(result.exceptionOrNull() is SsSearchFailedException)
+    }
+
+    @Test
+    fun `ScreenScraper is never title-searched on a platform without ROM files`() = runTest {
+        coEvery { screenScraper.searchGames(any(), any()) } returns listOf(hit(9, systemId = 138, systemName = "PC Windows"))
+
+        val candidates = evidence.searchByTitle(MatchProvider.SCREENSCRAPER, "Tactics Ogre", "windows")
+
+        assertEquals(emptyList<GameCandidate>(), candidates)
+        coVerify(exactly = 0) { screenScraper.searchGames(any(), any()) }
+    }
+
+    @Test
+    fun `other platforms still search ScreenScraper by title`() = runTest {
+        coEvery { screenScraper.searchGames("psp", "Tactics Ogre") } returns listOf(hit(2293, systemId = 61, systemName = "PSP"))
+
+        val candidates = evidence.searchByTitle(MatchProvider.SCREENSCRAPER, "Tactics Ogre", "psp")
+
+        assertEquals(listOf("2293"), candidates.map { it.providerGameId })
+        coVerify(exactly = 1) { screenScraper.searchGames("psp", "Tactics Ogre") }
     }
 
     @Test

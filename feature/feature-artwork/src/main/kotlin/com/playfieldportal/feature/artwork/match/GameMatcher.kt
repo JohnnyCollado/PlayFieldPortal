@@ -102,11 +102,16 @@ class GameMatcher(private val evidence: MatchEvidenceSource) {
      *
      * [query] lets the Studio resolve against the user's edited search text instead of the game
      * row; it defaults to the game's own display title.
+     *
+     * [skipRomHash] skips the ROM checksum lookup of Tier 2 for a caller that has just asked the
+     * provider about this ROM with stronger evidence (ScreenScraper's catalog sends the checksum
+     * with the file name and size), so the same answer is not asked for twice.
      */
     suspend fun resolve(
         game: Game,
         provider: MatchProvider,
         query: String? = null,
+        skipRomHash: Boolean = false,
     ): GameMatch? {
         val capability = ProviderCapabilities[provider]
 
@@ -126,7 +131,7 @@ class GameMatcher(private val evidence: MatchEvidenceSource) {
 
         // ── Tier 2: a content identifier ───────────────────────────────────
         val crc = game.romCrc32?.trim()?.takeIf { it.isNotEmpty() }
-        if (capability.addressableByRomHash && crc != null) {
+        if (capability.addressableByRomHash && crc != null && !skipRomHash) {
             evidence.candidateByRomHash(provider, crc, game.platformId)?.let {
                 return GameMatch(it.copy(provider = provider), MatchTier.CONTENT_ID)
             }

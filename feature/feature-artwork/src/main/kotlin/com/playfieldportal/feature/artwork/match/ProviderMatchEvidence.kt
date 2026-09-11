@@ -93,6 +93,7 @@ class ProviderMatchEvidence @Inject constructor(
      *
      * A failed ScreenScraper search throws `SsSearchFailedException`, never an empty list, so it is
      * not remembered as "nothing found". The other providers still report failures as empty lists.
+     * ScreenScraper on a platform without ROM files answers an empty list without a request.
      */
     override suspend fun searchByTitle(
         provider: MatchProvider,
@@ -131,8 +132,13 @@ class ProviderMatchEvidence @Inject constructor(
                 releaseYear = game.releaseDate?.take(4)?.toIntOrNull(),
             )
         }
-        // The only route to a ScreenScraper identity for a game with no ROM file (a Windows install).
-        MatchProvider.SCREENSCRAPER -> screenScraper.searchGames(platformId, query).map(::ssCandidate)
+        // Not asked on a platform without ROM files (AD-23). ScreenScraper catalogues few of those
+        // releases: on device the Windows search found nothing for any title, and cost 3.5 s of the
+        // account's single request slot on every open. Change Match goes straight to
+        // [searchScreenScraperOnAnyPlatform] there, which is the way to a console release.
+        MatchProvider.SCREENSCRAPER ->
+            if (platformId in PLATFORMS_WITHOUT_ROMS) emptyList()
+            else screenScraper.searchGames(platformId, query).map(::ssCandidate)
     }
 
     /**

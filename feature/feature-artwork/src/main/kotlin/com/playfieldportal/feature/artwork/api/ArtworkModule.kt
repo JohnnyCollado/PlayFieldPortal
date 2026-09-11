@@ -14,6 +14,8 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.HttpTimeout
 import com.playfieldportal.feature.artwork.BuildConfig
+import com.playfieldportal.feature.artwork.match.FileTitleSearchStore
+import com.playfieldportal.feature.artwork.match.TitleSearchStore
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
@@ -77,6 +79,13 @@ object ArtworkModule {
             }
         }
     }
+
+    // Title searches kept between Artwork Studio opens (AD-21). In the cache, not filesDir: every
+    // entry can be asked for again, so the system is free to clear it.
+    @Provides
+    @Singleton
+    fun provideTitleSearchStore(@ApplicationContext context: Context): TitleSearchStore =
+        FileTitleSearchStore(context.cacheDir.resolve("match-searches"))
 
     @Provides
     @Singleton

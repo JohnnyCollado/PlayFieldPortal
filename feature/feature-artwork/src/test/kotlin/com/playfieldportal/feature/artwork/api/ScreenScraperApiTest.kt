@@ -98,6 +98,60 @@ class ScreenScraperApiTest {
         assertTrue(scrubbed.contains("\"478505\""))
     }
 
+    // ── Request spacing, start to start (task M.4) ───────────────────────────
+
+    @Test
+    fun `a request that took longer than the interval sends the next one at once`() {
+        // The previous request started at 0 and was a 10 s every-platform search.
+        assertEquals(0L, ScreenScraperApi.waitBeforeNextRequest(nowMs = 10_000, lastStartMs = 0, intervalMs = 1_100))
+    }
+
+    @Test
+    fun `back-to-back fast requests are spaced by the interval from their starts`() {
+        // A 300 ms request that started at 5 000: the next may start at 6 100, not 300 ms + 1.1 s later.
+        assertEquals(800L, ScreenScraperApi.waitBeforeNextRequest(nowMs = 5_300, lastStartMs = 5_000, intervalMs = 1_100))
+        // The very first request has nothing to wait for.
+        assertEquals(0L, ScreenScraperApi.waitBeforeNextRequest(nowMs = 5_300, lastStartMs = 0, intervalMs = 1_100))
+    }
+
+    @Test
+    fun `the interval never drops below 1_1 s`() {
+        // The account measured on device allows 3072 a minute: the floor holds.
+        assertEquals(1_100L, ScreenScraperApi.requestIntervalMs(3_072))
+        assertEquals(1_100L, ScreenScraperApi.requestIntervalMs(null))
+        assertEquals(1_100L, ScreenScraperApi.requestIntervalMs(0))
+        // A strict account is spread evenly across its minute, rounded up.
+        assertEquals(2_000L, ScreenScraperApi.requestIntervalMs(30))
+        assertEquals(1_429L, ScreenScraperApi.requestIntervalMs(42))
+    }
+
+    @Test
+    fun `the per-minute limit is read from the account block`() {
+        val user = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+            .decodeFromString(SsUser.serializer(), """{"id":"someone","maxthreads":"1","maxrequestspermin":"3072"}""")
+
+        assertEquals("3072", user.maxRequestsPerMinute)
+    }
+
+    @Test
+    fun `account limits keep the numeric fields and never the account name or number`() {
+        val body = """
+            {"response":{"ssuser":{"id":"someone","numid":"42","maxthreads":"1",
+             "maxrequestspermin":"20","favregion":"us"},"jeux":[]}}
+        """.trimIndent()
+
+        assertEquals(
+            mapOf("maxthreads" to "1", "maxrequestspermin" to "20"),
+            ScreenScraperApi.accountLimits(body),
+        )
+    }
+
+    @Test
+    fun `a body with no account block has no limits to log`() {
+        assertNull(ScreenScraperApi.accountLimits("API closed for non-registered members"))
+        assertNull(ScreenScraperApi.accountLimits("""{"response":{"jeux":[]}}"""))
+    }
+
     @Test
     fun `a plain-text body is captured as it is`() {
         assertEquals(

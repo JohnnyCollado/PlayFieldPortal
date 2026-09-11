@@ -8,7 +8,7 @@ import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * Remembers title searches for one Artwork Studio open, and shares any search still in flight.
+ * Remembers title searches, and shares any search still in flight.
  *
  * The matcher re-runs Tier 3 on every source switch, tab switch and search, and the picker searches
  * the same titles again. ScreenScraper serves this account one request at a time, about three
@@ -17,12 +17,16 @@ import java.util.concurrent.ConcurrentHashMap
  * later caller gets it from memory. Only title searches are remembered; the other lookups pass
  * straight through.
  *
- * A failure is never remembered. A provider that throws on failure (ScreenScraper) is asked again
- * next time. A provider that still reports a failure as an empty list is remembered as empty until
- * [clear], which the Studio calls on every open.
+ * Memory lasts one Studio open ([clear]). Behind it, [store] keeps answers between opens (AD-21):
+ * an answer with hits for [HITS_TTL_MS], and ScreenScraper's empty answer for [SCREENSCRAPER_EMPTY_TTL_MS].
+ * ScreenScraper throws when a search fails, so its empty answer is a real one, but a game it adds
+ * later should not stay hidden for a week. The other providers still report a failure as an empty
+ * list, so their empty answers are never kept, and a failure is never remembered anywhere.
  */
 class CachingMatchEvidence(
     private val delegate: MatchEvidenceSource,
+    private val store: TitleSearchStore,
+    private val now: () -> Long = System::currentTimeMillis,
 ) : MatchEvidenceSource by delegate {
 
     private val answers = ConcurrentHashMap<SearchKey, List<GameCandidate>>()
@@ -38,7 +42,7 @@ class CachingMatchEvidence(
     /**
      * [search]'s answer, asked at most once per [provider], [query] and [scope] once it succeeds.
      * [scope] names what the search covers: the platform id for [searchByTitle], or a label of the
-     * caller's own for a search this interface has no method for.
+     * caller's own for a search this interface has no method for. It is kept apart in [store] too.
      */
     suspend fun remember(
         provider: MatchProvider,
@@ -72,7 +76,7 @@ class CachingMatchEvidence(
         }
     }
 
-    /** Forgets every answer, so the next open asks the providers afresh. */
+    /** Forgets every answer in memory, so the next open asks afresh. What [store] keeps stays. */
     fun clear() = answers.clear()
 
     private suspend fun ask(
@@ -80,14 +84,16 @@ class CachingMatchEvidence(
         mine: CompletableDeferred<List<GameCandidate>>,
         search: suspend () -> List<GameCandidate>,
     ): List<GameCandidate> {
-        try {
-            val found = search()
+        val (found, fromProvider) = try {
+            // Callers arriving meanwhile wait on this slot, so they share the store read too.
+            val kept = store.read(key.provider, key.query, key.scope)?.takeIf { it.expiresAtMillis > now() }
+            val answer = kept?.candidates ?: search()
             // A cancelled search is not an answer: some provider clients turn the cancellation into
             // an empty list, which would otherwise be remembered as "no hits".
             currentCoroutineContext().ensureActive()
-            answers[key] = found
-            mine.complete(found)
-            return found
+            answers[key] = answer
+            mine.complete(answer)
+            answer to (kept == null)
         } catch (e: Throwable) {
             // Callers waiting on this search get the same failure; nothing is remembered.
             mine.completeExceptionally(e)
@@ -95,6 +101,18 @@ class CachingMatchEvidence(
         } finally {
             inFlight.remove(key, mine)
         }
+        if (fromProvider) keep(key, found)
+        return found
+    }
+
+    /** Hands a provider's answer to [store] when AD-21 says it is worth keeping. */
+    private suspend fun keep(key: SearchKey, found: List<GameCandidate>) {
+        val ttl = when {
+            found.isNotEmpty() -> HITS_TTL_MS
+            key.provider == MatchProvider.SCREENSCRAPER -> SCREENSCRAPER_EMPTY_TTL_MS
+            else -> return
+        }
+        store.write(key.provider, key.query, key.scope, StoredTitleSearch(found, now() + ttl))
     }
 
     private data class SearchKey(val provider: MatchProvider, val query: String, val scope: String) {
@@ -109,5 +127,10 @@ class CachingMatchEvidence(
                 scope = scope,
             )
         }
+    }
+
+    companion object {
+        const val HITS_TTL_MS = 7L * 24 * 60 * 60 * 1000
+        const val SCREENSCRAPER_EMPTY_TTL_MS = 24L * 60 * 60 * 1000
     }
 }

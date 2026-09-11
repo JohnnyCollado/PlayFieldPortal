@@ -8,6 +8,7 @@ import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.feature.artwork.api.SgdbApiKeyProvider
 import com.playfieldportal.feature.artwork.api.SgdbArtType
+import com.playfieldportal.feature.artwork.api.SsCachedMedia
 import com.playfieldportal.feature.artwork.api.SteamGridDbApi
 import com.playfieldportal.feature.artwork.match.CachingMatchEvidence
 import com.playfieldportal.feature.artwork.match.GameCandidate
@@ -24,6 +25,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -258,6 +264,13 @@ private val SS_TYPES_FOR_KIND: Map<ArtworkKind, List<String>> = mapOf(
 // offers an icon-slot snap, a PDF manual or a gameplay video. Listed but disabled there.
 private val NO_IMAGE_PROVIDER_KINDS = setOf(ArtworkKind.ICON1, ArtworkKind.MANUAL, ArtworkKind.VIDEO)
 
+// Resolved in the background when the Studio opens (AD-22). Never TheGamesDB (monthly allowance on
+// free keys) and never ScreenScraper (one request slot): those two resolve only when visited.
+private val BACKGROUND_SOURCES = listOf(
+    StudioSource.STEAMGRIDDB to MatchProvider.STEAMGRIDDB,
+    StudioSource.IGDB to MatchProvider.IGDB,
+)
+
 // Tabs with no provider art type of their own. Rather than hide a provider there, it offers every
 // image it has for the game and the crop editor shapes the pick (user decision, 2026-09-10).
 private val SHOW_ALL_ART_KINDS = setOf(ArtworkKind.BOX_3D, ArtworkKind.PHYSICAL_MEDIA, ArtworkKind.SCREENSHOT)
@@ -305,13 +318,16 @@ class ArtworkStudioViewModel @Inject constructor(
     private val igdbApi: com.playfieldportal.feature.artwork.api.IgdbApi,
     private val videoSnapTranscoder: com.playfieldportal.feature.artwork.video.VideoSnapTranscoder,
     private val matchEvidence: ProviderMatchEvidence,
+    titleSearchStore: com.playfieldportal.feature.artwork.match.TitleSearchStore,
 ) : ViewModel(), ArtworkStudioActions {
 
     /**
-     * Title searches remembered for this open. The matcher re-resolves on every source switch, tab
-     * switch and search, and without this each one asked the provider again.
+     * Title searches, shared by the matcher and the Change Match picker, so the picker's seeded
+     * search and a re-resolution after a match is forgotten never ask twice. Remembered in memory
+     * for this open, and kept between opens by [titleSearchStore] (AD-21). Matches themselves are
+     * remembered in [matchMemo].
      */
-    private val titleSearches = CachingMatchEvidence(matchEvidence)
+    private val titleSearches = CachingMatchEvidence(matchEvidence, titleSearchStore)
 
     /** Tiers 1-3 only; the ranked picker below Tier 3 is deferred (AD-4). */
     private val matcher = GameMatcher(titleSearches)
@@ -352,6 +368,7 @@ class ArtworkStudioViewModel @Inject constructor(
         // Each open asks the providers afresh: a search that failed last time (providers report a
         // failure as no hits) must not keep the game unmatched for good.
         titleSearches.clear()
+        matchMemo.clear()
         if (this.gameId == gameId && _uiState.value.game != null) {
             // Same game reopened. The VM outlives the screen, so a key added or removed in Settings
             // since the last open has to be re-read here — reading it once per game is what kept a
@@ -361,13 +378,17 @@ class ArtworkStudioViewModel @Inject constructor(
                 refreshProviderAvailability()
                 if (_uiState.value.unavailableSources != before) {
                     landOnAvailableSource()
-                    resolveMatch()
                     loadResults()
                 }
+                // This open's memo was just cleared, so the unvisited providers resolve afresh too.
+                resolveInBackground()
             }
             return
         }
         this.gameId = gameId
+        // The last game's resolutions must not land in this game's memo or on its match row.
+        cancelLoad()
+        cancelBackgroundResolutions()
         viewModelScope.launch {
             val game = gameRepository.getById(gameId)
             refreshProviderAvailability()
@@ -382,8 +403,8 @@ class ArtworkStudioViewModel @Inject constructor(
             }
             landOnAvailableSource()
             refreshCurrent()
-            resolveMatch()
             loadResults()
+            resolveInBackground()
         }
     }
 
@@ -437,38 +458,48 @@ class ArtworkStudioViewModel @Inject constructor(
     }
 
     /**
-     * Browses the active category + source for the active query.
+     * Resolves the active source's match, then browses the active category + source with it. The
+     * one entry for both (AD-20): a tab, source, query or filter change calls this and nothing else.
      *
      * Race safety is coroutine ownership, never a delay (AD-6):
-     *  1. the previous browse is cancelled outright;
+     *  1. the previous job — resolution and browse alike — is cancelled outright;
      *  2. the request carries an immutable key and a monotonic token;
      *  3. the response may write to state only while BOTH still match.
      *
-     * A cache hit renders immediately with no loading state at all; a miss clears the grid and
-     * shows skeletons, so a source switch can never leave another provider's tiles on screen.
+     * A match already known (none needed, confirmed, or resolved earlier this open) is used at
+     * once, and a cache hit then renders with no loading state at all. Otherwise the grid shows
+     * skeletons until the match is resolved and the browse answers, so it never browses without
+     * the match and a source switch never leaves another provider's tiles on screen.
      */
     private fun loadResults() {
+        loadJob?.cancel()
+        val token = ++generation
         val state = _uiState.value
         val source = sourcesForTab().getOrNull(state.sourceIndex) ?: StudioSource.LOCAL
         val kind = tab().kind
-        // The confirmed match is part of the key, so re-pointing the game at another provider
-        // entry invalidates exactly its own cached pages and nothing else (Phase 1 left the field
-        // in place for precisely this).
-        val key = StudioRequestKey.of(state.query, source, kind, state.includeNsfw, state.match?.matchKey)
-
-        loadJob?.cancel()
-        activeKey = key
-        val token = ++generation
-
-        resultCache[key]?.let { cached ->
-            showPage(cached, pageIndex = 0, key = key, token = token)
-            return
+        val provider = providerFor(source)
+        val known = knownMatch(state, provider)
+        _uiState.update {
+            it.copy(matchProvider = provider, match = known?.match, matchResolving = known == null, matchFailed = false)
         }
-        if (source == StudioSource.LOCAL) {
-            // Local never browses — the grid shows the device-picker action instead.
-            resultCache[key] = emptyList()
-            showPage(emptyList(), pageIndex = 0, key = key, token = token)
-            return
+
+        if (known != null) {
+            val key = requestKey(state, source, kind, known.match)
+            activeKey = key
+            resultCache[key]?.let { cached ->
+                showPage(cached, pageIndex = 0, key = key, token = token)
+                return
+            }
+            if (source == StudioSource.LOCAL) {
+                // Local never browses — the grid shows the device-picker action instead.
+                resultCache[key] = emptyList()
+                showPage(emptyList(), pageIndex = 0, key = key, token = token)
+                return
+            }
+        } else {
+            // No key until the match is known: nothing may page or re-page a grid whose request
+            // has not been decided yet.
+            activeKey = null
         }
 
         _uiState.update {
@@ -476,24 +507,106 @@ class ArtworkStudioViewModel @Inject constructor(
                 pageCount = 0, rangeStart = 0, rangeEnd = 0, totalResults = 0)
         }
         loadJob = viewModelScope.launch {
-            val fetched = when (source) {
-                StudioSource.SCREENSCRAPER -> ssResults(kind, state.match)
-                StudioSource.STEAMGRIDDB   -> sgdbResults(kind, state.query)
-                StudioSource.THEGAMESDB    -> tgdbResults(kind, state.query, state.match)
-                StudioSource.IGDB          -> igdbResults(kind, state.query, state.match)
-                StudioSource.LOCAL         -> emptyList()
+            // ScreenScraper identifies a ROM best by the catalog's own lookup (name, size and checksum),
+            // so that runs before the matcher, which then need not ask by checksum again.
+            val romLookup = if (known == null && provider == MatchProvider.SCREENSCRAPER) lookUpSsRomIdentity() else null
+            // known == null only ever happens for a real provider (knownMatch answers for none).
+            var match = if (known != null) {
+                known.match
+            } else {
+                resolveMatch(checkNotNull(provider), state.query, token, skipRomHash = romLookup != null)
             }
-            // A cancelled request is not an answer. Provider calls wrap themselves in runCatching,
-            // which also catches the CancellationException and turns it into "nothing found" — so
-            // without this check a source switch mid-load cached an empty page under this key, and
-            // returning showed "No results" without ever asking again.
-            ensureActive()
-            // Store under the request's OWN key regardless of what is on screen now — a late
-            // response still warms its cache entry, it just may not be shown.
-            resultCache[key] = fetched
-            showPage(fetched, pageIndex = 0, key = key, token = token)
-            if (source == StudioSource.SCREENSCRAPER) refreshSsIdentityAfterBrowse()
+            var key = requestKey(state, source, kind, match)
+            activeKey = key
+            browse(source, kind, state.query, match, key, token, romLookup)
+            if (source != StudioSource.SCREENSCRAPER || !refreshSsIdentityAfterBrowse()) return@launch
+            // The browse identified the game and saved its id. Resolve again (Tier 1, no request)
+            // and re-browse only if that moved the key — the new key's browse is a media-cache hit.
+            match = resolveMatch(MatchProvider.SCREENSCRAPER, state.query, token)
+            val movedKey = requestKey(state, source, kind, match)
+            if (movedKey == key) return@launch
+            key = movedKey
+            activeKey = key
+            browse(source, kind, state.query, match, key, token)
         }
+    }
+
+    // The match is part of the key, so re-pointing the game at another provider entry invalidates
+    // exactly its own cached pages and nothing else.
+    private fun requestKey(state: ArtworkStudioUiState, source: StudioSource, kind: ArtworkKind, match: GameMatch?) =
+        StudioRequestKey.of(state.query, source, kind, state.includeNsfw, match?.matchKey)
+
+    /**
+     * What ScreenScraper's catalog answered when asked to identify the game's ROM, ahead of
+     * resolution. [ssId] is the id on the game row afterwards (null when it found nothing), and
+     * [medias] the catalog's answer (null when it found nothing).
+     */
+    private class SsRomLookup(val ssId: Long?, val medias: List<SsCachedMedia>?)
+
+    /**
+     * Runs the catalog's ROM identity lookup for a game ScreenScraper has no id for, and takes the
+     * row it leaves behind: a hit saves `ss_id`, so the resolution that follows is Tier 1 with no
+     * further request.
+     *
+     * Null when there is nothing for the catalog to hash (no ROM path or URI, as on Windows) or the
+     * game already has an id — then the matcher's own tiers run as before, stored checksum included.
+     * Null too when the lookup threw, since that asked nothing the matcher could skip.
+     */
+    private suspend fun lookUpSsRomIdentity(): SsRomLookup? {
+        val game = _uiState.value.game ?: return null
+        if (game.ssId != null || (game.romPath == null && game.romUri == null)) return null
+        val medias = try {
+            ssMediaCatalog.mediasFor(gameId, matchedSsId = null)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.w(e, "ScreenScraper ROM lookup failed")
+            return null
+        }
+        val stored = gameRepository.getById(gameId) ?: game
+        currentCoroutineContext().ensureActive()
+        if (stored.ssId != game.ssId || stored.romCrc32 != game.romCrc32) {
+            _uiState.update { it.copy(game = stored) }
+            // Anything remembered for ScreenScraper was resolved against the row before its id.
+            forgetMatches(MatchProvider.SCREENSCRAPER)
+        }
+        return SsRomLookup(stored.ssId, medias)
+    }
+
+    /**
+     * Fetches [key] unless it is cached, stores the answer under [key], and shows it if still current.
+     * [romLookup] is this job's ScreenScraper ROM lookup, if one ran, so the browse does not ask it again.
+     */
+    private suspend fun browse(
+        source: StudioSource,
+        kind: ArtworkKind,
+        query: String,
+        match: GameMatch?,
+        key: StudioRequestKey,
+        token: Long,
+        romLookup: SsRomLookup? = null,
+    ) {
+        val cached = resultCache[key]
+        if (cached != null) {
+            showPage(cached, pageIndex = 0, key = key, token = token)
+            return
+        }
+        val fetched = when (source) {
+            StudioSource.SCREENSCRAPER -> ssResults(kind, match, romLookup)
+            StudioSource.STEAMGRIDDB   -> sgdbResults(kind, query, match)
+            StudioSource.THEGAMESDB    -> tgdbResults(kind, query, match)
+            StudioSource.IGDB          -> igdbResults(kind, query, match)
+            StudioSource.LOCAL         -> emptyList()
+        }
+        // A cancelled request is not an answer. Provider calls wrap themselves in runCatching,
+        // which also catches the CancellationException and turns it into "nothing found" — so
+        // without this check a source switch mid-load cached an empty page under this key, and
+        // returning showed "No results" without ever asking again.
+        currentCoroutineContext().ensureActive()
+        // Store under the request's OWN key regardless of what is on screen now — a late
+        // response still warms its cache entry, it just may not be shown.
+        resultCache[key] = fetched
+        showPage(fetched, pageIndex = 0, key = key, token = token)
     }
 
     /**
@@ -559,12 +672,18 @@ class ArtworkStudioViewModel @Inject constructor(
     // ScreenScraper media is addressed by game id, not by a title. Unmatched, the catalog identifies
     // the game by its ROM (and saves that identity); matched by title or Change Match, it browses
     // that game's id — without saving a title match to the game row.
-    private suspend fun ssResults(kind: ArtworkKind, match: GameMatch?): List<StudioArt> {
+    //
+    // When [romLookup] ran in this job and the match is its own answer (the id it saved, or no match
+    // at all), its medias are used as they are: asking the catalog again would repeat the lookup that
+    // just missed, or re-read what it just cached.
+    private suspend fun ssResults(kind: ArtworkKind, match: GameMatch?, romLookup: SsRomLookup?): List<StudioArt> {
         val types = SS_TYPES_FOR_KIND[kind] ?: return emptyList()
         val matchedSsId = match?.candidate
             ?.takeIf { it.provider == MatchProvider.SCREENSCRAPER }
             ?.providerGameId?.toLongOrNull()
-        val medias = ssMediaCatalog.mediasFor(gameId, matchedSsId) ?: return emptyList()
+        val usesLookup = romLookup != null && (matchedSsId == null || matchedSsId == romLookup.ssId)
+        val medias = (if (usesLookup) romLookup?.medias else ssMediaCatalog.mediasFor(gameId, matchedSsId))
+            ?: return emptyList()
         return types.flatMap { type ->
             medias.filter { it.type == type && it.url != null }.map { m ->
                 StudioArt(
@@ -578,20 +697,27 @@ class ArtworkStudioViewModel @Inject constructor(
         }
     }
 
-    private suspend fun sgdbResults(kind: ArtworkKind, query: String): List<StudioArt> {
+    private suspend fun sgdbResults(kind: ArtworkKind, query: String, match: GameMatch?): List<StudioArt> {
         val types = sgdbTypesFor(kind).ifEmpty { return emptyList() }
         val game = _uiState.value.game ?: return emptyList()
-        // A saved id is the strongest evidence, but only while the user is still searching for
-        // THIS game: the moment they type something else, the typed title wins.
-        // A match the user confirmed through Change Match is the strongest evidence there is and
-        // holds whatever they type next: they already told us which game this is (task 2.3).
-        val confirmed = _uiState.value.match
-            ?.takeIf { it.userConfirmed && it.candidate.provider == MatchProvider.STEAMGRIDDB }
-            ?.candidate?.providerGameId?.toLongOrNull()
+        // Which SteamGridDB game to browse, strongest evidence first. [match] is the one the request
+        // key was built with, never a fresher read of state.
+        val sgdbMatch = match?.takeIf { it.candidate.provider == MatchProvider.STEAMGRIDDB }
+        // 1. A match the user confirmed through Change Match holds whatever they type next: they
+        //    already told us which game this is (task 2.3).
+        val confirmed = sgdbMatch?.takeIf { it.userConfirmed }?.candidate?.providerGameId?.toLongOrNull()
+        // 2. A saved id, but only while the user is still searching for THIS game: the moment they
+        //    type something else, the typed title wins.
         val savedId = game.steamGridDbId?.takeIf { StudioQuery.sameQuery(query, game.displayTitle) }
+        // 3. The resolved match, when the query produced it. A Tier 1 match ignores the query, and
+        //    step 2 already applies the query rule to the saved id.
+        val resolved = sgdbMatch
+            ?.takeIf { it.tier == MatchTier.CONTENT_ID || it.tier == MatchTier.EXACT_TITLE }
+            ?.candidate?.providerGameId?.toLongOrNull()
         val sgdbId = confirmed
             ?: savedId
-            ?: steamGridDb.searchGame(query).getOrNull()?.firstOrNull()?.id
+            ?: resolved
+            ?: firstSgdbHit(query, game.platformId)
             ?: return emptyList()
         // No dimension filter, ICON0 included: every grid shape is a valid candidate now
         // that pass 2's crop editor will shape it to the tile. One request per art type; when a
@@ -618,6 +744,20 @@ class ArtworkStudioViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    /**
+     * 4. SteamGridDB's first autocomplete hit for [query], so an ambiguous title still browses
+     * something. Asked through [titleSearches], which the matcher already filled for this query, so
+     * however many tabs are browsed SteamGridDB is searched once.
+     */
+    private suspend fun firstSgdbHit(query: String, platformId: String): Long? = try {
+        titleSearches.searchByTitle(MatchProvider.STEAMGRIDDB, query, platformId).firstOrNull()?.providerGameId?.toLongOrNull()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        Timber.w(e, "SGDB search failed")
+        null
     }
 
     /** Browsed by the matched id when there is one, exactly like [igdbResults]. */
@@ -715,7 +855,7 @@ class ArtworkStudioViewModel @Inject constructor(
         // The query persists across categories: a title the user corrected once should not have
         // to be retyped for every artwork kind.
         viewModelScope.launch { refreshCurrent() }
-        resolveMatch()
+        // A match never depends on the tab, so this resolves nothing already known this open.
         loadResults()
     }
 
@@ -733,11 +873,10 @@ class ArtworkStudioViewModel @Inject constructor(
             return
         }
         _uiState.update { it.copy(sourceIndex = clamped, zone = StudioZone.SOURCES) }
-        // A match belongs to one provider, so switching source re-asks the question before the
-        // grid is filled.
-        resolveMatch()
-        // Every source — Local included — goes through loadResults so the request key, the
-        // generation token and the cache stay the single description of what is on screen.
+        // A match belongs to one provider, so switching source answers that provider's question
+        // before the grid is filled. Every source — Local included — goes through loadResults so
+        // the request key, the generation token and the cache stay the single description of
+        // what is on screen.
         loadResults()
     }
 
@@ -761,14 +900,19 @@ class ArtworkStudioViewModel @Inject constructor(
      * A ScreenScraper browse can identify the game by its ROM and save `ss_id` + `rom_crc32` to the
      * row (SsMediaCatalog's mini-scrape). The match row resolved against the game as it was loaded,
      * so without this it kept saying "No ScreenScraper match" beside a grid full of that game's art.
-     * Costs no request: the next browse for the new match key is a media-cache hit.
+     *
+     * Re-reads the row, and when that identity moved, takes the new row and forgets ScreenScraper's
+     * remembered matches, which were resolved against the old one. Returns whether it moved; the
+     * caller resolves again.
      */
-    private suspend fun refreshSsIdentityAfterBrowse() {
-        val shown = _uiState.value.game ?: return
-        val stored = gameRepository.getById(gameId) ?: return
-        if (stored.ssId == shown.ssId && stored.romCrc32 == shown.romCrc32) return
+    private suspend fun refreshSsIdentityAfterBrowse(): Boolean {
+        val shown = _uiState.value.game ?: return false
+        val stored = gameRepository.getById(gameId) ?: return false
+        currentCoroutineContext().ensureActive()
+        if (stored.ssId == shown.ssId && stored.romCrc32 == shown.romCrc32) return false
         _uiState.update { it.copy(game = stored) }
-        resolveMatch()
+        forgetMatches(MatchProvider.SCREENSCRAPER)
+        return true
     }
 
     // ── Provider availability ─────────────────────────────────────────────────
@@ -843,21 +987,51 @@ class ArtworkStudioViewModel @Inject constructor(
     }
 
     /**
-     * Monotonic token for match resolution, mirroring [generation].
-     *
-     * Matching hits the network on a miss, so it races the same way browsing does: without a
-     * guard, a slow ScreenScraper lookup could land after the user has moved to SteamGridDB and
-     * label the screen with the wrong provider's answer.
+     * Matches resolved this open, per provider and query, "no match" included (AD-20). A match
+     * never depends on the tab, so a tab walk asks each provider once. Cleared on every open, and
+     * for one provider whenever its saved id changes. A resolution that failed is never stored.
      */
-    private var matchGeneration: Long = 0
+    private val matchMemo = HashMap<MatchMemoKey, GameMatch?>()
+
+    private data class MatchMemoKey(val provider: MatchProvider, val query: String) {
+        companion object {
+            private val WHITESPACE = Regex("\\s+")
+
+            // Case and spacing only, like CachingMatchEvidence's search key: punctuation can change
+            // what a provider returns.
+            fun of(provider: MatchProvider, query: String) =
+                MatchMemoKey(provider, query.trim().replace(WHITESPACE, " ").lowercase(java.util.Locale.ROOT))
+        }
+    }
+
+    /** A known answer to "who is this game", where [match] null means known to be unmatched. */
+    private class KnownMatch(val match: GameMatch?)
 
     /**
-     * Drops any in-flight match resolution — used when a confirmed match makes it moot. Clears the
-     * resolving flag too: the dropped resolution never lands to clear it, and the match row checks
-     * that flag first, so it would keep saying "Matching…" over a confirmed match.
+     * The match [loadResults] can use without resolving: none for a source with no provider, the
+     * user's confirmed match (never re-derived — the user already decided, and the matcher could
+     * only ever disagree), or this open's remembered answer. Null means it has to be resolved.
      */
-    private fun invalidateMatch() {
-        matchGeneration++
+    private fun knownMatch(state: ArtworkStudioUiState, provider: MatchProvider?): KnownMatch? {
+        if (provider == null) return KnownMatch(null)
+        state.match?.takeIf { it.userConfirmed && it.candidate.provider == provider }?.let { return KnownMatch(it) }
+        val key = MatchMemoKey.of(provider, state.query)
+        return if (matchMemo.containsKey(key)) KnownMatch(matchMemo[key]) else null
+    }
+
+    private fun forgetMatches(provider: MatchProvider) {
+        matchMemo.keys.removeAll { it.provider == provider }
+        // A background answer still on its way was resolved against the same stale row.
+        cancelBackgroundResolutions(provider)
+    }
+
+    /**
+     * Stops the running resolution and browse — used when a confirmed or forgotten match makes
+     * them moot. Clears the resolving flag too, since the cancelled job never lands to clear it,
+     * and the match row checks that flag first.
+     */
+    private fun cancelLoad() {
+        loadJob?.cancel()
         _uiState.update { it.copy(matchResolving = false) }
     }
 
@@ -870,42 +1044,122 @@ class ArtworkStudioViewModel @Inject constructor(
     private var changeMatchJob: kotlinx.coroutines.Job? = null
 
     /**
-     * Resolves who the active source thinks this game is, then re-browses if the answer changed
-     * the request key.
+     * Resolves who [provider] thinks the game is, for [query], and writes it to the match row.
+     * Runs inside [loadResults]' job, so leaving the source cancels it, request and all.
      *
-     * A confirmed match is never re-derived: the user already decided, and re-running the matcher
-     * could only ever disagree with them.
+     * A provider that didn't answer is said as such, never as "no match", and resolves to no match
+     * for this browse. The failure is not remembered, so the next visit or a Change Match search
+     * asks again.
      */
-    private fun resolveMatch(force: Boolean = false) {
+    private suspend fun resolveMatch(
+        provider: MatchProvider,
+        query: String,
+        token: Long,
+        skipRomHash: Boolean = false,
+    ): GameMatch? {
+        val game = _uiState.value.game ?: return null
+        val outcome = joinBackgroundResolution(provider, query)
+            ?: resolveAndRemember(game, provider, query, skipRomHash)
+        val resolved = outcome.getOrNull()
+        // Same token discipline as showPage: a job that is no longer the current one writes nothing.
+        if (token == generation) {
+            _uiState.update { it.copy(match = resolved, matchResolving = false, matchFailed = outcome.isFailure) }
+        }
+        return resolved
+    }
+
+    /**
+     * Runs the matcher and remembers a successful answer in [matchMemo]. Writes no state, so the
+     * background resolutions use it as they are. A failure comes back as a failed [Result] and is
+     * never remembered; a cancellation is rethrown.
+     */
+    private suspend fun resolveAndRemember(
+        game: Game,
+        provider: MatchProvider,
+        query: String,
+        skipRomHash: Boolean = false,
+        background: Boolean = false,
+    ): Result<GameMatch?> {
+        val startedAt = System.currentTimeMillis()
+        val outcome = try {
+            Result.success(matcher.resolve(game, provider, query, skipRomHash))
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.w(e, "Match resolution failed for %s", provider)
+            Result.failure(e)
+        }
+        // Some provider clients turn a cancellation into an empty answer, which must not be
+        // remembered as "no match".
+        currentCoroutineContext().ensureActive()
+        Timber.d(
+            "Studio match %s%s: %s in %d ms",
+            provider,
+            if (background) " (background)" else "",
+            outcome.fold({ it?.tier?.name ?: "none" }, { "failed" }),
+            System.currentTimeMillis() - startedAt,
+        )
+        if (outcome.isSuccess) matchMemo[MatchMemoKey.of(provider, query)] = outcome.getOrNull()
+        return outcome
+    }
+
+    // ── Background resolution on open (task M.6, AD-22) ───────────────────────
+
+    /** A resolution started on open for a provider the user has not visited yet. */
+    private class BackgroundResolution(val key: MatchMemoKey, val outcome: Deferred<Result<GameMatch?>>)
+
+    /** The background resolutions still running, by provider. Each removes itself when it ends. */
+    private val backgroundResolutions = HashMap<MatchProvider, BackgroundResolution>()
+
+    /**
+     * Starts resolving SteamGridDB and IGDB for the query at open, so switching to either is
+     * instant. Only those two (AD-22): TheGamesDB's free keys have a monthly allowance, and
+     * ScreenScraper has one request slot, so both resolve only when visited.
+     *
+     * Skipped for a provider with no key, the active one (its own job is resolving it), one
+     * already answered this open, or one already resolving this query. Each runs on its own, so
+     * one failing never stops the other, and a failure is not remembered. A later query change is
+     * resolved on visit, not here.
+     */
+    private fun resolveInBackground() {
         val state = _uiState.value
         val game = state.game ?: return
-        val provider = providerFor(sourcesForTab().getOrNull(state.sourceIndex))
-        if (provider == null) {
-            invalidateMatch()
-            _uiState.update { it.copy(match = null, matchProvider = null, matchResolving = false, matchFailed = false) }
-            return
+        val active = providerFor(sourcesForTab().getOrNull(state.sourceIndex))
+        BACKGROUND_SOURCES.forEach { (source, provider) ->
+            if (provider == active || source in state.unavailableSources) return@forEach
+            val key = MatchMemoKey.of(provider, state.query)
+            if (matchMemo.containsKey(key) || backgroundResolutions[provider]?.key == key) return@forEach
+            backgroundResolutions.remove(provider)?.outcome?.cancel()
+            // Lazy, so the entry is in the map before the resolution can finish and remove it.
+            val outcome = viewModelScope.async(start = CoroutineStart.LAZY) {
+                resolveAndRemember(game, provider, state.query, background = true)
+            }
+            val entry = BackgroundResolution(key, outcome)
+            backgroundResolutions[provider] = entry
+            outcome.invokeOnCompletion { backgroundResolutions.remove(provider, entry) }
+            outcome.start()
         }
-        val existing = state.match
-        if (!force && existing?.userConfirmed == true && existing.candidate.provider == provider) {
-            _uiState.update { it.copy(matchProvider = provider) }
-            return
-        }
+    }
 
-        val token = ++matchGeneration
-        _uiState.update { it.copy(matchProvider = provider, matchResolving = true, match = null, matchFailed = false) }
-        viewModelScope.launch {
-            val outcome = runCatching { matcher.resolve(game, provider, state.query) }
-                .onFailure { Timber.w(it, "Match resolution failed for %s", provider) }
-            // Same two-check reducer discipline as showPage: a superseded answer is dropped, not
-            // reconciled.
-            if (token != matchGeneration) return@launch
-            val resolved = outcome.getOrNull()
-            val changed = resolved?.matchKey != _uiState.value.match?.matchKey
-            // A provider that didn't answer is said as such, never as "no match": the failure is not
-            // remembered, so the next resolution or a Change Match search asks again.
-            _uiState.update { it.copy(match = resolved, matchResolving = false, matchFailed = outcome.isFailure) }
-            if (changed) loadResults()
+    /**
+     * The answer of a background resolution already running for [provider] and [query], so a visit
+     * that arrives mid-flight waits for it instead of asking again. Null when there is none, or
+     * when it was cancelled while waited on (a forgotten match, a new game), in which case the
+     * visit resolves for itself.
+     */
+    private suspend fun joinBackgroundResolution(provider: MatchProvider, query: String): Result<GameMatch?>? {
+        val running = backgroundResolutions[provider]?.takeIf { it.key == MatchMemoKey.of(provider, query) } ?: return null
+        return try {
+            running.outcome.await()
+        } catch (e: CancellationException) {
+            currentCoroutineContext().ensureActive()
+            null
         }
+    }
+
+    private fun cancelBackgroundResolutions(provider: MatchProvider? = null) {
+        val cancelled = if (provider == null) backgroundResolutions.values.toList() else listOfNotNull(backgroundResolutions[provider])
+        cancelled.forEach { it.outcome.cancel() }
     }
 
     /**
@@ -1001,11 +1255,19 @@ class ArtworkStudioViewModel @Inject constructor(
             )
         }
         changeMatchJob = viewModelScope.launch {
+            val startedAt = System.currentTimeMillis()
             val outcome = runCatching { changeMatchCandidates(provider, query, game.platformId) }
             // A cancelled search is not an answer: a newer search, or the closed picker, owns the
             // picker's state now.
             ensureActive()
             outcome.onFailure { Timber.w(it, "Change Match search failed") }
+            Timber.d(
+                "Studio Change Match %s: %s in %d ms, every platform: %b",
+                provider,
+                outcome.fold({ "${it.first.size} candidates" }, { "failed" }),
+                System.currentTimeMillis() - startedAt,
+                _uiState.value.changeMatchSearchingEveryPlatform,
+            )
             val (results, acrossPlatforms) = outcome.getOrDefault(emptyList<GameCandidate>() to false)
             // The cursor lands on the first candidate, so A confirms the top hit straight away; with
             // nothing found it stays on the field, where A edits the title instead.
@@ -1065,7 +1327,9 @@ class ArtworkStudioViewModel @Inject constructor(
         val provider = state.matchProvider ?: return
         val candidate = state.changeMatchResults.getOrNull(index) ?: return
         changeMatchJob?.cancel()
-        invalidateMatch()
+        cancelLoad()
+        // Every remembered answer for this provider predates the id about to be saved.
+        forgetMatches(provider)
         _uiState.update {
             it.copy(
                 // Tier 1 is exactly what this becomes: the id is about to be written to the game
@@ -1093,12 +1357,13 @@ class ArtworkStudioViewModel @Inject constructor(
      */
     override fun forgetMatch() {
         val provider = _uiState.value.matchProvider ?: return
-        invalidateMatch()
+        cancelLoad()
+        forgetMatches(provider)
         _uiState.update { it.copy(match = null, changeMatchOpen = false, actionsOpen = false) }
         viewModelScope.launch {
             gameRepository.updateProviderMatch(gameId, provider.name, null)
             _uiState.update { it.copy(game = gameRepository.getById(gameId) ?: it.game) }
-            resolveMatch(force = true)
+            // Nothing is confirmed or remembered for this provider now, so this re-derives.
             loadResults()
         }
     }
@@ -1135,8 +1400,7 @@ class ArtworkStudioViewModel @Inject constructor(
         }
         if (!unchanged) {
             // A new query is a new question about identity too — unless the user already answered
-            // it, in which case resolveMatch keeps their confirmed match.
-            resolveMatch()
+            // it, in which case loadResults keeps their confirmed match.
             loadResults()
         }
     }
@@ -1597,7 +1861,11 @@ class ArtworkStudioViewModel @Inject constructor(
         }
     }
     override fun dismissMessage() = _uiState.update { it.copy(message = null) }
-    fun close() = _uiState.update { it.copy(closed = true) }
+    fun close() {
+        // The ViewModel outlives the screen, so work started for this open must stop here.
+        cancelBackgroundResolutions()
+        _uiState.update { it.copy(closed = true) }
+    }
 
     /** The screen calls this right after acting on [ArtworkStudioUiState.closed] so a stale
      *  closed=true never survives to instantly re-close the screen on the next open. */

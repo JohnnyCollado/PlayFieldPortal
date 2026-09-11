@@ -121,6 +121,23 @@ class GameMatcherTest {
     }
 
     @Test
+    fun `skipping the ROM checksum tier goes straight to the title search`() = runTest {
+        val evidence = FakeEvidence(
+            byRomHash = mapOf("ABCD1234" to candidate(provider = MatchProvider.SCREENSCRAPER, id = "551")),
+            byTitle = listOf(candidate(provider = MatchProvider.SCREENSCRAPER, id = "552")),
+        )
+        val matcher = GameMatcher(evidence)
+
+        val match = matcher.resolve(game(romCrc32 = "abcd1234"), MatchProvider.SCREENSCRAPER, skipRomHash = true)
+
+        assertEquals(MatchTier.EXACT_TITLE, match?.tier)
+        assertEquals("552", match?.candidate?.providerGameId)
+        assertEquals(listOf("title:Final Fantasy VI Advance"), evidence.asked)
+    }
+
+    // The checksum tier still runs by default: `a ROM checksum resolves ScreenScraper when no id is saved`.
+
+    @Test
     fun `a ROM checksum is not offered to a provider that cannot take one`() = runTest {
         val evidence = FakeEvidence(byRomHash = mapOf("ABCD1234" to candidate()))
         val matcher = GameMatcher(evidence)

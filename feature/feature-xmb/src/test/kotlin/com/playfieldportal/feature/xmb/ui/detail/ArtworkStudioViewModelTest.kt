@@ -11,7 +11,6 @@ import com.playfieldportal.feature.artwork.api.IgdbGameInfo
 import com.playfieldportal.feature.artwork.api.SgdbApiKeyProvider
 import com.playfieldportal.feature.artwork.api.SgdbArtItem
 import com.playfieldportal.feature.artwork.api.SgdbArtType
-import com.playfieldportal.feature.artwork.api.SgdbGame
 import com.playfieldportal.feature.artwork.api.SsMediaCatalog
 import com.playfieldportal.feature.artwork.api.SteamGridDbApi
 import com.playfieldportal.feature.artwork.store.ArtworkKind
@@ -97,7 +96,11 @@ class ArtworkStudioViewModelTest {
         coEvery { theGamesDb.hasApiKey() } returns true
         coEvery { artworkStore.find(any(), any(), any()) } returns null
         coEvery { ssMediaCatalog.mediasFor(any(), any()) } returns emptyList()
-        coEvery { steamGridDb.searchGame(any()) } returns Result.success(listOf(SgdbGame(id = 77L, name = "Crash")))
+        // SteamGridDB's autocomplete, as the Studio asks it (task M.2): one hit, not an exact title
+        // match for the game, so it browses as the first hit without ever being the match.
+        coEvery {
+            matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.STEAMGRIDDB, any(), any())
+        } returns listOf(sgdbCandidate("77", "Crash"))
         coEvery { steamGridDb.getArt(any(), any(), any(), any(), any()) } returns Result.success(emptyList())
         coEvery { theGamesDb.fetchGameInfo(any(), any()) } returns null
         coEvery { igdbApi.fetchGameInfo(any(), any()) } returns null
@@ -109,6 +112,8 @@ class ArtworkStudioViewModelTest {
     private fun viewModel() = ArtworkStudioViewModel(
         context, gameRepository, artworkStore, routingStore, ssMediaCatalog,
         steamGridDb, sgdbKeyProvider, theGamesDb, igdbApi, videoSnapTranscoder, matchEvidence,
+        // Nothing kept between opens: these tests count what each open asks.
+        com.playfieldportal.feature.artwork.match.TitleSearchStore.None,
     )
 
     // ── The query is state, seeded from the title (task 1.1) ──────────────────
@@ -763,6 +768,411 @@ class ArtworkStudioViewModelTest {
         coVerify(exactly = 1) {
             matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.IGDB, any(), any())
         }
+    }
+
+    // ── One owner job for resolve, then browse (task M.1) ─────────────────────
+
+    @Test
+    fun `switching tabs keeps the match and never browses without it`() = runTest(testDispatcher) {
+        coEvery {
+            matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.THEGAMESDB, any(), any())
+        } returns listOf(
+            com.playfieldportal.feature.artwork.match.GameCandidate(
+                provider = com.playfieldportal.feature.artwork.match.MatchProvider.THEGAMESDB,
+                providerGameId = "55",
+                title = "Cr4sh Bandicoot",
+            ),
+        )
+        coEvery { theGamesDb.fetchGameInfoById(55L) } returns tgdb("tgdb-by-id")
+        val vm = loadedOn(StudioSource.THEGAMESDB)
+
+        // A tab change lands on the first source, so each tab is walked back to TheGamesDB.
+        listOf(ArtworkKind.BOX_ART, ArtworkKind.LOGO).forEach { kind ->
+            vm.selectTab(STUDIO_TABS.indexOfFirst { it.kind == kind })
+            advanceUntilIdle()
+            vm.selectSource(vm.sourcesForTab().indexOf(StudioSource.THEGAMESDB))
+            advanceUntilIdle()
+            assertEquals("THEGAMESDB:55", vm.uiState.value.match?.matchKey)
+        }
+
+        coVerify(exactly = 0) { theGamesDb.fetchGameInfo(any(), any()) }
+        coVerify(exactly = 3) { theGamesDb.fetchGameInfoById(55L) }
+        coVerify(exactly = 1) {
+            matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.THEGAMESDB, any(), any())
+        }
+    }
+
+    @Test
+    fun `the grid waits on skeletons, not an empty result, while its match resolves`() = runTest(testDispatcher) {
+        val gate = CompletableDeferred<Unit>()
+        coEvery {
+            matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.SCREENSCRAPER, any(), any())
+        } coAnswers {
+            gate.await()
+            emptyList()
+        }
+
+        val vm = viewModel()
+        vm.load(1L)   // ICON0's first source is ScreenScraper
+        advanceUntilIdle()
+
+        assertTrue(vm.uiState.value.matchResolving)
+        assertTrue(vm.uiState.value.resultsLoading)
+        // Only the ROM identity lookup that runs ahead of resolution (task M.3b); no browse yet.
+        coVerify(exactly = 1) { ssMediaCatalog.mediasFor(1L, null) }
+        coVerify(exactly = 0) { ssMediaCatalog.mediasFor(any(), isNull(inverse = true)) }
+
+        gate.complete(Unit)
+        advanceUntilIdle()
+
+        assertFalse(vm.uiState.value.matchResolving)
+        assertFalse(vm.uiState.value.resultsLoading)
+    }
+
+    @Test
+    fun `leaving a source cancels its running resolution`() = runTest(testDispatcher) {
+        var cancelled = false
+        coEvery {
+            matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.SCREENSCRAPER, any(), any())
+        } coAnswers {
+            try {
+                awaitCancellation()
+            } catch (e: CancellationException) {
+                cancelled = true
+                throw e
+            }
+        }
+        val vm = viewModel()
+        vm.load(1L)
+        advanceUntilIdle()
+
+        vm.selectSource(vm.sourcesForTab().indexOf(StudioSource.STEAMGRIDDB))
+        advanceUntilIdle()
+
+        assertTrue(cancelled)
+        assertEquals(com.playfieldportal.feature.artwork.match.MatchProvider.STEAMGRIDDB, vm.uiState.value.matchProvider)
+        assertFalse(vm.uiState.value.matchResolving)
+    }
+
+    @Test
+    fun `returning to a source reuses its match without asking again`() = runTest(testDispatcher) {
+        coEvery {
+            matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.SCREENSCRAPER, any(), any())
+        } returns listOf(ssCandidate("555", "Cr4sh Bandicoot"))
+        val vm = viewModel()
+        vm.load(1L)
+        advanceUntilIdle()
+        val sources = vm.sourcesForTab()
+        vm.selectSource(sources.indexOf(StudioSource.STEAMGRIDDB))
+        advanceUntilIdle()
+
+        vm.selectSource(sources.indexOf(StudioSource.SCREENSCRAPER))
+
+        // Known at once: no "Matching…" and no "No ScreenScraper match" flash while it re-resolves.
+        assertFalse(vm.uiState.value.matchResolving)
+        assertEquals("SCREENSCRAPER:555", vm.uiState.value.match?.matchKey)
+        advanceUntilIdle()
+        coVerify(exactly = 1) {
+            matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.SCREENSCRAPER, any(), any())
+        }
+    }
+
+    @Test
+    fun `a failed resolution is not remembered, so the next visit asks again`() = runTest(testDispatcher) {
+        var calls = 0
+        coEvery {
+            matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.SCREENSCRAPER, any(), any())
+        } coAnswers {
+            if (++calls == 1) throw com.playfieldportal.feature.artwork.api.SsSearchFailedException("No answer")
+            listOf(ssCandidate("555", "Cr4sh Bandicoot"))
+        }
+        val vm = viewModel()
+        vm.load(1L)
+        advanceUntilIdle()
+        assertTrue(vm.uiState.value.matchFailed)
+
+        val sources = vm.sourcesForTab()
+        vm.selectSource(sources.indexOf(StudioSource.STEAMGRIDDB))
+        advanceUntilIdle()
+        vm.selectSource(sources.indexOf(StudioSource.SCREENSCRAPER))
+        advanceUntilIdle()
+
+        assertEquals(2, calls)
+        assertFalse(vm.uiState.value.matchFailed)
+        assertEquals("SCREENSCRAPER:555", vm.uiState.value.match?.matchKey)
+    }
+
+    @Test
+    fun `a new query resolves again`() = runTest(testDispatcher) {
+        val vm = loadedOn(StudioSource.IGDB)
+
+        vm.openSearch()
+        vm.onQueryDraftChanged("Crash Bandicoot")
+        vm.submitSearch()
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) {
+            matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.IGDB, "Crash Bandicoot", any())
+        }
+    }
+
+    @Test
+    fun `reopening the Studio resolves afresh`() = runTest(testDispatcher) {
+        val vm = loadedOn(StudioSource.IGDB)
+        val sources = vm.sourcesForTab()
+
+        vm.load(1L)
+        advanceUntilIdle()
+        vm.selectSource(sources.indexOf(StudioSource.THEGAMESDB))
+        advanceUntilIdle()
+        vm.selectSource(sources.indexOf(StudioSource.IGDB))
+        advanceUntilIdle()
+
+        coVerify(exactly = 2) {
+            matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.IGDB, any(), any())
+        }
+    }
+
+    // ── One ScreenScraper identity lookup, not two (task M.3b) ────────────────
+
+    @Test
+    fun `a ROM game's ScreenScraper identity comes from one lookup`() = runTest(testDispatcher) {
+        var catalogSavedIdentity = false
+        coEvery { gameRepository.getById(1L) } answers {
+            if (catalogSavedIdentity) game.copy(ssId = 555L, romCrc32 = "ABCD1234") else game.copy(romCrc32 = "ABCD1234")
+        }
+        coEvery { ssMediaCatalog.mediasFor(1L, null) } coAnswers {
+            catalogSavedIdentity = true
+            listOf(com.playfieldportal.feature.artwork.api.SsCachedMedia(type = "mixrbv2", region = "us", url = "ss-icon", format = "png"))
+        }
+
+        val vm = viewModel()
+        vm.load(1L)   // ICON0's first source is ScreenScraper
+        advanceUntilIdle()
+
+        assertEquals("SCREENSCRAPER:555", vm.uiState.value.match?.matchKey)
+        assertEquals(com.playfieldportal.feature.artwork.match.MatchTier.SAVED_PROVIDER_ID, vm.uiState.value.match?.tier)
+        assertEquals(listOf("ss-icon"), vm.uiState.value.results.map { it.url })
+        // One jeuInfos in all: no checksum lookup, no title search, and the browse reused the answer.
+        coVerify(exactly = 0) { matchEvidence.candidateByRomHash(any(), any(), any()) }
+        coVerify(exactly = 0) {
+            matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.SCREENSCRAPER, any(), any())
+        }
+        coVerify(exactly = 1) { ssMediaCatalog.mediasFor(any(), any()) }
+    }
+
+    @Test
+    fun `when the catalog finds nothing, the title search runs and the checksum is not asked again`() =
+        runTest(testDispatcher) {
+            coEvery { gameRepository.getById(1L) } returns game.copy(romCrc32 = "ABCD1234")
+            coEvery { ssMediaCatalog.mediasFor(1L, null) } returns null
+
+            val vm = viewModel()
+            vm.load(1L)
+            advanceUntilIdle()
+
+            assertEquals(null, vm.uiState.value.match)
+            coVerify(exactly = 0) { matchEvidence.candidateByRomHash(any(), any(), any()) }
+            coVerify(exactly = 1) {
+                matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.SCREENSCRAPER, any(), any())
+            }
+            // The browse did not repeat the lookup that just missed.
+            coVerify(exactly = 1) { ssMediaCatalog.mediasFor(any(), any()) }
+        }
+
+    // ── Background resolution on open (task M.6) ──────────────────────────────
+
+    private fun igdbExact(id: String) = listOf(
+        com.playfieldportal.feature.artwork.match.GameCandidate(
+            provider = com.playfieldportal.feature.artwork.match.MatchProvider.IGDB,
+            providerGameId = id,
+            title = "Cr4sh Bandicoot",
+        ),
+    )
+
+    @Test
+    fun `opening the Studio resolves SteamGridDB and IGDB in the background, never TheGamesDB`() =
+        runTest(testDispatcher) {
+            val vm = viewModel()
+            vm.load(1L)   // lands on ScreenScraper
+            advanceUntilIdle()
+
+            coVerify(exactly = 1) {
+                matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.STEAMGRIDDB, any(), any())
+            }
+            coVerify(exactly = 1) {
+                matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.IGDB, any(), any())
+            }
+            coVerify(exactly = 0) {
+                matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.THEGAMESDB, any(), any())
+            }
+            // ScreenScraper only by its own visit, and nothing browsed for the background providers.
+            coVerify(exactly = 1) {
+                matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.SCREENSCRAPER, any(), any())
+            }
+            coVerify(exactly = 0) { steamGridDb.getArt(any(), any(), any(), any(), any()) }
+            coVerify(exactly = 0) { igdbApi.fetchGameInfoById(any()) }
+        }
+
+    @Test
+    fun `switching to a source resolved in the background asks nothing more`() = runTest(testDispatcher) {
+        coEvery {
+            matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.IGDB, any(), any())
+        } returns igdbExact("1234")
+        val vm = viewModel()
+        vm.load(1L)
+        advanceUntilIdle()
+
+        vm.selectSource(vm.sourcesForTab().indexOf(StudioSource.IGDB))
+
+        // Known before the dispatcher runs: no "Matching…" at all.
+        assertFalse(vm.uiState.value.matchResolving)
+        assertEquals("IGDB:1234", vm.uiState.value.match?.matchKey)
+        advanceUntilIdle()
+        coVerify(exactly = 1) {
+            matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.IGDB, any(), any())
+        }
+    }
+
+    @Test
+    fun `a visit mid-flight joins the background resolution instead of asking again`() = runTest(testDispatcher) {
+        coEvery { gameRepository.getById(1L) } returns game.copy(storefront = "STEAM", storefrontGameId = "620")
+        val gate = CompletableDeferred<Unit>()
+        coEvery {
+            matchEvidence.candidateByStorefront(com.playfieldportal.feature.artwork.match.MatchProvider.STEAMGRIDDB, "STEAM", "620")
+        } coAnswers {
+            gate.await()
+            sgdbCandidate("9620", "Portal 2")
+        }
+        val vm = viewModel()
+        vm.load(1L)
+        advanceUntilIdle()
+
+        vm.selectSource(vm.sourcesForTab().indexOf(StudioSource.STEAMGRIDDB))
+        advanceUntilIdle()
+        assertTrue(vm.uiState.value.matchResolving)
+
+        gate.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals("STEAMGRIDDB:9620", vm.uiState.value.match?.matchKey)
+        assertFalse(vm.uiState.value.matchResolving)
+        // The storefront lookup is not a title search, so nothing else would have shared it.
+        coVerify(exactly = 1) {
+            matchEvidence.candidateByStorefront(com.playfieldportal.feature.artwork.match.MatchProvider.STEAMGRIDDB, any(), any())
+        }
+    }
+
+    @Test
+    fun `a background resolution that fails does not stop the other`() = runTest(testDispatcher) {
+        coEvery {
+            matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.STEAMGRIDDB, any(), any())
+        } throws IllegalStateException("SteamGridDB is down")
+        coEvery {
+            matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.IGDB, any(), any())
+        } returns igdbExact("1234")
+        val vm = viewModel()
+        vm.load(1L)
+        advanceUntilIdle()
+        val sources = vm.sourcesForTab()
+
+        vm.selectSource(sources.indexOf(StudioSource.IGDB))
+        assertEquals("IGDB:1234", vm.uiState.value.match?.matchKey)
+        advanceUntilIdle()
+
+        // The failure was not remembered: visiting SteamGridDB asks again, and says it didn't answer.
+        vm.selectSource(sources.indexOf(StudioSource.STEAMGRIDDB))
+        advanceUntilIdle()
+        assertTrue(vm.uiState.value.matchFailed)
+        // At least the background's search and the visit's own. (The browse's first-hit search asks
+        // once more, since a failure is never remembered anywhere.)
+        coVerify(atLeast = 2) {
+            matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.STEAMGRIDDB, any(), any())
+        }
+    }
+
+    @Test
+    fun `closing the Studio cancels background resolutions`() = runTest(testDispatcher) {
+        var cancelled = 0
+        coEvery {
+            matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.IGDB, any(), any())
+        } coAnswers {
+            try {
+                awaitCancellation()
+            } catch (e: CancellationException) {
+                cancelled++
+                throw e
+            }
+        }
+        val vm = viewModel()
+        vm.load(1L)
+        advanceUntilIdle()
+
+        vm.close()
+        advanceUntilIdle()
+
+        assertEquals(1, cancelled)
+    }
+
+    // ── SteamGridDB browses by the match (task M.2) ───────────────────────────
+
+    private fun sgdbCandidate(id: String, title: String) =
+        com.playfieldportal.feature.artwork.match.GameCandidate(
+            provider = com.playfieldportal.feature.artwork.match.MatchProvider.STEAMGRIDDB,
+            providerGameId = id,
+            title = title,
+        )
+
+    @Test
+    fun `SteamGridDB searches once however many tabs are browsed`() = runTest(testDispatcher) {
+        val vm = loadedOn(StudioSource.STEAMGRIDDB)
+
+        listOf(ArtworkKind.BOX_ART, ArtworkKind.HERO).forEach { kind ->
+            vm.selectTab(STUDIO_TABS.indexOfFirst { it.kind == kind })
+            advanceUntilIdle()
+            vm.selectSource(vm.sourcesForTab().indexOf(StudioSource.STEAMGRIDDB))
+            advanceUntilIdle()
+        }
+
+        coVerify(exactly = 0) { steamGridDb.searchGame(any()) }
+        coVerify(exactly = 1) {
+            matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.STEAMGRIDDB, any(), any())
+        }
+        // ICON0 and BOX ART browse grids, HERO browses heroes: all three from the one hit.
+        coVerify(exactly = 2) { steamGridDb.getArt(77L, SgdbArtType.GRID, any(), any(), any()) }
+        coVerify(exactly = 1) { steamGridDb.getArt(77L, SgdbArtType.HERO, any(), any(), any()) }
+    }
+
+    @Test
+    fun `an ambiguous SteamGridDB title still browses its first hit`() = runTest(testDispatcher) {
+        // Two exact titles: the matcher calls that a miss, but the grid still has something to show.
+        coEvery {
+            matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.STEAMGRIDDB, any(), any())
+        } returns listOf(sgdbCandidate("501", "Cr4sh Bandicoot"), sgdbCandidate("502", "Cr4sh Bandicoot"))
+
+        val vm = loadedOn(StudioSource.STEAMGRIDDB)
+
+        assertEquals(null, vm.uiState.value.match)
+        coVerify { steamGridDb.getArt(501L, any(), any(), any(), any()) }
+        coVerify(exactly = 0) { steamGridDb.getArt(502L, any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `a typed query browses its own hit, not the saved id`() = runTest(testDispatcher) {
+        coEvery { gameRepository.getById(1L) } returns game.copy(steamGridDbId = 77L)
+        coEvery {
+            matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.STEAMGRIDDB, "Spyro", any())
+        } returns listOf(sgdbCandidate("88", "Spyro the Dragon"))
+        val vm = loadedOn(StudioSource.STEAMGRIDDB)
+        coVerify { steamGridDb.getArt(77L, any(), any(), any(), any()) }
+
+        vm.openSearch()
+        vm.onQueryDraftChanged("Spyro")
+        vm.submitSearch()
+        advanceUntilIdle()
+
+        coVerify { steamGridDb.getArt(88L, any(), any(), any(), any()) }
+        coVerify(exactly = 0) { steamGridDb.searchGame(any()) }
     }
 
     private fun ssCandidate(id: String, title: String, platformName: String? = null) =
