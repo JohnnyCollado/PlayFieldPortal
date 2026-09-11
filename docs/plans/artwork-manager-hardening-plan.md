@@ -308,7 +308,15 @@ Note: there is **zero existing coverage** for `ArtworkStudioViewModel`, the crop
 | L.3 | Title line and flat tabs: search joins the header, breadcrumb trail and SEARCH label go, eleven compact chips with LB/RB glyphs | None | DONE (`a9e0d28`) |
 | L.4 | Current-artwork rail: 150 dp (200 dp at ≥1000 dp wide), caption moved in, true-aspect thumbnail, Y hint | L.3 | DONE (`a9e0d28`) |
 | L.5 | Sources row, match line, page line and prompt bar: NSFW becomes a START badge, PREV/NEXT move under the grid, prompts drop to four | L.2, L.4 | DONE (uncommitted) |
-| L.6 | Verify the layout on the Thor and at least two other screen sizes against the capacity table | L.5 | READY |
+| L.6 | Verify the layout on the Thor and at least two other screen sizes against the capacity table | L.5 | IN PROGRESS (rail fix to see on a build) |
+| M.0 | Timing logs for ScreenScraper's request gate and the Studio's match resolution, plus the account's real rate limits, for a device baseline | L.6 | READY |
+| M.1 | One cancellable job per browse resolves the active provider's match and then browses with it; matches remembered per open, so a tab switch never resolves again (AD-20) | M.0 | READY |
+| M.2 | SteamGridDB browses by the resolved match or the cached search, never a second autocomplete | M.1 | READY |
+| M.3a | Skip ScreenScraper's title search on platforms without ROM files (AD-23) | M.0 | READY |
+| M.3b | ScreenScraper identity from the catalog's one `jeuInfos` before resolving, with no duplicate checksum lookup | M.1 | READY |
+| M.4 | Space ScreenScraper requests start to start, from the account's per-minute limit | M.0 | BLOCKED on M.0's limit reading |
+| M.5 | Keep title searches between opens: 7 days, ScreenScraper empty answers 1 day, other providers' empty answers never (AD-21) | M.1 | READY |
+| M.6 | Resolve SteamGridDB and IGDB in the background when the Studio opens (AD-22) | M.1 | READY |
 | 7.1 | Adopt B2's `ScrapeFailure` for inline provider errors with Retry / Choose Another Source | B2 typed-reasons slice | BLOCKED |
 
 `7.1` is BLOCKED on plan B2 landing its typed-reasons slice.
@@ -321,7 +329,8 @@ rework): the screen measures the grid slot and draws exactly one measured page w
 `userScrollEnabled = false`, `STUDIO_GRID_COLUMNS` is gone, and the paging pills read the
 ViewModel's page size instead of a hardcoded `20`. L.1's Studio tests still pass, 74 across
 `StudioGridCapacityTest`, `ArtworkStudioViewModelTest` and `StudioSearchTest`. `L.3` and `L.4` landed
-in `a9e0d28`; `L.5` is implemented and uncommitted at the time of writing. Next up: `L.6`, then Merge 4.
+in `a9e0d28`; `L.5` is implemented and uncommitted at the time of writing. Next up: finish `L.6`, then
+the matching-latency tasks `M.0`–`M.6` (see "Matching latency"), then Merge 4.
 
 ### What landed, and the decisions taken while landing it
 
@@ -425,6 +434,7 @@ merge independently reviewable:
 | 3 | `3.1` → `3.2` | Metadata presets ride Phase 2's candidate models; the seam (AD-12) is already located. |
 | 3b | `2.4` | *Added 2026-09-10.* Merge 2 shipped Change Match and Forget Match touch-only. One ViewModel file and its test; it should not wait for C17. |
 | 3c | `L.1` → `L.2` → `L.3` → `L.4` → `L.5` → `L.6` | *Added 2026-09-10.* The approved target layout (see "Studio layout rework"). Lands before Merge 4 so Phase 5's queue UI is built into the final layout, and before C17 so C17's regions match it. |
+| 3d | `M.0` → `M.1` → `M.2` → `M.3a` → `M.3b` → `M.4` → `M.5` → `M.6` | *Added 2026-09-11.* User request: identifying a game takes too long. M.1–M.3b and M.6 rewrite how the Studio sequences resolve and browse, which Merge 4's queue builds on, so they land first. |
 | 4 | `5.1` → `5.2` → `5.3` → `5.4` | The Studio-side multi-media queue, on top of a strip that already renders it. |
 | 5 | `6.1` → `6.2` → `6.3` | Crop, entirely self-contained. |
 | 6 | [C17](artwork-studio-navigation-plan.md), then `4.3` → `4.4`, then `6.4` | The input rework, now its own plan; `6.4`'s session undo spans metadata, ordering and crop, so it wants all three landed. |
@@ -1222,6 +1232,277 @@ content with sample state and a no-op implementation: Thor controller and touch,
 `StudioGridCapacity` at the worked-example slot sizes; the counts are approximate, not a substitute
 for L.6's device check. `:feature:feature-xmb:testDebugUnitTest` is green with the ViewModel
 implementing the interface and with both fix batches applied.
+
+## Matching latency (2026-09-11)
+
+**User request, before Merge 4:** identifying a game takes too long, and every second of it costs
+users. Read against the tree after L.6's fixes (uncommitted at the time of writing); re-verify line
+numbers before editing.
+
+### Problem, as measured and read
+
+Device numbers are in "ScreenScraper Change Match dead end" above. The account has one request slot
+(`maxthreads` 1). A platform-scoped `jeuRecherche` takes 3–4 s, and an every-platform one 9–11 s of
+ScreenScraper's own time. Most of the wait users saw was queueing, not server time. Seven causes in
+the tree:
+
+1. **A superseded resolution is never cancelled.** `resolveMatch` launches without keeping the job
+   (`ArtworkStudioViewModel.kt:896`), and `invalidateMatch` only bumps `matchGeneration`
+   (`:859-862`). A superseded ScreenScraper search keeps the one slot while the user's next action
+   queues. The Change Match picker had the same bug and was fixed with `changeMatchJob` (`:870`);
+   the matcher path was not.
+2. **Every tab switch forgets the match and browses without it.** `load`, `selectTab`,
+   `selectSource` and `submitSearch` call `resolveMatch()` and then `loadResults()` (`:385-386`,
+   `:718-719`, `:738-741`, `:1139-1140`). `resolveMatch` sets `match = null` at once (`:895`), so
+   `loadResults` keys the browse with no match (`:457`), although a match never depends on the tab.
+   - An unconfirmed ScreenScraper title match flashes "No ScreenScraper match", then browses again.
+   - TheGamesDB and IGDB start a title browse (`:633`, `:672`) that is cancelled or repeated as a
+     by-id browse once the match lands: three requests on a first visit where two would do.
+   - Only a match confirmed this session escapes (`:889`).
+3. **SteamGridDB searches twice per tab.** `sgdbResults` calls `steamGridDb.searchGame(query)`
+   itself (`:594`), outside `titleSearches` and ignoring the resolved match. Each tab is its own
+   result-cache key, so every tab visited sends another autocomplete request.
+4. **ScreenScraper spends its slot on lookups that cannot win.**
+   - Windows: Tier 3 always runs the `systemeid` search (`GameMatcher.kt:161` →
+     `ProviderMatchEvidence.kt:135`). On device it has found nothing for any title, and it costs
+     3–4 s on every open because ScreenScraper is the first source. The picker already skips it
+     (`searchesEveryPlatformFirst`, `ProviderMatchEvidence.kt:162`).
+   - A ROM game with `rom_crc32` but no `ss_id`: Tier 2 asks `jeuInfos` by checksum
+     (`ProviderMatchEvidence.kt:45`) and discards its media. The browse's `SsMediaCatalog.mediasFor`
+     then sends the same lookup with name, size and checksum (`SsMediaCatalog.kt:72-73`).
+   - A ROM game with no checksum: Tier 3's title search can take the slot ahead of the catalog's ROM
+     lookup, which is the stronger evidence.
+5. **The gate spaces requests from the end of the last one.** `rateLimited`
+   (`ScreenScraperApi.kt:465-473`) waits `MIN_REQUEST_INTERVAL_MS` (1.1 s, `:562`) after the previous
+   request finished, even after a 10 s search. Holding the lock across the request is right with
+   `maxthreads` 1. The gap only guards a per-minute limit, and `SsUser` (`:80-85`) parses none.
+6. **Every open starts cold.** `titleSearches.clear()` runs on every `load` (`:354`). The reason
+   is sound: TheGamesDB, IGDB and SteamGridDB report a failure as an empty list, and remembering
+   that across opens would keep a game unmatched.
+7. **The every-platform search's 9–11 s is ScreenScraper's.** The client can only avoid repeating it
+   or queueing behind it.
+
+### Decisions (user-approved 2026-09-11)
+
+**AD-20. One owner per browse.** One cancellable job resolves the active provider's match, then
+browses with it. Matches are remembered per open. A tab switch never resolves again, and leaving a
+source cancels its resolution.
+
+**AD-21. Title searches persist across opens.** Answers with hits are kept for 7 days (user-approved).
+ScreenScraper's genuine empty answers are kept for 1 day, which is a drafting detail to confirm:
+ScreenScraper throws on failure, so its empty answer is real, but a game it adds later should not
+stay hidden for a week. Other providers' empty answers are never persisted. Failures never are.
+
+**AD-22. Background resolution on open for SteamGridDB and IGDB only.** TheGamesDB has a monthly
+request allowance on free keys, and ScreenScraper has one slot, so both resolve only when visited.
+
+**AD-23. The matcher never title-searches ScreenScraper on a platform without ROM files.** The
+matcher still never widens across platforms; Change Match stays the way to pick a console release.
+
+### Rejected
+
+- **More than one ScreenScraper request at a time.** The account allows one.
+- **Dropping the 1.1 s gap before the per-minute limit is known.** Risks throttling the account.
+- **Automatic cross-platform matching, or fuzzy Tier 4 guesses to match sooner.** Both contradict
+  decisions above: a cross-platform match is a guess, and Tier 4 is deferred.
+- **Starting the every-platform search in the background for Windows games.** It holds the slot for
+  10 s and spends quota for users who never open Change Match. AD-21 makes the second time instant.
+- **Seeding Change Match with SteamGridDB's or IGDB's canonical title.** On device "Tactics Ogre:
+  Reborn" found only the PS5 release with no art, while "Tactics Ogre" found the Switch one.
+
+### Execution tasks
+
+Land in index order, one at a time: M.1, M.2, M.3b and M.6 all edit `ArtworkStudioViewModel.kt`.
+Each task drafts its tests before the implementation. The user runs every Gradle command.
+
+**M.0: Timing logs and the account's limits**
+- **Objective:** measure queueing against provider time before changing anything, and read the
+  account's real rate limits for M.4.
+- **Requirements:**
+  - `rateLimited` takes a label and logs, at debug level, the endpoint, the milliseconds spent
+    waiting for the gate, and the milliseconds the request took. Every caller passes one
+    (`jeuInfos`, `jeuRecherche`, `ssuserInfos`).
+  - The Studio logs each resolution's provider, tier (or none, or failed) and elapsed milliseconds,
+    and each Change Match search's elapsed milliseconds and whether it was every-platform.
+  - Once per process, log the numeric fields of a response's `ssuser` block. Never log `id`: it is
+    the account name. The per-minute field's exact name is unverified; this run reads it.
+- **Do not change:** any behaviour.
+- **Expected files:** `ScreenScraperApi.kt`, `ArtworkStudioViewModel.kt`. No test (logging only);
+  `ScreenScraperApiTest` and the Studio tests must stay green.
+- **Verification (device):** with logcat open, visit Tactics Ogre: Reborn (Windows) and one ROM
+  game with no `ss_id`. Walk ICON0 → BOX ART → LOGO, switch ScreenScraper → SteamGridDB → IGDB → back,
+  and run one Change Match search. Record the numbers here as the baseline.
+- **Stop:** when the baseline and the `ssuser` limits are recorded.
+
+**M.1: One owner job for resolve, then browse**
+- **Objective:** causes 1 and 2.
+- **Existing code:** `resolveMatch` (`:879-909`), `invalidateMatch` (`:859-862`), `loadResults`
+  (`:450-497`), its callers above, `confirmMatch` (`:1063-1086`), `forgetMatch` (`:1094-1104`),
+  `refreshSsIdentityAfterBrowse` (`:766-772`).
+- **Requirements:**
+  - A per-open match memo keyed on provider plus the query, normalized for case and spacing only,
+    as `CachingMatchEvidence.SearchKey` does (punctuation changes what a provider returns).
+    - A resolution that throws is not stored, and still sets `matchFailed`.
+    - Cleared in `load`, next to `titleSearches.clear()`.
+    - Cleared for one provider whenever that provider's saved id changes: `confirmMatch`,
+      `forgetMatch`, and `refreshSsIdentityAfterBrowse` when the id moved.
+  - `loadResults()` is the one entry. It cancels the previous job, then in one job:
+    1. When the source has a match provider and no confirmed match for it, read the memo or resolve.
+       `matchResolving` is shown, and the grid shows skeletons, never an empty result.
+    2. Write `match`.
+    3. Build `StudioRequestKey` with it.
+    4. Check the cache, fetch, `showPage`.
+  - The key and generation checks stay exactly as they are (AD-6).
+  - `selectTab` resolves nothing new: the memo answers for the same provider and query.
+  - Cancelling the job cancels a running resolution. `CachingMatchEvidence` already hands a shared
+    in-flight search to a caller still waiting when the asker is cancelled ("when the caller asking
+    is cancelled…"), so the Change Match picker is never stranded.
+  - A confirmed match still wins and is never re-derived (`:888-892`).
+  - `resolveMatch(force)` and its call sites fold into the above.
+- **Do not change:** `GameMatcher`, `CachingMatchEvidence`, the picker's `changeMatchJob`,
+  `StudioRequestKey`, `StudioResultCache`, the provider clients.
+- **Expected files:** `ArtworkStudioViewModel.kt`, `ArtworkStudioViewModelTest.kt`.
+- **Tests (draft first):**
+  - `switching tabs keeps the match and never browses without it`: with a unique TheGamesDB title
+    match, walk ICON0 → BOX ART → LOGO. `theGamesDb.fetchGameInfo` (by title) is never called,
+    `fetchGameInfoById` is called once per tab, and `searchByTitle` once in total.
+  - `the grid waits on skeletons, not an empty result, while its match resolves`: with a suspended
+    ScreenScraper search, `matchResolving` and `resultsLoading` stay true until it answers.
+  - `leaving a source cancels its running resolution`: a suspended ScreenScraper search records its
+    cancellation when SteamGridDB is selected.
+  - `returning to a source reuses its match without asking again`: ScreenScraper → SteamGridDB →
+    ScreenScraper asks ScreenScraper once.
+  - `a failed resolution is not remembered, so the next visit asks again`.
+  - `a new query resolves again`.
+  - `reopening the Studio resolves afresh`.
+  - Keep green: `the match is part of the request key, so switching match refetches`, `opening
+    Change Match while a match resolves never leaves the row on Matching`, `confirming a match
+    mid-resolution clears the spinner and keeps the user's choice`, `re-resolving a match reuses the
+    title search, and so does the picker`, `a ScreenScraper browse that identifies the game brings the
+    match row along`.
+- **Acceptance:** the tests pass. On the Thor a tab walk shows no "No ScreenScraper match" flash,
+  and M.0's logs show one resolution per provider per open.
+- **Dependencies:** M.0.
+- **Verification:** `:feature:feature-xmb:testDebugUnitTest`, then the M.0 device walk.
+
+**M.2: SteamGridDB browses by the match**
+- **Objective:** cause 3.
+- **Existing code:** `sgdbResults` (`:581-621`), its id choice at `:588-595`.
+- **Requirements:** choose the SteamGridDB id in this order, keeping today's query rules:
+  1. A confirmed SteamGridDB match.
+  2. The saved `steam_grid_db_id` while the query is the game's title (`:591`).
+  3. The resolved match when its tier is `CONTENT_ID` or `EXACT_TITLE`. Not `SAVED_PROVIDER_ID`:
+     Tier 1 ignores the query, and step 2 already keeps that rule.
+  4. The first hit of `titleSearches.searchByTitle(STEAMGRIDDB, query, platformId)`: today's first
+     autocomplete hit, now cached, so an ambiguous title still browses something.
+
+  Never a direct `steamGridDb.searchGame`.
+- **Expected files:** `ArtworkStudioViewModel.kt`, `ArtworkStudioViewModelTest.kt`. Existing SGDB
+  browse tests stub `steamGridDb.searchGame` (`ArtworkStudioViewModelTest.kt:100`); move those
+  stubs to `matchEvidence.searchByTitle(STEAMGRIDDB, …)`.
+- **Tests (draft first):** `SteamGridDB searches once however many tabs are browsed` (ICON0, BOX ART,
+  HERO: `searchGame` never, `searchByTitle` once); `an ambiguous SteamGridDB title still browses its
+  first hit`; `a typed query browses its own hit, not the saved id`.
+- **Dependencies:** M.1.
+
+**M.3a: No ScreenScraper title search where there are no ROM files**
+- **Objective:** cause 4, Windows (AD-23).
+- **Requirements:** `ProviderMatchEvidence.searchByTitle` returns an empty list for ScreenScraper
+  on `PLATFORMS_WITHOUT_ROMS` without sending a request. The picker is unaffected: it already goes
+  straight to `searchScreenScraperOnAnyPlatform` there. The match row says "No ScreenScraper match"
+  at once, and Change Match is the way on, as today.
+- **Expected files:** `ProviderMatchEvidence.kt`; new `ProviderMatchEvidenceTest.kt` in
+  feature-artwork `match/` (`ArtworkStudioViewModelTest` mocks this class, so it cannot see the
+  change).
+- **Tests (draft first):** `ScreenScraper is never title-searched on a platform without ROM files`
+  (a mocked `ScreenScraperApi.searchGames` is never called); `other platforms still search ScreenScraper
+  by title`.
+- **Dependencies:** M.0.
+
+**M.3b: One ScreenScraper identity lookup, not two**
+- **Objective:** cause 4, ROM games.
+- **Requirements:**
+  - On ScreenScraper, for a game with no `ss_id` on a platform with ROM files, M.1's job runs the
+    catalog's identity lookup first: `ssMediaCatalog.mediasFor(gameId, null)`, then reload the game
+    row. A hit saves `ss_id` (the catalog already does), so the resolution is Tier 1 with no further
+    request, and the browse reads `ss_media_cache`.
+  - On a miss, resolve with the checksum tier skipped, through a new defaulted parameter
+    `GameMatcher.resolve(…, skipRomHash = false)`. The catalog just asked `jeuInfos` with the same
+    checksum plus name and size.
+  - Skip it only when the catalog could hash (`romPath` or `romUri` set). With neither, the catalog
+    sends nothing, and a stored `rom_crc32` is still worth asking.
+- **Expected files:** `GameMatcher.kt`, `ArtworkStudioViewModel.kt`, `GameMatcherTest.kt`,
+  `ArtworkStudioViewModelTest.kt`. That is two test files, one over the §4 budget, because the new
+  parameter belongs to the pure matcher.
+- **Tests (draft first):**
+  - `GameMatcherTest`: `skipping the ROM checksum tier goes straight to the title search`, `the
+    checksum tier still runs by default`.
+  - `ArtworkStudioViewModelTest`: `a ROM game's ScreenScraper identity comes from one lookup` (the
+    catalog saves 555, `candidateByRomHash` is never called, and the match is Tier 1); `when the
+    catalog finds nothing, the title search runs and the checksum is not asked again`.
+- **Dependencies:** M.1.
+
+**M.4: ScreenScraper spacing, start to start**
+- **Objective:** cause 5.
+- **Blocked until** M.0 records the account's per-minute limit. If `ssuser` carries none, stop and
+  report rather than guess.
+- **Requirements:**
+  - Record when each request starts, and wait for `interval − (now − lastStart)`.
+  - `interval` is `max(1 100, ceil(60 000 ÷ perMinute))` ms, so a generous account is never slower
+    than today, and a strict one never exceeds its limit.
+  - Keep the `Mutex`, since `maxthreads` is 1.
+  - The spacing rule is a pure function, so it is testable without a mock HTTP engine (adding
+    `ktor-client-mock` still needs approval).
+- **Expected files:** `ScreenScraperApi.kt`, `ScreenScraperApiTest.kt`.
+- **Tests (draft first):** `a request that took longer than the interval sends the next one at
+  once`, `back-to-back fast requests are spaced by the interval from their starts`, `the interval
+  never drops below 1.1 s`.
+
+**M.5: Title searches kept between opens**
+- **Objective:** cause 6 (AD-21).
+- **Requirements:**
+  - A `TitleSearchStore` interface in feature-artwork `match/`, and a JSON-file implementation
+    under `cacheDir/match-searches/`, provided as a Hilt singleton. `ArtworkImportWorker` already
+    writes plan files the same way, in `filesDir`; this goes in `cacheDir` because it can be rebuilt.
+    A serializable DTO lives inside the store, so `GameMatching.kt` stays free of serialization.
+  - `CachingMatchEvidence` takes the store and an injectable clock. It reads memory, then an entry
+    in the store still inside its TTL, then the provider.
+  - Every answer goes to memory, as today. It goes to the store only when it has hits (7 days) or is
+    ScreenScraper's empty answer (1 day). Failures and cancellations never do.
+  - `remember(…, scope = "every-platform:…")` is stored under its own scope.
+  - `clear()` still clears memory only.
+- **Expected files:** `CachingMatchEvidence.kt`, new `TitleSearchStore.kt`, a Hilt binding in
+  `ArtworkModule.kt`, `ArtworkStudioViewModel.kt` (constructor), `CachingMatchEvidenceTest.kt`, and a
+  new `FileTitleSearchStoreTest.kt` over a temp directory. Two new files and two test files, over the
+  §4 budget: the store's file format deserves its own round-trip test.
+- **Tests (draft first):** `a search answered in an earlier open is served from the store without
+  asking`, `an entry past its TTL is asked again and replaced`, `other providers' empty answers are
+  never stored`, `a ScreenScraper empty answer is stored for one day only`, `a failed or cancelled
+  search is never stored`, `the every-platform scope is stored apart from the platform search`, and the
+  file store's round trip, including an unreadable file that reads as empty.
+- **Accepted cost:** a game ScreenScraper adds can take up to a day to appear.
+- **Dependencies:** M.1.
+
+**M.6: Background resolution on open**
+- **Objective:** instant switches to SteamGridDB and IGDB (AD-22).
+- **Requirements:**
+  - After `load` starts the active source's job, launch one resolution each for SteamGridDB and
+    IGDB, when they are available and not the active provider. They go through M.1's memo and
+    `titleSearches`, so a visit that arrives mid-flight joins them.
+  - A failure in one does not cancel the other, and is not remembered.
+  - Never TheGamesDB, never ScreenScraper.
+  - The ViewModel outlives the screen (host-scoped, `:348-351`), so these jobs are cancelled on the
+    close path that sets `closed`, and when `load` moves to another game, not only in `onCleared`.
+  - They use the query at open. A later query change is resolved on visit by M.1.
+- **Expected files:** `ArtworkStudioViewModel.kt`, `ArtworkStudioViewModelTest.kt`.
+- **Tests (draft first):** `opening the Studio resolves SteamGridDB and IGDB in the background, never
+  TheGamesDB`, `switching to a source resolved in the background asks nothing more`, `a background
+  resolution that fails does not stop the other`, `closing the Studio cancels background
+  resolutions`.
+- **Dependencies:** M.1.
+
+Every task: **if blocked**, stop and report what was attempted, what blocked it, which file caused
+it and what decision is needed (`PLANNING_WORKFLOW.md` §4).
 
 ## Deferred to a follow-up plan
 
