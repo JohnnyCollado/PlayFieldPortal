@@ -305,9 +305,9 @@ Note: there is **zero existing coverage** for `ArtworkStudioViewModel`, the crop
 | 6.4 | Session Undo Last Apply over metadata, artwork replacement, ordering and crop | 3.2, 5.4, 6.2 | READY |
 | L.1 | Measured grid capacity in the ViewModel: a pure `StudioGridCapacity` plus per-tab tile class replaces the fixed 4×5 constants; re-paging keeps the focused result (AD-17) | None | DONE |
 | L.2 | Render exactly one measured page: the grid slot reports its size and draws `gridColumns` × `gridRows` with no scrolling | L.1 | DONE |
-| L.3 | Title line and flat tabs: search joins the header, breadcrumb trail and SEARCH label go, eleven compact chips with LB/RB glyphs | None | DONE (uncommitted) |
-| L.4 | Current-artwork rail: 150 dp (200 dp at ≥1000 dp wide), caption moved in, true-aspect thumbnail, Y hint | L.3 | DONE (uncommitted) |
-| L.5 | Sources row, match line, page line and prompt bar: NSFW becomes a START badge, PREV/NEXT move under the grid, prompts drop to four | L.2, L.4 | READY |
+| L.3 | Title line and flat tabs: search joins the header, breadcrumb trail and SEARCH label go, eleven compact chips with LB/RB glyphs | None | DONE (`a9e0d28`) |
+| L.4 | Current-artwork rail: 150 dp (200 dp at ≥1000 dp wide), caption moved in, true-aspect thumbnail, Y hint | L.3 | DONE (`a9e0d28`) |
+| L.5 | Sources row, match line, page line and prompt bar: NSFW becomes a START badge, PREV/NEXT move under the grid, prompts drop to four | L.2, L.4 | DONE (uncommitted) |
 | L.6 | Verify the layout on the Thor and at least two other screen sizes against the capacity table | L.5 | READY |
 | 7.1 | Adopt B2's `ScrapeFailure` for inline provider errors with Retry / Choose Another Source | B2 typed-reasons slice | BLOCKED |
 
@@ -320,8 +320,8 @@ replanned after Merge 1, as promised; that replan is below. Task `2.4` landed ne
 rework): the screen measures the grid slot and draws exactly one measured page with
 `userScrollEnabled = false`, `STUDIO_GRID_COLUMNS` is gone, and the paging pills read the
 ViewModel's page size instead of a hardcoded `20`. L.1's Studio tests still pass, 74 across
-`StudioGridCapacityTest`, `ArtworkStudioViewModelTest` and `StudioSearchTest`. `L.3` is implemented
-and uncommitted at the time of writing. Next up: `L.4`–`L.6`, then Merge 4.
+`StudioGridCapacityTest`, `ArtworkStudioViewModelTest` and `StudioSearchTest`. `L.3` and `L.4` landed
+in `a9e0d28`; `L.5` is implemented and uncommitted at the time of writing. Next up: `L.6`, then Merge 4.
 
 ### What landed, and the decisions taken while landing it
 
@@ -1058,6 +1058,170 @@ Decisions taken while landing the last two:
 
 Still open from this group: `L.5` and `L.6`, and no part of `L.2`–`L.4` has yet been seen on a
 screen.
+
+### Landed: L.5 (2026-09-11)
+
+`L.3` and `L.4` were committed in `a9e0d28`; `L.5` is uncommitted at the time of writing. It changes
+`ArtworkStudioScreen.kt` only. Decisions taken while landing it:
+
+- **The match line and the page line keep their bands when empty.** The match line is still drawn
+  only while a source has a match provider (the visibility rule 2.4's menu entries mirror), and the
+  page line's text only once there are results. Their 22 dp and 16 dp stay reserved either way. If
+  they collapsed, switching to Local File or finishing a load would resize the grid slot. That
+  would fire `onGridMeasured` and re-page results that had just been measured. This is AD-16's
+  "every band except the grid has a fixed height", applied to the bands that come and go.
+- **Source chips share the tab chips' style** (24 dp, 10.5 sp, 8 dp padding, 4 dp gaps), as the
+  mockup draws them with one `.chip` class. The row scrolls horizontally rather than clipping, so a
+  narrow screen with "· n/a" badges on every image provider still reaches Local File.
+- **The mature badge is a `ControllerPrompt` for `HOME`**, so it shows whichever button the user's
+  bindings put on START. Known edge: `ControllerPromptGlyphs` draws nothing when an action has no
+  icon, so with START unbound the badge disappears. The SteamGridDB menu entry still toggles the
+  filter.
+- **The match line's CHANGE MATCH lost its filled background.** The mockup draws it as bold text
+  beside a muted FORGET. Disabled still reads as 35 % white.
+- **The pager hides on a single page** and keeps the range text. Its arrows use `hasPreviousPage` /
+  `hasNextPage` instead of the rail pills' own `hasMore` arithmetic, so one definition of "is there
+  another page" is left.
+- **Prompts are down to four per zone** in the grid: select, back, search, options. The per-zone
+  `when` stays for C17 task 2.4.
+
+No unit test was added: nothing in L.5 is logic outside Compose, and feature-xmb has no screen
+harness (L.6 decides whether to build one). Verification is the build plus the Thor, per the task.
+
+### Device fixes, same session (2026-09-11)
+
+- **Change Match needed two searches for "Tactics Ogre".** Logcat for the Windows install:
+  - The Studio's Windows-scoped match found 0 hits (2.4 s).
+  - The picker's every-platform seed, "Tactics Ogre: Reborn", found one PS5 hit with no art (8.6 s).
+  - "Tactics Ogre" then failed with `SocketTimeoutException` at 15 s and showed "didn't answer".
+  - The same search again returned 9 hits in 9.4 s.
+
+  ScreenScraper sends nothing until a search is done, so the client's 15 s read timeout cut off
+  a search that was still running. `jeuRecherche` now asks for a 40 s socket timeout through
+  `timeout {}`, and `HttpTimeout` is installed with no defaults, so every other request keeps
+  15 s. Not unit-tested: feature-artwork has no Ktor mock engine, and adding `ktor-client-mock`
+  needs approval. Still slow: the every-platform search is 9–15 s of ScreenScraper's own time on
+  a one-request-at-a-time account, and a seed title with a subtitle can still find the wrong
+  release first.
+- **Update Metadata closed itself when no source had anything** and left its reason in a message
+  behind the overlay, which looked like a crash. The overlay now stays open. With no presets it
+  says why: no source recognised the game (it points at a ScreenScraper Change Match, since
+  presets come from ScreenScraper's saved id and TheGamesDB's title search), or the sources
+  didn't answer. Its one button is Close, and Select, Back or a tap dismisses it. Tests are in
+  `GameDetailViewModelTest`.
+
+### L.6 in progress, and touch pills pulled forward from 4.3 (2026-09-11)
+
+**Thor, 833 × 468 dp, build installed 00:53 (L.5).** Capacity matches the table for every tile class
+checked: ICON0 5 × 3 = 15 ("1–15 of 23"), BOX ART 7 × 2 = 14 ("43–50 of 50", page 4 / 4, cursor on the
+last tile and on screen), PHYS. MEDIA 5 × 2 = 10. LOGO drew 4 columns; SteamGridDB had only 6 logos,
+so its 3 rows are unconfirmed. The measured slot is ~613 dp wide, not the assumed 635, with the same
+result. Injected `adb input` D-pad presses do not drive the Studio reliably (taps and B do); cursor
+walks are done on the pad.
+
+Fixed from the screenshots, not yet seen on a build:
+- **CHANGE MATCH was clipped** on one game's match line: its 4 dp vertical padding left ~14 dp
+  inside the 22 dp band. FORGET and CHANGE MATCH are now full-height boxes padded sideways only,
+  like the source chips.
+- **The header subtitle touched the query field** ("Artwork Studio · WINDOWS" under a capped
+  title left the weighted spacer ~2 dp). The field now has a 12 dp start gap.
+
+Second batch, root causes found in code, also not yet seen on a build:
+- **CHANGE MATCH sat ~115 dp short of the edge on "Tactics Ogre" but flush right on "Elliot".** The
+  match title was weighted `fill = false` beside a separate `Spacer(weight(1f))`. Row splits free
+  width between weighted children by weight, and a `fill = false` child leaves its unused share
+  empty rather than handing it to the spacer, so the offset tracked the title's length. The title
+  and the Confirmed badge now sit in one `Row(weight(1f))` with no spacer.
+- **The rail caption's wide line spacing and the page line's raised glyphs were one cause.**
+  `PFPTheme` uses Material3's default typography, so a `Text` with no style inherits `bodyLarge`'s
+  24 sp line height. A wrapped 9.5 sp caption was spaced like two paragraphs, and in the 16 dp page
+  line a 24 sp text box drew its text below the centred glyphs. Those texts set `lineHeight = 12.sp`.
+  The caption still wraps on BOX ART / 3D BOX / PHYS. MEDIA at the 150 dp rail; that is expected.
+
+**Seen on the Thor with both batches (2026-09-11, Tactics Ogre: Reborn):**
+- CHANGE MATCH is flush right with the title short, and the query field has its gap.
+- ICON0 on ScreenScraper is 5 × 3 ("1–13 of 13").
+- BOX ART's caption wraps onto two tight lines.
+- SteamGridDB BOX ART in touch mode is 7 × 2 ("1–14 of 50", Page 1 / 4), so the 40 dp page line
+  cost no row. "‹ Prev" is dimmed on the first page, the pills are unclipped, the rail shows
+  "⋯ Options", and the Mature badge is shown.
+- An injected `keyevent` RB changes tabs, but an injected pad key does not return the Studio to
+  controller mode. The controller-mode page line (glyph alignment) is checked on the pad.
+
+**20:9 phone, `wm size 864x1920` + `wm density 336` = 914 × 411 dp (same build):**
+- The measured grid slot is about 694 × 220 dp, not the table's 717 × 203. Side chrome is wider
+  than assumed, as on the Thor, and vertical chrome is smaller.
+
+| Tab (source) | Table | Measured | Note |
+|---|---|---|---|
+| ICON0 (ScreenScraper) | 6 × 2 = 12 | 5 × 2 = 10 ("1–10 of 13", Page 1 / 2) | ⌊702 ÷ 120⌋ = 5 at 694 dp |
+| BOX ART (SteamGridDB, touch) | 8 × 1 = 8 | 7 × 1 = 7 ("1–7 of 50", Page 1 / 8) | ⌊702 ÷ 88⌋ = 7 |
+| PHYS. MEDIA (ScreenScraper) | n/a | 6 columns (108 dp tiles, 2 results) | rows unconfirmed |
+| LOGO (ScreenScraper) | n/a | 4 columns (168 dp tiles, 1 result) | rows unconfirmed |
+
+- Every miss is one column, and it follows from the measured slot width. That is within L.6's
+  tolerance.
+- All eleven tabs, the sources, the match line and the pager fit. The controller-mode page line's
+  LB/RB glyphs now line up with its text.
+- **Clipping found and fixed (not yet on a build):** on BOX ART in touch mode, the rail's
+  "⋯ Options" pill was cut off at the bottom. The thumbnail took its full height from the rail's
+  width at 0.7 aspect (~214 dp), and nothing let it yield. The rail is now an inner column whose
+  only weighted child is the thumbnail (`weight(1f, fill = false)` then `aspectRatio`, with no
+  `fillMaxWidth`), so the thumbnail narrows to the height left. Options sits directly under it, and
+  the message sits under the inner column at the rail's bottom. A weighted spacer beside the
+  thumbnail would split the free height, the same `fill = false` trap as the match line.
+
+**16:10 tablet, `wm size 1080x1728` + `wm density 216` = 1280 × 800 dp (same build, reset
+afterwards):**
+- The rail is 200 dp (AD-19). The measured grid slot is about 1010 dp wide, against the table's 1032.
+
+| Tab (source) | Table | Measured | Note |
+|---|---|---|---|
+| ICON0 (ScreenScraper) | 8 × 6 = 48 | 8 columns (118 dp tiles, 13 results) | 6 rows by arithmetic, not seen |
+| BOX ART (SteamGridDB, touch) | 8 × 3 = 24 | 8 × 3 = 24 ("1–24 of 50", Page 1 / 3) | exact |
+| PHYS. MEDIA (ScreenScraper) | n/a | 8 columns (2 results) | rows unconfirmed |
+| LOGO (ScreenScraper) | n/a | 6 columns (162 dp tiles, 1 result) | ⌊1018 ÷ 148⌋ = 6 |
+
+- Nothing is clipped. The touch pills and "⋯ Options" fit.
+- Under a `wm size` override, `input tap` takes override coordinates. Two injected LB presses after
+  tapping a source chip did not change tabs (not investigated), so ICON0 on SteamGridDB was not
+  reached at this size.
+
+**L.6 status.** Capacity is within one column of the table at all three sizes, and the only
+clipping found is fixed. Still open before L.6 is DONE:
+- The rail fix is not yet on a build. Recheck BOX ART in touch mode at 914 × 411 dp.
+- ICON0's 6 rows at 1280 × 800 dp are arithmetic, not seen.
+- The D-pad walk was done only on the Thor, because injected D-pad keys do not drive the Studio.
+- The screenshots are in the session scratchpad, not the repo. Committing PNGs is the user's call.
+
+**Touch pills (user request, part of 4.3 landed ahead of C17).** `GameDetailScreen` now passes
+`showTouchControls` and `onTouchInput` into the Studio, which reports touches with the same
+non-consuming detector, since it replaces Game Detail while open. In touch mode the page line's
+‹ › become `XmbHeaderPill` "‹ Prev" / "Next ›" around "Page x / y" (dimmed, and inert, at either
+end), the manual preview's Prev/Next do the same, and the rail's Y hint becomes an "⋯ Options"
+pill. The page line is 40 dp in touch mode instead of 16 dp, so the pills are not clipped; the
+mode flip therefore re-measures the grid once, and AD-17 keeps the focused result. On the Thor
+that costs no capacity for any tile class (rows stay 3 / 2 / 2 / 3). The rest of 4.3, touch-sized
+tabs, source chips and tiles, still waits on C17. No unit test: presentation only, and feature-xmb
+has no screen harness.
+
+The three controls live in `StudioTouchControls.kt` as stateless composables (`StudioPageLine`,
+`StudioOptionsControl`, `StudioManualPager`) so they can be previewed; the screen takes a Hilt
+ViewModel and cannot be. Each has a `@CombinedPreviews` preview showing touch above controller mode
+at the Thor's measured widths (613 dp grid slot, 150 dp rail). feature-xmb gained
+`debugImplementation(libs.compose.ui.tooling)`, as feature-settings and feature-appbar already have,
+so Android Studio can render them.
+
+**Full-screen previews.** `ArtworkStudioScreen` is now a thin wrapper (ViewModel, load, close,
+pending pad action, file picker) around a stateless `ArtworkStudioContent(state, actions, …)`, the
+split `PfpPreviewWrapper` recommends. `actions` is a new `ArtworkStudioActions` interface of the 37
+functions the body calls; `ArtworkStudioViewModel` implements it, so the compiler keeps the two in
+step, and nothing about the ViewModel's behaviour changed. `ArtworkStudioPreview.kt` renders the
+content with sample state and a no-op implementation: Thor controller and touch, a 20:9 phone and a
+16:10 tablet. A static preview never measures its grid slot, so each pages its sample with
+`StudioGridCapacity` at the worked-example slot sizes; the counts are approximate, not a substitute
+for L.6's device check. `:feature:feature-xmb:testDebugUnitTest` is green with the ViewModel
+implementing the interface and with both fix batches applied.
 
 ## Deferred to a follow-up plan
 

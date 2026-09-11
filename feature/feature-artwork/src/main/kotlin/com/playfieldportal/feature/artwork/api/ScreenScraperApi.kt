@@ -8,6 +8,7 @@ import com.playfieldportal.feature.artwork.credentials.ScreenScraperCredentials
 import com.playfieldportal.feature.artwork.rom.RomIdentity
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.timeout
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
@@ -360,6 +361,10 @@ class ScreenScraperApi @Inject constructor(
                 credentialParams(creds)
                 parameter("recherche", title)
                 systemId?.let { parameter("systemeid", it) }
+                // ScreenScraper sends nothing until the search is done, and an every-platform search
+                // took 9–15 s on device and once longer. The client's 15 s read timeout cut that
+                // off, so the user had to search twice. Only name searches get the longer wait.
+                timeout { socketTimeoutMillis = SEARCH_SOCKET_TIMEOUT_MS }
             } }.let { it.status.value to it.bodyAsText() }
         } catch (e: CancellationException) {
             throw e
@@ -555,6 +560,7 @@ class ScreenScraperApi @Inject constructor(
     companion object {
         private const val BASE = "https://api.screenscraper.fr/api2"
         private const val MIN_REQUEST_INTERVAL_MS = 1_100L
+        private const val SEARCH_SOCKET_TIMEOUT_MS = 40_000L
 
         private val NON_SLUG = Regex("[^a-z0-9]+")
         private const val MAX_CAPTURES = 20

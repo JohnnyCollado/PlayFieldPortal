@@ -12,6 +12,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.HttpTimeout
 import com.playfieldportal.feature.artwork.BuildConfig
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.LogLevel
@@ -43,6 +44,10 @@ object ArtworkModule {
     @Singleton
     fun provideHttpClient(): HttpClient = HttpClient(OkHttp) {
         expectSuccess = false
+        // No defaults: every request keeps the engine's 15 s below. Installed so a request can ask
+        // for its own longer wait with timeout {} (ScreenScraper's name search does), which the
+        // OkHttp engine applies to a client built for that timeout.
+        install(HttpTimeout)
         install(ContentNegotiation) {
             json(Json {
                 ignoreUnknownKeys = true

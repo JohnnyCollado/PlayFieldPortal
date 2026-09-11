@@ -73,7 +73,8 @@ fun MetadataPreviewPanel(
         ) {
             Text("Update Metadata", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             Text(
-                "Up/Down  Rows  •  Left/Right  Policy  •  L1/R1  Source  •  Select  Toggle / Apply  •  B  Cancel",
+                if (ui.nothingFound) "Select or B  Close"
+                else "Up/Down  Rows  •  Left/Right  Policy  •  L1/R1  Source  •  Select  Toggle / Apply  •  B  Cancel",
                 color = TextMuted.copy(alpha = 0.5f),
                 fontSize = 10.sp,
             )
@@ -81,6 +82,40 @@ fun MetadataPreviewPanel(
             if (ui.loading) {
                 Box(Modifier.fillMaxWidth().padding(vertical = 28.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = focusEdge)
+                }
+                return@Column
+            }
+
+            // Nothing to preview: say why in the overlay the user opened, and leave closing to them.
+            if (ui.nothingFound) {
+                Text(
+                    if (ui.failed) "The metadata sources didn't answer." else "No source recognised this game.",
+                    color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+                Text(
+                    if (ui.failed) {
+                        "Nothing was changed. Check the connection and try again."
+                    } else {
+                        // Presets come from ScreenScraper (by its saved id) and TheGamesDB (by title),
+                        // so a ScreenScraper Change Match is what gives this game a source.
+                        "Nothing was changed. To identify it, open Artwork, choose ScreenScraper and " +
+                            "use Change Match, then update metadata again."
+                    },
+                    color = TextMuted, fontSize = 12.sp,
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(focusFill)
+                        .border(1.5.dp, focusEdge, RoundedCornerShape(8.dp))
+                        .clickable(onClick = onClose)
+                        .padding(vertical = 12.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text("Close", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                 }
                 return@Column
             }

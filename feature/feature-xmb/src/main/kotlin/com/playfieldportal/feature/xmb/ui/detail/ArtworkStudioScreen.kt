@@ -64,6 +64,8 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import kotlinx.coroutines.launch
@@ -110,12 +112,14 @@ fun ArtworkStudioScreen(
     onClose: () -> Unit,
     pendingGamepadAction: GamepadAction? = null,
     onGamepadActionConsumed: () -> Unit = {},
+    // Touch presentation, resolved by the caller exactly as for Game Detail: tappable controls
+    // become pills. The Studio replaces Game Detail while open, so it reports touches itself.
+    showTouchControls: Boolean = true,
+    onTouchInput: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: ArtworkStudioViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
-    val pfpColors = LocalPFPColors.current
-    val accent = menuCursorEdge()
 
     LaunchedEffect(gameId) { viewModel.load(gameId) }
     LaunchedEffect(state.closed) {
@@ -147,9 +151,38 @@ fun ArtworkStudioScreen(
         viewModel.consumeLocalPick()
     }
 
+    ArtworkStudioContent(
+        state = state,
+        actions = viewModel,
+        showTouchControls = showTouchControls,
+        onTouchInput = onTouchInput,
+        modifier = modifier,
+    )
+}
+
+/**
+ * The Studio itself, stateless: [state] in, [actions] out. Split from [ArtworkStudioScreen], which
+ * owns the ViewModel, loading, closing and the file picker, so that this can be previewed with
+ * sample state (ArtworkStudioPreview.kt).
+ */
+@OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
+@Composable
+internal fun ArtworkStudioContent(
+    state: ArtworkStudioUiState,
+    actions: ArtworkStudioActions,
+    showTouchControls: Boolean,
+    onTouchInput: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val pfpColors = LocalPFPColors.current
+    val accent = menuCursorEdge()
+
     Box(
         modifier = modifier
             .fillMaxSize()
+            // Any touch marks the input source as touch (revealing the pills), without consuming
+            // the event, as Game Detail does.
+            .pointerInput(Unit) { awaitEachGesture { awaitFirstDown(requireUnconsumed = false); onTouchInput() } }
             .background(
                 Brush.verticalGradient(
                     0f to pfpColors.backgroundTop.copy(alpha = 0.97f),
@@ -170,7 +203,7 @@ fun ArtworkStudioScreen(
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.clickable { viewModel.handleGamepadAction(GamepadAction.BACK) },
+                    modifier = Modifier.clickable { actions.handleGamepadAction(GamepadAction.BACK) },
                 ) {
                     Text(
                         "◀",
@@ -201,9 +234,12 @@ fun ArtworkStudioScreen(
                 // ── Query field (Square / tap) — the query the providers are actually asked for ──
                 // Editable and non-destructive: it never renames the game, and Reset puts the
                 // game's own title back. Submit-only, so no provider is hit per keystroke.
+                // L.6: a guaranteed gap. At 833 dp a capped title plus "Artwork Studio · WINDOWS"
+                // left the weighted spacer ~2 dp, so the subtitle ran into the field.
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
+                        .padding(start = 12.dp)
                         .widthIn(max = 300.dp)
                         .height(28.dp)
                         .clip(RoundedCornerShape(8.dp))
@@ -213,7 +249,7 @@ fun ArtworkStudioScreen(
                             if (state.queryIsCustom) accent.copy(alpha = 0.6f) else Color.Transparent,
                             RoundedCornerShape(8.dp),
                         )
-                        .clickable(onClick = viewModel::openSearch)
+                        .clickable(onClick = actions::openSearch)
                         .padding(horizontal = 10.dp),
                 ) {
                     // The glyph follows the user's controller, which is why it is drawn through
@@ -239,7 +275,7 @@ fun ArtworkStudioScreen(
                             color = Color.White.copy(alpha = 0.6f), fontSize = 10.sp,
                             modifier = Modifier
                                 .clip(RoundedCornerShape(6.dp))
-                                .clickable(onClick = viewModel::resetSearchToTitle)
+                                .clickable(onClick = actions::resetSearchToTitle)
                                 .padding(horizontal = 6.dp, vertical = 3.dp),
                         )
                     } else {
@@ -285,7 +321,7 @@ fun ArtworkStudioScreen(
                                     if (focusedZone) accent else Color.Transparent,
                                     RoundedCornerShape(6.dp),
                                 )
-                                .clickable { viewModel.selectTab(index) }
+                                .clickable { actions.selectTab(index) }
                                 .padding(horizontal = 8.dp),
                             contentAlignment = Alignment.Center,
                         ) {
@@ -317,105 +353,72 @@ fun ArtworkStudioScreen(
 
                 // ── Current artwork rail (AD-19: narrow on a handheld, wider on a tablet) ──
                 Column(Modifier.width(railWidth).fillMaxHeight()) {
-                    // The category and its display rule both live here now, so the header and tab
-                    // bands stay one line each (AD-16).
-                    Text(
-                        STUDIO_TABS[state.tabIndex].label,
-                        color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold,
-                    )
-                    Text(
-                        STUDIO_TABS[state.tabIndex].contract,
-                        color = Color.White.copy(alpha = 0.55f), fontSize = 9.5.sp,
-                    )
-                    Spacer(Modifier.height(6.dp))
-                    // The thumbnail is drawn in the ACTIVE TAB's tile shape rather than a fixed
-                    // 150 dp box, so the preview is judged the way the grid judges it. (The
-                    // mockup's 144×80 is ICON0's own crop target, which is that tab's data, not
-                    // its tile shape.)
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(STUDIO_TABS[state.tabIndex].tileClass.aspect.toFloat())
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(Color(0xFF080E1E).copy(alpha = 0.55f))
-                            .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(6.dp)),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        val curKindName = STUDIO_TABS[state.tabIndex].kind.name
-                        when {
-                            state.currentUri != null && curKindName in setOf("MANUAL", "VIDEO", "ICON1") -> Text(
-                                when (curKindName) {
-                                    "MANUAL" -> "PDF stored"
-                                    "ICON1"  -> "Icon video stored"
-                                    else     -> "Video stored"
-                                },
-                                color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp,
-                            )
-                            // key(previewVersion) forces a fresh AsyncImage after an apply so the
-                            // preview reloads even when the portable library reused the same URI.
-                            state.currentUri != null -> androidx.compose.runtime.key(state.previewVersion) {
-                                AsyncImage(
-                                    model = state.currentUri,
-                                    contentDescription = null,
-                                    contentScale = ContentScale.Fit,
-                                    modifier = Modifier.fillMaxSize().padding(6.dp),
+                    // L.6: the thumbnail is the inner column's ONLY weighted child, and the message
+                    // sits under that column at the rail's bottom. At 914 × 411 dp a portrait
+                    // thumbnail sized from the rail's width (~214 dp) pushed the Options pill off
+                    // the bottom. Weighted `fill = false`, it shrinks to the height left and keeps
+                    // its aspect, and Options still sits directly under it. A weighted spacer beside
+                    // it would split the free height and cap the thumbnail at half.
+                    Column(Modifier.weight(1f)) {
+                        // The category and its display rule both live here now, so the header and tab
+                        // bands stay one line each (AD-16).
+                        Text(
+                            STUDIO_TABS[state.tabIndex].label,
+                            color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold,
+                        )
+                        // L.6: an explicit line height, or the theme's 24 sp bodyLarge spaces a wrapped
+                        // caption ("XMB tile (Physical Media mode) · natural aspect") like two paragraphs.
+                        Text(
+                            STUDIO_TABS[state.tabIndex].contract,
+                            color = Color.White.copy(alpha = 0.55f), fontSize = 9.5.sp, lineHeight = 12.sp,
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        // The thumbnail is drawn in the ACTIVE TAB's tile shape rather than a fixed
+                        // 150 dp box, so the preview is judged the way the grid judges it. (The
+                        // mockup's 144×80 is ICON0's own crop target, which is that tab's data, not
+                        // its tile shape.) No fillMaxWidth: aspectRatio takes the rail's width when
+                        // the height allows it, and narrows rather than stretches when it does not.
+                        Box(
+                            modifier = Modifier
+                                .weight(1f, fill = false)
+                                .aspectRatio(STUDIO_TABS[state.tabIndex].tileClass.aspect.toFloat())
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(Color(0xFF080E1E).copy(alpha = 0.55f))
+                                .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(6.dp)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            val curKindName = STUDIO_TABS[state.tabIndex].kind.name
+                            when {
+                                state.currentUri != null && curKindName in setOf("MANUAL", "VIDEO", "ICON1") -> Text(
+                                    when (curKindName) {
+                                        "MANUAL" -> "PDF stored"
+                                        "ICON1"  -> "Icon video stored"
+                                        else     -> "Video stored"
+                                    },
+                                    color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp,
                                 )
+                                // key(previewVersion) forces a fresh AsyncImage after an apply so the
+                                // preview reloads even when the portable library reused the same URI.
+                                state.currentUri != null -> androidx.compose.runtime.key(state.previewVersion) {
+                                    AsyncImage(
+                                        model = state.currentUri,
+                                        contentDescription = null,
+                                        contentScale = ContentScale.Fit,
+                                        modifier = Modifier.fillMaxSize().padding(6.dp),
+                                    )
+                                }
+                                else -> Text("No artwork set", color = Color.White.copy(alpha = 0.4f), fontSize = 12.sp)
                             }
-                            else -> Text("No artwork set", color = Color.White.copy(alpha = 0.4f), fontSize = 12.sp)
                         }
+                        Spacer(Modifier.height(6.dp))
+                        // The Y hint replaces the old "Ⓨ · OPTIONS" pill; in touch mode it is an Options pill.
+                        StudioOptionsControl(showTouchControls = showTouchControls, onClick = actions::openActions)
                     }
-                    Spacer(Modifier.height(6.dp))
-                    // The Y hint replaces the old "Ⓨ · OPTIONS" pill: same tap target, but the glyph
-                    // is resolved from the live bindings, so it follows the user's controller.
-                    ControllerPrompt(
-                        action = GamepadAction.OPEN_CONTEXT_MENU,
-                        label = "Crop, restore, clear",
-                        glyphSize = 13.dp,
-                        labelColor = Color.White.copy(alpha = 0.6f),
-                        labelStyle = TextStyle(fontSize = 9.5.sp),
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .clickable(onClick = viewModel::openActions)
-                            .padding(vertical = 4.dp),
-                    )
-                    // Grid paging pills — shown only when the grid actually has more than a page.
-                    if (state.totalResults > state.pageSize) {
-                        val hasMore = state.page * state.pageSize + state.results.size < state.totalResults
-                        Spacer(Modifier.height(8.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(
-                                "‹  PREV",
-                                color = Color.White.copy(alpha = if (state.page > 0) 0.8f else 0.3f),
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(accent.copy(alpha = if (state.page > 0) 0.18f else 0.08f))
-                                    .clickable(enabled = state.page > 0, onClick = viewModel::previousPage)
-                                    .padding(vertical = 6.dp),
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                            )
-                            Text(
-                                "NEXT  ›",
-                                color = Color.White.copy(alpha = if (hasMore) 0.8f else 0.3f),
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(accent.copy(alpha = if (hasMore) 0.18f else 0.08f))
-                                    .clickable(enabled = hasMore, onClick = viewModel::nextPage)
-                                    .padding(vertical = 6.dp),
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                            )
-                        }
-                    }
-                    Spacer(Modifier.weight(1f))
+                    // L.5: paging moved to the page line under the grid.
                     state.message?.let {
                         Text(
                             it, color = accent, fontSize = 11.sp,
-                            modifier = Modifier.clickable(onClick = viewModel::dismissMessage),
+                            modifier = Modifier.clickable(onClick = actions::dismissMessage),
                         )
                     }
                 }
@@ -425,72 +428,83 @@ fun ArtworkStudioScreen(
                 // ── Available artwork ─────────────────────────────────────────
                 Column(Modifier.weight(1f).fillMaxHeight()) {
 
-                    // Source row + NSFW toggle + paging status
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        val sources = viewModel.sourcesForTab()
+                    // ── Sources row (24 dp) — chips styled like the tabs, plus SteamGridDB's mature badge ──
+                    // Scrolls rather than clips if a narrow screen cannot fit every chip; the row's
+                    // height never changes, so the grid slot below it stays measured.
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(24.dp)
+                            .horizontalScroll(rememberScrollState()),
+                    ) {
+                        val sources = actions.sourcesForTab()
                         sources.forEachIndexed { index, source ->
                             val selected = state.sourceIndex == index
                             val focusedZone = state.zone == StudioZone.SOURCES && selected
                             // Disabled, not hidden: a keyless provider, or one with nothing for this
                             // category, keeps its place and says why.
-                            val badge = viewModel.sourceBadge(source)
+                            val badge = actions.sourceBadge(source)
                             val available = badge == null
-                            Text(
-                                if (badge == null) source.label else "${source.label} · $badge",
-                                color = when {
-                                    !available -> Color.White.copy(alpha = 0.25f)
-                                    selected   -> Color.White
-                                    else       -> Color.White.copy(alpha = 0.5f)
-                                },
-                                fontSize = 11.sp,
+                            Box(
                                 modifier = Modifier
-                                    .padding(end = 6.dp)
-                                    .clip(RoundedCornerShape(7.dp))
-                                    .background(if (selected) accent.copy(alpha = 0.24f) else Color.White.copy(alpha = 0.05f))
-                                    .border(1.dp, if (focusedZone) accent else Color.Transparent, RoundedCornerShape(7.dp))
+                                    .height(24.dp)
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(if (selected) accent.copy(alpha = 0.24f) else Color.White.copy(alpha = 0.07f))
+                                    .border(1.dp, if (focusedZone) accent else Color.Transparent, RoundedCornerShape(6.dp))
                                     .clickable {
-                                        viewModel.selectSource(index)
-                                        if (source == StudioSource.LOCAL) viewModel.requestLocalPick()
+                                        actions.selectSource(index)
+                                        if (source == StudioSource.LOCAL) actions.requestLocalPick()
                                     }
-                                    .padding(horizontal = 10.dp, vertical = 5.dp),
-                            )
+                                    .padding(horizontal = 8.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    if (badge == null) source.label else "${source.label} · $badge",
+                                    color = when {
+                                        !available -> Color.White.copy(alpha = 0.28f)
+                                        selected   -> Color.White
+                                        else       -> Color.White.copy(alpha = 0.62f)
+                                    },
+                                    fontSize = 10.5.sp,
+                                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+                                    maxLines = 1,
+                                )
+                            }
                         }
-                        val sgdbActive = viewModel.sourcesForTab().getOrNull(state.sourceIndex) == StudioSource.STEAMGRIDDB
+                        // The mature filter is a START badge rather than a checkbox: START is what
+                        // toggles it, so the badge teaches the binding. Still tappable for touch.
+                        val sgdbActive = sources.getOrNull(state.sourceIndex) == StudioSource.STEAMGRIDDB
                         if (sgdbActive) {
-                            Text(
-                                if (state.includeNsfw) "☑ NSFW" else "☐ NSFW",
-                                color = if (state.includeNsfw) Color(0xFFE57373) else Color.White.copy(alpha = 0.5f),
-                                fontSize = 11.sp,
+                            ControllerPrompt(
+                                action = GamepadAction.HOME,
+                                label = if (state.includeNsfw) "Mature on" else "Mature off",
+                                glyphSize = 12.dp,
+                                labelColor = if (state.includeNsfw) Color(0xFFE57373) else Color.White.copy(alpha = 0.6f),
+                                labelStyle = TextStyle(fontSize = 9.sp),
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(7.dp))
-                                    .clickable(onClick = viewModel::toggleNsfw)
-                                    .padding(horizontal = 8.dp, vertical = 5.dp),
-                            )
-                        }
-                        Spacer(Modifier.weight(1f))
-                        // Status only — the Prev/Next pill buttons live in the left column.
-                        if (state.totalResults > 0) {
-                            Text(
-                                "${state.rangeStart}–${state.rangeEnd} of ${state.totalResults}" +
-                                    if (state.pageCount > 1) "   ·   page ${state.page + 1}/${state.pageCount}" else "",
-                                color = Color.White.copy(alpha = 0.45f), fontSize = 10.sp,
+                                    .padding(start = 4.dp)
+                                    .height(18.dp)
+                                    .clip(RoundedCornerShape(9.dp))
+                                    .background(Color.Black.copy(alpha = 0.18f))
+                                    .clickable(onClick = actions::toggleNsfw)
+                                    .padding(horizontal = 6.dp),
                             )
                         }
                     }
 
-                    // ── Match row (task 2.3) ──────────────────────────────────
+                    // ── Match line (22 dp, task 2.3) ──────────────────────────
                     // Who the active source thinks this game is. Only shown for a source that HAS
                     // an identity: Local files are the user's own and nothing identifies them.
-                    if (state.matchProvider != null) {
-                        Spacer(Modifier.height(8.dp))
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(9.dp))
-                                .background(Color.White.copy(alpha = 0.05f))
-                                .padding(horizontal = 12.dp, vertical = 8.dp),
-                        ) {
+                    // The band keeps its height even when empty, so switching to Local File does not
+                    // grow the grid slot and re-page the results (AD-16, AD-17).
+                    Spacer(Modifier.height(6.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().height(22.dp),
+                    ) {
+                        if (state.matchProvider != null) {
                             val matched = state.matchTitle
                             Text(
                                 when {
@@ -503,68 +517,102 @@ fun ArtworkStudioScreen(
                                     matched != null      -> Color(0xFF66BB6A)
                                     else                 -> Color(0xFFE0A030)
                                 },
-                                fontSize = 13.sp, fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp, fontWeight = FontWeight.Bold,
                             )
-                            Spacer(Modifier.width(9.dp))
-                            Text(
-                                when {
-                                    state.matchResolving -> "Matching on ${state.matchProvider?.label}…"
-                                    matched != null      -> "Matched as $matched"
-                                    state.matchFailed    -> "${state.matchProvider?.label} didn't answer"
-                                    // A dead end is stated plainly rather than left blank — it is
-                                    // the exact case Change Match exists to rescue.
-                                    else                 -> "No ${state.matchProvider?.label} match"
-                                },
-                                color = Color.White.copy(alpha = if (matched != null) 0.95f else 0.6f),
-                                fontSize = 12.sp,
-                                fontWeight = if (matched != null) FontWeight.SemiBold else FontWeight.Normal,
-                            )
-                            if (state.matchIsConfirmed) {
-                                Spacer(Modifier.width(9.dp))
-                                Text(
-                                    "Confirmed",
-                                    color = Color(0xFF66BB6A), fontSize = 10.sp,
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(6.dp))
-                                        .background(Color(0xFF66BB6A).copy(alpha = 0.15f))
-                                        .padding(horizontal = 7.dp, vertical = 3.dp),
-                                )
+                            Spacer(Modifier.width(7.dp))
+                            // L.6: the title and badge share ONE weighted row. With the title weighted
+                            // `fill = false` beside a separate weighted spacer, Row split the free width
+                            // between the two and a short title left its unused half empty, so CHANGE
+                            // MATCH stopped ~115 dp short of the edge ("Tactics Ogre") while a long
+                            // title sat flush right.
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f),
+                            ) {
+                                if (matched != null && !state.matchResolving) {
+                                    Text(
+                                        "Matched as ",
+                                        color = Color.White.copy(alpha = 0.75f), fontSize = 10.5.sp,
+                                        maxLines = 1,
+                                    )
+                                    Text(
+                                        matched,
+                                        color = Color.White, fontSize = 10.5.sp, fontWeight = FontWeight.SemiBold,
+                                        maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f, fill = false),
+                                    )
+                                } else {
+                                    Text(
+                                        when {
+                                            state.matchResolving -> "Matching on ${state.matchProvider?.label}…"
+                                            state.matchFailed    -> "${state.matchProvider?.label} didn't answer"
+                                            // A dead end is stated plainly rather than left blank — it is
+                                            // the exact case Change Match exists to rescue.
+                                            else                 -> "No ${state.matchProvider?.label} match"
+                                        },
+                                        color = Color.White.copy(alpha = 0.6f), fontSize = 10.5.sp,
+                                        maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f, fill = false),
+                                    )
+                                }
+                                if (state.matchIsConfirmed) {
+                                    Spacer(Modifier.width(7.dp))
+                                    Text(
+                                        "Confirmed",
+                                        color = Color(0xFF66BB6A), fontSize = 9.sp,
+                                        maxLines = 1,
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(5.dp))
+                                            .background(Color(0xFF66BB6A).copy(alpha = 0.14f))
+                                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                                    )
+                                }
                             }
-                            Spacer(Modifier.weight(1f))
                             // Forget Match only means anything once something was confirmed, and
                             // it costs the user nothing: no artwork, no metadata is removed.
+                            // L.6: both buttons take the band's full 22 dp and pad only sideways, like
+                            // the source chips. Vertical padding left ~14 dp for the text, which the
+                            // Thor drew with CHANGE MATCH's lower half cut off.
                             if (state.matchIsConfirmed) {
-                                Text(
-                                    "FORGET",
-                                    color = Color.White.copy(alpha = 0.55f), fontSize = 10.sp,
+                                Box(
                                     modifier = Modifier
-                                        .clip(RoundedCornerShape(7.dp))
-                                        .clickable(onClick = viewModel::forgetMatch)
-                                        .padding(horizontal = 10.dp, vertical = 5.dp),
-                                )
+                                        .fillMaxHeight()
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .clickable(onClick = actions::forgetMatch)
+                                        .padding(horizontal = 6.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        "FORGET",
+                                        color = Color.White.copy(alpha = 0.5f), fontSize = 9.5.sp,
+                                        maxLines = 1,
+                                    )
+                                }
                                 Spacer(Modifier.width(6.dp))
                             }
-                            // Always present, so the row keeps its shape across sources — but a
-                            // provider that returns one game has nothing to pick FROM, so there
+                            // Always present, so the line keeps its shape across sources — but a
+                            // provider without title search has nothing to pick FROM, so there
                             // the button is inert and says why rather than opening an empty list.
                             val canChange = state.canChangeMatch
-                            Text(
-                                "CHANGE MATCH",
-                                color = if (canChange) Color.White else Color.White.copy(alpha = 0.35f),
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.SemiBold,
+                            Box(
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(7.dp))
-                                    .background(
-                                        if (canChange) accent.copy(alpha = 0.28f)
-                                        else Color.White.copy(alpha = 0.05f),
-                                    )
-                                    .clickable { viewModel.onChangeMatchPressed() }
-                                    .padding(horizontal = 12.dp, vertical = 5.dp),
-                            )
+                                    .fillMaxHeight()
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .clickable { actions.onChangeMatchPressed() }
+                                    .padding(horizontal = 6.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    "CHANGE MATCH",
+                                    color = if (canChange) Color.White else Color.White.copy(alpha = 0.35f),
+                                    fontSize = 9.5.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                )
+                            }
                         }
                     }
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(6.dp))
 
                     // ── Grid slot ─────────────────────────────────────────────
                     // Whatever height is left belongs to the grid. Its measured size decides how many
@@ -573,7 +621,7 @@ fun ArtworkStudioScreen(
                         val slotWidth = maxWidth
                         val slotHeight = maxHeight
                         LaunchedEffect(slotWidth, slotHeight) {
-                            viewModel.onGridMeasured(slotWidth.value, slotHeight.value)
+                            actions.onGridMeasured(slotWidth.value, slotHeight.value)
                         }
                         val columns = state.gridColumns
                         val rows = state.gridRows
@@ -589,7 +637,7 @@ fun ArtworkStudioScreen(
                             ),
                         )
 
-                        val activeSource = viewModel.sourcesForTab().getOrNull(state.sourceIndex)
+                        val activeSource = actions.sourcesForTab().getOrNull(state.sourceIndex)
                         when {
                             // Skeleton tiles, not a bare spinner: the grid keeps its shape while an
                             // uncached page loads, so a source switch never flashes an empty panel.
@@ -615,7 +663,7 @@ fun ArtworkStudioScreen(
                                     .fillMaxSize()
                                     .clip(RoundedCornerShape(10.dp))
                                     .background(Color.White.copy(alpha = 0.05f))
-                                    .clickable(onClick = viewModel::requestLocalPick),
+                                    .clickable(onClick = actions::requestLocalPick),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Text(
@@ -665,7 +713,7 @@ fun ArtworkStudioScreen(
                                                     RoundedCornerShape(8.dp),
                                                 )
                                                 .combinedClickable(
-                                                    onClick = { viewModel.openCandidate(index) },
+                                                    onClick = { actions.openCandidate(index) },
                                                     onLongClick = {
                                                         if (art.isVideo) touchPreviewIndex =
                                                             if (touchPreviewIndex == index) -1 else index
@@ -719,17 +767,31 @@ fun ArtworkStudioScreen(
                             }
                         }
                     }
+
+                    // ── Page line (16 dp, 40 dp in touch mode) — see StudioPageLine ──
+                    Spacer(Modifier.height(6.dp))
+                    StudioPageLine(
+                        rangeStart = state.rangeStart,
+                        rangeEnd = state.rangeEnd,
+                        totalResults = state.totalResults,
+                        page = state.page,
+                        pageCount = state.pageCount,
+                        hasPreviousPage = state.hasPreviousPage,
+                        hasNextPage = state.hasNextPage,
+                        showTouchControls = showTouchControls,
+                        onPreviousPage = actions::previousPage,
+                        onNextPage = actions::nextPage,
+                    )
                 }
             }
 
             // Footer hints — per-zone, and resolved from the live bindings so the
             // glyphs follow the user's controller type and any remapped layout.
             //
-            // Search and mature are appended from ONE place rather than repeated per zone: they
+            // Search and options are appended from ONE place rather than repeated per zone: they
             // apply at every level, and the three hand-written lists are exactly how the old
-            // "NSFW" label for X survived it being rebound to search.
-            val sgdbPrompts = viewModel.sourcesForTab().getOrNull(state.sourceIndex) ==
-                StudioSource.STEAMGRIDDB
+            // "NSFW" label for X survived it being rebound to search. Paging is not listed (the
+            // page line carries its LB/RB glyphs) and neither is mature (its START badge does).
             ControllerPromptBar(
                 items = buildList {
                     when (state.zone) {
@@ -742,14 +804,11 @@ fun ArtworkStudioScreen(
                             add(ControllerPromptItem(GamepadAction.BACK, "back"))
                         }
                         StudioZone.GRID -> {
-                            add(ControllerPromptItem(GamepadAction.PREV_CATEGORY, "prev page"))
-                            add(ControllerPromptItem(GamepadAction.NEXT_CATEGORY, "next page"))
                             add(ControllerPromptItem(GamepadAction.SELECT, "preview / apply"))
                             add(ControllerPromptItem(GamepadAction.BACK, "back"))
                         }
                     }
                     add(ControllerPromptItem(GamepadAction.CHANGE_SORT, "search"))
-                    if (sgdbPrompts) add(ControllerPromptItem(GamepadAction.HOME, "mature"))
                     add(ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "options"))
                 },
                 modifier = Modifier.padding(top = 6.dp),
@@ -766,7 +825,7 @@ fun ArtworkStudioScreen(
                 Modifier
                     .fillMaxSize()
                     .background(Color.Black.copy(alpha = 0.93f))
-                    .clickable(onClick = viewModel::dismissCandidate),
+                    .clickable(onClick = actions::dismissCandidate),
                 contentAlignment = Alignment.Center,
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -778,34 +837,17 @@ fun ArtworkStudioScreen(
                         StudioPdfPage(
                             path = state.candidateManualPath!!,
                             page = state.manualPage,
-                            onPageCount = viewModel::onManualPageCount,
+                            onPageCount = actions::onManualPageCount,
                             modifier = Modifier.fillMaxWidth(0.62f).fillMaxHeight(0.68f),
                         )
                         Spacer(Modifier.height(8.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                "‹ Prev", color = Color.White.copy(alpha = if (state.manualPage > 0) 0.85f else 0.3f),
-                                fontSize = 12.sp,
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .clickable(enabled = state.manualPage > 0, onClick = viewModel::manualPreviousPage)
-                                    .padding(horizontal = 10.dp, vertical = 5.dp),
-                            )
-                            Text(
-                                "Page ${state.manualPage + 1} / ${state.manualPageCount.coerceAtLeast(1)}",
-                                color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp,
-                                modifier = Modifier.padding(horizontal = 8.dp),
-                            )
-                            val more = state.manualPage < state.manualPageCount - 1
-                            Text(
-                                "Next ›", color = Color.White.copy(alpha = if (more) 0.85f else 0.3f),
-                                fontSize = 12.sp,
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .clickable(enabled = more, onClick = viewModel::manualNextPage)
-                                    .padding(horizontal = 10.dp, vertical = 5.dp),
-                            )
-                        }
+                        StudioManualPager(
+                            page = state.manualPage,
+                            pageCount = state.manualPageCount,
+                            showTouchControls = showTouchControls,
+                            onPreviousPage = actions::manualPreviousPage,
+                            onNextPage = actions::manualNextPage,
+                        )
                     } else if (art.isVideo) {
                         Text("Video snap from ${art.provider}", color = Color.White, fontSize = 14.sp)
                     } else {
@@ -829,7 +871,7 @@ fun ArtworkStudioScreen(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(Color.White.copy(alpha = 0.08f))
-                                .clickable(enabled = !state.applying, onClick = viewModel::applyCandidate)
+                                .clickable(enabled = !state.applying, onClick = actions::applyCandidate)
                                 .padding(horizontal = 18.dp, vertical = 9.dp),
                         )
                         Text(
@@ -838,7 +880,7 @@ fun ArtworkStudioScreen(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(Color.White.copy(alpha = 0.08f))
-                                .clickable(onClick = viewModel::dismissCandidate)
+                                .clickable(onClick = actions::dismissCandidate)
                                 .padding(horizontal = 18.dp, vertical = 9.dp),
                         )
                     }
@@ -881,7 +923,7 @@ fun ArtworkStudioScreen(
                     imeWasShown = true
                 } else if (imeWasShown && editing) {
                     imeWasShown = false
-                    viewModel.stopChangeMatchEdit()
+                    actions.stopChangeMatchEdit()
                 }
             }
             val resultsState = rememberLazyListState()
@@ -894,7 +936,7 @@ fun ArtworkStudioScreen(
                 Modifier
                     .fillMaxSize()
                     .background(Color(0xC0000000))
-                    .clickable(onClick = viewModel::cancelChangeMatch),
+                    .clickable(onClick = actions::cancelChangeMatch),
                 contentAlignment = Alignment.Center,
             ) {
                 Column(
@@ -918,14 +960,14 @@ fun ArtworkStudioScreen(
                     BasicTextField(
                         value = state.changeMatchDraft,
                         readOnly = !state.changeMatchEditing,
-                        onValueChange = viewModel::onChangeMatchDraftChanged,
+                        onValueChange = actions::onChangeMatchDraftChanged,
                         singleLine = true,
                         textStyle = TextStyle(color = Color.White, fontSize = 15.sp),
                         cursorBrush = SolidColor(accent),
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                         keyboardActions = KeyboardActions(
-                            onSearch = { viewModel.submitChangeMatch() },
-                            onDone = { viewModel.submitChangeMatch() },
+                            onSearch = { actions.submitChangeMatch() },
+                            onDone = { actions.submitChangeMatch() },
                         ),
                         decorationBox = { inner ->
                             Box(
@@ -953,7 +995,7 @@ fun ArtworkStudioScreen(
                             .fillMaxWidth()
                             .focusRequester(matchFocus)
                             // A tap focuses the field; that is touch asking to type, so enter edit mode.
-                            .onFocusChanged { if (it.isFocused && !editing) viewModel.startChangeMatchEdit() },
+                            .onFocusChanged { if (it.isFocused && !editing) actions.startChangeMatchEdit() },
                     )
                     Spacer(Modifier.height(12.dp))
                     // A cross-platform list is offered, never assumed: another release's artwork may
@@ -990,7 +1032,7 @@ fun ArtworkStudioScreen(
                                         .padding(vertical = 2.dp)
                                         .clip(RoundedCornerShape(8.dp))
                                         .background(if (focused) accent.copy(alpha = 0.22f) else Color.Transparent)
-                                        .clickable { viewModel.confirmMatch(index) }
+                                        .clickable { actions.confirmMatch(index) }
                                         .padding(horizontal = 12.dp, vertical = 9.dp),
                                 ) {
                                     Text(
@@ -1025,7 +1067,7 @@ fun ArtworkStudioScreen(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(accent.copy(alpha = 0.30f))
-                                .clickable(onClick = viewModel::submitChangeMatch)
+                                .clickable(onClick = actions::submitChangeMatch)
                                 .padding(horizontal = 16.dp, vertical = 7.dp),
                         )
                         Spacer(Modifier.width(10.dp))
@@ -1035,7 +1077,7 @@ fun ArtworkStudioScreen(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(Color.White.copy(alpha = 0.07f))
-                                .clickable(onClick = viewModel::cancelChangeMatch)
+                                .clickable(onClick = actions::cancelChangeMatch)
                                 .padding(horizontal = 14.dp, vertical = 7.dp),
                         )
                     }
@@ -1056,7 +1098,7 @@ fun ArtworkStudioScreen(
                 Modifier
                     .fillMaxSize()
                     .background(Color(0xC0000000))
-                    .clickable(onClick = viewModel::cancelSearch),
+                    .clickable(onClick = actions::cancelSearch),
                 contentAlignment = Alignment.Center,
             ) {
                 Column(
@@ -1079,14 +1121,14 @@ fun ArtworkStudioScreen(
                     Spacer(Modifier.height(12.dp))
                     BasicTextField(
                         value = state.queryDraft,
-                        onValueChange = viewModel::onQueryDraftChanged,
+                        onValueChange = actions::onQueryDraftChanged,
                         singleLine = true,
                         textStyle = TextStyle(color = Color.White, fontSize = 15.sp),
                         cursorBrush = SolidColor(accent),
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                         keyboardActions = KeyboardActions(
-                            onSearch = { viewModel.submitSearch() },
-                            onDone = { viewModel.submitSearch() },
+                            onSearch = { actions.submitSearch() },
+                            onDone = { actions.submitSearch() },
                         ),
                         decorationBox = { inner ->
                             Box(
@@ -1113,7 +1155,7 @@ fun ArtworkStudioScreen(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(accent.copy(alpha = 0.30f))
-                                .clickable(onClick = viewModel::submitSearch)
+                                .clickable(onClick = actions::submitSearch)
                                 .padding(horizontal = 16.dp, vertical = 7.dp),
                         )
                         Spacer(Modifier.width(10.dp))
@@ -1123,7 +1165,7 @@ fun ArtworkStudioScreen(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(Color.White.copy(alpha = 0.07f))
-                                .clickable(onClick = viewModel::resetSearchToTitle)
+                                .clickable(onClick = actions::resetSearchToTitle)
                                 .padding(horizontal = 14.dp, vertical = 7.dp),
                         )
                         Spacer(Modifier.weight(1f))
@@ -1132,7 +1174,7 @@ fun ArtworkStudioScreen(
                             color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp,
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
-                                .clickable(onClick = viewModel::cancelSearch)
+                                .clickable(onClick = actions::cancelSearch)
                                 .padding(horizontal = 12.dp, vertical = 7.dp),
                         )
                     }
@@ -1142,15 +1184,15 @@ fun ArtworkStudioScreen(
 
         // ── Options menu overlay (Y / triangle) — the shared XMB-style context menu ──
         if (state.actionsOpen && !state.showFileInfo) {
-            val actions = state.availableActions
+            val menuActions = state.availableActions
             com.playfieldportal.core.ui.components.PspContextMenuOverlay(
                 title = STUDIO_TABS[state.tabIndex].label,
-                rows = actions.map {
+                rows = menuActions.map {
                     com.playfieldportal.core.ui.components.PspMenuRow(it.label, isDestructive = it == StudioAction.CLEAR)
                 },
                 selectedIndex = state.actionsIndex,
-                onRowActivated = { index -> actions.getOrNull(index)?.let(viewModel::runAction) },
-                onDismiss = viewModel::closeActions,
+                onRowActivated = { index -> menuActions.getOrNull(index)?.let(actions::runAction) },
+                onDismiss = actions::closeActions,
                 // Darker than the XMB default — the grid behind is busy, so let it recede.
                 scrim = Color(0xA6000000),
             )
@@ -1161,7 +1203,7 @@ fun ArtworkStudioScreen(
             val info = state.info
             Box(
                 Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.9f))
-                    .clickable(onClick = viewModel::closeActions),
+                    .clickable(onClick = actions::closeActions),
                 contentAlignment = Alignment.Center,
             ) {
                 Column(
@@ -1197,7 +1239,7 @@ fun ArtworkStudioScreen(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
                             .background(Color.White.copy(alpha = 0.08f))
-                            .clickable(onClick = viewModel::closeActions)
+                            .clickable(onClick = actions::closeActions)
                             .padding(horizontal = 16.dp, vertical = 8.dp),
                     )
                 }
@@ -1211,10 +1253,10 @@ fun ArtworkStudioScreen(
                 srcW = state.cropSrcW, srcH = state.cropSrcH,
                 cropL = state.cropL, cropT = state.cropT, cropR = state.cropR, cropB = state.cropB,
                 applying = state.applying,
-                onPan = viewModel::panCrop,
-                onZoom = viewModel::zoomCrop,
-                onApply = viewModel::applyCrop,
-                onCancel = viewModel::cancelCrop,
+                onPan = actions::panCrop,
+                onZoom = actions::zoomCrop,
+                onApply = actions::applyCrop,
+                onCancel = actions::cancelCrop,
             )
         }
 

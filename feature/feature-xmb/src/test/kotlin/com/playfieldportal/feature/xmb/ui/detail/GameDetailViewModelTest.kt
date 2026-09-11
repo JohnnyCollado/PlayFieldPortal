@@ -1095,11 +1095,55 @@ class GameDetailViewModelTest {
     }
 
     @Test
-    fun `no provider metadata closes the preview with a reason`() = runTest {
+    fun `no provider metadata keeps the preview open and explains it until dismissed`() = runTest {
         openLoadedPreview(presets = emptyList())
 
+        // The overlay the user opened says why it is empty; vanishing on its own read as a crash.
+        val preview = viewModel.uiState.value.metadataPreview!!
+        assertFalse(preview.loading)
+        assertTrue(preview.nothingFound)
+        assertFalse(preview.failed)
+        assertNull(viewModel.uiState.value.actionMessage)
+
+        // Policy input has nothing to act on; Select dismisses, like the panel's only button.
+        viewModel.handleGamepadAction(GamepadAction.NAVIGATE_LEFT)
+        assertEquals(MetadataApplyPolicy.FILL_MISSING_ONLY, viewModel.uiState.value.metadataPreview?.policy)
+        viewModel.handleGamepadAction(GamepadAction.SELECT)
+        testDispatcher.scheduler.advanceUntilIdle()
+
         assertNull(viewModel.uiState.value.metadataPreview)
-        assertEquals("No metadata found on any source", viewModel.uiState.value.actionMessage)
+        assertFalse(viewModel.uiState.value.closed)
+        coVerify(exactly = 0) { artworkRepository.applyMetadata(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `a failed metadata retrieval stays open and is told apart from nothing found`() = runTest {
+        coEvery { artworkRepository.fetchMetadataPreview(1L) } throws java.io.IOException("offline")
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.activateAction(DetailAction.METADATA)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val preview = viewModel.uiState.value.metadataPreview!!
+        assertFalse(preview.loading)
+        assertTrue(preview.nothingFound)
+        assertTrue(preview.failed)
+
+        viewModel.handleGamepadAction(GamepadAction.BACK)
+
+        assertNull(viewModel.uiState.value.metadataPreview)
+        assertFalse(viewModel.uiState.value.closed)
+    }
+
+    @Test
+    fun `tapping the empty preview's button closes it without a write`() = runTest {
+        openLoadedPreview(presets = emptyList())
+
+        viewModel.applyMetadataPreview()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.metadataPreview)
+        coVerify(exactly = 0) { artworkRepository.applyMetadata(any(), any(), any(), any()) }
     }
 
     @Test

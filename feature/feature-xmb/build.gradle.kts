@@ -56,6 +56,9 @@ dependencies {
     // app module owns it (full flavor only), so feature-xmb stays flavor-agnostic.
     implementation(project(":feature:feature-social"))
 
+    // Renders @Preview composables in Android Studio (same as feature-settings / feature-appbar).
+    debugImplementation(libs.compose.ui.tooling)
+
     testImplementation(libs.bundles.test.unit)
     testImplementation(libs.hilt.android.testing)
     // Compose UI tests run on the JVM via Robolectric (same pattern as feature-settings)

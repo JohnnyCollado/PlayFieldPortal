@@ -209,6 +209,8 @@ fun GameDetailScreen(
             onClose = viewModel::onArtworkStudioClosed,
             pendingGamepadAction = pendingGamepadAction,
             onGamepadActionConsumed = onGamepadActionConsumed,
+            showTouchControls = showTouchControls,
+            onTouchInput = onTouchInput,
             modifier = modifier.fillMaxSize(),
         )
         return

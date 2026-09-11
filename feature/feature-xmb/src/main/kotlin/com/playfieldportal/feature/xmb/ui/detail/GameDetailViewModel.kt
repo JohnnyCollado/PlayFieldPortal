@@ -170,6 +170,8 @@ data class GameDetailUiState(
 data class MetadataPreviewUi(
     val loading: Boolean = true,
     val applying: Boolean = false,
+    /** Retrieval threw, as opposed to every provider answering with nothing. */
+    val failed: Boolean = false,
     val current: Map<MetadataField, Any?> = emptyMap(),
     val presets: List<MetadataPreset> = emptyList(),
     val presetIndex: Int = 0,
@@ -179,6 +181,12 @@ data class MetadataPreviewUi(
     val focus: Int = 0,
 ) {
     val preset: MetadataPreset? get() = presets.getOrNull(presetIndex)
+
+    /**
+     * Retrieval finished with no preset to offer. The overlay stays open and says so: closing on its
+     * own, with the reason in a message behind it, looked like a crash.
+     */
+    val nothingFound: Boolean get() = !loading && presets.isEmpty()
     val rows: List<MetadataFieldRow> get() = preset?.let { MetadataApply.rows(current, it) }.orEmpty()
     val willWrite: Set<MetadataField>
         get() = preset?.let { MetadataApply.plan(current, it, policy, chosen).keys }.orEmpty()
@@ -1204,14 +1212,17 @@ class GameDetailViewModel @Inject constructor(
         val generation = ++metadataPreviewGeneration
         _uiState.update { it.copy(showOptions = false, metadataPreview = MetadataPreviewUi(), actionMessage = null) }
         viewModelScope.launch {
-            val preview = runCatching { artworkRepository.fetchMetadataPreview(game.id) }
+            val outcome = runCatching { artworkRepository.fetchMetadataPreview(game.id) }
                 .onFailure { Timber.w(it, "Metadata preview failed for game ${game.id}") }
-                .getOrNull()
+            val preview = outcome.getOrNull()
             if (generation != metadataPreviewGeneration) return@launch
             _uiState.update { s ->
                 if (s.metadataPreview == null) return@update s
                 if (preview == null || preview.presets.isEmpty()) {
-                    return@update s.copy(metadataPreview = null, actionMessage = "No metadata found on any source")
+                    // Stays open on an explanation; the user dismisses it (nothingFound).
+                    return@update s.copy(
+                        metadataPreview = MetadataPreviewUi(loading = false, failed = outcome.isFailure),
+                    )
                 }
                 val loaded = MetadataPreviewUi(
                     loading = false,
@@ -1257,7 +1268,8 @@ class GameDetailViewModel @Inject constructor(
         val game = _uiState.value.game ?: return
         val p = _uiState.value.metadataPreview ?: return
         if (p.loading || p.applying) return
-        val preset = p.preset ?: return
+        // The empty preview's only button is Close.
+        val preset = p.preset ?: return closeMetadataPreview()
         if (p.policy == MetadataApplyPolicy.KEEP_CURRENT) {
             closeMetadataPreview()
             showActionMessage("Kept current metadata")
@@ -1296,6 +1308,11 @@ class GameDetailViewModel @Inject constructor(
     private fun handleMetadataPreviewInput(action: GamepadAction) {
         val p = _uiState.value.metadataPreview ?: return
         if (p.applying) return   // the write is already committed to; let it finish
+        if (p.nothingFound) {
+            // Nothing to choose between: Select and Back both dismiss the explanation.
+            if (action == GamepadAction.SELECT || action == GamepadAction.BACK) closeMetadataPreview()
+            return
+        }
         when (action) {
             GamepadAction.BACK           -> closeMetadataPreview()
             GamepadAction.NAVIGATE_UP    -> updateMetadataPreview { it.copy(focus = (it.focus - 1).coerceIn(0, it.applyIndex)) }

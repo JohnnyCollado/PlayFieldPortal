@@ -305,7 +305,7 @@ class ArtworkStudioViewModel @Inject constructor(
     private val igdbApi: com.playfieldportal.feature.artwork.api.IgdbApi,
     private val videoSnapTranscoder: com.playfieldportal.feature.artwork.video.VideoSnapTranscoder,
     private val matchEvidence: ProviderMatchEvidence,
-) : ViewModel() {
+) : ViewModel(), ArtworkStudioActions {
 
     /**
      * Title searches remembered for this open. The matcher re-resolves on every source switch, tab
@@ -397,7 +397,7 @@ class ArtworkStudioViewModel @Inject constructor(
      * user walks the categories. A source that has nothing for the tab ([servesKind]) or has no
      * key ([ArtworkStudioUiState.unavailableSources]) is drawn disabled and skipped, never removed.
      */
-    fun sourcesForTab(): List<StudioSource> = StudioSource.entries
+    override fun sourcesForTab(): List<StudioSource> = StudioSource.entries
 
     /**
      * Whether [source] has anything at all for [kind]. SteamGridDB, TheGamesDB and IGDB are image
@@ -528,7 +528,7 @@ class ArtworkStudioViewModel @Inject constructor(
      * changed, re-pages so the focused result stays focused (AD-17). The screen should call this
      * only when the size actually changes; an unchanged capacity is a no-op either way.
      */
-    fun onGridMeasured(widthDp: Float, heightDp: Float) {
+    override fun onGridMeasured(widthDp: Float, heightDp: Float) {
         gridSlotDp = widthDp to heightDp
         val capacity = capacityFor(_uiState.value.tabIndex) ?: return
         applyCapacity(capacity)
@@ -699,7 +699,7 @@ class ArtworkStudioViewModel @Inject constructor(
 
     // Selecting a category or source (controller cycle OR touch tap) also lands navigation on
     // that level, so a tap jumps straight to the section and the grid refreshes underneath.
-    fun selectTab(index: Int) {
+    override fun selectTab(index: Int) {
         val tabIndex = index.coerceIn(0, STUDIO_TABS.lastIndex)
         // Another tab can mean another tile class, so the page size follows it from the last
         // measured slot. No re-page here: the load below starts the new tab at page 0 anyway.
@@ -721,7 +721,7 @@ class ArtworkStudioViewModel @Inject constructor(
 
     fun cycleTab(delta: Int) = selectTab((_uiState.value.tabIndex + delta).mod(STUDIO_TABS.size))
 
-    fun selectSource(index: Int) {
+    override fun selectSource(index: Int) {
         val sources = sourcesForTab()
         // A tab with no sources (empty list) must no-op — coercing into 0..-1 throws.
         if (sources.isEmpty()) return
@@ -791,7 +791,7 @@ class ArtworkStudioViewModel @Inject constructor(
      * Why [source] is disabled on the active tab, as the source row's short suffix, or null when it
      * can be asked. "Nothing for this tab" outranks "no key": adding a key would not help there.
      */
-    fun sourceBadge(source: StudioSource): String? = when {
+    override fun sourceBadge(source: StudioSource): String? = when {
         !servesKind(source, tab().kind)                -> "n/a"
         source in _uiState.value.unavailableSources    -> "no key"
         else                                           -> null
@@ -819,7 +819,7 @@ class ArtworkStudioViewModel @Inject constructor(
      * SteamGridDB request key (task 1.3), so flipping it anywhere else would silently change
      * hidden state that nothing on screen reflects and no provider would act on.
      */
-    fun toggleNsfw() {
+    override fun toggleNsfw() {
         if (!sgdbActive()) return
         _uiState.update { it.copy(includeNsfw = !it.includeNsfw, actionsOpen = false) }
         loadResults()
@@ -918,7 +918,7 @@ class ArtworkStudioViewModel @Inject constructor(
      * broken button. No provider takes that branch today (every [ProviderCapabilities] row supports
      * title search), but the capability table decides that, not this function.
      */
-    fun onChangeMatchPressed() {
+    override fun onChangeMatchPressed() {
         val state = _uiState.value
         if (state.canChangeMatch) {
             openChangeMatch()
@@ -953,10 +953,10 @@ class ArtworkStudioViewModel @Inject constructor(
         submitChangeMatch()
     }
 
-    fun onChangeMatchDraftChanged(text: String) =
+    override fun onChangeMatchDraftChanged(text: String) =
         _uiState.update { it.copy(changeMatchDraft = text.take(MAX_QUERY_LENGTH)) }
 
-    fun cancelChangeMatch() {
+    override fun cancelChangeMatch() {
         changeMatchJob?.cancel()
         _uiState.update {
             it.copy(
@@ -972,11 +972,11 @@ class ArtworkStudioViewModel @Inject constructor(
     }
 
     /** Select (or Square) on the query field: the screen focuses it and opens the keyboard. */
-    fun startChangeMatchEdit() = _uiState.update {
+    override fun startChangeMatchEdit() = _uiState.update {
         if (!it.changeMatchOpen) it else it.copy(changeMatchEditing = true, changeMatchIndex = -1)
     }
 
-    fun stopChangeMatchEdit() = _uiState.update { it.copy(changeMatchEditing = false) }
+    override fun stopChangeMatchEdit() = _uiState.update { it.copy(changeMatchEditing = false) }
 
     /** Walks field (-1) → candidates, clamped at both ends. */
     fun moveChangeMatchCursor(delta: Int) = _uiState.update {
@@ -987,7 +987,7 @@ class ArtworkStudioViewModel @Inject constructor(
      * Runs the picker's own search. Submit-only, like the artwork query — never per keystroke.
      * A new submit cancels the search before it.
      */
-    fun submitChangeMatch() {
+    override fun submitChangeMatch() {
         val state = _uiState.value
         val provider = state.matchProvider ?: return
         val game = state.game ?: return
@@ -1060,7 +1060,7 @@ class ArtworkStudioViewModel @Inject constructor(
      * provider column only. No artwork file and no metadata column is touched: confirming a match
      * changes what the Studio ASKS FOR, never what the game already has.
      */
-    fun confirmMatch(index: Int) {
+    override fun confirmMatch(index: Int) {
         val state = _uiState.value
         val provider = state.matchProvider ?: return
         val candidate = state.changeMatchResults.getOrNull(index) ?: return
@@ -1091,7 +1091,7 @@ class ArtworkStudioViewModel @Inject constructor(
      * Deliberately NOT destructive — every downloaded asset and every scraped field stays exactly
      * where it is. The only thing forgotten is who the provider was told this game is.
      */
-    fun forgetMatch() {
+    override fun forgetMatch() {
         val provider = _uiState.value.matchProvider ?: return
         invalidateMatch()
         _uiState.update { it.copy(match = null, changeMatchOpen = false, actionsOpen = false) }
@@ -1106,13 +1106,13 @@ class ArtworkStudioViewModel @Inject constructor(
     // ── Search (task 1.1) ─────────────────────────────────────────────────────
 
     /** Opens the search field, pre-filled with the active query and fully selectable. */
-    fun openSearch() = _uiState.update {
+    override fun openSearch() = _uiState.update {
         it.copy(searchOpen = true, queryDraft = it.query, actionsOpen = false, showFileInfo = false)
     }
 
-    fun onQueryDraftChanged(text: String) = _uiState.update { it.copy(queryDraft = text.take(MAX_QUERY_LENGTH)) }
+    override fun onQueryDraftChanged(text: String) = _uiState.update { it.copy(queryDraft = text.take(MAX_QUERY_LENGTH)) }
 
-    fun cancelSearch() = _uiState.update { it.copy(searchOpen = false, queryDraft = it.query) }
+    override fun cancelSearch() = _uiState.update { it.copy(searchOpen = false, queryDraft = it.query) }
 
     /**
      * Applies the typed query and re-browses.
@@ -1121,7 +1121,7 @@ class ArtworkStudioViewModel @Inject constructor(
      * blank draft falls back to the game's title rather than searching for nothing, and an
      * unchanged query closes the field without discarding the results already on screen.
      */
-    fun submitSearch() {
+    override fun submitSearch() {
         val state = _uiState.value
         val submitted = state.queryDraft.trim().ifBlank { gameTitle() }
         val unchanged = StudioQuery.sameQuery(submitted, state.query)
@@ -1142,7 +1142,7 @@ class ArtworkStudioViewModel @Inject constructor(
     }
 
     /** Returns the query to the game's own title. The game row is never touched either way. */
-    fun resetSearchToTitle() {
+    override fun resetSearchToTitle() {
         val title = gameTitle()
         if (StudioQuery.sameQuery(title, _uiState.value.query)) {
             _uiState.update { it.copy(searchOpen = false, queryDraft = title, query = title, queryIsCustom = false) }
@@ -1157,9 +1157,9 @@ class ArtworkStudioViewModel @Inject constructor(
     /** All results for the grid currently on screen, or empty if its key is no longer cached. */
     private fun activeResults(): List<StudioArt> = activeKey?.let { resultCache[it] }.orEmpty()
 
-    fun nextPage() = goToPage(_uiState.value.page + 1)
+    override fun nextPage() = goToPage(_uiState.value.page + 1)
 
-    fun previousPage() = goToPage(_uiState.value.page - 1)
+    override fun previousPage() = goToPage(_uiState.value.page - 1)
 
     private fun goToPage(index: Int) {
         val key = activeKey ?: return
@@ -1168,7 +1168,7 @@ class ArtworkStudioViewModel @Inject constructor(
         showPage(all, index, key, generation)
     }
 
-    fun openCandidate(index: Int) {
+    override fun openCandidate(index: Int) {
         val art = _uiState.value.results.getOrNull(index) ?: return
         _uiState.update { it.copy(candidate = art, gridIndex = index) }
         // Manuals preview as a paged PDF — pull the file down first (reused by Apply).
@@ -1206,19 +1206,19 @@ class ArtworkStudioViewModel @Inject constructor(
         tmp.takeIf { it.length() > 0 } ?: run { tmp.delete(); null }
     }.onFailure { Timber.w(it, "Candidate preview download failed") }.getOrNull()
 
-    fun onManualPageCount(count: Int) = _uiState.update {
+    override fun onManualPageCount(count: Int) = _uiState.update {
         it.copy(manualPageCount = count, manualPage = it.manualPage.coerceIn(0, (count - 1).coerceAtLeast(0)))
     }
 
-    fun manualPreviousPage() = _uiState.update {
+    override fun manualPreviousPage() = _uiState.update {
         it.copy(manualPage = (it.manualPage - 1).coerceAtLeast(0))
     }
 
-    fun manualNextPage() = _uiState.update {
+    override fun manualNextPage() = _uiState.update {
         it.copy(manualPage = (it.manualPage + 1).coerceAtMost((it.manualPageCount - 1).coerceAtLeast(0)))
     }
 
-    fun requestLocalPick() = _uiState.update { it.copy(localPickKind = tab().kind) }
+    override fun requestLocalPick() = _uiState.update { it.copy(localPickKind = tab().kind) }
     fun consumeLocalPick() = _uiState.update { it.copy(localPickKind = null) }
 
     fun applyLocal(uri: Uri) {
@@ -1245,7 +1245,7 @@ class ArtworkStudioViewModel @Inject constructor(
         }
     }
 
-    fun applyCandidate() {
+    override fun applyCandidate() {
         val art = _uiState.value.candidate ?: return
         val kind = tab().kind
         val manualFile = _uiState.value.candidateManualPath?.let { java.io.File(it) }
@@ -1273,7 +1273,7 @@ class ArtworkStudioViewModel @Inject constructor(
      * no artwork is exactly the one Change Match exists to rescue. Only a source with neither, i.e.
      * Local, still refuses, so the menu never opens empty.
      */
-    fun openActions() {
+    override fun openActions() {
         val sgdb = sgdbActive()
         val s = _uiState.value
         if (s.currentUri == null && !sgdb && s.matchProvider == null) return
@@ -1288,14 +1288,14 @@ class ArtworkStudioViewModel @Inject constructor(
         }
     }
 
-    fun closeActions() = _uiState.update { it.copy(actionsOpen = false, showFileInfo = false) }
+    override fun closeActions() = _uiState.update { it.copy(actionsOpen = false, showFileInfo = false) }
 
     private fun moveActionsCursor(delta: Int) = _uiState.update {
         val n = it.availableActions.size
         if (n == 0) it else it.copy(actionsIndex = (it.actionsIndex + delta).mod(n))
     }
 
-    fun runAction(action: StudioAction) {
+    override fun runAction(action: StudioAction) {
         when (action) {
             StudioAction.CROP             -> beginCrop()
             StudioAction.RESTORE_PREVIOUS -> restorePrevious()
@@ -1462,19 +1462,19 @@ class ArtworkStudioViewModel @Inject constructor(
         )
     }
 
-    fun panCrop(dx: Float, dy: Float) {
+    override fun panCrop(dx: Float, dy: Float) {
         _uiState.update { it.copy(cropCenterX = (it.cropCenterX + dx), cropCenterY = (it.cropCenterY + dy)) }
         recomputeCropRect()
     }
 
-    fun zoomCrop(factor: Float) {
+    override fun zoomCrop(factor: Float) {
         _uiState.update { it.copy(cropZoom = (it.cropZoom * factor).coerceIn(1f, 6f)) }
         recomputeCropRect()
     }
 
     /** Bakes the current crop window and stores it — a PNG region for stills, a re-encoded clip
      *  for ICON1 videos — keeping the untouched original for future re-crops. */
-    fun applyCrop() {
+    override fun applyCrop() {
         val kind = tab().kind
         val s = _uiState.value
         val displayPath = s.cropEditorPath ?: return
@@ -1510,7 +1510,7 @@ class ArtworkStudioViewModel @Inject constructor(
         }
     }
 
-    fun cancelCrop() {
+    override fun cancelCrop() {
         val s = _uiState.value
         s.cropEditorPath?.let { runCatching { java.io.File(it).delete() } }
         s.cropVideoSourcePath?.let { runCatching { java.io.File(it).delete() } }
@@ -1590,13 +1590,13 @@ class ArtworkStudioViewModel @Inject constructor(
         }
     }
 
-    fun dismissCandidate() {
+    override fun dismissCandidate() {
         _uiState.value.candidateManualPath?.let { runCatching { java.io.File(it).delete() } }
         _uiState.update {
             it.copy(candidate = null, candidateManualPath = null, manualDownloading = false, manualPage = 0, manualPageCount = 0)
         }
     }
-    fun dismissMessage() = _uiState.update { it.copy(message = null) }
+    override fun dismissMessage() = _uiState.update { it.copy(message = null) }
     fun close() = _uiState.update { it.copy(closed = true) }
 
     /** The screen calls this right after acting on [ArtworkStudioUiState.closed] so a stale
@@ -1605,7 +1605,7 @@ class ArtworkStudioViewModel @Inject constructor(
 
     // ── Controller ────────────────────────────────────────────────────────────
 
-    fun handleGamepadAction(action: GamepadAction) {
+    override fun handleGamepadAction(action: GamepadAction) {
         val s = _uiState.value
         // Search field: the IME owns typing; the pad only confirms or cancels.
         if (s.searchOpen) {
