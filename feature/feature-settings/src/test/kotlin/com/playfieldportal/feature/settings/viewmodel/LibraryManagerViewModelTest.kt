@@ -61,6 +61,7 @@ class LibraryManagerViewModelTest {
     private val vitaGameScanner = mockk<VitaGameScanner>(relaxed = true)
     private val libraryScanner = mockk<LibraryScanner>(relaxed = true)
     private val romRootScanRunner = mockk<RomRootScanRunner>(relaxed = true)
+    private val pcGameExporter = mockk<com.playfieldportal.feature.settings.pc.PcGameExporter>(relaxed = true)
 
     private lateinit var vm: LibraryManagerViewModel
 
@@ -89,6 +90,7 @@ class LibraryManagerViewModelTest {
             vitaGameScanner,
             libraryScanner,
             romRootScanRunner,
+            pcGameExporter,
         )
     }
 

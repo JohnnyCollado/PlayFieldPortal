@@ -55,6 +55,7 @@ class GameDetailViewModelTest {
     private lateinit var artworkStore: ArtworkStore
     private lateinit var launchDispatcher: com.playfieldportal.feature.launcher.LaunchDispatcher
     private lateinit var menuSound: com.playfieldportal.core.ui.sound.MenuSoundPlayer
+    private lateinit var pcGameExporter: com.playfieldportal.feature.settings.pc.PcGameExporter
     private lateinit var viewModel: GameDetailViewModel
 
     private val fakeGame = Game(
@@ -104,6 +105,7 @@ class GameDetailViewModelTest {
         artworkStore      = mockk(relaxed = true)
         launchDispatcher  = mockk(relaxed = true)
         menuSound         = mockk(relaxed = true)
+        pcGameExporter    = mockk(relaxed = true)
         // Explicit (not relaxed): a sealed-interface return can't be auto-mocked, and the
         // default launch path for these tests is a successful hand-off.
         coEvery { launchDispatcher.launch(any(), any(), any()) } returns
@@ -132,7 +134,56 @@ class GameDetailViewModelTest {
             launcherShortcutRepository = mockk(relaxed = true),
             achievementRepository = mockk(relaxed = true),
             launchDispatcher  = launchDispatcher,
+            pcGameExporter    = pcGameExporter,
         )
+    }
+
+    // ── Export Game (C18 task X.7) ────────────────────────────────────────
+
+    private val windowsGame = Game(
+        id              = 2L,
+        title           = "Portal 2",
+        platformId      = "windows",
+        packageName     = "banner.hub",
+        launchIntentUri = "intent:#Intent;action=banner.hub.LAUNCH_GAME;S.localGameId=local_1f2e;end",
+    )
+
+    @Test
+    fun `Export Game is offered for a Windows game, and not for a ROM game or an Android game`() = runTest {
+        coEvery { gameRepository.getById(2L) } returns windowsGame
+        coEvery { gameRepository.getById(3L) } returns
+            Game(id = 3L, title = "Alto's Odyssey", platformId = "android", packageName = "com.noodlecake.altosodyssey")
+        coEvery { platformDao.getById("windows") } returns null
+        coEvery { platformDao.getById("android") } returns null
+
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertFalse(DetailAction.EXPORT in viewModel.uiState.value.visibleActions)
+
+        viewModel.loadGame(3L)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertFalse(DetailAction.EXPORT in viewModel.uiState.value.visibleActions)
+
+        viewModel.loadGame(2L)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertTrue(DetailAction.EXPORT in viewModel.uiState.value.visibleActions)
+    }
+
+    @Test
+    fun `Export Game exports this game and shows what happened`() = runTest {
+        coEvery { gameRepository.getById(2L) } returns windowsGame
+        coEvery { platformDao.getById("windows") } returns null
+        coEvery { pcGameExporter.exportGame(2L) } returns com.playfieldportal.feature.settings.pc.PcGameExportReport(
+            written = 1, skipped = 0, failed = 0, message = "Exported Portal 2 to windows/import as Portal 2.pfpgame.",
+        )
+        viewModel.loadGame(2L)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.activateAction(DetailAction.EXPORT)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) { pcGameExporter.exportGame(2L) }
+        assertEquals("Exported Portal 2 to windows/import as Portal 2.pfpgame.", viewModel.uiState.value.actionMessage)
     }
 
     @After

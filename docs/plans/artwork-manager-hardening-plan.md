@@ -308,7 +308,7 @@ Note: there is **zero existing coverage** for `ArtworkStudioViewModel`, the crop
 | L.3 | Title line and flat tabs: search joins the header, breadcrumb trail and SEARCH label go, eleven compact chips with LB/RB glyphs | None | DONE (`a9e0d28`) |
 | L.4 | Current-artwork rail: 150 dp (200 dp at ≥1000 dp wide), caption moved in, true-aspect thumbnail, Y hint | L.3 | DONE (`a9e0d28`) |
 | L.5 | Sources row, match line, page line and prompt bar: NSFW becomes a START badge, PREV/NEXT move under the grid, prompts drop to four | L.2, L.4 | DONE (uncommitted) |
-| L.6 | Verify the layout on the Thor and at least two other screen sizes against the capacity table | L.5 | IN PROGRESS (rail fix to see on a build) |
+| L.6 | Verify the layout on the Thor and at least two other screen sizes against the capacity table | L.5 | DONE (closed by the user 2026-09-11; two unverified points accepted, see "L.6 status") |
 | M.0 | Timing logs for ScreenScraper's request gate and the Studio's match resolution, plus the account's real rate limits, for a device baseline | L.6 | DONE (uncommitted; baseline below) |
 | M.1 | One cancellable job per browse resolves the active provider's match and then browses with it; matches remembered per open, so a tab switch never resolves again (AD-20) | M.0 | DONE (uncommitted; unit tests green, device walk checked by the user) |
 | M.2 | SteamGridDB browses by the resolved match or the cached search, never a second autocomplete | M.1 | DONE (uncommitted; unit tests green, device walk checked by the user) |
@@ -1198,8 +1198,11 @@ afterwards):**
   reached at this size.
 
 **L.6 status.** Capacity is within one column of the table at all three sizes, and the only
-clipping found is fixed. Still open before L.6 is DONE:
-- The rail fix is not yet on a build. Recheck BOX ART in touch mode at 914 × 411 dp.
+clipping found is fixed. **Closed by the user on 2026-09-11** with the rail fix checked on a build.
+The two points that were never seen on a screen are accepted rather than verified, and no
+screenshots were added to the repo. The list as it stood:
+- ~~The rail fix is not yet on a build.~~ Checked by the user on a build, 2026-09-11: the rail's
+  "⋯ Options" control is no longer cut off.
 - ICON0's 6 rows at 1280 × 800 dp are arithmetic, not seen.
 - The D-pad walk was done only on the Thor, because injected D-pad keys do not drive the Studio.
 - The screenshots are in the session scratchpad, not the repo. Committing PNGs is the user's call.

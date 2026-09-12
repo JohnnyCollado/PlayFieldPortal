@@ -64,7 +64,12 @@ data class PcExportFile(
     val uri: String,
 )
 
-private val PC_EXPORT_EXTENSIONS = setOf("steam", "epic", "gog", "amazon", "pcgame", "desktop")
+private val PC_EXPORT_EXTENSIONS = setOf("steam", "epic", "gog", "amazon", "pcgame", "desktop", "pfpgame")
+
+// PFP's own `.pfpgame` export (C18) is a few kilobytes of JSON on shared storage, where any app can
+// write. One far larger than that is not read at all; the importer then rejects it as unreadable.
+private const val PFP_EXPORT_EXTENSION = "pfpgame"
+private const val MAX_PFP_EXPORT_BYTES = 256L * 1024
 
 // A file child collected during the scanTree walk — name, stable raw path (dedupe/display key)
 // and the SAF document URI (content access + launch handle).
@@ -574,7 +579,8 @@ class RomScanner @Inject constructor(
                     val ext = child.name.substringAfterLast('.', "").lowercase()
                     if (ext !in PC_EXPORT_EXTENSIONS) continue
                     val title = child.name.substringBeforeLast('.', child.name)
-                    val idContent = if (ext == "desktop") null else runCatching {
+                    val tooLarge = ext == PFP_EXPORT_EXTENSION && (child.sizeBytes ?: 0L) > MAX_PFP_EXPORT_BYTES
+                    val idContent = if (ext == "desktop" || tooLarge) null else runCatching {
                         context.contentResolver.openInputStream(child.uri)
                             ?.use { it.readBytes().toString(Charsets.UTF_8).trim() }
                     }.getOrNull()

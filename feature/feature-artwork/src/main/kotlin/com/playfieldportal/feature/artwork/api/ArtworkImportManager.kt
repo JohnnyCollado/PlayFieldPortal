@@ -16,6 +16,7 @@ import com.playfieldportal.feature.artwork.importer.ArtworkImportWorker
 import com.playfieldportal.feature.artwork.importer.DetectedImportSource
 import com.playfieldportal.feature.artwork.importer.ImportPlan
 import com.playfieldportal.feature.artwork.importer.ImportSummary
+import com.playfieldportal.feature.artwork.importer.RelinkOwnerLookup
 import com.playfieldportal.feature.artwork.portable.ArtworkLibraryManifest
 import com.playfieldportal.feature.artwork.portable.ArtworkNaming
 import com.playfieldportal.feature.artwork.portable.ArtworkPathResolver
@@ -289,8 +290,15 @@ class ArtworkImportManager @Inject constructor(
      *    runs with a live grant — a *disconnected* folder never destroys state, see §17);
      *  • size drift refreshes the record; duplicate portable names are counted as an advisory.
      * The folder is the source of truth throughout; this never deletes or moves any file.
+     *
+     * [claims] are artwork names a `.pfpgame` export says belong to a game —
+     * `(platform, kind, portable name lowercased)` → game id (C18 task X.5). After a fresh install
+     * there are no records, so they are what reconnects a manually added game's files exactly
+     * instead of through the fuzzy matcher. The lookup order is [RelinkOwnerLookup]'s.
      */
-    suspend fun relinkLibrary(): RelinkResult? = withContext(Dispatchers.IO) {
+    suspend fun relinkLibrary(
+        claims: Map<Triple<String, String, String>, Long> = emptyMap(),
+    ): RelinkResult? = withContext(Dispatchers.IO) {
         val tree = linkedTree() ?: return@withContext null
         if (!folderRepository.hasLiveGrant()) return@withContext null
         // Icons must be out of covers/ BEFORE the walk: covers/ maps to BOX_ART now, so a
@@ -373,19 +381,24 @@ class ArtworkImportManager @Inject constructor(
                     val fileStem = ArtworkNaming.fileStem(file.name)
                     val stemLower = fileStem.lowercase()
                     if (!stemsInDir.add(stemLower)) duplicateNames++
-                    // Own records first (exact portable-name hit), fuzzy matcher for foreign files.
-                    // The FULL stem is always tried first, so a ROM whose own name ends in "_07"
-                    // can never be mistaken for another game's seventh screenshot; only when that
-                    // finds nothing is an ordinal suffix considered (C16 task 0.4).
+                    // Claims, then own records (exact portable-name hits), then the fuzzy matcher for
+                    // foreign files. The FULL stem is always tried before an ordinal-stripped base,
+                    // so a ROM whose own name ends in "_07" can never be mistaken for another game's
+                    // seventh screenshot (C16 task 0.4). The order lives in RelinkOwnerLookup.
                     val multi = ArtworkFileNaming.supportsMultiple(kind)
                     val baseStem = if (multi) ArtworkFileNaming.stripOrdinal(fileStem) else fileStem
-                    val ids = ownersByName[Triple(platformId, kind.name, stemLower)]?.toList()
-                        ?: (indexFor(platformId).match(file.name) as? ArtworkImportMatcher.Result.Matched)?.gameIds
-                        ?: baseStem.takeIf { it != fileStem }?.let { base ->
-                            ownersByName[Triple(platformId, kind.name, base.lowercase())]?.toList()
-                                ?: (indexFor(platformId).match("$base.${file.name.substringAfterLast('.')}")
-                                    as? ArtworkImportMatcher.Result.Matched)?.gameIds
-                        }
+                    val ids = RelinkOwnerLookup.owners(
+                        platformId = platformId,
+                        kind = kind.name,
+                        fileName = file.name,
+                        fileStem = fileStem,
+                        baseStem = baseStem,
+                        claims = claims,
+                        recordOwners = ownersByName,
+                        fuzzyMatch = { name ->
+                            (indexFor(platformId).match(name) as? ArtworkImportMatcher.Result.Matched)?.gameIds
+                        },
+                    )
                     if (ids.isNullOrEmpty()) { orphans++; continue }
                     // The position the filename encodes — this is how sort_order survives a
                     // database rebuild, the folder staying the source of truth.

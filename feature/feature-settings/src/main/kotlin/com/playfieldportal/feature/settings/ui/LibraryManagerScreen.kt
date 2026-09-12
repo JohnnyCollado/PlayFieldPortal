@@ -114,6 +114,7 @@ fun LibraryManagerScreen(
         onRemoveApp = { viewModel.removeApp(it) },
         onRefreshHomeStatus = { viewModel.refreshHomeStatus() },
         onScanPcGamesFolder = { viewModel.scanPcGamesFolder(it) },
+        onExportManualPcGames = { viewModel.exportManualPcGames() },
         onImportPcGame = { viewModel.importPcGame(it) },
         onImportAllPcGames = { viewModel.importAllPcGames() },
         onTestLaunchPcGame = { l, id, s -> viewModel.testLaunchPcGame(l, id, s) },
@@ -165,6 +166,7 @@ private fun LibraryManagerContent(
     onRemoveApp: (Long) -> Unit,
     onRefreshHomeStatus: () -> Unit,
     onScanPcGamesFolder: (Uri) -> Unit,
+    onExportManualPcGames: () -> Unit,
     onImportPcGame: (PcGameRow) -> Unit,
     onImportAllPcGames: () -> Unit,
     onTestLaunchPcGame: (PcLauncherRow, String, String?) -> Unit,
@@ -185,7 +187,7 @@ private fun LibraryManagerContent(
         LibraryStep.PICK_EMULATOR -> PickEmulatorContent(state, onBack = handleBack, onEmulatorChosen = onEmulatorChosen, modifier = modifier)
         LibraryStep.SCAN_PROMPT   -> ScanPromptContent(state, onBack = handleBack, onConfirmAddConsole = onConfirmAddConsole, modifier = modifier)
         LibraryStep.CARD_DETAIL   -> CardDetailContent(state, onBack = handleBack, onAddAndroidApps = onAddAndroidApps, onLoadEmulatorOptions = onLoadEmulatorOptions, onRemoveExtension = onRemoveExtension, onAddExtension = onAddExtension, onScanConsole = onScanConsole, onBeginRename = onBeginRename, onToggleEnabled = onToggleEnabled, onTogglePinned = onTogglePinned, onMoveCard = onMoveCard, onRemoveCard = onRemoveCard, onSetEmulatorForDetail = onSetEmulatorForDetail, onOpenImportPcGames = onOpenImportPcGames, onSetVita3KFolder = onSetVita3KFolder, onScanVitaGames = onScanVitaGames, onRemoveApp = onRemoveApp, modifier = modifier)
-        LibraryStep.IMPORT_PC     -> ImportPcGamesContent(state, onBack = handleBack, onRefreshHomeStatus = onRefreshHomeStatus, onScanPcGamesFolder = onScanPcGamesFolder, onImportPcGame = onImportPcGame, onImportAllPcGames = onImportAllPcGames, onTestLaunchPcGame = onTestLaunchPcGame, onAddPcGameById = onAddPcGameById, onDismissMessage = onDismissMessage, homeRoleIntentProvider = homeRoleIntentProvider, modifier = modifier)
+        LibraryStep.IMPORT_PC     -> ImportPcGamesContent(state, onBack = handleBack, onRefreshHomeStatus = onRefreshHomeStatus, onScanPcGamesFolder = onScanPcGamesFolder, onExportManualPcGames = onExportManualPcGames, onImportPcGame = onImportPcGame, onImportAllPcGames = onImportAllPcGames, onTestLaunchPcGame = onTestLaunchPcGame, onAddPcGameById = onAddPcGameById, onDismissMessage = onDismissMessage, homeRoleIntentProvider = homeRoleIntentProvider, modifier = modifier)
     }
 
     // ── Convert-detected-games picker (after a PC scan, when the installer is on) ──
@@ -656,6 +658,7 @@ private fun ImportPcGamesContent(
     onBack: () -> Unit,
     onRefreshHomeStatus: () -> Unit,
     onScanPcGamesFolder: (Uri) -> Unit,
+    onExportManualPcGames: () -> Unit,
     onImportPcGame: (PcGameRow) -> Unit,
     onImportAllPcGames: () -> Unit,
     onTestLaunchPcGame: (PcLauncherRow, String, String?) -> Unit,
@@ -700,8 +703,15 @@ private fun ImportPcGamesContent(
             SettingsRow(
                 label    = "Scan Import Folder",
                 sublabel = "Pick the folder your launcher exports to — PFP scans it for GameNative / " +
-                    "Winlator exports (.steam · .epic · .gog · .amazon · .pcgame · .desktop) and imports them",
+                    "Winlator exports (.steam · .epic · .gog · .amazon · .pcgame · .desktop) and PFP's own " +
+                    ".pfpgame exports, and imports them",
                 onClick  = { importPicker.launch(null) },
+            )
+            SettingsRow(
+                label    = "Export Manual Games",
+                sublabel = "Writes a .pfpgame file into <windows>/import for each game added by ID or captured, " +
+                    "and each pin with artwork, so a fresh install can bring them back with their artwork",
+                onClick  = onExportManualPcGames,
             )
 
             SettingsGroup("PC Launchers")
@@ -868,6 +878,7 @@ fun LibraryManagerScreenPreview() {
             onRemoveApp = {},
             onRefreshHomeStatus = {},
             onScanPcGamesFolder = {},
+            onExportManualPcGames = {},
             onImportPcGame = {},
             onImportAllPcGames = {},
             onTestLaunchPcGame = { _, _, _ -> },

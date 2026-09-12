@@ -1301,6 +1301,7 @@ class XMBViewModel @Inject constructor(
     private val windowsLibrarySetup: com.playfieldportal.core.data.repository.WindowsLibrarySetup,
     private val pcShortcutImporter: com.playfieldportal.feature.launcher.PcShortcutImporter,
     private val pcGameScanner: com.playfieldportal.feature.settings.pc.PcGameScanner,
+    private val pcGameExporter: com.playfieldportal.feature.settings.pc.PcGameExporter,
     private val localSteamSchemaGenerator: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSchemaGenerator,
     private val localSteamDiscovery: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamDiscovery,
     private val launchDispatcher: com.playfieldportal.feature.launcher.LaunchDispatcher,
@@ -5076,6 +5077,9 @@ class XMBViewModel @Inject constructor(
             // demand — gated per-game at dispatch on the installer toggle being on.
             if (item.platformId == WINDOWS_PLATFORM_ID) {
                 add(XMBContextMenuItem("install_goldberg", "Install Goldberg Achievements"))
+                // Writes this game's .pfpgame file so a fresh install can bring it back with its
+                // artwork (C18 task X.7). Offered on every PC game; the exporter explains a refusal.
+                add(XMBContextMenuItem("export_game", "Export Game"))
             }
             // No "Edit App Details" here: package-backed GAME entries (PC shortcuts, Android
             // gaming apps) are games — art/title/note editing lives in Game Detail and the
@@ -5504,6 +5508,7 @@ class XMBViewModel @Inject constructor(
                     it.copy(activeShibaCoinsTarget = com.playfieldportal.feature.xmb.ui.detail.ShibaCoinsTarget.LibraryGame(menu.gameId))
                 }
                 "install_goldberg"       -> installGoldbergForGame(menu.gameId)
+                "export_game"            -> exportGameFromMenu(menu.gameId)
                 "edit_app"               -> openAppDetail(menu.gameId, menu.packageName ?: return)
                 "favorite"               -> toggleGameFavorite(menu.gameId, true)
                 "unfavorite"             -> toggleGameFavorite(menu.gameId, false)
@@ -5819,6 +5824,19 @@ class XMBViewModel @Inject constructor(
     // Per-game Goldberg conversion from the Shiba/game context menu. When the installer is off the
     // user is told there is no proper achievements.json (and how to enable generation); when it is
     // on, the game's emu folder is matched by title and its schema kit is written in place.
+    /** Export Game from the XMB menu (C18 task X.7); the outcome shows like Install Goldberg's. */
+    private fun exportGameFromMenu(gameId: Long) {
+        viewModelScope.launch {
+            val game = gameRepository.getById(gameId) ?: return@launch
+            val report = runCatching { pcGameExporter.exportGame(gameId) }
+                .onFailure { Timber.e(it, "Export Game failed for gameId=$gameId") }
+                .getOrNull()
+            _uiState.update {
+                it.copy(infoDialog = InfoDialogState(title = game.displayTitle, message = report?.message ?: "Export failed — see the log."))
+            }
+        }
+    }
+
     private fun installGoldbergForGame(gameId: Long) {
         viewModelScope.launch {
             val game = gameRepository.getById(gameId) ?: return@launch

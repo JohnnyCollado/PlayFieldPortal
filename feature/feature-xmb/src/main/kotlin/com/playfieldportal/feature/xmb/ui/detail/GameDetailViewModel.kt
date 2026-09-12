@@ -153,9 +153,15 @@ data class GameDetailUiState(
 
     // The options rows actually shown: the emulator picker is meaningless for package-backed
     // entries, so its row is hidden there. Index-based navigation must use THIS list.
+    // Export Game writes a PC game's .pfpgame file (C18 task X.7), so it is offered on Windows games only.
     val visibleActions: List<DetailAction>
-        get() = if (isPackageBacked) DetailAction.entries.filter { it != DetailAction.EMULATOR }
-                else DetailAction.entries
+        get() = DetailAction.entries.filter { action ->
+            when (action) {
+                DetailAction.EMULATOR -> !isPackageBacked
+                DetailAction.EXPORT   -> game?.platformId == WINDOWS_PLATFORM_ID
+                else                  -> true
+            }
+        }
 }
 
 // ── Metadata preview ──────────────────────────────────────────────────────────
@@ -203,11 +209,14 @@ enum class DetailAction(val label: String) {
     MANUAL("Manual"),
     REFRESH("Refresh"),
     METADATA("Update Metadata"),
+    EXPORT("Export Game"),
     RENAME("Edit Title"),
     EDIT("Edit Note"),
     LOCATION("Open Location"),
     REMOVE("Remove"),
 }
+
+private const val WINDOWS_PLATFORM_ID = "windows"
 
 // 0 = Launch, then the square row: 1 = Options, 2 = Artwork, 3 = Manual.
 const val MAIN_FOCUS_LAST = 3
@@ -237,6 +246,7 @@ class GameDetailViewModel @Inject constructor(
     private val launcherShortcutRepository: com.playfieldportal.feature.appbar.LauncherShortcutRepository,
     private val achievementRepository: com.playfieldportal.feature.achievements.AchievementController,
     private val launchDispatcher: com.playfieldportal.feature.launcher.LaunchDispatcher,
+    private val pcGameExporter: com.playfieldportal.feature.settings.pc.PcGameExporter,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GameDetailUiState())
@@ -549,6 +559,7 @@ class GameDetailViewModel @Inject constructor(
             DetailAction.MANUAL    -> openManual()
             DetailAction.REFRESH   -> fetchArtwork()
             DetailAction.METADATA  -> openMetadataPreview()
+            DetailAction.EXPORT    -> exportGame()
             DetailAction.RENAME    -> startEditTitle()
             DetailAction.EDIT      -> startEditNote()
             DetailAction.LOCATION  -> showActionMessage(
@@ -561,6 +572,20 @@ class GameDetailViewModel @Inject constructor(
     }
 
     private fun showActionMessage(msg: String) = _uiState.update { it.copy(actionMessage = msg) }
+
+    /**
+     * Export Game (C18 task X.7): writes this PC game's `.pfpgame` file into `windows/import`, so a
+     * fresh install's Scan Import Folder can bring it back with its artwork.
+     */
+    private fun exportGame() {
+        val gameId = _uiState.value.game?.id ?: return
+        viewModelScope.launch {
+            val report = runCatching { pcGameExporter.exportGame(gameId) }
+                .onFailure { Timber.e(it, "Export Game failed for gameId=$gameId") }
+                .getOrNull()
+            showActionMessage(report?.message ?: "Export failed — see the log.")
+        }
+    }
 
     // Opens the scraped PDF manual (ScreenScraper, stored as artwork/{gameId}/manual.pdf) in the
     // user's PDF viewer. Goes through the existing launch-intent channel; deliberately NOT

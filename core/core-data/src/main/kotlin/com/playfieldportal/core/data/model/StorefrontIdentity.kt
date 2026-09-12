@@ -42,7 +42,7 @@ object StorefrontIdentity {
      */
     fun fromLaunchIntentUri(intentUri: String?): Pair<String, String>? {
         if (intentUri.isNullOrBlank()) return null
-        val extras = parseExtras(intentUri)
+        val extras = IntentUriExtras.parse(intentUri)
 
         val gameNativeId = extras["i.app_id"] ?: extras["l.app_id"]
         if (isPlausibleAppId(gameNativeId)) {
@@ -56,40 +56,5 @@ object StorefrontIdentity {
         if (isPlausibleAppId(steamAppId)) return "STEAM" to steamAppId!!.trim()
 
         return null
-    }
-
-    /**
-     * The `key=value` extras of an intent URI, keyed by their typed prefix ("i.app_id",
-     * "S.game_source"). Segments are ';'-separated and values are URL-encoded by
-     * `Intent.toUri`, so each one is decoded before being returned.
-     */
-    private fun parseExtras(intentUri: String): Map<String, String> {
-        val body = intentUri.substringAfter("#Intent;", missingDelimiterValue = intentUri)
-        return body.split(';')
-            .mapNotNull { segment ->
-                if (!segment.contains('=')) return@mapNotNull null
-                val key = segment.substringBefore('=')
-                // Only typed-extra keys ("i.", "S.", "B.", "l.", …) — never action=, component=, …
-                if (key.length < 3 || key[1] != '.') return@mapNotNull null
-                key to decode(segment.substringAfter('='))
-            }
-            .toMap()
-    }
-
-    /** `Intent.toUri`'s encoding is `Uri.encode`; only %XX escapes need undoing here. */
-    private fun decode(raw: String): String {
-        if ('%' !in raw) return raw
-        val out = StringBuilder(raw.length)
-        var i = 0
-        while (i < raw.length) {
-            val c = raw[i]
-            val hex = if (c == '%' && i + 2 < raw.length) raw.substring(i + 1, i + 3).toIntOrNull(16) else null
-            if (hex != null) {
-                out.append(hex.toChar()); i += 3
-            } else {
-                out.append(c); i++
-            }
-        }
-        return out.toString()
     }
 }

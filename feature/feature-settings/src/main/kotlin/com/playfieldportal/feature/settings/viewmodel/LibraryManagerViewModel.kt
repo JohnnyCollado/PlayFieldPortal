@@ -146,6 +146,7 @@ class LibraryManagerViewModel @Inject constructor(
     private val vitaGameScanner: com.playfieldportal.feature.achievements.provider.vita.VitaGameScanner,
     private val libraryScanner: LibraryScanner,
     private val romRootScanRunner: RomRootScanRunner,
+    private val pcGameExporter: com.playfieldportal.feature.settings.pc.PcGameExporter,
 ) : ViewModel() {
 
     private val _scratch = MutableStateFlow(LibraryManagerUiState())
@@ -819,6 +820,20 @@ class LibraryManagerViewModel @Inject constructor(
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Export Manual Games (C18): writes a `.pfpgame` file into `<ROM Root>/windows/import` for every
+     * PC game a fresh install could not bring back on its own, and for every pin with artwork, so
+     * Scan Import Folder can restore them and reconnect their artwork by name.
+     */
+    fun exportManualPcGames() {
+        viewModelScope.launch {
+            val report = runCatching { pcGameExporter.export() }
+                .onFailure { Timber.e(it, "Manual PC game export failed") }
+                .getOrNull()
+            _scratch.update { it.copy(message = report?.message ?: "Export failed — see the log.") }
         }
     }
 
