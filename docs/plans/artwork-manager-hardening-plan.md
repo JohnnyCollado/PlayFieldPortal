@@ -295,7 +295,7 @@ Note: there is **zero existing coverage** for `ArtworkStudioViewModel`, the crop
 | 4.3 | Thread `showTouchControls` from `GameDetailScreen.kt:206` into the Studio; touch-sized targets and hit-target separation | C17 | READY |
 | 4.4 | Pending-change and pending-exit prompts (Apply / Discard / Stay) on context switch and exit | C17 | READY |
 | 5.0 | **Render what Phase 0 can already store**: `GameDetailViewModel.kt:265-273` builds the media strip from `find` (one screenshot, one video) — switch it to `findAll` so extra assets are visible at all (AD-13) | 0.3 | DONE |
-| 5.1 | Give `StudioArt` a provider asset id and key cross-page selection on `kind + provider + (providerAssetId ?: url)`, never grid index — see "Task 5.1" under Merge 4 | 1.4, 0.3 | IN PROGRESS |
+| 5.1 | Give `StudioArt` a provider asset id and key cross-page selection on `kind + provider + (providerAssetId ?: url)`, never grid index — see "Task 5.1" under Merge 4 | 1.4, 0.3 | DONE (tests green, device-checked 2026-09-13; screen part uncommitted) |
 | 5.2 | Sequential download queue over the shipped `studioAppendFromUrl`, with per-item states, partial-failure retention, Retry/Remove Failed | 5.1 | READY |
 | 5.3 | Duplicate detection through the shipped `findByProviderAssetId` / `findByOriginUrl` / `findByChecksum`, offering View Existing or Replace Existing | 5.1 | READY |
 | 5.4 | Reordering via the shipped `reorderAssets`, primary screenshot (position 0), and storage/size warnings before a large apply | 5.2, 5.0 | READY |

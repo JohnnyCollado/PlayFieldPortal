@@ -709,7 +709,12 @@ internal fun ArtworkStudioContent(
                                                     RoundedCornerShape(8.dp),
                                                 )
                                                 .combinedClickable(
-                                                    onClick = { actions.openCandidate(index) },
+                                                    // Routed like A: a multi-asset tab picks the tile,
+                                                    // and its preview is in the options menu (task 5.1).
+                                                    onClick = {
+                                                        if (state.selectsMultiple) actions.toggleSelection(index)
+                                                        else actions.openCandidate(index)
+                                                    },
                                                     onLongClick = {
                                                         if (art.isVideo) touchPreviewIndex =
                                                             if (touchPreviewIndex == index) -1 else index
@@ -757,6 +762,17 @@ internal fun ArtworkStudioContent(
                                                         .padding(horizontal = 5.dp, vertical = 3.dp),
                                                 )
                                             }
+                                            // Drawn inside the tile, so a pick never changes the
+                                            // measured slot (L.2). Top corner: the label owns the bottom.
+                                            if (state.isSelected(art)) {
+                                                com.playfieldportal.core.ui.components.PfpCheckBadge(
+                                                    fill = accent,
+                                                    markColor = pfpColors.backgroundBottom,
+                                                    modifier = Modifier
+                                                        .align(Alignment.TopEnd)
+                                                        .padding(5.dp),
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -770,6 +786,7 @@ internal fun ArtworkStudioContent(
                         rangeStart = state.rangeStart,
                         rangeEnd = state.rangeEnd,
                         totalResults = state.totalResults,
+                        selectedCount = state.selectedOnTab,
                         page = state.page,
                         pageCount = state.pageCount,
                         hasPreviousPage = state.hasPreviousPage,
@@ -800,7 +817,7 @@ internal fun ArtworkStudioContent(
                             add(ControllerPromptItem(GamepadAction.BACK, "back"))
                         }
                         StudioZone.GRID -> {
-                            add(ControllerPromptItem(GamepadAction.SELECT, "preview / apply"))
+                            add(ControllerPromptItem(GamepadAction.SELECT, if (state.selectsMultiple) "pick" else "preview / apply"))
                             add(ControllerPromptItem(GamepadAction.BACK, "back"))
                         }
                     }

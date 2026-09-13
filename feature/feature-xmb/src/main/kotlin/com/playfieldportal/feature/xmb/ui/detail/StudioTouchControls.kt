@@ -56,6 +56,8 @@ internal fun StudioPageLine(
     onPreviousPage: () -> Unit,
     onNextPage: () -> Unit,
     modifier: Modifier = Modifier,
+    // Picks on the active tab (task 5.1). Shown after the range, so it lives inside the band's height.
+    selectedCount: Int = 0,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -68,6 +70,15 @@ internal fun StudioPageLine(
                 "$rangeStart–$rangeEnd of $totalResults",
                 color = Color.White.copy(alpha = 0.6f), fontSize = 9.5.sp, lineHeight = 12.sp,
                 maxLines = 1,
+            )
+        }
+        // Counted even with no results: a pick made on another source or query is still held.
+        if (selectedCount > 0) {
+            Text(
+                "$selectedCount selected",
+                color = Color.White, fontSize = 9.5.sp, lineHeight = 12.sp, fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                modifier = Modifier.padding(start = if (totalResults > 0) 10.dp else 0.dp),
             )
         }
         Spacer(Modifier.weight(1f))
@@ -230,11 +241,12 @@ private fun StudioPageLinePreview() {
                     hasPreviousPage = false, hasNextPage = true, showTouchControls = touch,
                     onPreviousPage = {}, onNextPage = {}, modifier = Modifier.width(613.dp),
                 )
-                PreviewCaption("$mode · middle page")
+                PreviewCaption("$mode · middle page · 3 picked")
                 StudioPageLine(
                     rangeStart = 16, rangeEnd = 30, totalResults = 50, page = 1, pageCount = 4,
                     hasPreviousPage = true, hasNextPage = true, showTouchControls = touch,
                     onPreviousPage = {}, onNextPage = {}, modifier = Modifier.width(613.dp),
+                    selectedCount = 3,
                 )
                 PreviewCaption("$mode · single page (no pager)")
                 StudioPageLine(
