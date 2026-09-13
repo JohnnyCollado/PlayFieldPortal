@@ -21,7 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.playfieldportal.core.ui.preview.CombinedPreviews
 import com.playfieldportal.core.ui.preview.PfpPreview
 import com.playfieldportal.feature.settings.viewmodel.RootFolderRow

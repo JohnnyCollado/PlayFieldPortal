@@ -74,6 +74,65 @@ data class StudioArt(
 // the current level only. TABS (categories) → SOURCES → GRID.
 enum class StudioZone { TABS, SOURCES, GRID }
 
+/** Where one pick is on its way into the library (task 5.2). */
+enum class StudioQueueState { QUEUED, DOWNLOADING, ADDED, FAILED }
+
+/** A pick handed to the download queue. [gameId] is kept because the queue outlives the screen. */
+data class StudioQueueItem(
+    val gameId: Long,
+    val key: StudioArtKey,
+    val art: StudioArt,
+    val state: StudioQueueState,
+)
+
+/** What a tile's corner badge shows (tasks 5.1, 5.2). A stored asset reads as checked ([ADDED]) until unchecked. */
+enum class StudioTileMark { NONE, PICKED, QUEUED, DOWNLOADING, ADDED, FAILED, TO_REMOVE }
+
+/**
+ * The page line's account of the active tab: [toAdd] new picks and [toRemove] unchecked stored assets
+ * waiting for Apply, then the downloads this open.
+ */
+data class StudioQueueSummary(
+    val toAdd: Int = 0,
+    val toRemove: Int = 0,
+    val added: Int = 0,
+    val failed: Int = 0,
+    val total: Int = 0,
+) {
+    val hasChanges: Boolean get() = toAdd > 0 || toRemove > 0
+    val inQueue: Boolean get() = total > 0
+}
+
+/** The leave prompt's rows, in order: B asked to close while changes were not applied (task 5.2). */
+enum class StudioLeaveChoice(val label: String) {
+    APPLY("Apply and Close"),
+    DISCARD("Discard Changes"),
+    STAY("Stay"),
+}
+
+/** The apply confirmation's rows, in order: START, the Apply pill or Apply Changes ask before changing the slot. */
+enum class StudioApplyChoice(val label: String) {
+    APPLY("Apply"),
+    CANCEL("Cancel"),
+}
+
+/** "3 screenshots", "1 video": [count] assets of [kind], for the confirmation's title. */
+fun studioAssetCount(kind: ArtworkKind, count: Int): String {
+    val noun = when (kind) {
+        ArtworkKind.SCREENSHOT -> "screenshot"
+        ArtworkKind.VIDEO      -> "video"
+        else                   -> "image"
+    }
+    return if (count == 1) "1 $noun" else "$count ${noun}s"
+}
+
+/** The apply confirmation's title: "Add 2 screenshots?", "Remove 1 video?" or "Add 2 screenshots and remove 1?". */
+fun studioApplyTitle(kind: ArtworkKind, toAdd: Int, toRemove: Int): String = when {
+    toAdd > 0 && toRemove > 0 -> "Add ${studioAssetCount(kind, toAdd)} and remove $toRemove?"
+    toRemove > 0              -> "Remove ${studioAssetCount(kind, toRemove)}?"
+    else                      -> "Add ${studioAssetCount(kind, toAdd)}?"
+}
+
 data class ArtworkStudioUiState(
     val game: Game? = null,
     val isLoading: Boolean = true,
@@ -139,9 +198,22 @@ data class ArtworkStudioUiState(
     val candidate: StudioArt? = null,
     // ── Selection (C16 task 5.1) ─────────────────────────────────────────────
     // Tiles picked on a multi-asset tab, in pick order. Keyed by asset, not grid position, so a pick
-    // survives paging, a re-page, a source switch and a new query. Nothing downloads them yet: the
-    // queue that consumes this is task 5.2.
+    // survives paging, a re-page, a source switch and a new query. Applying moves them to [queue].
     val selection: Map<StudioArtKey, StudioArt> = emptyMap(),
+    // Stored assets the user unchecked, keyed like [selection]. Applying deletes them from the slot.
+    val removals: Map<StudioArtKey, StudioArt> = emptyMap(),
+    // ── Download queue (C16 task 5.2) ────────────────────────────────────────
+    // Picks handed over for download, in the order they were added. Closing the screen does not stop
+    // it: the ViewModel outlives the screen, and so does a download in flight.
+    val queue: List<StudioQueueItem> = emptyList(),
+    // B asked to close while changes were not applied: Apply and Close / Discard Changes / Stay.
+    val leavePromptOpen: Boolean = false,
+    val leavePromptIndex: Int = 0,
+    // START, the Apply pill or Apply Changes asked to apply this tab's changes: Apply / Cancel.
+    val applyConfirmOpen: Boolean = false,
+    val applyConfirmIndex: Int = 0,
+    // What the active multi-asset slot already holds, re-read on every open, tab, apply, clear and add.
+    val library: StudioLibraryAssets = StudioLibraryAssets(),
     // Manual candidates: the PDF is downloaded to cache and paged before Apply.
     val candidateManualPath: String? = null,
     val manualDownloading: Boolean = false,
@@ -218,6 +290,49 @@ data class ArtworkStudioUiState(
     val canPreviewFocused: Boolean
         get() = zone == StudioZone.GRID && selectsMultiple && results.getOrNull(gridIndex) != null
 
+    /** How the active tab's [art] is getting on in the open game's queue, or null if it was never added. */
+    fun queueStateOf(art: StudioArt): StudioQueueState? {
+        val kind = STUDIO_TABS.getOrNull(tabIndex)?.kind ?: return null
+        val key = StudioArtKey.of(kind, art)
+        return queue.firstOrNull { it.gameId == game?.id && it.key == key }?.state
+    }
+
+    /**
+     * A tile's badge: a download still in flight or failed first, then a stored asset (this open's
+     * download or the slot's own) that is unchecked or still checked, then a new pick.
+     */
+    fun tileMarkOf(art: StudioArt): StudioTileMark {
+        val kind = STUDIO_TABS.getOrNull(tabIndex)?.kind ?: return StudioTileMark.NONE
+        val key = StudioArtKey.of(kind, art)
+        val queued = queueStateOf(art)
+        return when {
+            queued == StudioQueueState.QUEUED      -> StudioTileMark.QUEUED
+            queued == StudioQueueState.DOWNLOADING -> StudioTileMark.DOWNLOADING
+            queued == StudioQueueState.FAILED      -> StudioTileMark.FAILED
+            key in removals                        -> StudioTileMark.TO_REMOVE
+            queued == StudioQueueState.ADDED || library.holds(kind, art) -> StudioTileMark.ADDED
+            key in selection                       -> StudioTileMark.PICKED
+            else                                   -> StudioTileMark.NONE
+        }
+    }
+
+    /** Unchecked stored assets on the active tab only, like [selectedOnTab]. */
+    val removalsOnTab: Int
+        get() = STUDIO_TABS.getOrNull(tabIndex)?.kind?.let { kind -> removals.keys.count { it.kind == kind } } ?: 0
+
+    val queueSummary: StudioQueueSummary
+        get() {
+            val kind = STUDIO_TABS.getOrNull(tabIndex)?.kind ?: return StudioQueueSummary()
+            val items = queue.filter { it.gameId == game?.id && it.key.kind == kind }
+            return StudioQueueSummary(
+                toAdd = selectedOnTab,
+                toRemove = removalsOnTab,
+                added = items.count { it.state == StudioQueueState.ADDED },
+                failed = items.count { it.state == StudioQueueState.FAILED },
+                total = items.size,
+            )
+        }
+
     /**
      * Actions for the current slot and then the active source, in menu order. Entries that do not
      * apply are hidden.
@@ -226,7 +341,12 @@ data class ArtworkStudioUiState(
         get() = buildList {
             val kind = STUDIO_TABS.getOrNull(tabIndex)?.kind
             val hasCurrent = currentUri != null
+            if (queueSummary.hasChanges) add(StudioAction.APPLY_CHANGES)
             if (canPreviewFocused) add(StudioAction.PREVIEW)
+            if (queueSummary.failed > 0) {
+                add(StudioAction.RETRY_FAILED)
+                add(StudioAction.REMOVE_FAILED)
+            }
             if (hasCurrent && kind != null && kind in CROPPABLE_KINDS) add(StudioAction.CROP)
             if (info?.hasPrevious == true) add(StudioAction.RESTORE_PREVIOUS)
             if (info?.originUrl != null) add(StudioAction.RESET_DEFAULT)
@@ -243,7 +363,10 @@ data class ArtworkStudioUiState(
 }
 
 enum class StudioAction(val label: String) {
+    APPLY_CHANGES("Apply Changes"),
     PREVIEW("Preview"),
+    RETRY_FAILED("Retry Failed Downloads"),
+    REMOVE_FAILED("Remove Failed Downloads"),
     CROP("Adjust Crop / Position"),
     RESTORE_PREVIOUS("Restore Previous"),
     RESET_DEFAULT("Reset to Scraped Default"),
@@ -382,6 +505,10 @@ class ArtworkStudioViewModel @Inject constructor(
     /** The in-flight browse, cancelled the moment another one starts. */
     private var loadJob: kotlinx.coroutines.Job? = null
 
+    // The one job draining the download queue (task 5.2). Never cancelled by close(): picks the user
+    // chose to add keep downloading after the screen is gone.
+    private var queueJob: kotlinx.coroutines.Job? = null
+
     private var gameId: Long = -1
 
     /** The grid slot's last reported size in dp; null until the screen has measured it. */
@@ -390,9 +517,15 @@ class ArtworkStudioViewModel @Inject constructor(
     fun load(gameId: Long) {
         // Always clear the closed flag: the VM survives across open/close (host-scoped), so a
         // stale closed=true from a prior B-press would otherwise slam the screen shut on reopen.
-        // Every open starts at Level 1 (categories), with no picks: nothing downloads them yet, and a
-        // pick left over from a closed screen would be invisible.
-        _uiState.update { it.copy(closed = false, zone = StudioZone.TABS, selection = emptyMap()) }
+        // Every open starts at Level 1 (categories) with no picks: a pick left over from a closed
+        // screen would be invisible. The queue keeps what is still downloading and forgets the rest.
+        _uiState.update { s ->
+            s.copy(
+                closed = false, zone = StudioZone.TABS, selection = emptyMap(), removals = emptyMap(),
+                leavePromptOpen = false, applyConfirmOpen = false,
+                queue = s.queue.filter { it.state == StudioQueueState.QUEUED || it.state == StudioQueueState.DOWNLOADING },
+            )
+        }
         // Each open asks the providers afresh: a search that failed last time (providers report a
         // failure as no hits) must not keep the game unmatched for good.
         titleSearches.clear()
@@ -408,6 +541,9 @@ class ArtworkStudioViewModel @Inject constructor(
                     landOnAvailableSource()
                     loadResults()
                 }
+                // What the slot holds may have changed while the screen was closed: a queue that
+                // finished after Add and Close, or a scrape.
+                refreshCurrent()
                 // This open's memo was just cleared, so the unvisited providers resolve afresh too.
                 resolveInBackground()
             }
@@ -483,6 +619,23 @@ class ArtworkStudioViewModel @Inject constructor(
             else                       -> null
         }
         _uiState.update { it.copy(currentUri = current) }
+        refreshLibrary()
+    }
+
+    /**
+     * Re-reads what the active multi-asset slot holds, so an asset added on an earlier visit shows as
+     * added (task 5.2). A single-art slot holds nothing a tile could be picked against.
+     */
+    private suspend fun refreshLibrary() {
+        val kind = tab().kind
+        val slots = if (com.playfieldportal.feature.artwork.store.ArtworkFileNaming.supportsMultiple(kind)) {
+            // Only records whose file still opens: a lost file must not read as checked while the
+            // gallery shows nothing.
+            routingStore.studioAssetsOnDisk(gameId, kind)
+        } else {
+            emptyList()
+        }
+        _uiState.update { it.copy(library = StudioLibraryAssets.of(kind, slots)) }
     }
 
     /**
@@ -710,20 +863,9 @@ class ArtworkStudioViewModel @Inject constructor(
             ?.takeIf { it.provider == MatchProvider.SCREENSCRAPER }
             ?.providerGameId?.toLongOrNull()
         val usesLookup = romLookup != null && (matchedSsId == null || matchedSsId == romLookup.ssId)
-        val medias = (if (usesLookup) romLookup?.medias else ssMediaCatalog.mediasFor(gameId, matchedSsId))
+        val medias = (if (usesLookup) romLookup.medias else ssMediaCatalog.mediasFor(gameId, matchedSsId))
             ?: return emptyList()
-        return types.flatMap { type ->
-            medias.filter { it.type == type && it.url != null }.map { m ->
-                StudioArt(
-                    url = m.url!!,
-                    thumb = null,
-                    provider = "ScreenScraper",
-                    label = listOfNotNull(m.type, m.region?.uppercase()).joinToString(" · "),
-                    isVideo = kind == ArtworkKind.VIDEO || kind == ArtworkKind.ICON1,
-                    providerAssetId = ScreenScraperAssetId.of(m.url),
-                )
-            }
-        }
+        return screenScraperTiles(kind, types, medias)
     }
 
     private suspend fun sgdbResults(kind: ArtworkKind, query: String, match: GameMatch?): List<StudioArt> {
@@ -1479,18 +1621,172 @@ class ArtworkStudioViewModel @Inject constructor(
     }
 
     /**
-     * Picks or unpicks the tile at [index] on a multi-asset tab (task 5.1). The pick is keyed by
-     * [StudioArtKey], never by [index], so it is still there after paging away and back. A single-art
-     * tab ignores it: one slot has nothing to pick several of.
+     * Checks or unchecks the tile at [index] on a multi-asset tab (tasks 5.1, 5.2). A new asset is picked
+     * to add. One the slot already holds starts checked, so unchecking it marks it for removal and
+     * checking it again keeps it. Keyed by [StudioArtKey], never by [index], so a change survives paging.
+     * A download still in flight, or a failed one (Retry / Remove Failed), cannot be toggled. A
+     * single-art tab ignores it: one slot has nothing to pick several of.
      */
     override fun toggleSelection(index: Int) = _uiState.update { s ->
         val art = s.results.getOrNull(index)
         if (art == null || !s.selectsMultiple) return@update s
         val key = StudioArtKey.of(STUDIO_TABS[s.tabIndex].kind, art)
-        s.copy(
-            gridIndex = index,
-            selection = if (key in s.selection) s.selection - key else s.selection + (key to art),
-        )
+        when (s.tileMarkOf(art)) {
+            StudioTileMark.QUEUED, StudioTileMark.DOWNLOADING, StudioTileMark.FAILED -> s
+            StudioTileMark.ADDED     -> s.copy(gridIndex = index, removals = s.removals + (key to art))
+            StudioTileMark.TO_REMOVE -> s.copy(gridIndex = index, removals = s.removals - key)
+            StudioTileMark.PICKED    -> s.copy(gridIndex = index, selection = s.selection - key)
+            StudioTileMark.NONE      -> s.copy(gridIndex = index, selection = s.selection + (key to art))
+        }
+    }
+
+    // ── Apply and the download queue (task 5.2) ───────────────────────────────
+
+    /** START, the Apply pill and Apply Changes: asks first, so nothing is added or removed on a stray press. */
+    override fun applyChanges() = _uiState.update { s ->
+        if (!s.queueSummary.hasChanges) s else s.copy(applyConfirmOpen = true, applyConfirmIndex = 0, actionsOpen = false)
+    }
+
+    /** Apply commits the active tab's changes; Cancel keeps them waiting. */
+    override fun resolveApplyConfirm(choice: StudioApplyChoice) {
+        _uiState.update { it.copy(applyConfirmOpen = false) }
+        if (choice == StudioApplyChoice.APPLY) {
+            val kind = tab().kind
+            commit { it.kind == kind }
+        }
+    }
+
+    private fun moveApplyConfirmCursor(delta: Int) = _uiState.update {
+        it.copy(applyConfirmIndex = (it.applyConfirmIndex + delta).mod(StudioApplyChoice.entries.size))
+    }
+
+    /**
+     * Applies the changes [which] accepts: unchecked stored assets are deleted, then new picks are
+     * queued. Deleting first means an append that starts now numbers its position after the deletes
+     * have closed their gaps.
+     */
+    private fun commit(which: (StudioArtKey) -> Boolean) {
+        val removals = _uiState.value.removals.filterKeys(which)
+        if (removals.isEmpty()) {
+            enqueue(which)
+            return
+        }
+        _uiState.update { it.copy(removals = it.removals - removals.keys, actionsOpen = false) }
+        viewModelScope.launch {
+            removeStored(removals)
+            enqueue(which)
+        }
+    }
+
+    /**
+     * Deletes the stored assets behind [removals], each kind's highest position first: every delete
+     * closes its gap, which would move the positions below it read before.
+     */
+    private suspend fun removeStored(removals: Map<StudioArtKey, StudioArt>) {
+        val gid = gameId
+        var failed = 0
+        for ((kind, entries) in removals.entries.groupBy { it.key.kind }) {
+            val library = StudioLibraryAssets.of(kind, routingStore.studioAssets(gid, kind))
+            val positions = entries.flatMap { library.sortOrdersHolding(it.value) }.distinct().sortedDescending()
+            for (position in positions) {
+                val removed = try {
+                    routingStore.deleteAssetAt(gid, kind, position)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Timber.w(e, "Studio asset removal failed")
+                    false
+                }
+                if (!removed) failed++
+            }
+        }
+        _uiState.update { s ->
+            s.copy(
+                // A removed asset's download this open is over, or its tile would still read as added.
+                queue = s.queue.filterNot { it.gameId == gid && it.key in removals.keys && it.state == StudioQueueState.ADDED },
+                message = if (failed > 0) "Some artwork could not be removed" else s.message,
+            )
+        }
+        if (gid == gameId) refreshCurrent()
+    }
+
+    override fun retryFailed() {
+        val kind = tab().kind
+        _uiState.update { s ->
+            s.copy(
+                actionsOpen = false,
+                queue = s.queue.map { if (it.isFailedOn(kind)) it.copy(state = StudioQueueState.QUEUED) else it },
+            )
+        }
+        drainQueue()
+    }
+
+    override fun removeFailed() {
+        val kind = tab().kind
+        _uiState.update { s -> s.copy(actionsOpen = false, queue = s.queue.filterNot { it.isFailedOn(kind) }) }
+    }
+
+    private fun StudioQueueItem.isFailedOn(kind: ArtworkKind) =
+        gameId == this@ArtworkStudioViewModel.gameId && key.kind == kind && state == StudioQueueState.FAILED
+
+    override fun resolveLeavePrompt(choice: StudioLeaveChoice) {
+        _uiState.update { it.copy(leavePromptOpen = false) }
+        when (choice) {
+            // Every tab's changes, not just this one's: the prompt counted them all.
+            StudioLeaveChoice.APPLY   -> { commit { true }; close() }
+            StudioLeaveChoice.DISCARD -> { _uiState.update { it.copy(selection = emptyMap(), removals = emptyMap()) }; close() }
+            StudioLeaveChoice.STAY    -> Unit
+        }
+    }
+
+    private fun moveLeavePromptCursor(delta: Int) = _uiState.update {
+        it.copy(leavePromptIndex = (it.leavePromptIndex + delta).mod(StudioLeaveChoice.entries.size))
+    }
+
+    /** Moves the picks [which] accepts out of the selection and onto the end of the queue. */
+    private fun enqueue(which: (StudioArtKey) -> Boolean) {
+        _uiState.update { s ->
+            val picked = s.selection.filterKeys(which)
+            if (picked.isEmpty()) return@update s
+            s.copy(
+                actionsOpen = false,
+                selection = s.selection - picked.keys,
+                queue = s.queue + picked.map { (key, art) -> StudioQueueItem(gameId, key, art, StudioQueueState.QUEUED) },
+            )
+        }
+        drainQueue()
+    }
+
+    /**
+     * Downloads the queue one item at a time, so a long list never opens a connection per pick. At
+     * most one job: it runs on the main dispatcher, so an item queued while it works is either found
+     * by its next look or finds the job already finished and starts a new one.
+     */
+    private fun drainQueue() {
+        if (queueJob?.isActive == true) return
+        queueJob = viewModelScope.launch {
+            while (true) {
+                val next = _uiState.value.queue.firstOrNull { it.state == StudioQueueState.QUEUED } ?: break
+                setQueueState(next, StudioQueueState.DOWNLOADING)
+                val path = try {
+                    routingStore.studioAppendFromUrl(
+                        next.gameId, next.key.kind, next.art.url, next.art.provider, next.art.providerAssetId,
+                    )
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    // One bad download is a failed item, never a stopped queue.
+                    Timber.w(e, "Studio queue download failed")
+                    null
+                }
+                setQueueState(next, if (path != null) StudioQueueState.ADDED else StudioQueueState.FAILED)
+                if (path != null && next.gameId == gameId && next.key.kind == tab().kind) refreshCurrent()
+            }
+        }
+    }
+
+    private fun setQueueState(item: StudioQueueItem, state: StudioQueueState) = _uiState.update { s ->
+        s.copy(queue = s.queue.map { if (it.gameId == item.gameId && it.key == item.key) it.copy(state = state) else it })
     }
 
     /** Plain bounded download for candidate previews (no ktor dependency in this module). */
@@ -1582,12 +1878,14 @@ class ArtworkStudioViewModel @Inject constructor(
      * mature filter (task 1.3), or Change Match on any provider (task 2.4). The unmatched game with
      * no artwork is exactly the one Change Match exists to rescue. Only a source with neither, i.e.
      * Local, still refuses, so the menu never opens empty. A focused tile on a multi-asset tab also
-     * opens it, for Preview (task 5.1).
+     * opens it, for Preview (task 5.1), and so do changes waiting to be applied or failed downloads (5.2).
      */
     override fun openActions() {
         val sgdb = sgdbActive()
         val s = _uiState.value
-        if (s.currentUri == null && !sgdb && s.matchProvider == null && !s.canPreviewFocused) return
+        if (s.currentUri == null && !sgdb && s.matchProvider == null && !s.canPreviewFocused &&
+            !s.queueSummary.hasChanges && s.queueSummary.failed == 0
+        ) return
         viewModelScope.launch {
             val info = routingStore.studioInfo(gameId, tab().kind)
             _uiState.update {
@@ -1608,7 +1906,10 @@ class ArtworkStudioViewModel @Inject constructor(
 
     override fun runAction(action: StudioAction) {
         when (action) {
+            StudioAction.APPLY_CHANGES    -> applyChanges()
             StudioAction.PREVIEW          -> { closeActions(); openCandidate(_uiState.value.gridIndex) }
+            StudioAction.RETRY_FAILED     -> retryFailed()
+            StudioAction.REMOVE_FAILED    -> removeFailed()
             StudioAction.CROP             -> beginCrop()
             StudioAction.RESTORE_PREVIOUS -> restorePrevious()
             StudioAction.RESET_DEFAULT    -> resetToScrapedDefault()
@@ -1876,6 +2177,7 @@ class ArtworkStudioViewModel @Inject constructor(
         }
         // Column-backed kinds repoint the game row; record-only kinds resolve by fixed name.
         repointColumn(kind, path)
+        refreshLibrary()
         val game = gameRepository.getById(gameId)
         _uiState.update {
             it.copy(
@@ -1895,6 +2197,7 @@ class ArtworkStudioViewModel @Inject constructor(
             // Delete the stored file, its backup + original, and the record; then unwire the column.
             routingStore.clearArtwork(gameId, kind)
             repointColumn(kind, null)
+            refreshLibrary()
             _uiState.update {
                 it.copy(currentUri = null, info = null, previewVersion = it.previewVersion + 1,
                     message = "${tab().label} cleared")
@@ -1970,6 +2273,29 @@ class ArtworkStudioViewModel @Inject constructor(
             }
             return
         }
+        // Apply confirmation: A activates the row, B cancels. START is ignored here, so pressing it twice
+        // cannot confirm.
+        if (s.applyConfirmOpen) {
+            when (action) {
+                GamepadAction.NAVIGATE_UP   -> moveApplyConfirmCursor(-1)
+                GamepadAction.NAVIGATE_DOWN -> moveApplyConfirmCursor(+1)
+                GamepadAction.SELECT        -> resolveApplyConfirm(StudioApplyChoice.entries[s.applyConfirmIndex])
+                GamepadAction.BACK          -> resolveApplyConfirm(StudioApplyChoice.CANCEL)
+                else -> Unit
+            }
+            return
+        }
+        // Leave prompt: B from the categories while changes wait to be applied. B again means Stay.
+        if (s.leavePromptOpen) {
+            when (action) {
+                GamepadAction.NAVIGATE_UP   -> moveLeavePromptCursor(-1)
+                GamepadAction.NAVIGATE_DOWN -> moveLeavePromptCursor(+1)
+                GamepadAction.SELECT        -> resolveLeavePrompt(StudioLeaveChoice.entries[s.leavePromptIndex])
+                GamepadAction.BACK          -> resolveLeavePrompt(StudioLeaveChoice.STAY)
+                else -> Unit
+            }
+            return
+        }
         if (s.actionsOpen) {
             val actions = s.availableActions
             when (action) {
@@ -1999,7 +2325,11 @@ class ArtworkStudioViewModel @Inject constructor(
         // the grid, clamped at the page edges: paging is exclusively LB/RB or the on-screen pills.
         when (action) {
             GamepadAction.BACK -> when (s.zone) {
-                StudioZone.TABS    -> close()
+                StudioZone.TABS    ->
+                    if (s.selection.isNotEmpty() || s.removals.isNotEmpty()) {
+                        _uiState.update { it.copy(leavePromptOpen = true, leavePromptIndex = 0) }
+                    }
+                    else close()
                 StudioZone.SOURCES -> _uiState.update { it.copy(zone = StudioZone.TABS) }
                 StudioZone.GRID    -> _uiState.update { it.copy(zone = StudioZone.SOURCES) }
             }
@@ -2044,14 +2374,12 @@ class ArtworkStudioViewModel @Inject constructor(
             }
             // X / Square focuses the search field, from any level.
             GamepadAction.CHANGE_SORT -> openSearch()
-            // START toggles SteamGridDB's mature filter — a screen-local repurposing, which is
-            // how START is already used elsewhere (the pickers bind it to Add/Apply; it has no
-            // global behaviour of its own). Silently ignored on every other source.
-            GamepadAction.HOME -> toggleNsfw()
+            // START applies the active tab's changes, as it confirms in the other pickers (task 5.2).
+            // SteamGridDB's mature filter, which it used to toggle, is in the Triangle menu.
+            GamepadAction.HOME -> applyChanges()
             // Y / Triangle opens the per-slot options menu (crop, restore, reset, clear, info) —
             // XMB-style context menu, available at every level.
             GamepadAction.OPEN_CONTEXT_MENU -> openActions()
-            else -> Unit
         }
     }
 }

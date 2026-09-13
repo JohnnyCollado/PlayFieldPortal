@@ -43,6 +43,13 @@ interface ArtworkStudioActions {
     fun previousPage()
     fun nextPage()
 
+    // Apply and the download queue
+    fun applyChanges()
+    fun resolveApplyConfirm(choice: StudioApplyChoice)
+    fun retryFailed()
+    fun removeFailed()
+    fun resolveLeavePrompt(choice: StudioLeaveChoice)
+
     // Candidate preview
     fun applyCandidate()
     fun dismissCandidate()

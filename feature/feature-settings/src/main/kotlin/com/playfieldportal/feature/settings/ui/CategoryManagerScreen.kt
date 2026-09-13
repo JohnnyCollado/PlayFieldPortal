@@ -19,7 +19,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.playfieldportal.core.ui.icons.CategoryIconGlyph
 import com.playfieldportal.feature.settings.viewmodel.CREATE_CATEGORY_FOCUS_KEY
 import com.playfieldportal.feature.settings.viewmodel.CategoryManagerUiState

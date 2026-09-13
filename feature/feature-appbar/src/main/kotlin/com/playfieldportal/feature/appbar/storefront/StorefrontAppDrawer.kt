@@ -69,7 +69,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -116,10 +116,6 @@ internal fun StorefrontAppDrawerScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var searchActive by remember { mutableStateOf(false) }
     val keyboard = LocalSoftwareKeyboardController.current
-    // Platform variant on purpose: this Compose BOM doesn't provide the lifecycle-runtime-compose
-    // LocalLifecycleOwner (reading it crashes at composition — see XMBShell's note on the same
-    // workaround), so the deprecated platform local is the one that is actually populated.
-    @Suppress("DEPRECATION")
     val lifecycleOwner = LocalLifecycleOwner.current
 
     LaunchedEffect(pendingGamepadAction) {

@@ -109,6 +109,70 @@ object ScreenScraperAssetId {
 }
 
 /**
+ * ScreenScraper media as Studio tiles for [kind]: one tile per file, in [types] order.
+ *
+ * `jeuInfos` lists some files more than once, either the same entry twice or one file under several
+ * regions (screenmarquee for wor, uk and us all serving `media=screenmarquee(wor)`), and
+ * ss_media_cache keeps the list as served. Picks are keyed by asset, so each copy would be its own
+ * tile that is picked and unpicked with the others. The one tile's label names every region its file
+ * was listed under.
+ */
+internal fun screenScraperTiles(
+    kind: ArtworkKind,
+    types: List<String>,
+    medias: List<com.playfieldportal.feature.artwork.api.SsCachedMedia>,
+): List<StudioArt> {
+    val served = types.flatMap { type ->
+        medias.mapNotNull { media -> media.url?.takeIf { media.type == type }?.let { url -> media to url } }
+    }
+    return served
+        .groupBy { (_, url) -> ScreenScraperAssetId.of(url) ?: url }
+        .values
+        .map { copies ->
+            val (media, url) = copies.first()
+            val regions = copies.mapNotNull { (copy, _) -> copy.region?.uppercase() }.distinct()
+            StudioArt(
+                url = url,
+                thumb = null,
+                provider = "ScreenScraper",
+                label = listOfNotNull(media.type, regions.joinToString("/").ifEmpty { null }).joinToString(" · "),
+                isVideo = kind == ArtworkKind.VIDEO || kind == ArtworkKind.ICON1,
+                providerAssetId = ScreenScraperAssetId.of(url),
+            )
+        }
+}
+
+/**
+ * What one multi-asset slot already holds (found on device during task 5.2; the queue's own states last
+ * one open). A tile it holds starts checked, and unchecking it marks the stored asset for removal.
+ *
+ * A tile is held when a stored record has its provider asset id, or was downloaded from its URL. A
+ * record written by Apply has no asset id, only the URL, and ScreenScraper URLs are stored as served,
+ * credentials included, so those are compared by [ScreenScraperAssetId]. Providers are not compared:
+ * asset ids and URLs never coincide across providers, and the scraper and the Studio name them apart.
+ */
+data class StudioLibraryAssets(
+    val kind: ArtworkKind? = null,
+    val slots: List<com.playfieldportal.feature.artwork.store.StudioArtworkSlot> = emptyList(),
+) {
+    fun holds(kind: ArtworkKind, art: StudioArt): Boolean = kind == this.kind && slots.any { it.holds(art) }
+
+    /** Every position holding [art]'s asset: one, or more if it was stored twice. */
+    fun sortOrdersHolding(art: StudioArt): List<Int> = slots.filter { it.holds(art) }.map { it.sortOrder }
+
+    companion object {
+        fun of(kind: ArtworkKind, slots: List<com.playfieldportal.feature.artwork.store.StudioArtworkSlot>) =
+            StudioLibraryAssets(kind, slots)
+
+        private fun com.playfieldportal.feature.artwork.store.StudioArtworkSlot.holds(art: StudioArt): Boolean =
+            (providerAssetId != null && providerAssetId == art.providerAssetId) ||
+                originUrl?.let(::originOf) == originOf(art.url)
+
+        private fun originOf(url: String): String = ScreenScraperAssetId.of(url) ?: url
+    }
+}
+
+/**
  * A small LRU of finished result lists, keyed by [StudioRequestKey].
  *
  * Replaces the single `allResults` field: with one list per key, switching back to a source the

@@ -1,5 +1,7 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
+import com.playfieldportal.feature.artwork.api.SsCachedMedia
+import com.playfieldportal.feature.artwork.store.StudioArtworkSlot
 import com.playfieldportal.feature.artwork.store.ArtworkKind
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -215,6 +217,89 @@ class StudioSearchTest {
     @Test
     fun `one asset offered on two tabs is two keys`() {
         assertNotEquals(StudioArtKey.of(ArtworkKind.ICON, art("u1")), StudioArtKey.of(ArtworkKind.SCREENSHOT, art("u1")))
+    }
+
+    // ── ScreenScraper tiles (found on device during task 5.2) ─────────────────
+    // Shapes taken from real ss_media_cache rows: the same entry twice, and one file under three regions.
+
+    private fun ssUrl(media: String) = "https://neoclone.screenscraper.fr/api2/mediaJeu.php" +
+        "?devid=pfp&devpassword=x&softname=pfp&ssid=&sspassword=&systemeid=57&jeuid=3&media=$media"
+
+    @Test
+    fun `a file ScreenScraper lists twice is one tile`() {
+        val tiles = screenScraperTiles(
+            ArtworkKind.SCREENSHOT,
+            listOf("ss"),
+            listOf(SsCachedMedia("ss", "wor", ssUrl("ss(wor)")), SsCachedMedia("ss", "wor", ssUrl("ss(wor)"))),
+        )
+
+        assertEquals(listOf("ss · WOR"), tiles.map { it.label })
+    }
+
+    @Test
+    fun `one file listed under several regions is one tile naming them all`() {
+        val tiles = screenScraperTiles(
+            ArtworkKind.ICON,
+            listOf("screenmarquee"),
+            listOf("wor", "uk", "us").map { SsCachedMedia("screenmarquee", it, ssUrl("screenmarquee(wor)")) },
+        )
+
+        assertEquals(1, tiles.size)
+        assertEquals("screenmarquee · WOR/UK/US", tiles.single().label)
+        assertEquals("3:screenmarquee(wor)", tiles.single().providerAssetId)
+    }
+
+    @Test
+    fun `different files stay separate tiles, in the tab's type order`() {
+        val tiles = screenScraperTiles(
+            ArtworkKind.SCREENSHOT,
+            listOf("ss", "sstitle"),
+            listOf(
+                SsCachedMedia("sstitle", "wor", ssUrl("sstitle(wor)")),
+                SsCachedMedia("ss", "wor", ssUrl("ss(wor)")),
+                SsCachedMedia("ss", "jp", ssUrl("ss(jp)")),
+                SsCachedMedia("box-2D", "wor", ssUrl("box-2D(wor)")),
+            ),
+        )
+
+        assertEquals(listOf("ss · WOR", "ss · JP", "sstitle · WOR"), tiles.map { it.label })
+    }
+
+    // ── What a slot already holds (found on device during task 5.2) ───────────
+
+    private fun slot(originUrl: String?, providerAssetId: String? = null) = StudioArtworkSlot(
+        sortOrder = 0, documentUri = "content://x", provider = null,
+        originUrl = originUrl, providerAssetId = providerAssetId, sizeBytes = 0,
+    )
+
+    @Test
+    fun `a held asset is recognised by its asset id, or by the URL it was downloaded from`() {
+        val library = StudioLibraryAssets.of(
+            ArtworkKind.SCREENSHOT,
+            listOf(
+                slot(originUrl = "https://sgdb/mirror/1.png", providerAssetId = "grids:1"),
+                slot(originUrl = "https://cdn.thegamesdb.net/ss/1.jpg"),
+            ),
+        )
+        val sgdb = StudioArt(url = "https://sgdb/1.png", thumb = null, provider = "SteamGridDB", providerAssetId = "grids:1")
+        val tgdb = StudioArt(url = "https://cdn.thegamesdb.net/ss/1.jpg", thumb = null, provider = "TheGamesDB")
+
+        assertTrue(library.holds(ArtworkKind.SCREENSHOT, sgdb))
+        assertTrue(library.holds(ArtworkKind.SCREENSHOT, tgdb))
+        assertFalse(library.holds(ArtworkKind.SCREENSHOT, tgdb.copy(url = "https://cdn.thegamesdb.net/ss/2.jpg")))
+        assertFalse("another tab's slot", library.holds(ArtworkKind.VIDEO, tgdb))
+        assertEquals(listOf(0), library.sortOrdersHolding(tgdb))
+    }
+
+    @Test
+    fun `a ScreenScraper file stored with other credentials is still held`() {
+        val storedSignedIn = ssUrl("ss(wor)").replace("ssid=&sspassword=", "ssid=me&sspassword=secret")
+        val library = StudioLibraryAssets.of(ArtworkKind.SCREENSHOT, listOf(slot(originUrl = storedSignedIn)))
+        val tile = screenScraperTiles(
+            ArtworkKind.SCREENSHOT, listOf("ss"), listOf(SsCachedMedia("ss", "wor", ssUrl("ss(wor)"))),
+        ).single()
+
+        assertTrue(library.holds(ArtworkKind.SCREENSHOT, tile))
     }
 
     private fun art(url: String) = StudioArt(url = url, thumb = null, provider = "test")

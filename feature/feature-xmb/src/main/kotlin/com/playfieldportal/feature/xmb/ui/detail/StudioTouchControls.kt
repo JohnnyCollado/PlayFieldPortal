@@ -56,8 +56,11 @@ internal fun StudioPageLine(
     onPreviousPage: () -> Unit,
     onNextPage: () -> Unit,
     modifier: Modifier = Modifier,
-    // Picks on the active tab (task 5.1). Shown after the range, so it lives inside the band's height.
-    selectedCount: Int = 0,
+    // The active tab's changes and their downloads (tasks 5.1, 5.2), after the range and inside the band's height.
+    picks: StudioQueueSummary = StudioQueueSummary(),
+    onApply: () -> Unit = {},
+    onRetryFailed: () -> Unit = {},
+    onRemoveFailed: () -> Unit = {},
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -73,11 +76,13 @@ internal fun StudioPageLine(
             )
         }
         // Counted even with no results: a pick made on another source or query is still held.
-        if (selectedCount > 0) {
-            Text(
-                "$selectedCount selected",
-                color = Color.White, fontSize = 9.5.sp, lineHeight = 12.sp, fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
+        if (picks.hasChanges || picks.inQueue) {
+            StudioPickStatus(
+                picks = picks,
+                showTouchControls = showTouchControls,
+                onApply = onApply,
+                onRetryFailed = onRetryFailed,
+                onRemoveFailed = onRemoveFailed,
                 modifier = Modifier.padding(start = if (totalResults > 0) 10.dp else 0.dp),
             )
         }
@@ -113,6 +118,72 @@ internal fun StudioPageLine(
                 glyphSize = 12.dp,
                 labelColor = Color.White.copy(alpha = 0.45f),
             )
+        }
+    }
+}
+
+/**
+ * The page line's changes: what waits for Apply ("2 to add · 1 to remove", or "+2 −1" in touch mode
+ * where the pills need the width), then how the queue is doing ("2 of 5 added · 1 failed"). Touch draws
+ * Apply, Retry and Remove as pills; a controller applies with START and retries or removes failures
+ * from the options menu, so it only needs the hint and the text.
+ */
+@Composable
+private fun StudioPickStatus(
+    picks: StudioQueueSummary,
+    showTouchControls: Boolean,
+    onApply: () -> Unit,
+    onRetryFailed: () -> Unit,
+    onRemoveFailed: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = modifier,
+    ) {
+        if (picks.hasChanges) {
+            val changes = if (showTouchControls) {
+                listOfNotNull("+${picks.toAdd}".takeIf { picks.toAdd > 0 }, "−${picks.toRemove}".takeIf { picks.toRemove > 0 })
+                    .joinToString(" ")
+            } else {
+                listOfNotNull(
+                    "${picks.toAdd} to add".takeIf { picks.toAdd > 0 },
+                    "${picks.toRemove} to remove".takeIf { picks.toRemove > 0 },
+                ).joinToString(" · ")
+            }
+            Text(
+                changes,
+                color = Color.White, fontSize = 9.5.sp, lineHeight = 12.sp, fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+            )
+            if (showTouchControls) {
+                XmbHeaderPill(label = "Apply ›", onClick = onApply)
+            } else {
+                ControllerPrompt(
+                    action = GamepadAction.HOME,
+                    label = "Apply",
+                    glyphSize = 12.dp,
+                    labelColor = Color.White.copy(alpha = 0.6f),
+                    labelStyle = TextStyle(fontSize = 9.5.sp, lineHeight = 12.sp),
+                    modifier = Modifier.clip(RoundedCornerShape(4.dp)).clickable(onClick = onApply),
+                )
+            }
+        }
+        if (picks.inQueue) {
+            Text(
+                buildString {
+                    append("${picks.added} of ${picks.total} added")
+                    if (picks.failed > 0) append(" · ${picks.failed} failed")
+                },
+                color = if (picks.failed > 0) Color(0xFFE0A030) else Color.White.copy(alpha = 0.6f),
+                fontSize = 9.5.sp, lineHeight = 12.sp,
+                maxLines = 1,
+            )
+            if (picks.failed > 0 && showTouchControls) {
+                XmbHeaderPill(label = "Retry", onClick = onRetryFailed)
+                XmbHeaderPill(label = "Remove", onClick = onRemoveFailed)
+            }
         }
     }
 }
@@ -241,12 +312,20 @@ private fun StudioPageLinePreview() {
                     hasPreviousPage = false, hasNextPage = true, showTouchControls = touch,
                     onPreviousPage = {}, onNextPage = {}, modifier = Modifier.width(613.dp),
                 )
-                PreviewCaption("$mode · middle page · 3 picked")
+                PreviewCaption("$mode · middle page · 3 to add")
                 StudioPageLine(
                     rangeStart = 16, rangeEnd = 30, totalResults = 50, page = 1, pageCount = 4,
                     hasPreviousPage = true, hasNextPage = true, showTouchControls = touch,
                     onPreviousPage = {}, onNextPage = {}, modifier = Modifier.width(613.dp),
-                    selectedCount = 3,
+                    picks = StudioQueueSummary(toAdd = 3),
+                )
+                // The widest the line gets: changes waiting, a failure and the pager, at the Thor's slot.
+                PreviewCaption("$mode · middle page · 2 to add, 1 to remove · 3 of 4 added, 1 failed")
+                StudioPageLine(
+                    rangeStart = 16, rangeEnd = 30, totalResults = 50, page = 1, pageCount = 4,
+                    hasPreviousPage = true, hasNextPage = true, showTouchControls = touch,
+                    onPreviousPage = {}, onNextPage = {}, modifier = Modifier.width(613.dp),
+                    picks = StudioQueueSummary(toAdd = 2, toRemove = 1, added = 3, failed = 1, total = 4),
                 )
                 PreviewCaption("$mode · single page (no pager)")
                 StudioPageLine(

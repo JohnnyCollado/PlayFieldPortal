@@ -43,6 +43,11 @@ private object PreviewStudioActions : ArtworkStudioActions {
     override fun toggleSelection(index: Int) = Unit
     override fun previousPage() = Unit
     override fun nextPage() = Unit
+    override fun applyChanges() = Unit
+    override fun resolveApplyConfirm(choice: StudioApplyChoice) = Unit
+    override fun retryFailed() = Unit
+    override fun removeFailed() = Unit
+    override fun resolveLeavePrompt(choice: StudioLeaveChoice) = Unit
     override fun applyCandidate() = Unit
     override fun dismissCandidate() = Unit
     override fun onManualPageCount(count: Int) = Unit

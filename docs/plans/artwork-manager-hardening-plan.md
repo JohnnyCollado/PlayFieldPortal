@@ -295,8 +295,8 @@ Note: there is **zero existing coverage** for `ArtworkStudioViewModel`, the crop
 | 4.3 | Thread `showTouchControls` from `GameDetailScreen.kt:206` into the Studio; touch-sized targets and hit-target separation | C17 | READY |
 | 4.4 | Pending-change and pending-exit prompts (Apply / Discard / Stay) on context switch and exit | C17 | READY |
 | 5.0 | **Render what Phase 0 can already store**: `GameDetailViewModel.kt:265-273` builds the media strip from `find` (one screenshot, one video) — switch it to `findAll` so extra assets are visible at all (AD-13) | 0.3 | DONE |
-| 5.1 | Give `StudioArt` a provider asset id and key cross-page selection on `kind + provider + (providerAssetId ?: url)`, never grid index — see "Task 5.1" under Merge 4 | 1.4, 0.3 | DONE (tests green, device-checked 2026-09-13; screen part uncommitted) |
-| 5.2 | Sequential download queue over the shipped `studioAppendFromUrl`, with per-item states, partial-failure retention, Retry/Remove Failed | 5.1 | READY |
+| 5.1 | Give `StudioArt` a provider asset id and key cross-page selection on `kind + provider + (providerAssetId ?: url)`, never grid index — see "Task 5.1" under Merge 4 | 1.4, 0.3 | DONE (`fa8c8fc`, `bbc967e`; tests green, device-checked 2026-09-13) |
+| 5.2 | Sequential download queue over the shipped `studioAppendFromUrl`, with per-item states, partial-failure retention, Retry/Remove Failed — see "Task 5.2" under Merge 4 | 5.1 | DONE (tests green, device-checked 2026-09-13; uncommitted) |
 | 5.3 | Duplicate detection through the shipped `findByProviderAssetId` / `findByOriginUrl` / `findByChecksum`, offering View Existing or Replace Existing | 5.1 | READY |
 | 5.4 | Reordering via the shipped `reorderAssets`, primary screenshot (position 0), and storage/size warnings before a large apply | 5.2, 5.0 | READY |
 | 6.1 | Crop profile registry keyed on kind → platform → **game** region → default → source ratio, with Original Image as the universal fallback and a starter profile set (AD-14) | None | READY |
@@ -1772,6 +1772,104 @@ test file over, keys being pure and selection being ViewModel state.
 
 **Stop if** the checkmark or count cannot fit the tile or the 16 dp page line without changing the
 measured grid slot (L.2's invariant): report rather than resize.
+
+### Task 5.2: add the picks through a sequential queue
+
+Read against `fa8c8fc` plus the uncommitted 5.1 screen part on 2026-09-13.
+
+**What the tree has.** 5.1's `selection` is shown but consumed by nothing. `RoutingArtworkStore.studioAppendFromUrl`
+(`RoutingArtworkStore.kt:210`) writes one asset at `nextSortOrder` and returns its path, or null when the
+download or write fails; it takes `providerAssetId`. START (`GamepadAction.HOME`) is bound to
+SteamGridDB's mature filter (`handleGamepadAction`), which the Triangle menu already offers as
+`TOGGLE_MATURE`. App Picker and the music track picker bind START to confirm ("Start (Confirm in
+pickers)", `GamepadBinding.kt`). The ViewModel outlives the screen (`close()`).
+
+**Decisions (user, 2026-09-13):**
+1. **START adds the picks**, like the other pickers. Touch gets an Add pill on the page line, and the
+   Triangle menu gets Add Selected. Apply in the candidate preview is unchanged.
+2. **Mature is menu-only**: START no longer toggles it on any tab. The badge stays as a tappable
+   status chip without the START glyph.
+3. **B with picks not yet added prompts** Add and Close / Discard Picks / Stay, instead of closing.
+4. **Progress shows on the tiles plus a page-line summary**: each tile's badge becomes queued,
+   adding, added or failed, and the page line reads "2 of 5 added · 1 failed", with Retry and
+   Remove pills in touch mode and Retry Failed / Remove Failed in the menu.
+5. **Adding asks first** (added after the first device pass): START, the Add pill and Add Selected
+   open "Add 3 screenshots?" with Add / Cancel, cursor on Add. B cancels and START is ignored inside
+   it, so a double press cannot confirm. The leave prompt's Add and Close is already a confirmation.
+
+**Found on device (2026-09-13): ScreenScraper tiles were doubled.** Picking one ticked two identical
+tiles. `jeuInfos` lists some files more than once and ss_media_cache stores the list as served: 7 of the
+11 cached lists on the test device had copies, either the same entry twice (`box-2D(de)` ×2) or one
+file under several regions (screenmarquee wor/uk/us, all `media=screenmarquee(wor)`). No list had two
+different files sharing a `jeuid:media` key, so 5.1's key was right and the grid was showing every copy.
+Fixed in the Studio, not the parser (the cached lists already hold the copies): `screenScraperTiles` in
+`StudioSearch.kt` makes one tile per asset, labelled with every region it was listed under.
+
+**Found on device (2026-09-13): added screenshots were not marked on a later visit.** The queue's states
+last one open (`load` drops finished items), and nothing read what the slot already held, so an asset
+added earlier could be picked and added again. `StudioLibraryAssets` in `StudioSearch.kt` now holds the
+active multi-asset slot's records (`RoutingArtworkStore.studioAssets`, read only), re-read on every
+open, tab, apply, clear and completed add. A tile it holds shows ADDED and cannot be picked. A record
+matches by provider asset id, or by the URL it was downloaded from (ScreenScraper URLs by asset id,
+since they are stored with credentials). This is marking only: 5.3 still owns View Existing / Replace
+Existing.
+
+**Changed after device testing (user, 2026-09-13): a checklist with Apply.** A multi-asset tab now
+works like App Picker. Stored assets start checked; A unchecks one (marked for removal, red "−") or
+checks it again, and A on a new asset picks it to add. START, the Apply pill and Apply Changes open
+"Add 2 screenshots and remove 1?" (Apply / Cancel, Apply styled destructive when it deletes). Apply
+deletes the unchecked assets through `deleteAssetAt`, highest position first since each delete closes
+its gap, then queues the new picks. Every "Add" label became "Apply": the footer hint, the pill, the
+menu entry, the confirmation and the leave prompt (Apply and Close / Discard Changes / Stay). A download
+in flight or failed cannot be toggled.
+
+**Found on device (2026-09-13): a removal let a later add delete another screenshot's file.** Portable
+multi-asset files were named from their position (`withOrdinal(base, sortOrder)`), but
+`deleteAtAndCompact` renumbers positions without renaming files, and `saveFromFile` deletes same-stem
+predecessors. On FINAL FANTASY III a compacted record at position 0 still used `…_02.png`; the next
+append at position 2 wrote `…_02.jpg` and deleted it, leaving a record whose file no longer opened
+(green in the Studio, absent from the gallery). Store fix (user-approved, outside 5.2's original "no
+store code"): `persistPortable` names a new position with `ArtworkFileNaming.nextOrdinal` (one past the
+highest ordinal the slot's records use, bare for an empty slot, lowest unused past `_99`), and a
+rewrite of an existing position keeps its file's name. Ordinals stay ascending with position, so
+Relink rebuilds the same order, with gaps. Protective: the Studio no longer treats a record whose
+file does not open as held. The lost file itself is not recoverable; that record shows unchecked and
+the asset can be re-added.
+
+**Scope.**
+- `StudioQueueItem(gameId, key, art, state)` with `QUEUED, DOWNLOADING, ADDED, FAILED`, held in
+  `ArtworkStudioUiState.queue`. Adding moves picks out of `selection` into the queue, in pick order.
+- One drain job: the first `QUEUED` item goes `DOWNLOADING`, then `ADDED` or `FAILED` from
+  `studioAppendFromUrl`, strictly one at a time. An exception is a failure, never a stopped queue.
+  `refreshCurrent` after an add to the visible slot.
+- START and Add add the **active tab's** picks; the leave prompt's Add adds **every** pick.
+- An asset already queued or added this open cannot be picked again.
+- Retry Failed re-queues the tab's failures; Remove Failed drops them.
+- `load` drops finished items and keeps in-flight ones: closing does not cancel the queue.
+  Tile states and the summary count only the open game's items.
+- Screen: tile state badges, the page-line summary and Add/Retry/Remove pills, a START "add" footer
+  hint while picks wait, the leave prompt on the shared context-menu overlay, and the mature badge
+  without its glyph.
+
+**Do not change:** Apply in the candidate overlay, duplicate detection (5.3), ordering or the 100-asset
+cap (5.4; `nextSortOrder` clamps at `MAX_SORT_ORDER`, so an append to a full slot overwrites position 99
+until 5.4 warns first), any store or DAO code.
+
+**Acceptance.**
+- START on SCREENSHOT with three picks asks first; confirming adds them in pick order, one download
+  at a time, each with its `providerAssetId`, and the picks leave `selection`.
+- Cancel or B in the confirmation keeps the picks and downloads nothing; a second START does not confirm.
+- A failed download is `FAILED` while the rest are added; Retry re-runs only it; Remove drops it.
+- START over SteamGridDB no longer changes the mature filter; the menu entry still does.
+- B from the tabs level with picks opens the prompt; Stay keeps them, Discard closes and clears them,
+  Add queues them all and closes.
+- An added tile cannot be picked again.
+
+**Budget.** `ArtworkStudioViewModel.kt`, `ArtworkStudioActions.kt`, `ArtworkStudioPreview.kt` (no-op),
+`ArtworkStudioScreen.kt`, `StudioTouchControls.kt`; tests in `ArtworkStudioViewModelTest`.
+
+**Stop if** the summary and pills cannot share the page line with the pager at the Thor's 613 dp slot
+in touch mode: report rather than grow the band.
 
 Every task: **if blocked**, stop and report what was attempted, what blocked it, which file caused
 it and what decision is needed (`PLANNING_WORKFLOW.md` §4).

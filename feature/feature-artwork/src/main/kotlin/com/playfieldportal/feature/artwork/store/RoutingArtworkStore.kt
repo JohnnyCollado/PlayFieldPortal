@@ -177,6 +177,19 @@ class RoutingArtworkStore @Inject constructor(
             )
         }
 
+    /**
+     * [studioAssets] without the records whose file no longer opens, which is what the gallery shows
+     * ([findAll] skips them too). The Studio marks tiles held from this, so a record left behind by a
+     * lost file never reads as checked.
+     */
+    suspend fun studioAssetsOnDisk(gameId: Long, kind: ArtworkKind): List<StudioArtworkSlot> {
+        val slots = studioAssets(gameId, kind)
+        if (slots.isEmpty()) return slots
+        return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            slots.filter { internal.isValidRef(it.documentUri) }
+        }
+    }
+
     /** The position an append would write to — one past the highest in use, or 0 for an empty slot. */
     suspend fun nextSortOrder(gameId: Long, kind: ArtworkKind): Int =
         if (!ArtworkFileNaming.supportsMultiple(kind)) 0
@@ -415,9 +428,9 @@ class RoutingArtworkStore @Inject constructor(
         // For multi-asset kinds the stored name carries the ordinal, so the base is recovered from
         // whichever position already exists and every position shares one base + collision suffix.
         val multi = ArtworkFileNaming.supportsMultiple(kind)
+        val slotRecords = if (multi) artworkRecordDao.findAll(game.id, kind.name) else emptyList()
         val establishedBase = if (multi) {
-            (existing ?: artworkRecordDao.get(game.id, kind.name))
-                ?.portableName?.let { ArtworkFileNaming.stripOrdinal(it) }
+            (existing ?: slotRecords.firstOrNull())?.portableName?.let { ArtworkFileNaming.stripOrdinal(it) }
         } else {
             existing?.portableName
         }
@@ -428,8 +441,15 @@ class RoutingArtworkStore @Inject constructor(
             artworkRecordDao.findNameCollisions(game.platformId, kind.name, portableName, game.id).isNotEmpty()) {
             portableName = "$portableName (2)"
         }
-        // Position 0 keeps the bare name, so single-art kinds and existing installs are untouched.
-        if (multi) portableName = ArtworkFileNaming.withOrdinal(portableName, sortOrder)
+        // A multi-asset file is named by its slot, never by its position (ArtworkFileNaming.nextOrdinal):
+        // a removal renumbers positions without renaming files, so the position's own ordinal can
+        // already name another asset's file, which saveFromFile below would delete as a same-stem
+        // predecessor. A rewrite of a position (crop, restore, reset) keeps the name its file has. An
+        // empty slot still starts at the bare name, so existing installs are untouched.
+        if (multi) {
+            portableName = existing?.portableName
+                ?: ArtworkFileNaming.withOrdinal(portableName, ArtworkFileNaming.nextOrdinal(slotRecords.map { it.portableName }))
+        }
 
         // Back up the current file (before saveFromFile deletes the same-stem occupant) so a single
         // "Restore Previous" is possible. Only user/reset/crop writes back up; scrapes never do.

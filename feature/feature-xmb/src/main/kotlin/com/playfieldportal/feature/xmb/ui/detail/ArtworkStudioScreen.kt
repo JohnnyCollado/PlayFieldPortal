@@ -78,7 +78,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.components.ControllerPrompt
@@ -100,7 +100,7 @@ private const val STUDIO_WIDE_WINDOW_DP = 1000
  * Layout follows the approved mock: destination tabs (LB/RB) → current-artwork panel +
  * available-artwork grid, source row (Left/Right in the SOURCES zone),
  * A = candidate preview → Apply, B = back, X = search, Y = per-slot options,
- * START = SteamGridDB's mature filter while that source is active.
+ * START = add the picked tiles on a multi-asset tab (SteamGridDB's mature filter is in the Y menu).
  *
  * (L2/R2 are unbound: no GamepadAction maps to KEYCODE_BUTTON_L2/R2 in GamepadBinding, so the
  * old "L2/R2 switch sources" line here described a binding that never existed.)
@@ -473,24 +473,27 @@ internal fun ArtworkStudioContent(
                                 )
                             }
                         }
-                        // The mature filter is a START badge rather than a checkbox: START is what
-                        // toggles it, so the badge teaches the binding. Still tappable for touch.
+                        // The mature filter's state, tappable for touch. A controller sets it from the
+                        // Y menu: START adds picks now (task 5.2), so the badge no longer shows a glyph.
                         val sgdbActive = sources.getOrNull(state.sourceIndex) == StudioSource.STEAMGRIDDB
                         if (sgdbActive) {
-                            ControllerPrompt(
-                                action = GamepadAction.HOME,
-                                label = if (state.includeNsfw) "Mature on" else "Mature off",
-                                glyphSize = 12.dp,
-                                labelColor = if (state.includeNsfw) Color(0xFFE57373) else Color.White.copy(alpha = 0.6f),
-                                labelStyle = TextStyle(fontSize = 9.sp),
+                            Box(
                                 modifier = Modifier
                                     .padding(start = 4.dp)
                                     .height(18.dp)
                                     .clip(RoundedCornerShape(9.dp))
                                     .background(Color.Black.copy(alpha = 0.18f))
                                     .clickable(onClick = actions::toggleNsfw)
-                                    .padding(horizontal = 6.dp),
-                            )
+                                    .padding(horizontal = 8.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    if (state.includeNsfw) "Mature on" else "Mature off",
+                                    color = if (state.includeNsfw) Color(0xFFE57373) else Color.White.copy(alpha = 0.6f),
+                                    fontSize = 9.sp, lineHeight = 12.sp,
+                                    maxLines = 1,
+                                )
+                            }
                         }
                     }
 
@@ -540,11 +543,11 @@ internal fun ArtworkStudioContent(
                                 } else {
                                     Text(
                                         when {
-                                            state.matchResolving -> "Matching on ${state.matchProvider?.label}…"
-                                            state.matchFailed    -> "${state.matchProvider?.label} didn't answer"
+                                            state.matchResolving -> "Matching on ${state.matchProvider.label}…"
+                                            state.matchFailed    -> "${state.matchProvider.label} didn't answer"
                                             // A dead end is stated plainly rather than left blank — it is
                                             // the exact case Change Match exists to rescue.
-                                            else                 -> "No ${state.matchProvider?.label} match"
+                                            else                 -> "No ${state.matchProvider.label} match"
                                         },
                                         color = Color.White.copy(alpha = 0.6f), fontSize = 10.5.sp,
                                         maxLines = 1, overflow = TextOverflow.Ellipsis,
@@ -764,15 +767,14 @@ internal fun ArtworkStudioContent(
                                             }
                                             // Drawn inside the tile, so a pick never changes the
                                             // measured slot (L.2). Top corner: the label owns the bottom.
-                                            if (state.isSelected(art)) {
-                                                com.playfieldportal.core.ui.components.PfpCheckBadge(
-                                                    fill = accent,
-                                                    markColor = pfpColors.backgroundBottom,
-                                                    modifier = Modifier
-                                                        .align(Alignment.TopEnd)
-                                                        .padding(5.dp),
-                                                )
-                                            }
+                                            StudioTileBadge(
+                                                mark = state.tileMarkOf(art),
+                                                accent = accent,
+                                                markColor = pfpColors.backgroundBottom,
+                                                modifier = Modifier
+                                                    .align(Alignment.TopEnd)
+                                                    .padding(5.dp),
+                                            )
                                         }
                                     }
                                 }
@@ -786,7 +788,7 @@ internal fun ArtworkStudioContent(
                         rangeStart = state.rangeStart,
                         rangeEnd = state.rangeEnd,
                         totalResults = state.totalResults,
-                        selectedCount = state.selectedOnTab,
+                        picks = state.queueSummary,
                         page = state.page,
                         pageCount = state.pageCount,
                         hasPreviousPage = state.hasPreviousPage,
@@ -794,6 +796,9 @@ internal fun ArtworkStudioContent(
                         showTouchControls = showTouchControls,
                         onPreviousPage = actions::previousPage,
                         onNextPage = actions::nextPage,
+                        onApply = actions::applyChanges,
+                        onRetryFailed = actions::retryFailed,
+                        onRemoveFailed = actions::removeFailed,
                     )
                 }
             }
@@ -817,10 +822,12 @@ internal fun ArtworkStudioContent(
                             add(ControllerPromptItem(GamepadAction.BACK, "back"))
                         }
                         StudioZone.GRID -> {
-                            add(ControllerPromptItem(GamepadAction.SELECT, if (state.selectsMultiple) "pick" else "preview / apply"))
+                            add(ControllerPromptItem(GamepadAction.SELECT, if (state.selectsMultiple) "check" else "preview / apply"))
                             add(ControllerPromptItem(GamepadAction.BACK, "back"))
                         }
                     }
+                    // START applies from any level, so its hint shows whenever this tab has changes waiting.
+                    if (state.queueSummary.hasChanges) add(ControllerPromptItem(GamepadAction.HOME, "apply"))
                     add(ControllerPromptItem(GamepadAction.CHANGE_SORT, "search"))
                     add(ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "options"))
                 },
@@ -848,7 +855,7 @@ internal fun ArtworkStudioContent(
                         Text("Downloading manual…", color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp)
                     } else if (state.candidateManualPath != null) {
                         StudioPdfPage(
-                            path = state.candidateManualPath!!,
+                            path = state.candidateManualPath,
                             page = state.manualPage,
                             onPageCount = actions::onManualPageCount,
                             modifier = Modifier.fillMaxWidth(0.62f).fillMaxHeight(0.68f),
@@ -954,6 +961,9 @@ internal fun ArtworkStudioContent(
             ) {
                 Column(
                     Modifier
+                        // A margin, outside the panel's background, so a short window never has the
+                        // panel touching its edges.
+                        .padding(vertical = 16.dp)
                         .width(520.dp)
                         .clip(RoundedCornerShape(12.dp))
                         .background(pfpColors.backgroundBottom)
@@ -1035,7 +1045,14 @@ internal fun ArtworkStudioContent(
                             "No games found. Try a shorter title, or the title without its edition.",
                             color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp,
                         )
-                        else -> LazyColumn(Modifier.fillMaxWidth().heightIn(max = 260.dp), state = resultsState) {
+                        // Weighted without fill, so the Column measures the fixed rows (Search / Cancel and
+                        // the hint below included) first and the list takes only the height left. Unweighted,
+                        // a long list on a short window took its full 260 dp and the Column squeezed the
+                        // pill buttons measured after it.
+                        else -> LazyColumn(
+                            Modifier.fillMaxWidth().weight(1f, fill = false).heightIn(max = 260.dp),
+                            state = resultsState,
+                        ) {
                             lazyItemsIndexed(state.changeMatchResults) { index, candidate ->
                                 val focused = index == state.changeMatchIndex
                                 Row(
@@ -1211,6 +1228,40 @@ internal fun ArtworkStudioContent(
             )
         }
 
+        // ── Apply confirmation (task 5.2): START, the Apply pill or Apply Changes ──
+        if (state.applyConfirmOpen) {
+            val changes = state.queueSummary
+            com.playfieldportal.core.ui.components.PspContextMenuOverlay(
+                title = studioApplyTitle(STUDIO_TABS[state.tabIndex].kind, changes.toAdd, changes.toRemove),
+                rows = StudioApplyChoice.entries.map {
+                    // Apply reads as destructive when it deletes stored artwork.
+                    com.playfieldportal.core.ui.components.PspMenuRow(
+                        it.label,
+                        isDestructive = it == StudioApplyChoice.APPLY && changes.toRemove > 0,
+                    )
+                },
+                selectedIndex = state.applyConfirmIndex,
+                onRowActivated = { index -> actions.resolveApplyConfirm(StudioApplyChoice.entries[index]) },
+                onDismiss = { actions.resolveApplyConfirm(StudioApplyChoice.CANCEL) },
+                scrim = Color(0xA6000000),
+            )
+        }
+
+        // ── Leave prompt (task 5.2): B from the categories while changes wait to be applied ──
+        if (state.leavePromptOpen) {
+            val waiting = state.selection.size + state.removals.size
+            com.playfieldportal.core.ui.components.PspContextMenuOverlay(
+                title = if (waiting == 1) "1 change not applied" else "$waiting changes not applied",
+                rows = StudioLeaveChoice.entries.map {
+                    com.playfieldportal.core.ui.components.PspMenuRow(it.label, isDestructive = it == StudioLeaveChoice.DISCARD)
+                },
+                selectedIndex = state.leavePromptIndex,
+                onRowActivated = { index -> actions.resolveLeavePrompt(StudioLeaveChoice.entries[index]) },
+                onDismiss = { actions.resolveLeavePrompt(StudioLeaveChoice.STAY) },
+                scrim = Color(0xA6000000),
+            )
+        }
+
         // ── File information panel ────────────────────────────────────────────
         if (state.showFileInfo) {
             val info = state.info
@@ -1277,6 +1328,61 @@ internal fun ArtworkStudioContent(
             Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.6f)), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = accent)
             }
+        }
+    }
+}
+
+/**
+ * A tile's corner badge (tasks 5.1, 5.2): a new pick is an accent check, a stored asset a green check,
+ * an unchecked stored asset a red ring with "−", waiting an accent ring, downloading spins and failed a
+ * red "!".
+ */
+@Composable
+private fun StudioTileBadge(
+    mark: StudioTileMark,
+    accent: Color,
+    markColor: Color,
+    modifier: Modifier = Modifier,
+) {
+    val size = 18.dp
+    val circle = androidx.compose.foundation.shape.CircleShape
+    when (mark) {
+        StudioTileMark.NONE -> Unit
+        StudioTileMark.PICKED -> com.playfieldportal.core.ui.components.PfpCheckBadge(
+            fill = accent, markColor = markColor, modifier = modifier, size = size,
+        )
+        StudioTileMark.TO_REMOVE -> Box(
+            modifier
+                .size(size)
+                .background(Color.Black.copy(alpha = 0.55f), circle)
+                .border(2.dp, Color(0xFFE57373), circle),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text("−", color = Color(0xFFE57373), fontSize = 12.sp, lineHeight = 12.sp, fontWeight = FontWeight.Bold)
+        }
+        StudioTileMark.QUEUED -> Box(
+            modifier
+                .size(size)
+                .background(Color.Black.copy(alpha = 0.55f), circle)
+                .border(2.dp, accent, circle),
+        )
+        StudioTileMark.DOWNLOADING -> Box(
+            modifier.size(size).background(Color.Black.copy(alpha = 0.55f), circle),
+            contentAlignment = Alignment.Center,
+        ) {
+            CircularProgressIndicator(color = accent, strokeWidth = 2.dp, modifier = Modifier.size(12.dp))
+        }
+        StudioTileMark.ADDED -> com.playfieldportal.core.ui.components.PfpCheckBadge(
+            fill = Color(0xFF66BB6A),
+            markColor = markColor,
+            modifier = modifier,
+            size = size,
+        )
+        StudioTileMark.FAILED -> Box(
+            modifier.size(size).background(Color(0xFFE57373), circle),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text("!", color = Color.White, fontSize = 11.sp, lineHeight = 12.sp, fontWeight = FontWeight.Bold)
         }
     }
 }

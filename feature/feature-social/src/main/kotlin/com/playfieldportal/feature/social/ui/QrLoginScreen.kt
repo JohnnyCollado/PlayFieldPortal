@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.social.ui
 
+import android.content.ClipData
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -24,23 +25,25 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.toClipEntry
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.playfieldportal.core.domain.discord.DeviceAuthChallenge
 import com.playfieldportal.core.domain.discord.DeviceLoginState
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * QR login (the primary, couch-first sign-in). Shows a QR the user scans with their phone's Discord
@@ -54,12 +57,7 @@ fun QrLoginScreen(
     modifier: Modifier = Modifier,
     viewModel: QrLoginViewModel = hiltViewModel(),
 ) {
-    // This BOM's compose-ui doesn't provide androidx.lifecycle.compose.LocalLifecycleOwner
-    // (the default source), so the default argument crashes at composition with
-    // "CompositionLocal LocalLifecycleOwner not present" — pass the platform one, like XMBShell.
-    val state by viewModel.state.collectAsStateWithLifecycle(
-        lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current,
-    )
+    val state by viewModel.state.collectAsStateWithLifecycle()
 
     LaunchedEffect(state) {
         if (state is DeviceLoginState.Success) onConnected()
@@ -105,7 +103,8 @@ private fun QrPrompt(challenge: DeviceAuthChallenge, onCancel: () -> Unit) {
 
     // Tap-to-copy: lets the user drop the code straight into a browser instead of typing it. The
     // "Copied!" hint shows briefly, then reverts.
-    val clipboard = LocalClipboardManager.current
+    val clipboard = LocalClipboard.current
+    val scope = rememberCoroutineScope()
     var copied by remember(challenge) { mutableStateOf(false) }
     LaunchedEffect(copied) {
         if (copied) {
@@ -115,7 +114,9 @@ private fun QrPrompt(challenge: DeviceAuthChallenge, onCancel: () -> Unit) {
     }
 
     val onCopy = {
-        clipboard.setText(AnnotatedString(challenge.userCode))
+        scope.launch {
+            clipboard.setClipEntry(ClipData.newPlainText("Discord login code", challenge.userCode).toClipEntry())
+        }
         copied = true
     }
 

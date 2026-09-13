@@ -217,13 +217,10 @@ private fun applyCenterCrop(view: TextureView, size: VideoSize?) {
  * inputs come from XMBShell's existing pipeline, but nothing there reacts to the app being
  * backgrounded — the composition survives ON_STOP, and a launcher is backgrounded constantly
  * (every game launch). Missing this would leave a decoder running behind the emulator.
- *
- * Uses the PLATFORM LocalLifecycleOwner: this Compose BOM doesn't provide the
- * androidx.lifecycle.compose variant (see XMBShell's note on the same workaround).
  */
 @Composable
 fun rememberAppVisible(): Boolean {
-    val owner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+    val owner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     var appVisible by remember { mutableStateOf(owner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) }
     DisposableEffect(owner) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->

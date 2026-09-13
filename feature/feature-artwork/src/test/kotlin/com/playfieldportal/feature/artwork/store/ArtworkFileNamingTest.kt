@@ -104,4 +104,30 @@ class ArtworkFileNamingTest {
         assertTrue(ArtworkFileNaming.isPruneCandidate(ArtworkKind.SCREENSHOT, "screenshot_1718000000.jpg", sortOrder = 0))
         assertFalse(ArtworkFileNaming.isPruneCandidate(ArtworkKind.SCREENSHOT, "screenshot_01.jpg", sortOrder = 0))
     }
+
+    // ── New files are numbered by the slot, not by position (found on device during C16 task 5.2) ──
+
+    @Test
+    fun `an empty slot starts at the bare name and each new asset takes the next ordinal`() {
+        assertEquals(0, ArtworkFileNaming.nextOrdinal(emptyList()))
+        assertEquals(1, ArtworkFileNaming.nextOrdinal(listOf("Zelda")))
+        assertEquals(3, ArtworkFileNaming.nextOrdinal(listOf("Zelda", "Zelda_01", "Zelda_02")))
+    }
+
+    // The FINAL FANTASY III case: after a removal compacted positions, position 0 still used "_02".
+    // Numbering by position would have named the append at position 2 "_02" and deleted that file.
+    @Test
+    fun `a compacted slot never reuses an ordinal its files still carry`() {
+        val compacted = listOf("Final Fantasy III Pixel Remaster_02", "Final Fantasy III Pixel Remaster_01")
+
+        assertEquals(3, ArtworkFileNaming.nextOrdinal(compacted))
+    }
+
+    @Test
+    fun `past the last ordinal the lowest unused one is taken, so a name is never shared`() {
+        val nearlyFull = (0..ArtworkFileNaming.MAX_SORT_ORDER).filter { it != 5 }
+            .map { ArtworkFileNaming.withOrdinal("Zelda", it) }
+
+        assertEquals(5, ArtworkFileNaming.nextOrdinal(nearlyFull))
+    }
 }

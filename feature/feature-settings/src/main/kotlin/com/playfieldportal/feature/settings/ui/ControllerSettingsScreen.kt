@@ -12,7 +12,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.playfieldportal.core.domain.model.ConfirmBackLayout
 import com.playfieldportal.core.domain.model.XYLayout
 import com.playfieldportal.core.domain.model.displayLabel

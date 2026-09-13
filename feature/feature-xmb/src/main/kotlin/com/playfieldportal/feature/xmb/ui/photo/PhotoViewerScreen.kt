@@ -43,7 +43,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.Photo
@@ -112,7 +112,8 @@ fun PhotoViewerScreen(
     val photo = state.photo ?: run { onBack(); return }
 
     // Pinch-zoom / drag for touch users; the same clamped transform the D-pad path drives.
-    val transformState = rememberTransformableState { zoomChange, panChange, _ ->
+    // The centroid is unused: onGesture takes no focal point, the same as the D-pad zoom.
+    val transformState = rememberTransformableState { _, zoomChange, panChange, _ ->
         viewModel.onGesture(zoomChange, panChange.x, panChange.y)
     }
 

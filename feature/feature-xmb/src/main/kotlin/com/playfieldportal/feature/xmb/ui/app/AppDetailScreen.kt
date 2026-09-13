@@ -66,7 +66,7 @@ import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
 import androidx.core.graphics.drawable.toBitmap
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.playfieldportal.core.ui.image.rememberArtworkModel
 import com.playfieldportal.core.domain.model.GamepadAction

@@ -82,6 +82,25 @@ object ArtworkFileNaming {
     fun withOrdinal(stem: String, sortOrder: Int): String =
         if (sortOrder <= 0) stem else "${stem}_%02d".format(Locale.US, sortOrder.coerceAtMost(MAX_SORT_ORDER))
 
+    /**
+     * The ordinal a new asset of a multi-asset slot is filed under, given the portable names its
+     * records already use ([slotNames]): one past the highest, or 0 (the bare name) for an empty slot.
+     *
+     * Deliberately not the new position. Removing an asset renumbers the positions after it without
+     * renaming their files, so a position's own ordinal can already name another asset's file, and a
+     * portable save deletes same-stem predecessors: that is how an append at position 2 deleted the
+     * `_02` file a compacted record at position 0 still used. One past the highest keeps ordinals
+     * ascending with position, which is what Relink rebuilds order from. Past [MAX_SORT_ORDER] the
+     * lowest unused ordinal is taken instead, so a name is never shared.
+     */
+    fun nextOrdinal(slotNames: Collection<String>): Int {
+        if (slotNames.isEmpty()) return 0
+        val used = slotNames.mapTo(HashSet()) { ordinalOf(it) }
+        val next = used.max() + 1
+        if (next <= MAX_SORT_ORDER) return next
+        return (0..MAX_SORT_ORDER).firstOrNull { it !in used } ?: MAX_SORT_ORDER
+    }
+
     /** The position encoded in [stem], or 0 when it carries no ordinal suffix. */
     fun ordinalOf(stem: String): Int =
         ORDINAL_SUFFIX.find(stem)?.groupValues?.get(1)?.toIntOrNull()?.takeIf { it in 1..MAX_SORT_ORDER } ?: 0

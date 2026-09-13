@@ -61,7 +61,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import coil3.compose.AsyncImage
@@ -126,14 +126,7 @@ fun XMBShellContainer(
 ) {
     // Lifecycle-aware collection: state observation stops while PFP is STOPPED (backgrounded behind
     // a game/emulator), so the shell isn't recomposing off-screen — less CPU/battery under load.
-    // The lifecycle owner is passed explicitly from the PLATFORM composition local: this Compose
-    // BOM doesn't provide androidx.lifecycle.compose.LocalLifecycleOwner (the default source), so
-    // letting collectAsStateWithLifecycle read it crashes at root composition with
-    // "CompositionLocal LocalLifecycleOwner not present" (same reason the rest of the app uses the
-    // platform variant). See AppDrawerScreen for the same workaround.
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle(
-        lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current,
-    )
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     // Voice needs RECORD_AUDIO. The ViewModel can check the grant but not request it (that needs an
     // Activity), so it raises requestMicPermission and we launch the system dialog here, then hand
@@ -311,9 +304,7 @@ fun XMBShellContainer(
 
     // Multi-select picker to convert detected emu games after a Windows-card scan (when the
     // Goldberg installer is on). Same dialog + controller the Library Manager uses.
-    val convertPicker by viewModel.convertPicker.collectAsStateWithLifecycle(
-        lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current,
-    )
+    val convertPicker by viewModel.convertPicker.collectAsStateWithLifecycle()
     convertPicker?.let { picker ->
         com.playfieldportal.core.ui.achievement.LocalSteamConvertPickerDialog(
             rows = picker.rows.map {

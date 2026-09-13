@@ -338,32 +338,18 @@ class ArtworkStudioViewModelTest {
         assertFalse("Square must no longer toggle mature", vm.uiState.value.includeNsfw)
     }
 
+    // START applies changes since task 5.2; mature moved to the options menu (covered with the queue tests).
+    // With nothing changed, START must change nothing and ask no provider again.
     @Test
-    fun `START toggles mature while SteamGridDB is the active source`() = runTest(testDispatcher) {
+    fun `START with nothing picked changes nothing`() = runTest(testDispatcher) {
         val vm = loadedOn(StudioSource.STEAMGRIDDB)
 
         vm.handleGamepadAction(GamepadAction.HOME)
         advanceUntilIdle()
 
-        assertTrue(vm.uiState.value.includeNsfw)
-        coVerify(exactly = 2) { steamGridDb.getArt(any(), any(), any(), any(), any()) }
-
-        vm.handleGamepadAction(GamepadAction.HOME)
-        advanceUntilIdle()
         assertFalse(vm.uiState.value.includeNsfw)
-    }
-
-    // Mature is a SteamGridDB filter and nothing else's. Flipping it elsewhere would change
-    // hidden state that nothing on screen reflects and no provider would act on.
-    @Test
-    fun `START does nothing on a source that has no mature filter`() = runTest(testDispatcher) {
-        val vm = loadedOn(StudioSource.IGDB)
-
-        vm.handleGamepadAction(GamepadAction.HOME)
-        advanceUntilIdle()
-
-        assertFalse(vm.uiState.value.includeNsfw)
-        coVerify(exactly = 1) { igdbApi.fetchGameInfo(any(), any()) }
+        assertTrue(vm.uiState.value.queue.isEmpty())
+        coVerify(exactly = 1) { steamGridDb.getArt(any(), any(), any(), any(), any()) }
     }
 
     // ── Paging (task 1.4) ─────────────────────────────────────────────────────
@@ -499,6 +485,222 @@ class ArtworkStudioViewModelTest {
         advanceUntilIdle()
 
         assertTrue(vm.uiState.value.selection.isEmpty())
+    }
+
+    // ── Download queue (task 5.2) ─────────────────────────────────────────────
+
+    @Test
+    fun `START asks, then adds the tab's picks in pick order, one download at a time`() = runTest(testDispatcher) {
+        val first = CompletableDeferred<String?>()
+        coEvery { routingStore.studioAppendFromUrl(any(), any(), "grids2", any(), any()) } coAnswers { first.await() }
+        coEvery { routingStore.studioAppendFromUrl(any(), any(), "heroes1", any(), any()) } returns "content://heroes1"
+        val vm = screenshotGridOnSgdb(perType = 2)   // grids1, grids2, heroes1, heroes2, …
+        vm.toggleSelection(1)
+        vm.toggleSelection(2)
+
+        vm.handleGamepadAction(GamepadAction.HOME)
+        assertTrue(vm.uiState.value.applyConfirmOpen)
+        assertTrue(vm.uiState.value.queue.isEmpty())
+
+        vm.handleGamepadAction(GamepadAction.SELECT)   // Apply is the first row
+        advanceUntilIdle()
+
+        assertFalse(vm.uiState.value.applyConfirmOpen)
+        assertTrue(vm.uiState.value.selection.isEmpty())
+        assertEquals(
+            listOf(StudioQueueState.DOWNLOADING, StudioQueueState.QUEUED),
+            vm.uiState.value.queue.map { it.state },
+        )
+        coVerify(exactly = 0) { routingStore.studioAppendFromUrl(any(), any(), "heroes1", any(), any()) }
+
+        first.complete("content://grids2")
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf(StudioQueueState.ADDED, StudioQueueState.ADDED),
+            vm.uiState.value.queue.map { it.state },
+        )
+        coVerify { routingStore.studioAppendFromUrl(1L, ArtworkKind.SCREENSHOT, "grids2", any(), "grids:2") }
+        coVerify { routingStore.studioAppendFromUrl(1L, ArtworkKind.SCREENSHOT, "heroes1", any(), "heroes:1") }
+    }
+
+    @Test
+    fun `a failed download is kept while the rest are added, then retried alone or removed`() = runTest(testDispatcher) {
+        coEvery { routingStore.studioAppendFromUrl(any(), any(), "grids1", any(), any()) } throws IllegalStateException("boom")
+        coEvery { routingStore.studioAppendFromUrl(any(), any(), "grids2", any(), any()) } returns "content://grids2"
+        val vm = screenshotGridOnSgdb(perType = 2)
+        vm.toggleSelection(0)
+        vm.toggleSelection(1)
+
+        vm.applyChanges()
+        vm.resolveApplyConfirm(StudioApplyChoice.APPLY)
+        advanceUntilIdle()
+
+        assertEquals(StudioQueueSummary(added = 1, failed = 1, total = 2), vm.uiState.value.queueSummary)
+        assertTrue(StudioAction.RETRY_FAILED in vm.uiState.value.availableActions)
+
+        vm.retryFailed()
+        advanceUntilIdle()
+        coVerify(exactly = 2) { routingStore.studioAppendFromUrl(any(), any(), "grids1", any(), any()) }
+        coVerify(exactly = 1) { routingStore.studioAppendFromUrl(any(), any(), "grids2", any(), any()) }
+
+        vm.removeFailed()
+        assertEquals(StudioQueueSummary(added = 1, total = 1), vm.uiState.value.queueSummary)
+    }
+
+    @Test
+    fun `an added tile unchecks to be removed, and checks again to keep it`() = runTest(testDispatcher) {
+        coEvery { routingStore.studioAppendFromUrl(any(), any(), any(), any(), any()) } returns "content://added"
+        val vm = screenshotGridOnSgdb(perType = 1)
+        vm.toggleSelection(0)
+        vm.applyChanges()
+        vm.resolveApplyConfirm(StudioApplyChoice.APPLY)
+        advanceUntilIdle()
+        val tile = vm.uiState.value.results[0]
+        assertEquals(StudioTileMark.ADDED, vm.uiState.value.tileMarkOf(tile))
+
+        vm.toggleSelection(0)
+        assertEquals(StudioTileMark.TO_REMOVE, vm.uiState.value.tileMarkOf(tile))
+        assertTrue(vm.uiState.value.selection.isEmpty())
+        assertEquals(StudioQueueSummary(toRemove = 1, added = 1, total = 1), vm.uiState.value.queueSummary)
+
+        vm.toggleSelection(0)
+        assertEquals(StudioTileMark.ADDED, vm.uiState.value.tileMarkOf(tile))
+        assertTrue(vm.uiState.value.removals.isEmpty())
+    }
+
+    @Test
+    fun `stored assets start checked, and Apply removes the unchecked ones before adding new picks`() = runTest(testDispatcher) {
+        val slots = listOf(
+            com.playfieldportal.feature.artwork.store.StudioArtworkSlot(
+                sortOrder = 0, documentUri = "content://s0", provider = "SteamGridDB",
+                originUrl = "grids1", providerAssetId = "grids:1", sizeBytes = 1,
+            ),
+            com.playfieldportal.feature.artwork.store.StudioArtworkSlot(
+                sortOrder = 1, documentUri = "content://s1", provider = "SteamGridDB",
+                originUrl = "grids2", providerAssetId = "grids:2", sizeBytes = 1,
+            ),
+        )
+        // Both files open: what the Studio marks and what a removal resolves positions from agree.
+        coEvery { routingStore.studioAssetsOnDisk(1L, ArtworkKind.SCREENSHOT) } returns slots
+        coEvery { routingStore.studioAssets(1L, ArtworkKind.SCREENSHOT) } returns slots
+        coEvery { routingStore.deleteAssetAt(any(), any(), any()) } returns true
+        val vm = screenshotGridOnSgdb(perType = 2)   // grids1, grids2, heroes1, heroes2, …
+        val results = vm.uiState.value.results
+        assertEquals(StudioTileMark.ADDED, vm.uiState.value.tileMarkOf(results[0]))
+        assertEquals(StudioTileMark.NONE, vm.uiState.value.tileMarkOf(results[2]))
+
+        vm.toggleSelection(0)
+        vm.toggleSelection(1)
+        vm.toggleSelection(2)
+        assertEquals(StudioQueueSummary(toAdd = 1, toRemove = 2), vm.uiState.value.queueSummary)
+
+        vm.handleGamepadAction(GamepadAction.HOME)
+        vm.handleGamepadAction(GamepadAction.SELECT)   // Apply
+        advanceUntilIdle()
+
+        // Highest position first: deleting 0 first would move 1 down to 0.
+        io.mockk.coVerifyOrder {
+            routingStore.deleteAssetAt(1L, ArtworkKind.SCREENSHOT, 1)
+            routingStore.deleteAssetAt(1L, ArtworkKind.SCREENSHOT, 0)
+            routingStore.studioAppendFromUrl(1L, ArtworkKind.SCREENSHOT, "heroes1", any(), "heroes:1")
+        }
+        assertTrue(vm.uiState.value.removals.isEmpty())
+        assertTrue(vm.uiState.value.selection.isEmpty())
+    }
+
+    // Found on device: a record whose file was lost read as checked while the gallery showed nothing.
+    @Test
+    fun `a stored record whose file is gone is not held, so its asset can be picked again`() = runTest(testDispatcher) {
+        val lost = com.playfieldportal.feature.artwork.store.StudioArtworkSlot(
+            sortOrder = 0, documentUri = "content://gone", provider = "SteamGridDB",
+            originUrl = "grids1", providerAssetId = "grids:1", sizeBytes = 1,
+        )
+        coEvery { routingStore.studioAssets(1L, ArtworkKind.SCREENSHOT) } returns listOf(lost)
+        coEvery { routingStore.studioAssetsOnDisk(1L, ArtworkKind.SCREENSHOT) } returns emptyList()
+        val vm = screenshotGridOnSgdb(perType = 1)
+        val tile = vm.uiState.value.results[0]
+
+        assertEquals(StudioTileMark.NONE, vm.uiState.value.tileMarkOf(tile))
+        vm.toggleSelection(0)
+        assertEquals(StudioTileMark.PICKED, vm.uiState.value.tileMarkOf(tile))
+    }
+
+    @Test
+    fun `Cancel or B in the apply confirmation keeps the changes and applies nothing`() = runTest(testDispatcher) {
+        val vm = screenshotGridOnSgdb(perType = 2)
+        vm.toggleSelection(0)
+
+        vm.handleGamepadAction(GamepadAction.HOME)
+        vm.handleGamepadAction(GamepadAction.HOME)   // a second START does not confirm
+        assertTrue(vm.uiState.value.applyConfirmOpen)
+        vm.handleGamepadAction(GamepadAction.BACK)
+        assertFalse(vm.uiState.value.applyConfirmOpen)
+
+        vm.runAction(StudioAction.APPLY_CHANGES)
+        assertTrue(vm.uiState.value.applyConfirmOpen)
+        vm.resolveApplyConfirm(StudioApplyChoice.CANCEL)
+        advanceUntilIdle()
+
+        assertEquals(1, vm.uiState.value.selection.size)
+        assertTrue(vm.uiState.value.queue.isEmpty())
+        coVerify(exactly = 0) { routingStore.studioAppendFromUrl(any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { routingStore.deleteAssetAt(any(), any(), any()) }
+    }
+
+    @Test
+    fun `the apply confirmation names what it adds and removes`() {
+        assertEquals("Add 1 screenshot?", studioApplyTitle(ArtworkKind.SCREENSHOT, toAdd = 1, toRemove = 0))
+        assertEquals("Remove 2 videos?", studioApplyTitle(ArtworkKind.VIDEO, toAdd = 0, toRemove = 2))
+        assertEquals("Add 3 screenshots and remove 1?", studioApplyTitle(ArtworkKind.SCREENSHOT, toAdd = 3, toRemove = 1))
+    }
+
+    @Test
+    fun `START no longer toggles the mature filter, and the menu still does`() = runTest(testDispatcher) {
+        val vm = screenshotGridOnSgdb(perType = 1)
+
+        vm.handleGamepadAction(GamepadAction.HOME)
+        advanceUntilIdle()
+        assertFalse(vm.uiState.value.includeNsfw)
+
+        vm.runAction(StudioAction.TOGGLE_MATURE)
+        advanceUntilIdle()
+        assertTrue(vm.uiState.value.includeNsfw)
+    }
+
+    @Test
+    fun `B from the categories with picks asks first, and Stay or Discard do what they say`() = runTest(testDispatcher) {
+        val vm = screenshotGridOnSgdb(perType = 2)
+        vm.toggleSelection(0)
+        repeat(3) { vm.handleGamepadAction(GamepadAction.BACK) }   // grid → sources → categories → prompt
+
+        assertTrue(vm.uiState.value.leavePromptOpen)
+        assertFalse(vm.uiState.value.closed)
+
+        vm.handleGamepadAction(GamepadAction.BACK)   // B in the prompt is Stay
+        assertFalse(vm.uiState.value.leavePromptOpen)
+        assertEquals(1, vm.uiState.value.selection.size)
+
+        vm.handleGamepadAction(GamepadAction.BACK)
+        vm.resolveLeavePrompt(StudioLeaveChoice.DISCARD)
+        advanceUntilIdle()
+
+        assertTrue(vm.uiState.value.closed)
+        assertTrue(vm.uiState.value.selection.isEmpty())
+        coVerify(exactly = 0) { routingStore.studioAppendFromUrl(any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `Apply and Close queues the picks and closes`() = runTest(testDispatcher) {
+        val vm = screenshotGridOnSgdb(perType = 2)
+        vm.toggleSelection(0)
+        repeat(3) { vm.handleGamepadAction(GamepadAction.BACK) }
+
+        vm.handleGamepadAction(GamepadAction.SELECT)   // Apply and Close is the first row
+        advanceUntilIdle()
+
+        assertTrue(vm.uiState.value.closed)
+        coVerify(exactly = 1) { routingStore.studioAppendFromUrl(1L, ArtworkKind.SCREENSHOT, "grids1", any(), "grids:1") }
     }
 
     // ── Measured grid capacity (task L.1) ─────────────────────────────────────
