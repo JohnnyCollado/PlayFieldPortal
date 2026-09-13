@@ -257,7 +257,7 @@ fun WizardRootRow(
     )
 }
 
-/** Checkbox row (terms-style toggles): SELECT/tap flips, ☑ drawn when checked. */
+/** Checkbox row (terms-style toggles): SELECT/tap flips the drawn checkbox. */
 @Composable
 fun WizardCheckboxRow(
     label: String,
@@ -271,29 +271,14 @@ fun WizardCheckboxRow(
         modifier = modifier,
         focusKey = focusKey,
         onClick = { onToggle(!checked) },
-        trailing = { WizardCheckboxGlyph(checked) },
-    )
-}
-
-@Composable
-private fun WizardCheckboxGlyph(checked: Boolean) {
-    Box(
-        modifier = Modifier
-            .size(18.dp)
-            .clip(RoundedCornerShape(4.dp))
-            .background(if (checked) Color.White else Color.Transparent)
-            .border(2.dp, Color.White.copy(alpha = if (checked) 1f else 0.6f), RoundedCornerShape(4.dp)),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (checked) {
-            Text(
-                text = "✓",
-                color = Color(0xFF06224B),
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
+        trailing = {
+            com.playfieldportal.core.ui.components.PfpCheckbox(
+                checked = checked,
+                color = Color.White,
+                markColor = Color(0xFF06224B),
             )
-        }
-    }
+        },
+    )
 }
 
 /**

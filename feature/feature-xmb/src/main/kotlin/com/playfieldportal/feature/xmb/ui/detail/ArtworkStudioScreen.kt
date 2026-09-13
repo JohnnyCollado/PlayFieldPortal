@@ -506,19 +506,15 @@ internal fun ArtworkStudioContent(
                     ) {
                         if (state.matchProvider != null) {
                             val matched = state.matchTitle
-                            Text(
-                                when {
-                                    state.matchResolving -> "◌"
-                                    matched != null      -> "✓"
-                                    else                 -> "!"
-                                },
-                                color = when {
-                                    state.matchResolving -> Color.White.copy(alpha = 0.4f)
-                                    matched != null      -> Color(0xFF66BB6A)
-                                    else                 -> Color(0xFFE0A030)
-                                },
-                                fontSize = 11.sp, fontWeight = FontWeight.Bold,
-                            )
+                            if (!state.matchResolving && matched != null) {
+                                com.playfieldportal.core.ui.components.PfpCheckMark(Color(0xFF66BB6A), size = 12.dp)
+                            } else {
+                                Text(
+                                    if (state.matchResolving) "◌" else "!",
+                                    color = if (state.matchResolving) Color.White.copy(alpha = 0.4f) else Color(0xFFE0A030),
+                                    fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                                )
+                            }
                             Spacer(Modifier.width(7.dp))
                             // L.6: the title and badge share ONE weighted row. With the title weighted
                             // `fill = false` beside a separate weighted spacer, Row split the free width

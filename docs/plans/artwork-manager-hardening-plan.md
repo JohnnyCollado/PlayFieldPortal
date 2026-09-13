@@ -295,7 +295,7 @@ Note: there is **zero existing coverage** for `ArtworkStudioViewModel`, the crop
 | 4.3 | Thread `showTouchControls` from `GameDetailScreen.kt:206` into the Studio; touch-sized targets and hit-target separation | C17 | READY |
 | 4.4 | Pending-change and pending-exit prompts (Apply / Discard / Stay) on context switch and exit | C17 | READY |
 | 5.0 | **Render what Phase 0 can already store**: `GameDetailViewModel.kt:265-273` builds the media strip from `find` (one screenshot, one video) — switch it to `findAll` so extra assets are visible at all (AD-13) | 0.3 | DONE |
-| 5.1 | Give `StudioArt` a provider asset id and key cross-page selection on `provider + (providerAssetId ?: url)`, never grid index — SGDB supplies a real `SgdbArtItem.id`, ScreenScraper/TGDB/IGDB do not | 1.4, 0.3 | READY |
+| 5.1 | Give `StudioArt` a provider asset id and key cross-page selection on `kind + provider + (providerAssetId ?: url)`, never grid index — see "Task 5.1" under Merge 4 | 1.4, 0.3 | IN PROGRESS |
 | 5.2 | Sequential download queue over the shipped `studioAppendFromUrl`, with per-item states, partial-failure retention, Retry/Remove Failed | 5.1 | READY |
 | 5.3 | Duplicate detection through the shipped `findByProviderAssetId` / `findByOriginUrl` / `findByChecksum`, offering View Existing or Replace Existing | 5.1 | READY |
 | 5.4 | Reordering via the shipped `reorderAssets`, primary screenshot (position 0), and storage/size warnings before a large apply | 5.2, 5.0 | READY |
@@ -307,16 +307,16 @@ Note: there is **zero existing coverage** for `ArtworkStudioViewModel`, the crop
 | L.2 | Render exactly one measured page: the grid slot reports its size and draws `gridColumns` × `gridRows` with no scrolling | L.1 | DONE |
 | L.3 | Title line and flat tabs: search joins the header, breadcrumb trail and SEARCH label go, eleven compact chips with LB/RB glyphs | None | DONE (`a9e0d28`) |
 | L.4 | Current-artwork rail: 150 dp (200 dp at ≥1000 dp wide), caption moved in, true-aspect thumbnail, Y hint | L.3 | DONE (`a9e0d28`) |
-| L.5 | Sources row, match line, page line and prompt bar: NSFW becomes a START badge, PREV/NEXT move under the grid, prompts drop to four | L.2, L.4 | DONE (uncommitted) |
+| L.5 | Sources row, match line, page line and prompt bar: NSFW becomes a START badge, PREV/NEXT move under the grid, prompts drop to four | L.2, L.4 | DONE (`f25e065`) |
 | L.6 | Verify the layout on the Thor and at least two other screen sizes against the capacity table | L.5 | DONE (closed by the user 2026-09-11; two unverified points accepted, see "L.6 status") |
-| M.0 | Timing logs for ScreenScraper's request gate and the Studio's match resolution, plus the account's real rate limits, for a device baseline | L.6 | DONE (uncommitted; baseline below) |
-| M.1 | One cancellable job per browse resolves the active provider's match and then browses with it; matches remembered per open, so a tab switch never resolves again (AD-20) | M.0 | DONE (uncommitted; unit tests green, device walk checked by the user) |
-| M.2 | SteamGridDB browses by the resolved match or the cached search, never a second autocomplete | M.1 | DONE (uncommitted; unit tests green, device walk checked by the user) |
-| M.3a | Skip ScreenScraper's title search on platforms without ROM files (AD-23) | M.0 | DONE (uncommitted; unit tests green, device walk checked by the user) |
-| M.3b | ScreenScraper identity from the catalog's one `jeuInfos` before resolving, with no duplicate checksum lookup | M.1 | DONE (uncommitted; unit tests green after a test compile fix, device walk checked by the user) |
-| M.4 | Space ScreenScraper requests start to start, from the account's per-minute limit | M.0 | DONE (uncommitted; unit tests green, device walk checked by the user) |
-| M.5 | Keep title searches between opens: 7 days, ScreenScraper empty answers 1 day, other providers' empty answers never (AD-21) | M.1 | DONE (uncommitted; unit tests green, verified on device 2026-09-11) |
-| M.6 | Resolve SteamGridDB and IGDB in the background when the Studio opens (AD-22) | M.1 | DONE (uncommitted; unit tests green, verified on device 2026-09-11) |
+| M.0 | Timing logs for ScreenScraper's request gate and the Studio's match resolution, plus the account's real rate limits, for a device baseline | L.6 | DONE (`75243b9`; baseline below) |
+| M.1 | One cancellable job per browse resolves the active provider's match and then browses with it; matches remembered per open, so a tab switch never resolves again (AD-20) | M.0 | DONE (`75243b9`; unit tests green, device walk checked by the user) |
+| M.2 | SteamGridDB browses by the resolved match or the cached search, never a second autocomplete | M.1 | DONE (`75243b9`; unit tests green, device walk checked by the user) |
+| M.3a | Skip ScreenScraper's title search on platforms without ROM files (AD-23) | M.0 | DONE (`75243b9`; unit tests green, device walk checked by the user) |
+| M.3b | ScreenScraper identity from the catalog's one `jeuInfos` before resolving, with no duplicate checksum lookup | M.1 | DONE (`75243b9`; unit tests green after a test compile fix, device walk checked by the user) |
+| M.4 | Space ScreenScraper requests start to start, from the account's per-minute limit | M.0 | DONE (`75243b9`; unit tests green, device walk checked by the user) |
+| M.5 | Keep title searches between opens: 7 days, ScreenScraper empty answers 1 day, other providers' empty answers never (AD-21) | M.1 | DONE (`75243b9`; unit tests green, verified on device 2026-09-11) |
+| M.6 | Resolve SteamGridDB and IGDB in the background when the Studio opens (AD-22) | M.1 | DONE (`75243b9`; unit tests green, verified on device 2026-09-11) |
 | 7.1 | Adopt B2's `ScrapeFailure` for inline provider errors with Retry / Choose Another Source | B2 typed-reasons slice | BLOCKED |
 
 `7.1` is BLOCKED on plan B2 landing its typed-reasons slice.
@@ -329,8 +329,8 @@ rework): the screen measures the grid slot and draws exactly one measured page w
 `userScrollEnabled = false`, `STUDIO_GRID_COLUMNS` is gone, and the paging pills read the
 ViewModel's page size instead of a hardcoded `20`. L.1's Studio tests still pass, 74 across
 `StudioGridCapacityTest`, `ArtworkStudioViewModelTest` and `StudioSearchTest`. `L.3` and `L.4` landed
-in `a9e0d28`; `L.5` is implemented and uncommitted at the time of writing. Next up: finish `L.6`, then
-the matching-latency tasks `M.0`–`M.6` (see "Matching latency"), then Merge 4.
+in `a9e0d28`. `L.5` and L.6's fixes landed in `f25e065`, and the user closed `L.6` on 2026-09-11. The
+matching-latency tasks `M.0`–`M.6` (see "Matching latency") landed in `75243b9`. Next up: Merge 4.
 
 ### What landed, and the decisions taken while landing it
 
@@ -1704,7 +1704,74 @@ for any task that adds a class, a field or a constructor argument. After the ins
   and reopening, at 17:32:48, the background matches answered in 18–19 ms and the same search returned
   2 candidates in **2 ms**.
 
-**Merge 3d is complete** (`M.0`–`M.6`), all uncommitted. `L.6` from Merge 3c is still IN PROGRESS.
+**Merge 3d is complete** (`M.0`–`M.6`), committed in `75243b9`. `L.6` from Merge 3c was closed by the
+user on 2026-09-11. The "implemented (uncommitted, not yet built)" notes above are the record at the time
+of writing.
+
+## Merge 4: multi-media queue (5.1–5.4)
+
+### Task 5.1: asset keys and cross-page selection
+
+Read against `c9599a8` on 2026-09-13; re-verify line numbers before editing.
+
+**What the tree has.** `StudioArt` (`ArtworkStudioViewModel.kt:61`) is `url`, `thumb`, `provider`,
+`label`, `isVideo`: no asset id, and nothing in the Studio selects more than one tile. A on the grid
+opens the candidate preview (`handleGamepadAction`, `StudioZone.GRID -> openCandidate`), and a touch
+tap does the same (`ArtworkStudioScreen.kt:716`). Every `GamepadAction` is already bound on the grid:
+A preview, Square search, START mature, Triangle menu, LB/RB page. The store side is ready:
+`studioAppendFromUrl` and `findByProviderAssetId` already take a `providerAssetId`, and none has been
+written yet, so its format is still free to choose.
+
+**Found while reading, and why the key is not `provider + (providerAssetId ?: url)`:**
+- **The kind has to be in the key.** One provider asset is offered on several tabs: SteamGridDB grids
+  appear on ICON0, BOX ART and the three `SHOW_ALL_ART_KINDS`. Picking it for SCREENSHOT is not
+  picking it for ICON0.
+- **SteamGridDB numbers each art type separately**, so a grid and a hero can share an `id`. Its asset
+  id is `<endpoint>:<id>` (`grids:1001`).
+- **ScreenScraper URLs are stored as served** (`ScreenScraperApi.kt:576`, `SsCachedMedia.url`), and
+  PFP's log redaction strips `devpassword`/`sspassword` from request URLs. If media URLs carry those
+  parameters too, a URL key changes with the account and holds a password, and task 5.3's
+  `findByOriginUrl` would compare credentials. Its asset id is read as `<jeuid>:<media>`, falling back
+  to the URL when either parameter is absent. **Unverified:** that the served media URLs carry `jeuid`
+  and `media`. Confirm on one `ss_media_cache` row; the fallback keeps behaviour correct either way.
+- TheGamesDB and IGDB have no asset id; their CDN URLs are the identity.
+
+**Decisions (user, 2026-09-13):**
+1. On a multi-asset tab (`ArtworkFileNaming.MULTI_ASSET_KINDS`: SCREENSHOT, VIDEO), **A toggles the
+   focused tile's selection** and **Preview moves into the Triangle menu** as its first entry. Every
+   other tab keeps A = preview.
+2. 5.1 ships the model, the toggle, a checkmark on picked tiles and an "n selected" count on the page
+   line. Nothing downloads until 5.2.
+
+**Scope.**
+- `StudioArt.providerAssetId`, filled by `ssResults` and `sgdbResults`.
+- Pure `StudioArtKey(kind, provider, asset)` and `ScreenScraperAssetId` in `StudioSearch.kt`.
+- `ArtworkStudioUiState.selection: Map<StudioArtKey, StudioArt>` in pick order, with `selectsMultiple`,
+  `isSelected(art)`, `selectedOnTab` and `canPreviewFocused`.
+- `ArtworkStudioActions.toggleSelection(index)`; A on the grid routes to it on multi-asset tabs;
+  `StudioAction.PREVIEW` opens the focused tile; `openActions` opens for it even with no current art.
+- Picks are cleared on every `load`: nothing consumes them yet, and a pick left from a closed screen
+  would be invisible.
+- Screen: checkmark on picked tiles, "n selected" on the page line, and a tap routed like A.
+
+**Do not change:** Apply in the candidate overlay (still replaces position 0; the append path is
+5.2's), the request key, the result cache, paging, or any store/DAO code.
+
+**Acceptance.**
+- A pick survives paging away and back, a re-page from a capacity change, a source switch and a new
+  query.
+- SteamGridDB's `grids:1` and `heroes:1` are two picks.
+- A on ICON0 still opens the preview, and selection stays empty.
+- Triangle ▸ Preview on a SCREENSHOT tile opens that tile's preview.
+- Two ScreenScraper URLs differing only in credentials are one asset.
+
+**Budget.** `ArtworkStudioViewModel.kt`, `StudioSearch.kt`, `ArtworkStudioActions.kt`,
+`ArtworkStudioPreview.kt` (no-op), `ArtworkStudioScreen.kt`: one file over §4, because the interface
+change forces the preview's no-op. Tests in `StudioSearchTest` and `ArtworkStudioViewModelTest`: one
+test file over, keys being pure and selection being ViewModel state.
+
+**Stop if** the checkmark or count cannot fit the tile or the 16 dp page line without changing the
+measured grid slot (L.2's invariant): report rather than resize.
 
 Every task: **if blocked**, stop and report what was attempted, what blocked it, which file caused
 it and what decision is needed (`PLANNING_WORKFLOW.md` §4).

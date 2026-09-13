@@ -941,7 +941,7 @@ private fun EmulatorPickerPanel(
                             )
                         }
                         if (isSelected) {
-                            Text("✓", color = PlayGreen, fontSize = 16.sp, modifier = Modifier.padding(start = 8.dp))
+                            com.playfieldportal.core.ui.components.PfpCheckMark(PlayGreen, Modifier.padding(start = 8.dp))
                         }
                     }
                 }

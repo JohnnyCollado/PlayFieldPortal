@@ -147,12 +147,9 @@ fun MusicTrackPicker(
                                 )
                             }
                         }
-                        Text(
-                            text = if (checked) "✓" else "",
-                            color = PickerCheck,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                        )
+                        if (checked) {
+                            com.playfieldportal.core.ui.components.PfpCheckMark(PickerCheck, size = 18.dp)
+                        }
                     }
                 }
             }

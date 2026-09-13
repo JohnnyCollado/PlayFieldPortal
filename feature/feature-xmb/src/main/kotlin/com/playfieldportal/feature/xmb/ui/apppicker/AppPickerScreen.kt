@@ -468,22 +468,14 @@ private fun AppPickerTile(
                 Spacer(Modifier.size(artworkSize))
             }
             // Check badge — upper-right, independent of focus; survives the cursor leaving.
-            Box(
-                Modifier
+            com.playfieldportal.core.ui.components.PfpCheckBadge(
+                fill = colors.tileSelectedEdge,
+                markColor = colors.backgroundDeep,
+                modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(3.dp)
-                    .size(18.dp)
-                    .alpha(check)
-                    .background(colors.tileSelectedEdge, RoundedCornerShape(50)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = "✓",
-                    color = colors.backgroundDeep,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
+                    .alpha(check),
+            )
         }
         Spacer(Modifier.height(6.dp))
         Text(

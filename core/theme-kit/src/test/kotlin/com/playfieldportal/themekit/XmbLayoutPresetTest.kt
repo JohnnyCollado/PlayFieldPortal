@@ -3,6 +3,7 @@ package com.playfieldportal.themekit
 import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
@@ -123,5 +124,24 @@ class XmbLayoutPresetTest {
         val portrait = XmbLayoutPreset.computeForWindowDp(468.3f, 832.5f, 369f / 160f)
 
         assertEquals(landscape, portrait)
+    }
+
+    @Test
+    fun `a saved preset still matches after the prefs round trip`() {
+        val preset = XmbLayoutPreset.computeForWindow(widthPx = 1920f, heightPx = 1080f, densityDpi = 369f)
+        val saved = XmbLayoutAdjustCodec.decode(XmbLayoutAdjustCodec.encode(mapOf("compact" to preset)))["compact"]
+
+        assertTrue(XmbLayoutPreset.matches(saved, preset))
+    }
+
+    @Test
+    fun `one editor step, a reset to default or no saved layout is not the preset`() {
+        val preset = XmbLayoutPreset.computeForWindow(widthPx = 1920f, heightPx = 1080f, densityDpi = 369f)
+
+        assertFalse(XmbLayoutPreset.matches(preset.copy(barLeftFraction = preset.barLeftFraction + 0.01f), preset))
+        assertFalse(XmbLayoutPreset.matches(preset.copy(barTopFraction = preset.barTopFraction - 0.01f), preset))
+        assertFalse(XmbLayoutPreset.matches(preset.copy(scale = preset.scale + 0.02f), preset))
+        assertFalse(XmbLayoutPreset.matches(XmbLayoutAdjust.DEFAULT, preset))
+        assertFalse(XmbLayoutPreset.matches(null, preset))
     }
 }

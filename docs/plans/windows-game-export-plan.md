@@ -197,13 +197,18 @@ since `reconcilePinnedShortcuts` does that.
 
 | ID | Task | Depends On | Status |
 |---|---|---|---|
-| X.1 | Pure `.pfpgame` model and codec: encode, lenient decode, version refusal, pin entries, invalid entries rejected | None | DONE (uncommitted; unit tests green) |
-| X.2 | Pure export selection: pins with artwork as pin entries; skip intent-less rows and rows a launcher export file recreates | None | DONE (uncommitted; unit tests green) |
-| X.3 | Exporter and the Export Manual Games row: read games and artwork records, write the files | X.1, X.2 | DONE (uncommitted; unit tests green, device check not reported) |
-| X.4 | Importer: `.pfpgame` in the folder scan after launcher files; safety check; match, fill-only or create; collect claims | X.1 | DONE (uncommitted; unit tests green) |
-| X.5 | Relink with claims, called by the scan when claims were collected | X.4 | DONE (uncommitted; unit tests green, fresh-install round trip pending) |
+| X.1 | Pure `.pfpgame` model and codec: encode, lenient decode, version refusal, pin entries, invalid entries rejected | None | DONE (`c9599a8`) |
+| X.2 | Pure export selection: pins with artwork as pin entries; skip intent-less rows and rows a launcher export file recreates | None | DONE (`c9599a8`) |
+| X.3 | Exporter and the Export Manual Games row: read games and artwork records, write the files | X.1, X.2 | DONE (`c9599a8`; checked in the device walk) |
+| X.4 | Importer: `.pfpgame` in the folder scan after launcher files; safety check; match, fill-only or create; collect claims | X.1 | DONE (`c9599a8`) |
+| X.5 | Relink with claims, called by the scan when claims were collected | X.4 | DONE (`c9599a8`; fresh-install round trip checked in the device walk) |
 | X.6 | Current scan skips PC games that are not installed | Investigation | BLOCKED on what GameNative and Winlator leave behind after an uninstall |
-| X.7 | Export Game for one Windows game, from Game Detail ▸ Options and the XMB Triangle menu | X.3 | IN PROGRESS |
+| X.7 | Export Game for one Windows game, from Game Detail ▸ Options and the XMB Triangle menu | X.3 | DONE (`c9599a8`; checked in the device walk) |
+
+**Landed in `c9599a8` (2026-09-12).** X.1–X.5 and X.7. The user ran the unit tests (green) and the device
+walk below, covering Export Game from both menus, Export Manual Games, and the clear-data restore with
+artwork reconnected and no duplicates. The "implemented (uncommitted, not yet built)" notes under each task
+are the record at the time of writing. Only X.6 is left, and it is blocked.
 
 Every task: **if blocked**, stop and report what was attempted, what blocked it, which file caused it
 and what decision is needed (`PLANNING_WORKFLOW.md` §4). The user runs every Gradle command.

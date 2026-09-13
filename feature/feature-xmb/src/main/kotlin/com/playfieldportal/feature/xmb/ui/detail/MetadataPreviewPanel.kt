@@ -253,7 +253,13 @@ private fun FieldRow(
     ) {
         Row(Modifier.width(FieldColumn), verticalAlignment = Alignment.CenterVertically) {
             if (showCheck) {
-                Text(if (checked) "☑" else "☐", color = TextPrimary, fontSize = 13.sp, modifier = Modifier.padding(end = 6.dp))
+                com.playfieldportal.core.ui.components.PfpCheckbox(
+                    checked = checked,
+                    color = TextPrimary,
+                    markColor = RowFill,
+                    size = 13.dp,
+                    modifier = Modifier.padding(end = 6.dp),
+                )
             }
             Text(row.field.label, color = TextPrimary, fontSize = 12.sp, maxLines = 1)
         }

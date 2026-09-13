@@ -187,6 +187,8 @@ data class DisplaySettingsUiState(
      * bound to positions, so they need the user's X/Y layout to resolve. See MediaRowShortcuts.
      */
     val xyLayout: XYLayout = XYLayout.STANDARD,
+    /** The layout saved for this screen size is the PSP preset, so Biblically Accurate PSP XMB greys out. */
+    val pspLayoutApplied: Boolean = false,
 ) {
     val waveStyleLabel: String get() = WAVE_STYLE_LABELS[waveStyle] ?: waveStyle.name
 }
@@ -278,6 +280,9 @@ class DisplaySettingsViewModel @Inject constructor(
             gameBootVideoAssigned = UiMediaSlot.GAMEBOOT_VIDEO in assigned,
             gameBootPreviewVisible = transient.gameBootPreviewVisible,
             xyLayout             = transient.xyLayout,
+            // Re-derived on every DataStore emission, so a save from the Adjust XMB Layout editor
+            // (a reset to default included) re-enables the row the moment it lands.
+            pspLayoutApplied     = PspXmbLayout.isApplied(prefs, PspXmbLayout.forWindow(context)),
         )
     }
         // uiMediaStore.assignments() is a directory listing — cheap, but still file IO.
@@ -349,6 +354,9 @@ class DisplaySettingsViewModel @Inject constructor(
     fun setSolidUnfocusedIcons(v: Boolean) = save { it[KEY_SOLID_UNFOCUSED_ICONS] = v }
 
     fun setTextShadow(v: Boolean) = save { it[KEY_TEXT_SHADOW] = v }
+
+    /** Display ▸ XMB Layout ▸ Biblically Accurate PSP XMB: saves the PSP preset for this screen size. */
+    fun applyPspLayout() = save { PspXmbLayout.write(it, PspXmbLayout.forWindow(context)) }
 
     // ── Font colour ───────────────────────────────────────────────────────────
 

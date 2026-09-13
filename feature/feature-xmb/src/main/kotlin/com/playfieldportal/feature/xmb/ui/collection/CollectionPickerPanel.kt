@@ -155,7 +155,7 @@ private fun PickerRow(
     ) {
         Text(label, color = TextPrimary, fontSize = 14.sp, maxLines = 1, modifier = Modifier.weight(1f))
         if (trailingCheck) {
-            Text("✓", color = CheckGreen, fontSize = 16.sp, modifier = Modifier.padding(start = 8.dp))
+            com.playfieldportal.core.ui.components.PfpCheckMark(CheckGreen, Modifier.padding(start = 8.dp))
         }
     }
 }

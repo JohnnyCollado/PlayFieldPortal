@@ -71,6 +71,44 @@ data class StudioRequestKey(
 }
 
 /**
+ * Which asset a result tile is, for selection (C16 task 5.1): the destination [kind], the
+ * [provider], and the provider's own asset id or, when it has none, the URL.
+ *
+ * Never a grid position: a page is one measured gridful, so an index names a different tile after
+ * paging, a re-page or a source switch. The kind is part of it because one provider asset is offered
+ * on several tabs (SteamGridDB grids on ICON0, BOX ART and SCREENSHOT), and picking it for one
+ * destination is not picking it for another.
+ */
+data class StudioArtKey(val kind: ArtworkKind, val provider: String, val asset: String) {
+    companion object {
+        fun of(kind: ArtworkKind, art: StudioArt) = StudioArtKey(kind, art.provider, art.providerAssetId ?: art.url)
+    }
+}
+
+/**
+ * ScreenScraper's asset id, read out of a `mediaJeu.php` URL as `<jeuid>:<media>`.
+ *
+ * Media URLs are kept exactly as ScreenScraper served them, and those can carry the developer and
+ * user credentials as query parameters. As a key such a URL would change with the account and hold a
+ * password, so the game id and media name are the identity instead. Null when either is missing, in
+ * which case the URL is used as it is.
+ */
+object ScreenScraperAssetId {
+    fun of(url: String?): String? {
+        val query = url?.substringAfter('?', missingDelimiterValue = "")?.takeIf { it.isNotEmpty() } ?: return null
+        val params = query.split('&').mapNotNull { pair ->
+            val name = pair.substringBefore('=')
+            val value = pair.substringAfter('=', missingDelimiterValue = "")
+            if (name.isEmpty() || value.isEmpty()) return@mapNotNull null
+            runCatching { java.net.URLDecoder.decode(value, "UTF-8") }.getOrNull()?.let { name.lowercase() to it }
+        }.toMap()
+        val gameId = params["jeuid"] ?: return null
+        val media = params["media"] ?: return null
+        return "$gameId:$media"
+    }
+}
+
+/**
  * A small LRU of finished result lists, keyed by [StudioRequestKey].
  *
  * Replaces the single `allResults` field: with one list per key, switching back to a source the

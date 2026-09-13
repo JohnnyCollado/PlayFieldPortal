@@ -181,13 +181,7 @@ private fun PspContextMenuRow(
             )
             if (row.checked) {
                 Spacer(Modifier.width(10.dp))
-                Text(
-                    text = "✓",
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    style = TextStyle(shadow = TextDropShadow),
-                )
+                PfpCheckMark(Color.White, size = 15.dp, shadow = TextDropShadow.color)
             }
         }
     }

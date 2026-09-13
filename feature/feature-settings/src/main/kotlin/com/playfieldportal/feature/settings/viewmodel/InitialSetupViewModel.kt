@@ -125,8 +125,6 @@ private data class ServiceIdentities(
     val steamId64: String,
 )
 
-// Must match XMBViewModel.KEY_XMB_LAYOUT_ADJUST — both read/write the same pref.
-private val KEY_XMB_LAYOUT_ADJUST = stringPreferencesKey("display_xmb_layout_adjust")
 // Must match XMBViewModel.KEY_INITIAL_SETUP_SEEN — both read/write the same pref.
 private val KEY_INITIAL_SETUP_SEEN = booleanPreferencesKey("initial_setup_seen")
 
@@ -585,22 +583,13 @@ class InitialSetupViewModel @Inject constructor(
         scratch.update { it.copy(autoFitXmbLayout = enabled) }
     }
 
-    /** Write the auto-fit preset for the CURRENT form-factor bucket (idempotent). */
+    /**
+     * Write the auto-fit preset for the CURRENT form-factor bucket (idempotent). The same write as
+     * Display ▸ XMB Layout ▸ Biblically Accurate PSP XMB, which therefore shows as applied after it.
+     */
     private suspend fun writeAutoFitPreset() {
-        val sw = context.resources.configuration.smallestScreenWidthDp
-        val bucket = com.playfieldportal.themekit.XmbFormFactor.forSmallestWidthDp(sw).key
-        val preset = com.playfieldportal.themekit.XmbLayoutPreset.computeForWindowDp(
-            widthDp = context.resources.configuration.screenWidthDp.toFloat(),
-            heightDp = context.resources.configuration.screenHeightDp.toFloat(),
-            density = context.resources.displayMetrics.density,
-        )
-        context.pfpDataStore.edit { prefs ->
-            val map = com.playfieldportal.themekit.XmbLayoutAdjustCodec
-                .decode(prefs[KEY_XMB_LAYOUT_ADJUST])
-                .toMutableMap()
-            map[bucket] = preset
-            prefs[KEY_XMB_LAYOUT_ADJUST] = com.playfieldportal.themekit.XmbLayoutAdjustCodec.encode(map)
-        }
+        val target = PspXmbLayout.forWindow(context)
+        context.pfpDataStore.edit { prefs -> PspXmbLayout.write(prefs, target) }
     }
 
     /**

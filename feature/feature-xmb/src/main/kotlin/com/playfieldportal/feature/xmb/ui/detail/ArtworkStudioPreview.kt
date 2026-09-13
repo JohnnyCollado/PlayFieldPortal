@@ -40,6 +40,7 @@ private object PreviewStudioActions : ArtworkStudioActions {
     override fun forgetMatch() = Unit
     override fun onGridMeasured(widthDp: Float, heightDp: Float) = Unit
     override fun openCandidate(index: Int) = Unit
+    override fun toggleSelection(index: Int) = Unit
     override fun previousPage() = Unit
     override fun nextPage() = Unit
     override fun applyCandidate() = Unit

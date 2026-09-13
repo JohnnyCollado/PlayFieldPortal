@@ -126,7 +126,7 @@ fun EmulatorProfileEditorScreen(
                     sublabel = intentTypeDescription(type),
                     trailing = {
                         if (editorState.intentType == type) {
-                            Text("✓", color = EditorAccent)
+                            com.playfieldportal.core.ui.components.PfpCheckMark(EditorAccent)
                         }
                     },
                     onClick = { onIntentTypeChange(type) },

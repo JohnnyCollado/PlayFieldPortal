@@ -75,11 +75,13 @@ fun BackupSettingsScreen(
 
             SettingsGroup("What's Included")
 
-            SettingsValueRow(label = "Game Library",        value = "✓")
-            SettingsValueRow(label = "Play History",        value = "✓")
-            SettingsValueRow(label = "Custom Categories",   value = "✓")
-            SettingsValueRow(label = "Settings & API Keys", value = "✓")
-            SettingsValueRow(label = "Emulator Profiles",   value = "✓")
+            listOf("Game Library", "Play History", "Custom Categories", "Settings & API Keys", "Emulator Profiles")
+                .forEach { included ->
+                    SettingsRow(
+                        label    = included,
+                        trailing = { com.playfieldportal.core.ui.components.PfpCheckMark(SettingsText) },
+                    )
+                }
             SettingsValueRow(label = "ROM Files",           value = "✗  (not included)")
 
             SettingsGroup("Restore")

@@ -57,13 +57,17 @@ enum class StudioSource(val label: String) {
     LOCAL("Local File"),
 }
 
-/** One result tile in the Available Artwork grid. */
+/**
+ * One result tile in the Available Artwork grid. [providerAssetId] is the provider's own id for the
+ * asset when it has one (task 5.1); without it the URL is the asset's only identity ([StudioArtKey]).
+ */
 data class StudioArt(
     val url: String,
     val thumb: String?,
     val provider: String,
     val label: String? = null,
     val isVideo: Boolean = false,
+    val providerAssetId: String? = null,
 )
 
 // Navigation levels, strictly hierarchical: confirm descends, back ascends, left/right acts on
@@ -131,8 +135,13 @@ data class ArtworkStudioUiState(
     // Keyed providers with no key/credentials: still listed, drawn disabled, skipped by source
     // cycling, and never asked. Re-read on every open so a key added in Settings takes effect.
     val unavailableSources: Set<StudioSource> = emptySet(),
-    // Candidate preview overlay (A on a grid tile). Apply/Cancel from here.
+    // Candidate preview overlay (A on a single-art tab's tile, or Preview in the menu). Apply/Cancel from here.
     val candidate: StudioArt? = null,
+    // ── Selection (C16 task 5.1) ─────────────────────────────────────────────
+    // Tiles picked on a multi-asset tab, in pick order. Keyed by asset, not grid position, so a pick
+    // survives paging, a re-page, a source switch and a new query. Nothing downloads them yet: the
+    // queue that consumes this is task 5.2.
+    val selection: Map<StudioArtKey, StudioArt> = emptyMap(),
     // Manual candidates: the PDF is downloaded to cache and paged before Apply.
     val candidateManualPath: String? = null,
     val manualDownloading: Boolean = false,
@@ -193,6 +202,22 @@ data class ArtworkStudioUiState(
     val hasPreviousPage: Boolean get() = page > 0
     val hasNextPage: Boolean get() = page < pageCount - 1
 
+    /** The active tab holds several assets (SCREENSHOT, VIDEO), so A picks tiles instead of previewing one. */
+    val selectsMultiple: Boolean
+        get() = STUDIO_TABS.getOrNull(tabIndex)?.kind
+            ?.let(com.playfieldportal.feature.artwork.store.ArtworkFileNaming::supportsMultiple) == true
+
+    fun isSelected(art: StudioArt): Boolean =
+        STUDIO_TABS.getOrNull(tabIndex)?.let { StudioArtKey.of(it.kind, art) in selection } == true
+
+    /** Picks for the active tab only: the other tabs' picks are kept, just not counted here. */
+    val selectedOnTab: Int
+        get() = STUDIO_TABS.getOrNull(tabIndex)?.kind?.let { kind -> selection.keys.count { it.kind == kind } } ?: 0
+
+    /** A took Preview's place on this tab, so the menu offers it for the focused tile. */
+    val canPreviewFocused: Boolean
+        get() = zone == StudioZone.GRID && selectsMultiple && results.getOrNull(gridIndex) != null
+
     /**
      * Actions for the current slot and then the active source, in menu order. Entries that do not
      * apply are hidden.
@@ -201,6 +226,7 @@ data class ArtworkStudioUiState(
         get() = buildList {
             val kind = STUDIO_TABS.getOrNull(tabIndex)?.kind
             val hasCurrent = currentUri != null
+            if (canPreviewFocused) add(StudioAction.PREVIEW)
             if (hasCurrent && kind != null && kind in CROPPABLE_KINDS) add(StudioAction.CROP)
             if (info?.hasPrevious == true) add(StudioAction.RESTORE_PREVIOUS)
             if (info?.originUrl != null) add(StudioAction.RESET_DEFAULT)
@@ -217,6 +243,7 @@ data class ArtworkStudioUiState(
 }
 
 enum class StudioAction(val label: String) {
+    PREVIEW("Preview"),
     CROP("Adjust Crop / Position"),
     RESTORE_PREVIOUS("Restore Previous"),
     RESET_DEFAULT("Reset to Scraped Default"),
@@ -363,8 +390,9 @@ class ArtworkStudioViewModel @Inject constructor(
     fun load(gameId: Long) {
         // Always clear the closed flag: the VM survives across open/close (host-scoped), so a
         // stale closed=true from a prior B-press would otherwise slam the screen shut on reopen.
-        // Every open starts at Level 1 (categories).
-        _uiState.update { it.copy(closed = false, zone = StudioZone.TABS) }
+        // Every open starts at Level 1 (categories), with no picks: nothing downloads them yet, and a
+        // pick left over from a closed screen would be invisible.
+        _uiState.update { it.copy(closed = false, zone = StudioZone.TABS, selection = emptyMap()) }
         // Each open asks the providers afresh: a search that failed last time (providers report a
         // failure as no hits) must not keep the game unmatched for good.
         titleSearches.clear()
@@ -692,6 +720,7 @@ class ArtworkStudioViewModel @Inject constructor(
                     provider = "ScreenScraper",
                     label = listOfNotNull(m.type, m.region?.uppercase()).joinToString(" · "),
                     isVideo = kind == ArtworkKind.VIDEO || kind == ArtworkKind.ICON1,
+                    providerAssetId = ScreenScraperAssetId.of(m.url),
                 )
             }
         }
@@ -741,6 +770,8 @@ class ArtworkStudioViewModel @Inject constructor(
                         art.style,
                         art.width?.let { w -> "${w}×${art.height}" },
                     ).joinToString(" · "),
+                    // SteamGridDB numbers each art type separately, so a grid and a hero can share an id.
+                    providerAssetId = "${type.endpoint}:${art.id}",
                 )
             }
         }
@@ -1447,6 +1478,21 @@ class ArtworkStudioViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Picks or unpicks the tile at [index] on a multi-asset tab (task 5.1). The pick is keyed by
+     * [StudioArtKey], never by [index], so it is still there after paging away and back. A single-art
+     * tab ignores it: one slot has nothing to pick several of.
+     */
+    override fun toggleSelection(index: Int) = _uiState.update { s ->
+        val art = s.results.getOrNull(index)
+        if (art == null || !s.selectsMultiple) return@update s
+        val key = StudioArtKey.of(STUDIO_TABS[s.tabIndex].kind, art)
+        s.copy(
+            gridIndex = index,
+            selection = if (key in s.selection) s.selection - key else s.selection + (key to art),
+        )
+    }
+
     /** Plain bounded download for candidate previews (no ktor dependency in this module). */
     private fun downloadToCache(url: String, suffix: String): java.io.File? = runCatching {
         val tmp = java.io.File.createTempFile("studio_", suffix, appCacheDir)
@@ -1535,12 +1581,13 @@ class ArtworkStudioViewModel @Inject constructor(
      * Opens even with no current artwork when the source has an entry of its own: SteamGridDB's
      * mature filter (task 1.3), or Change Match on any provider (task 2.4). The unmatched game with
      * no artwork is exactly the one Change Match exists to rescue. Only a source with neither, i.e.
-     * Local, still refuses, so the menu never opens empty.
+     * Local, still refuses, so the menu never opens empty. A focused tile on a multi-asset tab also
+     * opens it, for Preview (task 5.1).
      */
     override fun openActions() {
         val sgdb = sgdbActive()
         val s = _uiState.value
-        if (s.currentUri == null && !sgdb && s.matchProvider == null) return
+        if (s.currentUri == null && !sgdb && s.matchProvider == null && !s.canPreviewFocused) return
         viewModelScope.launch {
             val info = routingStore.studioInfo(gameId, tab().kind)
             _uiState.update {
@@ -1561,6 +1608,7 @@ class ArtworkStudioViewModel @Inject constructor(
 
     override fun runAction(action: StudioAction) {
         when (action) {
+            StudioAction.PREVIEW          -> { closeActions(); openCandidate(_uiState.value.gridIndex) }
             StudioAction.CROP             -> beginCrop()
             StudioAction.RESTORE_PREVIOUS -> restorePrevious()
             StudioAction.RESET_DEFAULT    -> resetToScrapedDefault()
@@ -1991,7 +2039,8 @@ class ArtworkStudioViewModel @Inject constructor(
                 StudioZone.SOURCES ->
                     if (sourcesForTab().getOrNull(s.sourceIndex) == StudioSource.LOCAL) requestLocalPick()
                     else _uiState.update { it.copy(zone = StudioZone.GRID) }
-                StudioZone.GRID    -> openCandidate(s.gridIndex)
+                // A multi-asset tab picks tiles; Preview is in the Triangle menu there (task 5.1).
+                StudioZone.GRID    -> if (s.selectsMultiple) toggleSelection(s.gridIndex) else openCandidate(s.gridIndex)
             }
             // X / Square focuses the search field, from any level.
             GamepadAction.CHANGE_SORT -> openSearch()

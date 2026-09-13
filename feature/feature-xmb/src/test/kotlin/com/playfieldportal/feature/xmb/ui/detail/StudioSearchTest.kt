@@ -179,5 +179,43 @@ class StudioSearchTest {
         assertEquals(2, StudioPage.of((1..40).map { art("u$it") }, 0, 20).pageCount)
     }
 
+    // ── Asset keys (task 5.1) ─────────────────────────────────────────────────
+
+    @Test
+    fun `a ScreenScraper asset is the same asset whatever account fetched its URL`() {
+        val anonymous = "https://neoclone.screenscraper.fr/api2/mediaJeu.php" +
+            "?devid=pfp&devpassword=x&softname=pfp&ssid=&sspassword=&systemeid=57&jeuid=3&media=ss(wor)"
+        val signedIn = "https://neoclone.screenscraper.fr/api2/mediaJeu.php" +
+            "?devid=pfp&devpassword=x&softname=pfp&ssid=me&sspassword=secret&systemeid=57&jeuid=3&media=ss%28wor%29"
+
+        assertEquals("3:ss(wor)", ScreenScraperAssetId.of(anonymous))
+        assertEquals(ScreenScraperAssetId.of(anonymous), ScreenScraperAssetId.of(signedIn))
+    }
+
+    @Test
+    fun `a URL without both a game id and a media name has no ScreenScraper asset id`() {
+        assertNull(ScreenScraperAssetId.of("https://x/api2/mediaJeu.php?jeuid=3"))
+        assertNull(ScreenScraperAssetId.of("https://x/api2/mediaJeu.php?jeuid=&media=ss"))
+        assertNull(ScreenScraperAssetId.of("https://cdn.example/box.png"))
+        assertNull(ScreenScraperAssetId.of(null))
+    }
+
+    @Test
+    fun `an asset key prefers the provider's id and falls back to the URL`() {
+        val withId = StudioArt(url = "https://sgdb/a.png", thumb = null, provider = "SteamGridDB", providerAssetId = "grids:42")
+        val sameAssetElsewhere = withId.copy(url = "https://mirror/a.png")
+
+        assertEquals(
+            StudioArtKey.of(ArtworkKind.SCREENSHOT, withId),
+            StudioArtKey.of(ArtworkKind.SCREENSHOT, sameAssetElsewhere),
+        )
+        assertEquals("u1", StudioArtKey.of(ArtworkKind.SCREENSHOT, art("u1")).asset)
+    }
+
+    @Test
+    fun `one asset offered on two tabs is two keys`() {
+        assertNotEquals(StudioArtKey.of(ArtworkKind.ICON, art("u1")), StudioArtKey.of(ArtworkKind.SCREENSHOT, art("u1")))
+    }
+
     private fun art(url: String) = StudioArt(url = url, thumb = null, provider = "test")
 }

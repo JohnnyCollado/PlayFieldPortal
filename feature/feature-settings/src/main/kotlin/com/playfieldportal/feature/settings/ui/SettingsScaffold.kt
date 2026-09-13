@@ -974,6 +974,9 @@ class SettingsRowAction(
     val icon: @Composable () -> Unit,
 )
 
+/** How far a disabled row's text fades: still readable, plainly not actionable. */
+private const val DISABLED_ROW_ALPHA = 0.4f
+
 @Composable
 fun SettingsRow(
     label: String,
@@ -991,7 +994,11 @@ fun SettingsRow(
     // When true the row-level cursor fill is suppressed while an inline action has focus,
     // letting the action's own background be the sole highlight indicator.
     hideRowHighlightOnActionFocus: Boolean = false,
+    // A disabled row keeps its place in navigation (every row is focusable) but greys out, and
+    // SELECT and taps do nothing: [onClick] is dropped rather than guarded at each use.
+    enabled: Boolean = true,
 ) {
+    val click = onClick?.takeIf { enabled }
     val actionFocusCount = remember { mutableIntStateOf(0) }
     val anyActionFocused = actionFocusCount.intValue > 0
     val focusTracker = LocalSettingsFocusTracker.current
@@ -1009,9 +1016,9 @@ fun SettingsRow(
     val row = rememberControllerRowRegistration(
         prefix = "row",
         focusKey = focusKey,
-        claimInitialFocus = onClick != null,
-        selectable = onClick != null,
-        onSelect = onClick,
+        claimInitialFocus = click != null,
+        selectable = click != null,
+        onSelect = click,
         onLongPress = onLongPress,
         trailingActionsFor = { rowKey ->
             actions.mapIndexed { index, action ->
@@ -1034,9 +1041,9 @@ fun SettingsRow(
             // Report on-screen Y and height so the scaffold can navigate and keep the row in view.
             .then(row.positionReporting)
             // Observe focus to register onclick with scaffold (for SELECT) and show highlight
-            .pointerInput(row.rowKey, onClick, onLongPress) {
+            .pointerInput(row.rowKey, click, onLongPress) {
                 detectTapGestures(
-                    onTap = { touchInput(); onClick?.invoke() },
+                    onTap = { touchInput(); click?.invoke() },
                     onLongPress = { touchInput(); onLongPress?.invoke() },
                 )
             }
@@ -1044,9 +1051,9 @@ fun SettingsRow(
                 isFocused = state.isFocused
                 onFocusChangedExternal?.invoke(state.isFocused)
                 if (state.isFocused) {
-                    focusTracker(onClick)
+                    focusTracker(click)
                     reportFocused(row.focusRequester)
-                    Timber.d("Settings focus: row=\"$label\" clickable=${onClick != null}")
+                    Timber.d("Settings focus: row=\"$label\" clickable=${click != null}")
                 }
             }
             // One consistent cursor fill for every focused row — read-only rows get the same
@@ -1069,7 +1076,8 @@ fun SettingsRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = label,
-                color = if (isFocused && cursorVisible && !(hideRowHighlightOnActionFocus && anyActionFocused)) Color.White else SettingsText,
+                color = (if (isFocused && cursorVisible && !(hideRowHighlightOnActionFocus && anyActionFocused)) Color.White else SettingsText)
+                    .let { if (enabled) it else it.copy(alpha = it.alpha * DISABLED_ROW_ALPHA) },
                 fontSize = 15.sp,
                 style = TextStyle(shadow = SettingsTextShadow),
             )
@@ -1077,7 +1085,7 @@ fun SettingsRow(
                 Spacer(Modifier.height(2.dp))
                 Text(
                     sublabel,
-                    color = SettingsSubtext,
+                    color = SettingsSubtext.let { if (enabled) it else it.copy(alpha = it.alpha * DISABLED_ROW_ALPHA) },
                     fontSize = 12.sp,
                     // The helper line is the least legible text on screen over a bright
                     // wallpaper — small, gray, and lowest in the row. The shadow is what keeps

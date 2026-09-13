@@ -398,6 +398,109 @@ class ArtworkStudioViewModelTest {
         assertEquals(1, vm.uiState.value.rangeStart)
     }
 
+    // ── Selection (task 5.1) ──────────────────────────────────────────────────
+
+    /** SteamGridDB on SCREENSHOT with the grid focused: [perType] results for each of its four art types. */
+    private suspend fun kotlinx.coroutines.test.TestScope.screenshotGridOnSgdb(perType: Int): ArtworkStudioViewModel {
+        coEvery { steamGridDb.getArt(any(), any(), any(), any(), any()) } answers {
+            val type = secondArg<SgdbArtType>()
+            Result.success((1..perType).map { SgdbArtItem(id = it.toLong(), url = "${type.endpoint}$it") })
+        }
+        val vm = loadedOn(StudioSource.STEAMGRIDDB)
+        vm.selectTab(STUDIO_TABS.indexOfFirst { it.kind == ArtworkKind.SCREENSHOT })
+        advanceUntilIdle()
+        vm.selectSource(vm.sourcesForTab().indexOf(StudioSource.STEAMGRIDDB))
+        advanceUntilIdle()
+        vm.handleGamepadAction(GamepadAction.SELECT)   // into the grid
+        return vm
+    }
+
+    @Test
+    fun `A on a screenshot tile picks it, and the pick survives paging away and back`() = runTest(testDispatcher) {
+        val vm = screenshotGridOnSgdb(perType = 6)   // 24 results: two 4 × 5 pages
+        vm.handleGamepadAction(GamepadAction.SELECT)
+
+        val picked = vm.uiState.value.results[0]
+        assertEquals("grids:1", picked.providerAssetId)
+        assertEquals(null, vm.uiState.value.candidate)
+        assertTrue(vm.uiState.value.isSelected(picked))
+
+        vm.nextPage()
+        assertFalse(vm.uiState.value.isSelected(vm.uiState.value.results[0]))
+        vm.previousPage()
+        assertTrue(vm.uiState.value.isSelected(vm.uiState.value.results[0]))
+        assertEquals(1, vm.uiState.value.selectedOnTab)
+
+        vm.handleGamepadAction(GamepadAction.SELECT)
+        assertTrue(vm.uiState.value.selection.isEmpty())
+    }
+
+    @Test
+    fun `a SteamGridDB grid and hero with the same id are two picks`() = runTest(testDispatcher) {
+        val vm = screenshotGridOnSgdb(perType = 2)   // grids1, grids2, heroes1, heroes2, …
+        vm.toggleSelection(0)
+        vm.toggleSelection(2)
+
+        assertEquals(listOf("grids1", "heroes1"), vm.uiState.value.selection.values.map { it.url })
+    }
+
+    @Test
+    fun `picks survive a source switch and are counted only on their own tab`() = runTest(testDispatcher) {
+        val vm = screenshotGridOnSgdb(perType = 2)
+        vm.toggleSelection(0)
+        val picked = vm.uiState.value.results[0]
+
+        vm.selectSource(vm.sourcesForTab().indexOf(StudioSource.IGDB))
+        advanceUntilIdle()
+        vm.selectSource(vm.sourcesForTab().indexOf(StudioSource.STEAMGRIDDB))
+        advanceUntilIdle()
+        assertTrue(vm.uiState.value.isSelected(picked))
+
+        vm.selectTab(STUDIO_TABS.indexOfFirst { it.kind == ArtworkKind.VIDEO })
+        advanceUntilIdle()
+        assertEquals(0, vm.uiState.value.selectedOnTab)
+        assertEquals(1, vm.uiState.value.selection.size)
+    }
+
+    @Test
+    fun `A on a single-art tab still previews the tile and picks nothing`() = runTest(testDispatcher) {
+        coEvery { steamGridDb.getArt(any(), any(), any(), any(), any()) } returns
+            Result.success(listOf(SgdbArtItem(id = 1L, url = "art1")))
+        val vm = loadedOn(StudioSource.STEAMGRIDDB)   // ICON0
+        vm.handleGamepadAction(GamepadAction.SELECT)   // into the grid
+        vm.handleGamepadAction(GamepadAction.SELECT)
+
+        assertEquals("art1", vm.uiState.value.candidate?.url)
+        vm.toggleSelection(0)
+        assertTrue(vm.uiState.value.selection.isEmpty())
+    }
+
+    @Test
+    fun `Preview in the Triangle menu opens the focused screenshot`() = runTest(testDispatcher) {
+        val vm = screenshotGridOnSgdb(perType = 2)
+        vm.handleGamepadAction(GamepadAction.NAVIGATE_RIGHT)
+        vm.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
+        advanceUntilIdle()
+
+        assertEquals(StudioAction.PREVIEW, vm.uiState.value.availableActions.first())
+        vm.handleGamepadAction(GamepadAction.SELECT)
+
+        assertEquals("grids2", vm.uiState.value.candidate?.url)
+        assertFalse(vm.uiState.value.actionsOpen)
+        assertTrue(vm.uiState.value.selection.isEmpty())
+    }
+
+    @Test
+    fun `every open starts with no picks`() = runTest(testDispatcher) {
+        val vm = screenshotGridOnSgdb(perType = 2)
+        vm.toggleSelection(0)
+
+        vm.load(1L)
+        advanceUntilIdle()
+
+        assertTrue(vm.uiState.value.selection.isEmpty())
+    }
+
     // ── Measured grid capacity (task L.1) ─────────────────────────────────────
 
     @Test

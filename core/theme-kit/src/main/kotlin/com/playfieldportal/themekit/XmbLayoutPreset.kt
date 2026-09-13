@@ -1,5 +1,7 @@
 package com.playfieldportal.themekit
 
+import kotlin.math.abs
+
 /**
  * Device-independent auto-fit for the XMB cross layout.
  *
@@ -7,8 +9,8 @@ package com.playfieldportal.themekit
  * barLeftFraction, barTopFraction) that reproduce the hand-tuned PSP-authentic layout
  * captured on the AYN Thor (1920×1080 @ 369 dpi, compact bucket, barLeftFraction = -0.05).
  *
- * This is an OPTIONAL helper — callers opt in explicitly (Setup Wizard checkbox or the
- * "Auto-fit (PSP)" action in the Adjust XMB Layout overlay). It is never applied
+ * This is an OPTIONAL helper — callers opt in explicitly (Setup Wizard checkbox or Display ▸
+ * XMB Layout ▸ Biblically Accurate PSP XMB). It is never applied
  * automatically. The returned values still pass through [XmbLayoutAdjustCodec.sanitize],
  * which re-applies all clamps as the final gate.
  *
@@ -146,6 +148,19 @@ object XmbLayoutPreset {
             barLeftFraction = barLeftFraction,
         )
     }
+
+    /**
+     * Whether [saved] is [preset], within a thousandth on each axis: tight enough that one step of
+     * the Adjust XMB Layout editor (0.01 position, 0.02 scale) never matches, loose enough to survive
+     * the prefs JSON round trip.
+     */
+    fun matches(saved: XmbLayoutAdjust?, preset: XmbLayoutAdjust): Boolean =
+        saved != null &&
+            abs(saved.scale - preset.scale) <= MATCH_TOLERANCE &&
+            abs(saved.barLeftFraction - preset.barLeftFraction) <= MATCH_TOLERANCE &&
+            abs(saved.barTopFraction - preset.barTopFraction) <= MATCH_TOLERANCE
+
+    private const val MATCH_TOLERANCE = 0.001f
 
     /** Return type for [computeRawForWindow] — exposes the intermediate canvas so tests can assert it. */
     data class AutoFitValues(

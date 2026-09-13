@@ -3,11 +3,21 @@ package com.playfieldportal.feature.settings.ui
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -64,6 +74,8 @@ fun DisplaySettingsScreen(
     var pickerSat by remember { mutableFloatStateOf(0f) }
     var pickerVal by remember { mutableFloatStateOf(1f) }
     var pickerChannel by remember { mutableIntStateOf(0) }
+    // Biblically Accurate PSP XMB confirmation: the highlighted option while it is open, null when closed.
+    var pspConfirmFocus by remember { mutableStateOf<Int?>(null) }
     // The "Hidden Items" manager moved to Settings ▸ Library ▸ Hidden Games
     // (settings_app_visibility) — see docs/plans/README.md (Settings hierarchy).
 
@@ -145,6 +157,20 @@ fun DisplaySettingsScreen(
             MediaRowShortcuts.promptsFor(state.xyLayout, isAssigned = slot.isAssignedIn(state))
         } ?: emptyList(),
         onInterceptAction = { action ->
+            // The PSP layout confirmation is a hard input boundary: nothing behind it sees a press.
+            pspConfirmFocus?.let { focused ->
+                when (action) {
+                    GamepadAction.NAVIGATE_LEFT, GamepadAction.NAVIGATE_RIGHT ->
+                        pspConfirmFocus = if (focused == PSP_CONFIRM_CANCEL) PSP_CONFIRM_APPLY else PSP_CONFIRM_CANCEL
+                    GamepadAction.SELECT -> {
+                        if (focused == PSP_CONFIRM_APPLY) viewModel.applyPspLayout()
+                        pspConfirmFocus = null
+                    }
+                    GamepadAction.BACK -> pspConfirmFocus = null
+                    else -> Unit
+                }
+                return@SettingsScaffold true
+            }
             // Fullscreen wallpaper preview swallows Confirm/Back — either dismisses it, same
             // as tapping, and the focused row underneath can never be activated through it.
             if (state.wallpaperPreviewVisible) {
@@ -322,7 +348,7 @@ fun DisplaySettingsScreen(
                 onClick  = { viewModel.cycleTextLegibility() },
             )
 
-            SettingsGroup("Scale & Layout")
+            SettingsGroup("XMB Layout")
             Text(
                 text     = "Position the XMB live for this screen — scale it, and shift the crossbar " +
                     "up/down and left/right — over the real interface. Each screen size (handheld, " +
@@ -339,6 +365,19 @@ fun DisplaySettingsScreen(
                 label    = "Adjust XMB Layout",
                 sublabel = "Live editor — scale + reposition the crossbar with the D-pad or sliders",
                 onClick  = onOpenXmbLayoutAdjust,
+            )
+
+            // Greyed out while this screen size's saved layout IS the preset; any change saved from
+            // the editor above, a reset to default included, brings it back.
+            SettingsRow(
+                label    = "Biblically Accurate PSP XMB",
+                sublabel = if (state.pspLayoutApplied) {
+                    "Applied to this screen. Change the layout with Adjust XMB Layout to use it again"
+                } else {
+                    "Apply the PSP's own proportions to this screen"
+                },
+                enabled  = !state.pspLayoutApplied,
+                onClick  = { pspConfirmFocus = PSP_CONFIRM_CANCEL },
             )
 
             SettingsRow(
@@ -554,6 +593,14 @@ fun DisplaySettingsScreen(
         )
     }
 
+    pspConfirmFocus?.let { focused ->
+        PspLayoutConfirmPanel(
+            focusedOption = focused,
+            onCancel = { pspConfirmFocus = null },
+            onApply = { viewModel.applyPspLayout(); pspConfirmFocus = null },
+        )
+    }
+
     // Three actions, matching the decision: transient dismiss, a permanent opt-out of the clamp,
     // and a permanent opt-out of the notice (adjustment carries on).
     if (state.textContrastNotice != null) {
@@ -587,6 +634,70 @@ fun DisplaySettingsScreen(
             },
             text = { Text(state.wallpaperMessage!!) },
         )
+    }
+}
+
+private const val PSP_CONFIRM_CANCEL = 0
+private const val PSP_CONFIRM_APPLY = 1
+
+/**
+ * Confirmation for Biblically Accurate PSP XMB. The screen's interceptor drives it: LEFT/RIGHT step
+ * between Cancel and Apply, SELECT activates, BACK cancels. Hand-built rather than an AlertDialog,
+ * whose window receives key events before the pad layer does; App Picker's RemovalConfirmPanel is
+ * the same shape. Opens on Cancel, so a stray double press never replaces a tuned layout.
+ */
+@Composable
+private fun PspLayoutConfirmPanel(focusedOption: Int, onCancel: () -> Unit, onApply: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.6f))
+            .clickable(onClick = onCancel),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            modifier = Modifier
+                .width(380.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(Color(0xF2101018))
+                .border(1.dp, SettingsDivider, RoundedCornerShape(8.dp))
+                // A tap on the panel itself must not fall through to the scrim's cancel.
+                .clickable(enabled = false) {}
+                .padding(20.dp),
+        ) {
+            Text("Apply Biblically Accurate PSP XMB?", color = SettingsText, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "Sets this screen's XMB scale and crossbar position to the PSP's own proportions. " +
+                    "Your current layout for this screen size is replaced; other screen sizes keep theirs.",
+                color = SettingsSubtext,
+                fontSize = 13.sp,
+            )
+            Spacer(Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                PspConfirmOption("Cancel", focusedOption == PSP_CONFIRM_CANCEL, onCancel)
+                PspConfirmOption("Apply", focusedOption == PSP_CONFIRM_APPLY, onApply)
+            }
+        }
+    }
+}
+
+/** One option button. Focus is fill and border only, so the row never shifts as the highlight moves. */
+@Composable
+private fun PspConfirmOption(label: String, focused: Boolean, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(if (focused) SettingsAccent.copy(alpha = 0.25f) else Color.Transparent)
+            .border(1.dp, if (focused) SettingsAccent else Color.Transparent, RoundedCornerShape(6.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+    ) {
+        Text(label, color = if (focused) Color.White else SettingsSubtext, fontSize = 14.sp)
     }
 }
 
