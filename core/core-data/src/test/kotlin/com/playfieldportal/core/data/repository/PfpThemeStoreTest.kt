@@ -80,7 +80,7 @@ class PfpThemeStoreTest {
         )
 
         assertNotNull(saved.previewPath, "a supplied preview becomes the list thumbnail")
-        assertTrue(File(saved.previewPath!!).isFile)
+        assertTrue(File(saved.previewPath).isFile)
     }
 
     @Test

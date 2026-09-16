@@ -67,7 +67,7 @@ class PfpThemeStoreV3Test {
         val prefs = context.pfpDataStore.data.first()
         val motionPath = prefs[KEY_MOTION_WALLPAPER]
         assertNotNull(motionPath, "a bundle carrying motion sets KEY_MOTION_WALLPAPER")
-        assertTrue(File(motionPath!!).isFile, "the motion file was written into the wallpaper dir")
+        assertTrue(File(motionPath).isFile, "the motion file was written into the wallpaper dir")
         assertTrue(PfpThemeStore.KEY_THEME_ICONS_STAMP in prefs.asMap(), "the icon stamp is bumped")
     }
 

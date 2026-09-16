@@ -2442,8 +2442,9 @@ class XMBViewModel @Inject constructor(
                     ?: s.selectedPlatformId
                 Triple(HideLocationType.PLATFORM, s.selectedPlatformId, name)
             }
-            cat != null && cat.isGamingCategory && cat.id != BuiltInCategory.GAMES &&
-                s.selectedPlatformId == null && s.selectedCollectionId == null ->
+            // Reached only when no platform or collection is selected — the branches above
+            // have already claimed every one of those cases.
+            cat != null && cat.isGamingCategory && cat.id != BuiltInCategory.GAMES ->
                 Triple(HideLocationType.CATEGORY, cat.id, cat.name)
             else -> null
         }
@@ -4544,7 +4545,7 @@ class XMBViewModel @Inject constructor(
                 // highlighted option (Cancel or Remove) instead of toggling a grid tile.
                 GamepadAction.SELECT -> {
                     val picker = state.appPicker
-                    if (picker?.confirmingRemovals == true) {
+                    if (picker.confirmingRemovals) {
                         if (picker.confirmFocusedOption == AppPickerState.CONFIRM_REMOVE) commitAppPicker()
                         else cancelConfirm()
                     } else toggleFocusedApp()
@@ -5142,7 +5143,7 @@ class XMBViewModel @Inject constructor(
             // another category (never moved out or removed); custom gaming categories allow
             // move / remove / pin. Move/Add only appear when a real destination exists — a
             // custom gaming category other than the current one (Main Game is never a target).
-            if (inGamingCategory && currentCat != null) {
+            if (inGamingCategory) {
                 val hasOtherCustomCategory = _uiState.value.categories.any {
                     it.isGamingCategory && it.id != BuiltInCategory.GAMES && it.id != currentCat.id
                 }
@@ -5193,7 +5194,7 @@ class XMBViewModel @Inject constructor(
                 packageName = item.packageName,
                 shortcutId  = item.shortcutId,
                 launchIntentUri = item.launchIntentUri,
-                categoryContext = if (inGamingCategory) currentCat?.id else null,
+                categoryContext = if (inGamingCategory) currentCat.id else null,
             )
         )}
     }
@@ -8656,7 +8657,7 @@ class XMBViewModel @Inject constructor(
                     val eligible = item?.gameId != null && item.isRealGame && !s.hasBlockingOverlay &&
                         resolveIconDisplay(item, s.iconDisplayMode, s.iconDisplayModeByPlatform).mode ==
                             IconDisplayMode.ICON0
-                    if (eligible) item?.gameId else null
+                    if (eligible) item.gameId else null
                 }
                 .distinctUntilChanged()
                 .collectLatest { gameId ->

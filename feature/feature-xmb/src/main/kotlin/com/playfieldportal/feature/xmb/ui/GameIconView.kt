@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -95,17 +96,21 @@ fun GameIcon(
             modifier    = modifier,
         )
 
-        // Legacy global icon style — the whole slot becomes the platform's media image.
-        iconStyle == GameIconStyle.CARTRIDGE -> PhysicalMediaIcon(
-            platformId  = item.platformId,
-            accentColor = item.accentColor?.let { Color(it) },
-            title       = item.title,
-            modifier    = modifier,
-        )
+        // Legacy global icon style — the whole slot becomes the platform's media image. Drawn to
+        // the same NATURAL_ART_HEIGHT as Physical Media mode so the two read at one size.
+        iconStyle == GameIconStyle.CARTRIDGE -> NaturalArtSlot(modifier) { artModifier ->
+            PhysicalMediaIcon(
+                platformId  = item.platformId,
+                accentColor = item.accentColor?.let { Color(it) },
+                title       = item.title,
+                modifier    = artModifier,
+            )
+        }
 
         // Icon display modes: per-game override ?: per-console override ?: global. ICON0 keeps the PSP
         // 144:80 edge-to-edge fill (and hosts the ICON1 video snap while focused); the other
-        // modes render their art at natural aspect inside the same fixed layout slot.
+        // modes render their art at natural aspect, drawn to NATURAL_ART_HEIGHT so they read at a
+        // comparable size — the layout slot itself is unchanged (see [NaturalArtSlot]).
         else -> {
             val resolved = resolveIconDisplay(
                 item,
@@ -115,12 +120,14 @@ fun GameIcon(
             when {
                 // Physical Media with nothing scraped: the bundled per-platform cartridge/disc.
                 resolved.mode == IconDisplayMode.PHYSICAL_MEDIA && resolved.uri == null ->
-                    PhysicalMediaIcon(
-                        platformId  = item.platformId,
-                        accentColor = item.accentColor?.let { Color(it) },
-                        title       = item.title,
-                        modifier    = modifier,
-                    )
+                    NaturalArtSlot(modifier) { artModifier ->
+                        PhysicalMediaIcon(
+                            platformId  = item.platformId,
+                            accentColor = item.accentColor?.let { Color(it) },
+                            title       = item.title,
+                            modifier    = artModifier,
+                        )
+                    }
 
                 // Box Art / 3D Box with nothing scraped: a letter tile shaped like the
                 // platform's box — the mode still reads visually even before a scrape.
@@ -128,22 +135,26 @@ fun GameIcon(
                 // branch, whose PspIcon0Icon draws the 144:80 landscape letter tile.)
                 resolved.uri == null &&
                     (resolved.mode == IconDisplayMode.BOX_ART || resolved.mode == IconDisplayMode.BOX_3D) ->
-                    BoxArtPlaceholderIcon(
-                        platformId  = item.platformId,
+                    NaturalArtSlot(modifier) { artModifier ->
+                        BoxArtPlaceholderIcon(
+                            platformId  = item.platformId,
+                            accentColor = item.accentColor?.let { Color(it) },
+                            title       = item.title,
+                            modifier    = artModifier,
+                        )
+                    }
+
+                resolved.naturalAspect -> NaturalArtSlot(modifier) { artModifier ->
+                    NaturalAspectArtIcon(
+                        artworkUri  = resolved.uri!!,
+                        // Box fronts are opaque rectangles and get the PSP frame; 3D boxes and
+                        // cartridge shots are transparent silhouettes and render frameless.
+                        framed      = resolved.uri == item.boxArtUri,
                         accentColor = item.accentColor?.let { Color(it) },
                         title       = item.title,
-                        modifier    = modifier,
+                        modifier    = artModifier,
                     )
-
-                resolved.naturalAspect -> NaturalAspectArtIcon(
-                    artworkUri  = resolved.uri!!,
-                    // Box fronts are opaque rectangles and get the PSP frame; 3D boxes and
-                    // cartridge shots are transparent silhouettes and render frameless.
-                    framed      = resolved.uri == item.boxArtUri,
-                    accentColor = item.accentColor?.let { Color(it) },
-                    title       = item.title,
-                    modifier    = modifier,
-                )
+                }
 
                 else -> {
                     val video = LocalFocusedGameVideo.current
@@ -167,6 +178,33 @@ fun GameIcon(
                 }
             }
         }
+    }
+}
+
+// ── Taller drawing budget for the natural-aspect modes ───────────────────────
+
+/**
+ * Box Art / 3D Box / Physical Media draw their art at natural aspect, so fitting inside the
+ * 126 × 70 ICON0 slot leaves a tall keep case only ~49 dp wide — far smaller on screen than the
+ * ICON0 tile it replaces. These modes get a taller budget and overflow the slot symmetrically.
+ *
+ * 84 dp is the practical ceiling: XMBItemList's ROW_HEIGHT is 88 dp, so anything more and the
+ * tiles in adjacent rows touch.
+ */
+private val NATURAL_ART_HEIGHT = 84.dp
+
+/**
+ * Keeps the LAYOUT slot exactly as the caller sized it (126 × 70) — row pitch, label alignment
+ * and the tap target never move — while handing [content] a taller, centred drawing box. The
+ * overflow is drawn, not clipped, so the art simply reads bigger in the same list.
+ */
+@Composable
+private fun NaturalArtSlot(
+    modifier: Modifier,
+    content: @Composable (Modifier) -> Unit,
+) {
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        content(Modifier.fillMaxWidth().requiredHeight(NATURAL_ART_HEIGHT))
     }
 }
 
@@ -422,11 +460,11 @@ fun CartridgeIcon(
                     lineTo(size.width - notchPx, 0f)
                     lineTo(size.width, notchPx)
                     lineTo(size.width, size.height - radiusPx)
-                    quadraticBezierTo(size.width, size.height, size.width - radiusPx, size.height)
+                    quadraticTo(size.width, size.height, size.width - radiusPx, size.height)
                     lineTo(radiusPx, size.height)
-                    quadraticBezierTo(0f, size.height, 0f, size.height - radiusPx)
+                    quadraticTo(0f, size.height, 0f, size.height - radiusPx)
                     lineTo(0f, radiusPx)
-                    quadraticBezierTo(0f, 0f, radiusPx, 0f)
+                    quadraticTo(0f, 0f, radiusPx, 0f)
                     close()
                 })
         }

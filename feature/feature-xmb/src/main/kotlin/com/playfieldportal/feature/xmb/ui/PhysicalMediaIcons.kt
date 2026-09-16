@@ -30,7 +30,10 @@ fun physicalMediaAssetName(platformId: String?): String? = when (platformId) {
     "wsc"                            -> "wonderswancolor"
 
     // ── Digital-only — no physical media ──────────────────────────────────────
-    "android", "windows", "steam",
+    // "windows" is NOT here: PC games ship on discs, so the card gets windows.png (the same
+    // disc silhouette PS2 uses) rather than falling through to the generic cartridge. Storefront
+    // platforms stay digital-only.
+    "android", "steam",
     "gog", "default"                 -> null
 
     // ── Everything else: platformId == filename ────────────────────────────────
@@ -49,6 +52,7 @@ fun physicalMediaIconRes(platformId: String?): Int? = when (platformId) {
     "saturn", "segacd", "sega32x",
     "dreamcast", "dc", "naomi", "atomiswave",
     "wii", "wiiu",
+    "windows",
     "xbox", "x360", "xbox360"       -> R.drawable.media_disc
 
     "psp"                           -> R.drawable.media_umd
@@ -77,7 +81,7 @@ fun physicalMediaIconRes(platformId: String?): Int? = when (platformId) {
     "pcengine", "pce", "tgfx16"    -> R.drawable.media_hucard
     "c64", "amiga", "msx"          -> R.drawable.media_floppy
 
-    "android", "windows", "steam",
+    "android", "steam",
     "gog", "arcade", "mame",
     "default"                       -> null
 

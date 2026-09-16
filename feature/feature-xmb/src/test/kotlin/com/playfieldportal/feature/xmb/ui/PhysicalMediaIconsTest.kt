@@ -57,7 +57,12 @@ class PhysicalMediaIconsTest {
 
     // Digital-only — must return null
     @Test fun `android returns null`() = assertNull(physicalMediaAssetName("android"))
-    @Test fun `windows returns null`() = assertNull(physicalMediaAssetName("windows"))
+    // Windows games ship on discs, so the card shows the same disc silhouette as PS2
+    // rather than falling through to the generic cartridge.
+    @Test fun `windows resolves to its own disc asset`() =
+        assertEquals("windows", physicalMediaAssetName("windows"))
+    @Test fun `steam stays digital only`() = assertNull(physicalMediaAssetName("steam"))
+    @Test fun `gog stays digital only`() = assertNull(physicalMediaAssetName("gog"))
     @Test fun `null returns null`() = assertNull(physicalMediaAssetName(null))
 
     // ── physicalMediaIconRes: every platform alias has a vector fallback ────────
@@ -77,6 +82,8 @@ class PhysicalMediaIconsTest {
     @Test fun `vb fallback exists`() = assertNotNull(physicalMediaIconRes("vb"))
     @Test fun `ws fallback exists`() = assertNotNull(physicalMediaIconRes("ws"))
     @Test fun `wsc fallback exists`() = assertNotNull(physicalMediaIconRes("wsc"))
+    @Test fun `windows falls back to the generic disc vector`() =
+        assertEquals(com.playfieldportal.feature.xmb.R.drawable.media_disc, physicalMediaIconRes("windows"))
     @Test fun `android fallback is null`() = assertNull(physicalMediaIconRes("android"))
     @Test fun `mame fallback is null`() = assertNull(physicalMediaIconRes("mame"))
 }
