@@ -302,5 +302,17 @@ class StudioSearchTest {
         assertTrue(library.holds(ArtworkKind.SCREENSHOT, tile))
     }
 
+    @Test
+    fun `a single-art slot holds its one asset the same way (task 5-3)`() {
+        // The comparison never looked at how many assets the kind takes; 5.3 relies on that, because
+        // a single-art slot's position-0 record is the whole library it compares against.
+        val library = StudioLibraryAssets.of(ArtworkKind.BOX_ART, listOf(slot(originUrl = "https://sgdb/1.png")))
+        val tile = StudioArt(url = "https://sgdb/1.png", thumb = null, provider = "SteamGridDB")
+
+        assertTrue(library.holds(ArtworkKind.BOX_ART, tile))
+        assertFalse(library.holds(ArtworkKind.BOX_ART, tile.copy(url = "https://sgdb/2.png")))
+        assertFalse("the box art slot says nothing about the hero slot", library.holds(ArtworkKind.HERO, tile))
+    }
+
     private fun art(url: String) = StudioArt(url = url, thumb = null, provider = "test")
 }

@@ -296,10 +296,10 @@ Note: there is **zero existing coverage** for `ArtworkStudioViewModel`, the crop
 | 4.4 | Pending-change and pending-exit prompts (Apply / Discard / Stay) on context switch and exit | C17 | READY |
 | 5.0 | **Render what Phase 0 can already store**: `GameDetailViewModel.kt:265-273` builds the media strip from `find` (one screenshot, one video) — switch it to `findAll` so extra assets are visible at all (AD-13) | 0.3 | DONE |
 | 5.1 | Give `StudioArt` a provider asset id and key cross-page selection on `kind + provider + (providerAssetId ?: url)`, never grid index — see "Task 5.1" under Merge 4 | 1.4, 0.3 | DONE (`fa8c8fc`, `bbc967e`; tests green, device-checked 2026-09-13) |
-| 5.2 | Sequential download queue over the shipped `studioAppendFromUrl`, with per-item states, partial-failure retention, Retry/Remove Failed — see "Task 5.2" under Merge 4 | 5.1 | DONE (tests green, device-checked 2026-09-13; uncommitted) |
-| 5.3 | Duplicate detection through the shipped `findByProviderAssetId` / `findByOriginUrl` / `findByChecksum`, offering View Existing or Replace Existing | 5.1 | READY |
-| 5.4 | Reordering via the shipped `reorderAssets`, primary screenshot (position 0), and storage/size warnings before a large apply | 5.2, 5.0 | READY |
-| 6.1 | Crop profile registry keyed on kind → platform → **game** region → default → source ratio, with Original Image as the universal fallback and a starter profile set (AD-14) | None | READY |
+| 5.2 | Sequential download queue over the shipped `studioAppendFromUrl`, with per-item states, partial-failure retention, Retry/Remove Failed — see "Task 5.2" under Merge 4 | 5.1 | DONE (`8569f33`; shipped as a checklist Apply that also removes, plus a store naming fix — tests green, device-checked 2026-09-13) |
+| 5.3 | Duplicate detection on the **single-art** tabs (5.2 already marks held multi-asset tiles), offering Replace Anyway or Cancel — see "Task 5.3" under Merge 4 | 5.2 | DONE (unit tests green 2026-09-15; the three-way prompt lost its View Existing row during implementation — see the spec; device check outstanding) |
+| 5.4 | A stored-assets manager over the shipped `reorderAssets`: reorder, primary screenshot at position 0, and a count-based warning before a large apply — see "Task 5.4" under Merge 4 | 5.2, 5.0 | DONE (unit tests green 2026-09-15; device check outstanding) |
+| 6.1 | Crop profile registry keyed on kind → platform → **game** region → default → source ratio, with Original Image as the universal fallback and a kind-default starter set — see "Task 6.1" under Merge 5 (AD-14) | None | READY |
 | 6.2 | Live final-result preview for ICON0, box art and physical media from the same crop state | 6.1 | READY |
 | 6.3 | Per-game/category profile override persisted in the shipped `crop_profile_key` column, with Reset to Platform Default | 6.1 | READY |
 | 6.4 | Session Undo Last Apply over metadata, artwork replacement, ordering and crop | 3.2, 5.4, 6.2 | READY |
@@ -330,7 +330,11 @@ rework): the screen measures the grid slot and draws exactly one measured page w
 ViewModel's page size instead of a hardcoded `20`. L.1's Studio tests still pass, 74 across
 `StudioGridCapacityTest`, `ArtworkStudioViewModelTest` and `StudioSearchTest`. `L.3` and `L.4` landed
 in `a9e0d28`. `L.5` and L.6's fixes landed in `f25e065`, and the user closed `L.6` on 2026-09-11. The
-matching-latency tasks `M.0`–`M.6` (see "Matching latency") landed in `75243b9`. Next up: Merge 4.
+matching-latency tasks `M.0`–`M.6` (see "Matching latency") landed in `75243b9`. Merge 4's first
+half then landed: `5.1` in `fa8c8fc` and `bbc967e`, and `5.2` in `8569f33`, which shipped wider than
+planned — a checklist Apply that removes as well as adds, ScreenScraper tile de-duplication, an
+ADDED mark read from the slot's own records, and a store-level portable naming fix. Next up: `5.3`
+and `5.4`, whose specs are under "Merge 4", then crop (`6.1`–`6.3`).
 
 ### What landed, and the decisions taken while landing it
 
@@ -1873,6 +1877,257 @@ in touch mode: report rather than grow the band.
 
 Every task: **if blocked**, stop and report what was attempted, what blocked it, which file caused
 it and what decision is needed (`PLANNING_WORKFLOW.md` §4).
+
+### Landed: 5.1 and 5.2 (2026-09-13)
+
+`5.1` is `fa8c8fc` + `bbc967e`; `5.2` is `8569f33`. Both were device-checked, and the Studio unit
+tests are green. What shipped differs from what was written above, so read this before 5.3:
+
+- **A multi-asset tab is a checklist, not a pick list.** Stored assets start checked. A unchecks one
+  into `removals` (red −) or re-checks it; A on a new asset puts it in `selection`. START / the Apply
+  pill / Apply Changes confirm once, then `commit()` deletes the unchecked positions highest-first
+  and queues the picks. So Apply already **removes**, which 5.4's ordering work has to coexist with.
+- **Held assets are already detected**, by `StudioLibraryAssets.holds` over
+  `RoutingArtworkStore.studioAssetsOnDisk` — provider asset id first, else the origin URL normalized
+  through `ScreenScraperAssetId` so credentials never enter the comparison. A held tile reads ADDED
+  and cannot be picked. This is the duplicate check 5.3 was going to write, already shipped for the
+  multi-asset tabs.
+- **Records whose file no longer opens are not held.** `studioAssetsOnDisk` filters them, so a lost
+  file reads unchecked rather than blocking a re-add.
+- **Store code moved after all**, with approval: `persistPortable` names a new position with
+  `ArtworkFileNaming.nextOrdinal` instead of its position, because `deleteAtAndCompact` renumbers
+  positions without renaming files and `saveFromFile` prunes same-stem predecessors. Ordinals stay
+  ascending with position, with gaps.
+
+**Unconsumed after 5.2**, and named here so 5.3/5.4 do not assume otherwise:
+`ArtworkRecordDao.findByProviderAssetId`, `findByOriginUrl`, `findByChecksum` and
+`RoutingArtworkStore.reorderAssets` are all still called by nothing outside their tests.
+
+### Task 5.3: duplicate detection on the single-art tabs
+
+Read against `8569f33` on 2026-09-15; re-verify line numbers before editing.
+
+**What the tree has, and how it changes this task.** The index row promised duplicate detection
+"through the shipped `findByProviderAssetId` / `findByOriginUrl` / `findByChecksum`". Reading the
+tree corrects that on three points:
+
+- **The multi-asset half is done.** `tileMarkOf` (`ArtworkStudioViewModel.kt:304`) already returns
+  ADDED for an asset the slot holds, and `toggleSelection` refuses to pick it. Re-writing that as a
+  prompt would be a regression: a badge on every duplicate tile beats a dialog per pick.
+- **`findByChecksum` has no data.** `ArtworkRecordEntity.checksum` is written by nothing in the
+  repository — the column exists in the 41→42 DDL and the DAO query, and the entity's own comment
+  says it is "filled lazily by background Verify/Scan", which does not exist. Its KDoc naming it a
+  duplicate-detection mechanism is aspirational. **Assumption taken:** 5.3 drops the checksum leg.
+  Byte-identical files served under two URLs stay undetected until something fills the column;
+  hashing on the write path is explicitly ruled out by that comment.
+- **The DAO queries are the wrong seam.** `StudioLibraryAssets.holds` already does this comparison,
+  is pure, and normalizes ScreenScraper credentials out of the URL. Reuse it rather than exposing two
+  more DAO calls through the store to do the same thing less carefully.
+
+**The real gap.** On a single-art tab (ICON0, BOX ART, HERO, LOGO, ...) `applyCandidate`
+(`ArtworkStudioViewModel.kt:1854`) calls `studioApplyFromUrl` with no check at all, so re-applying
+the asset already in the slot re-downloads it, backs the identical file up as `prevDocumentUri` and
+destroys the one real previous version. Nothing on screen says the focused tile is the current
+artwork either. `refreshLibrary` deliberately leaves `library` empty on single-art tabs
+(`ArtworkStudioViewModel.kt:629-639`), so the Studio does not currently know.
+
+**Second gap, same shape.** `applyCandidate` passes no `providerAssetId`, so single-art records carry
+only `origin_url`. Fix it in this task — `studioApplyFromUrl` already takes the parameter — or the
+comparison this task adds is URL-only forever on exactly the tabs it serves.
+
+**Scope.**
+- `refreshLibrary` populates `library` for single-art kinds too, from the position-0 record
+  (`studioAssetsOnDisk` already returns it; drop the `supportsMultiple` branch).
+- A `StudioTileMark.CURRENT` for a single-art tile the slot already holds, drawn like ADDED but
+  labelled for one slot. `selectsMultiple` still gates picking, so nothing else changes.
+- `applyCandidate` passes `art.providerAssetId`.
+- Apply on a tile the slot already holds opens a prompt on the shared context-menu overlay, the same
+  one 5.2's confirmations use: **Cancel**, then **Replace Anyway** (the current apply, unchanged).
+  Cursor on Cancel — the press is almost always a slip, so the safe entry is first.
+- **Corrected during implementation (2026-09-15):** this was specced as a three-way prompt with a
+  **View Existing** row first. There is nothing for it to do. Reaching Apply on a single-art tab
+  means A already opened the candidate overlay, so the image is on screen, and the stored asset the
+  prompt is about is that same image — the row offered to close the preview and show you the
+  preview. Two rows.
+- The prompt never fires on a multi-asset tab; those tiles cannot reach Apply.
+
+**Do not change:** the queue, the checklist, `removals`, ordering (5.4), the 100-asset cap (5.4),
+`persistPortable`, or any DAO.
+
+**Acceptance.**
+- Apply on the tile that is already the box art prompts; Replace Anyway re-downloads exactly as
+  today; Cancel leaves the slot untouched and the candidate open.
+- Applying a different tile does not prompt.
+- A ScreenScraper tile whose stored URL differs only in credentials is recognized as the same asset.
+- After one apply, re-opening the Studio still recognizes it — i.e. `provider_asset_id` was written.
+- Multi-asset tabs behave exactly as they do today: ADDED badge, no prompt.
+
+**Budget.** `ArtworkStudioViewModel.kt`, `StudioSearch.kt`, `ArtworkStudioActions.kt`,
+`ArtworkStudioPreview.kt` (no-op), `ArtworkStudioScreen.kt`; tests in `ArtworkStudioViewModelTest`
+and `StudioSearchTest`.
+
+**Stop if** the prompt cannot reuse 5.2's overlay without a fourth overlay early-return in the
+screen: report instead, because C17 is about to collapse those onto the engine's modal stack.
+
+### Task 5.4: the stored-assets manager
+
+Read against `8569f33` on 2026-09-15; re-verify line numbers before editing.
+
+**What the tree has.** `RoutingArtworkStore.reorderAssets` is shipped, tested and called by nothing.
+Nothing else is: the Studio has **no surface that lists a slot's stored assets**. The rail shows one
+thumbnail from `currentUri`, which `refreshCurrent` reads through `artworkStore.find` — position 0
+only. `StudioLibraryAssets.slots` holds the full ordered list already (with `sizeBytes`), so the data
+is in state; only the UI is missing. That UI, not the reorder call, is this task's real cost.
+
+**Three things found reading for this task:**
+
+- **Reorder is row-only, and renaming under it is ruled out.** `reorderAssets` writes 0..n-1 over
+  the rows (`ArtworkRecordDao.reorder:96`) while the files keep their ordinal names, and Relink
+  derives position straight from the name (`sortOrder = ordinalOf(fileStem)`,
+  `ArtworkImportManager.kt:405`). So after a Relink a reordered slot is back in ordinal order.
+  **This is Relink working as designed, not a defect**: the folder is the source of truth, which is
+  what lets artwork reconnect to re-imported games. The Windows PC export (`c9599a8`) leans on the
+  same property directly — a `.pfpgame` records each asset's `portableName`, and re-import claims
+  records back by exact name (`PcGameImportPlanner.kt:203-226`). **So the manager must not rename
+  files to express an order**: renaming would break those claims for every exported Windows game,
+  on top of not being atomic over SAF and contradicting `persistPortable`'s "a rewrite keeps its
+  file's name" rule. The manager reorders rows and says plainly that a Relink restores file order.
+- **The 100-asset cap silently overwrites.** `nextSortOrder` coerces to `MAX_SORT_ORDER` (99), so an
+  append to a full slot rewrites position 99 instead of failing. The index row's "warnings before a
+  large apply" is really this: Apply must refuse, or warn and clamp, when picks + stored > 100.
+- **There is no free-space API in this repository** — no `StatFs`, no `getFreeSpace`, anywhere — and
+  the portable library is a SAF tree, where free space is not reliably readable. `StudioArt` also
+  carries no size, so a pending pick's size is unknown until it is downloaded. **A byte-based
+  storage warning is therefore out of scope**; the warning is count-based against the cap, and the
+  manager may show stored bytes from `StudioArtworkSlot.sizeBytes`, which is real.
+
+**Scope.**
+- A stored-assets manager over the active multi-asset slot, reached from the Triangle menu
+  (`StudioAction.MANAGE_ASSETS`) and a rail pill in touch mode: the slot's assets in order, with
+  position 0 labelled the primary.
+- Move Up / Move Down on the focused asset, committed through `reorderAssets` with the full order;
+  Set as Primary moves it to position 0. `refreshCurrent` after each, so the rail and the Game Detail
+  strip (5.0's `findAll`) follow.
+- Apply refuses and explains when `stored - removals + picks > MAX_SORT_ORDER + 1`, naming how many
+  must be unchecked. Checked in `applyChanges` before the confirmation opens, so the confirmation is
+  never the thing that overflows.
+- The manager is read-and-reorder only: removal stays the checklist's job, so there is one way to
+  delete an asset, not two.
+
+**Do not change:** the queue, the checklist, `removals`, `persistPortable`'s naming, crop (6.x), or
+`nextSortOrder`'s clamp (the cap is enforced above it, not inside it).
+
+**Acceptance.**
+- Move Down on the primary makes the second asset primary; the rail and the Game Detail strip both
+  follow without reopening the Studio.
+- The order holds across a tab switch, a close and a reopen. It is not expected to hold across
+  a Relink, which rebuilds position from the filenames on purpose.
+- Apply with picks that would exceed 100 refuses, names the number, and adds nothing.
+- The manager opens on SCREENSHOT and VIDEO only, and is absent from the menu on single-art tabs.
+- A slot whose files were lost still opens the manager without crashing (`studioAssetsOnDisk`).
+
+**Budget.** `ArtworkStudioViewModel.kt`, `ArtworkStudioActions.kt`, `ArtworkStudioScreen.kt`,
+`ArtworkStudioPreview.kt` (no-op), plus one new `StudioAssetManager.kt` for the panel; tests in
+`ArtworkStudioViewModelTest`.
+
+**Stop if** a reorder turns out to need a file rename after all — that crosses into the PC export's
+name-based claims and is a separate decision — or if the panel cannot be drawn without changing the
+measured grid slot (L.2's invariant): report rather than resize.
+
+## Merge 5: crop profiles (6.1–6.3)
+
+### Task 6.1: the crop profile registry
+
+Read against the working tree on 2026-09-15; re-verify line numbers before editing.
+
+**What the tree has.** The whole of today's crop profile logic is one function:
+
+```kotlin
+private fun cropTargetAspect(kind: ArtworkKind, srcAspect: Float): Float = when (kind) {
+    ArtworkKind.ICON, ArtworkKind.ICON1 -> 144f / 80f   // XMB tile container
+    ArtworkKind.HERO                    -> 920f / 430f
+    ArtworkKind.BACKGROUND              -> 16f / 9f
+    else                                -> srcAspect     // free crop
+}
+```
+
+`ArtworkStudioViewModel.kt:2260`, with exactly **one** call site, `recomputeCropRect` at `:2322`.
+There is no registry, no platform tier, no region tier, and no key. Three things follow:
+
+- **"Original Image" already ships, under another name.** `else -> srcAspect` is the universal
+  fallback AD-11 asks for. The registry renames it rather than introducing it, so the fallback path
+  is the one that is already on devices.
+- **Both keys AD-14 needs are available and neither is plumbed.** `Game.platformId` (String) and
+  `Game.region` (`GameRegion?`, `NTSC_U / PAL / NTSC_J`, null when the scan could not tell). The
+  Studio already holds the game in `uiState.game`, so resolution needs no new data source — but
+  `cropTargetAspect` is handed neither today.
+- **`crop_profile_key` is written by nothing.** The column exists (`ArtworkRecordEntity.kt:111`) and
+  is only carried forward — `persistPortable` (`RoutingArtworkStore.kt:497`) and
+  `ArtworkImportManager.kt:483` both copy the prior value. It joins `findByChecksum` and
+  `reorderAssets` on the shipped-but-unconsumed list. **6.1 does not write it either**; 6.3 is the
+  task that does. 6.1 only has to make sure every resolution *produces* a key worth persisting.
+
+**Decisions taken.**
+
+1. **The registry lives in `:feature:feature-artwork`, not `:feature:feature-xmb`.** It is data about
+   artwork, `ArtworkKind` is already there, and 6.3 persists its key through the store. Keep it pure
+   Kotlin — no Android imports — so it unit-tests without Robolectric, unlike everything in the
+   Studio's own test class.
+2. **The starter set is the kind defaults only.** The platform and region tiers are built, resolved
+   and tested, but ship empty. AD-11's own reasoning is the argument: a wrong ratio is a visible bad
+   crop on every game of that platform, nobody has supplied real per-platform ratios, and adding a
+   row later is a data edit rather than a code change — which is precisely the property the registry
+   exists to give. **Consequence, stated plainly: 6.1 changes no pixels.** That is the intended
+   outcome. It is the mechanism, provable by tests, carrying zero crop-regression risk into a merge
+   whose next two tasks (6.2's live preview, 6.3's override) both stand on it.
+3. **The table is injectable.** A `CropProfileRegistry` built from a map, with the shipped table as
+   its default instance, so the platform and region tiers can be proven against a test table without
+   shipping a guessed ratio to prove them.
+
+**Scope.**
+
+- New `CropProfiles.kt` in `feature-artwork/store/`:
+  - `data class CropProfile(val key: String, val aspect: Float?)` — a **null** aspect means Original
+    Image, i.e. frame at the source's own ratio. Null rather than a sentinel float, so "no target"
+    cannot be arithmetic'd by accident.
+  - `class CropProfileRegistry(entries: Map<String, Float>)` with
+    `fun resolve(kind: ArtworkKind, platformId: String?, region: GameRegion?): CropProfile`,
+    resolving **kind → platform → game region → kind default → Original Image** (AD-14's order, with
+    artwork region deliberately absent).
+  - Keys are stable, human-readable and parseable, because 6.3 persists them: `"ICON:psx:NTSC_U"`,
+    `"ICON:psx"`, `"ICON"`, `"original"`.
+  - `companion object { val Default }` carrying the shipped table: ICON and ICON1 `144/80`, HERO
+    `920/430`, BACKGROUND `16/9`. Nothing else — every other kind resolves to Original Image.
+- `cropTargetAspect` is deleted. `recomputeCropRect` resolves through the registry, passing the open
+  game's `platformId` and `region`, and uses the source ratio when the resolved aspect is null.
+- Tests in a new `CropProfilesTest` (`:feature:feature-artwork`): the four shipped kinds resolve to
+  today's exact ratios; a platform row beats the kind default and a region row beats the platform row
+  (against a test table); an unknown platform and a null region fall back correctly; every resolution
+  returns a non-empty key.
+
+**Do not change:** `recomputeCropRect`'s window arithmetic, `saveCropBaked`, `has_original`, the crop
+editor UI or its gamepad handling, `crop_profile_key` (6.3 owns writing it), and `STUDIO_TABS`'
+`tileClass.aspect` — that is the **grid tile's** shape, a different number from the crop target that
+happens to look similar. Do not add platform rows to the shipped table in this task.
+
+**Acceptance.**
+
+- ICON and ICON1 frame at 144:80, HERO at 920:430, BACKGROUND at 16:9, and every other kind at the
+  source's own ratio — identical to today, proven against the real shipped registry rather than a
+  test fixture.
+- With a platform row present, it beats the kind default; with a region row present, it beats the
+  platform row. Proven against a test table.
+- An unknown platform, or a game whose region is null, resolves to the kind default and then to
+  Original Image without throwing.
+- Every `resolve` returns a `CropProfile` with a key; no path returns a bare `Float`.
+- Cropping a game with no region set opens and frames exactly as it does today.
+
+**Budget.** New `CropProfiles.kt` and new `CropProfilesTest` (both `:feature:feature-artwork`);
+`ArtworkStudioViewModel.kt`. No migration, no new dependency, no change to the store's API.
+
+**Stop if** the registry resolves any of the four shipped kinds to a ratio that differs from what
+`cropTargetAspect` returns today. Those are approved UI values — report the discrepancy rather than
+"correcting" either side, because a silent ratio change here re-crops artwork on every device.
 
 ## Deferred to a follow-up plan
 

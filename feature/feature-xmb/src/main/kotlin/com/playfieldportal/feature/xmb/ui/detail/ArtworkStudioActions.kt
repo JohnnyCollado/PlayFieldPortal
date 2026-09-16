@@ -45,9 +45,20 @@ interface ArtworkStudioActions {
 
     // Apply and the download queue
     fun applyChanges()
-    fun resolveApplyConfirm(choice: StudioApplyChoice)
+
+    // Confirmations (apply, replace) — one overlay, so one activation and one dismissal. The
+    // ViewModel routes them by which confirmation ArtworkStudioUiState.confirmPrompt describes.
+    fun resolveConfirm(index: Int)
+    fun dismissConfirm()
     fun retryFailed()
     fun removeFailed()
+
+    // Stored-assets manager (task 5.4) — reorder only; removal stays the checklist's job.
+    fun openAssetManager()
+    fun closeAssetManager()
+    fun focusManagedAsset(index: Int)
+    fun moveManagedAsset(delta: Int)
+    fun makeManagedAssetPrimary()
     fun resolveLeavePrompt(choice: StudioLeaveChoice)
 
     // Candidate preview

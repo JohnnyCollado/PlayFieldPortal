@@ -44,9 +44,15 @@ private object PreviewStudioActions : ArtworkStudioActions {
     override fun previousPage() = Unit
     override fun nextPage() = Unit
     override fun applyChanges() = Unit
-    override fun resolveApplyConfirm(choice: StudioApplyChoice) = Unit
+    override fun resolveConfirm(index: Int) = Unit
+    override fun dismissConfirm() = Unit
     override fun retryFailed() = Unit
     override fun removeFailed() = Unit
+    override fun openAssetManager() = Unit
+    override fun closeAssetManager() = Unit
+    override fun focusManagedAsset(index: Int) = Unit
+    override fun moveManagedAsset(delta: Int) = Unit
+    override fun makeManagedAssetPrimary() = Unit
     override fun resolveLeavePrompt(choice: StudioLeaveChoice) = Unit
     override fun applyCandidate() = Unit
     override fun dismissCandidate() = Unit

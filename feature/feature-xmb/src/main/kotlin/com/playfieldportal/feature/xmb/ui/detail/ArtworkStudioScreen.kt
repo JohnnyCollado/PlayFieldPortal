@@ -1228,21 +1228,17 @@ internal fun ArtworkStudioContent(
             )
         }
 
-        // ── Apply confirmation (task 5.2): START, the Apply pill or Apply Changes ──
-        if (state.applyConfirmOpen) {
-            val changes = state.queueSummary
+        // ── Confirmations: the apply confirmation (5.2) and the replace prompt (5.3) ──
+        // Both are described by state.confirmPrompt, so a further one needs no block of its own.
+        state.confirmPrompt?.let { prompt ->
             com.playfieldportal.core.ui.components.PspContextMenuOverlay(
-                title = studioApplyTitle(STUDIO_TABS[state.tabIndex].kind, changes.toAdd, changes.toRemove),
-                rows = StudioApplyChoice.entries.map {
-                    // Apply reads as destructive when it deletes stored artwork.
-                    com.playfieldportal.core.ui.components.PspMenuRow(
-                        it.label,
-                        isDestructive = it == StudioApplyChoice.APPLY && changes.toRemove > 0,
-                    )
+                title = prompt.title,
+                rows = prompt.rows.map {
+                    com.playfieldportal.core.ui.components.PspMenuRow(it.label, isDestructive = it.isDestructive)
                 },
-                selectedIndex = state.applyConfirmIndex,
-                onRowActivated = { index -> actions.resolveApplyConfirm(StudioApplyChoice.entries[index]) },
-                onDismiss = { actions.resolveApplyConfirm(StudioApplyChoice.CANCEL) },
+                selectedIndex = prompt.selectedIndex,
+                onRowActivated = actions::resolveConfirm,
+                onDismiss = actions::dismissConfirm,
                 scrim = Color(0xA6000000),
             )
         }
@@ -1310,6 +1306,22 @@ internal fun ArtworkStudioContent(
             }
         }
 
+        // ── Stored-assets manager (task 5.4) ──────────────────────────────────
+        if (state.managerOpen) {
+            StudioAssetManagerPanel(
+                kindLabel = STUDIO_TABS[state.tabIndex].label,
+                assets = state.managedAssets,
+                focusedIndex = state.managerIndex,
+                busy = state.managerBusy,
+                showTouchControls = showTouchControls,
+                accent = accent,
+                onFocus = actions::focusManagedAsset,
+                onMove = actions::moveManagedAsset,
+                onMakePrimary = actions::makeManagedAssetPrimary,
+                onClose = actions::closeAssetManager,
+            )
+        }
+
         // ── Crop / position editor ────────────────────────────────────────────
         state.cropEditorPath?.let { path ->
             StudioCropEditor(
@@ -1333,9 +1345,9 @@ internal fun ArtworkStudioContent(
 }
 
 /**
- * A tile's corner badge (tasks 5.1, 5.2): a new pick is an accent check, a stored asset a green check,
- * an unchecked stored asset a red ring with "−", waiting an accent ring, downloading spins and failed a
- * red "!".
+ * A tile's corner badge (tasks 5.1, 5.2, 5.3): a new pick is an accent check, a stored asset a green
+ * check, the single-art tile the slot already holds a green dot, an unchecked stored asset a red ring
+ * with "−", waiting an accent ring, downloading spins and failed a red "!".
  */
 @Composable
 private fun StudioTileBadge(
@@ -1378,6 +1390,14 @@ private fun StudioTileBadge(
             modifier = modifier,
             size = size,
         )
+        // Same green as ADDED — it is the same fact, that the slot holds this asset — but a dot
+        // rather than a check, because a single-art tile was never added to anything.
+        StudioTileMark.CURRENT -> Box(
+            modifier.size(size).background(Color(0xFF66BB6A), circle),
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(Modifier.size(6.dp).background(markColor, circle))
+        }
         StudioTileMark.FAILED -> Box(
             modifier.size(size).background(Color(0xFFE57373), circle),
             contentAlignment = Alignment.Center,
@@ -1395,7 +1415,7 @@ private fun StudioInfoRow(label: String, value: String) {
     }
 }
 
-private fun formatBytes(bytes: Long): String = when {
+internal fun formatBytes(bytes: Long): String = when {
     bytes <= 0L        -> "—"
     bytes < 1024       -> "$bytes B"
     bytes < 1024 * 1024 -> "%.1f KB".format(java.util.Locale.US, bytes / 1024.0)

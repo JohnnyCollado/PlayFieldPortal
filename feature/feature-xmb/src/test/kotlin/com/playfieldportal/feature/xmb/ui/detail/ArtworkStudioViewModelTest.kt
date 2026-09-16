@@ -1995,6 +1995,252 @@ class ArtworkStudioViewModelTest {
         assertEquals(listOf("tgdb-box", "tgdb-fanart", "tgdb-logo"), vm.uiState.value.results.map { it.url })
     }
 
+    // ── Duplicate detection on the single-art tabs (task 5.3) ─────────────────
+
+    /**
+     * SteamGridDB on BOX ART with the grid focused (grids1, grids2), and [stored] as what the slot
+     * already holds. A single-art tab, so A previews rather than picks.
+     */
+    private suspend fun kotlinx.coroutines.test.TestScope.boxArtGridOnSgdb(
+        stored: com.playfieldportal.feature.artwork.store.StudioArtworkSlot? = null,
+    ): ArtworkStudioViewModel {
+        coEvery { steamGridDb.getArt(any(), any(), any(), any(), any()) } answers {
+            val type = secondArg<SgdbArtType>()
+            Result.success((1..2).map { SgdbArtItem(id = it.toLong(), url = "${type.endpoint}$it") })
+        }
+        coEvery { routingStore.studioAssetsOnDisk(1L, ArtworkKind.BOX_ART) } returns listOfNotNull(stored)
+        val vm = loadedOn(StudioSource.STEAMGRIDDB)
+        vm.selectTab(STUDIO_TABS.indexOfFirst { it.kind == ArtworkKind.BOX_ART })
+        advanceUntilIdle()
+        vm.selectSource(vm.sourcesForTab().indexOf(StudioSource.STEAMGRIDDB))
+        advanceUntilIdle()
+        vm.handleGamepadAction(GamepadAction.SELECT)   // into the grid
+        return vm
+    }
+
+    /** What the box art slot holds, stored from [originUrl]. */
+    private fun storedBoxArt(originUrl: String, providerAssetId: String? = null) =
+        com.playfieldportal.feature.artwork.store.StudioArtworkSlot(
+            sortOrder = 0, documentUri = "content://box", provider = "SteamGridDB",
+            originUrl = originUrl, providerAssetId = providerAssetId, sizeBytes = 1,
+        )
+
+    @Test
+    fun `the tile already in the single-art slot reads as current`() = runTest(testDispatcher) {
+        val vm = boxArtGridOnSgdb(storedBoxArt("grids1", providerAssetId = "grids:1"))
+
+        val results = vm.uiState.value.results
+        // CURRENT, not ADDED: there is one slot, so the tile IS the artwork rather than one of a set.
+        assertEquals(StudioTileMark.CURRENT, vm.uiState.value.tileMarkOf(results[0]))
+        assertEquals(StudioTileMark.NONE, vm.uiState.value.tileMarkOf(results[1]))
+    }
+
+    @Test
+    fun `Apply on the current tile asks first, and Cancel leaves the slot untouched`() = runTest(testDispatcher) {
+        val vm = boxArtGridOnSgdb(storedBoxArt("grids1", providerAssetId = "grids:1"))
+        vm.handleGamepadAction(GamepadAction.SELECT)   // A previews the focused tile
+
+        vm.applyCandidate()
+
+        val prompt = vm.uiState.value.confirmPrompt
+        assertEquals(StudioConfirmKind.REPLACE, prompt?.kind)
+        // Cancel is first, so a stray A cannot overwrite the one stored previous version.
+        assertEquals(StudioReplaceChoice.CANCEL.label, prompt?.rows?.first()?.label)
+        assertEquals(0, prompt?.selectedIndex)
+        coVerify(exactly = 0) { routingStore.studioApplyFromUrl(any(), any(), any(), any(), any(), any()) }
+
+        vm.dismissConfirm()   // B
+        advanceUntilIdle()
+
+        assertEquals(null, vm.uiState.value.confirmPrompt)
+        // The candidate stays open: cancelling the question must not also cancel the preview.
+        assertEquals("grids1", vm.uiState.value.candidate?.url)
+        coVerify(exactly = 0) { routingStore.studioApplyFromUrl(any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `Replace Existing applies, recording the provider asset id`() = runTest(testDispatcher) {
+        coEvery {
+            routingStore.studioApplyFromUrl(any(), any(), any(), any(), any(), any())
+        } returns "content://replaced"
+        val vm = boxArtGridOnSgdb(storedBoxArt("grids1", providerAssetId = "grids:1"))
+        vm.handleGamepadAction(GamepadAction.SELECT)
+        vm.applyCandidate()
+
+        vm.resolveConfirm(StudioReplaceChoice.entries.indexOf(StudioReplaceChoice.REPLACE))
+        advanceUntilIdle()
+
+        // Without the asset id the record would carry only origin_url, and the next open's
+        // comparison would be URL-only on exactly the tabs this task serves.
+        coVerify {
+            routingStore.studioApplyFromUrl(1L, ArtworkKind.BOX_ART, "grids1", any(), any(), "grids:1")
+        }
+        assertEquals(null, vm.uiState.value.confirmPrompt)
+        assertEquals("content://replaced", vm.uiState.value.currentUri)
+    }
+
+    @Test
+    fun `applying a tile the slot does not hold never asks`() = runTest(testDispatcher) {
+        coEvery {
+            routingStore.studioApplyFromUrl(any(), any(), any(), any(), any(), any())
+        } returns "content://grids2"
+        val vm = boxArtGridOnSgdb(storedBoxArt("grids1", providerAssetId = "grids:1"))
+        vm.handleGamepadAction(GamepadAction.NAVIGATE_RIGHT)
+        vm.handleGamepadAction(GamepadAction.SELECT)
+
+        vm.applyCandidate()
+        advanceUntilIdle()
+
+        assertEquals(null, vm.uiState.value.confirmPrompt)
+        coVerify { routingStore.studioApplyFromUrl(1L, ArtworkKind.BOX_ART, "grids2", any(), any(), "grids:2") }
+    }
+
+    @Test
+    fun `a record stored without an asset id is still matched by its URL`() = runTest(testDispatcher) {
+        // Every single-art record written before this task is exactly this shape.
+        val vm = boxArtGridOnSgdb(storedBoxArt("grids1"))
+
+        assertEquals(StudioTileMark.CURRENT, vm.uiState.value.tileMarkOf(vm.uiState.value.results[0]))
+    }
+
+    @Test
+    fun `a multi-asset tab still adds without asking`() = runTest(testDispatcher) {
+        val slot = com.playfieldportal.feature.artwork.store.StudioArtworkSlot(
+            sortOrder = 0, documentUri = "content://s0", provider = "SteamGridDB",
+            originUrl = "grids1", providerAssetId = "grids:1", sizeBytes = 1,
+        )
+        coEvery { routingStore.studioAssetsOnDisk(1L, ArtworkKind.SCREENSHOT) } returns listOf(slot)
+        val vm = screenshotGridOnSgdb(perType = 1)
+
+        // Held tiles read ADDED and refuse to be picked, so Apply is unreachable for them (5.2).
+        assertEquals(StudioTileMark.ADDED, vm.uiState.value.tileMarkOf(vm.uiState.value.results[0]))
+        vm.handleGamepadAction(GamepadAction.SELECT)
+        assertEquals(null, vm.uiState.value.confirmPrompt)
+        assertTrue(vm.uiState.value.selection.isEmpty())
+    }
+
+    // ──────────────────────── Stored-assets manager (task 5.4) ────────────────────────
+
+    private fun storedScreenshot(sortOrder: Int) =
+        com.playfieldportal.feature.artwork.store.StudioArtworkSlot(
+            sortOrder = sortOrder, documentUri = "content://s$sortOrder", provider = "SteamGridDB",
+            originUrl = "stored$sortOrder", providerAssetId = null, sizeBytes = 10,
+        )
+
+    /** The screenshot grid with [count] assets already stored in the slot, manager open. */
+    private suspend fun kotlinx.coroutines.test.TestScope.managerOn(count: Int): ArtworkStudioViewModel {
+        coEvery { routingStore.studioAssetsOnDisk(1L, ArtworkKind.SCREENSHOT) } returns
+            (0 until count).map(::storedScreenshot)
+        val vm = screenshotGridOnSgdb(perType = 1)
+        vm.openAssetManager()
+        return vm
+    }
+
+    @Test
+    fun `moving the primary down makes the next asset primary`() = runTest(testDispatcher) {
+        val vm = managerOn(count = 3)
+
+        vm.moveManagedAsset(+1)
+        advanceUntilIdle()
+
+        // The slot's positions in their new order — rows only, so the files keep their names.
+        coVerify { routingStore.reorderAssets(1L, ArtworkKind.SCREENSHOT, listOf(1, 0, 2)) }
+        // The cursor follows the asset it moved, not the position it left.
+        assertEquals(1, vm.uiState.value.managerIndex)
+        // The rail reads position 0, so it has to be re-read after the write.
+        coVerify(atLeast = 1) { artworkStore.find(1L, ArtworkKind.SCREENSHOT, any()) }
+    }
+
+    @Test
+    fun `Make First moves the focused asset to position 0`() = runTest(testDispatcher) {
+        val vm = managerOn(count = 3)
+        vm.focusManagedAsset(2)
+
+        vm.makeManagedAssetPrimary()
+        advanceUntilIdle()
+
+        coVerify { routingStore.reorderAssets(1L, ArtworkKind.SCREENSHOT, listOf(2, 0, 1)) }
+        assertEquals(0, vm.uiState.value.managerIndex)
+    }
+
+    @Test
+    fun `a move off either end does nothing`() = runTest(testDispatcher) {
+        val vm = managerOn(count = 2)
+
+        vm.moveManagedAsset(-1)            // already first
+        vm.focusManagedAsset(1)
+        vm.moveManagedAsset(+1)            // already last
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) { routingStore.reorderAssets(any(), any(), any()) }
+    }
+
+    @Test
+    fun `a slot whose files were all lost opens the manager without moving anything`() = runTest(testDispatcher) {
+        // studioAssetsOnDisk drops records whose file no longer opens, so this is the real shape.
+        val vm = managerOn(count = 0)
+
+        assertTrue(vm.uiState.value.managerOpen)
+        assertTrue(vm.uiState.value.managedAssets.isEmpty())
+        vm.makeManagedAssetPrimary()
+        vm.moveManagedAsset(+1)
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) { routingStore.reorderAssets(any(), any(), any()) }
+    }
+
+    @Test
+    fun `the manager is offered only where there is an order to change`() = runTest(testDispatcher) {
+        val several = managerOn(count = 2)
+        assertTrue(StudioAction.MANAGE_ASSETS in several.uiState.value.availableActions)
+
+        coEvery { routingStore.studioAssetsOnDisk(1L, ArtworkKind.SCREENSHOT) } returns listOf(storedScreenshot(0))
+        val one = screenshotGridOnSgdb(perType = 1)
+        assertFalse("one asset has no order", StudioAction.MANAGE_ASSETS in one.uiState.value.availableActions)
+
+        val single = boxArtGridOnSgdb(storedBoxArt("grids1"))
+        assertFalse("single-art tab", StudioAction.MANAGE_ASSETS in single.uiState.value.availableActions)
+        single.openAssetManager()
+        assertFalse("and it refuses to open there", single.uiState.value.managerOpen)
+    }
+
+    // ──────────────────────── The 100-asset cap (task 5.4) ────────────────────────
+
+    @Test
+    fun `Apply refuses when the picks would not fit, and adds nothing`() = runTest(testDispatcher) {
+        val full = (0..99).map(::storedScreenshot)   // MAX_SORT_ORDER + 1 positions, all taken
+        coEvery { routingStore.studioAssetsOnDisk(1L, ArtworkKind.SCREENSHOT) } returns full
+        val vm = screenshotGridOnSgdb(perType = 1)
+        vm.toggleSelection(0)                        // not one of the stored ones, so it is a new pick
+        assertEquals(1, vm.uiState.value.overCapacityBy)
+
+        vm.applyChanges()
+        advanceUntilIdle()
+
+        // nextSortOrder clamps instead of refusing, so a confirmation here would overwrite position 99.
+        assertFalse(vm.uiState.value.applyConfirmOpen)
+        assertEquals("A game holds 100 screenshots at most — uncheck 1 to apply", vm.uiState.value.message)
+        assertEquals(1, vm.uiState.value.selectedOnTab)
+        coVerify(exactly = 0) { routingStore.studioAppendFromUrl(any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `unchecking a stored asset buys back the position a pick needs`() = runTest(testDispatcher) {
+        // Position 0 holds the first grid tile, so that tile is on screen and can be unchecked.
+        val full = (0..99).map(::storedScreenshot).toMutableList()
+        full[0] = full[0].copy(originUrl = "grids1")
+        coEvery { routingStore.studioAssetsOnDisk(1L, ArtworkKind.SCREENSHOT) } returns full
+        val vm = screenshotGridOnSgdb(perType = 1)
+
+        vm.toggleSelection(1)   // a new pick: over by one
+        assertEquals(1, vm.uiState.value.overCapacityBy)
+        vm.toggleSelection(0)   // uncheck the stored one: back to exactly full
+
+        assertEquals(0, vm.uiState.value.overCapacityBy)
+        vm.applyChanges()
+        assertTrue(vm.uiState.value.applyConfirmOpen)
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private suspend fun kotlinx.coroutines.test.TestScope.loadedOnTab(kind: ArtworkKind): ArtworkStudioViewModel {

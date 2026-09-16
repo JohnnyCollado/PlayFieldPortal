@@ -85,8 +85,12 @@ data class StudioQueueItem(
     val state: StudioQueueState,
 )
 
-/** What a tile's corner badge shows (tasks 5.1, 5.2). A stored asset reads as checked ([ADDED]) until unchecked. */
-enum class StudioTileMark { NONE, PICKED, QUEUED, DOWNLOADING, ADDED, FAILED, TO_REMOVE }
+/**
+ * What a tile's corner badge shows (tasks 5.1, 5.2, 5.3). A stored asset reads as checked ([ADDED])
+ * until unchecked; on a single-art tab the one asset the slot holds reads as [CURRENT] instead,
+ * because there is nothing to add it to — it already IS the artwork.
+ */
+enum class StudioTileMark { NONE, PICKED, QUEUED, DOWNLOADING, ADDED, CURRENT, FAILED, TO_REMOVE }
 
 /**
  * The page line's account of the active tab: [toAdd] new picks and [toRemove] unchecked stored assets
@@ -115,6 +119,38 @@ enum class StudioApplyChoice(val label: String) {
     APPLY("Apply"),
     CANCEL("Cancel"),
 }
+
+/**
+ * The replace prompt's rows, in order: Apply on a single-art tile the slot already holds (task 5.3).
+ *
+ * [CANCEL] is first because the press it answers is almost always a slip. There is no third "view it"
+ * row: A opened the candidate to get here, so the image is already on screen, and the stored asset is
+ * that same image. Replacing re-downloads identical bytes and backs them up over the one real
+ * previous version — nothing gained, one version lost.
+ */
+enum class StudioReplaceChoice(val label: String) {
+    CANCEL("Cancel"),
+    REPLACE("Replace Anyway"),
+}
+
+/** Which confirmation [StudioConfirmPrompt] describes — what activating a row resolves. */
+enum class StudioConfirmKind { APPLY, REPLACE }
+
+/** One row of a confirmation overlay. */
+data class StudioConfirmRow(val label: String, val isDestructive: Boolean = false)
+
+/**
+ * The open confirmation, or null when none is. The screen renders this one descriptor and the
+ * gamepad handler serves this one branch, so a further confirmation is a new builder here rather
+ * than another overlay early-return in the screen — which C17 is about to collapse onto the
+ * engine's modal stack anyway.
+ */
+data class StudioConfirmPrompt(
+    val kind: StudioConfirmKind,
+    val title: String,
+    val rows: List<StudioConfirmRow>,
+    val selectedIndex: Int,
+)
 
 /** "3 screenshots", "1 video": [count] assets of [kind], for the confirmation's title. */
 fun studioAssetCount(kind: ArtworkKind, count: Int): String {
@@ -212,6 +248,15 @@ data class ArtworkStudioUiState(
     // START, the Apply pill or Apply Changes asked to apply this tab's changes: Apply / Cancel.
     val applyConfirmOpen: Boolean = false,
     val applyConfirmIndex: Int = 0,
+    // Apply was pressed on a single-art tile the slot already holds: View / Replace / Cancel (5.3).
+    val replacePromptOpen: Boolean = false,
+    val replacePromptIndex: Int = 0,
+    // Stored-assets manager (task 5.4): reorders the active multi-asset slot. Its list is [library],
+    // which is already the slot's stored assets in order, so the panel holds no copy of its own.
+    val managerOpen: Boolean = false,
+    val managerIndex: Int = 0,
+    // Set while a reorder is being written, so the panel cannot start a second one over it.
+    val managerBusy: Boolean = false,
     // What the active multi-asset slot already holds, re-read on every open, tab, apply, clear and add.
     val library: StudioLibraryAssets = StudioLibraryAssets(),
     // Manual candidates: the PDF is downloaded to cache and paged before Apply.
@@ -310,7 +355,10 @@ data class ArtworkStudioUiState(
             queued == StudioQueueState.DOWNLOADING -> StudioTileMark.DOWNLOADING
             queued == StudioQueueState.FAILED      -> StudioTileMark.FAILED
             key in removals                        -> StudioTileMark.TO_REMOVE
-            queued == StudioQueueState.ADDED || library.holds(kind, art) -> StudioTileMark.ADDED
+            queued == StudioQueueState.ADDED       -> StudioTileMark.ADDED
+            // The same comparison either way; only the reading differs, so single-art says CURRENT.
+            library.holds(kind, art)               ->
+                if (selectsMultiple) StudioTileMark.ADDED else StudioTileMark.CURRENT
             key in selection                       -> StudioTileMark.PICKED
             else                                   -> StudioTileMark.NONE
         }
@@ -333,6 +381,56 @@ data class ArtworkStudioUiState(
             )
         }
 
+    /** What the stored-assets manager lists: the active slot's assets, lowest position first. */
+    val managedAssets: List<com.playfieldportal.feature.artwork.store.StudioArtworkSlot>
+        get() = library.slots
+
+    /**
+     * How many picks must be unchecked before Apply fits, or 0 when it already does.
+     *
+     * A slot holds [ArtworkFileNaming.MAX_SORT_ORDER] + 1 positions. `nextSortOrder` clamps to the
+     * last one instead of refusing, so an append past the cap silently rewrites position 99 — which
+     * makes this the only place the cap can actually be enforced. Counted against [library], which
+     * already includes everything added this open.
+     */
+    val overCapacityBy: Int
+        get() {
+            if (!selectsMultiple) return 0
+            val after = library.slots.size - removalsOnTab + selectedOnTab
+            val capacity = com.playfieldportal.feature.artwork.store.ArtworkFileNaming.MAX_SORT_ORDER + 1
+            return (after - capacity).coerceAtLeast(0)
+        }
+
+    /**
+     * The confirmation on screen, or null. Both confirmations are described here so the screen and
+     * the gamepad handler each serve them through one path (task 5.3). The apply confirmation wins
+     * a tie it cannot actually have: [applyChanges] is unreachable while a candidate is open.
+     */
+    val confirmPrompt: StudioConfirmPrompt?
+        get() = when {
+            applyConfirmOpen -> StudioConfirmPrompt(
+                kind = StudioConfirmKind.APPLY,
+                title = STUDIO_TABS.getOrNull(tabIndex)
+                    ?.let { studioApplyTitle(it.kind, queueSummary.toAdd, queueSummary.toRemove) }
+                    ?: "Apply changes?",
+                rows = StudioApplyChoice.entries.map {
+                    // Apply reads as destructive when it deletes stored artwork.
+                    StudioConfirmRow(it.label, isDestructive = it == StudioApplyChoice.APPLY && queueSummary.toRemove > 0)
+                },
+                selectedIndex = applyConfirmIndex,
+            )
+            replacePromptOpen -> StudioConfirmPrompt(
+                kind = StudioConfirmKind.REPLACE,
+                title = "${STUDIO_TABS.getOrNull(tabIndex)?.label ?: "This artwork"} is already this image",
+                rows = StudioReplaceChoice.entries.map {
+                    // Replace overwrites the one stored previous version, so it is the destructive row.
+                    StudioConfirmRow(it.label, isDestructive = it == StudioReplaceChoice.REPLACE)
+                },
+                selectedIndex = replacePromptIndex,
+            )
+            else -> null
+        }
+
     /**
      * Actions for the current slot and then the active source, in menu order. Entries that do not
      * apply are hidden.
@@ -347,6 +445,8 @@ data class ArtworkStudioUiState(
                 add(StudioAction.RETRY_FAILED)
                 add(StudioAction.REMOVE_FAILED)
             }
+            // Only where there is an order to change: several positions, on a tab that has them.
+            if (selectsMultiple && library.slots.size > 1) add(StudioAction.MANAGE_ASSETS)
             if (hasCurrent && kind != null && kind in CROPPABLE_KINDS) add(StudioAction.CROP)
             if (info?.hasPrevious == true) add(StudioAction.RESTORE_PREVIOUS)
             if (info?.originUrl != null) add(StudioAction.RESET_DEFAULT)
@@ -367,6 +467,7 @@ enum class StudioAction(val label: String) {
     PREVIEW("Preview"),
     RETRY_FAILED("Retry Failed Downloads"),
     REMOVE_FAILED("Remove Failed Downloads"),
+    MANAGE_ASSETS("Reorder Stored Artwork"),
     CROP("Adjust Crop / Position"),
     RESTORE_PREVIOUS("Restore Previous"),
     RESET_DEFAULT("Reset to Scraped Default"),
@@ -522,7 +623,8 @@ class ArtworkStudioViewModel @Inject constructor(
         _uiState.update { s ->
             s.copy(
                 closed = false, zone = StudioZone.TABS, selection = emptyMap(), removals = emptyMap(),
-                leavePromptOpen = false, applyConfirmOpen = false,
+                leavePromptOpen = false, applyConfirmOpen = false, replacePromptOpen = false,
+                managerOpen = false,
                 queue = s.queue.filter { it.state == StudioQueueState.QUEUED || it.state == StudioQueueState.DOWNLOADING },
             )
         }
@@ -623,19 +725,17 @@ class ArtworkStudioViewModel @Inject constructor(
     }
 
     /**
-     * Re-reads what the active multi-asset slot holds, so an asset added on an earlier visit shows as
-     * added (task 5.2). A single-art slot holds nothing a tile could be picked against.
+     * Re-reads what the active slot holds, so an asset stored on an earlier visit shows as added on a
+     * multi-asset tab (task 5.2) and as current on a single-art one (task 5.3). Single-art kinds
+     * return at most the position-0 record, which is exactly the comparison the replace prompt needs.
+     *
+     * Only records whose file still opens: a lost file must not read as held while nothing is there.
+     * A slot written by the internal (non-portable) store has no record at all, so it reads as empty
+     * — the same limitation the ADDED badge already carries.
      */
     private suspend fun refreshLibrary() {
         val kind = tab().kind
-        val slots = if (com.playfieldportal.feature.artwork.store.ArtworkFileNaming.supportsMultiple(kind)) {
-            // Only records whose file still opens: a lost file must not read as checked while the
-            // gallery shows nothing.
-            routingStore.studioAssetsOnDisk(gameId, kind)
-        } else {
-            emptyList()
-        }
-        _uiState.update { it.copy(library = StudioLibraryAssets.of(kind, slots)) }
+        _uiState.update { it.copy(library = StudioLibraryAssets.of(kind, routingStore.studioAssetsOnDisk(gameId, kind))) }
     }
 
     /**
@@ -1633,6 +1733,8 @@ class ArtworkStudioViewModel @Inject constructor(
         val key = StudioArtKey.of(STUDIO_TABS[s.tabIndex].kind, art)
         when (s.tileMarkOf(art)) {
             StudioTileMark.QUEUED, StudioTileMark.DOWNLOADING, StudioTileMark.FAILED -> s
+            // Not reachable — CURRENT is a single-art mark and this returned above on those tabs.
+            StudioTileMark.CURRENT   -> s
             StudioTileMark.ADDED     -> s.copy(gridIndex = index, removals = s.removals + (key to art))
             StudioTileMark.TO_REMOVE -> s.copy(gridIndex = index, removals = s.removals - key)
             StudioTileMark.PICKED    -> s.copy(gridIndex = index, selection = s.selection - key)
@@ -1642,13 +1744,28 @@ class ArtworkStudioViewModel @Inject constructor(
 
     // ── Apply and the download queue (task 5.2) ───────────────────────────────
 
-    /** START, the Apply pill and Apply Changes: asks first, so nothing is added or removed on a stray press. */
+    /**
+     * START, the Apply pill and Apply Changes: asks first, so nothing is added or removed on a stray
+     * press — and refuses outright when the picks would not fit, so the confirmation is never the
+     * thing that overflows the slot.
+     */
     override fun applyChanges() = _uiState.update { s ->
-        if (!s.queueSummary.hasChanges) s else s.copy(applyConfirmOpen = true, applyConfirmIndex = 0, actionsOpen = false)
+        val over = s.overCapacityBy
+        when {
+            !s.queueSummary.hasChanges -> s
+            over > 0 -> s.copy(
+                actionsOpen = false,
+                message = STUDIO_TABS.getOrNull(s.tabIndex)?.kind?.let { kind ->
+                    val capacity = com.playfieldportal.feature.artwork.store.ArtworkFileNaming.MAX_SORT_ORDER + 1
+                    "A game holds ${studioAssetCount(kind, capacity)} at most — uncheck $over to apply"
+                } ?: s.message,
+            )
+            else -> s.copy(applyConfirmOpen = true, applyConfirmIndex = 0, actionsOpen = false)
+        }
     }
 
     /** Apply commits the active tab's changes; Cancel keeps them waiting. */
-    override fun resolveApplyConfirm(choice: StudioApplyChoice) {
+    fun resolveApplyConfirm(choice: StudioApplyChoice) {
         _uiState.update { it.copy(applyConfirmOpen = false) }
         if (choice == StudioApplyChoice.APPLY) {
             val kind = tab().kind
@@ -1658,6 +1775,124 @@ class ArtworkStudioViewModel @Inject constructor(
 
     private fun moveApplyConfirmCursor(delta: Int) = _uiState.update {
         it.copy(applyConfirmIndex = (it.applyConfirmIndex + delta).mod(StudioApplyChoice.entries.size))
+    }
+
+    /**
+     * Replace Anyway is the apply exactly as it was before this task; Cancel keeps the candidate
+     * open, so a mistaken press costs nothing but the press.
+     */
+    fun resolveReplacePrompt(choice: StudioReplaceChoice) {
+        _uiState.update { it.copy(replacePromptOpen = false) }
+        if (choice == StudioReplaceChoice.REPLACE) performApplyCandidate()
+    }
+
+    private fun moveReplacePromptCursor(delta: Int) = _uiState.update {
+        it.copy(replacePromptIndex = (it.replacePromptIndex + delta).mod(StudioReplaceChoice.entries.size))
+    }
+
+    // ── Stored-assets manager (task 5.4) ──────────────────────────────────────
+
+    /**
+     * Opens the reorder panel over the active multi-asset slot. Read-and-reorder only: removal stays
+     * the checklist's job, so there is one way to delete an asset rather than two.
+     */
+    override fun openAssetManager() = _uiState.update {
+        if (!it.selectsMultiple) it else it.copy(managerOpen = true, managerIndex = 0, actionsOpen = false)
+    }
+
+    override fun closeAssetManager() = _uiState.update { it.copy(managerOpen = false) }
+
+    /** Touch: tapping a row focuses it, so the move controls act on the row the user pointed at. */
+    override fun focusManagedAsset(index: Int) = _uiState.update {
+        if (index in it.managedAssets.indices) it.copy(managerIndex = index) else it
+    }
+
+    private fun moveManagerCursor(delta: Int) = _uiState.update {
+        val n = it.managedAssets.size
+        if (n == 0) it else it.copy(managerIndex = (it.managerIndex + delta).coerceIn(0, n - 1))
+    }
+
+    /** Moves the focused asset [delta] positions, carrying the cursor with it. */
+    override fun moveManagedAsset(delta: Int) {
+        val s = _uiState.value
+        val from = s.managerIndex
+        val to = from + delta
+        if (from !in s.managedAssets.indices || to !in s.managedAssets.indices) return
+        val order = s.managedAssets.map { it.sortOrder }.toMutableList()
+        order.add(to, order.removeAt(from))
+        commitOrder(order, cursor = to)
+    }
+
+    /** Moves the focused asset to position 0 — the one the rail and the Game Detail strip show. */
+    override fun makeManagedAssetPrimary() {
+        val s = _uiState.value
+        val from = s.managerIndex
+        if (from <= 0 || from !in s.managedAssets.indices) return
+        val order = s.managedAssets.map { it.sortOrder }.toMutableList()
+        order.add(0, order.removeAt(from))
+        commitOrder(order, cursor = 0)
+    }
+
+    /**
+     * Writes [order] — the slot's current positions, in their new order — and re-reads.
+     *
+     * Rows only: the files keep their ordinal names. Relink rebuilds position from those names
+     * (`ArtworkImportManager`), and the Windows PC export claims records back by exact name, so
+     * renaming to express an order would break every exported game's claims. A Relink therefore
+     * restores file order, by design.
+     */
+    private fun commitOrder(order: List<Int>, cursor: Int) {
+        if (_uiState.value.managerBusy) return
+        val kind = tab().kind
+        val gid = gameId
+        _uiState.update { it.copy(managerBusy = true) }
+        viewModelScope.launch {
+            try {
+                routingStore.reorderAssets(gid, kind, order)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.w(e, "Studio asset reorder failed")
+                _uiState.update { it.copy(message = "Could not reorder artwork") }
+            }
+            // Re-reads the rail's thumbnail and [library], so the panel redraws in the written order
+            // rather than one this function guessed.
+            if (gid == gameId && kind == tab().kind) refreshCurrent()
+            _uiState.update {
+                it.copy(
+                    managerBusy = false,
+                    managerIndex = cursor.coerceIn(0, (it.managedAssets.size - 1).coerceAtLeast(0)),
+                )
+            }
+        }
+    }
+
+    // ── The confirmation overlay's shared entry points (task 5.3) ─────────────
+    // One descriptor on screen, so one activation and one dismissal, routed by which is open.
+
+    override fun resolveConfirm(index: Int) {
+        when (_uiState.value.confirmPrompt?.kind) {
+            StudioConfirmKind.APPLY   -> StudioApplyChoice.entries.getOrNull(index)?.let(::resolveApplyConfirm)
+            StudioConfirmKind.REPLACE -> StudioReplaceChoice.entries.getOrNull(index)?.let(::resolveReplacePrompt)
+            null -> Unit
+        }
+    }
+
+    /** B or a scrim tap: the row that changes nothing. */
+    override fun dismissConfirm() {
+        when (_uiState.value.confirmPrompt?.kind) {
+            StudioConfirmKind.APPLY   -> resolveApplyConfirm(StudioApplyChoice.CANCEL)
+            StudioConfirmKind.REPLACE -> resolveReplacePrompt(StudioReplaceChoice.CANCEL)
+            null -> Unit
+        }
+    }
+
+    private fun moveConfirmCursor(delta: Int) {
+        when (_uiState.value.confirmPrompt?.kind) {
+            StudioConfirmKind.APPLY   -> moveApplyConfirmCursor(delta)
+            StudioConfirmKind.REPLACE -> moveReplacePromptCursor(delta)
+            null -> Unit
+        }
     }
 
     /**
@@ -1851,7 +2086,24 @@ class ArtworkStudioViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Apply from the candidate overlay. On a single-art tab, applying the asset the slot already
+     * holds asks first (task 5.3): the write re-downloads identical bytes and backs them up as the
+     * record's previous version, destroying the one real previous version there was. Multi-asset tabs never reach
+     * here — their tiles pick instead of previewing.
+     */
     override fun applyCandidate() {
+        val s = _uiState.value
+        val art = s.candidate ?: return
+        if (!s.selectsMultiple && s.library.holds(tab().kind, art)) {
+            _uiState.update { it.copy(replacePromptOpen = true, replacePromptIndex = 0) }
+            return
+        }
+        performApplyCandidate()
+    }
+
+    /** The apply itself, once nothing is left to ask. */
+    private fun performApplyCandidate() {
         val art = _uiState.value.candidate ?: return
         val kind = tab().kind
         val manualFile = _uiState.value.candidateManualPath?.let { java.io.File(it) }
@@ -1861,7 +2113,11 @@ class ArtworkStudioViewModel @Inject constructor(
             val path = if (kind == ArtworkKind.MANUAL && manualFile?.exists() == true) {
                 routingStore.studioApplyFromFile(gameId, kind, manualFile, provider = art.provider, originUrl = art.url)
             } else {
-                routingStore.studioApplyFromUrl(gameId, kind, art.url, provider = art.provider)
+                // Without the asset id a single-art record carries only origin_url, and the holds
+                // comparison this task adds would be URL-only forever on the tabs it serves.
+                routingStore.studioApplyFromUrl(
+                    gameId, kind, art.url, provider = art.provider, providerAssetId = art.providerAssetId,
+                )
             }
             _uiState.update { it.copy(candidateManualPath = null) }
             finishApply(kind, path, art.provider)
@@ -1909,6 +2165,7 @@ class ArtworkStudioViewModel @Inject constructor(
             StudioAction.APPLY_CHANGES    -> applyChanges()
             StudioAction.PREVIEW          -> { closeActions(); openCandidate(_uiState.value.gridIndex) }
             StudioAction.RETRY_FAILED     -> retryFailed()
+            StudioAction.MANAGE_ASSETS    -> openAssetManager()
             StudioAction.REMOVE_FAILED    -> removeFailed()
             StudioAction.CROP             -> beginCrop()
             StudioAction.RESTORE_PREVIOUS -> restorePrevious()
@@ -2208,7 +2465,12 @@ class ArtworkStudioViewModel @Inject constructor(
     override fun dismissCandidate() {
         _uiState.value.candidateManualPath?.let { runCatching { java.io.File(it).delete() } }
         _uiState.update {
-            it.copy(candidate = null, candidateManualPath = null, manualDownloading = false, manualPage = 0, manualPageCount = 0)
+            it.copy(
+                candidate = null, candidateManualPath = null, manualDownloading = false,
+                manualPage = 0, manualPageCount = 0,
+                // The prompt asks about the candidate; without one there is nothing to ask about.
+                replacePromptOpen = false,
+            )
         }
     }
     override fun dismissMessage() = _uiState.update { it.copy(message = null) }
@@ -2273,14 +2535,14 @@ class ArtworkStudioViewModel @Inject constructor(
             }
             return
         }
-        // Apply confirmation: A activates the row, B cancels. START is ignored here, so pressing it twice
-        // cannot confirm.
-        if (s.applyConfirmOpen) {
+        // Confirmations (apply, replace): A activates the row, B takes the row that changes nothing.
+        // START is ignored here, so pressing it twice cannot confirm.
+        s.confirmPrompt?.let { prompt ->
             when (action) {
-                GamepadAction.NAVIGATE_UP   -> moveApplyConfirmCursor(-1)
-                GamepadAction.NAVIGATE_DOWN -> moveApplyConfirmCursor(+1)
-                GamepadAction.SELECT        -> resolveApplyConfirm(StudioApplyChoice.entries[s.applyConfirmIndex])
-                GamepadAction.BACK          -> resolveApplyConfirm(StudioApplyChoice.CANCEL)
+                GamepadAction.NAVIGATE_UP   -> moveConfirmCursor(-1)
+                GamepadAction.NAVIGATE_DOWN -> moveConfirmCursor(+1)
+                GamepadAction.SELECT        -> resolveConfirm(prompt.selectedIndex)
+                GamepadAction.BACK          -> dismissConfirm()
                 else -> Unit
             }
             return
@@ -2292,6 +2554,20 @@ class ArtworkStudioViewModel @Inject constructor(
                 GamepadAction.NAVIGATE_DOWN -> moveLeavePromptCursor(+1)
                 GamepadAction.SELECT        -> resolveLeavePrompt(StudioLeaveChoice.entries[s.leavePromptIndex])
                 GamepadAction.BACK          -> resolveLeavePrompt(StudioLeaveChoice.STAY)
+                else -> Unit
+            }
+            return
+        }
+        // Stored-assets manager: D-pad moves the cursor, LB/RB move the asset itself, A makes it the
+        // primary, B closes. Placed above the actions menu, which is what opened it.
+        if (s.managerOpen) {
+            when (action) {
+                GamepadAction.NAVIGATE_UP    -> moveManagerCursor(-1)
+                GamepadAction.NAVIGATE_DOWN  -> moveManagerCursor(+1)
+                GamepadAction.PREV_CATEGORY  -> moveManagedAsset(-1)   // LB
+                GamepadAction.NEXT_CATEGORY  -> moveManagedAsset(+1)   // RB
+                GamepadAction.SELECT         -> makeManagedAssetPrimary()
+                GamepadAction.BACK           -> closeAssetManager()
                 else -> Unit
             }
             return
