@@ -142,7 +142,7 @@ class PcGameScanner @Inject constructor(
         }
 
         val restore = restoreFromPfpExports(pfpExports, pm)
-        val relink = relinkClaimedArtwork(restore.claims)
+        val relink = relinkClaimedArtwork(restore.claims, restore.identitySeeds)
 
         // Emu game folders reconcile with the library — mapped games link LOCAL_STEAM, unmapped
         // folders stay tracked-only and load into Shiba Coins on sync (never game entities).
@@ -209,11 +209,14 @@ class PcGameScanner @Inject constructor(
      * without that check each scan, including the XMB's Scan This Console, would walk the whole
      * artwork library again after the artwork was already back.
      */
-    private suspend fun relinkClaimedArtwork(claims: Map<Triple<String, String, String>, Long>): ArtworkRelink {
+    private suspend fun relinkClaimedArtwork(
+        claims: Map<Triple<String, String, String>, Long>,
+        identitySeeds: List<com.playfieldportal.feature.artwork.portable.ArtworkIdentityIndex.Entry>,
+    ): ArtworkRelink {
         if (claims.isEmpty()) return ArtworkRelink.NotNeeded
         val records = claims.values.toSet().associateWith { artworkRecordDao.getForGame(it) }
         if (PcGameArtworkClaims.unresolved(claims, records).isEmpty()) return ArtworkRelink.NotNeeded
-        val result = runCatching { artworkImportManager.relinkLibrary(claims) }
+        val result = runCatching { artworkImportManager.relinkLibrary(claims, identitySeeds) }
             .onFailure { Timber.e(it, "Relink after .pfpgame restore failed") }
         return when {
             result.isFailure -> ArtworkRelink.Failed
@@ -229,6 +232,9 @@ class PcGameScanner @Inject constructor(
         val skipped: Int = 0,
         val untrusted: Int = 0,
         val claims: Map<Triple<String, String, String>, Long> = emptyMap(),
+        // Durable identity for the same artwork (task D.4b) — written into the library's identity
+        // index so the reconnection outlives this one import.
+        val identitySeeds: List<com.playfieldportal.feature.artwork.portable.ArtworkIdentityIndex.Entry> = emptyList(),
     )
 
     /**
@@ -276,7 +282,7 @@ class PcGameScanner @Inject constructor(
                 }
             }
         }
-        return PfpRestore(created, matched, skipped, untrusted, claims.toMap())
+        return PfpRestore(created, matched, skipped, untrusted, claims.toMap(), claims.toIdentitySeeds())
     }
 
     /**

@@ -195,6 +195,14 @@ fun ArtworkSettingsScreen(
             )
 
             SettingsToggleRow(
+                label    = "Crop Preview",
+                sublabel = "Show the finished tile in the corner while cropping artwork " +
+                    "(Ⓨ toggles it inside the crop editor too)",
+                checked  = state.cropPreviewEnabled,
+                onToggle = { viewModel.setCropPreviewEnabled(it) },
+            )
+
+            SettingsToggleRow(
                 label    = "Prefer SteamGridDB Heroes",
                 sublabel = "Try SteamGridDB first for hero/banner art",
                 checked  = state.preferSteamGridDbHeroes,

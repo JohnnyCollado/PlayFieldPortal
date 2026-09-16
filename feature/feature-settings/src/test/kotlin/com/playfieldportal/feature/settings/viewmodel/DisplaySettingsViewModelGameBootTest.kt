@@ -85,9 +85,12 @@ class DisplaySettingsViewModelGameBootTest {
         vm.setGameBootEnabled(false)
 
         eventually("the toggle wins") { !vm.uiState.first().gameBootEnabled }
+        // JUnit's assertNull takes the MESSAGE first. Value-first compiles here — the value is a
+        // String? too — and silently asserts that the message literal is null, so this test could
+        // never pass and the retirement it guards was never actually verified.
         assertNull(
-            context.pfpDataStore.data.first()[KEY_GAMEBOOT_MODE],
             "the retired mode key must not survive a toggle",
+            context.pfpDataStore.data.first()[KEY_GAMEBOOT_MODE],
         )
     }
 

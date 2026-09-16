@@ -17,6 +17,7 @@ import com.playfieldportal.feature.artwork.importer.DetectedImportSource
 import com.playfieldportal.feature.artwork.importer.ImportPlan
 import com.playfieldportal.feature.artwork.importer.ImportSummary
 import com.playfieldportal.feature.artwork.importer.RelinkOwnerLookup
+import com.playfieldportal.feature.artwork.portable.ArtworkIdentityIndex
 import com.playfieldportal.feature.artwork.portable.ArtworkLibraryManifest
 import com.playfieldportal.feature.artwork.portable.ArtworkNaming
 import com.playfieldportal.feature.artwork.portable.ArtworkPathResolver
@@ -298,6 +299,7 @@ class ArtworkImportManager @Inject constructor(
      */
     suspend fun relinkLibrary(
         claims: Map<Triple<String, String, String>, Long> = emptyMap(),
+        identitySeeds: List<ArtworkIdentityIndex.Entry> = emptyList(),
     ): RelinkResult? = withContext(Dispatchers.IO) {
         val tree = linkedTree() ?: return@withContext null
         if (!folderRepository.hasLiveGrant()) return@withContext null
@@ -339,7 +341,33 @@ class ArtworkImportManager @Inject constructor(
             ownersByName.getOrPut(Triple(r.platformId, r.artworkType, r.portableName.lowercase())) { mutableSetOf() }
                 .add(r.gameId)
         }
+        // Durable identity (task D.3). The index says which game's ids each file was written for;
+        // this maps those ids onto the games that exist NOW, so a file reconnects even when its
+        // name — and the ROM's name — has changed since. Built from the same tokensOf as the index
+        // itself, because two spellings of one id would simply never meet.
+        // Seeds first (task D.4b): a `.pfpgame` states its game's ids, so its artwork gains durable
+        // identity on the import that restores it rather than waiting for a later scrape. They are
+        // merged in before matching so this very walk can already resolve by them.
+        val storedIdentity = library.readIdentityIndex(tree)
+        val identityIndex = when {
+            identitySeeds.isEmpty() -> storedIdentity
+            else -> (storedIdentity ?: ArtworkIdentityIndex()).upsertAll(identitySeeds)
+        }
+        val ownersByToken = HashMap<String, MutableSet<Long>>()
+        if (identityIndex != null) {
+            games.forEach { g ->
+                ArtworkIdentityIndex.tokensOf(
+                    romCrc32 = g.romCrc32, ssId = g.ssId, tgdbId = g.tgdbId,
+                    igdbId = g.igdbId, sgdbId = g.steamGridDbId, artworkKey = g.artworkKey,
+                ).forEach { token -> ownersByToken.getOrPut(token) { mutableSetOf() }.add(g.id) }
+            }
+        }
         val upsertedKeys = HashSet<Triple<Long, String, Int>>()
+        // Backfill (task D.4): every file this walk links gets an identity row built from the game
+        // it landed on. This is what gives an EXISTING library durable identity — D.2 only records
+        // files written after it shipped, so without this a pre-D.2 folder would stay name-matched
+        // forever. Collected during the walk, written once at the end.
+        val identityRows = mutableListOf<ArtworkIdentityIndex.Entry>()
 
         var scanned = 0
         var linkedGames = 0
@@ -397,6 +425,17 @@ class ArtworkImportManager @Inject constructor(
                         recordOwners = ownersByName,
                         fuzzyMatch = { name ->
                             (indexFor(platformId).match(name) as? ArtworkImportMatcher.Result.Matched)?.gameIds
+                        },
+                        // The file's own row, resolved to whichever live game its strongest
+                        // surviving id names. An empty list means "the row names nobody any more",
+                        // and the name tiers below still get their turn.
+                        identityOwners = { stem ->
+                            identityIndex?.find(platformId, kind.name, stem)?.let { row ->
+                                row.tokens()
+                                    .firstNotNullOfOrNull { token -> ownersByToken[token] }
+                                    ?.toList()
+                                    ?: emptyList()
+                            }
                         },
                     )
                     if (ids.isNullOrEmpty()) { orphans++; continue }
@@ -463,6 +502,17 @@ class ArtworkImportManager @Inject constructor(
                         val prior = priorRecords[Triple(gameId, kind.name, sortOrder)]
                         if (prior != null && prior.sizeBytes != size) changedFiles++
                         upsertedKeys.add(Triple(gameId, kind.name, sortOrder))
+                        identityRows += ArtworkIdentityIndex.Entry(
+                            platformId = platformId,
+                            kind = kind.name,
+                            portableName = fileStem,
+                            romCrc32 = game.romCrc32,
+                            ssId = game.ssId,
+                            tgdbId = game.tgdbId,
+                            igdbId = game.igdbId,
+                            sgdbId = game.steamGridDbId,
+                            artworkKey = game.artworkKey,
+                        )
                         records += ArtworkRecordEntity(
                             gameId = gameId,
                             platformId = platformId,
@@ -510,6 +560,16 @@ class ArtworkImportManager @Inject constructor(
                 ArtworkKind.PHYSICAL_MEDIA.name -> if (game.physicalMediaUri == prior.documentUri) gameDao.updatePhysicalMedia(game.id, null)
                 ArtworkKind.BOX_3D.name -> if (game.box3dUri == prior.documentUri) gameDao.updateBox3d(game.id, null)
             }
+        }
+
+        // Write the backfilled identity once, and only when it actually changed — an unchanged
+        // library must not rewrite this file on the SD card on every scan.
+        val mergedIdentity = (identityIndex ?: ArtworkIdentityIndex()).upsertAll(identityRows)
+        // Compared against what the FOLDER held, not against the seeded copy, so seeds are written
+        // even when the walk itself linked nothing new.
+        if (mergedIdentity.entries != (storedIdentity?.entries ?: emptyList<ArtworkIdentityIndex.Entry>())) {
+            runCatching { library.writeIdentityIndex(tree, mergedIdentity) }
+                .onFailure { Timber.w(it, "Could not write the artwork identity index") }
         }
 
         linkedGames = linkedIds.size

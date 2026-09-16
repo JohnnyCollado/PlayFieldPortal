@@ -4,6 +4,10 @@ package com.playfieldportal.feature.artwork.importer
  * Which games one library file belongs to during Scan & Relink, strongest evidence first. Pure, so
  * the order is testable without a folder or a database.
  *
+ * 0. **Durable identity** (C16 task D.3): the library's identity index says which game's ids this
+ *    file was written for, and one of those ids names a game that still exists. This is the only
+ *    tier that survives a renamed ROM, which is why it goes first — every tier below it is a way of
+ *    guessing from a name, and a name is exactly what a rename changes.
  * 1. A **claim** on the file's full stem: the name a `.pfpgame` export says this game's artwork was
  *    saved under (C18 task X.5). It is the user's own record of the name, so it outranks everything.
  * 2. An existing **record** with that portable name: anything PFP itself wrote reconnects exactly.
@@ -12,8 +16,9 @@ package com.playfieldportal.feature.artwork.importer
  * 4. The **fuzzy matcher** on the full file name, for foreign files.
  * 5. A record, then the fuzzy matcher, on the base.
  *
- * With no claims this is exactly the order relink used before: record, fuzzy, record on the base,
- * fuzzy on the base. The full stem is always tried before the base, so a ROM whose own name ends in
+ * With no identity and no claims this is exactly the order relink used before: record, fuzzy, record
+ * on the base, fuzzy on the base — so a library written before D.2, or a foreign ES-DE drop that PFP
+ * never wrote, behaves exactly as it always has. The full stem is always tried before the base, so a ROM whose own name ends in
  * `_07` is never mistaken for another game's seventh screenshot (C16 task 0.4).
  */
 internal object RelinkOwnerLookup {
@@ -23,7 +28,10 @@ internal object RelinkOwnerLookup {
      * @param claims `(platform, kind, stem lowercased)` → the game that claims it.
      * @param recordOwners `(platform, kind, portable name lowercased)` → the games with such a record.
      * @param fuzzyMatch the import matcher for a file name, or null when it matches nothing.
-     * @return the owning game ids, or null when nothing claims, records or matches the file.
+     * @param identityOwners the games whose durable ids the identity index records for this stem,
+     *   or null when the file has no row or its row names no game that still exists. Defaults to
+     *   "no identity", so a caller that has no index behaves exactly as before D.3.
+     * @return the owning game ids, or null when nothing identifies, claims, records or matches it.
      */
     fun owners(
         platformId: String,
@@ -34,11 +42,15 @@ internal object RelinkOwnerLookup {
         claims: Map<Triple<String, String, String>, Long>,
         recordOwners: Map<Triple<String, String, String>, Set<Long>>,
         fuzzyMatch: (String) -> List<Long>?,
+        identityOwners: (String) -> List<Long>? = { null },
     ): List<Long>? {
         fun claimed(stem: String): List<Long>? = claims[Triple(platformId, kind, stem.lowercase())]?.let { listOf(it) }
         fun recorded(stem: String): List<Long>? = recordOwners[Triple(platformId, kind, stem.lowercase())]?.toList()
+        fun identified(stem: String): List<Long>? = identityOwners(stem)?.takeIf { it.isNotEmpty() }
         val hasBase = baseStem != fileStem
-        return claimed(fileStem)
+        return identified(fileStem)
+            ?: (if (hasBase) identified(baseStem) else null)
+            ?: claimed(fileStem)
             ?: recorded(fileStem)
             ?: (if (hasBase) claimed(baseStem) else null)
             ?: fuzzyMatch(fileName)

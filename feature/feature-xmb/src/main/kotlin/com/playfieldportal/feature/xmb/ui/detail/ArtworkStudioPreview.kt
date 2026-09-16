@@ -66,6 +66,7 @@ private object PreviewStudioActions : ArtworkStudioActions {
     override fun zoomCrop(factor: Float) = Unit
     override fun applyCrop() = Unit
     override fun cancelCrop() = Unit
+    override fun toggleCropPreview() = Unit
     override fun dismissMessage() = Unit
 }
 

@@ -85,6 +85,7 @@ class InitialSetupViewModelTest {
         every { artworkImport.folderTreeUri } returns flowOf(null)
         every { vita3KLibrary.ux0TreeUriFlow } returns flowOf(null)
         every { sgdbKeys.apiKeyFlow } returns flowOf(null)
+        every { metadataKeys.tgdbKeyFlow } returns flowOf(null)
         every { metadataKeys.igdbClientIdFlow } returns flowOf(null)
         every { metadataKeys.ssUsernameFlow } returns flowOf(null)
         every { credentials.raUsernameFlow } returns flowOf(null)
@@ -435,14 +436,49 @@ class InitialSetupViewModelTest {
         job.cancel()
     }
 
+    // ── TheGamesDB (wizard parity with Settings ▸ Artwork) ───────────────────
+
+    @Test fun `connectTgdb stores the key through the shared provider`() = runTest(dispatcher) {
+        // uiState is WhileSubscribed: without a collector it never leaves its construction
+        // snapshot, so the message assertion below would read a stale null.
+        val job = collectState()
+        vm.connectTgdb("  tgdb-key-123  ")
+        advanceUntilIdle()
+
+        // Trimming belongs to the provider (saveTgdbKey trims), so the raw draft is handed over.
+        coVerify(exactly = 1) { metadataKeys.saveTgdbKey("  tgdb-key-123  ") }
+        assertEquals("TheGamesDB connected", vm.uiState.value.message)
+        job.cancel()
+    }
+
+    @Test fun `a stored TheGamesDB key shows as connected`() = runTest(dispatcher) {
+        every { metadataKeys.tgdbKeyFlow } returns flowOf("stored-key")
+        vm = buildVm()
+        val job = collectState()
+        advanceUntilIdle()
+
+        assertTrue(vm.uiState.value.hasTgdb)
+        job.cancel()
+    }
+
+    @Test fun `no TheGamesDB key means not connected`() = runTest(dispatcher) {
+        val job = collectState()
+        advanceUntilIdle()
+
+        assertFalse(vm.uiState.value.hasTgdb)
+        job.cancel()
+    }
+
     @Test fun `blank credentials are ignored`() = runTest(dispatcher) {
         vm.connectSgdb("  ")
+        vm.connectTgdb("  ")
         vm.connectIgdb("client-id", "")
         vm.connectRetroAchievements("", "key")
         vm.connectSteam("id", " ")
         advanceUntilIdle()
 
         coVerify(exactly = 0) { sgdbKeys.saveKey(any()) }
+        coVerify(exactly = 0) { metadataKeys.saveTgdbKey(any()) }
         coVerify(exactly = 0) { metadataKeys.saveIgdbCredentials(any(), any()) }
         coVerify(exactly = 0) { credentials.saveRetroAchievements(any(), any()) }
         coVerify(exactly = 0) { credentials.saveSteam(any(), any()) }

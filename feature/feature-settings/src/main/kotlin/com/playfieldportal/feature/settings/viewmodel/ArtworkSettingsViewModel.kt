@@ -27,6 +27,9 @@ data class ArtworkSettingsUiState(
     val apiKeyMasked: String = "",
     // TheGamesDB has no free anonymous access: without a key every lookup is skipped.
     val hasTgdbKey: Boolean = false,
+    // The Artwork Studio crop editor's live result inset. Also switchable with Ⓨ inside the editor.
+    val cropPreviewEnabled: Boolean =
+        com.playfieldportal.core.data.repository.CropPreviewPreferences.DEFAULT_ENABLED,
     val hasIgdbCredentials: Boolean = false,
     val igdbClientId: String = "",
     val igdbCredentialStatus: String? = null,
@@ -83,6 +86,7 @@ class ArtworkSettingsViewModel @Inject constructor(
     private val screenScraperApi: ScreenScraperApi,
     private val artworkFolderRepository: com.playfieldportal.core.data.repository.ArtworkFolderRepository,
     private val iconDisplayPreferences: com.playfieldportal.core.data.repository.IconDisplayPreferences,
+    private val cropPreviewPreferences: com.playfieldportal.core.data.repository.CropPreviewPreferences,
 ) : ViewModel() {
 
     private val _extra = MutableStateFlow(ArtworkSettingsUiState())
@@ -101,6 +105,13 @@ class ArtworkSettingsViewModel @Inject constructor(
         viewModelScope.launch {
             iconDisplayPreferences.lingerDelaySecondsFlow.collect { seconds ->
                 _extra.update { it.copy(icon1LingerDelaySeconds = seconds) }
+            }
+        }
+        // The Artwork Studio's crop editor writes this same preference with its Ⓨ toggle, so the
+        // row follows a change made there without the screen being reopened.
+        viewModelScope.launch {
+            cropPreviewPreferences.enabledFlow.collect { enabled ->
+                _extra.update { it.copy(cropPreviewEnabled = enabled) }
             }
         }
         // Startup grant check (§17): a configured folder whose grant died gets a visible
@@ -239,6 +250,10 @@ class ArtworkSettingsViewModel @Inject constructor(
 
     // TheGamesDB key. MetadataApiKeyProvider has stored and read this since TheGamesDB was added,
     // but nothing ever wrote it — so TheGamesDB was silently disabled for everyone.
+    fun setCropPreviewEnabled(enabled: Boolean) {
+        viewModelScope.launch { cropPreviewPreferences.setEnabled(enabled) }
+    }
+
     fun saveTgdbKey(key: String) {
         viewModelScope.launch { warnIfUnprotected("TheGamesDB key", metadataKeyProvider.saveTgdbKey(key.trim())) }
     }

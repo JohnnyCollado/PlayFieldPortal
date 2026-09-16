@@ -72,13 +72,31 @@ Tests run and green:
 "Merge 5: crop profiles" in the same shape as every other task spec, and both are ready to hand to a
 helper as-is.
 
+## Not a plan task: TheGamesDB in the setup wizard
+
+Asked for directly on 2026-09-16 and **confirmed working by the user**. The wizard's SERVICES page
+had SteamGridDB, IGDB and ScreenScraper but no TheGamesDB, though `MetadataApiKeyProvider` already
+had `saveTgdbKey`/`tgdbKeyFlow`/`hasTgdbKey` and Settings ▸ Artwork already had a card. So this was
+a missing card, not a missing feature; it writes through the same provider, so either place
+configures the other. Touches `InitialSetupViewModel`, `InitialSetupScreen` and their test. It has
+no row in the plan because it is not part of C16 — that is deliberate, not an omission.
+
 ## Next actions, in order
 
 1. **Commit and push the staged work** (user's call, GitHub Desktop).
-2. **Task 6.2** — live final-result preview in the crop editor. Specced, no open questions.
-3. **Task 6.5** — centralize the artwork dimension policy. Specced, independent of 6.1/6.2.
-4. **Device check** for 5.3, 5.4 and 6.1 — see below.
-5. `6.3` and `6.4` are index rows only, not yet specced. `6.4` also waits on `3.2`/`6.2`.
+2. ~~**Task 6.2**~~ — done 2026-09-15 (staged, not committed). See the plan's 6.2 "As implemented"
+   note: top-right 132 dp inset, user-approved; `frameAspectFor` extracted so the inset and the crop
+   frame share one aspect expression.
+3. **Task 6.6** — done 2026-09-16 (staged). The video kinds now play while cropping, canvas and
+   inset both, user-decided. Two ExoPlayers over one local clip, drift-synced; `cropLayoutFor` and
+   `drawCropMask` extracted so the still and clip paths share geometry.
+4. **Merge 6 (`D.1`–`D.4`) — durable artwork identity.** Specced 2026-09-16, not implemented.
+   Raised by a real failure: after a fresh install a relink reconnected one file. Artwork identity is
+   spelled as a filename at every tier, so a renamed ROM orphans its art and the `.pfpgame` export's
+   durable ids are never used for artwork. `D.3` is the task that fixes the bug.
+5. **Task 6.5** — centralize the artwork dimension policy. Specced, independent of 6.1/6.2.
+6. **Device check** for 5.3, 5.4, 6.1, 6.2 and 6.6 — see below.
+7. `6.3` and `6.4` are index rows only, not yet specced. `6.4` also waits on `3.2`/`6.2`.
    `4.3`/`4.4` wait on plan C17; `7.1` is blocked on B2.
 
 ## Grounding already done — do not re-derive
@@ -139,6 +157,17 @@ Never done for 5.3, 5.4 or 6.1. One pass through the Artwork Studio covers all t
   cursor, LB/RB move the asset, A makes it primary, B closes, and touch gets pills plus tap-to-focus.
 - **6.1** — open the crop editor on ICON0 and on a kind with no default; framing must be identical
   to before, since 6.1 changes no pixels.
+- **6.2** — in the crop editor, the top-right inset tracks pan/zoom live: framed for ICON0 and BOX
+  ART, frameless for 3D BOX and PHYS. MEDIA, and absent on HERO/BACKGROUND/LOGO/SCREENSHOT.
+- **6.7** — the Ⓨ pill in the crop editor hides/shows the inset, the Settings ▸ Artwork "Crop
+  Preview" row follows it live (and vice versa), and the choice survives reopening the Studio.
+- **6.8** — focus a pick in the grid, Options ▸ Crop Before Applying: it downloads, the editor opens
+  centred, Apply commits it. Check the applied asset still offers **Reset to Scraped Default**
+  afterwards — that is the provenance the task exists to preserve, and the only way to see it work.
+- **6.6** — crop ICON1 and VIDEO: the clip plays full-screen AND in the inset, the two stay in
+  step, dragging does not stutter, and reopening the editor repeatedly does not leak players. Note
+  6.6 reshaped layer 1's render, so re-check an IMAGE crop in the same pass — the image path is
+  meant to be unchanged.
 
 ## Still unconsumed — do not assume any of these is wired up
 

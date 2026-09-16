@@ -300,10 +300,18 @@ Note: there is **zero existing coverage** for `ArtworkStudioViewModel`, the crop
 | 5.3 | Duplicate detection on the **single-art** tabs (5.2 already marks held multi-asset tiles), offering Replace Anyway or Cancel — see "Task 5.3" under Merge 4 | 5.2 | DONE (unit tests green 2026-09-15; the three-way prompt lost its View Existing row during implementation — see the spec; device check outstanding) |
 | 5.4 | A stored-assets manager over the shipped `reorderAssets`: reorder, primary screenshot at position 0, and a count-based warning before a large apply — see "Task 5.4" under Merge 4 | 5.2, 5.0 | DONE (unit tests green 2026-09-15; device check outstanding) |
 | 6.1 | Crop profile registry keyed on kind → platform → **game** region → default → source ratio, with Original Image as the universal fallback and a kind-default starter set — see "Task 6.1" under Merge 5 (AD-14) | None | DONE (unit tests green 2026-09-15; kind defaults only, so no pixels change — the platform and region tiers ship empty and are proven against a test table; device check outstanding) |
-| 6.2 | Live final-result preview for ICON0, box art, 3D box and physical media from the same crop state — see "Task 6.2" under Merge 5 | 6.1 | READY (specced 2026-09-15) |
+| 6.2 | Live final-result preview for ICON0, box art, 3D box and physical media from the same crop state — see "Task 6.2" under Merge 5 | 6.1 | DONE (unit tests written 2026-09-15, awaiting a run; fixed top-right inset at 132 dp, user-approved 2026-09-15; `frameSizeFor`'s aspect extracted to `frameAspectFor` so frame and inset share one expression; device check outstanding) |
 | 6.3 | Per-game/category profile override persisted in the shipped `crop_profile_key` column, with Reset to Platform Default | 6.1 | READY |
 | 6.4 | Session Undo Last Apply over metadata, artwork replacement, ordering and crop | 3.2, 5.4, 6.2 | READY |
 | 6.5 | Centralize the artwork dimension policy: one shared box-art canvas table, `boxArtAspectFor` migrated onto it, Vita split from PSP — see "Task 6.5" under Merge 5 (Artwork Dimension & Aspect Ratio Policy) | None | READY (specced 2026-09-15) |
+| 6.6 | Play the clip while cropping ICON1 and VIDEO — full-screen canvas and inset both live — see "Task 6.6" under Merge 5 | 6.2 | DONE (unit tests updated 2026-09-16, awaiting a run; device check outstanding) |
+| 6.7 | A switch for the crop editor's live preview inset — Settings ▸ Artwork row plus ⓨ in the editor, one switch for every kind | 6.2, 6.6 | DONE (tests green 2026-09-16; off also skips the inset's ExoPlayer, so it doubles as the escape hatch from 6.6's second decoder) |
+| 6.8 | Crop a pick BEFORE applying it, with its provider provenance carried into the record | 6.2 | DONE (tests green 2026-09-16; plain Apply untouched; still images only — video picks are excluded, see the task note) |
+| D.1 | A durable-identity index at the library root: format, defensive parse, read/write on `PortableArtworkLibrary` — see "Task D.1" under Merge 6 | None | DONE (unit tests written 2026-09-16, awaiting a run; serialized names lifted from `ArtworkEntryMetadata` so v1 evidence stays readable; nothing reads the file yet — D.2 writes it, D.3 consumes it) |
+| D.2 | Record the owning game's durable ids whenever PFP writes a portable artwork file | D.1 | DONE (unit tests written 2026-09-16, awaiting a run; buffered in `ArtworkIdentityRecorder` and flushed at the import boundary, never per file — the import executor's OWN writes are left to D.4's backfill, see the task note) |
+| D.3 | Relink consults the index **before** any name tier; name tiers stay as the fallback for foreign files | D.1, D.2 | DONE (unit tests written 2026-09-16, awaiting a run; `tokensOf` extracted so the file side and the database side build tokens identically; `identityOwners` defaults to "no identity", so a pre-D.2 library matches exactly as before) |
+| D.4a | Backfill the index during relink, from the game each file lands on — this is what gives an EXISTING library durable identity | D.3 | DONE (unit tests written 2026-09-16, awaiting a run; `upsertAll` added so a whole-library backfill is one pass, and the file is rewritten only when it changed) |
+| D.4b | Carry durable ids through `.pfpgame` export/import so a manually added game's artwork reconnects by id | D.4a | DONE (unit tests written 2026-09-16, awaiting a run; the export file format is UNCHANGED — its existing game-level ids were already enough, so no new version and old exports seed identity too) |
 | L.1 | Measured grid capacity in the ViewModel: a pure `StudioGridCapacity` plus per-tab tile class replaces the fixed 4×5 constants; re-paging keeps the focused result (AD-17) | None | DONE |
 | L.2 | Render exactly one measured page: the grid slot reports its size and draws `gridColumns` × `gridRows` with no scrolling | L.1 | DONE |
 | L.3 | Title line and flat tabs: search joins the header, breadcrumb trail and SEARCH label go, eleven compact chips with LB/RB glyphs | None | DONE (`a9e0d28`) |
@@ -442,6 +450,7 @@ merge independently reviewable:
 | 3d | `M.0` → `M.1` → `M.2` → `M.3a` → `M.3b` → `M.4` → `M.5` → `M.6` | *Added 2026-09-11.* User request: identifying a game takes too long. M.1–M.3b and M.6 rewrite how the Studio sequences resolve and browse, which Merge 4's queue builds on, so they land first. |
 | 4 | `5.1` → `5.2` → `5.3` → `5.4` | The Studio-side multi-media queue, on top of a strip that already renders it. |
 | 5 | `6.1` → `6.2` → `6.3` | Crop, entirely self-contained. |
+| 6 | `D.1` → `D.2` → `D.3` → `D.4a` → `D.4b` | Durable artwork identity. Ordered because each step is useless without the one before it. |
 | 6 | [C17](artwork-studio-navigation-plan.md), then `4.3` → `4.4`, then `6.4` | The input rework, now its own plan; `6.4`'s session undo spans metadata, ordering and crop, so it wants all three landed. |
 
 ### Still open from Phase 1's own goals
@@ -2233,6 +2242,364 @@ modified. No ViewModel change, no new dependency.
 **Stop if** the preview needs a new field on `ArtworkStudioUiState`, or any change to
 `recomputeCropRect` or `frameSizeFor`. That means the geometry is being recomputed rather than
 reused, and a preview that computes its own geometry will disagree with the frame it sits beside.
+
+**As implemented (2026-09-15).** Built to the spec, with three things worth recording:
+
+1. **`frameSizeFor` kept its behaviour but lost a line.** The aspect expression
+   `(cw * srcW) / (ch * srcH)` was extracted to `frameAspectFor(g)`, which `frameSizeFor` now
+   calls; the inset calls the same function. This is the opposite of the "stop if" condition — it
+   makes the preview *reuse* the frame's geometry instead of re-deriving it — but the extraction is
+   a change to those lines, so it is flagged rather than left silent. No arithmetic moved.
+2. **Placement approved by the user, 2026-09-15:** a 132 dp-wide inset in the **top-right** corner,
+   below the title, captioned in 9 sp grey. A larger 180 dp variant and a bottom-left position were
+   offered and declined.
+3. **Captions resolve through their own total function**, `cropPreviewCaptionFor(kind)`, rather than
+   riding on the chrome enum — `BOX_3D` and `PHYSICAL_MEDIA` share a chrome but not a name. A test
+   pins caption-nullness to chrome-nullness so the two cannot drift apart.
+
+Shipped: `StudioCropPreview.kt` (`CropPreviewChrome`, `cropPreviewChromeFor`,
+`cropPreviewCaptionFor`, `StudioCropPreviewTile`), `StudioCropPreviewTest` (7 tests),
+`ArtworkStudioScreen.kt` (`kind` parameter, `frameAspectFor`, the layer-2 inset). No ViewModel
+change, no new `ArtworkStudioUiState` field, no new dependency, one decode per editor open.
+
+### Task 6.6: play the clip while cropping ICON1 and VIDEO
+
+Raised by the user on 2026-09-16, immediately after 6.2 landed: "the biggest live previews will be
+for the video sections, since I want a snippet of the video to play while I crop it. This allows
+users to properly create placement."
+
+**Why 6.2 missed it.** 6.2 resolved ICON1 and VIDEO to *no inset*, on the reading that they have no
+still tile. That was wrong in the way that matters: those two kinds are the ones where a frozen
+frame tells you least. The action in a clip moves, and a crop judged against one extracted frame
+can land on exactly the wrong part of it.
+
+**What the tree already had — this is smaller than it sounds.**
+
+- **Video cropping already works end to end.** `beginCrop` (`ArtworkStudioViewModel.kt:2221`)
+  branches on `isVideoKind` (ICON1, VIDEO): it extracts one still frame to frame against and keeps
+  the clip in `cropVideoSourcePath`. `applyCrop` (`:2341`) re-encodes with Media3 Transformer's
+  `Crop` using the same `l/t/r/b` the frame produced. So the preview is faithful to the baked
+  result by construction, not by approximation.
+- `cropVideoSourcePath` was in `ArtworkStudioUiState` already and simply never reached the screen.
+  **No ViewModel change was needed** — only a parameter.
+- `StudioVideoTilePreview` already proves the ExoPlayer + `TextureView` pattern in this file. It is
+  *simpler* here: `cropVideoSourcePath` is a local temp file, so the whole non-seekable-stream
+  download fallback that tile preview carries does not apply.
+- Media3 ExoPlayer is already a `:feature:feature-xmb` dependency. No new dependency.
+
+**Decisions taken (user, 2026-09-16).**
+
+1. **Both the canvas and the inset play.** The canvas was offered as optional — inset-only would
+   have been purely additive — and the user chose both, so panning and zooming happen over moving
+   video rather than over a still.
+2. **VIDEO is frameless, ICON1 is the PSP tile.** ICON1 is the XMB icon slot in motion (PSP
+   ICON1.PMF) and wears that slot's chrome; VIDEO plays in the Game Details media strip, which
+   draws no frame, so framing it would invent chrome it never has.
+
+**How the canvas plays without disturbing the crop maths.** A video surface is a `View`, not
+something a `DrawScope` can paint, so the single Canvas splits in two for video kinds only:
+
+- the clip is laid out at `imgDispW × imgDispH` and offset to `imgLeft/imgTop` inside a clipped
+  full-screen box — the same numbers `drawImage`'s `dstOffset`/`dstSize` used;
+- a transparent Canvas above it draws the dim mask and the frame stroke, and carries the gesture
+  `pointerInput` (the video View would otherwise swallow the drags).
+
+Both numbers now come from one **`cropLayoutFor(g, areaW, areaH)`**, extracted from the old
+in-`DrawScope` arithmetic and used by the still path, the video path and the gesture block alike.
+A still painted by a DrawScope and a clip positioned by the layout system must place the same
+pixels in the same spot, or a pan would move the two by different amounts. The mask likewise moved
+into `DrawScope.drawCropMask`. `frameSizeFor`, `frameAspectFor` and `recomputeCropRect` are
+unchanged, and the image path draws the same expressions it always did.
+
+**Two players, one clip.** An ExoPlayer renders to one surface at a time, so the canvas and the
+inset each need their own. They are started together and then wander, and two views of one clip
+showing different moments reads as a bug — so `SyncClipTo` seeks the inset back onto the canvas
+whenever they drift more than 150 ms, checked on a 500 ms tick. That tolerance is deliberate:
+seeking every tick would stutter the very motion this task exists to show. **This is the one real
+cost of the task** — two hardware decoders over one local file for as long as the editor is open.
+
+**Shipped.** New `StudioCropVideo.kt` (`rememberCropClipPlayer`, `SyncClipTo`, `CropVideoSurface`);
+`StudioCropPreview.kt` gains `StudioCropPreviewVideoTile` and a shared `CropPreviewFrame` so the
+still and video insets cannot drift apart on chrome, and its chrome/caption maps gain ICON1 and
+VIDEO; `ArtworkStudioScreen.kt` takes `videoPath`, splits layer 1 and adds `cropLayoutFor` /
+`drawCropMask`; `StudioCropPreviewTest` updated — ICON1 and VIDEO move from the no-preview list to
+the previewing one, and a new test pins the previewing video kinds to the ViewModel's `isVideoKind`
+pair.
+
+**Fallback.** `rememberCropClipPlayer` returns null once playback errors, and both the canvas and
+the inset fall back to the extracted still — a motionless preview is still a truthful one, and a
+black rectangle is not.
+
+**Acceptance.**
+
+- Cropping ICON1 or VIDEO plays the clip full-screen behind the frame and again, cropped, in the
+  inset; pan and zoom move both together and the two stay in step.
+- ICON1's inset is framed PSP chrome, VIDEO's is frameless.
+- Apply still produces the Transformer-cropped clip it did before, from the same rect.
+- Image kinds are untouched: same single decode, same framing, same gestures.
+- A clip that will not play degrades to the still frame rather than to black.
+
+**Device check.** The one thing unit tests cannot cover here. Watch specifically for: the two
+surfaces staying in sync, no stutter while dragging, and both players actually released when the
+editor closes (reopen the editor several times and watch memory).
+
+### Task 6.7: a switch for the crop preview inset
+
+Asked for directly on 2026-09-16: "give me a option to disable the small preview window in Artwork
+Crop". The inset is a fixed corner overlay and can sit over the part of the image being framed at
+high zoom — a known, accepted cost of 6.2's placement decision, now given an escape hatch.
+
+**Decisions taken (user, 2026-09-16).**
+
+1. **Both homes.** A durable row in Settings ▸ Artwork *and* a Ⓨ toggle inside the crop editor, both
+   writing one stored preference. Settings alone was offered and declined: the moment you notice the
+   inset is in the way is the moment you want it gone, without leaving the editor.
+2. **One switch for every kind**, stills and video alike. A separate video switch was offered and
+   declined.
+
+**Shipped.** New `CropPreviewPreferences` in **core-data** — same reasoning as `GameBootPreferences`,
+which its KDoc cites: two screens write it and must never disagree. Both screens *collect* it, so a
+Ⓨ press moves the Settings row live and vice versa. Defaults on. Ⓨ (`OPEN_CONTEXT_MENU`) was
+genuinely unbound inside the crop editor — only A, B, D-pad and LB/RB were taken — so nothing was
+displaced. The pill renders only for kinds that have a preview at all.
+
+**Beyond the ask, deliberately:** with the preview off the inset's `ExoPlayer` is never constructed,
+and flipping it off releases the running one as it leaves composition. So for ICON1 and VIDEO this
+does not merely hide a rectangle — it drops the second decoder that task 6.6 named as its one real
+cost. That makes 6.7 the answer if the playing preview ever stutters on a device.
+
+### Task 6.8: crop a pick before applying it
+
+Asked for directly on 2026-09-16: "allow users to crop before applying as well."
+
+**The gap.** `StudioAction.CROP` is gated on `hasCurrent`, and `beginCrop` frames
+`routingStore.originalToTemp(gameId, kind)` — the slot's stored original. So a pick could only be
+framed *after* committing it, and getting it wrong meant applying, cropping, and re-applying.
+
+**Decision (user, 2026-09-16).** An **extra** Options entry when a grid pick is focused; plain Apply
+is untouched. Making cropping the default apply path, and folding it into the apply confirmation,
+were both offered and declined.
+
+**Shipped.** `StudioAction.CROP_BEFORE_APPLY` → `beginCropForCandidate()` downloads the focused pick
+through the queue's own path (`ArtworkTempIO.downloadToTemp`, exposed as
+`RoutingArtworkStore.candidateToTemp`), opens the editor over it, and Apply bakes and commits it.
+Cancelling deletes the temp and writes nothing.
+
+**The part that was actually load-bearing — provenance.** `saveCropBaked` read `originUrl`,
+`provider` and `providerAssetId` off the slot's **existing record**, which a not-yet-applied pick
+does not have. Left alone, a crop-first apply would have landed as an anonymous user file and
+quietly broken Reset to Scraped Default and duplicate detection for that asset. The candidate's
+provenance is now passed explicitly and used **only** when no record exists to inherit from — an
+existing record's provenance stays the truth.
+
+**Two deliberate limits.**
+
+- **It starts centred**, not from the slot's stored crop rect: that rect was derived from a different
+  image, and seeding from it would frame the new pick by the old one's numbers.
+- **Video picks are excluded** (`isVideo == false`). The editor's video path needs the clip in
+  `cropVideoSourcePath` and bakes through Media3 Transformer; offering the entry for something that
+  would fall down the still-image bake path is worse than not offering it. A follow-up, not a
+  redesign.
+
+## Merge 6: durable artwork identity
+
+Raised by the user on 2026-09-16 after a fresh install: a relink reconnected exactly one file (one
+game's ICON1) and nothing else. Their diagnosis, which the code confirms: *"it was because the name
+didn't make the folder. We should not have names be the identifier. it defeats the purpose of the
+export."*
+
+**The defect, precisely.** `ArtworkKeyFactory.keyFor` mints what its own KDoc calls "the stable,
+portable identity for a game's artwork entry" as `rom/{platformId}/{slug(rom filename stem)}` — a
+filename. Every tier of `RelinkOwnerLookup` is then name-based: claim on the stem, record on the
+portable name, claim on the ordinal-stripped base, fuzzy title match. There is no name-independent
+path through relink, so a ROM renamed (or named differently on another device) orphans all of its
+artwork.
+
+**Why the export does not save it.** `PcGameExport` already carries `ssId`, `tgdbId`, `igdbId` and
+`steamGridDbId` per game — real durable identity — but its artwork entries are
+`PcGameExportArtwork(kind, sortOrder, portableName)` and relink's claims map is keyed
+`(platform, kind, portableName)`. The export hauls durable ids across a wipe and then reconnects
+artwork by name anyway.
+
+**The intent already existed, and was deleted.** This is the important find (2026-09-16).
+`ArtworkEntryMetadata` (`portable/ArtworkEntryMetadata.kt`) is the v1 layout's per-entry
+`metadata.json`, and it already carries `rom_crc32`, `ss_id`, `sgdb_id`, `tgdb_id` and `igdb_id`.
+Its KDoc states the purpose outright: *"identity evidence the reconnect matcher uses when the
+primary key misses (renamed ROM)"*. Exactly this problem, already solved once.
+
+The v1 to v2 migration (`PortableArtworkLibrary.migrateV1Library`) reads that file for the portable
+name, moves the assets into the flat media-dir layout, and then **deletes `metadata.json`** — and
+the v3 layout never writes it again. The identity evidence was not rejected; it was dropped by a
+layout change with no replacement, leaving the name-only matching that fails today.
+
+So D.1 is not a new schema. It lifts `ArtworkEntryMetadata`'s already-frozen identity fields into a
+root-level index, keeping their serialized names so old files stay readable.
+
+The comment on `Game.ssId` says the same thing from the database side — ids are persisted so "a
+portable artwork library reconnects by id after a device migration" — and
+`ArtworkRecordDao.findByChecksum`, `findByProviderAssetId` and `findByOriginUrl` are built and
+unconsumed.
+
+**What durable identity is actually available.** None is universal, so identity is a *list*, not a
+key:
+
+| Field | Durable | Caveat |
+|---|---|---|
+| `romCrc32` | content-derived | only written by a ScreenScraper scrape (`MetadataRepository.kt:399`), null for unscraped games |
+| `ssId` / `tgdbId` / `igdbId` / `steamGridDbId` | yes | null until matched |
+| `artworkKey` | **no** | name-derived, as above |
+| `portableName` | **no** | today's mechanism |
+
+So a game's identity is the ordered set of the tokens it has — `crc:{romCrc32}`, `ss:{id}`,
+`tgdb:{id}`, `igdb:{id}`, `sgdb:{id}` — and a file matches a game when any token matches. A game
+with no tokens at all falls through to the existing name tiers, unchanged.
+
+**Filenames stay as they are.** They are ES-DE-shaped deliberately, and ES-DE matches media to ROMs
+by name; renaming files to CRCs would break that interop on purpose. Identity moves into a sidecar
+instead of into the name.
+
+**Decisions taken (user, 2026-09-16).**
+
+1. **One index at the library root**, beside the existing manifest. One read per relink, one rewrite
+   per operation, invisible to ES-DE. Accepted cost: a file the user hand-moves between platform
+   folders leaves a stale row, and relink falls back to the name tiers for it exactly as today.
+   Per-platform indexes, per-file sidecars and extending the 1 KB manifest were offered and declined.
+2. **The repoint rule does not change.** Relink still fills only missing, dead or remote references
+   and still respects user-assigned and locked records. Durable identity decides *which game a file
+   belongs to*, never *whether to overwrite a good reference*. "Trust the index over the column" was
+   offered and declined, so a wrong pick from an earlier fuzzy match is corrected by the user, not
+   silently by a scan.
+
+**Why this is four tasks.** It spans a new file format, every artwork write path, the relink lookup
+and the export — well past the PLANNING_WORKFLOW budget for one task. Each below stands alone and
+leaves the tree working.
+
+### Task D.1: the durable-identity index
+
+New `ArtworkIdentityIndex.kt` in `feature-artwork/.../portable/`: a serializable model mapping
+`(platformId, kind, portableName)` to the owning game's identity tokens, plus `parse`/`encode`
+written defensively in the same shape as `ArtworkLibraryManifest` (unknown keys ignored, malformed
+JSON to null, size cap — a much larger cap than the manifest's, since this scales with the library
+rather than being a fixed-size config; the manifest reads at 64 KB and a typical one is under 1 KB).
+**Reuse `ArtworkEntryMetadata`'s `@SerialName`s** (`rom_crc32`, `ss_id`, `sgdb_id`, `tgdb_id`,
+`igdb_id`) rather than minting new ones. `PortableArtworkLibrary` gains `readIdentityIndex` / `writeIdentityIndex` next to
+`readManifest` / `writeManifest`.
+
+Pure model plus one I/O surface, so it tests without a device: round trip, malformed input, unknown
+keys, oversized file, and an empty index reading back as empty rather than null.
+
+**Do not change:** `ArtworkLibraryManifest`, `ArtworkEntryMetadata` (still read by the v1
+migrator), `ArtworkKeyFactory`, or any relink behaviour. D.1 ships a file nothing reads yet.
+
+### Task D.2: record identity on write
+
+Every path that writes a portable artwork file records the owner's tokens into the index. The write
+choke point is the portable library save used by `RoutingArtworkStore` and
+`ArtworkImportExecutor`; the index is rewritten once per operation, never per file, matching
+`writeManifest`'s existing rule.
+
+**Stop if** this needs a write per file. That turns every scrape into N SAF writes on a slow SD card,
+and the manifest's "once per operation" rule exists for exactly that reason.
+
+**As implemented (2026-09-16).** The stop condition bit, and the answer is a buffer:
+`ArtworkIdentityRecorder` (`@Singleton`) holds the index in memory, `record` upserts without
+touching the folder, and `flush` is the only write. `RoutingArtworkStore.persistPortable` records;
+`ArtworkImportExecutor.execute` flushes at its end, under `NonCancellable` for the same reason the
+import report is — a cancelled import still wrote files, and those files should still be
+identifiable.
+
+Two consequences worth stating plainly:
+
+1. **Unflushed rows are lost if the process dies.** Acceptable by design rather than tolerated:
+   D.4's backfill rebuilds the index from `artwork_records` on the next relink, so the worst case is
+   identity one relink behind, never identity that is wrong.
+2. **The import executor's own `saveFromFile` calls are not recorded** — it writes outside
+   `persistPortable` and its plan model carries `artworkKey` but not the scraper ids or the CRC.
+   Recording from there would write the weakest evidence only; D.4's backfill joins
+   `artwork_records` to `games` and gets the full set, so those files are left to it deliberately.
+   D.2 flushes there because it is the coarse boundary that exists, not because it records there.
+
+A Studio apply or a scrape buffers its rows and they reach the folder at the next import or relink
+flush. That is the cost of honouring "never per file" without threading an operation boundary
+through `MetadataRepository`, which would have pushed this task past its file budget.
+
+### Task D.3: relink consults identity first
+
+`RelinkOwnerLookup.owners` gains a new **first** tier: an `identityOwners` lookup built by
+`ArtworkImportManager` from the current database (token to game ids) crossed with the index row for
+the file. Everything below it is untouched, so foreign files and ES-DE drops still reconnect exactly
+as they do now.
+
+This is the task that fixes the reported bug. Tests belong in the existing `RelinkOwnerLookup` test:
+identity beats a claim, identity beats a record, a file whose identity names a game that no longer
+exists falls through to the name tiers, and a game with no tokens behaves exactly as before.
+
+**As implemented (2026-09-16).**
+
+- `ArtworkIdentityIndex.tokensOf` was extracted from `Entry.tokens()` so the **file side** (a row in
+  the index) and the **database side** (a `GameEntity`'s ids) build tokens through one function. Two
+  spellings of the same id would never meet, and the failure would read as "no durable identity"
+  rather than as a bug — that is the single most important line in this task.
+- `identityOwners` is a defaulted parameter (`{ null }`), so every existing caller and all nine
+  pre-existing lookup tests are untouched, and a library written before D.2 matches exactly as it
+  always did.
+- The lambda distinguishes **no row** (null → fall through) from **a row naming nobody who still
+  exists** (empty list → also fall through). Without that distinction an index row for a deleted
+  game would swallow the file and the name tiers would never run.
+- The full stem is tried before the ordinal-stripped base, mirroring the name tiers, so a
+  multi-asset file cannot borrow another position's identity.
+- Relink does **not** flush the recorder here; D.4's backfill is what writes the index during a
+  relink, and doing it in both places would write twice.
+
+### Task D.4: backfill and export
+
+**Split into D.4a and D.4b on 2026-09-16.** The two halves live in different modules
+(`feature-artwork` and `feature-settings`) and together exceed one task's file budget. D.4a is also
+the half that fixes the reported bug, so it ships on its own.
+
+Two closing halves:
+
+- **Backfill.** The first relink after D.3 writes index rows for every file it links, from the
+  records it already has, so an existing library gains durable identity without the user doing
+  anything. Idempotent.
+- **Export.** A `.pfpgame`'s ids seed the identity index on import, so the reconnection outlives
+  that one import instead of having to be made again by name next time.
+
+**D.4b as implemented (2026-09-16).** The export **file format did not change**, which is better
+than the spec assumed: `PcGameExport` already carried `ssId`, `tgdbId`, `igdbId` and
+`steamGridDbId` at the game level, and each `PcGameExportArtwork` already carried `kind` and
+`portableName`. Together those are exactly one identity row, so no new field, no format version
+bump, and **exports written before this change seed identity too**.
+
+`PcGameArtworkClaims` now builds seeds beside the claims it already built, and:
+
+- a **contested** name (two games claiming it) seeds nothing, the same rule claims follow — neither
+  game may assert identity for a file both name;
+- an export with **no ids at all** seeds nothing, since a row with no token occupies a slot and
+  resolves to nobody;
+- seeds are merged into the index **before** the walk matches, so the restoring import already
+  resolves by them, and are compared against what the *folder* held when deciding to write — so
+  seeds persist even when the walk linked nothing new.
+
+There is still no `romCrc32` for a PC game, which is correct: there is no ROM to hash.
+
+**D.4a as implemented (2026-09-16).** Relink collects an identity row for every file it links —
+built from the `GameEntity` it matched, so the row carries the CRC and scraper ids the game has
+right now — and merges them into the index in one `upsertAll` pass at the end of the walk. Two
+properties matter and both are tested:
+
+- **Idempotent.** A second scan over an unchanged library produces an identical index, and the
+  write is skipped entirely when the merged entries equal what was read. Backfill runs on every
+  relink, so without this it would rewrite a multi-megabyte file on the SD card every scan.
+- **One pass, not one upsert per row.** `upsert` rebuilds the whole entry list per call; a
+  whole-library backfill through it would be quadratic.
+
+This is also what closes D.2's known gap: files the import executor wrote itself, and any rows
+buffered but never flushed, gain identity at the next relink from the records they already have.
+
+**Acceptance for the merge.** Wipe the app, rescan ROMs, relink artwork: every previously linked
+file reconnects, including for a game whose ROM has been renamed since. A game with no scrape and no
+ids still reconnects by name exactly as today.
 
 ### Task 6.5: centralize the artwork dimension policy
 

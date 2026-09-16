@@ -4,6 +4,7 @@ import com.playfieldportal.core.data.database.entity.ArtworkRecordEntity
 import com.playfieldportal.core.data.model.StorefrontIdentity
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GameContentType
+import com.playfieldportal.feature.artwork.portable.ArtworkIdentityIndex
 import com.playfieldportal.feature.launcher.PcLauncherCatalog
 
 private const val WINDOWS_PLATFORM_ID = "windows"
@@ -198,6 +199,10 @@ object PcGameImportPlanner {
 class PcGameArtworkClaims {
     private val owners = HashMap<Triple<String, String, String>, Long>()
     private val contested = HashSet<Triple<String, String, String>>()
+    // Durable identity for the same files (C16 task D.4b). A claim reconnects artwork once, by
+    // name; these rows put the export's scraper ids into the library's identity index, so the
+    // reconnection survives the next rename instead of having to be made again.
+    private val seeds = HashMap<Triple<String, String, String>, ArtworkIdentityIndex.Entry>()
 
     fun add(export: PcGameExport, gameId: Long) {
         export.artwork.forEach { item ->
@@ -206,12 +211,32 @@ class PcGameArtworkClaims {
             val owner = owners.putIfAbsent(key, gameId)
             if (owner != null && owner != gameId) {
                 owners.remove(key)
+                seeds.remove(key)
                 contested.add(key)
+            } else {
+                // A PC game has no ROM, so there is no CRC; the scraper ids are the durable part.
+                seeds[key] = ArtworkIdentityIndex.Entry(
+                    platformId = WINDOWS_PLATFORM_ID,
+                    kind = item.kind,
+                    portableName = item.portableName,
+                    ssId = export.ssId,
+                    tgdbId = export.tgdbId,
+                    igdbId = export.igdbId,
+                    sgdbId = export.steamGridDbId,
+                )
             }
         }
     }
 
     fun toMap(): Map<Triple<String, String, String>, Long> = owners.toMap()
+
+    /**
+     * The identity rows these exports justify — only for names exactly one game claims, and only
+     * where the export actually carried an id. A row with nothing durable in it would occupy a slot
+     * in the index and still resolve to nobody.
+     */
+    fun toIdentitySeeds(): List<ArtworkIdentityIndex.Entry> =
+        seeds.values.filter { it.tokens().isNotEmpty() }
 
     companion object {
         /**

@@ -34,6 +34,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -109,9 +110,17 @@ class ArtworkStudioViewModelTest {
     @After
     fun tearDown() = Dispatchers.resetMain()
 
+    // The crop preview switch is a DataStore-backed singleton; `context` here is a relaxed mock, so
+    // a real one would reach for a store that does not exist. Stubbed to the shipped default.
+    private val cropPreviewPreferences =
+        mockk<com.playfieldportal.core.data.repository.CropPreviewPreferences>(relaxed = true) {
+            every { enabledFlow } returns kotlinx.coroutines.flow.flowOf(true)
+        }
+
     private fun viewModel() = ArtworkStudioViewModel(
         context, gameRepository, artworkStore, routingStore, ssMediaCatalog,
         steamGridDb, sgdbKeyProvider, theGamesDb, igdbApi, videoSnapTranscoder, matchEvidence,
+        cropPreviewPreferences,
         // Nothing kept between opens: these tests count what each open asks.
         com.playfieldportal.feature.artwork.match.TitleSearchStore.None,
     )
@@ -459,6 +468,54 @@ class ArtworkStudioViewModelTest {
         assertEquals("art1", vm.uiState.value.candidate?.url)
         vm.toggleSelection(0)
         assertTrue(vm.uiState.value.selection.isEmpty())
+    }
+
+    // ── Crop before applying ──────────────────────────────────────────────────
+
+    // Cropping used to require artwork that was already applied (StudioAction.CROP is gated on
+    // hasCurrent), so a pick could only be framed after committing it.
+    @Test
+    fun `a focused pick offers Crop Before Applying, with Apply left alone`() = runTest(testDispatcher) {
+        val vm = screenshotGridOnSgdb(perType = 2)
+        vm.handleGamepadAction(GamepadAction.NAVIGATE_RIGHT)
+        advanceUntilIdle()
+
+        val actions = vm.uiState.value.availableActions
+        assertTrue(StudioAction.CROP_BEFORE_APPLY in actions)
+        // The slot holds nothing, so the applied-artwork crop must NOT be offered — these are two
+        // different operations on two different images.
+        assertFalse(StudioAction.CROP in actions)
+    }
+
+    @Test
+    fun `leaving the grid withdraws Crop Before Applying`() = runTest(testDispatcher) {
+        val vm = screenshotGridOnSgdb(perType = 2)
+        vm.handleGamepadAction(GamepadAction.NAVIGATE_RIGHT)
+        advanceUntilIdle()
+        assertTrue(StudioAction.CROP_BEFORE_APPLY in vm.uiState.value.availableActions)
+
+        vm.handleGamepadAction(GamepadAction.BACK)
+        advanceUntilIdle()
+
+        assertFalse(
+            "there is no focused pick outside the grid",
+            StudioAction.CROP_BEFORE_APPLY in vm.uiState.value.availableActions,
+        )
+    }
+
+    @Test
+    fun `cancelling a candidate crop leaves the slot untouched`() = runTest(testDispatcher) {
+        val vm = screenshotGridOnSgdb(perType = 2)
+        vm.handleGamepadAction(GamepadAction.NAVIGATE_RIGHT)
+        advanceUntilIdle()
+        val before = vm.uiState.value.currentUri
+
+        vm.cancelCrop()
+        advanceUntilIdle()
+
+        assertNull(vm.uiState.value.cropCandidate)
+        assertNull(vm.uiState.value.cropEditorPath)
+        assertEquals("nothing is written until Apply", before, vm.uiState.value.currentUri)
     }
 
     @Test

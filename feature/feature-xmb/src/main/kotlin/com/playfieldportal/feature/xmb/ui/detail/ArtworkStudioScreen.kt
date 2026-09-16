@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -86,6 +87,7 @@ import com.playfieldportal.core.ui.components.ControllerPromptBar
 import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.menuCursorEdge
+import com.playfieldportal.feature.artwork.store.ArtworkKind
 
 // The gap between grid tiles. Must equal StudioGridCapacity's GAP_DP, or the tiles drawn here stop
 // matching the capacity the ViewModel paged for.
@@ -1326,6 +1328,10 @@ internal fun ArtworkStudioContent(
         state.cropEditorPath?.let { path ->
             StudioCropEditor(
                 path = path,
+                kind = STUDIO_TABS[state.tabIndex].kind,
+                videoPath = state.cropVideoSourcePath,
+                previewEnabled = state.cropPreviewEnabled,
+                onTogglePreview = actions::toggleCropPreview,
                 srcW = state.cropSrcW, srcH = state.cropSrcH,
                 cropL = state.cropL, cropT = state.cropT, cropR = state.cropR, cropB = state.cropB,
                 applying = state.applying,
@@ -1426,11 +1432,23 @@ internal fun formatBytes(bytes: Long): String = when {
  * Crop/position editor: the untouched original fills the screen, a dimmed mask shows the crop
  * window (aspect-locked per kind by the ViewModel). Controller pans with the D-pad and zooms
  * with LB/RB; touch drags to pan and pinches to zoom.
+ *
+ * For the kinds that own an XMB tile or media-strip slot, a live inset in the top-right corner
+ * shows the framed region as the finished artwork — see [StudioCropPreviewTile].
+ *
+ * ICON1 and VIDEO are cropped as video: when [videoPath] is non-null the clip plays behind the
+ * frame AND inside the inset (task 6.6), so placement can be judged against the motion rather than
+ * against whichever still frame happened to be extracted. [path] is that still, and remains the
+ * fallback if the clip will not play.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun StudioCropEditor(
     path: String,
+    kind: ArtworkKind,
+    videoPath: String?,
+    previewEnabled: Boolean,
+    onTogglePreview: () -> Unit,
     srcW: Int, srcH: Int,
     cropL: Float, cropT: Float, cropR: Float, cropB: Float,
     applying: Boolean,
@@ -1457,9 +1475,58 @@ private fun StudioCropEditor(
     // crop frame's dimensions are static; everything else moves and scales behind it.
     Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.96f))) {
 
-        // ── Layer 1: full-screen image + fixed frame + dim mask ────────────────
+        // ── Layer 1: full-screen source + fixed frame + dim mask ───────────────
         val image = bmp
-        if (image == null) {
+        // One gesture block for both sources: the frame is fixed and full-screen either way, so
+        // pan and zoom read the same numbers whether a still or a clip sits underneath.
+        val gestures = Modifier.pointerInput(Unit) {
+            detectTransformGestures { _, pan, zoom, _ ->
+                val g = geom.value
+                val l = cropLayoutFor(g, size.width.toFloat(), size.height.toFloat())
+                // Frame is fixed: dragging the image right shifts the framed region left.
+                if (pan.x != 0f || pan.y != 0f) onPan(-pan.x / l.imgDispW, -pan.y / l.imgDispH)
+                if (zoom != 1f) onZoom(zoom)
+            }
+        }
+        // ICON1/VIDEO are cropped as video (task 6.6): the clip plays behind the frame so framing
+        // can be judged against the motion, not against one arbitrary frame. Two players, because
+        // an ExoPlayer drives one surface and the inset is the second — see StudioCropVideo.kt.
+        val canvasPlayer = if (videoPath != null) rememberCropClipPlayer(videoPath) else null
+        // Not created when the preview is off: that is the point of the switch for video kinds —
+        // no inset means no SECOND decoder. Flipping it off releases this one through
+        // rememberCropClipPlayer's DisposableEffect as it leaves composition.
+        val insetPlayer =
+            if (videoPath != null && previewEnabled) rememberCropClipPlayer(videoPath) else null
+        SyncClipTo(leader = canvasPlayer, follower = insetPlayer)
+
+        if (canvasPlayer != null) {
+            BoxWithConstraints(Modifier.fillMaxSize().clipToBounds()) {
+                val density = androidx.compose.ui.platform.LocalDensity.current
+                val l = cropLayoutFor(
+                    geom.value,
+                    with(density) { maxWidth.toPx() },
+                    with(density) { maxHeight.toPx() },
+                )
+                CropVideoSurface(
+                    player = canvasPlayer,
+                    modifier = Modifier
+                        .offset {
+                            androidx.compose.ui.unit.IntOffset(
+                                l.imgLeft.roundToInt(), l.imgTop.roundToInt()
+                            )
+                        }
+                        .size(
+                            with(density) { l.imgDispW.toDp() },
+                            with(density) { l.imgDispH.toDp() },
+                        ),
+                )
+                // The mask and frame ride above the clip, and carry the gestures — the video
+                // surface is a View and would swallow them.
+                androidx.compose.foundation.Canvas(Modifier.fillMaxSize().then(gestures)) {
+                    drawCropMask(cropLayoutFor(geom.value, size.width, size.height), accent)
+                }
+            }
+        } else if (image == null) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = accent)
             }
@@ -1468,44 +1535,15 @@ private fun StudioCropEditor(
                 Modifier
                     .fillMaxSize()
                     .clipToBounds()
-                    .pointerInput(Unit) {
-                        detectTransformGestures { _, pan, zoom, _ ->
-                            val g = geom.value
-                            val (fw, fh) = frameSizeFor(g, size.width.toFloat(), size.height.toFloat())
-                            val imgDispW = fw / (g.cropR - g.cropL).coerceAtLeast(0.0001f)
-                            val imgDispH = fh / (g.cropB - g.cropT).coerceAtLeast(0.0001f)
-                            // Frame is fixed: dragging the image right shifts the framed region left.
-                            if (pan.x != 0f || pan.y != 0f) onPan(-pan.x / imgDispW, -pan.y / imgDispH)
-                            if (zoom != 1f) onZoom(zoom)
-                        }
-                    },
+                    .then(gestures),
             ) {
-                val g = geom.value
-                val (fw, fh) = frameSizeFor(g, size.width, size.height)
-                val fx = (size.width - fw) / 2f; val fy = (size.height - fh) / 2f
-                // Scale the image so the crop window maps exactly onto the fixed frame.
-                val imgDispW = fw / (cropR - cropL).coerceAtLeast(0.0001f)
-                val imgDispH = fh / (cropB - cropT).coerceAtLeast(0.0001f)
-                val imgLeft = fx - cropL * imgDispW
-                val imgTop = fy - cropT * imgDispH
+                val l = cropLayoutFor(geom.value, size.width, size.height)
                 drawImage(
                     image = image,
-                    dstOffset = androidx.compose.ui.unit.IntOffset(imgLeft.roundToInt(), imgTop.roundToInt()),
-                    dstSize = androidx.compose.ui.unit.IntSize(imgDispW.roundToInt(), imgDispH.roundToInt()),
+                    dstOffset = androidx.compose.ui.unit.IntOffset(l.imgLeft.roundToInt(), l.imgTop.roundToInt()),
+                    dstSize = androidx.compose.ui.unit.IntSize(l.imgDispW.roundToInt(), l.imgDispH.roundToInt()),
                 )
-                // Dim everything outside the fixed frame, edge to edge of the screen.
-                val dim = Color.Black.copy(alpha = 0.62f)
-                val W = size.width; val H = size.height
-                drawRect(dim, size = androidx.compose.ui.geometry.Size(W, fy))
-                drawRect(dim, topLeft = androidx.compose.ui.geometry.Offset(0f, fy + fh), size = androidx.compose.ui.geometry.Size(W, H - fy - fh))
-                drawRect(dim, topLeft = androidx.compose.ui.geometry.Offset(0f, fy), size = androidx.compose.ui.geometry.Size(fx, fh))
-                drawRect(dim, topLeft = androidx.compose.ui.geometry.Offset(fx + fw, fy), size = androidx.compose.ui.geometry.Size(W - fx - fw, fh))
-                drawRect(
-                    accent,
-                    topLeft = androidx.compose.ui.geometry.Offset(fx, fy),
-                    size = androidx.compose.ui.geometry.Size(fw, fh),
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f),
-                )
+                drawCropMask(l, accent)
             }
         }
 
@@ -1532,12 +1570,60 @@ private fun StudioCropEditor(
                         .clickable(onClick = onCancel)
                         .padding(horizontal = 18.dp, vertical = 9.dp),
                 )
+                // Ⓨ is unbound inside the crop editor, so it takes the preview switch — the moment
+                // you notice the inset sitting over the part you are trying to frame is the moment
+                // you want it gone, without leaving for Settings. Writes the same stored preference
+                // the Settings ▸ Artwork row does.
+                if (cropPreviewChromeFor(kind) != null) {
+                    Text(
+                        if (previewEnabled) "Ⓨ  PREVIEW" else "Ⓨ  PREVIEW: OFF",
+                        color = Color.White.copy(alpha = if (previewEnabled) 0.8f else 0.45f),
+                        fontSize = 14.sp,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp)).background(Color.Black.copy(alpha = 0.55f))
+                            .clickable(onClick = onTogglePreview)
+                            .padding(horizontal = 18.dp, vertical = 9.dp),
+                    )
+                }
             }
             Text(
                 "drag to move the image   ·   pinch to zoom   ·   D-Pad move   ·   LB / RB zoom",
                 color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp,
                 modifier = Modifier.padding(top = 8.dp),
             )
+        }
+
+        // ── Layer 2: live result preview (task 6.2) ────────────────────────────
+        // A fixed top-right inset, so the crop frame stays centred and the gesture maths that map
+        // pan onto it are untouched. It reads the bitmap layer 1 already decoded and the same crop
+        // window, so it costs no decode and holds no state; kinds with no XMB tile get no inset.
+        val chrome = cropPreviewChromeFor(kind).takeIf { previewEnabled }
+        val caption = cropPreviewCaptionFor(kind)
+        val insetModifier = Modifier
+            .align(Alignment.TopEnd)
+            .padding(top = 42.dp, end = 20.dp)
+        if (chrome != null && caption != null) {
+            if (insetPlayer != null) {
+                StudioCropPreviewVideoTile(
+                    player = insetPlayer,
+                    aspect = frameAspectFor(geom.value),
+                    cropL = cropL, cropT = cropT, cropR = cropR, cropB = cropB,
+                    chrome = chrome,
+                    caption = caption,
+                    modifier = insetModifier,
+                )
+            } else if (image != null) {
+                // Also the fallback when a clip fails to play: the extracted still is still a
+                // truthful preview of the crop, just a motionless one.
+                StudioCropPreviewTile(
+                    image = image,
+                    aspect = frameAspectFor(geom.value),
+                    cropL = cropL, cropT = cropT, cropR = cropR, cropB = cropB,
+                    chrome = chrome,
+                    caption = caption,
+                    modifier = insetModifier,
+                )
+            }
         }
     }
 }
@@ -1548,13 +1634,63 @@ private data class CropGeom(
     val cropL: Float, val cropT: Float, val cropR: Float, val cropB: Float,
 )
 
-// The fixed frame's on-screen size: the crop window's aspect, fit to ~82% of the editor area.
-private fun frameSizeFor(g: CropGeom, areaW: Float, areaH: Float): Pair<Float, Float> {
+// The crop window's on-screen aspect. Extracted so the 6.2 result preview can show the SAME
+// rectangle the frame does: two copies of this expression would drift apart the moment a crop
+// profile changed, and the preview's whole claim is that it agrees with the frame beside it.
+private fun frameAspectFor(g: CropGeom): Float {
     val cw = (g.cropR - g.cropL).coerceAtLeast(0.0001f)
     val ch = (g.cropB - g.cropT).coerceAtLeast(0.0001f)
-    val frameAspect = (cw * g.srcW) / (ch * g.srcH)
+    return (cw * g.srcW) / (ch * g.srcH)
+}
+
+// The fixed frame's on-screen size: the crop window's aspect, fit to ~82% of the editor area.
+private fun frameSizeFor(g: CropGeom, areaW: Float, areaH: Float): Pair<Float, Float> {
+    val frameAspect = frameAspectFor(g)
     val fw = if (frameAspect > areaW / areaH) 0.82f * areaW else 0.82f * areaH * frameAspect
     return fw to (fw / frameAspect)
+}
+
+// Where the frame sits and how the source must be scaled and shifted so the crop window lands
+// exactly on it. Extracted in 6.6: a still is painted by a DrawScope and a clip is positioned by
+// the layout system, and those two must place the same pixels in the same spot or panning would
+// move the image and the playing video by different amounts.
+private data class CropLayout(
+    val fx: Float, val fy: Float, val fw: Float, val fh: Float,
+    val imgLeft: Float, val imgTop: Float, val imgDispW: Float, val imgDispH: Float,
+)
+
+private fun cropLayoutFor(g: CropGeom, areaW: Float, areaH: Float): CropLayout {
+    val (fw, fh) = frameSizeFor(g, areaW, areaH)
+    val fx = (areaW - fw) / 2f
+    val fy = (areaH - fh) / 2f
+    // Scale the source so the crop window maps exactly onto the fixed frame.
+    val imgDispW = fw / (g.cropR - g.cropL).coerceAtLeast(0.0001f)
+    val imgDispH = fh / (g.cropB - g.cropT).coerceAtLeast(0.0001f)
+    return CropLayout(
+        fx = fx, fy = fy, fw = fw, fh = fh,
+        imgLeft = fx - g.cropL * imgDispW, imgTop = fy - g.cropT * imgDispH,
+        imgDispW = imgDispW, imgDispH = imgDispH,
+    )
+}
+
+// Dims everything outside the fixed frame, edge to edge, then strokes the frame. Identical for a
+// still and for a clip — only what sits underneath it differs.
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawCropMask(
+    l: CropLayout,
+    accent: Color,
+) {
+    val dim = Color.Black.copy(alpha = 0.62f)
+    val W = size.width; val H = size.height
+    drawRect(dim, size = androidx.compose.ui.geometry.Size(W, l.fy))
+    drawRect(dim, topLeft = androidx.compose.ui.geometry.Offset(0f, l.fy + l.fh), size = androidx.compose.ui.geometry.Size(W, H - l.fy - l.fh))
+    drawRect(dim, topLeft = androidx.compose.ui.geometry.Offset(0f, l.fy), size = androidx.compose.ui.geometry.Size(l.fx, l.fh))
+    drawRect(dim, topLeft = androidx.compose.ui.geometry.Offset(l.fx + l.fw, l.fy), size = androidx.compose.ui.geometry.Size(W - l.fx - l.fw, l.fh))
+    drawRect(
+        accent,
+        topLeft = androidx.compose.ui.geometry.Offset(l.fx, l.fy),
+        size = androidx.compose.ui.geometry.Size(l.fw, l.fh),
+        style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f),
+    )
 }
 
 // Decodes [path] downscaled to a display-friendly size (bake still reads the full original).

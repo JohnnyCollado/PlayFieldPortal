@@ -50,6 +50,7 @@ class ArtworkImportExecutor @Inject constructor(
     private val artworkRecordDao: ArtworkRecordDao,
     private val reportDao: ArtworkImportReportDao,
     private val videoSnapTranscoder: com.playfieldportal.feature.artwork.video.VideoSnapTranscoder,
+    private val identityRecorder: com.playfieldportal.feature.artwork.portable.ArtworkIdentityRecorder,
 ) {
     data class Progress(val done: Int, val total: Int, val label: String)
 
@@ -144,6 +145,13 @@ class ArtworkImportExecutor @Inject constructor(
             errors = errors.take(ImportSummary.MAX_ERRORS),
             cancelled = cancelled,
         )
+        // Durable identity is buffered per file and written here, at the operation boundary (task
+        // D.2). NonCancellable for the same reason the report below is: a cancelled import still
+        // wrote files, and those files should still be identifiable.
+        withContext(kotlinx.coroutines.NonCancellable) {
+            runCatching { identityRecorder.flush(treeUri) }
+                .onFailure { Timber.w(it, "Could not write the artwork identity index") }
+        }
         // The report must persist even for a cancelled run — write it outside the cancelled scope.
         withContext(kotlinx.coroutines.NonCancellable) {
             runCatching {

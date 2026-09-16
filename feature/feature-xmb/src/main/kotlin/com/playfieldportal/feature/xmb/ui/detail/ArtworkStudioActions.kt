@@ -77,5 +77,8 @@ interface ArtworkStudioActions {
     fun applyCrop()
     fun cancelCrop()
 
+    /** Shows or hides the crop editor's live result inset, and remembers the choice. */
+    fun toggleCropPreview()
+
     fun dismissMessage()
 }

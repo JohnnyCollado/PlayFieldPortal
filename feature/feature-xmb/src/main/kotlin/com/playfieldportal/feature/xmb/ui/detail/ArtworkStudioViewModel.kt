@@ -281,6 +281,13 @@ data class ArtworkStudioUiState(
     // held in cropVideoSourcePath.
     val cropEditorPath: String? = null,
     val cropVideoSourcePath: String? = null,
+    // Set only while cropping a pick that has NOT been applied yet, so Apply can land it with the
+    // provider it came from instead of as an anonymous user file.
+    val cropCandidate: StudioArt? = null,
+    // The live result inset in the crop editor (tasks 6.2/6.6), switchable from Settings ▸ Artwork
+    // or with Ⓨ in the editor. One switch for every kind, stills and video alike.
+    val cropPreviewEnabled: Boolean =
+        com.playfieldportal.core.data.repository.CropPreviewPreferences.DEFAULT_ENABLED,
     val cropPreparing: Boolean = false,
     val cropSrcW: Int = 0,
     val cropSrcH: Int = 0,
@@ -449,6 +456,14 @@ data class ArtworkStudioUiState(
             // Only where there is an order to change: several positions, on a tab that has them.
             if (selectsMultiple && library.slots.size > 1) add(StudioAction.MANAGE_ASSETS)
             if (hasCurrent && kind != null && kind in CROPPABLE_KINDS) add(StudioAction.CROP)
+            // Crop a pick BEFORE it is applied. Offered whenever a grid tile is focused on a
+            // croppable tab — independent of whether the slot already holds art, since this frames
+            // the candidate rather than what is already there. Plain Apply is untouched.
+            if (zone == StudioZone.GRID && kind != null && kind in CROPPABLE_KINDS &&
+                results.getOrNull(gridIndex)?.isVideo == false
+            ) {
+                add(StudioAction.CROP_BEFORE_APPLY)
+            }
             if (info?.hasPrevious == true) add(StudioAction.RESTORE_PREVIOUS)
             if (info?.originUrl != null) add(StudioAction.RESET_DEFAULT)
             if (hasCurrent) add(StudioAction.CLEAR)
@@ -470,6 +485,7 @@ enum class StudioAction(val label: String) {
     REMOVE_FAILED("Remove Failed Downloads"),
     MANAGE_ASSETS("Reorder Stored Artwork"),
     CROP("Adjust Crop / Position"),
+    CROP_BEFORE_APPLY("Crop Before Applying"),
     RESTORE_PREVIOUS("Restore Previous"),
     RESET_DEFAULT("Reset to Scraped Default"),
     CLEAR("Clear Artwork"),
@@ -570,6 +586,7 @@ class ArtworkStudioViewModel @Inject constructor(
     private val igdbApi: com.playfieldportal.feature.artwork.api.IgdbApi,
     private val videoSnapTranscoder: com.playfieldportal.feature.artwork.video.VideoSnapTranscoder,
     private val matchEvidence: ProviderMatchEvidence,
+    private val cropPreviewPreferences: com.playfieldportal.core.data.repository.CropPreviewPreferences,
     titleSearchStore: com.playfieldportal.feature.artwork.match.TitleSearchStore,
 ) : ViewModel(), ArtworkStudioActions {
 
@@ -588,6 +605,18 @@ class ArtworkStudioViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(ArtworkStudioUiState())
     val uiState: StateFlow<ArtworkStudioUiState> = _uiState.asStateFlow()
+
+    // Declared AFTER _uiState on purpose: Kotlin runs initializers in declaration order, so an
+    // init block above it would collect into a field that does not exist yet.
+    init {
+        // Settings ▸ Artwork writes the same preference, so a change made there shows up here even
+        // while the Studio is open.
+        viewModelScope.launch {
+            cropPreviewPreferences.enabledFlow.collect { enabled ->
+                _uiState.update { it.copy(cropPreviewEnabled = enabled) }
+            }
+        }
+    }
 
     // One finished result list per request key. Replaces the single `allResults` field, whose
     // sharing was the disappearing-artwork bug: any late response overwrote whatever was on
@@ -2169,6 +2198,7 @@ class ArtworkStudioViewModel @Inject constructor(
             StudioAction.MANAGE_ASSETS    -> openAssetManager()
             StudioAction.REMOVE_FAILED    -> removeFailed()
             StudioAction.CROP             -> beginCrop()
+            StudioAction.CROP_BEFORE_APPLY -> beginCropForCandidate()
             StudioAction.RESTORE_PREVIOUS -> restorePrevious()
             StudioAction.RESET_DEFAULT    -> resetToScrapedDefault()
             StudioAction.CLEAR            -> { closeActions(); clearCurrent() }
@@ -2219,6 +2249,57 @@ class ArtworkStudioViewModel @Inject constructor(
     /** Loads the untouched original to a temp file and opens the crop editor over it. For
      *  ICON1 the original is a video: a still frame is extracted for framing and the video is
      *  kept for re-encoding on apply. */
+    /**
+     * Flips the crop editor's result inset and remembers the choice.
+     *
+     * Writes through [CropPreviewPreferences], the same store Settings ▸ Artwork writes, so the two
+     * places can never drift; the flow collected in `init` brings the new value back into state.
+     */
+    override fun toggleCropPreview() {
+        val next = !_uiState.value.cropPreviewEnabled
+        _uiState.update { it.copy(cropPreviewEnabled = next) }
+        viewModelScope.launch { cropPreviewPreferences.setEnabled(next) }
+    }
+
+    /**
+     * Opens the crop editor over a pick that has not been applied yet.
+     *
+     * The candidate is downloaded to a temp file through the same path the apply queue uses, and
+     * held in [ArtworkStudioUiState.cropCandidate] so [applyCrop] can carry its provider through.
+     * Nothing is written to the library until Apply — cancelling leaves the slot exactly as it was.
+     */
+    private fun beginCropForCandidate() {
+        val s = _uiState.value
+        val kind = tab().kind
+        val art = s.results.getOrNull(s.gridIndex) ?: return
+        viewModelScope.launch {
+            _uiState.update { it.copy(actionsOpen = false, cropPreparing = true) }
+            val temp = withContext(kotlinx.coroutines.Dispatchers.IO) {
+                routingStore.candidateToTemp(kind, art.url)
+            }
+            if (temp == null) {
+                _uiState.update { it.copy(cropPreparing = false, message = "Could not download that pick to crop") }
+                return@launch
+            }
+            val (w, h) = withContext(kotlinx.coroutines.Dispatchers.IO) { decodeBounds(temp) }
+            if (w <= 0 || h <= 0) {
+                temp.delete()
+                _uiState.update { it.copy(cropPreparing = false, message = "That pick is not an image this can crop") }
+                return@launch
+            }
+            // No seed from the slot's stored rect: this is a different image, so it starts centred.
+            _uiState.update {
+                it.copy(
+                    cropPreparing = false, cropEditorPath = temp.absolutePath,
+                    cropVideoSourcePath = null, cropCandidate = art,
+                    cropSrcW = w, cropSrcH = h, cropZoom = 1f,
+                    cropCenterX = 0.5f, cropCenterY = 0.5f,
+                )
+            }
+            recomputeCropRect()
+        }
+    }
+
     private fun beginCrop() {
         val kind = tab().kind
         viewModelScope.launch {
@@ -2343,9 +2424,13 @@ class ArtworkStudioViewModel @Inject constructor(
         val s = _uiState.value
         val displayPath = s.cropEditorPath ?: return
         val videoPath = s.cropVideoSourcePath
+        // Non-null only for a crop-before-apply: its provider has to survive into the record.
+        val candidate = s.cropCandidate
         val l = s.cropL; val t = s.cropT; val r = s.cropR; val b = s.cropB
         viewModelScope.launch {
-            _uiState.update { it.copy(applying = true, cropEditorPath = null, cropVideoSourcePath = null) }
+            _uiState.update {
+                it.copy(applying = true, cropEditorPath = null, cropVideoSourcePath = null, cropCandidate = null)
+            }
             val baked = if (videoPath != null) {
                 // ICON1: re-encode the video cropped to the frame (Media3 Transformer + Crop).
                 val out = java.io.File.createTempFile("studio_crop_", ".mp4", appCacheDir)
@@ -2361,7 +2446,12 @@ class ArtworkStudioViewModel @Inject constructor(
                 return@launch
             }
             val rect = "%.4f,%.4f,%.4f,%.4f".format(java.util.Locale.US, l, t, r, b)
-            val path = routingStore.saveCropBaked(gameId, kind, baked, rect)
+            val path = routingStore.saveCropBaked(
+                gameId, kind, baked, rect,
+                candidateOriginUrl = candidate?.url,
+                candidateProvider = candidate?.provider,
+                candidateAssetId = candidate?.providerAssetId,
+            )
             if (path == null) {
                 _uiState.update { it.copy(applying = false, message = "Could not save the cropped artwork") }
             } else {
@@ -2378,7 +2468,7 @@ class ArtworkStudioViewModel @Inject constructor(
         val s = _uiState.value
         s.cropEditorPath?.let { runCatching { java.io.File(it).delete() } }
         s.cropVideoSourcePath?.let { runCatching { java.io.File(it).delete() } }
-        _uiState.update { it.copy(cropEditorPath = null, cropVideoSourcePath = null) }
+        _uiState.update { it.copy(cropEditorPath = null, cropVideoSourcePath = null, cropCandidate = null) }
     }
 
     private fun decodeBounds(file: java.io.File): Pair<Int, Int> {
@@ -2525,6 +2615,8 @@ class ArtworkStudioViewModel @Inject constructor(
                 GamepadAction.PREV_CATEGORY  -> zoomCrop(1f / 1.1f)   // LB — zoom out
                 GamepadAction.SELECT         -> applyCrop()
                 GamepadAction.BACK           -> cancelCrop()
+                // Y is unbound inside the crop editor, so it takes the preview toggle.
+                GamepadAction.OPEN_CONTEXT_MENU -> toggleCropPreview()
                 else -> Unit
             }
             return

@@ -62,6 +62,7 @@ data class InitialSetupUiState(
     val artworkSources: List<ArtworkSourceUi> = emptyList(),
     // Services — connected state plus the public identity to show for it.
     val hasSgdb: Boolean = false,
+    val hasTgdb: Boolean = false,
     val igdbClientId: String = "",
     // ScreenScraper accounts only matter when the build ships dev credentials.
     val ssEnabled: Boolean = false,
@@ -116,9 +117,19 @@ private data class RootLists(
     val vita: String?,      // Vita3K ux0 folder display name
 )
 
+// The two plain API-key services. Grouped so `serviceIdentities` stays within combine's typed
+// five-flow overload: a sixth flow would force the vararg Array<Any?> form and the positional
+// casts this file's comment above warns about.
+@Immutable
+private data class ArtworkKeys(
+    val hasSgdb: Boolean,
+    val hasTgdb: Boolean,
+)
+
 @Immutable
 private data class ServiceIdentities(
     val hasSgdb: Boolean,
+    val hasTgdb: Boolean,
     val igdbClientId: String,
     val ssUsername: String,
     val raUsername: String,
@@ -214,15 +225,26 @@ class InitialSetupViewModel @Inject constructor(
         vita3KLibrary.ux0TreeUriFlow,
     ) { lists, vita -> lists.copy(vita = vita?.let(::rootDisplayName)) }
 
-    private val serviceIdentities = combine(
+    private val artworkKeys = combine(
         sgdbKeys.apiKeyFlow,
+        metadataKeys.tgdbKeyFlow,
+    ) { sgdbKey, tgdbKey ->
+        ArtworkKeys(
+            hasSgdb = !sgdbKey.isNullOrBlank(),
+            hasTgdb = !tgdbKey.isNullOrBlank(),
+        )
+    }
+
+    private val serviceIdentities = combine(
+        artworkKeys,
         metadataKeys.igdbClientIdFlow,
         metadataKeys.ssUsernameFlow,
         achievementCredentials.raUsernameFlow,
         achievementCredentials.steamId64Flow,
-    ) { sgdbKey, igdbId, ssUser, raUser, steamId ->
+    ) { keys, igdbId, ssUser, raUser, steamId ->
         ServiceIdentities(
-            hasSgdb      = !sgdbKey.isNullOrBlank(),
+            hasSgdb      = keys.hasSgdb,
+            hasTgdb      = keys.hasTgdb,
             igdbClientId = igdbId.orEmpty(),
             ssUsername   = ssUser.orEmpty(),
             raUsername   = raUser.orEmpty(),
@@ -241,6 +263,7 @@ class InitialSetupViewModel @Inject constructor(
             artworkFolderName = roots.artwork,
             vitaFolderName    = roots.vita,
             hasSgdb           = services.hasSgdb,
+            hasTgdb           = services.hasTgdb,
             igdbClientId      = services.igdbClientId,
             ssUsername        = services.ssUsername,
             raUsername        = services.raUsername,
@@ -543,6 +566,15 @@ class InitialSetupViewModel @Inject constructor(
         viewModelScope.launch {
             sgdbKeys.saveKey(apiKey)
             scratch.update { it.copy(message = "SteamGridDB connected") }
+        }
+    }
+
+    /** TheGamesDB is a single free API key, stored encrypted like the others. */
+    fun connectTgdb(apiKey: String) {
+        if (apiKey.isBlank()) return
+        viewModelScope.launch {
+            metadataKeys.saveTgdbKey(apiKey)
+            scratch.update { it.copy(message = "TheGamesDB connected") }
         }
     }
 

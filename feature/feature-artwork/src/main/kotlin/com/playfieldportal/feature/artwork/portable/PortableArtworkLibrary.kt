@@ -97,6 +97,29 @@ class PortableArtworkLibrary @Inject constructor(
             )
         }
 
+    // ── Durable-identity index (task D.1) ─────────────────────────────────────
+
+    /**
+     * The identity index, or null when the library has none yet — an unwritten index and an
+     * unreadable one are deliberately the same answer to the caller: no durable identity is
+     * available, fall back to name matching.
+     */
+    suspend fun readIdentityIndex(treeUri: Uri): ArtworkIdentityIndex? = withContext(Dispatchers.IO) {
+        val rootDocId = DocumentsContract.getTreeDocumentId(treeUri)
+        val file = findChild(treeUri, rootDocId, ArtworkIdentityIndex.FILE_NAME) ?: return@withContext null
+        readTextCapped(file.uri, ArtworkIdentityIndex.MAX_BYTES)?.let { ArtworkIdentityIndex.parse(it) }
+    }
+
+    /** Rewrites the identity index (once per operation — never per file, as with the manifest). */
+    suspend fun writeIdentityIndex(treeUri: Uri, index: ArtworkIdentityIndex): Boolean =
+        withContext(Dispatchers.IO) {
+            val rootDocId = DocumentsContract.getTreeDocumentId(treeUri)
+            writeText(
+                treeUri, rootDocId, ArtworkIdentityIndex.FILE_NAME, "application/json",
+                ArtworkIdentityIndex.encode(index.copy(updatedAt = System.currentTimeMillis())),
+            )
+        }
+
     // ── Import drop zone ──────────────────────────────────────────────────────
 
     /** The children of `import/` — each directory is a candidate import source. */

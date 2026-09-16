@@ -8,6 +8,8 @@ import com.playfieldportal.core.data.database.entity.ArtworkRecordEntity
 import com.playfieldportal.core.data.database.entity.GameEntity
 import com.playfieldportal.core.data.repository.ArtworkFolderRepository
 import com.playfieldportal.feature.artwork.api.ArtworkImageCache
+import com.playfieldportal.feature.artwork.portable.ArtworkIdentityIndex
+import com.playfieldportal.feature.artwork.portable.ArtworkIdentityRecorder
 import com.playfieldportal.feature.artwork.portable.ArtworkPathResolver
 import com.playfieldportal.feature.artwork.portable.PortableArtworkLibrary
 import com.playfieldportal.feature.artwork.portable.PortableNameResolver
@@ -45,6 +47,7 @@ class RoutingArtworkStore @Inject constructor(
     private val artworkRecordDao: ArtworkRecordDao,
     private val httpClient: HttpClient,
     private val imageCache: ArtworkImageCache,
+    private val identityRecorder: ArtworkIdentityRecorder,
 ) : ArtworkStore {
 
     override suspend fun saveFromUrl(gameId: Long, kind: ArtworkKind, url: String, sortOrder: Int): String? {
@@ -351,6 +354,13 @@ class RoutingArtworkStore @Inject constructor(
 
     /** The untouched original for re-cropping — the stashed pre-crop copy, or the current file
      *  if nothing has been cropped yet. Caller owns and deletes the returned temp. */
+    /**
+     * Downloads a not-yet-applied pick to a temp file so it can be cropped before it is applied.
+     * Same download path the queue uses; the caller owns the file from here.
+     */
+    suspend fun candidateToTemp(kind: ArtworkKind, url: String): java.io.File? =
+        ArtworkTempIO.downloadToTemp(httpClient, context.cacheDir, kind, url)
+
     suspend fun originalToTemp(gameId: Long, kind: ArtworkKind, sortOrder: Int = 0): java.io.File? {
         val (tree, game) = portableTarget(gameId) ?: return null
         val rec = artworkRecordDao.getAt(gameId, kind.name, sortOrder) ?: return null
@@ -368,12 +378,24 @@ class RoutingArtworkStore @Inject constructor(
      * backs up the pre-crop current as the previous version, and records the normalized rect.
      * [bakedTempFile] is consumed.
      */
+    /**
+     * Saves a baked crop as [kind]'s artwork.
+     *
+     * [candidateOriginUrl], [candidateProvider] and [candidateAssetId] carry the provenance of a
+     * pick that is being cropped **before** it is applied, when the slot has no record to inherit
+     * from yet. Without them a crop-first apply would land as a plain user file and lose the
+     * provider it came from — which Reset to Scraped Default and duplicate detection both read.
+     * They are ignored once a record exists, since that record's provenance is the truth.
+     */
     suspend fun saveCropBaked(
         gameId: Long,
         kind: ArtworkKind,
         bakedTempFile: java.io.File,
         cropRect: String,
         sortOrder: Int = 0,
+        candidateOriginUrl: String? = null,
+        candidateProvider: String? = null,
+        candidateAssetId: String? = null,
     ): String? {
         val target = portableTarget(gameId) ?: run { bakedTempFile.delete(); return null }
         val (tree, game) = target
@@ -392,9 +414,11 @@ class RoutingArtworkStore @Inject constructor(
         return persistPortable(
             tree, game, kind, bakedTempFile, source = rec?.source ?: SOURCE_USER,
             userAssigned = rec?.userAssigned ?: true,
-            originUrl = rec?.originUrl, provider = rec?.provider, backupPrevious = true,
+            originUrl = rec?.originUrl ?: candidateOriginUrl,
+            provider = rec?.provider ?: candidateProvider,
+            backupPrevious = true,
             cropRect = cropRect, hasOriginal = true, sortOrder = sortOrder,
-            providerAssetId = rec?.providerAssetId,
+            providerAssetId = rec?.providerAssetId ?: candidateAssetId,
         )
     }
 
@@ -472,6 +496,23 @@ class RoutingArtworkStore @Inject constructor(
         }
 
         val saved = library.saveFromFile(tree, game.platformId, kind, portableName, tempFile) ?: return null
+        // Durable identity for this file (task D.2): who owns it, stated as ids rather than as the
+        // name it happens to carry. Buffered only — the index is one document at the library root,
+        // so it is written at an operation boundary, never once per file. See ArtworkIdentityRecorder.
+        identityRecorder.record(
+            tree,
+            ArtworkIdentityIndex.Entry(
+                platformId = game.platformId,
+                kind = kind.name,
+                portableName = portableName,
+                romCrc32 = game.romCrc32,
+                ssId = game.ssId,
+                tgdbId = game.tgdbId,
+                igdbId = game.igdbId,
+                sgdbId = game.steamGridDbId,
+                artworkKey = game.artworkKey,
+            ),
+        )
         artworkRecordDao.upsert(
             ArtworkRecordEntity(
                 id = existing?.id ?: 0,

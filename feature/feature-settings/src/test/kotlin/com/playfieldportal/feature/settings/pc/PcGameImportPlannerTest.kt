@@ -256,4 +256,64 @@ class PcGameImportPlannerTest {
 
         assertTrue(unresolved.isEmpty())
     }
+
+    // ── Identity seeds (C16 task D.4b) ────────────────────────────────────────
+
+    // The point of the export was that it carries real ids; before this they were hauled across a
+    // wipe and then the artwork was reconnected by name anyway.
+    @Test
+    fun `an entry's artwork also seeds durable identity from the export's ids`() {
+        val seeds = PcGameArtworkClaims()
+            .apply { add(entry.copy(ssId = 55, tgdbId = 66), gameId = 12) }
+            .toIdentitySeeds()
+
+        assertEquals(2, seeds.size)
+        val icon = seeds.single { it.kind == "ICON" }
+        assertEquals("windows", icon.platformId)
+        assertEquals(55L, icon.ssId)
+        assertEquals(66L, icon.tgdbId)
+        // A PC game has no ROM, so there is nothing to hash.
+        assertNull(icon.romCrc32)
+    }
+
+    // Seeds keep the name's own casing: the index lowercases on lookup, and the row should read
+    // the way the file is actually spelled.
+    @Test
+    fun `a seed keeps the portable name as exported`() {
+        val seeds = PcGameArtworkClaims()
+            .apply { add(entry.copy(ssId = 55), gameId = 12) }
+            .toIdentitySeeds()
+
+        assertTrue(seeds.any { it.portableName == "Portal 2 (Co-op)" })
+    }
+
+    // The shared fixture carries ids, so they have to be stripped deliberately here — an export
+    // with nothing durable in it is exactly the case that must seed nothing.
+    @Test
+    fun `an export carrying no ids at all seeds nothing`() {
+        val anonymous = entry.copy(ssId = null, tgdbId = null, igdbId = null, steamGridDbId = null)
+        val seeds = PcGameArtworkClaims()
+            .apply { add(anonymous, gameId = 12) }
+            .toIdentitySeeds()
+
+        assertTrue("a row with no durable id would resolve to nobody", seeds.isEmpty())
+    }
+
+    // Same rule as claims: if two games name the same file, neither may assert identity for it.
+    @Test
+    fun `a contested name seeds no identity`() {
+        val seeds = PcGameArtworkClaims().apply {
+            add(entry.copy(ssId = 55), gameId = 12)
+            add(
+                entry.copy(
+                    ssId = 77,
+                    artwork = listOf(PcGameExportArtwork(kind = "ICON", portableName = "PORTAL 2 (CO-OP)")),
+                ),
+                gameId = 13,
+            )
+        }.toIdentitySeeds()
+
+        assertFalse(seeds.any { it.kind == "ICON" })
+        assertTrue(seeds.any { it.kind == "SCREENSHOT" })
+    }
 }
