@@ -447,6 +447,7 @@ fun XMBShell(
           // Icon display mode + the focused game's approved ICON1 snap ride the same rail so
           // the deeply nested tile composables never need them plumbed through params.
           LocalIconDisplayMode provides uiState.iconDisplayMode,
+          LocalIconDisplayModeByPlatform provides uiState.iconDisplayModeByPlatform,
           LocalFocusedGameVideo provides uiState.focusedGameVideo,
           // The icon-legibility treatment: PortalIcon + the theme-override glyph branches read
           // it ambiently, so every XMB silhouette glyph gets the matte from one provider.

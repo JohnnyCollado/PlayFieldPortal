@@ -760,9 +760,12 @@ data class XMBUiState(
 
     // ── Misc ──────────────────────────────────────────────────────────────
     val iconStyle: GameIconStyle = GameIconStyle.PSP_RECTANGLE,
-    // Global icon display mode (Custom ICON0 / Box Art / Physical Media / 3D Box). Per-game
-    // overrides ride on each XMBItem; resolution happens at render via [resolveIconDisplay].
+    // Global icon display mode (Custom ICON0 / Box Art / Physical Media / 3D Box) — the default
+    // every console follows until it is given an override of its own. Per-game overrides ride on
+    // each XMBItem; resolution happens at render via [resolveIconDisplay].
     val iconDisplayMode: IconDisplayMode = IconDisplayMode.DEFAULT,
+    // Per-console overrides keyed by platform id; a console absent here follows [iconDisplayMode].
+    val iconDisplayModeByPlatform: Map<String, IconDisplayMode> = emptyMap(),
     // Icon legibility treatment (PSP-style matte behind XMB silhouette glyphs), Display ▸
     // Appearance. Provided as LocalIconLegibility; NONE renders today's glyph exactly.
     val iconLegibility: com.playfieldportal.core.domain.model.IconLegibilityStyle =
@@ -1224,8 +1227,17 @@ data class ResolvedIcon(val uri: String?, val naturalAspect: Boolean, val mode: 
 // own asset, and each owns its missing-art placeholder so switching modes always visibly
 // changes the tile: ICON0 → the 144:80 letter tile, BOX_ART / BOX_3D → a letter tile in the
 // platform's box shape, PHYSICAL_MEDIA → the bundled per-platform cartridge/disc icon.
-fun resolveIconDisplay(item: XMBItem, globalMode: IconDisplayMode): ResolvedIcon {
-    val mode = IconDisplayMode.fromName(item.iconDisplayModeOverride) ?: globalMode
+//
+// Resolution order is game override > console override ([platformModes], keyed by platform id)
+// > the global mode, so picking a mode on one Memory Card never moves any other console.
+fun resolveIconDisplay(
+    item: XMBItem,
+    globalMode: IconDisplayMode,
+    platformModes: Map<String, IconDisplayMode> = emptyMap(),
+): ResolvedIcon {
+    val mode = IconDisplayMode.fromName(item.iconDisplayModeOverride)
+        ?: item.platformId?.let { platformModes[it] }
+        ?: globalMode
     return when (mode) {
         IconDisplayMode.ICON0 ->
             ResolvedIcon(item.iconUri, naturalAspect = false, mode = mode)
@@ -4911,8 +4923,9 @@ class XMBViewModel @Inject constructor(
             if (platformId == "windows") add(XMBContextMenuItem("import_pc_games", "Import PC Games"))
             add(XMBContextMenuItem("update_metadata",        "Update Metadata"))
             add(XMBContextMenuItem("scrape_missing_artwork", "Scrape Missing Artwork"))
-            // Global icon display switch — same setting as Artwork Settings, affects every game.
-            add(XMBContextMenuItem("icon_display_global", "Icon Display (${_uiState.value.iconDisplayMode.label})"))
+            // Icon display for THIS console only. Games on other Memory Cards are untouched;
+            // "Use Global Setting" here clears the console's override.
+            add(XMBContextMenuItem("icon_display_platform", "Icon Display (${platformIconDisplayLabel(platformId)})"))
             if (card.pinned) add(XMBContextMenuItem("unpin", "Unpin"))
             else             add(XMBContextMenuItem("pin",   "Pin To Top"))
             add(XMBContextMenuItem("library_manager",  "Open in Library Manager"))
@@ -4946,8 +4959,40 @@ class XMBViewModel @Inject constructor(
         )}
     }
 
+    // The label shown on a console's Icon Display row: its own override when it has one,
+    // otherwise the global mode it is currently following.
+    private fun platformIconDisplayLabel(platformId: String): String {
+        val state = _uiState.value
+        val override = state.iconDisplayModeByPlatform[platformId]
+        return override?.label ?: "Global: ${state.iconDisplayMode.label}"
+    }
+
+    // Second-level menu: the icon display mode for ONE console. "Use Global Setting" clears the
+    // override so the card follows the global mode again; per-game overrides still win.
+    private fun openPlatformIconDisplayPickerMenu(platformId: String) {
+        val state = _uiState.value
+        val override = state.iconDisplayModeByPlatform[platformId]
+        val items = buildList {
+            add(XMBContextMenuItem(
+                id      = "picondisp_default",
+                label   = "Use Global Setting (${state.iconDisplayMode.label})",
+                checked = override == null,
+            ))
+            IconDisplayMode.entries.forEach { mode ->
+                add(XMBContextMenuItem("picondisp_${mode.name}", mode.label, checked = override == mode))
+            }
+        }
+        _uiState.update { it.copy(
+            activeContextMenu = XMBContextMenu(
+                title      = "Icon Display",
+                items      = items,
+                platformId = platformId,   // routes selection through the platform handler branch
+            )
+        )}
+    }
+
     // Second-level menu: the GLOBAL icon display mode (mirrors Artwork Settings ▸ Game Icon
-    // Display). Per-game overrides keep winning; everything else follows this choice live.
+    // Display). Per-game and per-console overrides keep winning; everything else follows live.
     private fun openGlobalIconDisplayPickerMenu() {
         val current = _uiState.value.iconDisplayMode
         val items = IconDisplayMode.entries.map { mode ->
@@ -5461,10 +5506,18 @@ class XMBViewModel @Inject constructor(
                 "import_pc_games" -> _uiState.update { it.copy(activeSettingsScreen = "settings_import_pc") }
                 "icon_display_global" -> openGlobalIconDisplayPickerMenu()
             }
-            menu.platformId != null -> when (itemId) {
+            menu.platformId != null -> if (itemId.startsWith("picondisp_")) {
+                // Icon display picked for this console ("default" clears the console override so
+                // the card follows the global setting again).
+                val choice = itemId.removePrefix("picondisp_")
+                val pid = menu.platformId
+                viewModelScope.launch {
+                    iconDisplayPreferences.setPlatformMode(pid, IconDisplayMode.fromName(choice))
+                }
+            } else when (itemId) {
                 "find_games"       -> openAppPicker(AppPickerTarget.AndroidGames(menu.platformId), "Find Games")
                 "import_pc_games"  -> _uiState.update { it.copy(activeSettingsScreen = "settings_import_pc") }
-                "icon_display_global" -> openGlobalIconDisplayPickerMenu()
+                "icon_display_platform" -> openPlatformIconDisplayPickerMenu(menu.platformId)
                 "scan_roms"        -> scanCard(menu.platformId)
                 "scrape_missing_artwork" -> scrapeMissingArtworkForPlatform(menu.platformId)
                 "update_metadata"        -> updatePlatformMetadata(menu.platformId)
@@ -5662,10 +5715,13 @@ class XMBViewModel @Inject constructor(
         viewModelScope.launch {
             val game = gameRepository.getById(gameId) ?: return@launch
             val override = IconDisplayMode.fromName(game.iconDisplayMode)
+            // What the game falls back to: its console's override, else the global mode.
+            val state = _uiState.value
+            val inherited = state.iconDisplayModeByPlatform[game.platformId] ?: state.iconDisplayMode
             val items = buildList {
                 add(XMBContextMenuItem(
                     id      = "icondisp_default",
-                    label   = "Use Global Setting (${_uiState.value.iconDisplayMode.label})",
+                    label   = "Use Default (${inherited.label})",
                     checked = override == null,
                 ))
                 IconDisplayMode.entries.forEach { mode ->
@@ -8553,6 +8609,11 @@ class XMBViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
+            iconDisplayPreferences.platformModesFlow.collect { modes ->
+                _uiState.update { it.copy(iconDisplayModeByPlatform = modes) }
+            }
+        }
+        viewModelScope.launch {
             iconDisplayPreferences.animatedIconsFlow.collect { enabled ->
                 animatedIconsEnabled = enabled
                 if (!enabled) _uiState.update { it.copy(focusedGameVideo = null) }
@@ -8593,7 +8654,8 @@ class XMBViewModel @Inject constructor(
                 .map { s ->
                     val item = s.currentItems.getOrNull(s.selectedItemIndex)
                     val eligible = item?.gameId != null && item.isRealGame && !s.hasBlockingOverlay &&
-                        resolveIconDisplay(item, s.iconDisplayMode).mode == IconDisplayMode.ICON0
+                        resolveIconDisplay(item, s.iconDisplayMode, s.iconDisplayModeByPlatform).mode ==
+                            IconDisplayMode.ICON0
                     if (eligible) item?.gameId else null
                 }
                 .distinctUntilChanged()

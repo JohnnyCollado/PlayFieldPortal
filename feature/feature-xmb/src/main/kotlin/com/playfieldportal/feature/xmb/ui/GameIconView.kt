@@ -103,11 +103,15 @@ fun GameIcon(
             modifier    = modifier,
         )
 
-        // Icon display modes: per-game override ?: global. ICON0 keeps the authentic PSP
+        // Icon display modes: per-game override ?: per-console override ?: global. ICON0 keeps the PSP
         // 144:80 edge-to-edge fill (and hosts the ICON1 video snap while focused); the other
         // modes render their art at natural aspect inside the same fixed layout slot.
         else -> {
-            val resolved = resolveIconDisplay(item, LocalIconDisplayMode.current)
+            val resolved = resolveIconDisplay(
+                item,
+                LocalIconDisplayMode.current,
+                LocalIconDisplayModeByPlatform.current,
+            )
             when {
                 // Physical Media with nothing scraped: the bundled per-platform cartridge/disc.
                 resolved.mode == IconDisplayMode.PHYSICAL_MEDIA && resolved.uri == null ->

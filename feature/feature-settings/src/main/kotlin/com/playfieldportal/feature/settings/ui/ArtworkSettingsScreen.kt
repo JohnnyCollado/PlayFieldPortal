@@ -170,7 +170,7 @@ fun ArtworkSettingsScreen(
 
             SettingsValueRow(
                 label    = "Game Icon Display",
-                sublabel = "How game tiles are drawn on the XMB — per-game override in each game's Options menu",
+                sublabel = "Default for every console — override per console or per game from their Options menus",
                 value    = state.iconDisplayMode.label,
                 onClick  = { viewModel.cycleIconDisplayMode() },
             )

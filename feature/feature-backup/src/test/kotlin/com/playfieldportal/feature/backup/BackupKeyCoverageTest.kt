@@ -40,6 +40,7 @@ class BackupKeyCoverageTest {
             "display_text_shadow",
             "pref_animated_icons",
             "pref_icon_display_mode",
+            "pref_icon_display_mode_by_platform",
             "pref_icon1_linger_delay_seconds",
         )
     }

@@ -12,7 +12,7 @@ class ResolveIconDisplayTest {
     private val fullArt = XMBItem(
         id = "1", title = "Game",
         iconUri = "icon", boxArtUri = "box", physicalMediaUri = "cart", box3dUri = "box3d",
-        heroUri = "hero", artworkUri = "bg",
+        heroUri = "hero", artworkUri = "bg", platformId = "psx",
     )
 
     @Test
@@ -71,5 +71,35 @@ class ResolveIconDisplayTest {
     fun `unknown override name follows the global mode`() {
         val item = fullArt.copy(iconDisplayModeOverride = "NOT_A_MODE")
         assertEquals(IconDisplayMode.BOX_ART, resolveIconDisplay(item, IconDisplayMode.BOX_ART).mode)
+    }
+
+    @Test
+    fun `a console override beats the global mode for that console only`() {
+        val platformModes = mapOf("psx" to IconDisplayMode.BOX_ART)
+        val psx = resolveIconDisplay(fullArt, IconDisplayMode.ICON0, platformModes)
+        assertEquals(IconDisplayMode.BOX_ART, psx.mode)
+        assertEquals("box", psx.uri)
+
+        // A game on a console with no override of its own keeps following the global setting.
+        val snes = resolveIconDisplay(fullArt.copy(platformId = "snes"), IconDisplayMode.ICON0, platformModes)
+        assertEquals(IconDisplayMode.ICON0, snes.mode)
+        assertEquals("icon", snes.uri)
+    }
+
+    @Test
+    fun `the per-game override still beats its console override`() {
+        val item = fullArt.copy(iconDisplayModeOverride = IconDisplayMode.BOX_3D.name)
+        val r = resolveIconDisplay(item, IconDisplayMode.ICON0, mapOf("psx" to IconDisplayMode.BOX_ART))
+        assertEquals(IconDisplayMode.BOX_3D, r.mode)
+    }
+
+    @Test
+    fun `an item with no platform falls back to the global mode`() {
+        val r = resolveIconDisplay(
+            fullArt.copy(platformId = null),
+            IconDisplayMode.BOX_3D,
+            mapOf("psx" to IconDisplayMode.BOX_ART),
+        )
+        assertEquals(IconDisplayMode.BOX_3D, r.mode)
     }
 }

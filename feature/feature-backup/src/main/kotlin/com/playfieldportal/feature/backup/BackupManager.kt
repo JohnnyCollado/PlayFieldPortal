@@ -514,6 +514,8 @@ open class BackupManager @Inject constructor(
         stringPreferencesKey("display_icon_legibility"),
         stringPreferencesKey("display_xmb_layout_adjust"),
         stringPreferencesKey("pref_icon_display_mode"),
+        // Per-console icon display overrides, one encoded string for every Memory Card.
+        stringPreferencesKey("pref_icon_display_mode_by_platform"),
         // Theme cascade values. The applied theme's NAME and layout are plain data; the theme's
         // extracted icon files are not bundled, so theme_icons_stamp is deliberately absent —
         // restoring it would point observers at a directory that isn't there.

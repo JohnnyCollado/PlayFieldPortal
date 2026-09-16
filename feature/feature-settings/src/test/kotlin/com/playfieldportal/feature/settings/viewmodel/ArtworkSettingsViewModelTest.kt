@@ -43,6 +43,7 @@ class ArtworkSettingsViewModelTest {
     private lateinit var igdbApi: IgdbApi
     private lateinit var screenScraperApi: com.playfieldportal.feature.artwork.api.ScreenScraperApi
     private lateinit var iconDisplayPreferences: com.playfieldportal.core.data.repository.IconDisplayPreferences
+    private lateinit var cropPreviewPreferences: com.playfieldportal.core.data.repository.CropPreviewPreferences
     private lateinit var viewModel: ArtworkSettingsViewModel
 
     @Before
@@ -65,6 +66,9 @@ class ArtworkSettingsViewModelTest {
         // which would stall uiState at its initial value.
         every { screenScraperApi.isEnabledFlow }         returns flowOf(false)
         every { scrapePreferences.preferSteamGridDbHeroesFlow } returns flowOf(false)
+        cropPreviewPreferences = mockk(relaxed = true) {
+            every { enabledFlow } returns flowOf(true)
+        }
         iconDisplayPreferences = mockk(relaxed = true) {
             every { modeFlow } returns flowOf(com.playfieldportal.core.domain.model.IconDisplayMode.DEFAULT)
             every { animatedIconsFlow } returns flowOf(true)
@@ -94,6 +98,7 @@ class ArtworkSettingsViewModelTest {
             coEvery { getTreeUri() } returns null
         },
         iconDisplayPreferences = iconDisplayPreferences,
+        cropPreviewPreferences = cropPreviewPreferences,
     )
 
     // uiState is a WhileSubscribed StateFlow, so it only reflects upstream (the credential flows +
