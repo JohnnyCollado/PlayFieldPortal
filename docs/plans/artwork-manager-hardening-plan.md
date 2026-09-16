@@ -299,10 +299,11 @@ Note: there is **zero existing coverage** for `ArtworkStudioViewModel`, the crop
 | 5.2 | Sequential download queue over the shipped `studioAppendFromUrl`, with per-item states, partial-failure retention, Retry/Remove Failed — see "Task 5.2" under Merge 4 | 5.1 | DONE (`8569f33`; shipped as a checklist Apply that also removes, plus a store naming fix — tests green, device-checked 2026-09-13) |
 | 5.3 | Duplicate detection on the **single-art** tabs (5.2 already marks held multi-asset tiles), offering Replace Anyway or Cancel — see "Task 5.3" under Merge 4 | 5.2 | DONE (unit tests green 2026-09-15; the three-way prompt lost its View Existing row during implementation — see the spec; device check outstanding) |
 | 5.4 | A stored-assets manager over the shipped `reorderAssets`: reorder, primary screenshot at position 0, and a count-based warning before a large apply — see "Task 5.4" under Merge 4 | 5.2, 5.0 | DONE (unit tests green 2026-09-15; device check outstanding) |
-| 6.1 | Crop profile registry keyed on kind → platform → **game** region → default → source ratio, with Original Image as the universal fallback and a kind-default starter set — see "Task 6.1" under Merge 5 (AD-14) | None | READY |
-| 6.2 | Live final-result preview for ICON0, box art and physical media from the same crop state | 6.1 | READY |
+| 6.1 | Crop profile registry keyed on kind → platform → **game** region → default → source ratio, with Original Image as the universal fallback and a kind-default starter set — see "Task 6.1" under Merge 5 (AD-14) | None | DONE (unit tests green 2026-09-15; kind defaults only, so no pixels change — the platform and region tiers ship empty and are proven against a test table; device check outstanding) |
+| 6.2 | Live final-result preview for ICON0, box art, 3D box and physical media from the same crop state — see "Task 6.2" under Merge 5 | 6.1 | READY (specced 2026-09-15) |
 | 6.3 | Per-game/category profile override persisted in the shipped `crop_profile_key` column, with Reset to Platform Default | 6.1 | READY |
 | 6.4 | Session Undo Last Apply over metadata, artwork replacement, ordering and crop | 3.2, 5.4, 6.2 | READY |
+| 6.5 | Centralize the artwork dimension policy: one shared box-art canvas table, `boxArtAspectFor` migrated onto it, Vita split from PSP — see "Task 6.5" under Merge 5 (Artwork Dimension & Aspect Ratio Policy) | None | READY (specced 2026-09-15) |
 | L.1 | Measured grid capacity in the ViewModel: a pure `StudioGridCapacity` plus per-tab tile class replaces the fixed 4×5 constants; re-paging keeps the focused result (AD-17) | None | DONE |
 | L.2 | Render exactly one measured page: the grid slot reports its size and draws `gridColumns` × `gridRows` with no scrolling | L.1 | DONE |
 | L.3 | Title line and flat tabs: search joins the header, breadcrumb trail and SEARCH label go, eleven compact chips with LB/RB glyphs | None | DONE (`a9e0d28`) |
@@ -2128,6 +2129,168 @@ happens to look similar. Do not add platform rows to the shipped table in this t
 **Stop if** the registry resolves any of the four shipped kinds to a ratio that differs from what
 `cropTargetAspect` returns today. Those are approved UI values — report the discrepancy rather than
 "correcting" either side, because a silent ratio change here re-crops artwork on every device.
+
+### Task 6.2: live final-result preview in the crop editor
+
+Read against the working tree on 2026-09-15; re-verify line numbers before editing.
+
+**What the tree has.**
+
+- `StudioCropEditor` (`ArtworkStudioScreen.kt:1432`), rendered from `state.cropEditorPath` at `:1326`.
+  It is full-screen and deliberately **layered, not stacked**: layer 1 is a `Canvas` drawing the
+  decoded bitmap, the dim mask and the accent frame stroke; layer 2 floats the title, Apply/Cancel
+  and the hint line above it, so the zoomed image slides underneath the chrome (the comment at
+  `:1449` states this intent). The preview inset belongs on layer 2.
+- **Everything the preview needs is already in the composable.** `bmp` is decoded once per `path`
+  (`:1443`) through `decodeDisplayBitmap`, downsampled to ≤1600px; `cropL/T/R/B` and `srcW/srcH`
+  are already parameters. No second decode, no new `ArtworkStudioUiState` field, no ViewModel change.
+- `frameSizeFor` (`:1553`) already derives the crop window's on-screen aspect,
+  `(cw * srcW) / (ch * srcH)`. The inset's aspect is that same number — do not recompute it from the
+  registry, or the two will drift the moment a profile changes.
+- The real tile renderers are in `GameIconView.kt`, and there are exactly **two** treatments:
+  - `PspIcon0Icon` (`:287`) — `clip(PspShape)` where `PspShape = RoundedCornerShape(4.dp)`, backing
+    `Color(0xFF0A0A0F)`, `ContentScale.Crop` fill, a 1.dp `IconBorder` (`0x55FFFFFF`) border, and a
+    gloss shine strip across the top.
+  - `NaturalAspectArtIcon` (`:229`) — shrink-wraps to the art's intrinsic ratio inside the fixed
+    layout slot, `ContentScale.Fit`, and is **framed only when the uri is the box-art uri** (`:132`):
+    box fronts are opaque rectangles and get the PSP frame, while 3D boxes and physical media are
+    transparent silhouettes and render frameless.
+
+**Decisions taken.**
+
+1. **A fixed corner inset on layer 2** (user decision, 2026-09-15). The crop frame stays centred and
+   `frameSizeFor` is untouched — a side rail would have moved the frame's centring, which means
+   touching the gesture maths that map pan onto the frame. The inset can overlap the image at high
+   zoom; that is accepted, and is the same trade the title and buttons already make.
+2. **3D Box is included** (user decision, 2026-09-15), so the four croppable tile kinds are ICON0,
+   BOX ART, 3D BOX and PHYS. MEDIA. `BOX_3D` and `PHYSICAL_MEDIA` resolve to the same frameless
+   treatment, so it is one map row and no extra rendering code; leaving it out would ship three
+   previewing kinds and a fourth identical one that does not.
+3. **The chrome resolver is a pure function in its own file**, so it unit-tests without Compose or
+   Robolectric — the same reason `CropProfiles.kt` is pure in 6.1.
+4. **Transparent bounds are preserved.** The Dimension & Aspect Ratio Policy requires 3D Box and
+   Physical Media to keep their transparent bounds, so the frameless treatment draws the cropped
+   region alone: no opaque backing, no border, no gloss. Anything else invents a rectangle the real
+   tile does not draw.
+
+**Policy alignment.** The Artwork Dimension & Aspect Ratio Policy
+([`../PFP_Artwork_Dimensions_and_Aspect_Ratio_Policy.md`](../PFP_Artwork_Dimensions_and_Aspect_Ratio_Policy.md))
+governs what "final result" means here, and this task is consistent with it without needing the platform table:
+
+- ICON0 keeps its fixed 144×80 crop, so the ICON0 inset is the tile 1:1.
+- Box Art uses "actual selected artwork ratio when known". In the crop editor the source dimensions
+  are **always** known (`cropSrcW`/`cropSrcH` come off the decoded bitmap), so the crop window is
+  already the source-derived ratio and the inset simply renders it. The policy's per-platform
+  box-art table is placeholder/fallback data and is **not** consulted here — see task 6.5.
+- 3D Box, Physical Media and the other contain-only kinds are listed by the policy as artwork that
+  must not be force-cropped; they resolve to Original Image in the 6.1 registry already.
+
+**Scope.**
+
+- New `StudioCropPreview.kt` in `feature/feature-xmb/.../ui/detail/`:
+  - `enum class CropPreviewChrome { PSP_TILE, FRAMELESS }` — `PSP_TILE` reproduces `PspIcon0Icon`'s
+    treatment (4.dp rounded clip, `0xFF0A0A0F` backing, 1.dp `0x55FFFFFF` border, top gloss);
+    `FRAMELESS` draws the cropped region alone.
+  - `fun cropPreviewChromeFor(kind: ArtworkKind): CropPreviewChrome?` — `ICON` and `BOX_ART` to
+    `PSP_TILE`, `BOX_3D` and `PHYSICAL_MEDIA` to `FRAMELESS`, **null for every other kind** (no
+    inset). Total over `ArtworkKind`; a new kind gets no preview rather than a wrong one.
+  - `@Composable fun StudioCropPreviewTile(...)` drawing the crop window's region of the already
+    decoded bitmap at the window's own aspect, with the resolved chrome. Use `drawImage`'s
+    `srcOffset`/`srcSize` against the crop window in source pixels — exact, and no new allocation.
+- `ArtworkStudioScreen.kt`: `StudioCropEditor` takes a `kind: ArtworkKind`, the call site at `:1327`
+  passes `STUDIO_TABS[state.tabIndex].kind`, and layer 2 hosts the inset when the chrome resolves
+  non-null. Give the inset a short caption ("XMB tile", "Box Art tile", …) so it reads as a preview
+  rather than a stray thumbnail.
+- New `StudioCropPreviewTest`: the four kinds map to the right chrome; every other croppable kind
+  (`HERO`, `BACKGROUND`, `LOGO`, `SCREENSHOT`, `TITLESCREEN`, `ICON1`) returns null; the function is
+  total over `ArtworkKind` without throwing.
+
+**Do not change:** `recomputeCropRect` and the 6.1 registry, `frameSizeFor`, `CropGeom`, the
+`detectTransformGestures` block, `decodeDisplayBitmap`, `saveCropBaked`, the crop editor's gamepad
+handling, and `boxArtAspectFor` (task 6.5 owns it).
+
+**Traps.** Two numbers in the tree look like the preview's aspect and are not:
+
+- `boxArtAspectFor(platformId)` (`GameIconView.kt:176`) is the **placeholder's** shape, used only
+  when a game has no art at all. It is not a crop target and not the inset's aspect.
+- `StudioTileClass.aspect` (`StudioGridCapacity.kt:9` — 1.5 / 0.7 / 1.0 / 2.0) is the **result grid
+  tile's** shape, the same trap 6.1 named.
+
+The inset's aspect comes from the live crop window, and from nowhere else.
+
+**Acceptance.**
+
+- Cropping ICON0 shows a live 144:80 tile in PSP chrome that tracks pan and zoom in real time.
+- The Box Art inset is framed; 3D Box and Physical Media are frameless and keep transparent bounds.
+- Kinds with no tile representation show no inset, and the editor is pixel-identical to today there.
+- Exactly one `decodeDisplayBitmap` per editor open, as today — verifiable by reading, since the
+  preview takes `bmp` as a parameter rather than loading anything.
+- The crop frame's position, size and gesture response are unchanged.
+
+**Budget.** New `StudioCropPreview.kt` and new `StudioCropPreviewTest`; `ArtworkStudioScreen.kt`
+modified. No ViewModel change, no new dependency.
+
+**Stop if** the preview needs a new field on `ArtworkStudioUiState`, or any change to
+`recomputeCropRect` or `frameSizeFor`. That means the geometry is being recomputed rather than
+reused, and a preview that computes its own geometry will disagree with the frame it sits beside.
+
+### Task 6.5: centralize the artwork dimension policy
+
+Raised by the **Artwork Dimension & Aspect Ratio Policy**
+([`../PFP_Artwork_Dimensions_and_Aspect_Ratio_Policy.md`](../PFP_Artwork_Dimensions_and_Aspect_Ratio_Policy.md),
+supplied 2026-09-15). Independent of the
+crop tasks; listed in Merge 5 because it is the other half of "what shape is this artwork".
+
+**Why this is not 6.1's platform tier.** The policy's rule is *source dimensions beat platform
+preset*; 6.1's registry resolves *platform row beats kind default*, overriding the source. Those are
+opposite orderings, and they do not conflict only because the policy splits artwork in two:
+
+- **Fixed crop types** — ICON0 144×80, Hero 920×430, Background 16:9. These force a ratio. They are
+  exactly the four rows 6.1 shipped, and the policy's Crop Editor section restates them unchanged.
+- **Source-preferred types** — Box Art and the contain-only kinds. Source always wins.
+
+In the crop editor the source dimensions are always known, so a box-art platform row in the crop
+registry could only ever do harm: it would override a ratio the policy says must win. **The
+registry's platform tier therefore stays empty for box art**, and that is now an argued position
+rather than the holding pattern 6.1 left. The policy's table belongs to the path where source
+dimensions are *absent* by definition — the placeholder drawn when a game has no art.
+
+**What the tree has.** One table, one call site, and it is the only artwork ratio table in the repo:
+`boxArtAspectFor` at `GameIconView.kt:176`, called only from `BoxArtPlaceholderIcon` (`:204`).
+Measured against the policy it has three defects: **`psvita` shares PSP's 0.59** where the policy
+requires ~0.78; about twenty platforms the policy lists (`ps2`, `ps3`, `gc`, `wii`, `wiiu`, `nes`,
+`megadrive`, `mastersystem`, `gamegear`, `sega32x`, the Ataris, `neogeo`, `x360`, `virtualboy`, the
+arcade families, `windows`, `android`) are absent and fall to the generic branch; and that generic
+branch is 0.70 where the policy specifies 0.72 (430×600), with a square fallback reserved for the
+explicitly variable platforms.
+
+**Scope.**
+
+- New `ArtworkDimensions.kt` in `feature/feature-artwork/.../store/`, beside `CropProfiles.kt` and
+  pure Kotlin for the same reason: an `ArtworkCanvas(width, height, sourceAspectPreferred)` with an
+  `aspectRatio`, the full box-art table from the policy, and a resolver implementing the policy's
+  fallback logic — source dimensions when known, platform preset otherwise, 430×600 generic, square
+  for the variable platforms.
+- `boxArtAspectFor` becomes a thin wrapper over it, exactly as the policy's "Single Source of Truth"
+  section asks. **Its alias keys must survive the move** — `ps1`, `sfc`, `dc`, `nx`, `ds`, `3ds` are
+  in the tree today and the policy's table lists canonical ids only; dropping them silently
+  re-shapes those platforms' placeholders.
+- Tests: the policy's own suggested list (PS1, PS2, PSP, Vita, SNES, N64, DS, 3DS, Switch,
+  Dreamcast, Xbox 360, Windows, Android, unknown), that PSP and Vita differ, that every alias
+  resolves to its canonical platform's ratio, and that a known source ratio beats the preset.
+
+**Do not change:** the 6.1 crop registry or its table, `NaturalAspectArtIcon` (art with real
+dimensions already uses its intrinsic ratio, which is what the policy wants), and `PspIcon0Icon`.
+
+**Acceptance.** The policy's "Platform Presets", "Placeholder Behavior" and "Architecture"
+checklists, scoped to the placeholder path: every listed platform has a default, PSP and Vita differ,
+SNES/N64 render landscape, Switch narrow, DS/3DS wider, variable platforms are source-preferred, and
+one shared table serves every caller.
+
+**Deferred out of this task, needing their own grounding pass:** the policy's ScreenScraper download
+bounds (`maxwidth`/`maxheight` as caps, never as target crop dimensions) and its Image Storage
+Policy. Both touch the download and store layers rather than the dimension table, and neither has
+been checked against what the tree already does.
 
 ## Deferred to a follow-up plan
 

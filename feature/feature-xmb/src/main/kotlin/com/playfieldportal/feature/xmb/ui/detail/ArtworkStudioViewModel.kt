@@ -20,6 +20,7 @@ import com.playfieldportal.feature.artwork.match.ProviderCapabilities
 import com.playfieldportal.feature.artwork.match.ProviderMatchEvidence
 import com.playfieldportal.feature.artwork.store.ArtworkKind
 import com.playfieldportal.feature.artwork.store.ArtworkStore
+import com.playfieldportal.feature.artwork.store.CropProfileRegistry
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -2257,14 +2258,6 @@ class ArtworkStudioViewModel @Inject constructor(
 
     private fun isVideoKind(kind: ArtworkKind) = kind == ArtworkKind.ICON1 || kind == ArtworkKind.VIDEO
 
-    private fun cropTargetAspect(kind: ArtworkKind, srcAspect: Float): Float = when (kind) {
-        ArtworkKind.ICON,
-        ArtworkKind.ICON1      -> 144f / 80f     // XMB tile container
-        ArtworkKind.HERO       -> 920f / 430f
-        ArtworkKind.BACKGROUND -> 16f / 9f
-        else                   -> srcAspect        // free crop: keep the source's proportions
-    }
-
     /** A representative video frame as a PNG temp + its (w, h), for the crop editor's framing
      *  preview. Videos usually open on a black fade-in frame, so several points through the clip
      *  are sampled and the brightest (most visible) one is used. */
@@ -2319,7 +2312,8 @@ class ArtworkStudioViewModel @Inject constructor(
     private fun recomputeCropRect() = _uiState.update { s ->
         if (s.cropSrcW <= 0 || s.cropSrcH <= 0) return@update s
         val srcAspect = s.cropSrcW.toFloat() / s.cropSrcH
-        val target = cropTargetAspect(tab().kind, srcAspect)
+        val profile = CropProfileRegistry.Default.resolve(tab().kind, s.game?.platformId, s.game?.region)
+        val target = profile.aspect ?: srcAspect
         // Largest target-aspect window fitting the source at zoom=1, then shrunk by zoom.
         var wN: Float; var hN: Float
         if (target >= srcAspect) { wN = 1f; hN = srcAspect / target } else { hN = 1f; wN = target / srcAspect }
