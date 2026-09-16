@@ -1,5 +1,10 @@
 # Artwork Manager Hardening
 
+> **CLOSED 2026-09-16 (user decision).** Everything is working as intended; future bugs will come from
+> user reports rather than further planned work. Spatial navigation (C17) was deferred, `4.3` and `6.4`
+> were closed, and `4.4` is covered by `5.2`'s leave prompt. The one task still open, `7.1`, is blocked
+> on plan B2 and should be picked up from there if B2's typed failure reasons ever land.
+
 > Implementation handoff, approved 2026-09-09. Indexed as `C16` in [the plan index](README.md).
 > Work the Execution Task Index in dependency order, one bounded task per helper.
 >
@@ -292,7 +297,7 @@ Note: there is **zero existing coverage** for `ArtworkStudioViewModel`, the crop
 | 3.2 | Current-vs-Incoming preview with the four apply policies, reusing `GameDao.updateMetadataIfMissing` for Fill Missing Only | 3.1 | DONE |
 | 4.1 | ~~Replace `StudioZone` with spatial focus~~ — split out as its own plan | — | MOVED to [C17](artwork-studio-navigation-plan.md) |
 | 4.2 | ~~Rebind Square to search and Triangle to context; delete the stale L2/R2 KDoc~~ | — | DONE (in 1.3) |
-| 4.3 | ~~Thread `showTouchControls` from `GameDetailScreen.kt:206` into the Studio;~~ (done in L.6) touch-sized tabs, source chips and tiles, and hit-target separation | None (re-scoped off C17 2026-09-16) | READY |
+| 4.3 | ~~Thread `showTouchControls` from `GameDetailScreen.kt:206` into the Studio;~~ (done in L.6) touch-sized tabs, source chips and tiles, and hit-target separation | None (re-scoped off C17 2026-09-16) | CLOSED (user, 2026-09-16: the touch mode that shipped with L.6 is good enough; no enlarged targets) |
 | 4.4 | ~~Pending-change and pending-exit prompts (Apply / Discard / Stay) on context switch and exit~~ | — | DONE (covered by 5.2: the leave prompt guards exit, and picks survive a tab or source switch because selection is keyed by asset, so a context switch loses nothing to prompt about) |
 | 5.0 | **Render what Phase 0 can already store**: `GameDetailViewModel.kt:265-273` builds the media strip from `find` (one screenshot, one video) — switch it to `findAll` so extra assets are visible at all (AD-13) | 0.3 | DONE |
 | 5.1 | Give `StudioArt` a provider asset id and key cross-page selection on `kind + provider + (providerAssetId ?: url)`, never grid index — see "Task 5.1" under Merge 4 | 1.4, 0.3 | DONE (`fa8c8fc`, `bbc967e`; tests green, device-checked 2026-09-13) |
@@ -302,7 +307,7 @@ Note: there is **zero existing coverage** for `ArtworkStudioViewModel`, the crop
 | 6.1 | Crop profile registry keyed on kind → platform → **game** region → default → source ratio, with Original Image as the universal fallback and a kind-default starter set — see "Task 6.1" under Merge 5 (AD-14) | None | DONE (unit tests green 2026-09-15; kind defaults only, so no pixels change — the platform and region tiers ship empty and are proven against a test table; device-checked by the user 2026-09-16) |
 | 6.2 | Live final-result preview for ICON0, box art, 3D box and physical media from the same crop state — see "Task 6.2" under Merge 5 | 6.1 | DONE (unit tests green 2026-09-15; fixed top-right inset at 132 dp, user-approved 2026-09-15; `frameSizeFor`'s aspect extracted to `frameAspectFor` so frame and inset share one expression; device-checked by the user 2026-09-16) |
 | 6.3 | Per-game/category profile override persisted in the shipped `crop_profile_key` column, with Reset to Platform Default | 6.1 | DONE (unit tests green 2026-09-16, device-checked by the user the same day; two choices only, and the crop editor gained a real Ⓨ context menu — 6.7's preview switch is now its first row, because no button in the editor was semantically free — see "Task 6.3" under Merge 5) |
-| 6.4 | Session Undo Last Apply over metadata, artwork replacement, ordering and crop | 3.2, 5.4, 6.2 | READY |
+| 6.4 | ~~Session Undo Last Apply over metadata, artwork replacement, ordering and crop~~ | 3.2, 5.4, 6.2 | CLOSED (user, 2026-09-16: each area already has its own way back — Restore Previous, Reset to Scraped Default, the metadata preview's Keep Current, re-ordering, re-cropping from the untouched original) |
 | 6.5 | Centralize the artwork dimension policy: one shared box-art canvas table, `boxArtAspectFor` migrated onto it, Vita split from PSP — see "Task 6.5" under Merge 5 (Artwork Dimension & Aspect Ratio Policy) | None | DONE (unit tests green 2026-09-16, placeholders checked on device by the user the same day; `hasBoxArtPreset` added because nine policy rows ARE 430×600, so equality with the generic canvas cannot tell a row from a fall-through — see the task note) |
 | 6.6 | Play the clip while cropping ICON1 and VIDEO — full-screen canvas and inset both live — see "Task 6.6" under Merge 5 | 6.2 | DONE (unit tests green 2026-09-16; device-checked by the user 2026-09-16) |
 | 6.7 | A switch for the crop editor's live preview inset — Settings ▸ Artwork row plus ⓨ in the editor, one switch for every kind | 6.2, 6.6 | DONE (tests green 2026-09-16; off also skips the inset's ExoPlayer, so it doubles as the escape hatch from 6.6's second decoder) |
@@ -452,7 +457,7 @@ merge independently reviewable:
 | 4 | `5.1` → `5.2` → `5.3` → `5.4` | The Studio-side multi-media queue, on top of a strip that already renders it. |
 | 5 | `6.1` → `6.2` → `6.3` | Crop, entirely self-contained. |
 | 6 | `D.1` → `D.2` → `D.3` → `D.4a` → `D.4b` | Durable artwork identity. Ordered because each step is useless without the one before it. |
-| 6 | `4.3`, then `6.4` | `4.3` is touch-sized targets only (C17 deferred 2026-09-16; `4.4` covered by 5.2). `6.4`'s session undo spans metadata, ordering and crop, so it wants those landed. |
+| 6 | — | Plan closed 2026-09-16: C17 deferred, `4.3` and `6.4` closed, `4.4` covered by 5.2. Only `7.1` remains, blocked on B2. |
 
 ### Still open from Phase 1's own goals
 
