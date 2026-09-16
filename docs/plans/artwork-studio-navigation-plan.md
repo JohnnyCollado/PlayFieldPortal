@@ -1,5 +1,15 @@
 # Artwork Studio — spatial navigation on the shared navigation core
 
+> **DEFERRED 2026-09-16 (user decision), before any code landed.** Every control this plan would make
+> D-pad reachable already has a controller path: search on Square, paging on LB/RB, Change Match and
+> Forget Match on the Triangle menu (C16 `2.4`), and the stale-prompt drift was fixed in place. What
+> remains is a large input rework of the Studio for polish, and nothing is gated on it any more: C16
+> `4.3` and `4.4` were re-scoped off this plan the same day. A task `1.1` adapter was written and
+> passed its tests, then was deleted rather than shipped unused. The design decisions and findings
+> from that session — including a latent edit-mode bug in `core-navigation` — are in §8 and §9 of
+> [the session context](artwork-studio-navigation-session-context.md). Resume from there if this is
+> picked up again.
+
 > Implementation handoff, written 2026-09-09. Indexed as `C17` in [the plan index](README.md).
 > Split out of `C16` (Artwork Manager hardening), whose task `4.1` this replaces in full.
 >
@@ -262,6 +272,13 @@ Phase A is separately reviewable and reversible. Phase B is the behavioural chan
 
 ## Hand-off notes
 
+- **Read [`artwork-studio-navigation-session-context.md`](artwork-studio-navigation-session-context.md) first.**
+  Written 2026-09-16, it carries the drift this plan cannot: the Studio has roughly doubled since
+  `49ae052`, so most line references below have moved; there are now NINE overlay early-return
+  blocks rather than six (task `3.1` is larger than specced); and `showTouchControls` IS forwarded
+  into the Studio now, so this plan's "Current Behavior" is wrong on that point and C16 task `4.3`
+  is partly done. It also records that C16 is otherwise complete, so this plan is the only thing
+  gating the rest of it.
 - Repository is the source of truth, above this plan. If implementation contradicts something
   written here, stop and report rather than inventing architecture (`PLANNING_WORKFLOW.md` §6, §12).
 - Work **one bounded task per helper**, in dependency order, with `PLANNING_WORKFLOW.md` §4's

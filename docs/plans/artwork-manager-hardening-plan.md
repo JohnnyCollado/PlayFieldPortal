@@ -244,7 +244,7 @@ Square-to-search, Triangle-to-context and the stale L2/R2 KDoc all landed inside
 is retired, not deferred. **Spatial navigation moved out of this plan entirely**: it is now
 [`C17`](artwork-studio-navigation-plan.md), because the work turned out to be an adapter onto the
 existing `core-navigation` engine rather than a new focus system, and nothing in Phases 2, 3, 5 or
-6 depends on it. Tasks `4.3` and `4.4` depend on C17 landing.
+6 depends on it. C17 was deferred on 2026-09-16, and `4.3` and `4.4` were re-scoped off it.
 
 **Phase 5 — Multi-media, starting with a consumer.** Phase 0 made multiple screenshots and videos
 *storable*; nothing yet makes them *visible* (AD-13). So Phase 5 now opens with the Game Detail
@@ -292,8 +292,8 @@ Note: there is **zero existing coverage** for `ArtworkStudioViewModel`, the crop
 | 3.2 | Current-vs-Incoming preview with the four apply policies, reusing `GameDao.updateMetadataIfMissing` for Fill Missing Only | 3.1 | DONE |
 | 4.1 | ~~Replace `StudioZone` with spatial focus~~ — split out as its own plan | — | MOVED to [C17](artwork-studio-navigation-plan.md) |
 | 4.2 | ~~Rebind Square to search and Triangle to context; delete the stale L2/R2 KDoc~~ | — | DONE (in 1.3) |
-| 4.3 | Thread `showTouchControls` from `GameDetailScreen.kt:206` into the Studio; touch-sized targets and hit-target separation | C17 | READY |
-| 4.4 | Pending-change and pending-exit prompts (Apply / Discard / Stay) on context switch and exit | C17 | READY |
+| 4.3 | ~~Thread `showTouchControls` from `GameDetailScreen.kt:206` into the Studio;~~ (done in L.6) touch-sized tabs, source chips and tiles, and hit-target separation | None (re-scoped off C17 2026-09-16) | READY |
+| 4.4 | ~~Pending-change and pending-exit prompts (Apply / Discard / Stay) on context switch and exit~~ | — | DONE (covered by 5.2: the leave prompt guards exit, and picks survive a tab or source switch because selection is keyed by asset, so a context switch loses nothing to prompt about) |
 | 5.0 | **Render what Phase 0 can already store**: `GameDetailViewModel.kt:265-273` builds the media strip from `find` (one screenshot, one video) — switch it to `findAll` so extra assets are visible at all (AD-13) | 0.3 | DONE |
 | 5.1 | Give `StudioArt` a provider asset id and key cross-page selection on `kind + provider + (providerAssetId ?: url)`, never grid index — see "Task 5.1" under Merge 4 | 1.4, 0.3 | DONE (`fa8c8fc`, `bbc967e`; tests green, device-checked 2026-09-13) |
 | 5.2 | Sequential download queue over the shipped `studioAppendFromUrl`, with per-item states, partial-failure retention, Retry/Remove Failed — see "Task 5.2" under Merge 4 | 5.1 | DONE (`8569f33`; shipped as a checklist Apply that also removes, plus a store naming fix — tests green, device-checked 2026-09-13) |
@@ -434,7 +434,8 @@ That is a smaller and much better-understood job than it looked from inside this
 still large enough, and independent enough, to be its own plan:
 [`C17` — Artwork Studio spatial navigation](artwork-studio-navigation-plan.md).
 
-Nothing in Phases 2, 3, 5 or 6 depends on C17. Tasks `4.3` and `4.4` do.
+Nothing in Phases 2, 3, 5 or 6 depends on C17. Tasks `4.3` and `4.4` did until C17 was deferred
+on 2026-09-16; both were re-scoped off it then (see the task index).
 
 ### Suggested merge order
 
@@ -451,7 +452,7 @@ merge independently reviewable:
 | 4 | `5.1` → `5.2` → `5.3` → `5.4` | The Studio-side multi-media queue, on top of a strip that already renders it. |
 | 5 | `6.1` → `6.2` → `6.3` | Crop, entirely self-contained. |
 | 6 | `D.1` → `D.2` → `D.3` → `D.4a` → `D.4b` | Durable artwork identity. Ordered because each step is useless without the one before it. |
-| 6 | [C17](artwork-studio-navigation-plan.md), then `4.3` → `4.4`, then `6.4` | The input rework, now its own plan; `6.4`'s session undo spans metadata, ordering and crop, so it wants all three landed. |
+| 6 | `4.3`, then `6.4` | `4.3` is touch-sized targets only (C17 deferred 2026-09-16; `4.4` covered by 5.2). `6.4`'s session undo spans metadata, ordering and crop, so it wants those landed. |
 
 ### Still open from Phase 1's own goals
 
