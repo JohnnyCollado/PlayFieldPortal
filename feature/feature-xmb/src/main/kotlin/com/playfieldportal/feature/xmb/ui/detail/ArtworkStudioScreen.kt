@@ -1331,7 +1331,6 @@ internal fun ArtworkStudioContent(
                 kind = STUDIO_TABS[state.tabIndex].kind,
                 videoPath = state.cropVideoSourcePath,
                 previewEnabled = state.cropPreviewEnabled,
-                onTogglePreview = actions::toggleCropPreview,
                 srcW = state.cropSrcW, srcH = state.cropSrcH,
                 cropL = state.cropL, cropT = state.cropT, cropR = state.cropR, cropB = state.cropB,
                 applying = state.applying,
@@ -1339,7 +1338,34 @@ internal fun ArtworkStudioContent(
                 onZoom = actions::zoomCrop,
                 onApply = actions::applyCrop,
                 onCancel = actions::cancelCrop,
+                shape = CropShapeChoice.of(state.cropProfileOverride),
+                onOpenOptions = actions::openCropOptions,
             )
+            // The crop editor's context menu (task 6.3): the app's own overlay, so it reads like
+            // every other list in the Studio and the cursor behaves the same.
+            if (state.cropOptionsOpen) {
+                val currentShape = CropShapeChoice.of(state.cropProfileOverride)
+                com.playfieldportal.core.ui.components.PspContextMenuOverlay(
+                    title = "CROP OPTIONS",
+                    rows = state.cropOptionRows.map { row ->
+                        val shape = row.shape
+                        if (shape == null) {
+                            com.playfieldportal.core.ui.components.PspMenuRow(
+                                if (state.cropPreviewEnabled) "Live Preview: On" else "Live Preview: Off",
+                            )
+                        } else {
+                            com.playfieldportal.core.ui.components.PspMenuRow(
+                                "Shape: ${shape.label}",
+                                checked = shape == currentShape,
+                            )
+                        }
+                    },
+                    selectedIndex = state.cropOptionsIndex,
+                    onRowActivated = actions::activateCropOption,
+                    onDismiss = actions::closeCropOptions,
+                    scrim = Color(0xA6000000),
+                )
+            }
         }
 
         if (state.cropPreparing) {
@@ -1448,7 +1474,6 @@ private fun StudioCropEditor(
     kind: ArtworkKind,
     videoPath: String?,
     previewEnabled: Boolean,
-    onTogglePreview: () -> Unit,
     srcW: Int, srcH: Int,
     cropL: Float, cropT: Float, cropR: Float, cropB: Float,
     applying: Boolean,
@@ -1456,6 +1481,8 @@ private fun StudioCropEditor(
     onZoom: (Float) -> Unit,
     onApply: () -> Unit,
     onCancel: () -> Unit,
+    shape: CropShapeChoice,
+    onOpenOptions: () -> Unit,
 ) {
     val accent = menuCursorEdge()
     // The image transform behind the fixed frame is fully described by the current crop window;
@@ -1552,7 +1579,11 @@ private fun StudioCropEditor(
             Modifier.fillMaxSize().padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text("ADJUST CROP / POSITION", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text(
+                if (shape == CropShapeChoice.PLATFORM_DEFAULT) "ADJUST CROP / POSITION"
+                else "ADJUST CROP / POSITION  ·  ${shape.label.uppercase()}",
+                color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold,
+            )
             Spacer(Modifier.weight(1f))
             Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 Text(
@@ -1570,21 +1601,18 @@ private fun StudioCropEditor(
                         .clickable(onClick = onCancel)
                         .padding(horizontal = 18.dp, vertical = 9.dp),
                 )
-                // Ⓨ is unbound inside the crop editor, so it takes the preview switch — the moment
-                // you notice the inset sitting over the part you are trying to frame is the moment
-                // you want it gone, without leaving for Settings. Writes the same stored preference
-                // the Settings ▸ Artwork row does.
-                if (cropPreviewChromeFor(kind) != null) {
-                    Text(
-                        if (previewEnabled) "Ⓨ  PREVIEW" else "Ⓨ  PREVIEW: OFF",
-                        color = Color.White.copy(alpha = if (previewEnabled) 0.8f else 0.45f),
-                        fontSize = 14.sp,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp)).background(Color.Black.copy(alpha = 0.55f))
-                            .clickable(onClick = onTogglePreview)
-                            .padding(horizontal = 18.dp, vertical = 9.dp),
-                    )
-                }
+                // Ⓨ keeps the context button's app-wide meaning and opens the editor's menu. The
+                // preview switch (task 6.7) is the first row in it rather than its own button:
+                // Square opens search everywhere else in the Studio and START means Apply Changes,
+                // so there was no third button to give Crop Shape.
+                Text(
+                    "Ⓨ  OPTIONS",
+                    color = Color.White.copy(alpha = 0.8f), fontSize = 14.sp,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp)).background(Color.Black.copy(alpha = 0.55f))
+                        .clickable(onClick = onOpenOptions)
+                        .padding(horizontal = 18.dp, vertical = 9.dp),
+                )
             }
             Text(
                 "drag to move the image   ·   pinch to zoom   ·   D-Pad move   ·   LB / RB zoom",

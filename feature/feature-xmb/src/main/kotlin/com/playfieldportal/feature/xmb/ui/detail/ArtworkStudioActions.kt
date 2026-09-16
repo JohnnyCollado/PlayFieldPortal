@@ -80,5 +80,12 @@ interface ArtworkStudioActions {
     /** Shows or hides the crop editor's live result inset, and remembers the choice. */
     fun toggleCropPreview()
 
+    // The crop editor's context menu: the preview switch plus Crop Shape, the per-game
+    // crop-profile override (task 6.3).
+    fun openCropOptions()
+    fun closeCropOptions()
+    fun moveCropOptionsCursor(delta: Int)
+    fun activateCropOption(index: Int)
+
     fun dismissMessage()
 }

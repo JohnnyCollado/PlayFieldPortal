@@ -261,6 +261,25 @@ class RoutingArtworkStore @Inject constructor(
         artworkRecordDao.reorder(gameId, kind.name, orderedSortOrders.mapNotNull { rows[it]?.id })
     }
 
+    /**
+     * This game's crop-profile override for [kind], or null when it follows the shared defaults.
+     *
+     * Read at crop-editor open. A game with no stored artwork of the kind yet has no row to carry
+     * a key, so a pick cropped before it is applied (task 6.8) resolves on the defaults — the
+     * override is offered once there is something to hang it on.
+     */
+    suspend fun cropProfileOverride(gameId: Long, kind: ArtworkKind): String? =
+        artworkRecordDao.cropProfileKey(gameId, kind.name)
+
+    /**
+     * Stores [key] as this game's crop-profile override for [kind], or clears it when null
+     * (Reset to Platform Default). Writes no pixels: the override decides the crop FRAME the next
+     * crop is taken against, so already-baked artwork is untouched until it is re-cropped.
+     */
+    suspend fun setCropProfileOverride(gameId: Long, kind: ArtworkKind, key: String?) {
+        artworkRecordDao.setCropProfileKey(gameId, kind.name, key, System.currentTimeMillis())
+    }
+
     /** Studio Apply from a locally-produced file (manual download, cropped bake, local pick copy). */
     suspend fun studioApplyFromFile(
         gameId: Long, kind: ArtworkKind, tempFile: java.io.File, provider: String?, originUrl: String?,

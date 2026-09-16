@@ -83,6 +83,19 @@ interface ArtworkRecordDao {
     suspend fun setSortOrder(id: Long, sortOrder: Int, updatedAt: Long)
 
     /**
+     * Stores this game's crop-profile override for one artwork kind, or clears it when [key] is
+     * null (Reset to Platform Default). Every position of the kind carries the same key: the
+     * override is a property of how this game's artwork of that kind should be framed, not of one
+     * asset, so a reorder or a re-download must not change which crop target applies.
+     */
+    @Query("UPDATE artwork_records SET crop_profile_key = :key, updated_at = :updatedAt WHERE game_id = :gameId AND artwork_type = :type")
+    suspend fun setCropProfileKey(gameId: Long, type: String, key: String?, updatedAt: Long)
+
+    /** This game's stored crop-profile override for [type], or null when it follows the defaults. */
+    @Query("SELECT crop_profile_key FROM artwork_records WHERE game_id = :gameId AND artwork_type = :type AND crop_profile_key IS NOT NULL LIMIT 1")
+    suspend fun cropProfileKey(gameId: Long, type: String): String?
+
+    /**
      * Rewrites the positions of one slot to exactly [orderedIds], atomically.
      *
      * Two passes: every affected row is first parked at a negative position, then written to its

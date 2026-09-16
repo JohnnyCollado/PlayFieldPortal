@@ -297,21 +297,21 @@ Note: there is **zero existing coverage** for `ArtworkStudioViewModel`, the crop
 | 5.0 | **Render what Phase 0 can already store**: `GameDetailViewModel.kt:265-273` builds the media strip from `find` (one screenshot, one video) — switch it to `findAll` so extra assets are visible at all (AD-13) | 0.3 | DONE |
 | 5.1 | Give `StudioArt` a provider asset id and key cross-page selection on `kind + provider + (providerAssetId ?: url)`, never grid index — see "Task 5.1" under Merge 4 | 1.4, 0.3 | DONE (`fa8c8fc`, `bbc967e`; tests green, device-checked 2026-09-13) |
 | 5.2 | Sequential download queue over the shipped `studioAppendFromUrl`, with per-item states, partial-failure retention, Retry/Remove Failed — see "Task 5.2" under Merge 4 | 5.1 | DONE (`8569f33`; shipped as a checklist Apply that also removes, plus a store naming fix — tests green, device-checked 2026-09-13) |
-| 5.3 | Duplicate detection on the **single-art** tabs (5.2 already marks held multi-asset tiles), offering Replace Anyway or Cancel — see "Task 5.3" under Merge 4 | 5.2 | DONE (unit tests green 2026-09-15; the three-way prompt lost its View Existing row during implementation — see the spec; device check outstanding) |
-| 5.4 | A stored-assets manager over the shipped `reorderAssets`: reorder, primary screenshot at position 0, and a count-based warning before a large apply — see "Task 5.4" under Merge 4 | 5.2, 5.0 | DONE (unit tests green 2026-09-15; device check outstanding) |
-| 6.1 | Crop profile registry keyed on kind → platform → **game** region → default → source ratio, with Original Image as the universal fallback and a kind-default starter set — see "Task 6.1" under Merge 5 (AD-14) | None | DONE (unit tests green 2026-09-15; kind defaults only, so no pixels change — the platform and region tiers ship empty and are proven against a test table; device check outstanding) |
-| 6.2 | Live final-result preview for ICON0, box art, 3D box and physical media from the same crop state — see "Task 6.2" under Merge 5 | 6.1 | DONE (unit tests written 2026-09-15, awaiting a run; fixed top-right inset at 132 dp, user-approved 2026-09-15; `frameSizeFor`'s aspect extracted to `frameAspectFor` so frame and inset share one expression; device check outstanding) |
-| 6.3 | Per-game/category profile override persisted in the shipped `crop_profile_key` column, with Reset to Platform Default | 6.1 | READY |
+| 5.3 | Duplicate detection on the **single-art** tabs (5.2 already marks held multi-asset tiles), offering Replace Anyway or Cancel — see "Task 5.3" under Merge 4 | 5.2 | DONE (unit tests green 2026-09-15; the three-way prompt lost its View Existing row during implementation — see the spec; device-checked by the user 2026-09-16) |
+| 5.4 | A stored-assets manager over the shipped `reorderAssets`: reorder, primary screenshot at position 0, and a count-based warning before a large apply — see "Task 5.4" under Merge 4 | 5.2, 5.0 | DONE (unit tests green 2026-09-15; device-checked by the user 2026-09-16) |
+| 6.1 | Crop profile registry keyed on kind → platform → **game** region → default → source ratio, with Original Image as the universal fallback and a kind-default starter set — see "Task 6.1" under Merge 5 (AD-14) | None | DONE (unit tests green 2026-09-15; kind defaults only, so no pixels change — the platform and region tiers ship empty and are proven against a test table; device-checked by the user 2026-09-16) |
+| 6.2 | Live final-result preview for ICON0, box art, 3D box and physical media from the same crop state — see "Task 6.2" under Merge 5 | 6.1 | DONE (unit tests green 2026-09-15; fixed top-right inset at 132 dp, user-approved 2026-09-15; `frameSizeFor`'s aspect extracted to `frameAspectFor` so frame and inset share one expression; device-checked by the user 2026-09-16) |
+| 6.3 | Per-game/category profile override persisted in the shipped `crop_profile_key` column, with Reset to Platform Default | 6.1 | DONE (unit tests green 2026-09-16, device-checked by the user the same day; two choices only, and the crop editor gained a real Ⓨ context menu — 6.7's preview switch is now its first row, because no button in the editor was semantically free — see "Task 6.3" under Merge 5) |
 | 6.4 | Session Undo Last Apply over metadata, artwork replacement, ordering and crop | 3.2, 5.4, 6.2 | READY |
-| 6.5 | Centralize the artwork dimension policy: one shared box-art canvas table, `boxArtAspectFor` migrated onto it, Vita split from PSP — see "Task 6.5" under Merge 5 (Artwork Dimension & Aspect Ratio Policy) | None | READY (specced 2026-09-15) |
-| 6.6 | Play the clip while cropping ICON1 and VIDEO — full-screen canvas and inset both live — see "Task 6.6" under Merge 5 | 6.2 | DONE (unit tests updated 2026-09-16, awaiting a run; device check outstanding) |
+| 6.5 | Centralize the artwork dimension policy: one shared box-art canvas table, `boxArtAspectFor` migrated onto it, Vita split from PSP — see "Task 6.5" under Merge 5 (Artwork Dimension & Aspect Ratio Policy) | None | DONE (unit tests green 2026-09-16, placeholders checked on device by the user the same day; `hasBoxArtPreset` added because nine policy rows ARE 430×600, so equality with the generic canvas cannot tell a row from a fall-through — see the task note) |
+| 6.6 | Play the clip while cropping ICON1 and VIDEO — full-screen canvas and inset both live — see "Task 6.6" under Merge 5 | 6.2 | DONE (unit tests green 2026-09-16; device-checked by the user 2026-09-16) |
 | 6.7 | A switch for the crop editor's live preview inset — Settings ▸ Artwork row plus ⓨ in the editor, one switch for every kind | 6.2, 6.6 | DONE (tests green 2026-09-16; off also skips the inset's ExoPlayer, so it doubles as the escape hatch from 6.6's second decoder) |
 | 6.8 | Crop a pick BEFORE applying it, with its provider provenance carried into the record | 6.2 | DONE (tests green 2026-09-16; plain Apply untouched; still images only — video picks are excluded, see the task note) |
-| D.1 | A durable-identity index at the library root: format, defensive parse, read/write on `PortableArtworkLibrary` — see "Task D.1" under Merge 6 | None | DONE (unit tests written 2026-09-16, awaiting a run; serialized names lifted from `ArtworkEntryMetadata` so v1 evidence stays readable; nothing reads the file yet — D.2 writes it, D.3 consumes it) |
-| D.2 | Record the owning game's durable ids whenever PFP writes a portable artwork file | D.1 | DONE (unit tests written 2026-09-16, awaiting a run; buffered in `ArtworkIdentityRecorder` and flushed at the import boundary, never per file — the import executor's OWN writes are left to D.4's backfill, see the task note) |
-| D.3 | Relink consults the index **before** any name tier; name tiers stay as the fallback for foreign files | D.1, D.2 | DONE (unit tests written 2026-09-16, awaiting a run; `tokensOf` extracted so the file side and the database side build tokens identically; `identityOwners` defaults to "no identity", so a pre-D.2 library matches exactly as before) |
-| D.4a | Backfill the index during relink, from the game each file lands on — this is what gives an EXISTING library durable identity | D.3 | DONE (unit tests written 2026-09-16, awaiting a run; `upsertAll` added so a whole-library backfill is one pass, and the file is rewritten only when it changed) |
-| D.4b | Carry durable ids through `.pfpgame` export/import so a manually added game's artwork reconnects by id | D.4a | DONE (unit tests written 2026-09-16, awaiting a run; the export file format is UNCHANGED — its existing game-level ids were already enough, so no new version and old exports seed identity too) |
+| D.1 | A durable-identity index at the library root: format, defensive parse, read/write on `PortableArtworkLibrary` — see "Task D.1" under Merge 6 | None | DONE (unit tests green 2026-09-16; serialized names lifted from `ArtworkEntryMetadata` so v1 evidence stays readable; nothing reads the file yet — D.2 writes it, D.3 consumes it) |
+| D.2 | Record the owning game's durable ids whenever PFP writes a portable artwork file | D.1 | DONE (unit tests green 2026-09-16; buffered in `ArtworkIdentityRecorder` and flushed at the import boundary, never per file — the import executor's OWN writes are left to D.4's backfill, see the task note) |
+| D.3 | Relink consults the index **before** any name tier; name tiers stay as the fallback for foreign files | D.1, D.2 | DONE (unit tests green 2026-09-16; `tokensOf` extracted so the file side and the database side build tokens identically; `identityOwners` defaults to "no identity", so a pre-D.2 library matches exactly as before) |
+| D.4a | Backfill the index during relink, from the game each file lands on — this is what gives an EXISTING library durable identity | D.3 | DONE (unit tests green 2026-09-16; `upsertAll` added so a whole-library backfill is one pass, and the file is rewritten only when it changed) |
+| D.4b | Carry durable ids through `.pfpgame` export/import so a manually added game's artwork reconnects by id | D.4a | DONE (unit tests green 2026-09-16; the export file format is UNCHANGED — its existing game-level ids were already enough, so no new version and old exports seed identity too) |
 | L.1 | Measured grid capacity in the ViewModel: a pure `StudioGridCapacity` plus per-tab tile class replaces the fixed 4×5 constants; re-paging keeps the focused result (AD-17) | None | DONE |
 | L.2 | Render exactly one measured page: the grid slot reports its size and draws `gridColumns` × `gridRows` with no scrolling | L.1 | DONE |
 | L.3 | Title line and flat tabs: search joins the header, breadcrumb trail and SEARCH label go, eleven compact chips with LB/RB glyphs | None | DONE (`a9e0d28`) |
@@ -2601,6 +2601,50 @@ buffered but never flushed, gain identity at the next relink from the records th
 file reconnects, including for a game whose ROM has been renamed since. A game with no scrape and no
 ids still reconnects by name exactly as today.
 
+### Task 6.3: the per-game crop override
+
+**Landed (2026-09-16).** The override is a crop-profile KEY stored in `artwork_records.crop_profile_key`,
+resolved ahead of every tier by a fourth parameter on `CropProfileRegistry.resolve`. Three rules
+decide what a stored key may do, and each is a test:
+
+- It must name the kind it was stored against (`ICON` or `ICON:...`), so a key on one artwork type
+  can never reshape another.
+- An unrecognized key is **ignored**, not honoured — a key from a later version, or a platform row
+  since deleted, falls back to the tiers. Treating it as Original Image would silently drop a fixed
+  crop target the kind requires.
+- Null is Reset to Platform Default.
+
+**Two choices, not a table of them** (user decision, 2026-09-16): Platform Default and Original
+Image. That is what the shipped kind-defaults registry can express without inventing a key format,
+and it makes the Reset the same act as choosing the default — `PLATFORM_DEFAULT.storedKey` is null,
+so a later edit to the shared table reaches every game that never overrode it, with no migration.
+
+**The crop editor gained a real context menu.** Ⓨ opens `PspContextMenuOverlay` titled CROP
+OPTIONS, holding the task 6.7 live-preview switch and the two shape rows, with the current shape
+checked; the editor's prompt bar shows one Ⓨ OPTIONS pill, and the title line names the shape when
+it is overridden, so the state is readable without opening the menu. The preview row is built only
+for kinds `cropPreviewChromeFor` gives an inset — offering it on MANUAL would be a control that
+does nothing visible.
+
+This cost 6.7's preview switch its single press, and that was the only option: **no button in the
+crop editor was semantically free.** An earlier pass put Crop Shape on Ⓧ, which is wrong — Square
+opens search in the Studio's main branch and starts query editing in the Change Match picker, a
+consistency the class KDoc states outright ("X opens search, Y opens the per-slot options"). START
+is Apply Changes. So the context button had to take the editor's menu, exactly as it does
+everywhere else in the app, and the switch became its first row.
+
+The key is written the moment it is chosen, not on Apply: the override outlives this crop, so a
+cancelled crop should still leave the shape you picked. It writes every position of the kind
+(`setCropProfileKey` is keyed on game + type, not on one row), because the override describes how
+this game's artwork of that kind is framed — a reorder or a re-download must not change it. No
+pixels move: the override decides the FRAME the next crop is taken against, and already-baked
+artwork is untouched until it is re-cropped.
+
+Per-**category** overrides, which the task row also named, are not implemented: `crop_profile_key`
+hangs off an artwork record, so it can express per-game and per-kind but has nowhere to record a
+choice made for a whole platform or collection. That needs its own column or table, and it is a
+data-model change rather than a UI one.
+
 ### Task 6.5: centralize the artwork dimension policy
 
 Raised by the **Artwork Dimension & Aspect Ratio Policy**
@@ -2658,6 +2702,31 @@ one shared table serves every caller.
 bounds (`maxwidth`/`maxheight` as caps, never as target crop dimensions) and its Image Storage
 Policy. Both touch the download and store layers rather than the dimension table, and neither has
 been checked against what the tree already does.
+
+**Landed (2026-09-16).** `ArtworkDimensions.kt` in `feature-artwork/.../store/`, beside
+`CropProfiles.kt`: an `ArtworkCanvas(width, height, sourceAspectPreferred)` carrying the policy's
+numbers verbatim, all 42 seeded platforms, and `boxArtAspect(platformId, sourceWidth, sourceHeight)`
+implementing the fallback order. `boxArtAspectFor` is now one line over it. The alias keys survived
+as a canonicalizing map (`ps1`, `sfc`, `dc`, `nx`, `ds`, `3ds`, and `ngpc`, which the tree had at
+1.00 but neither the seeder nor the policy lists at all — it canonicalizes to `ngp`); ids are
+matched trimmed and lowercased.
+
+Two things the spec did not anticipate:
+
+- **`hasBoxArtPreset` had to exist.** The acceptance criterion "every built-in platform has a
+  default" cannot be tested by comparing against the generic canvas, because nine of the policy's
+  own rows (`nes`, `ps2`, `gc`, `wii`, `wiiu`, `megadrive`, `mastersystem`, `sega32x`, `x360`) are
+  *themselves* 430 × 600. Row presence and row value are different questions, so the table exposes
+  the first one directly.
+- **`PlatformSeeder.DEFAULT_PLATFORMS` is no longer private.** The coverage test asserts against the
+  real seeded list rather than a copy of it, so adding a platform without a box-art row fails the
+  test instead of silently landing on the generic case.
+
+Ratios that moved, all of them the point of the task: `psvita` 0.59 → 0.78, `nds`/`n3ds`
+0.89 → 0.90, `switch` 0.62 → 0.61, `segacd` 1.00 → 0.70, `saturn` stays 1.00, and the ~20 platforms
+that fell to the generic 0.70 now carry their own value (the generic itself is 0.72 now). Everything
+else is unchanged. `NaturalAspectArtIcon`, `PspIcon0Icon` and the 6.1 crop registry were not touched,
+and no caller passes source dimensions yet — `boxArtAspect` ships for the Studio paths that will.
 
 ## Deferred to a follow-up plan
 

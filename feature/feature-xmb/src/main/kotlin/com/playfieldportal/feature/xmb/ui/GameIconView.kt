@@ -50,6 +50,7 @@ import com.playfieldportal.core.ui.image.ArtworkRevisions
 import com.playfieldportal.core.ui.image.rememberArtworkModel
 import com.playfieldportal.core.domain.model.IconDisplayMode
 import com.playfieldportal.core.ui.icons.GameIconStyle
+import com.playfieldportal.feature.artwork.store.ArtworkDimensions
 import com.playfieldportal.feature.xmb.R
 import com.playfieldportal.feature.xmb.viewmodel.XMBItem
 import com.playfieldportal.feature.xmb.viewmodel.resolveIconDisplay
@@ -211,24 +212,12 @@ private fun NaturalArtSlot(
 // ── Box-shaped letter placeholder (Box Art / 3D Box modes, no art yet) ────────
 
 /**
- * Rough box-front aspect (width / height) per platform, for the placeholder tile — a PS1
- * jewel case reads square, a SNES box landscape, a PS2 keep case tall. Close enough beats
- * exact; the default is the common tall DVD-style case.
+ * Box-front aspect (width / height) per platform, for the placeholder tile — a PS1 jewel case
+ * reads square, a SNES box landscape, a PS2 keep case tall. A thin wrapper over the shared
+ * dimension policy, which owns the table; this is the placeholder path, so there are no source
+ * dimensions to prefer over the preset.
  */
-fun boxArtAspectFor(platformId: String?): Float = when (platformId) {
-    // Landscape North-American boxes
-    "snes", "sfc", "n64"                          -> 1.37f
-    // Square-ish jewel cases
-    "psx", "ps1", "dreamcast", "dc", "segacd",
-    "saturn", "gb", "gbc", "gba", "wonderswan",
-    "wonderswancolor", "ngp", "ngpc"              -> 1.0f
-    // Tall-but-narrow handheld cases
-    "psp", "psvita"                               -> 0.59f
-    "switch", "nx"                                -> 0.62f
-    "nds", "ds", "n3ds", "3ds"                    -> 0.89f
-    // Everything else: standard tall keep case (PS2/GC/Wii/Xbox/NES/MD…)
-    else                                          -> 0.70f
-}
+fun boxArtAspectFor(platformId: String?): Float = ArtworkDimensions.boxArt(platformId).aspectRatio
 
 // Letter tile in the platform's box shape — same accent-gradient + initial treatment as the
 // ICON0 fallback, shrunk-wrapped exactly like real natural-aspect art would be.

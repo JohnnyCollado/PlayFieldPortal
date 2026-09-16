@@ -119,4 +119,72 @@ class CropProfilesTest {
             }
         }
     }
+
+    // ── Task 6.3: the per-game override ──────────────────────────────────────
+
+    @Test
+    fun `a stored override beats every tier, including a region row`() {
+        val registry = CropProfileRegistry(
+            mapOf(
+                ArtworkKind.ICON.name to 144f / 80f,
+                "${ArtworkKind.ICON.name}:psx" to 4f / 3f,
+                "${ArtworkKind.ICON.name}:psx:NTSC_U" to 3f / 2f,
+            )
+        )
+        val profile = registry.resolve(ArtworkKind.ICON, "psx", GameRegion.NTSC_U, override = "${ArtworkKind.ICON.name}:psx")
+        assertEquals(4f / 3f, profile.aspect)
+        assertEquals("ICON:psx", profile.key)
+    }
+
+    @Test
+    fun `Original Image is selectable as an override even where a kind default exists`() {
+        val profile = CropProfileRegistry.Default.resolve(
+            ArtworkKind.ICON, "psx", null, override = CropProfileRegistry.ORIGINAL_KEY,
+        )
+        assertNull(profile.aspect)
+        assertEquals(CropProfileRegistry.ORIGINAL_KEY, profile.key)
+    }
+
+    @Test
+    fun `an unknown override is ignored rather than resolving to no target`() {
+        // A key written by a later version, or a platform row since removed. Falling through to the
+        // kind default keeps the crop frame sane; treating it as Original Image would silently drop
+        // a fixed crop target the artwork kind requires.
+        val profile = CropProfileRegistry.Default.resolve(
+            ArtworkKind.ICON, "psx", null, override = "ICON:nonesuch:PAL",
+        )
+        assertEquals(144f / 80f, profile.aspect)
+        assertEquals(ArtworkKind.ICON.name, profile.key)
+    }
+
+    @Test
+    fun `clearing the override returns the tier result — Reset to Platform Default`() {
+        val registry = CropProfileRegistry(
+            mapOf(
+                ArtworkKind.ICON.name to 144f / 80f,
+                "${ArtworkKind.ICON.name}:psx" to 4f / 3f,
+            )
+        )
+        val overridden = registry.resolve(ArtworkKind.ICON, "psx", null, override = CropProfileRegistry.ORIGINAL_KEY)
+        val reset = registry.resolve(ArtworkKind.ICON, "psx", null, override = null)
+        assertNull(overridden.aspect)
+        assertEquals(4f / 3f, reset.aspect)
+        assertEquals("ICON:psx", reset.key)
+    }
+
+    @Test
+    fun `an override never leaks across kinds`() {
+        // The stored key carries its own kind, so a HERO key must not satisfy an ICON resolve.
+        val profile = CropProfileRegistry.Default.resolve(
+            ArtworkKind.ICON, "psx", null, override = ArtworkKind.HERO.name,
+        )
+        assertEquals(144f / 80f, profile.aspect)
+        assertEquals(ArtworkKind.ICON.name, profile.key)
+    }
+
+    @Test
+    fun `a blank override is treated as no override`() {
+        val profile = CropProfileRegistry.Default.resolve(ArtworkKind.ICON, "psx", null, override = "  ")
+        assertEquals(144f / 80f, profile.aspect)
+    }
 }

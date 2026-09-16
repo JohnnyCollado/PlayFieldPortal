@@ -2337,4 +2337,131 @@ class ArtworkStudioViewModelTest {
     )
 
     private fun igdb(heroUrl: String) = IgdbGameInfo(artworkUrl = null, heroUrl = heroUrl, logoUrl = null)
+
+    // ── Task 6.3: the crop editor's context menu and the shape override ──────
+
+    private val originalKey = com.playfieldportal.feature.artwork.store.CropProfileRegistry.ORIGINAL_KEY
+
+    /** Index of the row selecting [shape] in the menu the VM built. */
+    private fun ArtworkStudioViewModel.rowFor(shape: CropShapeChoice?) =
+        uiState.value.cropOptionRows.indexOfFirst { it.shape == shape }
+
+    @Test
+    fun `the menu offers the preview switch only for a kind that has an inset`() = runTest(testDispatcher) {
+        val vm = viewModel()
+        vm.load(1L)
+        advanceUntilIdle()
+
+        // Tab 0 is ICON0, which has an XMB tile and so an inset to switch.
+        vm.selectTab(0)
+        vm.openCropOptions()
+        advanceUntilIdle()
+        assertTrue(vm.uiState.value.cropOptionRows.contains(CropOption.PREVIEW))
+
+        // MANUAL has no tile slot: the preview row would be a control that does nothing visible.
+        val manualTab = STUDIO_TABS.indexOfFirst { it.kind == ArtworkKind.MANUAL }
+        vm.selectTab(manualTab)
+        vm.openCropOptions()
+        advanceUntilIdle()
+        assertFalse(vm.uiState.value.cropOptionRows.contains(CropOption.PREVIEW))
+        // The shape rows are always there.
+        assertEquals(2, vm.uiState.value.cropOptionRows.size)
+    }
+
+    @Test
+    fun `the menu opens on the shape already in force, not on the first row`() = runTest(testDispatcher) {
+        val vm = viewModel()
+        vm.load(1L)
+        advanceUntilIdle()
+
+        vm.openCropOptions()
+        vm.activateCropOption(vm.rowFor(CropShapeChoice.ORIGINAL_IMAGE))
+        advanceUntilIdle()
+        vm.openCropOptions()
+        advanceUntilIdle()
+
+        assertTrue(vm.uiState.value.cropOptionsOpen)
+        assertEquals(vm.rowFor(CropShapeChoice.ORIGINAL_IMAGE), vm.uiState.value.cropOptionsIndex)
+    }
+
+    @Test
+    fun `choosing Original Image stores the key and closes the menu`() = runTest(testDispatcher) {
+        val vm = viewModel()
+        vm.load(1L)
+        advanceUntilIdle()
+
+        vm.openCropOptions()
+        vm.activateCropOption(vm.rowFor(CropShapeChoice.ORIGINAL_IMAGE))
+        advanceUntilIdle()
+
+        coVerify { routingStore.setCropProfileOverride(1L, any(), originalKey) }
+        assertFalse(vm.uiState.value.cropOptionsOpen)
+        assertEquals(originalKey, vm.uiState.value.cropProfileOverride)
+    }
+
+    @Test
+    fun `choosing Platform Default clears the stored key — this is the Reset`() = runTest(testDispatcher) {
+        val vm = viewModel()
+        vm.load(1L)
+        advanceUntilIdle()
+
+        vm.openCropOptions()
+        vm.activateCropOption(vm.rowFor(CropShapeChoice.ORIGINAL_IMAGE))
+        advanceUntilIdle()
+        vm.openCropOptions()
+        vm.activateCropOption(vm.rowFor(CropShapeChoice.PLATFORM_DEFAULT))
+        advanceUntilIdle()
+
+        coVerify { routingStore.setCropProfileOverride(1L, any(), null) }
+        assertNull(vm.uiState.value.cropProfileOverride)
+    }
+
+    @Test
+    fun `the preview row toggles the switch and writes no crop override`() = runTest(testDispatcher) {
+        val vm = viewModel()
+        vm.load(1L)
+        advanceUntilIdle()
+
+        vm.selectTab(0)
+        vm.openCropOptions()
+        val before = vm.uiState.value.cropPreviewEnabled
+        vm.activateCropOption(vm.rowFor(null))
+        advanceUntilIdle()
+
+        assertEquals(!before, vm.uiState.value.cropPreviewEnabled)
+        assertNull(vm.uiState.value.cropProfileOverride)
+        assertFalse(vm.uiState.value.cropOptionsOpen)
+    }
+
+    @Test
+    fun `the menu takes the pad while it is open, and Back closes only it`() = runTest(testDispatcher) {
+        val vm = viewModel()
+        vm.load(1L)
+        advanceUntilIdle()
+
+        vm.selectTab(0)
+        vm.openCropOptions()
+        advanceUntilIdle()
+        val rowCount = vm.uiState.value.cropOptionRows.size
+
+        // Down must not run off the end of the list, however often it is pressed.
+        repeat(rowCount + 3) { vm.handleGamepadAction(GamepadAction.NAVIGATE_DOWN) }
+        advanceUntilIdle()
+        assertEquals(rowCount - 1, vm.uiState.value.cropOptionsIndex)
+
+        repeat(rowCount + 3) { vm.handleGamepadAction(GamepadAction.NAVIGATE_UP) }
+        advanceUntilIdle()
+        assertEquals(0, vm.uiState.value.cropOptionsIndex)
+
+        vm.handleGamepadAction(GamepadAction.BACK)
+        advanceUntilIdle()
+        assertFalse(vm.uiState.value.cropOptionsOpen)
+    }
+
+    @Test
+    fun `an unrecognized stored key reads as Platform Default`() {
+        assertEquals(CropShapeChoice.PLATFORM_DEFAULT, CropShapeChoice.of("ICON:nonesuch"))
+        assertEquals(CropShapeChoice.PLATFORM_DEFAULT, CropShapeChoice.of(null))
+        assertEquals(CropShapeChoice.ORIGINAL_IMAGE, CropShapeChoice.of(originalKey))
+    }
 }

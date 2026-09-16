@@ -19,7 +19,8 @@ class PlatformSeeder @Inject constructor(
     }
 
     companion object {
-        private val DEFAULT_PLATFORMS = listOf(
+        // Public so the shared artwork dimension policy can be proven to cover every seeded platform.
+        val DEFAULT_PLATFORMS = listOf(
 
             // ── Sony ───────────────────────────────────────────────────────
             PlatformEntity(

@@ -22,9 +22,31 @@ data class CropProfile(val key: String, val aspect: Float?)
  */
 class CropProfileRegistry(private val entries: Map<String, Float>) {
 
-    /** Resolves the crop target for [kind] on the game identified by [platformId] / [region]. */
-    fun resolve(kind: ArtworkKind, platformId: String?, region: GameRegion?): CropProfile {
+    /**
+     * Resolves the crop target for [kind] on the game identified by [platformId] / [region].
+     *
+     * [override] is the game's own stored choice (`artwork_records.crop_profile_key`), and it wins
+     * over every tier — that is the whole point of a per-game override. It must name this [kind],
+     * so a key stored against one artwork type can never reshape another. An override that names
+     * nothing this registry knows is **ignored** rather than honoured: a key from a later version,
+     * or a platform row since deleted, should fall back to the tiers, never to "no crop target".
+     * Passing null is Reset to Platform Default.
+     */
+    fun resolve(
+        kind: ArtworkKind,
+        platformId: String?,
+        region: GameRegion?,
+        override: String? = null,
+    ): CropProfile {
         val kindKey = kind.name
+
+        override?.trim()?.takeIf { it.isNotEmpty() }?.let { key ->
+            if (key == ORIGINAL_KEY) return CropProfile(ORIGINAL_KEY, null)
+            if (key == kindKey || key.startsWith("$kindKey:")) {
+                entries[key]?.let { return CropProfile(key, it) }
+            }
+        }
+
         val platformKey = platformId?.let { "$kindKey:$it" }
         val regionKey = if (platformId != null && region != null) "$kindKey:$platformId:${region.name}" else null
 

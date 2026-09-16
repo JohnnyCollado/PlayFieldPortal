@@ -67,6 +67,10 @@ private object PreviewStudioActions : ArtworkStudioActions {
     override fun applyCrop() = Unit
     override fun cancelCrop() = Unit
     override fun toggleCropPreview() = Unit
+    override fun openCropOptions() = Unit
+    override fun closeCropOptions() = Unit
+    override fun moveCropOptionsCursor(delta: Int) = Unit
+    override fun activateCropOption(index: Int) = Unit
     override fun dismissMessage() = Unit
 }
 

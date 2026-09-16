@@ -115,6 +115,44 @@ enum class StudioLeaveChoice(val label: String) {
     STAY("Stay"),
 }
 
+/**
+ * The crop editor's context-menu rows (task 6.3), in order. The preview row is only built for kinds
+ * that have an inset to switch, so a menu may carry the shape rows alone.
+ */
+enum class CropOption {
+    /** The task 6.7 live-preview switch, a row here rather than its own button — see task 6.3. */
+    PREVIEW,
+    SHAPE_PLATFORM_DEFAULT,
+    SHAPE_ORIGINAL_IMAGE;
+
+    /** The shape this row selects, or null for the preview switch. */
+    val shape: CropShapeChoice?
+        get() = when (this) {
+            PREVIEW -> null
+            SHAPE_PLATFORM_DEFAULT -> CropShapeChoice.PLATFORM_DEFAULT
+            SHAPE_ORIGINAL_IMAGE -> CropShapeChoice.ORIGINAL_IMAGE
+        }
+}
+
+/**
+ * The crop shapes a game can be pinned to (task 6.3).
+ *
+ * [storedKey] is what lands in `artwork_records.crop_profile_key`. PLATFORM_DEFAULT stores null on
+ * purpose — "follow the defaults" is the absence of an override, so choosing it IS Reset to Platform
+ * Default and a later change to the shared table reaches this game without a migration.
+ */
+enum class CropShapeChoice(val label: String, val storedKey: String?) {
+    PLATFORM_DEFAULT("Platform Default", null),
+    ORIGINAL_IMAGE("Original Image", CropProfileRegistry.ORIGINAL_KEY);
+
+    companion object {
+        /** The row a stored key selects. An unrecognized key reads as the default, matching how
+         *  [CropProfileRegistry.resolve] ignores one. */
+        fun of(storedKey: String?): CropShapeChoice =
+            entries.firstOrNull { it.storedKey != null && it.storedKey == storedKey } ?: PLATFORM_DEFAULT
+    }
+}
+
 /** The apply confirmation's rows, in order: START, the Apply pill or Apply Changes ask before changing the slot. */
 enum class StudioApplyChoice(val label: String) {
     APPLY("Apply"),
@@ -285,9 +323,17 @@ data class ArtworkStudioUiState(
     // provider it came from instead of as an anonymous user file.
     val cropCandidate: StudioArt? = null,
     // The live result inset in the crop editor (tasks 6.2/6.6), switchable from Settings ▸ Artwork
-    // or with Ⓨ in the editor. One switch for every kind, stills and video alike.
+    // or from the editor's Ⓨ menu. One switch for every kind, stills and video alike.
     val cropPreviewEnabled: Boolean =
         com.playfieldportal.core.data.repository.CropPreviewPreferences.DEFAULT_ENABLED,
+    // This game's stored crop-profile override for the tab being cropped (task 6.3), read at
+    // editor open. Null means it follows the shared defaults — Reset to Platform Default.
+    val cropProfileOverride: String? = null,
+    // The crop editor's context menu: the live-preview switch plus the Crop Shape rows. Built at
+    // open, because the preview row is only offered for kinds that have an inset to show.
+    val cropOptionsOpen: Boolean = false,
+    val cropOptionsIndex: Int = 0,
+    val cropOptionRows: List<CropOption> = emptyList(),
     val cropPreparing: Boolean = false,
     val cropSrcW: Int = 0,
     val cropSrcH: Int = 0,
@@ -2287,11 +2333,13 @@ class ArtworkStudioViewModel @Inject constructor(
                 _uiState.update { it.copy(cropPreparing = false, message = "That pick is not an image this can crop") }
                 return@launch
             }
+            val override = routingStore.cropProfileOverride(gameId, kind)
             // No seed from the slot's stored rect: this is a different image, so it starts centred.
             _uiState.update {
                 it.copy(
                     cropPreparing = false, cropEditorPath = temp.absolutePath,
                     cropVideoSourcePath = null, cropCandidate = art,
+                    cropProfileOverride = override,
                     cropSrcW = w, cropSrcH = h, cropZoom = 1f,
                     cropCenterX = 0.5f, cropCenterY = 0.5f,
                 )
@@ -2325,9 +2373,11 @@ class ArtworkStudioViewModel @Inject constructor(
             }
             val (displayPath, videoPath, dims) = prepared
             val seed = _uiState.value.info?.cropRect?.let { parseCropRect(it) }
+            val override = routingStore.cropProfileOverride(gameId, kind)
             _uiState.update {
                 it.copy(
                     cropPreparing = false, cropEditorPath = displayPath, cropVideoSourcePath = videoPath,
+                    cropProfileOverride = override,
                     cropSrcW = dims.first, cropSrcH = dims.second, cropZoom = 1f,
                     cropCenterX = seed?.let { r -> (r[0] + r[2]) / 2f } ?: 0.5f,
                     cropCenterY = seed?.let { r -> (r[1] + r[3]) / 2f } ?: 0.5f,
@@ -2393,7 +2443,9 @@ class ArtworkStudioViewModel @Inject constructor(
     private fun recomputeCropRect() = _uiState.update { s ->
         if (s.cropSrcW <= 0 || s.cropSrcH <= 0) return@update s
         val srcAspect = s.cropSrcW.toFloat() / s.cropSrcH
-        val profile = CropProfileRegistry.Default.resolve(tab().kind, s.game?.platformId, s.game?.region)
+        val profile = CropProfileRegistry.Default.resolve(
+            tab().kind, s.game?.platformId, s.game?.region, s.cropProfileOverride,
+        )
         val target = profile.aspect ?: srcAspect
         // Largest target-aspect window fitting the source at zoom=1, then shrunk by zoom.
         var wN: Float; var hN: Float
@@ -2405,6 +2457,56 @@ class ArtworkStudioViewModel @Inject constructor(
             cropCenterX = cx, cropCenterY = cy,
             cropL = cx - wN / 2f, cropT = cy - hN / 2f, cropR = cx + wN / 2f, cropB = cy + hN / 2f,
         )
+    }
+
+    // ── Crop Shape: the per-game crop-profile override (task 6.3) ────────────
+    //
+    // Two choices, because two is what the shipped kind-defaults table can honestly express:
+    // follow the defaults, or frame at the image's own ratio. Choosing PLATFORM_DEFAULT is the
+    // Reset — it clears the stored key rather than storing a second name for the same thing.
+
+    override fun openCropOptions() {
+        val s = _uiState.value
+        // The preview row only where there is an inset to switch: for a kind with no XMB tile it
+        // would be a control that does nothing visible.
+        val rows = buildList {
+            if (cropPreviewChromeFor(tab().kind) != null) add(CropOption.PREVIEW)
+            add(CropOption.SHAPE_PLATFORM_DEFAULT)
+            add(CropOption.SHAPE_ORIGINAL_IMAGE)
+        }
+        val current = CropShapeChoice.of(s.cropProfileOverride)
+        _uiState.update {
+            it.copy(
+                cropOptionsOpen = true,
+                cropOptionRows = rows,
+                cropOptionsIndex = rows.indexOfFirst { row -> row.shape == current }.coerceAtLeast(0),
+            )
+        }
+    }
+
+    override fun closeCropOptions() = _uiState.update { it.copy(cropOptionsOpen = false) }
+
+    override fun moveCropOptionsCursor(delta: Int) = _uiState.update {
+        it.copy(cropOptionsIndex = (it.cropOptionsIndex + delta).coerceIn(0, it.cropOptionRows.lastIndex.coerceAtLeast(0)))
+    }
+
+    override fun activateCropOption(index: Int) {
+        val row = _uiState.value.cropOptionRows.getOrNull(index) ?: return
+        val shape = row.shape
+        if (shape == null) {
+            toggleCropPreview()
+            _uiState.update { it.copy(cropOptionsOpen = false) }
+            return
+        }
+        val kind = tab().kind
+        val key = shape.storedKey
+        viewModelScope.launch {
+            // Persisted immediately, not on Apply: the override outlives this crop, and a cancelled
+            // crop should still leave the shape you chose for next time.
+            routingStore.setCropProfileOverride(gameId, kind, key)
+            _uiState.update { it.copy(cropProfileOverride = key, cropOptionsOpen = false) }
+            recomputeCropRect()
+        }
     }
 
     override fun panCrop(dx: Float, dy: Float) {
@@ -2429,7 +2531,10 @@ class ArtworkStudioViewModel @Inject constructor(
         val l = s.cropL; val t = s.cropT; val r = s.cropR; val b = s.cropB
         viewModelScope.launch {
             _uiState.update {
-                it.copy(applying = true, cropEditorPath = null, cropVideoSourcePath = null, cropCandidate = null)
+                it.copy(
+                    applying = true, cropEditorPath = null, cropVideoSourcePath = null,
+                    cropCandidate = null, cropProfileOverride = null, cropOptionsOpen = false,
+                )
             }
             val baked = if (videoPath != null) {
                 // ICON1: re-encode the video cropped to the frame (Media3 Transformer + Crop).
@@ -2468,7 +2573,12 @@ class ArtworkStudioViewModel @Inject constructor(
         val s = _uiState.value
         s.cropEditorPath?.let { runCatching { java.io.File(it).delete() } }
         s.cropVideoSourcePath?.let { runCatching { java.io.File(it).delete() } }
-        _uiState.update { it.copy(cropEditorPath = null, cropVideoSourcePath = null, cropCandidate = null) }
+        _uiState.update {
+            it.copy(
+                cropEditorPath = null, cropVideoSourcePath = null,
+                cropCandidate = null, cropProfileOverride = null, cropOptionsOpen = false,
+            )
+        }
     }
 
     private fun decodeBounds(file: java.io.File): Pair<Int, Int> {
@@ -2604,6 +2714,18 @@ class ArtworkStudioViewModel @Inject constructor(
             }
             return
         }
+        // The crop editor's context menu (task 6.3). Ahead of the crop editor's own branch, because
+        // it opens OVER the editor and must take the pad while it is up.
+        if (s.cropOptionsOpen) {
+            when (action) {
+                GamepadAction.NAVIGATE_UP   -> moveCropOptionsCursor(-1)
+                GamepadAction.NAVIGATE_DOWN -> moveCropOptionsCursor(+1)
+                GamepadAction.SELECT        -> activateCropOption(_uiState.value.cropOptionsIndex)
+                GamepadAction.BACK          -> closeCropOptions()
+                else -> Unit
+            }
+            return
+        }
         // Crop editor: D-pad pans, LB/RB zoom out/in, A bakes, B cancels.
         if (s.cropEditorPath != null) {
             when (action) {
@@ -2615,8 +2737,11 @@ class ArtworkStudioViewModel @Inject constructor(
                 GamepadAction.PREV_CATEGORY  -> zoomCrop(1f / 1.1f)   // LB — zoom out
                 GamepadAction.SELECT         -> applyCrop()
                 GamepadAction.BACK           -> cancelCrop()
-                // Y is unbound inside the crop editor, so it takes the preview toggle.
-                GamepadAction.OPEN_CONTEXT_MENU -> toggleCropPreview()
+                // The context button keeps its app-wide meaning here: it opens the editor's menu,
+                // which holds the preview switch (task 6.7, one press deeper now) and Crop Shape.
+                // Square is NOT free — it opens search everywhere else in the Studio — and START
+                // means Apply Changes, so neither could take a third control.
+                GamepadAction.OPEN_CONTEXT_MENU -> openCropOptions()
                 else -> Unit
             }
             return
