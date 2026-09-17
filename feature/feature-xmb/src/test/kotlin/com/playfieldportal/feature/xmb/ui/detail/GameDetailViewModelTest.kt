@@ -1103,6 +1103,9 @@ class GameDetailViewModelTest {
         coEvery { artworkRepository.fetchMetadataPreview(1L) } returns MetadataPreview(metadataCurrent, presets)
         viewModel.loadGame(1L)
         testDispatcher.scheduler.advanceUntilIdle()
+        // The overlay is opened from the page's own graph, so the page has to have reported
+        // readiness first — the same order the screen runs in.
+        viewModel.onPageLaidOut()
         viewModel.activateAction(DetailAction.METADATA)
         testDispatcher.scheduler.advanceUntilIdle()
     }
@@ -1233,6 +1236,23 @@ class GameDetailViewModelTest {
     }
 
     @Test
+    fun `the metadata overlay takes controller input once its rows arrive`() = runTest {
+        openLoadedPreview()
+
+        // Retrieval is asynchronous: the overlay opens before it has any row, so the cursor can
+        // only be anywhere once the rows have been handed to the engine.
+        assertTrue(GameDetailKeys.METADATA_APPLY in viewModel.focusableNodeKeys())
+        assertEquals(GameDetailKeys.METADATA_APPLY, viewModel.uiState.value.navFocusKey)
+
+        viewModel.handleGamepadAction(GamepadAction.NAVIGATE_UP)
+
+        assertEquals(
+            GameDetailKeys.metadataField(MetadataField.DEVELOPER.name),
+            viewModel.uiState.value.navFocusKey,
+        )
+    }
+
+    @Test
     fun `switching source re-ticks its changes and toggling a row chooses fields`() = runTest {
         openLoadedPreview()
 
@@ -1249,5 +1269,144 @@ class GameDetailViewModelTest {
         assertEquals(MetadataApplyPolicy.CHOOSE_FIELDS, preview.policy)
         assertTrue(preview.chosen.isEmpty())
         assertTrue(preview.willWrite.isEmpty())
+    }
+
+    // ── Navigation (unified engine) ───────────────────────────────────────
+
+    /** Load the game and report the page's first laid-out graph, ready for controller input. */
+    private fun loadedAndLaidOut() {
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.onPageLaidOut()
+    }
+
+    @Test
+    fun `input before the game loads is dropped and never replayed`() = runTest {
+        // Nothing is loaded yet: the page has no graph, so the engine ignores the press outright.
+        viewModel.handleGamepadAction(GamepadAction.NAVIGATE_DOWN)
+        assertNull(viewModel.uiState.value.navFocusKey)
+
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // The dropped press did not accumulate: the cursor starts on Launch, where the design says
+        // it starts, and the next press is the one that moves it.
+        assertEquals(GameDetailKeys.LAUNCH, viewModel.uiState.value.navFocusKey)
+        viewModel.handleGamepadAction(GamepadAction.NAVIGATE_DOWN)
+        assertEquals(GameDetailKeys.FAVORITE, viewModel.uiState.value.navFocusKey)
+    }
+
+    @Test
+    fun `Options owns every input while open and hands the page its cursor back`() = runTest {
+        loadedAndLaidOut()
+        viewModel.handleGamepadAction(GamepadAction.NAVIGATE_DOWN)
+        assertEquals(GameDetailKeys.FAVORITE, viewModel.uiState.value.navFocusKey)
+
+        viewModel.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
+        assertTrue(viewModel.uiState.value.showOptions)
+        assertEquals(
+            GameDetailKeys.option(DetailAction.FAVORITE.name),
+            viewModel.uiState.value.navFocusKey,
+        )
+
+        viewModel.handleGamepadAction(GamepadAction.NAVIGATE_DOWN)
+        assertEquals(
+            GameDetailKeys.option(DetailAction.COLLECTIONS.name),
+            viewModel.uiState.value.navFocusKey,
+        )
+
+        // Back closes the overlay before it can close the page.…
+        viewModel.handleGamepadAction(GamepadAction.BACK)
+        assertFalse(viewModel.uiState.value.showOptions)
+        assertFalse(viewModel.uiState.value.closed)
+        // …and the page is back on the exact node it was interrupted on.
+        assertEquals(GameDetailKeys.FAVORITE, viewModel.uiState.value.navFocusKey)
+
+        // A second Back, with nothing open, leaves Game Detail.
+        viewModel.handleGamepadAction(GamepadAction.BACK)
+        assertTrue(viewModel.uiState.value.closed)
+    }
+
+    @Test
+    fun `a page action cannot fire through the Options overlay`() = runTest {
+        loadedAndLaidOut()
+        // Page cursor parked on Artwork, which would open the Artwork Studio if it ever fired.
+        viewModel.handleGamepadAction(GamepadAction.NAVIGATE_DOWN)
+        viewModel.handleGamepadAction(GamepadAction.NAVIGATE_RIGHT)
+        assertEquals(GameDetailKeys.ARTWORK, viewModel.uiState.value.navFocusKey)
+
+        viewModel.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
+        viewModel.handleGamepadAction(GamepadAction.SELECT)   // the first option: Favorite
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.showArtworkStudio)
+        assertTrue(viewModel.uiState.value.game?.isFavorite == true)
+        coVerify { gameRepository.setFavorite(1L, true) }
+    }
+
+    @Test
+    fun `a multi-disc set exposes one node per disc and confirming one keeps the cursor there`() = runTest {
+        val setKey = "psx\u0001/roms/psx\u0001Final Fantasy VII"
+        val primary = fakeGame.copy(id = 1L, discSetKey = setKey, discNumber = 1, isDiscPrimary = true)
+        val disc2 = fakeGame.copy(id = 2L, discSetKey = setKey, discNumber = 2, isDiscPrimary = false)
+        coEvery { gameRepository.getById(1L) } returns primary
+        coEvery { gameRepository.getDiscSetMembers(setKey) } returns listOf(primary, disc2)
+
+        loadedAndLaidOut()
+        assertTrue(GameDetailKeys.disc(1L) in viewModel.focusableNodeKeys())
+        assertTrue(GameDetailKeys.disc(2L) in viewModel.focusableNodeKeys())
+        assertEquals(GameDetailKeys.LAUNCH, viewModel.uiState.value.navFocusKey)
+
+        viewModel.handleGamepadAction(GamepadAction.NAVIGATE_DOWN)   // quick actions
+        viewModel.handleGamepadAction(GamepadAction.NAVIGATE_DOWN)   // first disc
+        assertEquals(GameDetailKeys.disc(1L), viewModel.uiState.value.navFocusKey)
+
+        viewModel.handleGamepadAction(GamepadAction.SELECT)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(1L, viewModel.uiState.value.selectedDiscId)
+        // Confirming a disc never throws the cursor somewhere unrelated.
+        assertEquals(GameDetailKeys.disc(1L), viewModel.uiState.value.navFocusKey)
+    }
+
+    @Test
+    fun `a package-backed game exposes neither emulator nor achievement nodes`() = runTest {
+        coEvery { gameRepository.getById(3L) } returns
+            Game(id = 3L, title = "Alto's Odyssey", platformId = "android", packageName = "com.noodlecake.altosodyssey")
+        coEvery { platformDao.getById("android") } returns null
+
+        viewModel.loadGame(3L)
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.onPageLaidOut()
+
+        val keys = viewModel.focusableNodeKeys()
+        assertTrue(GameDetailKeys.LAUNCH in keys)
+        assertFalse(GameDetailKeys.EMULATOR_ACTION in keys)
+        assertFalse(GameDetailKeys.EMULATOR_INFO in keys)
+        assertFalse(GameDetailKeys.COINS in keys)
+    }
+
+    @Test
+    fun `a missing manual leaves no focusable ghost node`() = runTest {
+        coEvery { artworkStore.find(1L, com.playfieldportal.feature.artwork.store.ArtworkKind.MANUAL) } returns null
+
+        loadedAndLaidOut()
+
+        assertFalse(GameDetailKeys.MANUAL in viewModel.focusableNodeKeys())
+        // The row is still rendered (and still tappable, so touching it can explain itself); it is
+        // simply not part of the controller graph.
+        assertNull(viewModel.uiState.value.navFocusKey?.takeIf { it == GameDetailKeys.MANUAL })
+    }
+
+    @Test
+    fun `a tap and a Cross press on the same node do the same thing`() = runTest {
+        loadedAndLaidOut()
+
+        viewModel.onNodeTapped(GameDetailKeys.COINS)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.openCoins)
+        assertEquals(GameDetailKeys.COINS, viewModel.uiState.value.navFocusKey)
+        // Touch hides the controller cursor without losing the logical node.
+        assertFalse(viewModel.uiState.value.cursorVisible)
     }
 }

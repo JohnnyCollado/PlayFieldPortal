@@ -102,7 +102,3 @@ docs/feedback/
 # Byte-identical copies of core/core-ui/src/main/res/raw — res/raw is the tracked copy.
 assets/SFX/active/*.wav
 assets/SFX/active/*.mp3
-
-# Discord Social SDK prebuilts (1.9.17379): vendor-licensed, fetched locally, never published.
-# Only :app consumes them; see discord/discord-native/README.md for where they go.
-discord/discord-native/libs/*.aar

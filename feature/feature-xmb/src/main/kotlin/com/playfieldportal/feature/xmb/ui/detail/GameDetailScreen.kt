@@ -1,7 +1,6 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -9,11 +8,9 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.relocation.BringIntoViewRequester
-import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,25 +24,22 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import com.playfieldportal.core.domain.model.Game
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.filled.Movie
-import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Brush
-import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Monitor
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
@@ -59,25 +53,23 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -85,26 +77,52 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import coil3.compose.AsyncImage
-import com.playfieldportal.core.ui.image.rememberArtworkModel
+import com.playfieldportal.core.domain.model.ControllerIcon
+import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.ui.components.ControllerPromptItem
+import com.playfieldportal.core.ui.detail.DetailRowSpacing
+import com.playfieldportal.core.ui.detail.PfpDetailBackground
+import com.playfieldportal.core.ui.detail.PfpDetailBreadcrumb
+import com.playfieldportal.core.ui.detail.PfpDetailField
+import com.playfieldportal.core.ui.detail.PfpDetailFieldBand
+import com.playfieldportal.core.ui.detail.PfpDetailHelperFooter
+import com.playfieldportal.core.ui.detail.PfpDetailHeroBanner
+import com.playfieldportal.core.ui.detail.PfpDetailIconTile
+import com.playfieldportal.core.ui.detail.PfpDetailLaunchButton
+import com.playfieldportal.core.ui.detail.PfpDetailMediaTile
+import com.playfieldportal.core.ui.detail.PfpDetailProgressRow
+import com.playfieldportal.core.ui.detail.PfpDetailQuickAction
+import com.playfieldportal.core.ui.detail.PfpDetailScaffold
+import com.playfieldportal.core.ui.detail.PfpDetailSectionLabel
+import com.playfieldportal.core.ui.detail.PfpDetailTextRow
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.core.ui.theme.menuCursorFill
 import com.playfieldportal.feature.xmb.ui.DetailContextMenu
 import com.playfieldportal.feature.xmb.ui.DetailMenuRow
 import com.playfieldportal.feature.xmb.ui.collection.CollectionPickerPanel
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import timber.log.Timber
 
-// The shared hero-card building blocks (breadcrumb, hero card, icon tile, console button,
-// square action button) live in DetailComponents.kt — shared with the App Detail page.
-// Neutral dark surfaces stay fixed; every accent/focus color comes from the active theme via
-// menuCursorFill()/menuCursorEdge() so this screen follows the chosen color scheme.
+// The Game Detail page: a controller-first, console-style information page on the shell's accent
+// surface. Its structure is the shared core-ui detail scaffold — breadcrumb header, scrolling body
+// of full-width rows, permanent helper footer — so App Detail renders the same frame.
+//
+// Navigation is the shared core-navigation engine (see GameDetailNav): every controller-actionable
+// element is a stable semantic node, movement follows reported geometry, and focus-driven scrolling
+// replaces the old fixed page-scroll steps. Touch taps route through the same nodes, so a tap and a
+// Cross press can never do different things.
+
 private val TextPrimary = Color(0xFFEEEEEE)
-private val TextMuted = Color(0xAAEEEEEE)
+private val TextMuted = Color(0xAAB8C6E0)
 private val PlayGreen = Color(0xFF45C46A)
-private val ActionFill = Color(0xFF1B1B26)
-private val PageBg = Color(0xFF06060C)
+private val ActionFail = Color(0xFFFF8A8A)
+
+/** Descriptions longer than this get a Confirm-to-expand affordance. */
+private const val OVERVIEW_EXPAND_THRESHOLD = 190
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -129,7 +147,6 @@ fun GameDetailScreen(
     viewModel: GameDetailViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
-    val context = LocalContext.current
 
     LaunchedEffect(gameId, initialDiscId) {
         viewModel.prepareForOpen()
@@ -175,7 +192,7 @@ fun GameDetailScreen(
             onBack()
         }
     }
-    // Strip tap / SELECT on the coin strip opens the dedicated Shiba Coins screen over this page.
+    // Confirm on the Shiba Coins row opens the dedicated screen over this page.
     LaunchedEffect(state.openCoins) {
         if (state.openCoins) {
             onOpenShibaCoins(gameId)
@@ -193,13 +210,30 @@ fun GameDetailScreen(
     if (!revealed) return
 
     if (state.isLoading) {
-        Box(modifier.fillMaxSize().background(PageBg)) {
+        PfpDetailBackground(modifier = modifier.fillMaxSize()) {
             CircularProgressIndicator(Modifier.align(Alignment.Center), color = menuCursorEdge())
         }
         return
     }
 
-    val game = state.game ?: return
+    val game = state.game
+    if (game == null) {
+        // A missing row must still be a way out: the page shows its own dead end and tells the
+        // engine it is laid out, so navigation can never be left permanently un-ready.
+        LaunchedEffect(Unit) { viewModel.onPageLaidOut() }
+        PfpDetailScaffold(
+            modifier = modifier,
+            header = {
+                PfpDetailBreadcrumb(crumbs = listOf("Library", "Game"), onBack = onBack)
+            },
+        ) {
+            Spacer(Modifier.height(24.dp))
+            Text("This game is no longer in your library.", color = TextPrimary, fontSize = 16.sp)
+            Spacer(Modifier.height(6.dp))
+            Text("Press Back to return to the library.", color = TextMuted, fontSize = 13.sp)
+        }
+        return
+    }
 
     // The Artwork Studio fully REPLACES the detail page while open — nothing shows or reacts
     // behind it; closing restores the page exactly where it was (state is untouched).
@@ -215,249 +249,323 @@ fun GameDetailScreen(
         )
         return
     }
-    val platform = state.platform
+
+    GameDetailContent(
+        state = state,
+        game = game,
+        onBack = onBack,
+        showTouchControls = showTouchControls,
+        onTouchInput = onTouchInput,
+        viewModel = viewModel,
+        modifier = modifier,
+    )
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun GameDetailContent(
+    state: GameDetailUiState,
+    game: Game,
+    onBack: () -> Unit,
+    showTouchControls: Boolean,
+    onTouchInput: () -> Unit,
+    viewModel: GameDetailViewModel,
+    modifier: Modifier = Modifier,
+) {
     val pfpColors = LocalPFPColors.current
-    val accentColor = platform?.accentColor?.let { Color(it) } ?: pfpColors.accentColor
+    val accentColor = state.platform?.accentColor?.let { Color(it) } ?: pfpColors.accentColor
+    val focus = state.navFocusKey
 
-    // Same translucent theme-gradient backdrop as the Music browser, so the XMB wave stays visible
-    // behind and all full-screen menus read consistently.
-    Box(
+    val pageScrollState = rememberScrollState()
+    val mediaListState = rememberLazyListState()
+    // One requester per node, created on first measure, plus the root-space Y of every node. Both
+    // are what turn "the cursor moved" into "the page shows the cursor": navigation stays
+    // coordinate-free and the screen owns the geometry.
+    val requesterFor = remember { mutableStateMapOf<String, BringIntoViewRequester>() }
+    val nodeY = remember { mutableStateMapOf<String, Float>() }
+    // The page top is not a node (the hero is deliberately not a controller-focus target), but it
+    // is a scroll target: focusing Launch or a quick action returns the page to the hero.
+    val pageTopRequester = remember { BringIntoViewRequester() }
+
+    // Report geometry upward whenever the layout settles. The ViewModel feeds it to the engine,
+    // which is what makes UP/DOWN follow the visual rows (and what lets a node that disappears
+    // hand its focus to whatever took its place on screen).
+    LaunchedEffect(Unit) {
+        snapshotFlow { nodeY.toMap() }
+            .distinctUntilChanged()
+            .collect { viewModel.onNodeGeometry(it) }
+    }
+    // The first usable graph is on screen: open the navigation gate. Input before this is ignored
+    // by the engine rather than buffered, so a press during load can never fire late.
+    LaunchedEffect(game.id) {
+        snapshotFlow { nodeY.keys.toSet() }
+            .filter { it.isNotEmpty() }
+            .first()
+        viewModel.onPageLaidOut()
+    }
+
+    // Focus-driven scrolling, replacing the old fixed page-scroll steps. The helper footer is a real
+    // layout row (not an overlay), so the body's viewport already excludes it — "above the footer"
+    // needs no extra math.
+    LaunchedEffect(focus) {
+        val key = focus ?: return@LaunchedEffect
+        val mediaIndex = state.detailMedia.indexOfFirst { GameDetailKeys.media(mediaStableId(it)) == key }
+        val target = if (mediaIndex >= 0) GameDetailKeys.MEDIA else key
+        // The hero is not a node, so bringing Launch into view alone parks the page just above
+        // Launch and the hero can never be reached again. The top band scrolls to the page top.
+        val inTopBand = key in TopBandKeys
+        val requester = requesterFor[target]
+        if (!inTopBand && requester == null) return@LaunchedEffect
+        // Hold the recovery lock for the alignment: repeated direction presses during the scroll are
+        // dropped, never queued, so a held stick cannot outrun the page.
+        viewModel.onScrollAlignmentChanged(true)
+        try {
+            // ONE bring-into-view call, deliberately never a branch of an if/else and never a
+            // ScrollState.animateScrollTo. A scroll call that lands in a branch has its Unit
+            // result materialized as a `checkcast kotlin.Unit`, and ScrollState.animateScrollTo is
+            // compiled as a *discarded* Float-returning animateScrollBy — so the moment such a
+            // scroll really suspends, the resumed Float hits that cast and the page dies with
+            // "Float cannot be cast to kotlin.Unit" (see GameDetailScrollTest).
+            // The page top is its own bring-into-view target instead, so returning to the hero uses
+            // the same path as bringing any other node into view.
+            (if (inTopBand) pageTopRequester else requester)?.bringIntoView()
+            if (mediaIndex >= 0) {
+                mediaListState.animateScrollToItem(mediaIndex)
+            }
+        } finally {
+            viewModel.onScrollAlignmentChanged(false)
+        }
+    }
+
+    PfpDetailScaffold(
         modifier = modifier
-            .fillMaxSize()
-            // Any touch anywhere marks the input source as touch (revealing the header pills),
-            // without consuming the event so buttons still work.
-            .pointerInput(Unit) { awaitEachGesture { awaitFirstDown(requireUnconsumed = false); onTouchInput() } }
-            .background(
-                Brush.verticalGradient(
-                    0f to pfpColors.backgroundTop.copy(alpha = 0.72f),
-                    1f to pfpColors.backgroundBottom.copy(alpha = 0.90f),
-                )
-            ),
+            // Any touch anywhere marks the input source as touch without consuming the event, so
+            // scrolling and buttons keep working while the controller cursor hides.
+            .pointerInput(Unit) { awaitEachGesture { awaitFirstDown(requireUnconsumed = false); onTouchInput() } },
+        scrollState = pageScrollState,
+        header = {
+            PfpDetailBreadcrumb(
+                crumbs = listOf("Library", state.platform?.name ?: game.platformId.uppercase(), game.displayTitle),
+                onBack = onBack,
+            )
+        },
+        footer = {
+            PfpDetailHelperFooter(
+                items = gameDetailHelperItems(state),
+                visible = !showTouchControls && state.cursorVisible,
+            )
+        },
+        // Overlays live here rather than in the scrolling body: they must cover the whole page and
+        // cannot be scrolled away. Each one pushes its own navigation context, so the page graph
+        // behind it is paused and hands back its exact cursor on close.
+        overlay = { GameDetailOverlays(state = state, game = game, viewModel = viewModel) },
     ) {
-        // One shared layout for every entry kind (ROMs, game apps, PC shortcuts), modeled on the
-        // hero-card detail mockup: breadcrumb → hero card → icon + play/actions → info + description.
-        // Scrollable by touch, and by D-pad: DOWN past the button row advances pageScrollSteps
-        // (see the ViewModel), which animates the same scroll state in fixed steps.
-        val pageScrollState = rememberScrollState()
-        val pageStepPx = with(LocalDensity.current) { PageScrollStep.roundToPx() }
-        // Scroll-to-focus: the button row and coin strip frame to their real geometry (so the
-        // coin strip is never clipped when highlighted); reading past the strip and the media
-        // strip use the fixed-stride scroll. Keyed on all three so returning to the strip (e.g.
-        // UP out of the media row) re-frames it.
-        val coinStripRequester = remember { BringIntoViewRequester() }
-        LaunchedEffect(state.mainFocus, state.pageScrollSteps, state.mediaFocus) {
-            val scrollTween = tween<Float>(durationMillis = 320, easing = LinearOutSlowInEasing)
-            when {
-                // Landing on the coin strip: bring the whole strip into view by its actual position.
-                state.mediaFocus < 0 && state.mainFocus == MAIN_FOCUS_COINS && state.pageScrollSteps == 0 ->
-                    runCatching { coinStripRequester.bringIntoView() }
-                // Launch / action buttons live at the top.
-                state.mediaFocus < 0 && state.mainFocus in 0..MAIN_FOCUS_LAST ->
-                    pageScrollState.animateScrollTo(0, scrollTween)
-                // Reading past the strip and the media strip: fixed-stride scroll (eased tween
-                // instead of the default spring, which settled with a stiff, notchy stop).
-                else ->
-                    pageScrollState.animateScrollTo(
-                        (state.pageScrollSteps * pageStepPx).coerceAtMost(pageScrollState.maxValue),
-                        animationSpec = scrollTween,
-                    )
-            }
-        }
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .widthIn(max = 920.dp)
-                .align(Alignment.TopCenter)
-                .verticalScroll(pageScrollState)
-                .padding(start = 28.dp, end = 28.dp, bottom = 22.dp),
+        Box(Modifier.fillMaxWidth().height(1.dp).bringIntoViewRequester(pageTopRequester))
+        Spacer(Modifier.height(16.dp))
+
+        PfpDetailHeroBanner(
+            artworkUri = game.heroUri ?: game.artworkUri,
+            title = game.displayTitle,
+            platform = state.platform?.name ?: game.platformId.uppercase(),
+            accentColor = accentColor,
+            facts = listOfNotNull(
+                game.lastPlayedAt?.let { "Last played ${relativeDays(it)}" },
+                game.totalPlayTimeMillis.takeIf { it > 0 }?.let { "Play time ${formatPlayTime(it)}" },
+                game.kindLabel(),
+            ),
+            favorite = game.isFavorite,
+        )
+
+        Spacer(Modifier.height(DetailRowSpacing + 6.dp))
+
+        // ── Primary actions ───────────────────────────────────────────────
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(18.dp),
         ) {
-            DetailBreadcrumb(
-                title    = platform?.name ?: game.platformId.uppercase(),
-                subtitle = game.kindLabel(),
-                onBack   = onBack,
+            PfpDetailIconTile(
+                uri = game.iconUri ?: game.logoUri ?: game.artworkUri,
+                title = game.displayTitle,
             )
-
-            HeroCard(
-                uri         = game.heroUri ?: game.artworkUri,
-                title       = game.displayTitle,
-                platform    = platform?.name ?: game.platformId.uppercase(),
-                accentColor = accentColor,
-            )
-
-            Spacer(Modifier.height(18.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(18.dp),
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                IconTile(
-                    uri   = game.iconUri ?: game.logoUri ?: game.artworkUri,
-                    title = game.displayTitle,
+                PfpDetailLaunchButton(
+                    label = "Launch",
+                    icon = Icons.Filled.PlayArrow,
+                    focused = focus == GameDetailKeys.LAUNCH,
+                    fill = PlayGreen,
+                    onClick = { viewModel.onNodeTapped(GameDetailKeys.LAUNCH) },
+                    modifier = Modifier.detailNode(GameDetailKeys.LAUNCH, requesterFor, nodeY),
                 )
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                Row(
+                    modifier = Modifier.detailNode(GameDetailKeys.ACTIONS, requesterFor, nodeY),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    ConsoleButton(
-                        label = "Launch",
-                        icon = Icons.Filled.PlayArrow,
-                        focused = state.mainFocus == 0,
-                        fill = PlayGreen,
-                        textColor = Color(0xFF06210D),
-                        onClick = viewModel::onPlayClicked,
+                    PfpDetailQuickAction(
+                        label = if (game.isFavorite) "Unfavorite" else "Favorite",
+                        icon = if (game.isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                        focused = focus == GameDetailKeys.FAVORITE,
+                        available = true,
+                        onClick = { viewModel.onNodeTapped(GameDetailKeys.FAVORITE) },
+                        contentDescription = if (game.isFavorite) "Remove from favorites" else "Add to favorites",
+                        modifier = Modifier.weight(1f),
                     )
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            SquareActionButton(
-                                icon = Icons.Filled.Settings,
-                                contentDescription = "Options",
-                                focused = state.mainFocus == 1,
-                                onClick = viewModel::onOptionsClicked,
-                            )
-                            SquareActionButton(
-                                icon = Icons.Filled.Brush,
-                                contentDescription = "Edit Artwork",
-                                focused = state.mainFocus == 2,
-                                onClick = viewModel::openArtworkManager,
-                            )
-                            SquareActionButton(
-                                icon = Icons.AutoMirrored.Filled.MenuBook,
-                                contentDescription = "Manual",
-                                focused = state.mainFocus == 3,
-                                onClick = viewModel::onManualClicked,
-                            )
-                    }
-                    if (state.launchError != null) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(state.launchError!!, color = menuCursorEdge(), fontSize = 12.sp)
-                            Spacer(Modifier.width(10.dp))
-                            Text(
-                                "Get help",
-                                color = menuCursorFill(),
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.clickable { viewModel.requestLaunchHelp() },
-                            )
-                        }
-                    } else (state.actionMessage ?: state.artworkMessage)?.let {
-                        Text(it, color = menuCursorEdge(), fontSize = 12.sp)
-                    }
-                }
-            }
-
-            if (state.showDiscPicker) {
-                Spacer(Modifier.height(18.dp))
-                DiscPicker(
-                    members = state.discMembers,
-                    focusedIndex = state.discFocusIndex,
-                    selectedId = state.selectedDiscId,
-                    onSelect = viewModel::selectDisc,
-                )
-            }
-
-            Spacer(Modifier.height(18.dp))
-
-            // Android games can never have achievements — no coin strip for them (the ViewModel
-            // skips its focus index too).
-            if (game.platformId != "android") ShibaCoinStrip(
-                coins = state.coins,
-                modifier = Modifier.bringIntoViewRequester(coinStripRequester),
-                focused = state.mainFocus == MAIN_FOCUS_COINS,
-                onClick = viewModel::requestOpenCoins,
-            )
-
-            Spacer(Modifier.height(18.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(20.dp),
-            ) {
-                GameInfoList(
-                    releaseYear = game.releaseYear,
-                    developer   = game.developer,
-                    publisher   = game.publisher,
-                    genre       = game.genre,
-                    lastPlayedAt = game.lastPlayedAt,
-                    playTimeMillis = game.totalPlayTimeMillis,
-                    // Package-backed gaming apps launch by package/shortcut — no emulator meta.
-                    emulator    = if (state.isPackageBacked) null else (state.resolvedLaunch?.profile?.name ?: "Not set"),
-                    emulatorCore = if (state.isPackageBacked) null else state.resolvedLaunch?.coreName,
-                    emulatorSource = if (state.isPackageBacked) null else state.resolvedLaunch?.source?.label,
-                    onEmulatorClick = if (state.isPackageBacked) null else viewModel::requestChangeEmulator,
-                    modifier    = Modifier.weight(0.42f),
-                )
-                DescriptionPanel(
-                    description = game.description,
-                    modifier    = Modifier.weight(0.58f),
-                )
-            }
-
-            // MEDIA PREVIEW — Steam-store-style strip: video tiles first, then screenshots.
-            // Confirm/tap a tile to preview (video plays via the user's player choice,
-            // images open the fullscreen viewer).
-            if (state.detailMedia.isNotEmpty()) {
-                Spacer(Modifier.height(18.dp))
-                Text("MEDIA PREVIEW", color = Color.White.copy(alpha = 0.55f), fontSize = 11.sp)
-                Spacer(Modifier.height(8.dp))
-                val mediaLazyState = rememberLazyListState()
-                LaunchedEffect(state.mediaFocus) {
-                    // Clamp against the live item count so a stale focus index can't crash.
-                    if (state.mediaFocus >= 0 && state.detailMedia.isNotEmpty()) {
-                        mediaLazyState.animateScrollToItem(state.mediaFocus.coerceIn(0, state.detailMedia.lastIndex))
+                    PfpDetailQuickAction(
+                        label = "Artwork",
+                        icon = Icons.Filled.Brush,
+                        focused = focus == GameDetailKeys.ARTWORK,
+                        available = true,
+                        onClick = { viewModel.onNodeTapped(GameDetailKeys.ARTWORK) },
+                        contentDescription = "Edit artwork",
+                        modifier = Modifier.weight(1f),
+                    )
+                    PfpDetailQuickAction(
+                        label = "Manual",
+                        icon = Icons.AutoMirrored.Filled.MenuBook,
+                        focused = focus == GameDetailKeys.MANUAL,
+                        // Kept visible when unavailable (the page's action set never moves), drained
+                        // and out of the controller graph, but still tappable so touching it can
+                        // explain why — the same behaviour as the pre-redesign button.
+                        available = state.hasManual,
+                        onClick = { viewModel.onNodeTapped(GameDetailKeys.MANUAL) },
+                        contentDescription = if (state.hasManual) "Open manual" else "Manual, unavailable",
+                        modifier = Modifier.weight(1f),
+                    )
+                    // Emulator configuration is meaningless for package-backed entries, so the
+                    // action is omitted for them entirely.
+                    if (state.showEmulatorAction) {
+                        PfpDetailQuickAction(
+                            label = "Emulator",
+                            icon = Icons.Filled.SportsEsports,
+                            focused = focus == GameDetailKeys.EMULATOR_ACTION,
+                            available = true,
+                            onClick = { viewModel.onNodeTapped(GameDetailKeys.EMULATOR_ACTION) },
+                            contentDescription = "Change emulator",
+                            modifier = Modifier.weight(1f),
+                        )
                     }
                 }
-                LazyRow(
-                    state = mediaLazyState,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    itemsIndexed(state.detailMedia) { index, media ->
-                        val focused = state.mediaFocus == index
-                        Box(
-                            modifier = Modifier
-                                .size(width = 214.dp, height = 120.dp)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(Color(0xFF11111A))
-                                .border(
-                                    width = if (focused) 2.dp else 1.dp,
-                                    color = if (focused) menuCursorEdge() else Color.White.copy(alpha = 0.12f),
-                                    shape = RoundedCornerShape(10.dp),
-                                )
-                                .clickable { viewModel.openMediaAt(index) },
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            if (media.isVideo) {
-                                // Poster: fall back to the hero/screenshot look — a dark tile
-                                // with a play glyph, like a store trailer card.
-                                AsyncImage(
-                                    model = rememberArtworkModel(
-                                        state.detailMedia.firstOrNull { !it.isVideo }?.uri
-                                            ?: game.heroUri ?: game.artworkUri,
-                                    ),
-                                    contentDescription = null,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier.fillMaxSize(),
-                                )
-                                Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.45f)))
-                                Icon(
-                                    Icons.Filled.PlayArrow,
-                                    contentDescription = "Play video",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(44.dp),
-                                )
-                            } else {
-                                AsyncImage(
-                                    model = rememberArtworkModel(media.uri),
-                                    contentDescription = "Screenshot",
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier.fillMaxSize(),
-                                )
-                            }
-                        }
+                if (state.launchError != null) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(state.launchError!!, color = ActionFail, fontSize = 12.sp)
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            "Get help",
+                            color = menuCursorFill(),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.clickable { viewModel.requestLaunchHelp() },
+                        )
                     }
+                } else (state.actionMessage ?: state.artworkMessage)?.let {
+                    Text(it, color = menuCursorEdge(), fontSize = 12.sp)
                 }
             }
         }
 
-        // Fullscreen image preview (Steam-style) — Confirm/Back or tap closes.
+        // ── Discs (multi-disc sets only) ──────────────────────────────────
+        if (state.showDiscPicker) {
+            Spacer(Modifier.height(DetailRowSpacing))
+            DiscRow(
+                members = state.discMembers,
+                selectedId = state.selectedDiscId,
+                focusedKey = focus,
+                requesterFor = requesterFor,
+                nodeY = nodeY,
+                onSelect = { id -> viewModel.onNodeTapped(GameDetailKeys.disc(id)) },
+                rowModifier = Modifier.detailNode(GameDetailKeys.DISCS, requesterFor, nodeY),
+            )
+        }
+
+        // ── Shiba Coins (never for Android entries — they can have no achievements) ──
+        if (game.platformId != "android") {
+            Spacer(Modifier.height(DetailRowSpacing))
+            val coins = state.coins
+            PfpDetailProgressRow(
+                label = "Shiba Coins",
+                value = coins?.let { "${it.earned.total} / ${it.total.total}" } ?: "Not tracked yet",
+                secondary = coins?.let { "${(it.progress * 100).toInt()}%" },
+                progress = coins?.progress ?: 0f,
+                focused = focus == GameDetailKeys.COINS,
+                disclosure = true,
+                onClick = { viewModel.onNodeTapped(GameDetailKeys.COINS) },
+                modifier = Modifier.detailNode(GameDetailKeys.COINS, requesterFor, nodeY),
+            )
+        }
+
+        // ── Overview ──────────────────────────────────────────────────────
+        Spacer(Modifier.height(DetailRowSpacing))
+        val description = game.description?.takeIf { it.isNotBlank() } ?: "No description available."
+        val expandable = description.length > OVERVIEW_EXPAND_THRESHOLD
+        PfpDetailTextRow(
+            label = "Overview",
+            text = description,
+            expanded = state.descriptionExpanded,
+            focused = focus == GameDetailKeys.OVERVIEW,
+            onClick = if (expandable) ({ viewModel.onNodeTapped(GameDetailKeys.OVERVIEW) }) else null,
+            modifier = Modifier.detailNode(GameDetailKeys.OVERVIEW, requesterFor, nodeY),
+        )
+
+        // ── Game information ──────────────────────────────────────────────
+        if (state.showInfoBand) {
+            Spacer(Modifier.height(DetailRowSpacing))
+            GameInformationBand(
+                game = game,
+                state = state,
+                focusedKey = focus,
+                requesterFor = requesterFor,
+                nodeY = nodeY,
+                viewModel = viewModel,
+            )
+        }
+
+        // ── Media strip ───────────────────────────────────────────────────
+        if (state.detailMedia.isNotEmpty()) {
+            Spacer(Modifier.height(DetailRowSpacing + 6.dp))
+            PfpDetailSectionLabel("Media Preview")
+            Spacer(Modifier.height(8.dp))
+            LazyRow(
+                state = mediaListState,
+                modifier = Modifier.detailNode(GameDetailKeys.MEDIA, requesterFor, nodeY),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                itemsIndexed(
+                    items = state.detailMedia,
+                    // Stable identity: a re-scrape or a reorder must not move the cursor to a
+                    // different asset.
+                    key = { _, media -> GameDetailKeys.media(mediaStableId(media)) },
+                ) { _, media ->
+                    val key = GameDetailKeys.media(mediaStableId(media))
+                    PfpDetailMediaTile(
+                        uri = media.uri,
+                        isVideo = media.isVideo,
+                        focused = focus == key,
+                        posterFallbackUri = state.detailMedia.firstOrNull { !it.isVideo }?.uri
+                            ?: game.heroUri ?: game.artworkUri,
+                        contentDescription = if (media.isVideo) "Play video" else "Screenshot",
+                        onClick = { viewModel.onNodeTapped(key) },
+                        modifier = Modifier.detailNode(key, requesterFor, nodeY),
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(DetailRowSpacing))
+    }
+}
+
+// ── Overlays ──────────────────────────────────────────────────────────────────
+
+@Composable
+private fun GameDetailOverlays(
+    state: GameDetailUiState,
+    game: Game,
+    viewModel: GameDetailViewModel,
+) {
+    Box(Modifier.fillMaxSize()) {
         state.imageViewerUri?.let { imageUri ->
             Box(
                 modifier = Modifier
@@ -465,16 +573,15 @@ fun GameDetailScreen(
                     .background(Color.Black.copy(alpha = 0.96f))
                     .clickable(onClick = viewModel::closeImageViewer),
             ) {
-                AsyncImage(
-                    model = rememberArtworkModel(imageUri),
+                coil3.compose.AsyncImage(
+                    model = com.playfieldportal.core.ui.image.rememberArtworkModel(imageUri),
                     contentDescription = "Media preview",
-                    contentScale = ContentScale.Fit,
+                    contentScale = androidx.compose.ui.layout.ContentScale.Fit,
                     modifier = Modifier.fillMaxSize().padding(12.dp),
                 )
             }
         }
 
-        // Built-in fullscreen snap player (used when no external video player is pinned).
         if (state.showVideoPlayer && state.videoUri != null) {
             GameVideoOverlay(
                 videoUri = state.videoUri!!,
@@ -492,7 +599,7 @@ fun GameDetailScreen(
                     )
                 },
                 selectedIndex = state.optionsIndex,
-                onRowClick = { viewModel.onOptionClicked(state.visibleActions[it]) },
+                onRowClick = { viewModel.onOptionRowTapped(state.visibleActions[it]) },
                 onDismiss = viewModel::closeOptions,
             )
         }
@@ -502,8 +609,7 @@ fun GameDetailScreen(
                 options      = state.emulatorPickerOptions,
                 selectedId   = game.emulatorPackage,
                 focusedIndex = state.emulatorPickerIndex,
-                onPick       = viewModel::confirmEmulatorPick,
-                onMove       = viewModel::onEmulatorPickerMove,
+                onPick       = viewModel::onEmulatorPickTapped,
                 onClose      = viewModel::closeEmulatorPicker,
             )
         }
@@ -578,52 +684,65 @@ fun GameDetailScreen(
     }
 }
 
-// What this library entry actually is — shown as the breadcrumb subtitle so all three entry
-// kinds share one screen without losing their identity.
-private fun Game.kindLabel(): String = when {
-    shortcutId != null || launchIntentUri != null -> "PC Shortcut"
-    romPath == null && packageName != null        -> "Game App"
-    else                                          -> "ROM"
-}
+// ── Disc row ──────────────────────────────────────────────────────────────────
 
+/**
+ * One stable node per disc member. Selecting a disc persists it as the preferred disc (the existing
+ * repository behaviour) and never moves focus to an unrelated element — the engine keeps the cursor
+ * on the node the user confirmed.
+ */
 @Composable
-private fun DiscPicker(
+private fun DiscRow(
     members: List<Game>,
-    focusedIndex: Int,
     selectedId: Long?,
+    focusedKey: String?,
+    requesterFor: MutableMap<String, BringIntoViewRequester>,
+    nodeY: MutableMap<String, Float>,
     onSelect: (Long) -> Unit,
+    rowModifier: Modifier = Modifier,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("DISCS", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            itemsIndexed(members) { index, member ->
-                val isFocused = focusedIndex == index
+        PfpDetailSectionLabel("Discs")
+        LazyRow(
+            modifier = rowModifier,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            itemsIndexed(
+                items = members,
+                key = { _, member -> GameDetailKeys.disc(member.id) },
+            ) { _, member ->
+                val key = GameDetailKeys.disc(member.id)
+                val isFocused = focusedKey == key
                 val isSelected = selectedId == member.id
-                // The list is numeric; selection/preference is communicated solely by the
-                // highlighted styling below.
                 val label = member.discNumber?.let { "Disc $it" } ?: "Playlist"
+                // Preference is communicated by named "Preferred" text and the edge, not by colour
+                // alone.
                 Column(
                     modifier = Modifier
-                        .widthIn(min = 110.dp)
+                        .widthIn(min = 116.dp)
+                        .detailNode(key, requesterFor, nodeY)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(if (isSelected) menuCursorFill().copy(alpha = 0.2f) else ActionFill)
+                        .background(if (isSelected) menuCursorFill().copy(alpha = 0.2f) else Color(0x40101018))
                         .border(
                             width = if (isFocused) 2.dp else 1.dp,
                             color = when {
                                 isFocused -> menuCursorEdge()
-                                // Preferred disc is indicated by highlight styling, not ordering.
                                 isSelected -> menuCursorEdge().copy(alpha = 0.55f)
                                 else -> Color.White.copy(alpha = 0.14f)
                             },
                             shape = RoundedCornerShape(8.dp),
                         )
-                        .clickable { onSelect(member.id) }
+                        .clickable(role = Role.Button) { onSelect(member.id) }
                         .padding(horizontal = 14.dp, vertical = 10.dp),
                 ) {
                     Text(label, color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                     Text(
-                        if (member.isMissing) "Missing" else "Available",
-                        color = if (member.isMissing) Color(0xFFFFB4AB) else TextMuted,
+                        text = when {
+                            member.isMissing -> "Missing"
+                            isSelected -> "Preferred"
+                            else -> "Available"
+                        },
+                        color = if (member.isMissing) ActionFail else TextMuted,
                         fontSize = 11.sp,
                     )
                 }
@@ -632,45 +751,174 @@ private fun DiscPicker(
     }
 }
 
+// ── Game information band ─────────────────────────────────────────────────────
+
+/**
+ * The structured information band. Fields wrap from one horizontal band into multiple rows as the
+ * page narrows, and absent values are omitted rather than filled with "Unknown".
+ *
+ * The emulator field is the band's one inline action: reached with RIGHT, confirmed to change the
+ * emulator for this game only. Package-backed entries never render it.
+ */
 @Composable
-private fun GameInfoList(
-    releaseYear: Int?,
-    developer: String?,
-    publisher: String?,
-    genre: String?,
-    lastPlayedAt: Long?,
-    playTimeMillis: Long,
-    emulator: String?,
-    // The resolved RetroArch core name + attribution level (B4) — null for package-backed entries
-    // and for games with no resolvable emulator.
-    emulatorCore: String? = null,
-    emulatorSource: String? = null,
-    onEmulatorClick: (() -> Unit)? = null,
-    modifier: Modifier = Modifier,
+private fun GameInformationBand(
+    game: Game,
+    state: GameDetailUiState,
+    focusedKey: String?,
+    requesterFor: MutableMap<String, BringIntoViewRequester>,
+    nodeY: MutableMap<String, Float>,
+    viewModel: GameDetailViewModel,
 ) {
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(10.dp))
-            .border(1.dp, Color(0x22FFFFFF), RoundedCornerShape(10.dp)),
+    val resolved = state.resolvedLaunch
+    PfpDetailFieldBand(
+        focused = focusedKey == GameDetailKeys.INFO,
+        modifier = Modifier.detailNode(GameDetailKeys.INFO, requesterFor, nodeY),
     ) {
-        releaseYear?.let           { InfoRow(Icons.Filled.CalendarToday, it.toString()) }
-        if (!developer.isNullOrBlank()) InfoRow(Icons.Filled.Person, developer)
-        // Publisher shown only when it adds information (often equals the developer).
-        if (!publisher.isNullOrBlank() && !publisher.equals(developer, ignoreCase = true)) {
-            InfoRow(Icons.Filled.Person, "Published by $publisher")
+        game.releaseYear?.let { year ->
+            PfpDetailField(label = "Released", value = year.toString())
         }
-        if (!genre.isNullOrBlank())     InfoRow(Icons.Filled.SportsEsports, genre)
-        lastPlayedAt?.let          { InfoRow(Icons.Filled.Schedule, "Last Played: ${relativeDays(it)}") }
-        if (playTimeMillis > 0)         InfoRow(Icons.Filled.Schedule, "Play Time: ${formatPlayTime(playTimeMillis)}")
-        emulator?.let {
-            EmulatorLaunchRow(
-                emulator = it,
-                core     = emulatorCore,
-                source   = emulatorSource,
-                onClick  = onEmulatorClick,
+        game.developer?.takeIf { it.isNotBlank() }?.let {
+            PfpDetailField(label = "Developer", value = it)
+        }
+        // Publisher only when it adds information (it often equals the developer).
+        game.publisher?.takeIf { !it.isNullOrBlank() && !it.equals(game.developer, ignoreCase = true) }?.let {
+            PfpDetailField(label = "Publisher", value = it)
+        }
+        game.genre?.takeIf { it.isNotBlank() }?.let {
+            PfpDetailField(label = "Genre", value = it)
+        }
+        game.lastPlayedAt?.let {
+            PfpDetailField(label = "Last played", value = relativeDays(it))
+        }
+        if (game.totalPlayTimeMillis > 0) {
+            PfpDetailField(label = "Play time", value = formatPlayTime(game.totalPlayTimeMillis))
+        }
+        if (!state.isPackageBacked && resolved != null) {
+            PfpDetailField(
+                label = "Emulator",
+                value = resolved.profile.name,
+                secondary = listOfNotNull(
+                    resolved.coreName?.let { "Core: $it" },
+                    resolved.source.label.lowercase(),
+                ).joinToString("  ·  ").takeIf { it.isNotBlank() },
+                focused = focusedKey == GameDetailKeys.EMULATOR_INFO,
+                disclosure = true,
+                onClick = { viewModel.onNodeTapped(GameDetailKeys.EMULATOR_INFO) },
+                modifier = Modifier.detailNode(GameDetailKeys.EMULATOR_INFO, requesterFor, nodeY),
             )
         }
     }
+}
+
+// ── Helper footer ─────────────────────────────────────────────────────────────
+
+/**
+ * The contextual helper footer: only the actions that are actually available, named for what they
+ * do in the current context (the design's Confirm/Options/Back on the base page, "Apply" in the
+ * metadata overlay, "Remove"/"Cancel" on the removal prompt).
+ *
+ * Pure function of the state so it can be unit-tested without a composition.
+ */
+internal fun gameDetailHelperItems(state: GameDetailUiState): List<ControllerPromptItem> = when {
+    state.imageViewerUri != null || state.showVideoPlayer ->
+        listOf(
+            ControllerPromptItem(GamepadAction.SELECT, "Close"),
+            ControllerPromptItem(GamepadAction.BACK, "Back"),
+        )
+    state.manualViewerUri != null ->
+        listOf(
+            ControllerPromptItem.fixed(ControllerIcon.DPAD_ALL, "Scroll"),
+            ControllerPromptItem(GamepadAction.PREV_CATEGORY, "Prev page"),
+            ControllerPromptItem(GamepadAction.NEXT_CATEGORY, "Next page"),
+            ControllerPromptItem(GamepadAction.BACK, "Close"),
+        )
+    state.confirmRemove ->
+        listOf(
+            ControllerPromptItem(GamepadAction.SELECT, "Remove"),
+            ControllerPromptItem(GamepadAction.BACK, "Cancel"),
+        )
+    state.isEditingNote || state.isEditingTitle ->
+        listOf(ControllerPromptItem(GamepadAction.BACK, "Cancel"))
+    state.metadataPreview != null ->
+        listOf(
+            ControllerPromptItem.fixed(ControllerIcon.DPAD_ALL, "Navigate"),
+            ControllerPromptItem(GamepadAction.SELECT, "Apply / Toggle"),
+            ControllerPromptItem(GamepadAction.NAVIGATE_LEFT, "Policy"),
+            ControllerPromptItem(GamepadAction.PREV_CATEGORY, "Source"),
+            ControllerPromptItem(GamepadAction.BACK, "Close"),
+        )
+    state.showEmulatorPicker ->
+        listOf(
+            ControllerPromptItem.fixed(ControllerIcon.DPAD_ALL, "Navigate"),
+            ControllerPromptItem(GamepadAction.SELECT, "Choose"),
+            ControllerPromptItem(GamepadAction.BACK, "Cancel"),
+        )
+    state.collectionPicker.visible ->
+        listOf(
+            ControllerPromptItem.fixed(ControllerIcon.DPAD_ALL, "Navigate"),
+            ControllerPromptItem(GamepadAction.SELECT, "Toggle"),
+            ControllerPromptItem(GamepadAction.BACK, "Close"),
+        )
+    state.showOptions ->
+        listOf(
+            ControllerPromptItem.fixed(ControllerIcon.DPAD_ALL, "Navigate"),
+            ControllerPromptItem(GamepadAction.SELECT, "Select"),
+            ControllerPromptItem(GamepadAction.BACK, "Close"),
+        )
+    else -> listOf(
+        ControllerPromptItem(GamepadAction.SELECT, confirmLabelFor(state)),
+        ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"),
+        ControllerPromptItem(GamepadAction.BACK, "Back"),
+    )
+}
+
+/** What Confirm means on the page itself, given the focused node. */
+private fun confirmLabelFor(state: GameDetailUiState): String {
+    val focus = state.navFocusKey ?: return "Launch"
+    val media = state.detailMedia.firstOrNull { GameDetailKeys.media(mediaStableId(it)) == focus }
+    return when {
+        media != null -> if (media.isVideo) "Play" else "Preview"
+        focus == GameDetailKeys.COINS -> "View"
+        focus == GameDetailKeys.OVERVIEW ->
+            if (state.descriptionExpanded) "Collapse" else "Read more"
+        focus.startsWith("game-detail:disc:") -> "Choose disc"
+        focus == GameDetailKeys.FAVORITE ->
+            if (state.game?.isFavorite == true) "Unfavorite" else "Favorite"
+        focus == GameDetailKeys.ARTWORK -> "Edit artwork"
+        focus == GameDetailKeys.MANUAL -> "Open manual"
+        focus == GameDetailKeys.EMULATOR_ACTION || focus == GameDetailKeys.EMULATOR_INFO -> "Change emulator"
+        else -> "Launch"
+    }
+}
+
+/** Launch and the quick actions sit directly under the hero, so focusing any of them shows the page top. */
+private val TopBandKeys = setOf(
+    GameDetailKeys.LAUNCH,
+    GameDetailKeys.ACTIONS,
+    GameDetailKeys.FAVORITE,
+    GameDetailKeys.ARTWORK,
+    GameDetailKeys.MANUAL,
+    GameDetailKeys.EMULATOR_ACTION,
+)
+
+/**
+ * The shared "page node" binding: a bring-into-view target for focus-driven scrolling plus the
+ * node's root-space Y for geometry-driven movement.
+ */
+private fun Modifier.detailNode(
+    key: String,
+    requesterFor: MutableMap<String, BringIntoViewRequester>,
+    nodeY: MutableMap<String, Float>,
+): Modifier = this
+    .bringIntoViewRequester(requesterFor.getOrPut(key) { BringIntoViewRequester() })
+    .onGloballyPositioned { coordinates -> nodeY[key] = coordinates.positionInRoot().y }
+
+// What this library entry actually is — shown in the hero facts so all three entry kinds share one
+// screen without losing their identity.
+private fun Game.kindLabel(): String = when {
+    shortcutId != null || launchIntentUri != null -> "PC Shortcut"
+    romPath == null && packageName != null        -> "Game App"
+    else                                          -> "ROM"
 }
 
 private fun formatPlayTime(millis: Long): String {
@@ -679,79 +927,6 @@ private fun formatPlayTime(millis: Long): String {
         minutes < 1     -> "Under a minute"
         minutes < 60    -> "$minutes min"
         else            -> "${minutes / 60} h ${minutes % 60} min"
-    }
-}
-
-@Composable
-private fun InfoRow(icon: ImageVector, value: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 14.dp, vertical = 11.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(icon, contentDescription = null, tint = TextMuted, modifier = Modifier.size(16.dp))
-        Spacer(Modifier.width(12.dp))
-        Text(value, color = TextPrimary, fontSize = 14.sp, maxLines = 1)
-    }
-}
-
-// The Game Detail emulator line (B4): the emulator that will actually run the game, the RetroArch
-// core it maps (when one exists), and the ladder level that decided both. Tap changes the emulator
-// for THIS game only — the same per-game override flow as Options ▸ Emulator. Package-backed
-// gaming apps don't show this row, so no emulator meta is ever offered for them.
-@Composable
-private fun EmulatorLaunchRow(
-    emulator: String,
-    core: String?,
-    source: String?,
-    onClick: (() -> Unit)?,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(horizontal = 14.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            Icons.Filled.Monitor,
-            contentDescription = null,
-            tint = TextMuted,
-            modifier = Modifier.size(16.dp),
-        )
-        Spacer(Modifier.width(12.dp))
-        Column(Modifier.weight(1f)) {
-            Text(emulator, color = TextPrimary, fontSize = 14.sp, maxLines = 1)
-            if (core != null || source != null) {
-                Text(
-                    buildList {
-                        core?.let { add("Core: $it") }
-                        source?.let { add(it.lowercase()) }
-                    }.joinToString("  ·  "),
-                    color = TextMuted,
-                    fontSize = 11.sp,
-                    maxLines = 1,
-                )
-            }
-        }
-        if (onClick != null) {
-            Spacer(Modifier.width(10.dp))
-            Text("Change", color = menuCursorEdge(), fontSize = 12.sp)
-        }
-    }
-}
-
-@Composable
-private fun DescriptionPanel(description: String?, modifier: Modifier = Modifier) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("DESCRIPTION", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-        Text(
-            description?.takeIf { it.isNotBlank() } ?: "No description available.",
-            color = TextMuted,
-            fontSize = 14.sp,
-            lineHeight = 21.sp,
-        )
     }
 }
 
@@ -766,7 +941,6 @@ private fun relativeDays(epochMillis: Long): String {
 
 private val OptionsPanelMaxHeight: Dp = 440.dp
 private val OptionsRowScrollStep: Dp = 58.dp
-private val PageScrollStep: Dp = 220.dp   // bigger stride — fewer presses to reach the bottom
 
 private fun DetailAction.dynamicLabel(favorite: Boolean, refreshing: Boolean): String = when (this) {
     DetailAction.FAVORITE -> if (favorite) "Unfavorite" else "Favorite"
@@ -870,7 +1044,6 @@ private fun EmulatorPickerPanel(
     selectedId: String?,
     focusedIndex: Int,
     onPick: (String) -> Unit,
-    onMove: (Int) -> Unit,
     onClose: () -> Unit,
 ) {
     Box(
@@ -901,7 +1074,7 @@ private fun EmulatorPickerPanel(
             )
 
             val scrollState = rememberScrollState()
-            val stepPx = with(LocalDensity.current) { OptionsRowScrollStep.roundToPx() }
+            val stepPx = with(androidx.compose.ui.platform.LocalDensity.current) { OptionsRowScrollStep.roundToPx() }
             LaunchedEffect(focusedIndex) { scrollState.animateScrollTo(focusedIndex * stepPx) }
 
             Column(
@@ -920,7 +1093,7 @@ private fun EmulatorPickerPanel(
                                 when {
                                     isFocused  -> menuCursorFill()
                                     isSelected -> menuCursorFill().copy(alpha = 0.17f)
-                                    else       -> ActionFill
+                                    else       -> Color(0xFF1B1B26)
                                 }
                             )
                             .then(
@@ -955,7 +1128,7 @@ private fun EmulatorPickerPanel(
 // composition.
 @Composable
 private fun GameVideoOverlay(videoUri: String, onClose: () -> Unit) {
-    val context = LocalContext.current
+    val context = androidx.compose.ui.platform.LocalContext.current
     var videoSize by remember(videoUri) { mutableStateOf<androidx.media3.common.VideoSize?>(null) }
     val player = remember(videoUri) {
         androidx.media3.exoplayer.ExoPlayer.Builder(context).build().apply {

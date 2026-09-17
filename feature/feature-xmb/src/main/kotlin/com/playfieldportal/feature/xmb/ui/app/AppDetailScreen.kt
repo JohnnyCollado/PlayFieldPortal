@@ -76,12 +76,16 @@ import com.playfieldportal.feature.xmb.ui.DetailContextMenu
 import com.playfieldportal.feature.xmb.ui.DetailMenuRow
 import com.playfieldportal.feature.xmb.ui.collection.CollectionPickerPanel
 import com.playfieldportal.feature.xmb.ui.detail.ArtworkType
-import com.playfieldportal.feature.xmb.ui.detail.ConsoleButton
-import com.playfieldportal.feature.xmb.ui.detail.DetailBreadcrumb
-import com.playfieldportal.feature.xmb.ui.detail.HeroCard
-import com.playfieldportal.feature.xmb.ui.detail.IconTile
-import com.playfieldportal.feature.xmb.ui.detail.SquareActionButton
 import com.playfieldportal.feature.xmb.ui.detail.displayLabel
+import com.playfieldportal.core.ui.detail.DetailRowSpacing
+import com.playfieldportal.core.ui.detail.PfpDetailBreadcrumb
+import com.playfieldportal.core.ui.detail.PfpDetailHelperFooter
+import com.playfieldportal.core.ui.detail.PfpDetailHeroBanner
+import com.playfieldportal.core.ui.detail.PfpDetailIconTile
+import com.playfieldportal.core.ui.detail.PfpDetailLaunchButton
+import com.playfieldportal.core.ui.detail.PfpDetailQuickAction
+import com.playfieldportal.core.ui.detail.PfpDetailScaffold
+import com.playfieldportal.core.ui.components.ControllerPromptItem
 
 // Neutral dark surfaces stay fixed; accent/focus colors come from the active theme via
 // menuCursorFill()/menuCursorEdge() so this screen follows the chosen color scheme.
@@ -149,89 +153,27 @@ fun AppDetailScreen(
 
     // Same translucent theme-gradient backdrop as the Music browser, so the XMB wave stays visible
     // behind and all full-screen menus read consistently.
-    Box(
+    // The same detail frame as Game Detail (core-ui's shared scaffold): breadcrumb header, accent
+    // surface, scrolling body of full-width rows, permanent helper footer. Apps have no metadata or
+    // description — just Launch, artwork and options — so the body is simply shorter.
+    PfpDetailScaffold(
         modifier = modifier
-            .fillMaxSize()
             // Any touch marks the input source as touch (revealing the header pill) without
             // consuming the event.
-            .pointerInput(Unit) { awaitEachGesture { awaitFirstDown(requireUnconsumed = false); onTouchInput() } }
-            .background(
-                Brush.verticalGradient(
-                    0f to pfpColors.backgroundTop.copy(alpha = 0.72f),
-                    1f to pfpColors.backgroundBottom.copy(alpha = 0.90f),
-                )
-            ),
-    ) {
-        // Same hero-card structure as Game Detail: breadcrumb → hero card → icon + actions.
-        // No metadata/description — apps only Launch, edit artwork, and manage options.
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .widthIn(max = 920.dp)
-                .align(Alignment.TopCenter)
-                .padding(start = 28.dp, end = 28.dp, bottom = 22.dp),
-        ) {
-            DetailBreadcrumb(
-                title    = "Apps",
-                subtitle = "Android App",
-                onBack   = viewModel::close,
+            .pointerInput(Unit) { awaitEachGesture { awaitFirstDown(requireUnconsumed = false); onTouchInput() } },
+        header = {
+            PfpDetailBreadcrumb(
+                crumbs = listOf("Apps", "Android App", game.displayTitle),
+                onBack = viewModel::close,
             )
-
-            // The banner is the app's Background (heroes are a game-only surface).
-            HeroCard(
-                uri         = game.artworkUri ?: game.heroUri,
-                title       = game.displayTitle,
-                platform    = game.packageName.orEmpty(),
-                accentColor = pfpColors.accentColor,
+        },
+        footer = {
+            PfpDetailHelperFooter(
+                items = appDetailHelperItems(),
+                visible = !showTouchControls,
             )
-
-            Spacer(Modifier.height(18.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(18.dp),
-            ) {
-                // Customized icon when set, the package's own icon otherwise.
-                IconTile(uri = null, title = game.displayTitle) {
-                    AppIconPreview(
-                        packageName   = game.packageName ?: "",
-                        customIconUri = game.iconUri,
-                        modifier      = Modifier.fillMaxSize(),
-                    )
-                }
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    ConsoleButton(
-                        label = "Launch",
-                        icon = Icons.Filled.PlayArrow,
-                        focused = state.mainFocus == 0,
-                        fill = Color(0xFFF2F2F2),
-                        textColor = Color(0xFF0A0A12),
-                        onClick = viewModel::launchApp,
-                    )
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            SquareActionButton(
-                                icon = Icons.Filled.Settings,
-                                contentDescription = "Options",
-                                focused = state.mainFocus == 1,
-                                onClick = viewModel::openOptions,
-                            )
-                            SquareActionButton(
-                                icon = Icons.Filled.Brush,
-                                contentDescription = "Edit Artwork",
-                                focused = state.mainFocus == 2,
-                                onClick = viewModel::openArtworkMenu,
-                            )
-                    }
-                    state.artworkMessage?.let {
-                        Text(it, color = menuCursorEdge(), fontSize = 12.sp)
-                    }
-                }
-            }
-        }
-
+        },
+        overlay = {
         AnimatedVisibility(state.showOptions, enter = fadeIn(), exit = fadeOut()) {
             DetailContextMenu(
                 title = "Options",
@@ -302,8 +244,86 @@ fun AppDetailScreen(
                 onCancelCreate      = viewModel::cancelCreateCollection,
             )
         }
+        },
+    ) {
+        Spacer(Modifier.height(16.dp))
+
+        // The banner is the app's Background (heroes are a game-only surface).
+        PfpDetailHeroBanner(
+            artworkUri  = game.artworkUri ?: game.heroUri,
+            title       = game.displayTitle,
+            platform    = game.packageName.orEmpty(),
+            accentColor = pfpColors.accentColor,
+        )
+
+        Spacer(Modifier.height(DetailRowSpacing + 6.dp))
+
+        // Same primary-action region as Game Detail: icon tile, Launch, quick actions beneath.
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(18.dp),
+            verticalAlignment = Alignment.Top,
+        ) {
+            // Customized icon when set, the package's own icon otherwise.
+            PfpDetailIconTile(uri = null, title = game.displayTitle) {
+                AppIconPreview(
+                    packageName   = game.packageName ?: "",
+                    customIconUri = game.iconUri,
+                    modifier      = Modifier.fillMaxSize(),
+                )
+            }
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                PfpDetailLaunchButton(
+                    label     = "Launch",
+                    icon      = Icons.Filled.PlayArrow,
+                    focused   = state.mainFocus == 0,
+                    fill      = Color(0xFFF2F2F2),
+                    textColor = Color(0xFF0A0A12),
+                    onClick   = viewModel::launchApp,
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    PfpDetailQuickAction(
+                        label     = "Options",
+                        icon      = Icons.Filled.Settings,
+                        focused   = state.mainFocus == 1,
+                        available = true,
+                        onClick   = viewModel::openOptions,
+                        contentDescription = "Options",
+                        modifier  = Modifier.weight(1f),
+                    )
+                    PfpDetailQuickAction(
+                        label     = "Artwork",
+                        icon      = Icons.Filled.Brush,
+                        focused   = state.mainFocus == 2,
+                        available = true,
+                        onClick   = viewModel::openArtworkMenu,
+                        contentDescription = "Edit artwork",
+                        modifier  = Modifier.weight(1f),
+                    )
+                }
+                state.artworkMessage?.let {
+                    Text(it, color = menuCursorEdge(), fontSize = 12.sp)
+                }
+            }
+        }
+
+        Spacer(Modifier.height(DetailRowSpacing))
     }
 }
+
+/**
+ * The App Detail page's helper prompts. Apps have no emulator, coins or media, so the footer is the
+ * same three actions in every context — but it still reserves its row, so nothing shifts when it
+ * fades for touch input.
+ */
+private fun appDetailHelperItems(): List<ControllerPromptItem> = listOf(
+    ControllerPromptItem(GamepadAction.SELECT, "Launch"),
+    ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"),
+    ControllerPromptItem(GamepadAction.BACK, "Back"),
+)
 
 // ── App icon preview (PSP rect if custom, native drawable otherwise) ───────────
 

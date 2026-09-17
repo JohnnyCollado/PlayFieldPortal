@@ -14,6 +14,8 @@ import com.playfieldportal.feature.xmb.ui.collection.CollectionPickerOption
 import com.playfieldportal.feature.xmb.ui.collection.CollectionPickerUi
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.navigation.NavigationLogger
+import com.playfieldportal.core.navigation.NavigationNode
 import com.playfieldportal.feature.artwork.api.ArtworkRepository
 import com.playfieldportal.feature.artwork.match.MetadataApply
 import com.playfieldportal.feature.artwork.match.MetadataApplyPolicy
@@ -39,6 +41,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -94,21 +98,23 @@ data class GameDetailUiState(
     val videoUri: String? = null,        // the game's video — playable from the Video button/strip
     val hasManual: Boolean = false,
     val showVideoPlayer: Boolean = false,   // built-in fullscreen video player overlay
-    // Steam-style MEDIA PREVIEW strip: videos first, then images. -1 = strip not focused.
+    // Steam-style MEDIA PREVIEW strip: videos first, then images.
     val detailMedia: List<DetailMedia> = emptyList(),
-    val mediaFocus: Int = -1,
     val imageViewerUri: String? = null,     // fullscreen image preview overlay
 
-    // ── Minimal one-screen navigation ─────────────────────────────────────
-    val mainFocus: Int = 0,
-    // D-pad page scrolling: DOWN past the button row scrolls the page in steps so gamepad
-    // users can read the full info/description area; UP unwinds before refocusing Play.
-    val pageScrollSteps: Int = 0,
-    // -1 means the main button row is focused; otherwise this is the focused disc member.
-    val discFocusIndex: Int = -1,
+    // ── Navigation (unified engine — see GameDetailNav) ───────────────────
+    // The stable key of the node the controller cursor is on, mirrored from the engine so the page
+    // can render focus. Null until the page is ready, and when nothing is focusable.
+    val navFocusKey: String? = null,
+    // False while the last input was touch: the cursor is hidden, logical focus is preserved.
+    val cursorVisible: Boolean = true,
+    // The Overview row's expanded state — Confirm toggles it.
+    val descriptionExpanded: Boolean = false,
+
     val showOptions: Boolean = false,
+    // Mirrors the engine's Options focus for rendering. The engine owns the authoritative node;
+    // this index only positions the menu's highlight.
     val optionsIndex: Int = 0,
-    val mediaUris: List<String> = emptyList(),
     // The resolved emulator + RetroArch core and the ladder level that decided them for the loaded
     // game; null while nothing resolves (loading / no emulator / package-backed entry).
     val resolvedLaunch: ResolvedLaunch? = null,
@@ -150,6 +156,31 @@ data class GameDetailUiState(
     // shortcut, or captured-intent handle — never an emulator.
     val isPackageBacked: Boolean
         get() = game != null && game.romPath == null && game.packageName != null
+
+    /**
+     * Emulator controls apply to this entry. Package-backed entries are omitted from both the quick
+     * actions and the information band, because emulator configuration is irrelevant for them.
+     */
+    val showEmulatorAction: Boolean
+        get() = game != null && !isPackageBacked
+
+    /**
+     * The Game Information band has anything to show. Absent values are omitted rather than filled
+     * with "Unknown", and an entry with nothing at all shows no band.
+     */
+    val showInfoBand: Boolean
+        get() {
+            val loaded = game ?: return false
+            return listOf(
+                loaded.releaseYear,
+                loaded.developer?.takeIf { it.isNotBlank() },
+                loaded.publisher?.takeIf { it.isNotBlank() },
+                loaded.genre?.takeIf { it.isNotBlank() },
+                loaded.lastPlayedAt,
+                loaded.totalPlayTimeMillis.takeIf { it > 0 },
+                resolvedLaunch?.profile?.name,
+            ).any { it != null }
+        }
 
     // The options rows actually shown: the emulator picker is meaningless for package-backed
     // entries, so its row is hidden there. Index-based navigation must use THIS list.
@@ -217,14 +248,15 @@ enum class DetailAction(val label: String) {
 }
 
 private const val WINDOWS_PLATFORM_ID = "windows"
+private const val ANDROID_PLATFORM_ID = "android"
 
-// 0 = Launch, then the square row: 1 = Options, 2 = Artwork, 3 = Manual.
-const val MAIN_FOCUS_LAST = 3
-// The Shiba Coins strip sits below the button row as focus index 4.
-const val MAIN_FOCUS_COINS = 4
+// Key prefixes the node graph hands back through [GameDetailNav.onActivate]. Kept next to the keys
+// themselves in GameDetailKeys; these are only the parts the ViewModel splits on.
+private const val DISC_KEY_PREFIX = "game-detail:disc:"
+private const val MEDIA_KEY_PREFIX = "game-detail:media:"
 
-// Upper bound for D-pad page scrolling — generous enough for the longest descriptions; the
-// screen clamps to the real content height, so overshoot is harmless.
+// Upper bound for the manual viewer's page scrolling — generous enough for the longest pages; the
+// viewer clamps to the real content height, so overshoot is harmless.
 const val MAX_PAGE_SCROLL_STEPS = 20
 
 // ── ViewModel ─────────────────────────────────────────────────────────────────
@@ -252,6 +284,329 @@ class GameDetailViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(GameDetailUiState())
     val uiState: StateFlow<GameDetailUiState> = _uiState.asStateFlow()
 
+    /**
+     * The page's navigation state: stable semantic nodes, geometry-driven traversal, readiness
+     * gating, and one modal context per blocking overlay. Owns navigation only — every business
+     * action still lives on this ViewModel.
+     */
+    private val nav = GameDetailNav(logger = NavigationLogger { Timber.w(it) })
+
+    init {
+        // The engine reports activations by stable key; the ViewModel decides what each one means.
+        nav.onActivate = ::activateNode
+
+        // The page graph follows the state it renders, from one place: media arriving, a manual
+        // appearing after an artwork refresh, discs resolving, the emulator changing — none of them
+        // touch navigation directly, and the engine preserves (or recovers) focus by itself.
+        viewModelScope.launch {
+            uiState
+                .map { navContentOf(it) }
+                .distinctUntilChanged()
+                .collect { content ->
+                    nav.updateContent(content)
+                    // The gate opens as soon as a loaded graph exists: until then the engine ignores
+                    // navigation input outright rather than buffering it, so a press during load
+                    // cannot fire late. The screen's onPageLaidOut() is the second, idempotent
+                    // signal (it also covers the load-error surface, which has no graph at all).
+                    if (content.loaded) nav.markReady()
+                    publishNav()
+                }
+        }
+
+        // Modal contexts are pushed/popped from the same state, so an overlay opened by an async
+        // action (the manual viewer's file lookup) pauses the page exactly like a synchronous one.
+        viewModelScope.launch {
+            uiState
+                .map { topModalId(it) }
+                .distinctUntilChanged()
+                .collect {
+                    syncNavStack()
+                    publishNav()
+                }
+        }
+
+        // A modal's own rows can arrive asynchronously too (metadata retrieval, the collection list,
+        // the installed-emulator catalog), so while one is up its nodes are rebuilt from state.
+        // publishNav matters here: rebuilding the graph can be what finally gives the overlay a
+        // cursor, and the state mirror has to carry that back to the screen.
+        viewModelScope.launch {
+            uiState.collect { s ->
+                val active = unlessModal(nav) ?: return@collect
+                nav.updateModalNodes(modalNodesFor(active), preferredModalFocus(active, s))
+                publishNav()
+            }
+        }
+    }
+
+    private fun unlessModal(nav: GameDetailNav): String? =
+        if (nav.isModalActive) nav.activeContextId else null
+
+    // ── Navigation plumbing ──────────────────────────────────────────────
+
+    /**
+     * What the page's node graph is built from. Only the affordances that actually change the
+     * focusable layout — everything else in the UI state is data, not navigation.
+     */
+    private fun navContentOf(s: GameDetailUiState): GameDetailNavContent {
+        val game = s.game
+        val loaded = game != null && !s.isLoading
+        return GameDetailNavContent(
+            gameId      = game?.id ?: 0L,
+            loaded      = loaded,
+            hasManual   = s.hasManual,
+            // Package-backed entries launch through a package/shortcut/intent — never an emulator,
+            // so they get no emulator nodes at all.
+            showEmulatorControls = loaded && s.showEmulatorAction,
+            discIds     = if (s.showDiscPicker) s.discMembers.map { it.id } else emptyList(),
+            // Android games can never have achievements.
+            showCoins   = loaded && game?.platformId != ANDROID_PLATFORM_ID,
+            showOverview = loaded,
+            showInfo    = loaded && s.showInfoBand,
+            mediaIds    = s.detailMedia.map { mediaStableId(it) },
+        )
+    }
+
+    private fun mediaIndexFor(key: String): Int =
+        _uiState.value.detailMedia.indexOfFirst { GameDetailKeys.media(mediaStableId(it)) == key }
+
+    /** Business meaning of a page node's stable key. */
+    private fun activateNode(key: String) {
+        when {
+            key == GameDetailKeys.LAUNCH -> { Timber.d("Controller SELECT activated Launch"); launch() }
+            key == GameDetailKeys.FAVORITE -> toggleFavorite()
+            key == GameDetailKeys.ARTWORK -> openArtworkManager()
+            key == GameDetailKeys.MANUAL -> openManual()
+            key == GameDetailKeys.EMULATOR_ACTION -> requestChangeEmulator()
+            key == GameDetailKeys.EMULATOR_INFO -> requestChangeEmulator()
+            key == GameDetailKeys.COINS -> requestOpenCoins()
+            key == GameDetailKeys.OVERVIEW -> toggleDescriptionExpanded()
+            key.startsWith(DISC_KEY_PREFIX) ->
+                key.removePrefix(DISC_KEY_PREFIX).toLongOrNull()?.let(::selectDisc)
+            key.startsWith(MEDIA_KEY_PREFIX) -> {
+                val index = mediaIndexFor(key)
+                if (index >= 0) openMediaAt(index)
+            }
+            else -> Unit
+        }
+    }
+
+    /** Confirm on the Overview row: expand or collapse the description. */
+    private fun toggleDescriptionExpanded() =
+        _uiState.update { it.copy(descriptionExpanded = !it.descriptionExpanded) }
+
+    /**
+     * Publish the engine's result after an input: the modal stack (a confirm may have opened or
+     * closed an overlay), the page cursor, and the indices the overlays still take as parameters.
+     */
+    private fun finishInput() {
+        syncNavStack()
+        publishNav()
+    }
+
+    private fun publishNav() {
+        _uiState.update { s ->
+            var next = s.copy(navFocusKey = nav.focusedKey, cursorVisible = nav.cursorVisible)
+            val focus = next.navFocusKey
+            if (next.showOptions) {
+                val index = next.visibleActions.indexOfFirst { GameDetailKeys.option(it.name) == focus }
+                if (index >= 0) next = next.copy(optionsIndex = index)
+            }
+            if (next.showEmulatorPicker) {
+                val index = next.emulatorPickerOptions.indexOfFirst { GameDetailKeys.emulatorPick(it.id) == focus }
+                if (index >= 0) next = next.copy(emulatorPickerIndex = index)
+            }
+            if (next.collectionPicker.visible) {
+                val index = collectionIndexFor(next, focus)
+                if (index >= 0) next = next.copy(collectionPicker = next.collectionPicker.copy(selectedIndex = index))
+            }
+            val preview = next.metadataPreview
+            if (preview != null) {
+                val index = metadataFocusFor(preview, focus)
+                if (index >= 0) next = next.copy(metadataPreview = preview.copy(focus = index))
+            }
+            next
+        }
+    }
+
+    /** The topmost blocking overlay, or null when the page itself owns input. */
+    private fun topModalId(s: GameDetailUiState): String? = when {
+        s.showArtworkStudio -> GameDetailKeys.MODAL_ARTWORK_STUDIO
+        s.imageViewerUri != null -> GameDetailKeys.MODAL_IMAGE_VIEWER
+        s.showVideoPlayer -> GameDetailKeys.MODAL_VIDEO_PLAYER
+        s.manualViewerUri != null -> GameDetailKeys.MODAL_MANUAL_VIEWER
+        s.confirmRemove -> GameDetailKeys.MODAL_CONFIRM_REMOVE
+        s.isEditingNote -> GameDetailKeys.MODAL_NOTE_EDITOR
+        s.isEditingTitle -> GameDetailKeys.MODAL_TITLE_EDITOR
+        s.metadataPreview != null -> GameDetailKeys.MODAL_METADATA
+        s.showEmulatorPicker -> GameDetailKeys.MODAL_EMULATOR_PICKER
+        s.collectionPicker.visible -> GameDetailKeys.MODAL_COLLECTION_PICKER
+        s.showOptions -> GameDetailKeys.MODAL_OPTIONS
+        else -> null
+    }
+
+    /**
+     * Keep the engine's context stack in step with the overlays the state says are open. Overlays in
+     * this screen never stack — each one closes the picker below it — so unwinding to the page graph
+     * and pushing the new context is the whole story.
+     */
+    private fun syncNavStack() {
+        val s = _uiState.value
+        val target = topModalId(s)
+        val active = if (nav.isModalActive) nav.activeContextId else null
+        if (target == active) {
+            // The overlay is the one already on top, but its rows may have arrived after it opened
+            // (metadata retrieval, the collection list, the emulator catalog). Re-registering is
+            // idempotent: it never steals focus from a user who already moved, and it keeps the
+            // overlay's cursor on the node it was on as long as that node still exists.
+            if (target != null) {
+                nav.updateModalNodes(modalNodesFor(target), preferredModalFocus(target, s))
+            }
+            return
+        }
+        while (nav.isModalActive) nav.popModal()
+        if (target != null) {
+            nav.pushModal(target, modalNodesFor(target), preferredModalFocus(target, s))
+        }
+    }
+
+    /** The rows of a modal context. Empty for overlays whose input is bespoke (viewers, editors). */
+    private fun modalNodesFor(contextId: String): List<NavigationNode> {
+        val s = _uiState.value
+        return when (contextId) {
+            GameDetailKeys.MODAL_OPTIONS -> s.visibleActions.map { action ->
+                NavigationNode(GameDetailKeys.option(action.name), onSelect = { activateAction(action) })
+            }
+            GameDetailKeys.MODAL_EMULATOR_PICKER -> s.emulatorPickerOptions.map { profile ->
+                NavigationNode(GameDetailKeys.emulatorPick(profile.id), onSelect = { confirmEmulatorPick(profile.id) })
+            }
+            GameDetailKeys.MODAL_COLLECTION_PICKER -> buildList {
+                s.collectionPicker.options.forEach { option ->
+                    add(
+                        NavigationNode(
+                            GameDetailKeys.collectionRow(option.id),
+                            onSelect = { toggleCollection(option.id) },
+                        ),
+                    )
+                }
+                add(NavigationNode(GameDetailKeys.COLLECTION_CREATE_ROW, onSelect = { startCreateCollection() }))
+            }
+            GameDetailKeys.MODAL_METADATA -> buildList {
+                s.metadataPreview?.let { preview ->
+                    preview.rows.forEach { row ->
+                        add(
+                            NavigationNode(
+                                GameDetailKeys.metadataField(row.field.name),
+                                onSelect = { toggleMetadataField(row.field) },
+                            ),
+                        )
+                    }
+                    if (preview.preset != null) {
+                        add(NavigationNode(GameDetailKeys.METADATA_APPLY, onSelect = { applyMetadataPreview() }))
+                    }
+                }
+            }
+            GameDetailKeys.MODAL_CONFIRM_REMOVE -> listOf(
+                NavigationNode(GameDetailKeys.CONFIRM_REMOVE, onSelect = { confirmRemoveGame() }),
+                NavigationNode(GameDetailKeys.CONFIRM_CANCEL, onSelect = { _uiState.update { it.copy(confirmRemove = false) } }),
+            )
+            // Viewers, text editors and the full-screen Artwork Studio own their own input.
+            else -> emptyList()
+        }
+    }
+
+    /**
+     * Where a freshly opened modal's cursor starts. Only consulted while its graph is still
+     * focus-less, so an async row arriving later never steals the cursor from the user.
+     */
+    private fun preferredModalFocus(contextId: String, s: GameDetailUiState): String? = when (contextId) {
+        GameDetailKeys.MODAL_OPTIONS -> s.visibleActions.firstOrNull()?.let { GameDetailKeys.option(it.name) }
+        GameDetailKeys.MODAL_EMULATOR_PICKER ->
+            s.emulatorPickerOptions.getOrNull(s.emulatorPickerIndex)?.let { GameDetailKeys.emulatorPick(it.id) }
+        GameDetailKeys.MODAL_COLLECTION_PICKER -> collectionKeyAt(s, s.collectionPicker.selectedIndex)
+        // The metadata overlay opens on Apply: the default policy is the non-destructive one.
+        GameDetailKeys.MODAL_METADATA -> GameDetailKeys.METADATA_APPLY
+        GameDetailKeys.MODAL_CONFIRM_REMOVE -> GameDetailKeys.CONFIRM_REMOVE
+        else -> null
+    }
+
+    private fun collectionKeyAt(s: GameDetailUiState, index: Int): String? {
+        val options = s.collectionPicker.options
+        return if (index >= options.size) GameDetailKeys.COLLECTION_CREATE_ROW
+        else options.getOrNull(index)?.let { GameDetailKeys.collectionRow(it.id) }
+    }
+
+    private fun collectionIndexFor(s: GameDetailUiState, focus: String?): Int {
+        if (focus == null) return -1
+        val options = s.collectionPicker.options
+        if (focus == GameDetailKeys.COLLECTION_CREATE_ROW) return options.size
+        val optionIndex = options.indexOfFirst { GameDetailKeys.collectionRow(it.id) == focus }
+        return if (optionIndex >= 0) optionIndex else -1
+    }
+
+    private fun metadataFocusFor(preview: MetadataPreviewUi, focus: String?): Int {
+        if (focus == null) return -1
+        if (focus == GameDetailKeys.METADATA_APPLY) return preview.applyIndex
+        val rowIndex = preview.rows.indexOfFirst { GameDetailKeys.metadataField(it.field.name) == focus }
+        return if (rowIndex >= 0) rowIndex else -1
+    }
+
+    /** Back on the base page: leave Game Detail. */
+    private fun close() = _uiState.update { it.copy(closed = true) }
+
+    /** Back inside a modal: close the topmost overlay before anything else. */
+    private fun closeActiveModal() {
+        val s = _uiState.value
+        when {
+            s.metadataPreview != null -> closeMetadataPreview()
+            s.showEmulatorPicker -> closeEmulatorPicker()
+            s.collectionPicker.visible -> closeCollectionPicker()
+            s.showOptions -> closeOptions()
+            else -> close()
+        }
+    }
+
+    // ── Touch (same actions, one path) ────────────────────────────────────
+
+    /** A tap on any page node: logical focus moves there, then the node activates. */
+    fun onNodeTapped(key: String) {
+        nav.touch(key)
+        finishInput()
+    }
+
+    /** Any touch anywhere: hide the controller cursor, keep logical focus (design §10). */
+    fun onTouchInput() {
+        nav.markTouchInput()
+        publishNav()
+    }
+
+    /**
+     * The page's first usable graph is on screen. Until this fires the engine ignores navigation
+     * input outright — it is never buffered — so a press during load cannot fire late.
+     */
+    fun onPageLaidOut() {
+        nav.markReady()
+        publishNav()
+    }
+
+    /** Test seam: every node key the cursor can reach, inline children included. */
+    internal fun focusableNodeKeys(): Set<String> = nav.reachableKeys()
+
+    /** Root-space Y of every page node the screen composed, for geometry-driven movement. */
+    fun onNodeGeometry(geometry: Map<String, Float>) {
+        nav.reportGeometry(geometry)
+        publishNav()
+    }
+
+    /**
+     * The page is animating the cursor into view. Repeated directional input during the alignment is
+     * dropped rather than queued, so a held direction cannot outrun the scroll.
+     */
+    fun onScrollAlignmentChanged(aligning: Boolean) {
+        if (aligning) nav.beginRecoveryLock() else nav.endRecoveryLock()
+    }
+
+    // ── Shiba Coins strip ─────────────────────────────────────────────────
+
     fun prepareForOpen() {
         _uiState.update {
             it.copy(
@@ -262,8 +617,20 @@ class GameDetailViewModel @Inject constructor(
                 isEditingTitle = false,
                 actionMessage = null,
                 launchError = null,
+                // An overlay left over from a previous open must not survive into this one, and the
+                // engine's modal stack has to unwind with it — otherwise the page would come back
+                // with a modal context still on top of its graph.
+                showEmulatorPicker = false,
+                metadataPreview = null,
+                collectionPicker = CollectionPickerUi(),
+                manualViewerUri = null,
+                imageViewerUri = null,
+                showVideoPlayer = false,
+                showArtworkStudio = false,
             )
         }
+        syncNavStack()
+        publishNav()
     }
 
     /**
@@ -279,6 +646,8 @@ class GameDetailViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
+            // Loading is a fresh page: every overlay closes with it, and the engine's modal stack
+            // unwinds from the state (below) rather than being left on top of a new graph.
             _uiState.update {
                 it.copy(
                     isLoading = true,
@@ -287,8 +656,16 @@ class GameDetailViewModel @Inject constructor(
                     confirmRemove = false,
                     isEditingNote = false,
                     isEditingTitle = false,
+                    showEmulatorPicker = false,
+                    metadataPreview = null,
+                    collectionPicker = CollectionPickerUi(),
+                    manualViewerUri = null,
+                    imageViewerUri = null,
+                    showVideoPlayer = false,
                 )
             }
+            syncNavStack()
+            publishNav()
             val game     = gameRepository.getById(id)
             // Always keep the detail picker in numeric disc order. The primary flag only
             // determines the highlighted/default selection; it must never move that disc ahead
@@ -324,7 +701,6 @@ class GameDetailViewModel @Inject constructor(
                     discMembers       = discMembers,
                     selectedDiscId    = selectedDisc?.id,
                     noteText          = game?.userNote ?: "",
-                    mediaUris         = mediaOf(game),
                     resolvedLaunch    = resolvedLaunch,
                     // Media strip plays the full VIDEO; ICON1 (icon snap) is a fallback so a game
                     // that only has a snap still shows a video card.
@@ -336,23 +712,23 @@ class GameDetailViewModel @Inject constructor(
                     },
                     hasManual         = game?.let { g -> artworkStore.find(g.id, ArtworkKind.MANUAL) } != null,
                     showVideoPlayer   = false,
-                    mediaFocus        = -1,
                     imageViewerUri    = null,
-                    isLoading          = false,
-                    mainFocus          = 0,
-                    pageScrollSteps    = 0,
-                    discFocusIndex     = -1,
-                    manualViewerUri    = null,
-                    showOptions        = false,
-                    optionsIndex       = 0,
-                    confirmRemove      = false,
-                    isEditingNote      = false,
-                    isEditingTitle     = false,
-                    actionMessage      = null,
-                    launchError        = null,
-                    closed             = false,
+                    isLoading         = false,
+                    // A fresh page shows the description collapsed again; focus itself is preserved
+                    // by the engine when this is a reload of the same game (Artwork Studio return).
+                    descriptionExpanded = false,
+                    manualViewerUri   = null,
+                    showOptions       = false,
+                    optionsIndex      = 0,
+                    confirmRemove     = false,
+                    isEditingNote     = false,
+                    isEditingTitle    = false,
+                    actionMessage     = null,
+                    launchError       = null,
+                    closed            = false,
                 )
             }
+            finishInput()
         }
     }
 
@@ -374,146 +750,83 @@ class GameDetailViewModel @Inject constructor(
         }
     }
 
-    fun selectDiscAt(index: Int) {
-        _uiState.value.discMembers.getOrNull(index)?.id?.let(::selectDisc)
-    }
-
     // ── Controller input ──────────────────────────────────────────────────
 
     fun handleGamepadAction(action: GamepadAction) {
+        // Catch the engine up before dispatching: an overlay may have been opened since the last
+        // input, and an asynchronously loaded row list (metadata rows, the collection list, the
+        // installed-emulator catalog) may have arrived. Neither may leave the press navigating the
+        // paused page behind the overlay, so the stack is reconciled first.
+        syncNavStack()
         val s = _uiState.value
 
-        // The manual viewer is the topmost overlay — it owns all input while open.
+        // ── Overlays that own their own semantics ─────────────────────────────
+        // Each of these still pushes a modal navigation context (see syncNavStack), so the page
+        // graph behind it is paused and gets its exact cursor back when the overlay closes. What
+        // they do NOT do is navigate by node — a text field, a flipbook and a video player have no
+        // row geometry to move through.
         if (s.imageViewerUri != null) {
-            if (action == GamepadAction.BACK || action == GamepadAction.SELECT) {
-                _uiState.update { it.copy(imageViewerUri = null) }
-            }
+            if (action == GamepadAction.BACK || action == GamepadAction.SELECT) closeImageViewer()
+            finishInput()
             return
         }
         if (s.showArtworkStudio) return   // actions are forwarded to the Studio's own VM
         if (s.showVideoPlayer) {
             // Fullscreen snap player: Back (or Confirm) closes; everything else is consumed.
             if (action == GamepadAction.BACK || action == GamepadAction.SELECT) closeVideoPlayer()
+            finishInput()
             return
         }
         if (s.manualViewerUri != null) {
             handleManualViewerInput(action)
+            finishInput()
             return
         }
-
         if (s.confirmRemove) {
             when (action) {
                 GamepadAction.SELECT -> confirmRemoveGame()
                 GamepadAction.BACK   -> _uiState.update { it.copy(confirmRemove = false) }
                 else -> Unit
             }
+            finishInput()
             return
         }
-
+        if (s.collectionPicker.showCreateDialog) {
+            // The new-collection prompt is a text field: the keyboard owns every key except Back,
+            // and Confirm belongs to the dialog's own buttons.
+            if (action == GamepadAction.BACK) cancelCreateCollection()
+            finishInput()
+            return
+        }
         if (s.isEditingNote) {
             if (action == GamepadAction.BACK) cancelNote()
+            finishInput()
             return
         }
-
         if (s.isEditingTitle) {
             if (action == GamepadAction.BACK) cancelTitleEdit()
+            finishInput()
             return
         }
-
         if (s.metadataPreview != null) {
             handleMetadataPreviewInput(action)
+            finishInput()
             return
         }
 
-        if (s.showEmulatorPicker) {
-            handleEmulatorPickerInput(action)
-            return
-        }
-
-        if (s.collectionPicker.visible) {
-            handleCollectionPickerInput(action)
-            return
-        }
-
-        if (s.showOptions) {
-            val actions = s.visibleActions
-            val count = actions.size
-            when (action) {
-                GamepadAction.NAVIGATE_UP   -> _uiState.update { it.copy(optionsIndex = (it.optionsIndex - 1).coerceIn(0, count - 1)) }
-                GamepadAction.NAVIGATE_DOWN -> _uiState.update { it.copy(optionsIndex = (it.optionsIndex + 1).coerceIn(0, count - 1)) }
-                GamepadAction.SELECT        -> activateAction(actions[s.optionsIndex.coerceIn(0, count - 1)])
-                GamepadAction.BACK          -> closeOptions()
-                else -> Unit
-            }
-            return
-        }
-
-        // Main page focus: 0 = Play, 1 = Options (gear), 2 = Artwork (brush).
+        // ── Engine-owned navigation ───────────────────────────────────────────
+        // Everything left — the page itself and the pickers whose rows ARE a graph — goes through
+        // the shared engine, so exactly one thing owns the cursor at a time.
         when (action) {
-            GamepadAction.NAVIGATE_LEFT  -> _uiState.update {
-                when {
-                    it.mediaFocus >= 0 -> it.copy(mediaFocus = (it.mediaFocus - 1).coerceAtLeast(0), actionMessage = null)
-                    it.discFocusIndex >= 0 -> it.copy(discFocusIndex = (it.discFocusIndex - 1).coerceAtLeast(0), actionMessage = null)
-                    else -> it.copy(mainFocus = (it.mainFocus - 1).coerceIn(0, MAIN_FOCUS_LAST), actionMessage = null)
-                }
-            }
-            GamepadAction.NAVIGATE_RIGHT -> _uiState.update {
-                when {
-                    it.mediaFocus >= 0 -> it.copy(mediaFocus = (it.mediaFocus + 1).coerceAtMost(it.detailMedia.lastIndex), actionMessage = null)
-                    it.discFocusIndex >= 0 -> it.copy(discFocusIndex = (it.discFocusIndex + 1).coerceAtMost(it.discMembers.lastIndex), actionMessage = null)
-                    else -> it.copy(mainFocus = (it.mainFocus + 1).coerceIn(0, MAIN_FOCUS_LAST), actionMessage = null)
-                }
-            }
-            GamepadAction.NAVIGATE_UP    -> _uiState.update {
-                if (it.mediaFocus >= 0) return@update it.copy(mediaFocus = -1, pageScrollSteps = 0, actionMessage = null)
-                if (it.discFocusIndex >= 0) return@update it.copy(discFocusIndex = -1, mainFocus = 1, actionMessage = null)
-                // One press rewinds the whole page scroll; the next lands on Launch — no more
-                // unwinding step by step before focus comes back.
-                if (it.pageScrollSteps > 0) return@update it.copy(pageScrollSteps = 0, actionMessage = null)
-                // From the coin strip, UP returns to the button row rather than jumping to Launch.
-                if (it.mainFocus == MAIN_FOCUS_COINS) return@update it.copy(mainFocus = 1, actionMessage = null)
-                it.copy(mainFocus = 0, actionMessage = null)
-            }
-            GamepadAction.NAVIGATE_DOWN  -> _uiState.update {
-                when {
-                    // First DOWN moves to the button row.
-                    it.mainFocus == 0 -> it.copy(mainFocus = 1, actionMessage = null)
-                    // From the button row, enter the disc picker before the lower strips.
-                    it.discFocusIndex < 0 && it.mainFocus in 1..MAIN_FOCUS_LAST && it.showDiscPicker ->
-                        it.copy(discFocusIndex = 0, actionMessage = null)
-                    // From the button row, DOWN lands on the Shiba Coins strip — except for
-                    // Android games, which never have achievements and render no strip.
-                    it.mainFocus in 1..MAIN_FOCUS_LAST && it.game?.platformId != "android" ->
-                        it.copy(mainFocus = MAIN_FOCUS_COINS, actionMessage = null)
-                    // From the disc picker, move across members and then continue down.
-                    it.discFocusIndex >= 0 && it.discFocusIndex < it.discMembers.lastIndex ->
-                        it.copy(discFocusIndex = it.discFocusIndex + 1, actionMessage = null)
-                    it.discFocusIndex >= 0 && it.game?.platformId != "android" ->
-                        it.copy(discFocusIndex = -1, mainFocus = MAIN_FOCUS_COINS, actionMessage = null)
-                    // From the strip, DOWN enters the media strip when there is one
-                    // (page scrolls to the bottom so the strip is visible)...
-                    it.mediaFocus < 0 && it.detailMedia.isNotEmpty() ->
-                        it.copy(mediaFocus = 0, pageScrollSteps = MAX_PAGE_SCROLL_STEPS, actionMessage = null)
-                    // ...otherwise (or once in the strip) further DOWNs scroll the page.
-                    else -> it.copy(pageScrollSteps = (it.pageScrollSteps + 1).coerceAtMost(MAX_PAGE_SCROLL_STEPS), actionMessage = null)
-                }
-            }
-            GamepadAction.SELECT        -> if (s.mediaFocus >= 0) {
-                openMediaAt(s.mediaFocus)
-            } else if (s.discFocusIndex >= 0) {
-                selectDiscAt(s.discFocusIndex)
-            } else when (s.mainFocus) {
-                0 -> { Timber.d("Controller SELECT activated Launch"); launch() }
-                1 -> openOptions()
-                2 -> openArtworkManager()
-                MAIN_FOCUS_COINS -> requestOpenCoins()
-                else -> onManualClicked()
-            }
-            // Y / Triangle opens the Options context menu directly, from anywhere on the page.
-            GamepadAction.OPEN_CONTEXT_MENU -> openOptions()
-            GamepadAction.BACK          -> _uiState.update { it.copy(closed = true) }
-            else -> Unit
+            // Y / Triangle opens Options from anywhere on the base page. Inside a modal it is
+            // inert: a context menu of a context menu is not a thing.
+            GamepadAction.OPEN_CONTEXT_MENU -> if (!nav.isModalActive) openOptions()
+            GamepadAction.BACK -> if (nav.isModalActive) closeActiveModal() else close()
+            // HOME belongs to the shell (the XMB bar), never to this page.
+            GamepadAction.HOME -> Unit
+            else -> nav.handleAction(action)
         }
+        finishInput()
     }
 
     // ── Shiba Coins strip ─────────────────────────────────────────────────
@@ -543,6 +856,12 @@ class GameDetailViewModel @Inject constructor(
     fun onOptionClicked(action: DetailAction) {
         _uiState.update { it.copy(optionsIndex = it.visibleActions.indexOf(action).coerceAtLeast(0)) }
         activateAction(action)
+    }
+
+    /** Tap on an Options row: focus first, then activate — one path for touch and controller. */
+    fun onOptionRowTapped(action: DetailAction) {
+        if (!nav.touch(GameDetailKeys.option(action.name))) activateAction(action)
+        finishInput()
     }
 
     fun onPlayClicked()    { Timber.d("Play clicked"); launch() }
@@ -973,10 +1292,13 @@ class GameDetailViewModel @Inject constructor(
     /** Tap on the Game Detail emulator line — same per-game-only override flow as Options ▸ Emulator. */
     fun requestChangeEmulator() = openEmulatorPicker()
 
-    fun onEmulatorPickerMove(delta: Int) {
-        val last = _uiState.value.emulatorPickerOptions.lastIndex
-        if (last < 0) return
-        _uiState.update { it.copy(emulatorPickerIndex = (it.emulatorPickerIndex + delta).coerceIn(0, last)) }
+    /**
+     * Tap on a picker row: the same path as Confirm. Logical focus moves to the picked profile
+     * first, so touch and the controller cannot disagree about where the cursor is.
+     */
+    fun onEmulatorPickTapped(profileId: String) {
+        if (!nav.touch(GameDetailKeys.emulatorPick(profileId))) confirmEmulatorPick(profileId)
+        finishInput()
     }
 
     fun confirmEmulatorPick(profileId: String) {
@@ -998,20 +1320,6 @@ class GameDetailViewModel @Inject constructor(
                     actionMessage      = profile?.let { p -> "Emulator set to ${p.name}" },
                 )
             }
-        }
-    }
-
-    private fun handleEmulatorPickerInput(action: GamepadAction) {
-        when (action) {
-            GamepadAction.NAVIGATE_UP   -> onEmulatorPickerMove(-1)
-            GamepadAction.NAVIGATE_DOWN -> onEmulatorPickerMove(+1)
-            GamepadAction.SELECT        -> {
-                val s = _uiState.value
-                val profile = s.emulatorPickerOptions.getOrNull(s.emulatorPickerIndex) ?: return
-                confirmEmulatorPick(profile.id)
-            }
-            GamepadAction.BACK          -> closeEmulatorPicker()
-            else -> Unit
         }
     }
 
@@ -1044,34 +1352,40 @@ class GameDetailViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Tap on a picker row. Touch takes the same path as Confirm: logical focus moves to the tapped
+     * row first, then the engine activates it, so a tap and a Cross press can never drift apart.
+     */
     fun onCollectionRowClick(index: Int) {
-        _uiState.update { it.copy(collectionPicker = it.collectionPicker.copy(selectedIndex = index)) }
-        activateCollectionRow()
+        val key = collectionKeyAt(_uiState.value, index)
+        // A tap can land before the node graph is ready (options load asynchronously); the direct
+        // fallback keeps the panel usable in that window.
+        if (key == null || !nav.touch(key)) activateCollectionRowAt(index)
+        finishInput()
     }
 
-    private fun moveCollectionPicker(delta: Int) {
-        _uiState.update {
-            val cp = it.collectionPicker
-            // rowCount can be 0 while the picker's options load — no-op rather than an
-            // IllegalArgumentException from coercing into the empty range 0..-1.
-            if (cp.rowCount <= 0) return@update it
-            it.copy(collectionPicker = cp.copy(
-                selectedIndex = (cp.selectedIndex + delta).coerceIn(0, cp.rowCount - 1),
-            ))
-        }
-    }
-
-    private fun activateCollectionRow() {
-        val cp = _uiState.value.collectionPicker
-        val gameId = _uiState.value.game?.id ?: return
-        if (cp.isCreateRow) {
-            _uiState.update { it.copy(collectionPicker = it.collectionPicker.copy(showCreateDialog = true, createText = "")) }
+    private fun activateCollectionRowAt(index: Int) {
+        val options = _uiState.value.collectionPicker.options
+        if (index >= options.size) {
+            startCreateCollection()
             return
         }
-        val option = cp.options.getOrNull(cp.selectedIndex) ?: return
+        options.getOrNull(index)?.let { toggleCollection(it.id) }
+    }
+
+    /** Confirm on a picker row: toggle this game's membership of that collection. */
+    private fun toggleCollection(collectionId: Long) {
+        val gameId = _uiState.value.game?.id ?: return
         viewModelScope.launch {
-            collectionRepository.toggleGame(option.id, gameId)
+            collectionRepository.toggleGame(collectionId, gameId)
             _uiState.update { it.copy(collectionPicker = it.collectionPicker.copy(options = buildCollectionOptions(gameId))) }
+        }
+    }
+
+    /** The picker's last row opens the new-collection prompt. */
+    private fun startCreateCollection() {
+        _uiState.update {
+            it.copy(collectionPicker = it.collectionPicker.copy(showCreateDialog = true, createText = ""))
         }
     }
 
@@ -1102,20 +1416,6 @@ class GameDetailViewModel @Inject constructor(
 
     fun closeCollectionPicker() {
         _uiState.update { it.copy(collectionPicker = CollectionPickerUi()) }
-    }
-
-    private fun handleCollectionPickerInput(action: GamepadAction) {
-        if (_uiState.value.collectionPicker.showCreateDialog) {
-            if (action == GamepadAction.BACK) cancelCreateCollection()
-            return // text entry needs the keyboard; SELECT is handled by the dialog button
-        }
-        when (action) {
-            GamepadAction.NAVIGATE_UP   -> moveCollectionPicker(-1)
-            GamepadAction.NAVIGATE_DOWN -> moveCollectionPicker(+1)
-            GamepadAction.SELECT        -> activateCollectionRow()
-            GamepadAction.BACK          -> closeCollectionPicker()
-            else -> Unit
-        }
     }
 
     // ── Favorite ──────────────────────────────────────────────────────────
@@ -1210,7 +1510,6 @@ class GameDetailViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     game              = updated ?: it.game,
-                    mediaUris         = mediaOf(updated ?: it.game),
                     isFetchingArtwork = false,
                     artworkMessage    = when {
                         result.success -> "Artwork updated"
@@ -1330,6 +1629,11 @@ class GameDetailViewModel @Inject constructor(
         if (p.loading || p.applying) s else s.copy(metadataPreview = transform(p))
     }
 
+    /**
+     * Metadata overlay input. Its field rows and Apply button are engine nodes, so UP/DOWN/Confirm
+     * go through the shared engine like everywhere else; the policy and provider cycles stay
+     * horizontal shortcuts, because those rows have no inline siblings for LEFT/RIGHT to traverse.
+     */
     private fun handleMetadataPreviewInput(action: GamepadAction) {
         val p = _uiState.value.metadataPreview ?: return
         if (p.applying) return   // the write is already committed to; let it finish
@@ -1340,21 +1644,16 @@ class GameDetailViewModel @Inject constructor(
         }
         when (action) {
             GamepadAction.BACK           -> closeMetadataPreview()
-            GamepadAction.NAVIGATE_UP    -> updateMetadataPreview { it.copy(focus = (it.focus - 1).coerceIn(0, it.applyIndex)) }
-            GamepadAction.NAVIGATE_DOWN  -> updateMetadataPreview { it.copy(focus = (it.focus + 1).coerceIn(0, it.applyIndex)) }
             GamepadAction.NAVIGATE_LEFT  -> cycleMetadataPolicy(-1)
             GamepadAction.NAVIGATE_RIGHT -> cycleMetadataPolicy(+1)
             GamepadAction.PREV_CATEGORY  -> cycleMetadataSource(-1)
             GamepadAction.NEXT_CATEGORY  -> cycleMetadataSource(+1)
-            GamepadAction.SELECT         ->
-                if (p.focus >= p.applyIndex) applyMetadataPreview()
-                else p.rows.getOrNull(p.focus)?.let { toggleMetadataField(it.field) }
+            GamepadAction.NAVIGATE_UP,
+            GamepadAction.NAVIGATE_DOWN,
+            GamepadAction.SELECT         -> nav.handleAction(action)
             else -> Unit
         }
     }
-
-    private fun mediaOf(game: Game?): List<String> =
-        listOfNotNull(game?.heroUri, game?.artworkUri, game?.logoUri).distinct()
 
     // Every artwork column a scrape can rewrite — the eviction set for a single-game refresh.
     private fun artRefsOf(game: Game?): List<String> = listOfNotNull(
