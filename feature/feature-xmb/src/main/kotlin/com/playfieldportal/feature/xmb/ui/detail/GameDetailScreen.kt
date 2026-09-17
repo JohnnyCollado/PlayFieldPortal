@@ -40,7 +40,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Monitor
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.SportsEsports
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -83,6 +83,9 @@ import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.detail.DetailRowSpacing
 import com.playfieldportal.core.ui.detail.PfpDetailBackground
+import com.playfieldportal.core.ui.detail.detailPalette
+import com.playfieldportal.core.ui.detail.LocalDetailViewportHeight
+import com.playfieldportal.core.ui.detail.detailHeroHeightFor
 import com.playfieldportal.core.ui.detail.PfpDetailBreadcrumb
 import com.playfieldportal.core.ui.detail.PfpDetailField
 import com.playfieldportal.core.ui.detail.PfpDetailFieldBand
@@ -211,7 +214,7 @@ fun GameDetailScreen(
 
     if (state.isLoading) {
         PfpDetailBackground(modifier = modifier.fillMaxSize()) {
-            CircularProgressIndicator(Modifier.align(Alignment.Center), color = menuCursorEdge())
+            CircularProgressIndicator(Modifier.align(Alignment.Center), color = detailPalette().focus)
         }
         return
     }
@@ -224,7 +227,7 @@ fun GameDetailScreen(
         PfpDetailScaffold(
             modifier = modifier,
             header = {
-                PfpDetailBreadcrumb(crumbs = listOf("Library", "Game"), onBack = onBack)
+                PfpDetailBreadcrumb(title = "Library", subtitle = "Game not found", onBack = onBack)
             },
         ) {
             Spacer(Modifier.height(24.dp))
@@ -346,7 +349,8 @@ private fun GameDetailContent(
         scrollState = pageScrollState,
         header = {
             PfpDetailBreadcrumb(
-                crumbs = listOf("Library", state.platform?.name ?: game.platformId.uppercase(), game.displayTitle),
+                title = state.platform?.name ?: game.platformId.uppercase(),
+                subtitle = game.kindLabel(),
                 onBack = onBack,
             )
         },
@@ -375,6 +379,11 @@ private fun GameDetailContent(
                 game.kindLabel(),
             ),
             favorite = game.isFavorite,
+            // Shrinks on short screens so Launch and the quick actions never land under the footer.
+            height = detailHeroHeightFor(
+                LocalDetailViewportHeight.current,
+                messageLine = state.launchError != null || (state.actionMessage ?: state.artworkMessage) != null,
+            ),
         )
 
         Spacer(Modifier.height(DetailRowSpacing + 6.dp))
@@ -426,42 +435,39 @@ private fun GameDetailContent(
                         label = "Manual",
                         icon = Icons.AutoMirrored.Filled.MenuBook,
                         focused = focus == GameDetailKeys.MANUAL,
-                        // Kept visible when unavailable (the page's action set never moves), drained
-                        // and out of the controller graph, but still tappable so touching it can
-                        // explain why — the same behaviour as the pre-redesign button.
+                        // Without a manual it keeps its place in the row (the action set never
+                        // moves) but is disabled: drained, untappable and out of the controller graph.
                         available = state.hasManual,
                         onClick = { viewModel.onNodeTapped(GameDetailKeys.MANUAL) },
-                        contentDescription = if (state.hasManual) "Open manual" else "Manual, unavailable",
+                        contentDescription = "Open manual",
                         modifier = Modifier.weight(1f),
                     )
-                    // Emulator configuration is meaningless for package-backed entries, so the
-                    // action is omitted for them entirely.
-                    if (state.showEmulatorAction) {
-                        PfpDetailQuickAction(
-                            label = "Emulator",
-                            icon = Icons.Filled.SportsEsports,
-                            focused = focus == GameDetailKeys.EMULATOR_ACTION,
-                            available = true,
-                            onClick = { viewModel.onNodeTapped(GameDetailKeys.EMULATOR_ACTION) },
-                            contentDescription = "Change emulator",
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
+                    // The context menu, for touch as much as the controller's Options button. The
+                    // emulator is changed by confirming (or tapping) the Game Information band.
+                    PfpDetailQuickAction(
+                        label = "Options",
+                        icon = Icons.Filled.MoreHoriz,
+                        focused = focus == GameDetailKeys.OPTIONS_ACTION,
+                        available = true,
+                        onClick = { viewModel.onNodeTapped(GameDetailKeys.OPTIONS_ACTION) },
+                        contentDescription = "Options",
+                        modifier = Modifier.weight(1f),
+                    )
                 }
                 if (state.launchError != null) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(state.launchError!!, color = ActionFail, fontSize = 12.sp)
+                        Text(state.launchError, color = ActionFail, fontSize = 12.sp)
                         Spacer(Modifier.width(10.dp))
                         Text(
                             "Get help",
-                            color = menuCursorFill(),
+                            color = detailPalette().focus,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.clickable { viewModel.requestLaunchHelp() },
                         )
                     }
                 } else (state.actionMessage ?: state.artworkMessage)?.let {
-                    Text(it, color = menuCursorEdge(), fontSize = 12.sp)
+                    Text(it, color = detailPalette().focus, fontSize = 12.sp)
                 }
             }
         }
@@ -584,7 +590,7 @@ private fun GameDetailOverlays(
 
         if (state.showVideoPlayer && state.videoUri != null) {
             GameVideoOverlay(
-                videoUri = state.videoUri!!,
+                videoUri = state.videoUri,
                 onClose  = viewModel::closeVideoPlayer,
             )
         }
@@ -722,13 +728,13 @@ private fun DiscRow(
                         .widthIn(min = 116.dp)
                         .detailNode(key, requesterFor, nodeY)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(if (isSelected) menuCursorFill().copy(alpha = 0.2f) else Color(0x40101018))
+                        .background(if (isSelected) detailPalette().focus.copy(alpha = 0.14f) else detailPalette().rowFill)
                         .border(
                             width = if (isFocused) 2.dp else 1.dp,
                             color = when {
-                                isFocused -> menuCursorEdge()
-                                isSelected -> menuCursorEdge().copy(alpha = 0.55f)
-                                else -> Color.White.copy(alpha = 0.14f)
+                                isFocused -> detailPalette().focus
+                                isSelected -> detailPalette().focus.copy(alpha = 0.55f)
+                                else -> detailPalette().rowEdge
                             },
                             shape = RoundedCornerShape(8.dp),
                         )
@@ -773,6 +779,8 @@ private fun GameInformationBand(
     PfpDetailFieldBand(
         focused = focusedKey == GameDetailKeys.INFO,
         modifier = Modifier.detailNode(GameDetailKeys.INFO, requesterFor, nodeY),
+        // The whole band is the emulator action, for touch as for the controller.
+        onClick = if (state.showEmulatorAction) ({ viewModel.onNodeTapped(GameDetailKeys.INFO) }) else null,
     ) {
         game.releaseYear?.let { year ->
             PfpDetailField(label = "Released", value = year.toString())
@@ -801,10 +809,7 @@ private fun GameInformationBand(
                     resolved.coreName?.let { "Core: $it" },
                     resolved.source.label.lowercase(),
                 ).joinToString("  ·  ").takeIf { it.isNotBlank() },
-                focused = focusedKey == GameDetailKeys.EMULATOR_INFO,
                 disclosure = true,
-                onClick = { viewModel.onNodeTapped(GameDetailKeys.EMULATOR_INFO) },
-                modifier = Modifier.detailNode(GameDetailKeys.EMULATOR_INFO, requesterFor, nodeY),
             )
         }
     }
@@ -886,7 +891,8 @@ private fun confirmLabelFor(state: GameDetailUiState): String {
             if (state.game?.isFavorite == true) "Unfavorite" else "Favorite"
         focus == GameDetailKeys.ARTWORK -> "Edit artwork"
         focus == GameDetailKeys.MANUAL -> "Open manual"
-        focus == GameDetailKeys.EMULATOR_ACTION || focus == GameDetailKeys.EMULATOR_INFO -> "Change emulator"
+        focus == GameDetailKeys.OPTIONS_ACTION -> "Options"
+        focus == GameDetailKeys.INFO && state.showEmulatorAction -> "Change emulator"
         else -> "Launch"
     }
 }
@@ -898,7 +904,7 @@ private val TopBandKeys = setOf(
     GameDetailKeys.FAVORITE,
     GameDetailKeys.ARTWORK,
     GameDetailKeys.MANUAL,
-    GameDetailKeys.EMULATOR_ACTION,
+    GameDetailKeys.OPTIONS_ACTION,
 )
 
 /**

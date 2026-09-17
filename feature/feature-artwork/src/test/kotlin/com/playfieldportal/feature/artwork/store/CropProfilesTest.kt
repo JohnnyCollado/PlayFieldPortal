@@ -1,6 +1,7 @@
 package com.playfieldportal.feature.artwork.store
 
 import com.playfieldportal.core.domain.model.GameRegion
+import com.playfieldportal.core.ui.detail.DetailHeroAspect
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -14,8 +15,15 @@ class CropProfilesTest {
 
         assertEquals(144f / 80f, registry.resolve(ArtworkKind.ICON, null, null).aspect)
         assertEquals(144f / 80f, registry.resolve(ArtworkKind.ICON1, null, null).aspect)
-        assertEquals(920f / 430f, registry.resolve(ArtworkKind.HERO, null, null).aspect)
+        assertEquals(DetailHeroAspect, registry.resolve(ArtworkKind.HERO, null, null).aspect)
         assertEquals(16f / 9f, registry.resolve(ArtworkKind.BACKGROUND, null, null).aspect)
+    }
+
+    @Test
+    fun `the hero crop is the Game Detail banner's own shape`() {
+        // The banner at full size: the 920dp page body less its 28dp side margins, 220dp tall.
+        val aspect = CropProfileRegistry.Default.resolve(ArtworkKind.HERO, null, null).aspect!!
+        assertEquals(864f / 220f, aspect, 0.001f)
     }
 
     @Test

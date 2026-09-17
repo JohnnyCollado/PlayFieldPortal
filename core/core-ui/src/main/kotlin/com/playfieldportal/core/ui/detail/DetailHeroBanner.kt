@@ -44,6 +44,16 @@ import com.playfieldportal.core.ui.theme.LocalPFPColors
 /** Default banner height. Short landscape screens may compact it (see the caller). */
 val DetailHeroHeight: Dp = 220.dp
 
+/** The banner's full-size width: the page body at its maximum, less its side margins. */
+val DetailHeroWidth: Dp = DetailContentMaxWidth - DetailContentPadding * 2
+
+/**
+ * The banner's shape at full size, and the Artwork Studio's HERO crop target (CropProfileRegistry),
+ * so a cropped hero fills the banner without being trimmed again. Narrower or shorter screens show
+ * the banner slightly wider than this and center-crop the small difference.
+ */
+val DetailHeroAspect: Float = DetailHeroWidth.value / DetailHeroHeight.value
+
 @Composable
 fun PfpDetailHeroBanner(
     artworkUri: String?,

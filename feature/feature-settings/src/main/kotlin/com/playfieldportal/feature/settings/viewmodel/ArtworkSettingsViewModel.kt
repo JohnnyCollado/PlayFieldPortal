@@ -73,6 +73,9 @@ data class ArtworkSettingsUiState(
     // Portable artwork folder is configured but its access grant died (SD removed, permission
     // revoked) — surfaces a warning on the Artwork Folder & Import row.
     val artworkFolderGrantDead: Boolean = false,
+    // Debug builds only: load every artwork and achievement credential from one .properties file.
+    val debugCredentialsAvailable: Boolean = com.playfieldportal.feature.settings.BuildConfig.DEBUG,
+    val debugCredentialsStatus: String? = null,
 )
 
 @HiltViewModel
@@ -87,6 +90,7 @@ class ArtworkSettingsViewModel @Inject constructor(
     private val artworkFolderRepository: com.playfieldportal.core.data.repository.ArtworkFolderRepository,
     private val iconDisplayPreferences: com.playfieldportal.core.data.repository.IconDisplayPreferences,
     private val cropPreviewPreferences: com.playfieldportal.core.data.repository.CropPreviewPreferences,
+    private val debugCredentialsLoader: com.playfieldportal.feature.settings.debug.DebugCredentialsLoader,
 ) : ViewModel() {
 
     private val _extra = MutableStateFlow(ArtworkSettingsUiState())
@@ -340,6 +344,54 @@ class ArtworkSettingsViewModel @Inject constructor(
             )
         }
     }
+
+    // ── Debug credentials file (debug builds only) ────────────────────────
+
+    /**
+     * Reads the picked `.properties` file and saves every credential it holds. The read is capped
+     * ([com.playfieldportal.feature.settings.debug.DEBUG_CREDENTIALS_MAX_BYTES]), so picking a video
+     * or a ROM by mistake is refused instead of being loaded into memory.
+     */
+    fun loadDebugCredentials(uri: android.net.Uri) {
+        if (!com.playfieldportal.feature.settings.BuildConfig.DEBUG) return
+        viewModelScope.launch {
+            val read = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                runCatching { context.contentResolver.openInputStream(uri) ?: error("No stream") }
+                    .mapCatching { stream ->
+                        stream.use { com.playfieldportal.feature.settings.debug.readCredentialsText(it) }
+                    }
+            }
+            val text = read.getOrElse { _ ->
+                _extra.update { it.copy(debugCredentialsStatus = "Couldn't read that file") }
+                return@launch
+            }
+            if (text == null) {
+                _extra.update { it.copy(debugCredentialsStatus = "That file is too large to be a credentials file") }
+                return@launch
+            }
+            loadDebugCredentialsText(text)
+        }
+    }
+
+    /** Saves the credentials in [text] and shows what happened. The parsing and saving is debug-only code. */
+    internal fun loadDebugCredentialsText(text: String) {
+        if (!com.playfieldportal.feature.settings.BuildConfig.DEBUG) return
+        viewModelScope.launch {
+            val result = debugCredentialsLoader.load(text)
+            _extra.update { it.copy(debugCredentialsStatus = result.status) }
+            if (result.anyUnprotected) {
+                _extra.update {
+                    it.copy(
+                        unprotectedSecretWarning =
+                            "Some credentials were saved, but this device's secure keystore was unavailable, " +
+                                "so they are stored unencrypted.",
+                    )
+                }
+            }
+        }
+    }
+
+    fun dismissDebugCredentialsStatus() = _extra.update { it.copy(debugCredentialsStatus = null) }
 
     fun requestRescrapeAll() = _extra.update { it.copy(confirmRescrapeAll = true) }
     fun cancelRescrapeAll()  = _extra.update { it.copy(confirmRescrapeAll = false) }

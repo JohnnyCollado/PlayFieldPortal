@@ -3,6 +3,8 @@ package com.playfieldportal.feature.xmb.ui.detail
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.ui.preview.PfpScreenPreview
@@ -81,7 +83,11 @@ class GameDetailScrollTest {
         render(MutableStateFlow(state(GameDetailKeys.LAUNCH)))
 
         composeRule.onNodeWithText("Artwork").assertIsDisplayed()
-        composeRule.onNodeWithText("Options").assertIsDisplayed()
+        // "Options" is both the last quick action and the helper footer's prompt: both must show.
+        val options = composeRule.onAllNodesWithText("Options")
+        options.assertCountEquals(2)
+        options[0].assertIsDisplayed()
+        options[1].assertIsDisplayed()
     }
 
     @Test

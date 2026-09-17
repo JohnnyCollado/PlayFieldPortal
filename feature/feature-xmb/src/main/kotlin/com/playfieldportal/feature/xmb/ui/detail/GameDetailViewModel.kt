@@ -158,8 +158,9 @@ data class GameDetailUiState(
         get() = game != null && game.romPath == null && game.packageName != null
 
     /**
-     * Emulator controls apply to this entry. Package-backed entries are omitted from both the quick
-     * actions and the information band, because emulator configuration is irrelevant for them.
+     * Emulator controls apply to this entry: the information band's Emulator field, and confirming
+     * the band to change it. Package-backed entries have neither, because emulator configuration is
+     * irrelevant for them.
      */
     val showEmulatorAction: Boolean
         get() = game != null && !isPackageBacked
@@ -359,7 +360,7 @@ class GameDetailViewModel @Inject constructor(
             showEmulatorControls = loaded && s.showEmulatorAction,
             discIds     = if (s.showDiscPicker) s.discMembers.map { it.id } else emptyList(),
             // Android games can never have achievements.
-            showCoins   = loaded && game?.platformId != ANDROID_PLATFORM_ID,
+            showCoins   = loaded && game.platformId != ANDROID_PLATFORM_ID,
             showOverview = loaded,
             showInfo    = loaded && s.showInfoBand,
             mediaIds    = s.detailMedia.map { mediaStableId(it) },
@@ -376,8 +377,8 @@ class GameDetailViewModel @Inject constructor(
             key == GameDetailKeys.FAVORITE -> toggleFavorite()
             key == GameDetailKeys.ARTWORK -> openArtworkManager()
             key == GameDetailKeys.MANUAL -> openManual()
-            key == GameDetailKeys.EMULATOR_ACTION -> requestChangeEmulator()
-            key == GameDetailKeys.EMULATOR_INFO -> requestChangeEmulator()
+            key == GameDetailKeys.OPTIONS_ACTION -> openOptions()
+            key == GameDetailKeys.INFO -> if (_uiState.value.showEmulatorAction) requestChangeEmulator()
             key == GameDetailKeys.COINS -> requestOpenCoins()
             key == GameDetailKeys.OVERVIEW -> toggleDescriptionExpanded()
             key.startsWith(DISC_KEY_PREFIX) ->
@@ -710,7 +711,9 @@ class GameDetailViewModel @Inject constructor(
                         screenshotUris.forEach { add(DetailMedia(it, isVideo = false)) }
                         artworkStore.find(game.id, ArtworkKind.TITLESCREEN)?.let { add(DetailMedia(it, isVideo = false)) }
                     },
-                    hasManual         = game?.let { g -> artworkStore.find(g.id, ArtworkKind.MANUAL) } != null,
+                    // The same two sources the viewer opens from, so an action that is enabled always
+                    // opens and a manual that exists is never disabled.
+                    hasManual         = game?.let { g -> manualPath(g.id) } != null,
                     showVideoPlayer   = false,
                     imageViewerUri    = null,
                     isLoading         = false,
@@ -965,10 +968,7 @@ class GameDetailViewModel @Inject constructor(
     private fun openManual() {
         val game = _uiState.value.game ?: return
         viewModelScope.launch {
-            // Internal store first (scraped manuals), then the portable media library
-            // ({platform}/manuals/{name}.pdf, tracked by the game's artwork record).
-            val path = artworkStore.find(game.id, ArtworkKind.MANUAL)
-                ?: artworkRecordDao.get(game.id, ArtworkKind.MANUAL.name)?.documentUri
+            val path = manualPath(game.id)
             if (path == null) {
                 showActionMessage("No manual available for this game")
                 return@launch
@@ -985,6 +985,14 @@ class GameDetailViewModel @Inject constructor(
             }
         }
     }
+
+    /**
+     * Where [gameId]'s manual lives: the internal store first (scraped manuals), then the portable
+     * media library ({platform}/manuals/{name}.pdf, tracked by the game's artwork record).
+     */
+    private suspend fun manualPath(gameId: Long): String? =
+        artworkStore.find(gameId, ArtworkKind.MANUAL)
+            ?: artworkRecordDao.get(gameId, ArtworkKind.MANUAL.name)?.documentUri
 
     fun closeManualViewer() = _uiState.update { it.copy(manualViewerUri = null) }
 

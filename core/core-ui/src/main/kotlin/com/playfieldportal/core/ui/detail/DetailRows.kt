@@ -30,13 +30,12 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.playfieldportal.core.ui.theme.menuCursorEdge
 
 // ── Full-width information rows ───────────────────────────────────────────────
 //
 // The approved direction replaces a collection of floating Material cards with full-width
-// translucent rows on the page's accent surface. Every row here shares one visual language:
-// a dark neutral fill with a subtle light edge, a thin bright accent edge when the controller
+// rows on the page's accent surface. Every row here shares one visual language: a recessed accent
+// fill with a lifted accent edge, a thin bright accent edge when the controller
 // cursor is on it, and no size change under focus.
 //
 // Rows are deliberately one node each: the controller cursor moves between rows, so a row must be
@@ -56,13 +55,14 @@ private fun RowShell(
         modifier = modifier
             .fillMaxWidth()
             .clip(RowShape)
+            // Fill first, so the focus lift paints over the opaque row rather than under it.
+            .background(DetailRowFill, RowShape)
             .detailFocusRing(
                 focused = focused,
-                edge = menuCursorEdge(),
-                fill = menuCursorEdge().copy(alpha = 0.16f),
+                edge = DetailFocusEdge,
+                fill = DetailFocusEdge.copy(alpha = 0.10f),
                 shape = RowShape,
             )
-            .background(DetailRowFill, RowShape)
             .then(
                 if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick)
                 else Modifier
@@ -127,7 +127,7 @@ fun PfpDetailInfoRow(
                     Spacer(Modifier.size(3.dp))
                     Text(
                         text = footnote,
-                        color = if (focused) menuCursorEdge() else DetailTextMuted.copy(alpha = 0.85f),
+                        color = if (focused) DetailFocusEdge else DetailTextMuted.copy(alpha = 0.85f),
                         fontSize = 11.sp,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
@@ -191,8 +191,8 @@ fun PfpDetailProgressRow(
                 Spacer(Modifier.size(8.dp))
                 PfpDetailProgressBar(
                     progress = progress,
-                    track = Color.White.copy(alpha = 0.18f),
-                    fill = if (focused) menuCursorEdge() else Color.White.copy(alpha = 0.72f),
+                    track = detailPalette().track,
+                    fill = DetailFocusEdge,
                 )
             }
             if (disclosure) {
@@ -266,7 +266,7 @@ fun PfpDetailTextRow(
             Spacer(Modifier.size(6.dp))
             Text(
                 text = if (expanded) "Confirm to collapse" else "Confirm to read more",
-                color = if (focused) menuCursorEdge() else DetailTextMuted.copy(alpha = 0.7f),
+                color = if (focused) DetailFocusEdge else DetailTextMuted.copy(alpha = 0.7f),
                 fontSize = 11.sp,
                 maxLines = 1,
             )
@@ -292,13 +292,14 @@ fun PfpDetailFieldBand(
         modifier = modifier
             .fillMaxWidth()
             .clip(RowShape)
+            // Fill first, so the focus lift paints over the opaque row rather than under it.
+            .background(DetailRowFill, RowShape)
             .detailFocusRing(
                 focused = focused,
-                edge = menuCursorEdge(),
-                fill = menuCursorEdge().copy(alpha = 0.16f),
+                edge = DetailFocusEdge,
+                fill = DetailFocusEdge.copy(alpha = 0.10f),
                 shape = RowShape,
             )
-            .background(DetailRowFill, RowShape)
             .then(
                 if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick)
                 else Modifier
@@ -327,8 +328,8 @@ fun PfpDetailField(
             .then(
                 if (focused) {
                     Modifier
-                        .background(menuCursorEdge().copy(alpha = 0.18f), shape)
-                        .border(1.5.dp, menuCursorEdge(), shape)
+                        .background(DetailFocusEdge.copy(alpha = 0.18f), shape)
+                        .border(1.5.dp, DetailFocusEdge, shape)
                 } else {
                     Modifier
                 }

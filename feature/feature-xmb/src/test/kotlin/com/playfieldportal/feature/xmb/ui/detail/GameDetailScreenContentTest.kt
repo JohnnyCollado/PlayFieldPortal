@@ -77,7 +77,7 @@ class GameDetailScreenContentTest {
             ),
         )
 
-        // The quick action and the information band's inline field are both gone, not disabled.
+        // The information band's inline emulator field is gone, not disabled.
         assertAbsent("Emulator", "a package-backed entry must not offer an emulator action")
         assertAbsent("MEDIA PREVIEW", "an entry with no media must not show a media band")
         // Android entries can never have achievements, so the coins strip is absent too.
@@ -109,7 +109,13 @@ class GameDetailScreenContentTest {
             ),
         )
 
-        assertPresent("Emulator", "a ROM-backed entry keeps its emulator action")
+        // The emulator is changed from the information band's field; the quick-action row carries
+        // Options (the context menu) instead of a second emulator control.
+        assertAbsent("Emulator", "the quick actions must not duplicate the emulator field")
+        assertPresent("Options", "the quick-action row opens the context menu")
+        // No manual: the action is simply disabled, with no "unavailable" explanation.
+        assertPresent("Manual", "the manual action keeps its place in the row")
+        assertAbsent("Unavailable", "a missing manual is disabled, not explained")
         assertPresent("MEDIA PREVIEW", "the media band appears once the strip has an asset")
         // The named plate on a playable tile: "this is playable" never rests on the glyph alone.
         assertPresent("VIDEO", "a video tile must be named, not just glyphed")

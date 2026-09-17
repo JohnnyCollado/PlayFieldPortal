@@ -40,12 +40,11 @@ object GameDetailKeys {
     const val FAVORITE = "game-detail:favorite"
     const val ARTWORK = "game-detail:artwork"
     const val MANUAL = "game-detail:manual"
-    const val EMULATOR_ACTION = "game-detail:emulator-action"
+    const val OPTIONS_ACTION = "game-detail:options-action"
     const val DISCS = "game-detail:discs"
     const val COINS = "game-detail:shiba-coins"
     const val OVERVIEW = "game-detail:overview"
     const val INFO = "game-detail:info"
-    const val EMULATOR_INFO = "game-detail:emulator-info"
     const val MEDIA = "game-detail:media"
 
     fun disc(gameId: Long): String = "game-detail:disc:$gameId"
@@ -217,14 +216,14 @@ class GameDetailNav(
         val quickActions = buildList {
             add(NavigationNode(GameDetailKeys.FAVORITE, onSelect = { activate(GameDetailKeys.FAVORITE) }))
             add(NavigationNode(GameDetailKeys.ARTWORK, onSelect = { activate(GameDetailKeys.ARTWORK) }))
-            // Manual stays visible when unavailable, but an unavailable action is never focusable —
-            // the controller must not be able to land on something that cannot do anything.
+            // Manual stays visible but disabled without one, and a disabled action is never
+            // focusable — the controller must not be able to land on something that does nothing.
             if (content.hasManual) {
                 add(NavigationNode(GameDetailKeys.MANUAL, onSelect = { activate(GameDetailKeys.MANUAL) }))
             }
-            if (content.showEmulatorControls) {
-                add(NavigationNode(GameDetailKeys.EMULATOR_ACTION, onSelect = { activate(GameDetailKeys.EMULATOR_ACTION) }))
-            }
+            // Options opens the context menu, which every entry has. The emulator itself is changed
+            // by confirming the information band.
+            add(NavigationNode(GameDetailKeys.OPTIONS_ACTION, onSelect = { activate(GameDetailKeys.OPTIONS_ACTION) }))
         }
         nodes += container(GameDetailKeys.ACTIONS, quickActions)
 
@@ -243,16 +242,13 @@ class GameDetailNav(
             nodes += NavigationNode(GameDetailKeys.OVERVIEW, onSelect = { activate(GameDetailKeys.OVERVIEW) })
         }
         if (content.showInfo) {
-            // The band is a reading target, so its Confirm is a no-op; the emulator field inside it
-            // is the inline action, reached with RIGHT.
-            nodes += container(
+            // One stop, like every other row: confirming the highlighted band opens the emulator
+            // picker directly, with no RIGHT into an inner field first. Package-backed entries have
+            // no emulator, so for them the band is a reading stop whose Confirm does nothing.
+            nodes += NavigationNode(
                 key = GameDetailKeys.INFO,
-                children = if (content.showEmulatorControls) {
-                    listOf(NavigationNode(GameDetailKeys.EMULATOR_INFO, onSelect = { activate(GameDetailKeys.EMULATOR_INFO) }))
-                } else {
-                    emptyList()
-                },
-                selectable = false,
+                selectable = content.showEmulatorControls,
+                onSelect = { activate(GameDetailKeys.INFO) },
             )
         }
         if (content.mediaIds.isNotEmpty()) {

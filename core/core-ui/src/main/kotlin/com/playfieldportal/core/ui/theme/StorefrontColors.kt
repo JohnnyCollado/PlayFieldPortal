@@ -138,8 +138,13 @@ private fun Color.isVividHue(): Boolean {
  * changes the drawer while text keeps a contrast floor ([ensureReadable]).
  */
 @Composable
-fun deriveStorefrontColors(): StorefrontColors {
-    val pfp = LocalPFPColors.current
+fun deriveStorefrontColors(): StorefrontColors = storefrontColorsFor(LocalPFPColors.current)
+
+/**
+ * The pure derivation behind [deriveStorefrontColors], for callers that already hold the theme
+ * colors (the detail page's palette, which must match the App Drawer exactly) and for tests.
+ */
+fun storefrontColorsFor(pfp: PFPColors): StorefrontColors {
     val hue = resolveHueSource(pfp.accentColor, pfp.waveColor, pfp.backgroundBottom)
 
     // Bright edge family — lerp(hue, white, …) is the menuCursorEdge idiom, tuned so lines and

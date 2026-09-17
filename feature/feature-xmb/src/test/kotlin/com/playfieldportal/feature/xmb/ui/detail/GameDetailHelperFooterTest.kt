@@ -88,8 +88,8 @@ class GameDetailHelperFooterTest {
             gameDetailHelperItems(baseState.copy(navFocusKey = GameDetailKeys.FAVORITE)).first().label,
         )
         assertEquals(
-            "Change emulator",
-            gameDetailHelperItems(baseState.copy(navFocusKey = GameDetailKeys.EMULATOR_ACTION)).first().label,
+            "Options",
+            gameDetailHelperItems(baseState.copy(navFocusKey = GameDetailKeys.OPTIONS_ACTION)).first().label,
         )
         assertEquals(
             "Read more",

@@ -5,7 +5,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
@@ -36,7 +35,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.playfieldportal.core.ui.image.rememberArtworkModel
-import com.playfieldportal.core.ui.theme.menuCursorEdge
 
 // ── Primary action region ─────────────────────────────────────────────────────
 //
@@ -69,7 +67,7 @@ fun PfpDetailLaunchButton(
             .background(if (focused) lerp(fill, Color.White, 0.10f) else fill)
             .border(
                 width = if (focused) 2.dp else 1.dp,
-                color = if (focused) Color.White else Color.Black.copy(alpha = 0.25f),
+                color = if (focused) DetailFocusEdge else Color.Black.copy(alpha = 0.25f),
                 shape = shape,
             )
             .clickable(role = Role.Button, onClick = onClick)
@@ -94,10 +92,8 @@ fun PfpDetailLaunchButton(
 /**
  * A labelled quick action under Launch.
  *
- * [available] is presentation only: an unavailable action stays visible (so the page's action set
- * does not move around) but is drained, carries the blocked mark instead of its own icon, and is
- * left out of the controller graph by the caller. It remains touchable, because touching it is how
- * a user learns *why* it is unavailable.
+ * An action that is not [available] stays in its slot (so the page's action set never moves) but is
+ * disabled: drained, untappable, and left out of the controller graph by the caller.
  */
 @Composable
 fun PfpDetailQuickAction(
@@ -114,26 +110,25 @@ fun PfpDetailQuickAction(
         modifier = modifier
             .defaultMinSize(minHeight = 46.dp)
             .clip(shape)
+            // Fill first, so the focus lift paints over the opaque tile rather than under it.
+            .background(DetailRowFill, shape)
             .detailFocusRing(
                 focused = focused,
-                edge = menuCursorEdge(),
-                fill = menuCursorEdge().copy(alpha = 0.20f),
+                edge = DetailFocusEdge,
+                fill = DetailFocusEdge.copy(alpha = 0.12f),
                 shape = shape,
             )
-            .background(DetailRowFill, shape)
-            // TalkBack cannot see the row's drained tint or its "Unavailable" line, so the state is
-            // carried in the node's own description when the caller supplies one.
             .semantics(mergeDescendants = true) {
                 contentDescription?.let { this.contentDescription = it }
             }
-            .clickable(role = Role.Button, onClick = onClick)
+            // Disabled rather than hidden: TalkBack reads it as a dimmed button, and taps do nothing.
+            .clickable(enabled = available, role = Role.Button, onClick = onClick)
+            .alpha(if (available) 1f else 0.38f)
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(9.dp),
     ) {
-        if (!available) {
-            PfpBlockedMark(color = DetailTextMuted.copy(alpha = 0.7f), size = 16.dp)
-        } else if (icon != null) {
+        if (icon != null) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
@@ -141,24 +136,14 @@ fun PfpDetailQuickAction(
                 modifier = Modifier.size(18.dp),
             )
         }
-        Column(modifier = Modifier.alpha(if (available) 1f else 0.62f)) {
-            Text(
-                text = label,
-                color = DetailTextPrimary,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            if (!available) {
-                Text(
-                    text = "Unavailable",
-                    color = DetailTextMuted,
-                    fontSize = 10.sp,
-                    maxLines = 1,
-                )
-            }
-        }
+        Text(
+            text = label,
+            color = DetailTextPrimary,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 

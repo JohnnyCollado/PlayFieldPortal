@@ -18,8 +18,8 @@ import androidx.compose.ui.unit.sp
 
 // The slim ◀ + title + subtitle header the full-page secondary screens share (Shiba Coins, Player
 // Status). The primary entry pages — Game Detail and App Detail — render the richer
-// `PfpDetailBreadcrumb` from core-ui instead, which adds the LIBRARY / PLATFORM / TITLE trail on the
-// darkened accent band; this simpler form stays for screens whose header has no trail.
+// `PfpDetailBreadcrumb` from core-ui instead: the same ◀ + title + subtitle shape, pinned above the
+// scrolling body with a thin divider under it.
 
 private val TextPrimary = Color(0xFFEEEEEE)
 private val TextMuted = Color(0xAAEEEEEE)

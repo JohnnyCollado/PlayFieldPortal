@@ -67,7 +67,8 @@ class DetailScaffoldLayoutTest {
                     scrollState = rememberScrollState(),
                     header = {
                         PfpDetailBreadcrumb(
-                            crumbs = listOf("Library", "PlayStation", "Crash Bandicoot"),
+                            title = "PlayStation",
+                            subtitle = "ROM",
                             onBack = {},
                         )
                     },
@@ -118,7 +119,7 @@ class DetailScaffoldLayoutTest {
     }
 
     @Test
-    fun `the breadcrumb keeps the title's casing and always offers a touch way back`() {
+    fun `the breadcrumb shows the platform over the entry kind and always offers a touch way back`() {
         var backs = 0
         composeRule.setContent {
             PfpScreenPreview {
@@ -126,7 +127,8 @@ class DetailScaffoldLayoutTest {
                     modifier = Modifier.testTag("page"),
                     header = {
                         PfpDetailBreadcrumb(
-                            crumbs = listOf("Library", "PlayStation", "Crash Bandicoot"),
+                            title = "Nintendo DS",
+                            subtitle = "ROM",
                             onBack = { backs++ },
                         )
                     },
@@ -137,13 +139,39 @@ class DetailScaffoldLayoutTest {
         }
         composeRule.waitForIdle()
 
-        // Leading segments are uppercase chrome; the trailing segment is the user-visible title.
-        composeRule.onNodeWithText("LIBRARY").assertExists()
-        composeRule.onNodeWithText("PLAYSTATION").assertExists()
-        composeRule.onNodeWithText("Crash Bandicoot").assertExists()
+        // The ◀ title / subtitle header, with the platform keeping its own casing.
+        composeRule.onNodeWithText("◀").assertExists()
+        composeRule.onNodeWithText("Nintendo DS").assertExists()
+        composeRule.onNodeWithText("ROM").assertExists()
+        // Unmerged: the clickable back target merges both texts into one node with one set of bounds.
+        val title = composeRule.onNodeWithText("Nintendo DS", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        val subtitle = composeRule.onNodeWithText("ROM", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        assertTrue("the subtitle sits under the title", subtitle.top >= title.bottom - 0.5f)
 
         composeRule.onNode(hasClickAction()).performClick()
         composeRule.waitForIdle()
         assertEquals("the breadcrumb is the page's touch way back", 1, backs)
+    }
+
+    @Test
+    fun `the body reports its real viewport height to the page`() {
+        var reported = androidx.compose.ui.unit.Dp.Unspecified
+        composeRule.setContent {
+            PfpScreenPreview {
+                PfpDetailScaffold(
+                    modifier = Modifier.testTag("page"),
+                    header = { PfpDetailBreadcrumb(title = "Nintendo DS", subtitle = "ROM", onBack = {}) },
+                    footer = { PfpDetailHelperFooter(items = emptyList(), modifier = Modifier.testTag("footer")) },
+                ) {
+                    reported = LocalDetailViewportHeight.current
+                    Column(Modifier.fillMaxWidth().height(2400.dp)) {}
+                }
+            }
+        }
+        composeRule.waitForIdle()
+
+        val viewportPx = composeRule.onNode(hasScrollAction()).fetchSemanticsNode().boundsInRoot.height
+        val reportedPx = with(composeRule.density) { reported.toPx() }
+        assertEquals("the page sizes its top band from the body's real viewport", viewportPx, reportedPx, 1f)
     }
 }

@@ -4,7 +4,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -64,38 +63,6 @@ fun PfpChevronMark(
             path,
             color,
             style = Stroke(width = w * 0.13f, cap = StrokeCap.Round, join = StrokeJoin.Round),
-        )
-    }
-}
-
-/**
- * The "unavailable" mark: an outlined circle with a diagonal slash.
- *
- * Availability must never be carried by colour alone, and a greyed label still reads as present;
- * a slash through the action's own slot says "this exists and cannot be used" in any theme.
- */
-@Composable
-fun PfpBlockedMark(
-    color: Color,
-    modifier: Modifier = Modifier,
-    size: Dp = 16.dp,
-) {
-    Canvas(modifier.size(size)) {
-        val stroke = this.size.minDimension * 0.11f
-        val inset = stroke / 2f
-        val diameter = this.size.minDimension - stroke
-        drawCircle(
-            color = color,
-            radius = diameter / 2f,
-            center = Offset(this.size.width / 2f, this.size.height / 2f),
-            style = Stroke(width = stroke),
-        )
-        drawLine(
-            color = color,
-            start = Offset(inset, this.size.height - inset),
-            end = Offset(this.size.width - inset, inset),
-            strokeWidth = stroke,
-            cap = StrokeCap.Round,
         )
     }
 }

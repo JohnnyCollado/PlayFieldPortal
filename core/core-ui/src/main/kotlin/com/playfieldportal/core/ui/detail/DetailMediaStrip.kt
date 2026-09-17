@@ -22,7 +22,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.playfieldportal.core.ui.image.rememberArtworkModel
-import com.playfieldportal.core.ui.theme.menuCursorEdge
 
 // ── Media preview tiles ───────────────────────────────────────────────────────
 //
@@ -57,11 +56,11 @@ fun PfpDetailMediaTile(
             .width(DetailMediaTileWidth)
             .height(DetailMediaTileHeight)
             .clip(shape)
-            .background(Color(0xFF11111A))
+            .background(DetailRowFill)
             .detailFocusRing(
                 focused = focused,
-                edge = menuCursorEdge(),
-                fill = menuCursorEdge().copy(alpha = 0.12f),
+                edge = DetailFocusEdge,
+                fill = DetailFocusEdge.copy(alpha = 0.12f),
                 shape = shape,
                 strong = true,
             )

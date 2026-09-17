@@ -19,6 +19,8 @@ bin/
 # Local config — never commit
 local.properties
 keystore.properties
+# Filled-in debug credentials file (template: docs/templates/pfp-debug-credentials.template.properties)
+pfp-debug-credentials.properties
 
 # Signing keys & keystores
 *.jks

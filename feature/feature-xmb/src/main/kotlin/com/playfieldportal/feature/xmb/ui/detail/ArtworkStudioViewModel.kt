@@ -699,6 +699,12 @@ class ArtworkStudioViewModel @Inject constructor(
     /** The in-flight browse, cancelled the moment another one starts. */
     private var loadJob: kotlinx.coroutines.Job? = null
 
+    /**
+     * Where file, decode and download work runs. Tests point it at their own dispatcher so that
+     * work cannot outlive the test; a constructor parameter would need a Hilt binding for one seam.
+     */
+    internal var ioDispatcher: kotlinx.coroutines.CoroutineDispatcher = kotlinx.coroutines.Dispatchers.IO
+
     // The one job draining the download queue (task 5.2). Never cancelled by close(): picks the user
     // chose to add keep downloading after the screen is gone.
     private var queueJob: kotlinx.coroutines.Job? = null
@@ -1806,7 +1812,7 @@ class ArtworkStudioViewModel @Inject constructor(
             _uiState.update {
                 it.copy(manualDownloading = true, candidateManualPath = null, manualPage = 0, manualPageCount = 0)
             }
-            viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            viewModelScope.launch(ioDispatcher) {
                 val tmp = downloadToCache(art.url, ".pdf")
                 _uiState.update { it.copy(manualDownloading = false, candidateManualPath = tmp?.absolutePath) }
             }
@@ -2160,7 +2166,7 @@ class ArtworkStudioViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(applying = true) }
             // Copy the picked document to a temp so the store can record provenance + back up.
-            val tmp = withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val tmp = withContext(ioDispatcher) {
                 runCatching {
                     val suffix = "." + (appContext.contentResolver.getType(uri)?.substringAfterLast('/') ?: "bin")
                     java.io.File.createTempFile("studio_local_", suffix, appCacheDir).also { f ->
@@ -2344,14 +2350,14 @@ class ArtworkStudioViewModel @Inject constructor(
         val art = s.results.getOrNull(s.gridIndex) ?: return
         viewModelScope.launch {
             _uiState.update { it.copy(actionsOpen = false, cropPreparing = true) }
-            val temp = withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val temp = withContext(ioDispatcher) {
                 routingStore.candidateToTemp(kind, art.url)
             }
             if (temp == null) {
                 _uiState.update { it.copy(cropPreparing = false, message = "Could not download that pick to crop") }
                 return@launch
             }
-            val (w, h) = withContext(kotlinx.coroutines.Dispatchers.IO) { decodeBounds(temp) }
+            val (w, h) = withContext(ioDispatcher) { decodeBounds(temp) }
             if (w <= 0 || h <= 0) {
                 temp.delete()
                 _uiState.update { it.copy(cropPreparing = false, message = "That pick is not an image this can crop") }
@@ -2381,7 +2387,7 @@ class ArtworkStudioViewModel @Inject constructor(
                 _uiState.update { it.copy(cropPreparing = false, message = "Could not open the original to crop") }
                 return@launch
             }
-            val prepared = withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val prepared = withContext(ioDispatcher) {
                 if (isVideoKind(kind)) {
                     val frame = extractVideoFrame(original)
                     if (frame == null) { original.delete(); null }
@@ -2567,7 +2573,7 @@ class ArtworkStudioViewModel @Inject constructor(
                 java.io.File(videoPath).delete()
                 if (ok) out else { out.delete(); null }
             } else {
-                withContext(kotlinx.coroutines.Dispatchers.IO) { bakeCrop(java.io.File(displayPath), l, t, r, b) }
+                withContext(ioDispatcher) { bakeCrop(java.io.File(displayPath), l, t, r, b) }
             }
             java.io.File(displayPath).delete()
             if (baked == null) {

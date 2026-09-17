@@ -1,5 +1,7 @@
 package com.playfieldportal.feature.settings.ui
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -51,6 +53,11 @@ fun ArtworkSettingsScreen(
     var ssUsernameDraft by remember(state.ssUsername) { mutableStateOf("") }
     var ssPasswordDraft by remember { mutableStateOf("") }
 
+    // Debug builds only. Any MIME type: pickers often report .properties files as octet-stream.
+    val credentialsFilePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let { viewModel.loadDebugCredentials(it) }
+    }
+
     SettingsScaffold(
         title    = "Settings",
         subtitle = "Artwork",
@@ -64,6 +71,28 @@ fun ArtworkSettingsScreen(
                 .fillMaxSize()
                 .verticalScroll(scrollState),
         ) {
+
+            // ── Debug: credentials file ───────────────────────────────────────
+            // Never in release: BuildConfig.DEBUG is a compile-time false there, so the row is
+            // stripped and the ViewModel refuses the load as well.
+            if (com.playfieldportal.feature.settings.BuildConfig.DEBUG && state.debugCredentialsAvailable) {
+                SettingsGroup("Debug")
+
+                SettingsRow(
+                    label    = "Load Credentials File",
+                    sublabel = "Fill every artwork and achievement credential from a .properties file " +
+                        "(steamgriddb.apiKey, thegamesdb.apiKey, igdb.*, screenscraper.*, retroachievements.*, steam.*)",
+                    onClick  = { credentialsFilePicker.launch(arrayOf("*/*")) },
+                )
+
+                state.debugCredentialsStatus?.let {
+                    SettingsRow(
+                        label    = it,
+                        sublabel = "Tap to dismiss",
+                        onClick  = { viewModel.dismissDebugCredentialsStatus() },
+                    )
+                }
+            }
 
             // ── Artwork library / import ──────────────────────────────────────
             SettingsGroup("Artwork Library")

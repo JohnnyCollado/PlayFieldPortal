@@ -16,6 +16,8 @@ android {
     }
     buildFeatures {
         compose = true
+        // BuildConfig.DEBUG gates the debug-only credentials file row in Settings ▸ Artwork.
+        buildConfig = true
     }
     // Robolectric (Compose UI tests) needs the merged manifest + resources on the test classpath
     testOptions {

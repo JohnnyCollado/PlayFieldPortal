@@ -44,6 +44,7 @@ class ArtworkSettingsViewModelTest {
     private lateinit var screenScraperApi: com.playfieldportal.feature.artwork.api.ScreenScraperApi
     private lateinit var iconDisplayPreferences: com.playfieldportal.core.data.repository.IconDisplayPreferences
     private lateinit var cropPreviewPreferences: com.playfieldportal.core.data.repository.CropPreviewPreferences
+    private lateinit var debugCredentialsLoader: com.playfieldportal.feature.settings.debug.DebugCredentialsLoader
     private lateinit var viewModel: ArtworkSettingsViewModel
 
     @Before
@@ -56,6 +57,7 @@ class ArtworkSettingsViewModelTest {
         scrapePreferences   = mockk(relaxed = true)
         igdbApi             = mockk(relaxed = true)
         screenScraperApi    = mockk(relaxed = true)
+        debugCredentialsLoader = mockk(relaxed = true)
 
         every { sgdbKeyProvider.apiKeyFlow }             returns flowOf(null)
         every { metadataKeyProvider.igdbClientIdFlow }   returns flowOf(null)
@@ -99,6 +101,7 @@ class ArtworkSettingsViewModelTest {
         },
         iconDisplayPreferences = iconDisplayPreferences,
         cropPreviewPreferences = cropPreviewPreferences,
+        debugCredentialsLoader = debugCredentialsLoader,
     )
 
     // uiState is a WhileSubscribed StateFlow, so it only reflects upstream (the credential flows +
@@ -348,4 +351,19 @@ class ArtworkSettingsViewModelTest {
         advanceUntilIdle()
         assertNull(viewModel.uiState.value.igdbCredentialStatus)
     }
+
+    // ── Debug credentials file (debug builds only) ────────────────────────────
+
+    @Test
+    fun `the credentials file row is offered in debug builds`() = runTest(testDispatcher) {
+        viewModel = activeViewModel()
+        advanceUntilIdle()
+        // Unit tests run the debug variant; the release variant compiles the row out.
+        assertEquals(
+            com.playfieldportal.feature.settings.BuildConfig.DEBUG,
+            viewModel.uiState.value.debugCredentialsAvailable,
+        )
+    }
+
+    // Loading itself is debug-source-set code: see ArtworkSettingsDebugCredentialsTest (testDebug).
 }

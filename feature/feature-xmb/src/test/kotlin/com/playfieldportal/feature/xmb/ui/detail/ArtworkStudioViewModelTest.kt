@@ -123,7 +123,12 @@ class ArtworkStudioViewModelTest {
         cropPreviewPreferences,
         // Nothing kept between opens: these tests count what each open asks.
         com.playfieldportal.feature.artwork.match.TitleSearchStore.None,
-    )
+    ).also {
+        // File, decode and download work runs on the test scheduler too. On the real IO pool it
+        // outlived its test and crashed a later one (an unmocked BitmapFactory, or a Main dispatcher
+        // already reset), so failures moved from test to test.
+        it.ioDispatcher = testDispatcher
+    }
 
     // ── The query is state, seeded from the title (task 1.1) ──────────────────
 
@@ -612,6 +617,9 @@ class ArtworkStudioViewModelTest {
             coEvery { artworkStore.find(1L, ArtworkKind.SCREENSHOT, 0) } returns "content://current-screenshot"
             coEvery { routingStore.studioAppendFromUrl(any(), any(), "grids1", any(), any()) } coAnswers { stuck.await() }
             coEvery { routingStore.studioAppendFromUrl(any(), any(), "grids2", any(), any()) } returns "content://grids2"
+            // Crop only has to START here. The relaxed store would hand back a mock File, and decoding
+            // it reaches BitmapFactory, which does not exist on the JVM: no original ends the crop.
+            coEvery { routingStore.originalToTemp(any(), any(), any()) } returns null
             val vm = screenshotGridOnSgdb(perType = 2)
             vm.toggleSelection(0)
             vm.toggleSelection(1)
@@ -2005,7 +2013,10 @@ class ArtworkStudioViewModelTest {
             matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.STEAMGRIDDB, any(), any())
         } coAnswers { slow.await() }
 
+        // A title the browse above has not searched: the seeded title's answer is already remembered,
+        // so searching it again finishes at once and never reaches the slow provider.
         vm.openChangeMatch()
+        vm.onChangeMatchDraftChanged("Crash Bandicoot Warped")
         vm.submitChangeMatch()
         advanceUntilIdle()
         assertTrue("the picker's search should still be in flight", vm.uiState.value.changeMatchLoading)

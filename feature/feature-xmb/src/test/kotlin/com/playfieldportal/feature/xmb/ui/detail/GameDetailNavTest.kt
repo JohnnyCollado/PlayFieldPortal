@@ -96,11 +96,11 @@ class GameDetailNavTest {
         assertEquals(GameDetailKeys.MANUAL, nav.focusedKey)
 
         nav.handleAction(GamepadAction.NAVIGATE_RIGHT)
-        assertEquals(GameDetailKeys.EMULATOR_ACTION, nav.focusedKey)
+        assertEquals(GameDetailKeys.OPTIONS_ACTION, nav.focusedKey)
 
         // Right at the end of the row stops there instead of wrapping to Favorite.
         nav.handleAction(GamepadAction.NAVIGATE_RIGHT)
-        assertEquals(GameDetailKeys.EMULATOR_ACTION, nav.focusedKey)
+        assertEquals(GameDetailKeys.OPTIONS_ACTION, nav.focusedKey)
 
         // Left at the start stops on the row's first action, not on the invisible band.
         repeat(4) { nav.handleAction(GamepadAction.NAVIGATE_LEFT) }
@@ -197,27 +197,62 @@ class GameDetailNavTest {
     // ── Dynamic content ───────────────────────────────────────────────────
 
     @Test
-    fun `hidden or unavailable actions are never focusable`() {
-        val nav = readyNav(content(hasManual = false, emulatorControls = false))
+    fun `a disabled manual is never focusable and the cursor steps over it`() {
+        val nav = readyNav(content(hasManual = false))
         assertTrue(GameDetailKeys.FAVORITE in nav.reachableKeys())
         assertFalse(GameDetailKeys.MANUAL in nav.reachableKeys())
-        assertFalse(GameDetailKeys.EMULATOR_ACTION in nav.reachableKeys())
 
-        // Right from Artwork can only reach the row's real end — the missing nodes are skipped.
+        // Right from Artwork skips the disabled Manual and lands on Options.
         nav.handleAction(GamepadAction.NAVIGATE_DOWN)
         nav.handleAction(GamepadAction.NAVIGATE_RIGHT)
         assertEquals(GameDetailKeys.ARTWORK, nav.focusedKey)
         nav.handleAction(GamepadAction.NAVIGATE_RIGHT)
-        assertEquals(GameDetailKeys.ARTWORK, nav.focusedKey)
+        assertEquals(GameDetailKeys.OPTIONS_ACTION, nav.focusedKey)
     }
 
     @Test
-    fun `a package-backed entry has no emulator action and no emulator information field`() {
+    fun `the Options quick action hands back its own key`() {
+        val nav = readyNav()
+        nav.handleAction(GamepadAction.NAVIGATE_DOWN)
+        repeat(3) { nav.handleAction(GamepadAction.NAVIGATE_RIGHT) }
+        assertEquals(GameDetailKeys.OPTIONS_ACTION, nav.focusedKey)
+
+        nav.handleAction(GamepadAction.SELECT)
+        assertEquals(listOf(GameDetailKeys.OPTIONS_ACTION), activated)
+    }
+
+    @Test
+    fun `a package-backed entry keeps Options but has no emulator information field`() {
         val nav = readyNav(content(emulatorControls = false))
         assertTrue(GameDetailKeys.COINS in nav.reachableKeys())
-        assertFalse(GameDetailKeys.EMULATOR_ACTION in nav.reachableKeys())
-        // The information band has no inline action at all for these entries.
-        assertFalse(GameDetailKeys.EMULATOR_INFO in nav.reachableKeys())
+        // Options is the context menu, which every entry has; only the emulator field is ROM-only.
+        assertTrue(GameDetailKeys.OPTIONS_ACTION in nav.reachableKeys())
+
+        // The information band is still a reading stop, but confirming it does nothing.
+        focusInfo(nav)
+        nav.handleAction(GamepadAction.SELECT)
+        assertTrue(activated.isEmpty())
+    }
+
+    @Test
+    fun `confirming the highlighted information band opens the emulator picker straight away`() {
+        val nav = readyNav()
+        focusInfo(nav)
+        assertEquals(GameDetailKeys.INFO, nav.focusedKey)
+
+        // No RIGHT into an inner field first: the highlighted row IS the action.
+        nav.handleAction(GamepadAction.SELECT)
+        assertEquals(listOf(GameDetailKeys.INFO), activated)
+
+        // And RIGHT has nowhere to go inside it.
+        nav.handleAction(GamepadAction.NAVIGATE_RIGHT)
+        assertEquals(GameDetailKeys.INFO, nav.focusedKey)
+    }
+
+    /** Walks Launch → quick actions → coins → overview → information band. */
+    private fun focusInfo(nav: GameDetailNav) {
+        repeat(4) { nav.handleAction(GamepadAction.NAVIGATE_DOWN) }
+        assertEquals(GameDetailKeys.INFO, nav.focusedKey)
     }
 
     @Test

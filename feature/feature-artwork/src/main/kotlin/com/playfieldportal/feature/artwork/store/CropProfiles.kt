@@ -1,6 +1,7 @@
 package com.playfieldportal.feature.artwork.store
 
 import com.playfieldportal.core.domain.model.GameRegion
+import com.playfieldportal.core.ui.detail.DetailHeroAspect
 
 /**
  * A resolved crop target: [key] is the stable, human-readable, parseable identifier the resolution
@@ -66,7 +67,9 @@ class CropProfileRegistry(private val entries: Map<String, Float>) {
             mapOf(
                 ArtworkKind.ICON.name to 144f / 80f,     // XMB tile container
                 ArtworkKind.ICON1.name to 144f / 80f,
-                ArtworkKind.HERO.name to 920f / 430f,
+                // The Game Detail banner's own full-size shape (864 × 220dp), read from the banner
+                // itself so the crop and the page can never drift apart again.
+                ArtworkKind.HERO.name to DetailHeroAspect,
                 ArtworkKind.BACKGROUND.name to 16f / 9f,
             )
         )

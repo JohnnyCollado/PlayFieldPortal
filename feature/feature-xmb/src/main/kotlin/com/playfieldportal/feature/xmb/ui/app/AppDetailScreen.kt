@@ -79,6 +79,10 @@ import com.playfieldportal.feature.xmb.ui.detail.ArtworkType
 import com.playfieldportal.feature.xmb.ui.detail.displayLabel
 import com.playfieldportal.core.ui.detail.DetailRowSpacing
 import com.playfieldportal.core.ui.detail.PfpDetailBreadcrumb
+import com.playfieldportal.core.ui.detail.detailPalette
+import com.playfieldportal.core.ui.detail.PfpDetailBackground
+import com.playfieldportal.core.ui.detail.LocalDetailViewportHeight
+import com.playfieldportal.core.ui.detail.detailHeroHeightFor
 import com.playfieldportal.core.ui.detail.PfpDetailHelperFooter
 import com.playfieldportal.core.ui.detail.PfpDetailHeroBanner
 import com.playfieldportal.core.ui.detail.PfpDetailIconTile
@@ -92,7 +96,6 @@ import com.playfieldportal.core.ui.components.ControllerPromptItem
 private val TextPrimary = Color(0xFFEEEEEE)
 private val TextMuted   = Color(0xAAEEEEEE)
 private val ActionFill    = Color(0xFF1B1B26)
-private val PageBg = Color(0xFF06060C)
 
 @Composable
 fun AppDetailScreen(
@@ -142,8 +145,8 @@ fun AppDetailScreen(
     }
 
     if (state.isLoading) {
-        Box(modifier.fillMaxSize().background(PageBg)) {
-            CircularProgressIndicator(Modifier.align(Alignment.Center), color = menuCursorEdge())
+        PfpDetailBackground(modifier = modifier.fillMaxSize()) {
+            CircularProgressIndicator(Modifier.align(Alignment.Center), color = detailPalette().focus)
         }
         return
     }
@@ -163,7 +166,8 @@ fun AppDetailScreen(
             .pointerInput(Unit) { awaitEachGesture { awaitFirstDown(requireUnconsumed = false); onTouchInput() } },
         header = {
             PfpDetailBreadcrumb(
-                crumbs = listOf("Apps", "Android App", game.displayTitle),
+                title = "Apps",
+                subtitle = "Android App",
                 onBack = viewModel::close,
             )
         },
@@ -254,6 +258,7 @@ fun AppDetailScreen(
             title       = game.displayTitle,
             platform    = game.packageName.orEmpty(),
             accentColor = pfpColors.accentColor,
+            height      = detailHeroHeightFor(LocalDetailViewportHeight.current, messageLine = state.artworkMessage != null),
         )
 
         Spacer(Modifier.height(DetailRowSpacing + 6.dp))
@@ -305,7 +310,7 @@ fun AppDetailScreen(
                     )
                 }
                 state.artworkMessage?.let {
-                    Text(it, color = menuCursorEdge(), fontSize = 12.sp)
+                    Text(it, color = detailPalette().focus, fontSize = 12.sp)
                 }
             }
         }

@@ -53,6 +53,7 @@ class GameDetailViewModelTest {
     private lateinit var intentResolver: EmulatorIntentResolver
     private lateinit var artworkRepository: ArtworkRepository
     private lateinit var artworkStore: ArtworkStore
+    private lateinit var artworkRecordDao: com.playfieldportal.core.data.database.dao.ArtworkRecordDao
     private lateinit var launchDispatcher: com.playfieldportal.feature.launcher.LaunchDispatcher
     private lateinit var menuSound: com.playfieldportal.core.ui.sound.MenuSoundPlayer
     private lateinit var pcGameExporter: com.playfieldportal.feature.settings.pc.PcGameExporter
@@ -103,6 +104,9 @@ class GameDetailViewModelTest {
         intentResolver    = mockk(relaxed = true)
         artworkRepository = mockk(relaxed = true)
         artworkStore      = mockk(relaxed = true)
+        artworkRecordDao  = mockk(relaxed = true)
+        // No portable-library records unless a test adds one (a relaxed mock would invent a record).
+        coEvery { artworkRecordDao.get(any(), any()) } returns null
         launchDispatcher  = mockk(relaxed = true)
         menuSound         = mockk(relaxed = true)
         pcGameExporter    = mockk(relaxed = true)
@@ -128,7 +132,7 @@ class GameDetailViewModelTest {
             intentResolver    = intentResolver,
             artworkRepository = artworkRepository,
             artworkStore      = artworkStore,
-            artworkRecordDao  = mockk(relaxed = true),
+            artworkRecordDao  = artworkRecordDao,
             menuSound         = menuSound,
             discordPresence   = mockk(relaxed = true),
             launcherShortcutRepository = mockk(relaxed = true),
@@ -661,7 +665,7 @@ class GameDetailViewModelTest {
         coVerify(exactly = 1) {
             launchDispatcher.launch(
                 any(),
-                match { it?.profile?.id == gambatte.id },
+                match { it.profile.id == gambatte.id },
                 fakeIntent,
             )
         }
@@ -1380,8 +1384,7 @@ class GameDetailViewModelTest {
 
         val keys = viewModel.focusableNodeKeys()
         assertTrue(GameDetailKeys.LAUNCH in keys)
-        assertFalse(GameDetailKeys.EMULATOR_ACTION in keys)
-        assertFalse(GameDetailKeys.EMULATOR_INFO in keys)
+        assertTrue(GameDetailKeys.OPTIONS_ACTION in keys)
         assertFalse(GameDetailKeys.COINS in keys)
     }
 
@@ -1392,9 +1395,45 @@ class GameDetailViewModelTest {
         loadedAndLaidOut()
 
         assertFalse(GameDetailKeys.MANUAL in viewModel.focusableNodeKeys())
-        // The row is still rendered (and still tappable, so touching it can explain itself); it is
-        // simply not part of the controller graph.
         assertNull(viewModel.uiState.value.navFocusKey?.takeIf { it == GameDetailKeys.MANUAL })
+
+        // Disabled, not explained: tapping it does nothing at all.
+        viewModel.onNodeTapped(GameDetailKeys.MANUAL)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertNull(viewModel.uiState.value.actionMessage)
+        assertNull(viewModel.uiState.value.manualViewerUri)
+    }
+
+    @Test
+    fun `a manual only in the portable library is enabled and opens`() = runTest {
+        // Not scraped into the internal store; linked from {platform}/manuals by its artwork record.
+        coEvery { artworkStore.find(1L, com.playfieldportal.feature.artwork.store.ArtworkKind.MANUAL) } returns null
+        coEvery {
+            artworkRecordDao.get(1L, com.playfieldportal.feature.artwork.store.ArtworkKind.MANUAL.name)
+        } returns mockk { every { documentUri } returns "content://library/psx/manuals/crash.pdf" }
+
+        loadedAndLaidOut()
+
+        assertTrue(viewModel.uiState.value.hasManual)
+        assertTrue(GameDetailKeys.MANUAL in viewModel.focusableNodeKeys())
+
+        viewModel.onNodeTapped(GameDetailKeys.MANUAL)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals("content://library/psx/manuals/crash.pdf", viewModel.uiState.value.manualViewerUri)
+    }
+
+    @Test
+    fun `the Options quick action opens the context menu`() = runTest {
+        loadedAndLaidOut()
+
+        viewModel.onNodeTapped(GameDetailKeys.OPTIONS_ACTION)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.showOptions)
+        assertEquals(
+            GameDetailKeys.option(DetailAction.FAVORITE.name),
+            viewModel.uiState.value.navFocusKey,
+        )
     }
 
     @Test
