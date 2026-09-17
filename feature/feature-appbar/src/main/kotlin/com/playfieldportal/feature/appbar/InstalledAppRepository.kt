@@ -10,6 +10,7 @@ import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Process
 import android.provider.Settings
+import com.playfieldportal.core.domain.model.KnownEmulatorPackages
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -30,26 +31,6 @@ data class InstalledApp(
     // True for pre-installed system apps. Used as a guard rail: uninstall isn't offered for these
     // (Android would reject it anyway), only "App Info".
     val isSystemApp: Boolean = false,
-)
-
-// Known emulator package name prefixes — used to tag emulators in the app list
-private val EMULATOR_PACKAGES = setOf(
-    "com.retroarch",
-    "com.retroarch.aarch64",
-    "org.ppsspp.ppsspp",
-    "org.ppsspp.ppsspg",
-    "org.dolphinemu.dolphinemu",
-    "com.duckstation",
-    "com.nethersx2",
-    "org.citra.citra_emu",
-    "org.yuzu.yuzu_emu",
-    "org.sudachi.sudachi_emu",
-    "me.magnum.melonds",
-    "com.mgba",
-    "com.winlator",
-    "com.winlator.plus",
-    "com.limelight.noir",   // GameHub
-    "com.gamenative",
 )
 
 @Singleton
@@ -86,7 +67,7 @@ class InstalledAppRepository @Inject constructor(
                 val isGame = appInfo.category == ApplicationInfo.CATEGORY_GAME ||
                              (appInfo.flags and ApplicationInfo.FLAG_IS_GAME) != 0
 
-                val isEmulator = EMULATOR_PACKAGES.any { packageName.startsWith(it) }
+                val isEmulator = KnownEmulatorPackages.isEmulator(packageName)
                 // A system app that has NOT been updated by the user can't be uninstalled; treat
                 // updated system apps (Chrome, etc.) as uninstallable.
                 val isSystem = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0 &&

@@ -343,6 +343,7 @@ internal fun platformDisplay(platformId: String): String = when (platformId) {
     "ps2" -> "PlayStation 2"
     "psp" -> "PSP"
     "psvita" -> "PS Vita"
+    "xbox" -> "Xbox"
     "x360" -> "Xbox 360"
     "windows" -> "Steam"
     else -> platformId.uppercase()

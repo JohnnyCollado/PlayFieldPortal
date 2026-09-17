@@ -59,5 +59,7 @@ fun systemIconRes(platformId: String?): Int = when (platformId?.lowercase()) {
     "wonderswan" -> R.drawable.sysicon_wonderswan
     "wonderswancolor" -> R.drawable.sysicon_wonderswancolor
     "x360" -> R.drawable.sysicon_x360
+    // No dedicated original-Xbox art yet; borrows the Xbox 360 icon until some is approved.
+    "xbox" -> R.drawable.sysicon_x360
     else -> R.drawable.sysicon_default
 }

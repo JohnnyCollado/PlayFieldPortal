@@ -32,6 +32,7 @@ class ArtworkDimensionsTest {
             "switch" to (366 to 600),
             "dreamcast" to (600 to 600),
             "x360" to (430 to 600),
+            "xbox" to (430 to 600),
             "windows" to (600 to 600),
             "android" to (600 to 600),
         )

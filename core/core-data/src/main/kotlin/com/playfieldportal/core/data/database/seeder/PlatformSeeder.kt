@@ -356,6 +356,16 @@ class PlatformSeeder @Inject constructor(
 
             // ── Microsoft ──────────────────────────────────────────────────
             PlatformEntity(
+                id            = "xbox",
+                name          = "Xbox",
+                shortName     = "Xbox",
+                // No dedicated original-Xbox art yet; shares the Xbox 360 icon.
+                iconRes       = "ic_platform_xbox360",
+                accentColor   = 0xFF107C10L,
+                romExtensions = "iso,xiso",
+                preferredEmulatorPackage = "com.izzy2lost.x1box",
+            ),
+            PlatformEntity(
                 id            = "x360",
                 name          = "Xbox 360",
                 shortName     = "X360",

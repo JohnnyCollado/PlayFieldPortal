@@ -710,6 +710,7 @@ class ScreenScraperApi @Inject constructor(
             "mame"           to 75,
             "wonderswan"     to 45,
             "wonderswancolor" to 46,
+            "xbox"           to 32,
             "x360"           to 33,
             "c64"            to 66,
             "android"        to 63,

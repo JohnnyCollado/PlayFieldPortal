@@ -90,6 +90,31 @@
     "notes": "NetherSX2-derived fork with a rewritten frontend — no EmulationActivity/bootPath. Boots via ACTION_VIEW + content:// URI into the exported MainActivity alias (scheme-only intent filter, no MIME type); the app queues it as a pending external launch and takes a persistable URI grant."
   },
   {
+    "id": "armsx1",
+    "name": "ARMSX1",
+    "packageName": "com.nanodata.armsx",
+    "activityClass": "com.armsx2.Main",
+    "intentType": "ACTION_VIEW",
+    "supportedPlatformIds": [
+      "psx",
+      "ps1"
+    ],
+    "useSafUri": true,
+    "notes": "PS1 emulator from the ARMSX2 team, built on the ARMSX2 frontend (com.armsx2.* classes). Boots via ACTION_VIEW + content:// URI into the exported Main activity (scheme-only intent filter, no MIME type). Verified against the 0.1.3 manifest."
+  },
+  {
+    "id": "armsx3",
+    "name": "ARMSX3",
+    "packageName": "com.armsx3",
+    "activityClass": "com.armsx2.Main",
+    "intentType": "ACTION_VIEW",
+    "supportedPlatformIds": [
+      "ps3"
+    ],
+    "useSafUri": true,
+    "notes": "RPCS3 port on the ARMSX2 frontend (com.armsx2.* classes). Boots via ACTION_VIEW + content:// URI into the exported Main activity (scheme-only intent filter, no MIME type). Verified against the 0.9.7.3 manifest."
+  },
+  {
     "id": "melonds",
     "name": "melonDS",
     "packageName": "me.magnum.melonds",
@@ -445,6 +470,18 @@
     ],
     "mimeType": "application/octet-stream",
     "useSafUri": true
+  },
+  {
+    "id": "x1box",
+    "name": "X1 BOX (xemu)",
+    "packageName": "com.izzy2lost.x1box",
+    "activityClass": "com.izzy2lost.x1box.LauncherActivity",
+    "intentType": "ACTION_VIEW",
+    "supportedPlatformIds": [
+      "xbox"
+    ],
+    "useSafUri": true,
+    "notes": "Android port of xemu (original Xbox). LauncherActivity is the only exported activity and boots a game via ACTION_VIEW + content:// URI (scheme-only intent filter, no MIME type). Needs the MCPX BIOS, flash ROM and HDD image set up in its own wizard first. Verified against the 1.2.5 manifest."
   },
   {
     "id": "winlator",

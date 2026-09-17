@@ -100,6 +100,15 @@ internal object KnownEmulatorCatalog {
             activityClass = "com.emulator.fpse64.Main",
             mimeType      = "application/octet-stream",
         ),
+        KnownEmulator(
+            // From the ARMSX2 team; reuses the ARMSX2 frontend (com.armsx2.* classes) under
+            // its own package. Scheme-only VIEW filter on the exported Main activity.
+            packageNames  = listOf("com.nanodata.armsx"),
+            suggestedName = "ARMSX1",
+            platformIds   = listOf("psx", "ps1"),
+            activityClass = "com.armsx2.Main",
+            useSafUri     = true,
+        ),
 
         // ── PS2 ──────────────────────────────────────────────────────────────
         KnownEmulator(
@@ -171,6 +180,15 @@ internal object KnownEmulatorCatalog {
             activityClass = "aenu.aps3e.EmulatorActivity",
             intentAction  = "aenu.intent.action.APS3E",
             intentExtras  = mapOf("iso_uri" to "{rom_uri}"),
+        ),
+        KnownEmulator(
+            // RPCS3 port on the ARMSX2 frontend (com.armsx2.* classes, com.armsx3 package).
+            // Scheme-only VIEW filter on the exported Main activity.
+            packageNames  = listOf("com.armsx3"),
+            suggestedName = "ARMSX3",
+            platformIds   = listOf("ps3"),
+            activityClass = "com.armsx2.Main",
+            useSafUri     = true,
         ),
 
         // ── Nintendo DS ───────────────────────────────────────────────────────
@@ -763,6 +781,17 @@ internal object KnownEmulatorCatalog {
             activityClass = "com.github.eka2l1.emu.EmulatorActivity",
             intentFlags   = listOf("CLEAR_TASK", "CLEAR_TOP"),
             mimeType      = "application/octet-stream",
+        ),
+
+        // ── Xbox ──────────────────────────────────────────────────────────────
+        KnownEmulator(
+            // X1 BOX, the Android xemu port. LauncherActivity is the only exported activity
+            // (scheme-only content/file VIEW filter); it hands the game on to MainActivity.
+            packageNames  = listOf("com.izzy2lost.x1box"),
+            suggestedName = "X1 BOX (xemu)",
+            platformIds   = listOf("xbox"),
+            activityClass = "com.izzy2lost.x1box.LauncherActivity",
+            useSafUri     = true,
         ),
 
         // ── Xbox 360 ──────────────────────────────────────────────────────────

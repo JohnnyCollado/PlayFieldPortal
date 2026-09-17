@@ -49,6 +49,11 @@ class PlatformFolderHintResolverTest {
     fun `newly added Microsoft and PC gaps resolve`() {
         assertEquals("x360", resolver.detectFromFolderName("xbox360"))
         assertEquals("x360", resolver.detectFromFolderName("x360"))
+        // Original Xbox: ES-DE canonical folder is "xbox", which is also our id.
+        assertEquals("xbox", resolver.detectFromFolderName("xbox"))
+        assertEquals("xbox", resolver.detectFromFolderName("xemu"))
+        assertEquals("xbox", resolver.detectFromFolderName("Microsoft Xbox"))
+        assertEquals("xbox", resolver.esDeFolderName("xbox"))
         assertEquals("windows", resolver.detectFromFolderName("windows"))
         assertEquals("windows", resolver.detectFromFolderName("winlator"))
     }

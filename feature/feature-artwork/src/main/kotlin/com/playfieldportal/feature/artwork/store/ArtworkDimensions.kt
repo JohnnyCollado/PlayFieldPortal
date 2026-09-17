@@ -136,6 +136,7 @@ object ArtworkDimensions {
         "cps3" to ArtworkCanvas(600, 600, sourceAspectPreferred = true),
 
         // ── Microsoft ───────────────────────────────────────────────────────
+        "xbox" to ArtworkCanvas(430, 600),
         "x360" to ArtworkCanvas(430, 600),
 
         // ── PC / Android: no physical packaging standard ─────────────────────

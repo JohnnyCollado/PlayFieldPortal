@@ -258,6 +258,9 @@ class PlatformFolderHintResolver @Inject constructor() {
         // ── PC / Other ─────────────────────────────────────────────────────
 
         // ── Microsoft ──────────────────────────────────────────────────────
+        "xbox"                      to "xbox",    // ES-DE canonical
+        "microsoft xbox"            to "xbox",
+        "xemu"                      to "xbox",
         "xbox360"                   to "x360",    // ES-DE canonical
         "x360"                      to "x360",
         "xbox 360"                  to "x360",
