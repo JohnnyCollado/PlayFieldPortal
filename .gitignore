@@ -53,7 +53,8 @@ Thumbs.db
 desktop.ini
 
 # Logs, temp files, and patch/merge leftovers
-*.log
+**/*.log
+.env*
 *.tmp
 *.bak
 *.rej
@@ -70,21 +71,7 @@ CLAUDE.md
 # of version control.
 GSE-Generator-main/
 hw/
-emu-pack-links/test-roms/Digimon All-Star Rumble (USA) (En,Fr,Es,Pt).7z
-emu-pack-links/test-roms/240pTestSuite-SNES-1.10.zip
-emu-pack-links/test-roms/240pTestSuite-Sega_Mega_CD-1.32.zip
-emu-pack-links/test-roms/240pTestSuite-PCE_TG16-SuperCDROM-1.15.zip
-emu-pack-links/test-roms/240pTestSuite-PCE_TG16-HuCard-1.15.zip
-emu-pack-links/test-roms/240pTestSuite-PCE_TG16-CDROM-1.15.zip
-emu-pack-links/test-roms/240pTestSuite-NeoGeoCD_1.0.zip
-emu-pack-links/test-roms/240pTestSuite-NeoGeo-MVS_AES_1.0.zip
-emu-pack-links/test-roms/240pTestSuite-NeoGeo-MVS_AES_1.0-NEO.zip
-emu-pack-links/test-roms/240pTestSuite-MD_Genesis-1.32.zip
-emu-pack-links/test-roms/240pSuite_32X_1.0.32x
-emu-pack-links/test-roms/240pSuite-Wii-1.20.zip
-emu-pack-links/test-roms/240pSuite-N64-RC.zip
-emu-pack-links/test-roms/240pSuite-GameCube-1.20.zip
-emu-pack-links/test-roms/240p-DC-PVR-2.03.zip
+emu-pack-links/test-roms/
 
 # Local FX clips used to test the boot sequence and GameBoot presentations. Working
 # media, not app assets — the shipped GameBoot default is drawn in Compose
@@ -98,3 +85,24 @@ assets/SFX/official/*
 assets/SFX/alt/*
 assets/SFX/resources/*
 !assets/SFX/**/*.md
+
+# Local tool leftovers and third-party UI reference material (C21 task 0.2)
+/.py
+.freebuff/
+assets/UI/*.zip
+assets/UI/ui samples/*.jpg
+assets/UI/ui samples/*.png
+assets/UI/ui samples/*.webp
+.acside/
+/.run/
+skills-lock.json
+/package-lock.json
+docs/feedback/
+
+# Byte-identical copies of core/core-ui/src/main/res/raw — res/raw is the tracked copy.
+assets/SFX/active/*.wav
+assets/SFX/active/*.mp3
+
+# Discord Social SDK prebuilts (1.9.17379): vendor-licensed, fetched locally, never published.
+# Only :app consumes them; see discord/discord-native/README.md for where they go.
+discord/discord-native/libs/*.aar

@@ -36,7 +36,7 @@ import com.playfieldportal.feature.settings.ui.LocalSettingsScrollStateRegistrar
 import com.playfieldportal.feature.settings.ui.SettingsScaffold
 
 // ── Chrome colors sampled from the PSP reference captures ──────────────────────
-// (docs/mockups/skype-wizard-mockup.html — the "Create New …" wizard skin)
+// (the PSP "Create New …" wizard skin)
 
 /** Green ring of the step badge (④⑤⑥⑧ circles in the reference). */
 internal val WizardRingGreen = Color(0xFF3BCC71)

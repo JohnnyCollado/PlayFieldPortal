@@ -164,4 +164,33 @@ class PcGameExportBuilderTest {
 
         assertTrue(files.isEmpty())
     }
+
+    @Test
+    fun `a bulk export never overwrites a file the folder already has for another game`() {
+        val gameA = game(1, launchIntentUri = "intent:#Intent;S.localGameId=local_9a9a;end")
+        val doomForA = exportOf(gameA)
+        val gameB = game(2, title = "Doom")
+
+        val files = PcGameExportBuilder.build(
+            listOf(gameB),
+            emptyMap(),
+            existing = mapOf("doom.pfpgame" to doomForA),
+        )
+
+        assertEquals("Doom (2).pfpgame", files.single().fileName)
+    }
+
+    @Test
+    fun `a bulk export reuses the folder's file for a game that already owns it`() {
+        val game = game(1)
+        val ownExport = exportOf(game)
+
+        val files = PcGameExportBuilder.build(
+            listOf(game),
+            emptyMap(),
+            existing = mapOf("portal 2.pfpgame" to ownExport),
+        )
+
+        assertEquals("Portal 2.pfpgame", files.single().fileName)
+    }
 }

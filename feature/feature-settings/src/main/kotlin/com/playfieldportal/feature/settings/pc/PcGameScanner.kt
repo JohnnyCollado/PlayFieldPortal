@@ -7,6 +7,7 @@ import android.net.Uri
 import com.playfieldportal.core.common.security.ShortcutIntentSanitizer
 import com.playfieldportal.core.data.database.dao.ArtworkRecordDao
 import com.playfieldportal.feature.artwork.api.ArtworkImportManager
+import com.playfieldportal.feature.artwork.match.MatchProvider
 import com.playfieldportal.core.data.repository.RomRootRepository
 import com.playfieldportal.core.data.repository.WindowsLibrarySetup
 import com.playfieldportal.core.data.repository.WindowsSetupState
@@ -270,7 +271,8 @@ class PcGameScanner @Inject constructor(
                 }
                 is PcGameImportDecision.Fill -> {
                     if (decision.changed) {
-                        gameRepository.upsert(decision.game)
+                        val original = games.first { it.id == decision.game.id }
+                        applyFill(original, decision.game)
                         games.replaceAll { if (it.id == decision.game.id) decision.game else it }
                     }
                     claims.add(export, decision.game.id)
@@ -283,6 +285,37 @@ class PcGameScanner @Inject constructor(
             }
         }
         return PfpRestore(created, matched, skipped, untrusted, claims.toMap(), claims.toIdentitySeeds())
+    }
+
+    /**
+     * Writes a Fill decision one column at a time (task 1.2), so restoring a `.pfpgame` onto an
+     * existing game can never REPLACE-upsert its row and cascade-delete its play sessions,
+     * collection membership or provider links. [original] is the matched game before
+     * [PcGameImportPlanner.fill] filled it; only a column that actually changed is written.
+     */
+    private suspend fun applyFill(original: Game, filled: Game) {
+        val id = filled.id
+        if (filled.scrapedTitle != original.scrapedTitle) {
+            gameRepository.updateScrapedTitle(id, filled.scrapedTitle)
+        }
+        if (filled.userTitleOverride != original.userTitleOverride) {
+            gameRepository.updateUserTitleOverride(id, filled.userTitleOverride)
+        }
+        if (filled.storefront != original.storefront || filled.storefrontGameId != original.storefrontGameId) {
+            gameRepository.updateStorefrontIdentity(id, filled.storefront, filled.storefrontGameId)
+        }
+        if (filled.ssId != original.ssId) {
+            gameRepository.updateProviderMatch(id, MatchProvider.SCREENSCRAPER.name, filled.ssId)
+        }
+        if (filled.tgdbId != original.tgdbId) {
+            gameRepository.updateProviderMatch(id, MatchProvider.THEGAMESDB.name, filled.tgdbId)
+        }
+        if (filled.igdbId != original.igdbId) {
+            gameRepository.updateProviderMatch(id, MatchProvider.IGDB.name, filled.igdbId)
+        }
+        if (filled.steamGridDbId != original.steamGridDbId) {
+            gameRepository.updateProviderMatch(id, MatchProvider.STEAMGRIDDB.name, filled.steamGridDbId)
+        }
     }
 
     /**

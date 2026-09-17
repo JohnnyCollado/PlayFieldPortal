@@ -606,6 +606,51 @@ class ArtworkStudioViewModelTest {
     }
 
     @Test
+    fun `the actions menu cursor stays on Crop when a queue failure adds rows ahead of it`() =
+        runTest(testDispatcher) {
+            val stuck = CompletableDeferred<String?>()
+            coEvery { artworkStore.find(1L, ArtworkKind.SCREENSHOT, 0) } returns "content://current-screenshot"
+            coEvery { routingStore.studioAppendFromUrl(any(), any(), "grids1", any(), any()) } coAnswers { stuck.await() }
+            coEvery { routingStore.studioAppendFromUrl(any(), any(), "grids2", any(), any()) } returns "content://grids2"
+            val vm = screenshotGridOnSgdb(perType = 2)
+            vm.toggleSelection(0)
+            vm.toggleSelection(1)
+
+            vm.applyChanges()
+            vm.resolveApplyConfirm(StudioApplyChoice.APPLY)
+            advanceUntilIdle()   // grids1 is stuck downloading; grids2 stays queued behind it — no failure yet.
+
+            vm.handleGamepadAction(GamepadAction.OPEN_CONTEXT_MENU)
+            advanceUntilIdle()
+            assertTrue(vm.uiState.value.actionsOpen)
+            val actionsBefore = vm.uiState.value.availableActions
+            assertTrue(StudioAction.CROP in actionsBefore)
+            assertFalse(StudioAction.RETRY_FAILED in actionsBefore)
+
+            val cropIndex = actionsBefore.indexOf(StudioAction.CROP)
+            repeat(cropIndex - vm.uiState.value.actionsIndex) { vm.handleGamepadAction(GamepadAction.NAVIGATE_DOWN) }
+            assertEquals(StudioAction.CROP, vm.uiState.value.actionsSelectedAction)
+
+            // The failure lands while the menu stays open — Retry/Remove are inserted ahead of Crop,
+            // shifting its position in the list.
+            stuck.completeExceptionally(IllegalStateException("boom"))
+            advanceUntilIdle()
+            val actionsAfter = vm.uiState.value.availableActions
+            assertTrue(StudioAction.RETRY_FAILED in actionsAfter)
+            assertTrue(
+                "the failure must actually move Crop for this test to prove anything",
+                actionsAfter.indexOf(StudioAction.CROP) != cropIndex,
+            )
+
+            vm.handleGamepadAction(GamepadAction.SELECT)
+            advanceUntilIdle()
+
+            // beginCrop() is the only action that reads the original to crop — proof CROP ran, not
+            // whatever now sits at the old index.
+            coVerify { routingStore.originalToTemp(1L, ArtworkKind.SCREENSHOT, any()) }
+        }
+
+    @Test
     fun `an added tile unchecks to be removed, and checks again to keep it`() = runTest(testDispatcher) {
         coEvery { routingStore.studioAppendFromUrl(any(), any(), any(), any(), any()) } returns "content://added"
         val vm = screenshotGridOnSgdb(perType = 1)
@@ -1915,6 +1960,64 @@ class ArtworkStudioViewModelTest {
 
         assertFalse(vm.uiState.value.changeMatchEditing)
         assertEquals(0, vm.uiState.value.changeMatchIndex)
+    }
+
+    // ── close() cancels browse and Change Match (task 3.2) ────────────────────
+
+    @Test
+    fun `close cancels a suspended browse, and reopening does not show a stale spinner`() =
+        runTest(testDispatcher) {
+            val slow = CompletableDeferred<List<SgdbArtItem>>()
+            coEvery { steamGridDb.getArt(any(), any(), any(), any(), any()) } coAnswers {
+                Result.success(slow.await())
+            }
+
+            val vm = viewModel()
+            vm.load(1L)
+            advanceUntilIdle()
+
+            val sources = vm.sourcesForTab()
+            vm.selectSource(sources.indexOf(StudioSource.STEAMGRIDDB))
+            advanceUntilIdle()
+            assertTrue("SGDB should still be in flight", vm.uiState.value.resultsLoading)
+
+            vm.close()
+            advanceUntilIdle()
+            assertFalse("close() must not leave a stale spinner", vm.uiState.value.resultsLoading)
+
+            // The cancelled browse's late answer must never land, closed or not.
+            slow.complete(listOf(SgdbArtItem(id = 9L, url = "sgdb-after-close")))
+            advanceUntilIdle()
+            assertTrue(vm.uiState.value.results.none { it.url == "sgdb-after-close" })
+
+            // Reopening the same game must not resurrect the cancelled browse's spinner.
+            vm.load(1L)
+            advanceUntilIdle()
+            assertFalse(vm.uiState.value.resultsLoading)
+        }
+
+    @Test
+    fun `close cancels a suspended Change Match search`() = runTest(testDispatcher) {
+        val vm = loadedOn(StudioSource.STEAMGRIDDB)
+
+        val slow = CompletableDeferred<List<com.playfieldportal.feature.artwork.match.GameCandidate>>()
+        coEvery {
+            matchEvidence.searchByTitle(com.playfieldportal.feature.artwork.match.MatchProvider.STEAMGRIDDB, any(), any())
+        } coAnswers { slow.await() }
+
+        vm.openChangeMatch()
+        vm.submitChangeMatch()
+        advanceUntilIdle()
+        assertTrue("the picker's search should still be in flight", vm.uiState.value.changeMatchLoading)
+
+        vm.close()
+        advanceUntilIdle()
+        assertFalse("close() must not leave the picker's spinner stuck", vm.uiState.value.changeMatchLoading)
+
+        // The cancelled search's late answer must never land, closed or not.
+        slow.complete(listOf(sgdbCandidate("999", "Late Candidate")))
+        advanceUntilIdle()
+        assertTrue(vm.uiState.value.changeMatchResults.none { it.providerGameId == "999" })
     }
 
     // ── Reaching Change Match / Forget Match with a controller (task 2.4) ─────

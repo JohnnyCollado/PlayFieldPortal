@@ -222,6 +222,13 @@ class RoutingArtworkStore @Inject constructor(
      * Adds another asset to a multi-asset slot instead of replacing its primary — the write
      * behind "add a screenshot" / "add a video". Single-art kinds fall back to a plain apply, so
      * a caller never has to branch on the kind.
+     *
+     * The download runs *before* the position is decided: [nextSortOrder] reads "one past the
+     * highest position in use", and a removal racing a slow download must not let that answer go
+     * stale between being read and being persisted. Only the DB reads inside [nextSortOrder] and
+     * [persistPortable] itself run between the two — no network suspension in that window — so a
+     * concurrent removal is either fully visible (its compaction already landed) or not observed
+     * at all, never half-applied into a gap.
      */
     suspend fun studioAppendFromUrl(
         gameId: Long,
@@ -229,11 +236,17 @@ class RoutingArtworkStore @Inject constructor(
         url: String,
         provider: String?,
         providerAssetId: String? = null,
-    ): String? = studioApplyFromUrl(
-        gameId, kind, url, provider,
-        sortOrder = nextSortOrder(gameId, kind),
-        providerAssetId = providerAssetId,
-    )
+    ): String? {
+        val target = portableTarget(gameId) ?: return internal.saveVersionedFromUrl(gameId, kind, url)
+        val (tree, game) = target
+        val tmp = ArtworkTempIO.downloadToTemp(httpClient, context.cacheDir, kind, url) ?: return null
+        val sortOrder = nextSortOrder(gameId, kind)
+        return persistPortable(
+            tree, game, kind, tmp, source = SOURCE_USER, userAssigned = true,
+            originUrl = url, provider = provider, backupPrevious = true,
+            sortOrder = sortOrder, providerAssetId = providerAssetId,
+        )
+    }
 
     /**
      * Removes one position of a multi-asset slot, deleting its file and closing the ordering gap

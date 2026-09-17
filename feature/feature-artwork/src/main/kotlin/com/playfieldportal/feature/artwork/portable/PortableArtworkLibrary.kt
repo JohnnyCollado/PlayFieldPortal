@@ -100,14 +100,27 @@ class PortableArtworkLibrary @Inject constructor(
     // ── Durable-identity index (task D.1) ─────────────────────────────────────
 
     /**
-     * The identity index, or null when the library has none yet — an unwritten index and an
-     * unreadable one are deliberately the same answer to the caller: no durable identity is
-     * available, fall back to name matching.
+     * Tri-state read of `pfp-artwork-identity.json` (task 1.3 / D3). Absent and Unreadable used to
+     * collapse to the same `null`, which let a writer treat "the app can't read this" as "there's
+     * nothing here yet" and overwrite it. They are now distinct: only [Absent] is safe to create
+     * fresh; [Unreadable] (IO error, oversized, a newer `format_version`, or not an index at all)
+     * must never be overwritten — the caller falls back to name matching for this run instead.
      */
-    suspend fun readIdentityIndex(treeUri: Uri): ArtworkIdentityIndex? = withContext(Dispatchers.IO) {
+    sealed interface IdentityIndexRead {
+        data object Absent : IdentityIndexRead
+        data class Loaded(val index: ArtworkIdentityIndex) : IdentityIndexRead
+        data class Unreadable(val reason: String) : IdentityIndexRead
+    }
+
+    suspend fun readIdentityIndex(treeUri: Uri): IdentityIndexRead = withContext(Dispatchers.IO) {
         val rootDocId = DocumentsContract.getTreeDocumentId(treeUri)
-        val file = findChild(treeUri, rootDocId, ArtworkIdentityIndex.FILE_NAME) ?: return@withContext null
-        readTextCapped(file.uri, ArtworkIdentityIndex.MAX_BYTES)?.let { ArtworkIdentityIndex.parse(it) }
+        val file = findChild(treeUri, rootDocId, ArtworkIdentityIndex.FILE_NAME)
+            ?: return@withContext IdentityIndexRead.Absent
+        val text = readTextCapped(file.uri, ArtworkIdentityIndex.MAX_BYTES)
+            ?: return@withContext IdentityIndexRead.Unreadable("IO error or oversized")
+        val index = ArtworkIdentityIndex.parse(text)
+            ?: return@withContext IdentityIndexRead.Unreadable("unparsable, or a newer format_version")
+        IdentityIndexRead.Loaded(index)
     }
 
     /** Rewrites the identity index (once per operation — never per file, as with the manifest). */
@@ -624,13 +637,22 @@ class PortableArtworkLibrary @Inject constructor(
         }
     }.getOrNull()
 
+    // A manual loop, not InputStream.readNBytes: that is API 33 and minSdk is 29, where it threw
+    // NoSuchMethodError into runCatching and every manifest and identity read came back null.
     private fun readTextCapped(uri: Uri, maxBytes: Int): String? = runCatching {
         resolver.openInputStream(uri)?.use { stream ->
-            val bytes = stream.readNBytes(maxBytes + 1)
-            if (bytes.size > maxBytes) {
-                Timber.w("Refusing to parse oversized file at $uri")
-                null
-            } else bytes.toString(Charsets.UTF_8)
+            val out = java.io.ByteArrayOutputStream()
+            val chunk = ByteArray(8192)
+            while (true) {
+                val read = stream.read(chunk)
+                if (read == -1) break
+                if (out.size() + read > maxBytes) {
+                    Timber.w("Refusing to parse oversized file at $uri")
+                    return@use null
+                }
+                out.write(chunk, 0, read)
+            }
+            out.toString(Charsets.UTF_8.name())
         }
     }.getOrNull()
 

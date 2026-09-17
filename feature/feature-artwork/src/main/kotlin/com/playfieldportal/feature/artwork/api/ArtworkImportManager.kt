@@ -17,7 +17,9 @@ import com.playfieldportal.feature.artwork.importer.DetectedImportSource
 import com.playfieldportal.feature.artwork.importer.ImportPlan
 import com.playfieldportal.feature.artwork.importer.ImportSummary
 import com.playfieldportal.feature.artwork.importer.RelinkOwnerLookup
+import com.playfieldportal.feature.artwork.importer.RelinkSlotOrdering
 import com.playfieldportal.feature.artwork.portable.ArtworkIdentityIndex
+import com.playfieldportal.feature.artwork.portable.ArtworkIdentityRecorder
 import com.playfieldportal.feature.artwork.portable.ArtworkLibraryManifest
 import com.playfieldportal.feature.artwork.portable.ArtworkNaming
 import com.playfieldportal.feature.artwork.portable.ArtworkPathResolver
@@ -54,6 +56,7 @@ class ArtworkImportManager @Inject constructor(
     private val artworkRecordDao: ArtworkRecordDao,
     private val artworkStore: ArtworkStore,
     private val internalStore: com.playfieldportal.feature.artwork.store.InternalArtworkStore,
+    private val identityRecorder: ArtworkIdentityRecorder,
 ) {
     data class LinkResult(
         val manifest: ArtworkLibraryManifest,
@@ -158,6 +161,16 @@ class ArtworkImportManager @Inject constructor(
         val missingFiles: Int = 0,     // records whose file is gone — record removed, columns cleared
         val changedFiles: Int = 0,     // size drift — record refreshed
         val duplicateNames: Int = 0,   // same portable name twice in one media dir (advisory)
+    )
+
+    /** One multi-asset slot's file, collected during the walk so its final position can be
+     * decided after every file in the (game, kind) slot has been seen (D1, task 1.5). */
+    private data class MultiAssetFile(
+        val fileStem: String,
+        val ordinal: Int,
+        val documentUri: String,
+        val sizeBytes: Long,
+        val relativePath: String,
     )
 
     /**
@@ -330,6 +343,12 @@ class ArtworkImportManager @Inject constructor(
         // a (gameId, type) key would collapse them to one and let the missing sweep delete four.
         val priorRecords = artworkRecordDao.getAll()
             .associateBy { Triple(it.gameId, it.artworkType, it.sortOrder) }
+        // Multi-asset provenance lookup (D1, task 1.5): keyed by NAME, not position — a delete or
+        // reorder renumbers positions without renaming files, so a file must find its own record by
+        // the name it actually carries, never by whatever position happens to hold it right now.
+        val priorByName = priorRecords.values.associateBy {
+            Triple(it.gameId, it.artworkType, it.portableName.lowercase())
+        }
         fun lockedTypes(gameId: Long): Set<String> = priorRecords.values
             .filter { it.gameId == gameId && (it.locked || it.userAssigned) }
             .map { it.artworkType }.toSet()
@@ -348,21 +367,23 @@ class ArtworkImportManager @Inject constructor(
         // Seeds first (task D.4b): a `.pfpgame` states its game's ids, so its artwork gains durable
         // identity on the import that restores it rather than waiting for a later scrape. They are
         // merged in before matching so this very walk can already resolve by them.
-        val storedIdentity = library.readIdentityIndex(tree)
-        val identityIndex = when {
-            identitySeeds.isEmpty() -> storedIdentity
-            else -> (storedIdentity ?: ArtworkIdentityIndex()).upsertAll(identitySeeds)
-        }
+        // The recorder is the identity index's only reader and writer (task 1.4 / D2): seeds are
+        // buffered through it so they are already reflected by `current(tree)` below, and this
+        // walk's own backfill is buffered the same way and flushed once at the end.
+        if (identitySeeds.isNotEmpty()) identityRecorder.recordAll(tree, identitySeeds)
+        val identityIndex = identityRecorder.current(tree)
         val ownersByToken = HashMap<String, MutableSet<Long>>()
-        if (identityIndex != null) {
-            games.forEach { g ->
-                ArtworkIdentityIndex.tokensOf(
-                    romCrc32 = g.romCrc32, ssId = g.ssId, tgdbId = g.tgdbId,
-                    igdbId = g.igdbId, sgdbId = g.steamGridDbId, artworkKey = g.artworkKey,
-                ).forEach { token -> ownersByToken.getOrPut(token) { mutableSetOf() }.add(g.id) }
-            }
+        games.forEach { g ->
+            ArtworkIdentityIndex.tokensOf(
+                romCrc32 = g.romCrc32, ssId = g.ssId, tgdbId = g.tgdbId,
+                igdbId = g.igdbId, sgdbId = g.steamGridDbId, artworkKey = g.artworkKey,
+            ).forEach { token -> ownersByToken.getOrPut(token) { mutableSetOf() }.add(g.id) }
         }
-        val upsertedKeys = HashSet<Triple<Long, String, Int>>()
+        // A prior record counts as seen when ITS RECORD was matched (by name, for a multi-asset
+        // slot; by position, for a single-art one) — never when some position merely got upserted,
+        // since after a delete/reorder a position can be upserted by a file that belongs to a
+        // different record entirely (task 1.5).
+        val matchedPriorIds = HashSet<Long>()
         // Backfill (task D.4): every file this walk links gets an identity row built from the game
         // it landed on. This is what gives an EXISTING library durable identity — D.2 only records
         // files written after it shipped, so without this a pre-D.2 folder would stay name-matched
@@ -396,6 +417,12 @@ class ArtworkImportManager @Inject constructor(
             for ((kind, mediaDir) in mediaDirs) {
                 val records = mutableListOf<ArtworkRecordEntity>()
                 val stemsInDir = HashSet<String>()
+                // Multi-asset files (D1): collected per game while the directory is walked, then
+                // ordered and given contiguous positions once every file in the slot has been
+                // seen — a file's final position can depend on every other file's prior record,
+                // so it cannot be decided file-by-file the way a single-art kind's can.
+                val multiAssetByGame = LinkedHashMap<Long, MutableList<MultiAssetFile>>()
+                val supersededPriorIds = mutableListOf<Long>()
                 for (file in library.listChildren(tree, mediaDir.documentId)) {
                     if (file.isDirectory || (file.sizeBytes ?: 0L) <= 0L) continue
                     scanned++
@@ -430,7 +457,7 @@ class ArtworkImportManager @Inject constructor(
                         // surviving id names. An empty list means "the row names nobody any more",
                         // and the name tiers below still get their turn.
                         identityOwners = { stem ->
-                            identityIndex?.find(platformId, kind.name, stem)?.let { row ->
+                            identityIndex.find(platformId, kind.name, stem)?.let { row ->
                                 row.tokens()
                                     .firstNotNullOfOrNull { token -> ownersByToken[token] }
                                     ?.toList()
@@ -439,13 +466,40 @@ class ArtworkImportManager @Inject constructor(
                         },
                     )
                     if (ids.isNullOrEmpty()) { orphans++; continue }
-                    // The position the filename encodes — this is how sort_order survives a
-                    // database rebuild, the folder staying the source of truth.
-                    val sortOrder = if (multi) ArtworkFileNaming.ordinalOf(fileStem) else 0
+                    val uri = file.uri.toString()
+                    val size = file.sizeBytes ?: 0L
+
+                    if (multi) {
+                        // Position is decided after the whole slot is seen (below) — only the
+                        // file's identity is collected here.
+                        for (gameId in ids) {
+                            val game = games.firstOrNull { it.id == gameId } ?: continue
+                            identityRows += ArtworkIdentityIndex.Entry(
+                                platformId = platformId,
+                                kind = kind.name,
+                                portableName = fileStem,
+                                romCrc32 = game.romCrc32,
+                                ssId = game.ssId,
+                                tgdbId = game.tgdbId,
+                                igdbId = game.igdbId,
+                                sgdbId = game.steamGridDbId,
+                                artworkKey = game.artworkKey,
+                            )
+                            multiAssetByGame.getOrPut(gameId) { mutableListOf() } += MultiAssetFile(
+                                fileStem = fileStem,
+                                ordinal = ArtworkFileNaming.ordinalOf(fileStem),
+                                documentUri = uri,
+                                sizeBytes = size,
+                                relativePath = ArtworkPathResolver.relativePath(platformId, kind, file.name),
+                            )
+                        }
+                        continue
+                    }
+
+                    // Single-art kinds always occupy position 0.
+                    val sortOrder = 0
                     for (gameId in ids) {
                         val game = games.firstOrNull { it.id == gameId } ?: continue
-                        val uri = file.uri.toString()
-                        val size = file.sizeBytes ?: 0L
                         // Column-backed kinds: fill when missing or dead; locked slots untouched.
                         // Column kinds are all single-art, so this only ever sees position 0 —
                         // the guard states the invariant rather than relying on it.
@@ -501,7 +555,7 @@ class ArtworkImportManager @Inject constructor(
                         // a user-assigned/locked asset into a plain "relink" row.
                         val prior = priorRecords[Triple(gameId, kind.name, sortOrder)]
                         if (prior != null && prior.sizeBytes != size) changedFiles++
-                        upsertedKeys.add(Triple(gameId, kind.name, sortOrder))
+                        prior?.let { matchedPriorIds.add(it.id) }
                         identityRows += ArtworkIdentityIndex.Entry(
                             platformId = platformId,
                             kind = kind.name,
@@ -535,7 +589,56 @@ class ArtworkImportManager @Inject constructor(
                         )
                     }
                 }
+
+                // Multi-asset slots (D1, task 1.5): order each game's linked files — a file with a
+                // prior record (matched by NAME) keeps that record's relative order; a file with no
+                // prior record sorts after them by filename ordinal — then assign contiguous
+                // positions 0..n-1. `upsert`'s REPLACE strategy deletes whatever currently occupies
+                // a position before inserting the new row, so writing the whole reordered slot in
+                // one call can never collide with the unique (game_id, artwork_type, sort_order)
+                // index, even when two files swap positions.
+                for ((gameId, files) in multiAssetByGame) {
+                    val ordered = RelinkSlotOrdering.order(
+                        files = files,
+                        stemOf = { it.fileStem },
+                        ordinalOf = { it.ordinal },
+                        priorSortOrder = { nameLower -> priorByName[Triple(gameId, kind.name, nameLower)]?.sortOrder },
+                    )
+                    ordered.forEachIndexed { position, f ->
+                        val prior = priorByName[Triple(gameId, kind.name, f.fileStem.lowercase())]
+                        if (prior != null && prior.sizeBytes != f.sizeBytes) changedFiles++
+                        prior?.let { matchedPriorIds.add(it.id) }
+                        records += ArtworkRecordEntity(
+                            gameId = gameId,
+                            platformId = platformId,
+                            artworkType = kind.name,
+                            sortOrder = position,
+                            portableName = f.fileStem,
+                            relativePath = f.relativePath,
+                            documentUri = f.documentUri,
+                            source = prior?.source ?: "relink",
+                            sizeBytes = f.sizeBytes,
+                            userAssigned = prior?.userAssigned ?: false,
+                            locked = prior?.locked ?: false,
+                            originUrl = prior?.originUrl,
+                            provider = prior?.provider,
+                            providerAssetId = prior?.providerAssetId,
+                            cropRect = prior?.cropRect,
+                            hasOriginal = prior?.hasOriginal ?: false,
+                            cropProfileKey = prior?.cropProfileKey,
+                            createdAt = prior?.createdAt ?: System.currentTimeMillis(),
+                        )
+                    }
+                    // REPLACE only clears positions 0..n-1. A MATCHED record parked at n or above (the
+                    // slot shrank because another of its files went missing) is skipped by the missing
+                    // sweep, so it would survive as a duplicate of the row just written for its file.
+                    priorRecords.values
+                        .filter { it.gameId == gameId && it.artworkType == kind.name && it.sortOrder >= ordered.size }
+                        .filter { it.id in matchedPriorIds }
+                        .mapTo(supersededPriorIds) { it.id }
+                }
                 if (records.isNotEmpty()) artworkRecordDao.upsert(records)
+                supersededPriorIds.forEach { artworkRecordDao.deleteById(it) }
             }
         }
 
@@ -544,7 +647,7 @@ class ArtworkImportManager @Inject constructor(
         // live grant, so a disconnected folder can never trigger this.
         var missingFiles = 0
         for (prior in priorRecords.values) {
-            if (Triple(prior.gameId, prior.artworkType, prior.sortOrder) in upsertedKeys) continue
+            if (prior.id in matchedPriorIds) continue
             missingFiles++
             artworkRecordDao.deleteById(prior.id)
             val game = games.firstOrNull { it.id == prior.gameId } ?: continue
@@ -562,15 +665,12 @@ class ArtworkImportManager @Inject constructor(
             }
         }
 
-        // Write the backfilled identity once, and only when it actually changed — an unchanged
-        // library must not rewrite this file on the SD card on every scan.
-        val mergedIdentity = (identityIndex ?: ArtworkIdentityIndex()).upsertAll(identityRows)
-        // Compared against what the FOLDER held, not against the seeded copy, so seeds are written
-        // even when the walk itself linked nothing new.
-        if (mergedIdentity.entries != (storedIdentity?.entries ?: emptyList<ArtworkIdentityIndex.Entry>())) {
-            runCatching { library.writeIdentityIndex(tree, mergedIdentity) }
-                .onFailure { Timber.w(it, "Could not write the artwork identity index") }
-        }
+        // Buffer the backfilled identity and flush once — the recorder writes only when something
+        // actually changed, and refuses to write while the folder's index is unreadable (task 1.3 /
+        // 1.4 / D2 / D3), so this walk can never clobber an index it could not read or rebuild from
+        // whatever this process could see.
+        identityRecorder.recordAll(tree, identityRows)
+        identityRecorder.flush(tree)
 
         linkedGames = linkedIds.size
         Timber.i(

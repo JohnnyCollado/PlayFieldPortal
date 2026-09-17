@@ -8,8 +8,6 @@ import org.robolectric.annotation.Config
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-import kotlin.test.assertTrue
-
 /**
  * v43 — Windows storefront identity, backfilled in place from `launch_intent_uri`.
  *
@@ -81,7 +79,11 @@ class Migration42To43Test {
 
     @Test
     fun `the same app id on two different stores is not a collision`() {
-        helper.createDatabase(41).use { _ -> }
+        helper.createDatabase(41).use { db ->
+            // A real backfill candidate rides alongside the directly-inserted pair below, so the
+            // index assertion covers both the backfill and the pair it protects.
+            insertPcGame(db, "Portal 2", GAME_NATIVE_STEAM)
+        }
 
         helper.runMigrationsAndValidate(
             43, listOf(PFPDatabase.MIGRATION_41_42, PFPDatabase.MIGRATION_42_43),
@@ -89,12 +91,26 @@ class Migration42To43Test {
             insertStoreGame(db, "Steam 620", "STEAM", "620")
             insertStoreGame(db, "GOG 620", "GOG", "620")
 
-            assertEquals(1, db.count("SELECT COUNT(*) FROM games WHERE storefront = 'STEAM' AND storefront_game_id = '620'"))
+            assertEquals(2, db.count("SELECT COUNT(*) FROM games WHERE storefront = 'STEAM' AND storefront_game_id = '620'"))
             assertEquals(1, db.count("SELECT COUNT(*) FROM games WHERE storefront = 'GOG' AND storefront_game_id = '620'"))
-            // The index exists and is on the PAIR, not on the id alone.
-            val hasIndex = db.rows("PRAGMA index_list('games')") { it.getText(1) }
-                .any { it == "index_games_storefront_storefront_game_id" }
-            assertTrue(hasIndex, "the (storefront, storefront_game_id) index is missing")
+            db.singleRow(
+                "SELECT storefront, storefront_game_id FROM games WHERE title = 'Portal 2'"
+            ) {
+                assertEquals("STEAM", it.getText(0))
+                assertEquals("620", it.getText(1))
+            }
+
+            // The index is on the PAIR, not on the id alone — a one-column index (either column,
+            // or the columns in the wrong order) would let this assertion pass under the old
+            // name-only check but fail here.
+            val indexColumns = db.rows(
+                "PRAGMA index_info('index_games_storefront_storefront_game_id')"
+            ) { it.getText(2) }
+            assertEquals(
+                listOf("storefront", "storefront_game_id"),
+                indexColumns,
+                "the index must cover both columns, in this order",
+            )
         }
     }
 

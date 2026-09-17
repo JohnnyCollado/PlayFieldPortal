@@ -81,6 +81,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
+import com.playfieldportal.core.common.logging.LogRedaction
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.components.ControllerPrompt
 import com.playfieldportal.core.ui.components.ControllerPromptBar
@@ -970,6 +971,7 @@ internal fun ArtworkStudioContent(
                         .clip(RoundedCornerShape(12.dp))
                         .background(pfpColors.backgroundBottom)
                         .border(1.dp, accent.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                        .clickable(enabled = false) {}
                         .padding(18.dp),
                 ) {
                     Text(
@@ -1139,6 +1141,7 @@ internal fun ArtworkStudioContent(
                         .clip(RoundedCornerShape(12.dp))
                         .background(pfpColors.backgroundBottom)
                         .border(1.dp, accent.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                        .clickable(enabled = false) {}
                         .padding(18.dp),
                 ) {
                     Text(
@@ -1222,7 +1225,7 @@ internal fun ArtworkStudioContent(
                 rows = menuActions.map {
                     com.playfieldportal.core.ui.components.PspMenuRow(it.label, isDestructive = it == StudioAction.CLEAR)
                 },
-                selectedIndex = state.actionsIndex,
+                selectedIndex = state.resolvedActionsIndex,
                 onRowActivated = { index -> menuActions.getOrNull(index)?.let(actions::runAction) },
                 onDismiss = actions::closeActions,
                 // Darker than the XMB default — the grid behind is busy, so let it recede.
@@ -1293,7 +1296,7 @@ internal fun ArtworkStudioContent(
                         StudioInfoRow("Cropped", if (info.cropRect != null) "Yes" else "No")
                         StudioInfoRow("Previous version", if (info.hasPrevious) "Available" else "—")
                         StudioInfoRow("Path", info.relativePath ?: "—")
-                        info.originUrl?.let { StudioInfoRow("Origin", it) }
+                        info.originUrl?.let { StudioInfoRow("Origin", LogRedaction.redact(it)) }
                     }
                     Spacer(Modifier.height(14.dp))
                     Text(

@@ -48,6 +48,27 @@ class ArtworkIdentityIndexTest {
         assertNull(ArtworkIdentityIndex.parse(""))
     }
 
+    // ── Tri-state read (task 1.3 / D3) ───────────────────────────────────────
+
+    @Test fun `one bad row is dropped and the rest load`() {
+        val json = """
+            {"format_version":1,"entries":[
+              {"platform_id":"snes","kind":"ICON","portable_name":"Final Fantasy VI",
+               "rom_crc32":"A1B2C3D4"},
+              {"platform_id":"snes","kind":"HERO"}
+            ]}
+        """.trimIndent()
+        val parsed = ArtworkIdentityIndex.parse(json)
+        assertNotNull("the readable rows must still load", parsed)
+        assertEquals(1, parsed!!.entries.size)
+        assertEquals("A1B2C3D4", parsed.entries.single().romCrc32)
+    }
+
+    @Test fun `format_version 2 is unreadable`() {
+        val json = """{"format_version":2,"entries":[]}"""
+        assertNull(ArtworkIdentityIndex.parse(json))
+    }
+
     // A future version may add fields; an older build must keep reading the file rather than
     // treating the whole library as unidentified.
     @Test fun `unknown keys are ignored`() {

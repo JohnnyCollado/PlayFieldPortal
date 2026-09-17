@@ -77,6 +77,7 @@ internal fun StudioAssetManagerPanel(
                 .clip(RoundedCornerShape(14.dp))
                 .background(Color(0xFF14141F))
                 .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(14.dp))
+                .clickable(enabled = false) {}
                 .padding(20.dp),
         ) {
             Text(

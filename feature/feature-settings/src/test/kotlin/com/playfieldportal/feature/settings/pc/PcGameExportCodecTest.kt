@@ -124,6 +124,51 @@ class PcGameExportCodecTest {
     }
 
     @Test
+    fun `a lowercase storefront normalizes and an implausible app id drops the pair`() {
+        val lowercase = decodedExport(
+            PcGameExportCodec.encode(bannerHubGame.copy(storefront = "steam", storefrontGameId = "620")),
+        )
+        assertEquals("STEAM", lowercase.storefront)
+        assertEquals("620", lowercase.storefrontGameId)
+
+        val implausibleId = decodedExport(
+            PcGameExportCodec.encode(bannerHubGame.copy(storefront = "STEAM", storefrontGameId = "abc")),
+        )
+        assertNull(implausibleId.storefront)
+        assertNull(implausibleId.storefrontGameId)
+    }
+
+    @Test
+    fun `an artwork item naming an unknown kind or an escaping name is dropped`() {
+        val text = PcGameExportCodec.encode(
+            bannerHubGame.copy(
+                artwork = listOf(
+                    PcGameExportArtwork(kind = "ICON", sortOrder = 0, portableName = "Portal 2"),
+                    PcGameExportArtwork(kind = "POSTER", sortOrder = 1, portableName = "Portal 2_01"),
+                    PcGameExportArtwork(kind = "LOGO", sortOrder = 2, portableName = "../../etc/passwd"),
+                    PcGameExportArtwork(kind = "HERO", sortOrder = 3, portableName = "sub/dir"),
+                ),
+            ),
+        )
+
+        assertEquals(listOf("ICON"), decodedExport(text).artwork.map { it.kind })
+    }
+
+    @Test
+    fun `an over-long title, scraped title or user title override is truncated, not rejected`() {
+        val longTitle = "T".repeat(PcGameExportCodec.MAX_TITLE_CHARS + 50)
+        val text = PcGameExportCodec.encode(
+            bannerHubGame.copy(title = longTitle, scrapedTitle = longTitle, userTitleOverride = longTitle),
+        )
+
+        val export = decodedExport(text)
+
+        assertEquals(PcGameExportCodec.MAX_TITLE_CHARS, export.title.length)
+        assertEquals(PcGameExportCodec.MAX_TITLE_CHARS, export.scrapedTitle?.length)
+        assertEquals(PcGameExportCodec.MAX_TITLE_CHARS, export.userTitleOverride?.length)
+    }
+
+    @Test
     fun `blank optional values and non-positive provider ids read as absent`() {
         val text = """
             {"format":"pfp-pc-game","version":1,"title":" Portal 2 ","launcherPackage":" banner.hub ",

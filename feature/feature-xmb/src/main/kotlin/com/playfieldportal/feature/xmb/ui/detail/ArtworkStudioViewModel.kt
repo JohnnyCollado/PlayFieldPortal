@@ -310,6 +310,10 @@ data class ArtworkStudioUiState(
     // Actions menu (OPEN_CONTEXT_MENU / on-screen ACTIONS) — operates on the active tab's current slot.
     val actionsOpen: Boolean = false,
     val actionsIndex: Int = 0,
+    // The action actually under the cursor (task 3.3). availableActions is recomputed from other
+    // state, so when it changes while the menu is open (e.g. a queue item fails), the cursor is
+    // re-anchored to this action rather than to actionsIndex's raw position.
+    val actionsSelectedAction: StudioAction? = null,
     // Whether the menu was opened over a SteamGridDB browse — gates the mature-content entry.
     val sgdbSourceActive: Boolean = false,
     val info: StudioArtworkInfo? = null,
@@ -521,6 +525,19 @@ data class ArtworkStudioUiState(
             // offered here too (task 2.4), under exactly the row's own visibility rules.
             if (matchProvider != null) add(StudioAction.CHANGE_MATCH)
             if (matchIsConfirmed) add(StudioAction.FORGET_MATCH)
+        }
+
+    /**
+     * Where the cursor sits in the current [availableActions] (task 3.3). Prefers the position of
+     * [actionsSelectedAction] so the cursor follows that action across a list change; falls back to
+     * the raw [actionsIndex], clamped, when that action is no longer offered.
+     */
+    val resolvedActionsIndex: Int
+        get() {
+            val actions = availableActions
+            if (actions.isEmpty()) return 0
+            val byAction = actionsSelectedAction?.let(actions::indexOf) ?: -1
+            return if (byAction >= 0) byAction else actionsIndex.coerceIn(0, actions.lastIndex)
         }
 }
 
@@ -2221,10 +2238,11 @@ class ArtworkStudioViewModel @Inject constructor(
         viewModelScope.launch {
             val info = routingStore.studioInfo(gameId, tab().kind)
             _uiState.update {
-                it.copy(
+                val opened = it.copy(
                     info = info, actionsOpen = true, actionsIndex = 0, showFileInfo = false,
                     sgdbSourceActive = sgdb,
                 )
+                opened.copy(actionsSelectedAction = opened.availableActions.getOrNull(0))
             }
         }
     }
@@ -2232,8 +2250,14 @@ class ArtworkStudioViewModel @Inject constructor(
     override fun closeActions() = _uiState.update { it.copy(actionsOpen = false, showFileInfo = false) }
 
     private fun moveActionsCursor(delta: Int) = _uiState.update {
-        val n = it.availableActions.size
-        if (n == 0) it else it.copy(actionsIndex = (it.actionsIndex + delta).mod(n))
+        val actions = it.availableActions
+        val n = actions.size
+        if (n == 0) {
+            it
+        } else {
+            val newIndex = (it.resolvedActionsIndex + delta).mod(n)
+            it.copy(actionsIndex = newIndex, actionsSelectedAction = actions.getOrNull(newIndex))
+        }
     }
 
     override fun runAction(action: StudioAction) {
@@ -2669,9 +2693,22 @@ class ArtworkStudioViewModel @Inject constructor(
     }
     override fun dismissMessage() = _uiState.update { it.copy(message = null) }
     fun close() {
-        // The ViewModel outlives the screen, so work started for this open must stop here.
+        // The ViewModel outlives the screen, so work started for this open must stop here. The
+        // download queue is deliberately left running (see load()'s comment on queueJob).
         cancelBackgroundResolutions()
-        _uiState.update { it.copy(closed = true) }
+        // cancelLoad() only clears matchResolving — resultsLoading is cleared by showPage(), which a
+        // cancelled loadJob never reaches, so a reopen of the same game (load()'s early-return path)
+        // would otherwise show a spinner over a browse that is never coming back.
+        cancelLoad()
+        changeMatchJob?.cancel()
+        _uiState.update {
+            it.copy(
+                closed = true,
+                resultsLoading = false,
+                changeMatchLoading = false,
+                changeMatchSearchingEveryPlatform = false,
+            )
+        }
     }
 
     /** The screen calls this right after acting on [ArtworkStudioUiState.closed] so a stale
@@ -2788,7 +2825,7 @@ class ArtworkStudioViewModel @Inject constructor(
             when (action) {
                 GamepadAction.NAVIGATE_UP   -> moveActionsCursor(-1)
                 GamepadAction.NAVIGATE_DOWN -> moveActionsCursor(+1)
-                GamepadAction.SELECT        -> actions.getOrNull(s.actionsIndex)?.let { runAction(it) }
+                GamepadAction.SELECT        -> actions.getOrNull(s.resolvedActionsIndex)?.let { runAction(it) }
                 GamepadAction.BACK          ->
                     if (s.showFileInfo) _uiState.update { it.copy(showFileInfo = false) } else closeActions()
                 else -> Unit

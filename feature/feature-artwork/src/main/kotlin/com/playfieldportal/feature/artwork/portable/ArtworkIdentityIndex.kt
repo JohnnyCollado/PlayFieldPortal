@@ -3,6 +3,13 @@ package com.playfieldportal.feature.artwork.portable
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.longOrNull
+import timber.log.Timber
 import java.util.Locale
 
 /**
@@ -26,8 +33,11 @@ import java.util.Locale
  * hand-moves between platform folders leaves a stale row — relink then falls back to the name tiers
  * for it, exactly as it does today.
  *
- * Parsed defensively like the manifest: unknown keys ignored, malformed JSON → null. A corrupted
- * index costs the library its durable identity for one scan, never its artwork.
+ * Parsed defensively like the manifest: unknown keys ignored, malformed JSON → null. A future
+ * `format_version` is also read as null (task 1.3 / D3) — a v2 file must not be silently rewritten
+ * as v1. Individual bad rows inside an otherwise-readable document are dropped (and counted), not
+ * fatal to the whole document. A corrupted index costs the library its durable identity for one
+ * scan, never its artwork.
  */
 @Serializable
 data class ArtworkIdentityIndex(
@@ -142,8 +152,27 @@ data class ArtworkIdentityIndex(
                 portableName.lowercase(Locale.US),
             )
 
-        fun parse(text: String): ArtworkIdentityIndex? =
-            runCatching { json.decodeFromString(serializer(), text) }.getOrNull()
+        /**
+         * Decodes the document's shell (`format_version`, `updated_at`) with the codec, then
+         * decodes `entries` one element at a time so a single malformed row does not fail the
+         * whole document (task 1.3 / D3). A `format_version` newer than this build understands is
+         * unreadable outright — reading it as v1 would silently rewrite a future file as v1.
+         */
+        fun parse(text: String): ArtworkIdentityIndex? = runCatching {
+            val root = json.parseToJsonElement(text) as? JsonObject ?: return@runCatching null
+            val formatVersion = root["format_version"]?.jsonPrimitive?.intOrNull ?: FORMAT_VERSION
+            if (formatVersion > FORMAT_VERSION) return@runCatching null
+            val updatedAt = root["updated_at"]?.jsonPrimitive?.longOrNull ?: 0L
+            // No entries array means this is not an index at all — unreadable, never "empty".
+            val rawEntries = root["entries"] as? JsonArray ?: return@runCatching null
+            var dropped = 0
+            val entries = rawEntries.mapNotNull { element ->
+                runCatching { json.decodeFromJsonElement(Entry.serializer(), element) }
+                    .getOrElse { dropped++; null }
+            }
+            if (dropped > 0) Timber.w("Artwork identity index: dropped $dropped malformed row(s)")
+            ArtworkIdentityIndex(formatVersion = formatVersion, updatedAt = updatedAt, entries = entries)
+        }.getOrNull()
 
         fun encode(index: ArtworkIdentityIndex): String =
             json.encodeToString(serializer(), index)

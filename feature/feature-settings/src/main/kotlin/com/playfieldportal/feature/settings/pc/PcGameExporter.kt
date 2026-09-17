@@ -42,18 +42,25 @@ object PcGameExportBuilder {
 
     /**
      * One file per game, in [games]' order. A file is named after the game's display title, with
-     * `" (2)"`, `" (3)"`, … when two games share a name (compared ignoring case, as FAT does). A game
-     * [exportFor] cannot export gets no file.
+     * `" (2)"`, `" (3)"`, … when two games share a name (compared ignoring case, as FAT does), or
+     * when the name is already taken by another game's file in [existing] (keyed the same way as
+     * [fileNameFor]). A game [exportFor] cannot export gets no file.
+     *
+     * Names this pass hands out are folded into the ownership check as it goes (as an unreadable
+     * entry, so two games in the same batch never share a name even if they happen to look like the
+     * same game to [isSameGame]) — batch-internal uniqueness holds alongside folder ownership.
      */
-    fun build(games: List<Game>, artworkByGame: Map<Long, List<ArtworkRecordEntity>>): List<PcGameExportFile> {
-        val usedNames = HashSet<String>()
+    fun build(
+        games: List<Game>,
+        artworkByGame: Map<Long, List<ArtworkRecordEntity>>,
+        existing: Map<String, PcGameExport?> = emptyMap(),
+    ): List<PcGameExportFile> {
+        val taken = HashMap(existing)
         return games.mapNotNull { game ->
             val export = exportFor(game, artworkByGame[game.id].orEmpty()) ?: return@mapNotNull null
-            val base = PortableNameResolver.fromTitle(game.displayTitle)
-            var name = base
-            var suffix = 2
-            while (!usedNames.add(name.lowercase())) name = "$base (${suffix++})"
-            PcGameExportFile("$name.${PcGameExportCodec.EXTENSION}", export)
+            val fileName = fileNameFor(game, taken)
+            taken[fileName.lowercase()] = null
+            PcGameExportFile(fileName, export)
         }
     }
 
@@ -162,13 +169,17 @@ class PcGameExporter @Inject constructor(
             launcherFiles = launcherExports.files,
             reproducedIntentUris = launcherExports.intentUris,
         )
-        val files = PcGameExportBuilder.build(selection.exported, artwork)
-
-        val existing = context.contentResolver.querySafChildren(folder.tree, folder.docId)
+        val folderFiles = context.contentResolver.querySafChildren(folder.tree, folder.docId)
             .filterNot { it.isDirectory }
-            .associateBy { it.name.lowercase() }
+        val existingByName = folderFiles.associateBy { it.name.lowercase() }
+        val existingExports = folderFiles
+            .filter { it.name.endsWith(".${PcGameExportCodec.EXTENSION}", ignoreCase = true) }
+            .associate { it.name.lowercase() to readExport(it) }
+
+        val files = PcGameExportBuilder.build(selection.exported, artwork, existingExports)
+
         val written = files.count { file ->
-            write(folder.tree, folder.docId, existing[file.fileName.lowercase()]?.uri, file)
+            write(folder.tree, folder.docId, existingByName[file.fileName.lowercase()]?.uri, file)
         }
 
         val failed = files.size - written
@@ -226,12 +237,33 @@ class PcGameExporter @Inject constructor(
 
     /** An existing `.pfpgame` file's entry, or null when it is too large or does not decode. */
     private fun readExport(file: SafChild): PcGameExport? {
+        // sizeBytes is only an early-out (skip opening a stream the provider already told us is too
+        // big); readBoundedText below is the real guard, since a provider can misreport or omit it.
         if ((file.sizeBytes ?: 0L) > PcGameExportCodec.MAX_CHARS) return null
-        val text = runCatching {
-            context.contentResolver.openInputStream(file.uri)?.use { it.readBytes().toString(Charsets.UTF_8) }
-        }.getOrNull() ?: return null
+        val text = readBoundedText(file.uri, PcGameExportCodec.MAX_CHARS.toLong()) ?: return null
         return (PcGameExportCodec.decode(text) as? PcGameExportDecode.Valid)?.export
     }
+
+    // Reads [uri]'s content up to [maxBytes], decoding as UTF-8, or null if the stream can't be
+    // opened/read or holds more than [maxBytes]. minSdk (29) predates InputStream.readNBytes(int)
+    // (API 33), so this bounds the read with a manual loop instead of buffering the whole stream
+    // before its size is known.
+    private fun readBoundedText(uri: Uri, maxBytes: Long): String? = runCatching {
+        context.contentResolver.openInputStream(uri)?.use { stream ->
+            val cap = maxBytes.toInt()
+            val chunk = ByteArray(minOf(cap, 8192).coerceAtLeast(1))
+            val out = java.io.ByteArrayOutputStream()
+            var total = 0
+            while (true) {
+                val read = stream.read(chunk)
+                if (read == -1) break
+                total += read
+                if (total > cap) return@use null
+                out.write(chunk, 0, read)
+            }
+            out.toString(Charsets.UTF_8.name())
+        }
+    }.getOrNull()
 
     /**
      * Writes [file] over [existing] when the folder already has one by that name, so a re-export

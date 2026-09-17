@@ -1,5 +1,7 @@
 package com.playfieldportal.feature.settings.pc
 
+import com.playfieldportal.core.data.model.StorefrontIdentity
+import com.playfieldportal.feature.artwork.store.ArtworkKind
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -71,6 +73,12 @@ object PcGameExportCodec {
     const val MAX_CHARS = 256 * 1024
     const val MAX_ARTWORK_ITEMS = 200
 
+    // A hand-edited or hostile file could carry an arbitrarily long string here; these three are
+    // shown as game titles, so cap them at the same length the Steam achievements parser already
+    // caps an untrusted title at (SteamCommunityAchievementsParser.MAX_TITLE_CHARS), truncating
+    // rather than rejecting — a too-long title is still a valid game to import.
+    const val MAX_TITLE_CHARS = 200
+
     private val json = Json {
         ignoreUnknownKeys = true
         encodeDefaults = true
@@ -117,7 +125,7 @@ object PcGameExportCodec {
     }
 
     private fun validate(raw: PcGameExport): PcGameExportDecode {
-        val title = raw.title.trim()
+        val title = raw.title.trim().take(MAX_TITLE_CHARS)
         if (title.isEmpty()) return PcGameExportDecode.Rejected("has no title")
         val launcherPackage = raw.launcherPackage.trim()
         if (launcherPackage.isEmpty()) return PcGameExportDecode.Rejected("names no launcher")
@@ -129,18 +137,25 @@ object PcGameExportCodec {
             return PcGameExportDecode.Rejected("has neither a launch intent nor a pinned shortcut")
         }
 
+        // The store and its app id are evidence PAIR; either side failing to validate means neither
+        // is trustworthy (StorefrontIdentity's own contract — an app id only means something within
+        // its store).
+        val normalizedStore = StorefrontIdentity.normalizeStore(raw.storefront)
+        val storefrontGameId = raw.storefrontGameId.orNullIfBlank()
+        val hasValidStorefrontPair = normalizedStore != null && StorefrontIdentity.isPlausibleAppId(storefrontGameId)
+
         return PcGameExportDecode.Valid(
             raw.copy(
                 title = title,
-                scrapedTitle = raw.scrapedTitle.orNullIfBlank(),
-                userTitleOverride = raw.userTitleOverride.orNullIfBlank(),
+                scrapedTitle = raw.scrapedTitle.orNullIfBlank()?.take(MAX_TITLE_CHARS),
+                userTitleOverride = raw.userTitleOverride.orNullIfBlank()?.take(MAX_TITLE_CHARS),
                 launcherPackage = launcherPackage,
                 shortcutId = shortcutId,
                 // A pin entry only matches: an intent inside one is never kept, so it can never be
                 // stored or launched, whatever the file says.
                 launchIntentUri = if (shortcutId != null) null else launchIntentUri,
-                storefront = raw.storefront.orNullIfBlank(),
-                storefrontGameId = raw.storefrontGameId.orNullIfBlank(),
+                storefront = if (hasValidStorefrontPair) normalizedStore else null,
+                storefrontGameId = if (hasValidStorefrontPair) storefrontGameId else null,
                 ssId = raw.ssId.orNullIfNotPositive(),
                 tgdbId = raw.tgdbId.orNullIfNotPositive(),
                 igdbId = raw.igdbId.orNullIfNotPositive(),
@@ -148,12 +163,17 @@ object PcGameExportCodec {
                 artwork = raw.artwork.mapNotNull { item ->
                     val kind = item.kind.trim()
                     val name = item.portableName.trim()
-                    if (kind.isEmpty() || name.isEmpty() || item.sortOrder < 0) null
+                    val isKnownKind = runCatching { ArtworkKind.valueOf(kind) }.isSuccess
+                    if (!isKnownKind || name.isEmpty() || item.sortOrder < 0 || !isSafePortableName(name)) null
                     else item.copy(kind = kind, portableName = name)
                 },
             ),
         )
     }
+
+    /** False for a name that could escape its artwork folder or carry a control character. */
+    private fun isSafePortableName(name: String): Boolean =
+        '/' !in name && '\\' !in name && ".." !in name && name.none { it.isISOControl() }
 
     private fun String?.orNullIfBlank(): String? = this?.trim()?.takeIf { it.isNotEmpty() }
 

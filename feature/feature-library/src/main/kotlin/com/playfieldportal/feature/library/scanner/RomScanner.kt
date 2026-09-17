@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import java.io.ByteArrayOutputStream
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -70,6 +71,12 @@ private val PC_EXPORT_EXTENSIONS = setOf("steam", "epic", "gog", "amazon", "pcga
 // write. One far larger than that is not read at all; the importer then rejects it as unreadable.
 private const val PFP_EXPORT_EXTENSION = "pfpgame"
 private const val MAX_PFP_EXPORT_BYTES = 256L * 1024
+
+// The GameNative/GameHub store exports (.steam/.epic/.gog/.amazon/.pcgame) hold nothing but a
+// trimmed decimal app id: PcGameScanner.buildPcLaunch requires it to parse as a positive Int, and
+// StorefrontIdentity.isPlausibleAppId caps a real id at 12 digits. 256 bytes leaves generous room
+// for surrounding whitespace/newlines while staying far below anything a provider could misreport.
+private const val MAX_LAUNCHER_EXPORT_BYTES = 256L
 
 // A file child collected during the scanTree walk — name, stable raw path (dedupe/display key)
 // and the SAF document URI (content access + launch handle).
@@ -579,11 +586,22 @@ class RomScanner @Inject constructor(
                     val ext = child.name.substringAfterLast('.', "").lowercase()
                     if (ext !in PC_EXPORT_EXTENSIONS) continue
                     val title = child.name.substringBeforeLast('.', child.name)
-                    val tooLarge = ext == PFP_EXPORT_EXTENSION && (child.sizeBytes ?: 0L) > MAX_PFP_EXPORT_BYTES
-                    val idContent = if (ext == "desktop" || tooLarge) null else runCatching {
-                        context.contentResolver.openInputStream(child.uri)
-                            ?.use { it.readBytes().toString(Charsets.UTF_8).trim() }
-                    }.getOrNull()
+                    // sizeBytes is only an early-out (skip opening a stream the provider already told
+                    // us is too big); readBoundedText below is the real guard, since a provider can
+                    // misreport or omit sizeBytes.
+                    val readCapBytes = when (ext) {
+                        PFP_EXPORT_EXTENSION -> MAX_PFP_EXPORT_BYTES
+                        "desktop" -> null
+                        else -> MAX_LAUNCHER_EXPORT_BYTES
+                    }
+                    val tooLargeHint = readCapBytes != null && (child.sizeBytes ?: 0L) > readCapBytes
+                    val idContent = if (readCapBytes == null || tooLargeHint) null else {
+                        val text = readBoundedText(child.uri, readCapBytes)
+                        if (text == null) {
+                            Timber.w("Oversized or unreadable export file, skipping content: ${child.name}")
+                        }
+                        text?.trim()
+                    }
                     out.add(
                         PcExportFile(
                             title      = title,
@@ -598,6 +616,27 @@ class RomScanner @Inject constructor(
             Timber.i("PC folder scan — found ${out.size} export file(s)")
             out
         }
+
+    // Reads [uri]'s content up to [maxBytes], decoding as UTF-8, or null if the stream can't be
+    // opened/read or holds more than [maxBytes]. minSdk (29) predates InputStream.readNBytes(int)
+    // (API 33), so this bounds the read with a manual loop instead — a stream is never fully
+    // buffered before the size is known, whatever the provider reports for sizeBytes.
+    private fun readBoundedText(uri: Uri, maxBytes: Long): String? = runCatching {
+        context.contentResolver.openInputStream(uri)?.use { stream ->
+            val cap = maxBytes.toInt()
+            val chunk = ByteArray(minOf(cap, 8192).coerceAtLeast(1))
+            val out = ByteArrayOutputStream()
+            var total = 0
+            while (true) {
+                val read = stream.read(chunk)
+                if (read == -1) break
+                total += read
+                if (total > cap) return@use null
+                out.write(chunk, 0, read)
+            }
+            out.toString(Charsets.UTF_8.name())
+        }
+    }.getOrNull()
 
     suspend fun findMissingRoms(knownPaths: List<String>): List<String> =
         knownPaths.filter { path -> !File(path).exists() }
