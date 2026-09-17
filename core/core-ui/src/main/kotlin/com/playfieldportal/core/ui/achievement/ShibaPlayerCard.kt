@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.domain.achievement.CoinWallet
@@ -55,7 +56,7 @@ fun ShibaPlayerCard(
             .padding(horizontal = 18.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        LevelMedallion(level = wallet.level, accent = accent)
+        ShibaLevelMedallion(level = wallet.level, accent = accent)
         Spacer(Modifier.width(16.dp))
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -99,19 +100,31 @@ fun ShibaPlayerCard(
     }
 }
 
+/**
+ * The Shiba Level medallion: an accent-ringed disc with "LV" over the level number. Shared by the
+ * player card and the achievements library header; [size] scales the ring and its type together.
+ */
 @Composable
-private fun LevelMedallion(level: Int, accent: Color) {
+fun ShibaLevelMedallion(
+    level: Int,
+    modifier: Modifier = Modifier,
+    size: Dp = MedallionSize,
+    accent: Color = menuCursorEdge(),
+) {
+    val scale = size / MedallionSize
     Box(
         contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .size(56.dp)
+        modifier = modifier
+            .size(size)
             .clip(CircleShape)
             .background(accent.copy(alpha = 0.18f))
-            .border(2.dp, accent, CircleShape),
+            .border(2.dp * scale.coerceAtLeast(0.75f), accent, CircleShape),
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("LV", color = TextMuted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
-            Text("$level", color = TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Text("LV", color = TextMuted, fontSize = 9.sp * scale, lineHeight = 10.sp * scale, fontWeight = FontWeight.Bold)
+            Text("$level", color = TextPrimary, fontSize = 20.sp * scale, lineHeight = 22.sp * scale, fontWeight = FontWeight.Bold)
         }
     }
 }
+
+private val MedallionSize = 56.dp

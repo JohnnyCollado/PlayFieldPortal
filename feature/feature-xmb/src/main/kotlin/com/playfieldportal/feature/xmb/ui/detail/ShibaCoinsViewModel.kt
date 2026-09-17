@@ -239,7 +239,7 @@ class ShibaCoinsViewModel @Inject constructor(
                 else -> s.displayed.getOrNull(s.focusIndex - FOCUS_COINS_START)?.let { toggleReveal(it) }
             }
             // X / square cycles the sort, Y / triangle cycles the Show filter — from anywhere on
-            // the page, matching the fullscreen Shiba library's bindings.
+            // the page.
             GamepadAction.CHANGE_SORT -> cycleSort(1)
             GamepadAction.OPEN_CONTEXT_MENU -> cycleFilter(1)
             GamepadAction.BACK -> close()

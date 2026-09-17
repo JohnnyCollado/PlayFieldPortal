@@ -3,65 +3,121 @@ package com.playfieldportal.feature.xmb.ui.detail
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import coil3.compose.AsyncImage
-import com.playfieldportal.core.ui.image.rememberArtworkModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.playfieldportal.core.domain.achievement.ShibaTier
 import com.playfieldportal.core.domain.model.GamepadAction
-import com.playfieldportal.core.ui.theme.LocalPFPColors
-import com.playfieldportal.core.ui.theme.menuCursorEdge
-import com.playfieldportal.core.ui.theme.menuCursorFill
+import com.playfieldportal.core.ui.achievement.ShibaLevelMedallion
+import com.playfieldportal.core.ui.components.PspContextMenuOverlay
+import com.playfieldportal.core.ui.components.PspMenuRow
+import com.playfieldportal.core.ui.components.XmbHeaderPill
+import com.playfieldportal.core.ui.detail.DetailContentPadding
+import com.playfieldportal.core.ui.detail.DetailPalette
+import com.playfieldportal.core.ui.detail.PfpDetailBackground
+import com.playfieldportal.core.ui.detail.PfpDetailBreadcrumb
+import com.playfieldportal.core.ui.detail.PfpDetailHelperFooter
+import com.playfieldportal.core.ui.detail.detailPalette
+import com.playfieldportal.feature.xmb.ui.PspIcon0Icon
 import com.playfieldportal.feature.xmb.viewmodel.ShibaLibraryMode
 import kotlin.math.roundToInt
 
-private val Reward = Color(0xFF9B6FE0)
-private val TextPrimary = Color(0xFFEEEEEE)
-private val TextMuted = Color(0x99EEEEEE)
-private val TextDim = Color(0x66EEEEEE)
-private val PanelFill = Color(0x33101018)
-private val Track = Color(0x33FFFFFF)
+// ── Achievements library screen ───────────────────────────────────────────────
+//
+// docs/plans/PFP_Achievements_Screen_Design.md: a console-native achievement browser built from the
+// shared detail-page surfaces — the App Drawer-derived background and palette, the ◀ breadcrumb, and
+// the permanent helper footer. Below the header sit a pinned Search row (navigation position 0) and
+// a full-width list of quiet, separator-divided game rows. Tracked and Untracked share every
+// dimension; only the right-hand information changes. Game art is the XMB's ICON0 tile. Triangle's
+// Options menu is the shared PSP context menu, entering from the right over the still-visible list.
+
+/** Every game row is this tall in both views, focused or not, so the list never shifts. */
+private val RowHeight = 64.dp
+private val SearchRowHeight = 48.dp
+/** ICON0 is 144 × 80; rows draw it at this height. */
+private val Icon0Height = 48.dp
+private const val ICON0_ASPECT = 144f / 80f
+private val CoinCellWidth = 52.dp
+private val PercentColumnWidth = 80.dp
+private val ShortBarWidth = 64.dp
+
+/** Reserved in both views so the header is the same height with or without the summary. */
+private val SummaryHeight = 48.dp
+
+private val FocusShape = RoundedCornerShape(4.dp)
+
+/** Earned-coin order across the screen: Platinum, Gold, Silver, Bronze (design §6). */
+private val CoinOrder = listOf(ShibaTier.PLATINUM, ShibaTier.GOLD, ShibaTier.SILVER, ShibaTier.BRONZE)
+
+private fun LibraryCoinCounts.countFor(tier: ShibaTier): Int = when (tier) {
+    ShibaTier.PLATINUM -> platinum
+    ShibaTier.GOLD -> gold
+    ShibaTier.SILVER -> silver
+    ShibaTier.BRONZE -> bronze
+}
+
+private val ShibaLibraryMode.viewTitle: String
+    get() = when (this) {
+        ShibaLibraryMode.TRACKED -> "Tracked Games"
+        ShibaLibraryMode.UNTRACKED -> "Untracked Games"
+    }
 
 @Composable
 fun ShibaLibraryScreen(
@@ -71,12 +127,16 @@ fun ShibaLibraryScreen(
     onOpenCoins: (ShibaCoinsTarget) -> Unit = {},
     pendingGamepadAction: GamepadAction? = null,
     onGamepadActionConsumed: () -> Unit = {},
+    showTouchControls: Boolean = false,
     viewModel: ShibaLibraryViewModel = hiltViewModel(),
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     LaunchedEffect(mode) { viewModel.load(mode) }
     LaunchedEffect(state.closed) {
-        if (state.closed) { onClose(); viewModel.onClosedHandled() }
+        if (state.closed) {
+            onClose()
+            viewModel.onClosedHandled()
+        }
     }
     LaunchedEffect(state.openCoins) {
         state.openCoins?.let { target ->
@@ -91,318 +151,334 @@ fun ShibaLibraryScreen(
         }
     }
 
-    // Focus follow (both tracked and untracked lists): a row that isn't composed yet — the cursor
-    // moved past the visible buffer, or a sort/filter jump teleported focus — is scrolled to by
-    // index first; once composed, its own BringIntoViewRequester (see GameListRow) refines the
-    // position without clipping the top row under the search field. The old fixed -viewport/3
-    // offset did both jobs and pushed the top row out of view.
+    // Focus follow, unchanged from the previous screen: every focus or order change SNAPS the focused
+    // row to the 1/3-viewport line (clamped at the list edges, so the top rows sit flush under
+    // Search). Instant, PSP-style — the built-in scroll animation is too slow for held input. The
+    // snap also drops the keyed LazyColumn's anchor after a reorder, which otherwise keeps the
+    // viewport glued to the old rows. Search is pinned above the list, so focusing it shows the top.
     val listState = rememberLazyListState()
-    // One authoritative focus-follow: every focus or order change SNAPS the focused row to the
-    // 1/3-viewport line (clamped at the list edges, so top rows sit flush under the search
-    // field and can never clip). Instant, PSP-style — the built-in scroll animation is too slow
-    // for held input and made navigation feel laggy. The snap is also what drops the keyed
-    // LazyColumn's anchor after a reorder (sort/filter/search/mode), which otherwise keeps the
-    // viewport glued to the old rows.
-    LaunchedEffect(Unit) {
-        snapshotFlow { state.rows.map { it.id } to state.focusIndex }.collect { (_, focus) ->
+    LaunchedEffect(listState) {
+        snapshotFlow { state.rows.map { it.id } to state.focusPosition }.collect { (_, position) ->
             val third = listState.layoutInfo.viewportSize.height / 3
-            listState.scrollToItem(focus.coerceAtLeast(0), scrollOffset = -third)
+            listState.scrollToItem((position - 1).coerceAtLeast(0), scrollOffset = -third)
         }
     }
 
-    val pfp = LocalPFPColors.current
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    0f to pfp.backgroundTop.copy(alpha = 0.80f),
-                    1f to pfp.backgroundBottom.copy(alpha = 0.94f),
-                ),
-            ),
-    ) {
-        Column(Modifier.fillMaxSize().padding(24.dp)) {
-            // Breadcrumb header: the ◀ arrow and the ACTIVE title both execute back; tapping the
-            // inactive title switches to that view (LEFT/RIGHT on the controller still switch).
-            // No press highlight, matching the other breadcrumbs.
-            Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(22.dp)) {
-                Text(
-                    "◀",
-                    color = TextDim,
-                    fontSize = 18.sp,
-                    modifier = Modifier
-                        .clickable(
-                            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-                            indication = null,
-                            onClick = viewModel::close,
-                        )
-                        .padding(bottom = 3.dp),
-                )
-                state.siblings.forEach { sib ->
-                    val active = sib == state.mode
-                    val count = if (sib == ShibaLibraryMode.TRACKED) state.trackedCount else state.untrackedCount
-                    val label = if (sib == ShibaLibraryMode.TRACKED) "All Tracked" else "Untracked"
+    val palette = detailPalette()
+    PfpDetailBackground(modifier = modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize()) {
+            PfpDetailBreadcrumb(
+                title = "Achievements / ${state.mode.viewTitle}",
+                subtitle = when (state.mode) {
+                    ShibaLibraryMode.TRACKED -> gameCount(state.trackedCount)
+                    ShibaLibraryMode.UNTRACKED -> gameCount(state.untrackedCount)
+                },
+                onBack = viewModel::close,
+                // The design's darker header band: the page darkened in place, so it follows the theme.
+                modifier = Modifier.background(headerShade(palette)),
+                trailing = {
+                    Box(Modifier.height(SummaryHeight), contentAlignment = Alignment.CenterEnd) {
+                        if (state.mode == ShibaLibraryMode.TRACKED) LibrarySummaryBlock(state.summary, palette)
+                    }
+                },
+            )
+
+            SearchRow(
+                state = state,
+                palette = palette,
+                onQueryChange = viewModel::setQuery,
+                onClick = viewModel::onSearchClick,
+                onEditEnded = viewModel::onSearchEditEnded,
+            )
+
+            Box(Modifier.fillMaxWidth().weight(1f).clipToBounds()) {
+                if (state.rows.isEmpty()) {
+                    // The shell stays; only the list area explains itself.
                     Text(
-                        text = "$label  $count",
-                        color = if (active) menuCursorEdge() else TextDim,
-                        fontSize = if (active) 22.sp else 16.sp,
-                        fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
-                        modifier = Modifier.clickable(
-                            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-                            indication = null,
-                        ) { if (active) viewModel.close() else viewModel.setMode(sib) },
+                        text = state.emptyMessage,
+                        color = palette.textMuted,
+                        fontSize = 15.sp,
+                        modifier = Modifier.padding(horizontal = DetailContentPadding + 10.dp, vertical = 24.dp),
                     )
                 }
-            }
-            Spacer(Modifier.height(12.dp))
-
-            // Sort (X / square) and, in All Tracked, provider filter (Y / triangle).
-            SortFilterBar(state, viewModel)
-            Spacer(Modifier.height(12.dp))
-
-            // The detail panel sits beside the search field too, so its top edge aligns with the
-            // search bar and it gets the full column height.
-            Row(Modifier.fillMaxSize()) {
-                Column(Modifier.weight(0.62f).fillMaxHeight()) {
-                    SearchField(query = state.query, onQueryChange = viewModel::setQuery)
-                    Spacer(Modifier.height(14.dp))
-
-                    // ── Master list ─────────────────────────────────────────────
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier.fillMaxWidth().weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        if (state.rows.isEmpty()) {
-                            item {
-                                val message = when {
-                                    state.query.isNotBlank() -> "No games match \"${state.query}\""
-                                    state.mode == ShibaLibraryMode.TRACKED -> "No tracked games yet"
-                                    else -> "Every game is tracked"
-                                }
-                                Text(message, color = TextMuted, fontSize = 15.sp, modifier = Modifier.padding(top = 24.dp))
-                            }
-                        }
-                        itemsIndexed(state.rows, key = { _, r -> r.id }) { i, row ->
-                            GameListRow(row, focused = i == state.focusIndex, accent = menuCursorEdge()) { viewModel.onRowClick(i) }
-                        }
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize().padding(horizontal = DetailContentPadding),
+                ) {
+                    items(state.rows, key = { it.id }) { row ->
+                        GameRow(
+                            row = row,
+                            focused = row.id == state.focusedRowId,
+                            palette = palette,
+                            onClick = { viewModel.onRowClick(row.id) },
+                        )
                     }
                 }
-
-                Spacer(Modifier.width(20.dp))
-
-                // ── Detail panel ────────────────────────────────────────────────
-                DetailPanel(state, accent = menuCursorEdge(), modifier = Modifier.weight(0.38f).fillMaxHeight())
             }
-        }
-    }
-}
 
-@Composable
-private fun SearchField(query: String, onQueryChange: (String) -> Unit) {
-    OutlinedTextField(
-        value = query,
-        onValueChange = onQueryChange,
-        singleLine = true,
-        label = { Text("Search games", color = TextMuted) },
-        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null, tint = TextMuted) },
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary,
-            focusedBorderColor = menuCursorEdge(), unfocusedBorderColor = Color(0x44FFFFFF),
-            cursorColor = menuCursorEdge(),
-        ),
-        modifier = Modifier.fillMaxWidth(),
-    )
-}
-
-// Sort chips (with an ▲/▼ direction marker on the active field) and, in the All Tracked view, the
-// provider filter chips. Chips are tappable; the button hints mirror the controller bindings.
-@Composable
-private fun SortFilterBar(state: ShibaLibraryUiState, viewModel: ShibaLibraryViewModel) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Sort  (X)", color = TextDim, fontSize = 11.sp)
-            LibrarySortField.entries.forEach { field ->
-                val active = field == state.sortField
-                val arrow = if (!active) "" else if (state.sortAscending) "  ▲" else "  ▼"
-                LibraryChip(field.label + arrow, active) {
-                    // Tap the active field to flip direction; tap another to select it ascending.
-                    if (active) viewModel.setSort(field, !state.sortAscending) else viewModel.setSort(field, true)
+            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                PfpDetailHelperFooter(items = shibaLibraryHelperItems(state), visible = !showTouchControls)
+                // Touch mode: the footer hints fade, and the controller-only actions become pills in
+                // the same reserved band (rows, Search and the breadcrumb are tappable already).
+                if (showTouchControls && state.options == null) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        XmbHeaderPill(label = "Options", onClick = viewModel::openOptions)
+                        XmbHeaderPill(
+                            label = ShibaLibraryMode.entries.first { it != state.mode }.viewTitle,
+                            onClick = { viewModel.switchSibling(1) },
+                        )
+                    }
                 }
             }
         }
-        if (state.showProviderFilter) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Filter  (Y)", color = TextDim, fontSize = 11.sp)
-                LibraryProviderFilter.entries.forEach { filter ->
-                    LibraryChip(filter.label, filter == state.providerFilter) { viewModel.setProviderFilter(filter) }
-                }
-            }
-        }
-    }
-}
 
-@Composable
-private fun LibraryChip(label: String, selected: Boolean, onClick: () -> Unit) {
-    Text(
-        label,
-        color = if (selected) Color.White else TextMuted,
-        fontSize = 12.sp,
-        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-        modifier = Modifier
-            .clip(RoundedCornerShape(999.dp))
-            .background(if (selected) menuCursorFill() else Color(0x22FFFFFF))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 6.dp),
-    )
-}
-
-@Composable
-private fun GameListRow(row: ShibaLibraryRow, focused: Boolean, accent: Color, onClick: () -> Unit) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .then(if (focused) Modifier.background(Color(0x22FFFFFF)).border(2.dp, accent, RoundedCornerShape(12.dp)) else Modifier)
-            .clickable(onClick = onClick)
-            .padding(10.dp),
-    ) {
-        BoxArt(row.artworkUri, Modifier.size(width = 52.dp, height = 52.dp))
-        Spacer(Modifier.width(12.dp))
-        Column(Modifier.weight(1f)) {
-            Text(row.title, color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(row.platformLabel, color = TextMuted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Spacer(Modifier.height(6.dp))
-            if (row.isTracked) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    LinearProgressIndicator(
-                        progress = { row.progress },
-                        modifier = Modifier.weight(1f).height(5.dp).clip(RoundedCornerShape(3.dp)),
-                        color = accent, trackColor = Track,
-                    )
-                    Spacer(Modifier.width(10.dp))
-                    Text("${(row.progress * 100).roundToInt()}%", color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                }
-                Spacer(Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    CoinTally(ShibaTier.BRONZE, row.bronzeEarned)
-                    CoinTally(ShibaTier.SILVER, row.silverEarned)
-                    CoinTally(ShibaTier.GOLD, row.goldEarned)
-                    CoinTally(ShibaTier.PLATINUM, if (row.mastered) 1 else 0)
-                }
-            } else {
-                Text(row.reason.orEmpty(), color = TextDim, fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            }
-        }
-    }
-}
-
-@Composable
-private fun CoinTally(tier: ShibaTier, count: Int) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        ShibaCoinIcon(tier, Modifier.size(18.dp))
-        Spacer(Modifier.width(5.dp))
-        Text("$count", color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-    }
-}
-
-@Composable
-private fun DetailPanel(state: ShibaLibraryUiState, accent: Color, modifier: Modifier = Modifier) {
-    val row = state.focused
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(PanelFill)
-            // Scrolls so every tier row and the total card stay reachable on short viewports —
-            // without this, Gold/Platinum clipped off the bottom on 1080p.
-            .verticalScroll(rememberScrollState())
-            .padding(20.dp),
-    ) {
-        if (row == null) {
-            Text("Nothing selected", color = TextMuted, fontSize = 14.sp)
-            return
-        }
-
-        // Logo (falls back to the title) + platform.
-        if (row.logoUri != null) {
-            AsyncImage(model = rememberArtworkModel(row.logoUri), contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxWidth().height(64.dp))
-        } else {
-            Text(row.title, color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-        }
-        Spacer(Modifier.height(4.dp))
-        Text(row.platformLabel, color = accent, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-        Spacer(Modifier.height(20.dp))
-
-        if (row.isTracked) {
-            SectionLabel("PROGRESS")
-            Text("${(row.progress * 100).roundToInt()}%", color = TextPrimary, fontSize = 38.sp, fontWeight = FontWeight.Bold)
-            LinearProgressIndicator(
-                progress = { row.progress },
-                modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
-                color = accent, trackColor = Track,
+        // The Icon Display pattern: "Options" lists Filter (…) and Provider (…); each opens its own
+        // list, titled by name, with the active choice checked.
+        state.options?.let { menu ->
+            PspContextMenuOverlay(
+                title = menu.title,
+                rows = state.optionRows.map { row -> PspMenuRow(label = row.label, checked = row.checked) },
+                selectedIndex = menu.selectedIndex,
+                onRowActivated = viewModel::onOptionActivated,
+                onDismiss = viewModel::closeOptions,
             )
-            Spacer(Modifier.height(24.dp))
+        }
+    }
+}
 
-            SectionLabel("SHIBA COINS")
-            CoinBreakdown("Bronze Coins", ShibaTier.BRONZE, row.bronzeEarned, row.bronzeTotal)
-            CoinBreakdown("Silver Coins", ShibaTier.SILVER, row.silverEarned, row.silverTotal)
-            CoinBreakdown("Gold Coins", ShibaTier.GOLD, row.goldEarned, row.goldTotal)
-            CoinBreakdown("Platinum Coins", ShibaTier.PLATINUM, if (row.mastered) 1 else 0, if (row.bronzeTotal + row.silverTotal + row.goldTotal > 0) 1 else 0)
-            Spacer(Modifier.height(20.dp))
+private fun gameCount(count: Int): String = if (count == 1) "1 game" else "$count games"
 
-            TotalScoreCard(state)
+private fun headerShade(palette: DetailPalette): Color =
+    Color.Black.copy(alpha = if (palette.textPrimary.luminance() < 0.5f) 0.10f else 0.28f)
+
+/** The focus treatment every focusable element on the screen shares; drawn inside its own bounds. */
+private fun Modifier.libraryFocus(focused: Boolean, palette: DetailPalette): Modifier =
+    if (focused) {
+        background(palette.focus.copy(alpha = 0.14f), FocusShape).border(1.5.dp, palette.focus, FocusShape)
+    } else {
+        this
+    }
+
+// ── Header summary ────────────────────────────────────────────────────────────
+
+@Composable
+private fun LibrarySummaryBlock(summary: LibrarySummary, palette: DetailPalette) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+        ShibaLevelMedallion(level = summary.level, size = 40.dp, accent = palette.focus)
+        SummaryStat(label = "NEXT LEVEL", value = "${(summary.nextLevelFraction * 100).roundToInt()}%", palette = palette) {
+            ProgressLine(summary.nextLevelFraction, palette, Modifier.width(56.dp))
+        }
+        SummaryStat(label = "TOTAL", value = "%,d".format(summary.total), palette = palette)
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            CoinOrder.forEach { tier -> CoinCount(tier, summary.coins.countFor(tier), palette, iconSize = 18.dp) }
+        }
+    }
+}
+
+@Composable
+private fun SummaryStat(
+    label: String,
+    value: String,
+    palette: DetailPalette,
+    below: @Composable () -> Unit = {},
+) {
+    Column {
+        Text(label, color = palette.textMuted, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, lineHeight = 12.sp, maxLines = 1, softWrap = false)
+        Text(value, color = palette.textPrimary, fontSize = 16.sp, lineHeight = 20.sp, maxLines = 1, softWrap = false)
+        below()
+    }
+}
+
+// ── Search ────────────────────────────────────────────────────────────────────
+
+/**
+ * The permanent Search row. Controller-first, the Artwork Studio's Change Match way: the field is
+ * read-only while it is merely focused, and the keyboard opens only in text-entry mode — an open
+ * keyboard receives key events before MainActivity, so raising it on focus would swallow the pad.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SearchRow(
+    state: ShibaLibraryUiState,
+    palette: DetailPalette,
+    onQueryChange: (String) -> Unit,
+    onClick: () -> Unit,
+    onEditEnded: () -> Unit,
+) {
+    val fieldFocus = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
+    val editing by rememberUpdatedState(state.searchEditing)
+    LaunchedEffect(state.searchEditing) {
+        if (state.searchEditing) {
+            // Settle a frame around the readOnly → editable flip before raising the keyboard.
+            withFrameNanos { }
+            runCatching { fieldFocus.requestFocus() }
+            withFrameNanos { }
+            keyboard?.show()
         } else {
-            SectionLabel("NOT TRACKED")
-            Text(row.reason.orEmpty(), color = TextPrimary, fontSize = 15.sp)
+            keyboard?.hide()
+            focusManager.clearFocus()
         }
     }
-}
-
-@Composable
-private fun SectionLabel(text: String) {
-    Text(text, color = TextMuted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.sp)
-    Spacer(Modifier.height(6.dp))
-}
-
-@Composable
-private fun CoinBreakdown(label: String, tier: ShibaTier, earned: Int, total: Int) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
-        ShibaCoinIcon(tier, Modifier.size(30.dp))
-        Spacer(Modifier.width(12.dp))
-        Text(label, color = TextPrimary, fontSize = 14.sp, modifier = Modifier.weight(1f))
-        Text("$earned", color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-        Text(" / $total", color = TextMuted, fontSize = 13.sp)
+    // The keyboard dismissed by its own Back key ends text entry, so the pad drives the list again.
+    val imeVisible = WindowInsets.isImeVisible
+    var imeWasShown by remember { mutableStateOf(false) }
+    LaunchedEffect(imeVisible) {
+        if (imeVisible) {
+            imeWasShown = true
+        } else if (imeWasShown && editing) {
+            imeWasShown = false
+            onEditEnded()
+        }
     }
-}
 
-@Composable
-private fun TotalScoreCard(state: ShibaLibraryUiState) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(Color(0x22000000))
-            .padding(16.dp),
-    ) {
-        SectionLabel("TOTAL COIN SCORE")
-        Text("%,d".format(state.totalCoinScore), color = TextPrimary, fontSize = 30.sp, fontWeight = FontWeight.Bold)
+    Column(Modifier.fillMaxWidth().padding(horizontal = DetailContentPadding)) {
         Spacer(Modifier.height(8.dp))
-        Text("NEXT REWARD: ${"%,d".format(state.coinsForNextLevel)} POINTS", color = TextMuted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-        Spacer(Modifier.height(6.dp))
-        LinearProgressIndicator(
-            progress = { state.levelFraction },
-            modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
-            color = Reward, trackColor = Track,
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(SearchRowHeight)
+                .libraryFocus(state.searchFocused, palette)
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick)
+                .padding(horizontal = 12.dp),
+        ) {
+            Icon(Icons.Filled.Search, contentDescription = null, tint = palette.textMuted, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(12.dp))
+            BasicTextField(
+                value = state.query,
+                onValueChange = onQueryChange,
+                readOnly = !state.searchEditing,
+                singleLine = true,
+                textStyle = TextStyle(color = palette.textPrimary, fontSize = 15.sp),
+                cursorBrush = SolidColor(palette.focus),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = { onEditEnded() }, onDone = { onEditEnded() }),
+                decorationBox = { inner ->
+                    Box(contentAlignment = Alignment.CenterStart) {
+                        if (state.query.isEmpty()) {
+                            Text("Search games…", color = palette.textMuted, fontSize = 15.sp)
+                        }
+                        inner()
+                    }
+                },
+                modifier = Modifier
+                    .weight(1f)
+                    .focusRequester(fieldFocus)
+                    // A tap lands on the field itself: treat it as the touch path into text entry.
+                    .onFocusChanged { if (it.isFocused && !editing) onClick() },
+            )
+        }
+        Separator(palette)
+    }
+}
+
+// ── Game rows ─────────────────────────────────────────────────────────────────
+
+@Composable
+private fun GameRow(
+    row: ShibaLibraryRow,
+    focused: Boolean,
+    palette: DetailPalette,
+    onClick: () -> Unit,
+) {
+    Column {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(RowHeight)
+                .libraryFocus(focused, palette)
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick)
+                .padding(horizontal = 10.dp),
+        ) {
+            GameIcon0(row, palette)
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    row.title,
+                    color = if (focused) palette.textPrimary else palette.textPrimary.copy(alpha = 0.85f),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(row.platformLabel, color = palette.textMuted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            Spacer(Modifier.width(16.dp))
+            if (row.isTracked) TrackedStats(row, focused, palette) else UntrackedReason(row.reason.orEmpty(), palette)
+        }
+        Separator(palette)
+    }
+}
+
+/**
+ * The game's ICON0 in the XMB's own 144:80 tile. With no ICON0 assigned, the tile draws its default
+ * letter card — the same one the XMB shows — rather than borrowing other artwork.
+ */
+@Composable
+private fun GameIcon0(row: ShibaLibraryRow, palette: DetailPalette) {
+    PspIcon0Icon(
+        artworkUri = row.icon0Uri,
+        accentColor = palette.focus,
+        title = row.title,
+        modifier = Modifier.height(Icon0Height).aspectRatio(ICON0_ASPECT),
+    )
+}
+
+@Composable
+private fun TrackedStats(row: ShibaLibraryRow, focused: Boolean, palette: DetailPalette) {
+    Column(Modifier.width(PercentColumnWidth), horizontalAlignment = Alignment.End) {
+        Text(
+            "${(row.progress * 100).roundToInt()}%",
+            color = if (focused) palette.textPrimary else palette.textPrimary.copy(alpha = 0.85f),
+            fontSize = 20.sp,
+            lineHeight = 24.sp,
         )
+        Spacer(Modifier.height(3.dp))
+        ProgressLine(row.progress, palette, Modifier.width(ShortBarWidth))
+    }
+    Spacer(Modifier.width(20.dp))
+    Row {
+        CoinOrder.forEach { tier ->
+            Box(Modifier.width(CoinCellWidth), contentAlignment = Alignment.CenterStart) {
+                CoinCount(tier, row.coins.countFor(tier), palette, iconSize = 18.dp)
+            }
+        }
     }
 }
 
 @Composable
-private fun BoxArt(uri: String?, modifier: Modifier) {
-    Box(modifier = modifier.clip(RoundedCornerShape(8.dp)).background(Color(0xFF1B1B27)), contentAlignment = Alignment.Center) {
-        if (uri != null) {
-            AsyncImage(model = rememberArtworkModel(uri), contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-        }
+private fun UntrackedReason(reason: String, palette: DetailPalette) {
+    Text(
+        reason,
+        color = palette.textMuted,
+        fontSize = 13.sp,
+        textAlign = TextAlign.End,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.widthIn(max = PercentColumnWidth + 20.dp + CoinCellWidth * CoinOrder.size),
+    )
+}
+
+@Composable
+private fun CoinCount(tier: ShibaTier, count: Int, palette: DetailPalette, iconSize: Dp) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        ShibaCoinIcon(tier, Modifier.size(iconSize))
+        Spacer(Modifier.width(4.dp))
+        Text("$count", color = palette.textPrimary, fontSize = 13.sp, maxLines = 1, softWrap = false)
     }
+}
+
+@Composable
+private fun ProgressLine(fraction: Float, palette: DetailPalette, modifier: Modifier = Modifier) {
+    Box(modifier.height(3.dp).clip(RoundedCornerShape(2.dp)).background(palette.track)) {
+        Box(Modifier.fillMaxHeight().fillMaxWidth(fraction.coerceIn(0f, 1f)).background(palette.focus))
+    }
+}
+
+@Composable
+private fun Separator(palette: DetailPalette) {
+    Box(Modifier.fillMaxWidth().height(1.dp).background(palette.rowEdge))
 }

@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -151,6 +152,36 @@ class DetailScaffoldLayoutTest {
         composeRule.onNode(hasClickAction()).performClick()
         composeRule.waitForIdle()
         assertEquals("the breadcrumb is the page's touch way back", 1, backs)
+    }
+
+    @Test
+    fun `a wide trailing slot never cuts the breadcrumb short`() {
+        val title = "Achievements / Tracked Games"
+        var wideTrailing by mutableStateOf(false)
+        composeRule.setContent {
+            PfpScreenPreview {
+                PfpDetailBreadcrumb(
+                    title = title,
+                    subtitle = "3 games",
+                    onBack = {},
+                    trailing = if (wideTrailing) {
+                        { Column(Modifier.testTag("trailing").width(2000.dp).height(40.dp)) {} }
+                    } else {
+                        null
+                    },
+                )
+            }
+        }
+        composeRule.waitForIdle()
+        val alone = composeRule.onNodeWithText(title, useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+
+        composeRule.runOnIdle { wideTrailing = true }
+        composeRule.waitForIdle()
+        val withTrailing = composeRule.onNodeWithText(title, useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        val trailing = composeRule.onNodeWithTag("trailing", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+
+        assertEquals("the breadcrumb keeps its full width beside a trailing slot", alone.width, withTrailing.width, 0.5f)
+        assertTrue("the trailing slot sits after the breadcrumb", trailing.left >= withTrailing.right - 0.5f)
     }
 
     @Test

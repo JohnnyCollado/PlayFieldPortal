@@ -203,10 +203,13 @@ fun PfpDetailBreadcrumb(
                 .padding(start = DetailContentPadding, end = DetailContentPadding, top = 8.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            // Deliberately unweighted: a Row measures unweighted children first, in order, so the
+            // breadcrumb claims its full width before [trailing] and is never cut short by it. (It
+            // used to share a weight with the spacer below, which handed it only half the leftover
+            // space.) Past the screen width it still ellipsizes against the Row's own bound.
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
-                    .weight(1f, fill = false)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
@@ -239,8 +242,10 @@ fun PfpDetailBreadcrumb(
                 }
             }
             if (trailing != null) {
+                Spacer(Modifier.width(16.dp))
                 Spacer(Modifier.weight(1f))
-                trailing()
+                // Gets whatever the breadcrumb leaves; clipped rather than pushing into it.
+                Box(modifier = Modifier.clipToBounds(), contentAlignment = Alignment.CenterEnd) { trailing() }
             }
         }
         Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(DetailDivider))
