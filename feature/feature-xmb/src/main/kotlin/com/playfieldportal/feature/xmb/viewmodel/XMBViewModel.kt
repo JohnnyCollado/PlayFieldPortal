@@ -1528,7 +1528,7 @@ class XMBViewModel @Inject constructor(
                 if (currentCategory()?.id == BuiltInCategory.MUSIC &&
                     _uiState.value.musicNav == MusicNav.Root
                 ) {
-                    loadItemsForCategory(currentCategory())
+                    refreshMediaRootPreservingCursor(musicRootItems())
                 }
             }
         }
@@ -2219,6 +2219,17 @@ class XMBViewModel @Inject constructor(
         _uiState.update { it.copy(currentItems = items, selectedItemIndex = restored) }
     }
 
+    /** Refreshes a visible media root without losing focus when rows appear or disappear. */
+    private fun refreshMediaRootPreservingCursor(items: List<XMBItem>) {
+        val state = _uiState.value
+        val selectedId = state.currentItems.getOrNull(state.selectedItemIndex)?.id
+        val restored = selectedId
+            ?.let { id -> items.indexOfFirst { it.id == id } }
+            ?.takeIf { it >= 0 }
+            ?: state.selectedItemIndex.coerceIn(0, (items.size - 1).coerceAtLeast(0))
+        _uiState.update { it.copy(currentItems = items, selectedItemIndex = restored) }
+    }
+
     // Music root: the static items (Now Playing, when something is playing; Playlist; Music Apps)
     // followed by the single "All Music" memory-card item. The root folder is managed in Settings →
     // Music; a getting-started "Add Music Folder" row shows until a root has been added and scanned
@@ -2460,7 +2471,7 @@ class XMBViewModel @Inject constructor(
                 if (currentCategory()?.id == BuiltInCategory.VIDEO &&
                     _uiState.value.videoNav == VideoNav.Root
                 ) {
-                    loadItemsForCategory(currentCategory())
+                    refreshMediaRootPreservingCursor(videoRootItems())
                 }
             }
         }
@@ -2941,7 +2952,7 @@ class XMBViewModel @Inject constructor(
                 if (currentCategory()?.id == BuiltInCategory.PHOTO &&
                     _uiState.value.photoNav == PhotoNav.Root
                 ) {
-                    _uiState.update { it.copy(currentItems = photoRootItems()) }
+                    refreshMediaRootPreservingCursor(photoRootItems())
                 }
             }
         }

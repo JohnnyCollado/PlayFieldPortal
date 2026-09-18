@@ -23,6 +23,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
 import com.playfieldportal.core.ui.theme.PFPTheme
 import com.playfieldportal.feature.library.scanner.LibraryRescanCoordinator
+import com.playfieldportal.feature.settings.media.MediaRescanCoordinator
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import com.playfieldportal.feature.xmb.gamepad.GamepadInputHandler
@@ -45,6 +46,9 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var libraryRescanCoordinator: LibraryRescanCoordinator
+
+    @Inject
+    lateinit var mediaRescanCoordinator: MediaRescanCoordinator
 
     // Owns the user's ui-media assignments; a cold start prunes anything left by slots the
     // current build no longer has (removed sound slots, crashed-import staging files).
@@ -167,8 +171,10 @@ class MainActivity : ComponentActivity() {
         // deleted while PFP was backgrounded. The coordinator throttles this internally (5 min), so
         // calling it on every resume costs nothing when it fires in quick succession.
         lifecycleScope.launch {
-            runCatching { libraryRescanCoordinator.onResume() }
-                .onFailure { Timber.e(it, "Resume-triggered library rescan failed") }
+            runCatching {
+                libraryRescanCoordinator.onResume()
+                mediaRescanCoordinator.onResume()
+            }.onFailure { Timber.e(it, "Resume-triggered library rescan failed") }
         }
     }
 

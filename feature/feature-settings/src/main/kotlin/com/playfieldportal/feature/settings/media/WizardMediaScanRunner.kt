@@ -22,6 +22,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import timber.log.Timber
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
@@ -57,13 +59,26 @@ class WizardMediaScanRunner @Inject constructor(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val notifier = BackgroundTaskNotifier(context)
     private val inFlight = ConcurrentHashMap<MediaRootKind, Job>()
+    private val scanMutex = Mutex()
+    private var allInFlight: Job? = null
 
-    /** Starts (or restarts after completion) the scan for [kind]'s current root. */
+    /** Starts (or restarts after completion) the scan for [kind]'s current roots. */
     fun kickoff(kind: MediaRootKind) {
         if (inFlight[kind]?.isActive == true) return
         inFlight[kind] = scope.launch {
-            runCatching { scan(kind) }
+            runCatching { scanMutex.withLock { scan(kind) } }
                 .onFailure { Timber.w(it, "Wizard %s scan failed", kind.name) }
+        }
+    }
+
+    /** Runs one unified pass over all media roots, without exposing per-kind trigger buckets. */
+    fun kickoffAll() {
+        if (allInFlight?.isActive == true) return
+        allInFlight = scope.launch {
+            MediaRootKind.entries.forEach { kind ->
+                runCatching { scanMutex.withLock { scan(kind) } }
+                    .onFailure { Timber.w(it, "Media %s scan failed", kind.name) }
+            }
         }
     }
 

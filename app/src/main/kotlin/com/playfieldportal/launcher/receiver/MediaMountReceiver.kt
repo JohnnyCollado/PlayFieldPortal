@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.playfieldportal.feature.library.scanner.LibraryRescanCoordinator
+import com.playfieldportal.feature.settings.media.MediaRescanCoordinator
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
@@ -32,6 +33,7 @@ class MediaMountReceiver : BroadcastReceiver() {
     @InstallIn(SingletonComponent::class)
     interface Deps {
         fun libraryRescanCoordinator(): LibraryRescanCoordinator
+        fun mediaRescanCoordinator(): MediaRescanCoordinator
     }
 
     // Deliberately NOT goAsync(): a broadcast's pending result must be finished within ~10s, but a
@@ -44,9 +46,9 @@ class MediaMountReceiver : BroadcastReceiver() {
         if (intent.action != Intent.ACTION_MEDIA_MOUNTED) return
 
         Timber.i("Media mounted (${intent.data}) — requesting library rescan")
-        EntryPointAccessors
+        val deps = EntryPointAccessors
             .fromApplication(context.applicationContext, Deps::class.java)
-            .libraryRescanCoordinator()
-            .onMediaMounted()
+        deps.libraryRescanCoordinator().onMediaMounted()
+        deps.mediaRescanCoordinator().onMediaMounted()
     }
 }
