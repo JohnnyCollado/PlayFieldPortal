@@ -365,6 +365,7 @@ private fun AccountAchievementSetEntity.toGameCoins(): GameCoins? {
         earned = CoinCounts(bronzeEarned, silverEarned, goldEarned),
         total = CoinCounts(bronzeTotal, silverTotal, goldTotal),
         isMastered = mastered,
+        lastSyncedAt = lastSyncedAt,
     )
 }
 

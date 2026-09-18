@@ -88,7 +88,6 @@ class SsMediaCatalog @Inject constructor(
                 publisher = info.publisher,
                 releaseYear = info.releaseYear,
                 genre = info.genre,
-                scrapedTitle = if (game.userTitleOverride == null) info.title else null,
                 players = info.players,
                 ageRating = info.ageRating,
                 franchise = info.franchise,
@@ -97,6 +96,11 @@ class SsMediaCatalog @Inject constructor(
                 ssId = matchedId,
                 romCrc32 = rom?.crc32,
             )
+            // Fill-only, like the main scrape: this lookup may name a game that has no name yet,
+            // but it must never rename one (see GameDao.fillScrapedTitleIfMissing).
+            if (game.userTitleOverride == null) {
+                info.title?.let { gameDao.fillScrapedTitleIfMissing(gameId, it) }
+            }
             Timber.i("SS catalog live lookup for gameId=$gameId → ssId=$matchedId, ${info.medias.size} medias")
             info.medias
         }

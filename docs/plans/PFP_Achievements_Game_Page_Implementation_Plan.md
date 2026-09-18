@@ -362,7 +362,7 @@ Install on the Thor:
 
 ---
 
-## 8. Open questions (need your call before Phase 6)
+## 8. Open questions — settled 2026-09-17
 
 1. **Where the last sync time shows.** `PspMenuRow` has no subtitle, so the mockup's
    "Synced from RetroAchievements · 4 min ago" line under Sync Now can't be drawn without
@@ -382,3 +382,25 @@ Install on the Thor:
    rather than `palette.focus`.
 5. **Badge art.** Rows use the provider badge (`iconUrl`) when there is one, and the tier coin
    otherwise. Should locked coins show their greyed-out badge, or always the tier coin?
+
+### Answers
+
+1. **Last sync time:** option (a). Header line 1's right side reads
+   `{platform} · Synced 4 min ago`, `· Never synced` when the set has no sync, or `· Not linked`
+   when the game is unmatched.
+2. **The unlinked page:** build the proposal as written, without a new mockup artboard.
+3. **Message line:** the muted notice line under the pinned row. No toast.
+4. **The Earned check:** the success green, reusing `DetailLaunchFill` — the restrained green the
+   detail pages already use for Launch — rather than `palette.focus`.
+5. **Badge art:** locked coins show their greyed-out provider badge (greyscale `ColorMatrix` at
+   0.6 alpha). A *redacted* hidden coin still falls back to the tier coin, because its badge can
+   give it away.
+
+### Decided during implementation
+
+- **The LOCAL_STEAM ownership readout** (the old page's `syncSourceLabel`) had nowhere to go once
+  the sync row was removed, and the plan didn't cover it. Rather than lose it, it became a short
+  tag in the header subtitle: `Local Steam · Owned on Steam · Synced 4 min ago`. An unknown
+  ownership stays silent, as before.
+- **The platform label** for a library game now uses `platformDisplay()` ("Nintendo DS") instead of
+  the raw upper-cased platform id ("NDS"), matching the library's rows.

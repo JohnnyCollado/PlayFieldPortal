@@ -1,22 +1,17 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -24,41 +19,18 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -88,9 +60,6 @@ import kotlin.math.roundToInt
 // dimension; only the right-hand information changes. Game art is the XMB's ICON0 tile. Triangle's
 // Options menu is the shared PSP context menu, entering from the right over the still-visible list.
 
-/** Every game row is this tall in both views, focused or not, so the list never shifts. */
-private val RowHeight = 64.dp
-private val SearchRowHeight = 48.dp
 /** ICON0 is 144 × 80; rows draw it at this height. */
 private val Icon0Height = 48.dp
 private const val ICON0_ASPECT = 144f / 80f
@@ -100,11 +69,6 @@ private val ShortBarWidth = 64.dp
 
 /** Reserved in both views so the header is the same height with or without the summary. */
 private val SummaryHeight = 48.dp
-
-private val FocusShape = RoundedCornerShape(4.dp)
-
-/** Earned-coin order across the screen: Platinum, Gold, Silver, Bronze (design §6). */
-private val CoinOrder = listOf(ShibaTier.PLATINUM, ShibaTier.GOLD, ShibaTier.SILVER, ShibaTier.BRONZE)
 
 private fun LibraryCoinCounts.countFor(tier: ShibaTier): Int = when (tier) {
     ShibaTier.PLATINUM -> platinum
@@ -184,7 +148,9 @@ fun ShibaLibraryScreen(
             )
 
             SearchRow(
-                state = state,
+                query = state.query,
+                editing = state.searchEditing,
+                focused = state.searchFocused,
                 palette = palette,
                 onQueryChange = viewModel::setQuery,
                 onClick = viewModel::onSearchClick,
@@ -248,17 +214,6 @@ fun ShibaLibraryScreen(
 
 private fun gameCount(count: Int): String = if (count == 1) "1 game" else "$count games"
 
-private fun headerShade(palette: DetailPalette): Color =
-    Color.Black.copy(alpha = if (palette.textPrimary.luminance() < 0.5f) 0.10f else 0.28f)
-
-/** The focus treatment every focusable element on the screen shares; drawn inside its own bounds. */
-private fun Modifier.libraryFocus(focused: Boolean, palette: DetailPalette): Modifier =
-    if (focused) {
-        background(palette.focus.copy(alpha = 0.14f), FocusShape).border(1.5.dp, palette.focus, FocusShape)
-    } else {
-        this
-    }
-
 // ── Header summary ────────────────────────────────────────────────────────────
 
 @Composable
@@ -289,91 +244,6 @@ private fun SummaryStat(
     }
 }
 
-// ── Search ────────────────────────────────────────────────────────────────────
-
-/**
- * The permanent Search row. Controller-first, the Artwork Studio's Change Match way: the field is
- * read-only while it is merely focused, and the keyboard opens only in text-entry mode — an open
- * keyboard receives key events before MainActivity, so raising it on focus would swallow the pad.
- */
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun SearchRow(
-    state: ShibaLibraryUiState,
-    palette: DetailPalette,
-    onQueryChange: (String) -> Unit,
-    onClick: () -> Unit,
-    onEditEnded: () -> Unit,
-) {
-    val fieldFocus = remember { FocusRequester() }
-    val keyboard = LocalSoftwareKeyboardController.current
-    val focusManager = LocalFocusManager.current
-    val editing by rememberUpdatedState(state.searchEditing)
-    LaunchedEffect(state.searchEditing) {
-        if (state.searchEditing) {
-            // Settle a frame around the readOnly → editable flip before raising the keyboard.
-            withFrameNanos { }
-            runCatching { fieldFocus.requestFocus() }
-            withFrameNanos { }
-            keyboard?.show()
-        } else {
-            keyboard?.hide()
-            focusManager.clearFocus()
-        }
-    }
-    // The keyboard dismissed by its own Back key ends text entry, so the pad drives the list again.
-    val imeVisible = WindowInsets.isImeVisible
-    var imeWasShown by remember { mutableStateOf(false) }
-    LaunchedEffect(imeVisible) {
-        if (imeVisible) {
-            imeWasShown = true
-        } else if (imeWasShown && editing) {
-            imeWasShown = false
-            onEditEnded()
-        }
-    }
-
-    Column(Modifier.fillMaxWidth().padding(horizontal = DetailContentPadding)) {
-        Spacer(Modifier.height(8.dp))
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(SearchRowHeight)
-                .libraryFocus(state.searchFocused, palette)
-                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick)
-                .padding(horizontal = 12.dp),
-        ) {
-            Icon(Icons.Filled.Search, contentDescription = null, tint = palette.textMuted, modifier = Modifier.size(20.dp))
-            Spacer(Modifier.width(12.dp))
-            BasicTextField(
-                value = state.query,
-                onValueChange = onQueryChange,
-                readOnly = !state.searchEditing,
-                singleLine = true,
-                textStyle = TextStyle(color = palette.textPrimary, fontSize = 15.sp),
-                cursorBrush = SolidColor(palette.focus),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { onEditEnded() }, onDone = { onEditEnded() }),
-                decorationBox = { inner ->
-                    Box(contentAlignment = Alignment.CenterStart) {
-                        if (state.query.isEmpty()) {
-                            Text("Search games…", color = palette.textMuted, fontSize = 15.sp)
-                        }
-                        inner()
-                    }
-                },
-                modifier = Modifier
-                    .weight(1f)
-                    .focusRequester(fieldFocus)
-                    // A tap lands on the field itself: treat it as the touch path into text entry.
-                    .onFocusChanged { if (it.isFocused && !editing) onClick() },
-            )
-        }
-        Separator(palette)
-    }
-}
-
 // ── Game rows ─────────────────────────────────────────────────────────────────
 
 @Composable
@@ -389,7 +259,7 @@ private fun GameRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(RowHeight)
-                .libraryFocus(focused, palette)
+                .shibaFocus(focused, palette)
                 .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick)
                 .padding(horizontal = 10.dp),
         ) {
@@ -460,25 +330,4 @@ private fun UntrackedReason(reason: String, palette: DetailPalette) {
         overflow = TextOverflow.Ellipsis,
         modifier = Modifier.widthIn(max = PercentColumnWidth + 20.dp + CoinCellWidth * CoinOrder.size),
     )
-}
-
-@Composable
-private fun CoinCount(tier: ShibaTier, count: Int, palette: DetailPalette, iconSize: Dp) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        ShibaCoinIcon(tier, Modifier.size(iconSize))
-        Spacer(Modifier.width(4.dp))
-        Text("$count", color = palette.textPrimary, fontSize = 13.sp, maxLines = 1, softWrap = false)
-    }
-}
-
-@Composable
-private fun ProgressLine(fraction: Float, palette: DetailPalette, modifier: Modifier = Modifier) {
-    Box(modifier.height(3.dp).clip(RoundedCornerShape(2.dp)).background(palette.track)) {
-        Box(Modifier.fillMaxHeight().fillMaxWidth(fraction.coerceIn(0f, 1f)).background(palette.focus))
-    }
-}
-
-@Composable
-private fun Separator(palette: DetailPalette) {
-    Box(Modifier.fillMaxWidth().height(1.dp).background(palette.rowEdge))
 }

@@ -53,6 +53,12 @@ data class GameCoins(
      * Steam has no softcore/hardcore split, so there it coincides with earned == total.
      */
     val isMastered: Boolean,
+    /**
+     * When this set was last synced from its provider, or null if it never has been. Defaulted so
+     * the many places that build a [GameCoins] for a tally never have to care; only the per-game
+     * page, which shows "Synced 4 min ago", reads it.
+     */
+    val lastSyncedAt: Long? = null,
 ) {
 
     /** Weighted value of coins earned so far (individual coins only). */

@@ -352,6 +352,20 @@ interface GameDao {
     @Query("UPDATE games SET scraped_title = :scrapedTitle WHERE id = :id")
     suspend fun updateScrapedTitle(id: Long, scrapedTitle: String?)
 
+    /**
+     * Names a game the scrape has never named, and nothing else: the write is skipped outright when
+     * `scraped_title` already holds something.
+     *
+     * An automatic scrape may NAME an unnamed game but must never RENAME one. [updateMetadata]
+     * takes the opposite side for every other column (`COALESCE(:new, old)` — the incoming value
+     * wins), which is right for a description or a release year and wrong for the title: it made a
+     * Change Match, or any later re-scrape, silently rewrite what the library calls a game. A title
+     * now only ever CHANGES through a path the user drove — the metadata preview's chosen fields,
+     * or Edit Title, which writes `user_title_override` and outranks this column entirely.
+     */
+    @Query("UPDATE games SET scraped_title = :scrapedTitle WHERE id = :id AND scraped_title IS NULL")
+    suspend fun fillScrapedTitleIfMissing(id: Long, scrapedTitle: String)
+
     // ── Windows storefront identity (C16 phase 0) ─────────────────────────────
     // Fill-only: a null argument keeps whatever is already stored, so a re-import that could not
     // determine the store never erases an identity an earlier one captured.

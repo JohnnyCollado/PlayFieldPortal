@@ -1,17 +1,21 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.database.entity.AccountAchievementEntity
 import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.core.domain.achievement.GameCoins
+import com.playfieldportal.core.domain.achievement.LocalCopyOwnership
 import com.playfieldportal.core.domain.achievement.ShibaTier
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.repository.GameRepository
-import com.playfieldportal.feature.achievements.match.AchievementAutoMatcher
+import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.feature.achievements.AchievementController
 import com.playfieldportal.feature.achievements.api.ProviderSyncResult
+import com.playfieldportal.feature.achievements.match.AchievementAutoMatcher
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,13 +24,35 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-enum class CoinSort { TIER, EARNED, RAREST }
-enum class CoinFilter { ALL, EARNED, LOCKED }
+// ── Per-game achievements page ────────────────────────────────────────────────
+//
+// docs/plans/PFP_Achievements_Game_Page_Implementation_Plan.md: the page that opens when you
+// confirm a tracked game, rebuilt to match the Tracked/Untracked browser. The contract is the
+// library's: a pinned Search row at navigation position 0, stable-id focus so sorting, searching,
+// switching view and data refreshes keep the cursor on the same coin, L1/R1 across the All /
+// Earned / Locked views, and a modal Triangle Options menu that owns Sort, Sync Now and Change
+// Match. What is NOT rebuilt: loading, syncing, matching and the Auto-Match flow, which are
+// carried over unchanged.
+
+enum class CoinSort(val label: String) { TIER("Tier"), EARNED("Earned"), RAREST("Rarest") }
+
+/** The three views of a game's coins, switched with L1/R1 and shown as tabs beside Search. */
+enum class CoinFilter(val label: String) { ALL("All"), EARNED("Earned"), LOCKED("Locked") }
 
 /** The Auto-Match flow's current step (unlinked Steam-platform games only). */
 enum class AutoMatchStep { CONFIRM_COPY, ENTER_APPID }
 
+/** The synthetic first row: the set-completion award, which is not one of the provider's coins. */
+internal const val PLATINUM_ROW_ID = "platinum"
+
+/** The unlinked game's single row: the Auto-Match panel, which stands in for the whole list. */
+internal const val LINK_ROW_ID = "link"
+
+/** What a redacted hidden coin matches on, so search can never give away its real title. */
+private const val REDACTED_TITLE = "Hidden Coin"
+
 /** One coin as the dedicated screen renders it. */
+@Immutable
 data class CoinRow(
     val id: String,
     val tier: ShibaTier,
@@ -37,8 +63,72 @@ data class CoinRow(
     val isHidden: Boolean,
     val isEarned: Boolean,
     val earnedAt: Long?,
+) {
+    /** A hidden coin the user hasn't earned can be revealed and re-hidden; an earned one can't. */
+    val isHideable: Boolean get() = isHidden && !isEarned
+}
+
+/** A row of the coin list. Focus, the footer and Confirm all key off which kind this is. */
+@Immutable
+sealed interface CoinListItem {
+    val id: String
+
+    /** The Platinum Crown: earned by taking every other coin in the game. */
+    data class Platinum(val earned: Int, val total: Int, val isMastered: Boolean) : CoinListItem {
+        override val id: String get() = PLATINUM_ROW_ID
+    }
+
+    data class Coin(val coin: CoinRow) : CoinListItem {
+        override val id: String get() = coin.id
+    }
+
+    /** An unlinked game has no coins to list — the whole list area is its Auto-Match panel. */
+    data object LinkPanel : CoinListItem {
+        override val id: String get() = LINK_ROW_ID
+    }
+}
+
+/** Coins per view, counted off the whole set so they don't move while you search. */
+@Immutable
+data class CoinViewCounts(val all: Int = 0, val earned: Int = 0, val locked: Int = 0) {
+    fun forView(filter: CoinFilter): Int = when (filter) {
+        CoinFilter.ALL -> all
+        CoinFilter.EARNED -> earned
+        CoinFilter.LOCKED -> locked
+    }
+}
+
+/** A second-level list in the Options menu, opened from its root row (the Icon Display pattern). */
+enum class CoinOptionGroup(val title: String) { SORT("Sort") }
+
+/** What an Options row does. */
+sealed interface CoinOption {
+    /** A root row: opens its list. */
+    data class OpenGroup(val group: CoinOptionGroup) : CoinOption
+    data class Sort(val sort: CoinSort) : CoinOption
+    data object SyncNow : CoinOption
+    data object ChangeMatch : CoinOption
+}
+
+/** A row of the Options menu: its label, action, and whether it is the active choice. */
+data class CoinOptionRow(
+    val label: String,
+    val option: CoinOption,
+    val checked: Boolean = false,
 )
 
+/**
+ * The open Options menu: the root list when [group] is null, otherwise that group's choices. Its
+ * cursor is separate from the coin list's, which it leaves untouched.
+ */
+data class CoinOptionsMenu(
+    val selectedIndex: Int = 0,
+    val group: CoinOptionGroup? = null,
+) {
+    val title: String get() = group?.title ?: "Options"
+}
+
+@Immutable
 data class ShibaCoinsUiState(
     val title: String = "",
     val platformLabel: String = "",
@@ -46,49 +136,140 @@ data class ShibaCoinsUiState(
     val linked: Boolean = false,
     // LOCAL_STEAM only: owned-vs-local classification from the link row; null = unknown (the
     // owned-games cache was never populated) and the UI stays silent about ownership.
-    val ownership: com.playfieldportal.core.domain.achievement.LocalCopyOwnership? = null,
+    val ownership: LocalCopyOwnership? = null,
     // An account entry with no library game: syncable, but nothing to link or match.
     val accountOnly: Boolean = false,
     val summary: GameCoins? = null,
     val coins: List<CoinRow> = emptyList(),
-    // Sorted + filtered view the screen renders; kept in sync with coins/sort/filter.
+    // Sorted, filtered and searched view the screen renders; kept in sync by withRows().
     val displayed: List<CoinRow> = emptyList(),
+    // The list as the screen draws it: the Platinum Crown row, the displayed coins, or — for an
+    // unlinked game — the single link panel. Stored rather than derived so a recomposition never
+    // re-sorts the set, and so focus recovery can compare the old list against the new one.
+    val rows: List<CoinListItem> = emptyList(),
+    val viewCounts: CoinViewCounts = CoinViewCounts(),
     val sort: CoinSort = CoinSort.TIER,
+    /** The active view. L1/R1 cycle it; the tabs beside Search show it. */
     val filter: CoinFilter = CoinFilter.ALL,
-    // Controller focus, in on-screen top-to-bottom order: 0 = action (sync/link), 1 = sort,
-    // 2 = filter, 3+ = coin rows. See the FOCUS_* constants below.
-    val focusIndex: Int = 0,
+    val query: String = "",
+    /** Search is in text-entry mode (the keyboard is up). */
+    val searchEditing: Boolean = false,
+    /**
+     * The focused row's id, or null when the pinned Search row (position 0) has focus. Ids are
+     * stable — a coin id, [PLATINUM_ROW_ID] or [LINK_ROW_ID] — never a list index, so sorting,
+     * searching and data refreshes keep the cursor on the same row.
+     */
+    val focusedRowId: String? = null,
+    /** The Triangle Options menu, while open. It owns controller input. */
+    val options: CoinOptionsMenu? = null,
     // Hidden coins the user chose to reveal (confirm/tap toggles). Session-only: cleared on open.
     val revealedIds: Set<String> = emptySet(),
     val isSyncing: Boolean = false,
+    /** When the provider set was last synced, for the header's "Synced 4 min ago" line. */
+    val lastSyncedAt: Long? = null,
     // Auto-Match flow (unlinked Steam-platform games): confirm whether the copy is a legit Steam
     // one, then fall through to manual appid entry when no automatic match is found.
     val autoMatchStep: AutoMatchStep? = null,
     // Controller selection on the confirm prompt: true = "Yes, legit Steam copy".
     val autoMatchYes: Boolean = true,
-    // FOCUS_ACTION holds two controls for a linked Steam game (Change match | Sync now);
-    // left/right picks which one confirm activates. False = Sync now, the primary action.
-    val actionOnChangeMatch: Boolean = false,
     // The branch the user picked, so manual appid entry links the matching provider.
     val isMatching: Boolean = false,
     val message: String? = null,
     val closed: Boolean = false,
-)
+) {
+    /** Navigation position: 0 is the pinned Search row, 1 is the first list row. */
+    val focusPosition: Int
+        get() = focusedRowId?.let { id -> rows.indexOfFirst { it.id == id } + 1 } ?: 0
 
-// Focus order MUST match the on-screen top-to-bottom layout in ShibaCoinsScreen: the action row
-// (Sync/Link) sits above the Sort and Filter rows, so it is focused first. These constants are the
-// single source of that order — the screen references them by name (no magic numbers) so the visual
-// and navigation order can never drift apart.
-internal const val FOCUS_ACTION = 0
-internal const val FOCUS_SORT = 1
-internal const val FOCUS_FILTER = 2
-internal const val FOCUS_COINS_START = 3
+    val focused: CoinListItem? get() = rows.getOrNull(focusPosition - 1)
+
+    val searchFocused: Boolean get() = focused == null
+
+    /** The focused coin, when a real coin row (not Platinum, not the link panel) has focus. */
+    val focusedCoin: CoinRow? get() = (focused as? CoinListItem.Coin)?.coin
+
+    /** Whether the focused coin is currently revealed (only meaningful for a hideable coin). */
+    val focusedRevealed: Boolean get() = focusedCoin?.let { it.id in revealedIds } == true
+
+    /** An unlinked library game: nothing to list until it is matched to a provider id. */
+    val showLinkPanel: Boolean get() = !linked && !accountOnly
+
+    /** Only a linked Steam library game has a user-provided match that can be changed. */
+    val hasChangeMatch: Boolean
+        get() = linked && !accountOnly && provider == AchievementProvider.STEAM
+
+    /** Steam asks about the copy first; RetroAchievements matches by ROM hash. Others can't. */
+    val canAutoMatch: Boolean
+        get() = provider == AchievementProvider.STEAM || provider == AchievementProvider.RETRO_ACHIEVEMENTS
+
+    /** Sync is offered wherever there is a provider identity to sync against. */
+    val canSync: Boolean get() = linked || accountOnly
+
+    val optionRows: List<CoinOptionRow> get() = coinOptionRows(this)
+
+    val emptyMessage: String
+        get() = when {
+            query.isNotBlank() -> "No coins match \"${query.trim()}\"."
+            filter == CoinFilter.EARNED -> "No coins earned yet."
+            filter == CoinFilter.LOCKED -> "Every coin is earned."
+            else -> "No coins to show."
+        }
+}
+
+/**
+ * The Options menu rows for [state], shaped like the library's: the root names each list with its
+ * current choice, and a list checks the active one. Sync Now is offered wherever there is a
+ * provider identity; Change Match only for a Steam library game, the one match the user supplied.
+ */
+fun coinOptionRows(state: ShibaCoinsUiState): List<CoinOptionRow> = when (state.options?.group) {
+    null -> buildList {
+        add(CoinOptionRow("Sort (${state.sort.label})", CoinOption.OpenGroup(CoinOptionGroup.SORT)))
+        // A sync in flight keeps its row so the menu doesn't reflow under the cursor; it just
+        // says so and does nothing when picked.
+        if (state.canSync) add(CoinOptionRow(if (state.isSyncing) "Syncing…" else "Sync Now", CoinOption.SyncNow))
+        if (state.hasChangeMatch) add(CoinOptionRow("Change Match", CoinOption.ChangeMatch))
+    }
+    CoinOptionGroup.SORT -> CoinSort.entries.map { sort ->
+        CoinOptionRow(sort.label, CoinOption.Sort(sort), checked = sort == state.sort)
+    }
+}
+
+/**
+ * The helper footer for [state]. Confirm is named for what it would do on the focused row and is
+ * left out when it would do nothing; text entry and the Options menu replace the page hints.
+ */
+fun shibaCoinsHelperItems(state: ShibaCoinsUiState): List<ControllerPromptItem> = when {
+    state.options != null -> listOf(
+        ControllerPromptItem(GamepadAction.SELECT, "Select"),
+        ControllerPromptItem(GamepadAction.BACK, "Close"),
+    )
+    state.searchEditing -> listOf(ControllerPromptItem(GamepadAction.BACK, "Done"))
+    // The link panel is the whole page: there is nothing to search and no view to change.
+    state.focused is CoinListItem.LinkPanel -> buildList {
+        if (state.canAutoMatch) add(ControllerPromptItem(GamepadAction.SELECT, "Auto-Match"))
+        add(ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"))
+        add(ControllerPromptItem(GamepadAction.BACK, "Back"))
+    }
+    else -> buildList {
+        val confirm = when {
+            state.searchFocused -> "Type"
+            // Confirm only does something on a coin the user may reveal or re-hide.
+            state.focusedCoin?.isHideable == true -> if (state.focusedRevealed) "Hide" else "Reveal"
+            else -> null
+        }
+        confirm?.let { add(ControllerPromptItem(GamepadAction.SELECT, it)) }
+        add(ControllerPromptItem(GamepadAction.CHANGE_SORT, "Search"))
+        add(ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"))
+        add(ControllerPromptItem(listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY), "Change View"))
+        add(ControllerPromptItem(GamepadAction.BACK, "Back"))
+    }
+}
 
 @HiltViewModel
 class ShibaCoinsViewModel @Inject constructor(
     private val gameRepository: GameRepository,
     private val achievementRepository: AchievementController,
-    private val autoMatcher: com.playfieldportal.feature.achievements.match.AchievementAutoMatcher,
+    private val autoMatcher: AchievementAutoMatcher,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ShibaCoinsUiState())
@@ -96,18 +277,25 @@ class ShibaCoinsViewModel @Inject constructor(
 
     private var gameId: Long = -1
     private var target: ShibaCoinsTarget = ShibaCoinsTarget.LibraryGame(-1)
-    private var loadJobs = mutableListOf<kotlinx.coroutines.Job>()
+    private val loadJobs = mutableListOf<Job>()
 
     fun load(target: ShibaCoinsTarget) {
         this.target = target
         // This ViewModel is retained across open/close, so clear the stale closed flag (otherwise
-        // the screen's close-effect fires immediately on reopen), reset focus to the top, and
-        // re-hide any revealed hidden coins (reveals are session-only).
+        // the screen's close-effect fires immediately on reopen) and start the page fresh: focus on
+        // the pinned Search row, no query, no menu, and any revealed hidden coins re-hidden.
         _state.update {
             it.copy(
-                closed = false, focusIndex = 0, revealedIds = emptySet(),
-                autoMatchStep = null, isMatching = false, actionOnChangeMatch = false,
-            )
+                closed = false,
+                focusedRowId = null,
+                query = "",
+                searchEditing = false,
+                options = null,
+                revealedIds = emptySet(),
+                autoMatchStep = null,
+                isMatching = false,
+                message = null,
+            ).withRows()
         }
         loadJobs.forEach { it.cancel() }
         loadJobs.clear()
@@ -125,7 +313,7 @@ class ShibaCoinsViewModel @Inject constructor(
             _state.update {
                 it.copy(
                     title = game?.displayTitle ?: "",
-                    platformLabel = game?.platformId?.uppercase() ?: "",
+                    platformLabel = game?.platformId?.let(::platformDisplay) ?: "",
                     provider = providerForPlatform(game?.platformId),
                 )
             }
@@ -141,12 +329,12 @@ class ShibaCoinsViewModel @Inject constructor(
                 _state.update {
                     it.copy(
                         summary = summary,
+                        lastSyncedAt = summary?.lastSyncedAt,
                         coins = coins.map { e -> e.toRow() },
                         linked = link != null,
                         provider = link?.let { l -> AchievementProvider.fromName(l.provider) } ?: it.provider,
-                        ownership = link?.ownership
-                            ?.let(com.playfieldportal.core.domain.achievement.LocalCopyOwnership::fromName),
-                    ).withDisplayed()
+                        ownership = link?.ownership?.let(LocalCopyOwnership::fromName),
+                    ).withRows()
                 }
             }
         }
@@ -155,7 +343,12 @@ class ShibaCoinsViewModel @Inject constructor(
     private fun loadAccountEntry(entry: ShibaCoinsTarget.AccountEntry) {
         gameId = -1
         _state.update {
-            it.copy(accountOnly = true, linked = false, provider = entry.provider, platformLabel = providerLabel(entry.provider))
+            it.copy(
+                accountOnly = true,
+                linked = false,
+                provider = entry.provider,
+                platformLabel = providerLabel(entry.provider),
+            )
         }
         loadJobs += viewModelScope.launch {
             combine(
@@ -169,28 +362,22 @@ class ShibaCoinsViewModel @Inject constructor(
                     it.copy(
                         title = set?.title ?: "",
                         summary = summary,
+                        lastSyncedAt = summary?.lastSyncedAt,
                         coins = coins.map { e -> e.toRow() },
-                    ).withDisplayed()
+                    ).withRows()
                 }
             }
         }
     }
 
-    fun setSort(sort: CoinSort) = _state.update { it.copy(sort = sort).withDisplayed() }
-    fun setFilter(filter: CoinFilter) = _state.update { it.copy(filter = filter).withDisplayed() }
-
-    /** Toggles a hidden coin between redacted and revealed. No-op for coins that aren't hidden. */
-    fun toggleReveal(coin: CoinRow) {
-        if (!coin.isHidden || coin.isEarned) return
-        _state.update {
-            it.copy(revealedIds = if (coin.id in it.revealedIds) it.revealedIds - coin.id else it.revealedIds + coin.id)
-        }
-    }
-    fun dismissMessage() = _state.update { it.copy(message = null) }
     fun close() = _state.update { it.copy(closed = true) }
 
     /** Clears the closed flag once the screen has acted on it, so the next open isn't cut short. */
     fun onClosedHandled() = _state.update { it.copy(closed = false) }
+
+    fun dismissMessage() = _state.update { it.copy(message = null) }
+
+    // ── Controller input ───────────────────────────────────────────────────────
 
     /** Controller input forwarded from the shell while this overlay is open. */
     fun handleGamepadAction(action: GamepadAction) {
@@ -214,70 +401,192 @@ class ShibaCoinsViewModel @Inject constructor(
             }
             null -> Unit
         }
-        val lastFocus = (FOCUS_COINS_START + s.displayed.size - 1).coerceAtLeast(0)
+        // The notice line under Search is transient: the next press has read it.
+        if (s.message != null) dismissMessage()
+        if (s.options != null) {
+            handleOptionsAction(action)
+            return
+        }
+        if (s.searchEditing) {
+            // An open keyboard receives key events before the shell does, so a pad press arriving
+            // here means the keyboard is already gone: end text entry. Back and Confirm stop there;
+            // anything else also does its normal job.
+            onSearchEditEnded()
+            if (action == GamepadAction.BACK || action == GamepadAction.SELECT) return
+        }
         when (action) {
-            GamepadAction.NAVIGATE_UP -> _state.update { it.copy(focusIndex = (it.focusIndex - 1).coerceIn(0, lastFocus)) }
-            GamepadAction.NAVIGATE_DOWN -> _state.update { it.copy(focusIndex = (it.focusIndex + 1).coerceIn(0, lastFocus)) }
-            GamepadAction.NAVIGATE_LEFT -> when (s.focusIndex) {
-                // Change match sits left of Sync now in the row.
-                FOCUS_ACTION -> if (hasChangeMatch(s)) _state.update { it.copy(actionOnChangeMatch = true) }
-                FOCUS_SORT -> cycleSort(-1)
-                FOCUS_FILTER -> cycleFilter(-1)
-                else -> Unit
-            }
-            GamepadAction.NAVIGATE_RIGHT -> when (s.focusIndex) {
-                FOCUS_ACTION -> if (hasChangeMatch(s)) _state.update { it.copy(actionOnChangeMatch = false) }
-                FOCUS_SORT -> cycleSort(1)
-                FOCUS_FILTER -> cycleFilter(1)
-                else -> Unit
-            }
-            GamepadAction.SELECT -> when (s.focusIndex) {
-                FOCUS_SORT -> cycleSort(1)
-                FOCUS_FILTER -> cycleFilter(1)
-                FOCUS_ACTION -> onActionSelect()
-                // Confirm on a hidden coin row reveals its details; confirm again re-hides.
-                else -> s.displayed.getOrNull(s.focusIndex - FOCUS_COINS_START)?.let { toggleReveal(it) }
-            }
-            // X / square cycles the sort, Y / triangle cycles the Show filter — from anywhere on
-            // the page.
-            GamepadAction.CHANGE_SORT -> cycleSort(1)
-            GamepadAction.OPEN_CONTEXT_MENU -> cycleFilter(1)
+            GamepadAction.NAVIGATE_UP -> moveFocus(-1)
+            GamepadAction.NAVIGATE_DOWN -> moveFocus(1)
+            // L / R change the view. LEFT / RIGHT stay as quiet aliases, as in the library.
+            GamepadAction.PREV_CATEGORY, GamepadAction.NAVIGATE_LEFT -> cycleView(-1)
+            GamepadAction.NEXT_CATEGORY, GamepadAction.NAVIGATE_RIGHT -> cycleView(1)
+            GamepadAction.SELECT -> activateFocused()
+            // Square always means "go to Search"; pressed on Search itself it starts typing.
+            GamepadAction.CHANGE_SORT -> if (s.searchFocused) startSearchEdit() else focusSearch()
+            GamepadAction.OPEN_CONTEXT_MENU -> openOptions()
             GamepadAction.BACK -> close()
+            GamepadAction.HOME -> Unit
+        }
+    }
+
+    // ── Focus ──────────────────────────────────────────────────────────────────
+
+    private fun moveFocus(delta: Int) = _state.update { s ->
+        val position = (s.focusPosition + delta).coerceIn(0, s.rows.size)
+        s.copy(focusedRowId = s.rows.getOrNull(position - 1)?.id)
+    }
+
+    fun focusSearch() = _state.update { it.copy(focusedRowId = null) }
+
+    /** Touch: the first tap on a row focuses it; tapping the focused row activates it. */
+    fun onRowClick(rowId: String) {
+        val s = _state.value
+        if (s.searchEditing) onSearchEditEnded()
+        if (s.message != null) dismissMessage()
+        if (s.focusedRowId == rowId) activateFocused()
+        else if (s.rows.any { it.id == rowId }) _state.update { it.copy(focusedRowId = rowId) }
+    }
+
+    /**
+     * Confirm: Search starts typing, a hidden coin reveals (and re-hides), the link panel runs its
+     * match. Platinum and an ordinary coin have nothing to open, so Confirm does nothing there.
+     */
+    private fun activateFocused() {
+        when (val row = _state.value.focused) {
+            null -> startSearchEdit()
+            is CoinListItem.Coin -> toggleReveal(row.coin)
+            is CoinListItem.LinkPanel -> onLinkPanelSelect()
+            is CoinListItem.Platinum -> Unit
+        }
+    }
+
+    /** Toggles a hidden coin between redacted and revealed. No-op for coins that aren't hidden. */
+    fun toggleReveal(coin: CoinRow) {
+        if (!coin.isHideable) return
+        _state.update {
+            val revealed = if (coin.id in it.revealedIds) it.revealedIds - coin.id else it.revealedIds + coin.id
+            // A revealed coin becomes searchable by its real title, so the list is rebuilt.
+            it.copy(revealedIds = revealed).withRows()
+        }
+    }
+
+    // ── Search ─────────────────────────────────────────────────────────────────
+
+    fun startSearchEdit() = _state.update { it.copy(focusedRowId = null, searchEditing = true) }
+
+    /** Text entry ended (keyboard dismissed, IME action, or a pad press). The query is kept. */
+    fun onSearchEditEnded() = _state.update { it.copy(searchEditing = false) }
+
+    /** Touch: tapping Search goes straight to typing. */
+    fun onSearchClick() = startSearchEdit()
+
+    fun setQuery(query: String) = _state.update { it.copy(query = query).withRows() }
+
+    // ── Views and sort ─────────────────────────────────────────────────────────
+
+    fun setSort(sort: CoinSort) = _state.update { it.copy(sort = sort).withRows() }
+
+    fun setFilter(filter: CoinFilter) = _state.update { it.copy(filter = filter).withRows() }
+
+    private fun cycleView(dir: Int) {
+        val views = CoinFilter.entries
+        setFilter(views[(_state.value.filter.ordinal + dir).mod(views.size)])
+    }
+
+    // ── Options menu ───────────────────────────────────────────────────────────
+
+    /** Opens the Options root on its first row. */
+    fun openOptions() = _state.update { it.copy(options = CoinOptionsMenu(), searchEditing = false) }
+
+    fun closeOptions() = _state.update { it.copy(options = null) }
+
+    /** Swaps the menu to [group]'s list, with the cursor on its active choice. */
+    private fun openOptionGroup(group: CoinOptionGroup) = _state.update { s ->
+        val listed = s.copy(options = CoinOptionsMenu(group = group))
+        val active = listed.optionRows.indexOfFirst { it.checked }.coerceAtLeast(0)
+        listed.copy(options = CoinOptionsMenu(selectedIndex = active, group = group))
+    }
+
+    private fun handleOptionsAction(action: GamepadAction) {
+        val menu = _state.value.options ?: return
+        when (action) {
+            GamepadAction.NAVIGATE_UP -> moveOptionsCursor(menu, -1)
+            GamepadAction.NAVIGATE_DOWN -> moveOptionsCursor(menu, 1)
+            GamepadAction.SELECT -> onOptionActivated(menu.selectedIndex)
+            GamepadAction.BACK, GamepadAction.OPEN_CONTEXT_MENU -> closeOptions()
             else -> Unit
         }
     }
 
-    // Whether the action row currently offers Change match next to Sync now.
-    private fun hasChangeMatch(s: ShibaCoinsUiState): Boolean =
-        s.linked && !s.accountOnly && s.provider == AchievementProvider.STEAM
+    private fun moveOptionsCursor(menu: CoinOptionsMenu, delta: Int) = _state.update { s ->
+        val last = (s.optionRows.size - 1).coerceAtLeast(0)
+        s.copy(options = menu.copy(selectedIndex = (menu.selectedIndex + delta).coerceIn(0, last)))
+    }
 
-    private fun onActionSelect() {
-        val s = _state.value
-        when {
-            hasChangeMatch(s) && s.actionOnChangeMatch -> changeLink()
-            s.linked || s.accountOnly -> sync()
-            s.provider == AchievementProvider.STEAM -> startAutoMatch()
-            s.provider == AchievementProvider.RETRO_ACHIEVEMENTS -> autoMatchRaByHash()
-            // Local Steam links from the game folder's own appid — nothing to enter here.
-            else -> _state.update {
-                it.copy(message = "Local Steam-emu games link from their game folder. Run Auto-match in Settings ▸ Shiba Coins.")
-            }
+    /**
+     * Activates an Options row (controller Confirm or tap), as the Icon Display menu does: a root
+     * row opens its list, and a choice applies and closes the menu.
+     */
+    fun onOptionActivated(index: Int) {
+        val row = _state.value.optionRows.getOrNull(index) ?: return
+        when (val option = row.option) {
+            is CoinOption.OpenGroup -> return openOptionGroup(option.group)
+            is CoinOption.Sort -> setSort(option.sort)
+            // A sync already in flight: the row says "Syncing…" and picking it holds the menu open.
+            CoinOption.SyncNow -> if (_state.value.isSyncing) return else sync()
+            CoinOption.ChangeMatch -> changeLink()
         }
+        closeOptions()
     }
 
-    private fun cycleSort(dir: Int) {
-        val entries = CoinSort.entries
-        setSort(entries[(_state.value.sort.ordinal + dir + entries.size) % entries.size])
+    // ── Rows ───────────────────────────────────────────────────────────────────
+
+    /**
+     * Rebuilds [ShibaCoinsUiState.displayed] and [ShibaCoinsUiState.rows] from the current set,
+     * sort, view, query and reveals, then recovers focus the library's way: the same row if it is
+     * still listed, otherwise the row now at the old position (clamped), otherwise Search.
+     */
+    private fun ShibaCoinsUiState.withRows(): ShibaCoinsUiState {
+        val displayed = coins.arrange(sort, filter, query, revealedIds)
+        val rows = buildList {
+            if (showLinkPanel) {
+                add(CoinListItem.LinkPanel)
+                return@buildList
+            }
+            if (showsPlatinum()) {
+                add(CoinListItem.Platinum(earned = earnedCoins, total = totalCoins, isMastered = isMastered))
+            }
+            displayed.forEach { add(CoinListItem.Coin(it)) }
+        }
+        val focusId = when {
+            focusedRowId == null -> null
+            rows.any { it.id == focusedRowId } -> focusedRowId
+            rows.isEmpty() -> null
+            else -> rows[(focusPosition - 1).coerceIn(0, rows.lastIndex)].id
+        }
+        return copy(
+            displayed = displayed,
+            rows = rows,
+            viewCounts = CoinViewCounts(
+                all = coins.size,
+                earned = coins.count { it.isEarned },
+                locked = coins.count { !it.isEarned },
+            ),
+            focusedRowId = focusId,
+        )
     }
 
-    private fun cycleFilter(dir: Int) {
-        val entries = CoinFilter.entries
-        setFilter(entries[(_state.value.filter.ordinal + dir + entries.size) % entries.size])
-    }
+    // ── Linking, matching and syncing (carried over unchanged) ─────────────────
 
-    private fun ShibaCoinsUiState.withDisplayed(): ShibaCoinsUiState {
-        val d = coins.arrange(sort, filter)
-        return copy(displayed = d, focusIndex = focusIndex.coerceIn(0, (FOCUS_COINS_START + d.size - 1).coerceAtLeast(0)))
+    /** Confirm on the link panel: Steam asks about the copy first, RetroAchievements hashes the ROM. */
+    private fun onLinkPanelSelect() {
+        when (_state.value.provider) {
+            AchievementProvider.STEAM -> startAutoMatch()
+            AchievementProvider.RETRO_ACHIEVEMENTS -> autoMatchRaByHash()
+            // Local Steam links from the game folder and PS Vita from the Vita3K scan — the panel
+            // says so, and there is nothing Confirm can do here.
+            AchievementProvider.LOCAL_STEAM, AchievementProvider.VITA_TROPHY -> Unit
+        }
     }
 
     /** Opens the Auto-Match flow: first ask whether this is a legitimate Steam copy. */
@@ -376,11 +685,7 @@ class ShibaCoinsViewModel @Inject constructor(
 
     /** Removes the current link so the user can re-match it (edit a wrong match). */
     fun changeLink() {
-        viewModelScope.launch {
-            achievementRepository.unlink(gameId)
-            // The row collapses to Auto-Match only — point confirm back at the primary action.
-            _state.update { it.copy(actionOnChangeMatch = false) }
-        }
+        viewModelScope.launch { achievementRepository.unlink(gameId) }
     }
 
     fun sync() {
@@ -408,6 +713,80 @@ class ShibaCoinsViewModel @Inject constructor(
         if (platformId == "windows") AchievementProvider.STEAM else AchievementProvider.RETRO_ACHIEVEMENTS
 }
 
+// ── Pure list shaping ─────────────────────────────────────────────────────────
+
+/** Individual coins earned (the Platinum is the prize for taking them all, never one of them). */
+internal val ShibaCoinsUiState.earnedCoins: Int get() = summary?.earned?.total ?: 0
+
+internal val ShibaCoinsUiState.totalCoins: Int get() = summary?.total?.total ?: 0
+
+internal val ShibaCoinsUiState.isMastered: Boolean get() = summary?.isMastered == true
+
+/**
+ * Whether the Platinum Crown row belongs in the current view: it is a locked award until the set is
+ * mastered and an earned one after, so it follows the view the same way a coin does. A game with no
+ * synced set has no crown to show, and a search only reaches it by name.
+ */
+internal fun ShibaCoinsUiState.showsPlatinum(): Boolean {
+    if (summary == null) return false
+    val needle = query.trim()
+    if (needle.isNotEmpty() && !PLATINUM_SEARCH_TEXT.contains(needle, ignoreCase = true)) return false
+    return when (filter) {
+        CoinFilter.ALL -> true
+        CoinFilter.EARNED -> isMastered
+        CoinFilter.LOCKED -> !isMastered
+    }
+}
+
+/** What the Platinum Crown row matches on — its own title, so "platinum" or "crown" finds it. */
+private const val PLATINUM_SEARCH_TEXT = "Platinum Crown"
+
+/**
+ * Pure sort + view + search for the coin list — used by the screen and unit-tested directly.
+ *
+ * [revealedIds] matters because a redacted hidden coin must never be findable by the words it is
+ * hiding: until the user reveals it, it matches only what the row actually shows.
+ */
+fun List<CoinRow>.arrange(
+    sort: CoinSort,
+    filter: CoinFilter,
+    query: String = "",
+    revealedIds: Set<String> = emptySet(),
+): List<CoinRow> {
+    val viewed = when (filter) {
+        CoinFilter.ALL -> this
+        CoinFilter.EARNED -> filter { it.isEarned }
+        CoinFilter.LOCKED -> filter { !it.isEarned }
+    }
+    val needle = query.trim()
+    val found = if (needle.isEmpty()) viewed else viewed.filter { it.matches(needle, revealedIds) }
+    return when (sort) {
+        // Lowest tier first (Bronze at the top, up to Gold), then rarest within the tier.
+        CoinSort.TIER -> found.sortedWith(compareBy({ tierRank(it.tier) }, { it.rarityRank }))
+        CoinSort.EARNED -> found.sortedWith(compareByDescending<CoinRow> { it.isEarned }.thenByDescending { it.earnedAt ?: 0L })
+        CoinSort.RAREST -> found.sortedBy { it.rarityRank }
+    }
+}
+
+private fun CoinRow.matches(needle: String, revealedIds: Set<String>): Boolean =
+    if (isHideable && id !in revealedIds) {
+        // Redacted: only the placeholder the row draws is searchable.
+        REDACTED_TITLE.contains(needle, ignoreCase = true)
+    } else {
+        title.contains(needle, ignoreCase = true) || description.contains(needle, ignoreCase = true)
+    }
+
+// Coins whose provider reported no rarity (stored as a negative sentinel) sort after every real
+// percentage — unknown rarity can't rank as rarest.
+private val CoinRow.rarityRank: Double get() = if (globalRarity < 0) Double.MAX_VALUE else globalRarity
+
+private fun tierRank(tier: ShibaTier): Int = when (tier) {
+    ShibaTier.BRONZE -> 0
+    ShibaTier.SILVER -> 1
+    ShibaTier.GOLD -> 2
+    ShibaTier.PLATINUM -> 3
+}
+
 /** The provider's display name, shown where a library game would show its platform. */
 internal fun providerLabel(provider: AchievementProvider): String = when (provider) {
     AchievementProvider.RETRO_ACHIEVEMENTS -> "RetroAchievements"
@@ -427,29 +806,3 @@ private fun AccountAchievementEntity.toRow() = CoinRow(
     isEarned = isEarned,
     earnedAt = earnedAt,
 )
-
-/** Pure sort + filter for the coin list — used by the screen and unit-tested directly. */
-fun List<CoinRow>.arrange(sort: CoinSort, filter: CoinFilter): List<CoinRow> {
-    val filtered = when (filter) {
-        CoinFilter.ALL -> this
-        CoinFilter.EARNED -> filter { it.isEarned }
-        CoinFilter.LOCKED -> filter { !it.isEarned }
-    }
-    return when (sort) {
-        // Lowest tier first (Bronze at the top, up to Gold), then rarest within the tier.
-        CoinSort.TIER -> filtered.sortedWith(compareBy({ tierRank(it.tier) }, { it.rarityRank }))
-        CoinSort.EARNED -> filtered.sortedWith(compareByDescending<CoinRow> { it.isEarned }.thenByDescending { it.earnedAt ?: 0L })
-        CoinSort.RAREST -> filtered.sortedBy { it.rarityRank }
-    }
-}
-
-// Coins whose provider reported no rarity (stored as a negative sentinel) sort after every real
-// percentage — unknown rarity can't rank as rarest.
-private val CoinRow.rarityRank: Double get() = if (globalRarity < 0) Double.MAX_VALUE else globalRarity
-
-private fun tierRank(tier: ShibaTier): Int = when (tier) {
-    ShibaTier.BRONZE -> 0
-    ShibaTier.SILVER -> 1
-    ShibaTier.GOLD -> 2
-    ShibaTier.PLATINUM -> 3
-}

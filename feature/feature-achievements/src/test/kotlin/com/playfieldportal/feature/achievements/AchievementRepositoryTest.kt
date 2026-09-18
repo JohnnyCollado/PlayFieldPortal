@@ -28,6 +28,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class AchievementRepositoryTest {
@@ -93,6 +94,24 @@ class AchievementRepositoryTest {
         assertEquals(AchievementProvider.RETRO_ACHIEVEMENTS, coins.provider)
         assertEquals(23 * 15 + 15 * 30 + 6 * 90, coins.earnedCoinValue)
         assertFalse(coins.isMastered)
+    }
+
+    @Test
+    fun `observeGameCoins carries the last sync time`() = runTest {
+        every { setDao.observeForGame(1L) } returns flowOf(
+            setEntity(provider = "RETRO_ACHIEVEMENTS", providerGameId = "14402", lastSyncedAt = 1_700_000_000_000L),
+        )
+
+        assertEquals(1_700_000_000_000L, repo.observeGameCoins(1L).first()!!.lastSyncedAt)
+    }
+
+    @Test
+    fun `observeGameCoins reports a never-synced set as null`() = runTest {
+        every { setDao.observeForGame(1L) } returns flowOf(
+            setEntity(provider = "RETRO_ACHIEVEMENTS", providerGameId = "14402"),
+        )
+
+        assertNull(repo.observeGameCoins(1L).first()!!.lastSyncedAt)
     }
 
     @Test

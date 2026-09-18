@@ -364,13 +364,10 @@ class MetadataRepository @Inject constructor(
 
         }   // end !options.metadataOnly
 
-        // Scraped title: ScreenScraper's canonical name wins, TheGamesDB fallback — only
-        // updated when no user override exists.
+        // Scraped title: ScreenScraper's canonical name, TheGamesDB fallback. Deliberately NOT
+        // written through updateMetadata below — see the fill-only write after it.
         val newScrapedTitle = ssInfo?.title ?: tgdbInfo?.title
         val existingOverride = gameEntity?.userTitleOverride
-        if (newScrapedTitle != null && existingOverride == null) {
-            Timber.d("Updating scraped title to '$newScrapedTitle' for gameId=$gameId")
-        }
 
         // ── Persist metadata (COALESCE in SQL preserves existing non-null values) ─
         gameDao.updateMetadata(
@@ -387,7 +384,6 @@ class MetadataRepository @Inject constructor(
             boxArtUri    = boxArtPath,
             physicalMediaUri = physicalMediaPath,
             box3dUri     = box3dPath,
-            scrapedTitle = if (existingOverride == null) newScrapedTitle else null,
             players      = ssInfo?.players,
             ageRating    = ssInfo?.ageRating,
             franchise    = ssInfo?.franchise,
@@ -398,6 +394,15 @@ class MetadataRepository @Inject constructor(
             steamGridDbId = sgdbGameId,
             romCrc32     = romIdentity?.crc32,
         )
+
+        // The title is the one column a scrape may FILL but never OVERWRITE: naming a game the
+        // scan only knew as a filename is the whole point, but silently renaming one the library
+        // already shows under another name is not. Re-scrapes and Change Match therefore leave it
+        // alone, and the only ways a title changes are the ones the user drove — the metadata
+        // preview's chosen fields, or Edit Title (user_title_override, which outranks this column).
+        if (newScrapedTitle != null && existingOverride == null) {
+            gameDao.fillScrapedTitleIfMissing(gameId, newScrapedTitle)
+        }
 
         // Dead cached URL(s): SS occasionally moves media. Refresh the cache once from a live
         // jeuInfos and retry exactly the failed kinds with fresh URLs — one extra call total.

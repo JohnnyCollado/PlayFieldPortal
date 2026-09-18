@@ -23,7 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -65,6 +65,30 @@ private val ItemSlotWidth = CategorySlotWidth
 // clipping. XMBShell reads this so the crossbar and its subitems stay on the same vertical line.
 internal val XmbLeftAnchor = CategorySlotWidth + XmbLayoutSpec.DEFAULT.leftAnchorExtraDp.dp
 
+/**
+ * The categories the bar actually lays out. Drilled in, the XMB hides every category to the RIGHT
+ * of the active one so focus collapses onto the active column (PSP second-level behaviour) — and
+ * they are DROPPED here rather than rendered empty inside the row.
+ *
+ * That distinction is the whole point. An emptied `items` entry still occupies a slot, so the
+ * trailing phantoms left the LazyRow holding just about exactly the scroll extent
+ * `scrollToItem(selectedIndex)` asks for and no headroom: any re-measure clamped the scroll short
+ * and the bar came to rest a whole slot off, sliding the selected caticon into the game column
+ * (the flyout-then-resume corruption). Dropping them keeps the extent honest, and the resulting
+ * size change re-seats the bar on every drill in/out for free.
+ *
+ * `take` keeps the surviving indices aligned with [categories], so [selectedIndex], the selected
+ * flag and the click callbacks all still mean the same thing. A selection that isn't a real index
+ * yet (nothing loaded, -1) hides nothing — an empty bar is worse than an unfiltered one.
+ */
+internal fun visibleCategories(
+    categories: List<Category>,
+    selectedIndex: Int,
+    drilledIn: Boolean,
+): List<Category> =
+    if (drilledIn && selectedIndex in categories.indices) categories.take(selectedIndex + 1)
+    else categories
+
 @Composable
 fun XMBCategoryBar(
     categories: List<Category>,
@@ -84,20 +108,10 @@ fun XMBCategoryBar(
 ) {
     val listState = rememberLazyListState()
 
-    // Seat the selected slot INSTANTLY on the bar's first composition — including every time the
-    // XMB foreground re-appears after a fullscreen menu closes (music browser, app drawer, Settings)
-    // — so the bar never visibly scrolls in from the start (the old "snap back" on close). Only real
-    // category changes after that glide smoothly.
-    var settled by remember { mutableStateOf(false) }
-    LaunchedEffect(selectedIndex, categories.size) {
-        if (categories.isEmpty()) return@LaunchedEffect
-        val target = selectedIndex.coerceIn(0, categories.lastIndex)
-        if (settled) {
-            listState.animateScrollToItem(target)
-        } else {
-            listState.scrollToItem(target)
-            settled = true
-        }
+    // The slots the row actually lays out (see [visibleCategories] for why drilled-in categories are
+    // dropped rather than emptied).
+    val rowCategories = remember(categories, drilledIn, selectedIndex) {
+        visibleCategories(categories, selectedIndex, drilledIn)
     }
 
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
@@ -105,6 +119,31 @@ fun XMBCategoryBar(
         // offset so the caticon bar tracks the item column when the cross is nudged left/right.
         val anchor = (XmbLeftAnchor + LocalXmbHorizontalShift.current).coerceAtLeast(0.dp)
         val endPadding = (maxWidth - anchor - ItemSlotWidth).coerceAtLeast(24.dp)
+
+        // Seat the selected slot on the bar's first composition — including every time the XMB
+        // foreground re-appears after a fullscreen menu closes (music browser, app drawer, Settings)
+        // — so the bar never visibly scrolls in from the start (the old "snap back" on close).
+        //
+        // Keyed on the measured geometry as well as the selection. The cross runs under its own
+        // LocalDensity, rebuilt whenever the per-form-factor layout adjustment resolves — and that
+        // arrives asynchronously with the theme load, so coming back to the app re-measures this row.
+        // A re-measure is exactly when the scroll can land short, so it has to re-seat here; keying
+        // on the selection alone left the bar wrong until the next category press.
+        var lastTarget by remember { mutableIntStateOf(-1) }
+        LaunchedEffect(selectedIndex, rowCategories.size, maxWidth, anchor) {
+            if (rowCategories.isEmpty()) return@LaunchedEffect
+            val target = selectedIndex.coerceIn(0, rowCategories.lastIndex)
+            // A real category change glides. A re-seat that lands on the SAME slot is geometry
+            // catching up (first composition, a resume, a drill in/out), and must snap: animating
+            // there is the visible scroll-in this effect exists to prevent.
+            if (lastTarget >= 0 && target != lastTarget) {
+                listState.animateScrollToItem(target)
+            } else {
+                listState.scrollToItem(target)
+            }
+            lastTarget = target
+        }
+
         LazyRow(
             state = listState,
             // Selection-driven only: the bar auto-scrolls to the selected slot (above), and touch
@@ -115,18 +154,16 @@ fun XMBCategoryBar(
             contentPadding = PaddingValues(start = anchor, end = endPadding),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            itemsIndexed(categories, key = { _, category -> category.id }) { index, category ->
-                // While drilled in, categories to the right of the active one are hidden.
-                if (!(drilledIn && index > selectedIndex)) {                        XMBCategoryItem(
-                            category = category,
-                            isSelected = index == selectedIndex,
-                            onClick = { onCategorySelected(index) },
-                            onLongPress = { onCategoryLongPress(index) },
-                            solidUnfocusedIcons = solidUnfocusedIcons,
-                            iconAnimatingAllowed = iconAnimatingAllowed,
-                            modifier = Modifier.width(ItemSlotWidth),
-                        )
-                }
+            itemsIndexed(rowCategories, key = { _, category -> category.id }) { index, category ->
+                XMBCategoryItem(
+                    category = category,
+                    isSelected = index == selectedIndex,
+                    onClick = { onCategorySelected(index) },
+                    onLongPress = { onCategoryLongPress(index) },
+                    solidUnfocusedIcons = solidUnfocusedIcons,
+                    iconAnimatingAllowed = iconAnimatingAllowed,
+                    modifier = Modifier.width(ItemSlotWidth),
+                )
             }
         }
     }

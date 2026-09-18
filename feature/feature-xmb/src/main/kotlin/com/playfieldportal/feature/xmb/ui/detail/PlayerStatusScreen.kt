@@ -39,13 +39,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import coil3.compose.AsyncImage
 import com.playfieldportal.core.domain.achievement.ShibaTier
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.achievement.BoneGlyph
@@ -383,34 +381,6 @@ private fun RarestCardView(
     }
 }
 
-@Composable
-private fun CoinArt(iconUrl: String?, tier: ShibaTier, modifier: Modifier) {
-    if (iconUrl != null) {
-        AsyncImage(
-            model = iconUrl,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = modifier.clip(RoundedCornerShape(8.dp)),
-        )
-    } else {
-        ShibaCoinIcon(tier, modifier)
-    }
-}
-
 private fun rarityText(globalRarity: Double): String =
     if (globalRarity < 0) "an unknown share" else String.format(java.util.Locale.US, "%.2f%%", globalRarity)
 
-// A short, human unlock age: "Just now", "5 min ago", "3 hr ago", "Yesterday", "5 days ago".
-private fun relativeTime(earnedAtMillis: Long, now: Long = System.currentTimeMillis()): String {
-    val diff = (now - earnedAtMillis).coerceAtLeast(0)
-    val minutes = diff / 60_000
-    val hours = diff / 3_600_000
-    val days = diff / 86_400_000
-    return when {
-        minutes < 1 -> "Just now"
-        minutes < 60 -> "$minutes min ago"
-        hours < 24 -> "$hours hr ago"
-        days == 1L -> "Yesterday"
-        else -> "$days days ago"
-    }
-}

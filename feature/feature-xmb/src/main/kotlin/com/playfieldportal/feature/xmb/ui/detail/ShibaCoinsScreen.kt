@@ -3,74 +3,99 @@ package com.playfieldportal.feature.xmb.ui.detail
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.playfieldportal.core.domain.achievement.AchievementProvider
+import com.playfieldportal.core.domain.achievement.LocalCopyOwnership
 import com.playfieldportal.core.domain.achievement.ShibaTier
 import com.playfieldportal.core.domain.model.GamepadAction
-import com.playfieldportal.core.ui.theme.LocalPFPColors
-import com.playfieldportal.core.ui.theme.menuCursorEdge
-import com.playfieldportal.core.ui.theme.menuCursorFill
+import com.playfieldportal.core.ui.components.ControllerPrompt
+import com.playfieldportal.core.ui.components.PfpCheckMark
+import com.playfieldportal.core.ui.components.PspContextMenuOverlay
+import com.playfieldportal.core.ui.components.PspMenuRow
+import com.playfieldportal.core.ui.components.XmbHeaderPill
+import com.playfieldportal.core.ui.detail.DetailContentPadding
+import com.playfieldportal.core.ui.detail.DetailLaunchFill
+import com.playfieldportal.core.ui.detail.DetailPalette
+import com.playfieldportal.core.ui.detail.PfpDetailBackground
+import com.playfieldportal.core.ui.detail.PfpDetailHelperFooter
+import com.playfieldportal.core.ui.detail.detailPalette
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
 
-private val Bronze = Color(0xFFC07C46)
-private val Silver = Color(0xFFB9C0C7)
-private val Gold = Color(0xFFE1B12C)
-private val Platinum = Color(0xFF6F9BF5)
-private val TextPrimary = Color(0xFFEEEEEE)
-private val TextMuted = Color(0x99EEEEEE)
-private val TextDim = Color(0x66EEEEEE)
-private val CardFill = Color(0xFF1B1B26)
+// ── A game's own achievements page ────────────────────────────────────────────
+//
+// docs/plans/PFP_Achievements_Game_Page_Implementation_Plan.md: the Tracked/Untracked browser's
+// shape applied to one game's coins — the App Drawer-derived background and palette, a two-line
+// header carrying completion and the per-tier tally, a pinned Search row whose right half holds the
+// All / Earned / Locked view tabs, full-width 64dp coin rows led by the Platinum Crown, and the
+// permanent helper footer. Sort, Sync Now and Change Match live in Triangle's shared PSP context
+// menu, not on the page. Every color comes from DetailPalette: this screen owns no palette of its own.
+
+/** Coin art in a row. Square, lightly rounded — the badge reads as artwork, not as a button. */
+private val CoinArtSize = 46.dp
+private val CoinArtCorner = 4.dp
+
+/** Right-hand columns. Fixed widths so every row's rarity, status and tier line up. */
+private val MetricColumnWidth = 74.dp
+private val RarityBarWidth = 64.dp
+private val StatusColumnWidth = 108.dp
+private val TierColumnWidth = 48.dp
+
+/** Header line 2 lines up under the title, past the back arrow's 48dp target and its gap. */
+private val HeaderTitleIndent = 52.dp
+private val HeaderBarWidth = 74.dp
+private val HeaderTierIconSize = 26.dp
+
+private val TabShape = RoundedCornerShape(999.dp)
+
 private val DATE_FMT = SimpleDateFormat("MMM d, yyyy", Locale.US)
 
-private fun metalOf(tier: ShibaTier) = when (tier) {
-    ShibaTier.BRONZE -> Bronze
-    ShibaTier.SILVER -> Silver
-    ShibaTier.GOLD -> Gold
-    ShibaTier.PLATINUM -> Platinum
-}
+/** Earned reads in the same restrained green the detail pages already use for Launch. */
+private val EarnedColor = DetailLaunchFill
 
 @Composable
 fun ShibaCoinsScreen(
@@ -79,9 +104,10 @@ fun ShibaCoinsScreen(
     modifier: Modifier = Modifier,
     pendingGamepadAction: GamepadAction? = null,
     onGamepadActionConsumed: () -> Unit = {},
+    showTouchControls: Boolean = false,
     viewModel: ShibaCoinsViewModel = hiltViewModel(),
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     LaunchedEffect(target) { viewModel.load(target) }
     LaunchedEffect(state.closed) {
         if (state.closed) {
@@ -96,403 +122,687 @@ fun ShibaCoinsScreen(
         }
     }
 
+    // Focus follow, the library's: every focus or order change SNAPS the focused row to the
+    // 1/3-viewport line (clamped at the list edges, so the top rows sit flush under Search).
+    // Instant, PSP-style — the built-in scroll animation is too slow for held input. The snap also
+    // drops the keyed LazyColumn's anchor after a reorder, which otherwise keeps the viewport glued
+    // to the old rows. Search is pinned above the list, so focusing it shows the top.
     val listState = rememberLazyListState()
-    // Same authoritative snap-follow as the Shiba library list: header focus pins the list to
-    // the top; a focused coin row snaps to the 1/3-viewport line (clamped at the list edges).
-    // Instant, PSP-style — animated following lagged behind held input. Reacting to the
-    // displayed ids as well makes a sort/filter reorder re-snap, dropping the keyed list's
-    // viewport anchor to the old rows.
-    LaunchedEffect(Unit) {
-        snapshotFlow { state.displayed.map { it.id } to state.focusIndex }.collect { (_, focus) ->
-            if (focus < FOCUS_COINS_START) {
-                listState.scrollToItem(0)
-            } else {
-                val third = listState.layoutInfo.viewportSize.height / 3
-                listState.scrollToItem(1 + (focus - FOCUS_COINS_START), scrollOffset = -third)
-            }
+    LaunchedEffect(listState) {
+        snapshotFlow { state.rows.map { it.id } to state.focusPosition }.collect { (_, position) ->
+            val third = listState.layoutInfo.viewportSize.height / 3
+            listState.scrollToItem((position - 1).coerceAtLeast(0), scrollOffset = -third)
         }
     }
 
-    val pfp = LocalPFPColors.current
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    0f to pfp.backgroundTop.copy(alpha = 0.72f),
-                    1f to pfp.backgroundBottom.copy(alpha = 0.90f),
-                )
-            ),
-    ) {
-        LazyColumn(
-            state = listState,
-            modifier = Modifier
-                .fillMaxSize()
-                .widthIn(max = 920.dp)
-                .align(Alignment.TopCenter)
-                .padding(horizontal = 28.dp),
-        ) {
-            item(key = "header") { HeaderSection(state, viewModel) }
-            itemsIndexed(state.displayed, key = { _, c -> c.id }) { i, coin ->
-                CoinListRow(
-                    coin,
-                    focused = state.focusIndex == FOCUS_COINS_START + i,
-                    revealed = coin.id in state.revealedIds,
-                    onToggleReveal = { viewModel.toggleReveal(coin) },
-                )
-            }
-            if (state.linked && state.displayed.isEmpty()) {
-                item { Text("No coins to show.", color = TextMuted, modifier = Modifier.padding(vertical = 16.dp)) }
-            }
-            item { Spacer(Modifier.height(24.dp)) }
-        }
-    }
-}
+    val palette = detailPalette()
+    PfpDetailBackground(modifier = modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize()) {
+            ShibaCoinsHeader(state, palette, onBack = viewModel::close)
 
-@Composable
-private fun HeaderSection(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewModel) {
-    Column(Modifier.fillMaxWidth()) {
-        DetailBreadcrumb(title = state.title, subtitle = "Shiba Coins", onBack = viewModel::close)
-        SummaryHeader(state)
-        // An account entry has nothing to link — it is already keyed to its provider identity.
-        if (!state.linked && !state.accountOnly) LinkSection(state, viewModel, focused = state.focusIndex == FOCUS_ACTION)
-        SyncRow(state, viewModel, focused = state.focusIndex == FOCUS_ACTION && (state.linked || state.accountOnly))
-        SortFilterChips(state, viewModel)
-        state.message?.let { msg ->
-            Text(
-                "$msg  (tap to dismiss)",
-                color = menuCursorEdge(),
-                fontSize = 13.sp,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { viewModel.dismissMessage() }
-                    .padding(vertical = 10.dp),
+            SearchRow(
+                query = state.query,
+                editing = state.searchEditing,
+                focused = state.searchFocused,
+                palette = palette,
+                placeholder = "Search coins…",
+                onQueryChange = viewModel::setQuery,
+                onClick = viewModel::onSearchClick,
+                onEditEnded = viewModel::onSearchEditEnded,
+                trailing = {
+                    // An unlinked game has no coins to view, so it has no views to switch between.
+                    if (!state.showLinkPanel) {
+                        ShibaCoinsViewTabs(
+                            active = state.filter,
+                            counts = state.viewCounts,
+                            palette = palette,
+                            showKeyCaps = !showTouchControls,
+                            onSelect = viewModel::setFilter,
+                        )
+                    }
+                },
             )
-        }
-    }
-}
 
-@Composable
-private fun SummaryHeader(state: ShibaCoinsUiState) {
-    val summary = state.summary
-    Column(Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 12.dp)) {
-        Row(verticalAlignment = Alignment.Bottom) {
-            Text("Progress", color = TextMuted, fontSize = 12.sp, modifier = Modifier.weight(1f))
-            Text(
-                "${((summary?.progress ?: 0f) * 100).roundToInt()}%",
-                color = TextPrimary, fontSize = 26.sp, fontWeight = FontWeight.Bold,
-            )
-        }
-        Spacer(Modifier.height(6.dp))
-        LinearProgressIndicator(
-            progress = { summary?.progress ?: 0f },
-            modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
-            color = menuCursorEdge(),
-            trackColor = Color(0x33FFFFFF),
-        )
-        Spacer(Modifier.height(12.dp))
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(10.dp))
-                .background(CardFill)
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-        ) {
-            ShibaCoinIcon(ShibaTier.PLATINUM, Modifier.size(28.dp).alpha(if (summary?.isMastered == true) 1f else 0.28f))
-            Spacer(Modifier.width(10.dp))
-            Text(
-                if (summary?.isMastered == true) "Platinum crown earned" else "Master every coin to earn the Platinum crown",
-                color = if (summary?.isMastered == true) TextPrimary else TextMuted,
-                fontSize = 13.sp, fontWeight = FontWeight.Medium,
-            )
-        }
-    }
-}
+            // Sync and match results read as a quiet line in the page, not as a modal.
+            state.message?.let { message -> NoticeLine(message, palette, viewModel::dismissMessage) }
 
-// The sync-source line doubles as the LOCAL_STEAM ownership readout. Wording stays neutral —
-// the owned-list signal can never prove piracy (family sharing, alternate accounts, unplayed
-// free games all look unowned), so "cracked" is never said; unknown states stay silent.
-private fun syncSourceLabel(state: ShibaCoinsUiState): String {
-    if (state.provider != AchievementProvider.LOCAL_STEAM) {
-        return "Synced from ${state.provider.name.lowercase().replace('_', ' ')}"
-    }
-    return when (state.ownership) {
-        com.playfieldportal.core.domain.achievement.LocalCopyOwnership.OWNED ->
-            "Local copy — owned on Steam, played offline"
-        com.playfieldportal.core.domain.achievement.LocalCopyOwnership.NOT_IN_LIBRARY ->
-            "Local copy — not in your Steam library, tracked locally"
-        null -> "Local copy — achievements tracked locally"
-    }
-}
-
-@Composable
-private fun LinkSection(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewModel, focused: Boolean) {
-    val edge = menuCursorEdge()
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
-            .then(if (focused) Modifier.border(2.dp, edge, RoundedCornerShape(10.dp)) else Modifier)
-            .padding(vertical = 10.dp, horizontal = if (focused) 8.dp else 0.dp),
-    ) {
-        when (state.provider) {
-            AchievementProvider.STEAM -> AutoMatchControls(state, viewModel, focused)
-            AchievementProvider.RETRO_ACHIEVEMENTS -> {
-                // RetroAchievements is hash-only — Auto-Match hashes the ROM and looks it up;
-                // there is no copy question and no manual entry.
-                Text("This game isn't linked yet", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    "RetroAchievements identifies games by ROM hash. Auto-Match hashes this ROM and looks it up — only a verified dump registered on RetroAchievements can link.",
-                    color = TextMuted,
-                    fontSize = 12.sp,
-                )
-                Spacer(Modifier.height(8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    PillButton(
-                        if (state.isMatching) "Matching…" else "Auto-Match",
-                        enabled = !state.isMatching,
-                        focused = focused,
-                    ) { viewModel.autoMatchRaByHash() }
+            Box(Modifier.fillMaxWidth().weight(1f)) {
+                if (state.rows.isEmpty()) {
+                    // The shell stays; only the list area explains itself.
+                    Text(
+                        text = state.emptyMessage,
+                        color = palette.textMuted,
+                        fontSize = 15.sp,
+                        modifier = Modifier.padding(horizontal = DetailContentPadding + 10.dp, vertical = 24.dp),
+                    )
+                }
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize().padding(horizontal = DetailContentPadding),
+                ) {
+                    items(
+                        items = state.rows,
+                        key = { it.id },
+                        // The link panel is a different shape from a coin row; keep their pools apart.
+                        contentType = { it::class },
+                    ) { row ->
+                        val focused = row.id == state.focusedRowId
+                        val onClick = remember(row.id) { { viewModel.onRowClick(row.id) } }
+                        when (row) {
+                            is CoinListItem.Platinum -> PlatinumCrownRow(row, focused, palette, onClick)
+                            is CoinListItem.Coin -> CoinListRow(
+                                coin = row.coin,
+                                revealed = row.coin.id in state.revealedIds,
+                                focused = focused,
+                                palette = palette,
+                                onClick = onClick,
+                            )
+                            is CoinListItem.LinkPanel -> LinkPanelRow(state, focused, palette, viewModel)
+                        }
+                    }
                 }
             }
-            AchievementProvider.LOCAL_STEAM -> {
-                // The appid comes from the game folder's steam_settings — nothing to enter by hand.
-                Text("Not linked yet", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    "Local Steam-emu games link from the steam_appid.txt in their game folder. Run Auto-match in Settings ▸ Shiba Coins to link this game.",
-                    color = TextMuted,
-                    fontSize = 12.sp,
-                )
+
+            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                PfpDetailHelperFooter(items = shibaCoinsHelperItems(state), visible = !showTouchControls)
+                // Touch mode: the hints fade and the controller-only action becomes a pill in the
+                // same reserved band (the tabs, rows and ◀ are tappable already).
+                if (showTouchControls && state.options == null) {
+                    XmbHeaderPill(label = "Options", onClick = viewModel::openOptions)
+                }
             }
-            AchievementProvider.VITA_TROPHY -> {
-                // PS Vita trophies link from the Vita3K ux0 scan — nothing to enter by hand.
-                Text("Not linked yet", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    "PS Vita trophies link automatically from Vita3K. Set your Vita3K data folder in the library and scan to link this game.",
-                    color = TextMuted,
-                    fontSize = 12.sp,
-                )
-            }
+        }
+
+        // Sort, Sync Now and Change Match: the same right-side menu the library opens on Triangle.
+        state.options?.let { menu ->
+            PspContextMenuOverlay(
+                title = menu.title,
+                rows = state.optionRows.map { row -> PspMenuRow(label = row.label, checked = row.checked) },
+                selectedIndex = menu.selectedIndex,
+                onRowActivated = viewModel::onOptionActivated,
+                onDismiss = viewModel::closeOptions,
+            )
         }
     }
 }
 
-// The Auto-Match flow for an unlinked Steam-platform game: one button, a legit-copy prompt that
-// picks the Steam-vs-local branch, and a manual appid fallback when neither branch matched.
+// ── Header ────────────────────────────────────────────────────────────────────
+
+/**
+ * The page's own two-line header. Deliberately not [PfpDetailBreadcrumb]: the title is larger here
+ * (25sp against the breadcrumb's 20sp) and a second line of stats hangs below it, and changing the
+ * shared breadcrumb would restyle the library and Game Detail along with it.
+ */
 @Composable
-private fun AutoMatchControls(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewModel, focused: Boolean) {
-    when (state.autoMatchStep) {
-        null -> {
-            Text("This game isn't linked yet", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-            Spacer(Modifier.height(8.dp))
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                PillButton("Auto-Match", enabled = !state.isMatching, focused = focused) { viewModel.startAutoMatch() }
-                if (state.isMatching) CircularProgressIndicator(color = menuCursorEdge(), modifier = Modifier.size(16.dp))
+private fun ShibaCoinsHeader(state: ShibaCoinsUiState, palette: DetailPalette, onBack: () -> Unit) {
+    Column(Modifier.fillMaxWidth().background(headerShade(palette))) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth().padding(start = DetailContentPadding, end = DetailContentPadding, top = 4.dp),
+        ) {
+            // 48dp touch target (Android's minimum) around a 16sp glyph, as the breadcrumb does.
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(48.dp)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        role = Role.Button,
+                        onClick = onBack,
+                    ),
+            ) {
+                Text("◀", color = palette.textMuted, fontSize = 16.sp)
             }
-        }
-        AutoMatchStep.CONFIRM_COPY -> {
-            Text("Is this a legitimate Steam copy?", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.width(4.dp))
             Text(
-                "A legit copy matches against Steam; anything else scans your game folders for Steam-emu data.",
-                color = TextMuted, fontSize = 12.sp,
+                text = state.title,
+                color = palette.textPrimary,
+                fontSize = 25.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
             )
-            Spacer(Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                PillButton("Yes", enabled = true, focused = state.autoMatchYes) { viewModel.chooseAutoMatch(true) }
-                PillButton("No", enabled = true, focused = !state.autoMatchYes) { viewModel.chooseAutoMatch(false) }
+            Spacer(Modifier.width(16.dp))
+            Text(
+                text = headerSubtitle(state),
+                color = palette.textMuted,
+                fontSize = 14.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(28.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = DetailContentPadding + HeaderTitleIndent, end = DetailContentPadding, bottom = 10.dp),
+        ) {
+            val summary = state.summary
+            HeaderStat(
+                label = "COMPLETION",
+                value = if (summary == null) "—" else "${(summary.progress * 100).roundToInt()}%",
+                palette = palette,
+            ) {
+                if (summary != null) {
+                    Spacer(Modifier.height(3.dp))
+                    ProgressLine(summary.progress, palette, Modifier.width(HeaderBarWidth), height = 4.dp)
+                }
+            }
+            HeaderStat(
+                label = "EARNED",
+                value = if (summary == null) "—" else "${summary.earned.total} / ${summary.total.total}",
+                palette = palette,
+            )
+            if (summary != null) {
+                Spacer(Modifier.weight(1f))
+                Row(horizontalArrangement = Arrangement.spacedBy(18.dp)) {
+                    CoinOrder.forEach { tier ->
+                        HeaderTierCell(tier, state.tierEarned(tier), state.tierTotal(tier), palette)
+                    }
+                }
             }
         }
-        AutoMatchStep.ENTER_APPID -> {
-            var draft by remember { mutableStateOf("") }
-            Text("No automatic match found", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-            Spacer(Modifier.height(6.dp))
-            Text("Enter the game's Steam app id:", color = TextMuted, fontSize = 12.sp)
-            Spacer(Modifier.height(6.dp))
-            OutlinedTextField(
-                value = draft,
-                onValueChange = { draft = it },
-                label = { Text("Steam app id", color = TextMuted) },
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary,
-                    focusedBorderColor = menuCursorEdge(), unfocusedBorderColor = Color(0x44FFFFFF),
-                    cursorColor = menuCursorEdge(),
-                ),
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Spacer(Modifier.height(8.dp))
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                PillButton("Link", enabled = draft.isNotBlank() && !state.isMatching) { viewModel.submitManualAppId(draft) }
-                PillButton("Cancel", enabled = true) { viewModel.cancelAutoMatch() }
-                if (state.isMatching) CircularProgressIndicator(color = menuCursorEdge(), modifier = Modifier.size(16.dp))
-            }
-        }
+        Box(Modifier.fillMaxWidth().height(1.dp).background(palette.divider))
+    }
+}
+
+/**
+ * The right of header line 1: where these coins come from and how fresh they are. A game that was
+ * never synced says so rather than showing a stale-looking blank.
+ */
+private fun headerSubtitle(state: ShibaCoinsUiState): String {
+    val freshness = when {
+        state.lastSyncedAt != null -> "Synced ${relativeTime(state.lastSyncedAt)}"
+        state.showLinkPanel -> "Not linked"
+        else -> "Never synced"
+    }
+    val source = listOfNotNull(state.platformLabel.takeIf { it.isNotBlank() }, ownershipTag(state))
+    return (source + freshness).joinToString(" · ")
+}
+
+/** The Platinum is the set-completion award, so its cell counts the crown, not individual coins. */
+private fun ShibaCoinsUiState.tierEarned(tier: ShibaTier): Int = when (tier) {
+    ShibaTier.PLATINUM -> if (isMastered) 1 else 0
+    ShibaTier.GOLD -> summary?.earned?.gold ?: 0
+    ShibaTier.SILVER -> summary?.earned?.silver ?: 0
+    ShibaTier.BRONZE -> summary?.earned?.bronze ?: 0
+}
+
+private fun ShibaCoinsUiState.tierTotal(tier: ShibaTier): Int = when (tier) {
+    ShibaTier.PLATINUM -> 1
+    ShibaTier.GOLD -> summary?.total?.gold ?: 0
+    ShibaTier.SILVER -> summary?.total?.silver ?: 0
+    ShibaTier.BRONZE -> summary?.total?.bronze ?: 0
+}
+
+@Composable
+private fun HeaderStat(
+    label: String,
+    value: String,
+    palette: DetailPalette,
+    below: @Composable () -> Unit = {},
+) {
+    Column {
+        Text(label, color = palette.textMuted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, lineHeight = 13.sp, maxLines = 1, softWrap = false)
+        Text(value, color = palette.textPrimary, fontSize = 19.sp, fontWeight = FontWeight.Medium, lineHeight = 23.sp, maxLines = 1, softWrap = false)
+        below()
     }
 }
 
 @Composable
-private fun SyncRow(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewModel, focused: Boolean) {
+private fun HeaderTierCell(tier: ShibaTier, earned: Int, total: Int, palette: DetailPalette) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        ShibaCoinIcon(tier, Modifier.size(HeaderTierIconSize))
+        Spacer(Modifier.width(6.dp))
+        Column {
+            Text("$earned", color = palette.textPrimary, fontSize = 14.sp, lineHeight = 16.sp, maxLines = 1, softWrap = false)
+            Text("/$total", color = palette.textMuted, fontSize = 11.sp, lineHeight = 13.sp, maxLines = 1, softWrap = false)
+        }
+    }
+}
+
+// ── View tabs ─────────────────────────────────────────────────────────────────
+
+/**
+ * All / Earned / Locked, in the right half of the pinned Search row. The counts come from the whole
+ * set, not the displayed list, so they hold still while you type.
+ */
+@Composable
+private fun ShibaCoinsViewTabs(
+    active: CoinFilter,
+    counts: CoinViewCounts,
+    palette: DetailPalette,
+    showKeyCaps: Boolean,
+    onSelect: (CoinFilter) -> Unit,
+) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = Modifier.fillMaxHeight(),
     ) {
-        Text(syncSourceLabel(state), color = TextMuted, fontSize = 12.sp, modifier = Modifier.weight(1f))
-        if (state.isSyncing) {
-            CircularProgressIndicator(color = menuCursorEdge(), modifier = Modifier.size(18.dp))
-        } else if (state.linked || state.accountOnly) {
-            // "Change match" is user-provided matching — Steam library games only;
-            // RetroAchievements is hash-only and account entries have no link to change. On the
-            // controller the action row holds both controls: left/right picks, confirm activates.
-            val hasChangeMatch = state.provider == AchievementProvider.STEAM && state.linked
-            if (hasChangeMatch) {
-                val changeFocused = focused && state.actionOnChangeMatch
-                val edge = menuCursorEdge()
-                Text(
-                    "Change match",
-                    color = if (changeFocused) Color.White else TextMuted,
-                    fontSize = 12.sp,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .then(if (changeFocused) Modifier.border(2.dp, edge, RoundedCornerShape(8.dp)) else Modifier)
-                        .clickable { viewModel.changeLink() }
-                        .padding(horizontal = 8.dp, vertical = 6.dp),
+        // The shoulder glyphs are drawn by the shared prompt so they follow the user's controller
+        // family (L1/R1, LB/RB, L/R); the tabs beside them carry the meaning, so they take no label.
+        if (showKeyCaps) ControllerPrompt(action = GamepadAction.PREV_CATEGORY, label = "", glyphSize = 18.dp)
+        CoinFilter.entries.forEach { view ->
+            ViewTab(
+                label = "${view.label} ${counts.forView(view)}",
+                selected = view == active,
+                palette = palette,
+                onClick = remember(view) { { onSelect(view) } },
+            )
+        }
+        if (showKeyCaps) ControllerPrompt(action = GamepadAction.NEXT_CATEGORY, label = "", glyphSize = 18.dp)
+    }
+}
+
+@Composable
+private fun ViewTab(label: String, selected: Boolean, palette: DetailPalette, onClick: () -> Unit) {
+    // The pill is small, but its tap target fills the 48dp Search row so touch has something to hit.
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .fillMaxHeight()
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                role = Role.Tab,
+                onClick = onClick,
+            ),
+    ) {
+        Text(
+            text = label,
+            color = if (selected) palette.textPrimary else palette.textMuted,
+            fontSize = 13.sp,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+            maxLines = 1,
+            softWrap = false,
+            modifier = Modifier
+                .clip(TabShape)
+                .then(
+                    if (selected) {
+                        Modifier
+                            .background(palette.focus.copy(alpha = 0.28f), TabShape)
+                            .border(1.dp, palette.focus, TabShape)
+                    } else {
+                        Modifier
+                    },
                 )
-                Spacer(Modifier.width(8.dp))
-            }
-            PillButton(
-                "Sync now",
-                enabled = true,
-                focused = focused && !(hasChangeMatch && state.actionOnChangeMatch),
-            ) { viewModel.sync() }
-        }
+                .padding(horizontal = 10.dp, vertical = 5.dp),
+        )
     }
 }
 
+// ── Notice line ───────────────────────────────────────────────────────────────
+
+/** The one-line result of a sync or a match. The next controller press or a tap clears it. */
 @Composable
-private fun SortFilterChips(state: ShibaCoinsUiState, viewModel: ShibaCoinsViewModel) {
-    Column(Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = focusRing(state.focusIndex == FOCUS_SORT),
-        ) {
-            Text("Sort  (X)", color = TextDim, fontSize = 11.sp)
-            Chip("Tier", state.sort == CoinSort.TIER) { viewModel.setSort(CoinSort.TIER) }
-            Chip("Earned", state.sort == CoinSort.EARNED) { viewModel.setSort(CoinSort.EARNED) }
-            Chip("Rarest", state.sort == CoinSort.RAREST) { viewModel.setSort(CoinSort.RAREST) }
-        }
-        Spacer(Modifier.height(6.dp))
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = focusRing(state.focusIndex == FOCUS_FILTER),
-        ) {
-            Text("Show  (Y)", color = TextDim, fontSize = 11.sp)
-            Chip("All", state.filter == CoinFilter.ALL) { viewModel.setFilter(CoinFilter.ALL) }
-            Chip("Earned", state.filter == CoinFilter.EARNED) { viewModel.setFilter(CoinFilter.EARNED) }
-            Chip("Locked", state.filter == CoinFilter.LOCKED) { viewModel.setFilter(CoinFilter.LOCKED) }
-        }
-    }
+private fun NoticeLine(message: String, palette: DetailPalette, onDismiss: () -> Unit) {
+    Text(
+        text = message,
+        color = palette.textMuted,
+        fontSize = 13.sp,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDismiss)
+            .padding(horizontal = DetailContentPadding + 10.dp, vertical = 8.dp),
+    )
 }
 
-@Composable
-private fun focusRing(focused: Boolean): Modifier {
-    val edge = menuCursorEdge()
-    return if (focused) Modifier
-        .clip(RoundedCornerShape(999.dp))
-        .border(2.dp, edge, RoundedCornerShape(999.dp))
-        .padding(4.dp)
-    else Modifier
-}
+// ── Rows ──────────────────────────────────────────────────────────────────────
 
 @Composable
 private fun CoinListRow(
     coin: CoinRow,
+    revealed: Boolean,
     focused: Boolean,
-    revealed: Boolean = false,
-    onToggleReveal: () -> Unit = {},
+    palette: DetailPalette,
+    onClick: () -> Unit,
 ) {
     // A hidden coin stays redacted until earned — unless the user chose to reveal it (confirm/tap
     // toggles; the same action hides it again).
-    val hideable = coin.isHidden && !coin.isEarned
-    val redacted = hideable && !revealed
-    val edge = menuCursorEdge()
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
-            .then(if (hideable) Modifier.clickable(onClick = onToggleReveal) else Modifier)
-            .then(if (focused) Modifier.border(2.dp, edge, RoundedCornerShape(10.dp)) else Modifier)
-            .padding(vertical = 9.dp, horizontal = 8.dp),
-    ) {
-        ShibaCoinIcon(coin.tier, Modifier.size(26.dp).alpha(if (coin.isEarned) 1f else 0.28f))
-        Spacer(Modifier.width(12.dp))
-        Column(Modifier.weight(1f)) {
-            Text(
-                if (redacted) "Hidden coin" else coin.title,
-                color = if (coin.isEarned) TextPrimary else TextMuted,
-                fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis,
+    val redacted = coin.isHideable && !revealed
+    ShibaCoinsRow(
+        // A redacted coin never shows its badge: the artwork alone can give the coin away.
+        iconUrl = if (redacted) null else coin.iconUrl,
+        tier = coin.tier,
+        dimmed = !coin.isEarned,
+        title = if (redacted) "Hidden Coin" else coin.title,
+        titleItalic = redacted,
+        description = when {
+            redacted -> "Keep playing — or press Confirm to reveal"
+            // Steam's Web API never returns a hidden achievement's description (even once earned),
+            // so the reveal shows the real title but there is no how-to to show.
+            coin.isHidden && coin.description.isBlank() -> "Steam keeps this one's description secret"
+            else -> coin.description
+        },
+        // A negative rarity is the "provider reported no percentage" sentinel.
+        metricValue = if (coin.globalRarity < 0) "—" else String.format(Locale.US, "%.1f%%", coin.globalRarity),
+        metricFraction = if (coin.globalRarity < 0) 0f else (coin.globalRarity / 100.0).toFloat(),
+        metricLabel = "of players",
+        earned = coin.isEarned,
+        statusDetail = coin.earnedAt?.let { DATE_FMT.format(Date(it)) },
+        focused = focused,
+        palette = palette,
+        onClick = onClick,
+    )
+}
+
+/**
+ * The set-completion award, pinned above the coins. It is not one of the provider's achievements,
+ * so it has nothing to open — it can hold focus, and Confirm does nothing on it.
+ */
+@Composable
+private fun PlatinumCrownRow(
+    row: CoinListItem.Platinum,
+    focused: Boolean,
+    palette: DetailPalette,
+    onClick: () -> Unit,
+) {
+    ShibaCoinsRow(
+        iconUrl = null,
+        tier = ShibaTier.PLATINUM,
+        dimmed = !row.isMastered,
+        title = "Platinum Crown",
+        titleItalic = false,
+        description = "Earn every other coin in the game",
+        metricValue = "${row.earned} / ${row.total}",
+        metricFraction = if (row.total == 0) 0f else row.earned.toFloat() / row.total,
+        metricLabel = "coins earned",
+        earned = row.isMastered,
+        statusDetail = null,
+        focused = focused,
+        palette = palette,
+        onClick = onClick,
+    )
+}
+
+/**
+ * The one row geometry every list row shares: art, the name and its explanation, a number with its
+ * bar, the earned/locked mark, and the tier. Fixed at [RowHeight] focused or not, so nothing shifts.
+ */
+@Composable
+private fun ShibaCoinsRow(
+    iconUrl: String?,
+    tier: ShibaTier,
+    dimmed: Boolean,
+    title: String,
+    titleItalic: Boolean,
+    description: String,
+    metricValue: String,
+    metricFraction: Float,
+    metricLabel: String,
+    earned: Boolean,
+    statusDetail: String?,
+    focused: Boolean,
+    palette: DetailPalette,
+    onClick: () -> Unit,
+) {
+    Column {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(RowHeight)
+                .shibaFocus(focused, palette)
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick)
+                .padding(horizontal = 10.dp),
+        ) {
+            CoinArt(
+                iconUrl = iconUrl,
+                tier = tier,
+                dimmed = dimmed,
+                cornerRadius = CoinArtCorner,
+                modifier = Modifier.size(CoinArtSize),
             )
-            Text(
-                when {
-                    redacted -> "Keep playing — or press confirm to reveal"
-                    // Steam's Web API never returns a hidden achievement's description (even once
-                    // earned) — the reveal shows the real title, but there is no how-to to show.
-                    coin.isHidden && coin.description.isBlank() -> "Steam keeps this one's description secret"
-                    else -> coin.description
-                },
-                color = TextDim, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
-            )
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    color = if (focused) palette.textPrimary else palette.textPrimary.copy(alpha = 0.85f),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    fontStyle = if (titleItalic) FontStyle.Italic else FontStyle.Normal,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = description,
+                    color = palette.textMuted,
+                    fontSize = 12.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Spacer(Modifier.width(16.dp))
+            MetricColumn(metricValue, metricFraction, metricLabel, palette)
+            Spacer(Modifier.width(12.dp))
+            StatusColumn(earned, statusDetail, palette)
+            TierColumn(tier, palette)
         }
-        Spacer(Modifier.width(10.dp))
-        Column(horizontalAlignment = Alignment.End) {
-            Text(
-                // A negative rarity is the "provider reported no percentage" sentinel.
-                if (coin.globalRarity < 0) "Rarity unavailable"
-                else String.format(Locale.US, "%.1f%%", coin.globalRarity),
-                color = metalOf(coin.tier), fontSize = 12.sp,
-            )
-            Text(
-                if (coin.isEarned) coin.earnedAt?.let { DATE_FMT.format(Date(it)) } ?: "Earned" else "Locked",
-                color = TextDim, fontSize = 10.sp,
-            )
+        Separator(palette)
+    }
+}
+
+@Composable
+private fun MetricColumn(value: String, fraction: Float, label: String, palette: DetailPalette) {
+    Column(Modifier.width(MetricColumnWidth), horizontalAlignment = Alignment.End) {
+        Text(value, color = palette.textPrimary, fontSize = 16.sp, lineHeight = 19.sp, maxLines = 1, softWrap = false)
+        Spacer(Modifier.height(3.dp))
+        ProgressLine(fraction, palette, Modifier.width(RarityBarWidth))
+        Spacer(Modifier.height(2.dp))
+        Text(label, color = palette.textMuted, fontSize = 9.sp, lineHeight = 11.sp, maxLines = 1, softWrap = false)
+    }
+}
+
+@Composable
+private fun StatusColumn(earned: Boolean, detail: String?, palette: DetailPalette) {
+    Column(Modifier.width(StatusColumnWidth)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (earned) {
+                PfpCheckMark(EarnedColor, size = 14.dp)
+                Spacer(Modifier.width(6.dp))
+                Text("Earned", color = EarnedColor, fontSize = 13.sp, maxLines = 1, softWrap = false)
+            } else {
+                Icon(Icons.Filled.Lock, contentDescription = null, tint = palette.textMuted, modifier = Modifier.size(13.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("Locked", color = palette.textMuted, fontSize = 13.sp, maxLines = 1, softWrap = false)
+            }
+        }
+        if (earned && detail != null) {
+            Text(detail, color = palette.textMuted, fontSize = 11.sp, lineHeight = 13.sp, maxLines = 1, softWrap = false)
         }
     }
 }
 
 @Composable
-private fun Chip(label: String, selected: Boolean, onClick: () -> Unit) {
-    Text(
-        label,
-        color = if (selected) Color.White else TextMuted,
-        fontSize = 12.sp,
+private fun TierColumn(tier: ShibaTier, palette: DetailPalette) {
+    Column(Modifier.width(TierColumnWidth), horizontalAlignment = Alignment.CenterHorizontally) {
+        ShibaCoinIcon(tier, Modifier.size(24.dp))
+        Text(
+            text = tier.name.lowercase().replaceFirstChar { it.uppercase() },
+            color = palette.textMuted,
+            fontSize = 9.sp,
+            lineHeight = 11.sp,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            softWrap = false,
+        )
+    }
+}
+
+// ── Unlinked game ─────────────────────────────────────────────────────────────
+
+/**
+ * An unlinked game has no coins to list, so its whole list area is this one focusable panel: what
+ * the provider needs in order to match, and the Auto-Match flow itself. The logic is unchanged from
+ * the previous page — only the styling follows the new rows.
+ */
+@Composable
+private fun LinkPanelRow(
+    state: ShibaCoinsUiState,
+    focused: Boolean,
+    palette: DetailPalette,
+    viewModel: ShibaCoinsViewModel,
+) {
+    Column(
         modifier = Modifier
-            .clip(RoundedCornerShape(999.dp))
-            .background(if (selected) menuCursorFill() else Color(0x22FFFFFF))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 6.dp),
-    )
+            .fillMaxWidth()
+            .shibaFocus(focused, palette)
+            .padding(horizontal = 14.dp, vertical = 14.dp),
+    ) {
+        when (state.autoMatchStep) {
+            null -> when (state.provider) {
+                AchievementProvider.STEAM -> {
+                    PanelTitle("This game isn't linked yet", palette)
+                    PanelBody(
+                        "Auto-Match asks whether this is a legitimate Steam copy, then resolves it against " +
+                            "Steam or scans your game folders for Steam-emu data.",
+                        palette,
+                    )
+                    PanelActions {
+                        PanelButton("Auto-Match", palette, enabled = !state.isMatching, highlighted = focused) {
+                            viewModel.startAutoMatch()
+                        }
+                        if (state.isMatching) PanelSpinner(palette)
+                    }
+                }
+                AchievementProvider.RETRO_ACHIEVEMENTS -> {
+                    PanelTitle("This game isn't linked yet", palette)
+                    PanelBody(
+                        "RetroAchievements identifies games by ROM hash. Auto-Match hashes this ROM and looks " +
+                            "it up — only a verified dump registered on RetroAchievements can link.",
+                        palette,
+                    )
+                    PanelActions {
+                        PanelButton(
+                            label = if (state.isMatching) "Matching…" else "Auto-Match",
+                            palette = palette,
+                            enabled = !state.isMatching,
+                            highlighted = focused,
+                        ) { viewModel.autoMatchRaByHash() }
+                    }
+                }
+                // Both of these link from a scan, not from anything the user can do on this page.
+                AchievementProvider.LOCAL_STEAM -> {
+                    PanelTitle("Not linked yet", palette)
+                    PanelBody(
+                        "Local Steam-emu games link from the steam_appid.txt in their game folder. Run " +
+                            "Auto-match in Settings ▸ Shiba Coins to link this game.",
+                        palette,
+                    )
+                }
+                AchievementProvider.VITA_TROPHY -> {
+                    PanelTitle("Not linked yet", palette)
+                    PanelBody(
+                        "PS Vita trophies link automatically from Vita3K. Set your Vita3K data folder in the " +
+                            "library and scan to link this game.",
+                        palette,
+                    )
+                }
+            }
+            AutoMatchStep.CONFIRM_COPY -> {
+                PanelTitle("Is this a legitimate Steam copy?", palette)
+                PanelBody(
+                    "A legit copy matches against Steam; anything else scans your game folders for Steam-emu data.",
+                    palette,
+                )
+                PanelActions {
+                    PanelButton("Yes", palette, enabled = true, highlighted = state.autoMatchYes) {
+                        viewModel.chooseAutoMatch(true)
+                    }
+                    PanelButton("No", palette, enabled = true, highlighted = !state.autoMatchYes) {
+                        viewModel.chooseAutoMatch(false)
+                    }
+                }
+            }
+            AutoMatchStep.ENTER_APPID -> {
+                var draft by remember { mutableStateOf("") }
+                PanelTitle("No automatic match found", palette)
+                PanelBody("Enter the game's Steam app id:", palette)
+                OutlinedTextField(
+                    value = draft,
+                    onValueChange = { draft = it },
+                    label = { Text("Steam app id", color = palette.textMuted) },
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = palette.textPrimary,
+                        unfocusedTextColor = palette.textPrimary,
+                        focusedBorderColor = palette.focus,
+                        unfocusedBorderColor = palette.rowEdge,
+                        cursorColor = palette.focus,
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                PanelActions {
+                    PanelButton("Link", palette, enabled = draft.isNotBlank() && !state.isMatching) {
+                        viewModel.submitManualAppId(draft)
+                    }
+                    PanelButton("Cancel", palette, enabled = true) { viewModel.cancelAutoMatch() }
+                    if (state.isMatching) PanelSpinner(palette)
+                }
+            }
+        }
+    }
 }
 
 @Composable
-private fun PillButton(label: String, enabled: Boolean, focused: Boolean = false, onClick: () -> Unit) {
-    val edge = menuCursorEdge()
+private fun PanelTitle(text: String, palette: DetailPalette) {
+    Text(text, color = palette.textPrimary, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+}
+
+@Composable
+private fun PanelBody(text: String, palette: DetailPalette) {
+    Spacer(Modifier.height(6.dp))
+    Text(text, color = palette.textMuted, fontSize = 13.sp, lineHeight = 18.sp)
+}
+
+@Composable
+private fun PanelActions(content: @Composable () -> Unit) {
+    Spacer(Modifier.height(12.dp))
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) { content() }
+}
+
+@Composable
+private fun PanelSpinner(palette: DetailPalette) {
+    CircularProgressIndicator(color = palette.focus, modifier = Modifier.size(16.dp))
+}
+
+@Composable
+private fun PanelButton(
+    label: String,
+    palette: DetailPalette,
+    enabled: Boolean,
+    highlighted: Boolean = false,
+    onClick: () -> Unit,
+) {
+    val shape = RoundedCornerShape(8.dp)
     Text(
-        label,
-        color = if (enabled) Color.White else TextDim,
-        fontSize = 13.sp,
+        text = label,
+        color = if (enabled) palette.textPrimary else palette.textMuted,
+        fontSize = 14.sp,
         fontWeight = FontWeight.Medium,
         modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(if (enabled) menuCursorFill() else Color(0x18FFFFFF))
-            .then(if (focused) Modifier.border(2.dp, edge, RoundedCornerShape(8.dp)) else Modifier)
-            .clickable(enabled = enabled, onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 9.dp),
+            .clip(shape)
+            .background(if (highlighted) palette.focus.copy(alpha = 0.28f) else palette.rowFill, shape)
+            .border(1.dp, if (highlighted) palette.focus else palette.rowEdge, shape)
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+            // Android's minimum touch height, so the panel's buttons stay tappable.
+            .padding(horizontal = 16.dp, vertical = 12.dp),
     )
+}
+
+// The LOCAL_STEAM ownership readout, carried over from the old page's sync line and shortened to a
+// tag that fits beside the platform. Wording stays neutral — the owned-list signal can never prove
+// piracy (family sharing, alternate accounts, unplayed free games all look unowned), so "cracked" is
+// never said; an unknown state stays silent rather than guessing.
+private fun ownershipTag(state: ShibaCoinsUiState): String? {
+    if (state.provider != AchievementProvider.LOCAL_STEAM) return null
+    return when (state.ownership) {
+        LocalCopyOwnership.OWNED -> "Owned on Steam"
+        LocalCopyOwnership.NOT_IN_LIBRARY -> "Tracked locally"
+        null -> null
+    }
 }

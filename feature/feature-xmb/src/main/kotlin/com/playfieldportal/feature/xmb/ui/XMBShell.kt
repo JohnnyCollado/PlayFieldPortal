@@ -1181,6 +1181,7 @@ fun XMBShell(
                     onClose = onCloseShibaCoins,
                     pendingGamepadAction = uiState.pendingShibaCoinsAction,
                     onGamepadActionConsumed = onShibaCoinsActionConsumed,
+                    showTouchControls = uiState.resolvedShowTouchButton,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
