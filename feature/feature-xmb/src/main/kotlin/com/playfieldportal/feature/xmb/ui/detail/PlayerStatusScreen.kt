@@ -1,11 +1,10 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.relocation.BringIntoViewRequester
-import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,70 +13,39 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
-import androidx.compose.foundation.gestures.animateScrollBy
-import androidx.compose.runtime.snapshotFlow
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.playfieldportal.core.domain.achievement.ShibaTier
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.ui.components.PspContextMenuOverlay
+import com.playfieldportal.core.ui.components.PspMenuRow
+import com.playfieldportal.core.ui.components.XmbHeaderPill
 import com.playfieldportal.core.ui.achievement.BoneGlyph
-import com.playfieldportal.core.ui.theme.LocalPFPColors
-import com.playfieldportal.core.ui.theme.menuCursorEdge
+import com.playfieldportal.core.ui.detail.DetailContentPadding
+import com.playfieldportal.core.ui.detail.DetailPalette
+import com.playfieldportal.core.ui.detail.PfpDetailBackground
+import com.playfieldportal.core.ui.detail.PfpDetailBreadcrumb
+import com.playfieldportal.core.ui.detail.PfpDetailHelperFooter
+import com.playfieldportal.core.ui.detail.detailPalette
 
-private val Bronze = Color(0xFFC07C46)
-private val Silver = Color(0xFFB9C0C7)
-private val Gold = Color(0xFFE1B12C)
-private val Platinum = Color(0xFF6F9BF5)
-private val TextPrimary = Color(0xFFEEEEEE)
-private val TextMuted = Color(0x99EEEEEE)
-private val TextDim = Color(0x66EEEEEE)
-private val CardFill = Color(0xFF1B1B26)
-private val Track = Color(0x33FFFFFF)
-
-// One DOWN/UP press scrolls the page by this much while browsing (before focus enters the feed).
-private val PAGE_SCROLL_STRIDE = 200.dp
-
-private fun metalOf(tier: ShibaTier) = when (tier) {
-    ShibaTier.BRONZE -> Bronze
-    ShibaTier.SILVER -> Silver
-    ShibaTier.GOLD -> Gold
-    ShibaTier.PLATINUM -> Platinum
-}
-
-/**
- * The account-wide player status view: Shiba level and rank, the XP curve toward the next level,
- * the tiered coin (achievement) wallet, recent unlocks, and the single rarest coin earned. Opened
- * from the XMB Shiba Coin player card and the Settings player card. Read-only and offline — every
- * field comes from the cached [PlayerStatusUiState]; activating a recent or rarest row opens that
- * game's Shiba Coins overlay.
- */
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PlayerStatusScreen(
     onClose: () -> Unit,
@@ -85,302 +53,223 @@ fun PlayerStatusScreen(
     modifier: Modifier = Modifier,
     pendingGamepadAction: GamepadAction? = null,
     onGamepadActionConsumed: () -> Unit = {},
+    showTouchControls: Boolean = false,
+    onTouchInput: () -> Unit = {},
     viewModel: PlayerStatusViewModel = hiltViewModel(),
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { viewModel.load() }
     LaunchedEffect(state.closed) {
-        if (state.closed) { onClose(); viewModel.onClosedHandled() }
+        if (state.closed) {
+            onClose()
+            viewModel.onClosedHandled()
+        }
     }
     LaunchedEffect(state.openCoins) {
-        state.openCoins?.let { target -> onOpenCoins(target); viewModel.onOpenHandled() }
+        state.openCoins?.let { onOpenCoins(it); viewModel.onOpenHandled() }
     }
     LaunchedEffect(pendingGamepadAction) {
-        if (pendingGamepadAction != null) {
-            viewModel.handleGamepadAction(pendingGamepadAction)
+        pendingGamepadAction?.let {
+            viewModel.handleGamepadAction(it)
             onGamepadActionConsumed()
         }
     }
 
-    // Controller scroll-to-focus: each recent row (and the rarest card) owns a BringIntoViewRequester;
-    // moving focus scrolls that element fully into view (never clipped). Focusing the very first
-    // recent row returns to the absolute top, so the breadcrumb and XP panel above the list stay
-    // reachable (bringIntoView alone would pin the first row to the top edge).
-    val scrollState = rememberScrollState()
-    val recentRequesters = remember { mutableStateMapOf<Int, BringIntoViewRequester>() }
-    val rarestRequester = remember { BringIntoViewRequester() }
-    LaunchedEffect(state.recentIndex, state.onRarest) {
-        when {
-            state.onRarest -> runCatching { rarestRequester.bringIntoView() }
-            state.recentIndex == 0 -> scrollState.animateScrollTo(0)
-            else -> runCatching { recentRequesters[state.recentIndex]?.bringIntoView() }
-        }
-    }
-    // While the rarest card holds focus, UP/DOWN nudge the PAGE: the ViewModel accumulates a
-    // counter and each delta becomes a relative scroll (relative because the card's position
-    // came from bringIntoView, not a known offset).
-    val stridePx = with(LocalDensity.current) { PAGE_SCROLL_STRIDE.roundToPx() }
-    LaunchedEffect(Unit) {
-        var last = 0
-        snapshotFlow { state.rarestPageNudge }.collect { nudge ->
-            val delta = nudge - last
-            last = nudge
-            if (delta != 0) scrollState.animateScrollBy(delta * stridePx.toFloat())
-        }
+    val palette = detailPalette()
+    val listState = rememberLazyListState()
+    LaunchedEffect(state.focusedId, state.onRarest, state.recent) {
+        val index = if (state.onRarest) 0 else state.recent.indexOfFirst { it.id == state.focusedId }.coerceAtLeast(0) + 1
+        runCatching { listState.animateScrollToItem(index) }
     }
 
-    val pfp = LocalPFPColors.current
-    Box(
+    // Report touch at the page boundary without consuming it, so row clicks, scrolling, and modal
+    // controls continue through the same paths used by controller input.
+    PfpDetailBackground(
         modifier = modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    0f to pfp.backgroundTop.copy(alpha = 0.80f),
-                    1f to pfp.backgroundBottom.copy(alpha = 0.94f),
-                ),
-            ),
+            .pointerInput(Unit) {
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false)
+                    onTouchInput()
+                }
+            },
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .widthIn(max = 1100.dp)
-                .align(Alignment.TopCenter)
-                .verticalScroll(scrollState)
-                // Keep the empty state scrollable so the page still responds to touch/controller
-                // scrolling and preserves the same navigation surface before achievements exist.
-                .heightIn(min = 720.dp)
-                .padding(horizontal = 28.dp, vertical = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            DetailBreadcrumb(title = "Player Status", subtitle = "Shiba Coins", onBack = viewModel::close)
-
-            // Top row: the level + rank + XP panel, full width.
-            LevelRankCard(state, Modifier.fillMaxWidth())
-
-            // Lower band: the recent feed on the left; the wallet and rarest card stacked on the
-            // right, their tops aligned with the recent feed.
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                RecentCard(state, viewModel, Modifier.weight(1f), recentRequesters)
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    WalletCard(state, Modifier.fillMaxWidth())
-                    RarestCardView(state, viewModel, Modifier.fillMaxWidth(), rarestRequester)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun SectionCard(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(CardFill)
-            .padding(20.dp),
-    ) { content() }
-}
-
-@Composable
-private fun SectionLabel(text: String) {
-    Text(text, color = TextMuted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.sp)
-    Spacer(Modifier.height(10.dp))
-}
-
-@Composable
-private fun LevelRankCard(state: PlayerStatusUiState, modifier: Modifier) {
-    val accent = menuCursorEdge()
-    SectionCard(modifier) {
-        Column {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                LevelBadge(state.level, accent)
-                Spacer(Modifier.width(16.dp))
-                Column(Modifier.weight(1f)) {
-                    // "<Rank> • <bones> [bone glyph]"
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(state.rankLabel, color = TextPrimary, fontSize = 26.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        if (state.bones > 0) {
-                            Spacer(Modifier.width(8.dp))
-                            Text("•  ${state.bones}", color = accent, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                            Spacer(Modifier.width(5.dp))
-                            BoneGlyph(tint = accent, size = 18.dp)
-                        }
-                    }
-                    Spacer(Modifier.height(4.dp))
-                    Text("Shiba standing", color = TextMuted, fontSize = 13.sp)
-                }
-            }
-            Spacer(Modifier.height(18.dp))
-            Row(verticalAlignment = Alignment.Bottom) {
+        Column(Modifier.fillMaxSize()) {
+            PlayerStatusHeader(state, palette, viewModel::close)
+            state.message?.let { message ->
                 Text(
-                    "${"%,d".format(state.xpIntoLevel)} / ${"%,d".format(state.xpForNextLevel)} XP",
-                    color = TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f),
+                    message,
+                    color = palette.textMuted,
+                    fontSize = 13.sp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = viewModel::dismissMessage,
+                        )
+                        .padding(horizontal = DetailContentPadding, vertical = 8.dp),
                 )
             }
-            Spacer(Modifier.height(8.dp))
-            LinearProgressIndicator(
-                progress = { state.levelFraction },
-                modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
-                color = accent, trackColor = Track,
-            )
-            Spacer(Modifier.height(8.dp))
-            val nextLabel = if (state.nextIsBone) "your next Bone" else "next level"
-            Text("${"%,d".format(state.xpToNext)} XP to $nextLabel", color = TextMuted, fontSize = 12.sp)
-        }
-    }
-}
-
-@Composable
-private fun LevelBadge(level: Int, accent: Color) {
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .size(72.dp)
-            .clip(RoundedCornerShape(18.dp))
-            .background(accent.copy(alpha = 0.18f))
-            .border(2.dp, accent, RoundedCornerShape(18.dp)),
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("LEVEL", color = TextMuted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
-            Text("$level", color = TextPrimary, fontSize = 30.sp, fontWeight = FontWeight.Bold)
-        }
-    }
-}
-
-@Composable
-private fun WalletCard(state: PlayerStatusUiState, modifier: Modifier) {
-    SectionCard(modifier) {
-        Column {
-            SectionLabel("SHIBA COIN WALLET")
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                TierPill(ShibaTier.BRONZE, "Bronze", state.bronze, Modifier.weight(1f))
-                TierPill(ShibaTier.SILVER, "Silver", state.silver, Modifier.weight(1f))
-                TierPill(ShibaTier.GOLD, "Gold", state.gold, Modifier.weight(1f))
-                TierPill(ShibaTier.PLATINUM, "Platinum", state.platinum, Modifier.weight(1f))
-            }
-            Spacer(Modifier.height(16.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("TOTAL XP", color = TextMuted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.sp, modifier = Modifier.weight(1f))
-                Text("%,d".format(state.totalXp), color = Gold, fontSize = 28.sp, fontWeight = FontWeight.Bold)
-            }
-            Spacer(Modifier.height(4.dp))
-            Text(
-                "${"%,d".format(state.coinsEarned)} / ${"%,d".format(state.coinsAvailable)} coins  •  " +
-                    "${state.gamesTracked} tracked  •  ${state.gamesMastered} mastered",
-                color = TextDim, fontSize = 12.sp,
-            )
-        }
-    }
-}
-
-@Composable
-private fun TierPill(tier: ShibaTier, label: String, count: Int, modifier: Modifier) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier) {
-        ShibaCoinIcon(tier, Modifier.size(44.dp))
-        Spacer(Modifier.height(6.dp))
-        Text("%,d".format(count), color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-        Text(label, color = metalOf(tier), fontSize = 11.sp, fontWeight = FontWeight.Medium)
-    }
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun RecentCard(
-    state: PlayerStatusUiState,
-    viewModel: PlayerStatusViewModel,
-    modifier: Modifier,
-    requesters: MutableMap<Int, BringIntoViewRequester>,
-) {
-    SectionCard(modifier) {
-        Column {
-            SectionLabel("RECENT ACHIEVEMENTS")
-            if (state.recent.isEmpty()) {
-                Text("No unlocks yet — sync your games to fill this in.", color = TextMuted, fontSize = 13.sp)
-                return@Column
-            }
-            state.recent.forEachIndexed { i, row ->
-                val requester = remember(i) { BringIntoViewRequester() }
-                DisposableEffect(i) {
-                    requesters[i] = requester
-                    onDispose { requesters.remove(i) }
+            Box(Modifier.fillMaxWidth().weight(1f)) {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize().padding(horizontal = DetailContentPadding),
+                    verticalArrangement = Arrangement.spacedBy(0.dp),
+                ) {
+                    item(key = "player-status:rarest") {
+                        RarestRow(state, palette, viewModel::onRarestClick)
+                    }
+                    items(state.recent, key = { it.id }) { row ->
+                        RecentAchievementRow(
+                            row = row,
+                            focused = !state.onRarest && row.id == state.focusedId,
+                            palette = palette,
+                            onClick = { viewModel.onRecentClick(row.id) },
+                        )
+                    }
                 }
-                RecentRowView(
-                    row,
-                    focused = state.recentFocused(i),
-                    modifier = Modifier.bringIntoViewRequester(requester),
-                ) { viewModel.onRecentClick(i) }
-                if (i < state.recent.lastIndex) Spacer(Modifier.height(8.dp))
+            }
+            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                PfpDetailHelperFooter(items = playerStatusHelperItems(state), visible = !showTouchControls)
+                if (showTouchControls && state.options == null) {
+                    XmbHeaderPill(label = "Options", onClick = viewModel::openOptions)
+                }
             }
         }
-    }
-}
-
-@Composable
-private fun RecentRowView(row: RecentRow, focused: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    val accent = menuCursorEdge()
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
-            .then(if (focused) Modifier.border(2.dp, accent, RoundedCornerShape(10.dp)) else Modifier)
-            .then(if (row.coinsTarget != null) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(8.dp),
-    ) {
-        CoinArt(row.iconUrl, row.tier, Modifier.size(44.dp))
-        Spacer(Modifier.width(12.dp))
-        Column(Modifier.weight(1f)) {
-            Text(row.coinTitle, color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(
-                "${row.gameTitle}  •  ${relativeTime(row.earnedAt)}",
-                color = TextMuted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
+        state.options?.let { menu ->
+            PspContextMenuOverlay(
+                title = menu.title,
+                rows = state.optionRows.map { PspMenuRow(label = it.label, checked = it.checked) },
+                selectedIndex = menu.selectedIndex,
+                onRowActivated = viewModel::onOptionActivated,
+                onDismiss = viewModel::closeOptions,
             )
         }
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun RarestCardView(
+private fun PlayerStatusHeader(
     state: PlayerStatusUiState,
-    viewModel: PlayerStatusViewModel,
-    modifier: Modifier,
-    requester: BringIntoViewRequester,
+    palette: DetailPalette,
+    onBack: () -> Unit,
 ) {
-    val rarest = state.rarest
-    val accent = menuCursorEdge()
-    val focused = state.rarestFocused
-    SectionCard(modifier.bringIntoViewRequester(requester)) {
-        Column {
-            SectionLabel("RAREST ACHIEVEMENT UNLOCKED")
-            if (rarest == null) {
-                Text("No rarity data yet.", color = TextMuted, fontSize = 13.sp)
-                return@Column
+    Column(Modifier.fillMaxWidth().background(headerShade(palette))) {
+        PfpDetailBreadcrumb(
+            title = "Player Status",
+            subtitle = "Shiba Coins",
+            onBack = onBack,
+            modifier = Modifier,
+            trailing = {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(state.rankLabel, color = palette.focus, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                    if (state.bones > 0) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            BoneGlyph(tint = palette.focus, size = 18.dp)
+                            Text(state.bones.toString(), color = palette.textPrimary, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                }
+            },
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(start = DetailContentPadding + 52.dp, end = DetailContentPadding, bottom = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(28.dp),
+            verticalAlignment = Alignment.Bottom,
+        ) {
+            StatBlock("SHIBA LEVEL", state.level.toString(), palette)
+            Column {
+                Text("NEXT LEVEL", color = palette.textMuted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                Text("${(state.levelFraction * 100).toInt()}%", color = palette.textPrimary, fontSize = 19.sp, fontWeight = FontWeight.Medium)
+                Spacer(Modifier.height(4.dp))
+                ProgressLine(state.levelFraction, palette, Modifier.width(74.dp), height = 4.dp)
             }
+            StatBlock("TOTAL COINS", "%,d".format(state.totalXp), palette)
+            Spacer(Modifier.weight(1f))
+            Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                TierStat(ShibaTier.PLATINUM, state.platinum, palette)
+                TierStat(ShibaTier.GOLD, state.gold, palette)
+                TierStat(ShibaTier.SILVER, state.silver, palette)
+                TierStat(ShibaTier.BRONZE, state.bronze, palette)
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatBlock(label: String, value: String, palette: DetailPalette) {
+    Column {
+        Text(label, color = palette.textMuted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+        Text(value, color = palette.textPrimary, fontSize = 19.sp, fontWeight = FontWeight.Medium)
+    }
+}
+
+@Composable
+private fun TierStat(tier: ShibaTier, count: Int, palette: DetailPalette) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        ShibaCoinIcon(tier, Modifier.size(22.dp))
+        Spacer(Modifier.width(5.dp))
+        Text(count.toString(), color = palette.textPrimary, fontSize = 13.sp)
+    }
+}
+
+@Composable
+private fun RarestRow(state: PlayerStatusUiState, palette: DetailPalette, onClick: () -> Unit) {
+    val rarest = state.rarest
+    Column {
+        if (rarest == null) {
+            Text("No rarest achievement yet.", color = palette.textMuted, fontSize = 14.sp, modifier = Modifier.padding(12.dp))
+        } else {
             Row(
-                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .then(if (focused) Modifier.border(2.dp, accent, RoundedCornerShape(12.dp)) else Modifier)
-                    .then(if (rarest.coinsTarget != null) Modifier.clickable { viewModel.onRarestClick() } else Modifier)
-                    .padding(8.dp),
+                    .shibaFocus(state.onRarest, palette)
+                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick)
+                    .padding(horizontal = 12.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                CoinArt(rarest.iconUrl, rarest.tier, Modifier.size(72.dp))
+                CoinArt(rarest.iconUrl, rarest.tier, Modifier.size(72.dp), cornerRadius = 6.dp)
                 Spacer(Modifier.width(16.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(rarest.coinTitle, color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    Text(rarest.gameTitle, color = TextMuted, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        "Unlocked by ${rarityText(rarest.globalRarity)} of players",
-                        color = accent, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
-                    )
+                    Text("RAREST UNLOCKED", color = palette.textMuted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.sp)
+                    Text(rarest.coinTitle, color = palette.textPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(rarest.gameTitle, color = palette.textMuted, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(if (rarest.globalRarity < 0) "—" else String.format(java.util.Locale.US, "%.1f%%", rarest.globalRarity), color = palette.focus, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                    Text("of players have this", color = palette.textMuted, fontSize = 11.sp)
                 }
             }
         }
+        Separator(palette)
     }
 }
 
-private fun rarityText(globalRarity: Double): String =
-    if (globalRarity < 0) "an unknown share" else String.format(java.util.Locale.US, "%.2f%%", globalRarity)
-
+@Composable
+private fun RecentAchievementRow(
+    row: RecentRow,
+    focused: Boolean,
+    palette: DetailPalette,
+    onClick: () -> Unit,
+) {
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .shibaFocus(focused, palette)
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick)
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            CoinArt(row.iconUrl, row.tier, Modifier.size(48.dp), dimmed = false, cornerRadius = 6.dp)
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Text(row.coinTitle, color = palette.textPrimary, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text("${row.gameTitle} · ${relativeTime(row.earnedAt)}", color = palette.textMuted, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            Text(row.tier.name, color = palette.textMuted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+        }
+        Separator(palette)
+    }
+}

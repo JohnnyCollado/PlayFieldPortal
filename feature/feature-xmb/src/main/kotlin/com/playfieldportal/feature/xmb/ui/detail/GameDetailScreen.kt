@@ -320,24 +320,19 @@ private fun GameDetailContent(
         val inTopBand = key in TopBandKeys
         val requester = requesterFor[target]
         if (!inTopBand && requester == null) return@LaunchedEffect
-        // Hold the recovery lock for the alignment: repeated direction presses during the scroll are
-        // dropped, never queued, so a held stick cannot outrun the page.
-        viewModel.onScrollAlignmentChanged(true)
-        try {
-            // ONE bring-into-view call, deliberately never a branch of an if/else and never a
-            // ScrollState.animateScrollTo. A scroll call that lands in a branch has its Unit
-            // result materialized as a `checkcast kotlin.Unit`, and ScrollState.animateScrollTo is
-            // compiled as a *discarded* Float-returning animateScrollBy — so the moment such a
-            // scroll really suspends, the resumed Float hits that cast and the page dies with
-            // "Float cannot be cast to kotlin.Unit" (see GameDetailScrollTest).
-            // The page top is its own bring-into-view target instead, so returning to the hero uses
-            // the same path as bringing any other node into view.
-            (if (inTopBand) pageTopRequester else requester)?.bringIntoView()
-            if (mediaIndex >= 0) {
-                mediaListState.animateScrollToItem(mediaIndex)
-            }
-        } finally {
-            viewModel.onScrollAlignmentChanged(false)
+        // Keep navigation live while the page aligns. The old recovery lock made held D-pad input
+        // feel sticky: every direction pressed during bring-into-view was discarded, so the user
+        // had to wait for the full scroll before the next move registered. Bring-into-view is
+        // cancellable; a newer focus change restarts it at the latest target.
+        //
+        // The page top is its own bring-into-view target, so returning to the hero uses the same
+        // path as bringing any other node into view. Media tiles use an instant horizontal snap —
+        // the vertical page movement already provides the only visual transition needed.
+        // Do not use ScrollState.animateScrollTo here: older Compose compiler output could resume its
+        // discarded Float result through a Unit cast (covered by GameDetailScrollTest).
+        (if (inTopBand) pageTopRequester else requester)?.bringIntoView()
+        if (mediaIndex >= 0) {
+            mediaListState.scrollToItem(mediaIndex)
         }
     }
 

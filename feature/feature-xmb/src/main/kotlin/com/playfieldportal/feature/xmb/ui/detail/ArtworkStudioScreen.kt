@@ -255,14 +255,16 @@ internal fun ArtworkStudioContent(
                         .clickable(onClick = actions::openSearch)
                         .padding(horizontal = 10.dp),
                 ) {
-                    // The glyph follows the user's controller, which is why it is drawn through
-                    // the same mapping table the input handler reads.
-                    ControllerPrompt(
-                        action = GamepadAction.CHANGE_SORT,
-                        label = "",
-                        glyphSize = 13.dp,
-                        labelColor = Color.White.copy(alpha = 0.45f),
-                    )
+                    // The glyph is useful in controller mode, but touch mode already exposes the
+                    // query as a direct target and should not advertise controller-only hints.
+                    if (!showTouchControls) {
+                        ControllerPrompt(
+                            action = GamepadAction.CHANGE_SORT,
+                            label = "",
+                            glyphSize = 13.dp,
+                            labelColor = Color.White.copy(alpha = 0.45f),
+                        )
+                    }
                     Text(
                         state.query.ifBlank { "—" },
                         color = if (state.queryIsCustom) accent else Color.White.copy(alpha = 0.92f),
@@ -299,13 +301,15 @@ internal fun ArtworkStudioContent(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth().height(28.dp),
             ) {
-                ControllerPrompt(
-                    action = GamepadAction.PREV_CATEGORY,
-                    label = "",
-                    glyphSize = 14.dp,
-                    labelColor = Color.White.copy(alpha = 0.45f),
-                    modifier = Modifier.padding(end = 6.dp),
-                )
+                if (!showTouchControls) {
+                    ControllerPrompt(
+                        action = GamepadAction.PREV_CATEGORY,
+                        label = "",
+                        glyphSize = 14.dp,
+                        labelColor = Color.White.copy(alpha = 0.45f),
+                        modifier = Modifier.padding(end = 6.dp),
+                    )
+                }
                 LazyRow(
                     state = tabListState,
                     modifier = Modifier.weight(1f),
@@ -338,13 +342,15 @@ internal fun ArtworkStudioContent(
                         }
                     }
                 }
-                ControllerPrompt(
-                    action = GamepadAction.NEXT_CATEGORY,
-                    label = "",
-                    glyphSize = 14.dp,
-                    labelColor = Color.White.copy(alpha = 0.45f),
-                    modifier = Modifier.padding(start = 6.dp),
-                )
+                if (!showTouchControls) {
+                    ControllerPrompt(
+                        action = GamepadAction.NEXT_CATEGORY,
+                        label = "",
+                        glyphSize = 14.dp,
+                        labelColor = Color.White.copy(alpha = 0.45f),
+                        modifier = Modifier.padding(start = 6.dp),
+                    )
+                }
             }
 
             // L.4: the tab's contract caption moved into the rail, so the tabs band is one line.
@@ -813,7 +819,7 @@ internal fun ArtworkStudioContent(
             // apply at every level, and the three hand-written lists are exactly how the old
             // "NSFW" label for X survived it being rebound to search. Paging is not listed (the
             // page line carries its LB/RB glyphs) and neither is mature (its START badge does).
-            ControllerPromptBar(
+            if (!showTouchControls) ControllerPromptBar(
                 items = buildList {
                     when (state.zone) {
                         StudioZone.TABS -> {

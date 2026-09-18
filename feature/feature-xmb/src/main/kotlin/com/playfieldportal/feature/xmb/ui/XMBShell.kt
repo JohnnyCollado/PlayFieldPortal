@@ -1182,6 +1182,7 @@ fun XMBShell(
                     pendingGamepadAction = uiState.pendingShibaCoinsAction,
                     onGamepadActionConsumed = onShibaCoinsActionConsumed,
                     showTouchControls = uiState.resolvedShowTouchButton,
+                    onTouchInput = onTouchInput,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -1197,6 +1198,7 @@ fun XMBShell(
                         pendingGamepadAction = uiState.pendingShibaLibraryAction,
                         onGamepadActionConsumed = onShibaLibraryActionConsumed,
                         showTouchControls = uiState.resolvedShowTouchButton,
+                        onTouchInput = onTouchInput,
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
@@ -1210,6 +1212,8 @@ fun XMBShell(
                     onOpenCoins = onOpenShibaCoinsTarget,
                     pendingGamepadAction = uiState.pendingPlayerStatusAction,
                     onGamepadActionConsumed = onPlayerStatusActionConsumed,
+                    showTouchControls = uiState.resolvedShowTouchButton,
+                    onTouchInput = onTouchInput,
                     modifier = Modifier.fillMaxSize(),
                 )
             }

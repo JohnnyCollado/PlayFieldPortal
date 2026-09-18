@@ -2,6 +2,8 @@ package com.playfieldportal.feature.xmb.ui.detail
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Text
@@ -92,6 +95,7 @@ fun ShibaLibraryScreen(
     pendingGamepadAction: GamepadAction? = null,
     onGamepadActionConsumed: () -> Unit = {},
     showTouchControls: Boolean = false,
+    onTouchInput: () -> Unit = {},
     viewModel: ShibaLibraryViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -129,7 +133,18 @@ fun ShibaLibraryScreen(
     }
 
     val palette = detailPalette()
-    PfpDetailBackground(modifier = modifier.fillMaxSize()) {
+    // Observe touch at the page boundary while leaving the gesture available to rows, Search, and
+    // the Options overlay. This only updates global input-source presentation state.
+    PfpDetailBackground(
+        modifier = modifier
+            .fillMaxSize()
+            .pointerInput(Unit) {
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false)
+                    onTouchInput()
+                }
+            },
+    ) {
         Column(Modifier.fillMaxSize()) {
             PfpDetailBreadcrumb(
                 title = "Achievements / ${state.mode.viewTitle}",

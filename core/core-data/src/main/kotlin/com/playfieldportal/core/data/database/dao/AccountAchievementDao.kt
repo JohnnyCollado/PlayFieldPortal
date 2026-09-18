@@ -26,6 +26,7 @@ data class RecentCoinRow(
     val tier: String,
     @ColumnInfo(name = "icon_url") val iconUrl: String?,
     @ColumnInfo(name = "earned_at") val earnedAt: Long,
+    @ColumnInfo(name = "global_rarity") val globalRarity: Double,
 )
 
 @Dao
@@ -86,7 +87,8 @@ interface AccountAchievementDao {
     // GROUP BY collapses multi-link duplicates.
     @Query(
         "SELECT MIN(l.game_id) AS library_game_id, COALESCE(g.title, s.title) AS game_title, " +
-            "a.title AS title, a.tier AS tier, a.icon_url AS icon_url, MAX(a.earned_at) AS earned_at " +
+            "a.title AS title, a.tier AS tier, a.icon_url AS icon_url, MAX(a.earned_at) AS earned_at, " +
+            "MAX(a.global_rarity) AS global_rarity " +
             "FROM account_achievements a " +
             "JOIN account_achievement_sets s ON s.provider = a.provider AND s.provider_game_id = a.provider_game_id " +
             "LEFT JOIN provider_game_links l ON l.provider = a.provider AND l.provider_game_id = a.provider_game_id " +

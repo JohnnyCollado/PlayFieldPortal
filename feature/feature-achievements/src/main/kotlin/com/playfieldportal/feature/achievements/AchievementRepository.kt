@@ -420,6 +420,7 @@ private fun RecentCoinRow.toRecentCoin(): RecentCoin? {
         tier = t,
         iconUrl = iconUrl,
         earnedAt = earnedAt,
+        globalRarity = globalRarity,
     )
 }
 

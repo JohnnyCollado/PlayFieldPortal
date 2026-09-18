@@ -58,6 +58,8 @@ data class RecentCoin(
     val tier: ShibaTier,
     val iconUrl: String?,
     val earnedAt: Long,
+    /** Provider-reported global unlock percentage; negative means unknown. */
+    val globalRarity: Double = -1.0,
 )
 
 /**
