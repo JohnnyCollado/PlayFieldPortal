@@ -13,6 +13,8 @@ data class PhotoLibrary(
     val scanRecursively: Boolean = true,
     val photoCount: Int = 0,
     val lastScannedAt: Long? = null,
+    /** Tree fingerprint from the last completed scan; null means never scanned. */
+    val scanSignature: String? = null,
     val createdAt: Long,
     val updatedAt: Long,
 )

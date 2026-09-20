@@ -30,7 +30,13 @@ interface VideoRepository {
     suspend fun getVideo(id: String): Video?
     suspend fun getVideosForLibrary(libraryId: String): List<Video>
     /** Atomically replaces the videos of one library only; other libraries are untouched. */
-    suspend fun replaceVideosForLibrary(libraryId: String, videos: List<Video>, scannedAt: Long)
+    suspend fun replaceVideosForLibrary(
+        libraryId: String,
+        videos: List<Video>,
+        scannedAt: Long,
+        /** Tree fingerprint from the scan that produced [videos]; null leaves the library unsigned. */
+        signature: String? = null,
+    )
 
     // ── Playback state ──────────────────────────────────────────────────────────
     suspend fun setResumePosition(id: String, positionMs: Long, watchedAt: Long)

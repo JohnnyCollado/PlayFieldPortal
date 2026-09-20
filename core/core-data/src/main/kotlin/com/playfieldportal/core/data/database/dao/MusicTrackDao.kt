@@ -35,6 +35,9 @@ interface MusicTrackDao {
     )
     fun observeByFolder(folderId: String): Flow<List<MusicTrackEntity>>
 
+    @Query("SELECT * FROM music_tracks WHERE folder_id = :folderId ORDER BY track_number, display_name COLLATE NOCASE ASC")
+    suspend fun getByFolder(folderId: String): List<MusicTrackEntity>
+
     @Query("SELECT * FROM music_tracks WHERE id = :id")
     suspend fun getById(id: String): MusicTrackEntity?
 

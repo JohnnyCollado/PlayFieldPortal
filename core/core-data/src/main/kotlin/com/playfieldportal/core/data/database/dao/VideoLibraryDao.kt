@@ -38,6 +38,9 @@ interface VideoLibraryDao {
     @Query("UPDATE video_libraries SET artwork_uri = :uri, updated_at = :now WHERE id = :id")
     suspend fun setArtwork(id: String, uri: String?, now: Long)
 
-    @Query("UPDATE video_libraries SET video_count = :count, last_scanned_at = :scannedAt, updated_at = :scannedAt WHERE id = :id")
-    suspend fun updateScanResult(id: String, count: Int, scannedAt: Long)
+    @Query(
+        "UPDATE video_libraries SET video_count = :count, last_scanned_at = :scannedAt, " +
+            "scan_signature = :signature, updated_at = :scannedAt WHERE id = :id"
+    )
+    suspend fun updateScanResult(id: String, count: Int, scannedAt: Long, signature: String?)
 }

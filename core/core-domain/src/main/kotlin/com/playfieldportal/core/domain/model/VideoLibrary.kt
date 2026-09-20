@@ -15,6 +15,8 @@ data class VideoLibrary(
     val scanRecursively: Boolean = true,
     val videoCount: Int = 0,
     val lastScannedAt: Long? = null,
+    /** Tree fingerprint from the last completed scan; null means never scanned. */
+    val scanSignature: String? = null,
     val createdAt: Long,
     val updatedAt: Long,
 )

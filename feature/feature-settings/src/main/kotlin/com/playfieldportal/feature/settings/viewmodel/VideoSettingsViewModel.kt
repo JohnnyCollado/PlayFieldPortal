@@ -10,12 +10,9 @@ import com.playfieldportal.core.data.video.VideoPlayerApp
 import com.playfieldportal.core.data.repository.FolderLinkStatus
 import com.playfieldportal.core.data.repository.MediaRootKind
 import com.playfieldportal.core.data.repository.MediaRootRepository
+import com.playfieldportal.feature.settings.media.WizardMediaScanRunner
 import com.playfieldportal.core.data.repository.SafGrants
-import com.playfieldportal.core.domain.model.VideoLibrary
 import com.playfieldportal.core.domain.repository.VideoRepository
-import com.playfieldportal.core.ui.notification.BackgroundTaskNotifier
-import com.playfieldportal.feature.library.scanner.VideoScanResult
-import com.playfieldportal.feature.library.scanner.VideoScanner
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -59,12 +56,11 @@ data class VideoSettingsUiState(
 class VideoSettingsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val videoRepository: VideoRepository,
-    private val videoScanner: VideoScanner,
     private val intentResolver: VideoIntentResolver,
     private val mediaRootRepository: MediaRootRepository,
+    private val scanRunner: WizardMediaScanRunner,
 ) : ViewModel() {
 
-    private val notifier = BackgroundTaskNotifier(context)
     private val _ui = MutableStateFlow(VideoSettingsUiState())
     val uiState: StateFlow<VideoSettingsUiState> = _ui
 
@@ -122,42 +118,11 @@ class VideoSettingsViewModel @Inject constructor(
      */
     fun rescan() {
         viewModelScope.launch {
-            val roots = mediaRootRepository.getAll(MediaRootKind.VIDEO)
-            if (roots.isEmpty()) {
-                _ui.value = _ui.value.copy(scanMessage = "Add a root folder first.")
-                return@launch
-            }
             _ui.value = _ui.value.copy(scanning = true, scanMessage = "Scanning…")
-
-            // Roots removed in the wizard or here take their library rows with them.
-            videoRepository.getLibraries()
-                .filter { it.treeUri !in roots }
-                .forEach { videoRepository.removeLibrary(it.id) }
-
-            var total = 0
-            var error: String? = null
-            for (root in roots) {
-                val library = syncLibraryForRoot(root)
-                val existing = videoRepository.getVideosForLibrary(library.id)
-                val taskId = "video_scan_${library.id}"
-                notifier.running(taskId, "Scanning ${library.displayName}", null)
-                videoScanner.scan(library, deep = false, existing = existing).collect { result ->
-                    when (result) {
-                        is VideoScanResult.Progress ->
-                            _ui.value = _ui.value.copy(scanMessage = "${result.videosFound} videos")
-                        is VideoScanResult.Complete -> {
-                            videoRepository.replaceVideosForLibrary(result.libraryId, result.videos, System.currentTimeMillis())
-                            total += result.videos.size
-                            notifier.complete(taskId, "Scanned ${library.displayName}", "${result.videos.size} videos")
-                        }
-                        is VideoScanResult.Error -> {
-                            error = result.message
-                            notifier.failed(taskId, "Scan failed", result.message)
-                        }
-                    }
-                }
+            val message = scanRunner.scanAllRoots(MediaRootKind.VIDEO, force = true) { progress ->
+                _ui.value = _ui.value.copy(scanMessage = progress)
             }
-            _ui.value = _ui.value.copy(scanning = false, scanMessage = error ?: "Found $total videos across ${roots.size} root(s).")
+            _ui.value = _ui.value.copy(scanning = false, scanMessage = message)
         }
     }
 
@@ -177,13 +142,8 @@ class VideoSettingsViewModel @Inject constructor(
 
     fun dismissMessage() { _ui.value = _ui.value.copy(scanMessage = null) }
 
-    // Ensures one VideoLibrary exists for [root] (recursive) — other roots keep their own rows.
-    private suspend fun syncLibraryForRoot(root: String): VideoLibrary {
-        val existing = videoRepository.getLibraries().firstOrNull { it.treeUri == root }
-        val library = existing ?: videoRepository.addLibrary(displayName(root), root, scanRecursively = true)
-        return videoRepository.getLibrary(library.id) ?: library
-    }
-
+    // Label for a root row in the list. The library row's own name is the runner's
+    // business; this is only what the user sees under "Root folders".
     private fun displayName(treeUri: String): String =
         runCatching { DocumentFile.fromTreeUri(context, Uri.parse(treeUri))?.name }.getOrNull()
             ?.takeIf { it.isNotBlank() }

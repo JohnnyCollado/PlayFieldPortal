@@ -107,7 +107,7 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         SteamOwnedGameEntity::class,
         SteamNoAchievementsEntity::class,
     ],
-    version = 43,
+    version = 44,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -1245,6 +1245,18 @@ abstract class PFPDatabase : RoomDatabase() {
         // Backfilled in place from launch_intent_uri, so existing libraries gain the identity
         // without a re-scan or any user action. Rows whose intent carries no trustworthy store
         // id (Winlator .desktop launches, GameHub localGameId) are left null rather than guessed.
+        // Tree signature for the three media libraries: a cheap "did anything change under this
+        // root" fingerprint taken at the end of every scan (count:totalBytes:newestMtime). Nullable
+        // with no backfill — an existing library reads back null, which means "never signed" and
+        // correctly forces one real scan before the fast path can ever engage.
+        val MIGRATION_43_44 = object : Migration(43, 44) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE music_folders ADD COLUMN scan_signature TEXT")
+                db.execSQL("ALTER TABLE photo_libraries ADD COLUMN scan_signature TEXT")
+                db.execSQL("ALTER TABLE video_libraries ADD COLUMN scan_signature TEXT")
+            }
+        }
+
         val MIGRATION_42_43 = object : Migration(42, 43) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE games ADD COLUMN storefront TEXT")

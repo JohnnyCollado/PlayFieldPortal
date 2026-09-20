@@ -32,6 +32,15 @@ data class PhotoLibraryEntity(
     @ColumnInfo(name = "last_scanned_at")
     val lastScannedAt: Long? = null,
 
+    /**
+     * Cheap fingerprint of the source tree as of the last completed scan
+     * (`count:totalBytes:newestMtime`, see safTreeSignature). Null means "never signed", which
+     * correctly forces a scan. Compared on card open so an unchanged folder costs one cursor
+     * query per directory and no file probing at all.
+     */
+    @ColumnInfo(name = "scan_signature")
+    val scanSignature: String? = null,
+
     @ColumnInfo(name = "created_at")
     val createdAt: Long,
 
@@ -47,6 +56,7 @@ fun PhotoLibraryEntity.toDomain() = PhotoLibrary(
     scanRecursively = scanRecursively,
     photoCount      = photoCount,
     lastScannedAt   = lastScannedAt,
+    scanSignature   = scanSignature,
     createdAt       = createdAt,
     updatedAt       = updatedAt,
 )
@@ -59,6 +69,7 @@ fun PhotoLibrary.toEntity() = PhotoLibraryEntity(
     scanRecursively = scanRecursively,
     photoCount      = photoCount,
     lastScannedAt   = lastScannedAt,
+    scanSignature   = scanSignature,
     createdAt       = createdAt,
     updatedAt       = updatedAt,
 )

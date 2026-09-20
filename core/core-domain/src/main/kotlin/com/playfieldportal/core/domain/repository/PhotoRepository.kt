@@ -31,7 +31,13 @@ interface PhotoRepository {
     suspend fun getPhoto(id: String): Photo?
     suspend fun getPhotosForLibrary(libraryId: String): List<Photo>
     /** Atomically replaces the photos of one library only; other libraries are untouched. */
-    suspend fun replacePhotosForLibrary(libraryId: String, photos: List<Photo>, scannedAt: Long)
+    suspend fun replacePhotosForLibrary(
+        libraryId: String,
+        photos: List<Photo>,
+        scannedAt: Long,
+        /** Tree fingerprint from the scan that produced [photos]; null leaves the library unsigned. */
+        signature: String? = null,
+    )
     /** Removes one photo row from its library. Never deletes the file on disk. */
     suspend fun removePhoto(id: String)
 }

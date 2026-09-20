@@ -38,6 +38,22 @@ tasks.withType<Test>().configureEach {
     if (System.getProperty("os.name").startsWith("Windows", ignoreCase = true)) {
         systemProperty("javax.net.ssl.trustStoreType", "Windows-ROOT")
     }
+
+    // One JVM per test class.
+    //
+    // This module's ViewModels share a single process-global `pfp_prefs` DataStore, whose write
+    // actor is strictly serial: once any test class leaves it in a bad state, every later class
+    // that touches it either fails at a bounded wait or blocks forever at an unbounded one.
+    // AudioSettingsViewModelTest documents that hazard at length and defends itself against its
+    // own writes, but a class cannot defend against what a PREVIOUS class left behind — and the
+    // symptom depends on test execution order, so adding an unrelated test class anywhere in the
+    // module can surface it.
+    //
+    // A fresh JVM per class makes leaked process-global state structurally impossible instead of
+    // relying on every author knowing the rule. It costs suite wall time (a fresh Robolectric
+    // sandbox per class); that is the right trade for a module whose tests otherwise pass or fail
+    // based on what ran before them.
+    forkEvery = 1
 }
 
 dependencies {

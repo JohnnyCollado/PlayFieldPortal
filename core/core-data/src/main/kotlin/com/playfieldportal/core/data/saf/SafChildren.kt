@@ -29,6 +29,28 @@ fun List<SafChild>.hasNoMediaMarker(): Boolean =
 // the PFP thumbnail cache, Android cache dirs, etc.). Cheaper than recursing then discarding.
 fun SafChild.isIgnoredDir(): Boolean = isDirectory && name.startsWith(".")
 
+/**
+ * Whether a quick scan may reuse the already-stored row for this file instead of re-probing it.
+ *
+ * Reuse requires that EVERY signal both sides can supply agrees, and that at least one exists.
+ * Comparing `lastModified` alone was unsound: this cursor maps a zero/absent mtime to null (see
+ * [querySafChildren]), a stored row's mtime is nullable too, and `null == null` is true — so on a
+ * provider that reports no mtime at all (USB/MTP and some SD cards) every file looked unchanged
+ * forever and edited content was never picked up.
+ *
+ * Size is the fallback signal precisely because those providers usually still report it. When
+ * neither signal is usable the file is re-probed: slower, but a scan that is slow is recoverable
+ * and a scan that is silently wrong is not.
+ */
+fun SafChild.matchesCachedFile(cachedLastModified: Long?, cachedSizeBytes: Long?): Boolean {
+    val mtimeComparable = lastModified != null && cachedLastModified != null
+    val sizeComparable = sizeBytes != null && cachedSizeBytes != null
+    if (!mtimeComparable && !sizeComparable) return false
+    if (mtimeComparable && lastModified != cachedLastModified) return false
+    if (sizeComparable && sizeBytes != cachedSizeBytes) return false
+    return true
+}
+
 // The DFS start for a library uri: a plain tree uri starts at its tree document; a
 // document-under-tree uri (an auto-detected subfolder of a granted media root) starts at that
 // document, so the scan covers just the subfolder while riding the root's grant.

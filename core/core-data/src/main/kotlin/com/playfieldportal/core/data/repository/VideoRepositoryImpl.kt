@@ -103,9 +103,10 @@ class VideoRepositoryImpl @Inject constructor(
         libraryId: String,
         videos: List<Video>,
         scannedAt: Long,
+        signature: String?,
     ) {
         videoDao.replaceForLibrary(libraryId, videos.map { it.toEntity() })
-        libraryDao.updateScanResult(libraryId, videos.size, scannedAt)
+        libraryDao.updateScanResult(libraryId, videos.size, scannedAt, signature)
         Timber.i("Replaced ${videos.size} videos for library $libraryId")
     }
 

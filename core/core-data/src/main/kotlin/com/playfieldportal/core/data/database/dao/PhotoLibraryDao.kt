@@ -34,6 +34,9 @@ interface PhotoLibraryDao {
     @Query("UPDATE photo_libraries SET scan_recursively = :recursive, updated_at = :now WHERE id = :id")
     suspend fun setScanRecursively(id: String, recursive: Boolean, now: Long)
 
-    @Query("UPDATE photo_libraries SET photo_count = :count, last_scanned_at = :scannedAt, updated_at = :scannedAt WHERE id = :id")
-    suspend fun updateScanResult(id: String, count: Int, scannedAt: Long)
+    @Query(
+        "UPDATE photo_libraries SET photo_count = :count, last_scanned_at = :scannedAt, " +
+            "scan_signature = :signature, updated_at = :scannedAt WHERE id = :id"
+    )
+    suspend fun updateScanResult(id: String, count: Int, scannedAt: Long, signature: String?)
 }

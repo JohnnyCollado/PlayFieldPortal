@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.xmb.viewmodel
 
+import com.playfieldportal.core.data.repository.MediaRootKind
 import android.content.Context
 import android.content.Intent
 import android.os.SystemClock
@@ -125,6 +126,8 @@ data class XMBContextMenu(
     val platformId: String? = null,
     // Set on the "All Games" card's menu (which is not a real Memory Card).
     val isAllGames: Boolean = false,
+    // Set on the "Music" card's menu — the section's scan action, since music has no folder card.
+    val allMusicCard: Boolean = false,
     val gameId: Long? = null,
     val packageName: String? = null,
     // The category the app is being acted on from (for remove/pin)
@@ -1299,6 +1302,7 @@ class XMBViewModel @Inject constructor(
     private val videoRepository: com.playfieldportal.core.domain.repository.VideoRepository,
     private val photoRepository: com.playfieldportal.core.domain.repository.PhotoRepository,
     private val photoScanner: com.playfieldportal.feature.library.scanner.PhotoScanner,
+    private val scanRunner: com.playfieldportal.feature.settings.media.WizardMediaScanRunner,
     private val hiddenPlacementDao: com.playfieldportal.core.data.database.dao.HiddenPlacementDao,
     private val discordAuthRepository: com.playfieldportal.core.data.discord.DiscordAuthRepository,
     private val discordPresence: com.playfieldportal.core.data.discord.DiscordPresenceController,
@@ -2273,7 +2277,7 @@ class XMBViewModel @Inject constructor(
                 XMBItem(
                     id       = ALL_MUSIC_ITEM_ID,
                     title    = "Music",
-                    subtitle = "$totalTracks ${if (totalTracks == 1) "track" else "tracks"}",
+                    subtitle = "",
                     coverUri = MEMORY_CARD_ASSET_URI,
                     type     = XMBItemType.MEMORY_CARD,
                 )
@@ -2297,7 +2301,7 @@ class XMBViewModel @Inject constructor(
             XMBItem(
                 id         = "pl_${pl.id}",
                 title      = pl.name,
-                subtitle   = "${pl.trackCount} ${if (pl.trackCount == 1) "track" else "tracks"}",
+                subtitle   = "",
                 playlistId = pl.id,
                 type       = XMBItemType.PLAYLIST,
             )
@@ -2517,7 +2521,7 @@ class XMBViewModel @Inject constructor(
                 XMBItem(
                     id       = ALL_VIDEOS_ITEM_ID,
                     title    = "Videos",
-                    subtitle = "$totalVideos ${if (totalVideos == 1) "video" else "videos"}",
+                    subtitle = "",
                     coverUri = MEMORY_CARD_ASSET_URI,
                     type     = XMBItemType.MEMORY_CARD,
                 )
@@ -2564,7 +2568,7 @@ class XMBViewModel @Inject constructor(
             XMBItem(
                 id       = "vlib_${lib.id}",
                 title    = lib.displayName,
-                subtitle = "${lib.videoCount} ${if (lib.videoCount == 1) "video" else "videos"}",
+                subtitle = "",
                 coverUri = lib.artworkUri,
                 type     = XMBItemType.VIDEO_FOLDER,
             )
@@ -2622,7 +2626,7 @@ class XMBViewModel @Inject constructor(
             XMBItem(
                 id         = "vpl_${pl.id}",
                 title      = pl.name,
-                subtitle   = "${pl.videoCount} ${if (pl.videoCount == 1) "video" else "videos"}",
+                subtitle   = "",
                 playlistId = pl.id,
                 type       = XMBItemType.PLAYLIST,
             )
@@ -2673,7 +2677,12 @@ class XMBViewModel @Inject constructor(
     // Handles A/Cross on any Video row. Returns true when [item] is a Video row it owns.
     private fun handleVideoSelection(item: XMBItem): Boolean = when {
         item.type == XMBItemType.EMPTY -> true
-        item.id == ALL_VIDEOS_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openVideoView(VideoNav.AllVideos); true }
+        item.id == ALL_VIDEOS_ITEM_ID -> {
+            menuSound.play(MenuSound.SELECT)
+            scanRunner.refreshIfStale(MediaRootKind.VIDEO)
+            openVideoView(VideoNav.AllVideos)
+            true
+        }
         item.id == VIDEO_COLLECTIONS_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openVideoView(VideoNav.Collections); true }
         item.id == RECENTLY_WATCHED_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openVideoView(VideoNav.RecentlyWatched); true }
         item.id == FAVORITE_VIDEOS_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openVideoView(VideoNav.Favorites); true }
@@ -2697,6 +2706,7 @@ class XMBViewModel @Inject constructor(
         item.id.startsWith("vlib_") -> {
             menuSound.play(MenuSound.SELECT)
             val libId = item.id.removePrefix("vlib_")
+            scanRunner.kickoffLibrary(MediaRootKind.VIDEO, libId, force = false)
             openVideoView(VideoNav.Library(libId, item.title))
             true
         }
@@ -2913,6 +2923,7 @@ class XMBViewModel @Inject constructor(
     private fun openVideoLibraryContextMenu(libraryId: String, name: String) {
         val items = listOf(
             XMBContextMenuItem("video_lib_open", "Open"),
+            XMBContextMenuItem("video_lib_scan", "Scan Library"),
             XMBContextMenuItem("video_lib_manage", "Manage in Settings"),
         )
         _uiState.update { it.copy(activeContextMenu = XMBContextMenu(name, items, videoLibraryId = libraryId)) }
@@ -2924,6 +2935,7 @@ class XMBViewModel @Inject constructor(
                 val name = _uiState.value.currentItems.firstOrNull { it.id == "vlib_$libraryId" }?.title.orEmpty()
                 openVideoView(VideoNav.Library(libraryId, name))
             }
+            "video_lib_scan" -> scanRunner.kickoffLibrary(MediaRootKind.VIDEO, libraryId, force = true)
             "video_lib_manage" -> _uiState.update { it.copy(activeSettingsScreen = "settings_video") }
         }
     }
@@ -3018,7 +3030,7 @@ class XMBViewModel @Inject constructor(
                 XMBItem(
                     id       = ALL_PHOTOS_ITEM_ID,
                     title    = "Photos",
-                    subtitle = "$totalPhotos ${if (totalPhotos == 1) "photo" else "photos"}",
+                    subtitle = "",
                     coverUri = MEMORY_CARD_ASSET_URI,
                     type     = XMBItemType.MEMORY_CARD,
                 )
@@ -3057,7 +3069,7 @@ class XMBViewModel @Inject constructor(
             XMBItem(
                 id       = "plib_${lib.id}",
                 title    = lib.displayName,
-                subtitle = "${lib.photoCount} ${if (lib.photoCount == 1) "photo" else "photos"}",
+                subtitle = "",
                 type     = XMBItemType.PHOTO_FOLDER,
             )
         }
@@ -3118,7 +3130,12 @@ class XMBViewModel @Inject constructor(
 
     // Handles A/Cross on any Photo row. Returns true when [item] is a Photo row it owns.
     private fun handlePhotoSelection(item: XMBItem): Boolean = when {
-        item.id == ALL_PHOTOS_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openPhotoView(PhotoNav.AllPhotos); true }
+        item.id == ALL_PHOTOS_ITEM_ID -> {
+            menuSound.play(MenuSound.SELECT)
+            scanRunner.refreshIfStale(MediaRootKind.PHOTO)
+            openPhotoView(PhotoNav.AllPhotos)
+            true
+        }
         item.id == PHOTO_ALBUMS_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openPhotoView(PhotoNav.Albums); true }
         item.id == PHOTO_APPS_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openPhotoView(PhotoNav.PhotoApps); true }
         item.id == CAMERA_ITEM_ID -> { menuSound.play(MenuSound.LAUNCH); launchCamera(); true }
@@ -3138,7 +3155,9 @@ class XMBViewModel @Inject constructor(
         }
         item.type == XMBItemType.PHOTO_FOLDER && item.id.startsWith("plib_") -> {
             menuSound.play(MenuSound.SELECT)
-            openPhotoView(PhotoNav.Library(item.id.removePrefix("plib_"), item.title))
+            val libId = item.id.removePrefix("plib_")
+            scanRunner.kickoffLibrary(MediaRootKind.PHOTO, libId, force = false)
+            openPhotoView(PhotoNav.Library(libId, item.title))
             true
         }
         item.type == XMBItemType.PHOTO_FILE && item.id.startsWith("pho_") -> {
@@ -3232,34 +3251,11 @@ class XMBViewModel @Inject constructor(
                 val name = _uiState.value.photoLibraries.firstOrNull { it.id == libraryId }?.displayName.orEmpty()
                 openPhotoView(PhotoNav.Library(libraryId, name))
             }
-            "photo_lib_scan" -> scanPhotoLibrary(libraryId)
+            "photo_lib_scan" -> scanRunner.kickoffLibrary(MediaRootKind.PHOTO, libraryId, force = true)
             "photo_lib_manage" -> _uiState.update { it.copy(activeSettingsScreen = "settings_photo") }
         }
     }
 
-    // Quick scan of one Album straight from the XMB card, surfaced via the notification tray like
-    // every other background scan. The library list flow refreshes the counts when it lands.
-    private fun scanPhotoLibrary(libraryId: String) {
-        viewModelScope.launch {
-            val library = photoRepository.getLibrary(libraryId) ?: return@launch
-            val taskId = "photo_scan_${library.id}"
-            val notifier = BackgroundTaskNotifier(context)
-            notifier.running(taskId, "Scanning ${library.displayName}", null)
-            val existing = photoRepository.getPhotosForLibrary(library.id)
-            photoScanner.scan(library, deep = false, existing = existing).collect { result ->
-                when (result) {
-                    is com.playfieldportal.feature.library.scanner.PhotoScanResult.Progress ->
-                        notifier.running(taskId, "Scanning ${result.libraryName}", null)
-                    is com.playfieldportal.feature.library.scanner.PhotoScanResult.Complete -> {
-                        photoRepository.replacePhotosForLibrary(result.libraryId, result.photos, System.currentTimeMillis())
-                        notifier.complete(taskId, "Scanned ${library.displayName}", "${result.photos.size} photos")
-                    }
-                    is com.playfieldportal.feature.library.scanner.PhotoScanResult.Error ->
-                        notifier.failed(taskId, "Scan failed: ${library.displayName}", result.message)
-                }
-            }
-        }
-    }
 
     // ── Fullscreen music browser (searchable) ───────────────────────────────────
     // Opens "Music" (all tracks) or "Playlist" (playlists → a playlist's tracks) as a fullscreen,
@@ -3452,7 +3448,12 @@ class XMBViewModel @Inject constructor(
         }
         // "Music" and "Playlist" open the fullscreen, searchable browser instead of the inline list.
         item.id == PLAYLISTS_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openMusicBrowser(MusicBrowserView.Playlists); true }
-        item.id == ALL_MUSIC_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openMusicBrowser(MusicBrowserView.AllMusic); true }
+        item.id == ALL_MUSIC_ITEM_ID -> {
+            menuSound.play(MenuSound.SELECT)
+            scanRunner.refreshIfStale(MediaRootKind.MUSIC)
+            openMusicBrowser(MusicBrowserView.AllMusic)
+            true
+        }
         item.id == MUSIC_APPS_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openMusicView(MusicNav.MusicApps); true }
         item.id == ADD_MUSIC_FOLDER_ITEM_ID -> {
             menuSound.play(MenuSound.SELECT)
@@ -3550,6 +3551,28 @@ class XMBViewModel @Inject constructor(
         _uiState.update { it.copy(musicPlayerVisible = false) }
     }
 
+    // Options for the "Music" memory card. Music roots have no per-folder card in the XMB, so
+    // this is where the section's scan action lives — the counterpart of "Scan Library" on a
+    // video library card and "Scan Album" on a photo album.
+    private fun openAllMusicContextMenu() {
+        val items = listOf(
+            XMBContextMenuItem("all_music_open", "Open"),
+            XMBContextMenuItem("all_music_scan", "Scan Music"),
+            XMBContextMenuItem("all_music_manage", "Manage in Settings"),
+        )
+        _uiState.update { it.copy(activeContextMenu = XMBContextMenu("Music", items, allMusicCard = true)) }
+    }
+
+    private fun handleAllMusicAction(itemId: String) {
+        when (itemId) {
+            "all_music_open" -> openMusicBrowser(MusicBrowserView.AllMusic)
+            // Forced: the user asked for a scan, so it reconciles even when the tree signature
+            // says nothing moved. The card-open path is the signature-gated one.
+            "all_music_scan" -> scanRunner.kickoff(MediaRootKind.MUSIC, force = true)
+            "all_music_manage" -> _uiState.update { it.copy(activeSettingsScreen = "settings_music") }
+        }
+    }
+
     private fun openMusicTrackContextMenu(item: XMBItem) {
         // Inside a playlist (inline or browser), offer "Remove from this Playlist"; the playlist id
         // rides on the menu so the action knows which playlist.
@@ -3614,6 +3637,9 @@ class XMBViewModel @Inject constructor(
         if (currentCategory()?.id != BuiltInCategory.MUSIC) return false
         return when {
             item.id == NOW_PLAYING_ITEM_ID -> { openNowPlayingContextMenu(); true }
+            // Music has no per-folder card in the XMB, so the section's scan action hangs off
+            // the "Music" memory card instead of a folder row.
+            item.id == ALL_MUSIC_ITEM_ID -> { openAllMusicContextMenu(); true }
             item.type == XMBItemType.MUSIC_TRACK -> { openMusicTrackContextMenu(item); true }
             item.type == XMBItemType.PLAYLIST && item.playlistId != null -> {
                 openPlaylistRowContextMenu(item.playlistId, item.title); true
@@ -3733,7 +3759,7 @@ class XMBViewModel @Inject constructor(
     // now lives in Settings → Music; this is retained for the scan/enable/remove paths it backs.
     private fun handleMusicFolderAction(folderId: String, itemId: String) {
         when (itemId) {
-            "scan_folder" -> scanMusicFolder(folderId)
+            "scan_folder" -> scanRunner.kickoffLibrary(MediaRootKind.MUSIC, folderId, force = true)
             "rename_folder" -> _uiState.update { it.copy(activeSettingsScreen = "settings_music") }
             "enable_folder" -> appAction { musicRepository.setFolderEnabled(folderId, true) }
             "disable_folder" -> appAction { musicRepository.setFolderEnabled(folderId, false) }
@@ -3787,24 +3813,6 @@ class XMBViewModel @Inject constructor(
         }
     }
 
-    private fun scanMusicFolder(folderId: String) {
-        viewModelScope.launch {
-            val folder = musicRepository.getFolder(folderId) ?: return@launch
-            val taskId = "music_scan_$folderId"
-            addBackgroundTask(BackgroundTaskInfo(taskId, "Scanning ${folder.displayName}", null))
-            musicScanner.scan(folder).collect { result ->
-                when (result) {
-                    is com.playfieldportal.feature.library.scanner.MusicScanResult.Progress -> Unit
-                    is com.playfieldportal.feature.library.scanner.MusicScanResult.Complete -> {
-                        musicRepository.replaceTracksForFolder(result.folderId, result.tracks, System.currentTimeMillis())
-                        completeBackgroundTask(taskId, "${result.tracks.size} tracks")
-                    }
-                    is com.playfieldportal.feature.library.scanner.MusicScanResult.Error ->
-                        failBackgroundTask(taskId, result.message)
-                }
-            }
-        }
-    }
 
     private suspend fun removeSingleTrack(folderId: String, trackId: String) {
         // Read current tracks once, drop the removed one, and replace the folder set.
@@ -5509,6 +5517,7 @@ class XMBViewModel @Inject constructor(
             }
             menu.musicTrackId != null -> handleMusicTrackAction(menu.musicTrackId, itemId, menu.playlistId)
             menu.musicFolderId != null -> handleMusicFolderAction(menu.musicFolderId, itemId)
+            menu.allMusicCard -> handleAllMusicAction(itemId)
             menu.isAllGames -> if (itemId.startsWith("gicondisp_")) {
                 IconDisplayMode.fromName(itemId.removePrefix("gicondisp_"))?.let { mode ->
                     viewModelScope.launch { iconDisplayPreferences.setMode(mode) }

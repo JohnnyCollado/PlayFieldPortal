@@ -10,12 +10,9 @@ import com.playfieldportal.core.data.music.MusicPlayerApp
 import com.playfieldportal.core.data.repository.FolderLinkStatus
 import com.playfieldportal.core.data.repository.MediaRootKind
 import com.playfieldportal.core.data.repository.MediaRootRepository
+import com.playfieldportal.feature.settings.media.WizardMediaScanRunner
 import com.playfieldportal.core.data.repository.SafGrants
-import com.playfieldportal.core.domain.model.MusicFolder
 import com.playfieldportal.core.domain.repository.MusicRepository
-import com.playfieldportal.core.ui.notification.BackgroundTaskNotifier
-import com.playfieldportal.feature.library.scanner.MusicScanResult
-import com.playfieldportal.feature.library.scanner.MusicScanner
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -55,12 +52,11 @@ data class MusicSettingsUiState(
 class MusicSettingsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val musicRepository: MusicRepository,
-    private val musicScanner: MusicScanner,
     private val intentResolver: MusicIntentResolver,
     private val mediaRootRepository: MediaRootRepository,
+    private val scanRunner: WizardMediaScanRunner,
 ) : ViewModel() {
 
-    private val notifier = BackgroundTaskNotifier(context)
     private val _ui = MutableStateFlow(MusicSettingsUiState())
     val uiState: StateFlow<MusicSettingsUiState> = _ui
 
@@ -120,42 +116,11 @@ class MusicSettingsViewModel @Inject constructor(
      */
     fun rescan() {
         viewModelScope.launch {
-            val roots = mediaRootRepository.getAll(MediaRootKind.MUSIC)
-            if (roots.isEmpty()) {
-                _ui.update { it.copy(scanMessage = "Add a root folder first.") }
-                return@launch
-            }
             _ui.update { it.copy(scanning = true, scanMessage = "Scanning…") }
-
-            // Roots removed in the wizard or here take their library rows with them.
-            musicRepository.getFolders()
-                .filter { it.treeUri !in roots }
-                .forEach { musicRepository.removeFolder(it.id) }
-
-            var total = 0
-            var error: String? = null
-            for (root in roots) {
-                val folder = syncFolderForRoot(root)
-                val existing = musicRepository.observeTracksByFolder(folder.id).first()
-                val taskId = "music_scan_${folder.id}"
-                notifier.running(taskId, "Scanning ${folder.displayName}", null)
-                musicScanner.scan(folder, deep = false, existing = existing).collect { result ->
-                    when (result) {
-                        is MusicScanResult.Progress ->
-                            _ui.update { it.copy(scanMessage = "${result.tracksFound} tracks") }
-                        is MusicScanResult.Complete -> {
-                            musicRepository.replaceTracksForFolder(result.folderId, result.tracks, System.currentTimeMillis())
-                            total += result.tracks.size
-                            notifier.complete(taskId, "Scanned ${folder.displayName}", "${result.tracks.size} tracks")
-                        }
-                        is MusicScanResult.Error -> {
-                            error = result.message
-                            notifier.failed(taskId, "Scan failed", result.message)
-                        }
-                    }
-                }
+            val message = scanRunner.scanAllRoots(MediaRootKind.MUSIC, force = true) { progress ->
+                _ui.update { it.copy(scanMessage = progress) }
             }
-            _ui.update { it.copy(scanning = false, scanMessage = error ?: "Found $total tracks across ${roots.size} root(s).") }
+            _ui.update { it.copy(scanning = false, scanMessage = message) }
         }
     }
 
@@ -174,13 +139,8 @@ class MusicSettingsViewModel @Inject constructor(
 
     fun dismissMessage() = _ui.update { it.copy(scanMessage = null) }
 
-    // Ensures one MusicFolder exists for [root] — other roots keep their own rows (multi-root model).
-    private suspend fun syncFolderForRoot(root: String): MusicFolder {
-        val existing = musicRepository.getFolders().firstOrNull { it.treeUri == root }
-        val folder = existing ?: musicRepository.addFolder(displayName(root), root)
-        return musicRepository.getFolder(folder.id) ?: folder
-    }
-
+    // Label for a root row in the list. The library row's own name is the runner's
+    // business; this is only what the user sees under "Root folders".
     private fun displayName(treeUri: String): String =
         runCatching { DocumentFile.fromTreeUri(context, Uri.parse(treeUri))?.name }.getOrNull()
             ?.takeIf { it.isNotBlank() }

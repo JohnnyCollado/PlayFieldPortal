@@ -25,9 +25,23 @@ interface MusicRepository {
     // ── Tracks ────────────────────────────────────────────────────────────────
     fun observeAllTracks(): Flow<List<MusicTrack>>
     fun observeTracksByFolder(folderId: String): Flow<List<MusicTrack>>
+
+    /**
+     * One-shot read of a folder's tracks, for callers that want a snapshot rather than updates —
+     * the scanner's "what do I already have" pass. Mirrors PhotoRepository.getPhotosForLibrary
+     * and VideoRepository.getVideosForLibrary; without it a scan had to collect the hot
+     * [observeTracksByFolder] flow and abort it with first().
+     */
+    suspend fun getTracksForFolder(folderId: String): List<MusicTrack>
     suspend fun getTrack(id: String): MusicTrack?
     /** Atomically replaces the tracks of one folder only; other folders' tracks are untouched. */
-    suspend fun replaceTracksForFolder(folderId: String, tracks: List<MusicTrack>, scannedAt: Long)
+    suspend fun replaceTracksForFolder(
+        folderId: String,
+        tracks: List<MusicTrack>,
+        scannedAt: Long,
+        /** Tree fingerprint from the scan that produced [tracks]; null leaves the folder unsigned. */
+        signature: String? = null,
+    )
 
     // ── Default player (DataStore-backed) ───────────────────────────────────────
     /** Package name of the chosen external player, or null for the system default chooser. */

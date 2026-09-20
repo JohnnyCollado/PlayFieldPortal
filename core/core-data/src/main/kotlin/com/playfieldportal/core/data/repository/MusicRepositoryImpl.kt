@@ -81,6 +81,9 @@ class MusicRepositoryImpl @Inject constructor(
     override fun observeTracksByFolder(folderId: String): Flow<List<MusicTrack>> =
         trackDao.observeByFolder(folderId).map { list -> list.map { it.toDomain() } }
 
+    override suspend fun getTracksForFolder(folderId: String): List<MusicTrack> =
+        trackDao.getByFolder(folderId).map { it.toDomain() }
+
     override suspend fun getTrack(id: String): MusicTrack? =
         trackDao.getById(id)?.toDomain()
 
@@ -88,9 +91,10 @@ class MusicRepositoryImpl @Inject constructor(
         folderId: String,
         tracks: List<MusicTrack>,
         scannedAt: Long,
+        signature: String?,
     ) {
         trackDao.replaceForFolder(folderId, tracks.map { it.toEntity() })
-        folderDao.updateScanResult(folderId, tracks.size, scannedAt)
+        folderDao.updateScanResult(folderId, tracks.size, scannedAt, signature)
         Timber.i("Replaced ${tracks.size} tracks for music folder $folderId")
     }
 

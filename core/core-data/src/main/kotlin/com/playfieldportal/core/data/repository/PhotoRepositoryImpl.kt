@@ -85,9 +85,10 @@ class PhotoRepositoryImpl @Inject constructor(
         libraryId: String,
         photos: List<Photo>,
         scannedAt: Long,
+        signature: String?,
     ) {
         photoDao.replaceForLibrary(libraryId, photos.map { it.toEntity() })
-        libraryDao.updateScanResult(libraryId, photos.size, scannedAt)
+        libraryDao.updateScanResult(libraryId, photos.size, scannedAt, signature)
         Timber.i("Replaced ${photos.size} photos for library $libraryId")
     }
 

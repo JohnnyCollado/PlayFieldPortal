@@ -118,8 +118,15 @@ private class FakeMusicFolderDao : MusicFolderDao {
     override suspend fun setDisplayName(id: String, name: String, now: Long) {
         map[id]?.let { map[id] = it.copy(displayName = name, updatedAt = now) }
     }
-    override suspend fun updateScanResult(id: String, count: Int, scannedAt: Long) {
-        map[id]?.let { map[id] = it.copy(trackCount = count, lastScannedAt = scannedAt, updatedAt = scannedAt) }
+    override suspend fun updateScanResult(id: String, count: Int, scannedAt: Long, signature: String?) {
+        map[id]?.let {
+            map[id] = it.copy(
+                trackCount = count,
+                lastScannedAt = scannedAt,
+                scanSignature = signature,
+                updatedAt = scannedAt,
+            )
+        }
     }
 }
 
@@ -130,6 +137,7 @@ private class FakeMusicTrackDao : MusicTrackDao {
     override fun observeAll(): Flow<List<MusicTrackEntity>> = flowOf(byFolder.values.flatten())
     override fun observeByFolder(folderId: String): Flow<List<MusicTrackEntity>> =
         flowOf(byFolder[folderId]?.toList().orEmpty())
+    override suspend fun getByFolder(folderId: String) = byFolder[folderId]?.toList().orEmpty()
     override suspend fun getById(id: String) = byFolder.values.flatten().firstOrNull { it.id == id }
     override suspend fun countForFolder(folderId: String) = byFolder[folderId]?.size ?: 0
     override suspend fun insertAll(tracks: List<MusicTrackEntity>) {

@@ -35,6 +35,9 @@ interface MusicFolderDao {
     suspend fun setDisplayName(id: String, name: String, now: Long)
 
 
-    @Query("UPDATE music_folders SET track_count = :count, last_scanned_at = :scannedAt, updated_at = :scannedAt WHERE id = :id")
-    suspend fun updateScanResult(id: String, count: Int, scannedAt: Long)
+    @Query(
+        "UPDATE music_folders SET track_count = :count, last_scanned_at = :scannedAt, " +
+            "scan_signature = :signature, updated_at = :scannedAt WHERE id = :id"
+    )
+    suspend fun updateScanResult(id: String, count: Int, scannedAt: Long, signature: String?)
 }

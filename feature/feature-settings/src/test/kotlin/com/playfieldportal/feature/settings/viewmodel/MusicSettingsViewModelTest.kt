@@ -7,8 +7,7 @@ import com.playfieldportal.core.data.music.MusicIntentResolver
 import com.playfieldportal.core.data.repository.MediaRootKind
 import com.playfieldportal.core.data.repository.MediaRootRepository
 import com.playfieldportal.core.domain.repository.MusicRepository
-import com.playfieldportal.feature.library.scanner.MusicScanResult
-import com.playfieldportal.feature.library.scanner.MusicScanner
+import com.playfieldportal.feature.settings.media.WizardMediaScanRunner
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -40,7 +39,7 @@ class MusicSettingsViewModelTest {
     private val dispatcher = StandardTestDispatcher()
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val musicRepository = mockk<MusicRepository>(relaxed = true)
-    private val musicScanner = mockk<MusicScanner>(relaxed = true)
+    private val scanRunner = mockk<WizardMediaScanRunner>(relaxed = true)
     private val intentResolver = mockk<MusicIntentResolver>(relaxed = true)
     private val mediaRoots = mockk<MediaRootRepository>(relaxed = true)
     private lateinit var vm: MusicSettingsViewModel
@@ -57,7 +56,7 @@ class MusicSettingsViewModelTest {
 
     private fun build() {
         every { mediaRoots.roots(MediaRootKind.MUSIC) } returns flowOf(listOf(rootUri))
-        vm = MusicSettingsViewModel(context, musicRepository, musicScanner, intentResolver, mediaRoots)
+        vm = MusicSettingsViewModel(context, musicRepository, intentResolver, mediaRoots, scanRunner)
     }
 
     @Test fun `roots flow maps to rows with grant status`() = runTest(dispatcher) {
@@ -73,11 +72,8 @@ class MusicSettingsViewModelTest {
 
     @Test fun `addRoot persists, adds, and starts a scan`() = runTest(dispatcher) {
         coEvery { mediaRoots.getAll(MediaRootKind.MUSIC) } returns listOf(rootUri)
-        coEvery { musicRepository.getFolders() } returns emptyList()
-        coEvery { musicRepository.observeTracksByFolder(any()) } returns flowOf(emptyList())
-        coEvery { musicScanner.scan(any(), any(), any()) } returns flowOf(
-            MusicScanResult.Complete(folderId = "folder-1", tracks = emptyList())
-        )
+        coEvery { scanRunner.scanAllRoots(MediaRootKind.MUSIC, any(), any()) } returns
+            "Found 0 tracks across 1 root(s)."
         build()
         advanceUntilIdle()
 
@@ -106,7 +102,8 @@ class MusicSettingsViewModelTest {
         build()
         advanceUntilIdle()
 
-        coEvery { mediaRoots.getAll(MediaRootKind.MUSIC) } returns emptyList()
+        coEvery { scanRunner.scanAllRoots(MediaRootKind.MUSIC, any(), any()) } returns
+            "Add a root folder first."
         vm.rescan()
         advanceUntilIdle()
 
