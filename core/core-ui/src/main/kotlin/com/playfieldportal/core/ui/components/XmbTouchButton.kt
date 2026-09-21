@@ -46,6 +46,7 @@ fun XmbTouchButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     size: Dp = 52.dp,
+    background: Color = Color.Transparent,
     content: @Composable BoxScope.() -> Unit,
 ) {
     val accent = LocalPFPColors.current.accentColor
@@ -53,6 +54,7 @@ fun XmbTouchButton(
         modifier = modifier
             .size(size)
             .clip(RoundedCornerShape(14.dp))
+            .background(background)
             .border(1.5.dp, accent.copy(alpha = 0.7f), RoundedCornerShape(14.dp))
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
@@ -78,15 +80,16 @@ fun XmbBackTouchButton(
     }
 }
 
-/** Single-glyph button (e.g. "⋯" for Options) in the shared themed frame. */
+/** Single-glyph button in the shared themed frame. */
 @Composable
 fun XmbGlyphTouchButton(
     glyph: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     size: Dp = 52.dp,
+    background: Color = Color.Transparent,
 ) {
-    XmbTouchButton(onClick = onClick, modifier = modifier, size = size) {
+    XmbTouchButton(onClick = onClick, modifier = modifier, size = size, background = background) {
         Text(
             text = glyph,
             color = Color.White,
@@ -194,7 +197,7 @@ fun XmbTouchButtonPreview() {
             Spacer(Modifier.width(12.dp))
             XmbBackTouchButton(onClick = {})
             Spacer(Modifier.width(12.dp))
-            XmbGlyphTouchButton(glyph = "⋯", onClick = {})
+            XmbGlyphTouchButton(glyph = "⋮", onClick = {})
         }
     }
 }
@@ -204,7 +207,7 @@ fun XmbTouchButtonPreview() {
 fun XmbPillPreview() {
     PfpPreview {
         Column(Modifier.padding(16.dp)) {
-            XmbHeaderPill(label = "Options", onClick = {}, leadingGlyph = "⋯")
+            XmbHeaderPill(label = "Options", onClick = {}, leadingGlyph = "⋮")
             Spacer(Modifier.height(12.dp))
             XmbHeaderPill(label = "Back", onClick = {}, leadingGlyph = "◀", focused = true)
             Spacer(Modifier.height(12.dp))

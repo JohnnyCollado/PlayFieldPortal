@@ -143,25 +143,17 @@ fun ControllerPromptGlyphs(
     glyphSpacing: Dp = 2.dp,
 ) {
     if (icons.isEmpty()) return
-    Row(
+    PromptRow(
+        glyphs = icons,
+        label = label,
         modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(spacing),
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(glyphSpacing),
-        ) {
-            for (icon in icons) {
-                ControllerIconGlyph(icon = icon, family = family, size = glyphSize)
-            }
-        }
-        Text(
-            text = label,
-            color = labelColor,
-            style = labelStyle,
-        )
-    }
+        labelColor = labelColor,
+        labelStyle = labelStyle,
+        glyphSize = glyphSize,
+        spacing = spacing,
+        glyphSpacing = glyphSpacing,
+        glyph = { icon -> ControllerIconGlyph(icon = icon, family = family, size = glyphSize) },
+    )
 }
 
 /**

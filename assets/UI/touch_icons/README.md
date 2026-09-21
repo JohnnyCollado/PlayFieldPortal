@@ -56,9 +56,10 @@ distinguishable from controller prompts at a glance.
 ## Known collision
 
 `ctl_touch_tap` is visually close to `ctl_ps_face_east` and `ctl_ns_share`
-(both ring-and-ring). Harmless while the footer shows one input family at a
-time; if touch and controller prompts can ever appear in the same row, the tap
-glyph needs differentiating.
+(both ring-and-ring). This is harmless because the footer now enforces one input
+family at a time: touch uses `TouchPromptBar`, while controller input uses
+`ControllerPromptBar`. Any future screen that mixes both families in one row must
+redesign the tap glyph first.
 
 ## Regenerating
 

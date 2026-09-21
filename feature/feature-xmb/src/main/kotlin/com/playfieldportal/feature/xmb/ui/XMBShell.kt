@@ -67,6 +67,7 @@ import androidx.media3.common.util.UnstableApi
 import coil3.compose.AsyncImage
 import com.playfieldportal.core.ui.image.rememberArtworkModel
 import com.playfieldportal.core.domain.model.BuiltInCategory
+import com.playfieldportal.core.domain.model.TouchSensitivity
 import com.playfieldportal.core.ui.motion.MotionWallpaperPolicy
 import com.playfieldportal.core.ui.motion.rememberAppVisible
 import com.playfieldportal.core.ui.components.XmbTouchButton
@@ -1252,6 +1253,7 @@ fun XMBShell(
                     pendingGamepadAction = uiState.pendingPhotoViewerAction,
                     onGamepadActionConsumed = onPhotoViewerActionConsumed,
                     showTouchControls = uiState.resolvedShowTouchButton,
+                    touchSensitivity = uiState.touchSensitivity.stepScale,
                     onTouchInput = onTouchInput,
                     modifier = Modifier.fillMaxSize(),
                 )

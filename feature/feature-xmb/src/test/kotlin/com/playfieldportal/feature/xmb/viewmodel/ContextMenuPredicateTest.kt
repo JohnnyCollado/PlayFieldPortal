@@ -102,6 +102,30 @@ class ContextMenuPredicateTest {
     }
 
     @Test
+    fun `the Music memory card has a context menu`() {
+        val item = XMBItem(id = XMBViewModel.ALL_MUSIC_ITEM_ID, title = "Music", type = XMBItemType.MEMORY_CARD)
+        assertTrue(item.hasContextMenu(state(BuiltInCategory.MUSIC, item)))
+    }
+
+    @Test
+    fun `the Videos memory card has a context menu`() {
+        val item = XMBItem(id = XMBViewModel.ALL_VIDEOS_ITEM_ID, title = "Videos", type = XMBItemType.MEMORY_CARD)
+        assertTrue(item.hasContextMenu(state(BuiltInCategory.VIDEO, item)))
+    }
+
+    @Test
+    fun `the Photos memory card has a context menu`() {
+        val item = XMBItem(id = XMBViewModel.ALL_PHOTOS_ITEM_ID, title = "Photos", type = XMBItemType.MEMORY_CARD)
+        assertTrue(item.hasContextMenu(state(BuiltInCategory.PHOTO, item)))
+    }
+
+    @Test
+    fun `a section memory card in the wrong category has no context menu`() {
+        val item = XMBItem(id = XMBViewModel.ALL_PHOTOS_ITEM_ID, title = "Photos", type = XMBItemType.MEMORY_CARD)
+        assertFalse(item.hasContextMenu(state(BuiltInCategory.VIDEO, item)))
+    }
+
+    @Test
     fun `achievements summary row has a context menu`() {
         val item = XMBItem(id = XMBViewModel.ACH_SUMMARY_ITEM_ID, title = "Player Card")
         assertTrue(item.hasContextMenu(state(BuiltInCategory.ACHIEVEMENTS, item)))

@@ -126,8 +126,9 @@ data class XMBContextMenu(
     val platformId: String? = null,
     // Set on the "All Games" card's menu (which is not a real Memory Card).
     val isAllGames: Boolean = false,
-    // Set on the "Music" card's menu — the section's scan action, since music has no folder card.
-    val allMusicCard: Boolean = false,
+    // Set on a section memory card's menu ("Music" / "Videos" / "Photos"), naming the section
+    // whose scan and settings the rows act on.
+    val mediaCard: MediaRootKind? = null,
     val gameId: Long? = null,
     val packageName: String? = null,
     // The category the app is being acted on from (for remove/pin)
@@ -175,6 +176,22 @@ data class XMBContextMenuItem(
     // Renders a checkmark (e.g. collections the game already belongs to).
     val checked: Boolean = false,
 )
+
+// How a media section names itself on screen — the memory card's own title, which is also what
+// its scan row scans ("Music" is already plural).
+private val MediaRootKind.pluralNoun: String
+    get() = when (this) {
+        MediaRootKind.MUSIC -> "Music"
+        MediaRootKind.VIDEO -> "Videos"
+        MediaRootKind.PHOTO -> "Photos"
+    }
+
+private val MediaRootKind.settingsScreenId: String
+    get() = when (this) {
+        MediaRootKind.MUSIC -> "settings_music"
+        MediaRootKind.VIDEO -> "settings_video"
+        MediaRootKind.PHOTO -> "settings_photo"
+    }
 
 // Drives the shared text-input dialog. Creating a collection is the default; the optional
 // targets repurpose it for renames and the game Edit Title / Edit Note actions.
@@ -1036,23 +1053,26 @@ internal fun List<MusicTrack>.trackSorted(mode: XmbSortMode): List<MusicTrack> =
 fun XMBItem.hasContextMenu(state: XMBUiState): Boolean {
     val categoryId = state.categories.getOrNull(state.selectedCategoryIndex)?.id
     return when {
-        // Music tracks / Now Playing / playlists / music-apps.
+        // The Music memory card / tracks / Now Playing / playlists / music-apps.
         categoryId == BuiltInCategory.MUSIC && (
             id == XMBViewModel.NOW_PLAYING_ITEM_ID ||
+                id == XMBViewModel.ALL_MUSIC_ITEM_ID ||
                 type == XMBItemType.MUSIC_TRACK ||
                 (type == XMBItemType.PLAYLIST && playlistId != null) ||
                 (state.musicNav == MusicNav.MusicApps && packageName != null)
         ) -> true
-        // Video files / libraries / playlists / video-apps.
+        // The Videos memory card / files / libraries / playlists / video-apps.
         categoryId == BuiltInCategory.VIDEO && (
-            (type == XMBItemType.VIDEO_FILE && id.startsWith("vid_")) ||
+            id == XMBViewModel.ALL_VIDEOS_ITEM_ID ||
+                (type == XMBItemType.VIDEO_FILE && id.startsWith("vid_")) ||
                 (type == XMBItemType.VIDEO_FOLDER && id.startsWith("vlib_")) ||
                 (type == XMBItemType.PLAYLIST && playlistId != null) ||
                 (state.videoNav == VideoNav.VideoApps && packageName != null)
         ) -> true
-        // Photo files / libraries / photo-apps.
+        // The Photos memory card / files / libraries / photo-apps.
         categoryId == BuiltInCategory.PHOTO && (
-            (type == XMBItemType.PHOTO_FILE && id.startsWith("pho_")) ||
+            id == XMBViewModel.ALL_PHOTOS_ITEM_ID ||
+                (type == XMBItemType.PHOTO_FILE && id.startsWith("pho_")) ||
                 (type == XMBItemType.PHOTO_FOLDER && id.startsWith("plib_")) ||
                 (state.photoNav == PhotoNav.PhotoApps && packageName != null)
         ) -> true
@@ -1419,6 +1439,7 @@ class XMBViewModel @Inject constructor(
         observeCategories()
         observeMissingGames()
         observeAppChanges()
+        warmInstalledAppCache()
         observeGamepadMappings()
         observeBootPreferences()
         observeGameBoot()
@@ -1833,6 +1854,13 @@ class XMBViewModel @Inject constructor(
         }
     }
 
+    // The installed-app enumeration behind every app list is a one-time PackageManager sweep held
+    // in AppCategoryRepository's cache. Paying for it on the first drill into Music/Video/Photo
+    // Apps is what made that first open slow; warm it at startup instead, off the critical path.
+    private fun warmInstalledAppCache() {
+        viewModelScope.launch { appCategoryRepository.ensureLoaded() }
+    }
+
     private fun currentCategory(): Category? =
         _uiState.value.categories.getOrNull(_uiState.value.selectedCategoryIndex)
 
@@ -1860,6 +1888,21 @@ class XMBViewModel @Inject constructor(
     private fun collectionHomeCategoryId(): String {
         val cat = currentCategory() ?: return BuiltInCategory.GAMES
         return if (categoryShowsCollections(cat)) cat.id else BuiltInCategory.GAMES
+    }
+
+    /**
+     * Publishes an Apps sub-view's rows, blanking the list first.
+     *
+     * Every other media sub-view either builds its rows in place or collects a Room flow, so it
+     * replaces [XMBUiState.currentItems] as the navigation happens. The Apps views resolve
+     * asynchronously (installed-app enumeration plus a per-app DB read), and until they return the
+     * state still holds the view the user just left — which is why opening Photo Apps showed a copy
+     * of the Photo root. Clearing first makes the flyout open empty and fill, never wrong.
+     */
+    private suspend fun publishAppSectionItems(resolve: suspend () -> List<XMBItem>) {
+        _uiState.update { it.copy(currentItems = emptyList()) }
+        val items = resolve()
+        _uiState.update { it.copy(currentItems = items) }
     }
 
     /**
@@ -2038,8 +2081,7 @@ class XMBViewModel @Inject constructor(
                     }
                     MusicNav.MusicApps -> {
                         clearMusicTrackCache()
-                        val items = musicAppItems()
-                        _uiState.update { it.copy(currentItems = items) }
+                        publishAppSectionItems { musicAppItems() }
                     }
                 }
                 BuiltInCategory.VIDEO -> when (val nav = _uiState.value.videoNav) {
@@ -2068,10 +2110,7 @@ class XMBViewModel @Inject constructor(
                     is VideoNav.Library -> videoRepository.observeVideosByLibrary(nav.id).collect { videos ->
                         setVideoItems(videos, emptyAllVideosItem())
                     }
-                    VideoNav.VideoApps -> {
-                        val items = videoAppItems()
-                        _uiState.update { it.copy(currentItems = items) }
-                    }
+                    VideoNav.VideoApps -> publishAppSectionItems { videoAppItems() }
                 }
                 BuiltInCategory.PHOTO -> when (val nav = _uiState.value.photoNav) {
                     PhotoNav.Root -> _uiState.update { it.copy(currentItems = photoRootItems()) }
@@ -2084,10 +2123,7 @@ class XMBViewModel @Inject constructor(
                     is PhotoNav.Library -> photoRepository.observePhotosByLibrary(nav.id).collect { photos ->
                         setPhotoItems(photos, emptyLibraryPhotosItem())
                     }
-                    PhotoNav.PhotoApps -> {
-                        val items = photoAppItems()
-                        _uiState.update { it.copy(currentItems = items) }
-                    }
+                    PhotoNav.PhotoApps -> publishAppSectionItems { photoAppItems() }
                 }
                 else -> {
                     // Gaming categories show games and collections
@@ -2847,6 +2883,7 @@ class XMBViewModel @Inject constructor(
     private fun openVideoContextMenu(item: XMBItem): Boolean {
         if (currentCategory()?.id != BuiltInCategory.VIDEO) return false
         return when {
+            item.id == ALL_VIDEOS_ITEM_ID -> { openMediaCardContextMenu(MediaRootKind.VIDEO); true }
             item.type == XMBItemType.VIDEO_FILE && item.id.startsWith("vid_") -> {
                 openVideoFileContextMenu(item.id.removePrefix("vid_"), item.title); true
             }
@@ -3202,6 +3239,7 @@ class XMBViewModel @Inject constructor(
     private fun openPhotoContextMenu(item: XMBItem): Boolean {
         if (currentCategory()?.id != BuiltInCategory.PHOTO) return false
         return when {
+            item.id == ALL_PHOTOS_ITEM_ID -> { openMediaCardContextMenu(MediaRootKind.PHOTO); true }
             item.type == XMBItemType.PHOTO_FILE && item.id.startsWith("pho_") -> {
                 openPhotoFileContextMenu(item.id.removePrefix("pho_"), item.title); true
             }
@@ -3551,25 +3589,26 @@ class XMBViewModel @Inject constructor(
         _uiState.update { it.copy(musicPlayerVisible = false) }
     }
 
-    // Options for the "Music" memory card. Music roots have no per-folder card in the XMB, so
-    // this is where the section's scan action lives — the counterpart of "Scan Library" on a
-    // video library card and "Scan Album" on a photo album.
-    private fun openAllMusicContextMenu() {
+    // Options for a section's memory card ("Music" / "Videos" / "Photos"). The card stands for the
+    // whole section, so it carries the section-wide actions and nothing narrower: rescan every root
+    // of that kind, or open that section's settings. There is no "Open" row — X on the card already
+    // opens it, and a menu that repeats the press it was opened from teaches nothing.
+    private fun openMediaCardContextMenu(kind: MediaRootKind) {
         val items = listOf(
-            XMBContextMenuItem("all_music_open", "Open"),
-            XMBContextMenuItem("all_music_scan", "Scan Music"),
-            XMBContextMenuItem("all_music_manage", "Manage in Settings"),
+            XMBContextMenuItem("media_card_scan", "Scan ${kind.pluralNoun}"),
+            XMBContextMenuItem("media_card_manage", "Manage in Settings"),
         )
-        _uiState.update { it.copy(activeContextMenu = XMBContextMenu("Music", items, allMusicCard = true)) }
+        _uiState.update {
+            it.copy(activeContextMenu = XMBContextMenu(kind.pluralNoun, items, mediaCard = kind))
+        }
     }
 
-    private fun handleAllMusicAction(itemId: String) {
+    private fun handleMediaCardAction(kind: MediaRootKind, itemId: String) {
         when (itemId) {
-            "all_music_open" -> openMusicBrowser(MusicBrowserView.AllMusic)
             // Forced: the user asked for a scan, so it reconciles even when the tree signature
             // says nothing moved. The card-open path is the signature-gated one.
-            "all_music_scan" -> scanRunner.kickoff(MediaRootKind.MUSIC, force = true)
-            "all_music_manage" -> _uiState.update { it.copy(activeSettingsScreen = "settings_music") }
+            "media_card_scan" -> scanRunner.kickoff(kind, force = true)
+            "media_card_manage" -> _uiState.update { it.copy(activeSettingsScreen = kind.settingsScreenId) }
         }
     }
 
@@ -3637,9 +3676,7 @@ class XMBViewModel @Inject constructor(
         if (currentCategory()?.id != BuiltInCategory.MUSIC) return false
         return when {
             item.id == NOW_PLAYING_ITEM_ID -> { openNowPlayingContextMenu(); true }
-            // Music has no per-folder card in the XMB, so the section's scan action hangs off
-            // the "Music" memory card instead of a folder row.
-            item.id == ALL_MUSIC_ITEM_ID -> { openAllMusicContextMenu(); true }
+            item.id == ALL_MUSIC_ITEM_ID -> { openMediaCardContextMenu(MediaRootKind.MUSIC); true }
             item.type == XMBItemType.MUSIC_TRACK -> { openMusicTrackContextMenu(item); true }
             item.type == XMBItemType.PLAYLIST && item.playlistId != null -> {
                 openPlaylistRowContextMenu(item.playlistId, item.title); true
@@ -5517,7 +5554,7 @@ class XMBViewModel @Inject constructor(
             }
             menu.musicTrackId != null -> handleMusicTrackAction(menu.musicTrackId, itemId, menu.playlistId)
             menu.musicFolderId != null -> handleMusicFolderAction(menu.musicFolderId, itemId)
-            menu.allMusicCard -> handleAllMusicAction(itemId)
+            menu.mediaCard != null -> handleMediaCardAction(menu.mediaCard, itemId)
             menu.isAllGames -> if (itemId.startsWith("gicondisp_")) {
                 IconDisplayMode.fromName(itemId.removePrefix("gicondisp_"))?.let { mode ->
                     viewModelScope.launch { iconDisplayPreferences.setMode(mode) }
@@ -8905,7 +8942,7 @@ class XMBViewModel @Inject constructor(
 
         // Music category synthetic rows / drill ids.
         private const val ADD_MUSIC_FOLDER_ITEM_ID = "add_music_folder"
-        private const val ALL_MUSIC_ITEM_ID = "all_music"
+        internal const val ALL_MUSIC_ITEM_ID = "all_music"
         internal const val NOW_PLAYING_ITEM_ID = "now_playing"
         private const val PLAYLISTS_ITEM_ID = "playlists"
         private const val MUSIC_APPS_ITEM_ID = "music_apps_item"
@@ -8919,7 +8956,7 @@ class XMBViewModel @Inject constructor(
         // category, so there is nothing hidden for users to tamper with in Category settings.
         private const val MUSIC_APPS_CATEGORY_ID = "music"
         // Video root item ids.
-        private const val ALL_VIDEOS_ITEM_ID = "all_videos"
+        internal const val ALL_VIDEOS_ITEM_ID = "all_videos"
         private const val VIDEO_COLLECTIONS_ITEM_ID = "video_collections"
         private const val RECENTLY_WATCHED_ITEM_ID = "recently_watched"
         private const val FAVORITE_VIDEOS_ITEM_ID = "favorite_videos"
@@ -8931,7 +8968,7 @@ class XMBViewModel @Inject constructor(
         private const val ADD_VIDEO_APPS_ITEM_ID = "add_video_apps"
         private const val VIDEO_APPS_CATEGORY_ID = "videos"
         // Photo root item ids.
-        private const val ALL_PHOTOS_ITEM_ID = "all_photos"
+        internal const val ALL_PHOTOS_ITEM_ID = "all_photos"
         private const val CAMERA_ITEM_ID = "photo_camera"
         private const val ADD_PHOTO_LIBRARY_ITEM_ID = "add_photo_library"
         private const val PHOTO_ALBUMS_ITEM_ID = "photo_albums"

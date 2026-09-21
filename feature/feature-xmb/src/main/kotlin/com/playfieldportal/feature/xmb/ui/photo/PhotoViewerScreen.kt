@@ -4,11 +4,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.rememberTransformableState
-import androidx.compose.foundation.gestures.transformable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,7 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -42,14 +39,19 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.size
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.Photo
+import com.playfieldportal.core.domain.model.TouchGesture
 import com.playfieldportal.core.ui.components.ControllerPromptBar
 import com.playfieldportal.core.ui.components.ControllerPromptItem
+import com.playfieldportal.core.ui.components.TouchPromptBar
+import com.playfieldportal.core.ui.components.TouchPromptItem
 import com.playfieldportal.core.ui.components.XmbHeaderPill
+import com.playfieldportal.core.ui.components.XmbTouchButton
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.feature.xmb.ui.DetailContextMenu
 import com.playfieldportal.feature.xmb.ui.DetailMenuRow
@@ -85,6 +87,7 @@ fun PhotoViewerScreen(
     // Touch header pills shown only when the last input was touch (AUTO), like the XMB App Drawer
     // button; a tap on the photo reports back via [onTouchInput] (and toggles the controls layer).
     showTouchControls: Boolean = true,
+    touchSensitivity: Float = 1f,
     onTouchInput: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: PhotoViewerViewModel = hiltViewModel(),
@@ -111,22 +114,16 @@ fun PhotoViewerScreen(
     }
     val photo = state.photo ?: run { onBack(); return }
 
-    // Pinch-zoom / drag for touch users; the same clamped transform the D-pad path drives.
-    // The centroid is unused: onGesture takes no focal point, the same as the D-pad zoom.
-    val transformState = rememberTransformableState { _, zoomChange, panChange, _ ->
-        viewModel.onGesture(zoomChange, panChange.x, panChange.y)
-    }
-
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(ViewerBg)
-            .transformable(transformState)
-            // Plain tap toggles the controls — no ripple, the whole screen is the target.
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = { onTouchInput(); viewModel.toggleControls() },
+            .photoViewerGestures(
+                zoomed = state.zoomed,
+                stepScale = touchSensitivity,
+                onTap = { onTouchInput(); viewModel.toggleControls() },
+                onStep = { direction -> onTouchInput(); viewModel.step(direction) },
+                onTransform = viewModel::onGesture,
             ),
     ) {
         AsyncImage(
@@ -143,6 +140,15 @@ fun PhotoViewerScreen(
                     rotationZ = state.rotationDegrees.toFloat(),
                 ),
         )
+
+        var helperFlashVisible by remember { mutableStateOf(showTouchControls) }
+        LaunchedEffect(photo.id, showTouchControls) {
+            helperFlashVisible = showTouchControls
+            if (showTouchControls) {
+                kotlinx.coroutines.delay(2600)
+                helperFlashVisible = false
+            }
+        }
 
         // ── Auto-fading title card ──────────────────────────────────────────
         // Centred title that appears on each new image, then disappears after a short delay
@@ -200,21 +206,34 @@ fun PhotoViewerScreen(
                     .padding(horizontal = 24.dp, vertical = 14.dp),
                 horizontalArrangement = Arrangement.Center,
             ) {
-                ControllerPromptBar(
-                    items = listOf(
-                        ControllerPromptItem(
-                            listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY),
-                            "Prev / Next",
+                if (showTouchControls) {
+                    TouchPromptBar(
+                        items = listOf(
+                            TouchPromptItem(listOf(TouchGesture.SWIPE_LEFT, TouchGesture.SWIPE_RIGHT), "Prev / Next"),
+                            TouchPromptItem(TouchGesture.TAP, "Hide Controls"),
                         ),
-                        ControllerPromptItem(GamepadAction.SELECT, "Hide Controls"),
-                        ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"),
-                        ControllerPromptItem(GamepadAction.BACK, "Back"),
-                    ),
-                    labelColor = TextMuted,
-                    labelStyle = TextStyle(fontSize = 12.sp),
-                    glyphSize = 16.dp,
-                    arrangement = Arrangement.spacedBy(18.dp, Alignment.CenterHorizontally),
-                )
+                        labelColor = TextMuted,
+                        labelStyle = TextStyle(fontSize = 12.sp),
+                        glyphSize = 16.dp,
+                        arrangement = Arrangement.spacedBy(18.dp, Alignment.CenterHorizontally),
+                    )
+                } else {
+                    ControllerPromptBar(
+                        items = listOf(
+                            ControllerPromptItem(
+                                listOf(GamepadAction.PREV_CATEGORY, GamepadAction.NEXT_CATEGORY),
+                                "Prev / Next",
+                            ),
+                            ControllerPromptItem(GamepadAction.SELECT, "Hide Controls"),
+                            ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"),
+                            ControllerPromptItem(GamepadAction.BACK, "Back"),
+                        ),
+                        labelColor = TextMuted,
+                        labelStyle = TextStyle(fontSize = 12.sp),
+                        glyphSize = 16.dp,
+                        arrangement = Arrangement.spacedBy(18.dp, Alignment.CenterHorizontally),
+                    )
+                }
             }
             // Header pills matching the detail screens: Back top-left, Options top-right — the
             // touch counterparts of B and Y. Shown while the controls layer is visible AND the last
@@ -227,37 +246,18 @@ fun PhotoViewerScreen(
                     background = MediaPillBg,
                     modifier = Modifier.align(Alignment.TopStart).padding(16.dp),
                 )
-                XmbHeaderPill(
-                    label = "Options",
+                XmbTouchButton(
                     onClick = viewModel::openOptions,
                     background = MediaPillBg,
                     modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
-                )
-                // Touch prev/next — the counterparts of L1/R1, as header pills matching Back /
-                // Options, centred on each side. Dimmed and inert at the ends. Part of the controls
-                // layer, so a tap on the photo hides them with everything else. Only shown with >1 photo.
-                if (state.photos.size > 1) {
-                    val hasPrev = state.index > 0
-                    val hasNext = state.index < state.photos.size - 1
-                    XmbHeaderPill(
-                        label = "Prev",
-                        leadingGlyph = "‹",
-                        onClick = { if (hasPrev) { onTouchInput(); viewModel.step(-1) } },
-                        background = MediaPillBg,
-                        modifier = Modifier
-                            .align(Alignment.CenterStart)
-                            .padding(start = 16.dp)
-                            .alpha(if (hasPrev) 1f else 0.35f),
-                    )
-                    XmbHeaderPill(
-                        label = "Next  ›",
-                        onClick = { if (hasNext) { onTouchInput(); viewModel.step(+1) } },
-                        background = MediaPillBg,
-                        modifier = Modifier
-                            .align(Alignment.CenterEnd)
-                            .padding(end = 16.dp)
-                            .alpha(if (hasNext) 1f else 0.35f),
-                    )
+                ) {
+                    Canvas(Modifier.size(22.dp)) {
+                        val radius = 2.5.dp.toPx()
+                        val x = size.width / 2f
+                        listOf(size.height * 0.22f, size.height * 0.5f, size.height * 0.78f).forEach { y ->
+                            drawCircle(Color.White, radius, Offset(x, y))
+                        }
+                    }
                 }
             }
         }
@@ -291,16 +291,18 @@ fun PhotoViewerScreen(
                 Text("Set as launcher wallpaper?", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                 Text("It replaces the XMB wave background.", color = TextMuted, fontSize = 12.sp)
                 Spacer(Modifier.height(4.dp))
-                ControllerPromptBar(
-                    items = listOf(
-                        ControllerPromptItem(GamepadAction.SELECT, "Apply"),
-                        ControllerPromptItem(GamepadAction.BACK, "Cancel"),
-                    ),
-                    labelColor = TextMuted,
-                    labelStyle = TextStyle(fontSize = 12.sp),
-                    glyphSize = 16.dp,
-                    arrangement = Arrangement.spacedBy(18.dp, Alignment.CenterHorizontally),
-                )
+                if (!showTouchControls) {
+                    ControllerPromptBar(
+                        items = listOf(
+                            ControllerPromptItem(GamepadAction.SELECT, "Apply"),
+                            ControllerPromptItem(GamepadAction.BACK, "Cancel"),
+                        ),
+                        labelColor = TextMuted,
+                        labelStyle = TextStyle(fontSize = 12.sp),
+                        glyphSize = 16.dp,
+                        arrangement = Arrangement.spacedBy(18.dp, Alignment.CenterHorizontally),
+                    )
+                }
                 Row(horizontalArrangement = Arrangement.Center) {
                     TextButton(onClick = viewModel::confirmWallpaper, enabled = !state.applyingWallpaper) {
                         Text(if (state.applyingWallpaper) "Applying…" else "Apply", color = menuCursorEdge())
@@ -340,6 +342,27 @@ fun PhotoViewerScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp),
             )
             LaunchedEffect(msg) { kotlinx.coroutines.delay(2500); viewModel.dismissMessage() }
+        }
+        if (showTouchControls && helperFlashVisible && !state.controlsVisible && !state.wallpaperPreviewVisible) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xCC000000))))
+                    .padding(horizontal = 24.dp, vertical = 14.dp),
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                TouchPromptBar(
+                    items = listOf(
+                        TouchPromptItem(listOf(TouchGesture.SWIPE_LEFT, TouchGesture.SWIPE_RIGHT), "Prev / Next"),
+                        TouchPromptItem(TouchGesture.TAP, "Show Controls"),
+                    ),
+                    labelColor = TextMuted,
+                    labelStyle = TextStyle(fontSize = 12.sp),
+                    glyphSize = 16.dp,
+                    arrangement = Arrangement.spacedBy(18.dp, Alignment.CenterHorizontally),
+                )
+            }
         }
     }
 }

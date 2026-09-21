@@ -218,6 +218,12 @@ deliberately excluding the device-specific XMB layout adjustment. Applying a the
 
 ## Conventions
 
+Touch helper bars are a separate input family from controller prompts. Use `TouchGesture` and
+`TouchPromptBar` for touch gestures; use `ControllerPromptBar` for physical controller inputs, and
+never mix both families in one helper row without first redesigning the touch tap glyph. Options
+uses a vertical kebab (`⋮`) rather than the old horizontal ellipsis convention; section screens
+should follow this when they receive their touch pass.
+
 - **MVVM:** ViewModels own state (`StateFlow<UiState>`); composables are stateless and driven by
   state + callbacks.
 - **Repositories** are the boundary between features and the data layer; features never touch DAOs
