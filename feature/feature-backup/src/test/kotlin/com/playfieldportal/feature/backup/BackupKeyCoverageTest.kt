@@ -107,6 +107,13 @@ class BackupKeyCoverageTest {
     }
 
     @Test
+    fun `music player choices are backed up`() {
+        // Music had no case in this file at all, which is how the visualizer field shipped
+        // unguarded: its key was read back on every player open and silently absent from a restore.
+        assertCovered("music_default_player_package", "music_visualizer_id")
+    }
+
+    @Test
     fun `the wallpaper and scheme the font colour is measured against are backed up`() {
         // A picked colour is only meaningful against the backdrop it was chosen for, so a restore
         // that carries one without the other is a half-restore.

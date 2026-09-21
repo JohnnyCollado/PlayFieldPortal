@@ -44,7 +44,7 @@ outward, brightening at the core and dissolving as they travel, so the field rea
 opening away from the viewer.
 
 - Each particle holds `angle`, `radius ∈ [0,1]`, `phase`. Radius advances per frame and wraps to 0.
-- `alpha = (1 - radius)²`, `size = lerp(2dp, 9dp, radius)` — small and bright at the throat, large
+- `alpha = (1 - radius)²`, `size = lerp(3dp, 12dp, radius)` — small and bright at the throat, large
   and faint at the rim.
 - Angular velocity is constant plus an energy term, so the whole ring *turns* fractionally faster
   on a swell rather than jumping.
@@ -134,11 +134,12 @@ is a review check on T3 and T4, not a suggestion.
 
 ### 3.3 One clock, one array, N draws
 
-The rule that makes a live picker affordable — nine live previews are not nine visualizers, they
-are one simulation drawn nine times:
+The rule that makes a live picker affordable — three live previews are not three visualizers, they
+are one simulation drawn once per preview:
 
-- **One `withFrameNanos` loop**, owned by the player screen. Not `rememberInfiniteTransition`, and
-  not one per tile — that would be nine animation subscriptions and nine recomposition scopes.
+- **One `withFrameNanos` loop**, owned by the player screen. Not `rememberInfiniteTransition`,
+  and not one per tile — that would be one animation subscription and one recomposition scope per
+  preview.
 - **One particle array**, advanced once per frame in the holder. Each tile draws the *first N*
   entries scaled into its own bounds, so simulation cost is O(1) in tile count; only draws scale.
 - **State is read in the draw phase.** The frame holder is read *inside* the `Canvas` lambda, so a
@@ -155,8 +156,10 @@ are one simulation drawn nine times:
 | Ripple | 14 rings | 8 rings | 5 rings |
 
 The hero drops when the strip opens, so total draw count stays roughly flat across the one
-transition where jank would be most visible. A single `budgetScale` multiplier on the holder turns
-everything down at once for a low-end device or a thermal signal, without touching a renderer.
+transition where jank would be most visible. *(Downscaling for a low-end device or a thermal
+signal is **not** built: the `budgetScale` multiplier existed as a holder field that nothing ever
+supplied a value for, so it was removed rather than left unwired. `XmbBackground` already derives
+battery-saver/thermal state and is the obvious source if a device needs it.)*
 
 The clock stops entirely when: the player is closed, the app is not resumed
 (`LifecycleResumeEffect`), or `Off` is selected.

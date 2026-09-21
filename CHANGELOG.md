@@ -51,8 +51,8 @@ All notable changes to Play Field Portal are documented here. This project follo
   styles are deliberately absent: the eye reads bars as a measurement, and a spectrum uncorrelated
   with the audio reads as a lie within seconds. The seam (`VisualizerFrame`, `PfpVisualizer`) is
   shaped for real RMS and FFT to drop in later without touching a renderer.
-  Nine live previews cost one simulation: a single `withFrameNanos` loop and one particle array per
-  field, advanced once and drawn N times, with the frame read in the draw phase so a running field
+  Three tiles cost one simulation: a single `withFrameNanos` loop and one particle array per field,
+  advanced once and drawn N times, with the frame read in the draw phase so a running field
   causes **zero** recompositions. The clock stops outright when the player closes, when the app is
   not resumed, or when Off is selected. While the strip is open it captures ◀/▶ for tile
   navigation and hands them straight back to seek on close.
@@ -218,6 +218,31 @@ All notable changes to Play Field Portal are documented here. This project follo
   at all, so the touch pills never appeared and the highlight rode a row far off screen through an
   entire touch session. Its cursor is now owned by the picker's own visible/hidden flag — the
   browser's model — rather than inferred from the last input source.
+- **A held D-pad direction now scrolls the Music lists at the same pace both ways.** Down was not
+  the mirror of up, because revealing a row used `LazyListState.scrollToItem`, which aligns it to
+  the *top* of the viewport. Stepping up past the first visible row, that is exactly one row of
+  travel — the row above becomes the new top row — but stepping down past the last one threw the row
+  from off the bottom to the top and moved the whole page with it. Held down, the cursor walked to
+  the bottom edge, lurched a page, and walked again, where held up glided one row at a time. A
+  one-row step down is now seated flush against the bottom edge instead, so both directions travel a
+  row per press; a move of more than one row — a sort cycling back to the top, a query refiltering
+  the list — is still the jump it always was. The browser and the picker share the rule (`revealRow`),
+  and their comments claiming the focused row framed *itself* with a `BringIntoViewRequester` are
+  gone: it never did, which is why the reveal had to be fixed here.
+- **The Music browser's D-pad no longer alternates between the nearest row and the top of the
+  list.** After a flick, every other press walked to a row nowhere near the cursor. The browser was
+  handing its row positions to the navigation engine, which keeps geometry in a *persistent* map and
+  sorts vertical traversal by it — and those positions are offsets **inside the current viewport**,
+  so they are only true of the frame that reported them. One flick left every row that had ever
+  been seen holding a value from the scroll position it was last seen at, which turned the engine's
+  idea of visual order into a jumble of two scroll positions for a press to walk; the re-anchor read
+  that same map. The browser now keeps its visible window to itself, exactly as the picker always
+  has, and the engine traverses in registration order — which for a top-to-bottom list *is* its
+  visual order.
+- **The re-anchor lands on the row the middle of the screen is inside.** Both lists compared each
+  row's *top* against the viewport centre, so the moment that centre fell in a row's lower half the
+  cursor parked one row below it. They now report row centres, matching the app picker and the app
+  drawer, which have always compared centres; a test pins the lower-half case.
 - **The XMB's *Now Playing* row follows the song.** It showed whatever was playing when it first
   appeared and then stopped: the Music root was rebuilt only when playback *gained or lost* a
   track, so advancing from one song to the next — on auto-advance at the end of a track, from the

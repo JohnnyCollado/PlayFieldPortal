@@ -126,8 +126,15 @@ class NavigationEngine(
     fun focusableKeys(): Set<String> = active.nodes.filter { it.focusable && it.enabled }.mapTo(mutableSetOf()) { it.key }
 
     /**
-     * The active context's key → Y geometry. Geometry lands here via [replaceNodes]/[replaceNodesWithGeometry]
-     * (bulk) or [reportNodeGeometry] (single node), and is what touch→D-pad re-anchoring reads.
+     * The active context's key → Y geometry. Geometry lands here via [replaceNodes] or
+     * [replaceNodesWithGeometry], which take a screen's whole node set at once, so the map stays a
+     * single coherent frame.
+     *
+     * A screen whose Y values are positions *inside a scrolling viewport* must not feed them here:
+     * they are only true of the layout that reported them, and this map persists and is what
+     * vertical traversal sorts by. Such a screen keeps its visible window itself and reports only
+     * its stable node set. ([reportNodeGeometry] merges one key at a time and is the wrong seam for
+     * that case for exactly this reason.)
      */
     fun currentGeometry(): Map<String, Float> = active.allGeometry()
 

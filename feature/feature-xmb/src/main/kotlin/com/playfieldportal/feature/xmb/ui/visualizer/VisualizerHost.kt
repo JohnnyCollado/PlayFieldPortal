@@ -7,7 +7,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
@@ -20,11 +19,12 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 /**
  * One clock, one array, N draws — the rule that makes a live picker affordable.
  *
- * Nine live previews are not nine visualizers. They are **one** simulation drawn nine times:
+ * The strip's previews are not separate visualizers. They are **one** simulation drawn once each —
+ * three draws (the hero and the two live tiles) against one advance per field per frame:
  *
  *  - **One `withFrameNanos` loop**, owned by the player screen. Not `rememberInfiniteTransition`,
- *    and never one per tile — that would be nine animation subscriptions and nine recomposition
- *    scopes for a field that is already being computed.
+ *    and never one per tile — that would be one animation subscription and one recomposition
+ *    scope per preview, for a field that is already being computed.
  *  - **One particle array per field**, advanced once per frame in this holder. Each tile draws the
  *    *first N* entries scaled into its own bounds, so simulation cost is O(1) in tile count and
  *    only draw scales.
@@ -56,20 +56,7 @@ class VisualizerHost internal constructor(tint: () -> Color) {
      */
     val frame: VisualizerFrame get() = frameState
 
-    /**
-     * One multiplier that turns every budget down at once, for a low-end device or a thermal
-     * signal, without touching a renderer.
-     *
-     * Snapshot-backed because [scaled] is called from the draw phase: a plain field would change
-     * without invalidating anything, and the budget would only take effect on the next unrelated
-     * frame.
-     */
-    var budgetScale: Float by mutableStateOf(1f)
-
     fun rendererFor(id: String): PfpVisualizer? = renderers[id]
-
-    /** Applies [budgetScale] to one of the table values below. */
-    fun scaled(budget: Int): Int = (budget * budgetScale).toInt().coerceAtLeast(1)
 
     /**
      * Advances every field once, then publishes the frame.
@@ -121,13 +108,9 @@ fun rememberVisualizerHost(
     trackId: String?,
     tint: Color,
     active: Boolean,
-    budgetScale: Float = 1f,
 ): VisualizerHost {
     val tintState = rememberUpdatedState(tint)
     val host = remember { VisualizerHost { tintState.value } }
-    // In a SideEffect, not inline: [VisualizerHost.budgetScale] is snapshot state, and writing
-    // snapshot state during composition is how you get a screen that recomposes itself forever.
-    SideEffect { host.budgetScale = budgetScale }
 
     // Read inside the frame callback rather than keyed on, so a play/pause does not tear down and
     // restart the loop (which would lose the frame delta and stutter on every toggle).
@@ -182,6 +165,6 @@ fun VisualizerField(
     }
     Canvas(modifier) {
         // The one state read that matters, and it is inside the draw lambda on purpose.
-        with(renderer) { render(host.frame, host.scaled(budget), sprite) }
+        with(renderer) { render(host.frame, budget, sprite) }
     }
 }

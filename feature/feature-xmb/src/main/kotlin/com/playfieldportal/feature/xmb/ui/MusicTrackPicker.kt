@@ -88,21 +88,21 @@ fun MusicTrackPicker(
     showTouchControls: Boolean = true,
     /** Any finger on the picker: hides the controller cursor and arms the revival press. */
     onTouchInput: () -> Unit = {},
-    /** Row index → Y, plus the viewport centre, for the revival press's nearest-visible anchor. */
+    /** Row index → the row's centre Y, plus the viewport centre, for the nearest-visible anchor. */
     onGeometry: (Map<Int, Float>, Float) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
-    // Rows frame themselves with a BringIntoViewRequester; this only has to put the target within
-    // reach of that when the cursor lands outside the composed window. Confirm row + one row per
-    // track, clamped so a stale cursor can't walk off the end of the list.
+    // Confirm row + one row per track, clamped so a stale cursor can't walk off the end of the list.
+    // The reveal is the minimal one (revealRow), the same rule the browser uses: a held direction
+    // travels one row at a time rather than walking to the bottom edge and lurching a page.
     LaunchedEffect(state.selectedIndex, state.cursorVisible) {
         // Never chase the cursor while it is hidden: the list belongs to the finger then, and
         // scrolling it back to a stale index is the jerk this is here to prevent.
         if (!state.cursorVisible) return@LaunchedEffect
         val target = state.selectedIndex.coerceIn(0, state.tracks.size)
         if (listState.layoutInfo.visibleItemsInfo.none { it.index == target }) {
-            listState.scrollToItem(target)
+            listState.revealRow(target)
         }
     }
 
@@ -119,7 +119,11 @@ fun MusicTrackPicker(
     LaunchedEffect(listState, state.tracks) {
         snapshotFlow { listState.layoutInfo }.collect { info ->
             if (info.visibleItemsInfo.isEmpty()) return@collect
-            val offsets = info.visibleItemsInfo.associate { it.index to it.offset.toFloat() }
+            // Row centres, to match the viewport centre they are compared against. (A list item's
+            // `size` is its main-axis length in pixels, not an IntSize.)
+            val offsets = info.visibleItemsInfo.associate {
+                it.index to it.offset + it.size / 2f
+            }
             onGeometry(offsets, (info.viewportStartOffset + info.viewportEndOffset) / 2f)
         }
     }

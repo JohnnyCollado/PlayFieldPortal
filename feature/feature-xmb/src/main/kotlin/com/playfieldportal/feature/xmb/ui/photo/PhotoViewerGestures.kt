@@ -3,6 +3,8 @@ package com.playfieldportal.feature.xmb.ui.photo
 import androidx.compose.foundation.gestures.calculatePan
 import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
@@ -14,20 +16,52 @@ import kotlin.math.abs
 private val PHOTO_STEP_COMMIT_DP = 72.dp
 private const val FLING_DP_PER_S = 420f
 
-/** One detector owns taps, navigation, pinch zoom and zoomed panning. */
+/**
+ * One detector owns taps, navigation, pinch zoom and zoomed panning.
+ *
+ * The zoom state and the sensitivity scale feed this through stable holders and are read *inside*
+ * the gesture, never used as `pointerInput` keys. `zoomed` flips the instant a pinch crosses
+ * `ZOOM_MIN`, and a key change cancels the running detector — whose replacement immediately waits
+ * for a fresh pointer-down, so the rest of that pinch was discarded and the image stopped scaling
+ * until the fingers came off. Read live, one pinch both enters the zoom and keeps driving it, and a
+ * touch-sensitivity change is picked up by the next swipe rather than by rebuilding the detector.
+ */
+@Composable
 fun Modifier.photoViewerGestures(
     zoomed: Boolean,
     stepScale: Float,
     onTap: () -> Unit,
     onStep: (Int) -> Unit,
     onTransform: (zoom: Float, panX: Float, panY: Float) -> Unit,
-): Modifier = pointerInput(zoomed, stepScale) {
-    val slop = viewConfiguration.touchSlop
-    val horizontalCommitPx = PHOTO_STEP_COMMIT_DP.toPx() * stepScale
-    val flingPxPerSecond = FLING_DP_PER_S * density
+): Modifier {
+    val zoomedNow = rememberUpdatedState(zoomed)
+    val stepScaleNow = rememberUpdatedState(stepScale)
+    return photoViewerGestureDetector(
+        zoomed = { zoomedNow.value },
+        stepScale = { stepScaleNow.value },
+        onTap = onTap,
+        onStep = onStep,
+        onTransform = onTransform,
+    )
+}
 
+/**
+ * Installs the detector. Both live inputs arrive as suppliers rather than values, because they have
+ * to be read inside the gesture: as parameters they would key the `pointerInput` and cut off
+ * whatever gesture was running when they changed.
+ */
+private fun Modifier.photoViewerGestureDetector(
+    zoomed: () -> Boolean,
+    stepScale: () -> Float,
+    onTap: () -> Unit,
+    onStep: (Int) -> Unit,
+    onTransform: (zoom: Float, panX: Float, panY: Float) -> Unit,
+): Modifier = pointerInput(Unit) {
     awaitPointerEventScope {
         while (true) {
+            val slop = viewConfiguration.touchSlop
+            val horizontalCommitPx = PHOTO_STEP_COMMIT_DP.toPx() * stepScale()
+            val flingPxPerSecond = FLING_DP_PER_S * density
             val down = awaitFirstDown(requireUnconsumed = false)
             val tracker = VelocityTracker().apply { addPosition(down.uptimeMillis, down.position) }
             var axis = Axis.NONE
@@ -77,7 +111,7 @@ fun Modifier.photoViewerGestures(
                         change.consume()
                     }
                 } else {
-                    if (zoomed) {
+                    if (zoomed()) {
                         onTransform(1f, delta.x, delta.y)
                     } else if (axis == Axis.HORIZONTAL) {
                         accumulatedX += delta.x
@@ -91,7 +125,7 @@ fun Modifier.photoViewerGestures(
                 onTap()
                 continue
             }
-            if (zoomed || axis != Axis.HORIZONTAL) continue
+            if (zoomed() || axis != Axis.HORIZONTAL) continue
 
             val velocityX = tracker.calculateVelocity().x
             photoStepFromSwipe(

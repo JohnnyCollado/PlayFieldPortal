@@ -47,8 +47,8 @@ data class VisualizerFrame(
  * Simulation state (particles, rings) lives in [VisualizerHost] and is advanced **once per frame**
  * regardless of how many tiles are on screen — see §3.3 of the plan. A renderer therefore holds a
  * reference to that shared field and draws the first `budget` entries of it scaled into whatever
- * bounds the `DrawScope` gives it, which is what makes nine live picker previews cost one
- * simulation and nine draws rather than nine of everything.
+ * bounds the `DrawScope` gives it, which is what makes the strip's live previews share one clock
+ * and their field's single particle array — a draw each, not a simulation each.
  */
 interface PfpVisualizer {
     val id: String

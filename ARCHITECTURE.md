@@ -240,6 +240,24 @@ acts on the stale pre-scroll row drags the list back to it. `SettingsScaffold`,
 (`listState.scroll { }`), so a fling the finger left running cannot carry the row out from under a
 cursor that just landed on it.
 
+**A viewport position is a fact about one frame, and must never enter the navigation engine.** The
+two terms of that rule are *row centres*, not row tops — the window is compared against the middle
+of the viewport, so a row's top hands the win to the row below as soon as the centre falls in its
+lower half — and they are held by the screen's owner, replaced wholesale on every layout, never
+merged into `NavigationEngine`'s geometry map. That map persists and is what vertical traversal
+sorts by, so a single flick would leave every row ever seen holding a position from a different
+scroll offset and the order a press walks would be two scroll positions interleaved. A list whose
+registration order already *is* its visual order should therefore report no geometry at all and let
+spec §7.2 supply the order.
+
+**Revealing the focused row is a one-row scroll.** A list whose cursor the D-pad walks uses
+`revealRow`, not `LazyListState.scrollToItem` on its own. `scrollToItem` aligns the row to the *top*
+of the viewport: one row of travel stepping up past the first visible row, a whole page stepping
+down past the last one, because the row that was below the window is thrown to the top and every row
+between moves with it — so a held direction lurches downward where it glides upward. The minimal
+reveal seats a downward one-row step against the bottom edge instead. A move of more than one row
+(a sort that recycles the list, a query that refilters it) is not a cursor step and stays a jump.
+
 **The two built-in players are one instrument.** `VideoPlayerScreen` and `MusicPlayerScreen` share
 the same transport pieces from `feature-xmb/.../ui/media/MediaTransport.kt` — `MediaScrubBar`,
 `Scrubber`, `TransportButton` — and the same controller ladder: **A** play/pause, **◀/▶** seek

@@ -534,6 +534,10 @@ open class BackupManager @Inject constructor(
             // Default players
             stringPreferencesKey("music_default_player_package"),
             stringPreferencesKey("video_default_player"),
+            // The in-app player's visualizer field (Portal / Ripple / Off). A choice, not a device
+            // fact, and the player reads it back on every open — so a restore that dropped it
+            // would silently return the user to Off.
+            stringPreferencesKey("music_visualizer_id"),
             // Library
             stringPreferencesKey("library_root_path"),
             // SAF ROM root grants (newline-joined list; singular key kept for older backups).

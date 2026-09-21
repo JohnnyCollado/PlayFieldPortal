@@ -1464,14 +1464,28 @@ class XMBViewModel @Inject constructor(
      */
     private var browserTouchScrolled = false
 
-    /** Viewport centre in the list's own coordinates, reported by the screen with row geometry. */
+    /** Viewport centre in the list's own coordinates, reported by the screen with the row window. */
     private var browserViewportCentreY = 0f
+
+    /**
+     * The browser's visible window: row id → the row's centre Y, replaced wholesale on every layout.
+     *
+     * It is deliberately kept here rather than pushed into [browserNav]'s geometry. Those Y values
+     * are offsets inside the current viewport, so they are only true of the frame that reported
+     * them; the engine's map is persistent and merges, so every row ever seen would keep a value
+     * from the scroll position it was last seen at — and that map is what the engine sorts by to
+     * decide visual order. After one flick the order became a jumble of two scroll positions and a
+     * D-pad press walked it, which is the jump this replaces. The browser's rows are registered top
+     * to bottom, which IS its visual order, and an engine with no geometry traverses in exactly that
+     * order (spec §7.2) — so the browser never reports geometry at all.
+     */
+    private var browserVisibleRowCentres: Map<String, Float> = emptyMap()
 
     /** True once a finger has been on the track picker, so the next controller press revives. */
     private var pickerTouchUsed = false
 
-    /** The picker's visible window: row index → main-axis offset, and the viewport centre. */
-    private var pickerVisibleOffsets: Map<Int, Float> = emptyMap()
+    /** The picker's visible window: row index → the row's centre Y, replaced on every layout. */
+    private var pickerVisibleRowCentres: Map<Int, Float> = emptyMap()
     private var pickerViewportCentreY = 0f
 
     // Identity of the "Now Playing" row as last published, so the Music root only rebuilds when
@@ -3545,11 +3559,14 @@ class XMBViewModel @Inject constructor(
      * The source transition from finger to pad, run once per controller press before the press is
      * given a meaning.
      *
-     * A revival press — the first one after a touch drag — spends itself re-anchoring the cursor to
-     * the row nearest the viewport centre (the content the user was actually looking at) and doing
-     * nothing else; a directional press that also moved would step the cursor straight past the
-     * visible area while it was still reappearing. Same rule as SettingsScaffold, because a user
-     * who learns one list has learned the other.
+     * A revival press — the first one after a finger has been on the list, a drag or a tap, since
+     * either leaves the cursor hidden — spends itself re-anchoring to the row nearest the viewport
+     * centre (the content the user was actually looking at) and doing nothing else; a directional
+     * press that also moved would step the cursor straight past the visible area while it was still
+     * reappearing. The row a tap left focused is deliberately not what gets re-anchored to: the
+     * window is what the user is looking at, and a tapped row is usually one that navigated away
+     * from this screen anyway. Same rule as SettingsScaffold, because a user who learns one list has
+     * learned the other.
      *
      * It lives on the source transition rather than inside [moveMusicBrowser] because *every*
      * button is one. Re-anchoring only for directionals left Options, Search, Open and Back acting
@@ -3585,7 +3602,7 @@ class XMBViewModel @Inject constructor(
         val focusable = browserNav.focusableKeys()
         val nearest = nearestToViewportCentre(
             centreY = browserViewportCentreY,
-            visibleOffsets = browserNav.currentGeometry().filterKeys { it in focusable },
+            visibleRowCentres = browserVisibleRowCentres.filterKeys { it in focusable },
         )
         if (nearest != null) browserNav.setFocused(nearest)
     }
@@ -3616,13 +3633,13 @@ class XMBViewModel @Inject constructor(
     }
 
     /**
-     * Row positions and the viewport centre, in the list's own coordinates, reported on every
-     * layout change. This is the geometry [focusBrowserNearestToViewportCentre] reads.
+     * The visible row window and the viewport centre, in the list's own coordinates, reported on
+     * every layout change. This is what [focusBrowserNearestToViewportCentre] reads.
      */
     fun onMusicBrowserGeometry(geometry: Map<String, Float>, viewportCentreY: Float) {
         if (_uiState.value.musicBrowser == null) return
         browserViewportCentreY = viewportCentreY
-        geometry.forEach { (key, y) -> browserNav.reportNodeGeometry(key, y) }
+        browserVisibleRowCentres = geometry
     }
 
     private fun handleMusicBrowserRow(item: XMBItem) {
@@ -4226,7 +4243,7 @@ class XMBViewModel @Inject constructor(
         pickerTouchUsed = false
         if (!reviving) return false
         val maxIndex = picker.tracks.size   // 0 = Confirm row, 1..size = tracks
-        val nearest = nearestToViewportCentre(pickerViewportCentreY, pickerVisibleOffsets)
+        val nearest = nearestToViewportCentre(pickerViewportCentreY, pickerVisibleRowCentres)
             ?.coerceIn(0, maxIndex)
         _uiState.update { state ->
             val p = state.musicTrackPicker ?: return@update state
@@ -4254,7 +4271,7 @@ class XMBViewModel @Inject constructor(
      */
     fun onMusicTrackPickerGeometry(offsets: Map<Int, Float>, viewportCentreY: Float) {
         if (_uiState.value.musicTrackPicker == null) return
-        pickerVisibleOffsets = offsets
+        pickerVisibleRowCentres = offsets
         pickerViewportCentreY = viewportCentreY
     }
 

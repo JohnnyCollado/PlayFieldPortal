@@ -108,16 +108,18 @@ fun MusicBrowserScreen(
     onNowPlayingTapped: () -> Unit = {},
     /** Any finger on the list: hides the controller cursor and arms the revival press. */
     onTouchInput: () -> Unit = {},
-    /** Row id → Y, plus the viewport centre, for the engine's nearest-visible recovery. */
+    /** Row id → the row's centre Y, plus the viewport centre, for the nearest-visible re-anchor. */
     onGeometry: (Map<String, Float>, Float) -> Unit = { _, _ -> },
     showTouchControls: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
-    // The focused row frames itself with a BringIntoViewRequester (this app's convention for
-    // controller focus — see StudioAssetManager). That can only work once the row is composed, so a
-    // jump that lands outside the viewport — a sort cycling back to the top, a query refiltering the
-    // list — brings it into range first and lets the row do the framing from there.
+    // The focused row is revealed by the list itself, and by the shortest scroll that does it
+    // (revealRow): a step up past the first visible row is already one row of travel, and a step
+    // down past the last one is seated at the bottom edge rather than thrown to the top, so a held
+    // direction glides a row at a time in both directions instead of lurching a page at a time
+    // downward. A move of more than one row — a sort cycling back to the top, a query refiltering
+    // the list — stays the jump it always was.
     LaunchedEffect(state.selectedIndex, state.scrollToTopToken, state.cursorVisible) {
         if (state.rows.isEmpty()) return@LaunchedEffect
         // Never chase the cursor while it is hidden: the list belongs to the finger then, and
@@ -125,7 +127,7 @@ fun MusicBrowserScreen(
         if (!state.cursorVisible) return@LaunchedEffect
         val target = state.selectedIndex.coerceIn(0, state.rows.lastIndex)
         if (listState.layoutInfo.visibleItemsInfo.none { it.index == target }) {
-            listState.scrollToItem(target)
+            listState.revealRow(target)
         }
     }
 
@@ -138,14 +140,20 @@ fun MusicBrowserScreen(
         listState.scroll { }
     }
 
-    // Feed the engine row geometry from the LazyColumn itself rather than from per-row
+    // Feed the re-anchor's nearest-visible rule from the LazyColumn itself rather than from per-row
     // onGloballyPositioned callbacks: the list already computes this, and only the visible window
-    // matters to a "nearest visible node" query.
+    // matters to a "nearest visible row" query.
     LaunchedEffect(listState, state.rows) {
         snapshotFlow { listState.layoutInfo }.collect { info ->
             if (info.visibleItemsInfo.isEmpty()) return@collect
             val geometry = info.visibleItemsInfo.mapNotNull { item ->
-                state.rows.getOrNull(item.index)?.id?.let { it to item.offset.toFloat() }
+                // The row's CENTRE (`offset` is its top, `size` its main-axis length in pixels — a
+                // list item's size is an Int, not an IntSize), to match the viewport centre it is
+                // compared against: a row's top would hand the win to the row below whenever the
+                // middle of the screen falls in a row's lower half.
+                state.rows.getOrNull(item.index)?.id?.let {
+                    it to item.offset + item.size / 2f
+                }
             }.toMap()
             onGeometry(geometry, (info.viewportStartOffset + info.viewportEndOffset) / 2f)
         }

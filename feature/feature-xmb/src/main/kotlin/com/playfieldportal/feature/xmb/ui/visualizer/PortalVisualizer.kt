@@ -30,8 +30,11 @@ private const val RADIAL_ENERGY = 0.22f
 private const val SPIN_BASE = 0.32f
 private const val SPIN_ENERGY = 0.38f
 
-private val MIN_PARTICLE = 2.dp
-private val MAX_PARTICLE = 9.dp
+// Throat to rim, before the tile scale below. Sized so the field still reads as circles at hero
+// size rather than as a haze of dots: the throat stays small and bright, and the rim — where the
+// alpha falloff has already thinned the particles — gets enough diameter to still be a shape.
+private val MIN_PARTICLE = 3.dp
+private val MAX_PARTICLE = 12.dp
 
 /** Rim radius a hero-sized field has, used to scale particle sizes down for a picker tile. */
 private val REFERENCE_RIM = 170.dp
