@@ -25,6 +25,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 private val KEY_DEFAULT_PLAYER = stringPreferencesKey("music_default_player_package")
+private val KEY_VISUALIZER_ID = stringPreferencesKey("music_visualizer_id")
+private const val DEFAULT_VISUALIZER_ID = "off"
 
 @Singleton
 class MusicRepositoryImpl @Inject constructor(
@@ -109,6 +111,13 @@ class MusicRepositoryImpl @Inject constructor(
             if (packageName.isNullOrBlank()) prefs.remove(KEY_DEFAULT_PLAYER)
             else prefs[KEY_DEFAULT_PLAYER] = packageName
         }
+    }
+
+    override fun observeVisualizerId(): Flow<String> =
+        context.pfpDataStore.data.map { it[KEY_VISUALIZER_ID] ?: DEFAULT_VISUALIZER_ID }
+
+    override suspend fun setVisualizerId(id: String) {
+        context.pfpDataStore.edit { prefs -> prefs[KEY_VISUALIZER_ID] = id }
     }
 
     // ── Playlists ───────────────────────────────────────────────────────────────

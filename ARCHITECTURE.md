@@ -220,9 +220,61 @@ deliberately excluding the device-specific XMB layout adjustment. Applying a the
 
 Touch helper bars are a separate input family from controller prompts. Use `TouchGesture` and
 `TouchPromptBar` for touch gestures; use `ControllerPromptBar` for physical controller inputs, and
-never mix both families in one helper row without first redesigning the touch tap glyph. Options
-uses a vertical kebab (`⋮`) rather than the old horizontal ellipsis convention; section screens
-should follow this when they receive their touch pass.
+never mix both families in one helper row without first redesigning the touch tap glyph — a screen
+shows one family at a time, chosen by `resolvedShowTouchButton`, not both at once. Options uses a
+vertical kebab (`⋮`) rather than the old horizontal ellipsis convention. Photo, Video and Music
+have all had their touch pass; remaining section screens should follow the same shape. That rule is
+about the *helper row* (which gestures a finger is told about, and which buttons a pad is); state a
+finger can act on is not part of the choice — the browser's now-playing strip is drawn in both input
+modes, because what it says is worth reading either way.
+
+**Switching from finger to pad is a press, not a free action.** A list a finger can scroll keeps its
+cursor hidden while the finger owns it, and the *first* controller press afterwards is a revival
+press: it parks the cursor on the visible row nearest the middle of the window — the content the
+user was looking at — and, when directional, is spent doing that rather than also moving. It has to
+be handled on the source transition (the entry point for controller input) and not inside the
+directional handler, because Options, Search, Open and Back are transitions too, and a press that
+acts on the stale pre-scroll row drags the list back to it. `SettingsScaffold`,
+`MusicBrowserScreen` and `MusicTrackPicker` all follow this rule; the re-anchor itself is
+`nearestToViewportCentre`. Revealing the cursor is also the moment to take the scroll mutex
+(`listState.scroll { }`), so a fling the finger left running cannot carry the row out from under a
+cursor that just landed on it.
+
+**The two built-in players are one instrument.** `VideoPlayerScreen` and `MusicPlayerScreen` share
+the same transport pieces from `feature-xmb/.../ui/media/MediaTransport.kt` — `MediaScrubBar`,
+`Scrubber`, `TransportButton` — and the same controller ladder: **A** play/pause, **◀/▶** seek
+∓10s, **L1/R1** previous/next, **Y** options, **B** close. A binding added to one belongs in the
+other. Seeking commits on release, not per pixel: dragging a decoder position on every touch event
+stutters it for the length of the drag. Their *layouts* diverge on purpose: the video player's
+centre is the content, while the music player's centre is the visualizer and must stay empty, so
+its album art is a 62dp thumbnail rather than a hero tile.
+
+**One clock, one array, N draws.** The music player's visualizer
+(`feature-xmb/.../ui/visualizer/`) draws a live preview of every field in its picker strip at the
+same time as the hero. That is only affordable because it is **one** simulation drawn many times,
+and the rule is easy to break by accident:
+
+- **One `withFrameNanos` loop**, owned by `VisualizerHost`. Not `rememberInfiniteTransition`, and
+  never one per tile — that would be one animation subscription and one recomposition scope per
+  preview.
+- **One particle array per field**, advanced once per frame in the host. Each tile draws the first
+  N entries scaled into its own bounds, so simulation cost is O(1) in tile count and only draw
+  scales.
+- **The frame is read in the draw phase**, inside the `Canvas` lambda. Read it from a composable
+  body instead and the whole player recomposes at 60Hz.
+- **One pre-rendered sprite**, `drawImage`d — not N radial-gradient `drawCircle` calls, each of
+  which rebuilds its shader.
+
+If you are adding motion to the music player, add it to `VisualizerHost`. A second animation loop
+is the single change most likely to undo all of the above.
+
+Renderers implement `PfpVisualizer` and receive a `VisualizerFrame(timeNanos, energy, bands)`.
+`energy` is synthetic today (three incommensurate sines seeded from the track id) and `bands` is
+always null, because playback is a `MediaPlayer` with no audio tap; the seam is shaped so an
+ExoPlayer migration can supply RMS and an FFT **without changing a renderer**. The one contract
+every renderer must honour is that it consumes `energy` in at least one term — the envelope decays
+to a floor on pause, and a field that sails on through a pause is the clearest possible tell that
+nothing is listening.
 
 - **MVVM:** ViewModels own state (`StateFlow<UiState>`); composables are stateless and driven by
   state + callbacks.

@@ -70,6 +70,15 @@ import com.playfieldportal.feature.library.scanner.ScanStatus
 import com.playfieldportal.feature.library.scanner.scanOutcomeMessage
 import com.playfieldportal.feature.xmb.R
 import com.playfieldportal.feature.xmb.gamepad.GamepadInputHandler
+import com.playfieldportal.core.navigation.NavigationCommand
+import com.playfieldportal.core.navigation.NavigationDirection
+import com.playfieldportal.core.navigation.NavigationEngine
+import com.playfieldportal.core.navigation.NavigationLogger
+import com.playfieldportal.core.navigation.NavigationNode
+import com.playfieldportal.core.navigation.NavigationTouchAction
+import com.playfieldportal.feature.xmb.music.MusicPlaybackState
+import com.playfieldportal.feature.xmb.music.nowPlayingRowKey
+import com.playfieldportal.feature.xmb.ui.visualizer.VisualizerIds
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -143,6 +152,10 @@ data class XMBContextMenu(
     val shortcutId: String? = null,
     // Captured legacy INSTALL_SHORTCUT launch intent when the menu is for such an entry.
     val launchIntentUri: String? = null,
+    // Set on any menu opened from the fullscreen music browser that carries its list-level rows
+    // (Resume, Sort). Independent of the row fields above, because those rows are appended to a
+    // track menu, a playlist menu, or a menu with nothing else in it.
+    val browserList: Boolean = false,
     // Set on a music folder's options menu / a music track's options menu.
     val musicFolderId: String? = null,
     val musicTrackId: String? = null,
@@ -493,11 +506,33 @@ data class MusicBrowserState(
     val query: String = "",
     val rows: List<XMBItem> = emptyList(),   // already filtered + sorted, ready to render
     val selectedIndex: Int = 0,
-    // Status-bar style sort hint, non-null on track views (AllMusic / a Playlist's tracks).
+    // The bare sort mode ("Title"), non-null on track views (AllMusic / a Playlist's tracks).
+    // Deliberately without the "Sort: " prefix, which belongs to the drawing — see [sortPillLabel].
     val sortLabel: String? = null,
     // Bumped to snap the list back to the top (sort change / query change).
     val scrollToTopToken: Int = 0,
-)
+    // Whether the controller cursor should be drawn. Owned by [browserNav] (the shared navigation
+    // engine), not inferred from the last input source: touch hides it, and the next controller
+    // press re-anchors it to the nearest visible row before it reappears.
+    val cursorVisible: Boolean = true,
+    // Focus signal for the (always-visible) search field: true puts the caret in it and raises the
+    // keyboard. Unlike the app picker's flag this does not show or hide the field — the browser's
+    // field is permanent, because its query is the list's filter and hiding it would hide why the
+    // list looks the way it does.
+    val searchActive: Boolean = false,
+    // The loaded song, for the now-playing strip along the bottom of the browser. Null when nothing
+    // is loaded, which is also when the strip is absent rather than blank.
+    val nowPlaying: MusicBrowserNowPlaying? = null,
+) {
+    /**
+     * The sort hint as the UI draws it — "Sort: Title".
+     *
+     * Two places render this (the header pill and the browser's Options row), and each adds the
+     * prefix itself. When [sortLabel] also carried one the pair produced "Sort: Sort: Title", so
+     * the prefix lives here, once, and [sortLabel] stays the bare mode name.
+     */
+    val sortPillLabel: String? get() = sortLabel?.let { "Sort: $it" }
+}
 
 // Drives the "New / Rename Playlist" text dialog. When [forTrackId] is set, the freshly created
 // playlist immediately receives that track.
@@ -520,6 +555,12 @@ data class MusicTrackPickerState(
     val tracks: List<MusicTrack>,
     val selected: Set<String> = emptySet(),
     val selectedIndex: Int = 0,   // index 0 = the Confirm row; 1..n = tracks
+    // Whether the controller cursor should be drawn, owned the same way the browser owns its own:
+    // touch hides it and the next controller press re-anchors it to the nearest visible track
+    // before showing it again. Deliberately not inferred from `lastInputWasTouch`, which a finger
+    // scrolling the list never updates — so a touch session used to leave the highlight riding a
+    // row far off screen.
+    val cursorVisible: Boolean = true,
 )
 
 // ── Main XMB state ────────────────────────────────────────────────────────────
@@ -580,6 +621,14 @@ data class XMBUiState(
     val musicPlayerVisible: Boolean = false,
     val musicPlayback: com.playfieldportal.feature.xmb.music.MusicPlaybackState =
         com.playfieldportal.feature.xmb.music.MusicPlaybackState(),
+    // Which field the player draws behind its chrome — one of VisualizerIds, persisted.
+    val musicVisualizerId: String = VisualizerIds.OFF,
+    // Player chrome (banner, metadata, transport, clock). Auto-hides only when a field is up:
+    // under `Off` hiding everything would leave a bare wallpaper with no way back but a blind tap.
+    val musicChromeVisible: Boolean = true,
+    // Cursor in the visualizer picker strip; null means the strip is closed. While it is non-null
+    // the strip owns the D-pad's horizontal axis (see onGamepadAction).
+    val musicPickerIndex: Int? = null,
 
     // ── Vertical axis: games / settings items ─────────────────────────────
     val currentItems: List<XMBItem> = emptyList(),
@@ -1389,13 +1438,53 @@ class XMBViewModel @Inject constructor(
     private var currentMusicTracks: List<MusicTrack> = emptyList()
     private var currentMusicTracksRaw: List<MusicTrack> = emptyList()
 
-    // Tracks whether playback currently has a track, so the Music root only rebuilds (to add/drop
-    // the "Now Playing" row) when that flips — not on every half-second playback tick.
-    private var lastHadPlayingTrack = false
+    /**
+     * The fullscreen browser's on-screen track list — its play queue.
+     *
+     * Deliberately NOT [currentMusicTracks]. That field belongs to the XMB's own item list, and
+     * [refreshMusicRootPreservingCursor] clears it every time the Music root rebuilds. The root
+     * rebuilds whenever the "Now Playing" row's contents change, i.e. the moment a song starts —
+     * so a browser sharing the field lost its queue the instant it played anything, and every
+     * later pick fell out of [openMusicPlayerForItem] on the empty-list guard, silently.
+     */
+    private var browserQueue: List<MusicTrack> = emptyList()
+
+    /**
+     * Controller navigation for the fullscreen browser, on the shared engine rather than a private
+     * index. The engine owns cursor visibility, stable-key focus across rebuilds, nearest-survivor
+     * recovery when the focused row is filtered away, and no-wrap clamping — all of which the
+     * hand-rolled `selectedIndex` either got wrong or did not have. `MusicBrowserState.selectedIndex`
+     * is now derived from [NavigationEngine.focusedKey] purely so the list has something to scroll to.
+     */
+    private val browserNav = NavigationEngine("music_browser", NavigationLogger { Timber.w(it) })
+
+    /**
+     * True once a finger has been on the list — a drag or a tap — so the next controller press is
+     * the one that takes over from it and re-anchors, rather than the one that navigates.
+     */
+    private var browserTouchScrolled = false
+
+    /** Viewport centre in the list's own coordinates, reported by the screen with row geometry. */
+    private var browserViewportCentreY = 0f
+
+    /** True once a finger has been on the track picker, so the next controller press revives. */
+    private var pickerTouchUsed = false
+
+    /** The picker's visible window: row index → main-axis offset, and the viewport centre. */
+    private var pickerVisibleOffsets: Map<Int, Float> = emptyMap()
+    private var pickerViewportCentreY = 0f
+
+    // Identity of the "Now Playing" row as last published, so the Music root only rebuilds when
+    // that row's contents actually change — not on every half-second playback tick.
+    private var lastNowPlayingKey: String? = null
 
     // Cached so a track launch (a discrete event) doesn't need to suspend-read DataStore.
     @Volatile
     private var defaultMusicPlayer: String? = null
+
+    // Idle timer behind [pokeMusicChrome]. One job, always cancelled before a new one starts, so a
+    // burst of input cannot stack up several pending hides.
+    private var musicChromeJob: Job? = null
 
     // Elapsed-realtime ms of the most recent user input (touch or controller). Drives the idle
     // context-menu hint: after IDLE_HINT_DELAY_MS with no input, if the focused item has a context
@@ -1561,13 +1650,20 @@ class XMBViewModel @Inject constructor(
             musicRepository.observeDefaultPlayerPackage().collect { defaultMusicPlayer = it }
         }
         viewModelScope.launch {
+            musicRepository.observeVisualizerId().collect { id ->
+                _uiState.update { it.copy(musicVisualizerId = id) }
+            }
+        }
+        viewModelScope.launch {
             musicPlayer.state.collect { playback ->
                 _uiState.update { it.copy(musicPlayback = playback) }
-                // Rebuild the Music root only when playback gains/loses a track, so the "Now Playing"
-                // row appears/disappears — never on the half-second position ticks.
-                val hasTrack = playback.track != null
-                if (hasTrack != lastHadPlayingTrack) {
-                    lastHadPlayingTrack = hasTrack
+                syncBrowserNowPlaying(playback)
+                // Rebuild the Music root only when the "Now Playing" row's own contents change —
+                // it appearing or disappearing, and equally the song advancing underneath it —
+                // never on the half-second position ticks, which the row doesn't show.
+                val nowPlayingKey = nowPlayingRowKey(playback)
+                if (nowPlayingKey != lastNowPlayingKey) {
+                    lastNowPlayingKey = nowPlayingKey
                     if (currentCategory()?.id == BuiltInCategory.MUSIC &&
                         _uiState.value.musicNav == MusicNav.Root
                     ) {
@@ -3306,7 +3402,17 @@ class XMBViewModel @Inject constructor(
             MusicBrowserView.Playlists   -> "Playlists"
             is MusicBrowserView.Playlist -> view.name
         }
-        _uiState.update { it.copy(musicBrowser = MusicBrowserState(view = view, title = title)) }
+        // New view, new list: drop the old focus so the engine seeds on the first row rather than
+        // trying to preserve a key that belongs to the list we just left.
+        browserNav.setFocused(null)
+        browserTouchScrolled = false
+        _uiState.update { it.copy(musicBrowser = MusicBrowserState(
+            view = view,
+            title = title,
+            // Seeded from the player: the browser is regularly opened mid-song, and a strip that
+            // only appears on the next playback emission would blink in a tick later.
+            nowPlaying = browserNowPlaying(it.musicPlayback),
+        )) }
         musicBrowserJob = viewModelScope.launch {
             when (view) {
                 MusicBrowserView.AllMusic -> musicRepository.observeAllTracks().collect { tracks ->
@@ -3322,6 +3428,21 @@ class XMBViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Mirrors the loaded track into the browser's now-playing strip.
+     *
+     * Written from the same collector as `XMBUiState.musicPlayback` so the strip can never name a
+     * song the player has moved off, and skipped when the strip would render exactly what it already
+     * shows: that collector fires twice a second, and nothing in the strip is positional.
+     */
+    private fun syncBrowserNowPlaying(playback: MusicPlaybackState) {
+        val next = browserNowPlaying(playback)
+        _uiState.update { state ->
+            val b = state.musicBrowser ?: return@update state
+            if (b.nowPlaying == next) state else state.copy(musicBrowser = b.copy(nowPlaying = next))
+        }
+    }
+
     private fun MusicTrack.matchesQuery(q: String): Boolean =
         displayTitle.lowercase().contains(q) ||
             artist?.lowercase()?.contains(q) == true ||
@@ -3333,7 +3454,7 @@ class XMBViewModel @Inject constructor(
         val q = state.query.trim().lowercase()
         val sorted = browserRawTracks.trackSorted(_uiState.value.musicSortMode)
         val filtered = if (q.isBlank()) sorted else sorted.filter { it.matchesQuery(q) }
-        currentMusicTracks = filtered   // the play queue is exactly what's on screen
+        browserQueue = filtered   // the play queue is exactly what's on screen
         val baseRows = when {
             filtered.isNotEmpty() -> filtered.toMusicItems()
             q.isNotBlank()        -> listOf(browserNoResultsItem())
@@ -3341,12 +3462,9 @@ class XMBViewModel @Inject constructor(
             else                  -> listOf(emptyAllMusicItem())
         }
         val rows = if (isPlaylist) baseRows + addTracksItem() else baseRows
-        val label = "Sort: ${_uiState.value.musicSortMode.label}"
-        _uiState.update { it.copy(musicBrowser = it.musicBrowser?.copy(
-            rows = rows,
-            selectedIndex = state.selectedIndex.coerceIn(0, (rows.size - 1).coerceAtLeast(0)),
-            sortLabel = label,
-        )) }
+        // The mode alone — the header pill and the Options row each add their own "Sort:" prefix,
+        // and carrying it here rendered "Sort: Sort: Title" in the pill.
+        publishBrowserRows(rows, sortLabel = _uiState.value.musicSortMode.label)
     }
 
     private fun rebuildBrowserPlaylistRows() {
@@ -3355,11 +3473,54 @@ class XMBViewModel @Inject constructor(
         val filtered = if (q.isBlank()) browserRawPlaylists
                        else browserRawPlaylists.filter { it.name.lowercase().contains(q) }
         val rows = playlistRootItems(filtered)   // playlist rows + "Create Playlist"
-        _uiState.update { it.copy(musicBrowser = it.musicBrowser?.copy(
-            rows = rows,
-            selectedIndex = state.selectedIndex.coerceIn(0, (rows.size - 1).coerceAtLeast(0)),
-            sortLabel = null,
-        )) }
+        publishBrowserRows(rows, sortLabel = null)
+    }
+
+    /**
+     * Hands a new row list to the engine and mirrors the result into the UI state.
+     *
+     * The engine keeps focus on the same row id when it survives, and falls back to the nearest
+     * survivor (geometry first, then order) when it does not — which is what makes filtering the
+     * list under the cursor behave rather than dumping it back at row 0.
+     */
+    private fun publishBrowserRows(rows: List<XMBItem>, sortLabel: String?) {
+        browserNav.replaceNodes(
+            rows.map { row ->
+                val actionable = row.type != XMBItemType.EMPTY
+                NavigationNode(
+                    key = row.id,
+                    focusable = actionable,
+                    selectable = actionable,
+                    // The engine activates the row; the ViewModel still decides what a row means.
+                    onSelect = { handleMusicBrowserRow(row) },
+                    onLongPress = { openMusicBrowserContextMenu() },
+                )
+            }
+        )
+        browserNav.markReady()
+        _uiState.update { state ->
+            val b = state.musicBrowser ?: return@update state
+            state.copy(musicBrowser = b.copy(
+                rows = rows,
+                sortLabel = sortLabel,
+                selectedIndex = browserIndexOfFocus(rows),
+                cursorVisible = browserNav.cursorVisible,
+            ))
+        }
+    }
+
+    private fun browserIndexOfFocus(rows: List<XMBItem>): Int =
+        rows.indexOfFirst { it.id == browserNav.focusedKey }.takeIf { it >= 0 } ?: 0
+
+    /** Mirrors the engine's focus and cursor visibility into the state after any dispatch. */
+    private fun syncBrowserCursor() {
+        _uiState.update { state ->
+            val b = state.musicBrowser ?: return@update state
+            state.copy(musicBrowser = b.copy(
+                selectedIndex = browserIndexOfFocus(b.rows),
+                cursorVisible = browserNav.cursorVisible,
+            ))
+        }
     }
 
     private fun browserNoResultsItem(): XMBItem = XMBItem(
@@ -3370,31 +3531,98 @@ class XMBViewModel @Inject constructor(
     fun onMusicBrowserQueryChange(query: String) {
         markTouchInput()
         val state = _uiState.value.musicBrowser ?: return
+        // Focus is not reset here: the engine keeps the focused row when it survives the filter and
+        // recovers to its nearest neighbour when it does not, which is the whole point of the
+        // migration. Only the scroll snaps to the top.
         _uiState.update { it.copy(musicBrowser = it.musicBrowser?.copy(
-            query = query, selectedIndex = 0,
+            query = query,
             scrollToTopToken = state.scrollToTopToken + 1,
         )) }
         if (state.view is MusicBrowserView.Playlists) rebuildBrowserPlaylistRows() else rebuildBrowserTrackRows()
     }
 
+    /**
+     * The source transition from finger to pad, run once per controller press before the press is
+     * given a meaning.
+     *
+     * A revival press — the first one after a touch drag — spends itself re-anchoring the cursor to
+     * the row nearest the viewport centre (the content the user was actually looking at) and doing
+     * nothing else; a directional press that also moved would step the cursor straight past the
+     * visible area while it was still reappearing. Same rule as SettingsScaffold, because a user
+     * who learns one list has learned the other.
+     *
+     * It lives on the source transition rather than inside [moveMusicBrowser] because *every*
+     * button is one. Re-anchoring only for directionals left Options, Search, Open and Back acting
+     * on the stale pre-drag row — which the list then had to travel back to, so the first press
+     * looked like it grabbed the screen and threw it somewhere the user had left.
+     *
+     * Returns true when this press was that revival press.
+     */
+    private fun reanchorMusicBrowserAfterTouch(): Boolean {
+        val reviving = browserTouchScrolled || !browserNav.cursorVisible
+        browserTouchScrolled = false
+        if (!reviving) return false
+        browserNav.markControllerInput()
+        focusBrowserNearestToViewportCentre()
+        syncBrowserCursor()
+        return true
+    }
+
     private fun moveMusicBrowser(delta: Int) {
-        val b = _uiState.value.musicBrowser ?: return
-        val next = (b.selectedIndex + delta).coerceIn(0, (b.rows.size - 1).coerceAtLeast(0))
-        if (next != b.selectedIndex) {
-            _uiState.update { it.copy(musicBrowser = b.copy(selectedIndex = next)) }
-            menuSound.play(MenuSound.SCROLL)
-        }
+        if (_uiState.value.musicBrowser == null) return
+        val before = browserNav.focusedKey
+        browserNav.dispatch(
+            NavigationCommand.Direction(
+                if (delta < 0) NavigationDirection.UP else NavigationDirection.DOWN
+            )
+        )        // Clamped at the ends by the engine, so silence there rather than a click that did nothing.
+        if (browserNav.focusedKey != before) menuSound.play(MenuSound.SCROLL)
+        syncBrowserCursor()
+    }
+
+    /** The engine's nearest-visible recovery, on the geometry the screen reports each layout. */
+    private fun focusBrowserNearestToViewportCentre() {
+        val focusable = browserNav.focusableKeys()
+        val nearest = nearestToViewportCentre(
+            centreY = browserViewportCentreY,
+            visibleOffsets = browserNav.currentGeometry().filterKeys { it in focusable },
+        )
+        if (nearest != null) browserNav.setFocused(nearest)
     }
 
     private fun activateMusicBrowser() {
-        val b = _uiState.value.musicBrowser ?: return
-        handleMusicBrowserRow(b.rows.getOrNull(b.selectedIndex) ?: return)
+        if (_uiState.value.musicBrowser == null) return
+        // Confirm runs the focused node's own onSelect, wired in publishBrowserRows.
+        browserNav.dispatch(NavigationCommand.Confirm)
+        syncBrowserCursor()
     }
 
     fun onMusicBrowserActivatedAt(index: Int) {
         markTouchInput()
-        _uiState.update { it.copy(musicBrowser = it.musicBrowser?.copy(selectedIndex = index)) }
-        activateMusicBrowser()
+        val key = _uiState.value.musicBrowser?.rows?.getOrNull(index)?.id ?: return
+        // A tap is not a scroll: it names its own row, so there is nothing to revive to.
+        browserTouchScrolled = false
+        browserNav.dispatchTouch(key, NavigationTouchAction.TAP)
+        syncBrowserCursor()
+    }
+
+    /** A finger on the list. Hides the cursor and arms the revival press. */
+    fun onMusicBrowserTouchInput() {
+        markTouchInput()
+        if (_uiState.value.musicBrowser == null) return
+        browserTouchScrolled = true
+        browserNav.markTouchInput()
+        syncBrowserCursor()
+    }
+
+    /**
+     * Row positions and the viewport centre, in the list's own coordinates, reported on every
+     * layout change. This is the geometry [focusBrowserNearestToViewportCentre] reads.
+     */
+    fun onMusicBrowserGeometry(geometry: Map<String, Float>, viewportCentreY: Float) {
+        if (_uiState.value.musicBrowser == null) return
+        browserViewportCentreY = viewportCentreY
+        geometry.forEach { (key, y) -> browserNav.reportNodeGeometry(key, y) }
     }
 
     private fun handleMusicBrowserRow(item: XMBItem) {
@@ -3415,18 +3643,77 @@ class XMBViewModel @Inject constructor(
 
     private fun openMusicBrowserContextMenu() {
         val b = _uiState.value.musicBrowser ?: return
-        val item = b.rows.getOrNull(b.selectedIndex) ?: return
+        val item = b.rows.getOrNull(b.selectedIndex)
         when {
+            item == null -> openMusicBrowserListMenu()
             item.type == XMBItemType.MUSIC_TRACK -> openMusicTrackContextMenu(item)
             item.type == XMBItemType.PLAYLIST && item.playlistId != null ->
                 openPlaylistRowContextMenu(item.playlistId, item.title)
+            // Nothing actionable under the cursor (an empty library, a query with no matches, the
+            // "Add Tracks" row) — but Sort belongs to the list, not to a row, so the menu still
+            // has something to offer.
+            else -> openMusicBrowserListMenu()
+        }
+        appendBrowserListItems()
+    }
+
+    /**
+     * Rows that belong to the browser's *list* rather than to any one row in it.
+     *
+     * Built in one place because they are appended to three different menus — a track's, a
+     * playlist's, and a bare one — and three copies would drift.
+     */
+    private fun browserListMenuItems(): List<XMBContextMenuItem> = buildList {
+        // Resume first: it is the reason to open this menu mid-song, and without it a player
+        // dismissed with B can only be recovered by finding and re-picking the track — which now
+        // (correctly) does not restart it, but is still a hunt through the library.
+        //
+        // The row names the song it would bring back, on the same "Label: value" shape the Sort row
+        // below uses — a bare "Resume" is indistinguishable from resume playback when the song is
+        // paused, which is a different thing.
+        musicPlayer.currentTrack()?.let { track ->
+            add(XMBContextMenuItem("music_browser_resume", "Resume: ${track.displayTitle}"))
+        }
+        _uiState.value.musicBrowser?.sortPillLabel?.let { label ->
+            add(XMBContextMenuItem("music_browser_sort", label))
+        }
+    }
+
+    /**
+     * The list-level menu, for when the cursor is not on an actionable row.
+     *
+     * Opened empty and filled by [appendBrowserListItems], so it is skipped entirely when there is
+     * nothing list-level to offer rather than presenting a menu with nothing in it.
+     */
+    private fun openMusicBrowserListMenu() {
+        val b = _uiState.value.musicBrowser ?: return
+        if (browserListMenuItems().isEmpty()) return
+        _uiState.update { it.copy(
+            activeContextMenu = XMBContextMenu(title = b.title, items = emptyList())
+        )}
+    }
+
+    /** Appends [browserListMenuItems] to whatever menu the browser just opened. */
+    private fun appendBrowserListItems() {
+        if (_uiState.value.musicBrowser == null) return
+        val extra = browserListMenuItems()
+        if (extra.isEmpty()) return
+        _uiState.update { state ->
+            val menu = state.activeContextMenu ?: return@update state
+            state.copy(activeContextMenu = menu.copy(
+                items = menu.items + extra,
+                browserList = true,
+            ))
         }
     }
 
     fun onMusicBrowserLongPressAt(index: Int) {
         markTouchInput()
-        _uiState.update { it.copy(musicBrowser = it.musicBrowser?.copy(selectedIndex = index)) }
-        openMusicBrowserContextMenu()
+        val key = _uiState.value.musicBrowser?.rows?.getOrNull(index)?.id ?: return
+        browserTouchScrolled = false
+        // LONG_PRESS never falls through to TAP in the engine, so this cannot also activate the row.
+        browserNav.dispatchTouch(key, NavigationTouchAction.LONG_PRESS)
+        syncBrowserCursor()
     }
 
     fun onMusicBrowserBack() {
@@ -3443,7 +3730,9 @@ class XMBViewModel @Inject constructor(
     private fun closeMusicBrowser() {
         musicBrowserJob?.cancel(); musicBrowserJob = null
         val view = _uiState.value.musicBrowser?.view
-        browserRawTracks = emptyList(); browserRawPlaylists = emptyList()
+        browserRawTracks = emptyList(); browserRawPlaylists = emptyList(); browserQueue = emptyList()
+        browserNav.setFocused(null)
+        browserTouchScrolled = false
         _uiState.update { it.copy(musicBrowser = null) }
         // Re-anchor the XMB cursor on the row the browser was opened from, so the reveal is
         // seamless even if the root list changed shape while the browser was open.
@@ -3461,6 +3750,31 @@ class XMBViewModel @Inject constructor(
     fun onMusicBrowserSortTapped() {
         markTouchInput()
         cycleSort()
+    }
+
+    /** Touch: the now-playing strip — the same reveal as the Options menu's Resume row. */
+    fun onMusicBrowserNowPlayingTapped() {
+        markTouchInput()
+        if (_uiState.value.musicPlayback.track == null) return
+        showMusicPlayer()
+    }
+
+    /**
+     * Raises or dismisses the search field's caret and keyboard. The query survives either way —
+     * see [MusicBrowserState.searchActive].
+     */
+    fun setMusicBrowserSearchActive(active: Boolean) {
+        val browser = _uiState.value.musicBrowser ?: return
+        if (browser.searchActive == active) return
+        menuSound.play(if (active) MenuSound.SELECT else MenuSound.BACK)
+        _uiState.update { it.copy(musicBrowser = it.musicBrowser?.copy(searchActive = active)) }
+    }
+
+    /** Touch: tapping the field owns its own focus, so this only keeps our flag honest. */
+    fun onMusicBrowserSearchFocusChanged(focused: Boolean) {
+        val browser = _uiState.value.musicBrowser ?: return
+        if (browser.searchActive == focused) return
+        _uiState.update { it.copy(musicBrowser = it.musicBrowser?.copy(searchActive = focused)) }
     }
 
     /** Touch: the browser's Options pill — opens the context menu for the highlighted row,
@@ -3481,7 +3795,7 @@ class XMBViewModel @Inject constructor(
         item.type == XMBItemType.EMPTY -> true   // not selectable
         item.id == NOW_PLAYING_ITEM_ID -> {
             menuSound.play(MenuSound.SELECT)
-            if (_uiState.value.musicPlayback.track != null) _uiState.update { it.copy(musicPlayerVisible = true) }
+            if (_uiState.value.musicPlayback.track != null) showMusicPlayer()
             true
         }
         // "Music" and "Playlist" open the fullscreen, searchable browser instead of the inline list.
@@ -3523,10 +3837,45 @@ class XMBViewModel @Inject constructor(
     // Selecting a song opens the in-app full player, with the on-screen track list as the queue.
     private fun openMusicPlayerForItem(item: XMBItem) {
         val trackId = item.id.removePrefix("mt_")
-        val startIndex = currentMusicTracks.indexOfFirst { it.id == trackId }.coerceAtLeast(0)
-        if (currentMusicTracks.isEmpty()) return
-        musicPlayer.setQueue(currentMusicTracks, startIndex)
+        // Selecting the song that is already loaded means "show me that" — not "start it again".
+        // Re-queueing here would restart the track from 0 and drop the user's position, which is
+        // the opposite of what picking the thing you are currently listening to should do.
+        if (musicPlayer.currentTrack()?.id == trackId) {
+            showMusicPlayer()
+            return
+        }
+        val queue = activeMusicQueue()
+        if (queue.isEmpty()) return
+        val startIndex = queue.indexOfFirst { it.id == trackId }.coerceAtLeast(0)
+        musicPlayer.setQueue(queue, startIndex, currentQueueName())
+        showMusicPlayer()
+    }
+
+    /**
+     * What the player's banner calls the queue: the playlist or browser view the tracks came from,
+     * falling back to the library as a whole. Resolved at queue time rather than read live, so the
+     * banner keeps naming where the songs came from even after the user navigates away.
+     */
+    private fun currentQueueName(): String {
+        val state = _uiState.value
+        (state.musicBrowser?.view as? MusicBrowserView.Playlist)?.let { return it.name }
+        (state.musicNav as? MusicNav.Playlist)?.let { return it.name }
+        return "All Music"
+    }
+
+    /**
+     * The track list a Play acts on: the browser's while it is open, the XMB item list's otherwise.
+     *
+     * Every caller that queues music goes through here, so the two lists cannot be confused for
+     * each other again.
+     */
+    private fun activeMusicQueue(): List<MusicTrack> =
+        if (_uiState.value.musicBrowser != null) browserQueue else currentMusicTracks
+
+    /** Shows the player and starts its chrome timer, which is the only way it ever starts. */
+    private fun showMusicPlayer() {
         _uiState.update { it.copy(musicPlayerVisible = true) }
+        pokeMusicChrome()
     }
 
     // ── In-app player controls (driven by the player overlay) ───────────────────
@@ -3536,15 +3885,116 @@ class XMBViewModel @Inject constructor(
     fun musicSeekTo(ms: Int) = musicPlayer.seekTo(ms)
     private fun musicSeekBy(deltaMs: Int) = musicPlayer.seekBy(deltaMs)
 
-    // Back / tap-outside on the player only hides the overlay — playback keeps going so the Music
-    // root's "Now Playing" item can return to it. Stopping is explicit (player Y → Stop & Close).
+    // The player's touch transport: the same ±10s step the D-pad takes, and the same options menu
+    // Y opens — the kebab and the face button must never diverge.
+    fun musicSeekBack() = musicSeekBy(-MUSIC_SEEK_STEP_MS)
+    fun musicSeekForward() = musicSeekBy(MUSIC_SEEK_STEP_MS)
+    fun musicOpenOptions() = openMusicPlayerOptions()
+
+    // ── Player chrome and the visualizer picker ─────────────────────────────────
+
+    /**
+     * Restores the chrome and restarts the idle timer. Every input inside the player calls this —
+     * pad, touch and the transport alike — so there is one definition of "recently used".
+     *
+     * Auto-hide is gated on a field being selected. With `Off` the backdrop is the wallpaper, and
+     * hiding the chrome over it would leave nothing on screen to aim at but a blind tap.
+     */
+    fun pokeMusicChrome() {
+        musicChromeJob?.cancel()
+        musicChromeJob = null
+        _uiState.update { it.copy(musicChromeVisible = true) }
+        val state = _uiState.value
+        if (state.musicVisualizerId == VisualizerIds.OFF || state.musicPickerIndex != null) return
+        musicChromeJob = viewModelScope.launch {
+            delay(MUSIC_CHROME_TIMEOUT_MS)
+            _uiState.update { it.copy(musicChromeVisible = false) }
+        }
+    }
+
+    /** Opens the strip on the current selection and pins the chrome for as long as it is up. */
+    fun openMusicVisualizerPicker() {
+        musicChromeJob?.cancel()
+        musicChromeJob = null
+        val index = VisualizerIds.ALL.indexOf(_uiState.value.musicVisualizerId).coerceAtLeast(0)
+        menuSound.play(MenuSound.SELECT)
+        _uiState.update { it.copy(musicPickerIndex = index, musicChromeVisible = true) }
+    }
+
+    /**
+     * Closes the strip and hands the horizontal axis back to seek — via [pokeMusicChrome], which
+     * also restarts the idle timer the open strip was suppressing.
+     */
+    fun closeMusicVisualizerPicker() {
+        if (_uiState.value.musicPickerIndex == null) return
+        menuSound.play(MenuSound.BACK)
+        _uiState.update { it.copy(musicPickerIndex = null) }
+        pokeMusicChrome()
+    }
+
+    fun toggleMusicVisualizerPicker() {
+        if (_uiState.value.musicPickerIndex != null) closeMusicVisualizerPicker()
+        else openMusicVisualizerPicker()
+    }
+
+    /** Any touch anywhere in the player: records the input source and restores the chrome. */
+    fun onMusicPlayerTouchInput() {
+        markTouchInput()
+        pokeMusicChrome()
+    }
+
+    /** Touch entry point for the player's strip affordance. */
+    fun onMusicStripAffordanceTapped() {
+        markTouchInput()
+        toggleMusicVisualizerPicker()
+    }
+
+    /** A tap picks the tile outright — no separate confirm, the way every other PFP tile behaves. */
+    fun onMusicVisualizerTileTapped(index: Int) {
+        markTouchInput()
+        _uiState.update { it.copy(musicPickerIndex = index) }
+        applyMusicVisualizer(index)
+    }
+
+    private fun moveMusicVisualizerFocus(delta: Int) {
+        val index = _uiState.value.musicPickerIndex ?: return
+        val next = (index + delta).coerceIn(0, VisualizerIds.ALL.lastIndex)
+        if (next == index) return
+        menuSound.play(MenuSound.SCROLL)
+        _uiState.update { it.copy(musicPickerIndex = next) }
+    }
+
+    private fun applyMusicVisualizer(index: Int) {
+        val id = VisualizerIds.ALL.getOrNull(index) ?: return
+        menuSound.play(MenuSound.SELECT)
+        // Optimistic, then persisted: the field has to change under the cursor on the same frame,
+        // and the DataStore write round-trips through observeVisualizerId a moment later.
+        _uiState.update { it.copy(musicVisualizerId = id) }
+        viewModelScope.launch { musicRepository.setVisualizerId(id) }
+        pokeMusicChrome()
+    }
+
+    // Back (B, or the touch pill) only hides the player — playback keeps going so the Music root's
+    // "Now Playing" item can return to it. Stopping is explicit (player Y → Stop & Close).
     fun closeMusicPlayer() {
         _uiState.update { it.copy(musicPlayerVisible = false) }
+        resetMusicPlayerChrome()
     }
 
     private fun stopAndCloseMusicPlayer() {
         musicPlayer.stop()
         _uiState.update { it.copy(musicPlayerVisible = false) }
+        resetMusicPlayerChrome()
+    }
+
+    /**
+     * Leaves the player in the state it should be found in next time: chrome up, strip closed, no
+     * timer pending. Also stops the visualizer clock, which is gated on the player being visible.
+     */
+    private fun resetMusicPlayerChrome() {
+        musicChromeJob?.cancel()
+        musicChromeJob = null
+        _uiState.update { it.copy(musicChromeVisible = true, musicPickerIndex = null) }
     }
 
     private fun openMusicPlayerOptions() {
@@ -3554,6 +4004,7 @@ class XMBViewModel @Inject constructor(
                 activeContextMenu = XMBContextMenu(
                     title = title,
                     items = listOf(
+                        XMBContextMenuItem("music_visualizer", "Visualizer"),
                         XMBContextMenuItem("music_background", "Play in Background"),
                         XMBContextMenuItem("music_close", "Stop & Close"),
                     ),
@@ -3746,6 +4197,9 @@ class XMBViewModel @Inject constructor(
                     playlistId   = playlistId,
                     playlistName = playlist?.name ?: "Playlist",
                     tracks       = tracks,
+                    // A picker opened by a finger starts with no cursor; one opened with a pad
+                    // starts on the Confirm row with it drawn, exactly as before.
+                    cursorVisible = !it.lastInputWasTouch,
                 )
             )}
         }
@@ -3756,6 +4210,52 @@ class XMBViewModel @Inject constructor(
         val maxIndex = picker.tracks.size   // 0 = Confirm row, 1..size = tracks
         val next = (picker.selectedIndex + delta).coerceIn(0, maxIndex)
         _uiState.update { it.copy(musicTrackPicker = picker.copy(selectedIndex = next)) }
+    }
+
+    /**
+     * The picker's source transition from finger to pad, run once per controller press before the
+     * press is given a meaning — the same rule the browser and SettingsScaffold follow, so the
+     * first button after a scroll parks the cursor on what the user can see instead of moving
+     * relative to a row that is off screen.
+     *
+     * Returns true when this press was the revival press (so a directional one must not also move).
+     */
+    private fun reanchorMusicTrackPickerAfterTouch(): Boolean {
+        val picker = _uiState.value.musicTrackPicker ?: return false
+        val reviving = pickerTouchUsed || !picker.cursorVisible
+        pickerTouchUsed = false
+        if (!reviving) return false
+        val maxIndex = picker.tracks.size   // 0 = Confirm row, 1..size = tracks
+        val nearest = nearestToViewportCentre(pickerViewportCentreY, pickerVisibleOffsets)
+            ?.coerceIn(0, maxIndex)
+        _uiState.update { state ->
+            val p = state.musicTrackPicker ?: return@update state
+            state.copy(musicTrackPicker = p.copy(
+                // No geometry yet (the list has not laid out) leaves the index alone rather than
+                // yanking it to the Confirm row.
+                selectedIndex = nearest ?: p.selectedIndex,
+                cursorVisible = true,
+            ))
+        }
+        return true
+    }
+
+    /** A finger on the picker: hides the cursor and arms the revival press. */
+    fun onMusicTrackPickerTouchInput() {
+        markTouchInput()
+        if (_uiState.value.musicTrackPicker == null) return
+        pickerTouchUsed = true
+        _uiState.update { it.copy(musicTrackPicker = it.musicTrackPicker?.copy(cursorVisible = false)) }
+    }
+
+    /**
+     * The picker's visible window, reported on every layout change. Only the visible rows matter to
+     * a "nearest to the middle of the screen" query, and the list already computes them.
+     */
+    fun onMusicTrackPickerGeometry(offsets: Map<Int, Float>, viewportCentreY: Float) {
+        if (_uiState.value.musicTrackPicker == null) return
+        pickerVisibleOffsets = offsets
+        pickerViewportCentreY = viewportCentreY
     }
 
     private fun activateMusicTrackPicker() {
@@ -3770,15 +4270,36 @@ class XMBViewModel @Inject constructor(
         }
     }
 
+    // Every one of these is reachable only by a finger — a pad drives the picker through
+    // onGamepadAction. Each has to record that, or resolvedShowTouchButton never flips and the
+    // controller cursor rides along through an entire touch session.
     fun onMusicTrackPickerActivatedAt(index: Int) {
-        _uiState.update { it.copy(musicTrackPicker = it.musicTrackPicker?.copy(selectedIndex = index)) }
+        markTouchInput()
+        _uiState.update { it.copy(musicTrackPicker = it.musicTrackPicker?.copy(
+            selectedIndex = index,
+            cursorVisible = false,
+        )) }
         activateMusicTrackPicker()
     }
 
-    fun onMusicTrackPickerConfirm() = confirmMusicTrackPicker()
+    fun onMusicTrackPickerConfirm() {
+        markTouchInput()
+        confirmMusicTrackPicker()
+    }
 
+    /**
+     * Closes the picker. Input-source agnostic on purpose: the gamepad ladder and
+     * [confirmMusicTrackPicker] both call it, so marking touch in here would tell the app a finger
+     * was used every time a pad dismissed the picker — the exact inverse of the bug above.
+     */
     fun closeMusicTrackPicker() {
         _uiState.update { it.copy(musicTrackPicker = null) }
+    }
+
+    /** The touch Cancel pill. */
+    fun onMusicTrackPickerDismissed() {
+        markTouchInput()
+        closeMusicTrackPicker()
     }
 
     private fun confirmMusicTrackPicker() {
@@ -3808,18 +4329,20 @@ class XMBViewModel @Inject constructor(
         when (itemId) {
             // Play in the in-app full player, queuing from the current on-screen list.
             "play" -> {
-                val startIndex = currentMusicTracks.indexOfFirst { it.id == trackId }.coerceAtLeast(0)
-                if (currentMusicTracks.isNotEmpty()) {
-                    musicPlayer.setQueue(currentMusicTracks, startIndex)
-                    _uiState.update { it.copy(musicPlayerVisible = true) }
+                val queue = activeMusicQueue()
+                if (queue.isNotEmpty()) {
+                    val startIndex = queue.indexOfFirst { it.id == trackId }.coerceAtLeast(0)
+                    musicPlayer.setQueue(queue, startIndex, currentQueueName())
+                    showMusicPlayer()
                 }
             }
             // Play in PFP and promote straight to the background media notification (no full
             // player UI), queuing from the current on-screen list.
             "play_background" -> {
-                val startIndex = currentMusicTracks.indexOfFirst { it.id == trackId }.coerceAtLeast(0)
-                if (currentMusicTracks.isNotEmpty()) {
-                    musicPlayer.setQueue(currentMusicTracks, startIndex)
+                val queue = activeMusicQueue()
+                if (queue.isNotEmpty()) {
+                    val startIndex = queue.indexOfFirst { it.id == trackId }.coerceAtLeast(0)
+                    musicPlayer.setQueue(queue, startIndex, currentQueueName())
                     com.playfieldportal.feature.xmb.music.MusicPlaybackService.start(context)
                 }
             }
@@ -4623,9 +5146,13 @@ class XMBViewModel @Inject constructor(
 
         // ── "Add Tracks" music picker captures ALL input when open ─────────────
         if (state.musicTrackPicker != null) {
+            // The same source-transition rule as the browser: the first press after a finger parks
+            // the cursor on the track nearest the viewport centre instead of acting on the stale
+            // pre-scroll row and dragging the list back to it.
+            val revivalPress = reanchorMusicTrackPickerAfterTouch()
             when (action) {
-                GamepadAction.NAVIGATE_UP   -> moveMusicTrackPicker(-1)
-                GamepadAction.NAVIGATE_DOWN -> moveMusicTrackPicker(+1)
+                GamepadAction.NAVIGATE_UP   -> if (!revivalPress) moveMusicTrackPicker(-1)
+                GamepadAction.NAVIGATE_DOWN -> if (!revivalPress) moveMusicTrackPicker(+1)
                 GamepadAction.SELECT        -> activateMusicTrackPicker()
                 GamepadAction.HOME          -> confirmMusicTrackPicker()
                 GamepadAction.BACK,
@@ -4684,13 +5211,34 @@ class XMBViewModel @Inject constructor(
 
         // ── In-app music player captures ALL input while open ──────────────────
         // (Below the context-menu branch so the player's own Y options menu wins when shown.)
+        // The video player's ladder, binding for binding: A play/pause, ◀/▶ seek, L1/R1 across
+        // the queue, Y options, B close. The two built-in players used opposite hands for seek
+        // and track, which is the kind of difference a user only discovers by getting it wrong.
         if (state.musicPlayerVisible) {
+            // The visualizer strip captures the horizontal axis while it is open — the same
+            // capture pattern the context menu uses above — and B hands it straight back to seek.
+            // "Seek is dead after closing the strip" is the regression this shape prevents: there
+            // is exactly one `return` between the two ladders and no shared state to forget.
+            val picker = state.musicPickerIndex
+            if (picker != null) {
+                when (action) {
+                    GamepadAction.NAVIGATE_LEFT  -> moveMusicVisualizerFocus(-1)
+                    GamepadAction.NAVIGATE_RIGHT -> moveMusicVisualizerFocus(+1)
+                    GamepadAction.SELECT         -> applyMusicVisualizer(picker)
+                    GamepadAction.BACK,
+                    GamepadAction.OPEN_CONTEXT_MENU -> closeMusicVisualizerPicker()
+                    else -> Unit
+                }
+                return
+            }
+            // Any press is "recently used", including the ones that fall through the when below.
+            pokeMusicChrome()
             when (action) {
                 GamepadAction.SELECT         -> musicPlayPause()
-                GamepadAction.NAVIGATE_LEFT  -> musicPrev()
-                GamepadAction.NAVIGATE_RIGHT -> musicNext()
-                GamepadAction.NAVIGATE_UP    -> musicSeekBy(10_000)
-                GamepadAction.NAVIGATE_DOWN  -> musicSeekBy(-10_000)
+                GamepadAction.NAVIGATE_LEFT  -> musicSeekBy(-MUSIC_SEEK_STEP_MS)
+                GamepadAction.NAVIGATE_RIGHT -> musicSeekBy(MUSIC_SEEK_STEP_MS)
+                GamepadAction.PREV_CATEGORY  -> musicPrev()
+                GamepadAction.NEXT_CATEGORY  -> musicNext()
                 GamepadAction.OPEN_CONTEXT_MENU     -> openMusicPlayerOptions()
                 GamepadAction.BACK           -> closeMusicPlayer()
                 else -> Unit
@@ -4764,13 +5312,27 @@ class XMBViewModel @Inject constructor(
         // ── Fullscreen music browser captures input. Below the context-menu / player / dialog
         //    branches above, so a menu (Y) or the player opened from it wins. ─────────────────
         if (state.musicBrowser != null) {
+            // First, and for every button: this press is the pad taking over from the finger. If it
+            // is a revival press the cursor has already been parked on the row the user was
+            // looking at, so the press is interpreted against THAT row and a directional one is
+            // spent — it must not also move.
+            val revivalPress = reanchorMusicBrowserAfterTouch()
             when (action) {
-                GamepadAction.NAVIGATE_UP    -> moveMusicBrowser(-1)
-                GamepadAction.NAVIGATE_DOWN  -> moveMusicBrowser(+1)
+                GamepadAction.NAVIGATE_UP    -> if (!revivalPress) moveMusicBrowser(-1)
+                GamepadAction.NAVIGATE_DOWN  -> if (!revivalPress) moveMusicBrowser(+1)
                 GamepadAction.SELECT         -> activateMusicBrowser()
-                GamepadAction.BACK           -> onMusicBrowserBack()
+                // B leaves the search field before it leaves the screen: with the keyboard up,
+                // backing out of the browser entirely is never what the press meant.
+                GamepadAction.BACK           ->
+                    if (state.musicBrowser.searchActive) setMusicBrowserSearchActive(false)
+                    else onMusicBrowserBack()
                 GamepadAction.OPEN_CONTEXT_MENU     -> openMusicBrowserContextMenu()
-                GamepadAction.CHANGE_SORT    -> cycleSort()
+                // X raises the search field rather than cycling the sort. Sort moved into the
+                // Options menu: it is a setting you change occasionally, where search is the thing
+                // you reach for constantly on a library of any size, and the field was previously
+                // unreachable without a touchscreen.
+                GamepadAction.CHANGE_SORT    ->
+                    setMusicBrowserSearchActive(!state.musicBrowser.searchActive)
                 else -> Unit
             }
             return
@@ -5542,12 +6104,24 @@ class XMBViewModel @Inject constructor(
             return
         }
 
+        // Checked before the row-scoped branches below: these rows ride on a track or playlist
+        // menu, whose handler would otherwise see an id it does not know and silently do nothing.
+        // The id prefix is what separates them, so a track's own "play" still falls through.
+        if (menu.browserList && itemId.startsWith("music_browser_")) {
+            when (itemId) {
+                "music_browser_resume" -> showMusicPlayer()
+                "music_browser_sort"   -> cycleSort()
+            }
+            return
+        }
+
         when {
             menu.achievementsHubMenu -> when (itemId) {
                 "ach_sync_all" -> syncAllCoinsFromHub()
                 "ach_auto_match" -> autoMatchFromHub()
             }
             menu.musicTrackId == MUSIC_PLAYER_MENU_MARKER -> when (itemId) {
+                "music_visualizer" -> openMusicVisualizerPicker()
                 "music_background" -> musicPlayInBackground()
                 "music_playpause"  -> musicPlayPause()
                 "music_close"      -> stopAndCloseMusicPlayer()
@@ -8939,6 +9513,14 @@ class XMBViewModel @Inject constructor(
         private const val APP_SHORTCUT_PLATFORM_ID = "app_shortcut"
         // Virtual card holding PC-launcher game imports (harvest / folder scan / add-by-ID).
         private const val WINDOWS_PLATFORM_ID = "windows"
+
+        // One step of the music player's seek, on the D-pad and on the touch transport alike.
+        // The same 10s the video player takes.
+        private const val MUSIC_SEEK_STEP_MS = 10_000
+
+        // The video player's CONTROLS_TIMEOUT_MS value. The two built-in players must not idle out
+        // at different speeds — a user who learns one learns the other.
+        private const val MUSIC_CHROME_TIMEOUT_MS = 3_500L
 
         // Music category synthetic rows / drill ids.
         private const val ADD_MUSIC_FOLDER_ITEM_ID = "add_music_folder"

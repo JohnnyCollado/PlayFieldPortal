@@ -271,13 +271,19 @@ fun XMBShellContainer(
         onCancelPlaylistName = viewModel::onCancelPlaylistName,
         onMusicTrackPickerActivatedAt = viewModel::onMusicTrackPickerActivatedAt,
         onMusicTrackPickerConfirm = viewModel::onMusicTrackPickerConfirm,
-        onMusicTrackPickerDismiss = viewModel::closeMusicTrackPicker,
+        onMusicTrackPickerDismiss = viewModel::onMusicTrackPickerDismissed,
+        onMusicTrackPickerTouchInput = viewModel::onMusicTrackPickerTouchInput,
+        onMusicTrackPickerGeometry = viewModel::onMusicTrackPickerGeometry,
         onMusicBrowserQueryChange = viewModel::onMusicBrowserQueryChange,
         onMusicBrowserActivatedAt = viewModel::onMusicBrowserActivatedAt,
         onMusicBrowserLongPressAt = viewModel::onMusicBrowserLongPressAt,
         onMusicBrowserBack = viewModel::onMusicBrowserBack,
         onMusicBrowserSortTapped = viewModel::onMusicBrowserSortTapped,
         onMusicBrowserOptionsTapped = viewModel::onMusicBrowserOptionsTapped,
+        onMusicBrowserSearchFocusChanged = viewModel::onMusicBrowserSearchFocusChanged,
+        onMusicBrowserNowPlayingTapped = viewModel::onMusicBrowserNowPlayingTapped,
+        onMusicBrowserTouchInput = viewModel::onMusicBrowserTouchInput,
+        onMusicBrowserGeometry = viewModel::onMusicBrowserGeometry,
         onAppPickerTileTapped = viewModel::onAppPickerTileTapped,
         onAppPickerTouchBrowse = viewModel::onAppPickerTouchBrowse,
         onAppPickerHeaderBack = viewModel::onAppPickerHeaderBack,
@@ -298,8 +304,15 @@ fun XMBShellContainer(
         onMusicPlayPause = viewModel::musicPlayPause,
         onMusicPrev = viewModel::musicPrev,
         onMusicNext = viewModel::musicNext,
+        onMusicSeekBack = viewModel::musicSeekBack,
+        onMusicSeekForward = viewModel::musicSeekForward,
         onMusicSeekTo = viewModel::musicSeekTo,
+        onMusicOptions = viewModel::musicOpenOptions,
         onMusicPlayerBack = viewModel::closeMusicPlayer,
+        onMusicVisualizerTileTapped = viewModel::onMusicVisualizerTileTapped,
+        onMusicStripAffordanceTapped = viewModel::onMusicStripAffordanceTapped,
+        onMusicStripDismissed = viewModel::closeMusicVisualizerPicker,
+        onMusicPlayerTouchInput = viewModel::onMusicPlayerTouchInput,
         onOpenAndroidLibraryPicker = viewModel::openAndroidLibraryPicker,
     )
 
@@ -385,8 +398,15 @@ fun XMBShell(
     onMusicPlayPause: () -> Unit = {},
     onMusicPrev: () -> Unit = {},
     onMusicNext: () -> Unit = {},
+    onMusicSeekBack: () -> Unit = {},
+    onMusicSeekForward: () -> Unit = {},
     onMusicSeekTo: (Int) -> Unit = {},
+    onMusicOptions: () -> Unit = {},
     onMusicPlayerBack: () -> Unit = {},
+    onMusicVisualizerTileTapped: (Int) -> Unit = {},
+    onMusicStripAffordanceTapped: () -> Unit = {},
+    onMusicStripDismissed: () -> Unit = {},
+    onMusicPlayerTouchInput: () -> Unit = {},
     onOpenAndroidLibraryPicker: () -> Unit = {},
     onOpenColorSchemePicker: () -> Unit = {},
     onColorSchemeHighlightedAt: (Int) -> Unit = {},
@@ -416,9 +436,15 @@ fun XMBShell(
     onMusicBrowserBack: () -> Unit = {},
     onMusicBrowserSortTapped: () -> Unit = {},
     onMusicBrowserOptionsTapped: () -> Unit = {},
+    onMusicBrowserSearchFocusChanged: (Boolean) -> Unit = {},
+    onMusicBrowserNowPlayingTapped: () -> Unit = {},
+    onMusicBrowserTouchInput: () -> Unit = {},
+    onMusicBrowserGeometry: (Map<String, Float>, Float) -> Unit = { _, _ -> },
     onMusicTrackPickerActivatedAt: (Int) -> Unit = {},
     onMusicTrackPickerConfirm: () -> Unit = {},
     onMusicTrackPickerDismiss: () -> Unit = {},
+    onMusicTrackPickerTouchInput: () -> Unit = {},
+    onMusicTrackPickerGeometry: (Map<Int, Float>, Float) -> Unit = { _, _ -> },
     onAppPickerTileTapped: (Int) -> Unit = {},
     onAppPickerTouchBrowse: (Int) -> Unit = {},
     onAppPickerHeaderBack: () -> Unit = {},
@@ -499,7 +525,11 @@ fun XMBShell(
                 uiState.activePlayerStatus ||
                 uiState.activePhotoViewer != null ||
                 uiState.activeAppId != null || uiState.activeAppDrawerFilter != null ||
-                uiState.musicPlayerVisible ||
+                // The music player covers the wave only when it has a field up. Under `Off` its
+                // backdrop is the Settings-style see-through scrim, and freezing the wave behind
+                // it would leave a still image where the whole point is a live one.
+                (uiState.musicPlayerVisible &&
+                    uiState.musicVisualizerId != com.playfieldportal.feature.xmb.ui.visualizer.VisualizerIds.OFF) ||
                 // The icon editor is translucent (like Settings), so the wave stays alive
                 // behind it — listed here to document that; layout adjust reads the same.
                 false
@@ -595,6 +625,9 @@ fun XMBShell(
             // use a translucent backdrop, so the XMB would otherwise show through them.
             if (uiState.activeAppDrawerFilter == null &&
                 uiState.musicBrowser == null &&
+                // The music player belongs here now that its `Off` backdrop is translucent: the
+                // status strip, category bar and item list would otherwise read through it.
+                !uiState.musicPlayerVisible &&
                 uiState.activeSettingsScreen == null &&
                 uiState.activeGameId == null &&
                 uiState.activeShibaCoinsTarget == null &&
@@ -953,9 +986,17 @@ fun XMBShell(
                 )
             }
 
-            // Fullscreen searchable music browser (Music / Playlist) — rendered before the player
-            // and context menu so a track's options menu and the player draw on top of it.
-            uiState.musicBrowser?.let { browser ->
+            // Fullscreen searchable music browser (Music / Playlist) — rendered before the
+            // context menu so a track's options menu draws on top of it.
+            //
+            // Removed from composition entirely while the player is up, rather than drawn under
+            // it: the player's `Off` backdrop is the see-through scrim (the wave and the
+            // wallpaper are the point of that mode), so a browser left underneath reads straight
+            // through it. Same reasoning as the foreground guard above, and the same second
+            // benefit — the browser's clickable rows cannot take a tap meant for the player.
+            // Browser state lives in the ViewModel, so closing the player restores it; the list
+            // re-frames its focused row on the way back in.
+            uiState.musicBrowser?.takeIf { !uiState.musicPlayerVisible }?.let { browser ->
                 MusicBrowserScreen(
                     state = browser,
                     onQueryChange = onMusicBrowserQueryChange,
@@ -964,6 +1005,10 @@ fun XMBShell(
                     onBack = onMusicBrowserBack,
                     onSortTapped = onMusicBrowserSortTapped,
                     onOptionsTapped = onMusicBrowserOptionsTapped,
+                    onSearchFocusChanged = onMusicBrowserSearchFocusChanged,
+                    onNowPlayingTapped = onMusicBrowserNowPlayingTapped,
+                    onTouchInput = onMusicBrowserTouchInput,
+                    onGeometry = onMusicBrowserGeometry,
                     showTouchControls = uiState.resolvedShowTouchButton,
                     modifier = Modifier.fillMaxSize(),
                 )
@@ -977,8 +1022,19 @@ fun XMBShell(
                     onPlayPause = onMusicPlayPause,
                     onPrev = onMusicPrev,
                     onNext = onMusicNext,
+                    onSeekBack = onMusicSeekBack,
+                    onSeekForward = onMusicSeekForward,
                     onSeekTo = onMusicSeekTo,
+                    onOptions = onMusicOptions,
                     onBack = onMusicPlayerBack,
+                    visualizerId = uiState.musicVisualizerId,
+                    chromeVisible = uiState.musicChromeVisible,
+                    pickerFocusedIndex = uiState.musicPickerIndex,
+                    onVisualizerTileTapped = onMusicVisualizerTileTapped,
+                    onStripAffordanceTapped = onMusicStripAffordanceTapped,
+                    onStripDismissed = onMusicStripDismissed,
+                    showTouchControls = uiState.resolvedShowTouchButton,
+                    onTouchInput = onMusicPlayerTouchInput,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -1127,6 +1183,9 @@ fun XMBShell(
                     onActivateAt = onMusicTrackPickerActivatedAt,
                     onConfirm = onMusicTrackPickerConfirm,
                     onDismiss = onMusicTrackPickerDismiss,
+                    showTouchControls = uiState.resolvedShowTouchButton,
+                    onTouchInput = onMusicTrackPickerTouchInput,
+                    onGeometry = onMusicTrackPickerGeometry,
                     modifier = Modifier.fillMaxSize(),
                 )
             }

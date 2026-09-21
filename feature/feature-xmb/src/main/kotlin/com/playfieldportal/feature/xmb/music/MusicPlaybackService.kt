@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.graphics.drawable.Icon
 import android.media.MediaMetadata
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
@@ -35,6 +36,12 @@ class MusicPlaybackService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private lateinit var mediaSession: MediaSession
     private var started = false
+
+    // Contents of the notification as last posted. The controller emits twice a second from its
+    // position ticker; rebuilding and re-notifying a notification at that rate is work nobody
+    // sees, so only a change in what it draws reposts it. The session's playback state is still
+    // set on every emission — that one is cheap and carries the position the system extrapolates.
+    private var postedNotificationKey: String? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -83,14 +90,19 @@ class MusicPlaybackService : Service() {
     }
 
     private fun update(state: MusicPlaybackState) {
-        mediaSession.setMetadata(
-            MediaMetadata.Builder()
-                .putString(MediaMetadata.METADATA_KEY_TITLE, state.track?.displayTitle ?: "")
-                .putString(MediaMetadata.METADATA_KEY_ARTIST, state.track?.artist ?: "")
-                .putString(MediaMetadata.METADATA_KEY_ALBUM, state.track?.album ?: "")
-                .putLong(MediaMetadata.METADATA_KEY_DURATION, state.durationMs.toLong())
-                .build()
-        )
+        val key = nowPlayingNotificationKey(state)
+        val changed = key != postedNotificationKey
+        if (changed) {
+            postedNotificationKey = key
+            mediaSession.setMetadata(
+                MediaMetadata.Builder()
+                    .putString(MediaMetadata.METADATA_KEY_TITLE, state.track?.displayTitle ?: "")
+                    .putString(MediaMetadata.METADATA_KEY_ARTIST, state.track?.artist ?: "")
+                    .putString(MediaMetadata.METADATA_KEY_ALBUM, state.track?.album ?: "")
+                    .putLong(MediaMetadata.METADATA_KEY_DURATION, state.durationMs.toLong())
+                    .build()
+            )
+        }
         mediaSession.setPlaybackState(
             PlaybackState.Builder()
                 .setActions(
@@ -104,8 +116,10 @@ class MusicPlaybackService : Service() {
                 )
                 .build()
         )
-        (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
-            .notify(NOTIF_ID, buildNotification(state))
+        if (changed) {
+            (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
+                .notify(NOTIF_ID, buildNotification(state))
+        }
     }
 
     private fun buildNotification(state: MusicPlaybackState): Notification {
@@ -141,7 +155,9 @@ class MusicPlaybackService : Service() {
             Intent(this, MusicPlaybackService::class.java).setAction(intentAction),
             PendingIntent.FLAG_IMMUTABLE,
         )
-        return Notification.Action.Builder(icon, title, pi).build()
+        // The Icon overload, not the resource-int one: that constructor has been deprecated since
+        // API 23, well under this app's minSdk 29.
+        return Notification.Action.Builder(Icon.createWithResource(this, icon), title, pi).build()
     }
 
     private fun createChannel() {

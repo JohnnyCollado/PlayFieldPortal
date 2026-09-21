@@ -49,6 +49,16 @@ interface MusicRepository {
     suspend fun getDefaultPlayerPackage(): String?
     suspend fun setDefaultPlayerPackage(packageName: String?)
 
+    // ── Now-Playing visualizer (DataStore-backed) ───────────────────────────────
+    /**
+     * Id of the field the in-app player draws behind the chrome: "off", "portal" or "ripple".
+     *
+     * Defaults to "off" — the field that costs no clock, no particles and no draw, so nobody who
+     * never opens the picker pays for any of the rest.
+     */
+    fun observeVisualizerId(): Flow<String>
+    suspend fun setVisualizerId(id: String)
+
     // ── Playlists ───────────────────────────────────────────────────────────────
     fun observePlaylists(): Flow<List<Playlist>>
     fun observePlaylistTracks(playlistId: Long): Flow<List<MusicTrack>>

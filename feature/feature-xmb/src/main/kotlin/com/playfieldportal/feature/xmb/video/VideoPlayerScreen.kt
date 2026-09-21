@@ -1,14 +1,10 @@
 package com.playfieldportal.feature.xmb.video
 
 import android.net.Uri
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Forward10
@@ -43,20 +38,13 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -82,6 +70,8 @@ import com.playfieldportal.core.ui.components.XmbMediaPillScrim
 import com.playfieldportal.core.ui.theme.deriveStorefrontColors
 import com.playfieldportal.core.ui.theme.menuCursor
 import com.playfieldportal.core.ui.theme.menuCursorEdge
+import com.playfieldportal.feature.xmb.ui.media.MediaScrubBar
+import com.playfieldportal.feature.xmb.ui.media.TransportButton
 import kotlinx.coroutines.delay
 import timber.log.Timber
 
@@ -452,63 +442,20 @@ private fun ControlsOverlay(
                 .background(Brush.verticalGradient(listOf(Color.Transparent, Color(0x99000000))))
                 .padding(24.dp),
         ) {
-            // The drag overrides the player's own position while it lasts, so the bar and the
-            // clock follow the finger instead of snapping back on every 500ms poll.
-            var scrubFraction by remember { mutableStateOf<Float?>(null) }
-            val playedFraction =
-                if (durationMs > 0) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
-            val shownFraction = scrubFraction ?: playedFraction
-            val shownMs = scrubFraction?.let { (it * durationMs).toLong() } ?: positionMs
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                // Not menuCursorEdge(): that reads accentColor, which every preset AND the XMB
-                // colour picker leave white (the picker writes the hue into waveColor). This is
-                // the same derivation the App Drawer uses, so the bar tracks the picked colour.
-                val played = deriveStorefrontColors().chromeDivider
-                val seekable = showTouchControls && durationMs > 0
-                Scrubber(
-                    fraction = shownFraction,
-                    color = played,
-                    scrubbing = scrubFraction != null,
-                    modifier = Modifier
-                        .weight(1f)
-                        .then(
-                            // Touch only, and only once the duration is known: a pad seeks in
-                            // 10s steps from the D-pad, and a bar it cannot move should not
-                            // show a cursor that invites dragging.
-                            if (!seekable) Modifier else Modifier
-                                .pointerInput(durationMs) {
-                                    detectTapGestures { offset ->
-                                        onSeekTo(((offset.x / size.width).coerceIn(0f, 1f) * durationMs).toLong())
-                                    }
-                                }
-                                .pointerInput(durationMs) {
-                                    detectHorizontalDragGestures(
-                                        onDragStart = { offset ->
-                                            scrubFraction = (offset.x / size.width).coerceIn(0f, 1f)
-                                        },
-                                        // Commit on release, not continuously: seeking an
-                                        // ExoPlayer on every pixel of travel stutters the
-                                        // decoder for the whole length of the drag.
-                                        onDragEnd = {
-                                            scrubFraction?.let { onSeekTo((it * durationMs).toLong()) }
-                                            scrubFraction = null
-                                        },
-                                        onDragCancel = { scrubFraction = null },
-                                    ) { change, _ ->
-                                        scrubFraction = (change.position.x / size.width).coerceIn(0f, 1f)
-                                        change.consume()
-                                    }
-                                }
-                        ),
-                )
-                Spacer(Modifier.width(12.dp))
-                Text(
-                    "${fmt(shownMs)} / ${fmt(durationMs)}",
-                    color = Color.White,
-                    fontSize = 13.sp,
-                )
-            }
+            // Not menuCursorEdge(): that reads accentColor, which every preset AND the XMB
+            // colour picker leave white (the picker writes the hue into waveColor). This is
+            // the same derivation the App Drawer uses, so the bar tracks the picked colour.
+            //
+            // Dragging is touch-only: a pad seeks in 10s steps from the D-pad, and a bar it
+            // cannot move should not show a cursor that invites dragging.
+            MediaScrubBar(
+                positionMs = positionMs,
+                durationMs = durationMs,
+                color = deriveStorefrontColors().chromeDivider,
+                seekable = showTouchControls,
+                onSeekTo = onSeekTo,
+                modifier = Modifier.fillMaxWidth(),
+            )
 
             if (!showTouchControls) {
                 Spacer(Modifier.height(14.dp))
@@ -629,81 +576,6 @@ private fun OptionsOverlay(
     }
 }
 
-/**
- * Progress bar plus its cursor, drawn in one pass so the thumb cannot drift off the fill.
- *
- * The canvas is [SCRUBBER_TOUCH_HEIGHT] tall for a 4dp bar: the visual weight is the reference's, but a
- * 4dp drag target is unhittable. The cursor's centre is clamped inside the track by its own
- * radius, so it never hangs half-off either end.
- */
-@Composable
-private fun Scrubber(
-    fraction: Float,
-    color: Color,
-    scrubbing: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    val radius by animateDpAsState(
-        targetValue = if (scrubbing) 9.dp else 6.dp,
-        label = "scrubberThumb",
-    )
-    Canvas(modifier.height(SCRUBBER_TOUCH_HEIGHT)) {
-        val centreY = size.height / 2f
-        val barHeight = 4.dp.toPx()
-        val corner = CornerRadius(barHeight / 2f)
-        val top = Offset(0f, centreY - barHeight / 2f)
-
-        drawRoundRect(color.copy(alpha = 0.28f), top, Size(size.width, barHeight), corner)
-        drawRoundRect(color, top, Size(size.width * fraction, barHeight), corner)
-
-        val thumb = radius.toPx()
-        val x = (size.width * fraction).coerceIn(thumb, (size.width - thumb).coerceAtLeast(thumb))
-        // A dark ring under the cursor for the same reason the symbols carry one: this band has
-        // a scrim, but the cursor sits at the bright end of it.
-        drawCircle(Color.Black.copy(alpha = 0.35f), thumb + 1.5.dp.toPx(), Offset(x, centreY))
-        drawCircle(color, thumb, Offset(x, centreY))
-    }
-}
-
-/** Bar visual is 4dp; the target around it has to be a finger wide. */
-private val SCRUBBER_TOUCH_HEIGHT = 28.dp
-
-/**
- * One transport target: the symbol alone, no ring and no fill.
- *
- * Material vectors rather than Text glyphs - U+23EE/23EA/23E9/23ED/23F8 all carry
- * Emoji_Presentation, so a typed symbol falls back to the colour emoji font on most Android
- * builds and the row comes out as blue-and-white emoji buttons. feature-xmb already carries
- * material-icons-extended, which is where Replay10 / Forward10 come from.
- *
- * [size] is the touch target, which the symbol alone would undersize, and stays 44dp at minimum.
- */
-@Composable
-private fun TransportButton(
-    icon: ImageVector,
-    contentDescription: String,
-    enabled: Boolean,
-    onClick: () -> Unit,
-    size: Dp = 44.dp,
-    iconSize: Dp = 26.dp,
-) {
-    Box(
-        modifier = Modifier
-            .size(size)
-            .clip(CircleShape)
-            .alpha(if (enabled) 1f else 0.35f)
-            .clickable(enabled = enabled, onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            tint = Color.White,
-            modifier = Modifier.size(iconSize),
-        )
-    }
-}
-
 // ── Track selection helpers ──────────────────────────────────────────────────
 
 @UnstableApi
@@ -744,11 +616,3 @@ private fun currentTrackLabel(player: Player, trackType: Int): String {
     }
 }
 
-private fun fmt(ms: Long): String {
-    if (ms <= 0) return "0:00"
-    val totalSec = ms / 1000
-    val h = totalSec / 3600
-    val m = (totalSec % 3600) / 60
-    val s = totalSec % 60
-    return if (h > 0) "%d:%02d:%02d".format(h, m, s) else "%d:%02d".format(m, s)
-}

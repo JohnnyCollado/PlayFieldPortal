@@ -6,6 +6,56 @@ All notable changes to Play Field Portal are documented here. This project follo
 ## [Unreleased]
 
 ### Added
+- **Resume the player from the Music browser.** Dismissing the player with B used to strand the
+  song: the browser had no way back to it, and re-picking the loaded track deliberately does *not*
+  restart it — so the only route to what was already playing was hunting the library for it. The
+  browser's Options menu (**Y**, or the kebab) now carries **Resume: <title>** above **Sort**, on the
+  same "Label: value" shape that row uses — a bare *Resume* would read as resume *playback*, which
+  is a different thing.
+  It is a *list-level* row, so it rides on all three menus the browser can open — a track's, a
+  playlist's, and one with nothing else in it — and is built in one place rather than appended three
+  times. It appears only while a track is loaded, so an idle browser never offers to resume nothing,
+  and it is the same call the “Now Playing” row makes: raise the player, position intact.
+  Fixing that surfaced a doubled label: the browser's sort state carried a `Sort: ` prefix that the
+  header pill and the Options row each added again, rendering `Sort: Sort: Title`. The state now
+  holds the bare mode name and a single `sortPillLabel` owns the prefix, pinned by a test.
+- **The browser says what is playing, and gets you back in one tap.** A strip along the bottom of
+  the fullscreen browser names the loaded song — **Resume: <title>**, with its artist and album art,
+  and the transport state on the right — and tapping it brings the player back up on that song,
+  position intact. Same reveal as the Options row above, without opening a menu. It appears the
+  moment a track is loaded and is *absent*, rather than blank, when nothing is, so an idle browser
+  never offers to resume nothing.
+  The strip is fed from the playback collector but holds only what it draws, so the player's
+  twice-a-second position ticks never repaint the browser's column; a test pins that position is not
+  part of its contents. It is deliberately **not** a controller target: the D-pad list belongs to the
+  navigation engine and a focusable node beside it would sit outside that graph, so a pad reaches the
+  same action through Options ▸ Resume — which is where it is discoverable without looking.
+- **The Music player gets a visualizer, and the centre of the screen back.** The Now Playing
+  screen was a large album tile in the middle of an empty page. It is now laid out on the PSP
+  Visual Player: a tinted banner naming the queue and the position in it, album art as a 62dp
+  thumbnail beside the title over a hairline rule that carries the artist, album and a codec chip,
+  and the **centre left empty for the field**. The transport cluster is transient and touch-only, a
+  large play-state glyph sits bottom-left, and elapsed time in the theme accent over total sits
+  above a bar spanning the right 45%. All of it auto-hides after 3.5 s — the video player's
+  timeout, not a second one — and any input brings it back.
+  Three fields ship, chosen from a bottom filmstrip of **live** previews (**Y ▸ Visualizer**, or
+  the touch affordance): **Portal**, circles spiralling out from a bright throat and dissolving at
+  the rim; **Ripple**, rings expanding from two drifting drop points at a deliberately unhurried
+  ~4.2 s life; and **Off**, the default, which is the *absence* of a renderer — no clock, no
+  particles, no draw — and drops the player's backdrop to the see-through scrim so the live XMB
+  wave and the user's wallpaper read through it. Auto-hide is suppressed under Off, because hiding
+  the chrome over a bare wallpaper leaves nothing to aim at.
+  There is **no audio analysis**: motion comes from a synthetic envelope seeded from the track id,
+  so each song has its own character consistently, and it decays to a floor over ~600 ms on pause —
+  Portal slows and dims, Ripple stops being disturbed and flattens. Bar-spectrum and waveform
+  styles are deliberately absent: the eye reads bars as a measurement, and a spectrum uncorrelated
+  with the audio reads as a lie within seconds. The seam (`VisualizerFrame`, `PfpVisualizer`) is
+  shaped for real RMS and FFT to drop in later without touching a renderer.
+  Nine live previews cost one simulation: a single `withFrameNanos` loop and one particle array per
+  field, advanced once and drawn N times, with the frame read in the draw phase so a running field
+  causes **zero** recompositions. The clock stops outright when the player closes, when the app is
+  not resumed, or when Off is selected. While the strip is open it captures ◀/▶ for tile
+  navigation and hands them straight back to seek on close.
 - **Drag anywhere to scroll, and back out by going left (C15).** Two input-model gaps on the same
   surfaces. A drag on a Settings header, on the helper footer or on the Setup Wizard's chrome did
   nothing, because every one of those screens lays its chrome out as a *sibling* of its scrolling
@@ -132,6 +182,20 @@ All notable changes to Play Field Portal are documented here. This project follo
   Detail uses, so the two screens can never disagree.
 
 ### Changed
+- **The Music player and its full-screen menus get the touch pass.** Music was the last section
+  still drawing both input families at once — touch pills stacked over a controller footer — and
+  the last one whose player disagreed with the other player about which hand does what. The
+  *Now Playing* screen is rebuilt on the video player's three bands (chrome, transport, progress),
+  and its controller ladder now matches binding for binding: **A** play/pause, **◀/▶** seek ∓10s,
+  **L1/R1** previous/next, **Y** options, **B** close — it used to seek on ▲/▼ and change track
+  on ◀/▶, the opposite hand from Video. The Material slider is gone: it issued a seek on every
+  pixel of the drag, so scrubbing a long track stuttered; the shared scrub bar follows the finger
+  and commits once on release. Tap-anywhere-to-close is gone with it, now that there is a transport
+  row under the thumb — Back is the pill and **B**. The full-screen browser and the playlist track
+  picker pick up the shared header pill and the kebab Options button, show the touch helper bar or
+  the controller one but never both, and frame the focused row by geometry instead of scroll
+  arithmetic. The picker also honours touch mode at all for the first time, with Add and Cancel in
+  the header rather than a Confirm row reachable only by scrolling back over every scanned song.
 - **Emulator profile reads are suspend and screened.** Profile loading declares its IO
   dispatcher instead of relying on call-site coincidence, and every persisted profile
   (which chooses an intent target that later receives a ROM grant) passes an admission
@@ -139,6 +203,29 @@ All notable changes to Play Field Portal are documented here. This project follo
   unknown intent flags are refused with a logged reason.
 
 ### Fixed
+- **A finger on the Music browser or the Add-Tracks picker no longer fights the pad.** Scroll one of
+  them and press a button, and the list used to travel back to the row the cursor had been left on
+  *before* the scroll, with the first press acting on that stale row instead of the one on screen.
+  Both lists now re-anchor on the source transition itself: the first controller press after a touch
+  parks the cursor on the row nearest the middle of the window — the content the user was actually
+  looking at — and a directional press is spent doing that rather than also moving, so the cursor
+  can never step past the visible area while it reappears. Re-anchoring on the transition rather
+  than inside the directional handler is the whole fix in the browser: Options, Search, Open and
+  Back were the cases that still dragged the list back. The press also takes the scroll mutex, so a
+  fling the finger left running can't slide the row out from under the cursor that just landed on
+  it. Settings already behaved this way; the browser and the picker now follow the same rule.
+  The picker needed the rest of the plumbing to go with it: a finger scrolling it reported nothing
+  at all, so the touch pills never appeared and the highlight rode a row far off screen through an
+  entire touch session. Its cursor is now owned by the picker's own visible/hidden flag — the
+  browser's model — rather than inferred from the last input source.
+- **The XMB's *Now Playing* row follows the song.** It showed whatever was playing when it first
+  appeared and then stopped: the Music root was rebuilt only when playback *gained or lost* a
+  track, so advancing from one song to the next — on auto-advance at the end of a track, from the
+  player, or from the notification — left the previous title, artist and cover art on the row
+  until the category was re-entered. The rebuild is now keyed on the row's own contents rather
+  than on whether anything is playing, which still ignores the twice-a-second position ticks that
+  the guard existed to filter out. The media notification was mirroring the same flow and rebuilt
+  itself on every one of those ticks; it now reposts only when what it draws changes.
 - **The Notification sound is cut until it gets real triggers.** It fired at the end of every
   full-library rescan — which the rescan bus runs on app resume, media mount and USB unplug —
   plus backup and restore completion, so the chime landed at seemingly random moments. The event

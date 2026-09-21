@@ -27,6 +27,12 @@ data class MusicPlaybackState(
     val index: Int = 0,
     val queueSize: Int = 0,
     val isPrepared: Boolean = false,
+    /**
+     * Where the queue came from — "All Music", a playlist's name, a folder. The player's banner
+     * prints it beside the index, which is the one place in the app that says what you are inside
+     * of rather than what is playing.
+     */
+    val queueName: String? = null,
 )
 
 /**
@@ -42,15 +48,17 @@ class MusicPlayerController @Inject constructor(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var player: MediaPlayer? = null
     private var queue: List<MusicTrack> = emptyList()
+    private var queueName: String? = null
     private var index = 0
     private var tickJob: Job? = null
 
     private val _state = MutableStateFlow(MusicPlaybackState())
     val state: StateFlow<MusicPlaybackState> = _state
 
-    /** Load [tracks] as the queue and start playing at [startIndex]. */
-    fun setQueue(tracks: List<MusicTrack>, startIndex: Int) {
+    /** Load [tracks] as the queue and start playing at [startIndex]. [name] labels it in the player. */
+    fun setQueue(tracks: List<MusicTrack>, startIndex: Int, name: String? = null) {
         queue = tracks
+        queueName = name
         index = startIndex.coerceIn(0, (tracks.size - 1).coerceAtLeast(0))
         playCurrent()
     }
@@ -88,7 +96,7 @@ class MusicPlayerController @Inject constructor(
     fun stop() {
         tickJob?.cancel(); tickJob = null
         releasePlayer()
-        queue = emptyList(); index = 0
+        queue = emptyList(); queueName = null; index = 0
         _state.value = MusicPlaybackState()
     }
 
@@ -126,7 +134,7 @@ class MusicPlayerController @Inject constructor(
         // Reflect the track immediately (duration fills in once prepared).
         _state.value = MusicPlaybackState(
             track = track, isPlaying = false, positionMs = 0, durationMs = 0,
-            index = index, queueSize = queue.size, isPrepared = false,
+            index = index, queueSize = queue.size, isPrepared = false, queueName = queueName,
         )
     }
 
@@ -151,6 +159,7 @@ class MusicPlayerController @Inject constructor(
             index = index,
             queueSize = queue.size,
             isPrepared = p != null,
+            queueName = queueName,
         )
     }
 
