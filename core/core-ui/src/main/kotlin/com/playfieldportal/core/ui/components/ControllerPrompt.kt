@@ -176,6 +176,13 @@ data class ControllerPromptItem(
         /** A prompt for a position no setting remaps (the D-pad, a raw-keycode escape). */
         fun fixed(icon: ControllerIcon, label: String) =
             ControllerPromptItem(emptyList(), label, listOf(icon))
+
+        /**
+         * Several unremappable positions under one label — "▲▼ Navigate". Same contract as the
+         * single-icon form; the pair reads as one range rather than two unrelated prompts.
+         */
+        fun fixed(icons: List<ControllerIcon>, label: String) =
+            ControllerPromptItem(emptyList(), label, icons)
     }
 }
 

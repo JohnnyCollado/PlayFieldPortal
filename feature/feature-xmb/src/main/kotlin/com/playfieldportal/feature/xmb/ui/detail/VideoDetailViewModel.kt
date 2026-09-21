@@ -72,6 +72,17 @@ data class VideoDetailUiState(
     val closed: Boolean = false,
 ) {
     val hasResume: Boolean get() = (video?.resumePositionMs ?: 0) > 0
+    /**
+     * True while anything is layered over the detail page itself.
+     *
+     * Every one of these routes input somewhere else (see [VideoDetailViewModel.handleGamepadAction]),
+     * so the page's own controller prompts would be naming actions that are not live — and the
+     * context menu's scrim is deliberately light enough to read them through.
+     */
+    val hasOverlay: Boolean
+        get() = playing || showOptions || showPlaylistPicker || creatingPlaylist ||
+                infoVisible || isEditingTitle || confirmRemove ||
+                externalLaunch != null || launchError != null
     // Primary buttons: a watched video leads with Resume + Start from Beginning; an unwatched one
     // just shows Play. (Options is appended by the screen.)
     val primaryActions: List<VideoDetailAction>

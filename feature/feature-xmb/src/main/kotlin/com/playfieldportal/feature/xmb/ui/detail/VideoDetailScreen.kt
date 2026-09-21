@@ -53,15 +53,20 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
 import coil3.compose.AsyncImage
+import com.playfieldportal.core.domain.model.ControllerIcon
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.Video
+import com.playfieldportal.core.ui.components.ControllerPromptBar
+import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.components.XmbHeaderPill
+import com.playfieldportal.core.ui.components.XmbKebabTouchButton
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.menuCursor
 import com.playfieldportal.core.ui.theme.menuCursorEdge
@@ -76,6 +81,10 @@ private val PlayGreen = Color(0xFF45C46A)
 private val ActionFill = Color(0xFF1B1B26)
 private val TextPrimary = Color(0xFFEEEEEE)
 private val TextMuted = Color(0xAAEEEEEE)
+
+// The controller footer's own height (14dp padding above and below a 16dp glyph row), and the
+// space the scroll viewport gives up for it. One value so the two cannot drift apart.
+private val FOOTER_HEIGHT = 44.dp
 
 @UnstableApi
 @Composable
@@ -143,6 +152,14 @@ fun VideoDetailScreen(
     }
     val video = state.video ?: run { onBack(); return }
     val pfpColors = LocalPFPColors.current
+    // Controller and touch are separate input families (see the Options convention in
+    // ARCHITECTURE.md): touch users get the header pills and tap the buttons directly, so the
+    // prompt footer is for the pad only. It names the page's own actions, so it goes away
+    // whenever something is layered over the page and input is routed elsewhere.
+    val showFooter = !showTouchControls && !state.hasOverlay
+    // Reserved off the plain pad check, not [showFooter]: the space must not appear and vanish as
+    // overlays come and go, which would shuffle the page behind the context menu's light scrim.
+    val footerInset = !showTouchControls
 
     // Same translucent theme-gradient backdrop as the Music browser, so the XMB wave stays visible
     // behind and all full-screen menus read consistently.
@@ -160,6 +177,12 @@ fun VideoDetailScreen(
     ) {
         Column(
             modifier = Modifier.fillMaxSize().widthIn(max = 920.dp).align(Alignment.Center)
+                // Outside the scroll, so it shortens the VIEWPORT rather than padding the content.
+                // DetailButton frames itself with a BringIntoViewRequester, which scrolls only
+                // until the button's edge reaches the viewport bottom — with a full-height viewport
+                // that lands the focused button underneath the footer, and content-side padding
+                // cannot help because it scrolls away with the button.
+                .padding(bottom = if (footerInset) FOOTER_HEIGHT else 0.dp)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 28.dp, vertical = 22.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -215,9 +238,10 @@ fun VideoDetailScreen(
             }
         }
 
-        // Header pills over the banner (touch only, per the last-input source) — hidden while the
-        // fullscreen player is up (it draws over everything). Back closes the Options menu when it's
-        // open, otherwise backs out; the Options pill opens the Options context menu (controller: Y).
+        // Header controls over the banner (touch only, per the last-input source) — hidden while
+        // the fullscreen player is up (it draws over everything). Back closes the Options menu when
+        // it's open, otherwise backs out; the kebab opens the Options context menu (controller: Y).
+        // Back pill + kebab is the same header the photo viewer uses, so the media screens match.
         if (!state.playing && showTouchControls) {
             XmbHeaderPill(
                 label = "Back",
@@ -225,11 +249,47 @@ fun VideoDetailScreen(
                 onClick = { if (state.showOptions) viewModel.closeOptions() else onBack() },
                 modifier = Modifier.align(Alignment.TopStart).padding(16.dp),
             )
-            XmbHeaderPill(
-                label = "Options",
+            XmbKebabTouchButton(
                 onClick = viewModel::openOptions,
                 modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
             )
+        }
+
+        // Controller help row — names the actions, not the buttons; the shared resolver draws
+        // whichever pad the user has and honours their Confirm/Back swap, so this row cannot
+        // disagree with what the pad actually does.
+        if (showFooter) {
+            // A fixed-height band rather than one sized by its contents: the viewport above gives
+            // up exactly FOOTER_HEIGHT, and a bar that measured itself could outgrow that reserve.
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(FOOTER_HEIGHT)
+                    .background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xCC000000)))),
+                contentAlignment = Alignment.Center,
+            ) {
+                ControllerPromptBar(
+                    items = listOfNotNull(
+                        // Only honest with something to move between: an unwatched video has a
+                        // single primary button and the D-pad does nothing.
+                        ControllerPromptItem
+                            .fixed(listOf(ControllerIcon.DPAD_UP, ControllerIcon.DPAD_DOWN), "Navigate")
+                            .takeIf { state.primaryActions.size > 1 },
+                        ControllerPromptItem(
+                            GamepadAction.SELECT,
+                            state.primaryActions.getOrNull(state.mainFocus)?.label ?: "Select",
+                        ),
+                        ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"),
+                        ControllerPromptItem(GamepadAction.BACK, "Back"),
+                    ),
+                    labelColor = TextMuted,
+                    labelStyle = TextStyle(fontSize = 12.sp),
+                    glyphSize = 16.dp,
+                    arrangement = Arrangement.spacedBy(18.dp, Alignment.CenterHorizontally),
+                    modifier = Modifier.padding(horizontal = 24.dp),
+                )
+            }
         }
 
         if (state.showOptions) {
@@ -319,6 +379,8 @@ fun VideoDetailScreen(
                 onExit = viewModel::onPlaybackExit,
                 pendingGamepadAction = pendingGamepadAction,
                 onGamepadActionConsumed = onGamepadActionConsumed,
+                showTouchControls = showTouchControls,
+                onTouchInput = onTouchInput,
                 modifier = Modifier.fillMaxSize(),
             )
         }

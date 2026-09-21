@@ -1,5 +1,6 @@
 package com.playfieldportal.core.ui.components
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -36,6 +37,13 @@ import com.playfieldportal.core.ui.theme.LocalPFPColors
 
 /** Soft dark halo applied to glyph text so it reads on any part of the wave gradient. */
 val XmbGlyphShadow = Shadow(Color(0xB3000000), Offset.Zero, 10f)
+
+/**
+ * Fill for touch controls that float over arbitrary imagery — a photo, a video frame — rather than
+ * over the themed gradient. The default 12% white wash vanishes on bright content, so the media
+ * screens pass this instead.
+ */
+val XmbMediaPillScrim = Color(0x99000000)
 
 /**
  * Base themed touch button: transparent background, rounded accent ring, centered [content].
@@ -97,6 +105,33 @@ fun XmbGlyphTouchButton(
             fontWeight = FontWeight.Bold,
             style = TextStyle(shadow = XmbGlyphShadow),
         )
+    }
+}
+
+/**
+ * Options button — the vertical kebab ("three dots") in the shared themed frame.
+ *
+ * Drawn rather than typed: the "⋮" character renders at wildly different weights across the
+ * fonts a device may fall back to, and the media screens float this over arbitrary imagery where a
+ * thin glyph disappears. Three circles are identical everywhere.
+ *
+ * This is the app-wide Options affordance on touch — see the Options convention in ARCHITECTURE.md.
+ */
+@Composable
+fun XmbKebabTouchButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    size: Dp = 52.dp,
+    background: Color = Color.Transparent,
+    dotColor: Color = Color.White,
+) {
+    XmbTouchButton(onClick = onClick, modifier = modifier, size = size, background = background) {
+        Canvas(Modifier.size(22.dp)) {
+            val radius = 2.5.dp.toPx()
+            val x = this.size.width / 2f
+            listOf(this.size.height * 0.22f, this.size.height * 0.5f, this.size.height * 0.78f)
+                .forEach { y -> drawCircle(dotColor, radius, Offset(x, y)) }
+        }
     }
 }
 
@@ -197,7 +232,7 @@ fun XmbTouchButtonPreview() {
             Spacer(Modifier.width(12.dp))
             XmbBackTouchButton(onClick = {})
             Spacer(Modifier.width(12.dp))
-            XmbGlyphTouchButton(glyph = "⋮", onClick = {})
+            XmbKebabTouchButton(onClick = {})
         }
     }
 }

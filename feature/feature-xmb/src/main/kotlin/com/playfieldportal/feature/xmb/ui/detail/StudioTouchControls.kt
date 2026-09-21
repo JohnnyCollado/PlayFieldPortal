@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.components.ControllerPrompt
 import com.playfieldportal.core.ui.components.XmbHeaderPill
+import com.playfieldportal.core.ui.components.XmbKebabTouchButton
 import com.playfieldportal.core.ui.preview.CombinedPreviews
 import com.playfieldportal.core.ui.preview.PfpPreview
 import com.playfieldportal.core.ui.theme.LocalPFPColors
@@ -189,9 +190,13 @@ private fun StudioPickStatus(
 }
 
 /**
- * The rail's options control. Controller mode shows the Y hint; in touch mode a small hint does not
- * read as tappable, so it becomes a pill. Either way [onClick] opens the actions menu, which decides
- * for itself whether anything can open.
+ * The header's options control, anchored at the right end of the header row. Controller mode shows
+ * the Y hint; in touch mode a small hint does not read as tappable, so it becomes the kebab — the
+ * app-wide Options affordance (see the Options convention in ARCHITECTURE.md). Either way [onClick]
+ * opens the actions menu, which decides for itself whether anything can open.
+ *
+ * Sized to the 36 dp header row rather than the 52 dp default the media screens use, which would
+ * force the row taller.
  */
 @Composable
 internal fun StudioOptionsControl(
@@ -200,11 +205,13 @@ internal fun StudioOptionsControl(
     modifier: Modifier = Modifier,
 ) {
     if (showTouchControls) {
-        XmbHeaderPill(label = "Options", onClick = onClick, modifier = modifier, leadingGlyph = "⋯")
+        XmbKebabTouchButton(onClick = onClick, modifier = modifier, size = 32.dp)
     } else {
         ControllerPrompt(
             action = GamepadAction.OPEN_CONTEXT_MENU,
-            label = "Crop, restore, clear",
+            // "Crop, restore, clear" named the menu's contents, which fit under the rail preview
+            // but not beside the title and query field. The menu names its own rows.
+            label = "Options",
             glyphSize = 13.dp,
             labelColor = Color.White.copy(alpha = 0.6f),
             labelStyle = TextStyle(fontSize = 9.5.sp),

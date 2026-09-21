@@ -290,6 +290,16 @@ internal fun ArtworkStudioContent(
                         )
                     }
                 }
+
+                // ── Options, anchored right ───────────────────────────────────
+                // Last in the header row, so it sits at the far right edge whatever the title and
+                // query field take. It used to live under the rail preview, which put the Studio's
+                // one menu somewhere no other screen keeps it.
+                StudioOptionsControl(
+                    showTouchControls = showTouchControls,
+                    onClick = actions::openActions,
+                    modifier = Modifier.padding(start = 12.dp),
+                )
             }
 
             // ── Destination tabs (AD-18: flat, one press apart) — the LB/RB glyphs sit at both
@@ -419,9 +429,6 @@ internal fun ArtworkStudioContent(
                                 else -> Text("No artwork set", color = Color.White.copy(alpha = 0.4f), fontSize = 12.sp)
                             }
                         }
-                        Spacer(Modifier.height(6.dp))
-                        // The Y hint replaces the old "Ⓨ · OPTIONS" pill; in touch mode it is an Options pill.
-                        StudioOptionsControl(showTouchControls = showTouchControls, onClick = actions::openActions)
                     }
                     // L.5: paging moved to the page line under the grid.
                     state.message?.let {

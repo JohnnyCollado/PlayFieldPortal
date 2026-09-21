@@ -4,7 +4,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,7 +29,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -39,7 +37,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.size
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
@@ -51,7 +48,8 @@ import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.components.TouchPromptBar
 import com.playfieldportal.core.ui.components.TouchPromptItem
 import com.playfieldportal.core.ui.components.XmbHeaderPill
-import com.playfieldportal.core.ui.components.XmbTouchButton
+import com.playfieldportal.core.ui.components.XmbKebabTouchButton
+import com.playfieldportal.core.ui.components.XmbMediaPillScrim
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.feature.xmb.ui.DetailContextMenu
 import com.playfieldportal.feature.xmb.ui.DetailMenuRow
@@ -64,10 +62,6 @@ private val ViewerBg = Color(0xFF000000)
 private val TextPrimary = Color(0xFFEEEEEE)
 private val TextMuted = Color(0xAAEEEEEE)
 private val PanelBg = Color(0xF0101018)
-
-// Header pills float over the photo itself, so they need a real scrim: the default 12% white
-// pill fill disappears on bright images (Prev/Next were unreadable on light photos).
-private val MediaPillBg = Color(0x99000000)
 
 /**
  * PSP-style fullscreen photo viewer: just the image on black, all UI hidden until toggled.
@@ -243,22 +237,14 @@ fun PhotoViewerScreen(
                     label = "Back",
                     leadingGlyph = "◀",
                     onClick = { viewModel.handleGamepadAction(GamepadAction.BACK) },
-                    background = MediaPillBg,
+                    background = XmbMediaPillScrim,
                     modifier = Modifier.align(Alignment.TopStart).padding(16.dp),
                 )
-                XmbTouchButton(
+                XmbKebabTouchButton(
                     onClick = viewModel::openOptions,
-                    background = MediaPillBg,
+                    background = XmbMediaPillScrim,
                     modifier = Modifier.align(Alignment.TopEnd).padding(16.dp),
-                ) {
-                    Canvas(Modifier.size(22.dp)) {
-                        val radius = 2.5.dp.toPx()
-                        val x = size.width / 2f
-                        listOf(size.height * 0.22f, size.height * 0.5f, size.height * 0.78f).forEach { y ->
-                            drawCircle(Color.White, radius, Offset(x, y))
-                        }
-                    }
-                }
+                )
             }
         }
 
