@@ -37,8 +37,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
-// Robolectric (not plain mockk): the runner builds a BackgroundTaskNotifier in its field
-// initializer, and NotificationChannel/Notification.Builder throw "Stub!" on a bare JVM.
+// Robolectric (not plain mockk): the shared BackgroundTaskCenter builds a real notifier, and
+// NotificationChannel/Notification.Builder throw "Stub!" on a bare JVM.
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 class WizardMediaScanRunnerTest {
@@ -47,6 +47,10 @@ class WizardMediaScanRunnerTest {
     private val scope = TestScope(StandardTestDispatcher(scheduler))
     private val context: Context = ApplicationProvider.getApplicationContext()
 
+    // Relaxed: this test is about scan orchestration, not about what each pass reports. The
+    // center's own behaviour is covered where it lives.
+    private val taskCenter =
+        mockk<com.playfieldportal.core.ui.notification.BackgroundTaskCenter>(relaxed = true)
     private val mediaRoots = mockk<MediaRootRepository>(relaxed = true)
     private val musicRepository = mockk<MusicRepository>(relaxed = true)
     private val photoRepository = mockk<PhotoRepository>(relaxed = true)
@@ -106,6 +110,7 @@ class WizardMediaScanRunnerTest {
             videoRepository = videoRepository,
             videoScanner = videoScanner,
             scope = scope,
+            tasks = taskCenter,
         )
     }
 

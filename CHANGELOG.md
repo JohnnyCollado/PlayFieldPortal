@@ -6,6 +6,82 @@ All notable changes to Play Field Portal are documented here. This project follo
 ## [Unreleased]
 
 ### Added
+- **A notification panel, on START or the bell in the status bar.** Background work used to end in
+  the Android shade and nowhere else — which on a device whose home screen *is* this launcher means
+  a user may never see it, and on API 33+ without `POST_NOTIFICATIONS` means `post()` silently does
+  nothing. A Vita-style panel now drops from the status strip and holds both halves: **RUNNING**,
+  live and transient, and **EARLIER**, the durable history you can act on and clear.
+  START was already bound and already did nothing on the XMB (`GamepadAction.HOME -> Unit`), so
+  opening the panel is one line replacing that — no new action, no new binding, no migration of
+  saved layouts. Its meaning inside the app/game/track pickers (Confirm) is untouched: one
+  `startOutcome` rule decides, below the branches that consume START, and a test pins both halves.
+  This is deliberately not the in-app task tray that was removed in `f6ad773e`. That tray showed
+  progress *and nothing else*, so when a scan ended the row vanished and left no trace, which is
+  exactly what made it redundant with the shade. Progress earns its place here by sitting on top of
+  a history that outlives it.
+- **Running work keeps its counts.** `BackgroundTaskInfo` carried a pre-divided `progress: Float?`,
+  so every call site computed `current / total` and threw both operands away. It now carries them,
+  and `fraction` derives the bar — so the panel *and* the shade notification show "14 / 56" and the
+  title being fetched, which is the part anyone actually reads. Artwork scraping reports the richest
+  progress in the app and had been losing all of it.
+  Achievement auto-matching and coin syncing both had `onProgress` callbacks and neither ever
+  reached the notifier; both are wired now. File scanning still reports completion only, so its bar
+  is honestly indeterminate rather than faked — `n of m Memory Cards` is the named upgrade path,
+  and it needs no counting pre-pass.
+- **History rows you can act on.** ✕ marks a row read and goes where it points: the Memory Card that
+  failed, the game that would not launch, Settings ▸ Artwork for an import that rejected files. An
+  unrecognised action degrades to a read-only dialog rather than throwing, so a row written by a
+  newer build can never poison an older one's panel.
+  There is no per-row menu. A row does one thing and Confirm already does it, so △ opens the one
+  menu that acts on the list: Mark All Read, Clear Read, Clear All.
+  **Clear All is always available and can never cancel a scan.** That holds structurally rather than
+  by care: running work is in-memory state, not a stored row, so a clear has nothing to reach it
+  with — and a task that settles afterwards still posts. A persisted running task would strand at
+  40% forever after a force-stop, which is the failure this shape rules out.
+- **One sink for every producer.** Six places built their own `BackgroundTaskNotifier` and posted
+  straight to the Android shade — the metadata scrape, artwork import, artwork export and internal
+  artwork migration workers, the Steam import, and the media scan runner — scattered across five
+  modules. Anything not started from the XMB therefore reached the shade and nothing else, so the
+  panel sat empty while a scrape ran and finished. They all report to one `BackgroundTaskCenter`
+  now, which owns the running list, writes the single history row at settle, and still mirrors to
+  the shade. It lives in core-ui and takes its collaborators as core-domain interfaces, so no
+  feature depends on another and core-ui gains no dependency on core-data.
+- **New producers.** Launch failures post from `LaunchOutcomeRecorder`, the one place every verdict
+  passes through, keyed by the game so four retries leave one fresh unread row. Artwork imports post
+  from the executor, as a WARNING whenever anything was ambiguous, unmatched or failed — a green
+  "412 imported" over thirty rejected files is how a rejection gets missed.
+- **Auto-match and Sync All say what they actually did.** Both used to end with "Matching
+  finished" / "Sync finished", which tells a user nothing about whether the thing they wanted
+  happened. They now report the counts that are the point of the run — "Matched 12 · Unmatched 3",
+  "41 synced · 2 no coins" — and a sync that could not reach a provider posts as a WARNING with a
+  link to the credentials screen, because "41 synced" over silently skipped providers is how a
+  missing API key goes unnoticed.
+  The wording is shared: Settings ▸ Achievements and the tray entry both read from one
+  `AchievementReportSummary`, so one run cannot be described two ways.
+- **Settings toasts reach the tray.** The dismissible rows on the achievements screen — the match
+  and sync summaries, "Steam connected", "RetroAchievements disconnected" — died with the screen
+  they appeared on. They now also record a notification, and the two achievement operations report
+  live progress there whichever surface started them, keyed so the hub and Settings share one row
+  rather than posting one each.
+- **The bell follows the sort chip's rule.** Under touch it is a tappable pill on the sort chip's
+  own shape, fill and padding (now shared between the two, so they cannot drift). Under a
+  controller it drops the surface and sits as a plain readout with the other status icons — there
+  is nothing to aim at, because the panel opens on START, and a permanent button-looking surface
+  would advertise a target that does not exist. That is the same gate the sort chip has always had.
+  The controller half of the affordance moved to the crossbar's idle hint, which gained a third
+  prompt: **START ▸ Notifications**. It is unconditional there — unlike Sort and Options it does
+  not depend on what has focus, and on a controller it is how the panel is discovered at all.
+- **An idle hint inside the panel.** After the same idle delay the crossbar's pill uses, and under
+  the same Display ▸ Context Menu Hint setting, a prompt bar fades in naming what the buttons do:
+  Open, Options, Close — in the same bottom-right corner the crossbar's pill uses, from one shared
+  placement, so a user who has learned where help appears finds it in the same place everywhere.
+  Nothing on screen said that Confirm opened a row or that the list had a menu of its own, and the
+  panel is reached by a button most people press once out of curiosity. Controller-only, and Open
+  appears only when there is a history row under the cursor.
+- **Settings ▸ Interface ▸ Notifications.** Record notifications, mirror to the Android shade
+  (on by default; the shade is not being replaced), and how long entries are kept. Retention runs on
+  the write path, never on a timer.
+
 - **Resume the player from the Music browser.** Dismissing the player with B used to strand the
   song: the browser had no way back to it, and re-picking the loaded track deliberately does *not*
   restart it — so the only route to what was already playing was hunting the library for it. The

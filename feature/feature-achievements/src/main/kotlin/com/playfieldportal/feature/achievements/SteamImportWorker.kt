@@ -8,12 +8,13 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
-import com.playfieldportal.core.ui.notification.BackgroundTaskNotifier
+import com.playfieldportal.core.domain.model.TaskKind
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.CancellationException
 import timber.log.Timber
 import java.util.UUID
+import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
 
 /**
  * Runs the Steam library import as real background work: a first import of a large library is a
@@ -26,11 +27,14 @@ class SteamImportWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted params: WorkerParameters,
     private val importer: SteamAccountImporter,
+    // The shared sink: the in-app notification panel and the Android shade at once.
+    // Building a BackgroundTaskNotifier here reached the shade only, so this work ran and
+    // finished without the panel ever hearing about it.
+    private val tasks: BackgroundTaskCenter,
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
-        val notifier = BackgroundTaskNotifier(applicationContext)
-        notifier.running(TASK_ID, "Importing Steam library", null)
+        tasks.start(TASK_ID, "Importing Steam library", TaskKind.ACHIEVEMENT)
         var lastNotified = 0L
 
         return try {
@@ -38,14 +42,11 @@ class SteamImportWorker @AssistedInject constructor(
                 val now = System.currentTimeMillis()
                 if (now - lastNotified >= 500 || done == total) {
                     lastNotified = now
-                    notifier.running(
-                        TASK_ID, "Importing Steam library — $done/$total",
-                        if (total > 0) done.toFloat() / total else null,
-                    )
+                    tasks.progress(TASK_ID, done, total)
                 }
                 setProgress(workDataOf(KEY_DONE to done, KEY_TOTAL to total))
             }
-            notifier.complete(TASK_ID, "Steam import finished", summaryOf(result))
+            tasks.complete(TASK_ID, summaryOf(result))
             Result.success(
                 workDataOf(
                     KEY_TOTAL to result.total,
@@ -58,11 +59,11 @@ class SteamImportWorker @AssistedInject constructor(
                 )
             )
         } catch (e: CancellationException) {
-            notifier.complete(TASK_ID, "Steam import cancelled", "Progress so far is kept — run again to resume")
+            tasks.complete(TASK_ID, "Cancelled — progress so far is kept, run again to resume")
             throw e
         } catch (e: Exception) {
             Timber.e(e, "Steam import failed")
-            notifier.failed(TASK_ID, "Steam import failed", "Run again to resume")
+            tasks.fail(TASK_ID, "Run again to resume")
             Result.failure(workDataOf(KEY_ERROR to "import failed"))
         }
     }

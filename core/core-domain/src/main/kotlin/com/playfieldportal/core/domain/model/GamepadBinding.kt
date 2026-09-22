@@ -121,7 +121,7 @@ fun GamepadAction.displayLabel(): String = when (this) {
     GamepadAction.CHANGE_SORT       -> "Change Sort Order"
     GamepadAction.PREV_CATEGORY     -> "Previous Tab (App Drawer)"
     GamepadAction.NEXT_CATEGORY     -> "Next Tab (App Drawer)"
-    GamepadAction.HOME              -> "Start (Confirm in pickers)"
+    GamepadAction.HOME              -> "Start (Notifications / Confirm in pickers)"
 }
 
 fun Int.keycodeDisplayName(): String = when (this) {

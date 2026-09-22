@@ -298,6 +298,10 @@ fun XMBShellContainer(
         onGamePickerDismiss = viewModel::closeGamePicker,
         onGamePickerActionConsumed = viewModel::consumeGamePickerAction,
         onDismissInfoDialog = viewModel::dismissInfoDialog,
+        onNotificationsTapped = viewModel::onToggleNotificationPanel,
+        onNotificationRowTapped = viewModel::onNotificationRowTapped,
+        onNotificationOptions = viewModel::onNotificationOptionsTapped,
+        onNotificationPanelDismiss = viewModel::closeNotificationPanel,
         onWindowsSetupConfirm = viewModel::confirmWindowsSetupPrompt,
         onWindowsSetupDismiss = viewModel::dismissWindowsSetupPrompt,
         onLaunchRecoveryAction = viewModel::onLaunchRecoveryAction,
@@ -462,6 +466,10 @@ fun XMBShell(
     onWindowsSetupConfirm: () -> Unit = {},
     onWindowsSetupDismiss: () -> Unit = {},
     onLaunchRecoveryAction: (com.playfieldportal.feature.launcher.LaunchRecoveryAction) -> Unit = {},
+    onNotificationsTapped: () -> Unit = {},
+    onNotificationRowTapped: (Int) -> Unit = {},
+    onNotificationOptions: () -> Unit = {},
+    onNotificationPanelDismiss: () -> Unit = {},
 ) {
     PFPTheme(colors = uiState.themeColors) {
       // The applied theme's custom icon slots ride alongside the palette: every themeable
@@ -702,8 +710,11 @@ fun XMBShell(
 
             XmbPspStatusStrip(
                 sortLabel = uiState.sortLabel,
-                showSortButton = uiState.resolvedShowTouchButton,
+                showTouchControls = uiState.resolvedShowTouchButton,
                 onSortTapped = onXmbSortTapped,
+                unreadNotifications = uiState.unreadNotifications,
+                notificationsRunning = uiState.runningTasks.isNotEmpty(),
+                onNotificationsTapped = onNotificationsTapped,
                 modifier = Modifier.align(Alignment.TopCenter),
             )
 
@@ -894,9 +905,13 @@ fun XMBShell(
                 ContextMenuHint(
                     showSort = uiState.canSortCurrentList,
                     showOptions = uiState.focusedItemHasContextMenu,
+                    // Always true here: the hint only renders on the main XMB with no overlay up,
+                    // which is exactly where START opens the panel.
+                    showNotifications = true,
                     modifier = Modifier.padding(
-                        bottom = if (drawerButtonVisible) 76.dp else 24.dp,
-                        end = 20.dp,
+                        bottom = if (drawerButtonVisible) HintPillBottomPaddingAboveDrawerButton
+                                 else HintPillBottomPadding,
+                        end = HintPillEndPadding,
                     ),
                 )
             }
@@ -1035,6 +1050,21 @@ fun XMBShell(
                     onStripDismissed = onMusicStripDismissed,
                     showTouchControls = uiState.resolvedShowTouchButton,
                     onTouchInput = onMusicPlayerTouchInput,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+
+            // Drops from the status strip, which stays visible above it. Placed before the
+            // context-menu overlay so the menu the panel opens draws over the panel, not under it.
+            uiState.notificationPanel?.let { panel ->
+                NotificationPanel(
+                    state = panel,
+                    running = uiState.runningTasks,
+                    history = uiState.notifications,
+                    onRowTapped = onNotificationRowTapped,
+                    onOptionsTapped = onNotificationOptions,
+                    onDismiss = onNotificationPanelDismiss,
+                    showHint = uiState.showNotificationHint,
                     modifier = Modifier.fillMaxSize(),
                 )
             }

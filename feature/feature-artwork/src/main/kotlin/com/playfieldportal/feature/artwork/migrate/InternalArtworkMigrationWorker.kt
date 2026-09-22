@@ -13,7 +13,8 @@ import com.playfieldportal.core.data.database.dao.ArtworkRecordDao
 import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.data.database.entity.ArtworkImportReportEntity
 import com.playfieldportal.core.data.repository.ArtworkFolderRepository
-import com.playfieldportal.core.ui.notification.BackgroundTaskNotifier
+import com.playfieldportal.core.domain.model.NotificationAction
+import com.playfieldportal.core.domain.model.TaskKind
 import com.playfieldportal.feature.artwork.importer.ImportSummary
 import com.playfieldportal.feature.artwork.store.ArtworkKind
 import com.playfieldportal.feature.artwork.store.ArtworkTempIO
@@ -24,6 +25,7 @@ import dagger.assisted.AssistedInject
 import kotlinx.coroutines.CancellationException
 import timber.log.Timber
 import java.util.UUID
+import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
 
 /**
  * M-F2 — moves artwork stranded in internal storage (`filesDir/artwork/{gameId}/`, scraped or
@@ -51,10 +53,13 @@ class InternalArtworkMigrationWorker @AssistedInject constructor(
     private val gameDao: GameDao,
     private val artworkRecordDao: ArtworkRecordDao,
     private val reportDao: ArtworkImportReportDao,
+    // The shared sink: the in-app notification panel and the Android shade at once.
+    // Building a BackgroundTaskNotifier here reached the shade only, so this work ran and
+    // finished without the panel ever hearing about it.
+    private val tasks: BackgroundTaskCenter,
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
-        val notifier = BackgroundTaskNotifier(applicationContext)
         if (folderRepository.getTreeUri() == null || !folderRepository.hasLiveGrant()) {
             return Result.failure(workDataOf(KEY_ERROR to "No artwork folder linked"))
         }
@@ -69,7 +74,7 @@ class InternalArtworkMigrationWorker @AssistedInject constructor(
         var failed = 0
         var bytes = 0L
         var cancelled = false
-        notifier.running(TASK_ID, LABEL, null)
+        tasks.start(TASK_ID, LABEL, TaskKind.ARTWORK)
 
         try {
             assets.forEachIndexed { index, asset ->
@@ -114,7 +119,7 @@ class InternalArtworkMigrationWorker @AssistedInject constructor(
                 }
 
                 if ((index + 1) % PROGRESS_STRIDE == 0 || index == assets.lastIndex) {
-                    notifier.running(TASK_ID, LABEL, (index + 1).toFloat() / assets.size)
+                    tasks.progress(TASK_ID, index + 1, assets.size)
                     setProgressAsync(
                         workDataOf(KEY_PROGRESS_DONE to index + 1, KEY_PROGRESS_TOTAL to assets.size)
                     )
@@ -124,19 +129,20 @@ class InternalArtworkMigrationWorker @AssistedInject constructor(
             cancelled = true
         } catch (e: Exception) {
             Timber.e(e, "Internal artwork migration failed")
-            notifier.failed(TASK_ID, "Artwork migration failed", e.message ?: "Unexpected error")
+            tasks.fail(TASK_ID, e.message ?: "Unexpected error", NotificationAction.OpenSettingsScreen("settings_artwork"))
             persistReport(startedAt, migrated, skipped, failed, bytes, cancelled = false)
             return Result.failure(workDataOf(KEY_ERROR to (e.message ?: "Unexpected error")))
         }
 
         persistReport(startedAt, migrated, skipped, failed, bytes, cancelled)
         if (cancelled) {
-            notifier.complete(TASK_ID, "Artwork migration cancelled", "$migrated files moved before cancelling")
+            tasks.complete(TASK_ID, "Cancelled — $migrated file(s) moved first")
             throw CancellationException("Migration cancelled")
         }
-        notifier.complete(
-            TASK_ID, "Artwork moved to your folder",
+        tasks.complete(
+            TASK_ID,
             "$migrated moved, $skipped already covered, $failed failed",
+            NotificationAction.OpenSettingsScreen("settings_artwork"),
         )
         return Result.success(workDataOf(KEY_MIGRATED to migrated, KEY_FAILED to failed))
     }

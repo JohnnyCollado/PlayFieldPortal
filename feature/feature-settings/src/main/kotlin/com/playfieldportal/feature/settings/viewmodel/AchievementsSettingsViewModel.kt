@@ -5,7 +5,12 @@ import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.achievement.AchievementCredentialsProvider
 import com.playfieldportal.core.domain.achievement.CoinWallet
 import com.playfieldportal.feature.achievements.AchievementController
+import com.playfieldportal.core.domain.model.NotificationAction
+import com.playfieldportal.core.domain.model.NotificationKind
+import com.playfieldportal.core.domain.model.NotificationSeverity
+import com.playfieldportal.core.domain.model.TaskKind
 import com.playfieldportal.feature.achievements.BatchSyncResult
+import com.playfieldportal.feature.achievements.notificationLine
 import android.content.Context
 import com.playfieldportal.feature.achievements.RaAccountImporter
 import com.playfieldportal.feature.achievements.RaImportResult
@@ -102,6 +107,10 @@ class AchievementsSettingsViewModel @Inject constructor(
     private val autoMatcher: AchievementAutoMatcher,
     private val repository: AchievementController,
     private val raImporter: RaAccountImporter,
+    // Settings has always shown these outcomes as a dismissible row that vanishes with the screen.
+    // The tray is where they survive: the same run started from the Shiba Coins hub already lands
+    // there, and a result the user has to be looking at Settings to ever see is the one they miss.
+    private val tasks: com.playfieldportal.core.ui.notification.BackgroundTaskCenter,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
@@ -228,31 +237,53 @@ class AchievementsSettingsViewModel @Inject constructor(
         viewModelScope.launch { credentials.setGoldbergInstallerEnabled(enabled) }
     }
 
+    /**
+     * Raises a settings toast AND records it in the tray.
+     *
+     * The dismissible row is the right thing while the user is on this screen; it dies with the
+     * screen. "Steam connected" is worth finding again an hour later, which is what the tray is
+     * for — so every toast goes to both, from one place, rather than each call site remembering.
+     */
+    private fun announce(
+        id: String,
+        message: String,
+        severity: NotificationSeverity = NotificationSeverity.INFO,
+    ) {
+        extra.update { it.copy(message = message) }
+        tasks.report(
+            id = id,
+            label = message,
+            severity = severity,
+            kind = NotificationKind.ACHIEVEMENT,
+            action = NotificationAction.OpenSettingsScreen("settings_achievements_credentials"),
+        )
+    }
+
     fun connectRetroAchievements(username: String, apiKey: String) {
         viewModelScope.launch {
             credentials.saveRetroAchievements(username, apiKey)
-            extra.update { it.copy(message = "RetroAchievements connected") }
+            announce("ra_connection", "RetroAchievements connected", NotificationSeverity.SUCCESS)
         }
     }
 
     fun disconnectRetroAchievements() {
         viewModelScope.launch {
             credentials.clearRetroAchievements()
-            extra.update { it.copy(message = "RetroAchievements disconnected") }
+            announce("ra_connection", "RetroAchievements disconnected")
         }
     }
 
     fun connectSteam(idOrVanity: String, apiKey: String) {
         viewModelScope.launch {
             val message = ServiceConnectors.connectSteam(credentials, steamApi, idOrVanity, apiKey)
-            extra.update { it.copy(message = message) }
+            announce("steam_connection", message)
         }
     }
 
     fun disconnectSteam() {
         viewModelScope.launch {
             credentials.clearSteam()
-            extra.update { it.copy(message = "Steam disconnected") }
+            announce("steam_connection", "Steam disconnected")
         }
     }
 
@@ -271,9 +302,18 @@ class AchievementsSettingsViewModel @Inject constructor(
         viewModelScope.launch {
             syncJob?.cancelAndJoin()
             extra.update { it.copy(isMatching = true, matchReport = null, matchDone = 0, matchTotal = 0) }
+            // Same task id the hub uses: it is the same operation, so it is one tray row either
+            // way rather than one per entry point.
+            tasks.start(MATCH_TASK_ID, "Auto-matching games", TaskKind.ACHIEVEMENT)
             val report = autoMatcher.matchUnlinked { done, total ->
+                tasks.progress(MATCH_TASK_ID, done, total)
                 extra.update { it.copy(matchDone = done, matchTotal = total) }
             }
+            tasks.complete(
+                MATCH_TASK_ID,
+                report.notificationLine(),
+                NotificationAction.OpenCategory("achievements"),
+            )
             extra.update { it.copy(isMatching = false, matchReport = report) }
             launchSyncAll().join()
         }
@@ -289,13 +329,37 @@ class AchievementsSettingsViewModel @Inject constructor(
         val job = viewModelScope.launch {
             try {
                 extra.update { it.copy(isSyncing = true, syncResult = null, syncDone = 0, syncTotal = 0) }
+                tasks.start(SYNC_TASK_ID, "Syncing Shiba Coins", TaskKind.ACHIEVEMENT)
                 val result = repository.syncAllLinked { done, total ->
+                    tasks.progress(SYNC_TASK_ID, done, total)
                     extra.update { it.copy(syncDone = done, syncTotal = total) }
+                }
+                // Missing credentials is a WARNING, not a success: "41 synced" over silently
+                // skipped providers is how a missing API key goes unnoticed.
+                if (result.missingCredentials) {
+                    tasks.report(
+                        id = SYNC_TASK_ID,
+                        label = "Syncing Shiba Coins",
+                        message = result.notificationLine(),
+                        severity = NotificationSeverity.WARNING,
+                        kind = NotificationKind.ACHIEVEMENT,
+                        action = NotificationAction.OpenSettingsScreen("settings_achievements_credentials"),
+                    )
+                } else {
+                    tasks.complete(
+                        SYNC_TASK_ID,
+                        result.notificationLine(),
+                        NotificationAction.OpenCategory("achievements"),
+                    )
                 }
                 extra.update { it.copy(isSyncing = false, syncResult = result) }
             } finally {
-                // A cancelled sync (auto-match taking over) must not leave the spinner stuck.
-                if (extra.value.isSyncing) extra.update { it.copy(isSyncing = false) }
+                // A cancelled sync (auto-match taking over) must not leave the spinner stuck, or
+                // a RUNNING row behind in the tray with nothing alive to finish it.
+                if (extra.value.isSyncing) {
+                    tasks.cancel(SYNC_TASK_ID)
+                    extra.update { it.copy(isSyncing = false) }
+                }
             }
         }
         syncJob = job
@@ -328,6 +392,13 @@ class AchievementsSettingsViewModel @Inject constructor(
 
     fun cancelSteamImport() {
         SteamImportWorker.cancel(context)
+    }
+
+    private companion object {
+        // The XMB's Shiba Coins hub runs the same two operations under these ids, so whichever
+        // surface starts a run, it is one tray row rather than one per entry point.
+        const val MATCH_TASK_ID = "achievement_match"
+        const val SYNC_TASK_ID = "achievement_sync"
     }
 
     fun dismissMessage() = extra.update { it.copy(message = null) }

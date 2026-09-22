@@ -51,7 +51,18 @@ import com.playfieldportal.core.domain.model.displayLabel
 import com.playfieldportal.core.domain.model.resolve
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.core.ui.icons.GameIconStyle
-import com.playfieldportal.core.ui.notification.BackgroundTaskNotifier
+import com.playfieldportal.core.domain.model.BackgroundTaskInfo
+import com.playfieldportal.core.domain.model.NotificationAction
+import com.playfieldportal.core.domain.model.NotificationSeverity
+import com.playfieldportal.core.domain.model.PfpNotification
+import com.playfieldportal.core.domain.model.TaskKind
+import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
+import com.playfieldportal.feature.achievements.notificationLine
+import com.playfieldportal.feature.xmb.ui.buildNotificationRows
+import com.playfieldportal.feature.xmb.ui.clampCursor
+import com.playfieldportal.feature.xmb.ui.firstSelectableIndex
+import com.playfieldportal.feature.xmb.ui.moveCursor
+import com.playfieldportal.feature.xmb.ui.notificationAt
 import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.core.ui.theme.DefaultPFPColors
 import com.playfieldportal.core.ui.theme.PFPColors
@@ -180,6 +191,9 @@ data class XMBContextMenu(
     val socialAccountMenu: Boolean = false,
     // Set on a Shiba Coins hub row's options menu (Sync All Coins).
     val achievementsHubMenu: Boolean = false,
+    // Set on the notification panel's menu (Mark All Read / Clear Read / Clear All). There is no
+    // per-row menu: a row does one thing, and Confirm already does it.
+    val notificationListMenu: Boolean = false,
 )
 
 data class XMBContextMenuItem(
@@ -464,6 +478,9 @@ fun settingsSectionItems(section: SettingsSection): List<XMBItem> = when (sectio
         // The id deliberately stays settings_audio — the route, SETTINGS_SCREEN_ROUTES, the row
         // focus keys (audio_<slot>) and SettingsHierarchyTest all key off it.
         XMBItem(id = "settings_audio",      title = "Sound",      subtitle = "Menu & boot sounds"),
+        // Sits with Display and Sound: the panel is part of how the launcher presents itself,
+        // not a library concern.
+        XMBItem(id = "settings_notifications", title = "Notifications", subtitle = "Panel history, retention & the Android shade"),
         XMBItem(id = "settings_categories", title = "Categories", subtitle = "Manage XMB categories"),
         XMBItem(id = "settings_themes",     title = "Themes",     subtitle = "XMB appearance & color scheme"),
         XMBItem(id = "settings_controller", title = "Controller", subtitle = "Button mapping"),
@@ -665,6 +682,10 @@ data class XMBUiState(
     // overlays are blocking by design, so this needs its own idle flag rather than reusing the XMB
     // context-menu hint (whose blocking-overlay gate would always suppress it).
     val showSettingsHint: Boolean = false,
+    // True when the user has been idle in the notification panel with a controller. Its own flag
+    // for the same reason the App Drawer's is: the panel is a blocking overlay, so the XMB pill's
+    // gate is false exactly while the panel is open, and this one is true only then.
+    val showNotificationHint: Boolean = false,
     // User setting (Display ▸ Context Menu Hint). When false the idle hint never shows.
     val contextMenuHintEnabled: Boolean = true,
     // User-configured idle delay in seconds, clamped to 1..5 and defaulting to the original 2.5s.
@@ -827,6 +848,17 @@ data class XMBUiState(
     val gamePickerCategoryId: String? = null,
     val pendingGamePickerAction: GamepadAction? = null,
 
+    // ── Notification panel (START, or the bell leading the status strip) ──
+    // Non-null while the panel is open; it joins hasBlockingOverlay below, without which the
+    // D-pad would keep driving the crossbar behind an open panel.
+    val notificationPanel: NotificationPanelState? = null,
+    // RUNNING: live work, in memory, never a Room row — a persisted running task would strand at
+    // 40% after a force-stop with nothing alive left to finish or fail it (plan section 4.2).
+    val runningTasks: List<BackgroundTaskInfo> = emptyList(),
+    // EARLIER: the durable history, newest first, in the DAO's own order.
+    val notifications: List<com.playfieldportal.core.domain.model.PfpNotification> = emptyList(),
+    val unreadNotifications: Int = 0,
+
     // ── Misc ──────────────────────────────────────────────────────────────
     val iconStyle: GameIconStyle = GameIconStyle.PSP_RECTANGLE,
     // Global icon display mode (Custom ICON0 / Box Art / Physical Media / 3D Box) — the default
@@ -939,6 +971,7 @@ data class XMBUiState(
     val hasBlockingOverlay: Boolean
         get() = showBootSequence ||
             activeGameBoot != null ||
+            notificationPanel != null ||
             activeSettingsScreen != null ||
             activeAppDrawerFilter != null ||
             activeGameId != null ||
@@ -1228,6 +1261,24 @@ fun shouldShowSettingsHint(state: XMBUiState, idleMs: Long): Boolean =
         state.activeSettingsScreen != null &&
         idleMs >= (state.contextMenuHintDelaySeconds * 1_000f).toLong()
 
+/**
+ * Pure decision: should the notification panel's idle hint be visible right now?
+ *
+ * The panel is where the affordances are least guessable in the whole app — nothing on screen
+ * says that Confirm opens a row or that the list has a menu of its own — and it is reached by a
+ * button most users will press once out of curiosity. So it earns the same idle pill the crossbar
+ * and the App Drawer already have, on the same clock and the same setting.
+ *
+ * Gated on the context menu being closed: the menu the pill is advertising is already open, and a
+ * hint offering Options over it would name an action that no longer does that.
+ */
+fun shouldShowNotificationHint(state: XMBUiState, idleMs: Long): Boolean =
+    state.contextMenuHintEnabled &&
+        !state.lastInputWasTouch &&
+        state.notificationPanel != null &&
+        state.activeContextMenu == null &&
+        idleMs >= (state.contextMenuHintDelaySeconds * 1_000f).toLong()
+
 data class XMBItem(
     val id: String,
     val title: String,
@@ -1322,13 +1373,6 @@ fun resolveIconDisplay(
     }
 }
 
-// A unit of background work surfaced to the notification bar. [progress] null = indeterminate.
-data class BackgroundTaskInfo(
-    val id: String,
-    val label: String,
-    val progress: Float?,
-)
-
 // ── ViewModel ─────────────────────────────────────────────────────────────────
 
 /**
@@ -1398,6 +1442,12 @@ class XMBViewModel @Inject constructor(
     // The preview plays its own audio: the gate owns playback for a real launch, and a preview
     // must never touch the gate. Same singleton player, so the two can never sound different.
     private val uiMediaAudioPlayer: com.playfieldportal.core.ui.media.UiMediaAudioPlayer,
+    // The notification panel's durable half, and the settings behind it. The panel's RUNNING half
+    // never reaches the repository — it lives in [runningTasks] below (plan section 4.2).
+    private val notificationRepository: com.playfieldportal.core.domain.repository.NotificationRepository,
+    // Shared with every other producer in the app (workers, scanners), so the panel shows all
+    // background work rather than only what the XMB itself started.
+    private val backgroundTasks: BackgroundTaskCenter,
 ) : ViewModel() {
 
     // Drives the "convert detected games?" multi-select picker after a Windows-card scan; the same
@@ -1523,8 +1573,6 @@ class XMBViewModel @Inject constructor(
     private var enabledCards: List<MemoryCard> = emptyList()
     private var baseThemeColors: PFPColors = DefaultPFPColors
 
-    // Background work is surfaced to the Android notification bar, not an in-app tray.
-    private val taskNotifier = BackgroundTaskNotifier(context)
 
     init {
         gamepadInputHandler.scope = viewModelScope
@@ -1556,6 +1604,7 @@ class XMBViewModel @Inject constructor(
         consumeWindowsSetupPrompt()
         observeLaunchRecoveryRequests()
         observeSetupState()
+        observeNotifications()
         // Live pin reconcile: an emulator UPDATING an already-pinned shortcut never fires the
         // confirm activity, so the OS callback is the only signal — import it the moment it lands.
         pcShortcutImporter.watchPinChanges(viewModelScope)
@@ -1599,8 +1648,12 @@ class XMBViewModel @Inject constructor(
                 cm.setPrimaryClip(android.content.ClipData.newPlainText(
                     "PFP launch diagnostic", request.diagnostic,
                 ))
-                taskNotifier.complete(
-                    "launch_diag_${request.gameId}", request.gameTitle, "Diagnostic copied to clipboard",
+                backgroundTasks.report(
+                    id = "launch_diag_${request.gameId}",
+                    label = request.gameTitle,
+                    message = "Diagnostic copied to clipboard",
+                    kind = com.playfieldportal.core.domain.model.NotificationKind.LAUNCH,
+                    action = NotificationAction.OpenGame(request.gameId),
                 )
             }
         }
@@ -5109,15 +5162,23 @@ class XMBViewModel @Inject constructor(
                     state = s,
                     idleMs = idleMs,
                 )
+                // Fourth consumer of the same clock: the notification panel's own pill.
+                val shouldShowNotifications =
+                    com.playfieldportal.feature.xmb.viewmodel.shouldShowNotificationHint(
+                        state = s,
+                        idleMs = idleMs,
+                    )
                 if (shouldShow != s.showContextMenuHint ||
                     shouldShowDrawer != s.showAppDrawerHint ||
-                    shouldShowSettings != s.showSettingsHint
+                    shouldShowSettings != s.showSettingsHint ||
+                    shouldShowNotifications != s.showNotificationHint
                 ) {
                     _uiState.update {
                         it.copy(
                             showContextMenuHint = shouldShow,
                             showAppDrawerHint = shouldShowDrawer,
                             showSettingsHint = shouldShowSettings,
+                            showNotificationHint = shouldShowNotifications,
                         )
                     }
                 }
@@ -5201,6 +5262,39 @@ class XMBViewModel @Inject constructor(
                 GamepadAction.SELECT        -> activateContextMenuItem()
                 GamepadAction.BACK,
                 GamepadAction.OPEN_CONTEXT_MENU      -> closeContextMenu()
+                else -> Unit
+            }
+            return
+        }
+
+        // ── START: open the panel, or close it ──
+        //
+        // Reached only after the pickers and the context menu above have had their turn, which is
+        // what keeps START = Confirm inside them. Everything else falls through to whichever
+        // overlay is actually on screen.
+        if (action == GamepadAction.HOME) {
+            when (startOutcome(state)) {
+                StartOutcome.CLOSE_PANEL -> { closeNotificationPanel(); return }
+                StartOutcome.OPEN_PANEL  -> { openNotificationPanel(); return }
+                StartOutcome.FORWARD_TO_OVERLAY -> Unit
+            }
+        }
+
+        // ── Notification panel captures ALL input while open ──
+        //
+        // Below the context-menu branch, so the △ menu it opens wins over the panel beneath it.
+        // Running rows are skipped by the cursor — they are a readout, not a list you act on.
+        if (state.notificationPanel != null) {
+            when (action) {
+                GamepadAction.NAVIGATE_UP   -> moveNotificationCursor(-1)
+                GamepadAction.NAVIGATE_DOWN -> moveNotificationCursor(+1)
+                GamepadAction.SELECT        -> activateNotificationRow()
+                // One menu, for the list. A row has a single meaning — open it — and Confirm
+                // already carries that, so a per-row menu would be a submenu holding one real
+                // entry plus two ways to say "read".
+                GamepadAction.OPEN_CONTEXT_MENU,
+                GamepadAction.CHANGE_SORT   -> openNotificationListMenu()
+                GamepadAction.BACK          -> closeNotificationPanel()
                 else -> Unit
             }
             return
@@ -5534,7 +5628,8 @@ class XMBViewModel @Inject constructor(
                     item?.packageName != null -> openAppContextMenu(item)
                 }
             }
-            // Start button no longer restarts / shows the boot screen.
+            // START is handled above, before the overlay ladder, so it can mean the same thing
+            // whether or not the panel is already open. Unreachable here.
             GamepadAction.HOME          -> Unit
             // Cycle the sort order of the current list (PSP-style). Whichever face button
             // the user's X/Y layout assigns to sort dispatches this.
@@ -5685,12 +5780,29 @@ class XMBViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(hubMatching = true, hubSyncAll = 0 to 0) }
             refreshAchievementsHubIfVisible()
-            runCatching {
+            // Both achievement passes already carried an onProgress callback and neither ever
+            // reached the notifier, so the hub row was the only place their progress was visible.
+            val taskId = "achievement_match"
+            addBackgroundTask(
+                BackgroundTaskInfo(id = taskId, label = "Auto-matching games", kind = TaskKind.ACHIEVEMENT)
+            )
+            val matched = runCatching {
                 achievementAutoMatcher.matchUnlinked { done, total ->
+                    updateBackgroundTask(taskId, done, total)
                     _uiState.update { it.copy(hubSyncAll = done to total) }
                     refreshAchievementsHubIfVisible()
                 }
             }.onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
+            // The counts ARE the result. "Matching finished" says nothing about whether the thing
+            // the user wanted happened, and the unmatched tally is the number that tells them
+            // whether anything is left to link by hand.
+            matched.getOrNull()?.let { report ->
+                completeBackgroundTask(
+                    taskId,
+                    report.notificationLine(),
+                    NotificationAction.OpenCategory(BuiltInCategory.ACHIEVEMENTS),
+                )
+            } ?: failBackgroundTask(taskId, "Auto-matching failed")
             _uiState.update { it.copy(hubMatching = false, hubSyncAll = null) }
             refreshAchievementsHubIfVisible()
             syncAllCoinsFromHub()
@@ -5704,12 +5816,37 @@ class XMBViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(hubSyncAll = 0 to 0) }
             refreshAchievementsHubIfVisible()
-            runCatching {
+            val taskId = "achievement_sync"
+            addBackgroundTask(
+                BackgroundTaskInfo(id = taskId, label = "Syncing Shiba Coins", kind = TaskKind.ACHIEVEMENT)
+            )
+            val synced = runCatching {
                 achievementRepository.syncAllLinked { done, total ->
+                    updateBackgroundTask(taskId, done, total)
                     _uiState.update { it.copy(hubSyncAll = done to total) }
                     refreshAchievementsHubIfVisible()
                 }
             }.onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
+            synced.getOrNull()?.let { result ->
+                // A sync that could not reach a provider is a WARNING, not a success: "41 synced"
+                // over silently skipped providers is how a missing API key goes unnoticed.
+                if (result.missingCredentials) {
+                    backgroundTasks.report(
+                        id = taskId,
+                        label = "Syncing Shiba Coins",
+                        message = result.notificationLine(),
+                        severity = NotificationSeverity.WARNING,
+                        kind = com.playfieldportal.core.domain.model.NotificationKind.ACHIEVEMENT,
+                        action = NotificationAction.OpenSettingsScreen("settings_achievements_credentials"),
+                    )
+                } else {
+                    completeBackgroundTask(
+                        taskId,
+                        result.notificationLine(),
+                        NotificationAction.OpenCategory(BuiltInCategory.ACHIEVEMENTS),
+                    )
+                }
+            } ?: failBackgroundTask(taskId, "Coin sync failed")
             _uiState.update { it.copy(hubSyncAll = null) }
             refreshAchievementsHubIfVisible()
         }
@@ -5976,6 +6113,9 @@ class XMBViewModel @Inject constructor(
     private fun activateContextMenuItem() {
         val menu   = _uiState.value.activeContextMenu ?: return
         val itemId = menu.items.getOrNull(menu.selectedIndex)?.id ?: return
+
+        // ── Notification panel menus (one row, or the list) ──
+        if (handleNotificationMenuItem(menu, itemId)) return
 
         // ── Gaming category picker submenu — move or add game to another category ──
         if (itemId.startsWith("cat_") && menu.gameId != null && menu.categoryContext != null && menu.pendingAppAction != null) {
@@ -6909,17 +7049,20 @@ class XMBViewModel @Inject constructor(
             // <windows>/import exports, emu folder reconcile) — extension scanning means nothing
             // to it, and "Scan This Console" must behave exactly like the Library Manager action.
             if (platformId == WINDOWS_PLATFORM_ID) {
-                addBackgroundTask(BackgroundTaskInfo(id = taskId, label = "Scanning ${card.displayName}…", progress = null))
+                addBackgroundTask(
+                    BackgroundTaskInfo(id = taskId, label = "Scanning ${card.displayName}…", kind = TaskKind.SCAN)
+                )
                 val report = runCatching { pcGameScanner.scan() }
                     .onFailure { Timber.e(it, "PC scan failed") }
                     .getOrNull()
                 if (report == null) {
-                    failBackgroundTask(taskId, "PC scan failed")
+                    failBackgroundTask(taskId, "PC scan failed", NotificationAction.OpenMemoryCard(platformId))
                 } else {
                     memoryCardRepository.recordScan(platformId, System.currentTimeMillis())
                     completeBackgroundTask(
                         taskId,
                         if (report.newGames == 0) "No new PC games found" else report.message,
+                        NotificationAction.OpenMemoryCard(platformId),
                     )
                     // When the Goldberg installer is on, offer to convert every detected emu folder
                     // that has steam_settings but no achievements.json yet — the user picks which.
@@ -6927,7 +7070,9 @@ class XMBViewModel @Inject constructor(
                         convertPickerController.start(report.emu.missingSchema) { outcome ->
                             convertOutcomeMessage(outcome)?.let { msg ->
                                 val id = "schema_gen_$platformId"
-                                addBackgroundTask(BackgroundTaskInfo(id = id, label = "Achievement schemas", progress = null))
+                                addBackgroundTask(
+                                    BackgroundTaskInfo(id = id, label = "Achievement schemas", kind = TaskKind.ACHIEVEMENT)
+                                )
                                 completeBackgroundTask(id, msg)
                             }
                         }
@@ -6936,16 +7081,24 @@ class XMBViewModel @Inject constructor(
                 return@launch
             }
 
-            addBackgroundTask(BackgroundTaskInfo(id = taskId, label = "Scanning ${card.displayName}…", progress = null))
+            // No counts: LibraryScanner reports completion only, never per platform or on
+            // progress, so this bar is honestly indeterminate rather than faked. "n of m Memory
+            // Cards" is the named upgrade path (plan section 4.3) — it needs no counting pre-pass,
+            // which is the one thing the media-scan performance work must not pay for again.
+            addBackgroundTask(
+                BackgroundTaskInfo(id = taskId, label = "Scanning ${card.displayName}…", kind = TaskKind.SCAN)
+            )
             val outcome = libraryScanner.scanPlatform(platformId, removeMissing = true)
             when (outcome.status) {
                 ScanStatus.COMPLETED -> completeBackgroundTask(
                     taskId,
                     scanOutcomeMessage(outcome, removeMissing = true),
+                    NotificationAction.OpenMemoryCard(platformId),
                 )
                 else -> failBackgroundTask(
                     taskId,
                     scanOutcomeMessage(outcome, removeMissing = true),
+                    NotificationAction.OpenMemoryCard(platformId),
                 )
             }
         }
@@ -6959,20 +7112,31 @@ class XMBViewModel @Inject constructor(
     private fun scrapeMissingArtworkForPlatform(platformId: String) {
         viewModelScope.launch {
             val taskId = "scrape_missing_$platformId"
-            addBackgroundTask(BackgroundTaskInfo(id = taskId, label = "Scraping missing artwork: ${cardName(platformId)}", progress = 0f))
+            addBackgroundTask(
+                BackgroundTaskInfo(
+                    id = taskId,
+                    label = "Scraping missing artwork: ${cardName(platformId)}",
+                    kind = TaskKind.ARTWORK,
+                )
+            )
             runCatching {
+                // ScrapeProgress is the richest producer in the app: counts, per-item tallies and
+                // the title being fetched. All three reach the row now instead of being divided
+                // into a fraction and dropped.
                 artworkRepository.scrapeMissingForPlatform(platformId) { p ->
-                    updateBackgroundTask(taskId, p.current.toFloat() / p.total.coerceAtLeast(1))
+                    updateBackgroundTask(taskId, p.current, p.total, p.title)
                 }
             }.onSuccess { result ->
-                completeBackgroundTask(taskId,
+                completeBackgroundTask(
+                    taskId,
                     if (result.total == 0) "No games are missing artwork"
-                    else "${result.succeeded} of ${result.total} game(s) updated"
+                    else "${result.succeeded} of ${result.total} game(s) updated",
+                    NotificationAction.OpenMemoryCard(platformId),
                 )
                 loadItemsForCategory(currentCategory())
             }.onFailure {
                 if (it is kotlinx.coroutines.CancellationException) throw it
-                failBackgroundTask(taskId, "Artwork scrape failed")
+                failBackgroundTask(taskId, "Artwork scrape failed", NotificationAction.OpenMemoryCard(platformId))
             }
         }
     }
@@ -6981,20 +7145,28 @@ class XMBViewModel @Inject constructor(
     private fun updatePlatformMetadata(platformId: String) {
         viewModelScope.launch {
             val taskId = "update_metadata_$platformId"
-            addBackgroundTask(BackgroundTaskInfo(id = taskId, label = "Updating metadata: ${cardName(platformId)}", progress = 0f))
+            addBackgroundTask(
+                BackgroundTaskInfo(
+                    id = taskId,
+                    label = "Updating metadata: ${cardName(platformId)}",
+                    kind = TaskKind.METADATA,
+                )
+            )
             runCatching {
                 artworkRepository.updateMetadataForPlatform(platformId) { p ->
-                    updateBackgroundTask(taskId, p.current.toFloat() / p.total.coerceAtLeast(1))
+                    updateBackgroundTask(taskId, p.current, p.total)
                 }
             }.onSuccess { result ->
-                completeBackgroundTask(taskId,
+                completeBackgroundTask(
+                    taskId,
                     if (result.total == 0) "No games on this card"
-                    else "${result.succeeded} of ${result.total} game(s) updated"
+                    else "${result.succeeded} of ${result.total} game(s) updated",
+                    NotificationAction.OpenMemoryCard(platformId),
                 )
                 loadItemsForCategory(currentCategory())
             }.onFailure {
                 if (it is kotlinx.coroutines.CancellationException) throw it
-                failBackgroundTask(taskId, "Metadata update failed")
+                failBackgroundTask(taskId, "Metadata update failed", NotificationAction.OpenMemoryCard(platformId))
             }
         }
     }
@@ -7031,26 +7203,178 @@ class XMBViewModel @Inject constructor(
     // Background work is reported through the Android notification bar. We keep a
     // tiny in-memory label map so progress/complete updates can re-title the same
     // notification without the caller having to re-supply the label each time.
-    private val taskLabels = mutableMapOf<String, String>()
+    // Running work is NOT owned here any more. It lives in the shared BackgroundTaskCenter, which
+    // every producer in the app reports to — the artwork and metadata workers, the media scanners,
+    // the Steam import — not just the tasks the XMB starts. Before that, anything begun outside
+    // this ViewModel reached the Android shade and the panel never heard about it.
+    //
+    // These four stay as private helpers because the call sites below read better for them, and
+    // because they are the seam the plan describes; each is now one line.
 
-    private fun addBackgroundTask(task: BackgroundTaskInfo) {
-        taskLabels[task.id] = task.label
-        taskNotifier.running(task.id, task.label, task.progress)
+    private fun observeNotifications() {
+        viewModelScope.launch {
+            notificationRepository.observeAll().collect { rows ->
+                _uiState.update { it.copy(notifications = rows).withClampedNotificationCursor() }
+            }
+        }
+        viewModelScope.launch {
+            notificationRepository.observeUnreadCount().collect { count ->
+                _uiState.update { it.copy(unreadNotifications = count) }
+            }
+        }
+        viewModelScope.launch {
+            backgroundTasks.running.collect { tasks ->
+                _uiState.update { it.copy(runningTasks = tasks).withClampedNotificationCursor() }
+            }
+        }
     }
 
-    private fun updateBackgroundTask(id: String, progress: Float) {
-        val label = taskLabels[id] ?: return
-        taskNotifier.running(id, label, progress.coerceIn(0f, 1f))
+    private fun addBackgroundTask(task: BackgroundTaskInfo) = backgroundTasks.start(task)
+
+    private fun updateBackgroundTask(id: String, current: Int, total: Int, detail: String? = null) =
+        backgroundTasks.progress(id, current, total, detail)
+
+    private fun completeBackgroundTask(
+        id: String,
+        message: String? = null,
+        action: NotificationAction = NotificationAction.None,
+    ) = backgroundTasks.complete(id, message, action)
+
+    private fun failBackgroundTask(
+        id: String,
+        message: String,
+        action: NotificationAction = NotificationAction.None,
+    ) = backgroundTasks.fail(id, message, action)
+
+    // ── Notification panel ──────────────────────────────────────────────
+
+    /** Keeps the cursor on a selectable row when the list changes under it (a clear, a new post). */
+    private fun XMBUiState.withClampedNotificationCursor(): XMBUiState {
+        val panel = notificationPanel ?: return this
+        val rows = buildNotificationRows(runningTasks, notifications)
+        return copy(notificationPanel = panel.copy(cursor = rows.clampCursor(panel.cursor)))
     }
 
-    private fun completeBackgroundTask(id: String, message: String? = null) {
-        val label = taskLabels.remove(id) ?: "Done"
-        taskNotifier.complete(id, label, message)
+    private fun notificationRows(state: XMBUiState = _uiState.value) =
+        buildNotificationRows(state.runningTasks, state.notifications)
+
+    /** The status-strip bell. The same toggle START drives, so the two ways in cannot diverge. */
+    fun onToggleNotificationPanel() {
+        markTouchInput()
+        if (_uiState.value.notificationPanel != null) closeNotificationPanel() else openNotificationPanel()
     }
 
-    private fun failBackgroundTask(id: String, message: String) {
-        val label = taskLabels.remove(id) ?: "Task failed"
-        taskNotifier.failed(id, label, message)
+    private fun openNotificationPanel() {
+        menuSound.play(MenuSound.SELECT)
+        val cursor = notificationRows().firstSelectableIndex()
+        _uiState.update { it.copy(notificationPanel = NotificationPanelState(cursor = cursor)) }
+    }
+
+    fun closeNotificationPanel() {
+        menuSound.play(MenuSound.BACK)
+        _uiState.update { it.copy(notificationPanel = null) }
+    }
+
+    private fun moveNotificationCursor(delta: Int) {
+        val panel = _uiState.value.notificationPanel ?: return
+        val next = notificationRows().moveCursor(panel.cursor, delta)
+        if (next == panel.cursor) {
+            gamepadInputHandler.cancelRepeat()
+            return
+        }
+        menuSound.play(MenuSound.SCROLL)
+        _uiState.update { it.copy(notificationPanel = panel.copy(cursor = next)) }
+    }
+
+    fun onNotificationRowTapped(index: Int) {
+        markTouchInput()
+        val panel = _uiState.value.notificationPanel ?: return
+        _uiState.update { it.copy(notificationPanel = panel.copy(cursor = index)) }
+        activateNotificationRow()
+    }
+
+    /** Confirm on a history row: mark it read, then go wherever it points. */
+    private fun activateNotificationRow() {
+        val state = _uiState.value
+        val panel = state.notificationPanel ?: return
+        val notification = notificationRows(state).notificationAt(panel.cursor) ?: return
+        menuSound.play(MenuSound.SELECT)
+        viewModelScope.launch { notificationRepository.markRead(notification.id) }
+        runNotificationAction(notification)
+    }
+
+    /**
+     * Where a row goes when it is opened.
+     *
+     * [NotificationAction.None] and the not-yet-implemented [NotificationAction.OpenUrl] both
+     * degrade to the read-only info dialog rather than doing nothing: a row that looks inert when
+     * pressed is worse than one that admits it has only text to offer.
+     */
+    private fun runNotificationAction(notification: PfpNotification) {
+        _uiState.update { it.copy(notificationPanel = null) }
+        when (val action = notification.action) {
+            is NotificationAction.OpenCategory -> {
+                val index = _uiState.value.categories.indexOfFirst { it.id == action.categoryId }
+                if (index >= 0) onCategorySelected(index) else showNotificationText(notification)
+            }
+            is NotificationAction.OpenMemoryCard -> openPlatformFolder(action.platformId)
+            is NotificationAction.OpenGame ->
+                _uiState.update { it.copy(activeGameId = action.gameId, activeGameAutoLaunch = false) }
+            is NotificationAction.OpenSettingsScreen ->
+                _uiState.update { it.copy(activeSettingsScreen = action.routeId) }
+            // The only action that leaves the app, so it waits for the RSS channel that will own
+            // it (plan section 8).
+            is NotificationAction.OpenUrl -> showNotificationText(notification)
+            NotificationAction.None -> showNotificationText(notification)
+        }
+    }
+
+    private fun showNotificationText(notification: PfpNotification) {
+        _uiState.update {
+            it.copy(infoDialog = InfoDialogState(notification.title, notification.body.orEmpty()))
+        }
+    }
+
+    fun onNotificationOptionsTapped() {
+        markTouchInput()
+        openNotificationListMenu()
+    }
+
+    /**
+     * Options for the list. Clear All is always offered, and it empties the history without
+     * touching running work: those tasks post their own fresh rows when they finish.
+     */
+    private fun openNotificationListMenu() {
+        if (_uiState.value.notificationPanel == null) return
+        _uiState.update {
+            it.copy(
+                activeContextMenu = XMBContextMenu(
+                    title = "Notifications",
+                    items = listOf(
+                        XMBContextMenuItem(NotificationMenuIds.MARK_ALL_READ, "Mark All Read"),
+                        XMBContextMenuItem(NotificationMenuIds.CLEAR_READ, "Clear Read"),
+                        XMBContextMenuItem(NotificationMenuIds.CLEAR_ALL, "Clear All", isDestructive = true),
+                    ),
+                    notificationListMenu = true,
+                ),
+            )
+        }
+    }
+
+    /** Routes a pick from the notification menu. Returns true when the menu was that one. */
+    private fun handleNotificationMenuItem(menu: XMBContextMenu, itemId: String): Boolean {
+        if (!menu.notificationListMenu) return false
+        closeContextMenu()
+        viewModelScope.launch {
+            when (itemId) {
+                NotificationMenuIds.MARK_ALL_READ -> notificationRepository.markAllRead()
+                NotificationMenuIds.CLEAR_READ -> notificationRepository.clearRead()
+                // Empties the history and leaves runningTasks alone: clearing the tray can never
+                // cancel a scan, because a scan was never a row.
+                NotificationMenuIds.CLEAR_ALL -> notificationRepository.clearAll()
+            }
+        }
+        return true
     }
 
     // ── Category / platform selection ─────────────────────────────────────────
@@ -8420,10 +8744,20 @@ class XMBViewModel @Inject constructor(
                 gameRepository.setFavorite(id, true)
             }.onSuccess {
                 Timber.i("App shortcut favorited: $packageName")
-                taskNotifier.complete("shortcut_fav_$packageName", label, "Added to Favorites")
+                backgroundTasks.report(
+                    id = "shortcut_fav_$packageName",
+                    label = label,
+                    message = "Added to Favorites",
+                    severity = NotificationSeverity.SUCCESS,
+                )
             }.onFailure { e ->
                 Timber.e(e, "Failed to add app to Favorites: $packageName")
-                taskNotifier.failed("shortcut_fav_$packageName", label, "Couldn't add to Favorites: ${e.message}")
+                backgroundTasks.report(
+                    id = "shortcut_fav_$packageName",
+                    label = label,
+                    message = "Couldn't add to Favorites: ${e.message}",
+                    severity = NotificationSeverity.ERROR,
+                )
             }
         }
     }
@@ -8434,7 +8768,12 @@ class XMBViewModel @Inject constructor(
                 .onSuccess { id -> openCollectionPicker(id) }
                 .onFailure { e ->
                     Timber.e(e, "Failed to prepare app shortcut for collection: $packageName")
-                    taskNotifier.failed("shortcut_col_$packageName", label, "Couldn't create shortcut: ${e.message}")
+                    backgroundTasks.report(
+                        id = "shortcut_col_$packageName",
+                        label = label,
+                        message = "Couldn't create shortcut: ${e.message}",
+                        severity = NotificationSeverity.ERROR,
+                    )
                 }
         }
     }
@@ -8443,7 +8782,13 @@ class XMBViewModel @Inject constructor(
         if (hostPackage == null || shortcutId == null) return
         launcherShortcutRepository.launch(hostPackage, shortcutId).onFailure { e ->
             Timber.e(e, "Failed to launch shortcut $hostPackage/$shortcutId")
-            taskNotifier.failed("launch_sc_$shortcutId", hostPackage, "Couldn't launch: ${e.message}")
+            backgroundTasks.report(
+                id = "launch_sc_$shortcutId",
+                label = hostPackage,
+                message = "Couldn't launch: ${e.message}",
+                severity = NotificationSeverity.ERROR,
+                kind = com.playfieldportal.core.domain.model.NotificationKind.LAUNCH,
+            )
         }
     }
 
@@ -8460,7 +8805,13 @@ class XMBViewModel @Inject constructor(
             context.startActivity(launch)
         }.onFailure { e ->
             Timber.e(e, "Failed to launch captured shortcut: $label")
-            taskNotifier.failed("launch_intent_${label.hashCode()}", label, "Couldn't launch: ${e.message}")
+            backgroundTasks.report(
+                id = "launch_intent_${label.hashCode()}",
+                label = label,
+                message = "Couldn't launch: ${e.message}",
+                severity = NotificationSeverity.ERROR,
+                kind = com.playfieldportal.core.domain.model.NotificationKind.LAUNCH,
+            )
         }
     }
 

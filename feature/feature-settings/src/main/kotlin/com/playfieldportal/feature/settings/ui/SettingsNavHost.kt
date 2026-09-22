@@ -37,6 +37,7 @@ val SETTINGS_SCREEN_ROUTES: Set<String> = setOf(
     "settings_themes",
     "settings_collections",
     "settings_display",
+    "settings_notifications",
     "settings_audio",
     "settings_controller",
     "settings_backup",
@@ -137,6 +138,7 @@ fun SettingsNavHost(
                 modifier = modifier,
             )
             "settings_collections" -> CollectionsSettingsScreen(onBack = onBack, modifier = modifier)
+            "settings_notifications" -> NotificationSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_display"    -> DisplaySettingsScreen(
                 onBack = onBack,
                 onOpenXmbLayoutAdjust = onOpenXmbLayoutAdjust,

@@ -20,6 +20,7 @@ import com.playfieldportal.core.data.database.dao.LibrarySourceDao
 import com.playfieldportal.core.data.database.dao.MemoryCardDao
 import com.playfieldportal.core.data.database.dao.MusicFolderDao
 import com.playfieldportal.core.data.database.dao.MusicTrackDao
+import com.playfieldportal.core.data.database.dao.NotificationDao
 import com.playfieldportal.core.data.database.dao.PlaylistDao
 import com.playfieldportal.core.data.database.dao.PlaySessionDao
 import com.playfieldportal.core.data.database.dao.ProviderGameLinkDao
@@ -51,6 +52,7 @@ import com.playfieldportal.core.data.database.entity.LibrarySourceEntity
 import com.playfieldportal.core.data.database.entity.MemoryCardEntity
 import com.playfieldportal.core.data.database.entity.MusicFolderEntity
 import com.playfieldportal.core.data.database.entity.MusicTrackEntity
+import com.playfieldportal.core.data.database.entity.NotificationEntity
 import com.playfieldportal.core.data.database.entity.PlaylistEntity
 import com.playfieldportal.core.data.database.entity.PlaylistTrackEntity
 import com.playfieldportal.core.data.database.entity.PlaySessionEntity
@@ -106,8 +108,9 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         AchievementMatchNoteEntity::class,
         SteamOwnedGameEntity::class,
         SteamNoAchievementsEntity::class,
+        NotificationEntity::class,
     ],
-    version = 44,
+    version = 45,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -137,6 +140,7 @@ abstract class PFPDatabase : RoomDatabase() {
     abstract fun backupDao(): BackupDao
     abstract fun artworkRecordDao(): ArtworkRecordDao
     abstract fun artworkImportReportDao(): ArtworkImportReportDao
+    abstract fun notificationDao(): NotificationDao
     abstract fun ssMediaCacheDao(): SsMediaCacheDao
     abstract fun accountAchievementSetDao(): AccountAchievementSetDao
     abstract fun accountAchievementDao(): AccountAchievementDao
@@ -1283,6 +1287,51 @@ abstract class PFPDatabase : RoomDatabase() {
                         arrayOf<Any>(store, storeId, id),
                     )
                 }
+            }
+        }
+
+        // v45 — the in-app notification panel's durable half. One new table and nothing else:
+        // no column is added, renamed or dropped anywhere, so this is trivially non-destructive.
+        //
+        // source_key is UNIQUE so a post carrying one replaces the row already holding it — a
+        // Memory Card that fails four times is one unread row, not four. SQLite treats NULLs as
+        // distinct in a unique index, so keyless rows still append freely.
+        //
+        // Running work is deliberately absent from this table (plan section 4.2): progress is
+        // process state, so persisting it would strand a phantom "Scanning... 40%" row after a
+        // force-stop with nothing alive left to finish or fail it.
+        val MIGRATION_44_45 = object : Migration(44, 45) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS notifications (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        kind TEXT NOT NULL,
+                        severity TEXT NOT NULL,
+                        title TEXT NOT NULL,
+                        body TEXT,
+                        source_key TEXT,
+                        action_type TEXT,
+                        action_arg TEXT,
+                        payload TEXT,
+                        created_at INTEGER NOT NULL,
+                        read_at INTEGER
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_notifications_created_at ON notifications (created_at)"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_notifications_read_at ON notifications (read_at)"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_notifications_kind ON notifications (kind)"
+                )
+                db.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS index_notifications_source_key " +
+                        "ON notifications (source_key)"
+                )
             }
         }
     }

@@ -8,7 +8,9 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
-import com.playfieldportal.core.ui.notification.BackgroundTaskNotifier
+import com.playfieldportal.core.domain.model.NotificationAction
+import com.playfieldportal.core.domain.model.TaskKind
+import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.CancellationException
@@ -27,13 +29,16 @@ class MetadataScrapeWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted params: WorkerParameters,
     private val artworkRepository: ArtworkRepository,
+    // The shared sink: the in-app notification panel and the Android shade at once. Building a
+    // BackgroundTaskNotifier here reached the shade only, so a scrape started from Settings ran
+    // and finished without the panel ever hearing about it.
+    private val tasks: BackgroundTaskCenter,
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
-        val notifier = BackgroundTaskNotifier(applicationContext)
         val mode = inputData.getString(KEY_MODE) ?: MODE_MISSING
         val label = if (mode == MODE_ALL) "Re-scraping all games" else "Scraping missing artwork"
-        notifier.running(TASK_ID, label, null)
+        tasks.start(TASK_ID, label, TaskKind.ARTWORK)
         var lastNotified = 0L
 
         val onProgress: (ScrapeProgress) -> Unit = { p ->
@@ -42,10 +47,9 @@ class MetadataScrapeWorker @AssistedInject constructor(
             val now = System.currentTimeMillis()
             if (now - lastNotified >= 500 || p.current == p.total) {
                 lastNotified = now
-                notifier.running(
-                    TASK_ID, "$label — ${p.current}/${p.total}",
-                    if (p.total > 0) p.current.toFloat() / p.total else null,
-                )
+                // The counts go in whole now; the center derives the bar and the panel row
+                // shows "14 / 56" and the title, instead of only a percentage.
+                tasks.progress(TASK_ID, p.current, p.total, p.title)
             }
             setProgressAsync(
                 workDataOf(
@@ -63,9 +67,10 @@ class MetadataScrapeWorker @AssistedInject constructor(
         return try {
             val result = if (mode == MODE_ALL) artworkRepository.reScrapeAllGames(onProgress)
             else artworkRepository.scrapeMissingOnly(onProgress)
-            notifier.complete(
-                TASK_ID, "Artwork scrape finished",
+            tasks.complete(
+                TASK_ID,
                 "${result.succeeded} succeeded, ${result.failed} failed of ${result.total}",
+                NotificationAction.OpenSettingsScreen("settings_artwork"),
             )
             Result.success(
                 workDataOf(
@@ -76,11 +81,11 @@ class MetadataScrapeWorker @AssistedInject constructor(
                 )
             )
         } catch (e: CancellationException) {
-            notifier.complete(TASK_ID, "Artwork scrape cancelled", "Artwork fetched so far is kept")
+            tasks.complete(TASK_ID, "Cancelled — artwork fetched so far is kept")
             throw e
         } catch (e: Exception) {
             Timber.e(e, "Scrape batch failed")
-            notifier.failed(TASK_ID, "Artwork scrape failed", e.message ?: "Unexpected error")
+            tasks.fail(TASK_ID, e.message ?: "Unexpected error")
             Result.failure(workDataOf(KEY_ERROR to (e.message ?: "Unexpected error")))
         }
     }

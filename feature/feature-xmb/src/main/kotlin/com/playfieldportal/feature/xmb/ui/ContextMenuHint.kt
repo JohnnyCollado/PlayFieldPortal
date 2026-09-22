@@ -24,8 +24,8 @@ import com.playfieldportal.core.ui.preview.PfpPreview
 // glyphs track both the controller display style and a swapped X/Y layout, mirroring the
 // reference PSP UI.
 //
-// The pill carries up to two prompts:
-//   [ {CHANGE_SORT} Sort  {OPEN_CONTEXT_MENU} Options ]
+// The pill carries up to three prompts:
+//   [ {CHANGE_SORT} Sort  {OPEN_CONTEXT_MENU} Options  {HOME} Notifications ]
 // Sort appears only where an X/Square press really re-sorts the list on screen
 // (XMBUiState.canSortCurrentList), and Options only where the focused item really has a
 // context menu (XMBUiState.focusedItemHasContextMenu). Both are conditional because a pill
@@ -38,6 +38,19 @@ import com.playfieldportal.core.ui.preview.PfpPreview
 // The pill chrome itself is the shared core-ui [ControllerHintBar] — the App Drawer renders the
 // same pill for its own actions (see feature-appbar's AppDrawerHintBar).
 
+/**
+ * Where an idle hint pill sits, anywhere in the launcher: bottom-right, against the screen edge.
+ *
+ * Shared rather than repeated so every surface that fades one in — the crossbar, the notification
+ * panel — puts it in the same place. A helper that moves depending on which screen raised it is a
+ * helper the eye has to hunt for, which is most of the value gone.
+ */
+val HintPillEndPadding = 20.dp
+val HintPillBottomPadding = 24.dp
+
+/** Raised clear of the touch App Drawer button on the surfaces where that button is also up. */
+val HintPillBottomPaddingAboveDrawerButton = 76.dp
+
 @Composable
 fun ContextMenuHint(
     modifier: Modifier = Modifier,
@@ -45,10 +58,20 @@ fun ContextMenuHint(
     showSort: Boolean = false,
     /** Show the Options half — the focused item has a context menu. */
     showOptions: Boolean = true,
+    /**
+     * Show the Notifications half — START opens the panel.
+     *
+     * Last, and unconditional on the XMB: unlike Sort and Options it does not depend on what has
+     * focus, and it is the only affordance for a surface that is otherwise advertised by one
+     * small bell. On a controller the bell is a plain readout with no press target, so this pill
+     * is where the panel is discovered at all.
+     */
+    showNotifications: Boolean = true,
 ) {
     val items = buildList {
         if (showSort) add(ControllerPromptItem(GamepadAction.CHANGE_SORT, "Sort"))
         if (showOptions) add(ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"))
+        if (showNotifications) add(ControllerPromptItem(GamepadAction.HOME, "Notifications"))
     }
     ControllerHintBar(items = items, modifier = modifier)
 }

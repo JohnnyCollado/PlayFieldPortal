@@ -18,8 +18,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -101,15 +103,30 @@ object XmbStatusIcons {
 
 // ── PSP-style full-width status strip ────────────────────────────────────────
 //
-// Layout:  DATE  ┊  TIME  [bg-task badge]          [BT] [WiFi] [Signal] [Bat] %
+// Layout:  DATE  ┊  TIME  ┊  SORT        [🔔] [Ctrl] [BT] [WiFi] [Signal] [Bat] %
+//
+// The bell LEADS the right group, and that placement is the point rather than an accident: every
+// icon behind it is conditional — a controller connects, Bluetooth goes off, cellular drops — so
+// any later position would slide around as hardware comes and goes. First means fixed, which is
+// what a button needs and a status readout does not.
+//
+// (The left group's old comment promised a "[bg-task badge]" slot that was never implemented and
+// is not what this plan used; the notification button is the right group's, not the left's.)
 
 @Composable
 fun XmbPspStatusStrip(
     sortLabel: String? = null,
-    // When the last input was touch, the sort label becomes a tappable chip that cycles the sort
-    // order; on controller it stays a plain label (X / Square cycles it).
-    showSortButton: Boolean = false,
+    // True when the last input was touch. Both tappable things in this bar are gated on it: the
+    // sort label becomes a chip that cycles the order, and the bell becomes a button that opens
+    // the notification panel. On a controller both fall back to plain readouts, because X cycles
+    // the sort and START opens the panel — and the idle hint pill names both.
+    showTouchControls: Boolean = false,
     onSortTapped: () -> Unit = {},
+    // Unread history entries, and whether any background work is running right now — the bell's
+    // two "something happened" states. See [NotificationButton].
+    unreadNotifications: Int = 0,
+    notificationsRunning: Boolean = false,
+    onNotificationsTapped: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -161,13 +178,13 @@ fun XmbPspStatusStrip(
             // the sort order; controller: a plain label (X / Square cycles it).
             if (sortLabel != null) {
                 StripSeparator()
-                if (showSortButton) {
+                if (showTouchControls) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(Color(0x24FFFFFF))
+                            .clip(PillShape)
+                            .background(PillFill)
                             .clickable(onClick = onSortTapped)
                             .padding(horizontal = 8.dp, vertical = 2.dp),
                     ) {
@@ -189,6 +206,12 @@ fun XmbPspStatusStrip(
             verticalAlignment     = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(7.dp),
         ) {
+            NotificationButton(
+                unread = unreadNotifications,
+                running = notificationsRunning,
+                tappable = showTouchControls,
+                onTap = onNotificationsTapped,
+            )
             if (sys.controllerConnected) {
                 Icon(
                     imageVector        = Icons.Filled.SportsEsports,
@@ -219,6 +242,82 @@ fun XmbPspStatusStrip(
             Text(
                 text       = "$batteryLevel%",
                 color      = if (batteryLevel <= 20 && !isCharging) LowBatteryTint else StripPrimary,
+                fontSize   = StripFontSize,
+                fontWeight = FontWeight.Medium,
+            )
+        }
+    }
+}
+
+/**
+ * The bell: a tappable pill under touch, a plain readout under a controller.
+ *
+ * Exactly the sort chip's rule, for the same reason. A pill says *pressable* before the glyph
+ * inside it says anything — which is what this needs on touch, where it is the only interactive
+ * element in a group of passive indicators. But under a controller there is nothing to press: the
+ * panel opens on START, so a permanent button-looking surface would be advertising a target the
+ * user cannot aim at, which is what the sort chip's own gate exists to avoid.
+ *
+ * The controller half of the affordance is the idle hint pill, which names START ▸ Notifications.
+ *
+ * Never hidden in either mode. At zero unread with nothing running the bell sits dimmed at
+ * [StripMuted] — present and quiet. Hiding it would remove the only thing advertising that the
+ * panel exists, and a user on a HOME-screen device has no shade habit to fall back on.
+ *
+ * The glyph is Material's bell for now; `status_notifications` becomes a themeable slot alongside
+ * the other `status_*` icons once its art lands (plan section 5).
+ */
+@Composable
+private fun NotificationButton(
+    unread: Int,
+    running: Boolean,
+    tappable: Boolean,
+    onTap: () -> Unit,
+) {
+    // The count wins when both apply: "3 unread" is more actionable than "something is running",
+    // and the running state is already spelled out by a live bar inside the panel.
+    val active = unread > 0 || running
+    val tint = if (active) StripPrimary else StripMuted
+    // Idle sits a step under the sort chip's 0x24 so a bell with nothing to say recedes without
+    // losing its shape; active matches the chip exactly.
+    val fill = if (active) PillFill else PillFillIdle
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = if (tappable) {
+            Modifier
+                .clip(PillShape)
+                .background(fill)
+                .clickable(onClick = onTap)
+                .padding(horizontal = 8.dp, vertical = 2.dp)
+        } else {
+            // No surface and no click target: it sits with the other status icons, spaced by the
+            // group's own 7.dp rather than carrying the chip's internal padding.
+            Modifier
+        },
+    ) {
+        Box(contentAlignment = Alignment.TopEnd) {
+            Icon(
+                imageVector        = Icons.Filled.Notifications,
+                contentDescription = if (unread > 0) "Notifications, $unread unread" else "Notifications",
+                tint               = tint,
+                modifier           = Modifier.size(13.dp),
+            )
+            // The activity mark: a small dot riding the bell while work is in flight, shown only
+            // when there is no count to show instead.
+            if (running && unread == 0) {
+                Box(
+                    Modifier
+                        .size(5.dp)
+                        .clip(CircleShape)
+                        .background(StripPrimary),
+                )
+            }
+        }
+        if (unread > 0) {
+            Text(
+                text       = unread.toString(),
+                color      = StripPrimary,
                 fontSize   = StripFontSize,
                 fontWeight = FontWeight.Medium,
             )
@@ -327,6 +426,12 @@ private fun StripSeparator() {
 
 private val StripHeight   = 28.dp
 private val StripFontSize = 12.sp
+
+// The strip's pill: one shape and one fill, shared by the sort chip and the notification button so
+// the two tappable things in this bar cannot drift into looking like different kinds of control.
+private val PillShape    = RoundedCornerShape(6.dp)
+private val PillFill     = Color(0x24FFFFFF)
+private val PillFillIdle = Color(0x14FFFFFF)
 private val LowBatteryTint = Color(0xFFFF6B6B)
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

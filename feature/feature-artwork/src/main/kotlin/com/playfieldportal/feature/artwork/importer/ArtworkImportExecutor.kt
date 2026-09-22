@@ -51,6 +51,9 @@ class ArtworkImportExecutor @Inject constructor(
     private val reportDao: ArtworkImportReportDao,
     private val videoSnapTranscoder: com.playfieldportal.feature.artwork.video.VideoSnapTranscoder,
     private val identityRecorder: com.playfieldportal.feature.artwork.portable.ArtworkIdentityRecorder,
+    // The import report already summarises what was rejected; this puts that summary where the
+    // user will actually meet it, instead of only in a table nothing surfaces.
+    private val notificationRepository: com.playfieldportal.core.domain.repository.NotificationRepository,
 ) {
     data class Progress(val done: Int, val total: Int, val label: String)
 
@@ -164,10 +167,49 @@ class ArtworkImportExecutor @Inject constructor(
                     )
                 )
             }.onFailure { Timber.e(it, "Could not persist import report") }
+            runCatching { postImportNotification(summary) }
+                .onFailure { Timber.w(it, "Could not post the import notification") }
         }
         Timber.i("Import finished: %s", summary)
         if (cancelled) throw CancellationException("Import cancelled")
         summary
+    }
+
+    /**
+     * One row per import, carrying the part a user has to act on.
+     *
+     * WARNING rather than SUCCESS whenever anything was rejected — ambiguous, unmatched or failed
+     * items are the whole reason the report exists, and a green row saying "412 imported" over
+     * thirty silently skipped files is how that gets missed. The action opens Settings > Artwork,
+     * where the full report lives.
+     */
+    private suspend fun postImportNotification(summary: ImportSummary) {
+        val rejected = summary.ambiguous + summary.unmatched + summary.failed
+        val severity = when {
+            summary.cancelled -> com.playfieldportal.core.domain.model.NotificationSeverity.WARNING
+            rejected > 0 -> com.playfieldportal.core.domain.model.NotificationSeverity.WARNING
+            else -> com.playfieldportal.core.domain.model.NotificationSeverity.SUCCESS
+        }
+        val headline = when {
+            summary.cancelled -> "Artwork import cancelled"
+            rejected > 0 -> "Artwork imported, ${rejected} item(s) need review"
+            else -> "Artwork imported"
+        }
+        notificationRepository.post(
+            kind = com.playfieldportal.core.domain.model.NotificationKind.ARTWORK,
+            severity = severity,
+            title = "$headline — ${summary.imported} file(s) from ${summary.sourceLabel}",
+            body = buildString {
+                append("${summary.imported} imported, ${summary.skipped} skipped, ")
+                append("${summary.failed} failed, ${summary.ambiguous} ambiguous, ")
+                append("${summary.unmatched} unmatched.")
+            },
+            // Keyed by the source, so re-importing the same folder replaces its row rather than
+            // stacking one per attempt.
+            sourceKey = "artwork_import:${summary.sourceLabel}",
+            action = com.playfieldportal.core.domain.model.NotificationAction
+                .OpenSettingsScreen("settings_artwork"),
+        )
     }
 
     // ── Per-game work ─────────────────────────────────────────────────────────

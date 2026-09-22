@@ -17,6 +17,7 @@ import com.playfieldportal.core.data.database.dao.LibrarySourceDao
 import com.playfieldportal.core.data.database.dao.MemoryCardDao
 import com.playfieldportal.core.data.database.dao.MusicFolderDao
 import com.playfieldportal.core.data.database.dao.MusicTrackDao
+import com.playfieldportal.core.data.database.dao.NotificationDao
 import com.playfieldportal.core.data.database.dao.PlaylistDao
 import com.playfieldportal.core.data.database.dao.PlaySessionDao
 import com.playfieldportal.core.data.database.dao.PlatformDao
@@ -32,10 +33,15 @@ import com.playfieldportal.core.data.database.dao.VideoPlaylistDao
 import com.playfieldportal.core.data.repository.CategoryRepositoryImpl
 import com.playfieldportal.core.data.repository.GameRepositoryImpl
 import com.playfieldportal.core.data.repository.MusicRepositoryImpl
+import com.playfieldportal.core.data.repository.NotificationPreferences
+import com.playfieldportal.core.data.repository.NotificationRepositoryImpl
 import com.playfieldportal.core.data.repository.PhotoRepositoryImpl
 import com.playfieldportal.core.data.repository.VideoRepositoryImpl
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.core.domain.repository.MusicRepository
+import com.playfieldportal.core.domain.repository.NotificationRepository
+import com.playfieldportal.core.domain.repository.NotificationRetention
+import com.playfieldportal.core.domain.repository.NotificationSettings
 import com.playfieldportal.core.domain.repository.PhotoRepository
 import com.playfieldportal.core.domain.repository.VideoRepository
 import dagger.Binds
@@ -107,6 +113,7 @@ object DatabaseModule {
             PFPDatabase.MIGRATION_41_42,
             PFPDatabase.MIGRATION_42_43,
             PFPDatabase.MIGRATION_43_44,
+            PFPDatabase.MIGRATION_44_45,
         )
         .build()
 
@@ -140,6 +147,7 @@ object DatabaseModule {
     @Provides fun provideBackupDao(db: PFPDatabase): BackupDao = db.backupDao()
     @Provides fun provideArtworkRecordDao(db: PFPDatabase): ArtworkRecordDao = db.artworkRecordDao()
     @Provides fun provideArtworkImportReportDao(db: PFPDatabase): ArtworkImportReportDao = db.artworkImportReportDao()
+    @Provides fun provideNotificationDao(db: PFPDatabase): NotificationDao = db.notificationDao()
 }
 
 @Module
@@ -161,4 +169,19 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindPhotoRepository(impl: PhotoRepositoryImpl): PhotoRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindNotificationRepository(impl: NotificationRepositoryImpl): NotificationRepository
+
+    // The retention window the repository reads on every write; DataStore-backed so
+    // Settings > Notifications and the prune path can never disagree about it.
+    @Binds
+    @Singleton
+    abstract fun bindNotificationRetention(impl: NotificationPreferences): NotificationRetention
+
+    // Read by the shared BackgroundTaskCenter in core-ui, which cannot see this module.
+    @Binds
+    @Singleton
+    abstract fun bindNotificationSettings(impl: NotificationPreferences): NotificationSettings
 }

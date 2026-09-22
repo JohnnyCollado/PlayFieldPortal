@@ -11,7 +11,8 @@ import com.playfieldportal.core.domain.model.VideoLibrary
 import com.playfieldportal.core.domain.repository.MusicRepository
 import com.playfieldportal.core.domain.repository.PhotoRepository
 import com.playfieldportal.core.domain.repository.VideoRepository
-import com.playfieldportal.core.ui.notification.BackgroundTaskNotifier
+import com.playfieldportal.core.domain.model.NotificationAction
+import com.playfieldportal.core.domain.model.TaskKind
 import com.playfieldportal.feature.library.scanner.MusicScanResult
 import com.playfieldportal.feature.library.scanner.MusicScanner
 import com.playfieldportal.feature.library.scanner.PhotoScanResult
@@ -29,6 +30,7 @@ import timber.log.Timber
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
+import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
 
 /**
  * The one place a media (re)scan runs.
@@ -59,11 +61,13 @@ class WizardMediaScanRunner @Inject constructor(
     private val videoRepository: VideoRepository,
     private val videoScanner: VideoScanner,
     @RescanApplicationScope private val scope: CoroutineScope,
+    // The shared sink, replacing a privately built BackgroundTaskNotifier: media scans reached the
+    // Android shade and the in-app notification panel never heard about them.
+    private val tasks: BackgroundTaskCenter,
 ) {
-    private val notifier = BackgroundTaskNotifier(context)
 
     /**
-     * The notifier, but only for a scan the USER asked for.
+     * The task sink, but only for a scan the USER asked for.
      *
      * Automatic passes — the resume/mount sweep and the freshness check when a card is opened —
      * report nothing. Opening the Video card should not post "Scanning Movies" followed a beat
@@ -72,7 +76,7 @@ class WizardMediaScanRunner @Inject constructor(
      *
      * Failures are deliberately NOT routed through this — see the Error branches.
      */
-    private fun progressFor(force: Boolean): BackgroundTaskNotifier? = notifier.takeIf { force }
+    private fun progressFor(force: Boolean): BackgroundTaskCenter? = tasks.takeIf { force }
     private val inFlight = ConcurrentHashMap<MediaRootKind, Job>()
 
     // One mutex PER KIND, not one shared lock. MUSIC, PHOTO and VIDEO write to disjoint
@@ -252,7 +256,7 @@ class WizardMediaScanRunner @Inject constructor(
     ): Outcome {
         val taskId = "music_scan_" + target.id
         val report = progressFor(force)
-        report?.running(taskId, "Scanning " + target.displayName, null)
+        report?.start(taskId, "Scanning " + target.displayName, TaskKind.SCAN)
         val existing = musicRepository.getTracksForFolder(target.id)
         var outcome = Outcome(target.trackCount, null)
         musicScanner.scan(
@@ -277,15 +281,15 @@ class WizardMediaScanRunner @Inject constructor(
                     outcome = Outcome(result.tracks.size, null)
                     report?.complete(
                         taskId,
-                        "Scanned " + target.displayName,
                         result.tracks.size.toString() + " tracks",
+                        NotificationAction.OpenCategory("music"),
                     )
                 }
                 is MusicScanResult.Error -> {
                     outcome = Outcome(0, result.message)
                     // Always surfaced, automatic or not: "Permission lost, re-select
                     // folder." is the one message a silent library needs to show.
-                    notifier.failed(taskId, "Scan failed", result.message)
+                    tasks.fail(taskId, result.message)
                 }
             }
         }
@@ -299,7 +303,7 @@ class WizardMediaScanRunner @Inject constructor(
     ): Outcome {
         val taskId = "photo_scan_" + target.id
         val report = progressFor(force)
-        report?.running(taskId, "Scanning " + target.displayName, null)
+        report?.start(taskId, "Scanning " + target.displayName, TaskKind.SCAN)
         var outcome = Outcome(target.photoCount, null)
         photoScanner.scan(
             library = target,
@@ -323,15 +327,15 @@ class WizardMediaScanRunner @Inject constructor(
                     outcome = Outcome(result.photos.size, null)
                     report?.complete(
                         taskId,
-                        "Scanned " + target.displayName,
                         result.photos.size.toString() + " photos",
+                        NotificationAction.OpenCategory("photos"),
                     )
                 }
                 is PhotoScanResult.Error -> {
                     outcome = Outcome(0, result.message)
                     // Always surfaced, automatic or not: "Permission lost, re-select
                     // folder." is the one message a silent library needs to show.
-                    notifier.failed(taskId, "Scan failed", result.message)
+                    tasks.fail(taskId, result.message)
                 }
             }
         }
@@ -345,7 +349,7 @@ class WizardMediaScanRunner @Inject constructor(
     ): Outcome {
         val taskId = "video_scan_" + target.id
         val report = progressFor(force)
-        report?.running(taskId, "Scanning " + target.displayName, null)
+        report?.start(taskId, "Scanning " + target.displayName, TaskKind.SCAN)
         var outcome = Outcome(target.videoCount, null)
         videoScanner.scan(
             library = target,
@@ -369,15 +373,15 @@ class WizardMediaScanRunner @Inject constructor(
                     outcome = Outcome(result.videos.size, null)
                     report?.complete(
                         taskId,
-                        "Scanned " + target.displayName,
                         result.videos.size.toString() + " videos",
+                        NotificationAction.OpenCategory("videos"),
                     )
                 }
                 is VideoScanResult.Error -> {
                     outcome = Outcome(0, result.message)
                     // Always surfaced, automatic or not: "Permission lost, re-select
                     // folder." is the one message a silent library needs to show.
-                    notifier.failed(taskId, "Scan failed", result.message)
+                    tasks.fail(taskId, result.message)
                 }
             }
         }

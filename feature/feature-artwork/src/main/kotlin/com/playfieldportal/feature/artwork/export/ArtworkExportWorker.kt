@@ -13,7 +13,8 @@ import com.playfieldportal.core.data.database.dao.ArtworkImportReportDao
 import com.playfieldportal.core.data.database.entity.ArtworkImportReportEntity
 import com.playfieldportal.core.data.platform.PlatformFolderHintResolver
 import com.playfieldportal.core.data.repository.ArtworkFolderRepository
-import com.playfieldportal.core.ui.notification.BackgroundTaskNotifier
+import com.playfieldportal.core.domain.model.NotificationAction
+import com.playfieldportal.core.domain.model.TaskKind
 import com.playfieldportal.feature.artwork.importer.ImportSummary
 import com.playfieldportal.feature.artwork.portable.ArtworkPathResolver
 import com.playfieldportal.feature.artwork.portable.PortableArtworkLibrary
@@ -23,6 +24,7 @@ import kotlinx.coroutines.CancellationException
 import timber.log.Timber
 import java.util.Locale
 import java.util.UUID
+import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
 
 /**
  * ES-DE-compatible export: copies the library's standard media directories into a user-picked
@@ -42,10 +44,13 @@ class ArtworkExportWorker @AssistedInject constructor(
     private val folderRepository: ArtworkFolderRepository,
     private val platformResolver: PlatformFolderHintResolver,
     private val reportDao: ArtworkImportReportDao,
+    // The shared sink: the in-app notification panel and the Android shade at once.
+    // Building a BackgroundTaskNotifier here reached the shade only, so this work ran and
+    // finished without the panel ever hearing about it.
+    private val tasks: BackgroundTaskCenter,
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
-        val notifier = BackgroundTaskNotifier(applicationContext)
         val destUriString = inputData.getString(KEY_DEST_TREE_URI)
             ?: return Result.failure(workDataOf(KEY_ERROR to "No destination folder"))
         val destTree = Uri.parse(destUriString)
@@ -63,7 +68,7 @@ class ArtworkExportWorker @AssistedInject constructor(
         var bytes = 0L
         var processed = 0
         var cancelled = false
-        notifier.running(TASK_ID, LABEL, null)
+        tasks.start(TASK_ID, LABEL, TaskKind.ARTWORK)
 
         try {
             // Artwork/{platform} children plus any legacy root-level platform dirs (v2 layout).
@@ -89,7 +94,9 @@ class ArtworkExportWorker @AssistedInject constructor(
                             copied++; bytes += file.sizeBytes ?: 0L
                         } else failed++
                         if (processed % PROGRESS_STRIDE == 0) {
-                            notifier.running(TASK_ID, LABEL, null)
+                            // No total up front: the export walks the tree as it copies, so
+                            // the bar stays honestly indeterminate and the count rides setProgress.
+                            tasks.start(TASK_ID, LABEL, TaskKind.ARTWORK)
                             setProgress(workDataOf(KEY_PROGRESS to processed))
                         }
                     }
@@ -99,17 +106,21 @@ class ArtworkExportWorker @AssistedInject constructor(
             cancelled = true
         } catch (e: Exception) {
             Timber.e(e, "Export failed")
-            notifier.failed(TASK_ID, "Artwork export failed", e.message ?: "Unexpected error")
+            tasks.fail(TASK_ID, e.message ?: "Unexpected error", NotificationAction.OpenSettingsScreen("settings_artwork"))
             persistReport(startedAt, copied, skipped, failed, bytes, cancelled = false)
             return Result.failure(workDataOf(KEY_ERROR to (e.message ?: "Unexpected error")))
         }
 
         persistReport(startedAt, copied, skipped, failed, bytes, cancelled)
         if (cancelled) {
-            notifier.complete(TASK_ID, "Artwork export cancelled", "$copied files exported before cancelling")
+            tasks.complete(TASK_ID, "Cancelled — $copied file(s) exported first")
             throw CancellationException("Export cancelled")
         }
-        notifier.complete(TASK_ID, "Artwork export finished", "$copied copied, $skipped already present, $failed failed")
+        tasks.complete(
+            TASK_ID,
+            "$copied copied, $skipped already present, $failed failed",
+            NotificationAction.OpenSettingsScreen("settings_artwork"),
+        )
         return Result.success(workDataOf(KEY_COPIED to copied, KEY_FAILED to failed))
     }
 

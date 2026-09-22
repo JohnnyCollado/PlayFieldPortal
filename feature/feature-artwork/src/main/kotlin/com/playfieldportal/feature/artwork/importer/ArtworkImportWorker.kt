@@ -8,7 +8,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
-import com.playfieldportal.core.ui.notification.BackgroundTaskNotifier
+import com.playfieldportal.core.domain.model.TaskKind
 import com.playfieldportal.feature.artwork.portable.PortableArtworkLibrary
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -16,6 +16,7 @@ import kotlinx.coroutines.CancellationException
 import timber.log.Timber
 import java.io.File
 import java.util.UUID
+import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
 
 /**
  * Runs an approved import plan in the background — survives leaving the settings screen, shows
@@ -30,10 +31,13 @@ class ArtworkImportWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted params: WorkerParameters,
     private val executor: ArtworkImportExecutor,
+    // The shared sink: the in-app notification panel and the Android shade at once.
+    // Building a BackgroundTaskNotifier here reached the shade only, so this work ran and
+    // finished without the panel ever hearing about it.
+    private val tasks: BackgroundTaskCenter,
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
-        val notifier = BackgroundTaskNotifier(applicationContext)
         val planFile = resolvePlanFile(applicationContext, inputData.getString(KEY_PLAN_FILE_NAME))
             ?: return Result.failure(workDataOf(KEY_ERROR to "Import plan not found"))
         val plan = ImportPlan.parse(planFile.readText())
@@ -43,7 +47,7 @@ class ArtworkImportWorker @AssistedInject constructor(
         }.getOrDefault(PortableArtworkLibrary.Transfer.COPY)
 
         val label = "Importing artwork — ${plan.sourceLabel}"
-        notifier.running(TASK_ID, label, null)
+        tasks.start(TASK_ID, label, TaskKind.ARTWORK)
         var lastShown = 0
 
         return try {
@@ -51,7 +55,7 @@ class ArtworkImportWorker @AssistedInject constructor(
                 // Throttle: a 50k-item run must not post 50k notifications/progress updates.
                 if (progress.done - lastShown >= PROGRESS_STRIDE || progress.done == progress.total) {
                     lastShown = progress.done
-                    notifier.running(TASK_ID, label, progress.done.toFloat() / progress.total.coerceAtLeast(1))
+                    tasks.progress(TASK_ID, progress.done, progress.total, progress.label)
                     setProgressAsync(
                         workDataOf(
                             KEY_PROGRESS_DONE to progress.done,
@@ -61,19 +65,18 @@ class ArtworkImportWorker @AssistedInject constructor(
                     )
                 }
             }
-            notifier.complete(
-                TASK_ID, "Artwork import finished",
-                "${summary.imported} imported, ${summary.skipped} skipped, ${summary.failed} failed",
-            )
+            // The executor posts the detailed import row (with its WARNING for anything that
+            // needed review); this just retires the RUNNING entry.
+            tasks.cancel(TASK_ID)
             planFile.delete()
             Result.success(workDataOf(KEY_IMPORTED to summary.imported, KEY_FAILED to summary.failed))
         } catch (e: CancellationException) {
-            notifier.complete(TASK_ID, "Artwork import cancelled", null)
+            tasks.complete(TASK_ID, "Import cancelled")
             planFile.delete()
             throw e
         } catch (e: Exception) {
             Timber.e(e, "Artwork import failed")
-            notifier.failed(TASK_ID, "Artwork import failed", e.message ?: "Unexpected error")
+            tasks.fail(TASK_ID, e.message ?: "Unexpected error")
             planFile.delete()
             Result.failure(workDataOf(KEY_ERROR to (e.message ?: "Unexpected error")))
         }

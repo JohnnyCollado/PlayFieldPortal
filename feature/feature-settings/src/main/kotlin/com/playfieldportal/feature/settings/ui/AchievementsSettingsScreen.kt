@@ -1,5 +1,8 @@
 package com.playfieldportal.feature.settings.ui
 
+import com.playfieldportal.feature.achievements.detailLine
+import com.playfieldportal.feature.achievements.summaryLine
+
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -222,16 +225,12 @@ fun AchievementsSettingsScreen(
                         onClick = { viewModel.syncAll() },
                     )
                 }
+                // Same wording as the notification this run also leaves in the tray — both read
+                // from AchievementReportSummary, so they cannot describe one run two ways.
                 state.syncResult?.let { r ->
-                    val summary = buildString {
-                        append("${r.synced} synced")
-                        if (r.noCoins > 0) append(" · ${r.noCoins} no coins")
-                        if (r.failed > 0) append(" · ${r.failed} failed")
-                    }
                     SettingsRow(
-                        label = summary,
-                        sublabel = if (r.missingCredentials) "Some providers need credentials — tap to dismiss"
-                                   else "Tap to dismiss",
+                        label = r.summaryLine(),
+                        sublabel = r.detailLine()?.let { "$it — tap to dismiss" } ?: "Tap to dismiss",
                         onClick = { viewModel.dismissSyncResult() },
                     )
                 }
@@ -248,9 +247,8 @@ fun AchievementsSettingsScreen(
                 }
                 state.matchReport?.let { report ->
                     SettingsRow(
-                        label = "Matched ${report.matched} · Unmatched ${report.unmatched.size}",
-                        sublabel = if (report.unmatched.isEmpty()) "Tap to dismiss"
-                                   else "See each game's reason in the Shiba Library's Untracked view. Tap to dismiss",
+                        label = report.summaryLine(),
+                        sublabel = report.detailLine()?.let { "$it. Tap to dismiss" } ?: "Tap to dismiss",
                         onClick = { viewModel.dismissReport() },
                     )
                 }
