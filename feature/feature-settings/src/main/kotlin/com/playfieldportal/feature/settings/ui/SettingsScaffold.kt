@@ -971,6 +971,9 @@ class SettingsRowAction(
     val onLongPress: (() -> Unit)? = null,
     // Background color drawn behind the icon when this action holds controller focus.
     val actionFocusBackgroundColor: Color = Color.White.copy(alpha = 0.25f),
+    // Reports controller-focus changes on this action, so a screen can retarget its helper
+    // footer while the cursor sits on the action rather than the row (Logs ▸ Share).
+    val onFocusChanged: ((Boolean) -> Unit)? = null,
     val icon: @Composable () -> Unit,
 )
 
@@ -984,6 +987,8 @@ fun SettingsRow(
     focusKey: String? = null,
     leading: @Composable (() -> Unit)? = null,
     trailing: @Composable (() -> Unit)? = null,
+    // Drawn on the label's line, right after it — a small tag such as Logs' CURRENT badge.
+    labelTrailing: @Composable (() -> Unit)? = null,
     // Inline controller-reachable actions (e.g. Replace/Remove buttons), navigated via LEFT/RIGHT.
     actions: List<SettingsRowAction> = emptyList(),
     // Reports controller-focus changes so a screen can track which row is hovered (e.g. to
@@ -1074,13 +1079,19 @@ fun SettingsRow(
             Spacer(Modifier.width(16.dp))
         }
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = label,
-                color = (if (isFocused && cursorVisible && !(hideRowHighlightOnActionFocus && anyActionFocused)) Color.White else SettingsText)
-                    .let { if (enabled) it else it.copy(alpha = it.alpha * DISABLED_ROW_ALPHA) },
-                fontSize = 15.sp,
-                style = TextStyle(shadow = SettingsTextShadow),
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = label,
+                    color = (if (isFocused && cursorVisible && !(hideRowHighlightOnActionFocus && anyActionFocused)) Color.White else SettingsText)
+                        .let { if (enabled) it else it.copy(alpha = it.alpha * DISABLED_ROW_ALPHA) },
+                    fontSize = 15.sp,
+                    style = TextStyle(shadow = SettingsTextShadow),
+                )
+                if (labelTrailing != null) {
+                    Spacer(Modifier.width(8.dp))
+                    labelTrailing()
+                }
+            }
             if (!sublabel.isNullOrBlank()) {
                 Spacer(Modifier.height(2.dp))
                 Text(

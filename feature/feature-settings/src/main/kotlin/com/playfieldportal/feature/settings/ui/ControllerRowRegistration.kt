@@ -169,6 +169,7 @@ internal fun SettingsRowActionButton(
             .onFocusChanged { state ->
                 actionFocused = state.isFocused
                 onFocusedChanged(state.isFocused)
+                action.onFocusChanged?.invoke(state.isFocused)
                 if (state.isFocused) {
                     focusTracker(action.onClick)
                     reportFocused(actionFr)
