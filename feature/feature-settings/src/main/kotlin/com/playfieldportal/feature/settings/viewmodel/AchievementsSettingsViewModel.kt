@@ -8,20 +8,9 @@ import com.playfieldportal.feature.achievements.AchievementController
 import com.playfieldportal.core.domain.model.NotificationAction
 import com.playfieldportal.core.domain.model.NotificationKind
 import com.playfieldportal.core.domain.model.NotificationSeverity
-import com.playfieldportal.core.domain.model.TaskKind
-import com.playfieldportal.feature.achievements.BatchSyncResult
-import com.playfieldportal.feature.achievements.notificationLine
-import android.content.Context
-import com.playfieldportal.feature.achievements.RaAccountImporter
-import com.playfieldportal.feature.achievements.RaImportResult
-import com.playfieldportal.feature.achievements.SteamImportWorker
-import dagger.hilt.android.qualifiers.ApplicationContext
 import com.playfieldportal.feature.achievements.provider.steam.SteamRemoteDataSource
-import com.playfieldportal.feature.achievements.match.AchievementAutoMatcher
-import com.playfieldportal.feature.achievements.match.MatchReport
+import com.playfieldportal.feature.achievements.match.AchievementMatchAndUpdate
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -44,22 +33,19 @@ data class AchievementsSettingsUiState(
     val hasSteam: Boolean = false,
     val steamId64: String = "",
     val lastSyncedLabel: String = "Never",
-    // Match/sync/connection OUTCOMES are tray-only now (row + shade + notification cue); the screen
-    // keeps only the live progress fields below. Import results still surface here (separate flow).
+    // Match/update/clear/connection OUTCOMES are tray-only (row + shade + notification cue); the
+    // screen keeps only live progress, the paused state and the clear confirmation.
     val isMatching: Boolean = false,
     val matchDone: Int = 0,
     val matchTotal: Int = 0,
     val isSyncing: Boolean = false,
     val syncDone: Int = 0,
     val syncTotal: Int = 0,
-    val isImporting: Boolean = false,
-    val importDone: Int = 0,
-    val importTotal: Int = 0,
-    val importResult: RaImportResult? = null,
-    val isSteamImporting: Boolean = false,
-    val steamImportDone: Int = 0,
-    val steamImportTotal: Int = 0,
-    val steamImportSummary: String? = null,
+    /** Scheduled updates are paused after Clear all tracked achievements until a manual resync. */
+    val updatesPaused: Boolean = false,
+    /** The Clear all tracked achievements confirmation is open. */
+    val confirmClearVisible: Boolean = false,
+    val isClearing: Boolean = false,
 )
 
 // The four persisted account flows, folded together so the wallet flow fits combine's arity.
@@ -79,14 +65,8 @@ private data class Extra(
     val isSyncing: Boolean = false,
     val syncDone: Int = 0,
     val syncTotal: Int = 0,
-    val isImporting: Boolean = false,
-    val importDone: Int = 0,
-    val importTotal: Int = 0,
-    val importResult: RaImportResult? = null,
-    val isSteamImporting: Boolean = false,
-    val steamImportDone: Int = 0,
-    val steamImportTotal: Int = 0,
-    val steamImportSummary: String? = null,
+    val confirmClearVisible: Boolean = false,
+    val isClearing: Boolean = false,
 )
 
 private val DATE_FMT = SimpleDateFormat("MMM d, yyyy HH:mm", Locale.US)
@@ -94,76 +74,22 @@ private val DATE_FMT = SimpleDateFormat("MMM d, yyyy HH:mm", Locale.US)
 /**
  * Connect-accounts screen state. API keys are write-only: never read back into the UI (the fields
  * show a masked placeholder when configured), only the public identities are surfaced. Saving Steam
- * resolves a vanity name to a SteamID64 once and caches it. Also drives the batch auto-match.
+ * resolves a vanity name to a SteamID64 once and caches it. Also drives Auto-Match, "Update
+ * installed achievements" (the selective update — never an account-wide import) and the
+ * confirmed Clear all tracked achievements.
  */
 @HiltViewModel
 class AchievementsSettingsViewModel @Inject constructor(
     private val credentials: AchievementCredentialsProvider,
     private val steamApi: SteamRemoteDataSource,
-    private val autoMatcher: AchievementAutoMatcher,
+    private val matchAndUpdate: AchievementMatchAndUpdate,
     private val repository: AchievementController,
-    private val raImporter: RaAccountImporter,
-    // Settings has always shown these outcomes as a dismissible row that vanishes with the screen.
-    // The tray is where they survive: the same run started from the Shiba Coins hub already lands
-    // there, and a result the user has to be looking at Settings to ever see is the one they miss.
+    // Connection outcomes go to the tray; update and clear outcomes are reported by the selective
+    // sync itself, so every entry point words them the same way.
     private val tasks: com.playfieldportal.core.ui.notification.BackgroundTaskCenter,
-    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     private val extra = MutableStateFlow(Extra())
-
-    init {
-        // The Steam import is a WorkManager job (a large library takes 10-20 minutes) — this
-        // observer is the single source of its in-app state, so reopening the screen mid-import
-        // reattaches to the live run. getInstance is guarded because plain JVM unit tests have
-        // no WorkManager initialized.
-        runCatching { androidx.work.WorkManager.getInstance(context) }.getOrNull()?.let { wm ->
-            viewModelScope.launch {
-                wm.getWorkInfosForUniqueWorkFlow(SteamImportWorker.UNIQUE_NAME)
-                    .collect { infos -> onSteamImportWorkInfos(infos) }
-            }
-        }
-    }
-
-    private fun onSteamImportWorkInfos(infos: List<androidx.work.WorkInfo>) {
-        val active = infos.firstOrNull { !it.state.isFinished }
-        if (active != null) {
-            val p = active.progress
-            extra.update {
-                it.copy(
-                    isSteamImporting = true,
-                    steamImportSummary = null,
-                    steamImportDone = p.getInt(SteamImportWorker.KEY_DONE, 0),
-                    steamImportTotal = p.getInt(SteamImportWorker.KEY_TOTAL, 0),
-                )
-            }
-            return
-        }
-        if (!extra.value.isSteamImporting) return
-        val finished = infos.maxByOrNull { it.state.ordinal }
-        val summary = when (finished?.state) {
-            androidx.work.WorkInfo.State.SUCCEEDED -> steamSummaryOf(finished.outputData)
-            androidx.work.WorkInfo.State.CANCELLED -> "Import cancelled — progress so far is kept"
-            else -> "Import failed — run again to resume"
-        }
-        extra.update { it.copy(isSteamImporting = false, steamImportSummary = summary) }
-    }
-
-    private fun steamSummaryOf(out: androidx.work.Data): String = when {
-        out.getBoolean(SteamImportWorker.KEY_MISSING_CREDENTIALS, false) ->
-            "Steam needs credentials — connect your account first"
-        out.getBoolean(SteamImportWorker.KEY_PROFILE_NOT_PUBLIC, false) ->
-            "Your Steam profile's Game Details are private"
-        else -> buildString {
-            append("${out.getInt(SteamImportWorker.KEY_IMPORTED, 0)} imported")
-            out.getInt(SteamImportWorker.KEY_NO_COINS, 0).takeIf { it > 0 }
-                ?.let { append(" · $it without achievements") }
-            out.getInt(SteamImportWorker.KEY_NO_PROGRESS, 0).takeIf { it > 0 }
-                ?.let { append(" · $it not played yet") }
-            out.getInt(SteamImportWorker.KEY_FAILED, 0).takeIf { it > 0 }
-                ?.let { append(" · $it failed") }
-        }
-    }
 
     private val accounts = combine(
         credentials.raUsernameFlow,
@@ -180,7 +106,8 @@ class AchievementsSettingsViewModel @Inject constructor(
         extra,
         repository.observeWallet(),
         credentials.goldbergInstallerEnabledFlow,
-    ) { acc, ex, wallet, goldberg ->
+        repository.observeAutoUpdatesPaused(),
+    ) { acc, ex, wallet, goldberg, paused ->
         AchievementsSettingsUiState(
             enabled = acc.enabled,
             localSteamTrackingEnabled = acc.localSteamEnabled,
@@ -197,14 +124,9 @@ class AchievementsSettingsViewModel @Inject constructor(
             isSyncing = ex.isSyncing,
             syncDone = ex.syncDone,
             syncTotal = ex.syncTotal,
-            isImporting = ex.isImporting,
-            importDone = ex.importDone,
-            importTotal = ex.importTotal,
-            importResult = ex.importResult,
-            isSteamImporting = ex.isSteamImporting,
-            steamImportDone = ex.steamImportDone,
-            steamImportTotal = ex.steamImportTotal,
-            steamImportSummary = ex.steamImportSummary,
+            updatesPaused = paused,
+            confirmClearVisible = ex.confirmClearVisible,
+            isClearing = ex.isClearing,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AchievementsSettingsUiState())
 
@@ -278,120 +200,77 @@ class AchievementsSettingsViewModel @Inject constructor(
         }
     }
 
-    private var syncJob: Job? = null
-
     /**
-     * Batch-links every unlinked game and surfaces a report of what couldn't be matched, then
-     * immediately syncs all linked games so freshly matched games get their coin data in the same
-     * pass (a match without a sync would leave every new link at zero coins).
-     *
-     * Matching always runs first: a sync already in flight is cancelled and re-run in full after
-     * the match, so a long-running sync can never block or delay auto-matching.
+     * Auto-Match, then "Update installed achievements" in the same pass so freshly matched games
+     * get their coins. Only games on this device are matched; the update fetches the new matches
+     * first. One run at a time, and never while a clear is in progress.
      */
     fun autoMatch() {
-        if (extra.value.isMatching) return
+        val ex = extra.value
+        if (ex.isMatching || ex.isSyncing || ex.isClearing) return
         viewModelScope.launch {
-            syncJob?.cancelAndJoin()
             extra.update { it.copy(isMatching = true, matchDone = 0, matchTotal = 0) }
-            // Same task id the hub uses: it is the same operation, so it is one tray row either
-            // way rather than one per entry point.
-            tasks.start(MATCH_TASK_ID, "Auto-matching games", TaskKind.ACHIEVEMENT)
-            val report = autoMatcher.matchUnlinked { done, total ->
-                tasks.progress(MATCH_TASK_ID, done, total)
-                extra.update { it.copy(matchDone = done, matchTotal = total) }
-            }
-            tasks.complete(
-                MATCH_TASK_ID,
-                report.notificationLine(),
-                NotificationAction.OpenCategory("achievements"),
-            )
-            extra.update { it.copy(isMatching = false) }
-            launchSyncAll().join()
-        }
-    }
-
-    /** Refreshes coin data for every linked game at once, with a progress + result summary. */
-    fun syncAll() {
-        if (extra.value.isSyncing || extra.value.isMatching) return
-        launchSyncAll()
-    }
-
-    private fun launchSyncAll(): Job {
-        val job = viewModelScope.launch {
             try {
-                extra.update { it.copy(isSyncing = true, syncDone = 0, syncTotal = 0) }
-                tasks.start(SYNC_TASK_ID, "Syncing Shiba Coins", TaskKind.ACHIEVEMENT)
-                val result = repository.syncAllLinked { done, total ->
-                    tasks.progress(SYNC_TASK_ID, done, total)
-                    extra.update { it.copy(syncDone = done, syncTotal = total) }
-                }
-                // Missing credentials is a WARNING, not a success: "41 synced" over silently
-                // skipped providers is how a missing API key goes unnoticed.
-                if (result.missingCredentials) {
-                    tasks.report(
-                        id = SYNC_TASK_ID,
-                        label = "Syncing Shiba Coins",
-                        message = result.notificationLine(),
-                        severity = NotificationSeverity.WARNING,
-                        kind = NotificationKind.ACHIEVEMENT,
-                        action = NotificationAction.OpenSettingsScreen("settings_achievements_credentials"),
-                    )
-                } else {
-                    tasks.complete(
-                        SYNC_TASK_ID,
-                        result.notificationLine(),
-                        NotificationAction.OpenCategory("achievements"),
-                    )
-                }
-                extra.update { it.copy(isSyncing = false) }
+                matchAndUpdate.run(
+                    onMatchProgress = { done, total -> extra.update { it.copy(matchDone = done, matchTotal = total) } },
+                    onUpdateProgress = { done, total ->
+                        extra.update { it.copy(isMatching = false, isSyncing = true, syncDone = done, syncTotal = total) }
+                    },
+                )
             } finally {
-                // A cancelled sync (auto-match taking over) must not leave the spinner stuck, or
-                // a RUNNING row behind in the tray with nothing alive to finish it.
-                if (extra.value.isSyncing) {
-                    tasks.cancel(SYNC_TASK_ID)
-                    extra.update { it.copy(isSyncing = false) }
-                }
+                extra.update { it.copy(isMatching = false, isSyncing = false) }
             }
         }
-        syncJob = job
-        return job
     }
 
     /**
-     * Imports the account's whole RetroAchievements history as tracked entries. Resumable: an
-     * interrupted run's next attempt continues with the entries still missing coin detail.
+     * "Update installed achievements": the selective update of present, matched games — the only
+     * manual refresh, and the action that resumes scheduled updates after a clear. Progress stays
+     * on screen; the result goes to the tray.
      */
-    fun importRaHistory() {
-        if (extra.value.isImporting || extra.value.isSyncing || extra.value.isMatching) return
+    fun updateInstalledAchievements() {
+        val ex = extra.value
+        if (ex.isSyncing || ex.isMatching || ex.isClearing) return
         viewModelScope.launch {
+            extra.update { it.copy(isSyncing = true, syncDone = 0, syncTotal = 0) }
             try {
-                extra.update { it.copy(isImporting = true, importResult = null, importDone = 0, importTotal = 0) }
-                val result = raImporter.import { done, total ->
-                    extra.update { it.copy(importDone = done, importTotal = total) }
+                repository.updateInstalledAchievements { done, total ->
+                    extra.update { it.copy(syncDone = done, syncTotal = total) }
                 }
-                extra.update { it.copy(isImporting = false, importResult = result) }
             } finally {
-                if (extra.value.isImporting) extra.update { it.copy(isImporting = false) }
+                extra.update { it.copy(isSyncing = false) }
             }
         }
     }
 
-    /** Enqueues the Steam library import as background work (no-op if one is running). */
-    fun importSteamLibrary() {
-        SteamImportWorker.enqueue(context)
+    /** Stops a running update; everything saved so far is kept. */
+    fun cancelUpdate() = repository.cancelUpdate()
+
+    // ── Clear all tracked achievements ─────────────────────────────────────────
+
+    /** Opens the confirmation. Nothing is touched until [confirmClearAll]. */
+    fun requestClearAll() {
+        if (extra.value.isClearing) return
+        extra.update { it.copy(confirmClearVisible = true) }
     }
 
-    fun cancelSteamImport() {
-        SteamImportWorker.cancel(context)
-    }
+    /** Cancel, Back or a tap outside: closes the confirmation and changes nothing. */
+    fun dismissClearAll() = extra.update { it.copy(confirmClearVisible = false) }
 
-    private companion object {
-        // The XMB's Shiba Coins hub runs the same two operations under these ids, so whichever
-        // surface starts a run, it is one tray row rather than one per entry point.
-        const val MATCH_TASK_ID = "achievement_match"
-        const val SYNC_TASK_ID = "achievement_sync"
+    /**
+     * Clears every achievement record PFP stores after the user confirmed. Running achievement
+     * work is cancelled first; the result (or failure) is reported in the tray.
+     */
+    fun confirmClearAll() {
+        val ex = extra.value
+        if (!ex.confirmClearVisible || ex.isClearing) return
+        extra.update { it.copy(confirmClearVisible = false, isClearing = true) }
+        viewModelScope.launch {
+            try {
+                repository.clearAllTrackedAchievements()
+            } finally {
+                extra.update { it.copy(isClearing = false) }
+            }
+        }
     }
-
-    fun dismissImportResult() = extra.update { it.copy(importResult = null) }
-    fun dismissSteamImportSummary() = extra.update { it.copy(steamImportSummary = null) }
 }

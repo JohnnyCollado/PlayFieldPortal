@@ -76,6 +76,7 @@ class LaunchDispatcherTest {
             gameBootGate = gameBootGate,
             menuSound = menuSound,
             autoCoreMemory = autoCoreMemory,
+            handoffTracker = GameHandoffTracker({ now }, emptySet()),
         )
     }
 

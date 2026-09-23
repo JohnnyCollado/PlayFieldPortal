@@ -223,6 +223,18 @@ class LocalSteamDiscovery @Inject constructor(
         }.getOrNull().orEmpty()
     }
 
+    /**
+     * Parses the progress file at [uri], or null when it can't be opened or isn't a readable
+     * progress file — "unknown", which must never be taken as "nothing earned".
+     */
+    suspend fun readProgressOrNull(uri: Uri): List<EmuEarnedAchievement>? = withContext(Dispatchers.IO) {
+        runCatching {
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                EmuAchievementFile.parseOrNull(input.readBounded(EmuAchievementFile.MAX_BYTES).toString(Charsets.UTF_8))
+            }
+        }.getOrNull()
+    }
+
     private fun List<SafChild>.textOf(name: String, maxBytes: Int): String? {
         val file = firstOrNull { !it.isDirectory && it.name.equals(name, ignoreCase = true) }
             ?: return null

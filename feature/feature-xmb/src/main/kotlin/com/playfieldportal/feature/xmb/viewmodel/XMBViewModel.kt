@@ -57,7 +57,6 @@ import com.playfieldportal.core.domain.model.NotificationSeverity
 import com.playfieldportal.core.domain.model.PfpNotification
 import com.playfieldportal.core.domain.model.TaskKind
 import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
-import com.playfieldportal.feature.achievements.notificationLine
 import com.playfieldportal.feature.xmb.ui.buildNotificationRows
 import com.playfieldportal.feature.xmb.ui.clampCursor
 import com.playfieldportal.feature.xmb.ui.firstSelectableIndex
@@ -1425,7 +1424,9 @@ class XMBViewModel @Inject constructor(
     private val artworkStore: com.playfieldportal.feature.artwork.store.ArtworkStore,
     private val gameLaunchPreferences: com.playfieldportal.core.data.repository.GameLaunchPreferences,
     private val achievementRepository: com.playfieldportal.feature.achievements.AchievementController,
-    private val achievementAutoMatcher: com.playfieldportal.feature.achievements.match.AchievementAutoMatcher,
+    private val achievementMatchAndUpdate: com.playfieldportal.feature.achievements.match.AchievementMatchAndUpdate,
+    // Enqueues the scheduled achievement check when PFP is used (startup and each return).
+    private val achievementAutoUpdates: com.playfieldportal.feature.achievements.sync.AchievementAutoUpdateScheduler,
     private val achievementCredentials: com.playfieldportal.core.data.achievement.AchievementCredentialsProvider,
     private val windowsLibrarySetup: com.playfieldportal.core.data.repository.WindowsLibrarySetup,
     private val pcShortcutImporter: com.playfieldportal.feature.launcher.PcShortcutImporter,
@@ -1576,6 +1577,7 @@ class XMBViewModel @Inject constructor(
 
 
     init {
+        scheduleAchievementCheck()
         gamepadInputHandler.scope = viewModelScope
         observeContextMenuHintIdle()
         observeIconDisplayMode()
@@ -5740,7 +5742,7 @@ class XMBViewModel @Inject constructor(
     }
 
     // Opens the △ options menu for a Shiba Coins hub row — the Player Card, All Tracked Games,
-    // and Untracked all carry Sync All Coins and Auto-Matching, so the first-ever match/sync
+    // and Untracked all carry Update Installed Achievements and Auto-Matching, so the first-ever match/sync
     // (nothing tracked yet, no All Tracked row) is reachable from the card. Returns true when
     // [item] is one it owns.
     private fun openAchievementsContextMenu(item: XMBItem): Boolean {
@@ -5763,7 +5765,7 @@ class XMBViewModel @Inject constructor(
                         ),
                         XMBContextMenuItem(
                             "ach_sync_all",
-                            if (syncing) "Syncing…" else "Sync All Coins",
+                            if (syncing) "Updating…" else "Update Installed Achievements",
                         ),
                     ),
                     achievementsHubMenu = true,
@@ -5773,83 +5775,58 @@ class XMBViewModel @Inject constructor(
         return true
     }
 
-    // Auto-matches every unlinked game (the batch matcher's full ladder — RA hashes, Steam,
-    // Local Steam), then chains straight into Sync All so fresh links land with their coins.
-    // One run at a time; the hub rows show "Auto-matching… n / m" while the match pass runs.
+    // Auto-matches every unlinked game on this device (RA hashes, Steam, Local Steam), then runs
+    // "Update installed achievements" so fresh links land with their coins. One run at a time;
+    // the hub rows show "Auto-matching… n / m", then the update's progress. The tray messages
+    // ("Games recognized", the update's one result) come from the shared sequence itself.
     private fun autoMatchFromHub() {
         if (_uiState.value.hubSyncAll != null || _uiState.value.hubMatching) return
         viewModelScope.launch {
             _uiState.update { it.copy(hubMatching = true, hubSyncAll = 0 to 0) }
             refreshAchievementsHubIfVisible()
-            // Both achievement passes already carried an onProgress callback and neither ever
-            // reached the notifier, so the hub row was the only place their progress was visible.
-            val taskId = "achievement_match"
-            addBackgroundTask(
-                BackgroundTaskInfo(id = taskId, label = "Auto-matching games", kind = TaskKind.ACHIEVEMENT)
-            )
-            val matched = runCatching {
-                achievementAutoMatcher.matchUnlinked { done, total ->
-                    updateBackgroundTask(taskId, done, total)
-                    _uiState.update { it.copy(hubSyncAll = done to total) }
-                    refreshAchievementsHubIfVisible()
-                }
-            }.onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
-            // The counts ARE the result. "Matching finished" says nothing about whether the thing
-            // the user wanted happened, and the unmatched tally is the number that tells them
-            // whether anything is left to link by hand.
-            matched.getOrNull()?.let { report ->
-                completeBackgroundTask(
-                    taskId,
-                    report.notificationLine(),
-                    NotificationAction.OpenCategory(BuiltInCategory.ACHIEVEMENTS),
+            try {
+                achievementMatchAndUpdate.run(
+                    onMatchProgress = { done, total ->
+                        _uiState.update { it.copy(hubSyncAll = done to total) }
+                        refreshAchievementsHubIfVisible()
+                    },
+                    onUpdateProgress = { done, total ->
+                        _uiState.update { it.copy(hubMatching = false, hubSyncAll = done to total) }
+                        refreshAchievementsHubIfVisible()
+                    },
                 )
-            } ?: failBackgroundTask(taskId, "Auto-matching failed")
-            _uiState.update { it.copy(hubMatching = false, hubSyncAll = null) }
-            refreshAchievementsHubIfVisible()
-            syncAllCoinsFromHub()
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Auto-match from the hub failed")
+            } finally {
+                _uiState.update { it.copy(hubMatching = false, hubSyncAll = null) }
+                refreshAchievementsHubIfVisible()
+            }
         }
     }
 
-    // Refreshes coin data for every linked game, with progress on the hub row. One run at a time;
-    // re-triggering while active is a no-op (the menu label reads "Syncing…" then).
+    // "Update installed achievements" from the hub: the same selective update Settings and Player
+    // Status run (present, matched games only), with progress on the hub row. One run at a time;
+    // re-triggering while active is a no-op (the menu label reads "Updating…" then).
     private fun syncAllCoinsFromHub() {
         if (_uiState.value.hubSyncAll != null) return
         viewModelScope.launch {
             _uiState.update { it.copy(hubSyncAll = 0 to 0) }
             refreshAchievementsHubIfVisible()
-            val taskId = "achievement_sync"
-            addBackgroundTask(
-                BackgroundTaskInfo(id = taskId, label = "Syncing Shiba Coins", kind = TaskKind.ACHIEVEMENT)
-            )
-            val synced = runCatching {
-                achievementRepository.syncAllLinked { done, total ->
-                    updateBackgroundTask(taskId, done, total)
+            try {
+                achievementRepository.updateInstalledAchievements { done, total ->
                     _uiState.update { it.copy(hubSyncAll = done to total) }
                     refreshAchievementsHubIfVisible()
                 }
-            }.onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
-            synced.getOrNull()?.let { result ->
-                // A sync that could not reach a provider is a WARNING, not a success: "41 synced"
-                // over silently skipped providers is how a missing API key goes unnoticed.
-                if (result.missingCredentials) {
-                    backgroundTasks.report(
-                        id = taskId,
-                        label = "Syncing Shiba Coins",
-                        message = result.notificationLine(),
-                        severity = NotificationSeverity.WARNING,
-                        kind = com.playfieldportal.core.domain.model.NotificationKind.ACHIEVEMENT,
-                        action = NotificationAction.OpenSettingsScreen("settings_achievements_credentials"),
-                    )
-                } else {
-                    completeBackgroundTask(
-                        taskId,
-                        result.notificationLine(),
-                        NotificationAction.OpenCategory(BuiltInCategory.ACHIEVEMENTS),
-                    )
-                }
-            } ?: failBackgroundTask(taskId, "Coin sync failed")
-            _uiState.update { it.copy(hubSyncAll = null) }
-            refreshAchievementsHubIfVisible()
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Achievement update from the hub failed")
+            } finally {
+                _uiState.update { it.copy(hubSyncAll = null) }
+                refreshAchievementsHubIfVisible()
+            }
         }
     }
 
@@ -8535,6 +8512,8 @@ class XMBViewModel @Inject constructor(
         val packageName = game.packageName
         if (shortcutId != null && packageName != null) {
             launcherShortcutRepository.launch(packageName, shortcutId)
+                // Shortcut launches bypass the dispatcher; record the hand-off for the return check.
+                .onSuccess { launchDispatcher.noteShortcutHandoff(game) }
                 .onFailure { e ->
                     Timber.w(e, "Direct shortcut launch failed")
                     launchDispatcher.recordPreflightFailure(game, null, "Couldn't launch: ${e.message}")
@@ -9274,8 +9253,18 @@ class XMBViewModel @Inject constructor(
      * turning boot off skips BOTH of its media components, resume included (design rule 7).
      */
     fun onHostResumed() {
+        scheduleAchievementCheck()
         if (!bootEnabled || !bootOnResume) return
         _uiState.update { it.copy(showBootSequence = true) }
+    }
+
+    // PFP being used is the only trigger for the scheduled achievement check: it enqueues one
+    // constrained job, and only when a provider is past its 24-hour window (never a daily wake-up).
+    private fun scheduleAchievementCheck() {
+        viewModelScope.launch {
+            runCatching { achievementAutoUpdates.onAppUsed() }
+                .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it else Timber.w(it, "Achievement check scheduling failed") }
+        }
     }
 
     // ── GameBoot ──────────────────────────────────────────────────────────────

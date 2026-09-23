@@ -4,6 +4,12 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
+import com.playfieldportal.core.data.database.entity.AccountAchievementEntity
+import com.playfieldportal.core.data.database.entity.AccountAchievementSetEntity
+import com.playfieldportal.core.data.database.entity.AchievementProviderSyncStateEntity
+import com.playfieldportal.core.data.database.entity.AchievementTrackedIdentityEntity
+import com.playfieldportal.core.data.database.entity.ProviderGameLinkEntity
 import com.playfieldportal.core.data.database.entity.AppOverrideEntity
 import com.playfieldportal.core.data.database.entity.CollectionEntity
 import com.playfieldportal.core.data.database.entity.CollectionGameEntity
@@ -110,4 +116,47 @@ interface BackupDao {
 
     @Query("UPDATE themes SET is_active = (id = :id)")
     suspend fun setActiveTheme(id: String)
+
+    // ── Achievements (selective sync) ───────────────────────────────────
+    @Query("SELECT * FROM achievement_tracked_identities")   suspend fun getAchievementIdentities(): List<AchievementTrackedIdentityEntity>
+    @Query("SELECT * FROM achievement_provider_sync_state")  suspend fun getAchievementSyncStates(): List<AchievementProviderSyncStateEntity>
+    @Query("SELECT * FROM account_achievement_sets")         suspend fun getAchievementSets(): List<AccountAchievementSetEntity>
+    @Query("SELECT * FROM account_achievements")             suspend fun getAchievementCoins(): List<AccountAchievementEntity>
+    @Query("SELECT * FROM provider_game_links")              suspend fun getProviderGameLinks(): List<ProviderGameLinkEntity>
+
+    @Query("DELETE FROM achievement_tracked_identities")  suspend fun clearAchievementIdentities()
+    @Query("DELETE FROM achievement_provider_sync_state") suspend fun clearAchievementSyncStates()
+    @Query("DELETE FROM account_achievements")            suspend fun clearAchievementCoins()
+    @Query("DELETE FROM account_achievement_sets")        suspend fun clearAchievementSets()
+    @Query("DELETE FROM provider_game_links")             suspend fun clearProviderGameLinks()
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertAchievementIdentities(rows: List<AchievementTrackedIdentityEntity>)
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertAchievementSyncStates(rows: List<AchievementProviderSyncStateEntity>)
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertAchievementSets(rows: List<AccountAchievementSetEntity>)
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertAchievementCoins(rows: List<AccountAchievementEntity>)
+    @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insertProviderGameLinks(rows: List<ProviderGameLinkEntity>)
+
+    /**
+     * Replaces the achievement records with a backup's, in one transaction. Runs after games are
+     * restored; the caller passes only links whose game the backup restored.
+     */
+    @Transaction
+    suspend fun replaceAchievementRecords(
+        identities: List<AchievementTrackedIdentityEntity>,
+        syncStates: List<AchievementProviderSyncStateEntity>,
+        sets: List<AccountAchievementSetEntity>,
+        coins: List<AccountAchievementEntity>,
+        links: List<ProviderGameLinkEntity>,
+    ) {
+        clearAchievementCoins()
+        clearAchievementSets()
+        clearAchievementIdentities()
+        clearAchievementSyncStates()
+        clearProviderGameLinks()
+        insertAchievementIdentities(identities)
+        insertAchievementSyncStates(syncStates)
+        insertAchievementSets(sets)
+        insertAchievementCoins(coins)
+        insertProviderGameLinks(links)
+    }
 }

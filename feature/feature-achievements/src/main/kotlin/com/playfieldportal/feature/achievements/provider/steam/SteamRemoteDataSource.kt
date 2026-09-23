@@ -30,6 +30,24 @@ sealed interface SteamOwnedGamesResult {
     data class Failed(val reason: String) : SteamOwnedGamesResult
 }
 
+/** Outcome of a GetSchemaForGame request. */
+sealed interface SteamSchemaResult {
+    data class Success(val achievements: List<SteamSchemaAchievement>) : SteamSchemaResult
+
+    /** A real answer: the game has no achievements. */
+    data object NotFound : SteamSchemaResult
+    data object MissingCredentials : SteamSchemaResult
+    data class Failed(val reason: String) : SteamSchemaResult
+}
+
+/** Outcome of a GetPlayerAchievements request. */
+sealed interface SteamPlayerResult {
+    data class Success(val byName: Map<String, SteamPlayerAchievement>) : SteamPlayerResult
+    data object ProfileNotPublic : SteamPlayerResult
+    data object MissingCredentials : SteamPlayerResult
+    data class Failed(val reason: String) : SteamPlayerResult
+}
+
 @Singleton
 class SteamRemoteDataSource @Inject constructor(
     private val webApi: SteamWebApi,
@@ -85,49 +103,84 @@ class SteamRemoteDataSource @Inject constructor(
         )
     }
 
-    /** Fetches a game's coins for the configured user. [appId] is the Steam appid. */
+    /**
+     * Fetches a game's coins for the configured user in one go — schema, global rarity, then the
+     * player's unlocks. Read-only; used where nothing is cached (the provider-search preview).
+     * Tracked games go through SteamDetailFetcher, which caches schema and rarity separately.
+     */
     suspend fun fetch(appId: String): ProviderSyncResult {
-        val key = credentials.steamApiKey()?.takeIf { it.isNotBlank() }
-            ?: return ProviderSyncResult.MissingCredentials
-        val steamId = credentials.steamId64()?.takeIf { it.isNotBlank() }
-            ?: return ProviderSyncResult.MissingCredentials
+        val schemaCoins = when (val schema = fetchSchema(appId)) {
+            is SteamSchemaResult.Success -> schema.achievements
+            SteamSchemaResult.NotFound -> return ProviderSyncResult.NotFound
+            SteamSchemaResult.MissingCredentials -> return ProviderSyncResult.MissingCredentials
+            is SteamSchemaResult.Failed -> return ProviderSyncResult.Failed(schema.reason)
+        }
+        val percentByName = fetchGlobalRarity(appId).orEmpty()
+        val earnedByName = when (val player = fetchPlayerAchievements(appId)) {
+            is SteamPlayerResult.Success -> player.byName
+            SteamPlayerResult.ProfileNotPublic -> return ProviderSyncResult.ProfileNotPublic
+            SteamPlayerResult.MissingCredentials -> return ProviderSyncResult.MissingCredentials
+            is SteamPlayerResult.Failed -> return ProviderSyncResult.Failed(player.reason)
+        }
+        val coins = SteamCoinMapper.map(appId, schemaCoins, percentByName, earnedByName)
+        return ProviderSyncResult.Success(appId, enrichHiddenDescriptions(appId, coins))
+    }
 
+    /** The game's achievement schema (documented ISteamUserStats/GetSchemaForGame). */
+    suspend fun fetchSchema(appId: String): SteamSchemaResult {
+        val key = credentials.steamApiKey()?.takeIf { it.isNotBlank() }
+            ?: return SteamSchemaResult.MissingCredentials
         rate.await()
         val schema = runCatching { webApi.getSchemaForGame(key, appId) }
             .getOrElse { e ->
                 if (e is CancellationException) throw e
-                return ProviderSyncResult.Failed("schema request failed")
+                return SteamSchemaResult.Failed("schema request failed")
             }
-        val schemaCoins = schema.body()?.game?.availableGameStats?.achievements.orEmpty()
-        if (schemaCoins.isEmpty()) return ProviderSyncResult.NotFound
+        if (schema.code() == 401 || schema.code() == 403) return SteamSchemaResult.MissingCredentials
+        if (!schema.isSuccessful) return SteamSchemaResult.Failed("Steam returned ${schema.code()}")
+        val achievements = schema.body()?.game?.availableGameStats?.achievements.orEmpty()
+        return if (achievements.isEmpty()) SteamSchemaResult.NotFound else SteamSchemaResult.Success(achievements)
+    }
 
-        // Rarity is best-effort: a failed percentages call still syncs coins (rarity 0).
+    /**
+     * Global unlock percentages by apiname (documented GetGlobalAchievementPercentagesForApp, no
+     * key). Best-effort: null when the request fails, and coins then sync without rarity.
+     */
+    suspend fun fetchGlobalRarity(appId: String): Map<String, Double>? {
         rate.await()
-        val percentByName = runCatching { webApi.getGlobalAchievementPercentages(appId) }
+        return runCatching { webApi.getGlobalAchievementPercentages(appId) }
             .getOrElse { e ->
                 if (e is CancellationException) throw e
                 null
             }
             ?.body()?.achievementpercentages?.achievements
             ?.associate { it.name to it.percent }
-            .orEmpty()
+    }
 
+    /**
+     * The player's unlocks for [appId] (documented ISteamUserStats/GetPlayerAchievements). A 403 or
+     * a "not public" error is [SteamPlayerResult.ProfileNotPublic] — never zero unlocks.
+     */
+    suspend fun fetchPlayerAchievements(appId: String): SteamPlayerResult {
+        val key = credentials.steamApiKey()?.takeIf { it.isNotBlank() }
+            ?: return SteamPlayerResult.MissingCredentials
+        val steamId = credentials.steamId64()?.takeIf { it.isNotBlank() }
+            ?: return SteamPlayerResult.MissingCredentials
         rate.await()
         val player = runCatching { webApi.getPlayerAchievements(key, steamId, appId) }
             .getOrElse { e ->
                 if (e is CancellationException) throw e
-                return ProviderSyncResult.Failed("player request failed")
+                return SteamPlayerResult.Failed("player request failed")
             }
         val stats = player.body()?.playerstats
         if (player.code() == 403 ||
             (stats?.success == false && stats.error?.contains("not public", ignoreCase = true) == true)
         ) {
-            return ProviderSyncResult.ProfileNotPublic
+            return SteamPlayerResult.ProfileNotPublic
         }
-
-        val earnedByName = stats?.achievements?.associateBy { it.apiname }.orEmpty()
-        val coins = SteamCoinMapper.map(appId, schemaCoins, percentByName, earnedByName)
-        return ProviderSyncResult.Success(appId, enrichHiddenDescriptions(appId, steamId, coins))
+        if (player.code() == 401) return SteamPlayerResult.MissingCredentials
+        if (stats == null) return SteamPlayerResult.Failed("Steam returned ${player.code()}")
+        return SteamPlayerResult.Success(stats.achievements.associateBy { it.apiname })
     }
 
     /**
@@ -137,12 +190,12 @@ class SteamRemoteDataSource @Inject constructor(
      * page, a Valve markup change, an ambiguous title — returns the coins untouched, leaving the
      * UI's "Steam keeps this one's description secret" fallback in place. Never fails the sync.
      */
-    private suspend fun enrichHiddenDescriptions(
+    suspend fun enrichHiddenDescriptions(
         appId: String,
-        steamId: String,
         coins: List<com.playfieldportal.feature.achievements.api.SyncedCoin>,
     ): List<com.playfieldportal.feature.achievements.api.SyncedCoin> {
         if (coins.none { it.isHidden && it.isEarned && it.description.isBlank() }) return coins
+        val steamId = credentials.steamId64()?.takeIf { it.isNotBlank() } ?: return coins
         return runCatching {
             rate.await()
             val response = communityApi.achievementsPage(steamId, appId)

@@ -13,7 +13,7 @@ import javax.inject.Singleton
  * docs/local-steam-achievements-plan.md): the discovered appid against the Steam owned-games
  * cache. An empty cache means UNKNOWN (null) — `isOwned == false` alone never becomes
  * NOT_IN_LIBRARY, so classification never guesses. Refreshed by every scan and by every
- * completed Steam account import.
+ * Steam update check (which reads the owned-games list once).
  */
 @Singleton
 class LocalSteamOwnership @Inject constructor(
@@ -33,7 +33,7 @@ class LocalSteamOwnership @Inject constructor(
         return ownership
     }
 
-    /** Re-derives every LOCAL_STEAM link — the post-import upgrade path for UNKNOWN states. */
+    /** Re-derives every LOCAL_STEAM link — the upgrade path for UNKNOWN states after an owned-games refresh. */
     suspend fun refreshAll() {
         val links = linkDao.getByProvider(AchievementProvider.LOCAL_STEAM.name)
         links.forEach { link ->

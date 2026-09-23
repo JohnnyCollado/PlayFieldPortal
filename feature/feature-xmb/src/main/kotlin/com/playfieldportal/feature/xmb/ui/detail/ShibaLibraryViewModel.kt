@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.domain.achievement.AchievementProvider
+import com.playfieldportal.core.domain.achievement.AwaitingSyncGame
 import com.playfieldportal.core.domain.achievement.GameStanding
 import com.playfieldportal.core.domain.achievement.LibraryStanding
 import com.playfieldportal.core.domain.achievement.UntrackedGame
@@ -133,11 +134,14 @@ data class ShibaLibraryRow(
     val progress: Float,
     val coins: LibraryCoinCounts,
     val reason: String?,
+    /** A matched, installed game with no achievement data yet (e.g. after a clear). */
+    val awaitingSync: Boolean = false,
 ) {
+    /** Tracked rows show progress; [reason] rows (untracked, or awaiting sync) show the reason. */
     val isTracked: Boolean get() = reason == null
 
     /** An untracked game Confirm can send to the existing match flow. */
-    val canAttemptMatch: Boolean get() = !isTracked && coinsTarget != null
+    val canAttemptMatch: Boolean get() = !isTracked && !awaitingSync && coinsTarget != null
 }
 
 data class ShibaLibraryUiState(
@@ -244,7 +248,7 @@ fun shibaLibraryHelperItems(state: ShibaLibraryUiState): List<ControllerPromptIt
         val focused = state.focused
         val confirm = when {
             focused == null -> "Type"
-            focused.isTracked -> "View Achievements"
+            focused.isTracked || focused.awaitingSync -> "View Achievements"
             focused.canAttemptMatch -> "Attempt Match"
             else -> null
         }
@@ -444,7 +448,9 @@ class ShibaLibraryViewModel @Inject constructor(
         // Rows are built unsorted; the provider filter, query and sort all apply in pushRows, so a
         // filter or sort change never needs a rebuild.
         currentModeRows = when (_state.value.mode) {
-            ShibaLibraryMode.TRACKED -> standing.tracked.map { it.toRow(it.libraryGameId?.let(byId::get)) }
+            ShibaLibraryMode.TRACKED ->
+                standing.tracked.map { it.toRow(it.libraryGameId?.let(byId::get)) } +
+                    standing.awaitingSync.map { it.toRow(byId[it.gameId]) }
             ShibaLibraryMode.UNTRACKED -> standing.untracked.map { it.toRow(byId[it.gameId]) }
         }
         val wallet = standing.wallet
@@ -512,7 +518,9 @@ class ShibaLibraryViewModel @Inject constructor(
         coinsTarget = libraryGameId?.let { ShibaCoinsTarget.LibraryGame(it) }
             ?: ShibaCoinsTarget.AccountEntry(coins.provider, providerGameId),
         title = game?.displayTitle ?: title,
-        platformLabel = game?.platformId?.let(::platformDisplay) ?: providerLabel(coins.provider),
+        // A removed game keeps its cached coins as history; the label says why it never refreshes.
+        platformLabel = (game?.platformId?.let(::platformDisplay) ?: providerLabel(coins.provider)) +
+            if (isInstalled) "" else " · Not installed",
         provider = coins.provider,
         platformSortKey = platformGroupOf(coins.provider, game?.platformId),
         icon0Uri = game?.iconUri,
@@ -524,6 +532,21 @@ class ShibaLibraryViewModel @Inject constructor(
             bronze = coins.earned.bronze,
         ),
         reason = null,
+    )
+
+    // Matched but never synced: shown under Tracked as "Awaiting sync" rather than a false 0%.
+    private fun AwaitingSyncGame.toRow(game: Game?) = ShibaLibraryRow(
+        id = "${provider.name}:$providerGameId",
+        coinsTarget = ShibaCoinsTarget.LibraryGame(gameId),
+        title = game?.displayTitle ?: title,
+        platformLabel = game?.platformId?.let(::platformDisplay) ?: providerLabel(provider),
+        provider = provider,
+        platformSortKey = platformGroupOf(provider, game?.platformId),
+        icon0Uri = game?.iconUri,
+        progress = 0f,
+        coins = LibraryCoinCounts(),
+        reason = "Awaiting sync",
+        awaitingSync = true,
     )
 
     private fun UntrackedGame.toRow(game: Game?) = ShibaLibraryRow(

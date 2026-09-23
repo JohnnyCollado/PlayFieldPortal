@@ -19,7 +19,7 @@ class PlayerStatusOptionsTest {
     @Test
     fun `root options expose sort provider and sync`() {
         assertEquals(
-            listOf("Sort (Newest)", "Provider (All)", "Sync All Games"),
+            listOf("Sort (Newest)", "Provider (All)", "Update Installed Achievements"),
             playerStatusOptionRows(state()).map { it.label },
         )
     }

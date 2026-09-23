@@ -29,7 +29,7 @@ data class EmuGameImportResult(
  * a launchable handle (pin / export / Add by ID). A folder that maps onto an existing game
  * links LOCAL_STEAM with the folder's appid and gets its ownership classified; an unmapped
  * folder simply stays a TRACKED local game, synced into Shiba Coins as an account-style entry
- * by the hub's Sync All (see `AchievementRepository.syncAllLinked`).
+ * by "Update installed achievements" (see `AchievementSyncCoordinator`).
  *
  * Mapping is the shortcut-to-folder join (docs/windows-library-refactor-plan.md Phase 5):
  * normalized title first, then the STEAM-NAME BRIDGE — the appid's official store name matched

@@ -63,6 +63,9 @@ interface AccountAchievementDao {
     )
     fun observeForSet(provider: String, providerGameId: String): Flow<List<AccountAchievementEntity>>
 
+    // Both feeds read confirmed identities only (the ledger join): an old account import's coins
+    // never rank here, while a removed game's cached coins still do.
+    //
     // The rarest earned coins across the whole account (lowest global unlock rarity first), each
     // named after its library game when one links to it, else the provider's title. Coins whose
     // provider reported no rarity are stored with a negative sentinel and excluded — unknown
@@ -73,6 +76,7 @@ interface AccountAchievementDao {
             "a.global_rarity AS global_rarity, a.icon_url AS icon_url " +
             "FROM account_achievements a " +
             "JOIN account_achievement_sets s ON s.provider = a.provider AND s.provider_game_id = a.provider_game_id " +
+            "JOIN achievement_tracked_identities t ON t.provider = a.provider AND t.provider_game_id = a.provider_game_id " +
             "LEFT JOIN provider_game_links l ON l.provider = a.provider AND l.provider_game_id = a.provider_game_id " +
             "LEFT JOIN games g ON g.id = l.game_id " +
             "WHERE a.is_earned = 1 AND a.global_rarity >= 0 " +
@@ -91,6 +95,7 @@ interface AccountAchievementDao {
             "MAX(a.global_rarity) AS global_rarity " +
             "FROM account_achievements a " +
             "JOIN account_achievement_sets s ON s.provider = a.provider AND s.provider_game_id = a.provider_game_id " +
+            "JOIN achievement_tracked_identities t ON t.provider = a.provider AND t.provider_game_id = a.provider_game_id " +
             "LEFT JOIN provider_game_links l ON l.provider = a.provider AND l.provider_game_id = a.provider_game_id " +
             "LEFT JOIN games g ON g.id = l.game_id " +
             "WHERE a.is_earned = 1 AND a.earned_at IS NOT NULL " +

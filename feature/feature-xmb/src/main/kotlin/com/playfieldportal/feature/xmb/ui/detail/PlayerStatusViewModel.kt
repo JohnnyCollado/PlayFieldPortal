@@ -120,7 +120,7 @@ fun playerStatusOptionRows(state: PlayerStatusUiState): List<PlayerStatusOptionR
     null -> listOf(
         PlayerStatusOptionRow("Sort (${state.sort.label})", PlayerStatusOption.OpenGroup(PlayerStatusOptionGroup.SORT)),
         PlayerStatusOptionRow("Provider (${state.providerFilter.label})", PlayerStatusOption.OpenGroup(PlayerStatusOptionGroup.PROVIDER)),
-        PlayerStatusOptionRow(if (state.isSyncing) "Syncing…" else "Sync All Games", PlayerStatusOption.SyncAll),
+        PlayerStatusOptionRow(if (state.isSyncing) "Updating…" else "Update Installed Achievements", PlayerStatusOption.SyncAll),
     )
     PlayerStatusOptionGroup.SORT -> PlayerStatusSort.entries.map {
         PlayerStatusOptionRow(it.label, PlayerStatusOption.Sort(it), checked = it == state.sort)
@@ -327,17 +327,20 @@ class PlayerStatusViewModel @Inject constructor(
         state.copy(recent = rows, focusedId = rows.firstOrNull()?.id, onRarest = false)
     }
 
+    // The same selective update Settings and the hub run (present, matched games only). Progress
+    // shows on the notice line; the result goes to the notification tray, like every other entry
+    // point, so it is worded once.
     private fun syncAll() {
         viewModelScope.launch {
             _state.update { it.copy(isSyncing = true, options = null, message = null) }
-            val result = achievements.syncAllLinked { done, total ->
-                _state.update { it.copy(message = if (total > 0) "Syncing games… $done / $total" else "Syncing games…") }
-            }
-            _state.update {
-                it.copy(
-                    isSyncing = false,
-                    message = "Synced ${result.synced} of ${result.total} games${if (result.failed > 0) " · ${result.failed} failed" else ""}",
-                )
+            try {
+                achievements.updateInstalledAchievements { done, total ->
+                    _state.update {
+                        it.copy(message = if (total > 0) "Checking $done of $total games…" else "Updating installed achievements…")
+                    }
+                }
+            } finally {
+                _state.update { it.copy(isSyncing = false, message = null) }
             }
         }
     }

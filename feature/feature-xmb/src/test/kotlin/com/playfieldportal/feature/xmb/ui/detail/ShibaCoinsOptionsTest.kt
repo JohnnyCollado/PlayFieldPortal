@@ -31,19 +31,19 @@ class ShibaCoinsOptionsTest {
 
     @Test
     fun `a linked RetroAchievements game offers Sort and Sync Now`() {
-        assertEquals(listOf("Sort (Tier)", "Sync Now"), labels(state()))
+        assertEquals(listOf("Sort (Tier)", "Refresh this game"), labels(state()))
     }
 
     @Test
     fun `a linked Steam game adds Change Match`() {
         val rows = labels(state(provider = AchievementProvider.STEAM))
-        assertEquals(listOf("Sort (Tier)", "Sync Now", "Change Match"), rows)
+        assertEquals(listOf("Sort (Tier)", "Refresh this game", "Change Match"), rows)
     }
 
     @Test
     fun `an account entry can sync but has no match to change`() {
         val rows = labels(state(provider = AchievementProvider.STEAM, linked = false, accountOnly = true))
-        assertEquals(listOf("Sort (Tier)", "Sync Now"), rows)
+        assertEquals(listOf("Sort (Tier)", "Refresh this game"), rows)
     }
 
     @Test
@@ -58,7 +58,7 @@ class ShibaCoinsOptionsTest {
 
     @Test
     fun `a sync in flight says so`() {
-        assertTrue("Syncing…" in labels(state(isSyncing = true)))
+        assertTrue("Refreshing…" in labels(state(isSyncing = true)))
     }
 
     @Test

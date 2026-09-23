@@ -394,7 +394,7 @@ class ShibaCoinsViewModelTest {
         open()
         press(GamepadAction.OPEN_CONTEXT_MENU)
 
-        assertEquals(listOf("Sort (Tier)", "Sync Now", "Change Match"), state.optionRows.map { it.label })
+        assertEquals(listOf("Sort (Tier)", "Refresh this game", "Change Match"), state.optionRows.map { it.label })
         viewModel.onOptionActivated(2)
 
         coVerify { achievements.unlink(gameId) }

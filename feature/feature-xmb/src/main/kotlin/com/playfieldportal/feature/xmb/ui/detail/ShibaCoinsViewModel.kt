@@ -139,6 +139,9 @@ data class ShibaCoinsUiState(
     val ownership: LocalCopyOwnership? = null,
     // An account entry with no library game: syncable, but nothing to link or match.
     val accountOnly: Boolean = false,
+    // False for a game matched once but since removed: its cached coins show as history, with no
+    // refresh (selective sync never refreshes games that are not on this device).
+    val installed: Boolean = true,
     val summary: GameCoins? = null,
     val coins: List<CoinRow> = emptyList(),
     // Sorted, filtered and searched view the screen renders; kept in sync by withRows().
@@ -202,8 +205,8 @@ data class ShibaCoinsUiState(
     val canAutoMatch: Boolean
         get() = provider == AchievementProvider.STEAM || provider == AchievementProvider.RETRO_ACHIEVEMENTS
 
-    /** Sync is offered wherever there is a provider identity to sync against. */
-    val canSync: Boolean get() = linked || accountOnly
+    /** Refresh is offered for an installed game with a provider identity to refresh against. */
+    val canSync: Boolean get() = (linked || accountOnly) && installed
 
     val optionRows: List<CoinOptionRow> get() = coinOptionRows(this)
 
@@ -218,15 +221,16 @@ data class ShibaCoinsUiState(
 
 /**
  * The Options menu rows for [state], shaped like the library's: the root names each list with its
- * current choice, and a list checks the active one. Sync Now is offered wherever there is a
- * provider identity; Change Match only for a Steam library game, the one match the user supplied.
+ * current choice, and a list checks the active one. Refresh this game is offered for an installed
+ * game with a provider identity; Change Match only for a Steam library game, the one match the
+ * user supplied.
  */
 fun coinOptionRows(state: ShibaCoinsUiState): List<CoinOptionRow> = when (state.options?.group) {
     null -> buildList {
         add(CoinOptionRow("Sort (${state.sort.label})", CoinOption.OpenGroup(CoinOptionGroup.SORT)))
         // A sync in flight keeps its row so the menu doesn't reflow under the cursor; it just
         // says so and does nothing when picked.
-        if (state.canSync) add(CoinOptionRow(if (state.isSyncing) "Syncing…" else "Sync Now", CoinOption.SyncNow))
+        if (state.canSync) add(CoinOptionRow(if (state.isSyncing) "Refreshing…" else "Refresh this game", CoinOption.SyncNow))
         if (state.hasChangeMatch) add(CoinOptionRow("Change Match", CoinOption.ChangeMatch))
     }
     CoinOptionGroup.SORT -> CoinSort.entries.map { sort ->
@@ -307,16 +311,22 @@ class ShibaCoinsViewModel @Inject constructor(
 
     private fun loadLibraryGame(id: Long) {
         gameId = id
-        _state.update { it.copy(accountOnly = false) }
+        _state.update { it.copy(accountOnly = false, installed = true) }
         loadJobs += viewModelScope.launch {
             val game = gameRepository.getById(id)
+            val installed = game?.isMissing != true
             _state.update {
                 it.copy(
                     title = game?.displayTitle ?: "",
                     platformLabel = game?.platformId?.let(::platformDisplay) ?: "",
                     provider = providerForPlatform(game?.platformId),
+                    installed = installed,
                 )
             }
+            // Cached rows are already showing; at most one check if the detail is over a day
+            // old. Never blocks the page and never runs for a game that isn't on this device.
+            if (installed) runCatching { achievementRepository.refreshGameIfStale(id) }
+                .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
         }
         loadJobs += viewModelScope.launch {
             combine(
@@ -346,9 +356,28 @@ class ShibaCoinsViewModel @Inject constructor(
             it.copy(
                 accountOnly = true,
                 linked = false,
+                installed = false,
                 provider = entry.provider,
                 platformLabel = providerLabel(entry.provider),
             )
+        }
+        loadJobs += viewModelScope.launch {
+            var staleChecked = false
+            achievementRepository.observeIdentityStatus(entry.provider, entry.providerGameId).collect { status ->
+                val installed = status?.isPresent == true
+                _state.update {
+                    it.copy(
+                        installed = installed,
+                        platformLabel = providerLabel(entry.provider) + if (installed) "" else " · Not installed",
+                    )
+                }
+                // One stale-on-open check, and only for an entry that is on this device.
+                if (installed && !staleChecked) {
+                    staleChecked = true
+                    runCatching { achievementRepository.refreshAccountEntryIfStale(entry.provider, entry.providerGameId) }
+                        .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
+                }
+            }
         }
         loadJobs += viewModelScope.launch {
             combine(
@@ -702,7 +731,9 @@ class ShibaCoinsViewModel @Inject constructor(
 
     private fun messageFor(result: ProviderSyncResult): String? = when (result) {
         is ProviderSyncResult.Success -> null
-        ProviderSyncResult.NotLinked -> "Link this game to a provider id first"
+        ProviderSyncResult.NotLinked ->
+            if (_state.value.installed) "Link this game to a provider id first"
+            else "This game isn't installed — its saved achievements are shown"
         ProviderSyncResult.MissingCredentials -> "Add your key in Settings ▸ Shiba Coins"
         ProviderSyncResult.ProfileNotPublic -> "Your Steam profile's Game Details are private"
         ProviderSyncResult.NotFound -> "No achievements found for this game"

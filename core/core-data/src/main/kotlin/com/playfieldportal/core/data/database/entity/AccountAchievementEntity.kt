@@ -2,6 +2,7 @@ package com.playfieldportal.core.data.database.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import kotlinx.serialization.Serializable
 
 /**
  * One individual coin (achievement) of a set: its tier, rarity, and this user's earned state.
@@ -10,6 +11,7 @@ import androidx.room.Entity
  * the key. The Platinum crown is never a row here — it is the set-completion award tracked on
  * [AccountAchievementSetEntity.mastered].
  */
+@Serializable
 @Entity(
     tableName = "account_achievements",
     primaryKeys = ["provider", "provider_game_id", "provider_achievement_id"],

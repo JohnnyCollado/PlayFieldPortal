@@ -2,6 +2,7 @@ package com.playfieldportal.core.data.database.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import kotlinx.serialization.Serializable
 import androidx.room.ForeignKey
 
 /**
@@ -12,6 +13,7 @@ import androidx.room.ForeignKey
  * its game, while the account rows it points to survive.
  * See docs/local-steam-achievements-plan.md and docs/account-achievements-plan.md.
  */
+@Serializable
 @Entity(
     tableName = "provider_game_links",
     primaryKeys = ["game_id", "provider"],

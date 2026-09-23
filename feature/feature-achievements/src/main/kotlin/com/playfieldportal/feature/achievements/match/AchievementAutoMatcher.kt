@@ -65,8 +65,10 @@ class AchievementAutoMatcher @Inject constructor(
     /** Matches every unlinked game; [onProgress] reports (done, total). */
     suspend fun matchUnlinked(onProgress: (done: Int, total: Int) -> Unit = { _, _ -> }): MatchReport {
         emuFolderCache = null   // fresh discovery per run — the singleton outlives folder changes
+        // Only games actually on this device: a missing ROM or removed install is never hashed,
+        // looked up or queued (selective sync — a match is a claim about THIS device).
         val unlinked = gameRepository.observeGamesOnly().first()
-            .filter { linkDao.getForGame(it.id) == null }
+            .filter { !it.isMissing && linkDao.getForGame(it.id) == null }
 
         // Notes are rewritten from scratch: this run's unmatched set is the source of truth.
         matchNoteDao.clear()

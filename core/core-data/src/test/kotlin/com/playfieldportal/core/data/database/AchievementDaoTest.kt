@@ -28,6 +28,10 @@ class AchievementDaoTest {
     private val sets = db.accountAchievementSetDao()
     private val coins = db.accountAchievementDao()
     private val links = db.providerGameLinkDao()
+    // Account-wide projections read confirmed identities only (selective sync, Task 4).
+    private val tracking = db.achievementTrackingDao()
+    private suspend fun confirm(provider: String, providerGameId: String) =
+        tracking.confirm(provider, providerGameId, "Chrono Trigger", now = 1L)
 
     @After fun tearDown() = db.close()
 
@@ -74,6 +78,7 @@ class AchievementDaoTest {
 
     @Test
     fun `wallet aggregate weights earned coins and adds platinum on mastery`() = runTest {
+        confirm("RETRO_ACHIEVEMENTS", "319")
         // 23 bronze, 15 silver, 6 gold earned, not mastered.
         sets.upsert(
             set(
@@ -117,6 +122,7 @@ class AchievementDaoTest {
     fun `deleting a game severs the link but account rows survive`() = runTest {
         val gameId = seedGame()
         seedLink(gameId, "STEAM", "1337")
+        confirm("STEAM", "1337")
         sets.upsert(set("STEAM", "1337", bronzeEarned = 1, bronzeTotal = 1))
         coins.upsertAll(listOf(coin("STEAM", "1337", "ACH_WIN", earned = true)))
 
@@ -145,61 +151,36 @@ class AchievementDaoTest {
     }
 
     @Test
-    fun `insertIfAbsent never clobbers a synced set and backfill only fills missing icons`() = runTest {
-        sets.upsert(
-            set("RETRO_ACHIEVEMENTS", "319", bronzeEarned = 5, bronzeTotal = 5)
-                .copy(lastSyncedAt = 111L),
-        )
-
-        sets.insertIfAbsent(set("RETRO_ACHIEVEMENTS", "319")) // an import re-walk
-        sets.insertIfAbsent(set("RETRO_ACHIEVEMENTS", "999"))
-        sets.backfillIcon("RETRO_ACHIEVEMENTS", "319", "https://icon")
-
-        val synced = sets.getSet("RETRO_ACHIEVEMENTS", "319")!!
-        assertEquals(5, synced.bronzeEarned) // survived the stub insert
-        assertEquals(111L, synced.lastSyncedAt)
-        assertEquals("https://icon", synced.iconUrl) // was NULL, so the backfill applied
-
-        sets.backfillIcon("RETRO_ACHIEVEMENTS", "319", "https://other")
-        assertEquals("https://icon", sets.getSet("RETRO_ACHIEVEMENTS", "319")!!.iconUrl)
-
-        // The re-walk's new game landed as a stub, i.e. pending detail.
-        val pending = sets.getUnsyncedSets("RETRO_ACHIEVEMENTS")
-        assertEquals(listOf("999"), pending.map { it.providerGameId })
-    }
-
-    @Test
-    fun `linking a library game to an already-imported entry reconciles into one row`() = runTest {
-        // An account import landed this entry before the game existed in the library.
+    fun `an earlier set becomes the library game's row once its match is confirmed`() = runTest {
+        // A set that landed before the game existed in the library (e.g. a Local Steam folder).
         sets.upsert(
             set("STEAM", "220", bronzeEarned = 3, bronzeTotal = 10)
                 .copy(title = "Half-Life 2", lastSyncedAt = 1L),
         )
-        val before = sets.observeAccountSets().first().single()
-        assertNull(before.libraryGameId)
-        val walletBefore = sets.observeWalletCoins().first()
+        assertEquals(0, sets.observeAccountSets().first().size) // unconfirmed: not tracked
 
-        // The game arrives in the library later and links to the same provider identity.
+        // The game arrives, links to the same provider identity, and the match is confirmed.
         val gameId = seedGame()
         seedLink(gameId, "STEAM", "220")
+        confirm("STEAM", "220")
 
-        // Still one row — now carrying the in-library marker and the library game's title.
+        // One row — carrying the in-library marker and the library game's title.
         val after = sets.observeAccountSets().first().single()
         assertEquals(gameId, after.libraryGameId)
         assertEquals("Chrono Trigger", after.title)
         assertEquals(3, after.bronzeEarned)
-        // Game-keyed reads resolve to the imported coins with no re-sync, and the wallet
-        // never double-counts the entry.
         assertEquals(3, sets.observeForGame(gameId).first()?.bronzeEarned)
-        assertEquals(walletBefore, sets.observeWalletCoins().first())
+        assertEquals(3 * 15, sets.observeWalletCoins().first())
     }
 
     @Test
     fun `hub projection lists every account set with its optional library game`() = runTest {
         val gameId = seedGame()
         seedLink(gameId, "RETRO_ACHIEVEMENTS", "319")
+        confirm("RETRO_ACHIEVEMENTS", "319")
+        confirm("LOCAL_STEAM", "999")
         sets.upsert(set("RETRO_ACHIEVEMENTS", "319", bronzeEarned = 1, bronzeTotal = 2))
-        sets.upsert(set("STEAM", "999", bronzeEarned = 5, bronzeTotal = 5)) // account-only entry
+        sets.upsert(set("LOCAL_STEAM", "999", bronzeEarned = 5, bronzeTotal = 5)) // folder-only entry
 
         val rows = sets.observeAccountSets().first().associateBy { it.providerGameId }
 

@@ -109,8 +109,11 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         SteamOwnedGameEntity::class,
         SteamNoAchievementsEntity::class,
         NotificationEntity::class,
+        com.playfieldportal.core.data.database.entity.AchievementTrackedIdentityEntity::class,
+        com.playfieldportal.core.data.database.entity.AchievementProviderSyncStateEntity::class,
+        com.playfieldportal.core.data.database.entity.AchievementMetadataCacheEntity::class,
     ],
-    version = 45,
+    version = 46,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -147,6 +150,7 @@ abstract class PFPDatabase : RoomDatabase() {
     abstract fun steamOwnedGamesDao(): SteamOwnedGamesDao
     abstract fun providerGameLinkDao(): ProviderGameLinkDao
     abstract fun achievementMatchNoteDao(): com.playfieldportal.core.data.database.dao.AchievementMatchNoteDao
+    abstract fun achievementTrackingDao(): com.playfieldportal.core.data.database.dao.AchievementTrackingDao
 
     companion object {
         const val DATABASE_NAME = "pfp_database"
@@ -1331,6 +1335,91 @@ abstract class PFPDatabase : RoomDatabase() {
                 db.execSQL(
                     "CREATE UNIQUE INDEX IF NOT EXISTS index_notifications_source_key " +
                         "ON notifications (source_key)"
+                )
+            }
+        }
+
+        // v46 — selective achievement sync (docs/plans/PFP_Local_Achievements_Selective_Sync_
+        // Implementation_Plan.md). Three new tables and nothing else changed: every set, coin and
+        // link survives as-is.
+        //
+        // achievement_tracked_identities is the confirmed-local-match ledger. It seeds ONLY from
+        // live provider links — never from a bare account_achievement_sets row, because the old
+        // RA/Steam account imports created identical-looking orphan sets that prove nothing about
+        // this device. A link whose game is flagged missing is a real former match and seeds as
+        // not present (history). Discovered Local Steam folders join at the first reconcile, once
+        // discovery can run. last_detail_at carries the set's last sync so a migrated library does
+        // not re-fetch everything on its first update.
+        val MIGRATION_45_46 = object : Migration(45, 46) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS achievement_tracked_identities (
+                        provider TEXT NOT NULL,
+                        provider_game_id TEXT NOT NULL,
+                        title TEXT NOT NULL,
+                        first_matched_at INTEGER NOT NULL,
+                        last_matched_at INTEGER NOT NULL,
+                        is_present INTEGER NOT NULL,
+                        last_seen_present_at INTEGER,
+                        last_checked_at INTEGER,
+                        last_detail_at INTEGER,
+                        retry_at INTEGER,
+                        failure_count INTEGER NOT NULL DEFAULT 0,
+                        summary_snapshot TEXT,
+                        PRIMARY KEY(provider, provider_game_id)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS achievement_provider_sync_state (
+                        provider TEXT NOT NULL,
+                        last_checked_at INTEGER,
+                        retry_at INTEGER,
+                        failure_count INTEGER NOT NULL DEFAULT 0,
+                        paused_reason TEXT,
+                        cohort_next INTEGER NOT NULL DEFAULT 0,
+                        cohort_last_day INTEGER,
+                        PRIMARY KEY(provider)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS achievement_metadata_cache (
+                        provider TEXT NOT NULL,
+                        provider_game_id TEXT NOT NULL,
+                        schema_json TEXT NOT NULL,
+                        rarity_json TEXT,
+                        fetched_at INTEGER NOT NULL,
+                        PRIMARY KEY(provider, provider_game_id)
+                    )
+                    """.trimIndent()
+                )
+                // One row per provider identity. The lowest game id names it deterministically
+                // when several local copies link to the same identity.
+                db.execSQL(
+                    """
+                    INSERT OR IGNORE INTO achievement_tracked_identities (
+                        provider, provider_game_id, title, first_matched_at, last_matched_at,
+                        is_present, last_seen_present_at, last_checked_at, last_detail_at, failure_count
+                    )
+                    SELECT l.provider, l.provider_game_id,
+                        (SELECT COALESCE(g2.user_title_override, g2.title)
+                            FROM provider_game_links l2 JOIN games g2 ON g2.id = l2.game_id
+                            WHERE l2.provider = l.provider AND l2.provider_game_id = l.provider_game_id
+                            ORDER BY l2.game_id LIMIT 1),
+                        MIN(l.resolved_at), MAX(l.resolved_at),
+                        MAX(CASE WHEN g.is_missing = 0 THEN 1 ELSE 0 END),
+                        NULL,
+                        s.last_synced_at, s.last_synced_at, 0
+                    FROM provider_game_links l
+                    JOIN games g ON g.id = l.game_id
+                    LEFT JOIN account_achievement_sets s
+                        ON s.provider = l.provider AND s.provider_game_id = l.provider_game_id
+                    GROUP BY l.provider, l.provider_game_id
+                    """.trimIndent()
                 )
             }
         }

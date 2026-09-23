@@ -1096,6 +1096,8 @@ class GameDetailViewModel @Inject constructor(
                 launcherShortcutRepository.launch(game.packageName!!, game.shortcutId!!)
                     .onSuccess {
                         _uiState.update { it.copy(actionMessage = null) }
+                        // Shortcut launches bypass the dispatcher; record the hand-off for the return check.
+                        launchDispatcher.noteShortcutHandoff(game)
                         discordPresence.setCurrentGame(game.title)
                     }
                     .onFailure { e ->

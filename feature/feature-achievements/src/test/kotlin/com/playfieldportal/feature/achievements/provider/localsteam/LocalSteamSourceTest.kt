@@ -29,7 +29,9 @@ class LocalSteamSourceTest {
     private val hiddenDescriptions = mockk<LocalSteamHiddenDescriptions> {
         coEvery { enrich(any(), any()) } answers { secondArg() }
     }
-    private val source = LocalSteamSource(discovery, webApi, credentials, hiddenDescriptions)
+    // Nothing cached: these cases exercise the network path that fills the metadata cache.
+    private val metadataStore = mockk<com.playfieldportal.feature.achievements.provider.steam.SteamMetadataStore>(relaxed = true)
+    private val source = LocalSteamSource(discovery, webApi, credentials, hiddenDescriptions, metadataStore, clock = { 0L })
 
     private val progressUri = mockk<Uri>()
     private val game = LocalSteamGame("MARVEL Cosmic Invasion", "doc:games/marvel", "2753970", progressUri)
@@ -39,6 +41,8 @@ class LocalSteamSourceTest {
     )
 
     init {
+        // Stubbed outside the mockk { } block: there, get(...) resolves to MockK's dynamic-call DSL.
+        coEvery { metadataStore.get(any()) } returns null
         coEvery { credentials.steamApiKey() } returns "key"
         coEvery { discovery.findByAppId("2753970") } returns game
         coEvery { webApi.getGlobalAchievementPercentages("2753970") } returns Response.success(

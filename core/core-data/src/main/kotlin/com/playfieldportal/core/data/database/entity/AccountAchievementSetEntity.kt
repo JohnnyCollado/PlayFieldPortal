@@ -2,6 +2,7 @@ package com.playfieldportal.core.data.database.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import kotlinx.serialization.Serializable
 
 /**
  * One game's achievement set on one provider, keyed by the provider's own identity — the single
@@ -13,6 +14,7 @@ import androidx.room.Entity
  * history outlives library membership, and provider disconnect keeps data cached (July 2026
  * decision). See docs/account-achievements-plan.md.
  */
+@Serializable
 @Entity(
     tableName = "account_achievement_sets",
     primaryKeys = ["provider", "provider_game_id"],

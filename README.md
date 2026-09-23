@@ -672,8 +672,17 @@ under **Settings ▸ Shiba Coins** and connect one or more providers:
 Each achievement earns a **bronze, silver, gold or platinum** coin by rarity; coins feed an
 account-wide wallet with **levels and ranks** shown on the **Player Card**.
 
+- **What gets tracked** — games on *this device* that are matched to a provider. PFP never
+  imports your whole RetroAchievements history or probes every game in your Steam account. A
+  game you remove keeps its earned coins as history (marked *Not installed*) but is no longer
+  refreshed.
+- **Updating** — PFP checks installed games at most once a day while you use it, cheaply:
+  RetroAchievements by progress summaries, Steam by the playtime Steam reports, Local Steam by
+  reading the game's own progress file (and again right after you return from a game you
+  launched from PFP). Only games that changed are fetched in full. A game's page refreshes
+  itself when its data is more than a day old, and **Refresh this game** checks it now.
 - **Player Card** — on the XMB and at the top of Settings ▸ Shiba Coins. Its menu holds
-  **Sync All Coins**, which refreshes every tracked game in one pass. Confirm on the card
+  **Update Installed Achievements**, which checks every installed, matched game. Confirm on the card
   opens the fullscreen **Player Status** view: level, rank and XP, Recent Achievements,
   your coin wallet, and your Rarest Achievement Unlocked — a recent unlock from a library
   game jumps straight to that game's coins screen.
@@ -686,16 +695,20 @@ account-wide wallet with **levels and ranks** shown on the **Player Card**.
   Steam-emu data and links it as Local Steam. When nothing links, the screen tells you
   exactly what to fix.
 - **Shiba Library** — a hub with an **All Tracked** view (filter by provider with **Y**,
-  sort by Title / Progress / Console with **X**) and an **Untracked** view of games you
-  could still link. Android games are excluded — they can never have achievements.
+  sort by Title / Progress / Console with **X**) and an **Untracked** view of installed games
+  you could still link. Android games are excluded — they can never have achievements.
+- **Clear all tracked achievements** — *Settings ▸ Shiba Coins ▸ Update Achievements* can
+  remove every achievement PFP has recorded, after a confirmation. Your games, provider
+  connections and game files are untouched; automatic updates pause until you run *Update
+  installed achievements* (or refresh a game) again.
 
 ### 4.20 Tracking local (Steam-emulated) PC games
 
 PFP can track achievements for Windows games run through Wine emulators (GameHub, Winlator,
 GameNative and friends) whose bundled Steam emulator (GSE / Goldberg) records unlocks in local
 files. Tracking is display-only: PFP reads what the game already wrote, joins it with the Steam
-schema, and shows the result in Shiba Coins — run *Sync All Coins* from the Player Card to load
-every tracked game.
+schema, and shows the result in Shiba Coins — run *Update Installed Achievements* from the
+Player Card to load every tracked game.
 
 > **Warning Note — back up your save files first.** This is opt-in behind
 > *Settings ▸ Shiba Coins ▸ Track Local Steam Games (Emulated)*, and enabling it shows the
@@ -704,7 +717,7 @@ every tracked game.
 > can be recorded. A game you set up and played *before* this feature could lose access to its
 > existing save data once the emulator starts reading from the new save location. Open your
 > Windows emulator, back up the save files for those games, and only then enable the toggle and
-> run *Sync All*.
+> run *Update installed achievements*.
 >
 > **Use your own Steam Web API key at your own risk.** This feature reads achievement data with
 > the Steam Web API key you supply. Steam tracking is entirely optional — you do not have to

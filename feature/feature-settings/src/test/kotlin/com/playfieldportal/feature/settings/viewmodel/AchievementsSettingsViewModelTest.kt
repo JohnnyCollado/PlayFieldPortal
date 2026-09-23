@@ -3,7 +3,7 @@ package com.playfieldportal.feature.settings.viewmodel
 import com.playfieldportal.core.data.achievement.AchievementCredentialsProvider
 import com.playfieldportal.feature.achievements.AchievementController
 import com.playfieldportal.feature.achievements.provider.steam.SteamRemoteDataSource
-import com.playfieldportal.feature.achievements.match.AchievementAutoMatcher
+import com.playfieldportal.feature.achievements.match.AchievementMatchAndUpdate
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -24,9 +24,8 @@ class AchievementsSettingsViewModelTest {
     private val dispatcher = StandardTestDispatcher()
     private val credentials = mockk<AchievementCredentialsProvider>(relaxed = true)
     private val steamApi = mockk<SteamRemoteDataSource>()
-    private val autoMatcher = mockk<AchievementAutoMatcher>(relaxed = true)
+    private val matchAndUpdate = mockk<AchievementMatchAndUpdate>(relaxed = true)
     private val repository = mockk<AchievementController>(relaxed = true)
-    private val raImporter = mockk<com.playfieldportal.feature.achievements.RaAccountImporter>(relaxed = true)
     // Relaxed: these tests are about credential resolution, not about what reaches the tray. The
     // center posts real Android notifications, which a bare JVM cannot build.
     private val tasks =
@@ -35,10 +34,7 @@ class AchievementsSettingsViewModelTest {
 
     @Before fun setUp() {
         Dispatchers.setMain(dispatcher)
-        vm = AchievementsSettingsViewModel(
-            credentials, steamApi, autoMatcher, repository, raImporter, tasks,
-            mockk<android.content.Context>(relaxed = true),
-        )
+        vm = AchievementsSettingsViewModel(credentials, steamApi, matchAndUpdate, repository, tasks)
     }
 
     @After fun tearDown() = Dispatchers.resetMain()
@@ -63,13 +59,10 @@ class AchievementsSettingsViewModelTest {
     }
 
     @Test
-    fun `autoMatch chains a full sync once matching completes`() = runTest(dispatcher) {
+    fun `autoMatch runs the shared match-then-update sequence`() = runTest(dispatcher) {
         vm.autoMatch()
         advanceUntilIdle()
 
-        coVerify(ordering = io.mockk.Ordering.ORDERED) {
-            autoMatcher.matchUnlinked(any())
-            repository.syncAllLinked(any())
-        }
+        coVerify(exactly = 1) { matchAndUpdate.run(any(), any()) }
     }
 }

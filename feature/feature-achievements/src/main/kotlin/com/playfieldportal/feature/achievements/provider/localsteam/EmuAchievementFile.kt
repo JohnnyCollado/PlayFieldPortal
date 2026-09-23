@@ -31,10 +31,16 @@ object EmuAchievementFile {
 
     private val json = Json { isLenient = true }
 
-    fun parse(text: String): List<EmuEarnedAchievement> {
-        if (text.length > MAX_BYTES) return emptyList()
+    fun parse(text: String): List<EmuEarnedAchievement> = parseOrNull(text).orEmpty()
+
+    /**
+     * Like [parse], but null when the text is not a readable progress file — so a caller that must
+     * not mistake "unreadable" for "nothing earned" (the launch-return check) can tell them apart.
+     */
+    fun parseOrNull(text: String): List<EmuEarnedAchievement>? {
+        if (text.length > MAX_BYTES) return null
         return runCatching {
-            val root = json.parseToJsonElement(text) as? JsonObject ?: return emptyList()
+            val root = json.parseToJsonElement(text) as? JsonObject ?: return null
             root.mapNotNull { (apiName, value) ->
                 val fields = value as? JsonObject ?: return@mapNotNull null
                 EmuEarnedAchievement(
@@ -44,7 +50,7 @@ object EmuAchievementFile {
                         ?.longOrNull?.takeIf { it > 0 },
                 )
             }
-        }.getOrElse { emptyList() }
+        }.getOrNull()
     }
 
     // gbe_fork writes real booleans; older Goldberg lineages have used 0/1. Absent means false.

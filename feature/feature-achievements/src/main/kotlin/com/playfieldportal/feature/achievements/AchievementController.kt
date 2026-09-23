@@ -8,8 +8,10 @@ import com.playfieldportal.core.domain.achievement.CoinWallet
 import com.playfieldportal.core.domain.achievement.GameCoins
 import com.playfieldportal.core.domain.achievement.LibraryStanding
 import com.playfieldportal.core.domain.achievement.RecentCoin
+import com.playfieldportal.core.domain.achievement.TrackedIdentityStatus
 import com.playfieldportal.feature.achievements.api.ProviderSyncResult
 import com.playfieldportal.feature.achievements.provider.steam.SteamCandidate
+import com.playfieldportal.feature.achievements.sync.AchievementUpdateSummary
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -40,10 +42,10 @@ interface AchievementController {
     /** An account entry's per-coin rows keyed by provider identity. */
     fun observeAccountCoins(provider: AchievementProvider, providerGameId: String): Flow<List<AccountAchievementEntity>>
 
-    /** Syncs an account entry keyed by provider identity; [title] names new hub rows. */
+    /** Explicitly refreshes a present entry keyed by provider identity; removed games are refused. */
     suspend fun syncAccountEntry(provider: AchievementProvider, providerGameId: String, title: String): ProviderSyncResult
 
-    /** The account-wide Shiba wallet (total coins -> level + rank), derived from every set. */
+    /** The account-wide Shiba wallet (total coins -> level + rank), from every confirmed set. */
     fun observeWallet(): Flow<CoinWallet>
 
     /** The whole-library standing for the Shiba Coins hub, with the [rarestLimit] rarest earned coins. */
@@ -52,14 +54,36 @@ interface AchievementController {
     /** The [limit] most recently earned coins across the account, newest first — the status view's feed. */
     fun observeRecentCoins(limit: Int = 8): Flow<List<RecentCoin>>
 
-    /** Fetches [providerGameId] from [provider] and persists the result, or returns why it couldn't. */
+    /** Explicit "Refresh this game" for [gameId], or returns why it couldn't. */
     suspend fun syncGame(gameId: Long, provider: AchievementProvider, providerGameId: String): ProviderSyncResult
 
-    /** Syncs a game from its stored link; [ProviderSyncResult.NotLinked] if it has none yet. */
+    /** Explicit refresh from the game's stored link; [ProviderSyncResult.NotLinked] if it has none. */
     suspend fun syncGameById(gameId: Long): ProviderSyncResult
 
-    /** Syncs every linked game in one pass; [onProgress] reports (done, total). */
-    suspend fun syncAllLinked(onProgress: (done: Int, total: Int) -> Unit = { _, _ -> }): BatchSyncResult
+    /**
+     * "Update installed achievements": checks every present, matched game selectively (never
+     * removed games, never the whole account); [onProgress] reports (done, total). Resumes
+     * scheduled updates if a clear had paused them.
+     */
+    suspend fun updateInstalledAchievements(onProgress: (done: Int, total: Int) -> Unit = { _, _ -> }): AchievementUpdateSummary
+
+    /** Stops a running update; saved progress is kept. */
+    fun cancelUpdate()
+
+    /** Stale-on-open: refreshes [gameId] only when its detail is over a day old; null if not needed. */
+    suspend fun refreshGameIfStale(gameId: Long): ProviderSyncResult?
+
+    /** Stale-on-open for a provider-keyed entry; null if not needed (or not installed). */
+    suspend fun refreshAccountEntryIfStale(provider: AchievementProvider, providerGameId: String): ProviderSyncResult?
+
+    /** Installed / last-checked status of a confirmed identity, or null when it isn't tracked. */
+    fun observeIdentityStatus(provider: AchievementProvider, providerGameId: String): Flow<TrackedIdentityStatus?>
+
+    /** True after Clear all tracked achievements until the user explicitly resyncs. */
+    fun observeAutoUpdatesPaused(): Flow<Boolean>
+
+    /** Removes every achievement record PFP stores and pauses scheduled updates; false if it failed. */
+    suspend fun clearAllTrackedAchievements(): Boolean
 
     /** Links a game to a provider id by hand — the always-works path. */
     suspend fun linkManually(gameId: Long, provider: AchievementProvider, providerGameId: String)

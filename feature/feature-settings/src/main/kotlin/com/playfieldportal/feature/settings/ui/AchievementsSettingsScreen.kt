@@ -1,8 +1,5 @@
 package com.playfieldportal.feature.settings.ui
 
-import com.playfieldportal.feature.achievements.detailLine
-import com.playfieldportal.feature.achievements.summaryLine
-
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,6 +11,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -21,6 +19,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.playfieldportal.core.ui.achievement.ShibaPlayerCard
@@ -209,24 +209,30 @@ fun AchievementsSettingsScreen(
 
             }
 
-            // Update Achievements intentionally contains only the original update actions: Sync All
-            // and Auto-match, plus their live progress/result messages. Account imports remain
-            // available from the combined legacy screen but are not exposed in this focused route.
+            // Update Achievements: the selective update (present, matched games only — never an
+            // account-wide import), Auto-match, and, in its own group below them, the confirmed
+            // Clear all tracked achievements. Outcomes go to the tray; only live progress and the
+            // paused state are shown here.
             if (section == null || section == AchievementsSettingsSection.UPDATE) {
-                SettingsGroup("Sync")
-                SettingsValueRow(label = "Last Synced", value = state.lastSyncedLabel)
+                SettingsGroup("Update")
+                SettingsValueRow(label = "Last Updated", value = state.lastSyncedLabel)
+                if (state.updatesPaused) {
+                    SettingsValueRow(label = "Automatic updates", value = "Updates paused until you resync")
+                }
                 if (state.isSyncing) {
-                    SettingsValueRow(label = "Syncing coins…", value = "${state.syncDone} / ${state.syncTotal}")
+                    SettingsValueRow(label = "Updating achievements…", value = "${state.syncDone} / ${state.syncTotal}")
                 } else {
                     SettingsRow(
-                        label = "Sync all coins",
-                        sublabel = if (state.isMatching) "Runs automatically once auto-match completes"
-                                   else "Refresh earned coins for every linked game",
-                        onClick = { viewModel.syncAll() },
+                        label = "Update installed achievements",
+                        sublabel = when {
+                            state.isMatching -> "Runs automatically once auto-match completes"
+                            state.updatesPaused -> "Resyncs the games on this device and resumes automatic updates"
+                            else -> "Check the games on this device for new achievements"
+                        },
+                        enabled = !state.isClearing,
+                        onClick = { viewModel.updateInstalledAchievements() },
                     )
                 }
-                // The sync outcome is a tray notification now (with the notification cue), not an
-                // in-screen row — only the live progress above stays here.
 
                 SettingsGroup("Auto-match")
                 if (state.isMatching) {
@@ -234,13 +240,54 @@ fun AchievementsSettingsScreen(
                 } else {
                     SettingsRow(
                         label = "Auto-match games",
-                        sublabel = "Link RetroAchievements (ROM hash) and Steam (title) automatically",
+                        sublabel = "Link the games on this device to RetroAchievements (ROM hash) and Steam",
+                        enabled = !state.isClearing,
                         onClick = { viewModel.autoMatch() },
                     )
                 }
-                // The match outcome and connection confirmations are tray notifications now, not
-                // in-screen rows.
+
+                // Kept apart from the update actions so it is never pressed in passing, and never
+                // a one-press action: it only opens the confirmation below.
+                SettingsGroup("Reset")
+                if (state.isClearing) {
+                    SettingsValueRow(label = "Clearing achievements…", value = "")
+                } else {
+                    SettingsRow(
+                        label = "Clear all tracked achievements",
+                        sublabel = "Removes every achievement recorded in Play Field Portal. Your games " +
+                            "and provider connections stay.",
+                        focusKey = "achievements_clear_all",
+                        onClick = { viewModel.requestClearAll() },
+                    )
+                }
             }
+        }
+
+        if (state.confirmClearVisible) {
+            // Cancel holds the default focus, so a stray Confirm press on the controller dismisses.
+            val cancelFocus = remember { FocusRequester() }
+            LaunchedEffect(Unit) { runCatching { cancelFocus.requestFocus() } }
+            AlertDialog(
+                onDismissRequest = viewModel::dismissClearAll,
+                title = { Text("Clear all tracked achievements?") },
+                text = {
+                    Text(
+                        "This will remove all achievements recorded in Play Field Portal, including " +
+                            "earned progress and records for games that are no longer installed. " +
+                            "Your games and provider connections will stay. Games will have to be " +
+                            "resynced to show their achievements again.",
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = viewModel::confirmClearAll) { Text("Clear achievements") }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = viewModel::dismissClearAll,
+                        modifier = Modifier.focusRequester(cancelFocus),
+                    ) { Text("Cancel") }
+                },
+            )
         }
 
         if (showLocalSteamWarning) {
@@ -258,7 +305,7 @@ fun AchievementsSettingsScreen(
                             "This also uses your own Steam Web API key to read achievement data — " +
                             "use it at your own risk. Steam tracking is entirely optional; leave " +
                             "this off if you'd rather not accept these risks.\n\n" +
-                            "Back up first, then turn this on and Sync All.",
+                            "Back up first, then turn this on and Update installed achievements.",
                     )
                 },
                 confirmButton = {

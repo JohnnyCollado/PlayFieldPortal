@@ -12,6 +12,11 @@ data class GameStanding(
     val title: String,
     val iconUrl: String?,
     val coins: GameCoins,
+    /**
+     * False for a game matched on this device once but since removed: its cached coins stay in
+     * the standing as history, labelled "Not installed", and it is never refreshed automatically.
+     */
+    val isInstalled: Boolean = true,
 ) {
     val inLibrary: Boolean get() = libraryGameId != null
 
@@ -21,6 +26,25 @@ data class GameStanding(
     /** True once every individual coin is earned. */
     val isMastered: Boolean get() = coins.isMastered
 }
+
+/**
+ * A present library game matched to a provider identity that has no achievement data yet — the
+ * state right after Clear all tracked achievements, or a fresh match before its first update.
+ * Shown as "Awaiting sync" instead of a false 0%.
+ */
+data class AwaitingSyncGame(
+    val gameId: Long,
+    val provider: AchievementProvider,
+    val providerGameId: String,
+    val title: String,
+)
+
+/** Sync status of one confirmed identity, for a game page's "Not installed" / last-checked line. */
+data class TrackedIdentityStatus(
+    val isPresent: Boolean,
+    val lastCheckedAt: Long?,
+    val lastDetailAt: Long?,
+)
 
 /**
  * A game with no achievement link, plus the plain reason why — the row shape behind the hub's
@@ -73,6 +97,7 @@ data class LibraryStanding(
     val tracked: List<GameStanding> = emptyList(),
     val rarestEarned: List<EarnedCoinRef> = emptyList(),
     val untracked: List<UntrackedGame> = emptyList(),
+    val awaitingSync: List<AwaitingSyncGame> = emptyList(),
 ) {
     /** Number of games with a synced set. */
     val gamesTracked: Int get() = tracked.size

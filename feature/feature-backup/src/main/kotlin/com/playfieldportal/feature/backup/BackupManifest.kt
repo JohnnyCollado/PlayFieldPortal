@@ -41,6 +41,13 @@ object BackupEntry {
     const val VIDEO_PLAYLIST_ITEMS = "video_playlist_items.json"
     const val PHOTO_LIBRARIES      = "photo_libraries.json"
     const val PHOTOS               = "photos.json"
+
+    // Achievements (selective sync). Optional: older archives simply lack them.
+    const val ACHIEVEMENT_IDENTITIES = "achievement_identities.json"
+    const val ACHIEVEMENT_SYNC_STATE = "achievement_sync_state.json"
+    const val ACHIEVEMENT_SETS       = "achievement_sets.json"
+    const val ACHIEVEMENT_COINS      = "achievement_coins.json"
+    const val PROVIDER_GAME_LINKS    = "provider_game_links.json"
 }
 
 @Serializable

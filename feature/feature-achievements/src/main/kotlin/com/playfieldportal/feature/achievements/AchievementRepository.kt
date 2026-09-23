@@ -4,6 +4,8 @@ import com.playfieldportal.core.data.achievement.AchievementCredentialsProvider
 import com.playfieldportal.core.data.database.dao.AccountAchievementDao
 import com.playfieldportal.core.data.database.dao.AccountAchievementSetDao
 import com.playfieldportal.core.data.database.dao.AchievementMatchNoteDao
+import com.playfieldportal.core.data.database.dao.AchievementTrackingDao
+import com.playfieldportal.core.data.database.dao.AwaitingSyncRow
 import com.playfieldportal.core.data.database.dao.ProviderGameLinkDao
 import com.playfieldportal.core.data.database.dao.AccountSetRow
 import com.playfieldportal.core.data.database.dao.EarnedCoinRow
@@ -12,6 +14,8 @@ import com.playfieldportal.core.data.database.entity.AccountAchievementEntity
 import com.playfieldportal.core.data.database.entity.AccountAchievementSetEntity
 import com.playfieldportal.core.data.database.entity.ProviderGameLinkEntity
 import com.playfieldportal.core.domain.achievement.AchievementProvider
+import com.playfieldportal.core.domain.achievement.AwaitingSyncGame
+import com.playfieldportal.core.domain.achievement.TrackedIdentityStatus
 import com.playfieldportal.feature.achievements.provider.steam.SteamAppListResolver
 import com.playfieldportal.core.domain.achievement.CoinCounts
 import com.playfieldportal.core.domain.achievement.CoinWallet
@@ -25,33 +29,37 @@ import com.playfieldportal.core.domain.achievement.UntrackedGame
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.feature.achievements.api.ProviderSyncResult
-import com.playfieldportal.feature.achievements.api.SyncedCoin
-import com.playfieldportal.feature.achievements.provider.RemoteAchievementSources
 import com.playfieldportal.feature.achievements.match.RaConsole
+import com.playfieldportal.feature.achievements.sync.AchievementClock
+import com.playfieldportal.feature.achievements.sync.AchievementIdentity
+import com.playfieldportal.feature.achievements.sync.AchievementSyncCoordinator
+import com.playfieldportal.feature.achievements.sync.AchievementUpdateSummary
+import com.playfieldportal.feature.achievements.sync.SyncTrigger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
-import timber.log.Timber
 import javax.inject.Singleton
 
 /**
- * The single entry point for the coin system: offline-first reads straight from Room, and a
- * network sync that maps a provider fetch into the persisted set + per-coin rows. The wallet is
- * derived reactively from the set summaries, so it updates itself whenever a sync lands — nothing
- * to recompute by hand. See docs/shiba-coins-achievements-plan.md.
+ * The single entry point for the coin system: offline-first reads straight from Room, plus the
+ * link commands. Every refresh — whole-library, per-game, stale-on-open — is delegated to the
+ * [AchievementSyncCoordinator], which scopes it to present, confirmed games
+ * (docs/plans/PFP_Local_Achievements_Selective_Sync_Implementation_Plan.md). The wallet is
+ * derived reactively from the confirmed set summaries, so it updates itself whenever a sync lands.
  */
 @Singleton
 class AchievementRepository @Inject constructor(
-    private val remoteSources: RemoteAchievementSources,
     private val credentials: AchievementCredentialsProvider,
     private val setDao: AccountAchievementSetDao,
     private val coinDao: AccountAchievementDao,
     private val linkDao: ProviderGameLinkDao,
     private val matchNoteDao: AchievementMatchNoteDao,
+    private val trackingDao: AchievementTrackingDao,
     private val steamResolver: SteamAppListResolver,
     private val gameRepository: GameRepository,
-    private val localSteamDiscovery: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamDiscovery,
+    private val coordinator: AchievementSyncCoordinator,
+    private val clock: AchievementClock,
 ) : AchievementController {
     /** This game's provider link (which provider + id it syncs from), or null if unlinked. */
     override fun observeLink(gameId: Long): Flow<ProviderGameLinkEntity?> = linkDao.observeForGame(gameId)
@@ -75,14 +83,15 @@ class AchievementRepository @Inject constructor(
     override fun observeAccountCoins(provider: AchievementProvider, providerGameId: String): Flow<List<AccountAchievementEntity>> =
         coinDao.observeForSet(provider.name, providerGameId)
 
-    /** The account-wide Shiba wallet (total coins -> level + rank), derived from every set. */
+    /** The account-wide Shiba wallet (total coins -> level + rank), from every confirmed set. */
     override fun observeWallet(): Flow<CoinWallet> =
         setDao.observeWalletCoins().map { CoinWallet(it) }
 
     /**
-     * The whole-library standing for the Shiba Coins hub: the wallet, every tracked game's standing,
-     * and the [rarestLimit] rarest earned coins. Counts and the mastery lens derive from the tracked
-     * list. Reads only cached rows — no network — so the hub is offline-first.
+     * The whole-library standing for the Shiba Coins hub: the wallet, every confirmed game's
+     * standing (removed games included, marked not installed), matched games still awaiting their
+     * first sync, and the [rarestLimit] rarest earned coins. Reads only cached rows — no network —
+     * so the hub is offline-first.
      */
     override fun observeLibraryStanding(rarestLimit: Int): Flow<LibraryStanding> =
         combine(
@@ -92,17 +101,20 @@ class AchievementRepository @Inject constructor(
             gameRepository.observeGamesOnly(),
             linkDao.observeLinkedGameIds(),
             matchNoteDao.observeAll(),
-        ) { (wallet, sets, rarest), games, linkedIds, notes ->
+            setDao.observeAwaitingSync(),
+        ) { (wallet, sets, rarest), games, linkedIds, notes, awaiting ->
             val linked = linkedIds.toHashSet()
             val noteByGame = notes.associate { it.gameId to it.reason }
             LibraryStanding(
                 wallet = wallet,
                 tracked = sets.mapNotNull { it.toGameStanding() },
                 rarestEarned = rarest.mapNotNull { it.toEarnedCoinRef() },
+                // Untracked lists present games only: a missing ROM is not something to match.
                 // Android games can never have achievements, so they are never "untracked".
                 untracked = games
-                    .filterNot { it.id in linked || it.platformId == "android" }
+                    .filterNot { it.id in linked || it.isMissing || it.platformId == "android" }
                     .map { it.toUntrackedGame(noteByGame[it.id]) },
+                awaitingSync = awaiting.mapNotNull { it.toAwaitingSyncGame() },
             )
         }
 
@@ -110,108 +122,46 @@ class AchievementRepository @Inject constructor(
     override fun observeRecentCoins(limit: Int): Flow<List<RecentCoin>> =
         coinDao.observeRecentEarned(limit).map { rows -> rows.mapNotNull { it.toRecentCoin() } }
 
-    /**
-     * Fetches [providerGameId] from [provider] and persists the result. On success the per-coin
-     * rows are replaced (pruning coins the provider dropped) and the summary is rewritten; any
-     * other outcome leaves the stored data untouched and is returned for the UI to surface.
-     */
+    /** Explicit per-game refresh of [gameId]'s provider identity (the page's Refresh). */
     override suspend fun syncGame(
         gameId: Long,
         provider: AchievementProvider,
         providerGameId: String,
-    ): ProviderSyncResult = syncEntry(provider, providerGameId, titleOf(gameId))
+    ): ProviderSyncResult = coordinator.refreshGame(gameId)
 
     /**
-     * Syncs an account entry that needs no library game — the import path and the provider-keyed
-     * coins screen's refresh. [title] is the provider's name for the game (shown on hub rows
-     * without a library copy).
+     * Explicit refresh of a provider-keyed entry (a Local Steam folder with no library game).
+     * Only a present, confirmed entry refreshes; a removed game keeps its cached coins.
      */
     override suspend fun syncAccountEntry(
         provider: AchievementProvider,
         providerGameId: String,
         title: String,
-    ): ProviderSyncResult = syncEntry(provider, providerGameId, title)
-
-    private suspend fun syncEntry(
-        provider: AchievementProvider,
-        providerGameId: String,
-        title: String,
-    ): ProviderSyncResult {
-        val result = remoteSources.forProvider(provider).fetch(providerGameId)
-        if (result !is ProviderSyncResult.Success) {
-            // INFO so a field log (Settings > Logs) names every non-success sync outcome; the
-            // result's reason string survives release minification.
-            Timber.i("Sync %s/%s (%s): %s", provider.name, providerGameId, title, result)
-            return result
-        }
-
-        val now = System.currentTimeMillis()
-        val resolvedId = result.providerGameId
-        val storedSet = setDao.getSet(provider.name, resolvedId)
-        val coins = stabilizeTiers(provider, resolvedId, storedSet, result.coins, now)
-        coinDao.deleteForSet(provider.name, resolvedId)
-        coinDao.upsertAll(coins.map { it.toEntity(provider, resolvedId) })
-        setDao.upsert(
-            summaryOf(provider, resolvedId, coins, now).copy(
-                title = title.ifBlank { storedSet?.title.orEmpty() },
-                iconUrl = storedSet?.iconUrl,
-            ),
-        )
-        credentials.setLastSyncedAt(now)
-        return result
-    }
-
-    // The provider fetch carries no game title; a library sync names the account row after its
-    // game so hub rows read the same before and after an entry gains a library copy.
-    private suspend fun titleOf(gameId: Long): String =
-        gameRepository.getById(gameId)?.displayTitle.orEmpty()
+    ): ProviderSyncResult = coordinator.refreshIdentity(AchievementIdentity(provider, providerGameId), title)
 
     /**
-     * Steam tiers (STEAM and LOCAL_STEAM alike) derive from global unlock percentages, which
-     * drift as more players unlock — without a damper a coin could flip Gold -> Silver between
-     * two quick syncs. Within [TIER_STABILITY_WINDOW_MS] of the previous sync each surviving
-     * coin keeps its stored tier (earned state and the displayed rarity % still refresh every
-     * sync); after the window tiers recompute from fresh rarity. Platinum is detection-based,
-     * never rarity-based, so it is always taken fresh. RA tiers come from fixed point values
-     * and are never frozen.
+     * Links a game to a provider id — by hand, or from an auto-match. A match for a game present on
+     * this device is confirmed into the tracked ledger right away, before any coin fetch.
      */
-    private suspend fun stabilizeTiers(
-        provider: AchievementProvider,
-        providerGameId: String,
-        storedSet: AccountAchievementSetEntity?,
-        fresh: List<SyncedCoin>,
-        now: Long,
-    ): List<SyncedCoin> {
-        when (provider) {
-            AchievementProvider.RETRO_ACHIEVEMENTS -> return fresh
-            AchievementProvider.STEAM, AchievementProvider.LOCAL_STEAM, AchievementProvider.VITA_TROPHY -> Unit
-        }
-        val lastSyncedAt = storedSet?.lastSyncedAt ?: return fresh
-        if (now - lastSyncedAt >= TIER_STABILITY_WINDOW_MS) return fresh
-
-        val storedTiers = coinDao.getForSet(provider.name, providerGameId)
-            .associate { it.providerAchievementId to it.tier }
-        return fresh.map { coin ->
-            if (coin.tier == ShibaTier.PLATINUM) return@map coin
-            val stored = storedTiers[coin.providerAchievementId]
-                ?.let { runCatching { ShibaTier.valueOf(it) }.getOrNull() }
-                ?.takeIf { it != ShibaTier.PLATINUM }
-            if (stored != null) coin.copy(tier = stored) else coin
-        }
-    }
-
-    /** Links a game to a provider id by hand — the always-works path (and the only one for RA yet). */
     override suspend fun linkManually(gameId: Long, provider: AchievementProvider, providerGameId: String) {
+        val id = providerGameId.trim()
         linkDao.upsert(
             ProviderGameLinkEntity(
                 gameId = gameId,
                 provider = provider.name,
-                providerGameId = providerGameId.trim(),
+                providerGameId = id,
                 source = "MANUAL",
-                resolvedAt = System.currentTimeMillis(),
+                resolvedAt = clock.now(),
             ),
         )
         matchNoteDao.deleteForGame(gameId) // it's linked now — drop any "untracked" note
+        confirmIfPresent(gameId, provider, id)
+    }
+
+    private suspend fun confirmIfPresent(gameId: Long, provider: AchievementProvider, providerGameId: String) {
+        val game = gameRepository.getById(gameId) ?: return
+        if (game.isMissing) return
+        trackingDao.confirm(provider.name, providerGameId, game.displayTitle, clock.now())
     }
 
     /**
@@ -226,10 +176,11 @@ class AchievementRepository @Inject constructor(
                 provider = AchievementProvider.STEAM.name,
                 providerGameId = appId,
                 source = "STEAM_TITLE",
-                resolvedAt = System.currentTimeMillis(),
+                resolvedAt = clock.now(),
             ),
         )
         matchNoteDao.deleteForGame(gameId)
+        confirmIfPresent(gameId, AchievementProvider.STEAM, appId)
         return appId
     }
 
@@ -250,111 +201,47 @@ class AchievementRepository @Inject constructor(
     override suspend fun searchSteam(query: String): List<com.playfieldportal.feature.achievements.provider.steam.SteamCandidate> =
         steamResolver.search(query)
 
-    /** Removes a game's provider link so it can be re-matched (edit a wrong auto-match). */
-    override suspend fun unlink(gameId: Long) = linkDao.deleteForGame(gameId)
-
-    /** Syncs a game from its stored link; [ProviderSyncResult.NotLinked] if it has none yet. */
-    override suspend fun syncGameById(gameId: Long): ProviderSyncResult {
-        val link = linkDao.getForGame(gameId) ?: return ProviderSyncResult.NotLinked
-        val provider = AchievementProvider.fromName(link.provider) ?: return ProviderSyncResult.NotLinked
-        return syncGame(gameId, provider, link.providerGameId)
-    }
-
     /**
-     * Syncs every linked game in one pass, refreshing all coin data at once — plus every
-     * TRACKED emu game folder without a library link, stored as an account-style entry (they
-     * are deliberately never library games — user decision 2026-07-16). Each provider fetch is
-     * already rate-limited in its client, so this paces itself. [onProgress] reports
-     * (done, total); per-game failures are counted, never thrown, so one bad game can't abort
-     * the run.
+     * Removes a game's provider link so it can be re-matched (Change Match: the user is saying the
+     * match was wrong). The identity leaves the tracked ledger unless another link still points at
+     * it, so it stops counting and stops syncing; its cached set stays stored, untouched, until a
+     * real match brings it back.
      */
-    override suspend fun syncAllLinked(onProgress: (done: Int, total: Int) -> Unit): BatchSyncResult {
-        val links = linkDao.getAll()
-        // Library-less local copies: discovered live so a moved/removed folder self-corrects.
-        val linkedLocalAppIds = links
-            .filter { it.provider == AchievementProvider.LOCAL_STEAM.name }
-            .map { it.providerGameId }
-            .toHashSet()
-        val trackedFolders = runCatching { localSteamDiscovery.scan() }.getOrDefault(emptyList())
-            .filter { it.appId !in linkedLocalAppIds }
-            .distinctBy { it.appId }
-
-        val linkedIdentities = links.map { it.provider to it.providerGameId }.toHashSet()
-        val folderAppIds = trackedFolders.map { it.appId }.toHashSet()
-
-        // The saves-location gate can untrack a folder between runs; its stale set (and coins)
-        // leave All Tracked here. Only LOCAL_STEAM sets are discovery-derived — RA/Steam account
-        // sets are the account's own record and are never pruned.
-        setDao.getAllSets()
-            .filter {
-                it.provider == AchievementProvider.LOCAL_STEAM.name &&
-                    it.providerGameId !in folderAppIds &&
-                    (it.provider to it.providerGameId) !in linkedIdentities
+    override suspend fun unlink(gameId: Long) {
+        val removed = trackingDao.linkPresenceForGame(gameId)
+        linkDao.deleteForGame(gameId)
+        removed.forEach { link ->
+            if (!linkDao.linkExistsFor(link.provider, link.providerGameId)) {
+                trackingDao.deleteIdentity(link.provider, link.providerGameId)
             }
-            .forEach { stale ->
-                Timber.i("Pruning untracked local set \"${stale.title}\" (${stale.providerGameId})")
-                coinDao.deleteForSet(stale.provider, stale.providerGameId)
-                setDao.deleteSet(stale.provider, stale.providerGameId)
-            }
-
-        // Account-only entries (RA/Steam imports, earlier local syncs) have no library game but
-        // sync all the same — everything shown under All Tracked refreshes in this one pass.
-        val accountOnly = setDao.getAllSets().filter { set ->
-            (set.provider to set.providerGameId) !in linkedIdentities &&
-                !(set.provider == AchievementProvider.LOCAL_STEAM.name && set.providerGameId in folderAppIds)
         }
-
-        val total = links.size + trackedFolders.size + accountOnly.size
-        var synced = 0
-        var noCoins = 0
-        var failed = 0
-        var missingCredentials = false
-        fun tally(result: ProviderSyncResult) = when (result) {
-            is ProviderSyncResult.Success -> synced++
-            ProviderSyncResult.NotFound -> noCoins++
-            ProviderSyncResult.MissingCredentials -> missingCredentials = true
-            ProviderSyncResult.ProfileNotPublic -> failed++
-            is ProviderSyncResult.Failed -> failed++
-            ProviderSyncResult.NotLinked -> Unit // impossible here (came from a link)
-        }
-        links.forEachIndexed { index, link ->
-            onProgress(index, total)
-            val provider = AchievementProvider.fromName(link.provider)
-            if (provider == null) { failed++; return@forEachIndexed }
-            tally(syncGame(link.gameId, provider, link.providerGameId))
-        }
-        trackedFolders.forEachIndexed { index, folder ->
-            onProgress(links.size + index, total)
-            tally(syncAccountEntry(AchievementProvider.LOCAL_STEAM, folder.appId, folder.folderName))
-        }
-        accountOnly.forEachIndexed { index, set ->
-            onProgress(links.size + trackedFolders.size + index, total)
-            val provider = AchievementProvider.fromName(set.provider)
-            if (provider == null) { failed++; return@forEachIndexed }
-            tally(syncAccountEntry(provider, set.providerGameId, set.title))
-        }
-        onProgress(total, total)
-        return BatchSyncResult(
-            total = total,
-            synced = synced,
-            noCoins = noCoins,
-            failed = failed,
-            missingCredentials = missingCredentials,
-        )
     }
+
+    /** Explicit refresh from the game's stored link; [ProviderSyncResult.NotLinked] if it has none. */
+    override suspend fun syncGameById(gameId: Long): ProviderSyncResult = coordinator.refreshGame(gameId)
+
+    override suspend fun updateInstalledAchievements(
+        onProgress: (done: Int, total: Int) -> Unit,
+    ): AchievementUpdateSummary = coordinator.updateInstalled(SyncTrigger.MANUAL, onProgress)
+
+    override fun cancelUpdate() = coordinator.cancelUpdate()
+
+    override suspend fun refreshGameIfStale(gameId: Long): ProviderSyncResult? =
+        coordinator.refreshGameIfStale(gameId)
+
+    override suspend fun refreshAccountEntryIfStale(provider: AchievementProvider, providerGameId: String): ProviderSyncResult? =
+        coordinator.refreshIfStale(AchievementIdentity(provider, providerGameId), "")
+
+    override fun observeIdentityStatus(provider: AchievementProvider, providerGameId: String): Flow<TrackedIdentityStatus?> =
+        trackingDao.observeIdentity(provider.name, providerGameId).map { row ->
+            row?.let { TrackedIdentityStatus(it.isPresent, it.lastCheckedAt, it.lastDetailAt) }
+        }
+
+    override fun observeAutoUpdatesPaused(): Flow<Boolean> = credentials.autoUpdatesPausedFlow
+
+    override suspend fun clearAllTrackedAchievements(): Boolean = coordinator.clearAll()
+
 }
-
-/** Re-tier Steam coins from fresh rarity only when the last sync is at least this old (7 days). */
-private const val TIER_STABILITY_WINDOW_MS = 7L * 24 * 60 * 60 * 1_000
-
-/** Outcome of a [AchievementRepository.syncAllLinked] pass, for the settings report. */
-data class BatchSyncResult(
-    val total: Int,
-    val synced: Int,
-    val noCoins: Int,
-    val failed: Int,
-    val missingCredentials: Boolean,
-)
 
 // ── Mappers ───────────────────────────────────────────────────────────────────
 
@@ -381,8 +268,15 @@ private fun AccountSetRow.toGameStanding(): GameStanding? {
             earned = CoinCounts(bronzeEarned, silverEarned, goldEarned),
             total = CoinCounts(bronzeTotal, silverTotal, goldTotal),
             isMastered = mastered,
+            lastSyncedAt = lastSyncedAt,
         ),
+        isInstalled = isPresent,
     )
+}
+
+private fun AwaitingSyncRow.toAwaitingSyncGame(): AwaitingSyncGame? {
+    val p = AchievementProvider.fromName(provider) ?: return null
+    return AwaitingSyncGame(gameId = gameId, provider = p, providerGameId = providerGameId, title = title)
 }
 
 // Why a game has no achievement link. Prefers the specific reason the last auto-match recorded
@@ -421,51 +315,5 @@ private fun RecentCoinRow.toRecentCoin(): RecentCoin? {
         iconUrl = iconUrl,
         earnedAt = earnedAt,
         globalRarity = globalRarity,
-    )
-}
-
-private fun SyncedCoin.toEntity(provider: AchievementProvider, providerGameId: String) = AccountAchievementEntity(
-    provider = provider.name,
-    providerGameId = providerGameId,
-    providerAchievementId = providerAchievementId,
-    title = title,
-    description = description,
-    tier = tier.name,
-    globalRarity = globalRarity,
-    iconUrl = iconUrl,
-    isHidden = isHidden,
-    isEarned = isEarned,
-    earnedAt = earnedAt,
-)
-
-// Title and icon are caller-owned identity (library game name vs provider name) and are set
-// via copy() on the returned summary.
-private fun summaryOf(
-    provider: AchievementProvider,
-    providerGameId: String,
-    coins: List<SyncedCoin>,
-    now: Long,
-): AccountAchievementSetEntity {
-    fun count(tier: ShibaTier, earnedOnly: Boolean) =
-        coins.count { it.tier == tier && (!earnedOnly || it.isEarned) }
-    // A provider-declared Platinum ("unlock every achievement"-style Steam coin) IS the crown:
-    // earning it lights mastery, and it never appears in the Bronze/Silver/Gold tallies (its XP is
-    // the crown's 300, not a per-coin value). Without one, the crown stays 100% completion —
-    // hardcore for RA, any unlock for Steam (earnedHardcore mirrors isEarned there).
-    val platinumCoins = coins.filter { it.tier == ShibaTier.PLATINUM }
-    val mastered = if (platinumCoins.isNotEmpty()) platinumCoins.any { it.earnedHardcore }
-                   else coins.isNotEmpty() && coins.all { it.earnedHardcore }
-    return AccountAchievementSetEntity(
-        provider = provider.name,
-        providerGameId = providerGameId,
-        title = "",
-        bronzeTotal = count(ShibaTier.BRONZE, earnedOnly = false),
-        silverTotal = count(ShibaTier.SILVER, earnedOnly = false),
-        goldTotal = count(ShibaTier.GOLD, earnedOnly = false),
-        bronzeEarned = count(ShibaTier.BRONZE, earnedOnly = true),
-        silverEarned = count(ShibaTier.SILVER, earnedOnly = true),
-        goldEarned = count(ShibaTier.GOLD, earnedOnly = true),
-        mastered = mastered,
-        lastSyncedAt = now,
     )
 }

@@ -32,13 +32,28 @@ class RaHashResolver @Inject constructor(
     private val remote: RaRemoteDataSource,
 ) {
     private val mutex = Mutex()
-    private val cache = mutableMapOf<Int, Map<String, String>>()
+    // One GetGameList per console per process: the hash matcher and the provider-search title
+    // picker share it, so typing a search never re-downloads a console list.
+    private val catalogs = mutableMapOf<Int, List<RaCatalogGame>>()
+    private val hashMaps = mutableMapOf<Int, Map<String, String>>()
 
     /** Looks [hash] up in [consoleId]'s registered-hash list. */
     suspend fun lookup(consoleId: Int, hash: String): RaHashLookup {
         val map = mutex.withLock {
-            cache[consoleId] ?: remote.hashMap(consoleId)?.also { cache[consoleId] = it }
+            hashMaps[consoleId] ?: loadLocked(consoleId)?.let { hashMaps.getValue(consoleId) }
         } ?: return RaHashLookup.Unavailable
         return map[hash.lowercase()]?.let { RaHashLookup.Found(it) } ?: RaHashLookup.NotRegistered
+    }
+
+    /** [consoleId]'s game catalog (titles for the provider search), or null when it can't load. */
+    suspend fun catalog(consoleId: Int): List<RaCatalogGame>? =
+        mutex.withLock { catalogs[consoleId] ?: loadLocked(consoleId) }
+
+    // Only successful fetches are cached — see the class comment.
+    private suspend fun loadLocked(consoleId: Int): List<RaCatalogGame>? {
+        val catalog = remote.gameCatalog(consoleId) ?: return null
+        catalogs[consoleId] = catalog
+        hashMaps[consoleId] = catalog.flatMap { game -> game.hashes.map { it.lowercase() to game.gameId } }.toMap()
+        return catalog
     }
 }

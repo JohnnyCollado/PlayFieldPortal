@@ -15,22 +15,22 @@ class RaHashResolverTest {
     @Test
     fun `a failed fetch is not cached — the next lookup retries and can succeed`() = runTest {
         // First call: list unavailable (offline / no credentials yet).
-        coEvery { remote.hashMap(3) } returns null
+        coEvery { remote.gameCatalog(3) } returns null
         assertEquals(RaHashLookup.Unavailable, resolver.lookup(3, "AABB"))
 
         // Credentials arrive / network returns: the same resolver instance must retry, not serve
         // a poisoned empty cache that reports every hash as unregistered.
-        coEvery { remote.hashMap(3) } returns mapOf("aabb" to "999")
+        coEvery { remote.gameCatalog(3) } returns listOf(RaCatalogGame("999", "Game", "SNES", null, listOf("aabb")))
         assertEquals(RaHashLookup.Found("999"), resolver.lookup(3, "AABB"))
     }
 
     @Test
     fun `a successful fetch is cached per console and lookups are case-insensitive`() = runTest {
-        coEvery { remote.hashMap(3) } returns mapOf("aabb" to "999")
+        coEvery { remote.gameCatalog(3) } returns listOf(RaCatalogGame("999", "Game", "SNES", null, listOf("aabb")))
 
         assertEquals(RaHashLookup.Found("999"), resolver.lookup(3, "AABB"))
         assertEquals(RaHashLookup.NotRegistered, resolver.lookup(3, "ffff"))
 
-        coVerify(exactly = 1) { remote.hashMap(3) }
+        coVerify(exactly = 1) { remote.gameCatalog(3) }
     }
 }

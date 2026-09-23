@@ -145,6 +145,14 @@ open class BackupManager @Inject constructor(
             zip.writeJson(BackupEntry.PHOTO_LIBRARIES,      json.encodeToString(listSerializer<PhotoLibraryEntity>(),      backupDao.getPhotoLibraries()))
             zip.writeJson(BackupEntry.PHOTOS,               json.encodeToString(listSerializer<PhotoEntity>(),             backupDao.getPhotos()))
 
+            // Achievements: the confirmed-local-match ledger and its sync state travel with the
+            // sets, coins and links they describe (the metadata cache is re-fetchable, so it stays).
+            zip.writeJson(BackupEntry.ACHIEVEMENT_IDENTITIES, json.encodeToString(listSerializer<com.playfieldportal.core.data.database.entity.AchievementTrackedIdentityEntity>(), backupDao.getAchievementIdentities()))
+            zip.writeJson(BackupEntry.ACHIEVEMENT_SYNC_STATE, json.encodeToString(listSerializer<com.playfieldportal.core.data.database.entity.AchievementProviderSyncStateEntity>(), backupDao.getAchievementSyncStates()))
+            zip.writeJson(BackupEntry.ACHIEVEMENT_SETS,       json.encodeToString(listSerializer<com.playfieldportal.core.data.database.entity.AccountAchievementSetEntity>(), backupDao.getAchievementSets()))
+            zip.writeJson(BackupEntry.ACHIEVEMENT_COINS,      json.encodeToString(listSerializer<com.playfieldportal.core.data.database.entity.AccountAchievementEntity>(), backupDao.getAchievementCoins()))
+            zip.writeJson(BackupEntry.PROVIDER_GAME_LINKS,    json.encodeToString(listSerializer<com.playfieldportal.core.data.database.entity.ProviderGameLinkEntity>(), backupDao.getProviderGameLinks()))
+
             // Bundled internal-storage assets. Absolute paths in the DB point into filesDir; storing
             // them relative to filesDir lets restore relocate them into whatever package/data-dir the
             // backup lands in.
@@ -240,6 +248,15 @@ open class BackupManager @Inject constructor(
         val photoLibraries = entries.decodeList<PhotoLibraryEntity>(BackupEntry.PHOTO_LIBRARIES)
         val photos         = entries.decodeList<PhotoEntity>(BackupEntry.PHOTOS)
 
+        // Present only in archives made since the selective achievement sync; an older archive
+        // leaves the device's achievement records as they are.
+        val hasAchievements = entries.containsKey(BackupEntry.ACHIEVEMENT_IDENTITIES)
+        val achIdentities = entries.decodeList<com.playfieldportal.core.data.database.entity.AchievementTrackedIdentityEntity>(BackupEntry.ACHIEVEMENT_IDENTITIES)
+        val achSyncStates = entries.decodeList<com.playfieldportal.core.data.database.entity.AchievementProviderSyncStateEntity>(BackupEntry.ACHIEVEMENT_SYNC_STATE)
+        val achSets       = entries.decodeList<com.playfieldportal.core.data.database.entity.AccountAchievementSetEntity>(BackupEntry.ACHIEVEMENT_SETS)
+        val achCoins      = entries.decodeList<com.playfieldportal.core.data.database.entity.AccountAchievementEntity>(BackupEntry.ACHIEVEMENT_COINS)
+        val achLinks      = entries.decodeList<com.playfieldportal.core.data.database.entity.ProviderGameLinkEntity>(BackupEntry.PROVIDER_GAME_LINKS)
+
         val settings = entries[BackupEntry.SETTINGS]?.let {
             json.decodeFromString(SettingsSnapshot.serializer(), it)
         }
@@ -304,6 +321,16 @@ open class BackupManager @Inject constructor(
         backupDao.insertVideoPlaylistItems(videoPlItems)
         backupDao.insertPhotoLibraries(photoLibraries)
         backupDao.insertPhotos(photos)
+
+        // Achievements after games, so every restored link finds its game (a link to a game the
+        // backup didn't carry would break the foreign key, so it is dropped).
+        if (hasAchievements) {
+            val gameIds = remappedGames.map { it.id }.toHashSet()
+            backupDao.replaceAchievementRecords(
+                achIdentities, achSyncStates, achSets, achCoins,
+                achLinks.filter { it.gameId in gameIds },
+            )
+        }
 
         // Platforms: merge only the user-editable columns onto the existing seeded catalog so an
         // older backup can never wipe platform definitions this build added.
@@ -628,6 +655,8 @@ open class BackupManager @Inject constructor(
             booleanPreferencesKey("pref_direct_game_launch"),
             // Achievements + artwork behaviour
             booleanPreferencesKey("achievements_enabled"),
+            // Paused after Clear all tracked achievements; travels with the achievement records.
+            booleanPreferencesKey("achievements_auto_updates_paused"),
             booleanPreferencesKey("artwork_import_move_files"),
             booleanPreferencesKey("pref_dl_manuals"),
             booleanPreferencesKey("pref_dl_video_snaps"),

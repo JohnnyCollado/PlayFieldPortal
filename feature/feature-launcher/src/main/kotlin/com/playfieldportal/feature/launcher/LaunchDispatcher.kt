@@ -67,6 +67,8 @@ class LaunchDispatcher @Inject constructor(
     // lives in MenuSoundPlayer; the dispatcher only says "this launch did not happen".
     private val menuSound: com.playfieldportal.core.ui.sound.MenuSoundPlayer,
     private val autoCoreMemory: AutoCoreMemory,
+    // Remembers the handed-off game so a confirmed return can trigger its local achievement check.
+    private val handoffTracker: GameHandoffTracker,
 ) {
     private val _recoveryRequests = MutableStateFlow<LaunchRecoveryRequest?>(null)
     /** Non-null while a recovery sheet should be shown; cleared by [dismissRecovery]. */
@@ -101,6 +103,7 @@ class LaunchDispatcher @Inject constructor(
             resolved?.profile?.takeIf { it.isRetroArchProfile() }?.let { profile ->
                 autoCoreMemory.remember(game.platformId, profile.id)
             }
+            handoffTracker.onDispatched(game)
             acceptPending(
                 PendingLaunch(
                     game         = game,
@@ -147,12 +150,22 @@ class LaunchDispatcher @Inject constructor(
         emitRecovery(game, resolved, message)
     }
 
+    /**
+     * A harvested launcher shortcut (Windows games) was started directly through LauncherApps,
+     * bypassing [launch]. Records the hand-off so the game's return is still recognized — without
+     * outcome recording or the recovery sheet, which only the intent path can classify.
+     */
+    fun noteShortcutHandoff(game: Game) {
+        handoffTracker.onDispatched(game)
+    }
+
     fun dismissRecovery() {
         _recoveryRequests.value = null
     }
 
     /** MainActivity reports PFP left the foreground (an activity covered the launcher). */
     fun onHostStopped() {
+        handoffTracker.onHostStopped()
         if (pending == null) return
         hostStopped = true
         watchdog?.cancel()
@@ -161,6 +174,7 @@ class LaunchDispatcher @Inject constructor(
 
     /** MainActivity reports PFP is foreground again — classify the pending hand-off. */
     fun onHostResumed() {
+        handoffTracker.onHostResumed()
         val p = pending ?: return
         pending = null
         val emulatorTookForeground = hostStopped

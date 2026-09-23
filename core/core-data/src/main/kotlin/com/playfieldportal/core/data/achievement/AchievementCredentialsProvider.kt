@@ -23,6 +23,7 @@ private val KEY_ENABLED = booleanPreferencesKey("achievements_enabled")
 private val KEY_LOCAL_STEAM_ENABLED = booleanPreferencesKey("local_steam_tracking_enabled")
 private val KEY_GOLDBERG_INSTALLER = booleanPreferencesKey("goldberg_installer_enabled")
 private val KEY_SYNC_LAST = longPreferencesKey("achievements_sync_last")
+private val KEY_AUTO_UPDATES_PAUSED = booleanPreferencesKey("achievements_auto_updates_paused")
 
 /**
  * Stores the user's achievement credentials. The two API keys are the only secrets and are
@@ -67,6 +68,25 @@ class AchievementCredentialsProvider @Inject constructor(
 
     val lastSyncedAtFlow: Flow<Long?> =
         context.pfpDataStore.data.map { it[KEY_SYNC_LAST] }
+
+    /**
+     * True after Clear all tracked achievements until the user explicitly resyncs: scheduled
+     * updates stay off so a clear is never silently refilled.
+     */
+    val autoUpdatesPausedFlow: Flow<Boolean> =
+        context.pfpDataStore.data.map { it[KEY_AUTO_UPDATES_PAUSED] ?: false }
+
+    suspend fun autoUpdatesPaused(): Boolean =
+        context.pfpDataStore.data.first()[KEY_AUTO_UPDATES_PAUSED] ?: false
+
+    suspend fun setAutoUpdatesPaused(paused: Boolean) {
+        context.pfpDataStore.edit { it[KEY_AUTO_UPDATES_PAUSED] = paused }
+    }
+
+    /** Forgets the last-sync time, so a cleared wallet no longer reads "Synced 4 min ago". */
+    suspend fun clearLastSyncedAt() {
+        context.pfpDataStore.edit { it.remove(KEY_SYNC_LAST) }
+    }
 
     suspend fun raUsername(): String? = context.pfpDataStore.data.first()[KEY_RA_USERNAME]
 
@@ -154,6 +174,7 @@ class AchievementCredentialsProvider @Inject constructor(
             it.remove(KEY_LOCAL_STEAM_ENABLED)
             it.remove(KEY_GOLDBERG_INSTALLER)
             it.remove(KEY_SYNC_LAST)
+            it.remove(KEY_AUTO_UPDATES_PAUSED)
         }
     }
 }
