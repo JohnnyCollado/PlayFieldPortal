@@ -239,7 +239,7 @@ enum class DetailAction(val label: String) {
     SAVES("Saves"),
     EMULATOR("Emulator"),
     MANUAL("Manual"),
-    REFRESH("Refresh"),
+    FETCH_ARTWORK("Fetch Artwork"),
     METADATA("Update Metadata"),
     EXPORT("Export Game"),
     RENAME("Edit Title"),
@@ -879,7 +879,7 @@ class GameDetailViewModel @Inject constructor(
             DetailAction.SAVES     -> showActionMessage("Save management isn't available yet")
             DetailAction.EMULATOR  -> openEmulatorPicker()
             DetailAction.MANUAL    -> openManual()
-            DetailAction.REFRESH   -> fetchArtwork()
+            DetailAction.FETCH_ARTWORK -> fetchArtwork()
             DetailAction.METADATA  -> openMetadataPreview()
             DetailAction.EXPORT    -> exportGame()
             DetailAction.RENAME    -> startEditTitle()
@@ -1502,27 +1502,24 @@ class GameDetailViewModel @Inject constructor(
         _uiState.update { it.copy(isEditingTitle = false, titleText = _uiState.value.game?.displayTitle ?: "") }
     }
 
-    // ── Artwork — scraper refresh ─────────────────────────────────────────
+    // ── Artwork — Fetch Artwork ───────────────────────────────────────────
 
     fun fetchArtwork() {
         val game = _uiState.value.game ?: return
         if (_uiState.value.isFetchingArtwork) return
         viewModelScope.launch {
             _uiState.update { it.copy(isFetchingArtwork = true, artworkMessage = null) }
-            val result = artworkRepository.fetchArtworkForGame(game.id, game.title)
+            // Shared with the XMB game menu; it evicts this game's refs from the image cache.
+            val result = artworkRepository.refetchArtworkForGame(game.id)
             val updated = gameRepository.getById(game.id)
-            // Re-scraped files reuse stable names, so evict only THIS game's refs (old and new)
-            // from the image cache. Never clearCache() here — that is the library-wide reset
-            // behind Settings > Artwork > Clear All Artwork.
-            artworkRepository.evictFromImageCache((artRefsOf(game) + artRefsOf(updated)).toSet())
             _uiState.update {
                 it.copy(
                     game              = updated ?: it.game,
                     isFetchingArtwork = false,
                     artworkMessage    = when {
-                        result.success -> "Artwork updated"
-                        result.skipped -> "Already has artwork"
-                        else           -> result.errorMessage ?: "Artwork fetch failed"
+                        result.success        -> "Artwork updated"
+                        result.alreadyRunning -> "Already fetching artwork for this game"
+                        else                  -> result.errorMessage ?: "Artwork fetch failed"
                     },
                 )
             }
@@ -1662,10 +1659,4 @@ class GameDetailViewModel @Inject constructor(
             else -> Unit
         }
     }
-
-    // Every artwork column a scrape can rewrite — the eviction set for a single-game refresh.
-    private fun artRefsOf(game: Game?): List<String> = listOfNotNull(
-        game?.artworkUri, game?.heroUri, game?.logoUri, game?.iconUri,
-        game?.boxArtUri, game?.physicalMediaUri, game?.box3dUri,
-    )
 }

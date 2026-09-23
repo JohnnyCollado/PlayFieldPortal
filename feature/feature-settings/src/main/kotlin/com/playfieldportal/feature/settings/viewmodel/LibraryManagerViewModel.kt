@@ -12,7 +12,11 @@ import com.playfieldportal.core.data.repository.RomRootRepository
 import com.playfieldportal.core.data.repository.SafGrants
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GameContentType
+import com.playfieldportal.core.domain.model.NotificationAction
+import com.playfieldportal.core.domain.model.NotificationSeverity
+import com.playfieldportal.core.domain.model.TaskKind
 import com.playfieldportal.core.domain.repository.GameRepository
+import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
 import com.playfieldportal.feature.appbar.LauncherShortcutRepository
 import com.playfieldportal.feature.launcher.EmulatorProfileRepository
 import com.playfieldportal.feature.launcher.PcLauncherAdapters
@@ -147,6 +151,9 @@ class LibraryManagerViewModel @Inject constructor(
     private val libraryScanner: LibraryScanner,
     private val romRootScanRunner: RomRootScanRunner,
     private val pcGameExporter: com.playfieldportal.feature.settings.pc.PcGameExporter,
+    // Scan and import outcomes go to the tray (row + shade + notification cue) rather than a
+    // dismissible row that dies with the screen. Progress and validation stay in-screen.
+    private val tasks: BackgroundTaskCenter,
 ) : ViewModel() {
 
     private val _scratch = MutableStateFlow(LibraryManagerUiState())
@@ -379,9 +386,12 @@ class LibraryManagerViewModel @Inject constructor(
                     emulatorId = null,
                 )
                 resetToList()
-                _scratch.update {
-                    it.copy(message = "Android library added. Open it in Games → Find Games to add apps.")
-                }
+                tasks.report(
+                    "lm_add_android", "Android library added",
+                    "Open it in Games → Find Games to add apps.",
+                    NotificationSeverity.SUCCESS,
+                    action = NotificationAction.OpenMemoryCard(ANDROID_PLATFORM_ID),
+                )
             }
             return
         }
@@ -573,18 +583,20 @@ class LibraryManagerViewModel @Inject constructor(
         if (PSVITA_PLATFORM_ID in _scratch.value.scanningPlatformIds) return
         viewModelScope.launch {
             _scratch.update { it.copy(scanningPlatformIds = it.scanningPlatformIds + PSVITA_PLATFORM_ID) }
+            val taskId = "lm_scan_$PSVITA_PLATFORM_ID"
+            tasks.start(taskId, "Scanning PS Vita", TaskKind.SCAN)
             val result = runCatching { vitaGameScanner.scan() }
                 .onFailure { Timber.e(it, "Vita scan failed") }
                 .getOrNull()
             if (result != null && (result.added > 0 || result.updated > 0)) {
                 runCatching { memoryCardRepository.recountGames(PSVITA_PLATFORM_ID) }
             }
-            _scratch.update {
-                it.copy(
-                    scanningPlatformIds = it.scanningPlatformIds - PSVITA_PLATFORM_ID,
-                    message = result?.message ?: "Vita scan failed — see the log.",
-                )
+            if (result != null) {
+                tasks.complete(taskId, result.message, NotificationAction.OpenMemoryCard(PSVITA_PLATFORM_ID))
+            } else {
+                tasks.fail(taskId, "Vita scan failed — see the log.")
             }
+            _scratch.update { it.copy(scanningPlatformIds = it.scanningPlatformIds - PSVITA_PLATFORM_ID) }
         }
     }
 
@@ -597,6 +609,11 @@ class LibraryManagerViewModel @Inject constructor(
         }
     }
 
+    // A human label for a running-scan row; the display name if the card is loaded, else the id.
+    private fun scanLabel(platformId: String): String =
+        uiState.value.cards.firstOrNull { it.platformId == platformId }?.displayName
+            ?.removeSuffix(" Memory Card") ?: platformId
+
     fun scanConsole(platformId: String, removeMissing: Boolean = false) {
         if (platformId in _scratch.value.scanningPlatformIds) return
         // PS Vita has no ROM folder: it scans Vita3K's granted ux0/app installed titles instead.
@@ -605,13 +622,15 @@ class LibraryManagerViewModel @Inject constructor(
         }
         viewModelScope.launch {
             _scratch.update { it.copy(scanningPlatformIds = it.scanningPlatformIds + platformId) }
+            val taskId = "lm_scan_$platformId"
+            tasks.start(taskId, "Scanning ${scanLabel(platformId)}", TaskKind.SCAN)
             val outcome = libraryScanner.scanPlatform(platformId, removeMissing)
-            _scratch.update {
-                it.copy(
-                    scanningPlatformIds = it.scanningPlatformIds - platformId,
-                    message = scanOutcomeMessage(outcome, removeMissing),
-                )
-            }
+            tasks.complete(
+                taskId,
+                scanOutcomeMessage(outcome, removeMissing),
+                NotificationAction.OpenMemoryCard(platformId),
+            )
+            _scratch.update { it.copy(scanningPlatformIds = it.scanningPlatformIds - platformId) }
             Timber.i(
                 "Library Manager scan complete for $platformId: " +
                         "${outcome.added} new, ${outcome.markedMissing} marked missing (status=${outcome.status})"
@@ -781,10 +800,17 @@ class LibraryManagerViewModel @Inject constructor(
                 }
                 ensureWindowsCard()
             }.fold(
-                onSuccess = { _scratch.update { it.copy(message = "\"$displayName\" added to Windows Games.") } },
+                onSuccess = {
+                    tasks.report(
+                        "lm_pc_add", "Windows Games",
+                        "\"$displayName\" added to Windows Games.",
+                        NotificationSeverity.SUCCESS,
+                        action = NotificationAction.OpenMemoryCard(WINDOWS_PLATFORM_ID),
+                    )
+                },
                 onFailure = { e ->
                     Timber.e(e, "Add PC game by id failed for ${row.name}")
-                    _scratch.update { it.copy(message = "Couldn't add game: ${e.message}") }
+                    tasks.report("lm_pc_add", "Windows Games", "Couldn't add game: ${e.message}", NotificationSeverity.ERROR)
                 },
             )
         }
@@ -801,22 +827,30 @@ class LibraryManagerViewModel @Inject constructor(
     fun scanPcGamesFolder(folder: Uri? = null) {
         viewModelScope.launch {
             if (folder != null) romRootRepository.persist(folder)
+            val taskId = "lm_pc_scan"
+            tasks.start(taskId, "Scanning Windows Games", TaskKind.SCAN)
             val report = runCatching { pcGameScanner.scan(folder) }
                 .onFailure { Timber.e(it, "PC scan failed") }
                 .getOrNull()
             if (report == null) {
-                _scratch.update { it.copy(message = "PC scan failed — see the log.") }
+                tasks.fail(taskId, "PC scan failed — see the log.")
                 return@launch
             }
             if (report.newGames > 0) ensureWindowsCard()
-            _scratch.update { it.copy(message = report.message) }
+            tasks.complete(taskId, report.message, NotificationAction.OpenMemoryCard(WINDOWS_PLATFORM_ID))
 
             // When the Goldberg installer is on, offer to convert every detected emu folder that
             // carries steam_settings but no achievements.json yet — the user picks which to convert.
             if (credentials.goldbergInstallerEnabled()) {
                 convertPickerController.start(report.emu.missingSchema) { outcome ->
                     convertOutcomeMessage(outcome)?.let { msg ->
-                        _scratch.update { it.copy(message = msg) }
+                        tasks.report(
+                            id = "lm_convert",
+                            label = "Goldberg convert",
+                            message = msg,
+                            severity = NotificationSeverity.SUCCESS,
+                            action = NotificationAction.OpenMemoryCard(WINDOWS_PLATFORM_ID),
+                        )
                     }
                 }
             }
@@ -833,7 +867,11 @@ class LibraryManagerViewModel @Inject constructor(
             val report = runCatching { pcGameExporter.export() }
                 .onFailure { Timber.e(it, "Manual PC game export failed") }
                 .getOrNull()
-            _scratch.update { it.copy(message = report?.message ?: "Export failed — see the log.") }
+            if (report != null) {
+                tasks.report("lm_pc_export", "Export Manual Games", report.message, NotificationSeverity.SUCCESS)
+            } else {
+                tasks.report("lm_pc_export", "Export Manual Games", "Export failed — see the log.", NotificationSeverity.ERROR)
+            }
         }
     }
 
@@ -888,10 +926,17 @@ class LibraryManagerViewModel @Inject constructor(
                 )
                 ensureWindowsCard()
             }.fold(
-                onSuccess = { _scratch.update { it.copy(message = "\"${row.title}\" added to Windows Games.") } },
+                onSuccess = {
+                    tasks.report(
+                        "lm_pc_import", "Windows Games",
+                        "\"${row.title}\" added to Windows Games.",
+                        NotificationSeverity.SUCCESS,
+                        action = NotificationAction.OpenMemoryCard(WINDOWS_PLATFORM_ID),
+                    )
+                },
                 onFailure = { e ->
                     Timber.e(e, "PC game import failed for ${row.gameId}")
-                    _scratch.update { it.copy(message = "Couldn't import \"${row.title}\": ${e.message}") }
+                    tasks.report("lm_pc_import", "Windows Games", "Couldn't import \"${row.title}\": ${e.message}", NotificationSeverity.ERROR)
                 },
             )
         }
@@ -916,7 +961,12 @@ class LibraryManagerViewModel @Inject constructor(
                 }.onFailure { Timber.e(it, "PC game import failed for ${row.gameId}") }
             }
             if (added > 0) ensureWindowsCard()
-            _scratch.update { it.copy(message = "Imported $added PC game(s) into Windows Games.") }
+            tasks.report(
+                "lm_pc_import_all", "Windows Games",
+                "Imported $added PC game(s) into Windows Games.",
+                NotificationSeverity.SUCCESS,
+                action = NotificationAction.OpenMemoryCard(WINDOWS_PLATFORM_ID),
+            )
         }
     }
 
@@ -945,13 +995,14 @@ class LibraryManagerViewModel @Inject constructor(
 
             val result = romScanner.createSubfolders(uri.toString(), names)
             Timber.i("ES-DE setup — root=$uri created=${result.created} existing=${result.existing}")
-            _scratch.update {
-                it.copy(
-                    message = "ROM Root ready: ${result.created} folder(s) created" +
-                            (if (result.existing > 0) ", ${result.existing} already there" else "") +
-                            ". Copy your games into the matching folders; the root will be scanned automatically when you add or replace it.",
-                )
-            }
+            tasks.report(
+                id = "lm_esde_setup",
+                label = "ROM Root ready",
+                message = "${result.created} folder(s) created" +
+                    (if (result.existing > 0) ", ${result.existing} already there" else "") +
+                    ". Copy your games into the matching folders; the root will be scanned automatically when you add or replace it.",
+                severity = NotificationSeverity.SUCCESS,
+            )
         }
     }
 
@@ -964,8 +1015,10 @@ class LibraryManagerViewModel @Inject constructor(
     // so the first-run wizard's ROM-root pick triggers the exact same pass without duplicating it.
     fun scanRomRoot() {
         viewModelScope.launch {
+            val taskId = "lm_rom_root_scan"
+            tasks.start(taskId, "Scanning ROM Root", TaskKind.SCAN)
             val report = romRootScanRunner.scan()
-            _scratch.update { it.copy(message = report.message) }
+            tasks.complete(taskId, report.message)
         }
     }
 

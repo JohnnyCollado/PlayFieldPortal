@@ -1049,8 +1049,8 @@ class GameDetailViewModelTest {
     }
 
     @Test
-    fun `fetchArtwork evicts only this game's refs and never wipes the library`() = runTest {
-        coEvery { artworkRepository.fetchArtworkForGame(any(), any()) } returns
+    fun `fetchArtwork runs the shared single-game refetch and never wipes the library`() = runTest {
+        coEvery { artworkRepository.refetchArtworkForGame(1L, any()) } returns
             ArtworkFetchResult(gameId = 1L, title = "Crash Bandicoot", success = true)
 
         viewModel.loadGame(1L)
@@ -1058,11 +1058,10 @@ class GameDetailViewModelTest {
         viewModel.fetchArtwork()
         testDispatcher.scheduler.advanceUntilIdle()
 
-        // The scraper overwrites fixed-path files, so this game's refs must be evicted from
-        // the image cache — but ONLY evicted. clearCache() is the library-wide destructive
-        // reset (deletes stored files and every game's artwork refs); calling it here was the
-        // bug that wiped all artwork on refresh.
-        verify { artworkRepository.evictFromImageCache(any()) }
+        // Scoped eviction lives in refetchArtworkForGame now (ArtworkRepositoryRefetchTest).
+        // clearCache() is the library-wide destructive reset; calling it here was the bug that
+        // wiped all artwork on refresh.
+        coVerify(exactly = 1) { artworkRepository.refetchArtworkForGame(1L, any()) }
         coVerify(exactly = 0) { artworkRepository.clearCache() }
 
         viewModel.uiState.test {
@@ -1074,8 +1073,71 @@ class GameDetailViewModelTest {
     }
 
     @Test
+    fun `fetchArtwork re-reads the game so the new art shows`() = runTest {
+        val refreshed = fakeGame.copy(artworkUri = "file:///art/crash_box.png")
+        coEvery { gameRepository.getById(1L) } returnsMany listOf(fakeGame, refreshed)
+        coEvery { artworkRepository.refetchArtworkForGame(1L, any()) } returns
+            ArtworkFetchResult(1L, "Crash Bandicoot", success = true)
+
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.fetchArtwork()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("file:///art/crash_box.png", viewModel.uiState.value.game?.artworkUri)
+    }
+
+    @Test
+    fun `fetchArtwork shows the scraper's message when nothing is found`() = runTest {
+        coEvery { artworkRepository.refetchArtworkForGame(1L, any()) } returns
+            ArtworkFetchResult(1L, "Crash Bandicoot", success = false, errorMessage = "Not found on any source")
+
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.fetchArtwork()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("Not found on any source", viewModel.uiState.value.artworkMessage)
+    }
+
+    @Test
+    fun `fetchArtwork says so when the XMB menu is already fetching this game`() = runTest {
+        coEvery { artworkRepository.refetchArtworkForGame(1L, any()) } returns
+            ArtworkFetchResult(1L, "Crash Bandicoot", success = false, alreadyRunning = true)
+
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.fetchArtwork()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isFetchingArtwork)
+        assertEquals("Already fetching artwork for this game", state.artworkMessage)
+    }
+
+    @Test
+    fun `the Fetch Artwork option runs the fetch`() = runTest {
+        coEvery { artworkRepository.refetchArtworkForGame(1L, any()) } returns
+            ArtworkFetchResult(1L, "Crash Bandicoot", success = true)
+
+        viewModel.loadGame(1L)
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.activateAction(DetailAction.FETCH_ARTWORK)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) { artworkRepository.refetchArtworkForGame(1L, any()) }
+    }
+
+    @Test
+    fun `the Fetch Artwork option is labelled for what it does`() {
+        assertEquals("Fetch Artwork", DetailAction.FETCH_ARTWORK.label)
+        assertEquals("Fetch Artwork", DetailAction.FETCH_ARTWORK.dynamicLabel(favorite = false, refreshing = false))
+        assertEquals("Fetching Artwork...", DetailAction.FETCH_ARTWORK.dynamicLabel(favorite = false, refreshing = true))
+    }
+
+    @Test
     fun `dismissArtworkMessage clears artworkMessage`() = runTest {
-        coEvery { artworkRepository.fetchArtworkForGame(any(), any()) } returns
+        coEvery { artworkRepository.refetchArtworkForGame(1L, any()) } returns
             ArtworkFetchResult(1L, "Crash", success = true)
 
         viewModel.loadGame(1L)

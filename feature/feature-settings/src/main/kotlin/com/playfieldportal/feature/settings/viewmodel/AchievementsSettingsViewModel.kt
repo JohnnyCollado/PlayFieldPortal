@@ -44,15 +44,14 @@ data class AchievementsSettingsUiState(
     val hasSteam: Boolean = false,
     val steamId64: String = "",
     val lastSyncedLabel: String = "Never",
-    val message: String? = null,
+    // Match/sync/connection OUTCOMES are tray-only now (row + shade + notification cue); the screen
+    // keeps only the live progress fields below. Import results still surface here (separate flow).
     val isMatching: Boolean = false,
     val matchDone: Int = 0,
     val matchTotal: Int = 0,
-    val matchReport: MatchReport? = null,
     val isSyncing: Boolean = false,
     val syncDone: Int = 0,
     val syncTotal: Int = 0,
-    val syncResult: BatchSyncResult? = null,
     val isImporting: Boolean = false,
     val importDone: Int = 0,
     val importTotal: Int = 0,
@@ -74,15 +73,12 @@ private data class Accounts(
 
 // Transient UI-only state (not backed by DataStore), folded into uiState.
 private data class Extra(
-    val message: String? = null,
     val isMatching: Boolean = false,
     val matchDone: Int = 0,
     val matchTotal: Int = 0,
-    val matchReport: MatchReport? = null,
     val isSyncing: Boolean = false,
     val syncDone: Int = 0,
     val syncTotal: Int = 0,
-    val syncResult: BatchSyncResult? = null,
     val isImporting: Boolean = false,
     val importDone: Int = 0,
     val importTotal: Int = 0,
@@ -195,15 +191,12 @@ class AchievementsSettingsViewModel @Inject constructor(
             hasSteam = !acc.steamId64.isNullOrBlank(),
             steamId64 = acc.steamId64.orEmpty(),
             lastSyncedLabel = acc.lastSyncedAt?.let { DATE_FMT.format(Date(it)) } ?: "Never",
-            message = ex.message,
             isMatching = ex.isMatching,
             matchDone = ex.matchDone,
             matchTotal = ex.matchTotal,
-            matchReport = ex.matchReport,
             isSyncing = ex.isSyncing,
             syncDone = ex.syncDone,
             syncTotal = ex.syncTotal,
-            syncResult = ex.syncResult,
             isImporting = ex.isImporting,
             importDone = ex.importDone,
             importTotal = ex.importTotal,
@@ -238,18 +231,16 @@ class AchievementsSettingsViewModel @Inject constructor(
     }
 
     /**
-     * Raises a settings toast AND records it in the tray.
+     * Records a connection outcome in the tray (row + shade + notification cue) — no in-screen row.
      *
-     * The dismissible row is the right thing while the user is on this screen; it dies with the
-     * screen. "Steam connected" is worth finding again an hour later, which is what the tray is
-     * for — so every toast goes to both, from one place, rather than each call site remembering.
+     * "Steam connected" is worth finding again an hour later, which is what the tray is for; a
+     * dismissible row that dies with the screen is exactly what the user asked to stop seeing here.
      */
     private fun announce(
         id: String,
         message: String,
         severity: NotificationSeverity = NotificationSeverity.INFO,
     ) {
-        extra.update { it.copy(message = message) }
         tasks.report(
             id = id,
             label = message,
@@ -301,7 +292,7 @@ class AchievementsSettingsViewModel @Inject constructor(
         if (extra.value.isMatching) return
         viewModelScope.launch {
             syncJob?.cancelAndJoin()
-            extra.update { it.copy(isMatching = true, matchReport = null, matchDone = 0, matchTotal = 0) }
+            extra.update { it.copy(isMatching = true, matchDone = 0, matchTotal = 0) }
             // Same task id the hub uses: it is the same operation, so it is one tray row either
             // way rather than one per entry point.
             tasks.start(MATCH_TASK_ID, "Auto-matching games", TaskKind.ACHIEVEMENT)
@@ -314,7 +305,7 @@ class AchievementsSettingsViewModel @Inject constructor(
                 report.notificationLine(),
                 NotificationAction.OpenCategory("achievements"),
             )
-            extra.update { it.copy(isMatching = false, matchReport = report) }
+            extra.update { it.copy(isMatching = false) }
             launchSyncAll().join()
         }
     }
@@ -328,7 +319,7 @@ class AchievementsSettingsViewModel @Inject constructor(
     private fun launchSyncAll(): Job {
         val job = viewModelScope.launch {
             try {
-                extra.update { it.copy(isSyncing = true, syncResult = null, syncDone = 0, syncTotal = 0) }
+                extra.update { it.copy(isSyncing = true, syncDone = 0, syncTotal = 0) }
                 tasks.start(SYNC_TASK_ID, "Syncing Shiba Coins", TaskKind.ACHIEVEMENT)
                 val result = repository.syncAllLinked { done, total ->
                     tasks.progress(SYNC_TASK_ID, done, total)
@@ -352,7 +343,7 @@ class AchievementsSettingsViewModel @Inject constructor(
                         NotificationAction.OpenCategory("achievements"),
                     )
                 }
-                extra.update { it.copy(isSyncing = false, syncResult = result) }
+                extra.update { it.copy(isSyncing = false) }
             } finally {
                 // A cancelled sync (auto-match taking over) must not leave the spinner stuck, or
                 // a RUNNING row behind in the tray with nothing alive to finish it.
@@ -401,9 +392,6 @@ class AchievementsSettingsViewModel @Inject constructor(
         const val SYNC_TASK_ID = "achievement_sync"
     }
 
-    fun dismissMessage() = extra.update { it.copy(message = null) }
-    fun dismissReport() = extra.update { it.copy(matchReport = null) }
-    fun dismissSyncResult() = extra.update { it.copy(syncResult = null) }
     fun dismissImportResult() = extra.update { it.copy(importResult = null) }
     fun dismissSteamImportSummary() = extra.update { it.copy(steamImportSummary = null) }
 }

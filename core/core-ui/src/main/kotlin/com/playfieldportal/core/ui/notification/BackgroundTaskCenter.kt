@@ -8,6 +8,8 @@ import com.playfieldportal.core.domain.model.NotificationSeverity
 import com.playfieldportal.core.domain.model.TaskKind
 import com.playfieldportal.core.domain.repository.NotificationRepository
 import com.playfieldportal.core.domain.repository.NotificationSettings
+import com.playfieldportal.core.ui.sound.MenuSound
+import com.playfieldportal.core.ui.sound.MenuSoundPlayer
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Collections
 import javax.inject.Inject
@@ -47,6 +49,10 @@ class BackgroundTaskCenter @Inject constructor(
     @ApplicationContext context: Context,
     private val notifications: NotificationRepository,
     settings: NotificationSettings,
+    // The one place a tray notification rings. This is the deliberate trigger MenuSound.NOTIFICATION
+    // was parked waiting for: a row settling here is exactly "a notification popped up", so the cue
+    // fires here and nowhere else (no more chimes on automatic rescans or backups).
+    private val menuSound: MenuSoundPlayer,
 ) {
     private val shade = BackgroundTaskNotifier(context)
 
@@ -175,6 +181,10 @@ class BackgroundTaskCenter @Inject constructor(
             else shade.complete(id, title, message)
         }
         if (!recordHistory) return
+        // A row is about to land in the panel — ring the notification cue (the user's SOUND_NOTIFICATION
+        // override, else the bundled default). Gated by recordHistory so a disabled tray is silent, and
+        // fired off the DB write so the cue is not held behind IO.
+        menuSound.play(MenuSound.NOTIFICATION)
         scope.launch {
             runCatching {
                 notifications.post(

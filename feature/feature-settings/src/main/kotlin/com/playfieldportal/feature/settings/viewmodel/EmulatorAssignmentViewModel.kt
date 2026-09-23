@@ -6,7 +6,10 @@ import com.playfieldportal.core.data.database.dao.PlatformDao
 import com.playfieldportal.core.data.repository.MemoryCardRepository
 import com.playfieldportal.core.domain.model.EmulatorProfile
 import com.playfieldportal.core.domain.model.MemoryCard
+import com.playfieldportal.core.domain.model.NotificationAction
+import com.playfieldportal.core.domain.model.NotificationSeverity
 import com.playfieldportal.core.domain.repository.GameRepository
+import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
 import com.playfieldportal.feature.launcher.AutoCoreMemory
 import com.playfieldportal.feature.launcher.EmulatorLaunchResolver
 import com.playfieldportal.feature.launcher.EmulatorProfileRepository
@@ -82,7 +85,6 @@ data class EmulatorAssignmentUiState(
     /** Row to restore focus to when returning from a platform's detail. */
     val returnFocusKey: String? = null,
     val confirmClearPlatformId: String? = null,
-    val message: String? = null,
 ) {
     val detailRow: PlatformAssignRow?
         get() = platforms.firstOrNull { it.platformId == detailPlatformId }
@@ -95,7 +97,17 @@ class EmulatorAssignmentViewModel @Inject constructor(
     private val gameRepository: GameRepository,
     private val profileRepository: EmulatorProfileRepository,
     private val autoCoreMemory: AutoCoreMemory,
+    private val tasks: BackgroundTaskCenter,
 ) : ViewModel() {
+
+    // Assignment outcomes post to the tray (row + shade + cue) rather than an in-screen row.
+    private fun report(message: String) = tasks.report(
+        id = "emu_assign",
+        label = "Emulator Assignment",
+        message = message,
+        severity = NotificationSeverity.SUCCESS,
+        action = NotificationAction.OpenSettingsScreen("settings_emulators_assign"),
+    )
 
     private val _uiState = MutableStateFlow(EmulatorAssignmentUiState())
     val uiState: StateFlow<EmulatorAssignmentUiState> = _uiState.asStateFlow()
@@ -120,7 +132,7 @@ class EmulatorAssignmentViewModel @Inject constructor(
     // ── Navigation ─────────────────────────────────────────────────────────────
 
     fun openDetail(platformId: String) = _uiState.update {
-        it.copy(detailPlatformId = platformId, returnFocusKey = platformId, confirmClearPlatformId = null, message = null)
+        it.copy(detailPlatformId = platformId, returnFocusKey = platformId, confirmClearPlatformId = null)
     }
 
     fun closeDetail() = _uiState.update {
@@ -133,8 +145,6 @@ class EmulatorAssignmentViewModel @Inject constructor(
         closeDetail()
         return true
     }
-
-    fun dismissMessage() = _uiState.update { it.copy(message = null) }
 
     // ── Default assignment ────────────────────────────────────────────────────
     //
@@ -149,9 +159,7 @@ class EmulatorAssignmentViewModel @Inject constructor(
             ?: row.defaultDisplayName
         viewModelScope.launch {
             memoryCardRepository.setEmulator(platformId, profileId)
-            _uiState.update {
-                it.copy(message = "${row.platformName}: default emulator set to ${name ?: profileId}")
-            }
+            report("${row.platformName}: default emulator set to ${name ?: profileId}")
         }
     }
 
@@ -160,9 +168,7 @@ class EmulatorAssignmentViewModel @Inject constructor(
         val row = _uiState.value.platforms.firstOrNull { it.platformId == platformId } ?: return
         viewModelScope.launch {
             memoryCardRepository.setEmulator(platformId, null)
-            _uiState.update {
-                it.copy(message = "${row.platformName}: using the recommended emulator")
-            }
+            report("${row.platformName}: using the recommended emulator")
         }
     }
 
@@ -181,13 +187,11 @@ class EmulatorAssignmentViewModel @Inject constructor(
         val row = _uiState.value.platforms.firstOrNull { it.platformId == platformId }
         viewModelScope.launch {
             gameRepository.clearPreferredEmulatorForPlatform(platformId)
-            _uiState.update {
-                it.copy(
-                    confirmClearPlatformId = null,
-                    message = "${row?.platformName ?: platformId}: cleared ${row?.overrideCount ?: 0} " +
-                        "per-game override(s) — those games now follow the platform default",
-                )
-            }
+            _uiState.update { it.copy(confirmClearPlatformId = null) }
+            report(
+                "${row?.platformName ?: platformId}: cleared ${row?.overrideCount ?: 0} " +
+                    "per-game override(s) — those games now follow the platform default",
+            )
         }
     }
 

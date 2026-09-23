@@ -1448,6 +1448,7 @@ class XMBViewModel @Inject constructor(
     // Shared with every other producer in the app (workers, scanners), so the panel shows all
     // background work rather than only what the XMB itself started.
     private val backgroundTasks: BackgroundTaskCenter,
+    private val gameArtworkFetchRunner: GameArtworkFetchRunner,
 ) : ViewModel() {
 
     // Drives the "convert detected games?" multi-select picker after a Windows-card scan; the same
@@ -5874,89 +5875,17 @@ class XMBViewModel @Inject constructor(
     }
 
     private fun openGameContextMenuCore(item: XMBItem, discCount: Int) {
-        val inCollection = _uiState.value.selectedCollectionId != null
         val currentCat = currentCategory()
         val inGamingCategory = currentCat?.isGamingCategory == true
-        val inMissingBucket = _uiState.value.selectedPlatformId == MISSING_PLATFORM_ID
-
-        val items = buildList {
-            // The explicit path to the edit surface, essential when direct launch makes
-            // confirm skip straight into the game. Launch/title/note/scrape actions all live
-            // in Game Detail — the menu stays navigational.
-            add(XMBContextMenuItem("game_details", "View Game Details"))
-            // Multi-disc sets: pick which disc to boot — the only way to reach a non-primary
-            // disc when direct launch skips Game Detail's picker. Launches the chosen disc.
-            if (discCount > 1) add(XMBContextMenuItem("choose_disc", "Choose Disc"))
-            // Android games can never have achievements — no Shiba Coins entry for them.
-            if (item.platformId != ANDROID_PLATFORM_ID) {
-                add(XMBContextMenuItem("view_shiba_coins", "View Shiba Coins"))
-            }
-            // Emulated PC (Local Steam) games can have their Goldberg achievement data installed on
-            // demand — gated per-game at dispatch on the installer toggle being on.
-            if (item.platformId == WINDOWS_PLATFORM_ID) {
-                add(XMBContextMenuItem("install_goldberg", "Install Goldberg Achievements"))
-                // Writes this game's .pfpgame file so a fresh install can bring it back with its
-                // artwork (C18 task X.7). Offered on every PC game; the exporter explains a refusal.
-                add(XMBContextMenuItem("export_game", "Export Game"))
-            }
-            // No "Edit App Details" here: package-backed GAME entries (PC shortcuts, Android
-            // gaming apps) are games — art/title/note editing lives in Game Detail and the
-            // game rows below, never the slim standard-app editor.
-            add(XMBContextMenuItem(
-                id    = if (item.isFavorite) "unfavorite" else "favorite",
-                label = if (item.isFavorite) "Remove from Favorites" else "Add to Favorites",
-            ))
-            add(XMBContextMenuItem("add_to_collection", "Add to Collection"))
-            // Only offer removal when viewing the game from inside a collection.
-            if (inCollection) add(XMBContextMenuItem("remove_from_collection", "Remove from Collection"))
-            add(XMBContextMenuItem("manage_collections", "Manage Collections"))
-
-            // Gaming category options. Games in the Main Game category can only be COPIED into
-            // another category (never moved out or removed); custom gaming categories allow
-            // move / remove / pin. Move/Add only appear when a real destination exists — a
-            // custom gaming category other than the current one (Main Game is never a target).
-            if (inGamingCategory) {
-                val hasOtherCustomCategory = _uiState.value.categories.any {
-                    it.isGamingCategory && it.id != BuiltInCategory.GAMES && it.id != currentCat.id
-                }
-                if (currentCat.id == BuiltInCategory.GAMES) {
-                    if (hasOtherCustomCategory) add(XMBContextMenuItem("add_category", "Add to Category"))
-                } else {
-                    if (hasOtherCustomCategory) add(XMBContextMenuItem("move_category", "Move to Category"))
-                    add(XMBContextMenuItem("remove_category", "Remove from Category"))
-                    val pinned = item.subtitle == "Pinned"
-                    add(XMBContextMenuItem(
-                        if (pinned) "unpin_category" else "pin_category",
-                        if (pinned) "Unpin" else "Pin",
-                    ))
-                }
-            }
-
-            // Emulator choice only applies to ROM-backed games; package-backed gaming apps
-            // launch via their package/shortcut handle.
-            if (!item.isAndroidApp) add(XMBContextMenuItem("change_emulator", "Change Emulator"))
-            add(XMBContextMenuItem("icon_display", "Icon Display"))
-            add(XMBContextMenuItem("file_location",    "View File Location"))
-            // Per-location hide for the spot this game is shown in (recoverable in Hidden Items).
-            currentHideLocation()?.let { (_, _, label) -> add(XMBContextMenuItem("hide_here", "Hide from $label")) }
-            // Android-library apps are user-curated, so let the user remove one like any game,
-            // or demote it to a standard app without losing its art/collections.
-            if (inMissingBucket) {
-                // The plan's explicit user delete, and the only destructive action anywhere in the
-                // missing-ROM flow. Mechanically identical to "Remove from Library" (delete row,
-                // file untouched), but labelled for what it means here: this bucket is the entry's
-                // last visible trace, so removing it ends the line rather than dropping it from one
-                // view. Everything else is recoverable by putting the file back.
-                add(XMBContextMenuItem("remove_missing", "Remove permanently", isDestructive = true))
-            } else if (item.platformId == ANDROID_PLATFORM_ID && item.packageName != null && !inCollection) {
-                add(XMBContextMenuItem("unmark_game", "Unmark as Game"))
-                add(XMBContextMenuItem("remove_app", "Remove from Library", isDestructive = true))
-            } else if (!inCollection) {
-                // Every other game gets full delete too (confirmed first). Deleting a scanned ROM
-                // entry leaves the file untouched — the next scan re-discovers it.
-                add(XMBContextMenuItem("remove_game", "Remove from Library", isDestructive = true))
-            }
-        }
+        val items = gameContextMenuItems(
+            item            = item,
+            discCount       = discCount,
+            inCollection    = _uiState.value.selectedCollectionId != null,
+            currentCategory = currentCat,
+            categories      = _uiState.value.categories,
+            inMissingBucket = _uiState.value.selectedPlatformId == MISSING_PLATFORM_ID,
+            hideLabel       = currentHideLocation()?.third,
+        )
 
         _uiState.update { it.copy(
             activeContextMenu = XMBContextMenu(
@@ -6388,6 +6317,7 @@ class XMBViewModel @Inject constructor(
                 "file_location"          -> showGameFileLocation(menu.gameId)
                 "change_emulator"        -> openEmulatorPickerMenu(menu.gameId)
                 "icon_display"           -> openIconDisplayPickerMenu(menu.gameId)
+                "fetch_artwork"          -> fetchArtworkFromMenu(menu.gameId)
                 // Two-step delete: a confirm menu first, matching the Game Detail page's guard.
                 "remove_game"            -> _uiState.update { it.copy(activeContextMenu = XMBContextMenu(
                     title  = "Remove \"${menu.title}\" from Library?",
@@ -6679,6 +6609,13 @@ class XMBViewModel @Inject constructor(
             _uiState.update {
                 it.copy(infoDialog = InfoDialogState(title = game.displayTitle, message = report?.message ?: "Export failed — see the log."))
             }
+        }
+    }
+
+    /** Fetch Artwork from the XMB game menu; progress and outcome go to the notification panel. */
+    private fun fetchArtworkFromMenu(gameId: Long) {
+        viewModelScope.launch {
+            if (gameArtworkFetchRunner.run(gameId)) loadItemsForCategory(currentCategory())
         }
     }
 
@@ -9874,13 +9811,13 @@ class XMBViewModel @Inject constructor(
         private const val ADD_GAMES_ITEM_ID = "add_games"
         private const val FIND_GAMES_ITEM_ID = "find_games"
         // Platform id whose library is built from installed apps (picker) instead of ROM scans.
-        private const val ANDROID_PLATFORM_ID = "android"
+        internal const val ANDROID_PLATFORM_ID = "android"
         // Sentinel platform for app rows that merely BACK a category app's artwork / favorite /
         // collection membership. They reference an app by package but are NOT in the Android
         // library, so they use this id instead of "android" to stay out of observeByPlatform.
         private const val APP_SHORTCUT_PLATFORM_ID = "app_shortcut"
         // Virtual card holding PC-launcher game imports (harvest / folder scan / add-by-ID).
-        private const val WINDOWS_PLATFORM_ID = "windows"
+        internal const val WINDOWS_PLATFORM_ID = "windows"
 
         // One step of the music player's seek, on the D-pad and on the touch transport alike.
         // The same 10s the video player takes.

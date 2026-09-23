@@ -18,6 +18,10 @@ import com.playfieldportal.core.data.repository.RetroArchLink
 import com.playfieldportal.core.data.repository.RomRootRepository
 import com.playfieldportal.core.data.repository.Vita3KLibrary
 import com.playfieldportal.core.data.repository.SafGrants
+import com.playfieldportal.core.domain.model.NotificationAction
+import com.playfieldportal.core.domain.model.NotificationKind
+import com.playfieldportal.core.domain.model.NotificationSeverity
+import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
 import com.playfieldportal.feature.achievements.provider.steam.SteamRemoteDataSource
 import com.playfieldportal.feature.artwork.MetadataApiKeyProvider
 import com.playfieldportal.feature.artwork.api.ArtworkImportManager
@@ -174,7 +178,22 @@ class InitialSetupViewModel @Inject constructor(
     private val romScanner: com.playfieldportal.feature.library.scanner.RomScanner,
     private val folderHintResolver: com.playfieldportal.core.data.platform.PlatformFolderHintResolver,
     private val memoryCardRepository: com.playfieldportal.core.data.repository.MemoryCardRepository,
+    private val tasks: BackgroundTaskCenter,
 ) : ViewModel() {
+
+    // Wizard OUTCOMES (folder linked, service connected, import started) go to the tray, keyed so a
+    // repeat replaces its row. Validation and "nothing to do" guidance stay inline (see the callers).
+    private fun announce(
+        id: String,
+        message: String,
+        severity: NotificationSeverity = NotificationSeverity.SUCCESS,
+    ) = tasks.report(
+        id = id,
+        label = message,
+        severity = severity,
+        kind = NotificationKind.SYSTEM,
+        action = NotificationAction.OpenSettingsScreen("settings_initial_setup"),
+    )
 
     // Wizard-local state (page + transient messages + RetroArch status); the folder/service rows
     // are mirrored from the stores so they never go stale.
@@ -367,13 +386,12 @@ class InitialSetupViewModel @Inject constructor(
                 .filter { it.isNotBlank() && it != "android" }
                 .distinct()
             val result = romScanner.createSubfolders(firstRoot, names)
-            scratch.update {
-                it.copy(
-                    message = "Created ${result.created} console folder(s)" +
-                        (if (result.existing > 0) " (${result.existing} already there)" else "") +
-                        ". Copy your games into the matching folders.",
-                )
-            }
+            announce(
+                "setup_rom_folders",
+                "Created ${result.created} console folder(s)" +
+                    (if (result.existing > 0) " (${result.existing} already there)" else "") +
+                    ". Copy your games into the matching folders.",
+            )
         }
     }
 
@@ -424,21 +442,22 @@ class InitialSetupViewModel @Inject constructor(
             val sources = runCatching { artworkImportManager.detectSources() }.getOrDefault(emptyList())
             detectedArtworkSources = sources
             scratch.update {
-                it.copy(
-                    message = buildString {
-                        append(
-                            if (result.existingLibrary) "Existing artwork library reconnected."
-                            else "Artwork library created."
-                        )
-                        if (scan != null && scan.gamesLinked > 0) {
-                            append(" ${scan.gamesLinked} game(s) linked from files already in the folder.")
-                        } else if (sources.isEmpty()) {
-                            append(" Place other launchers' media under its import/ folder to gather it here.")
-                        }
-                    },
-                    artworkSources = sources.map { s -> ArtworkSourceUi(s.label, s.systems.size) },
-                )
+                it.copy(artworkSources = sources.map { s -> ArtworkSourceUi(s.label, s.systems.size) })
             }
+            announce(
+                "setup_artwork_link",
+                buildString {
+                    append(
+                        if (result.existingLibrary) "Existing artwork library reconnected."
+                        else "Artwork library created."
+                    )
+                    if (scan != null && scan.gamesLinked > 0) {
+                        append(" ${scan.gamesLinked} game(s) linked from files already in the folder.")
+                    } else if (sources.isEmpty()) {
+                        append(" Place other launchers' media under its import/ folder to gather it here.")
+                    }
+                },
+            )
         }
     }
 
@@ -447,12 +466,8 @@ class InitialSetupViewModel @Inject constructor(
         viewModelScope.launch {
             artworkImportManager.forgetFolder()
             detectedArtworkSources = emptyList()
-            scratch.update {
-                it.copy(
-                    artworkSources = emptyList(),
-                    message = "Artwork folder released — files on disk were not touched.",
-                )
-            }
+            scratch.update { it.copy(artworkSources = emptyList()) }
+            announce("setup_artwork_link", "Artwork folder released — files on disk were not touched.")
         }
     }
 
@@ -477,11 +492,10 @@ class InitialSetupViewModel @Inject constructor(
                 return@launch
             }
             artworkImportManager.startImport(plan, PortableArtworkLibrary.Transfer.COPY)
-            scratch.update {
-                it.copy(
-                    message = "Importing \"${label ?: plan.sourceLabel}\" — progress shows in notifications; details land in Settings ▸ Artwork Import.",
-                )
-            }
+            announce(
+                "setup_artwork_import",
+                "Importing \"${label ?: plan.sourceLabel}\" — progress shows in notifications; details land in Settings ▸ Artwork Import.",
+            )
         }
     }
 
@@ -514,9 +528,9 @@ class InitialSetupViewModel @Inject constructor(
                     retroArchLinked = false,
                     retroArchCoreCount = null,
                     retroArchDetecting = false,
-                    message = "RetroArch link removed — no RetroArch cores will be offered until you link again.",
                 )
             }
+            announce("setup_retroarch", "RetroArch link removed — no RetroArch cores will be offered until you link again.")
         }
     }
 
@@ -527,9 +541,9 @@ class InitialSetupViewModel @Inject constructor(
                 retroArchDetecting = false,
                 retroArchLinked = inventory is CoreInventory.Verified || inventory is CoreInventory.EmptyTree,
                 retroArchCoreCount = if (inventory is CoreInventory.Unlinked) null else inventory.coreFiles.size,
-                message = doneMessage ?: it.message,
             )
         }
+        if (doneMessage != null) announce("setup_retroarch", doneMessage)
     }
 
     // ── Vita3K data folder (ux0) ───────────────────────────────────────────────
@@ -539,13 +553,13 @@ class InitialSetupViewModel @Inject constructor(
     fun linkVitaFolder(uri: Uri) {
         viewModelScope.launch {
             vita3KLibrary.setUx0Folder(uri)
-            scratch.update {
-                it.copy(
-                    message = "Vita3K data folder set. Installed titles can be scanned from the " +
-                        "PS Vita Memory Card in Library Manager.",
-                    vitaFolderName = rootDisplayName(uri.toString()),
-                )
-            }
+            // vitaFolderName is mirrored from vita3KLibrary.ux0TreeUriFlow in the uiState combine, so
+            // it updates itself once the grant persists — no scratch write needed here.
+            announce(
+                "setup_vita",
+                "Vita3K data folder set. Installed titles can be scanned from the " +
+                    "PS Vita Memory Card in Library Manager.",
+            )
         }
     }
 
@@ -553,9 +567,7 @@ class InitialSetupViewModel @Inject constructor(
     fun forgetVitaFolder() {
         viewModelScope.launch {
             vita3KLibrary.clear()
-            scratch.update {
-                it.copy(message = "Vita3K data folder released — files on disk were not touched.")
-            }
+            announce("setup_vita", "Vita3K data folder released — files on disk were not touched.")
         }
     }
 
@@ -565,7 +577,7 @@ class InitialSetupViewModel @Inject constructor(
         if (apiKey.isBlank()) return
         viewModelScope.launch {
             sgdbKeys.saveKey(apiKey)
-            scratch.update { it.copy(message = "SteamGridDB connected") }
+            announce("setup_svc_sgdb", "SteamGridDB connected")
         }
     }
 
@@ -574,7 +586,7 @@ class InitialSetupViewModel @Inject constructor(
         if (apiKey.isBlank()) return
         viewModelScope.launch {
             metadataKeys.saveTgdbKey(apiKey)
-            scratch.update { it.copy(message = "TheGamesDB connected") }
+            announce("setup_svc_tgdb", "TheGamesDB connected")
         }
     }
 
@@ -582,7 +594,8 @@ class InitialSetupViewModel @Inject constructor(
         if (clientId.isBlank() || clientSecret.isBlank()) return
         viewModelScope.launch {
             metadataKeys.saveIgdbCredentials(clientId, clientSecret)
-            scratch.update { it.copy(message = "IGDB connected", igdbStatus = null) }
+            scratch.update { it.copy(igdbStatus = null) }
+            announce("setup_svc_igdb", "IGDB connected")
         }
     }
 
@@ -641,7 +654,8 @@ class InitialSetupViewModel @Inject constructor(
         if (username.isBlank() || password.isBlank()) return
         viewModelScope.launch {
             metadataKeys.saveSsCredentials(username, password)
-            scratch.update { it.copy(message = "ScreenScraper connected", ssStatus = null) }
+            scratch.update { it.copy(ssStatus = null) }
+            announce("setup_svc_ss", "ScreenScraper connected")
         }
     }
 
@@ -650,7 +664,7 @@ class InitialSetupViewModel @Inject constructor(
         viewModelScope.launch {
             achievementCredentials.saveRetroAchievements(username, apiKey)
             achievementCredentials.setEnabled(true)
-            scratch.update { it.copy(message = "RetroAchievements connected") }
+            announce("setup_svc_ra", "RetroAchievements connected")
         }
     }
 
@@ -662,9 +676,11 @@ class InitialSetupViewModel @Inject constructor(
             val message = ServiceConnectors.connectSteam(
                 achievementCredentials, steamApi, idOrVanity, apiKey,
             )
-            scratch.update { it.copy(message = message) }
+            announce("setup_svc_steam", message)
         }
     }
 
+    // Still used by the validation / "nothing to do" rows the wizard keeps inline (import guidance,
+    // artwork-folder failure). Operation OUTCOMES go to the tray via announce() instead.
     fun dismissMessage() = scratch.update { it.copy(message = null) }
 }

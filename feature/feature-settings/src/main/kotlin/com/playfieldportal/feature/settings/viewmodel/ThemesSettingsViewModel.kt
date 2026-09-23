@@ -11,7 +11,10 @@ import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.data.repository.PfpThemeStore
 import com.playfieldportal.core.data.repository.PtfThemeImporter
+import com.playfieldportal.core.domain.model.NotificationAction
+import com.playfieldportal.core.domain.model.NotificationSeverity
 import com.playfieldportal.core.domain.model.PFPTheme
+import com.playfieldportal.core.ui.notification.BackgroundTaskCenter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,9 +31,10 @@ data class ThemesSettingsUiState(
     // Name of the theme applied through PfpThemeStore ("Default" = stock look).
     val activeThemeName: String = "Default",
     val isInstalling: Boolean = false,
-    val installMessage: String? = null,
     // Custom-theme cascade state (docs/xmb-theme-creator-plan.md): the imported/custom accent
     // that supersedes the preset scheme, and the unified icon tint (null = default white).
+    // Note: import/create/reset OUTCOMES no longer live here — they post to the notification tray.
+    // isInstalling stays: the in-screen progress bar is kept, only the result row is gone.
     val accentOverrideArgb: Long? = null,
     val iconColorArgb: Long? = null,
     // The user's saved .pfptheme library (imports + Quick Create).
@@ -44,6 +48,7 @@ class ThemesSettingsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val ptfImporter: PtfThemeImporter,
     private val themeStore: PfpThemeStore,
+    private val tasks: BackgroundTaskCenter,
 ) : ViewModel() {
 
     private val _extra = MutableStateFlow(ThemesSettingsUiState())
@@ -61,15 +66,26 @@ class ThemesSettingsViewModel @Inject constructor(
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ThemesSettingsUiState())
 
-    fun dismissMessage() = _extra.update { it.copy(installMessage = null) }
+    // Theme import/create/reset outcomes land in the tray (row + shade + notification cue), keyed so
+    // a repeat replaces its row. INFO for plain results, ERROR when the store reported a failure.
+    private fun reportTheme(message: String, severity: NotificationSeverity = NotificationSeverity.SUCCESS) {
+        tasks.report(
+            id = "themes_result",
+            label = "Themes",
+            message = message,
+            severity = severity,
+            action = NotificationAction.OpenSettingsScreen("settings_themes"),
+        )
+    }
 
     // ── Custom theme cascade ─────────────────────────────────────────────────
 
     /** Imports a user-picked official PSP theme (.ptf): wallpaper + derived accent. */
     fun importPtfTheme(uri: Uri) {
         viewModelScope.launch {
-            _extra.update { it.copy(isInstalling = true, installMessage = null) }
-            val message = when (val result = ptfImporter.import(uri)) {
+            _extra.update { it.copy(isInstalling = true) }
+            val result = ptfImporter.import(uri)
+            val message = when (result) {
                 is PtfThemeImporter.Result.Success ->
                     "Imported \"${result.themeName}\" — wallpaper applied" +
                         if (result.accentArgb != null) " with its color" else ""
@@ -78,7 +94,12 @@ class ThemesSettingsViewModel @Inject constructor(
                 is PtfThemeImporter.Result.Failed -> result.reason
             }
             Timber.i("PTF import: %s", message)
-            _extra.update { it.copy(isInstalling = false, installMessage = message) }
+            _extra.update { it.copy(isInstalling = false) }
+            reportTheme(
+                message,
+                if (result is PtfThemeImporter.Result.Success) NotificationSeverity.SUCCESS
+                else NotificationSeverity.ERROR,
+            )
         }
     }
 
@@ -110,7 +131,7 @@ class ThemesSettingsViewModel @Inject constructor(
         viewModelScope.launch {
             themeStore.resetApplied()
             Timber.i("Theme reset to default")
-            _extra.update { it.copy(installMessage = "Theme reset — back to the default look") }
+            reportTheme("Theme reset — back to the default look")
         }
     }
 
@@ -119,21 +140,25 @@ class ThemesSettingsViewModel @Inject constructor(
     /** Quick Create: a picked photo becomes a saved+applied theme, accent auto-derived. */
     fun createThemeFromPhoto(uri: Uri) {
         viewModelScope.launch {
-            _extra.update { it.copy(isInstalling = true, installMessage = null) }
+            _extra.update { it.copy(isInstalling = true) }
             val saved = themeStore.createFromImage(uri)
-            val message = if (saved != null) {
+            if (saved != null) {
                 themeStore.apply(saved.id)
-                "Created \"${saved.name}\"" +
-                    if (saved.accentArgb != null) " — color derived from the photo" else ""
-            } else "Could not read that image"
-            _extra.update { it.copy(isInstalling = false, installMessage = message) }
+                reportTheme(
+                    "Created \"${saved.name}\"" +
+                        if (saved.accentArgb != null) " — color derived from the photo" else "",
+                )
+            } else {
+                reportTheme("Could not read that image", NotificationSeverity.ERROR)
+            }
+            _extra.update { it.copy(isInstalling = false) }
         }
     }
 
     fun applySavedTheme(id: String) {
         viewModelScope.launch {
             val ok = themeStore.apply(id)
-            if (!ok) _extra.update { it.copy(installMessage = "Could not apply the theme") }
+            if (!ok) reportTheme("Could not apply the theme", NotificationSeverity.ERROR)
         }
     }
 
@@ -145,12 +170,8 @@ class ThemesSettingsViewModel @Inject constructor(
     fun saveCurrentLookAsTheme(name: String) {
         viewModelScope.launch {
             val saved = themeStore.saveCurrentLook(name)
-            _extra.update {
-                it.copy(
-                    installMessage = if (saved != null) "Saved \"${saved.name}\""
-                    else "Could not save the theme",
-                )
-            }
+            if (saved != null) reportTheme("Saved \"${saved.name}\"")
+            else reportTheme("Could not save the theme", NotificationSeverity.ERROR)
         }
     }
 
@@ -163,7 +184,7 @@ class ThemesSettingsViewModel @Inject constructor(
         viewModelScope.launch {
             val file = themeStore.exportForShare(id)
             if (file == null) {
-                _extra.update { it.copy(installMessage = "Could not export the theme") }
+                reportTheme("Could not export the theme", NotificationSeverity.ERROR)
                 return@launch
             }
             val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
@@ -181,10 +202,15 @@ class ThemesSettingsViewModel @Inject constructor(
     /** Imports a shared `.pfptheme` bundle into the library and applies it. */
     fun importPfpTheme(uri: Uri) {
         viewModelScope.launch {
-            _extra.update { it.copy(isInstalling = true, installMessage = null) }
+            _extra.update { it.copy(isInstalling = true) }
             val result = themeStore.importBundleDetailed(uri)
             if (result is PfpThemeStore.ImportResult.Success) themeStore.apply(result.theme.id)
-            _extra.update { it.copy(isInstalling = false, installMessage = messageFor(result)) }
+            _extra.update { it.copy(isInstalling = false) }
+            reportTheme(
+                messageFor(result),
+                if (result is PfpThemeStore.ImportResult.Success) NotificationSeverity.SUCCESS
+                else NotificationSeverity.ERROR,
+            )
         }
     }
 

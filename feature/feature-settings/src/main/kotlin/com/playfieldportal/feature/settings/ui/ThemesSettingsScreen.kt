@@ -90,7 +90,6 @@ fun ThemesSettingsScreen(
         onSetIconColor = { viewModel.setIconColor(it) },
         onClearAccentOverride = { viewModel.clearAccentOverride() },
         onResetTheme = { viewModel.resetTheme() },
-        onDismissMessage = { viewModel.dismissMessage() },
         onSaveCurrentLook = { viewModel.saveCurrentLookAsTheme(it) },
         modifier = modifier
     )
@@ -110,7 +109,6 @@ private fun ThemesSettingsContent(
     onSetIconColor: (Long?) -> Unit,
     onClearAccentOverride: () -> Unit,
     onResetTheme: () -> Unit,
-    onDismissMessage: () -> Unit,
     onSaveCurrentLook: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -356,13 +354,6 @@ private fun ThemesSettingsContent(
                     )
                 }
 
-                state.installMessage?.let { msg ->
-                    SettingsRow(
-                        label    = msg,
-                        sublabel = "Tap to dismiss",
-                        onClick  = onDismissMessage,
-                    )
-                }
             }
         }
 
@@ -517,7 +508,6 @@ fun ThemesSettingsScreenPreview() {
             onSetIconColor = {},
     onClearAccentOverride = {},
     onResetTheme = {},
-    onDismissMessage = {},
 )
     }
 }

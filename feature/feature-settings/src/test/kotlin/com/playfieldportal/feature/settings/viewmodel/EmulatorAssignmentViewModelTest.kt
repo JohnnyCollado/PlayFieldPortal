@@ -41,6 +41,7 @@ class EmulatorAssignmentViewModelTest {
     private val gameRepository = mockk<GameRepository>(relaxed = true)
     private val profileRepository = mockk<EmulatorProfileRepository>(relaxed = true)
     private val autoCoreMemory = mockk<com.playfieldportal.feature.launcher.AutoCoreMemory>(relaxed = true)
+    private val tasks = mockk<com.playfieldportal.core.ui.notification.BackgroundTaskCenter>(relaxed = true)
 
     private lateinit var vm: EmulatorAssignmentViewModel
 
@@ -102,6 +103,7 @@ class EmulatorAssignmentViewModelTest {
             gameRepository,
             profileRepository,
             autoCoreMemory,
+            tasks,
         )
     }
 
@@ -277,7 +279,13 @@ class EmulatorAssignmentViewModelTest {
         advanceUntilIdle()
 
         coVerify(exactly = 1) { memoryCardRepository.setEmulator("psx", "duckstation") }
-        assertTrue(vm.uiState.value.message!!.contains("DuckStation"))
+        io.mockk.verify {
+            tasks.report(
+                id = "emu_assign", label = any(),
+                message = match { it?.contains("DuckStation") == true },
+                severity = any(), kind = any(), action = any(),
+            )
+        }
     }
 
     @Test
@@ -329,7 +337,13 @@ class EmulatorAssignmentViewModelTest {
         // Scoped to ONE platform: snes overrides stay untouched.
         coVerify(exactly = 1) { gameRepository.clearPreferredEmulatorForPlatform("psx") }
         assertNull(vm.uiState.value.confirmClearPlatformId)
-        assertTrue(vm.uiState.value.message!!.contains("cleared 1 per-game override"))
+        io.mockk.verify {
+            tasks.report(
+                id = "emu_assign", label = any(),
+                message = match { it?.contains("cleared 1 per-game override") == true },
+                severity = any(), kind = any(), action = any(),
+            )
+        }
         assertEquals(1, row("snes")!!.overrideCount)
     }
 }

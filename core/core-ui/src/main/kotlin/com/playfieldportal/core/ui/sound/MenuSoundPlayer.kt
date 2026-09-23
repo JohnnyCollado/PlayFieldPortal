@@ -35,16 +35,14 @@ enum class MenuSound {
     BACK,           // back / close
     LAUNCH,         // launch a game or app
     /**
-     * A background task finished, or something worth surfacing arrived — a library rescan, a
-     * backup, an achievement sync. Fired on completion, never on progress.
+     * A tray notification was posted — a settled background task or a one-shot outcome. Fired from
+     * the single [com.playfieldportal.core.ui.notification.BackgroundTaskCenter] settle seam, so it
+     * rings exactly when a row lands in the panel and never on progress.
      *
-     * PARKED: [play] currently DROPS this event. It fired at the end of every full-library
-     * rescan — which the rescan bus runs on app resume, media mount and USB unplug — plus
-     * backup/restore completion, so it landed at seemingly random moments. The bundled
-     * `sfx_notification` sample, the SOUND_NOTIFICATION slot and the Sound screen row all stay,
-     * and the event's call sites are left in place; the gate inside [play] is the single switch
-     * to lift when the event gets real, deliberate triggers. Preview (ignoreMute) still
-     * auditions it so a saved assignment stays testable.
+     * This used to be PARKED: it once fired directly from the full-library rescan (which the rescan
+     * bus runs on app resume, media mount and USB unplug) and from backup/restore, so it landed at
+     * seemingly random moments. Those direct call sites are gone; the only trigger now is a real,
+     * deliberate notification, which is the condition the park was waiting on.
      *
      * `sfx_notification` is the slot that used to be mis-registered as the Favorite sound, and
      * naming it correctly here is what stops it being customized under the wrong label.
@@ -173,12 +171,6 @@ class MenuSoundPlayer @Inject constructor(
      */
     fun play(sound: MenuSound, ignoreMute: Boolean = false) {
         if (!enabled && !ignoreMute) return
-        // PARKED (Notification): the event is cut from ordinary playback — it fired on every
-        // full-library rescan (app resume, media mount, USB unplug) and backup/restore, which
-        // read as random chimes. Everything around it stays: the bundled sample loads, the slot
-        // is assignable and previewable, and the call sites keep firing this event. This is the
-        // one line to remove when the event gets its real triggers. See MenuSound.NOTIFICATION.
-        if (sound == MenuSound.NOTIFICATION && !ignoreMute) return
         val id = customIds[sound.slot]?.takeIf { it in loaded } ?: defaultIds[sound.slot] ?: return
         // Skip if the sample hasn't finished decoding yet — better silent than a click/glitch.
         // A custom sample that never loaded has already fallen through to the default above.

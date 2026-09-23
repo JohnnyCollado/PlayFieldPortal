@@ -77,10 +77,9 @@ open class BackupManager @Inject constructor(
     private val backupDao: BackupDao,
     private val backupFolderRepository: BackupFolderRepository,
     private val uiMediaStore: UiMediaStore,
-    // A finished backup/restore is a background task completing — the NOTIFICATION event.
-    // The event is currently parked at the player (it read as a random chime); this injection
-    // and both plays stay so lifting the park re-arms backup/restore automatically.
-    private val menuSound: com.playfieldportal.core.ui.sound.MenuSoundPlayer,
+    // A finished backup/restore is a background task completing: post it to the shared tray, which
+    // records the row, mirrors to the shade, and rings the notification cue from its one settle seam.
+    private val tasks: com.playfieldportal.core.ui.notification.BackgroundTaskCenter,
 ) {
     private val json = Json { prettyPrint = false; ignoreUnknownKeys = true }
 
@@ -161,10 +160,24 @@ open class BackupManager @Inject constructor(
         fileName
     }.fold(
         onSuccess = {
-            menuSound.play(com.playfieldportal.core.ui.sound.MenuSound.NOTIFICATION)
+            tasks.report(
+                id = BACKUP_TASK_ID,
+                label = "Backup created",
+                severity = com.playfieldportal.core.domain.model.NotificationSeverity.SUCCESS,
+                action = com.playfieldportal.core.domain.model.NotificationAction.OpenSettingsScreen("settings_backup"),
+            )
             BackupResult.Success(it)
         },
-        onFailure = { BackupResult.Failure(it.message ?: "Unknown error", it) },
+        onFailure = {
+            tasks.report(
+                id = BACKUP_TASK_ID,
+                label = "Backup failed",
+                message = it.message,
+                severity = com.playfieldportal.core.domain.model.NotificationSeverity.ERROR,
+                action = com.playfieldportal.core.domain.model.NotificationAction.OpenSettingsScreen("settings_backup"),
+            )
+            BackupResult.Failure(it.message ?: "Unknown error", it)
+        },
     )
     }
 
@@ -313,10 +326,24 @@ open class BackupManager @Inject constructor(
             // leftovers — same sweep every cold start runs, just brought forward.
             runCatching { uiMediaStore.pruneOrphans() }
                 .onFailure { Timber.w(it, "Post-restore UI-media prune failed") }
-            menuSound.play(com.playfieldportal.core.ui.sound.MenuSound.NOTIFICATION)
+            tasks.report(
+                id = RESTORE_TASK_ID,
+                label = "Backup restored",
+                message = if (refusals.isEmpty()) null else "${refusals.size} item(s) skipped",
+                severity = if (refusals.isEmpty()) com.playfieldportal.core.domain.model.NotificationSeverity.SUCCESS
+                else com.playfieldportal.core.domain.model.NotificationSeverity.WARNING,
+            )
             RestoreResult.Success(refusals)
         },
-        onFailure = { RestoreResult.Failure(it.message ?: "Unknown error", it) },
+        onFailure = {
+            tasks.report(
+                id = RESTORE_TASK_ID,
+                label = "Restore failed",
+                message = it.message,
+                severity = com.playfieldportal.core.domain.model.NotificationSeverity.ERROR,
+            )
+            RestoreResult.Failure(it.message ?: "Unknown error", it)
+        },
     )
 
     // ── Helpers ─────────────────────────────────────────────────────────
@@ -473,6 +500,9 @@ open class BackupManager @Inject constructor(
         )
 
     companion object {
+        // Stable tray ids so a repeated backup/restore replaces its row rather than stacking.
+        private const val BACKUP_TASK_ID = "backup_create"
+        private const val RESTORE_TASK_ID = "backup_restore"
         private const val RESTORE_STAGING_DIR = ".pfp_restore_tmp"
         // Generic binary so the SAF provider keeps our ".pfpbackup" name verbatim (no appended ext).
         private const val MIME_BACKUP = "application/octet-stream"

@@ -943,9 +943,9 @@ private fun relativeDays(epochMillis: Long): String {
 private val OptionsPanelMaxHeight: Dp = 440.dp
 private val OptionsRowScrollStep: Dp = 58.dp
 
-private fun DetailAction.dynamicLabel(favorite: Boolean, refreshing: Boolean): String = when (this) {
+internal fun DetailAction.dynamicLabel(favorite: Boolean, refreshing: Boolean): String = when (this) {
     DetailAction.FAVORITE -> if (favorite) "Unfavorite" else "Favorite"
-    DetailAction.REFRESH -> if (refreshing) "Refreshing..." else "Refresh"
+    DetailAction.FETCH_ARTWORK -> if (refreshing) "Fetching Artwork..." else label
     else -> label
 }
 

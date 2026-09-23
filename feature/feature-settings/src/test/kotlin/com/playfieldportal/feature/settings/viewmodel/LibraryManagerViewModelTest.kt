@@ -62,6 +62,7 @@ class LibraryManagerViewModelTest {
     private val libraryScanner = mockk<LibraryScanner>(relaxed = true)
     private val romRootScanRunner = mockk<RomRootScanRunner>(relaxed = true)
     private val pcGameExporter = mockk<com.playfieldportal.feature.settings.pc.PcGameExporter>(relaxed = true)
+    private val tasks = mockk<com.playfieldportal.core.ui.notification.BackgroundTaskCenter>(relaxed = true)
 
     private lateinit var vm: LibraryManagerViewModel
 
@@ -91,6 +92,7 @@ class LibraryManagerViewModelTest {
             libraryScanner,
             romRootScanRunner,
             pcGameExporter,
+            tasks,
         )
     }
 
@@ -158,7 +160,15 @@ class LibraryManagerViewModelTest {
         advanceUntilIdle()
 
         coVerify(exactly = 1) { libraryScanner.scanPlatform("psx", false) }
-        assertEquals("PlayStation Memory Card: 3 new ROM(s) added", vm.uiState.value.message)
+        // The outcome goes to the tray now, not an in-screen message row.
+        io.mockk.verify {
+            tasks.complete(
+                "lm_scan_psx",
+                "PlayStation Memory Card: 3 new ROM(s) added",
+                com.playfieldportal.core.domain.model.NotificationAction.OpenMemoryCard("psx"),
+            )
+        }
+        assertNull(vm.uiState.value.message)
         assertTrue("psx" !in vm.uiState.value.scanningPlatformIds)
         job.cancel()
     }

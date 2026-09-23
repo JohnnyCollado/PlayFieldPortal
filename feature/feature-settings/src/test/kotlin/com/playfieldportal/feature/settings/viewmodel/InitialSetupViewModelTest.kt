@@ -63,6 +63,7 @@ class InitialSetupViewModelTest {
     private val screenScraperApi = mockk<ScreenScraperApi>()
     private val scanRunner = mockk<com.playfieldportal.feature.settings.media.WizardMediaScanRunner>(relaxed = true)
     private val romRootScanRunner = mockk<RomRootScanRunner>(relaxed = true)
+    private val tasks = mockk<com.playfieldportal.core.ui.notification.BackgroundTaskCenter>(relaxed = true)
     private lateinit var vm: InitialSetupViewModel
 
     private fun buildVm() = InitialSetupViewModel(
@@ -72,6 +73,7 @@ class InitialSetupViewModelTest {
         mockk(relaxed = true), // romScanner (B3 create-standard-folders)
         mockk(relaxed = true), // folderHintResolver
         mockk(relaxed = true), // memoryCardRepository
+        tasks,
     )
 
     @Before fun setUp() {
@@ -272,7 +274,8 @@ class InitialSetupViewModelTest {
 
             assertNotNull(vm.uiState.value.artworkFolderName)
             assertEquals(listOf(ArtworkSourceUi("16-bit Collection", 0)), vm.uiState.value.artworkSources)
-            assertNotNull(vm.uiState.value.message)
+            // The outcome goes to the tray now, not an in-screen message row.
+            io.mockk.verify { tasks.report(id = "setup_artwork_link", label = any(), message = any(), severity = any(), kind = any(), action = any()) }
             job.cancel()
         }
 
@@ -309,7 +312,9 @@ class InitialSetupViewModelTest {
         advanceUntilIdle()
 
         coVerify { artworkImport.startImport(plan, PortableArtworkLibrary.Transfer.COPY) }
-        assertTrue(vm.uiState.value.message.orEmpty().contains("Importing"))
+        io.mockk.verify {
+            tasks.report(id = "setup_artwork_import", label = match { it.contains("Importing") }, message = any(), severity = any(), kind = any(), action = any())
+        }
         job.cancel()
     }
 
@@ -370,7 +375,7 @@ class InitialSetupViewModelTest {
         advanceUntilIdle()
 
         coVerify { vita3KLibrary.setUx0Folder(uri) }
-        assertNotNull(vm.uiState.value.message)
+        io.mockk.verify { tasks.report(id = "setup_vita", label = any(), message = any(), severity = any(), kind = any(), action = any()) }
         job.cancel()
     }
 
@@ -439,15 +444,14 @@ class InitialSetupViewModelTest {
     // ── TheGamesDB (wizard parity with Settings ▸ Artwork) ───────────────────
 
     @Test fun `connectTgdb stores the key through the shared provider`() = runTest(dispatcher) {
-        // uiState is WhileSubscribed: without a collector it never leaves its construction
-        // snapshot, so the message assertion below would read a stale null.
         val job = collectState()
         vm.connectTgdb("  tgdb-key-123  ")
         advanceUntilIdle()
 
         // Trimming belongs to the provider (saveTgdbKey trims), so the raw draft is handed over.
         coVerify(exactly = 1) { metadataKeys.saveTgdbKey("  tgdb-key-123  ") }
-        assertEquals("TheGamesDB connected", vm.uiState.value.message)
+        // The "connected" confirmation is a tray notification now, not an in-screen row.
+        io.mockk.verify { tasks.report(id = "setup_svc_tgdb", label = "TheGamesDB connected", message = any(), severity = any(), kind = any(), action = any()) }
         job.cancel()
     }
 

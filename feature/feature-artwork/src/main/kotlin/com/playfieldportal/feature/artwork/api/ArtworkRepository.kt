@@ -1,6 +1,7 @@
 package com.playfieldportal.feature.artwork.api
 
 import com.playfieldportal.core.data.database.dao.GameDao
+import com.playfieldportal.core.data.database.entity.GameEntity
 import com.playfieldportal.feature.artwork.MetadataRepository
 import com.playfieldportal.feature.artwork.match.MetadataApply
 import com.playfieldportal.feature.artwork.match.MetadataApplyPolicy
@@ -12,6 +13,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import java.util.Collections
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -19,7 +21,8 @@ data class ArtworkFetchResult(
     val gameId: Long,
     val title: String,
     val success: Boolean,
-    val skipped: Boolean = false,
+    // Another surface is already fetching this game; nothing was scraped by this call.
+    val alreadyRunning: Boolean = false,
     val errorMessage: String? = null,
 )
 
@@ -77,20 +80,50 @@ class ArtworkRepository @Inject constructor(
         results
     }
 
-    // Single-game entry point — used by GameDetailViewModel.
-    // Looks up platformId + romPath from DB so the call-site signature stays stable.
-    suspend fun fetchArtworkForGame(gameId: Long, title: String): ArtworkFetchResult {
-        val game = gameDao.getById(gameId)
-            ?: return ArtworkFetchResult(gameId, title, false, errorMessage = "Game not found")
+    // Games with a single-game fetch in flight. Game Detail and the XMB game menu can both ask for
+    // the same game; the second ask is answered with alreadyRunning instead of a second scrape.
+    private val refetching: MutableSet<Long> = Collections.synchronizedSet(HashSet())
 
-        val result = metadataRepository.fetchForGame(
-            gameId     = gameId,
-            title      = title,
-            platformId = game.platformId,
-            romPath    = game.romPath,
-        )
-        return ArtworkFetchResult(gameId, title, result.success, errorMessage = result.message.takeIf { !result.success })
+    /**
+     * Fetch Artwork for one game — the single entry point for Game Detail and the XMB game menu.
+     *
+     * Re-scraped files reuse stable names, so this game's refs (old and new) are evicted from the
+     * image cache afterwards. Only evicted: never clearCache(), which is the library-wide reset
+     * behind Settings > Artwork > Clear All Artwork.
+     */
+    suspend fun refetchArtworkForGame(
+        gameId: Long,
+        onAssetProgress: ((source: String, asset: String) -> Unit)? = null,
+    ): ArtworkFetchResult {
+        val before = gameDao.getById(gameId)
+            ?: return ArtworkFetchResult(gameId, "", false, errorMessage = "Game not found")
+        if (!refetching.add(gameId)) {
+            return ArtworkFetchResult(gameId, before.title, false, alreadyRunning = true)
+        }
+        try {
+            val result = metadataRepository.fetchForGame(
+                gameId          = gameId,
+                title           = before.title,
+                platformId      = before.platformId,
+                romPath         = before.romPath,
+                onAssetProgress = onAssetProgress,
+            )
+            val after = gameDao.getById(gameId)
+            evictFromImageCache((artRefsOf(before) + artRefsOf(after)).toSet())
+            return ArtworkFetchResult(
+                gameId, before.title, result.success,
+                errorMessage = result.message.takeIf { !result.success },
+            )
+        } finally {
+            refetching.remove(gameId)
+        }
     }
+
+    // Every artwork column a scrape can rewrite — the eviction set for a single-game fetch.
+    private fun artRefsOf(game: GameEntity?): List<String> = listOfNotNull(
+        game?.artworkUri, game?.heroUri, game?.logoUri, game?.iconUri,
+        game?.boxArtUri, game?.physicalMediaUri, game?.box3dUri,
+    )
 
     // ── Metadata presets (C16 task 3.2) ──────────────────────────────────────────
 

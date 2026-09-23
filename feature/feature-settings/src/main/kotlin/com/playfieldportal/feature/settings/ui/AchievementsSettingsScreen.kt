@@ -225,15 +225,8 @@ fun AchievementsSettingsScreen(
                         onClick = { viewModel.syncAll() },
                     )
                 }
-                // Same wording as the notification this run also leaves in the tray — both read
-                // from AchievementReportSummary, so they cannot describe one run two ways.
-                state.syncResult?.let { r ->
-                    SettingsRow(
-                        label = r.summaryLine(),
-                        sublabel = r.detailLine()?.let { "$it — tap to dismiss" } ?: "Tap to dismiss",
-                        onClick = { viewModel.dismissSyncResult() },
-                    )
-                }
+                // The sync outcome is a tray notification now (with the notification cue), not an
+                // in-screen row — only the live progress above stays here.
 
                 SettingsGroup("Auto-match")
                 if (state.isMatching) {
@@ -245,17 +238,8 @@ fun AchievementsSettingsScreen(
                         onClick = { viewModel.autoMatch() },
                     )
                 }
-                state.matchReport?.let { report ->
-                    SettingsRow(
-                        label = report.summaryLine(),
-                        sublabel = report.detailLine()?.let { "$it. Tap to dismiss" } ?: "Tap to dismiss",
-                        onClick = { viewModel.dismissReport() },
-                    )
-                }
-
-                state.message?.let {
-                    SettingsRow(label = it, sublabel = "Tap to dismiss", onClick = { viewModel.dismissMessage() })
-                }
+                // The match outcome and connection confirmations are tray notifications now, not
+                // in-screen rows.
             }
         }
 

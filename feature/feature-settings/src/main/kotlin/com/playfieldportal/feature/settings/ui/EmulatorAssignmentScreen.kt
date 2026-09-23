@@ -62,8 +62,6 @@ fun EmulatorAssignmentScreen(
             onRequestClearOverrides = viewModel::requestClearOverrides,
             onCancelClear          = viewModel::cancelClearOverrides,
             onConfirmClear         = viewModel::confirmClearOverrides,
-            message                = state.message,
-            onDismissMessage       = viewModel::dismissMessage,
             modifier               = modifier,
         )
     }
@@ -146,8 +144,6 @@ private fun AssignmentDetailContent(
     onRequestClearOverrides: () -> Unit,
     onCancelClear: () -> Unit,
     onConfirmClear: () -> Unit,
-    message: String?,
-    onDismissMessage: () -> Unit,
     modifier: Modifier,
 ) {
     SettingsScaffold(
@@ -218,8 +214,6 @@ private fun AssignmentDetailContent(
                     onClick  = onRequestClearOverrides,
                 )
             }
-
-            message?.let { EmulatorHint(it) }
         }
     }
 

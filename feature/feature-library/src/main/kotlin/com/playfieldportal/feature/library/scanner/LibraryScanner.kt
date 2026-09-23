@@ -76,9 +76,6 @@ class LibraryScanner @Inject constructor(
     private val libraryReconciler: LibraryReconciler,
     private val discSetReconciler: DiscSetReconciler,
     @ScannerIoDispatcher private val ioDispatcher: CoroutineDispatcher,
-    // A whole-library scan is a background task completing — the NOTIFICATION chime, fired on
-    // completion only, never per platform or on progress.
-    private val menuSound: com.playfieldportal.core.ui.sound.MenuSoundPlayer,
 ) {
     // Per-card single-flight, shared across every caller (manual scans, resume, mount, unplug).
     // A card already mid-survey returns SKIPPED_BUSY rather than queuing or racing a second walk
@@ -121,10 +118,9 @@ class LibraryScanner @Inject constructor(
     suspend fun scanAllEnabled(removeMissing: Boolean): List<PlatformScanOutcome> {
         val eligible = memoryCardRepository.getAll().filter { it.isScannable() }
         val outcomes = eligible.map { scanPlatform(it.platformId, removeMissing) }
-        // The rescan bus runs this on app resume, media mount and USB unplug, so this chime read
-        // as random. The Notification event is parked at the player until the trigger model gets
-        // redesigned — this call stays so lifting the park re-arms it here automatically.
-        menuSound.play(com.playfieldportal.core.ui.sound.MenuSound.NOTIFICATION)
+        // No chime here: the rescan bus runs this on app resume, media mount and USB unplug, so a
+        // cue here read as random. A user-initiated scan rings through BackgroundTaskCenter instead,
+        // when its settled row lands in the tray.
         return outcomes
     }
 
