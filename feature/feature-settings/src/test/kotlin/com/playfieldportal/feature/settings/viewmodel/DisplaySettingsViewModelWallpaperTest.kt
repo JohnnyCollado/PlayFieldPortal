@@ -11,15 +11,12 @@ import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import kotlinx.coroutines.withContext
 import org.junit.After
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -39,10 +36,10 @@ import org.robolectric.Shadows.shadowOf
  * path with a cleared poster is the unrenderable state the plan forbids.
  *
  * Concurrency note: the ViewModel launches on [dispatcher] (Dispatchers.setMain) while some of
- * its side effects complete on REAL threads (DataStore writes, Dispatchers.IO file deletes).
- * The wait helper therefore alternates `advanceUntilIdle()` (drives everything queued on the
- * test scheduler) with a real-thread sleep that never blocks the scheduler thread — blocking it
- * would deadlock the very coroutines we're waiting for.
+ * its side effects complete on REAL threads (DataStore writes, Dispatchers.IO file deletes), so
+ * the waiting is done by the shared [eventually] helper — see its KDoc for why both halves of
+ * that loop are needed. This test asserts only against the store and the filesystem, never
+ * through the ViewModel state, so it needs no standing subscriber.
  *
  * Coverage note: the video-probe success path (poster extraction through MediaMetadataRetriever)
  * is not exercised here — Robolectric can't decode a real MP4 on the JVM. Video import and the
@@ -162,23 +159,6 @@ class DisplaySettingsViewModelWallpaperTest {
      */
 
     // ── helpers ────────────────────────────────────────────────────────────────
-
-    /**
-     * Waits until [condition] holds. Drives the test scheduler (the VM's coroutines) and, in
-     * the same loop, sleeps on a REAL IO thread (never the scheduler thread) so wall-clock
-     * work — DataStore writes, file deletes — gets time to land.
-     */
-    private suspend fun TestScope.eventually(reason: String, condition: suspend () -> Boolean) {
-        val deadline = System.currentTimeMillis() + 10_000
-        while (!condition()) {
-            if (System.currentTimeMillis() > deadline) {
-                throw AssertionError("condition not met within 10s: $reason")
-            }
-            advanceUntilIdle()
-            withContext(Dispatchers.IO) { Thread.sleep(25) }
-        }
-        advanceUntilIdle()
-    }
 
     /** Polls fresh prefs snapshots until [predicate] holds, returning the settled snapshot. */
     private suspend fun TestScope.eventuallyPrefs(

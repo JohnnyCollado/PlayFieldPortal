@@ -91,7 +91,8 @@ class ShibaSelectiveSyncViewModelTest {
             ),
         )
 
-        val row = vm.uiState.value.rows.single()
+        // Rows carry the pinned "Search online" action row at position 0; only games are asserted here.
+        val row = vm.uiState.value.rows.single { it.id != SEARCH_ONLINE_ROW_ID }
         assertEquals("Awaiting sync", row.reason)
         assertTrue(row.awaitingSync)
         assertEquals(ShibaCoinsTarget.LibraryGame(5L), row.coinsTarget)

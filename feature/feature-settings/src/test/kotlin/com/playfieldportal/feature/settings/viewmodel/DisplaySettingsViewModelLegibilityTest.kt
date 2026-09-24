@@ -14,12 +14,9 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import kotlinx.coroutines.withContext
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -67,6 +64,7 @@ class DisplaySettingsViewModelLegibilityTest {
 
     @Test
     fun `cycle advances through every style and persists the enum name`() = runTest(dispatcher) {
+        observeUntilSettled(vm.uiState)
         val expected = IconLegibilityStyle.entries
         val seen = mutableListOf<IconLegibilityStyle>()
 
@@ -74,9 +72,9 @@ class DisplaySettingsViewModelLegibilityTest {
             eventually("style $index visible") {
                 // The DataStore-backed state must have settled to the persisted value before we
                 // sample it — the initial StateFlow value precedes the first emission.
-                vm.uiState.first().iconLegibility == expected[index]
+                vm.uiState.value.iconLegibility == expected[index]
             }
-            seen += vm.uiState.first().iconLegibility
+            seen += vm.uiState.value.iconLegibility
             vm.cycleIconLegibility()
             eventually("style ${index + 1} persisted") {
                 context.pfpDataStore.data.first()[KEY_ICON_LEGIBILITY] == expected[(index + 1) % expected.size].name
@@ -88,70 +86,56 @@ class DisplaySettingsViewModelLegibilityTest {
 
     @Test
     fun `an unknown persisted value surfaces as NONE and still cycles`() = runTest(dispatcher) {
+        observeUntilSettled(vm.uiState)
         context.pfpDataStore.edit {
             it[KEY_ICON_LEGIBILITY] = "CONTOUR_MEDIUM" // a style that no longer exists
         }
 
         eventually("stale value tolerated") {
-            vm.uiState.first().iconLegibility == IconLegibilityStyle.NONE
+            vm.uiState.value.iconLegibility == IconLegibilityStyle.NONE
         }
 
         // The pipeline genuinely works with the stale key present: cycling lands on the first
         // entry after NONE, proving the read neither crashed nor wedged the state flow.
         vm.cycleIconLegibility()
         eventually("cycle works after stale value") {
-            vm.uiState.first().iconLegibility == IconLegibilityStyle.OFFSET_SHADOW
+            vm.uiState.value.iconLegibility == IconLegibilityStyle.OFFSET_SHADOW
         }
     }
 
     @Test
     fun `solid unfocused icons toggles and persists`() = runTest(dispatcher) {
-        assertEquals(false, vm.uiState.first().solidUnfocusedIcons)
+        observeUntilSettled(vm.uiState)
+        assertEquals(false, vm.uiState.value.solidUnfocusedIcons)
 
         vm.setSolidUnfocusedIcons(true)
         eventually("solid icons persisted") {
             context.pfpDataStore.data.first()[KEY_SOLID_UNFOCUSED_ICONS] == true
         }
         eventually("solid icons surfaced") {
-            vm.uiState.first().solidUnfocusedIcons
+            vm.uiState.value.solidUnfocusedIcons
         }
     }
 
     @Test
     fun `text shadow defaults on, toggles off, and persists`() = runTest(dispatcher) {
+        observeUntilSettled(vm.uiState)
         // Default ON: helper text over bright wallpapers is the failure mode this setting exists
         // for, so the out-of-the-box experience ships with the shadow enabled.
-        assertEquals(true, vm.uiState.first().textShadow)
+        assertEquals(true, vm.uiState.value.textShadow)
 
         vm.setTextShadow(false)
         eventually("text shadow persisted off") {
             context.pfpDataStore.data.first()[KEY_TEXT_SHADOW] == false
         }
         eventually("text shadow surfaced off") {
-            !vm.uiState.first().textShadow
+            !vm.uiState.value.textShadow
         }
 
         vm.setTextShadow(true)
         eventually("text shadow surfaced on again") {
-            vm.uiState.first().textShadow
+            vm.uiState.value.textShadow
         }
-    }
-
-    /**
-     * Waits until [condition] holds. Drives the test scheduler (the VM's coroutines) and, in
-     * the same loop, sleeps on a REAL IO thread (never the scheduler thread) so wall-clock
-     * work — DataStore writes — gets time to land. Same pattern as the wallpaper test.
-     */
-    private suspend fun TestScope.eventually(reason: String, condition: suspend () -> Boolean) {
-        val deadline = System.currentTimeMillis() + 10_000
-        while (!condition()) {
-            if (System.currentTimeMillis() > deadline) {
-                throw AssertionError("condition not met within 10s: $reason")
-            }
-            advanceUntilIdle()
-            withContext(Dispatchers.IO) { Thread.sleep(25) }
-        }
-        advanceUntilIdle()
     }
 
     private companion object {

@@ -13,12 +13,9 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import kotlinx.coroutines.withContext
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -104,23 +101,6 @@ class DisplaySettingsViewModelGameBootTest {
         }
 
         eventually("boolean false surfaces as off in the row") { !vm.uiState.first().gameBootEnabled }
-    }
-
-    /**
-     * Waits until [condition] holds. Drives the test scheduler (the VM's coroutines) and, in
-     * the same loop, sleeps on a REAL IO thread (never the scheduler thread) so wall-clock
-     * work — DataStore writes — gets time to land. Same pattern as the Legibility test.
-     */
-    private suspend fun TestScope.eventually(reason: String, condition: suspend () -> Boolean) {
-        val deadline = System.currentTimeMillis() + 10_000
-        while (!condition()) {
-            if (System.currentTimeMillis() > deadline) {
-                throw AssertionError("condition not met within 10s: $reason")
-            }
-            advanceUntilIdle()
-            withContext(Dispatchers.IO) { Thread.sleep(25) }
-        }
-        advanceUntilIdle()
     }
 
     private companion object {

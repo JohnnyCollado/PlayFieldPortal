@@ -15,12 +15,9 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import kotlinx.coroutines.withContext
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -161,19 +158,6 @@ class DisplaySettingsViewModelFontColorTest {
             context.pfpDataStore.data.first()[KEY_LEGIBILITY] ==
                 expected[(start + 1) % expected.size].name
         }
-    }
-
-    /** Same wait idiom as the sibling legibility test — see its KDoc. */
-    private suspend fun TestScope.eventually(reason: String, condition: suspend () -> Boolean) {
-        val deadline = System.currentTimeMillis() + 10_000
-        while (!condition()) {
-            if (System.currentTimeMillis() > deadline) {
-                throw AssertionError("condition not met within 10s: $reason")
-            }
-            advanceUntilIdle()
-            withContext(Dispatchers.IO) { Thread.sleep(25) }
-        }
-        advanceUntilIdle()
     }
 
     private companion object {
