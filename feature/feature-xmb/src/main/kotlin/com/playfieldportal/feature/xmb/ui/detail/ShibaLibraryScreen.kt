@@ -1,6 +1,8 @@
 package com.playfieldportal.feature.xmb.ui.detail
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -31,6 +33,9 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -92,6 +97,7 @@ fun ShibaLibraryScreen(
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
     onOpenCoins: (ShibaCoinsTarget) -> Unit = {},
+    onOpenSearchOnline: () -> Unit = {},
     pendingGamepadAction: GamepadAction? = null,
     onGamepadActionConsumed: () -> Unit = {},
     showTouchControls: Boolean = false,
@@ -110,6 +116,12 @@ fun ShibaLibraryScreen(
         state.openCoins?.let { target ->
             onOpenCoins(target)
             viewModel.onOpenHandled()
+        }
+    }
+    LaunchedEffect(state.openSearchOnline) {
+        if (state.openSearchOnline) {
+            onOpenSearchOnline()
+            viewModel.onSearchOnlineHandled()
         }
     }
     LaunchedEffect(pendingGamepadAction) {
@@ -173,26 +185,31 @@ fun ShibaLibraryScreen(
             )
 
             Box(Modifier.fillMaxWidth().weight(1f).clipToBounds()) {
-                if (state.rows.isEmpty()) {
+                if (!state.hasGames) {
                     // The shell stays; only the list area explains itself.
                     Text(
                         text = state.emptyMessage,
                         color = palette.textMuted,
                         fontSize = 15.sp,
-                        modifier = Modifier.padding(horizontal = DetailContentPadding + 10.dp, vertical = 24.dp),
+                        // Below the pinned Search online row, which is listed even with no games.
+                        modifier = Modifier.padding(
+                            start = DetailContentPadding + 10.dp,
+                            end = DetailContentPadding + 10.dp,
+                            top = RowHeight + 24.dp,
+                        ),
                     )
                 }
                 LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize().padding(horizontal = DetailContentPadding),
                 ) {
-                    items(state.rows, key = { it.id }) { row ->
-                        GameRow(
-                            row = row,
-                            focused = row.id == state.focusedRowId,
-                            palette = palette,
-                            onClick = { viewModel.onRowClick(row.id) },
-                        )
+                    items(state.rows, key = { it.id }, contentType = { it.action }) { row ->
+                        val focused = row.id == state.focusedRowId
+                        val onClick = remember(row.id) { { viewModel.onRowClick(row.id) } }
+                        when (row.action) {
+                            LibraryRowAction.SEARCH_ONLINE -> SearchOnlineActionRow(row, focused, palette, onClick)
+                            null -> GameRow(row = row, focused = focused, palette = palette, onClick = onClick)
+                        }
                     }
                 }
             }
@@ -295,6 +312,76 @@ private fun GameRow(
             if (row.isTracked) TrackedStats(row, focused, palette) else UntrackedReason(row.reason.orEmpty(), palette)
         }
         Separator(palette)
+    }
+}
+
+/**
+ * The pinned "Search online" row. It carries the library's row geometry so it sits in the list
+ * without breaking its rhythm, and the one thing it does not share: a tile drawn as a magnifier
+ * over a globe, saying this row leaves the device.
+ */
+@Composable
+private fun SearchOnlineActionRow(
+    row: ShibaLibraryRow,
+    focused: Boolean,
+    palette: DetailPalette,
+    onClick: () -> Unit,
+) {
+    Column {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(RowHeight)
+                .shibaFocus(focused, palette)
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick)
+                .padding(horizontal = 10.dp),
+        ) {
+            SearchOnlineTile(palette, Modifier.height(Icon0Height).aspectRatio(ICON0_ASPECT))
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    row.title,
+                    color = palette.textPrimary,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(row.platformLabel, color = palette.textMuted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            Spacer(Modifier.width(16.dp))
+            Text("›", color = palette.textMuted, fontSize = 18.sp)
+        }
+        Separator(palette)
+    }
+}
+
+/** The row's glyph: a magnifier over a globe, drawn in the page's own accent. */
+@Composable
+private fun SearchOnlineTile(palette: DetailPalette, modifier: Modifier) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier
+            .background(palette.rowFill, FocusShape)
+            .border(1.dp, palette.rowEdge, FocusShape),
+    ) {
+        Canvas(Modifier.size(26.dp)) {
+            val accent = palette.focus
+            val stroke = Stroke(width = size.minDimension * 0.07f)
+            val globe = size.minDimension * 0.72f
+            // The globe: a circle crossed by its equator and one meridian.
+            drawCircle(accent, radius = globe / 2f, center = Offset(globe / 2f, globe / 2f), style = stroke)
+            drawLine(accent, Offset(0f, globe / 2f), Offset(globe, globe / 2f), strokeWidth = stroke.width)
+            drawOval(accent, topLeft = Offset(globe * 0.31f, 0f), size = Size(globe * 0.38f, globe), style = stroke)
+            // The magnifier's handle, leaving the globe at its lower right.
+            drawLine(
+                accent,
+                Offset(globe * 0.86f, globe * 0.86f),
+                Offset(size.width, size.height),
+                strokeWidth = stroke.width * 1.3f,
+            )
+        }
     }
 }
 

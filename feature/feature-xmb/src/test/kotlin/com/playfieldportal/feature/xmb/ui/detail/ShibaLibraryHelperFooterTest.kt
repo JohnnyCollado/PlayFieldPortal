@@ -86,6 +86,27 @@ class ShibaLibraryHelperFooterTest {
     }
 
     @Test
+    fun `the pinned Search online row names Confirm for what it opens`() {
+        val searchOnline = ShibaLibraryRow(
+            id = SEARCH_ONLINE_ROW_ID,
+            coinsTarget = null,
+            title = "Search online",
+            platformLabel = "Look up a game that isn't on this device",
+            provider = null,
+            platformSortKey = "",
+            icon0Uri = null,
+            progress = 0f,
+            coins = LibraryCoinCounts(),
+            reason = null,
+            action = LibraryRowAction.SEARCH_ONLINE,
+        )
+        val state = ShibaLibraryUiState(rows = listOf(searchOnline), focusedRowId = searchOnline.id)
+
+        assertEquals("Search online", labels(state).first())
+        assertEquals("an action row is not a tracked game", false, searchOnline.isTracked)
+    }
+
+    @Test
     fun `empty messages keep the shell and explain the empty list`() {
         assertEquals("No tracked games yet.", ShibaLibraryUiState().emptyMessage)
         assertEquals("Every eligible game is tracked.", ShibaLibraryUiState(mode = ShibaLibraryMode.UNTRACKED).emptyMessage)

@@ -386,7 +386,7 @@ private fun HeaderTierCell(tier: ShibaTier, earned: Int, total: Int, palette: De
  * set, not the displayed list, so they hold still while you type.
  */
 @Composable
-private fun ShibaCoinsViewTabs(
+internal fun ShibaCoinsViewTabs(
     active: CoinFilter,
     counts: CoinViewCounts,
     palette: DetailPalette,
@@ -469,7 +469,7 @@ private fun NoticeLine(message: String, palette: DetailPalette, onDismiss: () ->
 // ── Rows ──────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun CoinListRow(
+internal fun CoinListRow(
     coin: CoinRow,
     revealed: Boolean,
     focused: Boolean,

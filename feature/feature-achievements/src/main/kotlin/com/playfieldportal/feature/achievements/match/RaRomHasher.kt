@@ -219,4 +219,47 @@ object RaConsole {
         "psp" -> 41
         else -> null
     }
+
+    /**
+     * The consoles the "Search online" title picker offers, in menu order. A RetroAchievements title
+     * search is per console, so the picker can only list systems [idFor] knows — this is that same
+     * table, named the way RetroAchievements names them.
+     */
+    val searchable: List<RaConsoleOption> = listOf(
+        "snes" to "Super Nintendo",
+        "nes" to "NES",
+        "n64" to "Nintendo 64",
+        "gb" to "Game Boy",
+        "gbc" to "Game Boy Color",
+        "gba" to "Game Boy Advance",
+        "nds" to "Nintendo DS",
+        "virtualboy" to "Virtual Boy",
+        "megadrive" to "Genesis / Mega Drive",
+        "mastersystem" to "Master System",
+        "gamegear" to "Game Gear",
+        "sega32x" to "32X",
+        "segacd" to "Sega CD",
+        "saturn" to "Saturn",
+        "dreamcast" to "Dreamcast",
+        "psx" to "PlayStation",
+        "ps2" to "PlayStation 2",
+        "psp" to "PlayStation Portable",
+        "gc" to "GameCube",
+        "wii" to "Wii",
+        "pcengine" to "PC Engine",
+        "atari2600" to "Atari 2600",
+        "atari7800" to "Atari 7800",
+        "atarilynx" to "Atari Lynx",
+        "ngp" to "Neo Geo Pocket",
+        "wonderswan" to "WonderSwan",
+    ).mapNotNull { (platformId, label) ->
+        idFor(platformId)?.let { RaConsoleOption(platformId = platformId, consoleId = it, label = label) }
+    }
 }
+
+/** One console the RetroAchievements title search can be pointed at. */
+data class RaConsoleOption(
+    val platformId: String,
+    val consoleId: Int,
+    val label: String,
+)

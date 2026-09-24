@@ -84,6 +84,7 @@ import com.playfieldportal.feature.xmb.preview.PreviewData
 import com.playfieldportal.feature.xmb.ui.app.AppDetailScreen
 import com.playfieldportal.feature.xmb.ui.detail.GameDetailScreen
 import com.playfieldportal.feature.xmb.ui.detail.PlayerStatusScreen
+import com.playfieldportal.feature.xmb.ui.detail.SearchOnlineScreen
 import com.playfieldportal.feature.xmb.ui.detail.ShibaCoinsScreen
 import com.playfieldportal.feature.xmb.ui.detail.ShibaCoinsTarget
 import com.playfieldportal.feature.xmb.ui.detail.ShibaLibraryScreen
@@ -232,6 +233,10 @@ fun XMBShellContainer(
         onShibaCoinsActionConsumed = viewModel::onShibaCoinsActionConsumed,
         onCloseShibaLibrary = viewModel::onCloseShibaLibrary,
         onShibaLibraryActionConsumed = viewModel::onShibaLibraryActionConsumed,
+        onOpenSearchOnline = viewModel::openSearchOnline,
+        onCloseSearchOnline = viewModel::onCloseSearchOnline,
+        onSearchOnlineActionConsumed = viewModel::onSearchOnlineActionConsumed,
+        onOpenAchievementCredentials = viewModel::openAchievementCredentialsFromSearchOnline,
         onClosePlayerStatus = viewModel::onClosePlayerStatus,
         onPlayerStatusActionConsumed = viewModel::onPlayerStatusActionConsumed,
         onOpenPlayerStatus = viewModel::openPlayerStatus,
@@ -384,6 +389,10 @@ fun XMBShell(
     onShibaCoinsActionConsumed: () -> Unit = {},
     onCloseShibaLibrary: () -> Unit = {},
     onShibaLibraryActionConsumed: () -> Unit = {},
+    onOpenSearchOnline: () -> Unit = {},
+    onCloseSearchOnline: () -> Unit = {},
+    onSearchOnlineActionConsumed: () -> Unit = {},
+    onOpenAchievementCredentials: () -> Unit = {},
     onClosePlayerStatus: () -> Unit = {},
     onPlayerStatusActionConsumed: () -> Unit = {},
     onOpenPlayerStatus: () -> Unit = {},
@@ -1277,14 +1286,16 @@ fun XMBShell(
                 )
             }
 
-            // Hidden while a game's Shiba Coins overlay is open (opened from a tracked row);
-            // closing the coins overlay brings the library straight back, keeping its place.
-            if (uiState.activeShibaCoinsTarget == null) {
+            // Hidden while a game's Shiba Coins overlay or the Search online page is open (both
+            // opened from one of its rows); closing either brings the library straight back,
+            // keeping its place.
+            if (uiState.activeShibaCoinsTarget == null && !uiState.activeSearchOnline) {
                 uiState.activeShibaLibrary?.let { mode ->
                     ShibaLibraryScreen(
                         mode = mode,
                         onClose = onCloseShibaLibrary,
                         onOpenCoins = onOpenShibaCoinsTarget,
+                        onOpenSearchOnline = onOpenSearchOnline,
                         pendingGamepadAction = uiState.pendingShibaLibraryAction,
                         onGamepadActionConsumed = onShibaLibraryActionConsumed,
                         showTouchControls = uiState.resolvedShowTouchButton,
@@ -1292,6 +1303,19 @@ fun XMBShell(
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
+            }
+
+            // The explicit provider search and its read-only preview, over the library it opened from.
+            if (uiState.activeSearchOnline) {
+                SearchOnlineScreen(
+                    onClose = onCloseSearchOnline,
+                    onOpenCredentials = onOpenAchievementCredentials,
+                    pendingGamepadAction = uiState.pendingSearchOnlineAction,
+                    onGamepadActionConsumed = onSearchOnlineActionConsumed,
+                    showTouchControls = uiState.resolvedShowTouchButton,
+                    onTouchInput = onTouchInput,
+                    modifier = Modifier.fillMaxSize(),
+                )
             }
 
             // Player status view — hidden while a coin's Shiba Coins overlay is open on top of it

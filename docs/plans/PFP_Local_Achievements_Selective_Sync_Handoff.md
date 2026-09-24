@@ -40,9 +40,45 @@ Commands to finish the pass:
 ./gradlew :app:assembleDebug
 ```
 
+## Session 2 — Task 8 UI is written
+
+Built against the approved mockup (7 artboards): a pinned **Search online** row in the
+Tracked/Untracked browser, and the page it opens.
+
+- `ShibaLibraryViewModel` / `ShibaLibraryScreen`: `LibraryRowAction.SEARCH_ONLINE` adds one pinned
+  row above the games in both views. Neither the provider filter, the local query nor the sort
+  touches it — a local search that finds nothing is exactly when it is wanted. Its tile is the
+  magnifier-over-globe glyph, drawn on Canvas from the page palette. Entering a view still focuses
+  the first *game*, so the cursor lands where it always did; Up now passes the action row on its way
+  to Search.
+- `SearchOnlineViewModel` (new): stage-free state holding both lists — results, or the open
+  preview's coins. Debounced search (350 ms) with cancellation, the repository's own minimum query
+  length, provider and RA-console choices in the shared Triangle menu, `Refresh preview`, L/R across
+  All / Earned / Locked, and hidden-coin reveal. Its only collaborator is
+  `AchievementPreviewRepository`, plus `NetworkMonitor`/`AchievementCredentialsProvider` for telling
+  **offline** and **not connected** apart from **no results** — an unreachable provider is never
+  reported as a game that does not exist.
+- `SearchOnlineScreen` (new): the achievement pages' surfaces, plus the mockup's three own elements
+  — the tile glyph, the gold `PREVIEW` chip, the amber notice strip. Fixed gold rather than a
+  palette color: it is a warning mark and must read against every theme. Reuses `SearchRow`,
+  `ShibaCoinsViewTabs` and `CoinListRow` (the latter two widened from `private` to `internal`), so
+  a previewed coin is drawn by the same code as an owned one.
+- `RaConsole.searchable` (new): the console picker's table, derived from `idFor` so it can never
+  offer a system the search cannot query.
+- Shell: `activeSearchOnline` / `pendingSearchOnlineAction` in `XMBUiState`, routed above the
+  library in `onGamepadAction`; the library hides beneath it exactly as it does for the coins page.
+  The not-connected state's **Open Settings** lands on `settings_achievements_credentials`.
+- Tests: `SearchOnlineViewModelTest` (debounce, minimum length, offline vs no-results vs
+  not-connected, preview open/close, the refresh, and a `confirmVerified` that the whole footprint
+  of a search and a preview is search → open → close). `ShibaLibraryViewModelTest` and
+  `ShibaLibraryHelperFooterTest` updated for the pinned row.
+
+**Not compiled or run** — see the commands above.
+
 ## Remaining work, in order
 
-1. **Search online screen (Task 8 UI).** Approved in principle; mockup at
+1. ~~**Search online screen (Task 8 UI).**~~ Written; needs compiling, tests and a device pass.
+   Original note: Approved in principle; mockup at
    https://claude.ai/artifact/XeTJ91gkpsHMngqRxoXPLm (7 artboards, 1920×1080). The user said "go
    ahead and build it" and then interrupted the turn, so **confirm before building**. Backend is
    done: `AchievementPreviewRepository` (search Steam / RA catalog, open, close) with its test.

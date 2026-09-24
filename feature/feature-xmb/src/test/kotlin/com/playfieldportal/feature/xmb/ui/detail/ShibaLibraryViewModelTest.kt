@@ -74,20 +74,27 @@ class ShibaLibraryViewModelTest {
 
     private fun press(vararg actions: GamepadAction) = actions.forEach(viewModel::handleGamepadAction)
 
+    /** The listed games, without the pinned Search online row that sits above them in both views. */
+    private val gameTitles get() = state.rows.filter { it.action == null }.map { it.title }
+
     // ── Focus model ─────────────────────────────────────────────────────────────
 
     @Test
-    fun `opening a view focuses its first game, one step below Search`() {
+    fun `opening a view focuses its first game, below Search and the pinned Search online row`() {
         viewModel.load(ShibaLibraryMode.TRACKED)
 
-        assertEquals(1, state.focusPosition)
+        assertEquals(SEARCH_ONLINE_ROW_ID, state.rows.first().id)
+        assertEquals(2, state.focusPosition)
         assertEquals("Crash Bandicoot", state.focused?.title)
         assertFalse(state.searchFocused)
     }
 
     @Test
-    fun `up from the first game reaches Search and down returns to the first game`() {
+    fun `up from the first game passes Search online, reaches Search, and comes back down`() {
         viewModel.load(ShibaLibraryMode.TRACKED)
+
+        press(GamepadAction.NAVIGATE_UP)
+        assertEquals(SEARCH_ONLINE_ROW_ID, state.focusedRowId)
 
         press(GamepadAction.NAVIGATE_UP)
         assertTrue(state.searchFocused)
@@ -96,7 +103,7 @@ class ShibaLibraryViewModelTest {
         press(GamepadAction.NAVIGATE_UP)
         assertTrue("Search is the top edge; up never wraps", state.searchFocused)
 
-        press(GamepadAction.NAVIGATE_DOWN)
+        press(GamepadAction.NAVIGATE_DOWN, GamepadAction.NAVIGATE_DOWN)
         assertEquals("Crash Bandicoot", state.focused?.title)
     }
 
@@ -106,7 +113,7 @@ class ShibaLibraryViewModelTest {
 
         press(GamepadAction.NAVIGATE_DOWN, GamepadAction.NAVIGATE_DOWN, GamepadAction.NAVIGATE_DOWN, GamepadAction.NAVIGATE_DOWN)
 
-        assertEquals(3, state.focusPosition)
+        assertEquals(4, state.focusPosition)
         assertEquals("Half-Life 2", state.focused?.title)
     }
 
@@ -145,7 +152,7 @@ class ShibaLibraryViewModelTest {
         assertFalse("Back ends text entry before it closes anything", state.searchEditing)
         assertFalse(state.closed)
         assertEquals("final", state.query)
-        assertEquals(listOf("Final Fantasy IX"), state.rows.map { it.title })
+        assertEquals(listOf("Final Fantasy IX"), gameTitles)
     }
 
     @Test
@@ -154,17 +161,18 @@ class ShibaLibraryViewModelTest {
         viewModel.setQuery("half")
         viewModel.setQuery("")
 
-        assertEquals(listOf("Crash Bandicoot", "Final Fantasy IX", "Half-Life 2"), state.rows.map { it.title })
+        assertEquals(listOf("Crash Bandicoot", "Final Fantasy IX", "Half-Life 2"), gameTitles)
     }
 
     @Test
-    fun `Search stays reachable when the query matches nothing`() {
+    fun `a query that matches nothing leaves only Search online, which is where it is wanted`() {
         viewModel.load(ShibaLibraryMode.TRACKED)
         viewModel.setQuery("zelda")
 
-        assertTrue(state.rows.isEmpty())
-        assertTrue(state.searchFocused)
-        press(GamepadAction.NAVIGATE_DOWN)
+        assertFalse(state.hasGames)
+        assertEquals(listOf(SEARCH_ONLINE_ROW_ID), state.rows.map { it.id })
+        assertEquals(SEARCH_ONLINE_ROW_ID, state.focusedRowId)
+        press(GamepadAction.NAVIGATE_UP)
         assertTrue(state.searchFocused)
     }
 
@@ -178,7 +186,7 @@ class ShibaLibraryViewModelTest {
         viewModel.setSort(LibrarySortField.TITLE, ascending = false)
 
         assertEquals("Final Fantasy IX", state.focused?.title)
-        assertEquals(listOf("Half-Life 2", "Final Fantasy IX", "Crash Bandicoot"), state.rows.map { it.title })
+        assertEquals(listOf("Half-Life 2", "Final Fantasy IX", "Crash Bandicoot"), gameTitles)
     }
 
     @Test
@@ -188,7 +196,7 @@ class ShibaLibraryViewModelTest {
 
         viewModel.setProviderFilter(LibraryProviderFilter.RETRO)
 
-        assertEquals(2, state.focusPosition)
+        assertEquals(3, state.focusPosition)
         assertEquals("Final Fantasy IX", state.focused?.title)
     }
 
@@ -199,7 +207,7 @@ class ShibaLibraryViewModelTest {
 
         standing.value = standing.value.copy(tracked = standing.value.tracked.filterNot { it.providerGameId == "ff9" })
 
-        assertEquals(2, state.focusPosition)
+        assertEquals(3, state.focusPosition)
         assertEquals("Half-Life 2", state.focused?.title)
     }
 
@@ -272,7 +280,7 @@ class ShibaLibraryViewModelTest {
 
         assertEquals(LibraryProviderFilter.STEAM, state.providerFilter)
         assertNull(state.options)
-        assertEquals(listOf("Half-Life 2"), state.rows.map { it.title })
+        assertEquals(listOf("Half-Life 2"), gameTitles)
     }
 
     @Test
@@ -360,6 +368,33 @@ class ShibaLibraryViewModelTest {
 
         assertFalse(requireNotNull(state.focused).canAttemptMatch)
         assertNull(state.openCoins)
+    }
+
+    @Test
+    fun `Confirm on the pinned Search online row opens the provider search, tracking nothing`() {
+        viewModel.load(ShibaLibraryMode.TRACKED)
+
+        press(GamepadAction.NAVIGATE_UP) // Search online sits between Search and the first game
+        press(GamepadAction.SELECT)
+
+        assertTrue(state.openSearchOnline)
+        assertNull("a preview is not a game: nothing opens a coins page", state.openCoins)
+
+        viewModel.onSearchOnlineHandled()
+        assertFalse(state.openSearchOnline)
+    }
+
+    @Test
+    fun `the Search online row is pinned above the games in both views and never sorts or filters`() {
+        viewModel.load(ShibaLibraryMode.TRACKED)
+        viewModel.setSort(LibrarySortField.TITLE, ascending = false)
+        assertEquals(SEARCH_ONLINE_ROW_ID, state.rows.first().id)
+
+        viewModel.setProviderFilter(LibraryProviderFilter.VITA)
+        assertEquals(listOf(SEARCH_ONLINE_ROW_ID), state.rows.map { it.id })
+
+        viewModel.setMode(ShibaLibraryMode.UNTRACKED)
+        assertEquals(SEARCH_ONLINE_ROW_ID, state.rows.first().id)
     }
 
     @Test

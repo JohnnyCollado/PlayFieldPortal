@@ -789,6 +789,10 @@ data class XMBUiState(
     // Fullscreen All Tracked / Untracked overlay (null = closed).
     val activeShibaLibrary: ShibaLibraryMode? = null,
     val pendingShibaLibraryAction: GamepadAction? = null,
+    // Fullscreen "Search online" overlay, opened from the library's pinned action row. It draws
+    // over the library (which stays open behind it), and nothing it shows is ever written.
+    val activeSearchOnline: Boolean = false,
+    val pendingSearchOnlineAction: GamepadAction? = null,
     // Fullscreen player status view, opened from the Shiba Coin player card (XMB + Settings).
     val activePlayerStatus: Boolean = false,
     val pendingPlayerStatusAction: GamepadAction? = null,
@@ -5493,6 +5497,11 @@ class XMBViewModel @Inject constructor(
                 _uiState.update { it.copy(pendingShibaCoinsAction = action) }
                 return
             }
+            state.activeSearchOnline -> {
+                // Forward everything so the search page can leave its preview before it closes.
+                _uiState.update { it.copy(pendingSearchOnlineAction = action) }
+                return
+            }
             state.activeShibaLibrary != null -> {
                 // Forward everything so the fullscreen library can move focus and close on BACK.
                 _uiState.update { it.copy(pendingShibaLibraryAction = action) }
@@ -8469,6 +8478,33 @@ class XMBViewModel @Inject constructor(
 
     fun onShibaLibraryActionConsumed() {
         _uiState.update { it.copy(pendingShibaLibraryAction = null) }
+    }
+
+    // ── Search online overlay ─────────────────────────────────────────────────
+
+    fun openSearchOnline() {
+        _uiState.update { it.copy(activeSearchOnline = true) }
+    }
+
+    fun onCloseSearchOnline() {
+        _uiState.update { it.copy(activeSearchOnline = false, pendingSearchOnlineAction = null) }
+    }
+
+    fun onSearchOnlineActionConsumed() {
+        _uiState.update { it.copy(pendingSearchOnlineAction = null) }
+    }
+
+    /** The not-connected state's Open Settings: leave the search and land on the credentials page. */
+    fun openAchievementCredentialsFromSearchOnline() {
+        _uiState.update {
+            it.copy(
+                activeSearchOnline = false,
+                pendingSearchOnlineAction = null,
+                activeShibaLibrary = null,
+                pendingShibaLibraryAction = null,
+                activeSettingsScreen = "settings_achievements_credentials",
+            )
+        }
     }
 
     fun openPlayerStatus() {

@@ -136,13 +136,39 @@ data class ShibaLibraryRow(
     val reason: String?,
     /** A matched, installed game with no achievement data yet (e.g. after a clear). */
     val awaitingSync: Boolean = false,
+    /** Set on the pinned action row instead of a game; such a row has no progress and no coins. */
+    val action: LibraryRowAction? = null,
 ) {
     /** Tracked rows show progress; [reason] rows (untracked, or awaiting sync) show the reason. */
-    val isTracked: Boolean get() = reason == null
+    val isTracked: Boolean get() = reason == null && action == null
 
     /** An untracked game Confirm can send to the existing match flow. */
-    val canAttemptMatch: Boolean get() = !isTracked && !awaitingSync && coinsTarget != null
+    val canAttemptMatch: Boolean get() = !isTracked && action == null && !awaitingSync && coinsTarget != null
 }
+
+/** What a pinned action row does. Today there is one: look a game up on a provider. */
+enum class LibraryRowAction { SEARCH_ONLINE }
+
+/** The pinned action row's stable id — never a game's, so focus can never confuse the two. */
+internal const val SEARCH_ONLINE_ROW_ID = "action:search-online"
+
+/**
+ * The pinned "Search online" row (plan Task 8), listed above the games in both views: the way out of
+ * a library that only holds what is on this device. It opens a preview, never a tracked game.
+ */
+private fun searchOnlineRow() = ShibaLibraryRow(
+    id = SEARCH_ONLINE_ROW_ID,
+    coinsTarget = null,
+    title = "Search online",
+    platformLabel = "Look up a game that isn't on this device",
+    provider = null,
+    platformSortKey = "",
+    icon0Uri = null,
+    progress = 0f,
+    coins = LibraryCoinCounts(),
+    reason = null,
+    action = LibraryRowAction.SEARCH_ONLINE,
+)
 
 data class ShibaLibraryUiState(
     val mode: ShibaLibraryMode = ShibaLibraryMode.TRACKED,
@@ -163,7 +189,12 @@ data class ShibaLibraryUiState(
     val closed: Boolean = false,
     /** An entry the user activated; the screen opens its Shiba Coins page and calls onOpenHandled. */
     val openCoins: ShibaCoinsTarget? = null,
+    /** Set when the pinned Search online row is activated; the screen opens that page. */
+    val openSearchOnline: Boolean = false,
 ) {
+    /** False when the pinned action row is all that is listed — the list area explains itself. */
+    val hasGames: Boolean get() = rows.any { it.action == null }
+
     /** Navigation position: 0 is Search, 1 is the first game. */
     val focusPosition: Int get() = focusedRowId?.let { id -> rows.indexOfFirst { it.id == id } + 1 } ?: 0
 
@@ -248,6 +279,7 @@ fun shibaLibraryHelperItems(state: ShibaLibraryUiState): List<ControllerPromptIt
         val focused = state.focused
         val confirm = when {
             focused == null -> "Type"
+            focused.action == LibraryRowAction.SEARCH_ONLINE -> "Search online"
             focused.isTracked || focused.awaitingSync -> "View Achievements"
             focused.canAttemptMatch -> "Attempt Match"
             else -> null
@@ -354,12 +386,18 @@ class ShibaLibraryViewModel @Inject constructor(
     /** Confirm: Search starts typing; a game opens its achievements or its match flow, if it has one. */
     private fun activateFocused() {
         val row = _state.value.focused ?: return startSearchEdit()
+        if (row.action == LibraryRowAction.SEARCH_ONLINE) {
+            _state.update { it.copy(openSearchOnline = true) }
+            return
+        }
         val target = row.coinsTarget ?: return
         _state.update { it.copy(openCoins = target) }
     }
 
     /** Clears the open request once the screen has acted on it. */
     fun onOpenHandled() = _state.update { it.copy(openCoins = null) }
+
+    fun onSearchOnlineHandled() = _state.update { it.copy(openSearchOnline = false) }
 
     // ── Search ─────────────────────────────────────────────────────────────────
 
@@ -482,20 +520,23 @@ class ShibaLibraryViewModel @Inject constructor(
         val s = _state.value
         val provider = s.effectiveProviderFilter.provider
         val needle = s.query.trim()
-        val rows = currentModeRows
+        val games = currentModeRows
             .filter { provider == null || it.provider == provider }
             .filter { needle.isEmpty() || it.title.contains(needle, ignoreCase = true) }
             .sortedWith(sortComparator(s.effectiveSortField, s.sortAscending))
+        // Search online is pinned above the games, and neither the filter, the query nor the sort
+        // touches it: a local search that finds nothing is exactly when it is wanted.
+        val rows = listOf(searchOnlineRow()) + games
 
         val focusId = when {
-            focusFirstRow -> rows.firstOrNull()?.id
+            // A fresh view starts on the first game, as it did before the action row existed.
+            focusFirstRow -> games.firstOrNull()?.id ?: SEARCH_ONLINE_ROW_ID
             s.focusedRowId == null -> null
             rows.any { it.id == s.focusedRowId } -> s.focusedRowId
-            rows.isEmpty() -> null
             else -> rows[(s.focusPosition - 1).coerceIn(0, rows.lastIndex)].id
         }
-        // A fresh view waits for its first non-empty push (data may still be loading).
-        if (focusFirstRow && rows.isNotEmpty()) focusFirstRow = false
+        // A fresh view waits for its first push carrying games (data may still be loading).
+        if (focusFirstRow && games.isNotEmpty()) focusFirstRow = false
         _state.update { it.copy(rows = rows, focusedRowId = focusId) }
     }
 
