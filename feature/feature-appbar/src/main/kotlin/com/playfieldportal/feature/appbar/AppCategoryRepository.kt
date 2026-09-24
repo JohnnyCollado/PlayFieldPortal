@@ -5,9 +5,15 @@ import com.playfieldportal.core.data.database.dao.AppOverrideDao
 import com.playfieldportal.core.data.database.dao.CategoryDao
 import com.playfieldportal.core.data.database.entity.AppOverrideEntity
 import com.playfieldportal.core.data.database.entity.CategoryItemEntity
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -23,6 +29,17 @@ data class CategorizedApp(
 
 private const val ITEM_TYPE_APP = "app"
 
+// How long the package stream must be quiet before the catalog is rebuilt. Long enough to swallow
+// an install's callback burst, short enough that the new app is there by the time the user has
+// dismissed the installer.
+private const val PACKAGE_SETTLE_MS = 400L
+
+// One install is a removed → added → changed burst, and onPackageChanged also fires for component
+// enable/disable that the app list does not care about. Waiting for quiet collapses the burst
+// instead of sweeping PackageManager once per callback.
+@OptIn(FlowPreview::class)
+private fun Flow<Unit>.settled(): Flow<Unit> = debounce(PACKAGE_SETTLE_MS)
+
 // Resolves installed apps into XMB categories and applies user customizations. The contract:
 //   - An app with NO customization is placed by AppClassifier (automatic default).
 //   - As soon as the user moves/adds/removes/pins it, the app becomes "customized" and its
@@ -35,12 +52,42 @@ class AppCategoryRepository @Inject constructor(
     private val classifier: AppClassifier,
     private val categoryDao: CategoryDao,
     private val appOverrideDao: AppOverrideDao,
+    packageMonitor: InstalledPackageMonitor,
+    @AppCatalogScope scope: CoroutineScope,
 ) {
     @Volatile private var cache: List<InstalledApp> = emptyList()
 
-    // Emits whenever assignment or override state changes, so the XMB can re-resolve.
+    // Package events, after the cache has been rebuilt for them. Separate from the monitor's own
+    // flow so that ordering is a property of this class rather than of each subscriber: see init.
+    private val invalidations = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
+    init {
+        scope.launch {
+            packageMonitor.packageChanges
+                .settled()
+                // Rebuild BEFORE announcing, and in one place. Subscribers re-read through
+                // installedApps(), so announcing first would just refill them from the cache this
+                // event was supposed to invalidate — the bug would survive its own fix. Doing it
+                // here rather than in a per-subscriber onEach also means one sweep per event
+                // however many collectors are listening.
+                .collect {
+                    refresh()
+                    invalidations.emit(Unit)
+                }
+        }
+    }
+
+    // Emits whenever assignment or override state changes, or a package is installed, updated or
+    // removed — so every app list can re-resolve.
     fun changes(): Flow<Unit> =
-        combine(categoryDao.observeAppItems(), appOverrideDao.observeAll()) { _, _ -> Unit }
+        combine(
+            categoryDao.observeAppItems(),
+            appOverrideDao.observeAll(),
+            // onStart is load-bearing: combine emits nothing until EVERY source has produced a
+            // value, and a replay-less SharedFlow produces none on subscribe. Without it, adding
+            // this third arm would silently stop the two that already worked.
+            invalidations.onStart { emit(Unit) },
+        ) { _, _, _ -> Unit }
 
     suspend fun ensureLoaded() {
         if (cache.isEmpty()) cache = installedAppRepository.getInstalledApps()
@@ -48,6 +95,7 @@ class AppCategoryRepository @Inject constructor(
 
     suspend fun refresh() {
         cache = installedAppRepository.getInstalledApps()
+        Timber.i("App catalog refreshed: ${cache.size} apps")
     }
 
     private suspend fun installedApps(): List<InstalledApp> {

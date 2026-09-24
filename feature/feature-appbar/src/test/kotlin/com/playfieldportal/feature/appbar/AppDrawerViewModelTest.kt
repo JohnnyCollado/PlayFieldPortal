@@ -9,6 +9,7 @@ import io.mockk.verify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -25,6 +26,7 @@ class AppDrawerViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var repository: InstalledAppRepository
+    private lateinit var appCategoryRepository: AppCategoryRepository
     private lateinit var viewModel: AppDrawerViewModel
 
     @Before
@@ -33,8 +35,14 @@ class AppDrawerViewModelTest {
         repository = mockk(relaxed = true)
         coEvery { repository.getInstalledApps() } returns fakeApps()
         every { repository.hasUsageAccess() } returns true
+        // The catalog subscription reloads the drawer on package events. Silent here: these tests
+        // pin filtering and cursor behaviour against one fixed app list, so a second load would
+        // only add noise.
+        appCategoryRepository = mockk(relaxed = true)
+        every { appCategoryRepository.changes() } returns emptyFlow()
         viewModel = AppDrawerViewModel(
             repository,
+            appCategoryRepository,
             mockk(relaxed = true),   // menuSound
             mockk(relaxed = true),   // discordPresence
             mockk(relaxed = true),   // gameRepository
@@ -213,6 +221,7 @@ class AppDrawerViewModelTest {
         coEvery { repository.getInstalledApps() } returns fakeApps().map { it.copy(lastUsedAt = 0L) }
         viewModel = AppDrawerViewModel(
             repository,
+            appCategoryRepository,
             mockk(relaxed = true),   // menuSound
             mockk(relaxed = true),   // discordPresence
             mockk(relaxed = true),   // gameRepository

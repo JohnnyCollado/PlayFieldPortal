@@ -9,6 +9,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -70,6 +71,7 @@ data class AppDrawerUiState(
 @HiltViewModel
 class AppDrawerViewModel @Inject constructor(
     private val appRepository: InstalledAppRepository,
+    private val appCategoryRepository: AppCategoryRepository,
     private val menuSound: MenuSoundPlayer,
     private val discordPresence: com.playfieldportal.core.data.discord.DiscordPresenceController,
     private val gameRepository: com.playfieldportal.core.domain.repository.GameRepository,
@@ -81,6 +83,16 @@ class AppDrawerViewModel @Inject constructor(
 
     init {
         loadApps()
+        // The drawer used to reload only here and on ON_RESUME, and that observer lives in the
+        // screen's DisposableEffect — so it is only registered while the drawer is composed. This
+        // ViewModel is Activity-scoped (hiltViewModel() with no nav entry), so it outlives the
+        // drawer closing: installing an APK with the drawer shut and reopening it showed the list
+        // built at construction. Reacting to the catalog itself fixes that whether or not anything
+        // is on screen. drop(1) skips changes()' replayed opening value, which loadApps() above
+        // has already covered.
+        viewModelScope.launch {
+            appCategoryRepository.changes().drop(1).collect { loadApps() }
+        }
     }
 
     private fun loadApps() {
@@ -138,6 +150,11 @@ class AppDrawerViewModel @Inject constructor(
         viewModelScope.launch { discordPresence.setCurrentGame(label) }
     }
 
+    /**
+     * Reload on ON_RESUME. Not redundant with the catalog subscription above: `lastUsedAt` comes
+     * from UsageStatsManager, so returning from an app reorders "Recently Used" with no package
+     * event to react to.
+     */
     fun refresh() {
         loadApps()
     }

@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.work.Configuration
 import com.playfieldportal.core.data.database.seeder.DatabaseInitializer
 import com.playfieldportal.core.data.database.seeder.StartupDataPrep
+import com.playfieldportal.feature.appbar.InstalledPackageMonitor
 import com.playfieldportal.feature.artwork.api.ArtworkImageCache
 import com.playfieldportal.feature.launcher.EmulatorAutoConfigService
 import com.playfieldportal.feature.launcher.EmulatorProfileRepository
@@ -24,6 +25,7 @@ class PFPApplication : Application(), Configuration.Provider {
     @Inject lateinit var emulatorProfileRepository: EmulatorProfileRepository
     @Inject lateinit var emulatorAutoConfigService: EmulatorAutoConfigService
     @Inject lateinit var artworkImageCache: ArtworkImageCache
+    @Inject lateinit var installedPackageMonitor: InstalledPackageMonitor
 
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -35,6 +37,10 @@ class PFPApplication : Application(), Configuration.Provider {
         artworkImageCache.installAsSingleton()
         initDatabase()
         initEmulators()
+        // Registered here, not lazily on first injection: as the home app this process outlives
+        // every screen, so the app catalog has to be invalidated by package events rather than by
+        // the process dying. Cheap — one callback registration.
+        installedPackageMonitor.start()
     }
 
     private fun initDatabase() {

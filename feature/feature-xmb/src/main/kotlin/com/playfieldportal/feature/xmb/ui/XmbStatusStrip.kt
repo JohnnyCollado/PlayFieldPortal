@@ -6,6 +6,10 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
 import androidx.annotation.DrawableRes
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -27,7 +31,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -47,7 +50,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.feature.xmb.R
-import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -146,16 +148,59 @@ fun XmbPspStatusStrip(
                                status == BatteryManager.BATTERY_STATUS_FULL
             }
         }
-        context.registerReceiver(receiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        ContextCompat.registerReceiver(
+            context,
+            receiver,
+            IntentFilter(Intent.ACTION_BATTERY_CHANGED),
+            ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
         onDispose { context.unregisterReceiver(receiver) }
     }
 
-    LaunchedEffect(Unit) {
-        while (true) {
-            dateString = currentDateString()
-            timeString = currentTimeString()
-            delay(30_000L)
+    // The clock was a 30s poll, which made it wrong in two ways. A timezone or manual time change
+    // was invisible until the next tick, and — permanently — the poll ran at whatever phase the
+    // composable happened to start at, so the displayed minute rolled over up to 30s late even
+    // when nothing changed.
+    //
+    // ACTION_TIME_TICK is the platform's answer to both: the system broadcasts it ON the minute
+    // boundary to registered receivers only (it cannot be declared in a manifest), which is what
+    // the system status bar itself listens to. TIME_SET and TIMEZONE_CHANGED land an explicit
+    // change immediately; LOCALE_CHANGED keeps the 12/24-hour and date formats honest.
+    DisposableEffect(Unit) {
+        val clockReceiver = object : BroadcastReceiver() {
+            override fun onReceive(ctx: Context, intent: Intent) {
+                dateString = currentDateString()
+                timeString = currentTimeString()
+            }
         }
+        ContextCompat.registerReceiver(
+            context,
+            clockReceiver,
+            IntentFilter().apply {
+                addAction(Intent.ACTION_TIME_TICK)
+                addAction(Intent.ACTION_TIME_CHANGED)
+                addAction(Intent.ACTION_TIMEZONE_CHANGED)
+                addAction(Intent.ACTION_LOCALE_CHANGED)
+            },
+            ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
+        onDispose { context.unregisterReceiver(clockReceiver) }
+    }
+
+    // TIME_TICK is not delivered while the process is backgrounded, so the strip can come back
+    // holding a value up to a minute stale and then wait a further minute for the next tick. The
+    // composition survives ON_STOP (this is the home app), so a DisposableEffect keyed on Unit
+    // would not re-run to cover it — the resume itself has to recompute.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                dateString = currentDateString()
+                timeString = currentTimeString()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     Row(
