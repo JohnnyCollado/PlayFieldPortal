@@ -265,6 +265,37 @@ interface GameDao {
     @Query("UPDATE games SET is_missing = 1 WHERE rom_path IN (:romPaths)")
     suspend fun markMissing(romPaths: List<String>)
 
+    // ── Uninstalled-app tracking ───────────────────────────────────
+    // The same present/absent policy as the ROM pair above, keyed by package instead of path: an
+    // app the user marked as a game keeps its row (favorites, play stats, artwork, achievements)
+    // when it is uninstalled, and comes back whole on reinstall.
+    //
+    // launch_shortcut_id IS NULL restricts these to rows that ARE the app. A harvested launcher
+    // shortcut shares its host's package name but is a separate entry with its own presence, and
+    // the platform scope keeps the app_shortcut sentinel rows out entirely.
+
+    @Query(
+        """
+        UPDATE games SET is_missing = 0, last_seen_at = :seenAt
+        WHERE platform_id = :platformId
+          AND launch_shortcut_id IS NULL
+          AND package_name IN (:packageNames)
+        """
+    )
+    suspend fun markAppsSeen(platformId: String, packageNames: List<String>, seenAt: Long)
+
+    // Like markMissing, this takes an already-diffed list rather than a NOT IN over the table, so
+    // a PackageManager query that came back short can never mass-flag the library.
+    @Query(
+        """
+        UPDATE games SET is_missing = 1
+        WHERE platform_id = :platformId
+          AND launch_shortcut_id IS NULL
+          AND package_name IN (:packageNames)
+        """
+    )
+    suspend fun markAppsMissing(platformId: String, packageNames: List<String>)
+
     // The Missing bucket — one primary per fully missing set, plus ordinary missing games.
     @Query(
         """

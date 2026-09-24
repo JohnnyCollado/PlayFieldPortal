@@ -80,6 +80,8 @@ fun BootSequenceOverlay(
     modifier: Modifier = Modifier,
     bootVideoPath: String? = null,
     bootAudioPath: String? = null,
+    /** Boot Sequence's level, resolved by XMBViewModel. 0 means the user muted this sound. */
+    bootAudioGain: Float = 1f,
 ) {
     val logoAlpha    = remember { Animatable(0f) }
     val logoScale    = remember { Animatable(0.92f) }
@@ -177,7 +179,11 @@ fun BootSequenceOverlay(
         // Independent of the video: one failing must not stop the other. Composed inside the same
         // overlay so it is released the moment boot leaves composition.
         if (bootAudioPath != null) {
-            OneShotAudioLayer(path = bootAudioPath, clipEndMs = UiMediaLimits.BOOT_MAX_MS)
+            OneShotAudioLayer(
+                path = bootAudioPath,
+                clipEndMs = UiMediaLimits.BOOT_MAX_MS,
+                volume = bootAudioGain,
+            )
         }
     }
 }

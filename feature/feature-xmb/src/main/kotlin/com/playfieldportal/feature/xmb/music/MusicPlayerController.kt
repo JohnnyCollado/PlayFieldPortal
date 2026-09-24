@@ -44,6 +44,10 @@ data class MusicPlaybackState(
 @Singleton
 class MusicPlayerController @Inject constructor(
     @ApplicationContext private val context: Context,
+    // Ambience must not play under the user's own music. Pushed rather than observed: core-ui
+    // cannot see this class, so the arbitration runs the way the module dependency already points
+    // (see AmbienceController.setSuppressed).
+    private val ambience: com.playfieldportal.core.ui.sound.AmbienceController,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var player: MediaPlayer? = null
@@ -60,6 +64,12 @@ class MusicPlayerController @Inject constructor(
         queue = tracks
         queueName = name
         index = startIndex.coerceIn(0, (tracks.size - 1).coerceAtLeast(0))
+        // A queue exists from here until stop() — ambience stays down for all of it, including
+        // between tracks, so it cannot fade back in during a two-second gap.
+        ambience.setSuppressed(
+            com.playfieldportal.core.ui.sound.AmbienceController.OWNER_MUSIC,
+            suppressed = true,
+        )
         playCurrent()
     }
 
@@ -98,6 +108,12 @@ class MusicPlayerController @Inject constructor(
         releasePlayer()
         queue = emptyList(); queueName = null; index = 0
         _state.value = MusicPlaybackState()
+        // The queue is gone, so ambience may come back — subject to its own four gates, which is
+        // why this releases the suppression rather than starting anything itself.
+        ambience.setSuppressed(
+            com.playfieldportal.core.ui.sound.AmbienceController.OWNER_MUSIC,
+            suppressed = false,
+        )
     }
 
     /** The track currently loaded, for the "play in background" hand-off. */

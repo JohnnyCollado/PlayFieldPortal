@@ -975,6 +975,7 @@ fun XMBShell(
                         onComplete = onBootComplete,
                         bootVideoPath = uiState.bootVideoPath,
                         bootAudioPath = uiState.bootAudioPath,
+                        bootAudioGain = uiState.bootAudioGain,
                     )
                 } else {
                     Box(modifier = Modifier.fillMaxSize().background(Color.Black))

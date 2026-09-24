@@ -675,8 +675,6 @@ open class BackupManager @Inject constructor(
             booleanPreferencesKey("display_gameboot_enabled"),
             // Controller — D-pad LEFT as "back out" (Settings ▸ Controller).
             booleanPreferencesKey("controller_left_backs_out"),
-            // Sound
-            booleanPreferencesKey("sound_menu_enabled"),
             // Artwork download preferences
             booleanPreferencesKey("pref_dl_clear_logos"),
             booleanPreferencesKey("pref_dl_heroes"),
@@ -691,6 +689,12 @@ open class BackupManager @Inject constructor(
         )
 
         private val BACKED_UP_FLOAT_KEYS = listOf(
+            // Sound levels (Interface ▸ Sound): master plus one per channel. The names come from
+            // AudioChannel so this list cannot drift from the model that writes them — which is
+            // the whole reason the retired `sound_menu_enabled` was worth replacing rather than
+            // extending, since it had three independent declarations and no compiler link.
+            *com.playfieldportal.core.domain.model.AudioChannel.ALL_PREFERENCE_KEYS
+                .map { floatPreferencesKey(it) }.toTypedArray(),
             floatPreferencesKey("interface_context_menu_hint_delay_seconds"),
             // XMB scale + crossbar position (Display ▸ Adjust XMB Layout).
             floatPreferencesKey("display_xmb_scale"),

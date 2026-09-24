@@ -512,9 +512,10 @@ fun DisplaySettingsScreen(
                 onToggle = { viewModel.setRespectBatterySaver(it) },
             )
 
-            // (The old "Sound" group lived here — Menu Sounds moved to Settings ▸ Interface ▸
-            // Audio, which owns the same `sound_menu_enabled` pref plus the per-event sound
-            // assignments. No duplicate row may remain.)
+            // (The old "Sound" group lived here — it moved to Settings ▸ Interface ▸ Sound, which
+            // owns master volume, the per-sound levels and the sound assignments. The Menu Sounds
+            // toggle it used to hold is gone entirely: master at 0 is the mute. No duplicate row
+            // may remain.)
 
             SettingsGroup("Games")
 

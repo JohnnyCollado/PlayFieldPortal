@@ -29,8 +29,11 @@ import com.playfieldportal.core.ui.components.ControllerPromptItem
  *
  * [onUseDefault]'s action only appears while something custom is assigned: an action that would do
  * nothing is worse than no action for controller navigation, which has to step through every one.
- * [onPreview] is always offered, because previewing the bundled default is exactly how a user
- * decides whether they want to replace it.
+ *
+ * [onPreview] follows the same rule and is normally supplied, because previewing the bundled
+ * default is exactly how a user decides whether they want to replace it. It is null only for a
+ * slot that is ALREADY audible while its row is on screen — ambience, which loops behind the
+ * settings overlay, so a preview would start a second copy of a track the user can hear.
  */
 @Composable
 fun MediaAssignmentRow(
@@ -39,7 +42,7 @@ fun MediaAssignmentRow(
     value: String,
     isAssigned: Boolean,
     onPick: () -> Unit,
-    onPreview: () -> Unit,
+    onPreview: (() -> Unit)?,
     onUseDefault: () -> Unit,
     onFocusChanged: (Boolean) -> Unit,
     sublabel: String? = null,
@@ -59,21 +62,23 @@ fun MediaAssignmentRow(
             )
         },
         actions = buildList {
-            add(
-                SettingsRowAction(
-                    "Preview $label", onPreview,
-                    actionFocusBackgroundColor = lerp(SettingsAccent, Color.Black, 0.50f),
-                ) {
-                    Icon(
-                        Icons.Default.PlayArrow,
-                        contentDescription = "Preview $label",
-                        tint = SettingsAccent,
-                        modifier = Modifier
-                            .background(Color.Black.copy(alpha = 0.1f), RoundedCornerShape(6.dp))
-                            .padding(4.dp),
-                    )
-                }
-            )
+            if (onPreview != null) {
+                add(
+                    SettingsRowAction(
+                        "Preview $label", onPreview,
+                        actionFocusBackgroundColor = lerp(SettingsAccent, Color.Black, 0.50f),
+                    ) {
+                        Icon(
+                            Icons.Default.PlayArrow,
+                            contentDescription = "Preview $label",
+                            tint = SettingsAccent,
+                            modifier = Modifier
+                                .background(Color.Black.copy(alpha = 0.1f), RoundedCornerShape(6.dp))
+                                .padding(4.dp),
+                        )
+                    }
+                )
+            }
             if (isAssigned) {
                 add(
                     SettingsRowAction(

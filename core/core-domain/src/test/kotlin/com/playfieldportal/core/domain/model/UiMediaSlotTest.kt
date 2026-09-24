@@ -7,25 +7,23 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * Pins the seven-sound roster (docs/plans/README.md (C10)): six SOUND-kind rows in the
- * plan table's order, Boot Sound as the seventh row on the Sound screen, and the storage-key
- * decisions that keep old installs and backups from breaking — `sound_scroll` survives its
- * rename to "Navigation" with no migration, and the collapsed slots' keys (the two merged menu
- * sounds, and GameBoot's retired audio slot) become invalid so `pruneOrphans` can sweep their
- * leftovers.
+ * Pins the sound roster (docs/plans/README.md (C10)): the SOUND-kind rows in the plan table's
+ * order, and the storage-key decisions that keep old installs and backups from breaking —
+ * `sound_scroll` survives its rename to "Navigation" with no migration, while every retired
+ * slot's key (the two merged menu sounds, the Launch Sound, and both presentations' audio)
+ * becomes invalid so `pruneOrphans` can sweep their leftovers.
  */
 class UiMediaSlotTest {
 
     // ── the roster ───────────────────────────────────────────────────────────
 
-    @Test fun `sound slots are exactly the six merged rows in roster order`() {
+    @Test fun `sound slots are exactly the merged rows in roster order`() {
         assertEquals(
             listOf(
                 "sound_scroll" to "Navigation",
                 "sound_back" to "Back / Cancel",
                 "sound_confirm" to "Confirm / Apply",
                 "sound_error" to "Error / Invalid",
-                "sound_launch" to "Launch Sound",
                 "sound_notification" to "Notification",
             ),
             UiMediaSlot.ofKind(UiMediaKind.SOUND).map { it.key to it.displayName },
@@ -33,11 +31,20 @@ class UiMediaSlotTest {
         )
     }
 
-    @Test fun `boot sound is the seventh row and stays an audio track`() {
-        assertEquals(UiMediaKind.AUDIO_TRACK, UiMediaSlot.BOOT_AUDIO.kind)
-        assertFalse(UiMediaSlot.BOOT_AUDIO.isSound, "boot audio is not a SoundPool menu sound")
-        assertEquals("boot_audio", UiMediaSlot.BOOT_AUDIO.key)
-        assertEquals("Boot Sound", UiMediaSlot.BOOT_AUDIO.displayName)
+    @Test fun `ambience is the only audio track`() {
+        // AUDIO_TRACK means "assignable audio that is not a SoundPool sample". A PRESENTATION's
+        // sound must never appear here: Boot Sequence and GameBoot carry theirs inside the clip
+        // the user replaces, and a slot for one of them would put back the assignable audio row
+        // whose removal is why app launches stopped chirping.
+        assertEquals(
+            listOf(UiMediaSlot.AMBIENCE_AUDIO),
+            UiMediaSlot.ofKind(UiMediaKind.AUDIO_TRACK),
+        )
+        assertEquals("ambience_audio", UiMediaSlot.AMBIENCE_AUDIO.key)
+        assertFalse(
+            UiMediaSlot.AMBIENCE_AUDIO.isSound,
+            "ambience is minutes of ExoPlayer playback, not a SoundPool menu sample",
+        )
     }
 
     // ── the collapse: removed slots ──────────────────────────────────────────
@@ -47,6 +54,22 @@ class UiMediaSlotTest {
         assertNull(UiMediaSlot.fromKey("sound_systembrowse"), "SOUND_SYSTEM_BROWSE was merged into Navigation")
         assertFalse(UiMediaSlot.isValidKey("sound_select"))
         assertFalse(UiMediaSlot.isValidKey("sound_systembrowse"))
+    }
+
+    @Test fun `launch sound is retired - opening something is not a menu sound`() {
+        // The slot's only job had become chirping on every plain app launch, and it did it with a
+        // 5-second sample loaded into SoundPool. An invalid key is what lets pruneOrphans sweep
+        // an existing install's assignment and display name.
+        assertNull(UiMediaSlot.fromKey("sound_launch"), "SOUND_LAUNCH was retired")
+        assertFalse(UiMediaSlot.isValidKey("sound_launch"))
+    }
+
+    @Test fun `boot sequence is one slot - the replaceable clip, with no separate sound`() {
+        // Symmetric with GameBoot below: replacing the clip replaces its audio with it.
+        assertEquals(UiMediaSlot.BOOT_VIDEO, UiMediaSlot.fromKey("boot_video"))
+        assertEquals(UiMediaKind.VIDEO, UiMediaSlot.BOOT_VIDEO.kind)
+        assertNull(UiMediaSlot.fromKey("boot_audio"), "BOOT_AUDIO was retired")
+        assertFalse(UiMediaSlot.isValidKey("boot_audio"))
     }
 
     @Test fun `gameboot is one slot - the replaceable clip, with no separate sound`() {

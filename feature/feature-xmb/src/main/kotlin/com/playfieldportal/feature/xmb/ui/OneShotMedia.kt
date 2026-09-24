@@ -3,6 +3,7 @@ package com.playfieldportal.feature.xmb.ui
 import android.graphics.Matrix
 import android.view.TextureView
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -113,6 +114,7 @@ internal fun OneShotVideoLayer(
 internal fun OneShotAudioLayer(
     path: String,
     clipEndMs: Long,
+    volume: Float = 1f,
     onFinished: () -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -135,6 +137,11 @@ internal fun OneShotAudioLayer(
             prepare()
         }
     }
+
+    // Applied outside remember(path) so a level change during the clip lands on the running
+    // player rather than waiting for the next boot — the same live-update rule the slider screen
+    // depends on everywhere else.
+    LaunchedEffect(player, volume) { player.volume = volume }
 
     DisposableEffect(player) {
         val listener = object : Player.Listener {

@@ -37,9 +37,23 @@ import com.playfieldportal.themekit.UiMediaLimits
 private val AUDIO_PICKER_MIME = UiMediaLimits.AUDIO_MIME.toTypedArray()
 
 /**
- * Interface ▸ Sound — the Menu Sounds toggle plus the seven sound assignments: the six menu
- * sounds and Boot Sound, which previews through its own ExoPlayer path
- * ([com.playfieldportal.core.ui.media.UiMediaAudioPlayer]) instead of SoundPool.
+ * 20 discrete steps over 0..1 — 5% per press. Fine enough to land where you meant on a controller,
+ * coarse enough that holding LEFT crosses the range without a hundred repeats.
+ */
+private const val LEVEL_STEPS = 19
+
+/** Named once: the ambience row's sublabel is also quoted in the implementation plan. */
+private const val AMBIENCE_HELP =
+    "Loops while you browse. OGG loops seamlessly; MP3 may click."
+
+private fun formatLevel(value: Float): String = "${Math.round(value * 100)}%"
+
+/**
+ * Interface ▸ Sound — master volume, a level per launcher sound, then the sound assignments.
+ *
+ * Levels and assignments are separate lists because one row cannot own SELECT twice: the
+ * assignment rows use it to open the file picker, the slider rows to enter adjust mode. See
+ * [AudioSettingsViewModel] for the membership rule that follows from that.
  *
  * There is no editor sub-screen: selecting a row opens the system picker directly, and the row's
  * own inline actions carry Preview and Use Default. That is how every other media assignment in
@@ -152,19 +166,37 @@ fun AudioSettingsScreen(
                     .fillMaxSize()
                     .verticalScroll(scrollState),
             ) {
-                SettingsGroup("Menu Sounds")
+                SettingsGroup("Master")
 
-                SettingsToggleRow(
-                    label = "Menu Sounds",
-                    sublabel = "Play navigation, select, and launch sound effects",
-                    checked = state.menuSoundEnabled,
-                    onFocusChangedExternal = {
-                        if (it) focusedSlot = null
-                    },
-                    onToggle = { viewModel.setMenuSoundEnabled(it) },
+                SettingsSliderRow(
+                    label = "Master volume",
+                    sublabel = "Scales every launcher sound. At 0 the launcher is silent.",
+                    focusKey = "audio_master",
+                    value = state.masterLevel,
+                    onValueChange = { viewModel.setMasterLevel(it) },
+                    valueRange = 0f..1f,
+                    steps = LEVEL_STEPS,
+                    valueFormatter = ::formatLevel,
                 )
 
-                SettingsGroup("Sound Assignments")
+                SettingsGroup("Levels")
+
+                // The LEVELS list is not the assignments list: Boot Sequence and GameBoot appear
+                // here with no row below, because a level is something you can set for a sound you
+                // cannot replace. Ambience is in both, being the only assignable continuous sound.
+                AudioSettingsViewModel.LEVEL_CHANNELS.forEach { channel ->
+                    SettingsSliderRow(
+                        label = channel.displayName,
+                        focusKey = "audio_level_${channel.key}",
+                        value = state.channelLevels[channel] ?: 1f,
+                        onValueChange = { viewModel.setChannelLevel(channel, it) },
+                        valueRange = 0f..1f,
+                        steps = LEVEL_STEPS,
+                        valueFormatter = ::formatLevel,
+                    )
+                }
+
+                SettingsGroup("Sounds")
 
                 // Keep the assignment rows composed while an import is in flight. Removing
                 // them here unregisters their FocusRequesters; the navigation engine then
@@ -179,13 +211,20 @@ fun AudioSettingsScreen(
                 }
                 AudioSettingsViewModel.SOUND_SLOTS.forEach { slot ->
                     val label = state.soundLabels[slot] ?: PFP_DEFAULT_LABEL
+                    val isAmbience = slot == UiMediaSlot.AMBIENCE_AUDIO
                     MediaAssignmentRow(
                         label = slot.displayName,
+                        // Ambience accepts every audio container the gate allows, which is a
+                        // decision rather than an oversight: turning away a user's MP3 outright is
+                        // worse than a faint loop seam, so the trade-off is named here instead.
+                        sublabel = if (isAmbience) AMBIENCE_HELP else null,
                         focusKey = "audio_${slot.key}",
                         value = label,
                         isAssigned = slot in state.assignedSlots,
                         onPick = { pickFor(slot) },
-                        onPreview = { viewModel.preview(slot) },
+                        // Ambience is already playing behind this screen, so it has nothing to
+                        // audition — see AudioSettingsViewModel.preview.
+                        onPreview = if (isAmbience) null else ({ viewModel.preview(slot) }),
                         onUseDefault = {
                             requestSoundFocus(slot)
                             viewModel.useDefault(slot)
@@ -200,7 +239,7 @@ fun AudioSettingsScreen(
 
                 SettingsRow(
                     label = "Reset Sound to Defaults",
-                    sublabel = "Return every menu and boot sound to the bundled PFP sample and turn Menu Sounds back on",
+                    sublabel = "Return every menu sound to the bundled PFP sample and every level to full. Keeps your ambience track.",
                     onFocusChangedExternal = { if (it) focusedSlot = null },
                     onClick = { viewModel.requestReset() },
                 )

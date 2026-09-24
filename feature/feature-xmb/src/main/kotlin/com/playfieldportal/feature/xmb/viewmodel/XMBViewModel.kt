@@ -26,7 +26,7 @@ import com.playfieldportal.core.data.repository.MemoryCardRepository
 import com.playfieldportal.core.data.repository.PfpThemeStore
 import com.playfieldportal.core.ui.icons.CustomIcon
 import com.playfieldportal.core.ui.icons.GifFrameProbe
-import com.playfieldportal.core.ui.media.bundledDefaultUri
+import com.playfieldportal.core.ui.media.bootDefaultAudioUri
 import com.playfieldportal.core.ui.media.resolveBootAudio
 import com.playfieldportal.core.ui.media.resolveGameBootAudio
 import com.playfieldportal.themekit.CustomizableIcons
@@ -714,6 +714,11 @@ data class XMBUiState(
     // built-in logo animation / silence — both are supported, in any combination.
     val bootVideoPath: String? = null,
     val bootAudioPath: String? = null,
+    /**
+     * Boot Sequence's resolved level. Carried in state rather than read by the overlay so the
+     * chime follows a slider that is being dragged, and so the overlay stays draw-only.
+     */
+    val bootAudioGain: Float = 1f,
     // The GameBoot presentation currently on screen, from the launch gate or from the settings
     // preview. Null the rest of the time.
     val activeGameBoot: com.playfieldportal.feature.launcher.GameBootRequest? = null,
@@ -1447,6 +1452,8 @@ class XMBViewModel @Inject constructor(
     // The preview plays its own audio: the gate owns playback for a real launch, and a preview
     // must never touch the gate. Same singleton player, so the two can never sound different.
     private val uiMediaAudioPlayer: com.playfieldportal.core.ui.media.UiMediaAudioPlayer,
+    private val ambienceController: com.playfieldportal.core.ui.sound.AmbienceController,
+    private val audioLevels: com.playfieldportal.core.ui.sound.AudioLevels,
     // The notification panel's durable half, and the settings behind it. The panel's RUNNING half
     // never reaches the repository — it lives in [runningTasks] below (plan section 4.2).
     private val notificationRepository: com.playfieldportal.core.domain.repository.NotificationRepository,
@@ -2923,7 +2930,7 @@ class XMBViewModel @Inject constructor(
         }
         // Video-app rows launch the app.
         _uiState.value.videoNav == VideoNav.VideoApps && item.packageName != null -> {
-            menuSound.play(MenuSound.LAUNCH); appCategoryRepository.launch(item.packageName); true
+            appCategoryRepository.launch(item.packageName); true
         }
         else -> false
     }
@@ -3345,7 +3352,7 @@ class XMBViewModel @Inject constructor(
         }
         item.id == PHOTO_ALBUMS_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openPhotoView(PhotoNav.Albums); true }
         item.id == PHOTO_APPS_ITEM_ID -> { menuSound.play(MenuSound.SELECT); openPhotoView(PhotoNav.PhotoApps); true }
-        item.id == CAMERA_ITEM_ID -> { menuSound.play(MenuSound.LAUNCH); launchCamera(); true }
+        item.id == CAMERA_ITEM_ID -> { launchCamera(); true }
         item.id == ADD_PHOTO_LIBRARY_ITEM_ID -> {
             menuSound.play(MenuSound.SELECT)
             _uiState.update { it.copy(activeSettingsScreen = "settings_photo") }
@@ -3358,7 +3365,7 @@ class XMBViewModel @Inject constructor(
         }
         // Photo-app rows launch the app.
         _uiState.value.photoNav == PhotoNav.PhotoApps && item.packageName != null -> {
-            menuSound.play(MenuSound.LAUNCH); appCategoryRepository.launch(item.packageName); true
+            appCategoryRepository.launch(item.packageName); true
         }
         item.type == XMBItemType.PHOTO_FOLDER && item.id.startsWith("plib_") -> {
             menuSound.play(MenuSound.SELECT)
@@ -3906,7 +3913,7 @@ class XMBViewModel @Inject constructor(
         }
         // Music-app rows launch the app.
         _uiState.value.musicNav == MusicNav.MusicApps && item.packageName != null -> {
-            menuSound.play(MenuSound.LAUNCH); appCategoryRepository.launch(item.packageName); true
+            appCategoryRepository.launch(item.packageName); true
         }
         else -> false
     }
@@ -8224,16 +8231,14 @@ class XMBViewModel @Inject constructor(
                 (item?.shortcutId != null && item.packageName != null) ||
                 item?.packageName != null
         }
-        // A real game booting immediately is the only case GameBoot covers. A game boot is never
-        // scored by the menu's launch sound: GameBoot owns sfx_launch when it is on, and with
-        // GameBoot off the launch is silent by decision — a silent launch, not the sfx wearing a
-        // different hat. Plain app launches keep their sound (funnelling those is a separate
-        // refactor, explicitly out of scope).
-        val launchesGame = opensGameDetail && _uiState.value.directLaunch
+        // Opening something is silent, whatever it is. A game booting immediately is scored by
+        // the GameBoot presentation (or by nothing, when GameBoot is off — off means off); an app
+        // opening has no cue at all, because the app taking the screen IS the feedback. There is
+        // no longer a launch sound to wear either hat: the slot is retired and `sfx_launch`
+        // survives only as the built-in GameBoot sequence's own track.
         val event = when {
             silentRow -> null
-            launchesGame -> null
-            launches -> MenuSound.LAUNCH
+            launches -> null
             else -> MenuSound.SELECT
         }
         event?.let { menuSound.play(it) }
@@ -9240,6 +9245,7 @@ class XMBViewModel @Inject constructor(
      * turned off never becomes visible.
      */
     private fun observeBootPreferences() {
+        observeAmbienceBootGate()
         viewModelScope.launch {
             val prefs = context.pfpDataStore.data.first()
             bootEnabled = prefs[KEY_SHOW_BOOT] ?: true
@@ -9261,9 +9267,10 @@ class XMBViewModel @Inject constructor(
         // file IO, and it must not run on the composition that is trying to draw the first frame.
         // Re-resolved on every stamp bump, so an import or a restored backup is picked up.
         //
-        // Audio falls back to the bundled opening chime ONLY when there is no custom boot video:
-        // a custom video keeps its own audio track unless the user explicitly assigned a boot
-        // sound — see resolveBootAudio, which pins that rule in one tested place.
+        // Audio is the bundled opening chime ONLY when there is no custom boot video: a custom
+        // video keeps its own audio track — see resolveBootAudio, which pins that rule in one
+        // tested place. There is no separate boot-sound slot; replacing the video replaces the
+        // whole presentation, sound included.
         viewModelScope.launch {
             uiMediaStore.stamp
                 .distinctUntilChanged()
@@ -9272,9 +9279,7 @@ class XMBViewModel @Inject constructor(
                         val video = uiMediaStore.pathFor(com.playfieldportal.core.domain.model.UiMediaSlot.BOOT_VIDEO)
                         val audio = resolveBootAudio(
                             customVideoPath = video,
-                            customAudioPath = uiMediaStore.pathFor(com.playfieldportal.core.domain.model.UiMediaSlot.BOOT_AUDIO),
-                            bundledDefaultUri = com.playfieldportal.core.domain.model.UiMediaSlot.BOOT_AUDIO
-                                .bundledDefaultUri(context.packageName),
+                            defaultUri = bootDefaultAudioUri(context.packageName),
                         )
                         video to audio
                     }
@@ -9374,6 +9379,7 @@ class XMBViewModel @Inject constructor(
                     uri = it,
                     clipEndMs = com.playfieldportal.themekit.UiMediaLimits.GAMEBOOT_SEQUENCE_MS,
                     label = "gameboot-preview",
+                    channel = com.playfieldportal.core.domain.model.AudioChannel.GAMEBOOT,
                 )
             }
             _uiState.update {
@@ -9390,6 +9396,31 @@ class XMBViewModel @Inject constructor(
     }
 
     // ── Boot sequence ─────────────────────────────────────────────────────────
+
+    /**
+     * Holds ambience until the boot sequence is off screen — chime first, then music.
+     *
+     * Driven off the STATE rather than from [onBootSequenceComplete], because that is only one of
+     * the ways the boot ends: the pref can be off so it never runs, a resume can replay it, and a
+     * skip can cut it short. Observing the flag covers all of them, where hooking the completion
+     * callback would leave ambience silent forever on the install that has boot turned off.
+     */
+    private fun observeAmbienceBootGate() {
+        viewModelScope.launch {
+            _uiState
+                .map { it.showBootSequence }
+                .distinctUntilChanged()
+                .collect { showing -> ambienceController.setBootFinished(!showing) }
+        }
+        // The boot chime's level. Collected for the process's lifetime rather than sampled when
+        // the boot starts, so dragging Boot Sequence on the Sound screen is audible against a
+        // replayed boot immediately rather than one boot later.
+        viewModelScope.launch {
+            audioLevels.gainFor(com.playfieldportal.core.domain.model.AudioChannel.BOOT)
+                .distinctUntilChanged()
+                .collect { gain -> _uiState.update { it.copy(bootAudioGain = gain) } }
+        }
+    }
 
     fun onBootSequenceComplete() {
         Timber.d("StartupSeq: boot sequence complete")

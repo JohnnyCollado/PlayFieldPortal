@@ -6,6 +6,33 @@ All notable changes to Play Field Portal are documented here. This project follo
 ## [Unreleased]
 
 ### Added
+- **Ambience: a looping background track for the launcher.** Assign a clip under Interface ▸ Sound
+  and it loops while you browse, Wii-menu style. No assignment means ambience is off — the
+  assignment *is* the switch, so there is no second toggle to drift out of sync with it.
+  It stops for anything that should outrank it: a game launch (the player is released, not paused —
+  a paused ExoPlayer still holds a codec), the music player, the video player, and any other app
+  that takes audio focus, which it requests properly and yields on every loss type. Suppression from
+  the music and video players is *pushed* rather than observed, because audio focus is granted
+  per-application and would never make our own ambience yield to our own music.
+  Every audio container the import gate accepts is allowed. OGG loops seamlessly where MP3 clicks at
+  the seam (encoder delay and padding), so the row says so rather than rejecting the file — a faint
+  seam you were warned about beats a picker that turns your music away.
+- **Master volume and a level per sound, replacing the Menu Sounds toggle.** Interface ▸ Sound now
+  has three lists: master, a level for each of the eight launcher sounds (including Boot Sequence,
+  GameBoot and Ambience), and the sound assignments. Master at 0 is the mute; the
+  `sound_menu_enabled` boolean is gone, along with the three separate places it used to be declared.
+  Levels are resolved through one square-law taper, so half the slider sounds like half rather than
+  three-quarters, and every player follows the level as a flow — dragging a slider is audible while
+  the sound is still playing instead of on the next one.
+  This governs launcher chrome only. The music and video players keep playing at system volume:
+  scaling your own albums by a launcher setting is not what a master volume means.
+
+### Fixed
+- **The slider rows in Settings used a hardcoded accent.** `SettingsSliderRow` painted its focus
+  cursor from the live theme but its thumb, track and value text from a fixed `PfpPalette.Accent`
+  blue — so a focused slider showed a stock Material blue sitting inside a themed cursor, on every
+  preset scheme (they all resolve `accentColor` to white). All three now follow `menuCursorEdge()`,
+  the derivation already built to stay legible against that same cursor fill.
 - **A notification panel, on START or the bell in the status bar.** Background work used to end in
   the Android shade and nowhere else — which on a device whose home screen *is* this launcher means
   a user may never see it, and on API 33+ without `POST_NOTIFICATIONS` means `post()` silently does

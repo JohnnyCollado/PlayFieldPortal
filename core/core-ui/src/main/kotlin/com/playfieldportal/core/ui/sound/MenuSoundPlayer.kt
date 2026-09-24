@@ -3,6 +3,7 @@ package com.playfieldportal.core.ui.sound
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.SoundPool
+import com.playfieldportal.core.domain.model.AudioChannel
 import com.playfieldportal.core.domain.model.UiMediaSlot
 import com.playfieldportal.core.ui.media.bundledDefaultRes
 import com.playfieldportal.core.ui.R
@@ -33,7 +34,6 @@ enum class MenuSound {
      */
     CONFIRM,
     BACK,           // back / close
-    LAUNCH,         // launch a game or app
     /**
      * A tray notification was posted — a settled background task or a one-shot outcome. Fired from
      * the single [com.playfieldportal.core.ui.notification.BackgroundTaskCenter] settle seam, so it
@@ -60,6 +60,10 @@ enum class MenuSound {
      * SCROLL, SELECT and SYSTEM_BROWSE all land on [UiMediaSlot.SOUND_SCROLL]: the merged
      * Navigation row is one sample covering three events — a default, not a law (75+ call sites
      * still distinguish the events, and `MenuSound` itself is unchanged).
+     *
+     * There is deliberately no LAUNCH event. Opening an app is silent, and opening a game is
+     * scored by the GameBoot presentation or by nothing at all — see
+     * [com.playfieldportal.core.ui.media.gameBootDefaultAudioUri].
      */
     val slot: UiMediaSlot
         get() = when (this) {
@@ -68,9 +72,27 @@ enum class MenuSound {
             SELECT -> UiMediaSlot.SOUND_SCROLL
             CONFIRM -> UiMediaSlot.SOUND_CONFIRM
             BACK -> UiMediaSlot.SOUND_BACK
-            LAUNCH -> UiMediaSlot.SOUND_LAUNCH
             NOTIFICATION -> UiMediaSlot.SOUND_NOTIFICATION
             ERROR -> UiMediaSlot.SOUND_ERROR
+        }
+
+    /**
+     * The volume channel this event is scaled by (Interface ▸ Sound ▸ Levels).
+     *
+     * Deliberately parallel to [slot] rather than derived from it: the two happen to agree today
+     * — one row, one sample, one level — and writing the mapping out keeps them free to diverge
+     * without a silent behaviour change. Navigation's three events share one channel for the same
+     * reason they share one slot.
+     */
+    val channel: AudioChannel
+        get() = when (this) {
+            SCROLL -> AudioChannel.NAVIGATION
+            SYSTEM_BROWSE -> AudioChannel.NAVIGATION
+            SELECT -> AudioChannel.NAVIGATION
+            CONFIRM -> AudioChannel.CONFIRM
+            BACK -> AudioChannel.BACK
+            NOTIFICATION -> AudioChannel.NOTIFICATION
+            ERROR -> AudioChannel.ERROR
         }
 }
 
@@ -94,15 +116,21 @@ enum class MenuSound {
 class MenuSoundPlayer @Inject constructor(
     @ApplicationContext private val context: Context,
     private val uiMedia: UiMediaPaths,
+    private val levels: AudioLevels,
 ) {
     /**
-     * When false, [play] is a no-op. Observed here from `sound_menu_enabled` rather than pushed in
-     * by a ViewModel: the app drawer and game detail play through this same singleton, and before
-     * this the mute flag only survived while XMBViewModel happened to be alive.
+     * Resolved gain per channel, cached from [AudioLevels] because [play] is called from the
+     * gamepad dispatcher on nearly every input and must not suspend.
+     *
+     * A cached snapshot is correct HERE and nowhere else in the app: a menu sound is a one-shot,
+     * so it reads the level at the instant it fires and the next press picks up any change. A
+     * continuous player (ambience) must collect instead — see AmbienceController.
+     *
+     * Starts at full so the very first press before the flows emit is audible rather than silent.
      */
     @Volatile
-    var enabled: Boolean = true
-        private set
+    private var gains: Map<AudioChannel, Float> =
+        AudioChannel.entries.associateWith { 1f }
 
     private val pool: SoundPool = SoundPool.Builder()
         .setMaxStreams(4)
@@ -152,10 +180,13 @@ class MenuSoundPlayer @Inject constructor(
             .onEach { reload() }
             .launchIn(scope)
 
-        uiMedia.menuSoundsEnabled
-            .distinctUntilChanged()
-            .onEach { enabled = it }
-            .launchIn(scope)
+        // One collector per channel this player can voice. Writes replace the whole map rather
+        // than mutating it, so play() always reads a consistent snapshot.
+        for (channel in MenuSound.entries.map { it.channel }.distinct()) {
+            levels.gainFor(channel)
+                .onEach { gain -> gains = gains + (channel to gain) }
+                .launchIn(scope)
+        }
     }
 
     /**
@@ -163,19 +194,23 @@ class MenuSoundPlayer @Inject constructor(
      * [MenuSound.slot], so the merged Navigation row is one customization for three events.
      *
      * [ignoreMute] exists for the Sound screen's Preview button only: a user auditioning a sound
-     * they just picked must hear it even with Menu Sounds off. It is a defaulted parameter so no
-     * ordinary call site changes.
+     * they just picked must hear it even with master at zero, which is the app's mute. It is a
+     * defaulted parameter so no ordinary call site changes.
      *
      * Rapid navigation needs no debouncing here — SoundPool's own oldest-stream eviction at
      * `maxStreams = 4` already gives "interrupt rather than queue".
      */
     fun play(sound: MenuSound, ignoreMute: Boolean = false) {
-        if (!enabled && !ignoreMute) return
+        // ignoreMute is the Sound screen's Preview: auditioning a sound you just picked has to be
+        // audible even with master at zero, which is now the mute. Preview plays at full so what
+        // you hear is the SAMPLE, not the sample times two sliders you may be about to change.
+        val gain = if (ignoreMute) 1f else gains[sound.channel] ?: 1f
+        if (gain <= 0f) return
         val id = customIds[sound.slot]?.takeIf { it in loaded } ?: defaultIds[sound.slot] ?: return
         // Skip if the sample hasn't finished decoding yet — better silent than a click/glitch.
         // A custom sample that never loaded has already fallen through to the default above.
         if (id !in loaded) return
-        pool.play(id, 1f, 1f, 1, 0, 1f)
+        pool.play(id, gain, gain, 1, 0, 1f)
     }
 
     /**

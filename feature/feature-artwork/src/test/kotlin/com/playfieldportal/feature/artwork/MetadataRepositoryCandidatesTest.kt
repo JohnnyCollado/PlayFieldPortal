@@ -176,7 +176,10 @@ class MetadataRepositoryCandidatesTest {
                 boxArtUri = null,
                 physicalMediaUri = null,
                 box3dUri = null,
-                scrapedTitle = "Tgdb Title",
+                // NOT the title: a scrape may FILL it but never OVERWRITE it, so it is written
+                // by fillScrapedTitleIfMissing below rather than riding the COALESCE update —
+                // otherwise a re-scrape or a Change Match would silently rename the game.
+                scrapedTitle = null,
                 players = null,
                 ageRating = null,
                 franchise = null,
@@ -189,5 +192,7 @@ class MetadataRepositoryCandidatesTest {
                 romCrc32 = null,
             )
         }
+        // The title's own write: fill-only, and skipped entirely when the user set an override.
+        coVerify(exactly = 1) { gameDao.fillScrapedTitleIfMissing(1L, "Tgdb Title") }
     }
 }

@@ -41,11 +41,6 @@ class UiMediaLimitsTest {
         }
     }
 
-    @Test fun `launch sound accepts exactly at 3 s and rejects over`() {
-        assertNull(UiMediaLimits.validate(UiMediaLimits.LAUNCH, probe(durationMs = 3_000L)))
-        assertNotNull(UiMediaLimits.validate(UiMediaLimits.LAUNCH, probe(durationMs = 3_001L)))
-    }
-
     @Test fun `a gameboot clip accepts exactly at 10 s and rejects over`() {
         // Twice the built-in sequence: 5 s was too tight to author anything with a payoff.
         assertNull(UiMediaLimits.validate(UiMediaLimits.GAMEBOOT_CLIP, videoProbe(durationMs = 8_600L)))
@@ -54,8 +49,6 @@ class UiMediaLimitsTest {
     }
 
     @Test fun `boot media accepts exactly at 10 s and rejects over`() {
-        assertNull(UiMediaLimits.validate(UiMediaLimits.BOOT, probe(durationMs = 10_000L)))
-        assertNotNull(UiMediaLimits.validate(UiMediaLimits.BOOT, probe(durationMs = 10_001L)))
         assertNull(UiMediaLimits.validate(UiMediaLimits.BOOT_CLIP, videoProbe(durationMs = 10_000L)))
         assertNotNull(UiMediaLimits.validate(UiMediaLimits.BOOT_CLIP, videoProbe(durationMs = 10_001L)))
     }
@@ -112,8 +105,7 @@ class UiMediaLimitsTest {
 
     @Test fun `null duration is a rejection for every kind`() {
         for (spec in listOf(
-            UiMediaLimits.NAVIGATION, UiMediaLimits.LAUNCH,
-            UiMediaLimits.BOOT, UiMediaLimits.BOOT_CLIP,
+            UiMediaLimits.NAVIGATION, UiMediaLimits.BOOT_CLIP,
             UiMediaLimits.GAMEBOOT_CLIP,
         )) {
             val p = if (spec.kind == UiMediaLimits.Kind.VIDEO) videoProbe(durationMs = null) else probe(durationMs = null)
@@ -136,7 +128,7 @@ class UiMediaLimitsTest {
         assertNull(UiMediaLimits.validate(UiMediaLimits.NAVIGATION, probe(durationMs = 0L)))
         for (spec in listOf(
             UiMediaLimits.NAVIGATION, UiMediaLimits.CONFIRM,
-            UiMediaLimits.BACK, UiMediaLimits.ERROR, UiMediaLimits.NOTIFICATION, UiMediaLimits.LAUNCH,
+            UiMediaLimits.BACK, UiMediaLimits.ERROR, UiMediaLimits.NOTIFICATION,
         )) {
             assertEquals(0L, spec.recommendedMinMs, "$spec: audio must carry no floor")
         }
@@ -148,8 +140,7 @@ class UiMediaLimitsTest {
         // never quietly swap roles.
         for (spec in listOf(
             UiMediaLimits.NAVIGATION, UiMediaLimits.CONFIRM,
-            UiMediaLimits.BACK, UiMediaLimits.ERROR, UiMediaLimits.NOTIFICATION, UiMediaLimits.LAUNCH,
-            UiMediaLimits.BOOT,
+            UiMediaLimits.BACK, UiMediaLimits.ERROR, UiMediaLimits.NOTIFICATION,
         )) {
             assertTrue(
                 spec.maxBytes >= UiMediaLimits.AUDIO_STAGE_MAX_BYTES,
@@ -182,8 +173,8 @@ class UiMediaLimitsTest {
     @Test fun `every slot spec has sane ranges`() {
         for (spec in listOf(
             UiMediaLimits.NAVIGATION, UiMediaLimits.CONFIRM,
-            UiMediaLimits.BACK, UiMediaLimits.ERROR, UiMediaLimits.NOTIFICATION, UiMediaLimits.LAUNCH,
-            UiMediaLimits.GAMEBOOT_CLIP, UiMediaLimits.BOOT, UiMediaLimits.BOOT_CLIP,
+            UiMediaLimits.BACK, UiMediaLimits.ERROR, UiMediaLimits.NOTIFICATION,
+            UiMediaLimits.GAMEBOOT_CLIP, UiMediaLimits.BOOT_CLIP,
         )) {
             assertTrue(spec.recommendedMinMs >= 0, "$spec: min must not be negative")
             assertTrue(spec.recommendedMaxMs >= spec.recommendedMinMs, "$spec: range inverted")

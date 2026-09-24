@@ -730,7 +730,6 @@ class GameDetailViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         coVerify(exactly = 1) { launchDispatcher.launch(any(), any(), any()) }
-        verify(exactly = 0) { menuSound.play(com.playfieldportal.core.ui.sound.MenuSound.LAUNCH, any()) }
         verify(exactly = 1) { menuSound.play(com.playfieldportal.core.ui.sound.MenuSound.SELECT, any()) }
     }
 

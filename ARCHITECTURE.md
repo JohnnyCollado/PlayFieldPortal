@@ -187,20 +187,38 @@ replaced path from the image cache through the `CustomIconCacheEvictor` seam or 
 keeps playing. Editing happens in a live fullscreen overlay above the XMB, and only the focused
 row/column animates (gated on battery saver and `hasBlockingOverlay`).
 
-**UI media.** `UiMediaStore` keeps `filesDir/ui-media/<slot>.<ext>` for nine slots: six menu
-sounds, the boot video/audio pair, and GameBoot's one replaceable clip (`UiMediaSlot`). Per-slot
-duration and byte caps come from `UiMediaLimits`, and a duration bound is always mandatory.
-`MenuSoundPlayer` resolves a custom sample over its bundled `R.raw` default *inside the player*, so
-roughly ninety call sites needed no change; `BOOT_AUDIO` resolves through `bundledDefaultRes` /
-`resolveBootAudio`. GameBoot is deliberately ONE thing: one on/off switch, one built-in
-Compose-drawn sequence with its own bundled sound (`gameBootDefaultAudioUri`, `sfx_launch`), and one
-slot the user can replace it with — a clip that brings its own audio, which is why
-`resolveGameBootAudio` has two branches and no GameBoot audio slot exists. The switch fully owns the
-transition: on plays the presentation with its sound, off plays nothing, and a game boot is never
-scored by the menu's App Launch sound (the same `sfx_launch` sample) in either state — confirm
-sites suppress it for games unconditionally, so GameBoot off is a silent launch.
-`pruneOrphans()` sweeps files and preferences for retired slots on cold start and after a backup
-restore (including the retired `gameboot_audio`).
+**UI media.** `UiMediaStore` keeps `filesDir/ui-media/<slot>.<ext>` for eight slots: five menu
+sounds, the boot and GameBoot clips, and the ambience track (`UiMediaSlot`). Per-slot duration and
+byte caps come from `UiMediaLimits`, and a duration bound is always mandatory. `MenuSoundPlayer`
+resolves a custom sample over its bundled `R.raw` default *inside the player*, so roughly ninety
+call sites needed no change.
+
+**A presentation's sound travels inside the presentation.** Boot Sequence and GameBoot are each ONE
+thing: a switch, a built-in Compose-drawn sequence with its own bundled sound
+(`bootDefaultAudioUri` / `gameBootDefaultAudioUri`), and one clip the user can replace it with,
+which brings its own audio. That is why `resolveBootAudio` and `resolveGameBootAudio` are the same
+two branches and why neither has an audio slot. There is no launch sound at all: opening an app is
+silent, and opening a game is scored by GameBoot or by nothing. `pruneOrphans()` sweeps files and
+preferences for retired slots on cold start and after a backup restore (`sound_launch`,
+`boot_audio`, `gameboot_audio`).
+
+**Volume.** `AudioChannel` names the eight launcher sounds; `AudioLevels` (core-ui) / `AudioLevelStore`
+(core-data) resolve `master × channel` through one square-law taper, and **that function is the only
+place the taper exists**. Master at 0 is the app's mute — the `sound_menu_enabled` boolean it
+replaced is gone, along with its three independent declaration sites. Levels govern launcher chrome
+only: the music and video players run at system volume, because scaling the user's own media by a
+launcher setting is not what a master volume means. Every player reads gain as a *flow*, never a
+snapshot, so a dragged slider is audible immediately; `MenuSoundPlayer` caches one because a
+one-shot fired from the gamepad dispatcher cannot suspend.
+
+**Ambience.** `AmbienceController` loops the assigned `AMBIENCE_AUDIO` clip under the XMB — the
+first continuous sound the launcher has ever made, and the reason volume exists. Four gates must all
+hold: assigned, audible, foregrounded, unsuppressed; plus a start condition on the boot sequence
+finishing, so the chime plays and then the music. It **releases** rather than pauses on background
+(a paused ExoPlayer still holds a codec) and handles audio focus fully, so it yields to Spotify and
+to a call. The music and video players *push* suppression into it, because core-ui cannot see
+feature-xmb and because audio focus is per-application — our own music player taking focus would
+never make our own ambience yield.
 
 **Motion wallpapers.** `MotionWallpaperBackground` composites a looping clip over an import-time
 poster still. Video decodes through ExoPlayer; **GIF and animated WebP never construct a player at

@@ -4,6 +4,7 @@ import android.content.Context
 import com.playfieldportal.core.data.repository.GameBootPreferences
 import com.playfieldportal.core.data.repository.UiMediaStore
 import com.playfieldportal.core.domain.model.UiMediaSlot
+import com.playfieldportal.core.domain.model.AudioChannel
 import com.playfieldportal.core.ui.media.UiMediaAudioPlayer
 import io.mockk.every
 import io.mockk.mockk
@@ -75,7 +76,7 @@ class GameBootGateTest {
 
         assertNull(h.gate.active.value, "A disabled gate must never put a presentation on screen")
         assertFalse(h.gate.isActive)
-        verify(exactly = 0) { h.player.play(any<String>(), any(), any()) }
+        verify(exactly = 0) { h.player.play(any<String>(), any(), any(), any()) }
     }
 
     @Test
@@ -94,7 +95,9 @@ class GameBootGateTest {
         )
         // The audio is gate-owned: it starts before the first frame so the measured timeline
         // stays in sync, and the draw-only overlay can never release the player mid-clip.
-        verify(exactly = 1) { h.player.play(any<String>(), any(), any()) }
+        verify(exactly = 1) {
+            h.player.play(any<String>(), any(), any(), AudioChannel.GAMEBOOT)
+        }
         assertTrue(awaiting.isActive, "The launch must still be waiting")
 
         h.gate.onPresentationFinished()
@@ -115,7 +118,7 @@ class GameBootGateTest {
         assertTrue(request.videoPath == "/data/ui-media/gameboot_video.mp4")
         // Scoring someone's clip with the built-in sound is never what they meant.
         assertNull(request.audioPath, "A custom clip must keep its own audio track")
-        verify(exactly = 0) { h.player.play(any<String>(), any(), any()) }
+        verify(exactly = 0) { h.player.play(any<String>(), any(), any(), any()) }
 
         h.gate.onPresentationFinished()
         advanceUntilIdle()

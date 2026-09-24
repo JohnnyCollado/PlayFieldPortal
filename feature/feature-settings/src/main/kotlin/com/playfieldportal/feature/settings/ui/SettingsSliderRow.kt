@@ -74,6 +74,15 @@ fun SettingsSliderRow(
     val adjusting = LocalSettingsSliderAdjusting.current
     var isFocused by remember { mutableStateOf(false) }
 
+    // The adjusting colour comes from the LIVE theme, not PfpPalette's fixed blue.
+    //
+    // This row already paints its focus fill with menuCursorFill() — accent-tinted, themed — so a
+    // hardcoded SettingsAccent put a stock Material blue thumb inside a themed cursor, visibly
+    // mismatched on every preset scheme (they all resolve accentColor to white). menuCursorEdge()
+    // is the derivation built for exactly this job: the accent lerped toward white far enough to
+    // stay legible against the fill it sits inside, which is the same problem a thumb has.
+    val adjustAccent = com.playfieldportal.core.ui.theme.menuCursorEdge()
+
     // Latest-value holder: the adjust node is built at SELECT time but steps must read the value
     // as it is NOW. `latestValue` is refreshed every recomposition via SideEffect, so a stored
     // node keeps stepping from current state regardless of how many steps already applied.
@@ -150,7 +159,7 @@ fun SettingsSliderRow(
             Spacer(Modifier.width(16.dp))
             Text(
                 text = valueFormatter(value),
-                color = if (adjusting) SettingsAccent else SettingsSubtext,
+                color = if (adjusting) adjustAccent else SettingsSubtext,
                 fontSize = 13.sp,
                 style = TextStyle(shadow = SettingsTextShadow),
             )
@@ -168,8 +177,8 @@ fun SettingsSliderRow(
             steps = steps,
             enabled = enabled,
             colors = SliderDefaults.colors(
-                thumbColor = if (adjusting) SettingsAccent else SettingsSubtext,
-                activeTrackColor = if (adjusting) SettingsAccent else SettingsDivider,
+                thumbColor = if (adjusting) adjustAccent else SettingsSubtext,
+                activeTrackColor = if (adjusting) adjustAccent else SettingsDivider,
                 inactiveTrackColor = SettingsDivider.copy(alpha = 0.4f),
             ),
         )

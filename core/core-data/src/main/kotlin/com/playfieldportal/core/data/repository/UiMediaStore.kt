@@ -3,7 +3,6 @@ package com.playfieldportal.core.data.repository
 import android.content.Context
 import android.media.MediaMetadataRetriever
 import android.net.Uri
-import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -73,10 +72,6 @@ class UiMediaStore @Inject constructor(
     /** Bumps on every import/clear so observers (MenuSoundPlayer, overlays) reload. */
     override val stamp: Flow<Long> = context.pfpDataStore.data.map { prefs ->
         prefs[KEY_UI_MEDIA_STAMP] ?: 0L
-    }
-
-    override val menuSoundsEnabled: Flow<Boolean> = context.pfpDataStore.data.map { prefs ->
-        prefs[KEY_MENU_SOUNDS_ENABLED] ?: true
     }
 
     // ── Queries ──────────────────────────────────────────────────────────────
@@ -189,9 +184,8 @@ class UiMediaStore @Inject constructor(
 
     /**
      * Clears every slot of [kind] — "Reset Sound to Defaults" passes [UiMediaKind.SOUND]; the
-     * Boot/GameBoot screens reset their own kinds. Never touches other kinds' files. Note Boot
-     * Sound ([UiMediaSlot.BOOT_AUDIO]) is AUDIO_TRACK, not SOUND: callers that own it as one of
-     * their rows clear it alongside its [UiMediaKind.SOUND] siblings themselves.
+     * Boot/GameBoot screens reset their own kinds. Never touches other kinds' files, which is
+     * what keeps a sound reset from wiping either presentation's clip.
      */
     suspend fun clearAll(kind: UiMediaKind): Boolean = withContext(Dispatchers.IO) {
         var removedAny = false
@@ -310,9 +304,6 @@ class UiMediaStore @Inject constructor(
          * reload. Mirrors `custom_icons_stamp`'s contract. Backed up by feature-backup.
          */
         val KEY_UI_MEDIA_STAMP = longPreferencesKey("ui_media_stamp")
-
-        /** The Menu Sounds enable pref — observed by [UiMediaPaths.menuSoundsEnabled]. */
-        val KEY_MENU_SOUNDS_ENABLED = booleanPreferencesKey("sound_menu_enabled")
 
         /**
          * Where [slot]'s cosmetic display name is stored. Public so the settings screens can read

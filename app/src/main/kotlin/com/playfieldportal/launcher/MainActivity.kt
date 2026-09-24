@@ -61,6 +61,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var launchDispatcher: com.playfieldportal.feature.launcher.LaunchDispatcher
 
+    @Inject
+    lateinit var ambienceController: com.playfieldportal.core.ui.sound.AmbienceController
+
     // Same activity-scoped instance the shell's hiltViewModel() resolves — used to report when
     // the notification-permission dialog is out of the way so the boot sequence can start.
     private val xmbViewModel: XMBViewModel by viewModels()
@@ -158,6 +161,10 @@ class MainActivity : ComponentActivity() {
         // B1: PFP is foreground again — classify any pending launch hand-off (success if the
         // emulator held the foreground for a real session, never-foregrounded otherwise).
         launchDispatcher.onHostResumed()
+        // Ambience only ever sounds while the launcher is on screen. It still waits on the boot
+        // sequence after this (XMBViewModel pushes that gate), so a resume that replays the boot
+        // gets the chime first and the music after, exactly like a cold start.
+        ambienceController.onHostResumed()
         // Only a RETURN counts for "Show Boot Sequence on Resume" — the very first onResume after
         // onCreate is the cold start, which already plays its own boot.
         if (wasStopped) {
@@ -181,6 +188,9 @@ class MainActivity : ComponentActivity() {
     override fun onStop() {
         // B1: another activity covered the launcher — the dispatched emulator came to front.
         launchDispatcher.onHostStopped()
+        // Releases the ambience player outright rather than pausing it: a game is about to want
+        // the audio hardware, and a paused ExoPlayer still holds a codec.
+        ambienceController.onHostStopped()
         wasStopped = true
         super.onStop()
     }

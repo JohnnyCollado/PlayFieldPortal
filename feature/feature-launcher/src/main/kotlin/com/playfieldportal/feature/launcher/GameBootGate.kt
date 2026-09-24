@@ -75,9 +75,9 @@ class GameBootGate @Inject constructor(
 
     /**
      * Runs the GameBoot presentation when it is switched on, and returns immediately when it is
-     * not — in which case nothing plays and the launch is silent by decision. A game boot is
-     * never scored by the menu's Launch Sound, which stays the app-launch sound and is suppressed
-     * at the confirm sites for games in both states; with GameBoot off, off means off.
+     * not — in which case nothing plays and the launch is silent by decision. There is no menu
+     * launch sound to fall back on: that slot is retired, opening an app is silent, and with
+     * GameBoot off, off means off.
      *
      * When on, this suspends until the presentation finishes, is skipped, or times out. A second
      * request while one is already on screen is dropped, not queued.
@@ -102,7 +102,12 @@ class GameBootGate @Inject constructor(
         // draws, so it can never release the player mid-clip. A custom clip resolves to null here
         // and keeps its own track.
         audio?.let {
-            audioPlayer.play(uri = it, clipEndMs = UiMediaLimits.GAMEBOOT_SEQUENCE_MS, label = "gameboot")
+            audioPlayer.play(
+                uri = it,
+                clipEndMs = UiMediaLimits.GAMEBOOT_SEQUENCE_MS,
+                label = "gameboot",
+                channel = com.playfieldportal.core.domain.model.AudioChannel.GAMEBOOT,
+            )
         }
         _active.value = GameBootRequest(gameTitle = gameTitle, videoPath = video, audioPath = audio)
         try {

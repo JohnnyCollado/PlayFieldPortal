@@ -2,17 +2,18 @@ package com.playfieldportal.feature.settings.viewmodel
 
 import android.content.Context
 import android.net.Uri
-import androidx.datastore.preferences.core.booleanPreferencesKey
-import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.playfieldportal.core.data.datastore.pfpDataStore
+import com.playfieldportal.core.data.repository.AudioLevelStore
+import com.playfieldportal.core.data.repository.AudioLevelStore.Companion.levelKey
+import com.playfieldportal.core.data.repository.AudioLevelStore.Companion.masterKey
 import com.playfieldportal.core.data.repository.ControllerLayoutRepository
 import com.playfieldportal.core.data.repository.UiMediaStore
+import com.playfieldportal.core.domain.model.AudioChannel
 import com.playfieldportal.core.domain.model.UiMediaKind
 import com.playfieldportal.core.domain.model.UiMediaSlot
 import com.playfieldportal.core.domain.model.XYLayout
-import com.playfieldportal.core.ui.media.UiMediaAudioPlayer
 import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.core.ui.sound.MenuSoundPlayer
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,16 +28,14 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-// Must match XMBViewModel / DisplaySettingsViewModel — the SAME pref this screen inherited when
-// the row moved out of Display ▸ Sound. Kept as "enabled" rather than migrated to a "mute" key:
-// inverting the polarity would make a restored old backup mean the opposite of what it said.
-private val KEY_MENU_SOUND = booleanPreferencesKey("sound_menu_enabled")
-
 /** The label shown when a slot has no user assignment. */
 const val PFP_DEFAULT_LABEL = "PFP Default"
 
 data class AudioSettingsUiState(
-    val menuSoundEnabled: Boolean = true,
+    /** Master level, 0..1. At 0 the launcher is silent — this replaced the Menu Sounds toggle. */
+    val masterLevel: Float = 1f,
+    /** Per-channel level, 0..1. Every channel is present; a missing entry would render as 0. */
+    val channelLevels: Map<AudioChannel, Float> = emptyMap(),
     /** Per-sound-slot row summary: the imported file's name, or [PFP_DEFAULT_LABEL]. */
     val soundLabels: Map<UiMediaSlot, String> = emptyMap(),
     /** Slots the user has actually assigned — drives whether "Use Default" is offered. */
@@ -53,12 +52,25 @@ data class AudioSettingsUiState(
 )
 
 /**
- * Interface ▸ Sound. Owns the Menu Sounds toggle (moved here from Display ▸ Sound) and the
- * SEVEN sound assignments — the six menu sounds plus Boot Sound, which lives here as its
- * seventh row while staying an AUDIO_TRACK slot (Display ▸ Boot Sequence reaches the same slot).
+ * Interface ▸ Sound. Three lists, in this order: **master**, **levels**, **assignments**.
  *
- * Every row previews: the six menu sounds through [MenuSoundPlayer], Boot Sound through
- * [UiMediaAudioPlayer] (no [MenuSound] exists for it — it is boot music, not a UI tick).
+ * **Levels and assignments are two lists, not one.** The obvious design is one row per sound
+ * carrying both its file and its slider, and it cannot work on a controller: `SettingsRow` claims
+ * SELECT to open the file picker and `SettingsSliderRow` claims SELECT to enter adjust mode. One
+ * row cannot own both, and inventing a modifier chord for a settings screen is a worse answer
+ * than two lists.
+ *
+ * **The membership rule, restated.** This screen used to pin "every row is a menu sound and every
+ * menu sound is a row". That invariant now belongs to [SOUND_SLOTS] — the ASSIGNMENT list —
+ * specifically. [LEVEL_CHANNELS] is a different list with different membership: it includes Boot
+ * Sequence and GameBoot, which have no assignable file here, because a level is a thing you can
+ * set for a sound you cannot replace.
+ *
+ * Ambience is the only entry in both lists, and correctly so: it is the only sound that is both
+ * assignable and continuous.
+ *
+ * The Menu Sounds toggle is gone. Master at 0 is the mute — a switch and a slider that both mean
+ * "silent" drift apart the moment one is changed without the other.
  *
  * Boot VIDEO and GameBoot's clip are deliberately NOT reachable from here — they live with their
  * own presentations under Display, and [confirmReset] must never touch them.
@@ -68,7 +80,7 @@ class AudioSettingsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val store: UiMediaStore,
     private val menuSound: MenuSoundPlayer,
-    private val bootSoundPreviewer: UiMediaAudioPlayer,
+    private val levels: AudioLevelStore,
     private val controllerLayout: ControllerLayoutRepository,
 ) : ViewModel() {
 
@@ -94,12 +106,16 @@ class AudioSettingsViewModel @Inject constructor(
             else PFP_DEFAULT_LABEL
         }
         AudioSettingsUiState(
-            menuSoundEnabled = prefs[KEY_MENU_SOUND] ?: true,
+            // Read straight from the same prefs snapshot the labels came from, so a level and a
+            // label can never disagree about which edit they are showing.
+            masterLevel = (prefs[masterKey] ?: AudioLevelStore.DEFAULT_LEVEL).coerceIn(0f, 1f),
+            channelLevels = AudioChannel.entries.associateWith { channel ->
+                (prefs[channel.levelKey] ?: AudioLevelStore.DEFAULT_LEVEL).coerceIn(0f, 1f)
+            },
             soundLabels = labels,
-            // Not a kind filter anymore: BOOT_AUDIO is AUDIO_TRACK but IS a row on this screen,
-            // while BOOT_VIDEO / GAMEBOOT_VIDEO are assignments on other screens' concerns. Filter
-            // by "on this screen" so the Use Default action appears on the Boot row and nowhere
-            // it should not.
+            // BOOT_VIDEO / GAMEBOOT_VIDEO are assignments on other screens' concerns, so filter
+            // by "on this screen" rather than showing a Use Default action for a slot this screen
+            // does not own.
             assignedSlots = assigned.filterTo(HashSet()) { it in SCREEN_SLOTS },
             message = message,
             importing = importing,
@@ -111,8 +127,12 @@ class AudioSettingsViewModel @Inject constructor(
         .flowOn(Dispatchers.IO)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AudioSettingsUiState())
 
-    fun setMenuSoundEnabled(enabled: Boolean) = viewModelScope.launch {
-        context.pfpDataStore.edit { it[KEY_MENU_SOUND] = enabled }
+    fun setMasterLevel(percent: Float) = viewModelScope.launch {
+        levels.setMaster(percent)
+    }
+
+    fun setChannelLevel(channel: AudioChannel, percent: Float) = viewModelScope.launch {
+        levels.setChannel(channel, percent)
     }
 
     /** Records which row the picker was launched for. Called immediately before launching it. */
@@ -145,21 +165,23 @@ class AudioSettingsViewModel @Inject constructor(
     }
 
     /**
-     * Auditions [slot]'s current sound, custom or default, even while Menu Sounds is off. The six
-     * menu sounds play through [MenuSoundPlayer]; Boot Sound plays through [UiMediaAudioPlayer]
-     * — custom assignment first, bundled default otherwise — so its row previews like every
-     * other one.
+     * Auditions [slot]'s current sound, custom or default, at full volume even with master at 0 —
+     * a sound you just picked has to be audible while you are deciding about it.
+     *
+     * **Ambience deliberately has no preview.** It is already playing behind this screen: the
+     * settings UI is an overlay on the XMB, so the launcher is still foregrounded and unsuppressed
+     * and the loop is running. Auditioning it would mean starting a second copy of a track the
+     * user can already hear, and its slider is the honest way to judge it.
      */
     fun preview(slot: UiMediaSlot) {
-        val event = MenuSound.entries.firstOrNull { it.slot == slot }
-        if (event != null) {
-            menuSound.play(event, ignoreMute = true)
-        } else {
-            bootSoundPreviewer.play(customPath = store.pathFor(slot))
-        }
+        val event = MenuSound.entries.firstOrNull { it.slot == slot } ?: return
+        menuSound.play(event, ignoreMute = true)
     }
 
-    /** Drops [slot]'s custom file, returning that event to its bundled sample. */
+    /**
+     * Drops [slot]'s custom file. For a menu sound that restores its bundled sample; for ambience
+     * there is no bundled track, so it turns the feature off — the assignment IS the switch.
+     */
     fun useDefault(slot: UiMediaSlot) = viewModelScope.launch {
         store.clear(slot)
     }
@@ -168,35 +190,34 @@ class AudioSettingsViewModel @Inject constructor(
     fun dismissReset() { _confirmResetVisible.value = false }
 
     /**
-     * "Reset Sound to Defaults": clears every SOUND slot PLUS Boot Sound (it is a row on this
-     * screen) and restores the Menu Sounds toggle. Never touches the boot video or GameBoot's
-     * clip — those belong to their own screens' resets.
+     * "Reset Sound to Defaults": clears every SOUND slot and returns every level to full.
+     *
+     * Deliberately does NOT clear the ambience assignment. Ambience is AUDIO_TRACK, so
+     * `clearAll(SOUND)` structurally cannot see it — and that is the behaviour we want: a reset
+     * of the menu sounds should not silently delete the background track the user chose, which
+     * has its own Use Default on its own row. Never touches the boot video or GameBoot's clip
+     * either, for the same reason.
      */
     fun confirmReset() = viewModelScope.launch {
         _confirmResetVisible.value = false
         menuSound.play(MenuSound.CONFIRM)
         store.clearAll(UiMediaKind.SOUND)
-        store.clear(UiMediaSlot.BOOT_AUDIO)
-        context.pfpDataStore.edit { it[KEY_MENU_SOUND] = true }
+        levels.resetAll()
     }
 
     fun dismissMessage() { _message.value = null }
 
-    /** Stops a running Boot Sound preview (a no-op when none is playing). */
-    fun stopBootPreview() = bootSoundPreviewer.stop()
-
-    /** A leaving screen must not leave a boot preview sounding behind it. */
-    override fun onCleared() {
-        stopBootPreview()
-    }
-
     companion object {
         /**
-         * The seven customizable sound rows, in the order the screen lists them: the six
-         * [UiMediaKind.SOUND] slots in enum (roster) order, then Boot Sound last.
+         * The ASSIGNMENT rows, in the order the screen lists them: every menu sound, then the
+         * ambience track. Ambience is appended rather than derived because it is AUDIO_TRACK —
+         * the one assignable row here that is not a SoundPool sample.
          */
         val SOUND_SLOTS: List<UiMediaSlot> =
-            UiMediaSlot.ofKind(UiMediaKind.SOUND) + UiMediaSlot.BOOT_AUDIO
+            UiMediaSlot.ofKind(UiMediaKind.SOUND) + UiMediaSlot.AMBIENCE_AUDIO
+
+        /** The LEVEL rows, in enum order. A different list — see the class KDoc. */
+        val LEVEL_CHANNELS: List<AudioChannel> = AudioChannel.entries.toList()
 
         private val SCREEN_SLOTS: Set<UiMediaSlot> = SOUND_SLOTS.toSet()
     }

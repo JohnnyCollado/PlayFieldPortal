@@ -185,4 +185,10 @@ class GameRepositoryImpl @Inject constructor(
 
     override suspend fun markMissing(romPaths: List<String>) =
         gameDao.markMissing(romPaths)
+
+    override suspend fun markAppsSeen(platformId: String, packageNames: List<String>, seenAt: Long) =
+        gameDao.markAppsSeen(platformId, packageNames, seenAt)
+
+    override suspend fun markAppsMissing(platformId: String, packageNames: List<String>) =
+        gameDao.markAppsMissing(platformId, packageNames)
 }

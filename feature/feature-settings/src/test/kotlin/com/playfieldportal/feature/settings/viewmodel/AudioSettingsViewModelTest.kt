@@ -5,12 +5,13 @@ import android.net.Uri
 import androidx.datastore.preferences.core.edit
 import androidx.test.core.app.ApplicationProvider
 import com.playfieldportal.core.data.datastore.pfpDataStore
+import com.playfieldportal.core.data.repository.AudioLevelStore
 import com.playfieldportal.core.data.repository.ControllerLayoutRepository
 import com.playfieldportal.core.data.repository.ControllerMappingRepository
 import com.playfieldportal.core.data.repository.MediaDisplayNames
 import com.playfieldportal.core.data.repository.UiMediaStore
+import com.playfieldportal.core.domain.model.AudioChannel
 import com.playfieldportal.core.domain.model.UiMediaSlot
-import com.playfieldportal.core.ui.media.UiMediaAudioPlayer
 import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.core.ui.sound.MenuSoundPlayer
 import io.mockk.mockk
@@ -71,7 +72,6 @@ class AudioSettingsViewModelTest {
 
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val menuSound: MenuSoundPlayer = mockk(relaxed = true)
-    private val bootPreviewer: UiMediaAudioPlayer = mockk(relaxed = true)
     private lateinit var store: UiMediaStore
     private lateinit var vm: AudioSettingsViewModel
 
@@ -88,7 +88,7 @@ class AudioSettingsViewModelTest {
             context,
             store,
             menuSound,
-            bootPreviewer,
+            AudioLevelStore(context),
             ControllerLayoutRepository(context, ControllerMappingRepository(context)),
         )
     }
@@ -142,30 +142,62 @@ class AudioSettingsViewModelTest {
 
     // ── the roster ───────────────────────────────────────────────────────────
 
-    @Test fun `the Sound screen lists the seven rows with boot last`() = runTest(dispatcher) {
-        assertEquals(
-            listOf(
-                "sound_scroll", "sound_back", "sound_confirm", "sound_error",
-                "sound_launch", "sound_notification", "boot_audio",
-            ),
-            AudioSettingsViewModel.SOUND_SLOTS.map { it.key },
-        )
+    @Test fun `the assignment list is every menu sound plus the ambience track`() =
+        runTest(dispatcher) {
+            assertEquals(
+                listOf(
+                    "sound_scroll", "sound_back", "sound_confirm", "sound_error",
+                    "sound_notification", "ambience_audio",
+                ),
+                AudioSettingsViewModel.SOUND_SLOTS.map { it.key },
+            )
+        }
+
+    @Test fun `the level list is every channel, which is NOT the assignment list`() =
+        runTest(dispatcher) {
+            // The two lists differ on purpose: Boot Sequence and GameBoot have levels but nothing
+            // to assign here, because a level is something you can set for a sound you cannot
+            // replace. Collapsing them into one list is the mistake this pins against.
+            val channels = AudioSettingsViewModel.LEVEL_CHANNELS.map { it.key }
+            assertEquals(AudioChannel.entries.map { it.key }, channels)
+            assertTrue("boot" in channels && "gameboot" in channels)
+            assertTrue(
+                AudioSettingsViewModel.SOUND_SLOTS.none { it.key == "boot_video" },
+                "a presentation's clip is its own screen's business",
+            )
+        }
+
+    @Test fun `ambience is the only entry in both lists`() = runTest(dispatcher) {
+        // It is the only sound that is both assignable and continuous, so it is the only one that
+        // needs a file AND a level.
+        assertTrue(AudioSettingsViewModel.SOUND_SLOTS.any { it == UiMediaSlot.AMBIENCE_AUDIO })
+        assertTrue(AudioSettingsViewModel.LEVEL_CHANNELS.any { it == AudioChannel.AMBIENCE })
     }
 
-    // ── Boot Sound as an ordinary row ────────────────────────────────────────
+    @Test fun `no retired slot can come back as a row`() = runTest(dispatcher) {
+        // Launch Sound scored every plain app open; Boot Sound reached into a presentation that
+        // now carries its own audio. Either one back on this screen is the bug returning.
+        val keys = AudioSettingsViewModel.SOUND_SLOTS.map { it.key }
+        assertFalse("sound_launch" in keys, "opening an app is silent — there is no Launch Sound")
+        assertFalse("boot_audio" in keys, "the boot clip carries its own audio")
+    }
 
-    @Test fun `an assigned boot audio row gets its name and the use-default affordance`() =
+    // ── rows and their affordances ──────────────────────────────────────────
+
+    @Test fun `an assigned row gets its name and the use-default affordance`() =
         runTest(dispatcher) {
-            seedAssignment(UiMediaSlot.BOOT_AUDIO)
-            seedDisplayName(UiMediaSlot.BOOT_AUDIO, "opening.wav")
+            seedAssignment(UiMediaSlot.SOUND_CONFIRM)
+            seedDisplayName(UiMediaSlot.SOUND_CONFIRM, "confirm.wav")
             collectUiState()
 
-            eventually("the Boot row surfaces its name and Use Default") {
+            eventually("the row surfaces its name and Use Default") {
                 val state = vm.uiState.value
-                state.soundLabels[UiMediaSlot.BOOT_AUDIO] == "opening.wav" &&
-                    UiMediaSlot.BOOT_AUDIO in state.assignedSlots
+                state.soundLabels[UiMediaSlot.SOUND_CONFIRM] == "confirm.wav" &&
+                    UiMediaSlot.SOUND_CONFIRM in state.assignedSlots
             }
         }
+
+    // ── what is NOT a row ────────────────────────────────────────────────────
 
     @Test fun `only rows on this screen can be assigned slots`() = runTest(dispatcher) {
         seedAssignment(UiMediaSlot.BOOT_VIDEO, ext = "mp4")
@@ -182,54 +214,37 @@ class AudioSettingsViewModelTest {
         assertFalse(UiMediaSlot.GAMEBOOT_VIDEO in state.assignedSlots, "GameBoot has its own screen")
     }
 
-    @Test fun `preview on the boot row plays through the boot previewer, not SoundPool`() =
+    @Test fun `menu rows preview through SoundPool - there is no second audio path`() =
         runTest(dispatcher) {
-            vm.preview(UiMediaSlot.BOOT_AUDIO)
+            val menuSlots = AudioSettingsViewModel.SOUND_SLOTS.filter { it.isSound }
+            for (slot in menuSlots) vm.preview(slot)
             advanceUntilIdle()
-            // Bundled default (no custom assignment): the previewer gets null and resolves the
-            // resource URI itself.
-            verify(exactly = 1) { bootPreviewer.play(UiMediaSlot.BOOT_AUDIO, null) }
+            verify(exactly = menuSlots.size) { menuSound.play(any(), any()) }
+        }
+
+    @Test fun `ambience has no preview - it is already playing behind this screen`() =
+        runTest(dispatcher) {
+            // Settings is an overlay on the XMB, so the launcher is still foregrounded and the
+            // loop is running. A preview would start a second copy of an audible track.
+            vm.preview(UiMediaSlot.AMBIENCE_AUDIO)
+            advanceUntilIdle()
             verify(exactly = 0) { menuSound.play(any(), any()) }
         }
 
-    @Test fun `preview on the boot row hands the custom assignment to the previewer`() =
-        runTest(dispatcher) {
-            seedAssignment(UiMediaSlot.BOOT_AUDIO, ext = "mp3")
-            collectUiState()
-            eventually("the assignment is visible") {
-                UiMediaSlot.BOOT_AUDIO in vm.uiState.value.assignedSlots
-            }
-
-            vm.preview(UiMediaSlot.BOOT_AUDIO)
-            advanceUntilIdle()
-
-            verify(exactly = 1) {
-                bootPreviewer.play(UiMediaSlot.BOOT_AUDIO, mediaFile(UiMediaSlot.BOOT_AUDIO, "mp3").absolutePath)
-            }
-        }
-
-    @Test fun `menu sound rows still preview through SoundPool, never the boot previewer`() =
-        runTest(dispatcher) {
-            vm.preview(UiMediaSlot.SOUND_SCROLL)
-            advanceUntilIdle()
-            verify(exactly = 1) { menuSound.play(any(), any()) }
-            verify(exactly = 0) { bootPreviewer.play(UiMediaSlot.BOOT_AUDIO, any()) }
-        }
-
-    @Test fun `tearing the screen down stops any running boot preview`() = runTest(dispatcher) {
-        // onCleared() delegates here (it is protected, so the test drives the public seam);
-        // the override is a one-liner covered by review.
-        vm.stopBootPreview()
-        verify(exactly = 1) { bootPreviewer.stop() }
+    @Test fun `previewing a slot this screen does not own is a no-op`() = runTest(dispatcher) {
+        // A video slot has no MenuSound event. Before, the else-branch handed it to an ExoPlayer;
+        // now there is nothing to hand it to, so it must fall through silently rather than guess.
+        vm.preview(UiMediaSlot.BOOT_VIDEO)
+        advanceUntilIdle()
+        verify(exactly = 0) { menuSound.play(any(), any()) }
     }
 
     // ── reset semantics ──────────────────────────────────────────────────────
 
-    @Test fun `confirmReset clears the seven sounds including boot audio and never touches video media`() =
+    @Test fun `confirmReset clears the menu sounds and never touches video media`() =
         runTest(dispatcher) {
             seedAssignment(UiMediaSlot.SOUND_SCROLL)
             seedAssignment(UiMediaSlot.SOUND_NOTIFICATION)
-            seedAssignment(UiMediaSlot.BOOT_AUDIO)
             seedAssignment(UiMediaSlot.BOOT_VIDEO, ext = "mp4")
             seedAssignment(UiMediaSlot.GAMEBOOT_VIDEO, ext = "mp4")
             collectUiState()
@@ -238,25 +253,25 @@ class AudioSettingsViewModelTest {
             vm.requestReset()
             vm.confirmReset()
 
-            eventually("the seven sounds are cleared") {
+            eventually("the menu sounds are cleared") {
                 !mediaFile(UiMediaSlot.SOUND_SCROLL, "wav").isFile &&
-                    !mediaFile(UiMediaSlot.SOUND_NOTIFICATION, "wav").isFile &&
-                    !mediaFile(UiMediaSlot.BOOT_AUDIO, "wav").isFile
+                    !mediaFile(UiMediaSlot.SOUND_NOTIFICATION, "wav").isFile
             }
 
             // The negatives are as load-bearing as the positives, and time can't prove a
-            // negative — assert them only after the deletions have observably landed.
+            // negative — assert them only after the deletions have observably landed. A boot clip
+            // now carries the user's boot audio, so clearing it here would silently take that too.
             assertTrue(mediaFile(UiMediaSlot.BOOT_VIDEO, "mp4").isFile, "reset must never touch the boot video")
             assertTrue(mediaFile(UiMediaSlot.GAMEBOOT_VIDEO, "mp4").isFile, "reset must never touch GameBoot media")
         }
 
-    @Test fun `useDefault drops the boot audio assignment`() = runTest(dispatcher) {
-        seedAssignment(UiMediaSlot.BOOT_AUDIO)
+    @Test fun `useDefault drops a menu sound assignment`() = runTest(dispatcher) {
+        seedAssignment(UiMediaSlot.SOUND_CONFIRM)
 
-        vm.useDefault(UiMediaSlot.BOOT_AUDIO)
+        vm.useDefault(UiMediaSlot.SOUND_CONFIRM)
 
-        eventually("the boot audio file is removed") {
-            !mediaFile(UiMediaSlot.BOOT_AUDIO, "wav").isFile
+        eventually("the sound file is removed") {
+            !mediaFile(UiMediaSlot.SOUND_CONFIRM, "wav").isFile
         }
     }
 

@@ -269,18 +269,16 @@ class UiMediaStoreTest {
     }
 
     /**
-     * clearAll(SOUND) clears the six menu-sound rows and nothing else. Boot Sound is the Sound
-     * screen's SEVENTH row and IS cleared by that screen's reset — but by the ViewModel, not by
-     * the store: BOOT_AUDIO is AUDIO_TRACK kind, so clearAll(SOUND) structurally cannot see it
-     * (see AudioSettingsViewModel.confirmReset and its test). Videos are never touched either —
-     * the Phase 2c rule from docs/plans/README.md (C10).
+     * clearAll(SOUND) clears the menu-sound rows and nothing else. Neither presentation's clip is
+     * touched, which now covers their audio too: Boot Sequence and GameBoot each carry their sound
+     * inside the clip, so a sound reset that reached them would silently strip a user's boot audio
+     * — the Phase 2c rule from docs/plans/README.md (C10).
      */
     @Test
-    fun `clearAll of SOUND clears the six sound rows and never touches boot or gameboot media`() = runTest {
+    fun `clearAll of SOUND clears the sound rows and never touches boot or gameboot media`() = runTest {
         probeReturns(100L)
         store.import(UiMediaSlot.SOUND_SCROLL, register(wavBytes()))
         store.import(UiMediaSlot.SOUND_BACK, register(wavBytes()))
-        store.import(UiMediaSlot.BOOT_AUDIO, register(wavBytes(), name = "boot.wav"))
         probeReturns(100L, mime = "video/mp4")
         store.import(UiMediaSlot.BOOT_VIDEO, register(wavBytes(), name = "boot.mp4"))
         store.import(UiMediaSlot.GAMEBOOT_VIDEO, register(wavBytes(), name = "gameboot.mp4"))
@@ -289,8 +287,7 @@ class UiMediaStoreTest {
 
         assertNull(store.pathFor(UiMediaSlot.SOUND_SCROLL))
         assertNull(store.pathFor(UiMediaSlot.SOUND_BACK))
-        assertNotNull(store.pathFor(UiMediaSlot.BOOT_AUDIO), "clearAll(SOUND) must not clear boot audio — its screen's ViewModel owns that")
-        assertNotNull(store.pathFor(UiMediaSlot.BOOT_VIDEO), "reset audio must never touch the boot video")
+        assertNotNull(store.pathFor(UiMediaSlot.BOOT_VIDEO), "reset audio must never touch the boot video — its audio rides along")
         assertNotNull(store.pathFor(UiMediaSlot.GAMEBOOT_VIDEO), "reset audio must never touch GameBoot media")
     }
 

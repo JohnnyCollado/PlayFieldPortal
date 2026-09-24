@@ -25,10 +25,4 @@ interface UiMediaPaths {
      * lifetime — the exact bug the custom-icons stamp exists to prevent.
      */
     val stamp: Flow<Long>
-
-    /**
-     * The user's `sound_menu_enabled` pref (default true). Observed here — not by whichever
-     * ViewModel happens to be alive — so the mute flag can never silently die with its host.
-     */
-    val menuSoundsEnabled: Flow<Boolean>
 }

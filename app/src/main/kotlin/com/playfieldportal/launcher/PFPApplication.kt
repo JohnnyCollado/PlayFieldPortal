@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.work.Configuration
 import com.playfieldportal.core.data.database.seeder.DatabaseInitializer
 import com.playfieldportal.core.data.database.seeder.StartupDataPrep
+import com.playfieldportal.feature.appbar.InstalledAppReconciler
 import com.playfieldportal.feature.appbar.InstalledPackageMonitor
 import com.playfieldportal.feature.artwork.api.ArtworkImageCache
 import com.playfieldportal.feature.launcher.EmulatorAutoConfigService
@@ -26,6 +27,7 @@ class PFPApplication : Application(), Configuration.Provider {
     @Inject lateinit var emulatorAutoConfigService: EmulatorAutoConfigService
     @Inject lateinit var artworkImageCache: ArtworkImageCache
     @Inject lateinit var installedPackageMonitor: InstalledPackageMonitor
+    @Inject lateinit var installedAppReconciler: InstalledAppReconciler
 
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -41,6 +43,10 @@ class PFPApplication : Application(), Configuration.Provider {
         // every screen, so the app catalog has to be invalidated by package events rather than by
         // the process dying. Cheap — one callback registration.
         installedPackageMonitor.start()
+        // Subscribes to the catalog the monitor feeds, so app-backed library rows follow what is
+        // actually installed. Started here for the same reason: a lazily-built singleton nobody
+        // injects never runs.
+        installedAppReconciler.start()
     }
 
     private fun initDatabase() {

@@ -1,6 +1,7 @@
 package com.playfieldportal.feature.backup
 
 import org.junit.Assert.assertTrue
+import com.playfieldportal.core.domain.model.AudioChannel
 import org.junit.Test
 
 /**
@@ -118,6 +119,25 @@ class BackupKeyCoverageTest {
         // A picked colour is only meaningful against the backdrop it was chosen for, so a restore
         // that carries one without the other is a half-restore.
         assertCovered("display_custom_wallpaper", "display_color_scheme")
+    }
+
+    @Test
+    fun `every sound level is backed up`() {
+        // Generated from AudioChannel rather than typed out: the model owns the names, so a new
+        // channel that someone forgets to add to BackupManager fails HERE rather than silently
+        // resetting to full on a restored device.
+        assertCovered(*AudioChannel.ALL_PREFERENCE_KEYS.toTypedArray())
+    }
+
+    @Test
+    fun `the retired menu-sound toggle is gone from the backup list`() {
+        // Master at 0 is the mute now. A restore that re-introduced the boolean would carry a
+        // setting nothing reads, and the key's three old declaration sites are exactly why the
+        // volume keys are generated from one place.
+        assertTrue(
+            "sound_menu_enabled was retired — master volume replaced it",
+            "sound_menu_enabled" !in covered,
+        )
     }
 
     @Test

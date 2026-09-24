@@ -97,4 +97,10 @@ interface GameRepository {
     fun observeMissing(): Flow<List<Game>>
     suspend fun markSeen(romPaths: List<String>, seenAt: Long)
     suspend fun markMissing(romPaths: List<String>)
+
+    // The same policy for app-backed rows, keyed by package. An uninstalled app is marked missing,
+    // never deleted, so its favorite/play-stats/artwork survive and a reinstall restores it whole.
+    // Both take already-diffed lists, for the same reason the ROM pair does.
+    suspend fun markAppsSeen(platformId: String, packageNames: List<String>, seenAt: Long)
+    suspend fun markAppsMissing(platformId: String, packageNames: List<String>)
 }

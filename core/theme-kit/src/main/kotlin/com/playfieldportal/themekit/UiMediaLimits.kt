@@ -52,7 +52,6 @@ object UiMediaLimits {
     // ── Duration caps (hard max) ─────────────────────────────────────────────
     const val SOUND_MAX_MS          = 500L     // Navigation / Category Change
     const val CONFIRM_MAX_MS        = 1_000L   // Confirm / Back / Error
-    const val LAUNCH_MAX_MS         = 3_000L   // Launch Sound
     /**
      * Notification gets its own, looser cap rather than joining the Confirm family. It is not
      * navigation feedback: it fires at most a few times an hour, nothing is waiting on it, and a
@@ -75,7 +74,19 @@ object UiMediaLimits {
      * the two watchdogs behind it are sized from (GameBootOverlay's video cap, GameBootGate's).
      */
     const val GAMEBOOT_CLIP_MAX_MS  = 10_000L
+    /**
+     * The built-in Boot Sequence's own chime (`sfx_opening`) and the ceiling for a user's boot
+     * clip. Like [GAMEBOOT_SEQUENCE_MS], the audio side of this is not an import cap: there is no
+     * boot-audio slot to import into. It survives as [BOOT_CLIP]'s duration ceiling.
+     */
     const val BOOT_MAX_MS           = 10_000L
+    /**
+     * Ambience runs far longer than anything else here because it is the only sound that LOOPS —
+     * a two-minute bed repeats often enough to be heard as music rather than as a cue, where a
+     * ten-second one repeats often enough to be heard as a fault. The ceiling bounds the staging
+     * copy rather than expressing taste; the byte cap is the real anti-DoS belt.
+     */
+    const val AMBIENCE_MAX_MS       = 300_000L
 
     // ── Byte caps ────────────────────────────────────────────────────────────
     /**
@@ -96,15 +107,25 @@ object UiMediaLimits {
     val NAVIGATION   = Spec(Kind.SOUND,       0L,    250L,   SOUND_MAX_MS,   AUDIO_STAGE_MAX_BYTES)
     val CONFIRM      = Spec(Kind.SOUND,       0L,   500L,   CONFIRM_MAX_MS, AUDIO_STAGE_MAX_BYTES)
     val BACK         = Spec(Kind.SOUND,       0L,   500L,   CONFIRM_MAX_MS, AUDIO_STAGE_MAX_BYTES)
-    val LAUNCH       = Spec(Kind.SOUND,       0L, 2_000L,   LAUNCH_MAX_MS,  AUDIO_STAGE_MAX_BYTES)
     val NOTIFICATION = Spec(Kind.SOUND,       0L, 1_500L,   NOTIFICATION_MAX_MS, AUDIO_STAGE_MAX_BYTES)
     val ERROR        = Spec(Kind.SOUND,       0L,   500L,   CONFIRM_MAX_MS, AUDIO_STAGE_MAX_BYTES)
-    // GameBoot has ONE slot: the user's replaceable clip. There is no GameBoot audio spec
-    // because there is no GameBoot audio slot — the built-in sequence's own sound is bundled,
-    // not imported, and GAMEBOOT_SEQUENCE_MS is what the gate clips it to.
+    // Boot Sequence and GameBoot each have ONE slot: the user's replaceable clip. Neither has an
+    // audio spec, because neither has an audio slot — their built-in sounds are bundled, not
+    // imported, and GAMEBOOT_SEQUENCE_MS / BOOT_MAX_MS are what the gates clip them to. There is
+    // likewise no LAUNCH spec: opening an app is silent and opening a game is GameBoot's job.
     val GAMEBOOT_CLIP = Spec(Kind.VIDEO,      1_000L, 8_000L, GAMEBOOT_CLIP_MAX_MS, VIDEO_MAX_BYTES)
-    val BOOT         = Spec(Kind.AUDIO_TRACK, 0L, 8_000L, BOOT_MAX_MS,    AUDIO_STAGE_MAX_BYTES)
     val BOOT_CLIP    = Spec(Kind.VIDEO,       1_000L, 8_000L, BOOT_MAX_MS,    VIDEO_MAX_BYTES)
+    /**
+     * Ambience accepts the FULL [AUDIO_MIME] set by decision, not by omission.
+     *
+     * MP3 carries encoder delay and padding, so a looped MP3 clicks at the seam where OGG/Opus
+     * does not — and a launcher loop repeats every couple of minutes forever, so the artefact is
+     * heard constantly. Restricting the picker to OGG was considered and rejected: turning away a
+     * user's file outright is a worse first experience than a faint seam, and the row's helper
+     * text names the trade-off so it is an informed choice. Filtering this to OGG later would be
+     * reverting a decision, not fixing an oversight.
+     */
+    val AMBIENCE     = Spec(Kind.AUDIO_TRACK, 30_000L, 180_000L, AMBIENCE_MAX_MS, AUDIO_STAGE_MAX_BYTES)
 
     /** Accepted audio containers. Audio MIME arrays come from this set verbatim. */
     val AUDIO_MIME = setOf(
