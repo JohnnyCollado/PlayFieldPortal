@@ -49,8 +49,10 @@ suspend fun TestScope.eventually(
  * putting anything in its place, which is a regression, not a hardening.
  *
  * Either route can be dropped during a test class's first test, where Robolectric spends seconds
- * loading every class the ViewModel's combine touches while DataStore hands out updates through
- * a drop-oldest buffer. Only first tests have ever been seen to fail this way.
+ * loading every class the ViewModel's combine touches. The mechanism is not pinned down — see
+ * AudioSettingsViewModelTest's KDoc for a related DataStore/dispatcher hazard that is NOT the
+ * cause here, since adopting its unconfined Main broke these tests. Only first tests have ever
+ * been seen to fail this way.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 suspend fun TestScope.observeUntilSettled(state: StateFlow<*>) {
