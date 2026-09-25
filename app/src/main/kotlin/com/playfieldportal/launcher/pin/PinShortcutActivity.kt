@@ -65,6 +65,9 @@ class PinShortcutActivity : ComponentActivity() {
         val label = shortcut.shortLabel?.toString()?.takeIf { it.isNotBlank() }
             ?: shortcut.longLabel?.toString()?.takeIf { it.isNotBlank() }
             ?: shortcutId
+        // The host's publish stamp: what the reconcile sweep compares against so this pin is
+        // imported once, not re-imported on every startup (PcShortcutLedger).
+        val changedAt = shortcut.lastChangedTimestamp
 
         Timber.i("Accepted pinned shortcut: \"$label\" from $hostPackage")
 
@@ -73,16 +76,21 @@ class PinShortcutActivity : ComponentActivity() {
         runBlocking {
             withTimeoutOrNull(STORE_TIMEOUT_MS) {
                 withContext(Dispatchers.IO) {
-                    runCatching { store(hostPackage, shortcutId, label) }
+                    runCatching { store(hostPackage, shortcutId, label, changedAt) }
                         .onFailure { Timber.e(it, "Failed to store pinned shortcut $shortcutId") }
                 }
             } ?: Timber.e("Storing pinned shortcut $shortcutId timed out")
         }
     }
 
-    private suspend fun store(hostPackage: String, shortcutId: String, label: String) {
+    private suspend fun store(
+        hostPackage: String,
+        shortcutId: String,
+        label: String,
+        changedAt: Long,
+    ) {
         if (pcShortcutImporter.isPcLauncher(hostPackage)) {
-            val result = pcShortcutImporter.importPinnedShortcut(hostPackage, shortcutId, label)
+            val result = pcShortcutImporter.importPinnedShortcut(hostPackage, shortcutId, label, changedAt)
             if (result.needsSetup) WindowsSetupNotifications.post(applicationContext, label)
             return
         }

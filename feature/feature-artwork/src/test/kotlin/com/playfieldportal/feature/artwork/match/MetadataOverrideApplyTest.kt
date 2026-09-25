@@ -122,6 +122,73 @@ class MetadataOverrideApplyTest {
         assertFalse(writtenOverrides!!.contains("TITLE"))
     }
 
+    // ── A provider title over a hand-set one (C23 T2 follow-up) ───────────────
+    //
+    // The user's typed title shadows every column, so writing scraped_title under it changed
+    // nothing on screen — the bug. An applied TITLE now clears the override as well, which is
+    // why the ViewModel confirms before sending one.
+
+    @Test
+    fun `an applied provider title clears the hand-set title override`() = runTest {
+        given(storedGame(titleOverride = "Crash 1"))
+
+        val written = repo.applyMetadata(
+            1L,
+            MetadataPreset(provider = MatchProvider.SCREENSCRAPER, title = "Crash Bandicoot"),
+            MetadataApplyPolicy.REPLACE_ALL,
+        )
+
+        assertEquals(setOf(MetadataField.TITLE), written)
+        // Cleared, not overwritten: the scraped layer underneath becomes visible, which is the
+        // same end state as reverting the field by hand.
+        coVerify { gameDao.updateUserTitleOverride(1L, null) }
+    }
+
+    @Test
+    fun `a provider title equal to the scraped one still replaces the typed one`() = runTest {
+        // Stored scraped_title is "Crash Bandicoot" and so is the provider's — but the user sees
+        // their own "Crash 1", so the row is compared against THAT and still offers the change.
+        given(storedGame(titleOverride = "Crash 1"))
+
+        val written = repo.applyMetadata(
+            1L,
+            MetadataPreset(provider = MatchProvider.SCREENSCRAPER, title = "Crash Bandicoot"),
+            MetadataApplyPolicy.CHOOSE_FIELDS,
+            chosen = setOf(MetadataField.TITLE),
+        )
+
+        assertEquals(setOf(MetadataField.TITLE), written)
+        coVerify { gameDao.updateUserTitleOverride(1L, null) }
+    }
+
+    @Test
+    fun `a provider apply that writes no title leaves the override alone`() = runTest {
+        given(storedGame(titleOverride = "Crash 1"))
+
+        repo.applyMetadata(
+            1L,
+            MetadataPreset(provider = MatchProvider.SCREENSCRAPER, developer = "Naughty Dog"),
+            MetadataApplyPolicy.REPLACE_ALL,
+        )
+
+        coVerify(exactly = 0) { gameDao.updateUserTitleOverride(any(), any()) }
+    }
+
+    @Test
+    fun `Fill Missing Only never clears a title the user set by hand`() = runTest {
+        // A hand-set title is exactly what "missing" is not, whatever the columns underneath hold.
+        given(storedGame(titleOverride = "Crash 1"))
+
+        val written = repo.applyMetadata(
+            1L,
+            MetadataPreset(provider = MatchProvider.SCREENSCRAPER, title = "Crash Bandicoot"),
+            MetadataApplyPolicy.FILL_MISSING_ONLY,
+        )
+
+        assertFalse(MetadataField.TITLE in written)
+        coVerify(exactly = 0) { gameDao.updateUserTitleOverride(any(), any()) }
+    }
+
     @Test
     fun `Fill Missing Only fills only what has neither an override nor a stored value`() = runTest {
         // Developer is hand-set; description is stored; genre is empty both ways.

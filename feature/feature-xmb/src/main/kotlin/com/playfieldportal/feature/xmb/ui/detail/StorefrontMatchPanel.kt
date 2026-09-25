@@ -136,10 +136,10 @@ fun StorefrontMatchPanel(
                 else -> Unit
             }
 
-            // One scroll region holding the list AND the line that explains it, taking all the space
-            // the action row leaves. See the note in StorefrontRematchPanel for why a `fill = false`
-            // weighted list with siblings below it lands them on top of its last row — the picker
-            // had the same shape and only escaped it by usually returning two candidates.
+            // One scroll region for the list, taking all the space the action row leaves. See the
+            // note in StorefrontRematchPanel for why a `fill = false` weighted list with siblings
+            // below it lands them on top of its last row — the picker had the same shape and only
+            // escaped it by usually returning two candidates.
             Column(
                 modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -161,13 +161,6 @@ fun StorefrontMatchPanel(
                     focusFill = focusFill,
                     focusEdge = focusEdge,
                     onClick = { onRowClick(ui.noMatchIndex) },
-                )
-
-                Text(
-                    "Choosing stores a permanent id for this game. Your typed metadata is never touched.",
-                    color = TextMuted.copy(alpha = 0.55f),
-                    fontSize = 10.sp,
-                    modifier = Modifier.padding(top = 2.dp),
                 )
             }
 

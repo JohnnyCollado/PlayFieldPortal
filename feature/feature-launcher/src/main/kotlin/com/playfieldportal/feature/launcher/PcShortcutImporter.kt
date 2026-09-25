@@ -57,6 +57,7 @@ class PcShortcutImporter @Inject constructor(
     private val memoryCards: MemoryCardRepository,
     private val windowsLibrary: WindowsLibrarySetup,
     private val achievementLinker: PcGameAchievementLinker,
+    private val ledger: PcShortcutLedger,
 ) {
     /** The routing gate: true when [hostPackage] is a fingerprint-verified PC launcher. */
     fun isPcLauncher(hostPackage: String?): Boolean =
@@ -67,6 +68,12 @@ class PcShortcutImporter @Inject constructor(
      * sweep behind missed and UPDATED pins (re-pressing "Add to home" on an already-pinned game
      * only updates the shortcut; no confirm activity ever fires). Requires the default-launcher
      * role, like every pinned-shortcut read; returns the number of shortcuts imported.
+     *
+     * A pin is imported ONCE. PFP keeps the pin forever (it is the launch handle), so the sweep
+     * consults [PcShortcutLedger] and skips anything it has already handled — otherwise removing
+     * a Windows game from the library would only have it swept back in on the next startup. A
+     * republished shortcut (the user pressing "Add to Desktop" again) carries a newer
+     * `lastChangedTimestamp` and is imported afresh.
      */
     suspend fun reconcilePinnedShortcuts(hostPackage: String? = null): Int {
         val launcherApps = context.getSystemService(Context.LAUNCHER_APPS_SERVICE) as? LauncherApps
@@ -87,12 +94,17 @@ class PcShortcutImporter @Inject constructor(
                 .onFailure { Timber.w(it, "Pinned-shortcut query failed for $host (not the Home app?)") }
                 .getOrNull().orEmpty()
             for (shortcut in pinned.filter { it.isEnabled }) {
+                val changedAt = shortcut.lastChangedTimestamp
+                // Already turned into a library row and not republished since — whether the row
+                // still exists is the user's business, not the sweep's.
+                if (ledger.isHandled(host, shortcut.id, changedAt)) continue
                 importPinnedShortcut(
                     hostPackage = host,
                     shortcutId  = shortcut.id,
                     label       = shortcut.shortLabel?.toString()?.takeIf { it.isNotBlank() }
                         ?: shortcut.longLabel?.toString()?.takeIf { it.isNotBlank() }
                         ?: shortcut.id,
+                    changedAt   = changedAt,
                 )
                 imported++
             }
@@ -145,11 +157,16 @@ class PcShortcutImporter @Inject constructor(
     @Volatile
     private var watcherRegistered = false
 
-    /** Imports a modern pinned/published shortcut, launched via `startShortcut(package, id)`. */
+    /**
+     * Imports a modern pinned/published shortcut, launched via `startShortcut(package, id)`.
+     * [changedAt] is the shortcut's `lastChangedTimestamp`; it is recorded in the ledger so the
+     * reconcile sweep treats this pin as spent until the host republishes it.
+     */
     suspend fun importPinnedShortcut(
         hostPackage: String,
         shortcutId: String,
         label: String,
+        changedAt: Long = System.currentTimeMillis(),
     ): PcShortcutImportResult {
         val existing = gameRepository.getLauncherShortcut(hostPackage, shortcutId)
             ?: titleMatch(label)?.let { match ->
@@ -176,6 +193,7 @@ class PcShortcutImporter @Inject constructor(
             runCatching { achievementLinker.linkSteam(gameId, appId) }
                 .onFailure { Timber.e(it, "STEAM link failed for appid $appId") }
         }
+        ledger.markHandled(hostPackage, shortcutId, changedAt)
         return finish(gameId, added = existing == null, what = "pin \"$label\" from $hostPackage")
     }
 

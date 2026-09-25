@@ -112,6 +112,25 @@ class MetadataApplyTest {
     }
 
     @Test
+    fun `the provider baseline takes TITLE from what the user sees and the rest from the columns`() {
+        val current = mapOf(
+            MetadataField.TITLE to "Crash Bandicoot",
+            MetadataField.DEVELOPER to "Scraped Studio",
+        )
+        val effective = mapOf(
+            MetadataField.TITLE to "Crash 1",
+            MetadataField.DEVELOPER to "Scraped Studio",
+        )
+
+        val baseline = MetadataApply.providerBaselineOf(current, effective)
+
+        // TITLE is the one field a provider apply can now reach through the override, so it is
+        // the one field measured against the screen rather than against the column.
+        assertEquals("Crash 1", baseline[MetadataField.TITLE])
+        assertEquals("Scraped Studio", baseline[MetadataField.DEVELOPER])
+    }
+
+    @Test
     fun `Replace All writes every differing value and never a blank`() {
         val plan = MetadataApply.plan(current, incoming, MetadataApplyPolicy.REPLACE_ALL, chosen = emptySet())
 

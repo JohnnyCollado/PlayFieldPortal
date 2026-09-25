@@ -221,6 +221,12 @@ data class ManualFieldRow(
 )
 
 /**
+ * The one value an apply can destroy that the user cannot recover from the scraped layer: the
+ * title they typed. [current] is what they see today, [incoming] what the provider offers.
+ */
+data class TitleReplaceConfirm(val current: String, val incoming: String)
+
+/**
  * C16 task 3.2 — the Current-vs-Incoming overlay. Retrieval fills it and nothing is written until
  * [GameDetailViewModel.applyMetadataPreview] runs; Back always closes without a write.
  *
@@ -255,6 +261,8 @@ data class MetadataPreviewUi(
     val manualText: Map<MetadataField, String> = emptyMap(),
     /** The field whose text editor is open, if any. */
     val editingField: MetadataField? = null,
+    /** Set while an apply waits for a yes on replacing the title the user typed. */
+    val titleReplace: TitleReplaceConfirm? = null,
     val editText: String = "",
     val policy: MetadataApplyPolicy = MetadataApplyPolicy.FILL_MISSING_ONLY,
     val chosen: Set<MetadataField> = emptySet(),
@@ -290,8 +298,13 @@ data class MetadataPreviewUi(
             communityRating = parseRatingPercent(manualText[MetadataField.COMMUNITY_RATING]),
         )
 
-    /** The values the selected source is measured against — see [current] and [effective]. */
-    private val comparedAgainst: Map<MetadataField, Any?> get() = if (isManual) effective else current
+    /**
+     * The values the selected source is measured against — see [current] and [effective]. A
+     * provider gets [MetadataApply.providerBaselineOf]: the columns, with TITLE taken from the
+     * screen, because an applied title now replaces a hand-set one instead of writing under it.
+     */
+    val comparedAgainst: Map<MetadataField, Any?>
+        get() = if (isManual) effective else MetadataApply.providerBaselineOf(current, effective)
 
     /**
      * Retrieval produced nothing usable at all — it threw, or the game is gone. The overlay stays
@@ -310,7 +323,7 @@ data class MetadataPreviewUi(
 
     val rows: List<MetadataFieldRow>
         get() = if (isManual) emptyList()
-        else preset?.let { MetadataApply.rows(current, it) }.orEmpty()
+        else preset?.let { MetadataApply.rows(comparedAgainst, it) }.orEmpty()
 
     /**
      * Every field, always — the Manual column has to offer an empty field to fill, which is the
@@ -1762,7 +1775,12 @@ class GameDetailViewModel @Inject constructor(
                         metadataEditText(it, preview.effective[it])
                     },
                     chosen = preview.presets.firstOrNull()
-                        ?.let { MetadataApply.changedFields(preview.current, it) }
+                        ?.let {
+                            MetadataApply.changedFields(
+                                MetadataApply.providerBaselineOf(preview.current, preview.effective),
+                                it,
+                            )
+                        }
                         .orEmpty(),
                     // Fill Missing Only is the non-destructive default for a provider. When no
                     // provider answered the overlay opens straight on the Manual column, where the
@@ -1798,7 +1816,7 @@ class GameDetailViewModel @Inject constructor(
         val moved = p.copy(presetIndex = index)
         val next = moved.copy(
             chosen = moved.preset?.let {
-                MetadataApply.changedFields(if (moved.isManual) p.effective else p.current, it)
+                MetadataApply.changedFields(moved.comparedAgainst, it)
             }.orEmpty(),
             // Fill Missing Only is the right default for a provider — it is the non-destructive
             // one — and the wrong default for the user, whose typed value means "use this". So
@@ -1913,6 +1931,37 @@ class GameDetailViewModel @Inject constructor(
             showActionMessage("Nothing to change")
             return
         }
+        // Their typed title is the one thing here that an apply replaces rather than layers over,
+        // so it is the one thing that asks first. Everything else either fills a column the user
+        // never touched or leaves their override in place.
+        if (p.titleReplace == null && !p.isManual &&
+            MetadataField.TITLE in p.willWrite && MetadataField.TITLE in p.overridden
+        ) {
+            val typed = p.effective[MetadataField.TITLE]?.toString().orEmpty()
+            val incoming = MetadataApply.incomingOf(preset)[MetadataField.TITLE]?.toString().orEmpty()
+            _uiState.update {
+                it.copy(metadataPreview = p.copy(titleReplace = TitleReplaceConfirm(typed, incoming)))
+            }
+            return
+        }
+        writeMetadataPreview(game, p, preset)
+    }
+
+    /** "Replace" on the title confirm — the same apply, now approved. */
+    fun confirmTitleReplace() {
+        val game = _uiState.value.game ?: return
+        val p = _uiState.value.metadataPreview ?: return
+        val preset = p.preset ?: return
+        if (p.titleReplace == null || p.applying) return
+        val approved = p.copy(titleReplace = null)
+        _uiState.update { it.copy(metadataPreview = approved) }
+        writeMetadataPreview(game, approved, preset)
+    }
+
+    /** "Keep Mine" on the title confirm — back to the preview, nothing written. */
+    fun cancelTitleReplace() = updateMetadataPreview { it.copy(titleReplace = null) }
+
+    private fun writeMetadataPreview(game: Game, p: MetadataPreviewUi, preset: MetadataPreset) {
         _uiState.update { it.copy(metadataPreview = p.copy(applying = true)) }
         viewModelScope.launch {
             val written = runCatching { artworkRepository.applyMetadata(game.id, preset, p.policy, p.chosen) }
@@ -2244,6 +2293,15 @@ class GameDetailViewModel @Inject constructor(
     private fun handleMetadataPreviewInput(action: GamepadAction) {
         val p = _uiState.value.metadataPreview ?: return
         if (p.applying) return   // the write is already committed to; let it finish
+        p.titleReplace?.let {
+            // A yes/no on top of the table: Select replaces, Back keeps what the user typed.
+            when (action) {
+                GamepadAction.SELECT -> confirmTitleReplace()
+                GamepadAction.BACK   -> cancelTitleReplace()
+                else -> Unit
+            }
+            return
+        }
         if (p.editingField != null) {
             // The text editor is on top and owns the keyboard; Back discards the edit, like the
             // Edit Title dialog. Nothing else reaches the rows underneath.

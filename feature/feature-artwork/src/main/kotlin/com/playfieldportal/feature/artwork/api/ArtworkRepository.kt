@@ -159,8 +159,10 @@ class ArtworkRepository @Inject constructor(
      * was touched.
      *
      * Two destinations, one plan. A provider preset writes the ordinary metadata columns exactly as
-     * it always has — no artwork column, provider id or title override can change through this
-     * path. A [MatchProvider.MANUAL] preset writes the user-override shadow layer instead and
+     * it always has — no artwork column or provider id can change through this path. The one
+     * exception is the title override, which an applied TITLE clears so the stored name becomes
+     * the visible one; every other override is out of a provider's reach.
+     * A [MatchProvider.MANUAL] preset writes the user-override shadow layer instead and
      * leaves every metadata column alone, which is what makes a hand-set value survive the next
      * Re-scrape All: the scrape keeps refreshing a layer that no longer reaches the screen.
      */
@@ -175,7 +177,10 @@ class ArtworkRepository @Inject constructor(
         // columns hold — the only thing it can write.
         val comparedAgainst =
             if (incoming.provider == MatchProvider.MANUAL) MetadataApply.effectiveOf(game)
-            else MetadataApply.currentOf(game)
+            else MetadataApply.providerBaselineOf(
+                MetadataApply.currentOf(game),
+                MetadataApply.effectiveOf(game),
+            )
         val plan = MetadataApply.plan(comparedAgainst, incoming, policy, chosen)
         if (plan.isEmpty()) return@withContext emptySet()
 
@@ -211,6 +216,14 @@ class ArtworkRepository @Inject constructor(
                 ageRating = ageRating, franchise = franchise, communityRating = communityRating,
                 releaseDate = releaseDate,
             )
+        }
+        // An applied title also clears a hand-set one, so the name the provider just stored is the
+        // name on screen. Without this the write landed under the override and nothing changed —
+        // the whole reason TITLE is measured against the screen (MetadataApply.providerBaselineOf).
+        // Only ever on an explicit apply that includes TITLE: the caller confirms first, and the
+        // scrapers' own paths never come through here.
+        if (MetadataField.TITLE in plan && !game.userTitleOverride.isNullOrBlank()) {
+            gameDao.updateUserTitleOverride(gameId, null)
         }
         plan.keys
     }

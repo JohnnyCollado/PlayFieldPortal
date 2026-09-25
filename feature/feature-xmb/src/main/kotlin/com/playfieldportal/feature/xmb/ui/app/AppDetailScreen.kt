@@ -70,7 +70,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.playfieldportal.core.ui.image.rememberArtworkModel
 import com.playfieldportal.core.domain.model.GamepadAction
-import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.feature.xmb.ui.DetailContextMenu
 import com.playfieldportal.feature.xmb.ui.DetailMenuRow
@@ -152,7 +151,6 @@ fun AppDetailScreen(
     }
 
     val game = state.game ?: return
-    val pfpColors = LocalPFPColors.current
 
     // Same translucent theme-gradient backdrop as the Music browser, so the XMB wave stays visible
     // behind and all full-screen menus read consistently.
@@ -257,7 +255,6 @@ fun AppDetailScreen(
             artworkUri  = game.artworkUri ?: game.heroUri,
             title       = game.displayTitle,
             platform    = game.packageName.orEmpty(),
-            accentColor = pfpColors.accentColor,
             height      = detailHeroHeightFor(LocalDetailViewportHeight.current, messageLine = state.artworkMessage != null),
         )
 

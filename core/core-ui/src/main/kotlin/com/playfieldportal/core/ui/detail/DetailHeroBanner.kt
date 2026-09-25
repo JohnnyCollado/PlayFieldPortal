@@ -60,7 +60,9 @@ fun PfpDetailHeroBanner(
     title: String,
     platform: String,
     modifier: Modifier = Modifier,
-    accentColor: Color = LocalPFPColors.current.accentColor,
+    // The page's accent, not the platform's: the hero has to sit in the same color scheme as the
+    // cursor, the focused labels and the progress fill around it (detailPaletteFor).
+    accentColor: Color = detailPalette().focus,
     /** Pre-formatted identity facts ("Last played 3 days ago", "Play time: 12 h"). */
     facts: List<String> = emptyList(),
     favorite: Boolean = false,

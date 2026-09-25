@@ -99,7 +99,6 @@ import com.playfieldportal.core.ui.detail.PfpDetailQuickAction
 import com.playfieldportal.core.ui.detail.PfpDetailScaffold
 import com.playfieldportal.core.ui.detail.PfpDetailSectionLabel
 import com.playfieldportal.core.ui.detail.PfpDetailTextRow
-import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.core.ui.theme.menuCursorFill
 import com.playfieldportal.feature.xmb.ui.DetailContextMenu
@@ -276,8 +275,6 @@ private fun GameDetailContent(
     viewModel: GameDetailViewModel,
     modifier: Modifier = Modifier,
 ) {
-    val pfpColors = LocalPFPColors.current
-    val accentColor = state.platform?.accentColor?.let { Color(it) } ?: pfpColors.accentColor
     val focus = state.navFocusKey
 
     val pageScrollState = rememberScrollState()
@@ -374,7 +371,6 @@ private fun GameDetailContent(
             artworkUri = game.heroUri ?: game.artworkUri,
             title = game.displayTitle,
             platform = state.platform?.name ?: game.platformId.uppercase(),
-            accentColor = accentColor,
             facts = listOfNotNull(
                 game.lastPlayedAt?.let { "Last played ${relativeDays(it)}" },
                 game.totalPlayTimeMillis.takeIf { it > 0 }?.let { "Play time ${formatPlayTime(it)}" },
@@ -639,6 +635,8 @@ private fun GameDetailOverlays(
                     onEditTextChanged = viewModel::onMetadataEditChanged,
                     onSaveEdit        = viewModel::saveMetadataEdit,
                     onCancelEdit      = viewModel::cancelMetadataEdit,
+                    onConfirmTitleReplace = viewModel::confirmTitleReplace,
+                    onCancelTitleReplace  = viewModel::cancelTitleReplace,
                     onApply           = viewModel::applyMetadataPreview,
                     onClose           = viewModel::closeMetadataPreview,
                 )
@@ -890,6 +888,12 @@ internal fun gameDetailHelperItems(state: GameDetailUiState): List<ControllerPro
         )
     state.isEditingNote || state.isEditingTitle ->
         listOf(ControllerPromptItem(GamepadAction.BACK, "Cancel"))
+    // The title confirm owns the overlay while it is up, so it owns the hints too.
+    state.metadataPreview?.titleReplace != null ->
+        listOf(
+            ControllerPromptItem(GamepadAction.SELECT, "Replace"),
+            ControllerPromptItem(GamepadAction.BACK, "Keep Mine"),
+        )
     state.metadataPreview != null ->
         listOf(
             ControllerPromptItem.fixed(ControllerIcon.DPAD_ALL, "Navigate"),

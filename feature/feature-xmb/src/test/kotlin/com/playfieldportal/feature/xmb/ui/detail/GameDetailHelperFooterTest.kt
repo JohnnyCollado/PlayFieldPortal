@@ -35,6 +35,17 @@ class GameDetailHelperFooterTest {
     }
 
     @Test
+    fun `the title confirm owns the hints while it is up`() {
+        val state = baseState.copy(
+            metadataPreview = MetadataPreviewUi(
+                titleReplace = TitleReplaceConfirm(current = "Crash 1", incoming = "Crash Bandicoot"),
+            ),
+        )
+
+        assertEquals(listOf("Replace", "Keep Mine"), labels(state))
+    }
+
+    @Test
     fun `the metadata overlay replaces the page hints instead of adding to them`() {
         val state = baseState.copy(metadataPreview = MetadataPreviewUi())
 

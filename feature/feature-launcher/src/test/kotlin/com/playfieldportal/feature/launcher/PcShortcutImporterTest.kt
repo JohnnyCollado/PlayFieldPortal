@@ -8,12 +8,17 @@ import com.playfieldportal.core.data.repository.WindowsLibrarySetup
 import com.playfieldportal.core.data.repository.WindowsSetupState
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.model.GameContentType
+import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.domain.repository.GameRepository
+import androidx.datastore.preferences.core.edit
+import androidx.test.core.app.ApplicationProvider
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.slot
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import kotlin.test.Test
@@ -33,8 +38,17 @@ class PcShortcutImporterTest {
     private val windowsLibrary = mockk<WindowsLibrarySetup>(relaxed = true)
     private val linker = mockk<PcGameAchievementLinker>(relaxed = true)
 
+    // The ledger is real: it is DataStore-backed and what the reconcile sweep reads.
+    private val appContext = ApplicationProvider.getApplicationContext<Context>()
+    private val ledger = PcShortcutLedger(appContext)
+
+    @Before
+    fun clearLedger() {
+        runBlocking { appContext.pfpDataStore.edit { it.clear() } }
+    }
+
     private fun importer() = PcShortcutImporter(
-        mockk<Context>(relaxed = true), gameRepository, memoryCards, windowsLibrary, linker,
+        mockk<Context>(relaxed = true), gameRepository, memoryCards, windowsLibrary, linker, ledger,
     )
 
     private fun ready() {
@@ -115,6 +129,33 @@ class PcShortcutImporterTest {
         assertEquals(5L, result.gameId)
         assertTrue(result.needsSetup)
         coVerify { windowsLibrary.flagSetupPrompt() }
+    }
+
+    @Test
+    fun `an imported pin is marked handled, so the sweep leaves a removed game removed`() = runTest {
+        ready()
+        coEvery { gameRepository.getLauncherShortcut("com.winlator", "shortcut-1") } returns null
+        coEvery { gameRepository.getByPlatform("windows") } returns emptyList()
+        coEvery { gameRepository.upsert(any()) } returns 5L
+
+        importer().importPinnedShortcut("com.winlator", "shortcut-1", "Some Game", changedAt = 1_000L)
+
+        // The pin stays pinned (it is the launch handle), but it is spent: the next startup
+        // sweep sees it as handled and will not re-create the row the user deleted.
+        assertTrue(ledger.isHandled("com.winlator", "shortcut-1", changedAt = 1_000L))
+    }
+
+    @Test
+    fun `re-adding from the host republishes the shortcut, which the ledger lets back in`() = runTest {
+        ready()
+        coEvery { gameRepository.getLauncherShortcut("com.winlator", "shortcut-1") } returns null
+        coEvery { gameRepository.getByPlatform("windows") } returns emptyList()
+        coEvery { gameRepository.upsert(any()) } returns 5L
+
+        importer().importPinnedShortcut("com.winlator", "shortcut-1", "Some Game", changedAt = 1_000L)
+
+        // Pressing "Add to Desktop" again updates the pin in place — a newer publish stamp.
+        assertFalse(ledger.isHandled("com.winlator", "shortcut-1", changedAt = 2_000L))
     }
 
     // ── Legacy captures ───────────────────────────────────────────────────────

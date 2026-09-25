@@ -129,9 +129,9 @@ object MetadataApply {
     ).filterNot { it.isEmpty }
 
     /**
-     * The stored values a preset is compared against. TITLE is `scraped_title`, never the user's
-     * title override: a preset can refresh the scraped name, but the override always wins on screen
-     * and nothing here can write it.
+     * The stored values a preset is compared against. TITLE is `scraped_title` — the column a
+     * provider writes. What a provider apply is actually MEASURED against is
+     * [providerBaselineOf], which swaps that one field for the title on screen.
      */
     fun currentOf(game: GameEntity): Map<MetadataField, Any?> = mapOf(
         MetadataField.TITLE to game.scrapedTitle,
@@ -170,6 +170,23 @@ object MetadataApply {
             } ?: stored[field]
         }
     }
+
+    /**
+     * What a PROVIDER preset is measured against: the columns, except TITLE.
+     *
+     * A hand-set title shadows `scraped_title` everywhere on screen, so comparing an incoming
+     * title against the column promised changes the user would never see — and hid the one change
+     * they asked for when the two columns already agreed. An applied TITLE now clears the
+     * override (`ArtworkRepository.applyMetadata`), so the honest baseline is what they see. The
+     * ViewModel confirms before sending one, which is what keeps "their title only ever changes
+     * with their say-so" true.
+     *
+     * Every other field keeps the column baseline: a provider still cannot reach those overrides.
+     */
+    fun providerBaselineOf(
+        current: Map<MetadataField, Any?>,
+        effective: Map<MetadataField, Any?>,
+    ): Map<MetadataField, Any?> = current + (MetadataField.TITLE to effective[MetadataField.TITLE])
 
     /** The preset's usable values. Null and blank both mean "said nothing" and are dropped. */
     fun incomingOf(preset: MetadataPreset): Map<MetadataField, Any> = buildMap {

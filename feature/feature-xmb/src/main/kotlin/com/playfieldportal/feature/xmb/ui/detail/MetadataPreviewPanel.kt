@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -69,6 +70,8 @@ fun MetadataPreviewPanel(
     onSaveEdit: () -> Unit,
     onCancelEdit: () -> Unit,
     onApply: () -> Unit,
+    onConfirmTitleReplace: () -> Unit,
+    onCancelTitleReplace: () -> Unit,
     onClose: () -> Unit,
 ) {
     Box(
@@ -253,6 +256,18 @@ fun MetadataPreviewPanel(
             }
         }
 
+        // Topmost of all: the yes/no on replacing a hand-typed title, which outranks even the
+        // editor — it is the last thing between the user and losing what they typed.
+        ui.titleReplace?.let { confirm ->
+            TitleReplaceDialog(
+                confirm = confirm,
+                focusEdge = focusEdge,
+                onConfirm = onConfirmTitleReplace,
+                onCancel = onCancelTitleReplace,
+            )
+            return@Box
+        }
+
         // Topmost inside the overlay: one field's text editor.
         ui.editingField?.let { field ->
             MetadataFieldEditor(
@@ -267,6 +282,70 @@ fun MetadataPreviewPanel(
                 onCancel = onCancelEdit,
             )
         }
+    }
+}
+
+/**
+ * The title confirm: the field editor's chrome with the text swapped for two lines — what the user
+ * typed and what will replace it — so a destructive apply looks like every other dialog here.
+ */
+@Composable
+private fun TitleReplaceDialog(
+    confirm: TitleReplaceConfirm,
+    focusEdge: Color,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    Box(
+        Modifier.fillMaxSize().background(Color(0xCC000000)).clickable(onClick = onCancel),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            modifier = Modifier
+                .widthIn(max = 420.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(Color(0xF20A0A14))
+                .clickable(enabled = false) {}
+                .padding(16.dp),
+        ) {
+            Text(
+                "Replace your title?",
+                color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                "You set this title by hand. Applying the new one clears yours.",
+                color = TextMuted,
+                fontSize = 11.sp,
+                modifier = Modifier.padding(top = 4.dp, bottom = 10.dp),
+            )
+            TitleReplaceLine("Yours", confirm.current, TextMuted)
+            Spacer(Modifier.height(4.dp))
+            TitleReplaceLine("New", confirm.incoming, ChangeGreen)
+            Row(
+                Modifier.fillMaxWidth().padding(top = 10.dp),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                TextButton(onClick = onCancel) { Text("Keep Mine", color = TextMuted) }
+                TextButton(onClick = onConfirm) {
+                    Text("Replace", color = focusEdge, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TitleReplaceLine(label: String, value: String, valueColor: Color) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(label, color = TextMuted, fontSize = 11.sp, modifier = Modifier.width(52.dp))
+        Text(
+            value.ifBlank { "—" },
+            color = valueColor,
+            fontSize = 13.sp,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
     }
 }
 
