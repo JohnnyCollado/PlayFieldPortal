@@ -242,6 +242,7 @@ fun XMBShellContainer(
         onOpenPlayerStatus = viewModel::openPlayerStatus,
         onOpenPlayerStatusFromSettings = viewModel::openPlayerStatusFromSettings,
         onOpenLibraryManager = viewModel::openLibraryManager,
+        onOpenArtworkOrphans = viewModel::openArtworkOrphans,
         onGoToLibrary = viewModel::goToLibrary,
         onGameDetailActionConsumed = viewModel::consumeGameDetailAction,
         onCloseVideoDetail = viewModel::onCloseVideoDetail,
@@ -398,6 +399,7 @@ fun XMBShell(
     onOpenPlayerStatus: () -> Unit = {},
     onOpenPlayerStatusFromSettings: () -> Unit = {},
     onOpenLibraryManager: () -> Unit = {},
+    onOpenArtworkOrphans: () -> Unit = {},
     onGoToLibrary: () -> Unit = {},
     onGameDetailActionConsumed: () -> Unit = {},
     onCloseVideoDetail: () -> Unit = {},
@@ -957,6 +959,7 @@ fun XMBShell(
                         onOpenPlayerStatus = onOpenPlayerStatus,
                         onOpenPlayerStatusFromSettings = onOpenPlayerStatusFromSettings,
                         onOpenLibraryManager = onOpenLibraryManager,
+                        onOpenArtworkOrphans = onOpenArtworkOrphans,
                         onGoToLibrary = onGoToLibrary,
                         modifier = Modifier.fillMaxSize(),
                     )

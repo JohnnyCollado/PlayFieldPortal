@@ -20,6 +20,7 @@ val SETTINGS_SCREEN_ROUTES: Set<String> = setOf(
     "settings_categories",
     "settings_artwork",
     "settings_artwork_import",
+    "settings_artwork_orphans",
     "settings_achievements",
     // Achievements section entry points (Settings ▸ Achievements flyout) — first pass routes them
     // to the combined Shiba Coins screen; distinct ids keep the L2 list keys stable until
@@ -71,6 +72,7 @@ fun SettingsNavHost(
     onOpenPlayerStatus: () -> Unit = {},
     onOpenPlayerStatusFromSettings: () -> Unit = {},
     onOpenLibraryManager: () -> Unit = {},
+    onOpenArtworkOrphans: () -> Unit = {},
     onGoToLibrary: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
@@ -111,7 +113,12 @@ fun SettingsNavHost(
             "settings_photo"      -> PhotoSettingsScreen(onBack = onBack, modifier = modifier)
             "settings_categories" -> CategoryManagerScreen(onBack = onBack, modifier = modifier)
             "settings_artwork"    -> ArtworkSettingsScreen(onBack = onBack, modifier = modifier)
-            "settings_artwork_import" -> ArtworkImportScreen(onBack = onBack, modifier = modifier)
+            "settings_artwork_import" -> ArtworkImportScreen(
+                onBack = onBack,
+                onOpenOrphans = onOpenArtworkOrphans,
+                modifier = modifier,
+            )
+            "settings_artwork_orphans" -> ArtworkOrphanScreen(onBack = onBack, modifier = modifier)
             "settings_achievements" -> AchievementsSettingsScreen(onBack = onBack, onOpenPlayerStatus = onOpenPlayerStatus, modifier = modifier)
             "settings_achievements_player_card" -> {
                 // This branch is intentionally a tiny launch surface: selection opens the host-owned

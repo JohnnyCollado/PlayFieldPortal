@@ -7,6 +7,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.playfieldportal.core.data.database.PFPDatabase
 import com.playfieldportal.core.data.database.dao.AppOverrideDao
 import com.playfieldportal.core.data.database.dao.ArtworkImportReportDao
+import com.playfieldportal.core.data.database.dao.ArtworkOrphanFileDao
 import com.playfieldportal.core.data.database.dao.ArtworkRecordDao
 import com.playfieldportal.core.data.database.dao.BackupDao
 import com.playfieldportal.core.data.database.dao.CategoryDao
@@ -115,6 +116,9 @@ object DatabaseModule {
             PFPDatabase.MIGRATION_43_44,
             PFPDatabase.MIGRATION_44_45,
             PFPDatabase.MIGRATION_45_46,
+            PFPDatabase.MIGRATION_46_47,
+            PFPDatabase.MIGRATION_47_48,
+            PFPDatabase.MIGRATION_48_49,
         )
         .build()
 
@@ -149,6 +153,7 @@ object DatabaseModule {
     @Provides fun provideBackupDao(db: PFPDatabase): BackupDao = db.backupDao()
     @Provides fun provideArtworkRecordDao(db: PFPDatabase): ArtworkRecordDao = db.artworkRecordDao()
     @Provides fun provideArtworkImportReportDao(db: PFPDatabase): ArtworkImportReportDao = db.artworkImportReportDao()
+    @Provides fun provideArtworkOrphanFileDao(db: PFPDatabase): ArtworkOrphanFileDao = db.artworkOrphanFileDao()
     @Provides fun provideNotificationDao(db: PFPDatabase): NotificationDao = db.notificationDao()
 }
 

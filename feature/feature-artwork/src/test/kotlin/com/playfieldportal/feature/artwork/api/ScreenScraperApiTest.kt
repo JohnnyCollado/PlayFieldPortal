@@ -13,6 +13,7 @@ class ScreenScraperApiTest {
         appContext = mockk(relaxed = true),
         httpClient = mockk(relaxed = true),
         credentials = mockk(relaxed = true),
+        scrapePreferences = mockk(relaxed = true),
     )
 
     // ScreenScraper serves these as HTTP 200 with a plain-text body — classification is what

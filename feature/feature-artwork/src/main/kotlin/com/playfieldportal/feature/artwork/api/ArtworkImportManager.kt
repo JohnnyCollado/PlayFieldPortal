@@ -3,9 +3,11 @@ package com.playfieldportal.feature.artwork.api
 import android.content.Context
 import android.net.Uri
 import com.playfieldportal.core.data.database.dao.ArtworkImportReportDao
+import com.playfieldportal.core.data.database.dao.ArtworkOrphanFileDao
 import com.playfieldportal.core.data.database.dao.ArtworkRecordDao
 import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.data.database.entity.ArtworkImportReportEntity
+import com.playfieldportal.core.data.database.entity.ArtworkOrphanFileEntity
 import com.playfieldportal.core.data.database.entity.ArtworkRecordEntity
 import com.playfieldportal.core.data.repository.ArtworkFolderRepository
 import com.playfieldportal.core.data.repository.ArtworkStorageMode
@@ -31,6 +33,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.util.Locale
@@ -40,6 +44,9 @@ import javax.inject.Singleton
 
 // SGDB grids are ≈2.14 wide; the widest real box fronts (US SNES/N64) are ≈1.37.
 private const val GRID_ASPECT_THRESHOLD = 1.6f
+
+// artwork_records.source for a file the user tied to a game by hand in the orphan picker.
+private const val SOURCE_MANUAL_LINK = "manual_link"
 
 /**
  * The single entry point settings UIs use for the artwork folder + import flow — ViewModels
@@ -57,7 +64,14 @@ class ArtworkImportManager @Inject constructor(
     private val artworkStore: ArtworkStore,
     private val internalStore: com.playfieldportal.feature.artwork.store.InternalArtworkStore,
     private val identityRecorder: ArtworkIdentityRecorder,
+    private val orphanFileDao: ArtworkOrphanFileDao,
 ) {
+
+    // One relink at a time. A user can now start one from All Games while the automated trigger
+    // fires on resume; two walks over one folder would race on artwork_records and on the
+    // identity index, and the loser would write rows built from a half-stale snapshot.
+    private val relinkMutex = Mutex()
+
     data class LinkResult(
         val manifest: ArtworkLibraryManifest,
         // True when the picked folder already held a PFP library (re-link, not a fresh library).
@@ -154,14 +168,34 @@ class ArtworkImportManager @Inject constructor(
     fun cancelInternalMigration() =
         com.playfieldportal.feature.artwork.migrate.InternalArtworkMigrationWorker.cancel(context)
 
+    /**
+     * How much of the library a relink walks (C22 task T5).
+     *
+     * This is not a performance knob — it changes what the walk is *allowed to conclude*.
+     * [FullLibrary] has seen every file, so it may declare a record's file missing. [Platforms]
+     * has seen a subset and may not: see the sweep's guard in [relinkLibrary].
+     */
+    sealed interface RelinkScope {
+        data object FullLibrary : RelinkScope
+        data class Platforms(val platformIds: Set<String>) : RelinkScope
+    }
+
     data class RelinkResult(
         val entriesScanned: Int,
         val gamesLinked: Int,
-        val orphanEntries: Int,        // files matching no game
+        val orphanEntries: Int,        // files matching no game — retained in artwork_orphan_files
         val missingFiles: Int = 0,     // records whose file is gone — record removed, columns cleared
         val changedFiles: Int = 0,     // size drift — record refreshed
         val duplicateNames: Int = 0,   // same portable name twice in one media dir (advisory)
+        // Which walk produced this. A caller must not infer a scoped run from missingFiles == 0 —
+        // a full walk over a healthy library reports zero too.
+        val scope: RelinkScope = RelinkScope.FullLibrary,
     )
+
+    /** Per-platform progress during a relink: (platforms done, platforms total, current label). */
+    fun interface RelinkProgress {
+        fun onProgress(done: Int, total: Int, label: String)
+    }
 
     /** One multi-asset slot's file, collected during the walk so its final position can be
      * decided after every file in the (game, kind) slot has been seen (D1, task 1.5). */
@@ -309,18 +343,37 @@ class ArtworkImportManager @Inject constructor(
      * `(platform, kind, portable name lowercased)` → game id (C18 task X.5). After a fresh install
      * there are no records, so they are what reconnects a manually added game's files exactly
      * instead of through the fuzzy matcher. The lookup order is [RelinkOwnerLookup]'s.
+     *
+     * [scope] restricts the walk. See [RelinkScope] — a scoped walk deliberately performs no
+     * missing sweep and clears no game column.
+     *
+     * Serialized by [relinkMutex]: the automated trigger and a user-invoked relink can now both
+     * fire, and two concurrent walks over one folder would race on the record table and on the
+     * identity index.
      */
     suspend fun relinkLibrary(
         claims: Map<Triple<String, String, String>, Long> = emptyMap(),
         identitySeeds: List<ArtworkIdentityIndex.Entry> = emptyList(),
+        scope: RelinkScope = RelinkScope.FullLibrary,
+        progress: RelinkProgress? = null,
     ): RelinkResult? = withContext(Dispatchers.IO) {
-        val tree = linkedTree() ?: return@withContext null
-        if (!folderRepository.hasLiveGrant()) return@withContext null
+        relinkMutex.withLock {
+            relinkLocked(claims, identitySeeds, scope, progress)
+        }
+    }
+
+    private suspend fun relinkLocked(
+        claims: Map<Triple<String, String, String>, Long>,
+        identitySeeds: List<ArtworkIdentityIndex.Entry>,
+        scope: RelinkScope,
+        progress: RelinkProgress?,
+    ): RelinkResult? {
+        val tree = linkedTree() ?: return null
+        if (!folderRepository.hasLiveGrant()) return null
         // Icons must be out of covers/ BEFORE the walk: covers/ maps to BOX_ART now, so a
         // stale grid left behind would be linked as box art and the missing sweep would drop
         // its ICON record. Idempotent and cheap when there's nothing to move.
         relocateIcon0Assets(tree)
-        val rootDocId = android.provider.DocumentsContract.getTreeDocumentId(tree)
 
         val games = gameDao.getAll()
         val byPlatform = games.groupBy { it.platformId }
@@ -396,10 +449,25 @@ class ArtworkImportManager @Inject constructor(
         var changedFiles = 0
         var duplicateNames = 0
         val linkedIds = mutableSetOf<Long>()
+        // Unmatched files, retained rather than merely counted (task T1) — this is what the orphan
+        // picker reads. Collected during the walk and written once at the end, scoped the same way
+        // the walk was, so a scoped run never speaks for a platform it did not visit.
+        val orphanRows = mutableListOf<ArtworkOrphanFileEntity>()
         // Artwork/{platform} children plus any legacy root-level platform dirs (v2 layout).
-        for (platformDir in library.platformDirs(tree)) {
+        val platformDirs = library.platformDirs(tree).let { dirs ->
+            when (scope) {
+                is RelinkScope.FullLibrary -> dirs
+                is RelinkScope.Platforms -> dirs.filter { it.name in scope.platformIds }
+            }
+        }
+        val walkedPlatformIds = mutableSetOf<String>()
+        var platformsDone = 0
+        for (platformDir in platformDirs) {
             val platformId = platformDir.name
+            progress?.onProgress(platformsDone, platformDirs.size, platformId)
+            platformsDone++
             if (byPlatform[platformId].isNullOrEmpty()) continue
+            walkedPlatformIds += platformId
             // Direct media dirs plus the nested PFP namespace (pfp/icon0 → ICON).
             val mediaDirs = mutableListOf<Pair<ArtworkKind, SafChild>>()
             for (child in library.listChildren(tree, platformDir.documentId).filter { it.isDirectory }) {
@@ -465,7 +533,18 @@ class ArtworkImportManager @Inject constructor(
                             }
                         },
                     )
-                    if (ids.isNullOrEmpty()) { orphans++; continue }
+                    if (ids.isNullOrEmpty()) {
+                        orphans++
+                        orphanRows += ArtworkOrphanFileEntity(
+                            platformId = platformId,
+                            artworkType = kind.name,
+                            fileName = file.name,
+                            stem = fileStem,
+                            documentUri = file.uri.toString(),
+                            sizeBytes = file.sizeBytes ?: 0L,
+                        )
+                        continue
+                    }
                     val uri = file.uri.toString()
                     val size = file.sizeBytes ?: 0L
 
@@ -645,8 +724,18 @@ class ArtworkImportManager @Inject constructor(
         // Missing sweep: records whose file was not seen by this walk point at nothing — remove
         // them and clear any game column still carrying the dead reference. Only reached with a
         // live grant, so a disconnected folder can never trigger this.
+        //
+        // STRUCTURALLY UNREACHABLE FOR A SCOPED WALK (task T5), not merely disabled. A scoped walk
+        // has not looked at most of the library, so "not seen by this walk" does not mean "gone".
+        // Even restricted to the scoped platforms it is refused: the sweep is the only destructive
+        // step in the whole relink, its correctness depends on every listChildren call having
+        // succeeded, and the automated trigger fires on app resume and media mount — exactly when
+        // a SAF provider is most likely to return a short listing. A transient failure that costs
+        // a user-invoked relink one bad run would, on the automated path, delete records silently
+        // and repeatedly. The games a scoped walk serves are newly added rows, which have no prior
+        // records to sweep anyway.
         var missingFiles = 0
-        for (prior in priorRecords.values) {
+        for (prior in if (scope is RelinkScope.FullLibrary) priorRecords.values else emptyList()) {
             if (prior.id in matchedPriorIds) continue
             missingFiles++
             artworkRecordDao.deleteById(prior.id)
@@ -672,12 +761,129 @@ class ArtworkImportManager @Inject constructor(
         identityRecorder.recordAll(tree, identityRows)
         identityRecorder.flush(tree)
 
+        // Orphan retention (task T1). A walk's output is the complete truth for the platforms it
+        // visited, so the rows are REPLACED over that scope rather than merged — a file that has
+        // since been matched or deleted has to disappear from the picker.
+        when (scope) {
+            is RelinkScope.FullLibrary -> orphanFileDao.replaceAll(orphanRows)
+            // The scoped set, not just the platforms that produced rows: a platform walked and
+            // found clean must have its old rows cleared, and it contributes none.
+            is RelinkScope.Platforms -> orphanFileDao.replaceForPlatforms(walkedPlatformIds, orphanRows)
+        }
+
         linkedGames = linkedIds.size
         Timber.i(
-            "Scan: $scanned files, $linkedGames linked, $orphans unmatched, " +
+            "Scan (${if (scope is RelinkScope.FullLibrary) "full" else "scoped"}): $scanned files, " +
+                "$linkedGames linked, $orphans unmatched, " +
                 "$missingFiles missing, $changedFiles changed, $duplicateNames duplicate names",
         )
-        RelinkResult(scanned, linkedGames, orphans, missingFiles, changedFiles, duplicateNames)
+        progress?.onProgress(platformDirs.size, platformDirs.size, "")
+        return RelinkResult(scanned, linkedGames, orphans, missingFiles, changedFiles, duplicateNames, scope)
+    }
+
+    // ── Orphan recovery (C22 task T4) ─────────────────────────────────────────
+
+    /** Files the last relink could not place, for the orphan picker. */
+    val orphanFiles: Flow<List<ArtworkOrphanFileEntity>> get() = orphanFileDao.observeAll()
+
+    suspend fun orphanCount(): Int = orphanFileDao.count()
+
+    /**
+     * Assigns one retained orphan to [gameId] by hand (AD-8).
+     *
+     * The file is **never renamed or moved** — the folder is the user's, and the record is how PFP
+     * remembers the link. `userAssigned` is set so no later scrape or relink overwrites the
+     * choice, and an identity row is written so the link survives the ROM being renamed. The next
+     * relink then reconnects this file through the records tier without the user doing anything.
+     *
+     * Returns false when the orphan row or the game has gone since the list was rendered.
+     */
+    suspend fun assignOrphan(
+        platformId: String,
+        artworkType: String,
+        fileName: String,
+        gameId: Long,
+    ): Boolean = withContext(Dispatchers.IO) {
+        val orphan = orphanFileDao.getAll().firstOrNull {
+            it.platformId == platformId && it.artworkType == artworkType && it.fileName == fileName
+        } ?: return@withContext false
+        val game = gameDao.getAll().firstOrNull { it.id == gameId } ?: return@withContext false
+        val kind = runCatching { ArtworkKind.valueOf(artworkType) }.getOrNull() ?: return@withContext false
+
+        // Append for a multi-asset kind, overwrite position 0 for a single-art one — the same rule
+        // the walk uses, so a later relink finds this record exactly where it expects it.
+        val sortOrder = if (ArtworkFileNaming.supportsMultiple(kind)) {
+            artworkRecordDao.maxSortOrder(gameId, kind.name) + 1
+        } else {
+            0
+        }
+        val now = System.currentTimeMillis()
+        artworkRecordDao.upsert(
+            ArtworkRecordEntity(
+                gameId = gameId,
+                platformId = platformId,
+                artworkType = kind.name,
+                sortOrder = sortOrder,
+                portableName = orphan.stem,
+                relativePath = ArtworkPathResolver.relativePath(platformId, kind, orphan.fileName),
+                documentUri = orphan.documentUri,
+                source = SOURCE_MANUAL_LINK,
+                sizeBytes = orphan.sizeBytes,
+                userAssigned = true,
+                createdAt = now,
+                updatedAt = now,
+            )
+        )
+        // Same replaceability rule as the walk: a library file outranks an empty, dead or remote
+        // reference, and never displaces one the user already chose.
+        if (sortOrder == 0) {
+            val current = when (kind) {
+                ArtworkKind.ICON -> game.iconUri
+                ArtworkKind.HERO -> game.heroUri
+                ArtworkKind.BACKGROUND -> game.artworkUri
+                ArtworkKind.LOGO -> game.logoUri
+                ArtworkKind.BOX_ART -> game.boxArtUri
+                ArtworkKind.PHYSICAL_MEDIA -> game.physicalMediaUri
+                ArtworkKind.BOX_3D -> game.box3dUri
+                else -> null
+            }
+            val replaceable = !artworkStore.isValidRef(current) ||
+                current?.startsWith("http", ignoreCase = true) == true
+            if (replaceable) {
+                when (kind) {
+                    ArtworkKind.ICON -> gameDao.updateIconUri(gameId, orphan.documentUri)
+                    ArtworkKind.HERO -> gameDao.updateHero(gameId, orphan.documentUri)
+                    ArtworkKind.BACKGROUND -> gameDao.updateArtwork(gameId, orphan.documentUri)
+                    ArtworkKind.LOGO -> gameDao.updateLogo(gameId, orphan.documentUri)
+                    ArtworkKind.BOX_ART -> gameDao.updateBoxArt(gameId, orphan.documentUri)
+                    ArtworkKind.PHYSICAL_MEDIA -> gameDao.updatePhysicalMedia(gameId, orphan.documentUri)
+                    ArtworkKind.BOX_3D -> gameDao.updateBox3d(gameId, orphan.documentUri)
+                    else -> Unit
+                }
+            }
+        }
+        // Durable identity, so a later ROM rename does not orphan this file all over again.
+        linkedTree()?.let { tree ->
+            identityRecorder.recordAll(
+                tree,
+                listOf(
+                    ArtworkIdentityIndex.Entry(
+                        platformId = platformId,
+                        kind = kind.name,
+                        portableName = orphan.stem,
+                        romCrc32 = game.romCrc32,
+                        ssId = game.ssId,
+                        tgdbId = game.tgdbId,
+                        igdbId = game.igdbId,
+                        sgdbId = game.steamGridDbId,
+                        artworkKey = game.artworkKey,
+                    )
+                ),
+            )
+            identityRecorder.flush(tree)
+        }
+        orphanFileDao.delete(platformId, artworkType, fileName)
+        true
     }
 
     private suspend fun linkedTree(): Uri? =

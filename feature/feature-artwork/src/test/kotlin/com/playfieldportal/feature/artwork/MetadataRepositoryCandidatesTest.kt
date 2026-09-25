@@ -51,6 +51,7 @@ class MetadataRepositoryCandidatesTest {
         httpClient = mockk(relaxed = true),
         videoSnapTranscoder = mockk(relaxed = true),
         ssMediaCacheDao = mockk(relaxed = true),
+        scrapePreferences = mockk(relaxed = true),
     )
 
     private val tgdb = TgdbGameInfo(
@@ -63,7 +64,12 @@ class MetadataRepositoryCandidatesTest {
         logoUrl = null,
     )
 
-    private fun givenGame(userTitleOverride: String? = null) {
+    private fun givenGame(
+        userTitleOverride: String? = null,
+        storefront: String? = null,
+        storefrontGameId: String? = null,
+        igdbId: Long? = null,
+    ) {
         coEvery { gameDao.getById(1L) } returns GameEntity(
             id = 1L,
             title = "raw_rom_name",
@@ -80,7 +86,10 @@ class MetadataRepositoryCandidatesTest {
             releaseYear = null,
             genre = null,
             steamGridDbId = null,
+            igdbId = igdbId,
             userTitleOverride = userTitleOverride,
+            storefront = storefront,
+            storefrontGameId = storefrontGameId,
         )
         coEvery { screenScraper.isEnabled() } returns false
         coEvery { sgdbKeyProvider.getKey() } returns null
@@ -126,10 +135,93 @@ class MetadataRepositoryCandidatesTest {
             options = ScrapeOptions(metadataOnly = true),
         )
 
-        assertNull(candidates.igdbInfo)
+        // SteamGridDB supplies no text and is still skipped. IGDB is not on this list any more —
+        // since C23 T5 it supplies text, so skipping it here would mean the metadata preview could
+        // never offer an IGDB preset.
         assertNull(candidates.sgdbGameId)
-        coVerify(exactly = 0) { igdbApi.fetchGameInfo(any(), any()) }
         coVerify(exactly = 0) { steamGridDb.searchGame(any()) }
+    }
+
+    @Test
+    fun `metadata-only retrieval does ask IGDB, which now supplies text`() = runTest {
+        givenGame()
+        coEvery { igdbApi.hasCredentials() } returns true
+        coEvery { igdbApi.fetchGameInfo(any(), any()) } returns
+            IgdbGameInfo(artworkUrl = null, heroUrl = null, logoUrl = null, description = "IGDB blurb")
+
+        val candidates = repo.fetchCandidates(
+            1L, "raw_rom_name", "snes", romPath = null,
+            options = ScrapeOptions(metadataOnly = true),
+        )
+
+        assertEquals("IGDB blurb", candidates.igdbInfo?.description)
+        coVerify { igdbApi.fetchGameInfo("snes", "raw_rom_name") }
+    }
+
+    // ── IGDB by storefront identity (C23 T4) ────────────────────────────────
+
+    @Test
+    fun `a Windows game resolves through its storefront id, with no title comparison`() = runTest {
+        givenGame(storefront = "STEAM", storefrontGameId = "620")
+        coEvery { igdbApi.hasCredentials() } returns true
+        coEvery { igdbApi.fetchGameIdByStorefront("STEAM", "620") } returns 7346L
+        coEvery { igdbApi.fetchGameInfoById(7346L) } returns
+            IgdbGameInfo(artworkUrl = null, heroUrl = null, logoUrl = null, title = "Portal 2")
+
+        val candidates = repo.fetchCandidates(
+            1L, "raw_rom_name", "windows", romPath = null,
+            options = ScrapeOptions(metadataOnly = true),
+        )
+
+        assertEquals("Portal 2", candidates.igdbInfo?.title)
+        coVerify { igdbApi.fetchGameInfoById(7346L) }
+        // The exact id stands on its own: the title search is never reached.
+        coVerify(exactly = 0) { igdbApi.fetchGameInfo(any(), any()) }
+    }
+
+    @Test
+    fun `a saved igdb id outranks the storefront lookup`() = runTest {
+        givenGame(storefront = "STEAM", storefrontGameId = "620", igdbId = 11L)
+        coEvery { igdbApi.hasCredentials() } returns true
+        coEvery { igdbApi.fetchGameInfoById(11L) } returns
+            IgdbGameInfo(artworkUrl = null, heroUrl = null, logoUrl = null, title = "Confirmed match")
+
+        repo.fetchCandidates(
+            1L, "raw_rom_name", "windows", romPath = null,
+            options = ScrapeOptions(metadataOnly = true),
+        )
+
+        // A saved id is a decision the user or a past scrape already made.
+        coVerify { igdbApi.fetchGameInfoById(11L) }
+        coVerify(exactly = 0) { igdbApi.fetchGameIdByStorefront(any(), any()) }
+    }
+
+    @Test
+    fun `a row with no storefront pair falls back to the title search exactly as before`() = runTest {
+        givenGame()
+        coEvery { igdbApi.hasCredentials() } returns true
+
+        repo.fetchCandidates(
+            1L, "raw_rom_name", "snes", romPath = null,
+            options = ScrapeOptions(metadataOnly = true),
+        )
+
+        coVerify { igdbApi.fetchGameInfo("snes", "raw_rom_name") }
+        coVerify(exactly = 0) { igdbApi.fetchGameInfoById(any()) }
+    }
+
+    @Test
+    fun `an id IGDB does not know falls back to the title search`() = runTest {
+        givenGame(storefront = "EPIC", storefrontGameId = "unknown-slug")
+        coEvery { igdbApi.hasCredentials() } returns true
+        coEvery { igdbApi.fetchGameIdByStorefront("EPIC", "unknown-slug") } returns null
+
+        repo.fetchCandidates(
+            1L, "raw_rom_name", "windows", romPath = null,
+            options = ScrapeOptions(metadataOnly = true),
+        )
+
+        coVerify { igdbApi.fetchGameInfo("windows", "raw_rom_name") }
     }
 
     @Test

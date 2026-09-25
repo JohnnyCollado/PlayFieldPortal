@@ -81,6 +81,13 @@ interface GameRepository {
     suspend fun getByStorefront(storefront: String, storefrontGameId: String): List<Game>
     // Pass null to clear the override and fall back to scrapedTitle / title.
     suspend fun updateUserTitleOverride(id: Long, override: String?)
+
+    /**
+     * Replaces the whole hand-set metadata map (JSON keyed by `MetadataField` name). Pass null once
+     * nothing is overridden. TITLE is not in this map — it stays in `user_title_override`, written
+     * through [updateUserTitleOverride]; `MetadataOverrides.of` hides the split from callers.
+     */
+    suspend fun updateUserMetadataOverrides(id: Long, overridesJson: String?)
     // Display-mode tile columns (Artwork Studio apply path). updateBoxArt above is legacy
     // naming for the BACKGROUND column; these hit the real tile columns.
     suspend fun updateBoxArtTile(id: Long, uri: String?)

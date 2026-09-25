@@ -7,6 +7,7 @@ import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.data.database.dao.SsMediaCacheDao
 import com.playfieldportal.core.data.database.entity.GameEntity
 import com.playfieldportal.core.data.database.entity.SsMediaCacheEntity
+import com.playfieldportal.feature.artwork.api.ArtworkScrapePreferences
 import com.playfieldportal.feature.artwork.api.SsMediaSelection
 import com.playfieldportal.feature.artwork.api.IgdbApi
 import com.playfieldportal.feature.artwork.api.IgdbGameInfo
@@ -83,6 +84,7 @@ class MetadataRepository @Inject constructor(
     private val httpClient: HttpClient,
     private val videoSnapTranscoder: VideoSnapTranscoder,
     private val ssMediaCacheDao: SsMediaCacheDao,
+    private val scrapePreferences: ArtworkScrapePreferences,
 ) {
     // Batch guards, set from ScreenScraper's typed failures: 430 (daily quota) and credential
     // failures stop SS for the rest of the run; 431 stops only hash-less lookups (each miss digs
@@ -134,7 +136,7 @@ class MetadataRepository @Inject constructor(
             if (!options.bypassSsCache && cachedSsId != null && gameEntity?.description != null) {
                 ssMediaCacheDao.get(cachedSsId)?.let { row ->
                     SsMediaSelection.decode(row.mediasJson)?.let { medias ->
-                        ssInfo = SsMediaSelection.infoFromCache(cachedSsId, medias)
+                        ssInfo = SsMediaSelection.infoFromCache(cachedSsId, medias, scrapePreferences.getArtworkRegion())
                         usedSsCache = true
                         Timber.i("SS media cache hit (ssId=$cachedSsId) — skipping jeuInfos for '$bestTitle'")
                     }
@@ -176,15 +178,24 @@ class MetadataRepository @Inject constructor(
             }.onFailure { Timber.w(it, "TheGamesDB error for '$bestTitle'") }.getOrNull()
         }
 
-        // ── 3. IGDB (secondary artwork; skipped on metadata-only runs) ────────
+        // ── 3. IGDB (artwork, and since C23 T5 text metadata too) ────────────
+        // Asked on metadata-only runs as well now that it supplies text: before T5 it was an
+        // artwork-only source, so skipping it there cost nothing. Skipping it now would mean the
+        // metadata preview never offers an IGDB preset.
         var igdbInfo: IgdbGameInfo? = null
-        if (igdbApi.hasCredentials() && !options.metadataOnly) {
+        if (igdbApi.hasCredentials()) {
             val needsBoxArt = ssInfo?.artworkUrl == null && tgdbInfo?.artworkUrl == null
             val needsHero   = ssInfo?.heroUrl == null && tgdbInfo?.heroUrl == null
-            if (needsBoxArt || needsHero) {
+            if (options.metadataOnly || needsBoxArt || needsHero) {
                 onAssetProgress?.invoke("IGDB", "Searching…")
                 igdbInfo = runCatching {
-                    igdbApi.fetchGameInfo(platformId, bestTitle)
+                    // Strongest identity first, title only as a last resort: a saved igdb_id, then
+                    // the Windows storefront PAIR through external_games (C23 T4), then the title
+                    // search that is all a console ROM has.
+                    val exactId = gameEntity?.igdbId?.takeIf { it > 0 }
+                        ?: resolveIgdbIdByStorefront(gameEntity)
+                    if (exactId != null) igdbApi.fetchGameInfoById(exactId)
+                    else igdbApi.fetchGameInfo(platformId, bestTitle)
                 }.onFailure { Timber.w(it, "IGDB error for '$bestTitle'") }.getOrNull()
             }
         }
@@ -223,6 +234,22 @@ class MetadataRepository @Inject constructor(
             sgdbHeroUrl = sgdbHeroUrl,
             sgdbLogoUrl = sgdbLogoUrl,
         )
+    }
+
+    /**
+     * The IGDB id for a Windows game's storefront identity, or null when the row has no pair or
+     * IGDB does not know that id (C23 T4).
+     *
+     * An exact id match: `("STEAM", "620")` resolves to Portal 2 and nothing else, with no title
+     * comparison anywhere in the path. A row without a pair — every console ROM — falls straight
+     * through to the title search, exactly as before.
+     */
+    private suspend fun resolveIgdbIdByStorefront(game: GameEntity?): Long? {
+        val store = game?.storefront?.takeIf { it.isNotBlank() } ?: return null
+        val storeId = game.storefrontGameId?.takeIf { it.isNotBlank() } ?: return null
+        return runCatching { igdbApi.fetchGameIdByStorefront(store, storeId) }
+            .onFailure { Timber.w(it, "IGDB external_games lookup failed for %s:%s", store, storeId) }
+            .getOrNull()
     }
 
     suspend fun fetchForGame(

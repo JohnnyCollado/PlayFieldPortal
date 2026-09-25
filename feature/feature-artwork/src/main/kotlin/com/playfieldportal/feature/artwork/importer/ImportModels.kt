@@ -36,8 +36,20 @@ data class DetectedImportSource(
     data class SystemFolder(val platformId: String, val docId: String, val folderName: String)
 }
 
-/** How a candidate was tied to a game, strongest first (ordinal = priority). */
-enum class MatchConfidence { EXACT_FILENAME, DISPLAY_TITLE, SIMPLIFIED_TITLE, INDEXED_FILENAME }
+/**
+ * How a candidate was tied to a game, strongest first (ordinal = priority).
+ *
+ * The ORDER is load-bearing, not just the names: `ArtworkImportPlanner` keeps the best match per
+ * kind with `item.confidence.ordinal < existing.confidence.ordinal`. A constant may be inserted
+ * (the serialized form is the name, so stored reports survive), but never reordered.
+ */
+enum class MatchConfidence {
+    EXACT_FILENAME,
+    DISPLAY_TITLE,
+    SIMPLIFIED_TITLE,
+    CANONICAL_TITLE,
+    INDEXED_FILENAME,
+}
 
 @Serializable
 data class PlannedItem(

@@ -182,5 +182,7 @@ class GameMatcher(private val evidence: MatchEvidenceSource) {
         MatchProvider.THEGAMESDB -> game.tgdbId
         MatchProvider.IGDB -> game.igdbId
         MatchProvider.STEAMGRIDDB -> game.steamGridDbId
+        // The user is not addressed by an id — a hand-typed preset is built, never fetched.
+        MatchProvider.MANUAL -> null
     }?.takeIf { it > 0 }?.toString()
 }

@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.library.scanner
 
+import com.playfieldportal.core.domain.artwork.ArtworkRelinkTrigger
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -182,6 +183,63 @@ class RescanTriggerBusTest {
         bus.submit(RescanTrigger.AppResumed)
         advanceUntilIdle()
 
+        coVerify(exactly = 1) { scanner.scanAllEnabled(true) }
+    }
+
+    // ── Artwork relink trigger (C22 task T5) ──────────────────────────────────
+
+    private fun outcomeFor(platformId: String, added: Int) = outcome.copy(platformId = platformId, added = added)
+
+    @Test
+    fun `a scan that adds nothing triggers no artwork work at all`() = runTest {
+        val scanner = mockk<LibraryScanner>(relaxed = true)
+        coEvery { scanner.scanAllEnabled(true) } returns listOf(outcomeFor("psx", 0), outcomeFor("ps2", 0))
+        val relinked = mutableListOf<Set<String>>()
+        val bus = RescanTriggerBus(
+            scanner, discoveryScanner, this,
+            artworkRelink = ArtworkRelinkTrigger { relinked += it },
+        )
+
+        bus.submit(RescanTrigger.AppResumed)
+        advanceUntilIdle()
+
+        // The common case — a resume with no new ROMs — must cost nothing.
+        assertEquals(emptyList<Set<String>>(), relinked)
+    }
+
+    @Test
+    fun `only the platforms that gained games are relinked`() = runTest {
+        val scanner = mockk<LibraryScanner>(relaxed = true)
+        coEvery { scanner.scanAllEnabled(true) } returns listOf(
+            outcomeFor("psx", 3),
+            outcomeFor("ps2", 0),
+            outcomeFor("snes", 1),
+        )
+        val relinked = mutableListOf<Set<String>>()
+        val bus = RescanTriggerBus(
+            scanner, discoveryScanner, this,
+            artworkRelink = ArtworkRelinkTrigger { relinked += it },
+        )
+
+        bus.submit(RescanTrigger.AppResumed)
+        advanceUntilIdle()
+
+        assertEquals(listOf(setOf("psx", "snes")), relinked)
+    }
+
+    @Test
+    fun `a failing relink trigger does not fail the scan`() = runTest {
+        val scanner = mockk<LibraryScanner>(relaxed = true)
+        coEvery { scanner.scanAllEnabled(true) } returns listOf(outcomeFor("psx", 1))
+        val bus = RescanTriggerBus(
+            scanner, discoveryScanner, this,
+            artworkRelink = ArtworkRelinkTrigger { error("artwork is having a bad day") },
+        )
+
+        bus.submit(RescanTrigger.AppResumed)
+        advanceUntilIdle()
+
+        // The scan itself still ran and completed; the throw was swallowed at the seam.
         coVerify(exactly = 1) { scanner.scanAllEnabled(true) }
     }
 }

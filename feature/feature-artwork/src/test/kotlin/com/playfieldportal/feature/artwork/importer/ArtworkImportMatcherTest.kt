@@ -89,4 +89,83 @@ class ArtworkImportMatcherTest {
             numIndex.match("1942 (Japan, USA).png"),
         )
     }
+
+    // ── Pass 5: canonical title (C22 task T2) ─────────────────────────────────
+
+    @Test
+    fun `pass 5 reconnects the No-Intro trailing-article convention`() {
+        val zelda = PlatformIndex(
+            listOf(GameRef(30, null, "The Legend of Zelda: Ocarina of Time", null))
+        )
+        assertEquals(
+            Result.Matched(listOf(30L), MatchConfidence.CANONICAL_TITLE),
+            zelda.match("Legend of Zelda, The - Ocarina of Time (USA).png"),
+        )
+    }
+
+    @Test
+    fun `pass 5 matches a roman-numeral filename to an arabic-numeral title`() {
+        val ff = PlatformIndex(
+            listOf(GameRef(31, null, "Final Fantasy 7", null))
+        )
+        assertEquals(
+            Result.Matched(listOf(31L), MatchConfidence.CANONICAL_TITLE),
+            ff.match("Final Fantasy VII.png"),
+        )
+    }
+
+    @Test
+    fun `two games canonicalizing alike are ambiguous, never matched`() {
+        // Two rows for one game, imported under both spellings of the article convention. The
+        // query's simplified form ("legend of zelda") equals neither row's simplified form
+        // ("the legend of zelda", "legend of zelda the"), so passes 1-3 all miss and pass 5 is
+        // the one that fires — where the uniqueness valve refuses to guess between them.
+        val zelda = PlatformIndex(
+            listOf(
+                GameRef(32, null, "The Legend of Zelda", null),
+                GameRef(33, null, "Legend of Zelda, The", null),
+            )
+        )
+        val result = zelda.match("Legend of Zelda.png")
+        assertTrue(result is Result.Ambiguous)
+        assertEquals(setOf(32L, 33L), (result as Result.Ambiguous).gameIds.toSet())
+    }
+
+    @Test
+    fun `pass 5 does not rescue a title pass 3 already found ambiguous`() {
+        // Both rows simplify to "final fantasy vii", so pass 3 returns Ambiguous and pass 5 is
+        // never reached — a looser pass must not turn a genuine ambiguity into a match.
+        val result = index.match("Final Fantasy VII.png")
+        assertTrue(result is Result.Ambiguous)
+        assertEquals(setOf(3L, 4L), (result as Result.Ambiguous).gameIds.toSet())
+    }
+
+    @Test
+    fun `pass 4 inherits pass 5 and still degrades the confidence`() {
+        val zelda = PlatformIndex(
+            listOf(GameRef(34, null, "The Legend of Zelda", null))
+        )
+        assertEquals(
+            Result.Matched(listOf(34L), MatchConfidence.INDEXED_FILENAME),
+            zelda.match("0556 - Legend of Zelda, The.png"),
+        )
+    }
+
+    @Test
+    fun `confidence order is the priority order ArtworkImportPlanner compares by ordinal`() {
+        // ArtworkImportPlanner keeps the best match per kind with
+        // `item.confidence.ordinal < existing.confidence.ordinal`, so this ordering is behaviour,
+        // not documentation. CANONICAL_TITLE must sit below SIMPLIFIED_TITLE and above
+        // INDEXED_FILENAME.
+        assertEquals(
+            listOf(
+                MatchConfidence.EXACT_FILENAME,
+                MatchConfidence.DISPLAY_TITLE,
+                MatchConfidence.SIMPLIFIED_TITLE,
+                MatchConfidence.CANONICAL_TITLE,
+                MatchConfidence.INDEXED_FILENAME,
+            ),
+            MatchConfidence.entries.sortedBy { it.ordinal },
+        )
+    }
 }

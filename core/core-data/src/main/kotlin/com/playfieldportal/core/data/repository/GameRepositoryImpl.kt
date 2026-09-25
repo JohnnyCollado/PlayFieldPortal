@@ -155,6 +155,9 @@ class GameRepositoryImpl @Inject constructor(
     override suspend fun updateUserTitleOverride(id: Long, override: String?) =
         gameDao.updateUserTitleOverride(id, override)
 
+    override suspend fun updateUserMetadataOverrides(id: Long, overridesJson: String?) =
+        gameDao.updateUserMetadataOverrides(id, overridesJson)
+
     override suspend fun updateBoxArtTile(id: Long, uri: String?) =
         gameDao.updateBoxArt(id, uri)
 

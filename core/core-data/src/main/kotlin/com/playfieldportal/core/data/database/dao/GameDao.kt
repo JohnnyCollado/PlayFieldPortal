@@ -323,7 +323,13 @@ interface GameDao {
 
     // Updates only non-null fields — COALESCE keeps existing value when new value is null.
     // scraped_title is updated when a metadata source returns a title.
-    // user_title_override is NEVER touched here — only explicit user action changes it.
+    //
+    // The incoming value wins on every other column, and that stayed right once the user could set
+    // those fields by hand (C23): a hand-set value does not live in these columns at all. It lives
+    // in user_metadata_overrides, which display coalesces OVER whatever this query writes, so a
+    // bulk re-scrape may refresh the scraped layer as destructively as it likes and still never
+    // change what the user sees. Neither override column is touched here — only explicit user
+    // action changes user_title_override or user_metadata_overrides.
     @Query(
         """
         UPDATE games SET
@@ -393,6 +399,10 @@ interface GameDao {
      * Change Match, or any later re-scrape, silently rewrite what the library calls a game. A title
      * now only ever CHANGES through a path the user drove — the metadata preview's chosen fields,
      * or Edit Title, which writes `user_title_override` and outranks this column entirely.
+     *
+     * The other nine fields reached the same protection a different way (C23): rather than teach
+     * this query to spare them, their hand-set values were moved out of its reach entirely, into
+     * `user_metadata_overrides`. Hence one title rule here and no rule at all for the rest.
      */
     @Query("UPDATE games SET scraped_title = :scrapedTitle WHERE id = :id AND scraped_title IS NULL")
     suspend fun fillScrapedTitleIfMissing(id: Long, scrapedTitle: String)
@@ -469,6 +479,19 @@ interface GameDao {
     // Stores the user-chosen display name. Pass null to clear and fall back to scrapedTitle/title.
     @Query("UPDATE games SET user_title_override = :override WHERE id = :id")
     suspend fun updateUserTitleOverride(id: Long, override: String?)
+
+    /**
+     * Replaces the whole hand-set metadata map (a JSON object keyed by `MetadataField` name).
+     *
+     * Whole-map, not per-key: SQLite would need `json_set`/`json_remove` to merge in SQL, and the
+     * caller has already read the row to build the new map. Pass null once nothing is overridden,
+     * so a fully reverted game is indistinguishable from one never touched.
+     *
+     * Deliberately NOT COALESCE-guarded, for the same reason [updateProviderMatch] is not: clearing
+     * an override has to actually clear it.
+     */
+    @Query("UPDATE games SET user_metadata_overrides = :overridesJson WHERE id = :id")
+    suspend fun updateUserMetadataOverrides(id: Long, overridesJson: String?)
 
     @Query("UPDATE games SET icon_uri = :iconUri WHERE id = :id")
     suspend fun updateIconUri(id: Long, iconUri: String?)

@@ -3,6 +3,7 @@ package com.playfieldportal.feature.artwork.api
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -30,6 +31,23 @@ class ArtworkScrapePreferences @Inject constructor(
 
     val downloadVideoSnapsFlow: Flow<Boolean> =
         context.pfpDataStore.data.map { it[KEY_DOWNLOAD_VIDEO_SNAPS] ?: false }
+
+    /**
+     * Preferred artwork region (C22 task T6), as a ScreenScraper region code — `us`, `eu`, `jp`,
+     * `wor`. Null means "no preference", which leaves the walk at its `wor → us → eu → jp`
+     * default: exactly the order that shipped before this preference existed, so an untouched
+     * install picks the same art it always did.
+     */
+    val artworkRegionFlow: Flow<String?> =
+        context.pfpDataStore.data.map { it[KEY_ARTWORK_REGION] }
+
+    suspend fun getArtworkRegion(): String? = context.pfpDataStore.data.first()[KEY_ARTWORK_REGION]
+
+    suspend fun setArtworkRegion(region: String?) =
+        context.pfpDataStore.edit { prefs ->
+            if (region.isNullOrBlank()) prefs.remove(KEY_ARTWORK_REGION)
+            else prefs[KEY_ARTWORK_REGION] = region
+        }
 
     suspend fun getOptions(): ScrapeOptions {
         val prefs = context.pfpDataStore.data.first()
@@ -63,5 +81,15 @@ class ArtworkScrapePreferences @Inject constructor(
         private val KEY_DOWNLOAD_HEROES      = booleanPreferencesKey("pref_dl_heroes")
         private val KEY_DOWNLOAD_MANUALS     = booleanPreferencesKey("pref_dl_manuals")
         private val KEY_DOWNLOAD_VIDEO_SNAPS = booleanPreferencesKey("pref_dl_video_snaps")
+        private val KEY_ARTWORK_REGION       = stringPreferencesKey("pref_artwork_region")
+
+        /** The regions offered in Settings, in menu order. `null` label is "No preference". */
+        val ARTWORK_REGIONS: List<Pair<String?, String>> = listOf(
+            null to "No preference",
+            "us" to "USA",
+            "eu" to "Europe",
+            "jp" to "Japan",
+            "wor" to "World",
+        )
     }
 }

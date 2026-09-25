@@ -75,4 +75,23 @@ class ArtworkNamingTest {
     fun `slug is deterministic and case-insensitive`() {
         assertEquals(ArtworkNaming.slug("Crash Bandicoot"), ArtworkNaming.slug("CRASH BANDICOOT"))
     }
+
+    /**
+     * C22 task T2 — the frozen path must not have learned pass 5's rules. `slug()` output is a
+     * directory name on the user's SD card; if `TitleCanon` ever leaked into it, every existing
+     * library would silently stop matching. These are the exact inputs pass 5 rewrites.
+     */
+    @Test
+    fun `slug keeps articles and roman numerals — TitleCanon did not leak into the frozen path`() {
+        assertEquals("the-legend-of-zelda", ArtworkNaming.slug("The Legend of Zelda"))
+        assertEquals("legend-of-zelda-the", ArtworkNaming.slug("Legend of Zelda, The"))
+        assertEquals("final-fantasy-vii", ArtworkNaming.slug("Final Fantasy VII"))
+        assertEquals("mega-man-x", ArtworkNaming.slug("Mega Man X"))
+    }
+
+    @Test
+    fun `simplifyTitle keeps articles and roman numerals`() {
+        assertEquals("the legend of zelda", ArtworkNaming.simplifyTitle("The Legend of Zelda"))
+        assertEquals("final fantasy vii", ArtworkNaming.simplifyTitle("Final Fantasy VII"))
+    }
 }

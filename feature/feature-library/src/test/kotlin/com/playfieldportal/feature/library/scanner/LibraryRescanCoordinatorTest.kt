@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.library.scanner
 
+import com.playfieldportal.core.domain.artwork.ArtworkRelinkTrigger
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -13,6 +14,7 @@ import org.junit.Test
 class LibraryRescanCoordinatorTest {
     private lateinit var libraryScanner: LibraryScanner
     private val romRootDiscoveryScanner = mockk<RomRootDiscoveryScanner>(relaxed = true)
+    private val artworkRelink = mockk<ArtworkRelinkTrigger>(relaxed = true)
 
     private val outcome = PlatformScanOutcome(
         platformId = "psx",
@@ -29,7 +31,7 @@ class LibraryRescanCoordinatorTest {
     }
 
     private fun coordinator(scope: kotlinx.coroutines.CoroutineScope) =
-        LibraryRescanCoordinator(libraryScanner, romRootDiscoveryScanner, scope)
+        LibraryRescanCoordinator(libraryScanner, romRootDiscoveryScanner, scope, artworkRelink)
 
     @Test
     fun `onResume scans the first time`() = runTest {

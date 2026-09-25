@@ -13,6 +13,7 @@ import dagger.hilt.components.SingletonComponent
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.HttpTimeout
+import com.playfieldportal.core.domain.artwork.ArtworkRelinkTrigger
 import com.playfieldportal.feature.artwork.BuildConfig
 import com.playfieldportal.feature.artwork.match.FileTitleSearchStore
 import com.playfieldportal.feature.artwork.match.TitleSearchStore
@@ -86,6 +87,27 @@ object ArtworkModule {
     @Singleton
     fun provideTitleSearchStore(@ApplicationContext context: Context): TitleSearchStore =
         FileTitleSearchStore(context.cacheDir.resolve("match-searches"))
+
+    /**
+     * The scan → artwork seam (C22 task T5). `feature-library` knows only the interface in
+     * core-domain; this is the side that knows a relink is a WorkManager job. Fire-and-forget by
+     * construction — enqueuing returns immediately, so a scan never waits on artwork, and the
+     * worker's KEEP policy means a burst of resumes cannot stack up walks.
+     */
+    @Provides
+    @Singleton
+    fun provideArtworkRelinkLauncher(@ApplicationContext context: Context): ArtworkRelinkLauncher =
+        ArtworkRelinkLauncher { platformIds -> ArtworkRelinkWorker.enqueue(context, platformIds) }
+
+    @Provides
+    @Singleton
+    fun provideArtworkRelinkTrigger(launcher: ArtworkRelinkLauncher): ArtworkRelinkTrigger =
+        ArtworkRelinkTrigger { platformIds ->
+            // The guard lives here, not in the launcher: an empty set from a SCAN means "nothing
+            // was added", while an empty set from the UI means "the whole library". Delegating
+            // without this check would turn every quiet resume into a full-library walk.
+            if (platformIds.isNotEmpty()) launcher.relink(platformIds)
+        }
 
     @Provides
     @Singleton

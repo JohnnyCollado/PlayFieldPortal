@@ -2,7 +2,9 @@ package com.playfieldportal.feature.artwork.api
 
 import com.playfieldportal.core.data.database.dao.GameDao
 import com.playfieldportal.core.data.database.entity.GameEntity
+import com.playfieldportal.core.domain.model.MetadataOverrides
 import com.playfieldportal.feature.artwork.MetadataRepository
+import com.playfieldportal.feature.artwork.match.MatchProvider
 import com.playfieldportal.feature.artwork.match.MetadataApply
 import com.playfieldportal.feature.artwork.match.MetadataApplyPolicy
 import com.playfieldportal.feature.artwork.match.MetadataField
@@ -143,14 +145,24 @@ class ArtworkRepository @Inject constructor(
             romPath    = game.romPath,
             options    = ScrapeOptions(metadataOnly = true, bypassSsCache = true),
         )
-        MetadataPreview(MetadataApply.currentOf(game), MetadataApply.presetsFrom(candidates))
+        MetadataPreview(
+            current    = MetadataApply.currentOf(game),
+            effective  = MetadataApply.effectiveOf(game),
+            overridden = MetadataApply.overriddenFieldsOf(game),
+            presets    = MetadataApply.presetsFrom(candidates),
+        )
     }
 
     /**
      * Applies [incoming] under [policy] against the game's CURRENT row (re-read here, so a preview
-     * left open never writes against stale values). Returns the fields written; empty means the
-     * table was not touched. Only text columns are passed — no artwork column, provider id or
-     * user title override can change through this path.
+     * left open never writes against stale values). Returns the fields written; empty means nothing
+     * was touched.
+     *
+     * Two destinations, one plan. A provider preset writes the ordinary metadata columns exactly as
+     * it always has — no artwork column, provider id or title override can change through this
+     * path. A [MatchProvider.MANUAL] preset writes the user-override shadow layer instead and
+     * leaves every metadata column alone, which is what makes a hand-set value survive the next
+     * Re-scrape All: the scrape keeps refreshing a layer that no longer reaches the screen.
      */
     suspend fun applyMetadata(
         gameId: Long,
@@ -159,8 +171,18 @@ class ArtworkRepository @Inject constructor(
         chosen: Set<MetadataField> = emptySet(),
     ): Set<MetadataField> = withContext(Dispatchers.IO) {
         val game = gameDao.getById(gameId) ?: return@withContext emptySet()
-        val plan = MetadataApply.plan(MetadataApply.currentOf(game), incoming, policy, chosen)
+        // A manual edit is measured against what the user SEES, a provider's against what the
+        // columns hold — the only thing it can write.
+        val comparedAgainst =
+            if (incoming.provider == MatchProvider.MANUAL) MetadataApply.effectiveOf(game)
+            else MetadataApply.currentOf(game)
+        val plan = MetadataApply.plan(comparedAgainst, incoming, policy, chosen)
         if (plan.isEmpty()) return@withContext emptySet()
+
+        if (incoming.provider == MatchProvider.MANUAL) {
+            writeOverrides(game, plan)
+            return@withContext plan.keys
+        }
 
         val description     = plan[MetadataField.DESCRIPTION] as String?
         val developer       = plan[MetadataField.DEVELOPER] as String?
@@ -192,6 +214,46 @@ class ArtworkRepository @Inject constructor(
         }
         plan.keys
     }
+
+    /**
+     * Merges [plan] into the game's hand-set overrides. Merge, not replace: applying an edit to one
+     * field must not silently revert the eight the user set earlier.
+     *
+     * TITLE goes to its own column (`MetadataOverrides` documents why it lives there), so the two
+     * halves of one map are written by the two statements that own them.
+     */
+    private suspend fun writeOverrides(game: GameEntity, plan: Map<MetadataField, Any>) {
+        var overrides = MetadataOverrides.parse(game.userMetadataOverrides)
+        plan.forEach { (field, value) ->
+            if (field == MetadataField.TITLE) {
+                gameDao.updateUserTitleOverride(game.id, value.toString())
+            } else {
+                overrides = overrides.with(field.name, value)
+            }
+        }
+        gameDao.updateUserMetadataOverrides(game.id, overrides.toColumnValue())
+    }
+
+    /**
+     * Reverts one field to whatever the scrapers last stored: the override key is removed and the
+     * column underneath, untouched all along, becomes visible again.
+     *
+     * Returns true when a value was actually removed, so the caller can say "reverted" rather than
+     * "reverted" over a field that had no override.
+     */
+    suspend fun clearMetadataOverride(gameId: Long, field: MetadataField): Boolean =
+        withContext(Dispatchers.IO) {
+            val game = gameDao.getById(gameId) ?: return@withContext false
+            if (field == MetadataField.TITLE) {
+                if (game.userTitleOverride.isNullOrBlank()) return@withContext false
+                gameDao.updateUserTitleOverride(gameId, null)
+                return@withContext true
+            }
+            val overrides = MetadataOverrides.parse(game.userMetadataOverrides)
+            if (!overrides.isOverridden(field.name)) return@withContext false
+            gameDao.updateUserMetadataOverrides(gameId, overrides.without(field.name).toColumnValue())
+            true
+        }
 
     /** Drops every cached ScreenScraper media-URL list — next scrape refreshes per game. */
     suspend fun clearSsMediaCache() = ssMediaCacheDao.clearAll()

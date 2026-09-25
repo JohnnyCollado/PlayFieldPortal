@@ -214,7 +214,12 @@ class GameMatcherTest {
 
     @Test
     fun `every provider can be searched by title`() {
-        assertEquals(MatchProvider.entries.toList(), ProviderCapabilities.searchable)
+        // Every REMOTE provider has a multi-result title endpoint. MANUAL is not one — the user is
+        // not an endpoint — so Change Match offers the four and never a fifth.
+        assertEquals(
+            MatchProvider.entries - MatchProvider.MANUAL,
+            ProviderCapabilities.searchable,
+        )
     }
 
     /** A Windows install has no ROM to hash, so its ScreenScraper identity can only come from its title. */

@@ -11,6 +11,7 @@ import androidx.work.WorkManager
 import com.playfieldportal.core.data.datastore.pfpDataStore
 import com.playfieldportal.core.data.repository.RomRootRepository
 import com.playfieldportal.feature.artwork.api.ArtworkImportManager
+import com.playfieldportal.feature.artwork.api.ArtworkRelinkWorker
 import com.playfieldportal.feature.artwork.importer.ArtworkImportWorker
 import com.playfieldportal.feature.artwork.importer.DetectedImportSource
 import com.playfieldportal.feature.artwork.importer.ImportPlan
@@ -34,6 +35,9 @@ import javax.inject.Inject
 private val KEY_MOVE_FILES = booleanPreferencesKey("artwork_import_move_files")
 
 data class ArtworkImportUiState(
+    // Files the last relink could not place (C22 task T4). Drives the Unmatched Artwork row,
+    // which is hidden at zero.
+    val orphanCount: Int = 0,
     // Folder link
     val folderDisplay: String? = null,
     val folderLinked: Boolean = false,
@@ -101,6 +105,11 @@ class ArtworkImportViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
+            importManager.orphanFiles.collect { rows ->
+                _uiState.value = _uiState.value.copy(orphanCount = rows.size)
+            }
+        }
+        viewModelScope.launch {
             importManager.reports.collect { rows ->
                 _uiState.value = _uiState.value.copy(reports = rows.map { it.toUi() })
             }
@@ -114,6 +123,11 @@ class ArtworkImportViewModel @Inject constructor(
             WorkManager.getInstance(context)
                 .getWorkInfosForUniqueWorkFlow(InternalArtworkMigrationWorker.UNIQUE_NAME)
                 .collect { infos -> onMigrationWorkInfos(infos) }
+        }
+        viewModelScope.launch {
+            WorkManager.getInstance(context)
+                .getWorkInfosForUniqueWorkFlow(ArtworkRelinkWorker.UNIQUE_NAME)
+                .collect { infos -> onRelinkWorkInfos(infos) }
         }
         viewModelScope.launch { refreshInternalFootprint() }
     }
@@ -283,29 +297,46 @@ class ArtworkImportViewModel @Inject constructor(
         )
     }
 
+    /**
+     * Starts a full-library Scan & Relink (C22 task T3b).
+     *
+     * This used to run on `viewModelScope`, so navigating away mid-scan killed it. It now enqueues
+     * the shared worker; `relinking` is driven by the worker's state below, not by a local boolean.
+     *
+     * Deliberately NOT migrated: `onFolderPicked`, `InitialSetupViewModel` and `PcGameScanner` all
+     * call `relinkLibrary` as a step *inside* a larger operation that already owns its own progress
+     * and reports a combined result. Those must stay synchronous.
+     */
     fun relinkLibrary() {
         if (_uiState.value.relinking) return
         _uiState.value = _uiState.value.copy(relinking = true)
-        viewModelScope.launch {
-            runCatching { importManager.relinkLibrary() }
-                .onSuccess { result ->
-                    _uiState.value = _uiState.value.copy(
-                        relinking = false,
-                        notice = if (result == null) "No artwork folder linked (or access was lost)."
-                        else buildString {
-                            append("Scan: ${result.entriesScanned} files · ${result.gamesLinked} games linked")
-                            if (result.missingFiles > 0) append(" · ${result.missingFiles} missing removed")
-                            if (result.changedFiles > 0) append(" · ${result.changedFiles} changed")
-                            if (result.duplicateNames > 0) append(" · ${result.duplicateNames} duplicate names")
-                            if (result.orphanEntries > 0) append(" · ${result.orphanEntries} unmatched")
-                        },
-                    )
-                }
-                .onFailure {
-                    Timber.e(it, "Library scan failed")
-                    _uiState.value = _uiState.value.copy(relinking = false, error = "Library scan failed — see logs.")
-                }
+        ArtworkRelinkWorker.enqueue(context)
+    }
+
+    private fun onRelinkWorkInfos(infos: List<WorkInfo>) {
+        val active = infos.firstOrNull { !it.state.isFinished }
+        if (active != null) {
+            _uiState.value = _uiState.value.copy(relinking = true)
+            return
         }
+        if (!_uiState.value.relinking) return
+        // Unique work, so this is the run that just finished.
+        val last = infos.lastOrNull()
+        val notice = when (last?.state) {
+            WorkInfo.State.SUCCEEDED -> {
+                val scanned = last.outputData.getInt(ArtworkRelinkWorker.KEY_SCANNED, 0)
+                val linked = last.outputData.getInt(ArtworkRelinkWorker.KEY_LINKED, 0)
+                val orphans = last.outputData.getInt(ArtworkRelinkWorker.KEY_ORPHANS, 0)
+                buildString {
+                    append("Scan: $scanned files · $linked games linked")
+                    if (orphans > 0) append(" · $orphans unmatched — see Unmatched Artwork")
+                }
+            }
+            WorkInfo.State.FAILED -> "Library scan failed — see logs."
+            WorkInfo.State.CANCELLED -> "Library scan cancelled."
+            else -> null
+        }
+        _uiState.value = _uiState.value.copy(relinking = false, notice = notice ?: _uiState.value.notice)
     }
 
     // ── Internal-storage migration (M-F2) ─────────────────────────────────────

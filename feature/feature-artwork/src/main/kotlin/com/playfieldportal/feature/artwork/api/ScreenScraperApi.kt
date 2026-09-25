@@ -238,6 +238,7 @@ class ScreenScraperApi @Inject constructor(
     @ApplicationContext private val appContext: Context,
     private val httpClient: HttpClient,
     private val credentials: MetadataCredentialSource,
+    private val scrapePreferences: ArtworkScrapePreferences,
 ) {
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
@@ -338,7 +339,7 @@ class ScreenScraperApi @Inject constructor(
                 ))
             }
 
-            val info = game.toInfo()
+            val info = game.toInfo(scrapePreferences.getArtworkRegion())
             Timber.i("ScreenScraper: match ssId=${info.ssId} '${info.title}' for '${rom?.fileName}'")
             SsLookupResult(info, diag.copy(quota = quota))
         } catch (e: Exception) {
@@ -390,7 +391,7 @@ class ScreenScraperApi @Inject constructor(
         val parsed = decodeSearch(body)
             ?: throw SsSearchFailedException("ScreenScraper answered with an error instead of results")
         rememberRequestLimit(parsed.response?.user)
-        val hits = hitsOf(parsed)
+        val hits = hitsOf(parsed, scrapePreferences.getArtworkRegion())
         Timber.d("ScreenScraper search '$title' (system ${systemId ?: "any"}) → ${hits.size} hits")
         return hits
     }
@@ -424,17 +425,23 @@ class ScreenScraperApi @Inject constructor(
      * A jeuRecherche body → hits, or null when the body is not a search response at all:
      * ScreenScraper serves error messages as plain text, often with HTTP 200. Pure, so parsing is
      * testable without a network.
+     *
+     * [userRegion] is forwarded to the per-hit region pick and defaults to null — the region is
+     * resolved once by the caller rather than read here, for the reason [hitsOf] gives.
      */
-    internal fun parseSearch(body: String): List<SsSearchHit>? = decodeSearch(body)?.let(::hitsOf)
+    internal fun parseSearch(body: String, userRegion: String? = null): List<SsSearchHit>? =
+        decodeSearch(body)?.let { hitsOf(it, userRegion) }
 
     private fun decodeSearch(body: String): SsSearchResponse? =
         runCatching { json.decodeFromString(SsSearchResponse.serializer(), body) }
             .onFailure { Timber.w("ScreenScraper search: non-JSON body '${body.take(160)}'") }
             .getOrNull()
 
-    private fun hitsOf(parsed: SsSearchResponse): List<SsSearchHit> =
+    // The region is passed in rather than read here: this is not a suspend function, and it
+    // runs per hit — resolving the preference thirty times for one search would be absurd.
+    private fun hitsOf(parsed: SsSearchResponse, userRegion: String?): List<SsSearchHit> =
         parsed.response?.games.orEmpty().mapNotNull { game ->
-            val info = game.toInfo()
+            val info = game.toInfo(userRegion)
             val id = info.ssId ?: return@mapNotNull null
             val title = info.title?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
             SsSearchHit(
@@ -541,7 +548,7 @@ class ScreenScraperApi @Inject constructor(
         else                                                    -> SsFailureReason.PARSE_ERROR
     }
 
-    private fun SsGame.toInfo(): SsGameInfo {
+    private fun SsGame.toInfo(userRegion: String?): SsGameInfo {
         val title = names.firstOrNull { it.region == "us" }?.text
             ?: names.firstOrNull { it.region == "wor" }?.text
             ?: names.firstOrNull()?.text
@@ -576,7 +583,7 @@ class ScreenScraperApi @Inject constructor(
         val cachedMedias = medias.mapNotNull { m ->
             m.url?.let { SsCachedMedia(type = m.type, region = m.region, url = it, format = m.format) }
         }
-        val urls = SsMediaSelection.urls(cachedMedias)
+        val urls = SsMediaSelection.urls(cachedMedias, userRegion)
 
         return SsGameInfo(
             ssId        = id?.toLongOrNull(),

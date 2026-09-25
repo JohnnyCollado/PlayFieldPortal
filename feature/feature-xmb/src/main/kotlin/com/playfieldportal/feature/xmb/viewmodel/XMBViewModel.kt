@@ -75,6 +75,7 @@ import com.playfieldportal.feature.launcher.LaunchSource
 import com.playfieldportal.feature.launcher.ResolvedLaunch
 import com.playfieldportal.feature.launcher.corePathFor
 import com.playfieldportal.feature.artwork.api.ArtworkRepository
+import com.playfieldportal.feature.artwork.api.relinkAll
 import com.playfieldportal.feature.library.scanner.LibraryScanner
 import com.playfieldportal.feature.library.scanner.ScanStatus
 import com.playfieldportal.feature.library.scanner.scanOutcomeMessage
@@ -1431,6 +1432,7 @@ class XMBViewModel @Inject constructor(
     private val pttOverlay: com.playfieldportal.feature.xmb.voice.PttOverlayManager,
     private val iconDisplayPreferences: com.playfieldportal.core.data.repository.IconDisplayPreferences,
     private val artworkStore: com.playfieldportal.feature.artwork.store.ArtworkStore,
+    private val artworkRelinkLauncher: com.playfieldportal.feature.artwork.api.ArtworkRelinkLauncher,
     private val gameLaunchPreferences: com.playfieldportal.core.data.repository.GameLaunchPreferences,
     private val achievementRepository: com.playfieldportal.feature.achievements.AchievementController,
     private val achievementMatchAndUpdate: com.playfieldportal.feature.achievements.match.AchievementMatchAndUpdate,
@@ -5702,6 +5704,9 @@ class XMBViewModel @Inject constructor(
                     // Scanning (missing-ROM pass, full re-scan) lives in the Library settings.
                     XMBContextMenuItem("library_manager", "Manage Library"),
                     XMBContextMenuItem("import_pc_games", "Import PC Games"),
+                    // Full-library Scan & Relink from the card the whole collection lives on
+                    // (C22 task T3). Runs as a worker, so it survives leaving this screen.
+                    XMBContextMenuItem("relink_artwork", "Relink Artwork"),
                     XMBContextMenuItem("icon_display_global", "Icon Display (${it.iconDisplayMode.label})"),
                 ),
                 isAllGames = true,
@@ -6215,6 +6220,8 @@ class XMBViewModel @Inject constructor(
             } else when (itemId) {
                 "library_manager" -> _uiState.update { it.copy(activeSettingsScreen = "settings_library") }
                 "import_pc_games" -> _uiState.update { it.copy(activeSettingsScreen = "settings_import_pc") }
+                // Progress lands in the notification panel, not here.
+                "relink_artwork" -> artworkRelinkLauncher.relinkAll()
                 "icon_display_global" -> openGlobalIconDisplayPickerMenu()
             }
             menu.platformId != null -> if (itemId.startsWith("picondisp_")) {
@@ -9503,6 +9510,11 @@ class XMBViewModel @Inject constructor(
     fun openLibraryManager() {
         markInitialSetupSeen()
         _uiState.update { it.copy(activeSettingsScreen = "settings_library") }
+    }
+
+    /** Settings ▸ Artwork Folder & Import ▸ Unmatched Artwork (C22 task T4). */
+    fun openArtworkOrphans() {
+        _uiState.update { it.copy(activeSettingsScreen = "settings_artwork_orphans") }
     }
 
     /**

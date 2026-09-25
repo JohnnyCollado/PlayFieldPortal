@@ -622,8 +622,10 @@ val STUDIO_TABS = listOf(
 
 /**
  * Fullscreen Artwork Studio (controller-first) — the single place a game's artwork is browsed
- * and changed. LB/RB switch destination tabs, Left/Right act on the current level, D-pad drives
- * the grid, A previews→applies, B backs out, X opens search, Y opens the per-slot options.
+ * and changed. LB/RB switch destination tabs — and only that, except in the grid, where they page
+ * instead; D-pad Left/Right act on the current level (the source row, then the tile cursor) and are
+ * inert on the tab row; A previews→applies, B backs out, X opens search, Y opens the per-slot
+ * options.
  * Replaces the old in-detail artwork manager.
  *
  * (L2/R2 are unbound: no GamepadAction maps to KEYCODE_BUTTON_L2/R2 in GamepadBinding, so the
@@ -2850,9 +2852,18 @@ class ArtworkStudioViewModel @Inject constructor(
             return
         }
         // Three hierarchical levels: TABS (categories) → SOURCES → GRID. Confirm descends, BACK
-        // ascends (and closes from Level 1). Left/Right — and LB/RB, which mirror them — act on
-        // the current level only; in the grid LB/RB page instead. D-pad up/down only moves inside
-        // the grid, clamped at the page edges: paging is exclusively LB/RB or the on-screen pills.
+        // ascends (and closes from Level 1).
+        //
+        // The two horizontal pairs mean ONE thing each rather than mirroring each other:
+        //
+        //   LB/RB     the artwork type — everywhere except the grid, which takes them back for
+        //             paging, because that is the only level with more than one screen of content.
+        //   D-pad ←/→ whatever the current level holds: the source row, then the tile cursor.
+        //             Nothing at the tab level, so the artwork type cannot be changed by accident
+        //             while arrowing around.
+        //
+        // D-pad up/down only moves inside the grid, clamped at the page edges: paging is
+        // exclusively LB/RB or the on-screen pills.
         when (action) {
             GamepadAction.BACK -> when (s.zone) {
                 StudioZone.TABS    ->
@@ -2864,13 +2875,15 @@ class ArtworkStudioViewModel @Inject constructor(
                 StudioZone.GRID    -> _uiState.update { it.copy(zone = StudioZone.SOURCES) }
             }
             GamepadAction.NAVIGATE_LEFT -> when (s.zone) {
-                StudioZone.TABS    -> cycleTab(-1)
+                // The tab row is deliberately inert to the D-pad: the artwork type moves on the
+                // shoulders alone, so arrowing about can never change it.
+                StudioZone.TABS    -> Unit
                 StudioZone.SOURCES -> cycleSource(-1)
                 StudioZone.GRID    ->
                     if (s.gridIndex > 0) _uiState.update { it.copy(gridIndex = s.gridIndex - 1) }
             }
             GamepadAction.NAVIGATE_RIGHT -> when (s.zone) {
-                StudioZone.TABS    -> cycleTab(+1)
+                StudioZone.TABS    -> Unit
                 StudioZone.SOURCES -> cycleSource(+1)
                 StudioZone.GRID    ->
                     if (s.gridIndex < s.results.lastIndex) _uiState.update { it.copy(gridIndex = s.gridIndex + 1) }
@@ -2883,15 +2896,16 @@ class ArtworkStudioViewModel @Inject constructor(
             ) {
                 _uiState.update { it.copy(gridIndex = s.gridIndex + s.gridColumns) }
             }
+            // LB/RB are the artwork type, until the grid claims them for paging. Cycling the type
+            // from the source row runs selectTab, which returns to the tab row and to that type's
+            // first source — sources belong to a type, so carrying an index across is meaningless.
             GamepadAction.PREV_CATEGORY -> when (s.zone) {   // LB
-                StudioZone.TABS    -> cycleTab(-1)
-                StudioZone.SOURCES -> cycleSource(-1)
-                StudioZone.GRID    -> previousPage()
+                StudioZone.TABS, StudioZone.SOURCES -> cycleTab(-1)
+                StudioZone.GRID                     -> previousPage()
             }
             GamepadAction.NEXT_CATEGORY -> when (s.zone) {   // RB
-                StudioZone.TABS    -> cycleTab(+1)
-                StudioZone.SOURCES -> cycleSource(+1)
-                StudioZone.GRID    -> nextPage()
+                StudioZone.TABS, StudioZone.SOURCES -> cycleTab(+1)
+                StudioZone.GRID                     -> nextPage()
             }
             GamepadAction.SELECT -> when (s.zone) {
                 StudioZone.TABS    -> _uiState.update { it.copy(zone = StudioZone.SOURCES) }

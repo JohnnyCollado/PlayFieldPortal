@@ -10,6 +10,7 @@ import com.playfieldportal.core.data.database.dao.AccountAchievementDao
 import com.playfieldportal.core.data.database.dao.AccountAchievementSetDao
 import com.playfieldportal.core.data.database.dao.AppOverrideDao
 import com.playfieldportal.core.data.database.dao.ArtworkImportReportDao
+import com.playfieldportal.core.data.database.dao.ArtworkOrphanFileDao
 import com.playfieldportal.core.data.database.dao.ArtworkRecordDao
 import com.playfieldportal.core.data.database.dao.BackupDao
 import com.playfieldportal.core.data.database.dao.CategoryDao
@@ -41,6 +42,7 @@ import com.playfieldportal.core.data.database.entity.AccountAchievementSetEntity
 import com.playfieldportal.core.data.database.entity.AchievementMatchNoteEntity
 import com.playfieldportal.core.data.database.entity.AppOverrideEntity
 import com.playfieldportal.core.data.database.entity.ArtworkImportReportEntity
+import com.playfieldportal.core.data.database.entity.ArtworkOrphanFileEntity
 import com.playfieldportal.core.data.database.entity.ArtworkRecordEntity
 import com.playfieldportal.core.data.database.entity.CategoryEntity
 import com.playfieldportal.core.data.database.entity.CategoryItemEntity
@@ -112,8 +114,9 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         com.playfieldportal.core.data.database.entity.AchievementTrackedIdentityEntity::class,
         com.playfieldportal.core.data.database.entity.AchievementProviderSyncStateEntity::class,
         com.playfieldportal.core.data.database.entity.AchievementMetadataCacheEntity::class,
+        ArtworkOrphanFileEntity::class,
     ],
-    version = 46,
+    version = 49,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -143,6 +146,7 @@ abstract class PFPDatabase : RoomDatabase() {
     abstract fun backupDao(): BackupDao
     abstract fun artworkRecordDao(): ArtworkRecordDao
     abstract fun artworkImportReportDao(): ArtworkImportReportDao
+    abstract fun artworkOrphanFileDao(): ArtworkOrphanFileDao
     abstract fun notificationDao(): NotificationDao
     abstract fun ssMediaCacheDao(): SsMediaCacheDao
     abstract fun accountAchievementSetDao(): AccountAchievementSetDao
@@ -1419,6 +1423,83 @@ abstract class PFPDatabase : RoomDatabase() {
                     LEFT JOIN account_achievement_sets s
                         ON s.provider = l.provider AND s.provider_game_id = l.provider_game_id
                     GROUP BY l.provider, l.provider_game_id
+                    """.trimIndent()
+                )
+            }
+        }
+
+        /**
+         * C22 task T1 — `artwork_orphan_files`: the files Scan & Relink walked but could not tie
+         * to a game. Purely additive; no existing table is touched. The table is derived state
+         * over the user's artwork folder, so creating it empty is correct — the next relink fills
+         * it, and until then the orphan picker simply has nothing to show.
+         */
+        val MIGRATION_46_47 = object : Migration(46, 47) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS artwork_orphan_files (
+                        platform_id TEXT NOT NULL,
+                        artwork_type TEXT NOT NULL,
+                        file_name TEXT NOT NULL,
+                        stem TEXT NOT NULL,
+                        document_uri TEXT NOT NULL,
+                        size_bytes INTEGER NOT NULL,
+                        seen_at INTEGER NOT NULL,
+                        PRIMARY KEY(platform_id, artwork_type, file_name)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_artwork_orphan_files_platform_id " +
+                        "ON artwork_orphan_files(platform_id)"
+                )
+            }
+        }
+
+        /**
+         * v48 — `games.user_metadata_overrides`: the hand-set metadata shadow layer.
+         *
+         * One nullable TEXT column and nothing else. Every existing row reads NULL, which
+         * `MetadataOverrides.parse` already treats as "no overrides", so legacy rows need no
+         * backfill. No metadata column is touched: the whole point of the shadow layer is that the
+         * scraped values stay exactly where they are and simply stop winning on screen.
+         */
+        val MIGRATION_47_48 = object : Migration(47, 48) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE games ADD COLUMN user_metadata_overrides TEXT")
+            }
+        }
+
+        /**
+         * v49 — gives `ps3` the ROM extensions it shipped without.
+         *
+         * PlatformSeeder seeded ps3 with an EMPTY extension list, and it runs INSERT OR IGNORE, so
+         * fixing the seed alone would only ever reach a fresh install. Every existing library would
+         * keep an empty list, and `RomRootDiscoveryScanner` skips any platform whose list is empty
+         * (`if (exts.isEmpty()) continue`) — so PS3 folders were silently never auto-detected.
+         *
+         * Both tables, for the reason the v33 `zip` migration did both: `memory_cards` COPIES the
+         * platform's list at creation (`MemoryCardRepository.addCard`) and the scanner PREFERS that
+         * copy, so fixing `platforms` alone would leave anyone who already made a PS3 card exactly
+         * as broken as before.
+         *
+         * Both writes are guarded on the value still being the empty seed. A non-empty list is one
+         * the user typed, and a knowledge-base update must never overwrite an override.
+         */
+        val MIGRATION_48_49 = object : Migration(48, 49) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    UPDATE platforms SET rom_extensions = 'iso,pkg,ps3dir'
+                    WHERE id = 'ps3' AND (rom_extensions IS NULL OR TRIM(rom_extensions) = '')
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    UPDATE memory_cards SET supported_extensions = 'iso,pkg,ps3dir'
+                    WHERE platform_id = 'ps3'
+                      AND (supported_extensions IS NULL OR TRIM(supported_extensions) = '')
                     """.trimIndent()
                 )
             }

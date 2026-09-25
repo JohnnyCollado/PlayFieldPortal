@@ -31,6 +31,8 @@ import java.util.Locale
 @Composable
 fun ArtworkImportScreen(
     onBack: () -> Unit,
+    // Opens the Unmatched Artwork picker. Routed by the host, like every other cross-screen jump.
+    onOpenOrphans: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: ArtworkImportViewModel = hiltViewModel(),
 ) {
@@ -120,6 +122,16 @@ fun ArtworkImportScreen(
                         "changed files, and cleans up references to deleted ones",
                     onClick  = if (state.relinking || state.importRunning) null else ({ viewModel.relinkLibrary() }),
                 )
+
+                // Whatever the last scan could not place. Hidden when there is nothing to resolve,
+                // so the row is a to-do list rather than a permanent piece of furniture.
+                if (state.orphanCount > 0) {
+                    SettingsRow(
+                        label    = "Unmatched Artwork (${state.orphanCount})",
+                        sublabel = "Files in your folder that matched no game — link them by hand",
+                        onClick  = onOpenOrphans,
+                    )
+                }
 
                 // ── Internal-storage migration (M-F2) ────────────────────────
                 if (state.internalFiles > 0 || state.migrationRunning) {

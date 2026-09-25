@@ -34,6 +34,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -2410,6 +2411,110 @@ class ArtworkStudioViewModelTest {
         assertEquals(0, vm.uiState.value.overCapacityBy)
         vm.applyChanges()
         assertTrue(vm.uiState.value.applyConfirmOpen)
+    }
+
+    // ── Horizontal controls: which pair owns what (C23 follow-up) ────────────
+    //
+    // LB/RB are the artwork type everywhere except the grid, which takes them back for paging.
+    // D-pad Left/Right act on the current level and are inert on the tab row, so arrowing around
+    // can never change the artwork type by accident. These pin that matrix zone by zone.
+
+    @Test
+    fun `the D-pad cannot change the artwork type from the tab row`() = runTest(testDispatcher) {
+        val vm = viewModel()
+        vm.load(1L)
+        advanceUntilIdle()
+        val tab = vm.uiState.value.tabIndex
+        assertEquals(StudioZone.TABS, vm.uiState.value.zone)
+
+        vm.handleGamepadAction(GamepadAction.NAVIGATE_RIGHT)
+        vm.handleGamepadAction(GamepadAction.NAVIGATE_LEFT)
+        advanceUntilIdle()
+
+        assertEquals("the tab row is inert to the D-pad", tab, vm.uiState.value.tabIndex)
+        assertEquals(StudioZone.TABS, vm.uiState.value.zone)
+    }
+
+    @Test
+    fun `the shoulders change the artwork type from the tab row`() = runTest(testDispatcher) {
+        val vm = viewModel()
+        vm.load(1L)
+        advanceUntilIdle()
+        val tab = vm.uiState.value.tabIndex
+
+        vm.handleGamepadAction(GamepadAction.NEXT_CATEGORY)
+        advanceUntilIdle()
+        assertEquals((tab + 1).mod(STUDIO_TABS.size), vm.uiState.value.tabIndex)
+
+        vm.handleGamepadAction(GamepadAction.PREV_CATEGORY)
+        advanceUntilIdle()
+        assertEquals(tab, vm.uiState.value.tabIndex)
+    }
+
+    @Test
+    fun `on the source row the D-pad moves sources and the shoulders move the type`() =
+        runTest(testDispatcher) {
+            val vm = loadedOn(StudioSource.STEAMGRIDDB)
+            val tab = vm.uiState.value.tabIndex
+            val source = vm.uiState.value.sourceIndex
+            assertEquals(StudioZone.SOURCES, vm.uiState.value.zone)
+
+            // D-pad stays on this level: the source moves, the artwork type does not.
+            vm.handleGamepadAction(GamepadAction.NAVIGATE_RIGHT)
+            advanceUntilIdle()
+            assertEquals("the D-pad never reaches the artwork type", tab, vm.uiState.value.tabIndex)
+            assertEquals(StudioZone.SOURCES, vm.uiState.value.zone)
+            if (vm.sourcesForTab().size > 1) {
+                assertNotEquals(source, vm.uiState.value.sourceIndex)
+            }
+
+            // The shoulders reach past this level to the artwork type, which is what returns the
+            // cursor to the tab row: a source index belongs to one type and cannot be carried.
+            vm.handleGamepadAction(GamepadAction.NEXT_CATEGORY)
+            advanceUntilIdle()
+            assertEquals((tab + 1).mod(STUDIO_TABS.size), vm.uiState.value.tabIndex)
+            assertEquals(StudioZone.TABS, vm.uiState.value.zone)
+            assertEquals(0, vm.uiState.value.sourceIndex)
+        }
+
+    @Test
+    fun `in the grid the shoulders page and leave the artwork type alone`() = runTest(testDispatcher) {
+        coEvery { steamGridDb.getArt(any(), any(), any(), any(), any()) } returns
+            Result.success((1..30).map { SgdbArtItem(id = it.toLong(), url = "art$it") })
+        val vm = loadedOn(StudioSource.STEAMGRIDDB)
+        vm.handleGamepadAction(GamepadAction.SELECT)   // into the grid
+        advanceUntilIdle()
+        val tab = vm.uiState.value.tabIndex
+        assertEquals(StudioZone.GRID, vm.uiState.value.zone)
+        assertEquals(0, vm.uiState.value.page)
+
+        // The grid is the one level with more than one screen of content, so it keeps the
+        // shoulders for paging rather than handing them to the artwork type.
+        vm.handleGamepadAction(GamepadAction.NEXT_CATEGORY)
+        advanceUntilIdle()
+        assertEquals(1, vm.uiState.value.page)
+        assertEquals("paging never changes the artwork type", tab, vm.uiState.value.tabIndex)
+        assertEquals(StudioZone.GRID, vm.uiState.value.zone)
+
+        vm.handleGamepadAction(GamepadAction.PREV_CATEGORY)
+        advanceUntilIdle()
+        assertEquals(0, vm.uiState.value.page)
+        assertEquals(tab, vm.uiState.value.tabIndex)
+    }
+
+    @Test
+    fun `in the grid the D-pad moves the tile cursor, not the page`() = runTest(testDispatcher) {
+        coEvery { steamGridDb.getArt(any(), any(), any(), any(), any()) } returns
+            Result.success((1..30).map { SgdbArtItem(id = it.toLong(), url = "art$it") })
+        val vm = loadedOn(StudioSource.STEAMGRIDDB)
+        vm.handleGamepadAction(GamepadAction.SELECT)
+        advanceUntilIdle()
+
+        vm.handleGamepadAction(GamepadAction.NAVIGATE_RIGHT)
+        advanceUntilIdle()
+
+        assertEquals(1, vm.uiState.value.gridIndex)
+        assertEquals("the D-pad never pages", 0, vm.uiState.value.page)
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

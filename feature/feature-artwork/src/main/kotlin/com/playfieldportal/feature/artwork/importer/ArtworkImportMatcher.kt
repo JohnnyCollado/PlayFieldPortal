@@ -1,5 +1,6 @@
 package com.playfieldportal.feature.artwork.importer
 
+import com.playfieldportal.feature.artwork.match.TitleCanon
 import com.playfieldportal.feature.artwork.portable.ArtworkNaming
 
 /**
@@ -11,6 +12,9 @@ import com.playfieldportal.feature.artwork.portable.ArtworkNaming
  *  Pass 3 — simplified title (release tags stripped); auto-match only on exactly one candidate
  *  Pass 4 — passes 1–3 again with a leading dump-index prefix ("0556 - Game.png") stripped,
  *           reported at the weakest confidence
+ *  Pass 5 — canonical title ([TitleCanon]: leading/trailing "the" dropped, roman numerals made
+ *           arabic), which is what reconnects the No-Intro "Legend of Zelda, The" convention to a
+ *           naturally-titled game; auto-match only on exactly one candidate, like pass 3
  *
  * Pass-1 multi-hits are NOT ambiguous: ids under one stem key have byte-identical normalized
  * filenames, which only happens when one physical game scanned as several rows (.cue + .bin) —
@@ -56,6 +60,14 @@ object ArtworkImportMatcher {
                 keys.forEach { getOrPut(it) { mutableListOf() }.add(g.id) }
             }
         }
+        private val byCanonical = buildMap<String, MutableList<Long>> {
+            games.forEach { g ->
+                val keys = listOfNotNull(g.romStem, g.displayTitle, g.scrapedTitle)
+                    .map { TitleCanon.of(ArtworkNaming.simplifyTitle(it)) }
+                    .filter { it.isNotBlank() }.distinct()
+                keys.forEach { getOrPut(it) { mutableListOf() }.add(g.id) }
+            }
+        }
 
         fun match(artworkFileName: String): Result {
             val stem = ArtworkNaming.fileStem(artworkFileName)
@@ -83,11 +95,26 @@ object ArtworkImportMatcher {
             val simplified = ArtworkNaming.simplifyTitle(stem)
             if (simplified.isNotBlank()) {
                 bySimplified[simplified]?.let { ids ->
-                    // Simplified matching is the loosest pass — only a unique candidate is safe.
+                    // Simplified matching is loose — only a unique candidate is safe.
                     return if (ids.distinct().size == 1) {
                         Result.Matched(ids.distinct(), MatchConfidence.SIMPLIFIED_TITLE)
                     } else {
                         Result.Ambiguous(ids.distinct())
+                    }
+                }
+                // Pass 5: canonical-to-canonical. The query's canonical form is always looked up,
+                // even when canonicalizing changed nothing about it — "Legend of Zelda.png" is
+                // already canonical, and the whole point is that it should reach a game stored as
+                // "The Legend of Zelda". A title pass 3 already found genuinely ambiguous has
+                // returned above; a looser pass must never rescue it.
+                val canonical = TitleCanon.of(simplified)
+                if (canonical.isNotBlank()) {
+                    byCanonical[canonical]?.let { ids ->
+                        return if (ids.distinct().size == 1) {
+                            Result.Matched(ids.distinct(), MatchConfidence.CANONICAL_TITLE)
+                        } else {
+                            Result.Ambiguous(ids.distinct())
+                        }
                     }
                 }
             }

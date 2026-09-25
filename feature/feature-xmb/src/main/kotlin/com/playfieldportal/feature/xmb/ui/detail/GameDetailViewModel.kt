@@ -17,6 +17,7 @@ import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.navigation.NavigationLogger
 import com.playfieldportal.core.navigation.NavigationNode
 import com.playfieldportal.feature.artwork.api.ArtworkRepository
+import com.playfieldportal.feature.artwork.match.MatchProvider
 import com.playfieldportal.feature.artwork.match.MetadataApply
 import com.playfieldportal.feature.artwork.match.MetadataApplyPolicy
 import com.playfieldportal.feature.artwork.match.MetadataField
@@ -47,6 +48,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
+import kotlin.math.roundToInt
 
 // ── Artwork type ──────────────────────────────────────────────────────────────
 enum class ArtworkType { ICON, HERO, BACKGROUND }
@@ -173,10 +175,10 @@ data class GameDetailUiState(
         get() {
             val loaded = game ?: return false
             return listOf(
-                loaded.releaseYear,
-                loaded.developer?.takeIf { it.isNotBlank() },
-                loaded.publisher?.takeIf { it.isNotBlank() },
-                loaded.genre?.takeIf { it.isNotBlank() },
+                loaded.displayReleaseYear,
+                loaded.displayDeveloper?.takeIf { it.isNotBlank() },
+                loaded.displayPublisher?.takeIf { it.isNotBlank() },
+                loaded.displayGenre?.takeIf { it.isNotBlank() },
                 loaded.lastPlayedAt,
                 loaded.totalPlayTimeMillis.takeIf { it > 0 },
                 resolvedLaunch?.profile?.name,
@@ -198,37 +200,144 @@ data class GameDetailUiState(
 
 // ── Metadata preview ──────────────────────────────────────────────────────────
 
+/** One editable line of the Manual column: what is shown today, and what the user has typed. */
+data class ManualFieldRow(
+    val field: MetadataField,
+    /** The effective value — the user's own where they set one, the scraped value otherwise. */
+    val current: Any?,
+    val text: String,
+    /** This field is hand-set today, so it can be reverted to reveal the scraped value. */
+    val overridden: Boolean,
+)
+
 /**
  * C16 task 3.2 — the Current-vs-Incoming overlay. Retrieval fills it and nothing is written until
  * [GameDetailViewModel.applyMetadataPreview] runs; Back always closes without a write.
  *
  * The "will change" markers ([willWrite]) come from the same `MetadataApply.plan` the repository
  * writes with, so the preview can never promise a change the SQL does not make.
+ *
+ * C23 T3 added one more source to choose between: the user. The Manual column's cells are text
+ * fields rather than a provider's answer, and what it applies lands in the override shadow layer
+ * instead of the metadata columns — but it is the same preset, the same policies and the same plan
+ * function, so there is no second editing surface to keep honest.
  */
 data class MetadataPreviewUi(
     val loading: Boolean = true,
     val applying: Boolean = false,
     /** Retrieval threw, as opposed to every provider answering with nothing. */
     val failed: Boolean = false,
+    /**
+     * The game's own values were read, so the Manual column has something to seed from and to
+     * compare against. False only when retrieval produced nothing at all — see [nothingFound].
+     */
+    val editable: Boolean = false,
+    /** What the metadata COLUMNS hold — what a provider preset is compared against and writes. */
     val current: Map<MetadataField, Any?> = emptyMap(),
+    /** What the user SEES — overrides over stored values. A manual edit is compared against this. */
+    val effective: Map<MetadataField, Any?> = emptyMap(),
+    /** Fields hand-set today. Drives the revert affordance, never the comparison. */
+    val overridden: Set<MetadataField> = emptySet(),
     val presets: List<MetadataPreset> = emptyList(),
+    /** `0..presets.lastIndex` is a provider; [presets].size is the Manual column. */
     val presetIndex: Int = 0,
+    /** What the user has typed per field, seeded from [effective]. */
+    val manualText: Map<MetadataField, String> = emptyMap(),
+    /** The field whose text editor is open, if any. */
+    val editingField: MetadataField? = null,
+    val editText: String = "",
     val policy: MetadataApplyPolicy = MetadataApplyPolicy.FILL_MISSING_ONLY,
     val chosen: Set<MetadataField> = emptySet(),
-    /** `0..rows.lastIndex` is a field row; [applyIndex] is the Apply button. */
+    /** `0..shownFields.lastIndex` is a field row; [applyIndex] is the Apply button. */
     val focus: Int = 0,
 ) {
-    val preset: MetadataPreset? get() = presets.getOrNull(presetIndex)
+    /** The Manual column is selected: the rows are text fields and Apply writes overrides. */
+    val isManual: Boolean get() = presetIndex >= presets.size
+
+    /** Every source the chips offer: each provider that answered, plus Manual, which always is. */
+    val sourceCount: Int get() = presets.size + 1
 
     /**
-     * Retrieval finished with no preset to offer. The overlay stays open and says so: closing on its
-     * own, with the reason in a message behind it, looked like a crash.
+     * The preset for the selected source. For Manual it is built from [manualText] on the spot —
+     * a hand-typed preset is exactly a provider preset with a different author, so it goes through
+     * `MetadataApply.plan` like any other and the change markers stay honest for free.
      */
-    val nothingFound: Boolean get() = !loading && presets.isEmpty()
-    val rows: List<MetadataFieldRow> get() = preset?.let { MetadataApply.rows(current, it) }.orEmpty()
+    val preset: MetadataPreset?
+        get() = if (isManual) manualPreset else presets.getOrNull(presetIndex)
+
+    private val manualPreset: MetadataPreset
+        get() = MetadataPreset(
+            provider = MatchProvider.MANUAL,
+            title = manualText[MetadataField.TITLE],
+            description = manualText[MetadataField.DESCRIPTION],
+            developer = manualText[MetadataField.DEVELOPER],
+            publisher = manualText[MetadataField.PUBLISHER],
+            releaseYear = manualText[MetadataField.RELEASE_YEAR]?.trim()?.toIntOrNull(),
+            releaseDate = manualText[MetadataField.RELEASE_DATE],
+            genre = manualText[MetadataField.GENRE],
+            ageRating = manualText[MetadataField.AGE_RATING],
+            franchise = manualText[MetadataField.FRANCHISE],
+            communityRating = parseRatingPercent(manualText[MetadataField.COMMUNITY_RATING]),
+        )
+
+    /** The values the selected source is measured against — see [current] and [effective]. */
+    private val comparedAgainst: Map<MetadataField, Any?> get() = if (isManual) effective else current
+
+    /**
+     * Retrieval produced nothing usable at all — it threw, or the game is gone. The overlay stays
+     * open on an explanation and the user dismisses it; closing on its own, with the reason in a
+     * message behind it, looked like a crash. There is no Manual column here on purpose: seeding
+     * one from values that could not be read would be inventing them.
+     */
+    val nothingFound: Boolean get() = !loading && !editable
+
+    /**
+     * Every provider answered with nothing, but the game itself read fine. Said inline, above a
+     * Manual column that is still offered — which is the whole point: a game no scraper recognises
+     * is exactly the one worth typing by hand.
+     */
+    val noProviderFound: Boolean get() = editable && presets.isEmpty()
+
+    val rows: List<MetadataFieldRow>
+        get() = if (isManual) emptyList()
+        else preset?.let { MetadataApply.rows(current, it) }.orEmpty()
+
+    /**
+     * Every field, always — the Manual column has to offer an empty field to fill, which is the
+     * case a provider column never has (it only lists what the provider actually supplied).
+     */
+    val manualRows: List<ManualFieldRow>
+        get() = if (!isManual) emptyList() else MetadataField.entries.map { field ->
+            ManualFieldRow(
+                field = field,
+                current = effective[field],
+                text = manualText[field].orEmpty(),
+                overridden = field in overridden,
+            )
+        }
+
+    /** The fields with a row on screen, in order — what the navigation graph is built from. */
+    val shownFields: List<MetadataField>
+        get() = if (isManual) manualRows.map { it.field } else rows.map { it.field }
+
     val willWrite: Set<MetadataField>
-        get() = preset?.let { MetadataApply.plan(current, it, policy, chosen).keys }.orEmpty()
-    val applyIndex: Int get() = rows.size
+        get() = preset?.let { MetadataApply.plan(comparedAgainst, it, policy, chosen).keys }.orEmpty()
+
+    val applyIndex: Int get() = shownFields.size
+}
+
+/**
+ * A community rating typed as a percentage (what the panel displays) back to the stored 0..1 scale.
+ * Editing "90%" as `0.9` would ask the user to know an internal normalization.
+ */
+private fun parseRatingPercent(text: String?): Float? =
+    text?.trim()?.removeSuffix("%")?.trim()?.toFloatOrNull()?.div(100f)?.coerceIn(0f, 1f)
+
+/** The stored value as the Manual column's initial text — the inverse of [parseRatingPercent]. */
+internal fun metadataEditText(field: MetadataField, value: Any?): String = when {
+    value == null -> ""
+    field == MetadataField.COMMUNITY_RATING && value is Float -> ((value * 100).roundToInt()).toString()
+    else -> value.toString()
 }
 
 // ── Options menu ──────────────────────────────────────────────────────────────
@@ -493,11 +602,13 @@ class GameDetailViewModel @Inject constructor(
             }
             GameDetailKeys.MODAL_METADATA -> buildList {
                 s.metadataPreview?.let { preview ->
-                    preview.rows.forEach { row ->
+                    // One node per row on screen, whichever column is selected: a provider row
+                    // ticks for Choose Fields, a Manual row opens its text editor.
+                    preview.shownFields.forEach { field ->
                         add(
                             NavigationNode(
-                                GameDetailKeys.metadataField(row.field.name),
-                                onSelect = { toggleMetadataField(row.field) },
+                                GameDetailKeys.metadataField(field.name),
+                                onSelect = { onMetadataRowSelected(field) },
                             ),
                         )
                     }
@@ -547,7 +658,7 @@ class GameDetailViewModel @Inject constructor(
     private fun metadataFocusFor(preview: MetadataPreviewUi, focus: String?): Int {
         if (focus == null) return -1
         if (focus == GameDetailKeys.METADATA_APPLY) return preview.applyIndex
-        val rowIndex = preview.rows.indexOfFirst { GameDetailKeys.metadataField(it.field.name) == focus }
+        val rowIndex = preview.shownFields.indexOfFirst { GameDetailKeys.metadataField(it.name) == focus }
         return if (rowIndex >= 0) rowIndex else -1
     }
 
@@ -1549,17 +1660,33 @@ class GameDetailViewModel @Inject constructor(
             if (generation != metadataPreviewGeneration) return@launch
             _uiState.update { s ->
                 if (s.metadataPreview == null) return@update s
-                if (preview == null || preview.presets.isEmpty()) {
-                    // Stays open on an explanation; the user dismisses it (nothingFound).
+                if (preview == null) {
+                    // The retrieval itself failed or the game is gone. Nothing to edit against —
+                    // an empty Manual column seeded from values we could not read would be a lie.
                     return@update s.copy(
                         metadataPreview = MetadataPreviewUi(loading = false, failed = outcome.isFailure),
                     )
                 }
+                // No provider preset is NOT a dead end any more: the Manual column is always
+                // offered, and a game no scraper recognises is exactly the one worth typing.
                 val loaded = MetadataPreviewUi(
-                    loading = false,
-                    current = preview.current,
-                    presets = preview.presets,
-                    chosen  = MetadataApply.changedFields(preview.current, preview.presets.first()),
+                    loading    = false,
+                    editable   = true,
+                    current    = preview.current,
+                    effective  = preview.effective,
+                    overridden = preview.overridden,
+                    presets    = preview.presets,
+                    manualText = MetadataField.entries.associateWith {
+                        metadataEditText(it, preview.effective[it])
+                    },
+                    chosen = preview.presets.firstOrNull()
+                        ?.let { MetadataApply.changedFields(preview.current, it) }
+                        .orEmpty(),
+                    // Fill Missing Only is the non-destructive default for a provider. When no
+                    // provider answered the overlay opens straight on the Manual column, where the
+                    // right default is the other one: a value the user types means "use this".
+                    policy = if (preview.presets.isEmpty()) MetadataApplyPolicy.REPLACE_ALL
+                    else MetadataApplyPolicy.FILL_MISSING_ONLY,
                 )
                 // Focus starts on Apply: the default policy is the non-destructive one.
                 s.copy(metadataPreview = loaded.copy(focus = loaded.applyIndex))
@@ -1579,12 +1706,34 @@ class GameDetailViewModel @Inject constructor(
         p.copy(policy = all[(p.policy.ordinal + delta).mod(all.size)])
     }
 
-    /** Switches the incoming provider; Choose Fields re-ticks what THAT provider would change. */
+    /**
+     * Switches source between the providers that answered and the Manual column; Choose Fields
+     * re-ticks what THAT source would change.
+     */
     fun cycleMetadataSource(delta: Int) = updateMetadataPreview { p ->
-        if (p.presets.size < 2) return@updateMetadataPreview p
-        val index = (p.presetIndex + delta).mod(p.presets.size)
-        val next = p.copy(presetIndex = index, chosen = MetadataApply.changedFields(p.current, p.presets[index]))
+        if (p.sourceCount < 2) return@updateMetadataPreview p
+        val index = (p.presetIndex + delta).mod(p.sourceCount)
+        val moved = p.copy(presetIndex = index)
+        val next = moved.copy(
+            chosen = moved.preset?.let {
+                MetadataApply.changedFields(if (moved.isManual) p.effective else p.current, it)
+            }.orEmpty(),
+            // Fill Missing Only is the right default for a provider — it is the non-destructive
+            // one — and the wrong default for the user, whose typed value means "use this". So
+            // entering the Manual column moves to Replace All; the policy chips still override it.
+            policy = if (moved.isManual) MetadataApplyPolicy.REPLACE_ALL else moved.policy,
+        )
         next.copy(focus = next.focus.coerceIn(0, next.applyIndex))
+    }
+
+    /**
+     * Confirming a row. On a provider column that ticks the field for Choose Fields; on the Manual
+     * column it opens that field's text editor, because there is nothing to tick — the value the
+     * user types IS the choice.
+     */
+    private fun onMetadataRowSelected(field: MetadataField) {
+        if (_uiState.value.metadataPreview?.isManual == true) startEditMetadataField(field)
+        else toggleMetadataField(field)
     }
 
     /** Toggling a row IS choosing fields, so the policy follows to Choose Fields. */
@@ -1593,6 +1742,75 @@ class GameDetailViewModel @Inject constructor(
             policy = MetadataApplyPolicy.CHOOSE_FIELDS,
             chosen = if (field in p.chosen) p.chosen - field else p.chosen + field,
         )
+    }
+
+    // ── The Manual column's per-field text editor ─────────────────────────
+
+    fun startEditMetadataField(field: MetadataField) = updateMetadataPreview { p ->
+        p.copy(editingField = field, editText = p.manualText[field].orEmpty())
+    }
+
+    fun onMetadataEditChanged(text: String) = updateMetadataPreview { p ->
+        if (p.editingField == null) p else p.copy(editText = text)
+    }
+
+    /**
+     * Keeps what was typed, in the preview only. Nothing reaches the database until Apply — the
+     * overlay's one promise is that Back never writes.
+     *
+     * Typing a field that differs from what is shown also ticks it, so Choose Fields (which is what
+     * editing a row means) does not silently drop the edit the user just made.
+     */
+    fun saveMetadataEdit() = updateMetadataPreview { p ->
+        val field = p.editingField ?: return@updateMetadataPreview p
+        val text = p.editText.trim()
+        val edited = p.copy(
+            manualText = p.manualText + (field to text),
+            editingField = null,
+            editText = "",
+        )
+        val changes = edited.preset?.let {
+            MetadataApply.changedFields(edited.effective, it)
+        }.orEmpty()
+        edited.copy(chosen = if (field in changes) edited.chosen + field else edited.chosen - field)
+    }
+
+    fun cancelMetadataEdit() = updateMetadataPreview { p ->
+        p.copy(editingField = null, editText = "")
+    }
+
+    /**
+     * Reverts one field: the override is removed and the scraped value underneath — untouched the
+     * whole time — becomes visible again. This one DOES write immediately, because it is a discard
+     * of something already saved rather than a pending edit.
+     */
+    fun revertMetadataField(field: MetadataField) {
+        val game = _uiState.value.game ?: return
+        val p = _uiState.value.metadataPreview ?: return
+        if (p.applying) return
+        viewModelScope.launch {
+            val reverted = runCatching { artworkRepository.clearMetadataOverride(game.id, field) }
+                .onFailure { Timber.w(it, "Metadata revert failed for game ${game.id}") }
+                .getOrDefault(false)
+            val updated = gameRepository.getById(game.id)
+            _uiState.update { s ->
+                val preview = s.metadataPreview ?: return@update s
+                // The scraped value is what the columns already held — no re-retrieval needed.
+                val scraped = preview.current[field]
+                s.copy(
+                    game = updated ?: s.game,
+                    metadataPreview = preview.copy(
+                        effective = preview.effective + (field to scraped),
+                        overridden = preview.overridden - field,
+                        manualText = preview.manualText + (field to metadataEditText(field, scraped)),
+                        chosen = preview.chosen - field,
+                        editingField = null,
+                        editText = "",
+                    ),
+                    actionMessage = if (reverted) "Reverted ${field.label} to the scraped value" else s.actionMessage,
+                )
+            }
+        }
     }
 
     fun applyMetadataPreview() {
@@ -1604,6 +1822,13 @@ class GameDetailViewModel @Inject constructor(
         if (p.policy == MetadataApplyPolicy.KEEP_CURRENT) {
             closeMetadataPreview()
             showActionMessage("Kept current metadata")
+            return
+        }
+        // The button already says "Nothing to Change"; asking the writer to confirm that costs a
+        // row read and can only agree, since it plans from the same function.
+        if (p.willWrite.isEmpty()) {
+            closeMetadataPreview()
+            showActionMessage("Nothing to change")
             return
         }
         _uiState.update { it.copy(metadataPreview = p.copy(applying = true)) }
@@ -1618,10 +1843,15 @@ class GameDetailViewModel @Inject constructor(
                     metadataPreview = null,
                     actionMessage = written.fold(
                         onSuccess = { fields ->
+                            // "set by hand" rather than "from Manual": the provider wording reads
+                            // as a source name, and for this one the source is the user.
+                            val from =
+                                if (preset.provider == MatchProvider.MANUAL) "set by hand"
+                                else "from ${preset.provider.label}"
                             when (fields.size) {
                                 0    -> "Nothing to change"
-                                1    -> "Updated 1 field from ${preset.provider.label}"
-                                else -> "Updated ${fields.size} fields from ${preset.provider.label}"
+                                1    -> "Updated 1 field $from"
+                                else -> "Updated ${fields.size} fields $from"
                             }
                         },
                         onFailure = { "Metadata update failed" },
@@ -1644,6 +1874,12 @@ class GameDetailViewModel @Inject constructor(
     private fun handleMetadataPreviewInput(action: GamepadAction) {
         val p = _uiState.value.metadataPreview ?: return
         if (p.applying) return   // the write is already committed to; let it finish
+        if (p.editingField != null) {
+            // The text editor is on top and owns the keyboard; Back discards the edit, like the
+            // Edit Title dialog. Nothing else reaches the rows underneath.
+            if (action == GamepadAction.BACK) cancelMetadataEdit()
+            return
+        }
         if (p.nothingFound) {
             // Nothing to choose between: Select and Back both dismiss the explanation.
             if (action == GamepadAction.SELECT || action == GamepadAction.BACK) closeMetadataPreview()

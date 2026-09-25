@@ -28,6 +28,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.playfieldportal.feature.artwork.api.ArtworkScrapePreferences
 import com.playfieldportal.feature.settings.viewmodel.ArtworkSettingsViewModel
 
 @Composable
@@ -265,6 +266,11 @@ fun ArtworkSettingsScreen(
                     checked  = state.downloadVideoSnaps,
                     onToggle = { viewModel.setDownloadVideoSnaps(it) },
                 )
+                SettingsRow(
+                    label    = "Artwork Region (${regionLabel(state.artworkRegion)})",
+                    sublabel = "Which region's box art and logos to prefer when a game has several",
+                    onClick  = { viewModel.cycleArtworkRegion() },
+                )
             }
 
             // ── SteamGridDB API key ───────────────────────────────────────────
@@ -497,3 +503,9 @@ private fun credentialFieldColors() = OutlinedTextFieldDefaults.colors(
     unfocusedTextColor   = SettingsText,
     cursorColor          = SettingsAccent,
 )
+
+/** The menu label for a stored ScreenScraper region code. */
+private fun regionLabel(region: String?): String =
+    ArtworkScrapePreferences.ARTWORK_REGIONS.firstOrNull { it.first == region }?.second
+        ?: region?.uppercase()
+        ?: "No preference"

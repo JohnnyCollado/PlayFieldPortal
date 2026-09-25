@@ -172,6 +172,13 @@ data class GameEntity(
     @ColumnInfo(name = "user_title_override")
     val userTitleOverride: String? = null,
 
+    // The other nine hand-set metadata fields, as a JSON object keyed by MetadataField name
+    // (see MetadataOverrides). A shadow layer over the metadata columns below: the scrapers keep
+    // rewriting those and never win on screen. TITLE stays in user_title_override because the
+    // achievement joins read it in SQL.
+    @ColumnInfo(name = "user_metadata_overrides")
+    val userMetadataOverrides: String? = null,
+
     // Content classification (GAME / ANDROID_APP / VIDEO_APP / …). Only GAME rows aggregate
     // into "All Games". Stored as the enum name; defaults to GAME for legacy/console rows.
     @ColumnInfo(name = "content_type")
@@ -251,6 +258,7 @@ fun GameEntity.toDomain() = Game(
     isManualEntry = isManualEntry,
     scrapedTitle = scrapedTitle,
     userTitleOverride = userTitleOverride,
+    userMetadataOverrides = userMetadataOverrides,
     contentType = GameContentType.fromName(contentType),
     shortcutId = launchShortcutId,
     launchIntentUri = launchIntentUri,
@@ -305,6 +313,7 @@ fun Game.toEntity() = GameEntity(
     isManualEntry = isManualEntry,
     scrapedTitle = scrapedTitle,
     userTitleOverride = userTitleOverride,
+    userMetadataOverrides = userMetadataOverrides,
     contentType = contentType.name,
     launchShortcutId = shortcutId,
     launchIntentUri = launchIntentUri,

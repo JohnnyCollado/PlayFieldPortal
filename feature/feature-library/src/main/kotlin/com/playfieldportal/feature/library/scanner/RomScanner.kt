@@ -322,18 +322,43 @@ class RomScanner @Inject constructor(
             return@flow
         }
 
+        // A directory whose own name carries a directory-game extension IS the game (a PS3 .ps3dir
+        // JB folder). It is collected here and deliberately never descended into: its contents are
+        // that game's parts, not more games. Found at any depth, and regardless of [recursive] when
+        // it sits at the top — recursive governs looking INSIDE ordinary folders, and a game is not
+        // an ordinary folder.
+        val folderGames = mutableListOf<File>()
+        val rootPath = root.absolutePath
+
         // Collect the folder's files once, then suppress disc companions: a .bin listed in a
         // sibling .cue (or a Dreamcast .gdi track file) is part of a disc, never a game row on its
         // own — the same suppression the ROM-root walk gets from DiscImageResolver.
-        val allFiles = (if (recursive) root.walkTopDown() else root.listFiles()?.asSequence() ?: emptySequence())
-            .filter { it.isFile }
-            .filter { !it.name.startsWith(".") }                 // ignore hidden files
-            .toList()
+        val allFiles: List<File> = if (recursive) {
+            root.walkTopDown()
+                .onEnter { dir ->
+                    val isGame = dir.absolutePath != rootPath &&
+                        DirectoryGameExtensions.isGameFolder(dir.name, allowed)
+                    if (isGame) folderGames += dir
+                    !isGame   // false prunes the walk here
+                }
+                .filter { it.isFile }
+                .filter { !it.name.startsWith(".") }             // ignore hidden files
+                .toList()
+        } else {
+            val children = root.listFiles()?.toList().orEmpty()
+            children.filterTo(folderGames) {
+                it.isDirectory && DirectoryGameExtensions.isGameFolder(it.name, allowed)
+            }
+            children.filter { it.isFile && !it.name.startsWith(".") }
+        }
         val suppressedPaths = discImageResolver.resolveFiles(allFiles).suppressedPaths
 
+        // Directory games join AFTER suppression: companion suppression is a statement about files
+        // inside one folder, and a folder game is not one of them.
         val candidates = allFiles
             .filter { it.extension.lowercase() in allowed }      // only supported extensions
             .filterNot { it.absolutePath in suppressedPaths }    // never companion files
+            .plus(folderGames)
 
         val newGames         = mutableListOf<Game>()
         val seenPaths        = HashSet<String>()                 // de-dupe within this scan
@@ -432,12 +457,23 @@ class RomScanner @Inject constructor(
         visited.add(rootDocId)
         val stack = ArrayDeque<String>().apply { addLast(rootDocId) }
         val fileChildren = mutableListOf<SafFileChild>()
+        // Directory games (a PS3 .ps3dir JB folder). Kept apart from [fileChildren] so they take no
+        // part in companion suppression, which is a statement about files inside a folder.
+        val folderGameChildren = mutableListOf<SafFileChild>()
         while (stack.isNotEmpty()) {
             coroutineContext.ensureActive()
             val dirDocId = stack.removeLast()
             for (child in context.contentResolver.querySafChildren(tree, dirDocId)) {
                 coroutineContext.ensureActive()
                 if (child.isDirectory) {
+                    // The folder IS the game: record it and never descend — its contents are that
+                    // game's parts. Checked before [recursive], which governs looking inside
+                    // ordinary folders only.
+                    if (DirectoryGameExtensions.isGameFolder(child.name, allowed)) {
+                        val dirPath = safDocumentIdToRawPath(child.documentId) ?: child.uri.toString()
+                        folderGameChildren.add(SafFileChild(child.name, dirPath, child.uri.toString()))
+                        continue
+                    }
                     if (recursive && visited.add(child.documentId)) stack.addLast(child.documentId)
                     continue
                 }
@@ -462,8 +498,8 @@ class RomScanner @Inject constructor(
             }.getOrNull()
         }
 
-        // Phase 3 — the actual scan over the collected files.
-        for (child in fileChildren) {
+        // Phase 3 — the actual scan over the collected files, then the directory games.
+        for (child in fileChildren + folderGameChildren) {
             coroutineContext.ensureActive()
             if (child.rawPath in suppressedPaths) continue
             val ext = child.name.substringAfterLast('.', "").lowercase()

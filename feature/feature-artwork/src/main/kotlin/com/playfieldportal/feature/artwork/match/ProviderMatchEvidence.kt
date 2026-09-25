@@ -139,6 +139,9 @@ class ProviderMatchEvidence @Inject constructor(
         MatchProvider.SCREENSCRAPER ->
             if (platformId in PLATFORMS_WITHOUT_ROMS) emptyList()
             else screenScraper.searchGames(platformId, query).map(::ssCandidate)
+        // There is no endpoint to ask. A manual preset comes from what the user typed, and Change
+        // Match has nothing to offer for it.
+        MatchProvider.MANUAL -> emptyList()
     }
 
     /**

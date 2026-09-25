@@ -20,9 +20,11 @@ class IgdbApiTest {
     }
 
     @Test
-    fun `the batch scraper's best-match query is unchanged`() {
+    fun `the batch scraper's best-match query asks for artwork and, since C23 T5, text`() {
+        // The field list widened when IGDB became a metadata source as well as an artwork one.
+        // Both callers share it, so a game still costs one request whichever of them wants it.
         assertEquals(
-            "search \"Final Fantasy VI Advance\"; fields name,cover.image_id,artworks.image_id; limit 1;",
+            "search \"Final Fantasy VI Advance\"; fields name,summary,first_release_date,total_rating,genres.name,involved_companies.company.name,involved_companies.developer,involved_companies.publisher,cover.image_id,artworks.image_id; limit 1;",
             IgdbApi.bestMatchBody("Final Fantasy VI Advance"),
         )
     }
@@ -38,7 +40,7 @@ class IgdbApiTest {
     @Test
     fun `a matched game is fetched by id, not by title`() {
         assertEquals(
-            "fields name,cover.image_id,artworks.image_id; where id = 1234;",
+            "fields name,summary,first_release_date,total_rating,genres.name,involved_companies.company.name,involved_companies.developer,involved_companies.publisher,cover.image_id,artworks.image_id; where id = 1234;",
             IgdbApi.byIdBody(1234L),
         )
     }

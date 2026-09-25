@@ -46,10 +46,10 @@ private const val TITLE_FADE_MS = 500
  * design's "mute must not silence GameBoot" rule satisfied structurally rather than by a check.
  *
  * GameBoot is ONE thing with one switch. With no custom video, [GameBootSequence] draws the
- * built-in PSP-style light sweep (motion-budget aware via [waveStyle]) against the bundled launch
- * sound; assign a video and it replaces the whole presentation, sound included. The gate has
- * already decided which of the two is playing by the time this composes, so there is no fallback
- * branch here.
+ * built-in white-field title card and its chromatic light sweeps (motion-budget aware via
+ * [waveStyle]) against the bundled launch sound; assign a video and it replaces the whole
+ * presentation, sound included. The gate has already decided which of the two is playing by the
+ * time this composes, so there is no fallback branch here.
  */
 @Composable
 fun GameBootOverlay(
@@ -103,9 +103,9 @@ fun GameBootOverlay(
                 modifier = Modifier.fillMaxSize(),
             )
         } else {
-            // No custom video: the built-in PSP-style light sweep, beat-matched to the bundled
-            // launch sound. It reports back when its timeline has run its course — always the
-            // full length, whatever the motion budget does to the drawing.
+            // No custom video: the built-in title card and its light sweeps, beat-matched to the
+            // bundled launch sound. It reports back when its timeline has run its course — always
+            // the full length, whatever the motion budget does to the drawing.
             GameBootSequence(
                 gameTitle = gameTitle,
                 waveStyle = waveStyle,

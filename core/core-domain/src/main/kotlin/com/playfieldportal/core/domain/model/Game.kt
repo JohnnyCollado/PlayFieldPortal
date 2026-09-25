@@ -71,6 +71,10 @@ data class Game(
     val scrapedTitle: String?      = null,
     // User-set display name override. Takes priority over everything else in the UI.
     val userTitleOverride: String? = null,
+    // The other nine hand-set metadata fields, as a JSON object keyed by MetadataField name.
+    // A shadow layer: the scrapers keep rewriting the columns below and simply never win on
+    // screen, because the display accessors coalesce an override over the stored value.
+    val userMetadataOverrides: String? = null,
     // What this entry actually is. Drives "All Games" filtering — only GAME aggregates there.
     val contentType: GameContentType = GameContentType.GAME,
     // For launcher-shortcut entries harvested from another app (GameHub PCs, etc.): the host
@@ -96,4 +100,24 @@ data class Game(
 ) {
     // Resolved display name: user override → scraped metadata title → raw scan title.
     val displayTitle: String get() = userTitleOverride ?: scrapedTitle ?: title
+
+    /**
+     * The hand-set values, parsed once per instance. Parsing on every accessor would re-read the
+     * blob for each field of each row the library draws.
+     */
+    private val overrides: MetadataOverrides by lazy { MetadataOverrides.parse(userMetadataOverrides) }
+
+    // The nine effective metadata values, generalising [displayTitle]: what the user typed where
+    // they typed something, the scraped value otherwise. Every surface that shows metadata reads
+    // these, never the raw columns — that is what makes an override survive a re-scrape.
+    val displayDescription: String? get() = overrides.string(MetadataOverrideKeys.DESCRIPTION) ?: description
+    val displayDeveloper: String? get() = overrides.string(MetadataOverrideKeys.DEVELOPER) ?: developer
+    val displayPublisher: String? get() = overrides.string(MetadataOverrideKeys.PUBLISHER) ?: publisher
+    val displayReleaseYear: Int? get() = overrides.int(MetadataOverrideKeys.RELEASE_YEAR) ?: releaseYear
+    val displayReleaseDate: String? get() = overrides.string(MetadataOverrideKeys.RELEASE_DATE) ?: releaseDate
+    val displayGenre: String? get() = overrides.string(MetadataOverrideKeys.GENRE) ?: genre
+    val displayAgeRating: String? get() = overrides.string(MetadataOverrideKeys.AGE_RATING) ?: ageRating
+    val displayFranchise: String? get() = overrides.string(MetadataOverrideKeys.FRANCHISE) ?: franchise
+    val displayCommunityRating: Float?
+        get() = overrides.float(MetadataOverrideKeys.COMMUNITY_RATING) ?: communityRating
 }

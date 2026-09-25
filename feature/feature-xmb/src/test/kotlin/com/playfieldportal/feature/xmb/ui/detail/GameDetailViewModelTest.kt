@@ -1164,8 +1164,13 @@ class GameDetailViewModelTest {
     )
     private val tgdbPreset = MetadataPreset(provider = MatchProvider.THEGAMESDB, description = "TGDB text")
 
-    private fun openLoadedPreview(presets: List<MetadataPreset> = listOf(ssPreset, tgdbPreset)) {
-        coEvery { artworkRepository.fetchMetadataPreview(1L) } returns MetadataPreview(metadataCurrent, presets)
+    private fun openLoadedPreview(
+        presets: List<MetadataPreset> = listOf(ssPreset, tgdbPreset),
+        effective: Map<MetadataField, Any?> = metadataCurrent,
+        overridden: Set<MetadataField> = emptySet(),
+    ) {
+        coEvery { artworkRepository.fetchMetadataPreview(1L) } returns
+            MetadataPreview(metadataCurrent, effective, overridden, presets)
         viewModel.loadGame(1L)
         testDispatcher.scheduler.advanceUntilIdle()
         // The overlay is opened from the page's own graph, so the page has to have reported
@@ -1202,7 +1207,8 @@ class GameDetailViewModelTest {
 
     @Test
     fun `a metadata preview closed while loading is not reopened by the late answer`() = runTest {
-        coEvery { artworkRepository.fetchMetadataPreview(1L) } returns MetadataPreview(metadataCurrent, listOf(ssPreset))
+        coEvery { artworkRepository.fetchMetadataPreview(1L) } returns
+            MetadataPreview(metadataCurrent, metadataCurrent, emptySet(), listOf(ssPreset))
         viewModel.loadGame(1L)
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -1214,25 +1220,83 @@ class GameDetailViewModelTest {
     }
 
     @Test
-    fun `no provider metadata keeps the preview open and explains it until dismissed`() = runTest {
+    fun `no provider metadata still offers the Manual column rather than a dead end`() = runTest {
         openLoadedPreview(presets = emptyList())
 
-        // The overlay the user opened says why it is empty; vanishing on its own read as a crash.
+        // A game no scraper recognised is exactly the one worth typing by hand, so the overlay
+        // opens straight onto the Manual column instead of an apology.
         val preview = viewModel.uiState.value.metadataPreview!!
         assertFalse(preview.loading)
-        assertTrue(preview.nothingFound)
+        assertFalse(preview.nothingFound)
+        assertTrue(preview.noProviderFound)
+        assertTrue(preview.isManual)
         assertFalse(preview.failed)
+        // Every field has a row, including the empty ones — the empty one is the point.
+        assertEquals(MetadataField.entries.toList(), preview.shownFields)
         assertNull(viewModel.uiState.value.actionMessage)
 
-        // Policy input has nothing to act on; Select dismisses, like the panel's only button.
-        viewModel.handleGamepadAction(GamepadAction.NAVIGATE_LEFT)
-        assertEquals(MetadataApplyPolicy.FILL_MISSING_ONLY, viewModel.uiState.value.metadataPreview?.policy)
+        // Nothing typed yet, so Apply has nothing to write and never reaches the writer.
         viewModel.handleGamepadAction(GamepadAction.SELECT)
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertNull(viewModel.uiState.value.metadataPreview)
         assertFalse(viewModel.uiState.value.closed)
         coVerify(exactly = 0) { artworkRepository.applyMetadata(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `a hand-typed field is applied as a MANUAL preset and nothing else is`() = runTest {
+        openLoadedPreview(presets = emptyList())
+        coEvery { artworkRepository.applyMetadata(any(), any(), any(), any()) } returns
+            setOf(MetadataField.DEVELOPER)
+
+        viewModel.startEditMetadataField(MetadataField.DEVELOPER)
+        viewModel.onMetadataEditChanged("Naughty Dog")
+        viewModel.saveMetadataEdit()
+
+        val typed = viewModel.uiState.value.metadataPreview!!
+        assertNull(typed.editingField)
+        assertEquals(setOf(MetadataField.DEVELOPER), typed.willWrite)
+
+        viewModel.applyMetadataPreview()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify {
+            artworkRepository.applyMetadata(
+                1L,
+                // Exactly what was typed, and only that: the untouched fields were seeded from the
+                // values already shown, so they cannot register as changes.
+                match<MetadataPreset> {
+                    it.provider == MatchProvider.MANUAL &&
+                        it.developer == "Naughty Dog" &&
+                        it.description == "A classic platformer."
+                },
+                any(), any(),
+            )
+        }
+        assertEquals("Updated 1 field set by hand", viewModel.uiState.value.actionMessage)
+    }
+
+    @Test
+    fun `reverting a field drops the override and reveals the scraped value`() = runTest {
+        // Developer is hand-set to something other than what the column holds.
+        openLoadedPreview(
+            presets = emptyList(),
+            effective = metadataCurrent + (MetadataField.DEVELOPER to "My own studio"),
+            overridden = setOf(MetadataField.DEVELOPER),
+        )
+        coEvery { artworkRepository.clearMetadataOverride(1L, MetadataField.DEVELOPER) } returns true
+
+        viewModel.revertMetadataField(MetadataField.DEVELOPER)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val preview = viewModel.uiState.value.metadataPreview!!
+        // metadataCurrent has a null Developer — the scraped value, revealed again.
+        assertNull(preview.effective[MetadataField.DEVELOPER])
+        assertFalse(MetadataField.DEVELOPER in preview.overridden)
+        assertEquals("", preview.manualText[MetadataField.DEVELOPER])
+        assertEquals("Reverted Developer to the scraped value", viewModel.uiState.value.actionMessage)
+        coVerify { artworkRepository.clearMetadataOverride(1L, MetadataField.DEVELOPER) }
     }
 
     @Test
@@ -1255,7 +1319,7 @@ class GameDetailViewModelTest {
     }
 
     @Test
-    fun `tapping the empty preview's button closes it without a write`() = runTest {
+    fun `an untouched Manual column closes without a write`() = runTest {
         openLoadedPreview(presets = emptyList())
 
         viewModel.applyMetadataPreview()

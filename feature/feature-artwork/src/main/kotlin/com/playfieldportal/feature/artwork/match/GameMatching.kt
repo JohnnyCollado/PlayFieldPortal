@@ -9,22 +9,34 @@ package com.playfieldportal.feature.artwork.match
  * into a database write.
  */
 
-/** A provider a game can be identified against. Kept separate from the Studio's source list. */
+/**
+ * A provider a game can be identified against. Kept separate from the Studio's source list.
+ *
+ * [MANUAL] is the user. It is a provider in the same sense the others are — it proposes a
+ * [MetadataPreset] and that preset goes through `MetadataApply.plan` like any other, so the
+ * preview's "will change" markers stay honest without a second code path. What makes it different
+ * is only where the write lands: a MANUAL preset writes the user-override shadow layer, never the
+ * scraped metadata columns.
+ */
 enum class MatchProvider(val label: String) {
     SCREENSCRAPER("ScreenScraper"),
     THEGAMESDB("TheGamesDB"),
     IGDB("IGDB"),
     STEAMGRIDDB("SteamGridDB"),
+    MANUAL("Manual"),
 }
 
 /**
  * What a provider can actually be addressed by, as the tree stands today.
  *
- * [supportsTitleSearch] is true for every provider today — each has a multi-result title endpoint
+ * [supportsTitleSearch] is true for every REMOTE provider — each has a multi-result title endpoint
  * (ScreenScraper's jeuRecherche included). Saved ids and ROM checksums still resolve first, so a
  * title search only runs when nothing stronger stands up. A provider gains a
  * capability by flipping a flag here once its API grows the endpoint — the matcher reads the
  * table, it never hardcodes a provider name.
+ *
+ * [MatchProvider.MANUAL] is addressable by nothing and searchable not at all: the user is not an
+ * endpoint. It is in the table only so [ProviderCapabilities.metadataProviders] can name it.
  */
 data class ProviderCapability(
     val provider: MatchProvider,
@@ -69,15 +81,17 @@ object ProviderCapabilities {
             suppliesArtwork = true,
         ),
         // IgdbApi.searchGames returns up to ten games per title, so IGDB backs Tier 3 and Change
-        // Match. IgdbGameInfo carries cover/hero URLs only — no text fields are requested — so it has
-        // no metadata preset to offer (C16 task 3.2).
+        // Match. Since C23 T5 its query also asks for name, summary, involved companies, release
+        // date, genres and rating, so it offers a metadata preset as well as artwork. It is the one
+        // provider addressable by a storefront PAIR through external_games, which is how a Windows
+        // game resolves by its exact Steam/GOG/Epic id instead of by title (C23 T4).
         ProviderCapability(
             provider = MatchProvider.IGDB,
             addressableBySavedId = true,
             addressableByRomHash = false,
-            addressableByStorefrontId = false,
+            addressableByStorefrontId = true,
             supportsTitleSearch = true,
-            suppliesMetadata = false,
+            suppliesMetadata = true,
             suppliesArtwork = true,
         ),
         // SteamGridDbApi.searchGame returns a List<SgdbGame>, and getSteamAppId resolves the Steam
@@ -91,13 +105,25 @@ object ProviderCapabilities {
             suppliesMetadata = false,
             suppliesArtwork = true,
         ),
+        // The user. No endpoint to address, nothing to search, no artwork — the Artwork Studio
+        // owns images and overrides are text only (Non-Goals). It supplies metadata, which is the
+        // whole point: a hand-typed preset is a metadata source that outranks every other one.
+        ProviderCapability(
+            provider = MatchProvider.MANUAL,
+            addressableBySavedId = false,
+            addressableByRomHash = false,
+            addressableByStorefrontId = false,
+            supportsTitleSearch = false,
+            suppliesMetadata = true,
+            suppliesArtwork = false,
+        ),
     ).associateBy { it.provider }
 
     operator fun get(provider: MatchProvider): ProviderCapability = table.getValue(provider)
 
     val all: List<ProviderCapability> get() = MatchProvider.entries.map { table.getValue(it) }
 
-    /** Providers that can back a Change Match picker — all four today. */
+    /** Providers that can back a Change Match picker — the four remote ones. */
     val searchable: List<MatchProvider> get() = all.filter { it.supportsTitleSearch }.map { it.provider }
 
     /** Providers a metadata preset can be built from. */

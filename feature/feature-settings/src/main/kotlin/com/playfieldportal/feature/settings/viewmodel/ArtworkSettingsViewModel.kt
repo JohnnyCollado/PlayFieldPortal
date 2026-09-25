@@ -70,6 +70,9 @@ data class ArtworkSettingsUiState(
     val downloadManuals: Boolean = true,
     val downloadVideoSnaps: Boolean = false,
     val preferSteamGridDbHeroes: Boolean = false,
+    // Preferred artwork region, as a ScreenScraper code (C22 task T6). Null = no preference,
+    // which leaves the walk at the order that shipped before this setting existed.
+    val artworkRegion: String? = null,
     // Portable artwork folder is configured but its access grant died (SD removed, permission
     // revoked) — surfaces a warning on the Artwork Folder & Import row.
     val artworkFolderGrantDead: Boolean = false,
@@ -226,6 +229,7 @@ class ArtworkSettingsViewModel @Inject constructor(
                     downloadLogos      = opts.downloadClearLogos,
                     downloadManuals    = opts.downloadManuals,
                     downloadVideoSnaps = opts.downloadVideoSnaps,
+                    artworkRegion      = scrapePreferences.getArtworkRegion(),
                 )
             }
         }
@@ -476,5 +480,13 @@ class ArtworkSettingsViewModel @Inject constructor(
 
     fun setPreferSteamGridDbHeroes(enabled: Boolean) {
         viewModelScope.launch { scrapePreferences.setPreferSteamGridDbHeroes(enabled) }
+    }
+
+    /** Cycles to the next region in [ArtworkScrapePreferences.ARTWORK_REGIONS] (C22 task T6). */
+    fun cycleArtworkRegion() {
+        val options = ArtworkScrapePreferences.ARTWORK_REGIONS.map { it.first }
+        val next = options[(options.indexOf(_extra.value.artworkRegion).coerceAtLeast(0) + 1) % options.size]
+        _extra.update { it.copy(artworkRegion = next) }
+        viewModelScope.launch { scrapePreferences.setArtworkRegion(next) }
     }
 }

@@ -1,6 +1,7 @@
 package com.playfieldportal.feature.artwork.match
 
 import com.playfieldportal.core.data.database.entity.GameEntity
+import com.playfieldportal.core.domain.model.MetadataOverrides
 import com.playfieldportal.feature.artwork.MetadataCandidates
 
 /**
@@ -48,9 +49,24 @@ data class MetadataFieldRow(
     val differs: Boolean get() = incoming != current
 }
 
-/** What the preview shows: the game's stored values and every non-empty provider preset. */
+/**
+ * What the preview shows: the game's values and every non-empty provider preset.
+ *
+ * Two "current" maps, because there are honestly two. [current] is what the metadata COLUMNS hold —
+ * the only thing a provider preset can compare against or write, so it is what the Current column
+ * shows beside one. [effective] is what the user SEES on Game Detail: their own value where they
+ * set one, the scraped value otherwise. A manual edit is compared against that, which is also what
+ * makes Fill Missing Only mean "neither an override nor a stored value" for a manual preset.
+ */
 data class MetadataPreview(
     val current: Map<MetadataField, Any?>,
+    val effective: Map<MetadataField, Any?>,
+    /**
+     * The fields hand-set today. Read from the override map itself, not inferred by comparing
+     * [effective] against [current]: a user who typed exactly what the scraper already stored has
+     * still set that field, and must still be able to revert it.
+     */
+    val overridden: Set<MetadataField>,
     val presets: List<MetadataPreset>,
 )
 
@@ -58,8 +74,12 @@ object MetadataApply {
 
     /**
      * Text presets from one retrieval. Only providers that return text can produce one:
-     * ScreenScraper and TheGamesDB. IGDB's `IgdbGameInfo` carries cover/hero URLs and no text today,
-     * and SteamGridDB is artwork-only by design, so neither is offered.
+     * ScreenScraper, TheGamesDB and — since C23 T5, which widened its Apicalypse field list from
+     * cover/hero URLs to name, summary, involved companies, release date, genres and rating — IGDB.
+     * SteamGridDB stays artwork-only by design and is never offered.
+     *
+     * A MANUAL preset is absent on purpose: it is built from what the user typed, not from what a
+     * provider answered, so the ViewModel constructs it rather than this function.
      */
     fun presetsFrom(candidates: MetadataCandidates): List<MetadataPreset> = listOfNotNull(
         candidates.ssInfo?.let { ss ->
@@ -85,6 +105,21 @@ object MetadataApply {
                 releaseYear = tgdb.releaseYear,
             )
         },
+        candidates.igdbInfo?.let { igdb ->
+            MetadataPreset(
+                provider = MatchProvider.IGDB,
+                title = igdb.title,
+                description = igdb.description,
+                developer = igdb.developer,
+                publisher = igdb.publisher,
+                releaseYear = igdb.releaseYear,
+                releaseDate = igdb.releaseDate,
+                genre = igdb.genre,
+                // No age rating and no franchise: IGDB models both as separate joins this query
+                // does not ask for, and an absent field is honest where an invented one is not.
+                communityRating = igdb.communityRating,
+            )
+        },
     ).filterNot { it.isEmpty }
 
     /**
@@ -104,6 +139,31 @@ object MetadataApply {
         MetadataField.FRANCHISE to game.franchise,
         MetadataField.COMMUNITY_RATING to game.communityRating,
     )
+
+    /**
+     * The values the user actually sees: their hand-set override where there is one, the stored
+     * value otherwise. TITLE resolves the same way `Game.displayTitle` does, because
+     * `MetadataOverrides.of` folds `user_title_override` back into the map.
+     *
+     * This is NOT what a provider preset is compared against — see [currentOf]. A provider can only
+     * write the columns, so promising it a change against a value it cannot reach would be a lie.
+     */
+    fun overriddenFieldsOf(game: GameEntity): Set<MetadataField> {
+        val overrides = MetadataOverrides.of(game.userMetadataOverrides, game.userTitleOverride)
+        return MetadataField.entries.filterTo(mutableSetOf()) { overrides.isOverridden(it.name) }
+    }
+
+    fun effectiveOf(game: GameEntity): Map<MetadataField, Any?> {
+        val overrides = MetadataOverrides.of(game.userMetadataOverrides, game.userTitleOverride)
+        val stored = currentOf(game)
+        return MetadataField.entries.associateWith { field ->
+            when (field) {
+                MetadataField.RELEASE_YEAR -> overrides.int(field.name)
+                MetadataField.COMMUNITY_RATING -> overrides.float(field.name)
+                else -> overrides.string(field.name)
+            } ?: stored[field]
+        }
+    }
 
     /** The preset's usable values. Null and blank both mean "said nothing" and are dropped. */
     fun incomingOf(preset: MetadataPreset): Map<MetadataField, Any> = buildMap {

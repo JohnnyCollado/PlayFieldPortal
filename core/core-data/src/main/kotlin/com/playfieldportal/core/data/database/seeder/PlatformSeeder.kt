@@ -53,7 +53,17 @@ class PlatformSeeder @Inject constructor(
                 shortName     = "PS3",
                 iconRes       = "ic_platform_ps3",
                 accentColor   = 0xFF003087L,
-                romExtensions = "",
+                // The file-based formats the Android PS3 emulators load: decrypted ISO disc images
+                // and decrypted PKG digital installs (a .rap beside a PKG is its licence, never a
+                // game, so it is deliberately absent). An empty list here meant the auto-detect
+                // scanner skipped ps3 folders outright — see RomRootDiscoveryScanner.
+                //
+                // Decrypted JB game DIRECTORIES are the third format those emulators accept. A
+                // folder has no extension of its own, so it carries one in its NAME —
+                // "Demon's Souls.ps3dir", the EmulationStation DE convention — and the scanner
+                // takes such a folder as one game without descending into it
+                // (see DirectoryGameExtensions).
+                romExtensions = "iso,pkg,ps3dir",
             ),
             PlatformEntity(
                 id            = "psvita",

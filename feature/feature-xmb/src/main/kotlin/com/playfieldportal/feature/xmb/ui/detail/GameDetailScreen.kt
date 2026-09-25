@@ -499,7 +499,7 @@ private fun GameDetailContent(
 
         // ── Overview ──────────────────────────────────────────────────────
         Spacer(Modifier.height(DetailRowSpacing))
-        val description = game.description?.takeIf { it.isNotBlank() } ?: "No description available."
+        val description = game.displayDescription?.takeIf { it.isNotBlank() } ?: "No description available."
         val expandable = description.length > OVERVIEW_EXPAND_THRESHOLD
         PfpDetailTextRow(
             label = "Overview",
@@ -618,14 +618,19 @@ private fun GameDetailOverlays(
         AnimatedVisibility(state.metadataPreview != null, enter = fadeIn(), exit = fadeOut()) {
             state.metadataPreview?.let { preview ->
                 MetadataPreviewPanel(
-                    ui             = preview,
-                    focusFill      = menuCursorFill(),
-                    focusEdge      = menuCursorEdge(),
-                    onSelectPolicy = viewModel::selectMetadataPolicy,
-                    onCycleSource  = viewModel::cycleMetadataSource,
-                    onToggleField  = viewModel::toggleMetadataField,
-                    onApply        = viewModel::applyMetadataPreview,
-                    onClose        = viewModel::closeMetadataPreview,
+                    ui                = preview,
+                    focusFill         = menuCursorFill(),
+                    focusEdge         = menuCursorEdge(),
+                    onSelectPolicy    = viewModel::selectMetadataPolicy,
+                    onCycleSource     = viewModel::cycleMetadataSource,
+                    onToggleField     = viewModel::toggleMetadataField,
+                    onEditField       = viewModel::startEditMetadataField,
+                    onRevertField     = viewModel::revertMetadataField,
+                    onEditTextChanged = viewModel::onMetadataEditChanged,
+                    onSaveEdit        = viewModel::saveMetadataEdit,
+                    onCancelEdit      = viewModel::cancelMetadataEdit,
+                    onApply           = viewModel::applyMetadataPreview,
+                    onClose           = viewModel::closeMetadataPreview,
                 )
             }
         }
@@ -777,17 +782,20 @@ private fun GameInformationBand(
         // The whole band is the emulator action, for touch as for the controller.
         onClick = if (state.showEmulatorAction) ({ viewModel.onNodeTapped(GameDetailKeys.INFO) }) else null,
     ) {
-        game.releaseYear?.let { year ->
+        // Every field here is the EFFECTIVE value — what the user typed by hand where they typed
+        // something, the scraped value otherwise. Reading the raw columns is what would let the
+        // next Re-scrape All quietly replace a correction on screen.
+        game.displayReleaseYear?.let { year ->
             PfpDetailField(label = "Released", value = year.toString())
         }
-        game.developer?.takeIf { it.isNotBlank() }?.let {
+        game.displayDeveloper?.takeIf { it.isNotBlank() }?.let {
             PfpDetailField(label = "Developer", value = it)
         }
         // Publisher only when it adds information (it often equals the developer).
-        game.publisher?.takeIf { !it.isNullOrBlank() && !it.equals(game.developer, ignoreCase = true) }?.let {
+        game.displayPublisher?.takeIf { !it.isNullOrBlank() && !it.equals(game.displayDeveloper, ignoreCase = true) }?.let {
             PfpDetailField(label = "Publisher", value = it)
         }
-        game.genre?.takeIf { it.isNotBlank() }?.let {
+        game.displayGenre?.takeIf { it.isNotBlank() }?.let {
             PfpDetailField(label = "Genre", value = it)
         }
         game.lastPlayedAt?.let {
