@@ -182,6 +182,11 @@ class GameMatcher(private val evidence: MatchEvidenceSource) {
         MatchProvider.THEGAMESDB -> game.tgdbId
         MatchProvider.IGDB -> game.igdbId
         MatchProvider.STEAMGRIDDB -> game.steamGridDbId
+        // Steam has no id column on `games` and never will: a resolved storefront identity is a
+        // different fact from the import-captured pair, so it lives in `game_storefront_identities`
+        // and is read by StorefrontMetadataResolver, not from the game row (C23 T6). Its capability
+        // says addressableBySavedId = false, so the matcher never reaches this branch anyway.
+        MatchProvider.STEAM -> null
         // The user is not addressed by an id — a hand-typed preset is built, never fetched.
         MatchProvider.MANUAL -> null
     }?.takeIf { it > 0 }?.toString()

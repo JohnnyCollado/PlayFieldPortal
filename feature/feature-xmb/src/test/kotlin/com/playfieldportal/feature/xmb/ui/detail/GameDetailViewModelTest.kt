@@ -57,6 +57,7 @@ class GameDetailViewModelTest {
     private lateinit var launchDispatcher: com.playfieldportal.feature.launcher.LaunchDispatcher
     private lateinit var menuSound: com.playfieldportal.core.ui.sound.MenuSoundPlayer
     private lateinit var pcGameExporter: com.playfieldportal.feature.settings.pc.PcGameExporter
+    private lateinit var storefrontMatches: com.playfieldportal.feature.artwork.match.StorefrontMatchRepository
     private lateinit var viewModel: GameDetailViewModel
 
     private val fakeGame = Game(
@@ -121,6 +122,13 @@ class GameDetailViewModelTest {
         every { profileRepository.getInstalledProfiles() }         returns emptyList()
         coEvery { profileRepository.getProfilesForPlatform(any()) }  returns emptyList()
 
+        storefrontMatches = mockk(relaxed = true)
+        // Explicit, for the same reason launchDispatcher is: Lookup is a sealed interface and a
+        // relaxed mock cannot invent one. These tests never open the picker, so the honest default
+        // is the branch that says there is nothing to look up.
+        coEvery { storefrontMatches.lookup(any(), any()) } returns
+            com.playfieldportal.feature.artwork.match.StorefrontMatchRepository.Lookup.NotApplicable
+
         viewModel = GameDetailViewModel(
             context           = context,
             gameRepository    = gameRepository,
@@ -139,6 +147,7 @@ class GameDetailViewModelTest {
             achievementRepository = mockk(relaxed = true),
             launchDispatcher  = launchDispatcher,
             pcGameExporter    = pcGameExporter,
+            storefrontMatches = storefrontMatches,
         )
     }
 

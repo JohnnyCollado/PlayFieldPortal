@@ -214,8 +214,9 @@ class GameMatcherTest {
 
     @Test
     fun `every provider can be searched by title`() {
-        // Every REMOTE provider has a multi-result title endpoint. MANUAL is not one — the user is
-        // not an endpoint — so Change Match offers the four and never a fifth.
+        // Every REMOTE provider has a multi-result title endpoint — Steam's storesearch included
+        // since C23 T6. MANUAL is not one, because the user is not an endpoint, so Change Match
+        // offers every provider except that one.
         assertEquals(
             MatchProvider.entries - MatchProvider.MANUAL,
             ProviderCapabilities.searchable,

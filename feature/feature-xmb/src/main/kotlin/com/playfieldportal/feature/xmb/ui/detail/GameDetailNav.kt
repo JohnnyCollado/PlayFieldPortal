@@ -63,6 +63,16 @@ object GameDetailKeys {
 
     fun metadataField(fieldName: String): String = "game-detail:metadata:field:$fieldName"
 
+    // ── Storefront match picker and Rematch (C23 T6) ──────────────────────────
+    fun storefrontCandidate(index: Int): String = "game-detail:storefront:candidate:$index"
+
+    /** Always the last stop in the picker — "No correct match" is never absent. */
+    const val STOREFRONT_NO_MATCH = "game-detail:storefront:no-match"
+
+    fun storefrontStore(storeKey: String): String = "game-detail:storefront:store:$storeKey"
+
+    const val STOREFRONT_SEARCH_ALL = "game-detail:storefront:search-all"
+
     const val CONFIRM_REMOVE = "game-detail:confirm-remove"
     const val CONFIRM_CANCEL = "game-detail:confirm-cancel"
 
@@ -78,6 +88,8 @@ object GameDetailKeys {
     const val MODAL_IMAGE_VIEWER = "game-detail:modal:image-viewer"
     const val MODAL_VIDEO_PLAYER = "game-detail:modal:video-player"
     const val MODAL_ARTWORK_STUDIO = "game-detail:modal:artwork-studio"
+    const val MODAL_STOREFRONT_MATCH = "game-detail:modal:storefront-match"
+    const val MODAL_STOREFRONT_REMATCH = "game-detail:modal:storefront-rematch"
 }
 
 /**

@@ -52,6 +52,9 @@ class MetadataRepositoryCandidatesTest {
         videoSnapTranscoder = mockk(relaxed = true),
         ssMediaCacheDao = mockk(relaxed = true),
         scrapePreferences = mockk(relaxed = true),
+        // C23 T6: relaxed, so these cases keep pinning the four providers they were written for.
+        // The storefront resolver's own order of operations is pinned by its own suite.
+        storefrontResolver = mockk(relaxed = true),
     )
 
     private val tgdb = TgdbGameInfo(

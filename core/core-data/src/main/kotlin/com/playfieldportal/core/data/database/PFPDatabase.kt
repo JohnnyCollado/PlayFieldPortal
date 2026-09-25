@@ -16,6 +16,7 @@ import com.playfieldportal.core.data.database.dao.BackupDao
 import com.playfieldportal.core.data.database.dao.CategoryDao
 import com.playfieldportal.core.data.database.dao.CollectionDao
 import com.playfieldportal.core.data.database.dao.GameDao
+import com.playfieldportal.core.data.database.dao.GameStorefrontIdentityDao
 import com.playfieldportal.core.data.database.dao.LaunchOutcomeDao
 import com.playfieldportal.core.data.database.dao.LibrarySourceDao
 import com.playfieldportal.core.data.database.dao.MemoryCardDao
@@ -44,6 +45,7 @@ import com.playfieldportal.core.data.database.entity.AppOverrideEntity
 import com.playfieldportal.core.data.database.entity.ArtworkImportReportEntity
 import com.playfieldportal.core.data.database.entity.ArtworkOrphanFileEntity
 import com.playfieldportal.core.data.database.entity.ArtworkRecordEntity
+import com.playfieldportal.core.data.database.entity.GameStorefrontIdentityEntity
 import com.playfieldportal.core.data.database.entity.CategoryEntity
 import com.playfieldportal.core.data.database.entity.CategoryItemEntity
 import com.playfieldportal.core.data.database.entity.CollectionEntity
@@ -115,8 +117,9 @@ import com.playfieldportal.core.data.database.entity.VideoPlaylistItemEntity
         com.playfieldportal.core.data.database.entity.AchievementProviderSyncStateEntity::class,
         com.playfieldportal.core.data.database.entity.AchievementMetadataCacheEntity::class,
         ArtworkOrphanFileEntity::class,
+        GameStorefrontIdentityEntity::class,
     ],
-    version = 49,
+    version = 50,
     exportSchema = true,        // schema JSON exported to /schemas/ for migration auditing
 )
 @TypeConverters(PFPTypeConverters::class)
@@ -147,6 +150,7 @@ abstract class PFPDatabase : RoomDatabase() {
     abstract fun artworkRecordDao(): ArtworkRecordDao
     abstract fun artworkImportReportDao(): ArtworkImportReportDao
     abstract fun artworkOrphanFileDao(): ArtworkOrphanFileDao
+    abstract fun gameStorefrontIdentityDao(): GameStorefrontIdentityDao
     abstract fun notificationDao(): NotificationDao
     abstract fun ssMediaCacheDao(): SsMediaCacheDao
     abstract fun accountAchievementSetDao(): AccountAchievementSetDao
@@ -1501,6 +1505,46 @@ abstract class PFPDatabase : RoomDatabase() {
                     WHERE platform_id = 'ps3'
                       AND (supported_extensions IS NULL OR TRIM(supported_extensions) = '')
                     """.trimIndent()
+                )
+            }
+        }
+
+        /**
+         * C23 T6 — `game_storefront_identities`: a game's CONFIRMED identity on a storefront.
+         *
+         * Purely additive; no existing table is touched. In particular `games.storefront` and
+         * `games.storefront_game_id` keep meaning exactly what they meant — where an entry was
+         * imported from — and are not migrated into this table. The two facts are different (see
+         * the entity's KDoc), and conflating them would make a future Steam import deduplicate
+         * against a game it never installed.
+         *
+         * The table is created empty, which is correct: every row in it is something the resolver
+         * or the user establishes, and until one does there is nothing to know.
+         */
+        val MIGRATION_49_50 = object : Migration(49, 50) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS game_storefront_identities (
+                        game_id INTEGER NOT NULL,
+                        store TEXT NOT NULL,
+                        store_id TEXT NOT NULL,
+                        namespace TEXT,
+                        catalog_item_id TEXT,
+                        app_name TEXT,
+                        confidence TEXT NOT NULL,
+                        user_confirmed INTEGER NOT NULL DEFAULT 0,
+                        resolved_title TEXT,
+                        linked_at INTEGER NOT NULL,
+                        last_verified_at INTEGER,
+                        PRIMARY KEY(game_id, store),
+                        FOREIGN KEY(game_id) REFERENCES games(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_game_storefront_identities_store_store_id " +
+                        "ON game_storefront_identities(store, store_id)"
                 )
             }
         }

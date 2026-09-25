@@ -12,6 +12,12 @@ package com.playfieldportal.feature.artwork.match
 /**
  * A provider a game can be identified against. Kept separate from the Studio's source list.
  *
+ * [STEAM] is Valve's storefront, reached keylessly (C23 T6). It is addressable ONLY by a
+ * storefront id: `store.steampowered.com/api/appdetails` takes an appid and nothing else, and
+ * `storesearch` exists purely to discover that appid once. It is therefore the first provider
+ * whose saved id lives outside `games` — in `game_storefront_identities`, because a resolved
+ * storefront identity is a different fact from the import-captured one (see the entity's KDoc).
+ *
  * [MANUAL] is the user. It is a provider in the same sense the others are — it proposes a
  * [MetadataPreset] and that preset goes through `MetadataApply.plan` like any other, so the
  * preview's "will change" markers stay honest without a second code path. What makes it different
@@ -23,6 +29,7 @@ enum class MatchProvider(val label: String) {
     THEGAMESDB("TheGamesDB"),
     IGDB("IGDB"),
     STEAMGRIDDB("SteamGridDB"),
+    STEAM("Steam"),
     MANUAL("Manual"),
 }
 
@@ -105,6 +112,19 @@ object ProviderCapabilities {
             suppliesMetadata = false,
             suppliesArtwork = true,
         ),
+        // Steam's keyless storefront (C23 T6). appdetails is addressed by appid; storesearch is a
+        // real multi-result title endpoint, which is what the 5-rule normalizer feeds. No saved id
+        // on `games` — its identity lives in `game_storefront_identities` — and no artwork: the
+        // Artwork Manager owns images and Steam header art is not offered through this path.
+        ProviderCapability(
+            provider = MatchProvider.STEAM,
+            addressableBySavedId = false,
+            addressableByRomHash = false,
+            addressableByStorefrontId = true,
+            supportsTitleSearch = true,
+            suppliesMetadata = true,
+            suppliesArtwork = false,
+        ),
         // The user. No endpoint to address, nothing to search, no artwork — the Artwork Studio
         // owns images and overrides are text only (Non-Goals). It supplies metadata, which is the
         // whole point: a hand-typed preset is a metadata source that outranks every other one.
@@ -123,7 +143,7 @@ object ProviderCapabilities {
 
     val all: List<ProviderCapability> get() = MatchProvider.entries.map { table.getValue(it) }
 
-    /** Providers that can back a Change Match picker — the four remote ones. */
+    /** Providers that can back a Change Match picker — every remote one. */
     val searchable: List<MatchProvider> get() = all.filter { it.supportsTitleSearch }.map { it.provider }
 
     /** Providers a metadata preset can be built from. */

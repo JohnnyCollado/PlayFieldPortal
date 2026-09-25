@@ -113,6 +113,8 @@ dependencies {
     // ArtworkImageCacheTest drives a real Coil ImageLoader, which needs an Android Context.
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
+    // C23 T6: the Steam provider's tests drive a MockEngine, so they never touch the network.
+    testImplementation(libs.ktor.client.mock)
 
     implementation(project(":core:core-common"))
     implementation(project(":core:core-domain"))

@@ -13,6 +13,7 @@ import com.playfieldportal.core.data.database.dao.BackupDao
 import com.playfieldportal.core.data.database.dao.CategoryDao
 import com.playfieldportal.core.data.database.dao.CollectionDao
 import com.playfieldportal.core.data.database.dao.GameDao
+import com.playfieldportal.core.data.database.dao.GameStorefrontIdentityDao
 import com.playfieldportal.core.data.database.dao.LaunchOutcomeDao
 import com.playfieldportal.core.data.database.dao.LibrarySourceDao
 import com.playfieldportal.core.data.database.dao.MemoryCardDao
@@ -119,6 +120,7 @@ object DatabaseModule {
             PFPDatabase.MIGRATION_46_47,
             PFPDatabase.MIGRATION_47_48,
             PFPDatabase.MIGRATION_48_49,
+            PFPDatabase.MIGRATION_49_50,
         )
         .build()
 
@@ -155,6 +157,8 @@ object DatabaseModule {
     @Provides fun provideArtworkImportReportDao(db: PFPDatabase): ArtworkImportReportDao = db.artworkImportReportDao()
     @Provides fun provideArtworkOrphanFileDao(db: PFPDatabase): ArtworkOrphanFileDao = db.artworkOrphanFileDao()
     @Provides fun provideNotificationDao(db: PFPDatabase): NotificationDao = db.notificationDao()
+    @Provides fun provideGameStorefrontIdentityDao(db: PFPDatabase): GameStorefrontIdentityDao =
+        db.gameStorefrontIdentityDao()
 }
 
 @Module

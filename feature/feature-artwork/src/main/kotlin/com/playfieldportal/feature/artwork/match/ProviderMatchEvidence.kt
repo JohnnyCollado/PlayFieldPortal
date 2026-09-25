@@ -26,6 +26,10 @@ class ProviderMatchEvidence @Inject constructor(
     private val screenScraper: ScreenScraperApi,
     private val igdbApi: IgdbApi,
     private val theGamesDb: TheGamesDbApi,
+    // The storefront provider, not a second Steam client. Routing the Studio's Steam search through
+    // it is what keeps ONE throttled, deduplicated, cached path to store.steampowered.com — a
+    // direct SteamStorefrontApi call here would be a second, unmetered one (C23 T6, Phase 16).
+    private val steam: SteamMetadataProvider,
 ) : MatchEvidenceSource {
 
     /**
@@ -70,6 +74,20 @@ class ProviderMatchEvidence @Inject constructor(
         storefront: String,
         storefrontGameId: String,
     ): GameCandidate? {
+        // Steam resolves its OWN pair by definition: the appid in the row is the appid Steam uses,
+        // so this is an identity read and not a lookup (C23 T6).
+        if (provider == MatchProvider.STEAM) {
+            if (!storefront.equals("STEAM", ignoreCase = true)) return null
+            val preset = (steam.getMetadata(storefrontGameId) as? StorefrontOutcome.Ok)?.value
+                ?: return null
+            val title = preset.title?.takeIf { it.isNotBlank() } ?: return null
+            return GameCandidate(
+                provider = MatchProvider.STEAM,
+                providerGameId = storefrontGameId,
+                title = title,
+                releaseYear = preset.releaseYear,
+            )
+        }
         if (provider != MatchProvider.STEAMGRIDDB) return null
         if (!storefront.equals("STEAM", ignoreCase = true)) return null
 
@@ -139,6 +157,27 @@ class ProviderMatchEvidence @Inject constructor(
         MatchProvider.SCREENSCRAPER ->
             if (platformId in PLATFORMS_WITHOUT_ROMS) emptyList()
             else screenScraper.searchGames(platformId, query).map(::ssCandidate)
+        // Steam's storesearch, reached through the storefront provider so the request is queued,
+        // deduplicated and cached like every other Steam call. The title arrives raw here, so it
+        // goes through the 5-rule normalizer first — the same candidates the resolver would send.
+        MatchProvider.STEAM -> {
+            val normalized = StorefrontTitleNormalizer.normalize(query)
+            when (val found = steam.search(normalized.searchCandidates)) {
+                is StorefrontOutcome.Ok -> found.value.map {
+                    GameCandidate(
+                        provider = MatchProvider.STEAM,
+                        providerGameId = it.storeId,
+                        title = it.title,
+                        releaseYear = it.releaseYear,
+                        thumbUrl = it.thumbUrl,
+                    )
+                }
+                // An empty list, like every provider here but ScreenScraper. The storefront
+                // resolver is where a Steam failure is told apart from a Steam miss; the Studio's
+                // evidence source has no vocabulary for the difference.
+                else -> emptyList()
+            }
+        }
         // There is no endpoint to ask. A manual preset comes from what the user typed, and Change
         // Match has nothing to offer for it.
         MatchProvider.MANUAL -> emptyList()

@@ -16,6 +16,8 @@ import com.playfieldportal.feature.artwork.api.ScreenScraperApi
 import com.playfieldportal.feature.artwork.api.SgdbApiKeyProvider
 import com.playfieldportal.feature.artwork.api.SsGameInfo
 import com.playfieldportal.feature.artwork.api.SteamGridDbApi
+import com.playfieldportal.feature.artwork.match.MetadataPreset
+import com.playfieldportal.feature.artwork.match.StorefrontMetadataResolver
 import com.playfieldportal.feature.artwork.rom.RomHasher
 import com.playfieldportal.feature.artwork.rom.RomIdentity
 import com.playfieldportal.feature.artwork.store.ArtworkKind
@@ -56,10 +58,22 @@ data class MetadataCandidates(
     val sgdbGridUrl: String?,
     val sgdbHeroUrl: String?,
     val sgdbLogoUrl: String?,
+    /**
+     * Steam's storefront answer for a Windows game, already in preset form (C23 T6).
+     *
+     * A preset rather than a raw response because the Steam provider hands back the shared
+     * currency directly — there is no second consumer that would want the response shape, and
+     * `Storefront`-specific types must not leak above the provider (Phase 4).
+     *
+     * Defaulted so that every existing construction of this class — including the ones in tests
+     * that C23 §9 requires to keep passing unmodified — stays valid.
+     */
+    val steamPreset: MetadataPreset? = null,
 ) {
     /** No provider returned anything — the seam where [MetadataRepository.fetchForGame] stops. */
     val isEmpty: Boolean
-        get() = ssInfo == null && tgdbInfo == null && igdbInfo == null && sgdbGridUrl == null
+        get() = ssInfo == null && tgdbInfo == null && igdbInfo == null && sgdbGridUrl == null &&
+            steamPreset == null
 }
 
 // Fetches metadata + artwork from multiple sources in priority order.
@@ -85,12 +99,16 @@ class MetadataRepository @Inject constructor(
     private val videoSnapTranscoder: VideoSnapTranscoder,
     private val ssMediaCacheDao: SsMediaCacheDao,
     private val scrapePreferences: ArtworkScrapePreferences,
+    private val storefrontResolver: StorefrontMetadataResolver,
 ) {
     // Batch guards, set from ScreenScraper's typed failures: 430 (daily quota) and credential
     // failures stop SS for the rest of the run; 431 stops only hash-less lookups (each miss digs
     // the account deeper into the unrecognized-ROM penalty). Reset at the start of each batch.
     @Volatile private var ssStopped = false
     @Volatile private var ssUnhashedStopped = false
+
+    /** The one platform a storefront identity can belong to. Console ROMs skip the resolver. */
+    private val WINDOWS_PLATFORM_ID = "windows"
 
     fun resetSsBatchGuards() {
         ssStopped = false
@@ -220,6 +238,14 @@ class MetadataRepository @Inject constructor(
             }.onFailure { Timber.w(it, "SteamGridDB error for '$bestTitle'") }
         }
 
+        // -- 5. Storefront providers (Windows games only, C23 T6) ------------
+        // Last on purpose. It is the only provider addressed by a storefront IDENTITY rather than
+        // a title, so it costs nothing on a console ROM (it returns immediately with no row to
+        // resolve) and it is the most precise answer available for a Windows game. It is asked
+        // even when the earlier providers answered: a Steam preset is an OFFER in the preview, and
+        // which offer wins is the user's decision through the apply policy, not this order.
+        val steamPreset = resolveStorefrontPreset(gameEntity, onAssetProgress)
+
         return MetadataCandidates(
             gameEntity  = gameEntity,
             bestTitle   = bestTitle,
@@ -233,7 +259,35 @@ class MetadataRepository @Inject constructor(
             sgdbGridUrl = sgdbGridUrl,
             sgdbHeroUrl = sgdbHeroUrl,
             sgdbLogoUrl = sgdbLogoUrl,
+            steamPreset = steamPreset,
         )
+    }
+
+    /**
+     * The storefront resolver's metadata for a Windows game, or null.
+     *
+     * Null covers three different things on purpose, because none of them is worth distinguishing
+     * to a caller that only wants a preset: the game is a console ROM with no storefront identity
+     * to resolve, no store had it, or a store could not be reached. The last case is recorded
+     * where it belongs — the resolver reports it per store — and is never allowed to look like
+     * "this game does not exist" (Phase 15).
+     *
+     * Resolution is never allowed to throw into the scrape: one store being down must not end a
+     * run that ScreenScraper, TheGamesDB and IGDB already answered.
+     */
+    private suspend fun resolveStorefrontPreset(
+        game: GameEntity?,
+        onAssetProgress: ((source: String, asset: String) -> Unit)?,
+    ): MetadataPreset? {
+        if (game == null || game.platformId != WINDOWS_PLATFORM_ID) return null
+        onAssetProgress?.invoke("Steam", "Searching…")
+        val resolution = runCatching { storefrontResolver.resolve(game) }
+            .onFailure { Timber.w(it, "Storefront resolve failed for game %d", game.id) }
+            .getOrNull() ?: return null
+        resolution.unavailableStores.forEach {
+            Timber.i("Storefront %s unavailable for game %d — left unlinked, not unmatched", it.key, game.id)
+        }
+        return resolution.presets.firstOrNull()
     }
 
     /**

@@ -361,7 +361,7 @@ to change it, the branch is in the wrong place.
 | T3 | Editable column in `MetadataPreviewPanel` + revert affordance | T2 | M | DONE |
 | T4 | IGDB lookup by `(storefront, storefront_game_id)` via `external_games` | T5, D3 unknown resolved | M | DONE |
 | T5 | IGDB text fields + IGDB preset in `presetsFrom` | None | S | DONE |
-| T6 | Steam `appdetails` keyless provider *(severable)* | T4 | M | READY (not started) |
+| T6 | Shared storefront resolver + Steam `appdetails` keyless provider *(severable)* | T4 | L | DONE |
 
 T1–T5 are implemented, and the unit suites pass: 1,486 tests across `:core:core-domain`,
 `:core:core-data`, `:feature:feature-artwork` and `:feature:feature-xmb`, 0 failures. `schemas/48.json`
@@ -374,9 +374,11 @@ widened in T5), `MetadataRepositoryCandidatesTest` (it asserted IGDB is skipped 
 runs — exactly what T5 reverses) and `GameDetailViewModelTest` (`MetadataPreview` gained fields, and
 the no-provider overlay stopped being a dead end).
 
-T6 was deliberately not started: its own entry says to start it only if T4 lands and IGDB coverage
-disappoints in practice, and T4 covers all three stores (see Q1/Q2 below), so there is nothing yet
-to be disappointed by.
+T6 was subsequently started, at the user's direction and against a wider brief than this plan's own
+one-line entry: a shared **multi-storefront resolver** with Steam as its first and only provider.
+The brief's own Phase 22 forbids building the three stores at once, so GOG and Epic are explicitly
+out of this pass — the point is to validate the shared architecture against one store before a
+second store's quirks can reach it. See §12.
 
 Status key: `READY` · `IMPLEMENTING` · `VERIFYING` · `DONE` · `BLOCKED`.
 Effort: S = under a day · M = a few days · L = a week or more.
@@ -416,3 +418,165 @@ respected or the overrun justified in writing, and no known blocker.
    reach. And "no provider recognised this game" stopped being a dead end: that overlay used to
    offer only a Close button, which was exactly backwards, since a game no scraper knows is the one
    most worth typing by hand. It now opens on the Manual column with the note above it.
+
+---
+
+## 12. T6 — the shared storefront resolver (Steam first)
+
+T6 grew from "a keyless Steam client" into the resolver the whole Windows-metadata path needed, on
+a 22-phase brief supplied with the task. What follows is what was built, what was reused rather
+than rebuilt, and what was deliberately left.
+
+### 12.1 What the tree already had (Phase 0)
+
+The architecture review found that more than half the brief already existed, so most of T6 is
+composition rather than new machinery:
+
+| The brief asks for | What already existed | What T6 did |
+| --- | --- | --- |
+| Storefront identity | `games.storefront` + `storefront_game_id` (import identity) | Added `game_storefront_identities` for the *resolved* identity — a different fact (§12.2) |
+| Title normalization rules 2, 3 | `ArtworkNaming.normalizeForMatch` / `simplifyTitle`, `TitleCanon` | Composed them; added only rules 1, 4 and 5 |
+| Candidate model | `GameCandidate`, `MatchTier` | Added `StorefrontCandidate` + `MatchConfidence` for storefront scoring |
+| Metadata currency | `MetadataPreset`, `MetadataApply.plan` | `MatchProvider.STEAM` joins `presetsFrom`; no new writer |
+| Search caching | `TitleSearchStore` (file-backed, Studio-owned) | New in-memory `StorefrontSearchCache` — see §12.4 |
+| Notifications | `BackgroundTaskCenter` | One aggregate row per bulk run, no new infrastructure |
+| A keyless Steam client | `feature-achievements`' Retrofit `SteamStoreApi` | A Ktor one in `feature-artwork`; see §12.3 |
+
+### 12.2 Why a new table and not the existing storefront columns
+
+`games.storefront` / `storefront_game_id` are the **installation** identity: where an entry was
+imported from, and what `getByStorefront` deduplicates future imports against. A resolved identity
+is a different claim — "the game in this row is the one Steam calls 620" — and is true of a
+Winlator shortcut or a hand-added game no launcher ever reported. Writing a resolved id into the
+import columns would make a later Steam import deduplicate against a game it never installed.
+
+`game_storefront_identities` is therefore a child table keyed `(game_id, store)`, cascade-deleted
+with its game, carrying Epic's namespace/catalogItemId/appName columns unused so that adding Epic
+costs no migration. Migration **49 → 50**, purely additive, nothing backfilled.
+
+### 12.3 Why the Steam client is duplicated
+
+`feature-achievements` already has a keyless `SteamStoreApi`. It is not reused, for three reasons
+in order of weight: a feature module must not depend on another feature module; it is
+Retrofit/OkHttp where `feature-artwork` is Ktor throughout; and it requests `filters=basic`, which
+returns the name and nothing else — no developer, publisher, release date or genres, which is
+exactly the payload a metadata provider exists to fetch.
+
+### 12.4 Why the search cache is not `TitleSearchStore`
+
+`TitleSearchStore` is keyed by `MatchProvider` and holds `GameCandidate`, which carries no
+developer and no publisher. Reusing it would silently drop the two corroborating signals the
+scorer depends on most, turning HIGH matches into AMBIGUOUS ones. Confirmed identities and cached
+searches are also required by Phase 14 to expire differently: the cache is six hours, the identity
+table expires never.
+
+### 12.5 The rule the design enforces
+
+A title is how an identity is **discovered**; the id is the relationship. Once a row exists in
+`game_storefront_identities`, the resolver does not normalize, search or score — it fetches by id.
+A title search reopens only when the store says the id is gone (and the link was not
+user-confirmed), when the user unlinks, or on an explicit rematch. A provider failure never
+reopens it: an outage must not be able to unlink a library.
+
+False positives are treated as strictly worse than prompts. Two candidates sharing an exact
+normalized title are AMBIGUOUS no matter how far apart they score; an exact title whose year
+contradicts the local one is AMBIGUOUS; and an edition-stripped or partial title can never reach
+an auto-linking confidence without independent corroboration.
+
+### 12.6 What T6 did NOT build, and why
+
+- **The GOG and Epic providers.** Phase 22 is explicit: do not implement the three at once, and
+  validate the shared resolver against Steam first. Adding either is one entry in
+  `StorefrontModule.provideProviders` — the identity table, normalizer, scorer and resolver already
+  accommodate them.
+- ~~The ambiguous-match picker (Phase 10) and the Rematch menu entry (Phase 18).~~ **Built**, after
+  the artboards were approved — see §12.8.
+- **A settings entry point for the bulk sync.** `StorefrontMetadataSync.run` exists and reports
+  correctly; nothing calls it yet, because where it belongs in Settings is a UI decision.
+
+### 12.7 Verification status
+
+Seven new suites, all green alongside the existing ones in `:core:core-data` and
+`:feature:feature-artwork`: `StorefrontTitleNormalizerTest`, `StorefrontMatchScorerTest`,
+`SteamMetadataProviderTest` (MockEngine — no network), `StorefrontRequestQueueTest`,
+`StorefrontSearchCacheTest`, `StorefrontMetadataResolverTest`, `StorefrontMetadataSyncTest` and
+`Migration49To50Test`. `schemas/50.json` is exported.
+
+Three existing suites needed a change, each because T6 changed what it pinned, and each a
+constructor argument or a comment rather than an assertion:
+`MetadataRepositoryCandidatesTest` and `ProviderMatchEvidenceScreenScraperTest` (both gained one
+relaxed mock) and `GameMatcherTest` (a comment saying Change Match offers "four" providers; the
+assertion itself, `MatchProvider.entries - MANUAL`, was already correct and is unchanged).
+`MetadataApplyTest` passes **unmodified**, as §9 requires.
+
+**Live check: done.** Every unit test mocks the transport, so the open risk was that the response
+shapes in `SteamStorefrontApi` were pinned against fixtures written from the observed format rather
+than a captured live response — `storesearch` and `appdetails` being keyless and undocumented is
+what makes them usable and also what makes them free to change. Steam search has since been
+confirmed working against the real endpoint on device, through the picker, so the search half of
+the contract is real rather than assumed.
+
+Two things the device pass has NOT yet exercised, neither of them blocking: fetching a preset by a
+stored appid (`appdetails` → `MetadataPreset` → the Steam column in Update Metadata), and the §9
+manual override pass, which has been outstanding since T1–T5 and is unrelated to this task.
+
+Adding `MatchProvider.STEAM` also made two existing `when` expressions non-exhaustive
+(`GameMatcher.savedIdFor` and `ProviderMatchEvidence.searchByTitle`). Both were given real answers
+rather than an `else`: Steam has no saved id on `games` by design, and its title search delegates to
+`SteamMetadataProvider` so there stays exactly ONE queued, deduplicated, cached path to Steam. The
+same pass closed a gap the compiler did not flag — `candidateByStorefront` returned null for Steam
+despite its capability saying `addressableByStorefrontId = true`.
+
+### 12.8 The picker and Rematch (Phases 10 and 18)
+
+Designed as artboards first, approved, then built to them.
+
+**The seam.** `StorefrontMatchRepository` is the only thing the XMB talks to, so `feature-xmb`
+never touches `GameStorefrontIdentityDao` or a provider. Its `lookup` resolves with
+`allowAutoLink = false`: **opening either screen cannot link a game**, and the one write in the
+class is `confirm`, which happens because a person chose.
+
+**`ignoreStoredIdentity`.** Rematch needed a way past the stored-identity fast path — otherwise
+"search again" would return the stored id forever. It is a parameter on `resolve`, never set
+automatically, and it still writes nothing: the existing link survives until the user picks a
+replacement. The import-captured pair is skipped by it too, for the same reason — the user is
+saying the id PFP has is wrong, and the captured pair is an id PFP has.
+
+**Overlay order.** Rematch sits UNDER the picker, so Back from a picker opened by Replace returns
+to Rematch rather than dropping the user out to Game Detail.
+
+**One deviation from the artboard, deliberate.** The Rematch artboard drew Replace and Remove as
+two separate targets on each row — three focus stops per line. Built, each row is ONE stop whose
+action is chosen with Left/Right and taken with Select. A line of small targets is hard to hit on
+a TV, and Remove is not a button anyone should reach by accident. The look is unchanged; only the
+traversal is. Touch still taps the buttons directly.
+
+**Wording.** The More Information ledger lists signals that scored NOTHING, worded by which side
+was silent — `Release year — the store didn't say` versus `Developer — no match against your copy`.
+The mapper can only see the candidate, so it never claims the user's own row is the thing missing
+a value when it does not know that.
+
+Two suites cover it: `StorefrontMatchRepositoryTest` (every `lookup` branch, and that looking
+never links) and `StorefrontMatchUiTest` (the mapping and the wording). `GameDetailViewModelTest`
+gained one relaxed mock and one explicit stub, because `Lookup` is a sealed interface a relaxed
+mock cannot invent.
+
+**The floor governs linking, not looking.** Found on device with `Bravely Default`, where Steam
+has `BRAVELY DEFAULT II` — a different game, which scores a partial title and nothing else and so
+falls below `PLAUSIBLE_FLOOR`. The scorer was right to refuse it and the resolver was wrong to
+return NO_MATCH: the picker showed an empty screen while the store plainly listed two near
+namesakes, which reads as a broken search and offers no way to say which one is yours. Near misses
+now reach a picker the user opened, at `LOW`, with a notice saying they are not confident matches.
+An automatic pass still treats them as NO_MATCH — a bulk run must not queue a confirmation for
+every game with a near-namesake — and a candidate that scored zero is never shown, because that is
+a search-engine artefact rather than a near miss. Three tests in `StorefrontMetadataResolverTest`
+pin both halves.
+
+**A layout bug the same session found.** Both panels put their explanatory text as a sibling below
+a `weight(1f, fill = false)` scroll region, so once the rows plus that text outgrew the 540dp cap
+the text was placed over the LAST row — the first row could never show it, which is why Steam
+looked right and Epic did not. The text now lives inside the scroll region with the rows it
+explains, and the region fills.
+
+Still unbuilt, and still needing a decision rather than code: where the bulk
+`StorefrontMetadataSync.run` belongs in Settings.

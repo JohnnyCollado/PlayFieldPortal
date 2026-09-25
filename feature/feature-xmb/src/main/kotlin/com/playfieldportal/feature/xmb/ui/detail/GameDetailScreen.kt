@@ -358,7 +358,14 @@ private fun GameDetailContent(
         // Overlays live here rather than in the scrolling body: they must cover the whole page and
         // cannot be scrolled away. Each one pushes its own navigation context, so the page graph
         // behind it is paused and hands back its exact cursor on close.
-        overlay = { GameDetailOverlays(state = state, game = game, viewModel = viewModel) },
+        overlay = {
+            GameDetailOverlays(
+                state = state,
+                game = game,
+                viewModel = viewModel,
+                showTouchControls = showTouchControls,
+            )
+        },
     ) {
         Box(Modifier.fillMaxWidth().height(1.dp).bringIntoViewRequester(pageTopRequester))
         Spacer(Modifier.height(16.dp))
@@ -565,6 +572,9 @@ private fun GameDetailOverlays(
     state: GameDetailUiState,
     game: Game,
     viewModel: GameDetailViewModel,
+    // The storefront panels swap their glyph hint line for XmbHeaderPills under touch, so the
+    // flag has to reach this far down rather than stopping at the page content.
+    showTouchControls: Boolean,
 ) {
     Box(Modifier.fillMaxSize()) {
         state.imageViewerUri?.let { imageUri ->
@@ -631,6 +641,39 @@ private fun GameDetailOverlays(
                     onCancelEdit      = viewModel::cancelMetadataEdit,
                     onApply           = viewModel::applyMetadataPreview,
                     onClose           = viewModel::closeMetadataPreview,
+                )
+            }
+        }
+
+        // Rematch sits UNDER the picker: Rematch opens it, and Back returns here rather than
+        // dropping the user all the way out to Game Detail (C23 T6, Phase 18).
+        AnimatedVisibility(state.storefrontRematch != null, enter = fadeIn(), exit = fadeOut()) {
+            state.storefrontRematch?.let { rematch ->
+                StorefrontRematchPanel(
+                    ui                = rematch,
+                    focusFill         = menuCursorFill(),
+                    focusEdge         = menuCursorEdge(),
+                    showTouchControls = showTouchControls,
+                    onRowClick        = viewModel::onRematchRowTapped,
+                    onActionClick     = viewModel::onRematchActionTapped,
+                    onSearchAll       = viewModel::searchAllStorefronts,
+                    onClose           = viewModel::closeStorefrontRematch,
+                )
+            }
+        }
+
+        AnimatedVisibility(state.storefrontMatch != null, enter = fadeIn(), exit = fadeOut()) {
+            state.storefrontMatch?.let { match ->
+                StorefrontMatchPanel(
+                    ui                = match,
+                    focusFill         = menuCursorFill(),
+                    focusEdge         = menuCursorEdge(),
+                    showTouchControls = showTouchControls,
+                    onRowClick        = viewModel::onStorefrontRowTapped,
+                    onMoreInfo        = viewModel::openStorefrontMoreInfo,
+                    onCloseMoreInfo   = viewModel::closeStorefrontMoreInfo,
+                    onChooseFocused   = { viewModel.chooseStorefrontCandidate(match.focus) },
+                    onClose           = viewModel::closeStorefrontMatch,
                 )
             }
         }

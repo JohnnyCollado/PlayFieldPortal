@@ -41,6 +41,17 @@ class UiMediaLimitsTest {
         }
     }
 
+    @Test fun `ambience accepts a ten-minute track and rejects over`() {
+        // Raised from five minutes: ambience LOOPS, so a longer bed is heard less often as a
+        // repeat, and nothing technical held it lower — it streams through ExoPlayer rather than
+        // being decoded into memory like a menu sound.
+        assertNull(UiMediaLimits.validate(UiMediaLimits.AMBIENCE, probe(durationMs = 600_000L)))
+        assertNotNull(UiMediaLimits.validate(UiMediaLimits.AMBIENCE, probe(durationMs = 600_001L)))
+        // Ten minutes of ordinary 160 kbps audio is nowhere near the staging ceiling, so a real
+        // track of this length is never refused for its size.
+        assertNull(UiMediaLimits.validate(UiMediaLimits.AMBIENCE, probe(durationMs = 600_000L, bytes = 12L * 1024 * 1024)))
+    }
+
     @Test fun `a gameboot clip accepts exactly at 10 s and rejects over`() {
         // Twice the built-in sequence: 5 s was too tight to author anything with a payoff.
         assertNull(UiMediaLimits.validate(UiMediaLimits.GAMEBOOT_CLIP, videoProbe(durationMs = 8_600L)))

@@ -17,7 +17,10 @@ import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.navigation.NavigationLogger
 import com.playfieldportal.core.navigation.NavigationNode
 import com.playfieldportal.feature.artwork.api.ArtworkRepository
+import com.playfieldportal.feature.artwork.match.MatchConfidence
 import com.playfieldportal.feature.artwork.match.MatchProvider
+import com.playfieldportal.feature.artwork.match.Storefront
+import com.playfieldportal.feature.artwork.match.StorefrontMatchRepository
 import com.playfieldportal.feature.artwork.match.MetadataApply
 import com.playfieldportal.feature.artwork.match.MetadataApplyPolicy
 import com.playfieldportal.feature.artwork.match.MetadataField
@@ -140,6 +143,10 @@ data class GameDetailUiState(
     // Current-vs-Incoming metadata overlay (C16 task 3.2); null = closed.
     val metadataPreview: MetadataPreviewUi? = null,
 
+    // Storefront match picker and Rematch (C23 T6, Phases 10 and 18); null = closed.
+    val storefrontMatch: StorefrontMatchUi? = null,
+    val storefrontRematch: StorefrontRematchUi? = null,
+
     // ── Emulator picker ───────────────────────────────────────────────────
     val showEmulatorPicker: Boolean = false,
     val emulatorPickerOptions: List<EmulatorProfile> = emptyList(),
@@ -193,6 +200,9 @@ data class GameDetailUiState(
             when (action) {
                 DetailAction.EMULATOR -> !isPackageBacked
                 DetailAction.EXPORT   -> game?.platformId == WINDOWS_PLATFORM_ID
+                // A storefront identity is a PC-only fact: a console ROM is matched by its file,
+                // and there is no store to rematch it against (C23 T6).
+                DetailAction.STOREFRONT -> game?.platformId == WINDOWS_PLATFORM_ID
                 else                  -> true
             }
         }
@@ -351,6 +361,7 @@ enum class DetailAction(val label: String) {
     FETCH_ARTWORK("Fetch Artwork"),
     METADATA("Update Metadata"),
     EXPORT("Export Game"),
+    STOREFRONT("Rematch Storefront"),
     RENAME("Edit Title"),
     EDIT("Edit Note"),
     LOCATION("Open Location"),
@@ -389,6 +400,7 @@ class GameDetailViewModel @Inject constructor(
     private val achievementRepository: com.playfieldportal.feature.achievements.AchievementController,
     private val launchDispatcher: com.playfieldportal.feature.launcher.LaunchDispatcher,
     private val pcGameExporter: com.playfieldportal.feature.settings.pc.PcGameExporter,
+    private val storefrontMatches: StorefrontMatchRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GameDetailUiState())
@@ -534,6 +546,14 @@ class GameDetailViewModel @Inject constructor(
                 val index = metadataFocusFor(preview, focus)
                 if (index >= 0) next = next.copy(metadataPreview = preview.copy(focus = index))
             }
+            next.storefrontMatch?.let { match ->
+                val index = storefrontMatchFocusFor(match, focus)
+                if (index >= 0) next = next.copy(storefrontMatch = match.copy(focus = index))
+            }
+            next.storefrontRematch?.let { rematch ->
+                val index = storefrontRematchFocusFor(rematch, focus)
+                if (index >= 0) next = next.copy(storefrontRematch = rematch.copy(focus = index))
+            }
             next
         }
     }
@@ -547,6 +567,8 @@ class GameDetailViewModel @Inject constructor(
         s.confirmRemove -> GameDetailKeys.MODAL_CONFIRM_REMOVE
         s.isEditingNote -> GameDetailKeys.MODAL_NOTE_EDITOR
         s.isEditingTitle -> GameDetailKeys.MODAL_TITLE_EDITOR
+        s.storefrontMatch != null -> GameDetailKeys.MODAL_STOREFRONT_MATCH
+        s.storefrontRematch != null -> GameDetailKeys.MODAL_STOREFRONT_REMATCH
         s.metadataPreview != null -> GameDetailKeys.MODAL_METADATA
         s.showEmulatorPicker -> GameDetailKeys.MODAL_EMULATOR_PICKER
         s.collectionPicker.visible -> GameDetailKeys.MODAL_COLLECTION_PICKER
@@ -600,6 +622,33 @@ class GameDetailViewModel @Inject constructor(
                 }
                 add(NavigationNode(GameDetailKeys.COLLECTION_CREATE_ROW, onSelect = { startCreateCollection() }))
             }
+            GameDetailKeys.MODAL_STOREFRONT_MATCH -> buildList {
+                s.storefrontMatch?.let { match ->
+                    match.rows.indices.forEach { index ->
+                        add(
+                            NavigationNode(
+                                GameDetailKeys.storefrontCandidate(index),
+                                onSelect = { chooseStorefrontCandidate(index) },
+                            ),
+                        )
+                    }
+                    // Last and unconditional: the user is never made to pick one of the offers.
+                    add(NavigationNode(GameDetailKeys.STOREFRONT_NO_MATCH, onSelect = { closeStorefrontMatch() }))
+                }
+            }
+            GameDetailKeys.MODAL_STOREFRONT_REMATCH -> buildList {
+                s.storefrontRematch?.let { rematch ->
+                    rematch.rows.forEach { row ->
+                        add(
+                            NavigationNode(
+                                GameDetailKeys.storefrontStore(row.store.key),
+                                onSelect = { takeRematchAction(row.store) },
+                            ),
+                        )
+                    }
+                    add(NavigationNode(GameDetailKeys.STOREFRONT_SEARCH_ALL, onSelect = { searchAllStorefronts() }))
+                }
+            }
             GameDetailKeys.MODAL_METADATA -> buildList {
                 s.metadataPreview?.let { preview ->
                     // One node per row on screen, whichever column is selected: a provider row
@@ -638,6 +687,14 @@ class GameDetailViewModel @Inject constructor(
         // The metadata overlay opens on Apply: the default policy is the non-destructive one.
         GameDetailKeys.MODAL_METADATA -> GameDetailKeys.METADATA_APPLY
         GameDetailKeys.MODAL_CONFIRM_REMOVE -> GameDetailKeys.CONFIRM_REMOVE
+        // The picker opens on the strongest candidate, which is the one the user most likely
+        // wants — but it is still a CHOICE, so nothing is written until they press Select.
+        GameDetailKeys.MODAL_STOREFRONT_MATCH ->
+            if (s.storefrontMatch?.rows.isNullOrEmpty()) GameDetailKeys.STOREFRONT_NO_MATCH
+            else GameDetailKeys.storefrontCandidate(0)
+        GameDetailKeys.MODAL_STOREFRONT_REMATCH ->
+            s.storefrontRematch?.rows?.firstOrNull()?.let { GameDetailKeys.storefrontStore(it.store.key) }
+                ?: GameDetailKeys.STOREFRONT_SEARCH_ALL
         else -> null
     }
 
@@ -655,6 +712,18 @@ class GameDetailViewModel @Inject constructor(
         return if (optionIndex >= 0) optionIndex else -1
     }
 
+    private fun storefrontMatchFocusFor(ui: StorefrontMatchUi, focus: String?): Int {
+        if (focus == null) return -1
+        if (focus == GameDetailKeys.STOREFRONT_NO_MATCH) return ui.noMatchIndex
+        return ui.rows.indices.firstOrNull { GameDetailKeys.storefrontCandidate(it) == focus } ?: -1
+    }
+
+    private fun storefrontRematchFocusFor(ui: StorefrontRematchUi, focus: String?): Int {
+        if (focus == null) return -1
+        if (focus == GameDetailKeys.STOREFRONT_SEARCH_ALL) return ui.searchAllIndex
+        return ui.rows.indexOfFirst { GameDetailKeys.storefrontStore(it.store.key) == focus }
+    }
+
     private fun metadataFocusFor(preview: MetadataPreviewUi, focus: String?): Int {
         if (focus == null) return -1
         if (focus == GameDetailKeys.METADATA_APPLY) return preview.applyIndex
@@ -669,6 +738,8 @@ class GameDetailViewModel @Inject constructor(
     private fun closeActiveModal() {
         val s = _uiState.value
         when {
+            s.storefrontMatch != null -> closeStorefrontMatch()
+            s.storefrontRematch != null -> closeStorefrontRematch()
             s.metadataPreview != null -> closeMetadataPreview()
             s.showEmulatorPicker -> closeEmulatorPicker()
             s.collectionPicker.visible -> closeCollectionPicker()
@@ -922,6 +993,16 @@ class GameDetailViewModel @Inject constructor(
             finishInput()
             return
         }
+        if (s.storefrontMatch != null) {
+            handleStorefrontMatchInput(action)
+            finishInput()
+            return
+        }
+        if (s.storefrontRematch != null) {
+            handleStorefrontRematchInput(action)
+            finishInput()
+            return
+        }
         if (s.metadataPreview != null) {
             handleMetadataPreviewInput(action)
             finishInput()
@@ -992,6 +1073,7 @@ class GameDetailViewModel @Inject constructor(
             DetailAction.MANUAL    -> openManual()
             DetailAction.FETCH_ARTWORK -> fetchArtwork()
             DetailAction.METADATA  -> openMetadataPreview()
+            DetailAction.STOREFRONT -> openStorefrontRematch()
             DetailAction.EXPORT    -> exportGame()
             DetailAction.RENAME    -> startEditTitle()
             DetailAction.EDIT      -> startEditNote()
@@ -1871,6 +1953,294 @@ class GameDetailViewModel @Inject constructor(
      * go through the shared engine like everywhere else; the policy and provider cycles stay
      * horizontal shortcuts, because those rows have no inline siblings for LEFT/RIGHT to traverse.
      */
+
+    // -- Storefront match picker and Rematch (C23 T6, Phases 10 and 18) --------
+    //
+    // The rule these functions exist to keep: a storefront identity is written when, and only
+    // when, a person chooses one. Opening either overlay resolves with `allowAutoLink = false`,
+    // so looking costs nothing and changes nothing.
+
+    private var storefrontGeneration = 0L
+
+    /** Options - Rematch Storefront. Lists what this game is linked to today. */
+    fun openStorefrontRematch() {
+        val gameId = _uiState.value.game?.id ?: return
+        val generation = ++storefrontGeneration
+        _uiState.update {
+            it.copy(
+                showOptions = false,
+                actionMessage = null,
+                storefrontRematch = StorefrontRematchUi(gameTitle = it.game?.displayTitle.orEmpty()),
+            )
+        }
+        viewModelScope.launch {
+            val rows = runCatching { storefrontMatches.rematchRows(gameId) }
+                .onFailure { Timber.w(it, "Could not read storefront identities for game %d", gameId) }
+                .getOrDefault(emptyList())
+            if (generation != storefrontGeneration) return@launch
+            _uiState.update { state ->
+                val current = state.storefrontRematch ?: return@update state
+                state.copy(
+                    storefrontRematch = current.copy(
+                        loading = false,
+                        rows = rows.map(::storefrontRematchRowOf),
+                    ),
+                )
+            }
+            syncNavStack()
+        }
+    }
+
+    fun closeStorefrontRematch() {
+        storefrontGeneration++
+        _uiState.update { it.copy(storefrontRematch = null) }
+        syncNavStack()
+    }
+
+    /** Tap on a Rematch row: focus it, then take whichever action it has selected. */
+    fun onRematchRowTapped(index: Int) {
+        val store = _uiState.value.storefrontRematch?.rows?.getOrNull(index)?.store ?: return
+        if (!nav.touch(GameDetailKeys.storefrontStore(store.key))) takeRematchAction(store)
+        finishInput()
+    }
+
+    /** Tap straight on one of a row's buttons - the touch path, where there is no Left/Right. */
+    fun onRematchActionTapped(index: Int, action: RematchAction) {
+        val row = _uiState.value.storefrontRematch?.rows?.getOrNull(index) ?: return
+        if (!row.enabled) return
+        nav.touch(GameDetailKeys.storefrontStore(row.store.key))
+        updateRematch { ui ->
+            ui.copy(rows = ui.rows.map { if (it.store == row.store) it.copy(selectedAction = action) else it })
+        }
+        takeRematchAction(row.store)
+        finishInput()
+    }
+
+    /**
+     * Left/Right on a Rematch row.
+     *
+     * The row is ONE focus stop with its actions selected horizontally, rather than two or three
+     * separate stops. On a TV a line of small targets is hard to hit and easy to mis-hit, and
+     * Remove is not a button anyone should reach by accident.
+     */
+    fun cycleRematchAction(delta: Int) = updateRematch { ui ->
+        val row = ui.focusedRow ?: return@updateRematch ui
+        if (row.actions.size <= 1) return@updateRematch ui
+        val next = (row.actions.indexOf(row.selectedAction) + delta).mod(row.actions.size)
+        ui.copy(
+            rows = ui.rows.map {
+                if (it.store == row.store) it.copy(selectedAction = row.actions[next]) else it
+            },
+        )
+    }
+
+    private fun takeRematchAction(store: Storefront) {
+        val row = _uiState.value.storefrontRematch?.rows?.firstOrNull { it.store == store } ?: return
+        if (!row.enabled) {
+            showActionMessage(row.storeLabel + " isn't supported yet")
+            return
+        }
+        when (row.selectedAction) {
+            RematchAction.SEARCH, RematchAction.REPLACE -> openStorefrontMatch(ignoreStoredIdentity = true)
+            RematchAction.REMOVE -> unlinkStorefront(store)
+        }
+    }
+
+    private fun unlinkStorefront(store: Storefront) {
+        val gameId = _uiState.value.game?.id ?: return
+        viewModelScope.launch {
+            runCatching { storefrontMatches.unlink(gameId, store) }
+                .onFailure { Timber.w(it, "Could not unlink %s for game %d", store.key, gameId) }
+            // Re-read rather than patching the row in place: the table is the truth, and a failed
+            // delete must not leave the screen claiming the link is gone.
+            val rows = runCatching { storefrontMatches.rematchRows(gameId) }.getOrDefault(emptyList())
+            _uiState.update { state ->
+                val current = state.storefrontRematch ?: return@update state
+                state.copy(storefrontRematch = current.copy(rows = rows.map(::storefrontRematchRowOf)))
+            }
+            showActionMessage(store.label + " link removed. Your metadata is unchanged.")
+            syncNavStack()
+        }
+    }
+
+    /** The Rematch screen's "Search every store again". */
+    fun searchAllStorefronts() {
+        updateRematch { it.copy(searching = true) }
+        openStorefrontMatch(ignoreStoredIdentity = true)
+    }
+
+    /**
+     * Opens the picker.
+     *
+     * [ignoreStoredIdentity] is what Rematch passes: the only way past a stored id, and still
+     * write-free - the existing link survives until the user picks a replacement.
+     */
+    fun openStorefrontMatch(ignoreStoredIdentity: Boolean = false) {
+        val gameId = _uiState.value.game?.id ?: return
+        val generation = ++storefrontGeneration
+        _uiState.update {
+            it.copy(
+                showOptions = false,
+                actionMessage = null,
+                storefrontMatch = StorefrontMatchUi(gameTitle = it.game?.displayTitle.orEmpty()),
+            )
+        }
+        viewModelScope.launch {
+            val lookup = runCatching { storefrontMatches.lookup(gameId, ignoreStoredIdentity) }
+                .onFailure { Timber.w(it, "Storefront lookup failed for game %d", gameId) }
+                .getOrNull()
+            if (generation != storefrontGeneration) return@launch
+            _uiState.update { state ->
+                val current = state.storefrontMatch ?: return@update state
+                state.copy(
+                    storefrontMatch = storefrontMatchFrom(current, lookup),
+                    storefrontRematch = state.storefrontRematch?.copy(searching = false),
+                )
+            }
+            syncNavStack()
+        }
+    }
+
+    fun closeStorefrontMatch() {
+        storefrontGeneration++
+        _uiState.update {
+            it.copy(storefrontMatch = null, storefrontRematch = it.storefrontRematch?.copy(searching = false))
+        }
+        syncNavStack()
+    }
+
+    fun openStorefrontMoreInfo() = updateMatch { ui ->
+        if (ui.focusedCandidate == null) ui else ui.copy(moreInfoOpen = true)
+    }
+
+    fun closeStorefrontMoreInfo() = updateMatch { it.copy(moreInfoOpen = false) }
+
+    /** Tap on a candidate row: focus first, then activate - one path for touch and controller. */
+    fun onStorefrontRowTapped(index: Int) {
+        val ui = _uiState.value.storefrontMatch ?: return
+        val key =
+            if (index >= ui.rows.size) GameDetailKeys.STOREFRONT_NO_MATCH
+            else GameDetailKeys.storefrontCandidate(index)
+        if (!nav.touch(key)) {
+            if (index >= ui.rows.size) closeStorefrontMatch() else chooseStorefrontCandidate(index)
+        }
+        finishInput()
+    }
+
+    /** Select on a candidate. The one place a storefront identity is written. */
+    fun chooseStorefrontCandidate(index: Int) {
+        val gameId = _uiState.value.game?.id ?: return
+        val ui = _uiState.value.storefrontMatch ?: return
+        if (ui.confirming) return
+        val row = ui.rows.getOrNull(index) ?: return closeStorefrontMatch()
+        _uiState.update { it.copy(storefrontMatch = ui.copy(confirming = true)) }
+        viewModelScope.launch {
+            runCatching {
+                storefrontMatches.confirm(gameId, row.candidate, ui.confidence ?: MatchConfidence.AMBIGUOUS)
+            }.onFailure { Timber.w(it, "Could not store the chosen storefront identity") }
+            storefrontGeneration++
+            val rematchRows = if (_uiState.value.storefrontRematch != null) {
+                runCatching { storefrontMatches.rematchRows(gameId) }.getOrDefault(emptyList())
+            } else {
+                emptyList()
+            }
+            _uiState.update { state ->
+                state.copy(
+                    storefrontMatch = null,
+                    storefrontRematch = state.storefrontRematch?.copy(
+                        searching = false,
+                        rows = rematchRows.map(::storefrontRematchRowOf),
+                    ),
+                    actionMessage = "Linked to " + row.storeLabel + ": " + row.title,
+                )
+            }
+            syncNavStack()
+        }
+    }
+
+    /**
+     * A finished lookup as picker state.
+     *
+     * Every branch ends with the overlay OPEN and saying something. A lookup that found nothing is
+     * still an answer the user asked for, and closing the screen they just opened would leave them
+     * wondering whether it ran at all.
+     */
+    private fun storefrontMatchFrom(
+        current: StorefrontMatchUi,
+        lookup: StorefrontMatchRepository.Lookup?,
+    ): StorefrontMatchUi {
+        val base = current.copy(loading = false)
+        return when (lookup) {
+            is StorefrontMatchRepository.Lookup.NeedsChoice -> {
+                // One store at a time: the strongest store first, which with Steam alone is Steam.
+                val pending = lookup.pending.first()
+                base.copy(
+                    query = lookup.query,
+                    storeLabel = pending.store.label,
+                    confidence = pending.confidence,
+                    rows = pending.candidates.map(::storefrontRowOf),
+                    focus = 0,
+                )
+            }
+            is StorefrontMatchRepository.Lookup.Settled -> base.copy(
+                storeLabel = lookup.identities.firstOrNull()?.storeLabel,
+                settledLabel = lookup.identities.joinToString(", ") { it.record.resolvedTitle ?: it.storeLabel },
+            )
+            is StorefrontMatchRepository.Lookup.Unavailable ->
+                base.copy(unavailableStores = lookup.stores.map { it.label })
+            StorefrontMatchRepository.Lookup.NotApplicable -> base.copy(notApplicable = true)
+            StorefrontMatchRepository.Lookup.NoMatch, StorefrontMatchRepository.Lookup.Unknown, null -> base
+        }
+    }
+
+    private fun updateMatch(transform: (StorefrontMatchUi) -> StorefrontMatchUi) = _uiState.update { s ->
+        val ui = s.storefrontMatch ?: return@update s
+        if (ui.loading || ui.confirming) s else s.copy(storefrontMatch = transform(ui))
+    }
+
+    private fun updateRematch(transform: (StorefrontRematchUi) -> StorefrontRematchUi) = _uiState.update { s ->
+        val ui = s.storefrontRematch ?: return@update s
+        if (ui.loading) s else s.copy(storefrontRematch = transform(ui))
+    }
+
+    /**
+     * Picker input. Rows are engine nodes, so Up/Down/Select go through the shared engine; Triangle
+     * is More Information, which is the only key this overlay claims for itself.
+     */
+    private fun handleStorefrontMatchInput(action: GamepadAction) {
+        val ui = _uiState.value.storefrontMatch ?: return
+        if (ui.confirming) return   // the write is already committed to; let it finish
+        if (ui.moreInfoOpen) {
+            when (action) {
+                GamepadAction.BACK -> closeStorefrontMoreInfo()
+                GamepadAction.SELECT -> chooseStorefrontCandidate(ui.focus)
+                else -> Unit
+            }
+            return
+        }
+        when (action) {
+            GamepadAction.BACK -> closeStorefrontMatch()
+            GamepadAction.OPEN_CONTEXT_MENU -> openStorefrontMoreInfo()
+            GamepadAction.NAVIGATE_UP,
+            GamepadAction.NAVIGATE_DOWN,
+            GamepadAction.SELECT -> nav.handleAction(action)
+            else -> Unit
+        }
+    }
+
+    /** Rematch input. Left/Right pick a row's action; everything else is the shared engine. */
+    private fun handleStorefrontRematchInput(action: GamepadAction) {
+        when (action) {
+            GamepadAction.BACK -> closeStorefrontRematch()
+            GamepadAction.NAVIGATE_LEFT -> cycleRematchAction(-1)
+            GamepadAction.NAVIGATE_RIGHT -> cycleRematchAction(+1)
+            GamepadAction.NAVIGATE_UP,
+            GamepadAction.NAVIGATE_DOWN,
+            GamepadAction.SELECT -> nav.handleAction(action)
+            else -> Unit
+        }
+    }
+
     private fun handleMetadataPreviewInput(action: GamepadAction) {
         val p = _uiState.value.metadataPreview ?: return
         if (p.applying) return   // the write is already committed to; let it finish

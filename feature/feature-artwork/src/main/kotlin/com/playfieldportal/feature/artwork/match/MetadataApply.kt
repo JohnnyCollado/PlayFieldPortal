@@ -74,9 +74,10 @@ object MetadataApply {
 
     /**
      * Text presets from one retrieval. Only providers that return text can produce one:
-     * ScreenScraper, TheGamesDB and — since C23 T5, which widened its Apicalypse field list from
-     * cover/hero URLs to name, summary, involved companies, release date, genres and rating — IGDB.
-     * SteamGridDB stays artwork-only by design and is never offered.
+     * ScreenScraper, TheGamesDB, IGDB — since C23 T5, which widened its Apicalypse field list from
+     * cover/hero URLs to name, summary, involved companies, release date, genres and rating — and,
+     * since C23 T6, Steam for Windows games resolved to a storefront identity. SteamGridDB stays
+     * artwork-only by design and is never offered.
      *
      * A MANUAL preset is absent on purpose: it is built from what the user typed, not from what a
      * provider answered, so the ViewModel constructs it rather than this function.
@@ -120,6 +121,11 @@ object MetadataApply {
                 communityRating = igdb.communityRating,
             )
         },
+        // Steam arrives already in preset form — the provider builds it, because nothing above a
+        // provider should know what an appdetails response looks like (C23 T6, Phase 4). No
+        // franchise: Steam models franchises as store pages and search tags, not as a field on a
+        // game, and an invented one is worse than an absent one.
+        candidates.steamPreset,
     ).filterNot { it.isEmpty }
 
     /**

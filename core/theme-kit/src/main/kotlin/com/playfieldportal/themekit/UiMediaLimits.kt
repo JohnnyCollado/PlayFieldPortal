@@ -85,8 +85,14 @@ object UiMediaLimits {
      * a two-minute bed repeats often enough to be heard as music rather than as a cue, where a
      * ten-second one repeats often enough to be heard as a fault. The ceiling bounds the staging
      * copy rather than expressing taste; the byte cap is the real anti-DoS belt.
+     *
+     * Ten minutes, raised from five (owner decision): the longer the bed, the less the loop is
+     * noticed at all, and the reasoning above only ever argued upward. Nothing technical was
+     * holding it at five — ambience streams through ExoPlayer rather than being decoded into
+     * memory like a menu sound, so length costs nothing at playback, and ten minutes of 160 kbps
+     * audio is ~12 MB against a 128 MB staging ceiling.
      */
-    const val AMBIENCE_MAX_MS       = 300_000L
+    const val AMBIENCE_MAX_MS       = 600_000L
 
     // ── Byte caps ────────────────────────────────────────────────────────────
     /**
@@ -125,7 +131,7 @@ object UiMediaLimits {
      * text names the trade-off so it is an informed choice. Filtering this to OGG later would be
      * reverting a decision, not fixing an oversight.
      */
-    val AMBIENCE     = Spec(Kind.AUDIO_TRACK, 30_000L, 180_000L, AMBIENCE_MAX_MS, AUDIO_STAGE_MAX_BYTES)
+    val AMBIENCE     = Spec(Kind.AUDIO_TRACK, 30_000L, 600_000L, AMBIENCE_MAX_MS, AUDIO_STAGE_MAX_BYTES)
 
     /** Accepted audio containers. Audio MIME arrays come from this set verbatim. */
     val AUDIO_MIME = setOf(
