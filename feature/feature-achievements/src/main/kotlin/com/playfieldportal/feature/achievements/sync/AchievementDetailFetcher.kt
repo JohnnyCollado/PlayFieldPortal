@@ -3,6 +3,7 @@ package com.playfieldportal.feature.achievements.sync
 import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.feature.achievements.api.ProviderSyncResult
 import com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSource
+import com.playfieldportal.feature.achievements.provider.ps3.Ps3TrophySource
 import com.playfieldportal.feature.achievements.provider.retro.RetroAchievementsSource
 import com.playfieldportal.feature.achievements.provider.vita.VitaTrophySource
 import javax.inject.Inject
@@ -23,6 +24,7 @@ class DefaultAchievementDetailFetcher @Inject constructor(
     private val steam: SteamDetailFetcher,
     private val localSteam: LocalSteamSource,
     private val vita: VitaTrophySource,
+    private val ps3: Ps3TrophySource,
 ) : AchievementDetailFetcher {
 
     override suspend fun fetch(identity: AchievementIdentity, reason: FetchReason): ProviderSyncResult {
@@ -33,6 +35,7 @@ class DefaultAchievementDetailFetcher @Inject constructor(
             // Only an explicit refresh repairs Local Steam metadata; everything else stays local.
             AchievementProvider.LOCAL_STEAM -> localSteam.fetch(id, renewMetadata = reason == FetchReason.EXPLICIT)
             AchievementProvider.VITA_TROPHY -> vita.fetch(id)
+            AchievementProvider.PS3_TROPHY -> ps3.fetch(id)
         }
     }
 }

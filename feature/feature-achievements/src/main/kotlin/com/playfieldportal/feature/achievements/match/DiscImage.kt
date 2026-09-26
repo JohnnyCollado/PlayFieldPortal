@@ -81,6 +81,63 @@ class DiscImage private constructor(
         return null
     }
 
+    /** One child of a listed directory: its name, extent and whether it is itself a directory. */
+    data class Child(val name: String, val lba: Int, val size: Int, val isDirectory: Boolean)
+
+    /**
+     * Lists the immediate children of the directory at [lba], reusing [findFile]'s record walk.
+     * The `\x00` / `\x01` self-and-parent records are skipped and a trailing `;1` version suffix
+     * stripped, so names read as they do on the console.
+     *
+     * Like [findFile], only the directory's first sector is searched — enough for the handful of
+     * entries a `PS3_GAME/TROPDIR` holds, and it keeps a multi-GB image to a single sector read.
+     * [size] is accepted for symmetry with [Entry] and to bound a short final sector.
+     */
+    fun listDir(lba: Int, size: Int): List<Child> {
+        val buf = readSector(lba, minOf(2048, if (size > 0) size else 2048))
+        val out = mutableListOf<Child>()
+        var i = 0
+        while (i < buf.size && buf[i].toInt() != 0) {
+            val recLen = buf[i].u()
+            if (recLen == 0 || i + recLen > buf.size) break
+            val idLen = buf[i + 32].u()
+            if (idLen <= 0 || i + 33 + idLen > buf.size) break
+            val raw = String(buf, i + 33, idLen, Charsets.US_ASCII)
+            // A 1-byte "\u0000"/"\u0001" id is the . / .. record, not a child.
+            val isSelfOrParent = idLen == 1 && (raw[0].code == 0 || raw[0].code == 1)
+            if (!isSelfOrParent) {
+                out += Child(
+                    name = raw.substringBefore(';'),
+                    lba = u24(buf, i + 2),
+                    size = u32(buf, i + 10),
+                    isDirectory = buf[i + 25].u() and 0x02 != 0,
+                )
+            }
+            i += recLen
+        }
+        return out
+    }
+
+    /**
+     * Reads a small file's bytes from the image, capped at [maxBytes] — for metadata like a PS3
+     * `PARAM.SFO`. Never use this on a large extent; the hashers stream sectors instead.
+     */
+    fun readFileBytes(lba: Int, size: Int, maxBytes: Int): ByteArray {
+        var remaining = minOf(size, maxBytes)
+        var sector = lba
+        val out = java.io.ByteArrayOutputStream()
+        while (remaining > 0) {
+            val want = minOf(remaining, 2048)
+            val chunk = readSector(sector, want)
+            if (chunk.isEmpty()) break
+            out.write(chunk, 0, chunk.size)
+            remaining -= chunk.size
+            if (chunk.size < want) break
+            sector++
+        }
+        return out.toByteArray()
+    }
+
     /** Appends [size] bytes of the file starting at [lba] to [md5], 2048 bytes per sector. */
     fun hashFileInto(md5: MessageDigest, lba: Int, size: Int) {
         var remaining = size

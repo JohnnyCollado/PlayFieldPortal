@@ -7,6 +7,7 @@ import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.core.domain.model.Game
 import com.playfieldportal.core.domain.repository.GameRepository
 import com.playfieldportal.feature.achievements.AchievementController
+import com.playfieldportal.feature.achievements.provider.ps3.Ps3TropDirReader
 import com.playfieldportal.feature.achievements.provider.retro.RaHashLookup
 import com.playfieldportal.feature.achievements.provider.retro.RaHashResolver
 import com.playfieldportal.feature.achievements.provider.steam.SteamShortcut
@@ -47,6 +48,8 @@ class AchievementAutoMatcher @Inject constructor(
     private val localSteamDiscovery: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamDiscovery,
     private val localSteamOwnership: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamOwnership,
     private val steamNames: com.playfieldportal.feature.achievements.provider.steam.SteamAppListResolver,
+    private val ps3TropDirReader: com.playfieldportal.feature.achievements.provider.ps3.Ps3TropDirReader,
+    private val ps3TrophyDiscovery: com.playfieldportal.feature.achievements.provider.ps3.Ps3TrophyDiscovery,
 ) {
     private sealed interface Outcome {
         data object Matched : Outcome
@@ -184,6 +187,9 @@ class AchievementAutoMatcher @Inject constructor(
 
     private suspend fun matchOne(game: Game): Outcome {
         if (game.platformId == "windows") return matchWindows(game)
+        // PS3 games link from the trophy set id the disc itself declares, never from a hash: RA
+        // has no PS3 console, and ARMSX3's trophy files are keyed by NPCOMMID.
+        if (game.platformId == PS3_PLATFORM_ID) return matchPs3(game)
         // RetroAchievements is hash-only: a game links solely by its ROM/disc content hash, never
         // by title. If the hash isn't a registered RA hash, the game stays untracked.
         val consoleId = RaConsole.idFor(game.platformId)
@@ -211,6 +217,72 @@ class AchievementAutoMatcher @Inject constructor(
                 )
         }
     }
+
+    /**
+     * PS3 games link by the NPWR id the game itself declares in `PS3_GAME/TROPDIR` — the same data
+     * the emulator reads to register the set. The **first** id is the base set and becomes the
+     * provider game id; the source merges any DLC subsets at fetch time, so nothing here has to
+     * store the list (docs/plans/PFP_PS3_Trophy_Tracking_Implementation_Plan.md section 5.1).
+     *
+     * A game whose declared set is not on disk yet is linked **anyway**, at 0%: the link is already
+     * deterministic from the disc, and the emulator creates the folder the first time the game runs.
+     * That is not a failure.
+     */
+    private suspend fun matchPs3(game: Game): Outcome {
+        when (val declared = ps3TropDirReader.npCommIdsFor(game)) {
+            is Ps3TropDirReader.Result.Found -> {
+                repository.linkManually(game.id, AchievementProvider.PS3_TROPHY, declared.baseNpCommId)
+                return Outcome.Matched
+            }
+            Ps3TropDirReader.Result.NoTropDir ->
+                return Outcome.Unmatched("This PS3 game declares no trophies")
+            Ps3TropDirReader.Result.NoTrophySets ->
+                return Outcome.Unmatched("The game's TROPDIR lists no trophy set")
+            Ps3TropDirReader.Result.NoPs3Game ->
+                return Outcome.Unmatched("Not a PS3 disc layout — no PS3_GAME folder in the image")
+            Ps3TropDirReader.Result.NoImage ->
+                return Outcome.Unmatched("No PS3 image on this device to read trophy ids from")
+            // An encrypted or unreadable dump can't declare its id, so fall back to matching the
+            // trophy set's own title — and only when that match is strong (see section 4).
+            Ps3TropDirReader.Result.Unreadable -> Unit
+        }
+        return matchPs3ByTitle(game)
+    }
+
+    /**
+     * Degraded fallback for an unreadable image: match a trophy set present under the PS3 grant by
+     * its `TROPCONF.SFM` title-name, through the same 5-rule normalizer the storefront resolver
+     * uses (it handles the `"Witch and the Hundred Knight, The"` article swap). A fallback match is
+     * a suggestion, so it links only on an exact normalized-key match and never guesses.
+     *
+     * It has no `TROPDIR`, so it has no grouping information: it links the one set it matched, and a
+     * later successful disc read is what completes the game.
+     */
+    private suspend fun matchPs3ByTitle(game: Game): Outcome {
+        val available = ps3TrophyDiscovery.availableSetIds()
+        if (available.isEmpty()) {
+            return Outcome.Unmatched(
+                "Couldn't read this PS3 image (an encrypted dump can't declare its trophy id), and " +
+                    "no trophy sets were found — set your PS3 Data Folder in the library",
+            )
+        }
+        val wanted = ps3TitleKey(game.displayTitle)
+        val hit = available.firstOrNull { id ->
+            val name = ps3TrophyDiscovery.loadOneSet(id)?.titleName ?: return@firstOrNull false
+            wanted.isNotEmpty() && ps3TitleKey(name) == wanted
+        }
+        if (hit == null) {
+            return Outcome.Unmatched(
+                "Couldn't read this PS3 image, and no installed trophy set matches this title by name",
+            )
+        }
+        repository.linkManually(game.id, AchievementProvider.PS3_TROPHY, hit)
+        return Outcome.Matched
+    }
+
+    // The 5-rule normalizer's strict equality key — the same one the storefront matcher compares on.
+    private fun ps3TitleKey(title: String): String =
+        com.playfieldportal.feature.artwork.match.StorefrontTitleNormalizer.normalize(title).comparisonKey
 
     // Windows games are folder-first (docs/windows-library-refactor-plan.md section 5): an
     // emu-marked game folder mapping to this game by normalized title links LOCAL_STEAM with the
@@ -355,5 +427,37 @@ class AchievementAutoMatcher @Inject constructor(
         "wiiu" -> "Wii U"
         "switch" -> "Nintendo Switch"
         else -> "this system ($platformId)"
+    }
+
+    /** Outcome of the explicit per-game PS3 match, so the Shiba page can say what to fix. */
+    sealed interface Ps3MatchResult {
+        data object Matched : Ps3MatchResult
+        data class Unmatched(val reason: String) : Ps3MatchResult
+    }
+
+    /**
+     * Single-game Auto-Match for a PS3 game: exactly the branch [matchUnlinked] runs, so the Shiba
+     * page and the batch report agree on both the link and the reason. The match note is updated to
+     * mirror this attempt, keeping the Shiba Library's Untracked view truthful.
+     */
+    suspend fun matchSingleAsPs3(gameId: Long): Ps3MatchResult {
+        val game = gameRepository.getById(gameId)
+            ?: return Ps3MatchResult.Unmatched("Game not found")
+        return when (val outcome = matchPs3(game)) {
+            Outcome.Matched -> {
+                matchNoteDao.deleteForGame(gameId)
+                Ps3MatchResult.Matched
+            }
+            is Outcome.Unmatched -> {
+                matchNoteDao.upsert(
+                    AchievementMatchNoteEntity(gameId, outcome.reason, System.currentTimeMillis()),
+                )
+                Ps3MatchResult.Unmatched(outcome.reason)
+            }
+        }
+    }
+
+    private companion object {
+        const val PS3_PLATFORM_ID = "ps3"
     }
 }

@@ -56,6 +56,12 @@ fun ContextMenuHint(
     modifier: Modifier = Modifier,
     /** Show the Sort half — the current list responds to CHANGE_SORT. */
     showSort: Boolean = false,
+    /**
+     * What that half is called. "Sort" everywhere the press cycles the order; "Filter" on the
+     * Games column, where it opens a menu of Search and Sort instead. The pill names actions, so
+     * a press that stopped cycling has to stop saying it cycles.
+     */
+    sortLabel: String = "Sort",
     /** Show the Options half — the focused item has a context menu. */
     showOptions: Boolean = true,
     /**
@@ -69,7 +75,7 @@ fun ContextMenuHint(
     showNotifications: Boolean = true,
 ) {
     val items = buildList {
-        if (showSort) add(ControllerPromptItem(GamepadAction.CHANGE_SORT, "Sort"))
+        if (showSort) add(ControllerPromptItem(GamepadAction.CHANGE_SORT, sortLabel))
         if (showOptions) add(ControllerPromptItem(GamepadAction.OPEN_CONTEXT_MENU, "Options"))
         if (showNotifications) add(ControllerPromptItem(GamepadAction.HOME, "Notifications"))
     }

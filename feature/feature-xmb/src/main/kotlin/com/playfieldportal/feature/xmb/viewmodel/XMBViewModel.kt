@@ -194,7 +194,16 @@ data class XMBContextMenu(
     // Set on the notification panel's menu (Mark All Read / Clear Read / Clear All). There is no
     // per-row menu: a row does one thing, and Confirm already does it.
     val notificationListMenu: Boolean = false,
+    // Set on the Games category's Filter menu (Square / the status pill). Unlike every other
+    // submenu here, this one has a root worth returning to, so [gamesFilterGroup] is null on the
+    // root and names the open group otherwise — and BACK inside a group returns to the root
+    // rather than closing. See the two-level Options menu in ShibaLibraryViewModel.
+    val gamesFilterMenu: Boolean = false,
+    val gamesFilterGroup: GamesFilterGroup? = null,
 )
+
+/** A second-level list inside the Games Filter menu, opened from its root row. */
+enum class GamesFilterGroup(val title: String) { SORT("Sort") }
 
 data class XMBContextMenuItem(
     val id: String,
@@ -551,6 +560,15 @@ data class MusicBrowserState(
     val sortPillLabel: String? get() = sortLabel?.let { "Sort: $it" }
 }
 
+/**
+ * The Games column's search field, while it is open.
+ *
+ * [text] filters the column live on every keystroke — the field is not a form to submit, so
+ * Confirm only dismisses it. [textOnOpen] is what Cancel restores, which is why the query is not
+ * simply read back off [XMBUiState.gameQuery].
+ */
+data class GameSearchFieldState(val text: String, val textOnOpen: String)
+
 // Drives the "New / Rename Playlist" text dialog. When [forTrackId] is set, the freshly created
 // playlist immediately receives that track.
 data class PlaylistNameDialogState(
@@ -782,6 +800,14 @@ data class XMBUiState(
     // ── Context menu (Y/Triangle) ─────────────────────────────────────────
     val activeContextMenu: XMBContextMenu? = null,
 
+    // ── Games filter (Square / the status pill) ───────────────────────────
+    // The Games column's live search term; blank = unfiltered. Games only: Music and Video keep
+    // the plain sort cycle. Cleared whenever the list it was typed against changes (drilling into
+    // a Memory Card, opening a collection, leaving Games) — see [clearGameQuery].
+    val gameQuery: String = "",
+    // The transient search field, while open. Non-null means it owns input, like a name dialog.
+    val gameSearchField: GameSearchFieldState? = null,
+
     // ── Shiba Coins hub: Root (summary + lenses) → Rarest Earned drill ─────
     val achievementsNav: AchievementsNav = AchievementsNav.Root,
     val libraryStanding: com.playfieldportal.core.domain.achievement.LibraryStanding =
@@ -966,6 +992,11 @@ data class XMBUiState(
     val canSortCurrentList: Boolean
         get() = activeSortModes() != null
 
+    // What the CHANGE_SORT half of the hint pill is called here. Games opens a Filter menu rather
+    // than cycling, and the pill names actions — so it has to say which action.
+    val sortActionLabel: String
+        get() = if (activeSortModes() === GAME_SORTS) "Filter" else "Sort"
+
     // Whether the bottom-right contextual button (App Drawer / Back) should be shown, per the
     // user's Touch Navigation Button setting. AUTO follows the last input source.
     val resolvedShowTouchButton: Boolean
@@ -991,6 +1022,7 @@ data class XMBUiState(
             activeVideoId != null ||
             activePhotoViewer != null ||
             activeContextMenu != null ||
+            gameSearchField != null ||
             activeDiscordLogin ||
             colorSchemePicker != null ||
             customColorPicker != null ||
@@ -1087,6 +1119,65 @@ internal fun List<Game>.gameSorted(mode: XmbSortMode): List<Game> = when (mode) 
     XmbSortMode.DATE_ADDED    -> sortedByDescending { it.id }
     else                      -> sortedBy { it.displayTitle.lowercase() }
 }
+
+/**
+ * Does this game answer to [query]? Case-insensitive substring over the **display** title — the
+ * title the row actually shows, which a manual override can move away from [Game.title]. Matching
+ * the raw title would hide a game under exactly the name the user just gave it.
+ *
+ * Substring rather than prefix on purpose: "zelda" has to find "The Legend of Zelda".
+ */
+internal fun Game.matchesGameQuery(query: String): Boolean =
+    displayTitle.lowercase().contains(query)
+
+/**
+ * Every Games row the column shows, in order: **filter by the live query, then sort**.
+ *
+ * The single funnel for the Games column. Every path through loadItemsForCategory goes through
+ * this one function rather than calling [gameSorted] itself — there are eight of them (All Games,
+ * a Memory Card, Favorites, Missing, a collection, a gaming category, …) and a filter applied at
+ * the call sites would eventually miss one, leaving a screen that silently ignores search.
+ *
+ * Filtering first is both cheaper and clearer: the sort then provably orders exactly what is on
+ * screen. A blank or whitespace-only query filters nothing at all.
+ */
+internal fun gamesForDisplay(games: List<Game>, query: String, mode: XmbSortMode): List<Game> {
+    val q = query.trim().lowercase()
+    val filtered = if (q.isBlank()) games else games.filter { it.matchesGameQuery(q) }
+    return filtered.gameSorted(mode)
+}
+
+/**
+ * The Games Filter menu's rows, shaped like the Shiba Library's Options menu: the root names each
+ * list with its current choice ("Search  None", "Sort  Title"), and a group checks the active one.
+ *
+ * Pure and top-level so the rows can be asserted without a ViewModel, and so the menu can never
+ * disagree with the state it describes.
+ *
+ * "Clear Search" appears only while a query is active — a row that would do nothing is worse than
+ * a shorter menu, and it is the fast way off a filtered column.
+ */
+fun gamesFilterRows(state: XMBUiState, group: GamesFilterGroup?): List<XMBContextMenuItem> =
+    when (group) {
+        null -> buildList {
+            val term = state.gameQuery.trim()
+            add(XMBContextMenuItem(GAMES_FILTER_SEARCH_ID, "Search" + if (term.isBlank()) "  None" else "  \"$term\""))
+            add(XMBContextMenuItem(GAMES_FILTER_SORT_ID, "Sort  ${state.gameSortMode.label}"))
+            if (term.isNotBlank()) add(XMBContextMenuItem(GAMES_FILTER_CLEAR_ID, "Clear Search"))
+        }
+        GamesFilterGroup.SORT -> GAME_SORTS.map { mode ->
+            XMBContextMenuItem(
+                id = GAMES_FILTER_SORT_PREFIX + mode.name,
+                label = mode.label,
+                checked = mode == state.gameSortMode,
+            )
+        }
+    }
+
+const val GAMES_FILTER_SEARCH_ID = "games_filter_search"
+const val GAMES_FILTER_SORT_ID = "games_filter_sort"
+const val GAMES_FILTER_CLEAR_ID = "games_filter_clear"
+const val GAMES_FILTER_SORT_PREFIX = "games_filter_sort_"
 
 /**
  * Where the cursor belongs after the list it is on is refreshed: on the same row, found by id.
@@ -2091,6 +2182,9 @@ class XMBViewModel @Inject constructor(
      */
     private fun loadItemsForCategory(category: Category?, keepCursorOnRow: Boolean = false) {
         currentItemsJob?.cancel()
+        // Dropped before the new list is built: a builder left over from the previous view would
+        // rebuild a column that is no longer on screen. Each Games branch installs its own.
+        rebuildGameRows = null
         if (category == null) { _uiState.update { it.copy(currentItems = emptyList(), sortLabel = null, drillTitle = null, drillSiblings = emptyList(), drillSiblingIndex = 0) }; return }
         val drill = computeDrillTitle()
         val (sibs, sibIdx) = if (drill != null) computeDrillSiblings(category) else (emptyList<XMBItem>() to 0)
@@ -2101,7 +2195,9 @@ class XMBViewModel @Inject constructor(
                 BuiltInCategory.FAVORITES -> {
                     var keepCursor = keepCursorOnRow
                     gameRepository.observeFavorites().collect { games ->
-                        publishGameItems(games.notHiddenAt(HideLocationType.FAVORITES).gameSorted(_uiState.value.gameSortMode).toXmbItems(), keepCursor)
+                        publishGames(keepCursor) {
+                            gameRowsOrEmpty(games.notHiddenAt(HideLocationType.FAVORITES))
+                        }
                         keepCursor = true
                     }
                 }
@@ -2166,9 +2262,7 @@ class XMBViewModel @Inject constructor(
                         var keepCursor = keepCursorOnRow
                         collectionRepository.observeGames(collectionId).collect { games ->
                             val visible = games.notHiddenAt(HideLocationType.COLLECTION, collectionId.toString())
-                            val items = if (visible.isEmpty()) listOf(emptyCollectionItem())
-                                        else visible.gameSorted(_uiState.value.gameSortMode).toXmbItems()
-                            publishGameItems(items, keepCursor)
+                            publishGames(keepCursor) { gameRowsOrEmpty(visible, ::emptyCollectionItem) }
                             keepCursor = true
                         }
                     } else if (platformId == ALL_GAMES_PLATFORM_ID) {
@@ -2178,9 +2272,7 @@ class XMBViewModel @Inject constructor(
                         var keepCursor = keepCursorOnRow
                         gameRepository.observeAllGames().collect { games ->
                             val visible = games.notHiddenAt(HideLocationType.ALL_GAMES)
-                            val items = if (visible.isEmpty()) listOf(emptyAllGamesItem())
-                                        else visible.gameSorted(_uiState.value.gameSortMode).toXmbItems()
-                            publishGameItems(items, keepCursor)
+                            publishGames(keepCursor) { gameRowsOrEmpty(visible, ::emptyAllGamesItem) }
                             keepCursor = true
                         }
                     } else if (platformId == FAVORITES_PLATFORM_ID) {
@@ -2188,9 +2280,7 @@ class XMBViewModel @Inject constructor(
                         var keepCursor = keepCursorOnRow
                         gameRepository.observeFavorites().collect { games ->
                             val visible = games.notHiddenAt(HideLocationType.FAVORITES)
-                            val items = if (visible.isEmpty()) listOf(emptyFavoritesItem())
-                                        else visible.gameSorted(_uiState.value.gameSortMode).toXmbItems()
-                            publishGameItems(items, keepCursor)
+                            publishGames(keepCursor) { gameRowsOrEmpty(visible, ::emptyFavoritesItem) }
                             keepCursor = true
                         }
                     } else if (platformId == MISSING_PLATFORM_ID) {
@@ -2199,14 +2289,14 @@ class XMBViewModel @Inject constructor(
                         // is the only place "Remove permanently" is offered.
                         var keepCursor = keepCursorOnRow
                         gameRepository.observeMissing().collect { games ->
-                            val items = if (games.isEmpty()) listOf(emptyMissingItem())
-                                        else games.gameSorted(_uiState.value.gameSortMode)
-                                            .toXmbItems()
-                                            // Each row states why it is here, per the plan. The
-                                            // subtitle would otherwise carry play stats that are
-                                            // meaningless for a file that isn't there.
-                                            .map { it.copy(subtitle = MISSING_REASON) }
-                            publishGameItems(items, keepCursor)
+                            publishGames(keepCursor) {
+                                gameRowsOrEmpty(games, ::emptyMissingItem) { rows ->
+                                    // Each row states why it is here, per the plan. The subtitle
+                                    // would otherwise carry play stats that are meaningless for a
+                                    // file that isn't there.
+                                    rows.map { it.copy(subtitle = MISSING_REASON) }
+                                }
+                            }
                             keepCursor = true
                         }
                     } else if (platformId != null) {
@@ -2222,9 +2312,9 @@ class XMBViewModel @Inject constructor(
                                 games.notHiddenAt(HideLocationType.ANDROID_PLATFORM)
                             else
                                 games.notHiddenAt(HideLocationType.PLATFORM, platformId)
-                            val items = if (visible.isEmpty()) listOf(emptyFolderItem(platformId))
-                                        else visible.gameSorted(_uiState.value.gameSortMode).toXmbItems()
-                            publishGameItems(items, keepCursor)
+                            publishGames(keepCursor) {
+                                gameRowsOrEmpty(visible, emptyItem = { emptyFolderItem(platformId) })
+                            }
                             keepCursor = true
                         }
                     } else {
@@ -2315,9 +2405,7 @@ class XMBViewModel @Inject constructor(
                         var keepCursor = keepCursorOnRow
                         collectionRepository.observeGames(openCollectionId).collect { games ->
                             val visible = games.notHiddenAt(HideLocationType.COLLECTION, openCollectionId.toString())
-                            val items = if (visible.isEmpty()) listOf(emptyCollectionItem())
-                                        else visible.gameSorted(_uiState.value.gameSortMode).toXmbItems()
-                            publishGameItems(items, keepCursor)
+                            publishGames(keepCursor) { gameRowsOrEmpty(visible, ::emptyCollectionItem) }
                             keepCursor = true
                         }
                         return@launch
@@ -2330,30 +2418,46 @@ class XMBViewModel @Inject constructor(
                             .filterIsInstance<com.playfieldportal.core.data.repository.GameCategoryItem.GameItem>()
                             .filterNot { isHiddenAt(HiddenPlacement.gameKey(it.game.id), HideLocationType.CATEGORY, category.id) }
                         val pinnedGameIds = gameRows.filter { it.pinned }.map { it.game.id }.toSet()
-                        val gameItems = gameRows.map { it.game }.gameSorted(_uiState.value.gameSortMode).toXmbItems().map { xmb ->
-                            if (xmb.gameId in pinnedGameIds) xmb.copy(subtitle = "Pinned") else xmb
-                        }
-                        // Collections belong to exactly one category, tracked by categoryId —
-                        // the single source of truth for placement (not the junction table).
-                        // Pinned collections sort to the top.
-                        val collectionItems = _uiState.value.collections
-                            .filter { it.categoryId == category.id }
-                            .sortedByDescending { it.isPinned }
-                            .map { collection ->
-                                val games = "${collection.gameCount} ${if (collection.gameCount == 1) "Game" else "Games"}"
-                                XMBItem(
-                                    id = "col_${collection.id}",
-                                    title = collection.name,
-                                    subtitle = if (collection.isPinned) "Pinned · $games" else games,
-                                    collectionId = collection.id,
-                                    iconKey = collection.iconKey,
-                                    type = XMBItemType.COLLECTION,
-                                )
+                        // A one-shot read: the junction rows above are fetched once, and the
+                        // builder below re-runs against them whenever the query or sort changes.
+                        publishGames(keepCursorOnRow) {
+                            // The same funnel as every other Games list, but this one assembles its
+                            // own empty state: the column is games AND collections, so an empty-row
+                            // helper that only knows about the games half would draw "no matches"
+                            // over a column that still has collections in it.
+                            val gameItems = gamesForDisplay(
+                                gameRows.map { it.game },
+                                _uiState.value.gameQuery,
+                                _uiState.value.gameSortMode,
+                            ).toXmbItems().map { xmb ->
+                                if (xmb.gameId in pinnedGameIds) xmb.copy(subtitle = "Pinned") else xmb
                             }
-                        val combined = collectionItems + gameItems
-                        val items = if (combined.isEmpty()) listOf(emptyCategoryItem(category)) else combined
-                        // A one-shot read: it re-runs only when something reloads the category.
-                        publishGameItems(items + addGamesItem(), keepCursorOnRow)
+                            // Collections belong to exactly one category, tracked by categoryId —
+                            // the single source of truth for placement (not the junction table).
+                            // Pinned collections sort to the top.
+                            val collectionItems = _uiState.value.collections
+                                .filter { it.categoryId == category.id }
+                                .sortedByDescending { it.isPinned }
+                                .map { collection ->
+                                    val games = "${collection.gameCount} ${if (collection.gameCount == 1) "Game" else "Games"}"
+                                    XMBItem(
+                                        id = "col_${collection.id}",
+                                        title = collection.name,
+                                        subtitle = if (collection.isPinned) "Pinned · $games" else games,
+                                        collectionId = collection.id,
+                                        iconKey = collection.iconKey,
+                                        type = XMBItemType.COLLECTION,
+                                    )
+                                }
+                            val combined = collectionItems + gameItems
+                            val activeQuery = _uiState.value.gameQuery.trim()
+                            val items = when {
+                                combined.isNotEmpty()    -> combined
+                                activeQuery.isNotBlank() -> listOf(noGameMatchesItem(activeQuery))
+                                else                     -> listOf(emptyCategoryItem(category))
+                            }
+                            items + addGamesItem()
+                        }
                     } else {
                         // Non-gaming categories show apps (Photo / Music / Video / Network / App Store / custom).
                         // Apps the user has given artwork (via Edit App Details → a games-table row keyed
@@ -2975,7 +3079,11 @@ class XMBViewModel @Inject constructor(
         _uiState.update { state ->
             val next = mutate(state)
             val remembered = viewCursor[viewCursorKey(next)] ?: 0
-            next.copy(selectedItemIndex = remembered)
+            // A Games search term belongs to the list it was typed against. Every navigation that
+            // changes which list is on screen passes through here, so this is the one place the
+            // query has to be dropped — see [clearGameQuery].
+            val query = if (viewCursorKey(next) == viewCursorKey(state)) next.gameQuery else ""
+            next.copy(selectedItemIndex = remembered, gameQuery = query)
         }
         loadItemsForCategory(currentCategory())
     }
@@ -4472,7 +4580,11 @@ class XMBViewModel @Inject constructor(
     // can never disagree about whether the current list sorts.
     private fun activeSortContext(): List<XmbSortMode>? = _uiState.value.activeSortModes()
 
-    /** Touch: the status-bar sort chip — cycles the sort order, same as X/Square. */
+    /**
+     * Touch: the status-bar chip. On Games it opens the Filter menu; everywhere else it still
+     * cycles the sort, exactly as X/Square does — the two entry points share [cycleSort] precisely
+     * so the chip and the button can never drift apart.
+     */
     fun onSortLabelTapped() {
         markTouchInput()
         cycleSort()
@@ -4495,6 +4607,10 @@ class XMBViewModel @Inject constructor(
             return
         }
         val cycle = activeSortContext() ?: return
+        // Games doesn't cycle any more: it opens the Filter menu, where Sort is one of two rows
+        // and the active mode carries a checkmark. Music and Video keep the cycle — their lists
+        // have no search and a menu for three modes would be ceremony.
+        if (cycle === GAME_SORTS) { openGamesFilterMenu(); return }
         val isMusic = cycle === MUSIC_SORTS
         val isVideo = cycle === VIDEO_SORTS
         val current = when {
@@ -4524,6 +4640,134 @@ class XMBViewModel @Inject constructor(
             return
         }
         loadItemsForCategory(currentCategory())
+    }
+
+    // ── Games Filter menu (Square / the status chip) ──────────────────────────
+
+    /** Opens the Filter root on its first row. */
+    private fun openGamesFilterMenu() {
+        menuSound.play(MenuSound.SYSTEM_BROWSE)
+        _uiState.update { it.copy(activeContextMenu = gamesFilterMenuFor(it, group = null)) }
+    }
+
+    /** Swaps the open menu to [group]'s list (or back to the root when null). */
+    private fun openGamesFilterGroup(group: GamesFilterGroup?) {
+        menuSound.play(MenuSound.SYSTEM_BROWSE)
+        _uiState.update { state ->
+            val menu = gamesFilterMenuFor(state, group)
+            // Open a group on its active choice, and return to the root on the row that led here,
+            // so a press of BACK lands the cursor where the eye already is.
+            val cursor = when (group) {
+                GamesFilterGroup.SORT -> menu.items.indexOfFirst { it.checked }.coerceAtLeast(0)
+                null -> menu.items.indexOfFirst { it.id == GAMES_FILTER_SORT_ID }.coerceAtLeast(0)
+            }
+            state.copy(activeContextMenu = menu.copy(selectedIndex = cursor))
+        }
+    }
+
+    private fun gamesFilterMenuFor(state: XMBUiState, group: GamesFilterGroup?) = XMBContextMenu(
+        title = group?.title ?: "Filter",
+        items = gamesFilterRows(state, group),
+        gamesFilterMenu = true,
+        gamesFilterGroup = group,
+    )
+
+    /**
+     * Handles one activation inside the Filter menu. Returns false when the menu is not this one,
+     * so [activateContextMenuItem] can fall through to every other menu unchanged.
+     */
+    private fun handleGamesFilterItem(menu: XMBContextMenu, itemId: String): Boolean {
+        if (!menu.gamesFilterMenu) return false
+        when {
+            itemId == GAMES_FILTER_SORT_ID   -> openGamesFilterGroup(GamesFilterGroup.SORT)
+            itemId == GAMES_FILTER_SEARCH_ID -> { closeContextMenu(); openGameSearchField() }
+            itemId == GAMES_FILTER_CLEAR_ID  -> { closeContextMenu(); applyGameQuery("") }
+            itemId.startsWith(GAMES_FILTER_SORT_PREFIX) -> {
+                val mode = XmbSortMode.entries
+                    .firstOrNull { it.name == itemId.removePrefix(GAMES_FILTER_SORT_PREFIX) }
+                    ?: return true
+                closeContextMenu()
+                applyGameSortMode(mode)
+            }
+        }
+        return true
+    }
+
+    /** Applies a sort mode chosen from the menu, and re-renders the column from the top. */
+    private fun applyGameSortMode(mode: XmbSortMode) {
+        if (_uiState.value.gameSortMode == mode) return
+        menuSound.play(MenuSound.SYSTEM_BROWSE)
+        _uiState.update { it.copy(
+            gameSortMode = mode,
+            selectedItemIndex = 0,
+            scrollToTopToken = it.scrollToTopToken + 1,
+        )}
+        // Second pass on purpose: currentSortLabel() reads _uiState.value, which inside the update
+        // above is still the pre-change state — it would label the column with the old mode.
+        _uiState.update { it.copy(sortLabel = currentSortLabel()) }
+        rebuildGameColumn()
+    }
+
+    /**
+     * Sets the live query and rebuilds the column.
+     *
+     * The cursor goes back to the top rather than being kept by id: the list the cursor was
+     * anchored in no longer exists, and publishGameItems' keep-the-row logic would land it on an
+     * arbitrary neighbour of a row that has just been filtered out.
+     */
+    private fun applyGameQuery(query: String) {
+        if (_uiState.value.gameQuery == query) return
+        _uiState.update { it.copy(
+            gameQuery = query,
+            selectedItemIndex = 0,
+            scrollToTopToken = it.scrollToTopToken + 1,
+        )}
+        // As in [applyGameSortMode]: the label has to be computed from the state after the write.
+        _uiState.update { it.copy(sortLabel = currentSortLabel()) }
+        rebuildGameColumn()
+    }
+
+    /**
+     * Re-renders the Games column from the rows already in hand, falling back to a full reload if
+     * there is no builder (nothing has published a Games list yet).
+     *
+     * This is what keeps typing cheap: a per-keystroke [loadItemsForCategory] would cancel and
+     * re-subscribe a database flow over the whole library on every character.
+     */
+    private fun rebuildGameColumn() {
+        val rebuild = rebuildGameRows
+        if (rebuild != null) rebuild() else loadItemsForCategory(currentCategory())
+    }
+
+    /**
+     * Drops the query when the list it was typed against goes away — a different Memory Card, a
+     * collection, another category. Carrying it across would leave a short column whose cause has
+     * scrolled out of the user's memory.
+     *
+     * No reload here: every caller is already navigating, and does its own.
+     */
+    private fun clearGameQuery() = _uiState.update {
+        if (it.gameQuery.isBlank()) it else it.copy(gameQuery = "")
+    }
+
+    fun openGameSearchField() = _uiState.update {
+        it.copy(gameSearchField = GameSearchFieldState(text = it.gameQuery, textOnOpen = it.gameQuery))
+    }
+
+    /** Live: every keystroke re-filters the column behind the field. */
+    fun onGameSearchChanged(text: String) {
+        _uiState.update { it.copy(gameSearchField = it.gameSearchField?.copy(text = text)) }
+        applyGameQuery(text)
+    }
+
+    /** Confirm dismisses the field. The query is already applied — there is nothing to commit. */
+    fun onGameSearchConfirmed() = _uiState.update { it.copy(gameSearchField = null) }
+
+    /** Cancel restores the query as it was when the field opened. */
+    fun onGameSearchCancelled() {
+        val restore = _uiState.value.gameSearchField?.textOnOpen ?: return
+        _uiState.update { it.copy(gameSearchField = null) }
+        applyGameQuery(restore)
     }
 
     // The parent label for the two-pane flyout, non-null whenever drilled into ANY sub-item — a Games
@@ -4763,11 +5007,16 @@ class XMBViewModel @Inject constructor(
     // Status-bar hint for the current list ("Sort: Title"), or null when the list isn't sortable.
     private fun currentSortLabel(): String? {
         val cycle = activeSortContext() ?: return null
-        val mode = when {
-            cycle === MUSIC_SORTS -> _uiState.value.musicSortMode
-            cycle === VIDEO_SORTS -> _uiState.value.videoSortMode
-            else                  -> _uiState.value.gameSortMode
+        val state = _uiState.value
+        // Games: the chip names the menu it opens, and carries the active search term. That term
+        // is not decoration — a column missing four fifths of its games has nothing else on screen
+        // explaining why, and this chip is the only thing the eye can find it in.
+        if (cycle === GAME_SORTS) {
+            val term = state.gameQuery.trim()
+            return if (term.isBlank()) "Filter: ${state.gameSortMode.label}"
+                   else "Filter: \"$term\" · ${state.gameSortMode.label}"
         }
+        val mode = if (cycle === MUSIC_SORTS) state.musicSortMode else state.videoSortMode
         return "Sort: ${mode.label}"
     }
 
@@ -4961,6 +5210,61 @@ class XMBViewModel @Inject constructor(
      * ([cursorAfterRefresh]); without it the cursor keeps its index, which is what a fresh drill-in
      * needs, since navigateRememberingCursor has already set the index it should land on.
      */
+    /**
+     * The rows for one Games list: [games] filtered by the live query and sorted, or a single
+     * explanatory row when that comes out empty.
+     *
+     * Which empty row matters. A library with nothing in it gets [emptyItem] ("No games imported
+     * yet"); a query that matched nothing gets [noGameMatchesItem], because those are different
+     * problems and the second one is the user's own doing and instantly fixable. A null
+     * [emptyItem] is the one list that has always drawn a bare column when empty — the Favorites
+     * *category* — and it keeps doing so.
+     *
+     * [mapRows] is for the two lists that decorate their rows afterwards (Missing's reason
+     * subtitle, a gaming category's "Pinned" marker). It runs on real rows only — an empty-state
+     * row must never be given a game's decoration.
+     */
+    private fun gameRowsOrEmpty(
+        games: List<Game>,
+        emptyItem: (() -> XMBItem)? = null,
+        mapRows: (List<XMBItem>) -> List<XMBItem> = { it },
+    ): List<XMBItem> {
+        val state = _uiState.value
+        val visible = gamesForDisplay(games, state.gameQuery, state.gameSortMode)
+        return when {
+            visible.isNotEmpty()         -> mapRows(visible.toXmbItems())
+            state.gameQuery.isNotBlank() -> listOf(noGameMatchesItem(state.gameQuery.trim()))
+            else                         -> listOfNotNull(emptyItem?.invoke())
+        }
+    }
+
+    /** The Games column's "your search matched nothing" row. */
+    private fun noGameMatchesItem(term: String): XMBItem = XMBItem(
+        id       = EMPTY_CATEGORY_ITEM_ID,
+        title    = "No games match \"$term\"",
+        subtitle = "Open the Filter menu to change or clear it.",
+        type     = XMBItemType.EMPTY,
+    )
+
+    /**
+     * How to rebuild the Games column from the rows already in hand, or null when the list on
+     * screen is not a Games list.
+     *
+     * Set by each Games branch of [loadItemsForCategory] to a lambda closing over the list that
+     * branch last received, so a query or sort change re-runs [gameRowsOrEmpty] against the new
+     * state without re-subscribing to the database. Typing is per-keystroke: without this, every
+     * character cancelled and restarted a Room flow over the whole library.
+     *
+     * The same reasoning (and the same shape) as the music browser's cached `browserRawTracks`.
+     */
+    private var rebuildGameRows: (() -> Unit)? = null
+
+    /** Publishes a Games list and remembers how to rebuild it. See [rebuildGameRows]. */
+    private fun publishGames(keepCursorOnRow: Boolean, build: () -> List<XMBItem>) {
+        rebuildGameRows = { publishGameItems(build(), keepCursorOnRow = false) }
+        publishGameItems(build(), keepCursorOnRow)
+    }
+
     private fun publishGameItems(items: List<XMBItem>, keepCursorOnRow: Boolean) = _uiState.update {
         if (!keepCursorOnRow) it.copy(currentItems = items)
         else it.copy(
@@ -5277,7 +5581,12 @@ class XMBViewModel @Inject constructor(
                 GamepadAction.NAVIGATE_DOWN -> shiftContextMenu(+1)
                 GamepadAction.SELECT        -> activateContextMenuItem()
                 GamepadAction.BACK,
-                GamepadAction.OPEN_CONTEXT_MENU      -> closeContextMenu()
+                GamepadAction.OPEN_CONTEXT_MENU      ->
+                    // The Games Filter menu is the one menu here with a root worth returning to,
+                    // so BACK inside a group climbs one level instead of closing outright. Every
+                    // other submenu in the XMB is a one-shot picker, where closing IS the way out.
+                    if (state.activeContextMenu?.gamesFilterGroup != null) openGamesFilterGroup(null)
+                    else closeContextMenu()
                 else -> Unit
             }
             return
@@ -5410,6 +5719,16 @@ class XMBViewModel @Inject constructor(
         }
         if (state.playlistNameDialog != null) {
             if (action == GamepadAction.BACK) onCancelPlaylistName()
+            return
+        }
+        // The Games search field owns input while it is up, like the name dialogs above it. BACK
+        // cancels (restoring the query it opened with); the keyboard's own Search key confirms.
+        if (state.gameSearchField != null) {
+            when (action) {
+                GamepadAction.BACK   -> onGameSearchCancelled()
+                GamepadAction.SELECT -> onGameSearchConfirmed()
+                else -> Unit
+            }
             return
         }
         // Read-only info dialog (e.g. file location) — A or B closes it.
@@ -6040,6 +6359,9 @@ class XMBViewModel @Inject constructor(
     private fun activateContextMenuItem() {
         val menu   = _uiState.value.activeContextMenu ?: return
         val itemId = menu.items.getOrNull(menu.selectedIndex)?.id ?: return
+
+        // ── Games Filter menu — owns its own rows, and its groups stay open ──
+        if (handleGamesFilterItem(menu, itemId)) return
 
         // ── Notification panel menus (one row, or the list) ──
         if (handleNotificationMenuItem(menu, itemId)) return
@@ -7332,6 +7654,9 @@ class XMBViewModel @Inject constructor(
         // plain XMB (the drawer can't normally be open here, but this keeps the contextual button
         // state correct no matter which path selected the category).
         _uiState.update { it.copy(selectedCategoryIndex = index, selectedItemIndex = restore, selectedPlatformId = null, selectedCollectionId = null, musicNav = MusicNav.Root, videoNav = VideoNav.Root, photoNav = PhotoNav.Root, socialNav = SocialNav.Root, achievementsNav = AchievementsNav.Root, settingsSectionNav = null, activeAppDrawerFilter = null) }
+        // Moving along the crossbar is the coarsest "different list" there is, and this path does
+        // not go through navigateRememberingCursor, so it drops the Games query itself.
+        clearGameQuery()
         tintWaveForCategory(category)
         loadItemsForCategory(category)
     }

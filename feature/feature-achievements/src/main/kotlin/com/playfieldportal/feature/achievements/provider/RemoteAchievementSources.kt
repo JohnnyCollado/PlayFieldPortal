@@ -2,6 +2,7 @@ package com.playfieldportal.feature.achievements.provider
 
 import com.playfieldportal.core.domain.achievement.AchievementProvider
 import com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSource
+import com.playfieldportal.feature.achievements.provider.ps3.Ps3TrophySource
 import com.playfieldportal.feature.achievements.provider.retro.RetroAchievementsSource
 import com.playfieldportal.feature.achievements.provider.steam.SteamAchievementsSource
 import com.playfieldportal.feature.achievements.provider.vita.VitaTrophySource
@@ -20,11 +21,13 @@ class RemoteAchievementSources @Inject constructor(
     private val steam: SteamAchievementsSource,
     private val localSteam: LocalSteamSource,
     private val vitaTrophy: VitaTrophySource,
+    private val ps3Trophy: Ps3TrophySource,
 ) {
     fun forProvider(provider: AchievementProvider): RemoteAchievementSource = when (provider) {
         AchievementProvider.RETRO_ACHIEVEMENTS -> retroAchievements
         AchievementProvider.STEAM -> steam
         AchievementProvider.LOCAL_STEAM -> localSteam
         AchievementProvider.VITA_TROPHY -> vitaTrophy
+        AchievementProvider.PS3_TROPHY -> ps3Trophy
     }
 }

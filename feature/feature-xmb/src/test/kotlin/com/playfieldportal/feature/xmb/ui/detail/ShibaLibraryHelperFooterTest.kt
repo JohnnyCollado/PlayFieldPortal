@@ -81,7 +81,7 @@ class ShibaLibraryHelperFooterTest {
 
         val rows = libraryOptionRows(state)
 
-        assertEquals(listOf("All", "RetroAchievements", "Steam", "Local Steam", "PS Vita"), rows.map { it.label })
+        assertEquals(listOf("All", "RetroAchievements", "Steam", "Local Steam", "PS Vita", "PS3"), rows.map { it.label })
         assertEquals(listOf("All"), rows.filter { it.checked }.map { it.label })
     }
 

@@ -58,6 +58,8 @@ class LibraryManagerViewModelTest {
     private val localSteamSchemaGenerator = mockk<LocalSteamSchemaGenerator>(relaxed = true)
     private val credentials = mockk<AchievementCredentialsProvider>(relaxed = true)
     private val vita3KLibrary = mockk<Vita3KLibrary>(relaxed = true)
+    private val ps3DataLibrary =
+        mockk<com.playfieldportal.core.data.repository.Ps3DataLibrary>(relaxed = true)
     private val vitaGameScanner = mockk<VitaGameScanner>(relaxed = true)
     private val libraryScanner = mockk<LibraryScanner>(relaxed = true)
     private val romRootScanRunner = mockk<RomRootScanRunner>(relaxed = true)
@@ -74,6 +76,7 @@ class LibraryManagerViewModelTest {
         every { gameRepository.observeAll() } returns flowOf(emptyList())
         every { emulatorProfileRepository.profiles } returns flowOf(emptyList())
         every { vita3KLibrary.ux0TreeUriFlow } returns flowOf(null)
+        every { ps3DataLibrary.dataTreeUriFlow } returns flowOf(null)
         vm = LibraryManagerViewModel(
             context,
             memoryCardRepository,
@@ -88,6 +91,7 @@ class LibraryManagerViewModelTest {
             localSteamSchemaGenerator,
             credentials,
             vita3KLibrary,
+            ps3DataLibrary,
             vitaGameScanner,
             libraryScanner,
             romRootScanRunner,

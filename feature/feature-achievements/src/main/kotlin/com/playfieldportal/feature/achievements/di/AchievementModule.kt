@@ -9,6 +9,7 @@ import com.playfieldportal.feature.achievements.sync.DefaultAchievementDetailFet
 import com.playfieldportal.feature.achievements.sync.LocalSteamCheckStrategy
 import com.playfieldportal.feature.achievements.sync.LocalSteamReturnListener
 import com.playfieldportal.feature.achievements.sync.ProviderCheckStrategy
+import com.playfieldportal.feature.achievements.sync.Ps3TrophyCheckStrategy
 import com.playfieldportal.feature.achievements.sync.RaCheckStrategy
 import com.playfieldportal.feature.achievements.sync.SteamCheckStrategy
 import com.playfieldportal.feature.achievements.sync.VitaTrophyCheckStrategy
@@ -40,6 +41,7 @@ interface AchievementModule {
     @Binds @IntoSet fun steamStrategy(impl: SteamCheckStrategy): ProviderCheckStrategy
     @Binds @IntoSet fun localSteamStrategy(impl: LocalSteamCheckStrategy): ProviderCheckStrategy
     @Binds @IntoSet fun vitaStrategy(impl: VitaTrophyCheckStrategy): ProviderCheckStrategy
+    @Binds @IntoSet fun ps3Strategy(impl: Ps3TrophyCheckStrategy): ProviderCheckStrategy
 
     @Binds @IntoSet fun localSteamReturn(impl: LocalSteamReturnListener): GameSessionReturnListener
 }

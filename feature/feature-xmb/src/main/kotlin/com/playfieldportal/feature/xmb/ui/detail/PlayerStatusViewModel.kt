@@ -54,6 +54,7 @@ enum class PlayerStatusProviderFilter(val label: String, val provider: Achieveme
     STEAM("Steam", AchievementProvider.STEAM),
     LOCAL_STEAM("Local Steam", AchievementProvider.LOCAL_STEAM),
     VITA("PS Vita", AchievementProvider.VITA_TROPHY),
+    PS3("PS3", AchievementProvider.PS3_TROPHY),
 }
 
 enum class PlayerStatusOptionGroup(val title: String) { SORT("Sort"), PROVIDER("Provider") }

@@ -110,6 +110,7 @@ fun LibraryManagerScreen(
         onSetEmulatorForDetail = { viewModel.setEmulatorForDetail(it) },
         onOpenImportPcGames = { viewModel.openImportPcGames() },
         onSetVita3KFolder = { viewModel.setVita3KFolder(it) },
+        onSetPs3DataFolder = { viewModel.setPs3DataFolder(it) },
         onScanVitaGames = { viewModel.scanVitaGames() },
         onRemoveApp = { viewModel.removeApp(it) },
         onRefreshHomeStatus = { viewModel.refreshHomeStatus() },
@@ -162,6 +163,7 @@ private fun LibraryManagerContent(
     onSetEmulatorForDetail: (EmulatorOption) -> Unit,
     onOpenImportPcGames: () -> Unit,
     onSetVita3KFolder: (Uri) -> Unit,
+    onSetPs3DataFolder: (Uri) -> Unit,
     onScanVitaGames: () -> Unit,
     onRemoveApp: (Long) -> Unit,
     onRefreshHomeStatus: () -> Unit,
@@ -186,7 +188,7 @@ private fun LibraryManagerContent(
         LibraryStep.PICK_PLATFORM -> PickPlatformContent(state, onBack = handleBack, onPlatformChosen = onPlatformChosen, modifier = modifier)
         LibraryStep.PICK_EMULATOR -> PickEmulatorContent(state, onBack = handleBack, onEmulatorChosen = onEmulatorChosen, modifier = modifier)
         LibraryStep.SCAN_PROMPT   -> ScanPromptContent(state, onBack = handleBack, onConfirmAddConsole = onConfirmAddConsole, modifier = modifier)
-        LibraryStep.CARD_DETAIL   -> CardDetailContent(state, onBack = handleBack, onAddAndroidApps = onAddAndroidApps, onLoadEmulatorOptions = onLoadEmulatorOptions, onRemoveExtension = onRemoveExtension, onAddExtension = onAddExtension, onScanConsole = onScanConsole, onBeginRename = onBeginRename, onToggleEnabled = onToggleEnabled, onTogglePinned = onTogglePinned, onMoveCard = onMoveCard, onRemoveCard = onRemoveCard, onSetEmulatorForDetail = onSetEmulatorForDetail, onOpenImportPcGames = onOpenImportPcGames, onSetVita3KFolder = onSetVita3KFolder, onScanVitaGames = onScanVitaGames, onRemoveApp = onRemoveApp, modifier = modifier)
+        LibraryStep.CARD_DETAIL   -> CardDetailContent(state, onBack = handleBack, onAddAndroidApps = onAddAndroidApps, onLoadEmulatorOptions = onLoadEmulatorOptions, onRemoveExtension = onRemoveExtension, onAddExtension = onAddExtension, onScanConsole = onScanConsole, onBeginRename = onBeginRename, onToggleEnabled = onToggleEnabled, onTogglePinned = onTogglePinned, onMoveCard = onMoveCard, onRemoveCard = onRemoveCard, onSetEmulatorForDetail = onSetEmulatorForDetail, onOpenImportPcGames = onOpenImportPcGames, onSetVita3KFolder = onSetVita3KFolder, onSetPs3DataFolder = onSetPs3DataFolder, onScanVitaGames = onScanVitaGames, onRemoveApp = onRemoveApp, modifier = modifier)
         LibraryStep.IMPORT_PC     -> ImportPcGamesContent(state, onBack = handleBack, onRefreshHomeStatus = onRefreshHomeStatus, onScanPcGamesFolder = onScanPcGamesFolder, onExportManualPcGames = onExportManualPcGames, onImportPcGame = onImportPcGame, onImportAllPcGames = onImportAllPcGames, onTestLaunchPcGame = onTestLaunchPcGame, onAddPcGameById = onAddPcGameById, onDismissMessage = onDismissMessage, homeRoleIntentProvider = homeRoleIntentProvider, modifier = modifier)
     }
 
@@ -448,6 +450,7 @@ private fun CardDetailContent(
     onSetEmulatorForDetail: (EmulatorOption) -> Unit,
     onOpenImportPcGames: () -> Unit,
     onSetVita3KFolder: (Uri) -> Unit,
+    onSetPs3DataFolder: (Uri) -> Unit,
     onScanVitaGames: () -> Unit,
     onRemoveApp: (Long) -> Unit,
     modifier: Modifier,
@@ -461,9 +464,13 @@ private fun CardDetailContent(
     val isAndroid = card.platformId == "android"
     val isWindows = card.platformId == "windows"
     val isVita    = card.platformId == "psvita"
+    val isPs3     = card.platformId == "ps3"
     val vitaFolderPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocumentTree()
     ) { uri -> uri?.let { onSetVita3KFolder(it) } }
+    val ps3FolderPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { uri -> uri?.let { onSetPs3DataFolder(it) } }
 
     SettingsScaffold(title = "Library Manager", subtitle = card.displayName, onBack = onBack, modifier = modifier) {
         // Registered like the list screens: the scaffold needs a scroll owner here for its
@@ -580,6 +587,27 @@ private fun CardDetailContent(
                     },
                     onClick  = if (!isScanning && card.romDirectory != null) ({ onScanConsole(card.platformId) }) else null,
                 )
+            }
+
+            // PS3 games scan as ordinary ROMs; this grant only unlocks trophy reading from
+            // ARMSX3's own data folder. Nothing is ever written into it.
+            if (isPs3) {
+                SettingsGroup("Achievements")
+                SettingsValueRow(
+                    label    = "PS3 Data Folder",
+                    value    = state.ps3FolderLabel ?: "Not set",
+                    sublabel = state.ps3FolderLabel
+                        ?.let { "Reading trophies from this ARMSX3 PS3 folder" }
+                        ?: "Pick your ARMSX3 PS3 folder so PFP can read trophies",
+                    onClick  = { ps3FolderPicker.launch(null) },
+                )
+                if (state.ps3FolderLabel == null) {
+                    Hint(
+                        "Grant the ARMSX3 PS3 folder (the one holding config/dev_hdd0), then run " +
+                            "Auto-Match in Settings ▸ Shiba Coins. Trophy ids come from each game's " +
+                            "own disc, so a game can link before you have ever booted it.",
+                    )
+                }
             }
 
             if (isAndroid) SettingsGroup("Actions")
@@ -874,6 +902,7 @@ fun LibraryManagerScreenPreview() {
             onSetEmulatorForDetail = {},
             onOpenImportPcGames = {},
             onSetVita3KFolder = {},
+            onSetPs3DataFolder = {},
             onScanVitaGames = {},
             onRemoveApp = {},
             onRefreshHomeStatus = {},

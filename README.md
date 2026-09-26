@@ -93,7 +93,8 @@ Android home screen as a single front end for ROM emulation, Android games, PC-l
    - [4.18 Backup & restore](#418-backup--restore)
    - [4.19 Shiba Coins (achievements)](#419-shiba-coins-achievements)
    - [4.20 Tracking local (Steam-emulated) PC games](#420-tracking-local-steam-emulated-pc-games)
-   - [4.21 Settings reference](#421-settings-reference)
+   - [4.21 Tracking PS3 trophies (ARMSX3)](#421-tracking-ps3-trophies-armsx3)
+   - [4.22 Settings reference](#422-settings-reference)
 5. [Permissions & privacy](#5-permissions--privacy)
 6. [Troubleshooting](#6-troubleshooting)
 7. [For Developers](#for-developers)
@@ -770,7 +771,55 @@ Notes:
   installs the bundled emulator over the game's original `steam_api` DLL (backed up alongside
   it). This is the step the Warning Note's backup protects against.
 
-### 4.21 Settings reference
+### 4.21 Tracking PS3 trophies (ARMSX3)
+
+PFP can track real PS3 trophies for games you run in ARMSX3, read entirely from the emulator's own
+files. Fully offline: no account, no API key, nothing to connect. **PFP never writes anything into
+the emulator's data folder or into a game image** — every read is read-only.
+
+PS3 games need no special scan. `ps3` is an ordinary console card (`iso`, `pkg`, `ps3dir`), so your
+games are already in the library; trophies only need one folder grant.
+
+**Setting it up**
+
+1. *Settings ▸ Library Manager ▸ PS3 ▸ PS3 Data Folder* — pick your ARMSX3 PS3 folder, the one that
+   holds `config/dev_hdd0`. Granting `config`, `dev_hdd0`, or the `trophy` folder itself works too;
+   PFP resolves whichever level you picked. No path is ever hardcoded.
+2. Run *Auto-Match* — either from *Settings ▸ Shiba Coins* for the whole library, or from a single
+   game's Shiba Coins page.
+
+**How a game finds its trophies**
+
+By the trophy set id (`NPWR…`) the **game itself declares**, read from `PS3_GAME/TROPDIR` inside its
+own disc image — the same place the emulator looks. Only a few 2 KB sectors of a multi-GB image are
+read. Matching by title is the fallback, used only when that id can't be read (an encrypted dump),
+and it links only on a strong name match rather than guessing.
+
+Because the id comes from the disc, a game can be linked **before you have ever booted it**: PFP
+will tell you a game has 48 trophies waiting and track it at 0%. The emulator creates the trophy
+folder the first time the game runs, so play it once and the unlocks appear on the next update.
+
+**What you see**
+
+- Trophy names, descriptions, hidden flags and icons from the set's own `TROPCONF.SFM`, and earned
+  state with unlock times from `TROPUSR.DAT`.
+- Platinum is a real PS3 trophy, so it shows as the Platinum Crown — never minted locally.
+- No rarity percentages: PS3 trophies have no local rarity source, so those columns stay blank.
+- A game with DLC trophy subsets shows **one** merged list and one completion percentage. Installing
+  the DLC simply makes the list longer on the next update.
+- A set PFP cannot read is reported as *unknown*, never as "nothing earned".
+
+**If nothing appears**
+
+| What you see | What it means |
+|---|---|
+| "no PS3 data folder set" | The grant is missing or was revoked — set it again (step 1). |
+| "has no dev_hdd0 trophy data" | The granted folder isn't the ARMSX3 PS3 folder. |
+| "play … once in ARMSX3" | The game hasn't registered its trophy set yet. Boot it once. |
+| "Couldn't read this PS3 image" | An encrypted dump. It can't declare its trophy id. |
+| "This PS3 game declares no trophies" | The title genuinely ships without a trophy set. |
+
+### 4.22 Settings reference
 
 | Section | What it covers |
 |---|---|

@@ -60,3 +60,23 @@ class VitaTrophyCheckStrategy @Inject constructor() : ProviderCheckStrategy {
         const val INTERVAL_MS = 3L * 24 * 60 * 60 * 1_000
     }
 }
+
+/**
+ * PS3_TROPHY (ARMSX3's local trophy files) has no cheap change signal either — a fingerprint would
+ * mean re-reading every set's `TROPUSR.DAT`, which is the read itself — so it clones
+ * [VitaTrophyCheckStrategy]'s conservative cadence rather than inventing a new one. The reads are
+ * local; the writer reports whether anything actually changed.
+ */
+@Singleton
+class Ps3TrophyCheckStrategy @Inject constructor() : ProviderCheckStrategy {
+
+    override val provider = AchievementProvider.PS3_TROPHY
+
+    override suspend fun plan(entries: List<TrackedEntry>, trigger: SyncTrigger, now: Long): ProviderCheckPlan {
+        val due = entries.filter { entry ->
+            trigger == SyncTrigger.MANUAL || entry.isNew ||
+                entry.lastCheckedAt == null || now - entry.lastCheckedAt >= VitaTrophyCheckStrategy.INTERVAL_MS
+        }
+        return ProviderCheckPlan(toFetch = due.mapTo(mutableSetOf()) { it.identity })
+    }
+}

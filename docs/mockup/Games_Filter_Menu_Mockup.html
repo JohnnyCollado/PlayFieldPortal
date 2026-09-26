@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Games Filter Menu</title>
+<style>
+  :root {
+    --page-bg: #1a1c22;
+    --page-fg: #e8e6e1;
+    --page-muted: #9a978f;
+    --card: #23262e;
+    --rule: #34383f;
+    /* XMB Classic Blue, as LocalPFPColors renders it */
+    --wave: #1b4f9c;
+    --wave-deep: #0a1f42;
+    --accent: #7fc4ff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--page-bg); color: var(--page-fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    padding: 40px 24px 72px;
+  }
+  header { max-width: 1000px; margin: 0 auto 36px; }
+  h1 { font-size: 26px; font-weight: 600; letter-spacing: -0.01em; }
+  header p { color: var(--page-muted); font-size: 14px; margin-top: 8px; line-height: 1.55; }
+  .frames { max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 38px; }
+  figure { background: var(--card); border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; }
+  figcaption { padding: 13px 18px; border-bottom: 1px solid var(--rule); font-size: 13px; color: var(--page-muted); }
+  figcaption b { color: var(--page-fg); font-weight: 600; margin-right: 8px; }
+  .screen {
+    position: relative; aspect-ratio: 16 / 9; width: 100%;
+    background:
+      radial-gradient(120% 90% at 18% 8%, rgba(255,255,255,0.10), transparent 60%),
+      linear-gradient(160deg, var(--wave) 0%, var(--wave-deep) 78%);
+    overflow: hidden;
+  }
+  /* soft XMB wave band */
+  .screen::after {
+    content: ""; position: absolute; left: -10%; right: -10%; top: 36%; height: 30%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent);
+    filter: blur(22px); pointer-events: none;
+  }
+
+  /* status strip */
+  .strip {
+    position: absolute; inset: 0 0 auto 0; height: 7.4%;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 3.2%; font-size: 12px; z-index: 5;
+  }
+  .strip .left, .strip .right { display: flex; align-items: center; gap: 6px; }
+  .strip .right { gap: 7px; }
+  .muted { color: rgba(255,255,255,0.62); }
+  .sep { color: rgba(255,255,255,0.32); }
+  .pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(255,255,255,0.14); border-radius: 999px; padding: 2px 9px;
+    color: #fff; font-weight: 500;
+  }
+  .pill em { font-style: normal; color: var(--accent); }
+  .glyphs { color: rgba(255,255,255,0.75); letter-spacing: 3px; }
+
+  /* game column */
+  .column { position: absolute; left: 7%; top: 26%; display: flex; flex-direction: column; gap: 3px; z-index: 2; }
+  .row { display: flex; align-items: center; gap: 11px; padding: 6px 0; opacity: 0.55; }
+  .row.sel { opacity: 1; }
+  .tile {
+    width: 34px; height: 34px; border-radius: 4px;
+    background: linear-gradient(145deg, rgba(255,255,255,0.34), rgba(255,255,255,0.10));
+    box-shadow: 0 2px 6px rgba(0,0,0,0.45); flex: none;
+  }
+  .row.sel .tile { width: 46px; height: 46px; box-shadow: 0 0 18px rgba(160,210,255,0.55), 0 3px 10px rgba(0,0,0,0.5); }
+  .row .label { color: rgba(255,255,255,0.72); font-size: 13px; text-shadow: 0 2px 4px rgba(0,0,0,0.75); white-space: nowrap; }
+  .row.sel .label { color: #fff; font-size: 15px; font-weight: 600; }
+  .empty-note { color: rgba(255,255,255,0.55); font-size: 13px; font-style: italic; text-shadow: 0 2px 4px rgba(0,0,0,0.75); }
+
+  /* PSP right-edge menu panel */
+  .menu {
+    position: absolute; right: 0; top: 0; bottom: 0; width: 31.3%;   /* 300dp of 960 */
+    background: rgba(27,79,156,0.75);
+    padding: 0 4.2% 0 2.9%;
+    display: flex; flex-direction: column; justify-content: center; z-index: 6;
+  }
+  .menu .title { color: rgba(255,255,255,0.92); font-size: 15px; font-weight: 300; text-shadow: 0 2px 4px rgba(0,0,0,0.75); }
+  .menu .rule { height: 1px; background: rgba(255,255,255,0.30); margin: 10px 8px 12px 0; }
+  .menu .mrow {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 11px 0; margin-right: -22%; padding-right: 22%;
+    color: rgba(255,255,255,0.62); font-size: 13px; text-shadow: 0 2px 4px rgba(0,0,0,0.75);
+  }
+  .menu .mrow.sel {
+    color: #fff; font-size: 14px; font-weight: 600;
+    background: linear-gradient(90deg, transparent, rgba(150,205,255,0.40));
+  }
+  .menu .mrow .val { color: rgba(255,255,255,0.55); font-weight: 400; font-size: 12px; }
+  .menu .mrow.sel .val { color: rgba(255,255,255,0.85); }
+  .check { color: #fff; font-size: 13px; }
+  .scrim { position: absolute; inset: 0; background: rgba(0,0,0,0.25); z-index: 4; }
+
+  /* search entry */
+  .search {
+    position: absolute; left: 7%; top: 17%; z-index: 7;
+    background: rgba(8,20,40,0.88); border: 1px solid rgba(255,255,255,0.28);
+    border-radius: 6px; padding: 9px 14px; min-width: 38%;
+    display: flex; align-items: center; gap: 9px;
+    box-shadow: 0 6px 22px rgba(0,0,0,0.5);
+  }
+  .search .icon { color: rgba(255,255,255,0.6); font-size: 13px; }
+  .search .text { color: #fff; font-size: 15px; }
+  .search .caret { width: 1.5px; height: 17px; background: #fff; animation: blink 1.1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .search .hint { margin-left: auto; color: rgba(255,255,255,0.45); font-size: 11px; }
+
+  /* idle hint pill */
+  .hint-pill {
+    position: absolute; right: 2.1%; bottom: 4.4%; z-index: 5;
+    background: rgba(0,0,0,0.72); border-radius: 999px; padding: 6px 13px;
+    display: flex; align-items: center; gap: 13px; font-size: 11px; color: rgba(255,255,255,0.9);
+  }
+  .hint-pill span { display: inline-flex; align-items: center; gap: 5px; }
+  .btn {
+    width: 15px; height: 15px; border-radius: 50%; flex: none;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 700; color: #fff; font-style: normal;
+  }
+  .btn.sq { background: #d05a8f; }
+  .btn.tri { background: #4fae72; }
+  .btn.st { background: #55596a; font-size: 7px; }
+  .note {
+    max-width: 1000px; margin: 34px auto 0; color: var(--page-muted);
+    font-size: 13px; line-height: 1.6; border-top: 1px solid var(--rule); padding-top: 18px;
+  }
+  .note b { color: var(--page-fg); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Games &mdash; Filter menu &amp; status pill</h1>
+  <p>Mockup for <b>PFP_Games_Filter_Menu_Implementation_Plan.md</b>. Five states, Games category only.
+     Square / the status pill open the menu instead of blind-cycling the sort; the search term filters
+     the live column by display title. Chrome follows <code>PspContextMenuOverlay</code> (right-edge
+     panel, 300dp, wave at 75%, glow band bleeding to the screen edge) and <code>XmbPspStatusStrip</code>.</p>
+</header>
+
+<div class="frames">
+
+  <!-- A -->
+  <figure>
+    <figcaption><b>A &middot; Baseline</b> No query. The pill now reads <i>Filter</i>, not <i>Sort</i>, and the hint pill's Square half is relabelled to match.</figcaption>
+    <div class="screen">
+      <div class="strip">
+        <div class="left">
+          <span class="muted">Thu, Sep 25</span><span class="sep">&#9482;</span>
+          <span>9:41</span><span class="sep">&#9482;</span>
+          <span class="pill">&#8645; Filter: Title</span>
+        </div>
+        <div class="right"><span class="glyphs">&#128276; &#9099; &#9662; &#9646;</span><span class="muted">82%</span></div>
+      </div>
+      <div class="column">
+        <div class="row"><div class="tile"></div><div class="label">Castlevania: SotN</div></div>
+        <div class="row sel"><div class="tile"></div><div class="label">Gran Turismo 4</div></div>
+        <div class="row"><div class="tile"></div><div class="label">Jak II</div></div>
+        <div class="row"><div class="tile"></div><div class="label">Shadow of the Colossus</div></div>
+        <div class="row"><div class="tile"></div><div class="label">The Legend of Zelda: Wind Waker</div></div>
+        <div class="row"><div class="tile"></div><div class="label">Zelda II: The Adventure of Link</div></div>
+      </div>
+      <div class="hint-pill">
+        <span><i class="btn sq">&#9633;</i>Filter</span>
+        <span><i class="btn tri">&#9651;</i>Options</span>
+        <span><i class="btn st">&#9654;&#9654;</i>Notifications</span>
+      </div>
+    </div>
+  </figure>
+
+  <!-- B -->
+  <figure>
+    <figcaption><b>B &middot; Root menu</b> Square (or tapping the pill) opens it. Each row names its current choice, exactly like the Shiba Library's Options root.</figcaption>
+    <div class="screen">
+      <div class="strip">
+        <div class="left">
+          <span class="muted">Thu, Sep 25</span><span class="sep">&#9482;</span>
+          <span>9:41</span><span class="sep">&#9482;</span>
+          <span class="pill">&#8645; Filter: Title</span>
+        </div>
+        <div class="right"><span class="glyphs">&#128276; &#9099; &#9662; &#9646;</span><span class="muted">82%</span></div>
+      </div>
+      <div class="column">
+        <div class="row"><div class="tile"></div><div class="label">Castlevania: SotN</div></div>
+        <div class="row sel"><div class="tile"></div><div class="label">Gran Turismo 4</div></div>
+        <div class="row"><div class="tile"></div><div class="label">Jak II</div></div>
+        <div class="row"><div class="tile"></div><div class="label">Shadow of the Colossus</div></div>
+      </div>
+      <div class="scrim"></div>
+      <div class="menu">
+        <div class="title">Filter</div>
+        <div class="rule"></div>
+        <div class="mrow sel"><span>Search</span><span class="val">None</span></div>
+        <div class="mrow"><span>Sort</span><span class="val">Title</span></div>
+      </div>
+    </div>
+  </figure>
+
+  <!-- C -->
+  <figure>
+    <figcaption><b>C &middot; Sort group</b> The same overlay, swapped to the group. Checkmark on the active mode &mdash; no more cycling blind. Circle returns to the root; a second Circle closes.</figcaption>
+    <div class="screen">
+      <div class="strip">
+        <div class="left">
+          <span class="muted">Thu, Sep 25</span><span class="sep">&#9482;</span>
+          <span>9:41</span><span class="sep">&#9482;</span>
+          <span class="pill">&#8645; Filter: Title</span>
+        </div>
+        <div class="right"><span class="glyphs">&#128276; &#9099; &#9662; &#9646;</span><span class="muted">82%</span></div>
+      </div>
+      <div class="column">
+        <div class="row"><div class="tile"></div><div class="label">Castlevania: SotN</div></div>
+        <div class="row sel"><div class="tile"></div><div class="label">Gran Turismo 4</div></div>
+        <div class="row"><div class="tile"></div><div class="label">Jak II</div></div>
+        <div class="row"><div class="tile"></div><div class="label">Shadow of the Colossus</div></div>
+      </div>
+      <div class="scrim"></div>
+      <div class="menu">
+        <div class="title">Sort</div>
+        <div class="rule"></div>
+        <div class="mrow sel"><span>Title</span><span class="check">&#10003;</span></div>
+        <div class="mrow"><span>Recently Played</span></div>
+        <div class="mrow"><span>Date Added</span></div>
+      </div>
+    </div>
+  </figure>
+
+  <!-- D -->
+  <figure>
+    <figcaption><b>D &middot; Search entry</b> Activating <i>Search</i> closes the menu and opens the field over the column. The list filters as you type &mdash; the column behind is already down to two rows.</figcaption>
+    <div class="screen">
+      <div class="strip">
+        <div class="left">
+          <span class="muted">Thu, Sep 25</span><span class="sep">&#9482;</span>
+          <span>9:41</span><span class="sep">&#9482;</span>
+          <span class="pill">&#8645; Filter: <em>&ldquo;zel&rdquo;</em> &middot; Title</span>
+        </div>
+        <div class="right"><span class="glyphs">&#128276; &#9099; &#9662; &#9646;</span><span class="muted">82%</span></div>
+      </div>
+      <div class="search">
+        <span class="icon">&#128269;</span><span class="text">zel</span><span class="caret"></span>
+        <span class="hint">&#10005; Confirm &middot; &#9675; Cancel</span>
+      </div>
+      <div class="column" style="top:34%">
+        <div class="row sel"><div class="tile"></div><div class="label">The Legend of Zelda: Wind Waker</div></div>
+        <div class="row"><div class="tile"></div><div class="label">Zelda II: The Adventure of Link</div></div>
+      </div>
+    </div>
+  </figure>
+
+  <!-- E -->
+  <figure>
+    <figcaption><b>E &middot; Active query &amp; no matches</b> The pill carries the term so a short column always explains itself, and a no-results row replaces an empty screen. Both are the whole reason the pill changes.</figcaption>
+    <div class="screen">
+      <div class="strip">
+        <div class="left">
+          <span class="muted">Thu, Sep 25</span><span class="sep">&#9482;</span>
+          <span>9:41</span><span class="sep">&#9482;</span>
+          <span class="pill">&#8645; Filter: <em>&ldquo;zzz&rdquo;</em> &middot; Title</span>
+        </div>
+        <div class="right"><span class="glyphs">&#128276; &#9099; &#9662; &#9646;</span><span class="muted">82%</span></div>
+      </div>
+      <div class="column" style="top:40%">
+        <div class="row sel"><div class="tile" style="opacity:0.35"></div><div class="label">No games match &ldquo;zzz&rdquo;</div></div>
+        <div class="empty-note" style="margin-left:57px">Square &rarr; Search to change it</div>
+      </div>
+      <div class="hint-pill">
+        <span><i class="btn sq">&#9633;</i>Filter</span>
+        <span><i class="btn tri">&#9651;</i>Options</span>
+        <span><i class="btn st">&#9654;&#9654;</i>Notifications</span>
+      </div>
+    </div>
+  </figure>
+
+</div>
+
+<p class="note">
+  <b>Not shown, but specified in the plan:</b> touch parity (the pill is already a tap target when
+  <code>showTouchControls</code> is set &mdash; it opens this same menu instead of cycling), and the query's
+  lifetime (cleared when the platform / collection changes, kept while you stay put).
+  Music and Video keep the existing cycle behaviour and the <i>Sort:</i> pill, unchanged.
+</p>
+</body>
+</html>

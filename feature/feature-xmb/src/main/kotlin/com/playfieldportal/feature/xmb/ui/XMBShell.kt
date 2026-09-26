@@ -253,6 +253,8 @@ fun XMBShellContainer(
         onAppDetailActionConsumed = viewModel::consumeAppDetailAction,
         onContextMenuItemActivated = viewModel::onContextMenuItemActivatedAt,
         onContextMenuDismiss = viewModel::closeContextMenu,
+        onGameSearchChanged = viewModel::onGameSearchChanged,
+        onGameSearchConfirmed = viewModel::onGameSearchConfirmed,
         onOpenColorSchemePicker = viewModel::openColorSchemePicker,
         onColorSchemeHighlightedAt = viewModel::onColorSchemeHighlightedAt,
         onColorSchemeConfirm = viewModel::confirmColorSchemePicker,
@@ -410,6 +412,8 @@ fun XMBShell(
     onAppDetailActionConsumed: () -> Unit = {},
     onContextMenuItemActivated: (Int) -> Unit = {},
     onContextMenuDismiss: () -> Unit = {},
+    onGameSearchChanged: (String) -> Unit = {},
+    onGameSearchConfirmed: () -> Unit = {},
     onMusicPlayPause: () -> Unit = {},
     onMusicPrev: () -> Unit = {},
     onMusicNext: () -> Unit = {},
@@ -915,6 +919,7 @@ fun XMBShell(
             ) {
                 ContextMenuHint(
                     showSort = uiState.canSortCurrentList,
+                    sortLabel = uiState.sortActionLabel,
                     showOptions = uiState.focusedItemHasContextMenu,
                     // Always true here: the hint only renders on the main XMB with no overlay up,
                     // which is exactly where START opens the panel.
@@ -1171,6 +1176,16 @@ fun XMBShell(
                     initialText = dialog.initialText,
                     onConfirm = onConfirmCollectionName,
                     onCancel = onCancelCollectionName,
+                )
+            }
+
+            // The Games search field, over the column it filters. Above the menus it was opened
+            // from (they close first) and below nothing — it is the only thing taking input.
+            uiState.gameSearchField?.let { field ->
+                GameSearchField(
+                    text = field.text,
+                    onTextChange = onGameSearchChanged,
+                    onConfirm = onGameSearchConfirmed,
                 )
             }
 

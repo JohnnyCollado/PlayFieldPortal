@@ -201,9 +201,13 @@ data class ShibaCoinsUiState(
     val hasChangeMatch: Boolean
         get() = linked && !accountOnly && provider == AchievementProvider.STEAM
 
-    /** Steam asks about the copy first; RetroAchievements matches by ROM hash. Others can't. */
+    /**
+     * Steam asks about the copy first, RetroAchievements matches by ROM hash, and PS3 reads the
+     * trophy id out of the game's own disc. Local Steam and Vita link from a scan instead.
+     */
     val canAutoMatch: Boolean
-        get() = provider == AchievementProvider.STEAM || provider == AchievementProvider.RETRO_ACHIEVEMENTS
+        get() = provider == AchievementProvider.STEAM || provider == AchievementProvider.RETRO_ACHIEVEMENTS ||
+            provider == AchievementProvider.PS3_TROPHY
 
     /** Refresh is offered for an installed game with a provider identity to refresh against. */
     val canSync: Boolean get() = (linked || accountOnly) && installed
@@ -615,6 +619,8 @@ class ShibaCoinsViewModel @Inject constructor(
             // Local Steam links from the game folder and PS Vita from the Vita3K scan — the panel
             // says so, and there is nothing Confirm can do here.
             AchievementProvider.LOCAL_STEAM, AchievementProvider.VITA_TROPHY -> Unit
+            // PS3 links from the disc's own TROPDIR, so Confirm can do the whole job here.
+            AchievementProvider.PS3_TROPHY -> autoMatchPs3()
         }
     }
 
@@ -636,6 +642,26 @@ class ShibaCoinsViewModel @Inject constructor(
             when (result) {
                 AchievementAutoMatcher.RaMatchResult.Matched -> sync()
                 is AchievementAutoMatcher.RaMatchResult.Unmatched ->
+                    _state.update { it.copy(message = result.reason) }
+            }
+        }
+    }
+
+    /**
+     * PS3 Auto-Match: read the NPWR id the game's own disc declares and link it. No copy question
+     * and no manual entry — the disc is the authority. A game whose set isn't registered yet links
+     * anyway at 0%, so the only messages here are real failures (grant unset, unreadable image, no
+     * TROPDIR), in the matcher's own words.
+     */
+    fun autoMatchPs3() {
+        if (_state.value.isMatching) return
+        viewModelScope.launch {
+            _state.update { it.copy(isMatching = true) }
+            val result = autoMatcher.matchSingleAsPs3(gameId)
+            _state.update { it.copy(isMatching = false) }
+            when (result) {
+                AchievementAutoMatcher.Ps3MatchResult.Matched -> sync()
+                is AchievementAutoMatcher.Ps3MatchResult.Unmatched ->
                     _state.update { it.copy(message = result.reason) }
             }
         }
@@ -740,8 +766,12 @@ class ShibaCoinsViewModel @Inject constructor(
         is ProviderSyncResult.Failed -> "Sync failed: ${result.reason}"
     }
 
-    private fun providerForPlatform(platformId: String?): AchievementProvider =
-        if (platformId == "windows") AchievementProvider.STEAM else AchievementProvider.RETRO_ACHIEVEMENTS
+    private fun providerForPlatform(platformId: String?): AchievementProvider = when (platformId) {
+        "windows" -> AchievementProvider.STEAM
+        // PS3 has no RetroAchievements console: its coins always come from ARMSX3's trophy files.
+        "ps3" -> AchievementProvider.PS3_TROPHY
+        else -> AchievementProvider.RETRO_ACHIEVEMENTS
+    }
 }
 
 // ── Pure list shaping ─────────────────────────────────────────────────────────
@@ -824,6 +854,7 @@ internal fun providerLabel(provider: AchievementProvider): String = when (provid
     AchievementProvider.STEAM -> "Steam"
     AchievementProvider.LOCAL_STEAM -> "Local Steam"
     AchievementProvider.VITA_TROPHY -> "PS Vita"
+    AchievementProvider.PS3_TROPHY -> "PS3"
 }
 
 private fun AccountAchievementEntity.toRow() = CoinRow(

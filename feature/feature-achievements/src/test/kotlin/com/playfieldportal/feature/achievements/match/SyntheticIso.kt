@@ -26,8 +26,12 @@ class SyntheticIso {
      * but the LBA fields written into the ISO9660 records are offset by [baseLba] — modelling a GD-ROM
      * whose filesystem sits on a track that starts deep in the disc (Dreamcast track 3 at LBA 45000),
      * where records address sectors absolutely. Zero (the default) yields a normal single-track image.
+     *
+     * [includeDotRecords] prepends each directory with the one-byte-id self and parent records a
+     * real ISO9660 directory starts with. Off by default so every existing fixture stays
+     * byte-identical; the directory-listing test turns it on to prove those records are skipped.
      */
-    fun build(baseLba: Int = 0): ByteArray {
+    fun build(baseLba: Int = 0, includeDotRecords: Boolean = false): ByteArray {
         val lba = HashMap<String, Int>()
         val size = HashMap<String, Int>()
 
@@ -49,6 +53,12 @@ class SyntheticIso {
         // Directory sectors: each dir's immediate children, back to back (zero byte terminates).
         for (dir in dirs) {
             var off = lba[dir]!! * SECTOR
+            if (includeDotRecords) {
+                val self = lba[dir]!! + baseLba
+                val parent = lba[parentOf(dir).takeIf { dir.isNotEmpty() } ?: ""]!! + baseLba
+                off += writeDirRecord(image, off, self, SECTOR, byteArrayOf(0), isDir = true)
+                off += writeDirRecord(image, off, parent, SECTOR, byteArrayOf(1), isDir = true)
+            }
             for (child in childrenOf(dir)) {
                 val isDir = child in dirs
                 val idText = if (isDir) nameOf(child) else "${nameOf(child)};1"

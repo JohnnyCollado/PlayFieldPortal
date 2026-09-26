@@ -38,9 +38,17 @@ class AchievementAutoMatcherTest {
             coEvery { officialNameOf(any()) } returns null
         }
 
+    private val ps3TropDirReader =
+        mockk<com.playfieldportal.feature.achievements.provider.ps3.Ps3TropDirReader>()
+    private val ps3TrophyDiscovery =
+        mockk<com.playfieldportal.feature.achievements.provider.ps3.Ps3TrophyDiscovery> {
+            coEvery { availableSetIds() } returns emptyList()
+        }
+
     private val matcher = AchievementAutoMatcher(
         gameRepository, linkDao, matchNoteDao, raHashResolver, repository, romReader, discOpener,
-        steamGridDb, localSteamDiscovery, localSteamOwnership, steamNames,
+        steamGridDb, localSteamDiscovery, localSteamOwnership, steamNames, ps3TropDirReader,
+        ps3TrophyDiscovery,
     )
 
     private fun game(id: Long, platform: String, title: String = "Game $id") =
@@ -98,13 +106,15 @@ class AchievementAutoMatcherTest {
 
     @Test
     fun `reports unsupported systems without reading the rom`() = runTest {
-        val g = game(1, "ps3") // RA has no PS3 achievements — no console id at all
+        // PS4 has no RA console id and no local provider either, so it stays genuinely untracked.
+        // (PS3 used to stand in here; it now routes to the PS3_TROPHY branch instead.)
+        val g = game(1, "ps4")
         stubGames(g)
 
         val report = matcher.matchUnlinked()
 
         assertEquals(1, report.unmatched.size)
-        assertEquals("RetroAchievements has no achievements for this system (ps3)", report.unmatched.first().reason)
+        assertEquals("RetroAchievements has no achievements for PlayStation 4", report.unmatched.first().reason)
         coVerify(exactly = 0) { romReader.read(any()) }
         coVerify(exactly = 0) { discOpener.open(any()) }
     }

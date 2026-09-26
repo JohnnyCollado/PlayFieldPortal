@@ -717,6 +717,24 @@ private fun LinkPanelRow(
                         palette,
                     )
                 }
+                // PS3 is the one local provider with a per-game action: the trophy id comes from
+                // the game's own disc, so Auto-Match can link it here and now.
+                AchievementProvider.PS3_TROPHY -> {
+                    PanelTitle("Not linked yet", palette)
+                    PanelBody(
+                        "PS3 trophies link from the game's own disc — set your PS3 Data Folder in the " +
+                            "library and Auto-Match.",
+                        palette,
+                    )
+                    PanelActions {
+                        PanelButton(
+                            label = if (state.isMatching) "Matching…" else "Auto-Match",
+                            palette = palette,
+                            enabled = !state.isMatching,
+                            highlighted = focused,
+                        ) { viewModel.autoMatchPs3() }
+                    }
+                }
             }
             AutoMatchStep.CONFIRM_COPY -> {
                 PanelTitle("Is this a legitimate Steam copy?", palette)

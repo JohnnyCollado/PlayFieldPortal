@@ -115,6 +115,8 @@ data class LibraryManagerUiState(
     val pcGames: List<PcGameRow> = emptyList(),
     // Display name of the granted Vita3K ux0 folder (null = not set).
     val vita3KFolderLabel: String? = null,
+    // Display name of the granted ARMSX3 PS3 data folder (null = not set).
+    val ps3FolderLabel: String? = null,
     // True when PFP is the active Home app (unlocks auto-import of published game shortcuts).
     val isHomeLauncher: Boolean = false,
 
@@ -147,6 +149,7 @@ class LibraryManagerViewModel @Inject constructor(
     private val localSteamSchemaGenerator: com.playfieldportal.feature.achievements.provider.localsteam.LocalSteamSchemaGenerator,
     private val credentials: com.playfieldportal.core.data.achievement.AchievementCredentialsProvider,
     private val vita3KLibrary: com.playfieldportal.core.data.repository.Vita3KLibrary,
+    private val ps3DataLibrary: com.playfieldportal.core.data.repository.Ps3DataLibrary,
     private val vitaGameScanner: com.playfieldportal.feature.achievements.provider.vita.VitaGameScanner,
     private val libraryScanner: LibraryScanner,
     private val romRootScanRunner: RomRootScanRunner,
@@ -199,20 +202,24 @@ class LibraryManagerViewModel @Inject constructor(
         )
     }
 
+    // combine() is typed to 5 flows, so the two emulator data-folder grants travel as one typed
+    // pair rather than pushing the whole combine onto an Array<Any?> lambda.
+    private val emulatorFolderGrants: kotlinx.coroutines.flow.Flow<Pair<String?, String?>> =
+        combine(vita3KLibrary.ux0TreeUriFlow, ps3DataLibrary.dataTreeUriFlow) { vita, ps3 -> vita to ps3 }
+
     val uiState: StateFlow<LibraryManagerUiState> = combine(
         memoryCardRepository.observeAll(),
         gameRepository.observeAll(),
         emulatorProfileRepository.profiles,
-        vita3KLibrary.ux0TreeUriFlow,
+        emulatorFolderGrants,
         _scratch,
-    ) { cards, games, profiles, vitaUx0, scratch ->
+    ) { cards, games, profiles, grants, scratch ->
+        val (vitaUx0, ps3Data) = grants
         val emulatorNames = profiles.associate { it.id to it.name }
         val counts = games.groupBy { it.platformId }.mapValues { it.value.size }
         scratch.copy(
-            vita3KFolderLabel = vitaUx0?.let { uri ->
-                RomRootRepository.rawPathOfTree(uri)?.substringAfterLast('/')
-                    ?: Uri.decode(uri).substringAfterLast('/').substringAfterLast(':')
-            },
+            vita3KFolderLabel = vitaUx0?.let(::folderLabelOf),
+            ps3FolderLabel = ps3Data?.let(::folderLabelOf),
             // Each root shows the consoles homed under it (matched by the card's directory).
             romRoots = scratch.romRoots.map { root ->
                 val rootRaw = RomRootRepository.rawPathOfTree(root.treeUri)?.trimEnd('/')
@@ -597,6 +604,27 @@ class LibraryManagerViewModel @Inject constructor(
                 tasks.fail(taskId, "Vita scan failed — see the log.")
             }
             _scratch.update { it.copy(scanningPlatformIds = it.scanningPlatformIds - PSVITA_PLATFORM_ID) }
+        }
+    }
+
+    // A granted tree's last path segment, for a settings row — the raw path when the provider
+    // exposes one, else the decoded document id's leaf.
+    private fun folderLabelOf(uri: String): String =
+        RomRootRepository.rawPathOfTree(uri)?.substringAfterLast('/')
+            ?: Uri.decode(uri).substringAfterLast('/').substringAfterLast(':')
+
+    /**
+     * Grants (and persists) the ARMSX3 PS3 data folder. Unlike Vita there is nothing to scan: PS3
+     * games are ordinary ROMs that already scan into the library, so this grant only unlocks trophy
+     * reading (docs/plans/PFP_PS3_Trophy_Tracking_Implementation_Plan.md).
+     */
+    fun setPs3DataFolder(uri: Uri?) {
+        if (uri == null) return
+        viewModelScope.launch {
+            ps3DataLibrary.setDataFolder(uri)   // persists the SAF read grant
+            _scratch.update {
+                it.copy(message = "PS3 data folder set. Run Auto-Match in Settings ▸ Shiba Coins to link PS3 trophies.")
+            }
         }
     }
 

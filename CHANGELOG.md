@@ -6,6 +6,25 @@ All notable changes to Play Field Portal are documented here. This project follo
 ## [Unreleased]
 
 ### Added
+- **PS3 trophy tracking (ARMSX3), a fourth achievement provider.** Grant your ARMSX3 PS3 folder in
+  *Library Manager ▸ PS3* and PFP reads real PS3 trophies out of the emulator's own files —
+  definitions, hidden flags and icons from `TROPCONF.SFM`, earned state and unlock times from the
+  big-endian `TROPUSR.DAT`. Fully offline: no account, no API key, and nothing is ever written into
+  the emulator's data folder or into a game image.
+  A game links by the `NPWR` trophy set id **its own disc declares** in `PS3_GAME/TROPDIR` — the
+  same place the emulator looks — not by title, so the link is deterministic. Reading it costs a
+  handful of 2 KB sectors of a multi-GB image, which also means a game can be linked *before it has
+  ever been booted*: PFP tracks it at 0% and says to play it once, where the emulator's own trophy
+  screen shows nothing at all. Title matching survives only as the degraded fallback for an
+  encrypted dump, and links only on a strong name match.
+  A game with DLC trophy subsets shows **one** merged coin list and one completion percentage, in
+  the order the disc declares them, with exactly one Platinum. Coin ids are namespaced per set, so
+  two subsets both numbering their trophies from 0 can't collide, and installing DLC simply makes
+  the list longer on the next update with no invalidation logic. The grant is accepted at whatever
+  depth you pick (the ARMSX3 root, `config`, `dev_hdd0`, or `trophy` itself) and profiles are
+  enumerated rather than assumed, so a second user folder is read too.
+  PS3 needed no scanner and no database migration: `ps3` was already a ROM console, and the provider
+  column already stores an enum name.
 - **Ambience: a looping background track for the launcher.** Assign a clip under Interface ▸ Sound
   and it loops while you browse, Wii-menu style. No assignment means ambience is off — the
   assignment *is* the switch, so there is no second toggle to drift out of sync with it.
