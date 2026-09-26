@@ -65,6 +65,8 @@ import com.playfieldportal.core.ui.components.PspMenuRow
 import com.playfieldportal.core.data.repository.PfpThemeStore
 import com.playfieldportal.core.ui.preview.CombinedPreviews
 import com.playfieldportal.core.ui.preview.PfpPreview
+import com.playfieldportal.core.ui.sound.LocalMenuSounds
+import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.feature.settings.viewmodel.ThemesSettingsUiState
 import com.playfieldportal.feature.settings.viewmodel.ThemesSettingsViewModel
 
@@ -162,6 +164,10 @@ private fun ThemesSettingsContent(
     var pickerVal by remember { mutableStateOf(1f) }
     var pickerChannel by remember { mutableStateOf(0) }
     val customIndex = PfpColorChoices.size
+    // Every branch of this screen's interceptor moves a cursor the scaffold cannot see — a strip
+    // index, a menu index, an HSV channel — so the cue is voiced alongside each move. A consumed
+    // action is invisible to the scaffold by design; that is what makes this the screen's job.
+    val menuSounds = LocalMenuSounds.current
 
     fun openIconPicker() {
         val argb = state.iconColorArgb ?: 0xFFFFFFFFL
@@ -191,57 +197,97 @@ private fun ThemesSettingsContent(
                 when {
                     customPicker -> {
                         when (action) {
-                            GamepadAction.NAVIGATE_UP   -> pickerChannel = (pickerChannel + 2) % 3
-                            GamepadAction.NAVIGATE_DOWN -> pickerChannel = (pickerChannel + 1) % 3
-                            GamepadAction.NAVIGATE_LEFT -> when (pickerChannel) {
-                                0 -> pickerHue = ((pickerHue - 6f) % 360f + 360f) % 360f
-                                1 -> pickerSat = (pickerSat - 0.04f).coerceIn(0f, 1f)
-                                else -> pickerVal = (pickerVal - 0.04f).coerceIn(0f, 1f)
+                            GamepadAction.NAVIGATE_UP   -> {
+                                menuSounds.play(MenuSound.SCROLL); pickerChannel = (pickerChannel + 2) % 3
                             }
-                            GamepadAction.NAVIGATE_RIGHT -> when (pickerChannel) {
-                                0 -> pickerHue = ((pickerHue + 6f) % 360f + 360f) % 360f
-                                1 -> pickerSat = (pickerSat + 0.04f).coerceIn(0f, 1f)
-                                else -> pickerVal = (pickerVal + 0.04f).coerceIn(0f, 1f)
+                            GamepadAction.NAVIGATE_DOWN -> {
+                                menuSounds.play(MenuSound.SCROLL); pickerChannel = (pickerChannel + 1) % 3
+                            }
+                            // Stepping a channel's value is a move along it, so it ticks like
+                            // one — the same reading the scaffold gives a slider's LEFT/RIGHT.
+                            GamepadAction.NAVIGATE_LEFT -> {
+                                menuSounds.play(MenuSound.SCROLL)
+                                when (pickerChannel) {
+                                    0 -> pickerHue = ((pickerHue - 6f) % 360f + 360f) % 360f
+                                    1 -> pickerSat = (pickerSat - 0.04f).coerceIn(0f, 1f)
+                                    else -> pickerVal = (pickerVal - 0.04f).coerceIn(0f, 1f)
+                                }
+                            }
+                            GamepadAction.NAVIGATE_RIGHT -> {
+                                menuSounds.play(MenuSound.SCROLL)
+                                when (pickerChannel) {
+                                    0 -> pickerHue = ((pickerHue + 6f) % 360f + 360f) % 360f
+                                    1 -> pickerSat = (pickerSat + 0.04f).coerceIn(0f, 1f)
+                                    else -> pickerVal = (pickerVal + 0.04f).coerceIn(0f, 1f)
+                                }
                             }
                             GamepadAction.SELECT -> {
+                                // Committing the picked colour, not descending into anything.
+                                menuSounds.play(MenuSound.CONFIRM)
                                 onSetIconColor(hsvToArgbLong(pickerHue, pickerSat, pickerVal))
                                 customPicker = false
                             }
-                            GamepadAction.BACK -> customPicker = false
+                            GamepadAction.BACK -> { menuSounds.play(MenuSound.BACK); customPicker = false }
                             else -> Unit
                         }
                         true
                     }
                     m != null -> {
                         when (action) {
-                            GamepadAction.NAVIGATE_UP   -> menuIndex = (menuIndex - 1).coerceAtLeast(0)
-                            GamepadAction.NAVIGATE_DOWN -> menuIndex = (menuIndex + 1).coerceAtMost(m.options.size - 1)
-                            GamepadAction.SELECT        -> { m.options.getOrNull(menuIndex)?.action?.invoke(); menu = null }
+                            // Clamped at either end, so the cue follows the index and not the press
+                            // — the same rule the scaffold's own row movement follows.
+                            GamepadAction.NAVIGATE_UP   -> {
+                                val next = (menuIndex - 1).coerceAtLeast(0)
+                                if (next != menuIndex) menuSounds.play(MenuSound.SCROLL)
+                                menuIndex = next
+                            }
+                            GamepadAction.NAVIGATE_DOWN -> {
+                                val next = (menuIndex + 1).coerceAtMost(m.options.size - 1)
+                                if (next != menuIndex) menuSounds.play(MenuSound.SCROLL)
+                                menuIndex = next
+                            }
+                            GamepadAction.SELECT        -> {
+                                menuSounds.play(MenuSound.SELECT)
+                                m.options.getOrNull(menuIndex)?.action?.invoke(); menu = null
+                            }
                             GamepadAction.BACK,
-                            GamepadAction.OPEN_CONTEXT_MENU      -> menu = null
+                            GamepadAction.OPEN_CONTEXT_MENU      -> {
+                                menuSounds.play(MenuSound.BACK); menu = null
+                            }
                             else -> Unit
                         }
                         true
                     }
                     myThemesFocused && action == GamepadAction.NAVIGATE_LEFT -> {
-                        cardIndex = (cardIndex - 1).coerceAtLeast(0); true
+                        val next = (cardIndex - 1).coerceAtLeast(0)
+                        if (next != cardIndex) menuSounds.play(MenuSound.SCROLL)
+                        cardIndex = next; true
                     }
                     myThemesFocused && action == GamepadAction.NAVIGATE_RIGHT -> {
-                        cardIndex = (cardIndex + 1).coerceAtMost((state.savedThemes.size - 1).coerceAtLeast(0)); true
+                        val next = (cardIndex + 1).coerceAtMost((state.savedThemes.size - 1).coerceAtLeast(0))
+                        if (next != cardIndex) menuSounds.play(MenuSound.SCROLL)
+                        cardIndex = next; true
                     }
                     iconStripFocused && action == GamepadAction.NAVIGATE_LEFT -> {
-                        iconIndex = (iconIndex - 1).coerceAtLeast(0)
+                        val next = (iconIndex - 1).coerceAtLeast(0)
+                        if (next != iconIndex) menuSounds.play(MenuSound.SCROLL)
+                        iconIndex = next
                         runCatching { iconStripRequester.requestFocus() }
                         true
                     }
                     iconStripFocused && action == GamepadAction.NAVIGATE_RIGHT -> {
-                        iconIndex = (iconIndex + 1).coerceAtMost(customIndex)
+                        val next = (iconIndex + 1).coerceAtMost(customIndex)
+                        if (next != iconIndex) menuSounds.play(MenuSound.SCROLL)
+                        iconIndex = next
                         runCatching { iconStripRequester.requestFocus() }
                         true
                     }
                     action == GamepadAction.OPEN_CONTEXT_MENU -> {
                         if (myThemesFocused) {
-                            state.savedThemes.getOrNull(cardIndex)?.let { openMenuForSavedTheme(it) }
+                            state.savedThemes.getOrNull(cardIndex)?.let {
+                                menuSounds.play(MenuSound.SELECT)
+                                openMenuForSavedTheme(it)
+                            }
                         }
                         true
                     }
@@ -411,14 +457,19 @@ private fun FocusableStrip(
     val navigationOrder = LocalSettingsNavigationOrder.current
     val reportFocused = LocalSettingsReportFocused.current
     val reportRemoved = LocalSettingsReportRemoved.current
+    val menuSounds = LocalMenuSounds.current
     var isFocused by remember { mutableStateOf(false) }
     val fr = focusRequester ?: remember { FocusRequester() }
+    // A strip is a navigation node but not a SettingsRow, so it carries the activation cue itself
+    // — the same place a row carries it, for the same reason. One wrapped lambda for both the node
+    // and the focus-tracker fallback, so they cannot sound different.
+    val activate: () -> Unit = { menuSounds.play(MenuSound.SELECT); onSelect() }
     val navItem = ControllerNavItem(
         key        = "strip-${System.identityHashCode(fr)}",
         focusable  = true,
         selectable = true,
         enabled    = true,
-        onSelect   = onSelect,
+        onSelect   = activate,
     )
 
     DisposableEffect(Unit) {
@@ -450,7 +501,7 @@ private fun FocusableStrip(
                 isFocused = st.isFocused
                 onFocusChange(st.isFocused)
                 if (st.isFocused) {
-                    focusTracker(onSelect)
+                    focusTracker(activate)
                     reportFocused(fr)
                 }
             }

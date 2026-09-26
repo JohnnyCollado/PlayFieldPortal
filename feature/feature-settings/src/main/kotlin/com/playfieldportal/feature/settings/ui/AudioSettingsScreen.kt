@@ -26,6 +26,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.UiMediaSlot
+import com.playfieldportal.core.ui.sound.LocalMenuSounds
+import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.feature.settings.viewmodel.AudioSettingsViewModel
 import com.playfieldportal.feature.settings.viewmodel.PFP_DEFAULT_LABEL
 import com.playfieldportal.themekit.UiMediaLimits
@@ -117,6 +119,8 @@ fun AudioSettingsScreen(
     // Which assignment row the cursor is on right now — the north/west face-button shortcuts
     // operate on it. Toggle and reset rows never set it, so shortcuts are inert over them.
     var focusedSlot by remember { mutableStateOf<UiMediaSlot?>(null) }
+    // The face-button shortcuts are consumed by the interceptor, so they voice themselves.
+    val menuSounds = LocalMenuSounds.current
 
     Box(modifier = modifier) {
         SettingsScaffold(
@@ -135,6 +139,9 @@ fun AudioSettingsScreen(
                         // so the north-face shortcut is consumed only when it has real work to do.
                         // Restore the row after Use Default removes its inline action.
                         requestSoundFocus(slot)
+                        // Matches the row's own Use Default action; the west-face preview below
+                        // stays uncued because the sample it plays IS the feedback.
+                        menuSounds.play(MenuSound.CONFIRM)
                         viewModel.useDefault(slot)
                         true
                     }

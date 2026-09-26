@@ -28,6 +28,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.playfieldportal.core.ui.sound.LocalMenuSounds
+import com.playfieldportal.core.ui.sound.MenuSound
 import kotlin.math.round
 
 /**
@@ -72,6 +74,7 @@ fun SettingsSliderRow(
     val reportFocused = LocalSettingsReportFocused.current
     val enterSliderMode = LocalSettingsEnterSliderMode.current
     val adjusting = LocalSettingsSliderAdjusting.current
+    val menuSounds = LocalMenuSounds.current
     var isFocused by remember { mutableStateOf(false) }
 
     // The adjusting colour comes from the LIVE theme, not PfpPalette's fixed blue.
@@ -90,7 +93,10 @@ fun SettingsSliderRow(
     SideEffect { latestValue.value = value }
     val stepSize = if (steps > 0) (valueRange.endInclusive - valueRange.start) / (steps + 1) else 0f
 
+    // Entering adjust mode is the activation cue, like any other row's SELECT. The steps taken
+    // once inside are cursor moves and tick from the scaffold, which owns adjust-mode input.
     val enterAdjustment = {
+        menuSounds.play(MenuSound.SELECT)
         val node = SettingsSliderNode(
             onStep = { delta ->
                 val raw = latestValue.value + delta * stepSize

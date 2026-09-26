@@ -49,6 +49,8 @@ import com.playfieldportal.core.ui.motion.MotionWallpaperBackground
 import com.playfieldportal.core.ui.motion.MotionWallpaperPolicy
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.UiMediaSlot
+import com.playfieldportal.core.ui.sound.LocalMenuSounds
+import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.composite
 import com.playfieldportal.core.ui.theme.solveScrimColor
@@ -145,6 +147,10 @@ fun DisplaySettingsScreen(
         )
     }
 
+    // The two modals below swallow input before the scaffold sees it, so they voice their own
+    // moves — see the interceptor's own note on why a consumed action cannot be voiced centrally.
+    val menuSounds = LocalMenuSounds.current
+
     SettingsScaffold(
         title    = "Settings",
         subtitle = "Display",
@@ -160,13 +166,17 @@ fun DisplaySettingsScreen(
             // The PSP layout confirmation is a hard input boundary: nothing behind it sees a press.
             pspConfirmFocus?.let { focused ->
                 when (action) {
-                    GamepadAction.NAVIGATE_LEFT, GamepadAction.NAVIGATE_RIGHT ->
+                    GamepadAction.NAVIGATE_LEFT, GamepadAction.NAVIGATE_RIGHT -> {
+                        menuSounds.play(MenuSound.SCROLL)
                         pspConfirmFocus = if (focused == PSP_CONFIRM_CANCEL) PSP_CONFIRM_APPLY else PSP_CONFIRM_CANCEL
+                    }
                     GamepadAction.SELECT -> {
+                        // Apply is the commit; Cancel is a back — same two words the dialog itself uses.
+                        menuSounds.play(if (focused == PSP_CONFIRM_APPLY) MenuSound.CONFIRM else MenuSound.BACK)
                         if (focused == PSP_CONFIRM_APPLY) viewModel.applyPspLayout()
                         pspConfirmFocus = null
                     }
-                    GamepadAction.BACK -> pspConfirmFocus = null
+                    GamepadAction.BACK -> { menuSounds.play(MenuSound.BACK); pspConfirmFocus = null }
                     else -> Unit
                 }
                 return@SettingsScaffold true
@@ -175,6 +185,8 @@ fun DisplaySettingsScreen(
             // as tapping, and the focused row underneath can never be activated through it.
             if (state.wallpaperPreviewVisible) {
                 if (action == GamepadAction.SELECT || action == GamepadAction.BACK) {
+                    // Both buttons dismiss, so both are a back regardless of which one was pressed.
+                    menuSounds.play(MenuSound.BACK)
                     viewModel.hideWallpaperPreview()
                 }
                 return@SettingsScaffold true
@@ -187,6 +199,8 @@ fun DisplaySettingsScreen(
                     // Advertised only while the row has a custom assignment, so this is consumed
                     // only when it has real work to do. Restore focus after the action vanishes.
                     requestMediaFocus(slot)
+                    // Same cue the row's own Use Default action plays — one shortcut, one meaning.
+                    menuSounds.play(MenuSound.CONFIRM)
                     viewModel.clearUiMedia(slot)
                     true
                 }

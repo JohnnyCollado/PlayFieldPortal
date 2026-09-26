@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.domain.model.XYLayout
 import com.playfieldportal.core.ui.components.ControllerPromptItem
+import com.playfieldportal.core.ui.sound.MenuSound
 
 /**
  * One user-media assignment row: what it is, what is currently assigned, and the two
@@ -67,6 +68,9 @@ fun MediaAssignmentRow(
                     SettingsRowAction(
                         "Preview $label", onPreview,
                         actionFocusBackgroundColor = lerp(SettingsAccent, Color.Black, 0.50f),
+                        // The sample IS the feedback here. A cursor tick first would put the thing
+                        // being auditioned second, on top of a cue that sounds like the default.
+                        plays = null,
                     ) {
                         Icon(
                             Icons.Default.PlayArrow,
@@ -84,6 +88,10 @@ fun MediaAssignmentRow(
                     SettingsRowAction(
                         "Use the PFP default for $label", onUseDefault,
                         actionFocusBackgroundColor = lerp(Color(0xFFE55353), Color.Black, 0.50f),
+                        // Throwing away a sample the user imported is a commit, not a descent, so
+                        // it takes the confirm cue rather than the ordinary activation one. The
+                        // north-face shortcut that does the same job plays the same cue.
+                        plays = MenuSound.CONFIRM,
                     ) {
                         Icon(
                             Icons.Default.Refresh,

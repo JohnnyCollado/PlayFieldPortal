@@ -35,6 +35,8 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.playfieldportal.core.domain.model.GamepadAction
 import com.playfieldportal.core.ui.components.ControllerPromptItem
+import com.playfieldportal.core.ui.sound.LocalMenuSounds
+import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.feature.settings.viewmodel.LogFileItem
 import com.playfieldportal.feature.settings.viewmodel.LogsSettingsViewModel
 import timber.log.Timber
@@ -89,6 +91,9 @@ fun LogsSettingsScreen(
         else -> SettingsDefaultHelperItems
     }
 
+    // Consumed by the interceptor below, so the scaffold never sees it to voice it.
+    val menuSounds = LocalMenuSounds.current
+
     SettingsScaffold(
         title = "Settings",
         subtitle = "Logs",
@@ -100,6 +105,8 @@ fun LogsSettingsScreen(
             if (target != null && !state.confirmClearVisible &&
                 MediaRowShortcuts.isNorthFace(action, state.xyLayout)
             ) {
+                // Consumed, so the scaffold stays silent — the shortcut voices itself.
+                menuSounds.play(MenuSound.SELECT)
                 shareLogFile(context, target)
                 true
             } else {

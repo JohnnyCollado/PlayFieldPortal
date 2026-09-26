@@ -25,6 +25,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.dp
+import com.playfieldportal.core.ui.sound.LocalMenuSounds
+import com.playfieldportal.core.ui.sound.MenuSound
 
 // ── Shared controller-row registration ──────────────────────────────────────────
 //
@@ -145,6 +147,13 @@ internal fun SettingsRowActionButton(
     val rowActionFrs = LocalSettingsRowActions.current
     val reportFocused = LocalSettingsReportFocused.current
     val reportRemoved = LocalSettingsReportRemoved.current
+    val menuSounds = LocalMenuSounds.current
+    // One wrapped activation for both ways in — the icon button's own click and the tap gesture
+    // layered over it — honouring the action's [SettingsRowAction.plays] opt-out. The controller
+    // path wraps the same way where the nav node is built (SettingsRow / WizardRow).
+    val activate = remember(action.onClick, action.plays, menuSounds) {
+        { action.plays?.let(menuSounds::play); action.onClick() }
+    }
     val actionFr = remember { FocusRequester() }
     val actionKey = "$rowKey:action:$index"
     var actionFocused by remember { mutableStateOf(false) }
@@ -157,11 +166,11 @@ internal fun SettingsRowActionButton(
         }
     }
     IconButton(
-        onClick = action.onClick,
+        onClick = activate,
         modifier = Modifier
-            .pointerInput(actionKey, action.onClick, action.onLongPress) {
+            .pointerInput(actionKey, activate, action.onLongPress) {
                 detectTapGestures(
-                    onTap = { touchInput(); action.onClick() },
+                    onTap = { touchInput(); activate() },
                     onLongPress = { touchInput(); action.onLongPress?.invoke() },
                 )
             }
@@ -171,7 +180,7 @@ internal fun SettingsRowActionButton(
                 onFocusedChanged(state.isFocused)
                 action.onFocusChanged?.invoke(state.isFocused)
                 if (state.isFocused) {
-                    focusTracker(action.onClick)
+                    focusTracker(activate)
                     reportFocused(actionFr)
                 }
             }

@@ -52,6 +52,8 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.playfieldportal.core.ui.sound.LocalMenuSounds
+import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.core.ui.theme.menuCursor
 import com.playfieldportal.core.ui.theme.menuCursorEdge
 import com.playfieldportal.core.ui.theme.menuCursorFill
@@ -97,16 +99,28 @@ fun WizardRow(
     val touchInput = LocalSettingsTouchInput.current
     val cursorVisible = LocalSettingsCursorVisible.current
     val reportFocused = LocalSettingsReportFocused.current
+    val menuSounds = LocalMenuSounds.current
     var isFocused by remember { mutableStateOf(false) }
     val actionFocusCount = remember { mutableIntStateOf(0) }
     val anyActionFocused = actionFocusCount.intValue > 0
+
+    // Activation cue on the row's own lambda, exactly as SettingsRow does it: the wizard is the
+    // first thing a new user navigates, so it cannot be the one surface that stays mute.
+    val activate = remember(onClick, menuSounds) {
+        onClick?.let { action ->
+            {
+                menuSounds.play(MenuSound.SELECT)
+                action()
+            }
+        }
+    }
 
     val row = rememberControllerRowRegistration(
         prefix = "wizard",
         focusKey = focusKey,
         claimInitialFocus = onClick != null,
         selectable = onClick != null,
-        onSelect = onClick,
+        onSelect = activate,
         trailingActionsFor = { rowKey ->
             actions.mapIndexed { index, action ->
                 ControllerNavItem(
@@ -114,7 +128,7 @@ fun WizardRow(
                     focusable = true,
                     selectable = true,
                     enabled = true,
-                    onSelect = action.onClick,
+                    onSelect = { action.plays?.let(menuSounds::play); action.onClick() },
                     onLongPress = action.onLongPress,
                 )
             }
@@ -127,13 +141,13 @@ fun WizardRow(
             .fillMaxWidth()
             .focusRequester(row.focusRequester)
             .then(row.positionReporting)
-            .pointerInput(row.rowKey, onClick) {
-                detectTapGestures(onTap = { touchInput(); onClick?.invoke() })
+            .pointerInput(row.rowKey, activate) {
+                detectTapGestures(onTap = { touchInput(); activate?.invoke() })
             }
             .onFocusChanged { state ->
                 isFocused = state.isFocused
                 if (state.isFocused) {
-                    focusTracker(onClick)
+                    focusTracker(activate)
                     reportFocused(row.focusRequester)
                 }
             }
@@ -304,14 +318,21 @@ fun WizardTextField(
     val touchInput = LocalSettingsTouchInput.current
     val reportFocused = LocalSettingsReportFocused.current
     val keyboard = LocalSoftwareKeyboardController.current
+    val menuSounds = LocalMenuSounds.current
     var editing by remember { mutableStateOf(false) }
+
+    // Entering edit mode is this field's activation, the same as SettingsTextFieldRow's. Leaving
+    // it stays silent: the IME owns that moment, and focus can leave without any press at all.
+    val beginEditing: () -> Unit = {
+        menuSounds.play(MenuSound.SELECT); editing = true
+    }
 
     val row = rememberControllerRowRegistration(
         prefix = "wizardfield",
         focusKey = focusKey,
         claimInitialFocus = true,
         selectable = true,
-        onSelect = { editing = true },
+        onSelect = beginEditing,
     )
     val fr = row.focusRequester
 
@@ -374,7 +395,7 @@ fun WizardTextField(
                         .onFocusChanged { state ->
                             if (state.isFocused) {
                                 // SELECT over the field starts editing (opens the keyboard).
-                                focusTracker { editing = true }
+                                focusTracker(beginEditing)
                                 reportFocused(fr)
                             } else {
                                 editing = false
@@ -387,7 +408,7 @@ fun WizardTextField(
                     Box(
                         modifier = Modifier
                             .matchParentSize()
-                            .pointerInput(Unit) { detectTapGestures { editing = true } },
+                            .pointerInput(Unit) { detectTapGestures { beginEditing() } },
                     )
                 }
             }
@@ -405,13 +426,17 @@ private fun WizardAdvanceButton(onAdvance: () -> Unit, focusKey: String?) {
     val focusTracker = LocalSettingsFocusTracker.current
     val touchInput = LocalSettingsTouchInput.current
     val reportFocused = LocalSettingsReportFocused.current
+    val menuSounds = LocalMenuSounds.current
     var focused by remember { mutableStateOf(false) }
+    // One wrapped activation shared by the node, the focus-tracker fallback and the tap, so the
+    // button cannot sound different depending on how it was pressed.
+    val advanceWithCue: () -> Unit = { menuSounds.play(MenuSound.SELECT); onAdvance() }
     val advance = rememberControllerRowRegistration(
         prefix = "wizardadvance",
         focusKey = focusKey,
         claimInitialFocus = false,
         selectable = true,
-        onSelect = onAdvance,
+        onSelect = advanceWithCue,
     )
     Box(
         modifier = Modifier
@@ -425,11 +450,13 @@ private fun WizardAdvanceButton(onAdvance: () -> Unit, focusKey: String?) {
             .onFocusChanged { state ->
                 focused = state.isFocused
                 if (state.isFocused) {
-                    focusTracker(onAdvance)
+                    focusTracker(advanceWithCue)
                     reportFocused(advance.focusRequester)
                 }
             }
-            .pointerInput(onAdvance) { detectTapGestures(onTap = { touchInput(); onAdvance() }) }
+            .pointerInput(onAdvance) {
+                detectTapGestures(onTap = { touchInput(); advanceWithCue() })
+            }
             .focusable(),
         contentAlignment = Alignment.Center,
     ) {
@@ -447,24 +474,30 @@ fun WizardMessageRow(
     val focusTracker = LocalSettingsFocusTracker.current
     val touchInput = LocalSettingsTouchInput.current
     val reportFocused = LocalSettingsReportFocused.current
+    val menuSounds = LocalMenuSounds.current
     var isFocused by remember { mutableStateOf(false) }
+    // Dismissing a status row closes something rather than opening it, so it takes the back cue
+    // — the same reading the scaffold gives BACK and a LEFT that backs out.
+    val dismiss: () -> Unit = {
+        menuSounds.play(MenuSound.BACK); onDismiss()
+    }
     val row = rememberControllerRowRegistration(
         prefix = "wizardmsg",
         focusKey = null,
         claimInitialFocus = false,   // a transient status never steals the page's opening focus
         selectable = true,
-        onSelect = onDismiss,
+        onSelect = dismiss,
     )
     Row(
         modifier = modifier
             .fillMaxWidth()
             .focusRequester(row.focusRequester)
             .then(row.positionReporting)
-            .pointerInput(row.rowKey) { detectTapGestures(onTap = { touchInput(); onDismiss() }) }
+            .pointerInput(row.rowKey) { detectTapGestures(onTap = { touchInput(); dismiss() }) }
             .onFocusChanged { state ->
                 isFocused = state.isFocused
                 if (state.isFocused) {
-                    focusTracker(onDismiss)
+                    focusTracker(dismiss)
                     reportFocused(row.focusRequester)
                 }
             }

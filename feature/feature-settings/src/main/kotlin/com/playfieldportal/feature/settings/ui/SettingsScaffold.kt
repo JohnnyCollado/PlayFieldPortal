@@ -82,6 +82,8 @@ import com.playfieldportal.core.ui.components.ControllerHintBar
 import com.playfieldportal.core.ui.components.ControllerPromptBar
 import com.playfieldportal.core.ui.components.ControllerPromptItem
 import com.playfieldportal.core.ui.gesture.dragToScroll
+import com.playfieldportal.core.ui.sound.LocalMenuSounds
+import com.playfieldportal.core.ui.sound.MenuSound
 import com.playfieldportal.core.ui.theme.LocalPFPColors
 import com.playfieldportal.core.ui.theme.LocalPfpTextColors
 import com.playfieldportal.core.ui.theme.solveScrimColor
@@ -315,6 +317,12 @@ fun SettingsScaffold(
 ) {
     // Settings ▸ Controller ▸ Left Backs Out, supplied by SettingsNavHost from the XMB's state.
     val leftBacksOut = LocalSettingsLeftBacksOut.current
+    // Voices this screen's cursor. The settings layer navigates in composition rather than in a
+    // ViewModel, so the cue for a move or a back lives here, beside the move itself. The cue for
+    // ACTIVATING something deliberately does not: it lives on the row that owns the action (see
+    // SettingsRow), so a tap and a SELECT on the same row sound identically without either path
+    // knowing about the other.
+    val menuSounds = LocalMenuSounds.current
     val focusManager = LocalFocusManager.current
     // The screen content owns the actual verticalScroll state. All focus visibility and boundary
     // operations use this registered state so touch scrolling and controller navigation share one
@@ -576,7 +584,10 @@ fun SettingsScaffold(
         }
         Timber.d("Settings focus: action=$pendingAction focusedClick=${focusedRowClick.value != null}")
         // Give the screen a chance to consume the action first (e.g. remap capture mode).
-        // If the interceptor returns true the action is fully consumed — no navigation fires.
+        // If the interceptor returns true the action is fully consumed — no navigation fires, and
+        // no cue either: a consumed action did something only the screen knows the shape of, so the
+        // screen voices it or does not. Button-remap capture is why this can never be voiced from
+        // here — a cue on every captured press would sound on presses being RECORDED, not acted on.
         if (onInterceptAction?.invoke(pendingAction) == true) {
             onConsumed()
             return@LaunchedEffect
@@ -595,10 +606,22 @@ fun SettingsScaffold(
         val adjustingSlider = sliderNodeState.value
         if (adjustingSlider != null) {
             when (pendingAction) {
-                GamepadAction.NAVIGATE_LEFT  -> adjustingSlider.onStep(-1)
-                GamepadAction.NAVIGATE_RIGHT -> adjustingSlider.onStep(1)
+                // A step is a cursor move along the slider, so it ticks like one. A step into a
+                // clamped end still ticks: adjust mode consumed the press, and silence there reads
+                // as a dropped input rather than as "already at the end".
+                GamepadAction.NAVIGATE_LEFT  -> {
+                    menuSounds.play(MenuSound.SCROLL); adjustingSlider.onStep(-1)
+                }
+                GamepadAction.NAVIGATE_RIGHT -> {
+                    menuSounds.play(MenuSound.SCROLL); adjustingSlider.onStep(1)
+                }
+                // Leaving adjust mode is a level up whichever button does it, so it gets the same
+                // cue as the scaffold's own BACK: the same gesture, one scope inward.
                 GamepadAction.SELECT,
-                GamepadAction.BACK -> sliderNodeState.value = null
+                GamepadAction.BACK -> {
+                    menuSounds.play(MenuSound.BACK); sliderNodeState.value = null
+                }
+                // No cue here: these fall through to the vertical move below, which plays its own.
                 GamepadAction.NAVIGATE_UP,
                 GamepadAction.NAVIGATE_DOWN -> sliderNodeState.value = null
                 else -> Unit
@@ -619,6 +642,9 @@ fun SettingsScaffold(
             GamepadAction.NAVIGATE_UP -> {
                 val previous = navigationState.focusedKey
                 val target = navigationState.move(-1)
+                // The cue follows the CURSOR, not the press: a clamped move stays silent, exactly
+                // as the XMB's own lists are at their ends, so a boundary is audible by its silence.
+                if (target != null && target != previous) menuSounds.play(MenuSound.SCROLL)
                 // Clamped at the first navigable item: stay put but scroll back to the top.
                 if (target != null && target == previous) {
                     // Up at the first logical item is a deliberate top-boundary action. Always
@@ -636,7 +662,10 @@ fun SettingsScaffold(
             }
 
             GamepadAction.NAVIGATE_DOWN -> {
-                requestFocusFor(navigationState.move(1))
+                val previous = navigationState.focusedKey
+                val target = navigationState.move(1)
+                if (target != null && target != previous) menuSounds.play(MenuSound.SCROLL)
+                requestFocusFor(target)
             }
             // Inline trailing actions (e.g. a root row's Replace/Remove buttons) are reached
             // horizontally. On a row without them moveHorizontal returns null — LEFT was a silent
@@ -647,24 +676,41 @@ fun SettingsScaffold(
             // mode above, and a screen's own onInterceptAction (remap capture, Themes, Sound).
             GamepadAction.NAVIGATE_LEFT -> {
                 val target = navigationState.moveHorizontal(-1)
-                if (target != null) requestFocusFor(target)
-                else if (leftBacksOut) onBack()
+                if (target != null) {
+                    menuSounds.play(MenuSound.SCROLL)
+                    requestFocusFor(target)
+                } else if (leftBacksOut) {
+                    // LEFT that backs out IS a back, so it sounds like one rather than like a move
+                    // — the same split the XMB makes when LEFT leaves a drill-in.
+                    menuSounds.play(MenuSound.BACK)
+                    onBack()
+                }
             }
 
             GamepadAction.NAVIGATE_RIGHT -> {
-                navigationState.moveHorizontal(1)?.let { requestFocusFor(it) }
+                navigationState.moveHorizontal(1)?.let {
+                    menuSounds.play(MenuSound.SCROLL)
+                    requestFocusFor(it)
+                }
             }
 
             GamepadAction.SELECT -> {
                 // The model dispatches to the focused item; the registered-click fallback only
                 // fires when the model has nothing to dispatch (e.g. no rows composed yet) and
                 // stays fresh through the focus tracker.
+                //
+                // No cue here on purpose. Both paths end in the row's OWN activation lambda, which
+                // already carries the sound — so a read-only row stays silent for free, an inline
+                // action can voice itself differently (the Sound screen's Preview plays no cue
+                // ahead of the sample it exists to play), and a tap gets the same cue without a
+                // second decision being made anywhere.
                 if (!navigationState.select()) focusedRowClick.value?.invoke()
             }
             // One-level-up navigation: invoke this screen's back handler. For multi-step
             // screens that's "collapse a sub-step (else close)"; for leaf screens it closes
             // the overlay back to the XMB. Mirrors the on-screen Back button exactly.
             GamepadAction.BACK -> {
+                menuSounds.play(MenuSound.BACK)
                 onBack()
             }
 
@@ -808,7 +854,7 @@ fun SettingsScaffold(
                                 androidx.compose.foundation.interaction.MutableInteractionSource()
                             },
                             indication = null,
-                        ) { onBack() },
+                        ) { menuSounds.play(MenuSound.BACK); onBack() },
                     ) {
                         Text(
                             text = "◀",
@@ -974,6 +1020,11 @@ class SettingsRowAction(
     // Reports controller-focus changes on this action, so a screen can retarget its helper
     // footer while the cursor sits on the action rather than the row (Logs ▸ Share).
     val onFocusChanged: ((Boolean) -> Unit)? = null,
+    // The cue this action plays when activated, by SELECT or by tap. Defaults to the ordinary
+    // activation cue; null for an action whose whole job is to make a sound of its own (Sound ▸
+    // Preview), where a cursor tick ahead of the sample would be the thing you are auditioning
+    // arriving second.
+    val plays: MenuSound? = MenuSound.SELECT,
     val icon: @Composable () -> Unit,
 )
 
@@ -1003,7 +1054,18 @@ fun SettingsRow(
     // SELECT and taps do nothing: [onClick] is dropped rather than guarded at each use.
     enabled: Boolean = true,
 ) {
-    val click = onClick?.takeIf { enabled }
+    val menuSounds = LocalMenuSounds.current
+    // The activation cue is attached to the row's lambda, not to the scaffold's SELECT branch,
+    // because that lambda is the ONE thing the controller path and the tap path below share:
+    // the scaffold dispatches it through the navigation model, the tap gesture calls it directly,
+    // and the focus tracker hands it back as the fallback. One wrap covers all three.
+    //
+    // Remembered so the pointerInput key below stays stable — a fresh lambda per recomposition
+    // would tear down and rebuild the gesture detector on every frame a row redraws.
+    val rawClick = onClick?.takeIf { enabled }
+    val click = remember(rawClick, menuSounds) {
+        rawClick?.let { activate -> { menuSounds.play(MenuSound.SELECT); activate() } }
+    }
     val actionFocusCount = remember { mutableIntStateOf(0) }
     val anyActionFocused = actionFocusCount.intValue > 0
     val focusTracker = LocalSettingsFocusTracker.current
@@ -1032,7 +1094,9 @@ fun SettingsRow(
                     focusable = true,
                     selectable = true,
                     enabled = true,
-                    onSelect = action.onClick,
+                    // Same cue the action's own tap plays (SettingsRowActionButton), and the same
+                    // opt-out honoured.
+                    onSelect = { action.plays?.let(menuSounds::play); action.onClick() },
                     onLongPress = action.onLongPress,
                 )
             }
@@ -1150,14 +1214,21 @@ fun SettingsFocusable(
     val focusTracker = LocalSettingsFocusTracker.current
     val touchInput = LocalSettingsTouchInput.current
     val reportFocused = LocalSettingsReportFocused.current
+    val menuSounds = LocalMenuSounds.current
     var isFocused by remember { mutableStateOf(false) }
+
+    // Same one-lambda wrap as SettingsRow: the custom element sounds like a row because it IS a
+    // row as far as navigation is concerned.
+    val activate = remember(onClick, menuSounds) {
+        { menuSounds.play(MenuSound.SELECT); onClick() }
+    }
 
     val row = rememberControllerRowRegistration(
         prefix = "custom",
         focusKey = focusKey,
         claimInitialFocus = true,
         selectable = true,
-        onSelect = onClick,
+        onSelect = activate,
     )
 
     Box(
@@ -1168,12 +1239,12 @@ fun SettingsFocusable(
             .onFocusChanged { state ->
                 isFocused = state.isFocused
                 if (state.isFocused) {
-                    focusTracker(onClick)
+                    focusTracker(activate)
                     reportFocused(row.focusRequester)
                 }
             }
-            .pointerInput(onClick) {
-                detectTapGestures(onTap = { touchInput(); onClick() })
+            .pointerInput(activate) {
+                detectTapGestures(onTap = { touchInput(); activate() })
             }
             .focusable(),
     ) {
@@ -1191,6 +1262,9 @@ fun SettingsToggleRow(
     checked: Boolean,
     onToggle: (Boolean) -> Unit,
 ) {
+    // The switch is a tap target in its OWN right — a finger on the thumb never reaches the row's
+    // click — so it carries the cue itself. The row's own path is already covered by SettingsRow.
+    val menuSounds = LocalMenuSounds.current
     SettingsRow(
         label = label,
         sublabel = sublabel,
@@ -1202,7 +1276,7 @@ fun SettingsToggleRow(
         trailing = {
             Switch(
                 checked = checked,
-                onCheckedChange = onToggle,
+                onCheckedChange = { next -> menuSounds.play(MenuSound.SELECT); onToggle(next) },
                 colors = SwitchDefaults.colors(
                     checkedThumbColor = Color.White,
                     checkedTrackColor = SettingsAccent,
@@ -1268,7 +1342,13 @@ fun SettingsTextFieldRow(
     val focusTracker = LocalSettingsFocusTracker.current
     val keyboard = LocalSoftwareKeyboardController.current
     val reportFocused = LocalSettingsReportFocused.current
+    val menuSounds = LocalMenuSounds.current
     var editing by remember { mutableStateOf(false) }
+
+    // Entering edit mode is this row's activation — it is what SELECT and a tap both do here — so
+    // it gets the ordinary activation cue. Leaving it stays silent: the IME owns that moment, and
+    // focus can leave the field without any press at all.
+    val beginEditing: () -> Unit = { menuSounds.play(MenuSound.SELECT); editing = true }
 
     // Always focusable so this field can be the screen's initial-focus target (a screen that
     // starts with a text field still opens with it highlighted, read-only). Registration is
@@ -1280,7 +1360,7 @@ fun SettingsTextFieldRow(
         claimInitialFocus = true,
         selectable = enabled,
         enabled = enabled,
-        onSelect = { editing = true },
+        onSelect = beginEditing,
     )
     val fr = row.focusRequester
 
@@ -1342,7 +1422,7 @@ fun SettingsTextFieldRow(
                     .onFocusChanged { state ->
                         if (state.isFocused) {
                             // Controller SELECT over the field starts editing (opens the keyboard).
-                            focusTracker { editing = true }
+                            focusTracker(beginEditing)
                             reportFocused(fr)
                         } else {
                             editing = false
@@ -1356,7 +1436,7 @@ fun SettingsTextFieldRow(
                 Box(
                     modifier = Modifier
                         .matchParentSize()
-                        .pointerInput(Unit) { detectTapGestures { editing = true } },
+                        .pointerInput(Unit) { detectTapGestures { beginEditing() } },
                 )
             }
         }

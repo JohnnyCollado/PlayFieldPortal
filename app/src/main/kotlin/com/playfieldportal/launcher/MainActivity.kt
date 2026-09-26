@@ -16,11 +16,15 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.core.content.ContextCompat
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
+import com.playfieldportal.core.ui.sound.LocalMenuSounds
+import com.playfieldportal.core.ui.sound.MenuSoundSink
 import com.playfieldportal.core.ui.theme.PFPTheme
 import com.playfieldportal.feature.library.scanner.LibraryRescanCoordinator
 import com.playfieldportal.feature.settings.media.MediaRescanCoordinator
@@ -63,6 +67,12 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var ambienceController: com.playfieldportal.core.ui.sound.AmbienceController
+
+    // Voices the settings layer's cursor. Settings navigation lives in composition rather than in
+    // a ViewModel (one scaffold, ~40 screens), so the player reaches it as an ambient sink
+    // provided here — see LocalMenuSounds for why that layer is the exception.
+    @Inject
+    lateinit var menuSoundPlayer: com.playfieldportal.core.ui.sound.MenuSoundPlayer
 
     // Same activity-scoped instance the shell's hiltViewModel() resolves — used to report when
     // the notification-permission dialog is out of the way so the boot sequence can start.
@@ -143,13 +153,19 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             PFPTheme {
-                // Controller prompts are ambient: every footer resolves its glyphs from the
-                // live bindings supplied here, so none of them can contradict the pad.
-                ProvideControllerPrompts {
-                    // AppXmbHost is defined per build variant: the debug source set wraps the shell so
-                    // long-pressing Settings opens DebugMenuScreen; the release source set calls
-                    // XMBShellContainer directly, keeping debug code out of the APK.
-                    AppXmbHost()
+                // Menu sounds are ambient for the same reason controller prompts are: the layers
+                // that need them are composables, not ViewModels. Remembered so the static local
+                // is written once — a fresh lambda per recomposition would invalidate the subtree.
+                val menuSounds = remember { MenuSoundSink { menuSoundPlayer.play(it) } }
+                CompositionLocalProvider(LocalMenuSounds provides menuSounds) {
+                    // Controller prompts are ambient: every footer resolves its glyphs from the
+                    // live bindings supplied here, so none of them can contradict the pad.
+                    ProvideControllerPrompts {
+                        // AppXmbHost is defined per build variant: the debug source set wraps the shell so
+                        // long-pressing Settings opens DebugMenuScreen; the release source set calls
+                        // XMBShellContainer directly, keeping debug code out of the APK.
+                        AppXmbHost()
+                    }
                 }
             }
         }

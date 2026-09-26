@@ -16,6 +16,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.playfieldportal.core.domain.model.GamepadAction
+import com.playfieldportal.core.ui.sound.LocalMenuSounds
+import com.playfieldportal.core.ui.sound.MenuSound
 import kotlinx.coroutines.launch
 
 @Composable
@@ -28,6 +30,9 @@ fun CreditsSettingsScreen(
     val scrollState = rememberScrollState()
     val scope = rememberCoroutineScope()
     val stepPx = with(LocalDensity.current) { 120.dp.toPx() }
+    // Credits has no rows, so the scaffold's own move cue never fires here — the page itself is
+    // what moves, and it ticks for the same reason a row would.
+    val menuSounds = LocalMenuSounds.current
 
     SettingsScaffold(
         title = "Settings",
@@ -36,8 +41,14 @@ fun CreditsSettingsScreen(
         modifier = modifier,
         onInterceptAction = { action ->
             when (action) {
-                GamepadAction.NAVIGATE_UP   -> { scope.launch { scrollState.animateScrollBy(-stepPx) }; true }
-                GamepadAction.NAVIGATE_DOWN -> { scope.launch { scrollState.animateScrollBy(stepPx) }; true }
+                GamepadAction.NAVIGATE_UP   -> {
+                    menuSounds.play(MenuSound.SCROLL)
+                    scope.launch { scrollState.animateScrollBy(-stepPx) }; true
+                }
+                GamepadAction.NAVIGATE_DOWN -> {
+                    menuSounds.play(MenuSound.SCROLL)
+                    scope.launch { scrollState.animateScrollBy(stepPx) }; true
+                }
                 else -> false
             }
         },
